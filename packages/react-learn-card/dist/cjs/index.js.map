@@ -1,0 +1,1 @@
+{"version":3,"file":"index.js","sources":["../../src/components/Button.tsx"],"sourcesContent":[null],"names":["text","onClick","React","createElement","type"],"mappings":"8HAOsC,EAAGA,KAAAA,EAAMC,QAAAA,KAEvCC,EAAA,QAAAC,cAAA,SAAA,CAAQC,KAAK,SAASH,QAASA,GAC1BD"}
