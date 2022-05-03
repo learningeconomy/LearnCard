@@ -6,7 +6,7 @@ export type ButtonProps = {
     className?: string;
 };
 
-const Button: React.FC<ButtonProps> = ({ text, onClick, className = '' }) => {
+export const Button: React.FC<ButtonProps> = ({ text, onClick, className = '' }) => {
     return (
         <button
             type="button"
