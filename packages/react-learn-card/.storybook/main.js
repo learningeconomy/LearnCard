@@ -5,6 +5,18 @@
   ],
   "addons": [
     "@storybook/addon-links",
-    "@storybook/addon-essentials"
-  ]
+     "@storybook/addon-essentials",
+      {
+        name: '@storybook/addon-postcss',
+        options: {
+            postcssLoaderOptions: {
+                // When using postCSS 8
+                implementation: require('postcss'),
+            },
+        },
+    },
+  ],
+     core: {
+         builder: 'webpack5'
+     }
 }

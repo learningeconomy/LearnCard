@@ -1,16 +1,21 @@
-import React, { MouseEventHandler } from 'react'
+import React, { MouseEventHandler } from 'react';
 
 export type ButtonProps = {
-    text?: string;        
+    text?: string;
     onClick: MouseEventHandler<HTMLButtonElement>;
+    className?: string;
 };
 
-const Button: React.FC<ButtonProps> = ({ text, onClick }) => {
+const Button: React.FC<ButtonProps> = ({ text, onClick, className = '' }) => {
     return (
-        <button type="button" onClick={onClick} >
+        <button
+            type="button"
+            onClick={onClick}
+            className={`p-4 border rounded text-gray-700 ${className}`}
+        >
             {text}
-        </button>   
-    )
-}
+        </button>
+    );
+};
 
 export default Button;
