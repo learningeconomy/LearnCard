@@ -18,3 +18,11 @@ ButtonTest.args = {
     },
     text: 'Test!',
 };
+
+export const AlertButton = Template.bind({});
+ButtonTest.args = {
+    onClick: () => {
+        window.alert('Nice');
+    },
+    text: 'Alert!',
+};
