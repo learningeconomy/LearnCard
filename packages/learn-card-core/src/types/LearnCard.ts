@@ -1,3 +1,5 @@
+import { ModelAliases } from '@glazed/types';
+
 import { DidKeyPluginConstants, DidKeyPluginMethods } from '@wallet/plugins/didkey/types';
 import { IDXPluginMethods } from '@wallet/plugins/idx/types';
 import { VCPluginMethods } from '@wallet/plugins/vc/types';
@@ -9,3 +11,10 @@ export type LearnCardWallet = UnlockedWallet<
     DidKeyPluginMethods & VCPluginMethods & IDXPluginMethods,
     DidKeyPluginConstants
 >;
+
+export type CeramicIDXArgs = {
+    modelData: ModelAliases;
+    credentialAlias: string;
+    ceramicEndpoint: string;
+    defaultContentFamily: string;
+};

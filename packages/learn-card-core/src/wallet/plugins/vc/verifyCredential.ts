@@ -1,13 +1,7 @@
-import vc from '@digitalbazaar/vc';
+import { verifyCredential as vc } from 'didkit';
 
-import { VerifyCredential } from './types';
+import { VC } from './types';
 
-const verifyCredential = ({ credential, options }: VerifyCredential) => {
-  return vc.verifyCredential({
-    credential,
-    suite: options.suite,
-    documentLoader: options.documentLoader,
-  });
+export const verifyCredential = async (credential: VC) => {
+    return JSON.parse(await vc(JSON.stringify(credential), '{}'));
 };
-
-export { verifyCredential };

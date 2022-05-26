@@ -1,27 +1,46 @@
-export type IssueCredential = {
-    credential: any;
-    options: any;
+export type Proof = {
+    type: string;
+    proofPurpose: string;
+    verificationMethod: string;
+    jws: string;
+    created: string;
 };
 
-export type VerifyCredential = {
-    credential: any;
-    options: any;
+export type UnsignedVC = {
+    [key: string]: any;
+    '@context': string | string[];
+    credentialSubject: { id: string };
+    id: string;
+    issuanceDate: string;
+    issuer: string;
+    type: string[];
 };
 
-export type PresentCredentials = {
-    verifiableCredential: any;
-    options: any;
+export type VC = UnsignedVC & { proof: Proof };
+
+export type UnsignedVP = {
+    [key: string]: any;
+    '@context': string | string[];
+    holder: string;
+    type: string[];
+    verifiableCredential: VC;
 };
 
-export type VerifyPresentation = {
-    presentation: any;
-    options: any;
+export type VP = UnsignedVP & { proof: Proof };
+
+export type VerificationCheck = {
+    checks: string[];
+    warnings: string[];
+    errors: string[];
 };
 
 export type VCPluginMethods = {
-    issue: (config: IssueCredential) => Promise<any>;
-    issueUsingWalletSuite: (config: IssueCredential) => Promise<any>;
-    verifyCredential: (config: VerifyCredential) => Promise<any>;
-    createVerifiablePresentation: (config: PresentCredentials) => Promise<any>;
-    verifyPresentation: (config: VerifyPresentation) => Promise<any>;
+    issueCredential: (credential: UnsignedVC) => Promise<VC>;
+    verifyCredential: (credential: VC) => Promise<VerificationCheck>;
+    issuePresentation: (credential: VC, holder?: string) => Promise<VP>;
+    verifyPresentation: (presentation: VP) => Promise<VerificationCheck>;
+    getTestVc: (subject?: string) => UnsignedVC;
+
+    // Dependent methods
+    getSubjectDid: () => string;
 };

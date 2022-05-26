@@ -3,6 +3,7 @@ import { toUint8Array } from 'hex-lite';
 import KeyDidResolver from 'key-did-resolver';
 import { Ed25519Provider } from 'key-did-provider-ed25519';
 import { DIDDataStore } from '@glazed/did-datastore';
+import { TileLoader } from '@glazed/tile-loader';
 import { ModelAliases } from '@glazed/types';
 import { CeramicClient } from '@ceramicnetwork/http-client';
 import { CreateOpts } from '@ceramicnetwork/common';
@@ -10,9 +11,10 @@ import { TileDocument, TileMetadataArgs } from '@ceramicnetwork/stream-tile';
 
 import { CredentialStreamId, CredentialsList, IDXPluginMethods } from './types';
 import { Plugin, UnlockedWallet } from 'types/wallet';
+import { CeramicIDXArgs } from 'types/LearnCard';
 
 const getCeramicClientFromWalletSuite = async (
-    wallet: UnlockedWallet<any, any>,
+    wallet: UnlockedWallet<any, any, any>,
     ceramicEndpoint: string
 ): Promise<CeramicClient> => {
     const client = new CeramicClient(ceramicEndpoint);
@@ -37,12 +39,11 @@ const getCeramicClientFromWalletSuite = async (
 
 export const getIDXPlugin = async (
     wallet: UnlockedWallet<any, any, any>,
-    modelData: ModelAliases,
-    credentialAlias: string,
-    ceramicEndpoint: string,
-    defaultContentFamily: string
+    { modelData, credentialAlias, ceramicEndpoint, defaultContentFamily }: CeramicIDXArgs
 ): Promise<Plugin<'IDX', IDXPluginMethods>> => {
     const ceramic = await getCeramicClientFromWalletSuite(wallet, ceramicEndpoint);
+
+    const loader = new TileLoader({ ceramic });
 
     const dataStore = new DIDDataStore({ ceramic, model: modelData });
 
@@ -93,7 +94,7 @@ export const getIDXPlugin = async (
     };
 
     const readContentFromCeramic = async (streamId: string): Promise<any> => {
-        return (await TileDocument.load(ceramic, streamId))?.content;
+        return (await loader.load(streamId))?.content;
     };
 
     return {
@@ -108,11 +109,14 @@ export const getIDXPlugin = async (
 
                 return credential && (await readContentFromCeramic(credential.id));
             },
-            getVerifiableCredentials: async _wallet => {
+            getVerifiableCredentials: async () => {
                 const credentialList = await getCredentialsListFromIndex();
-                const streamId = credentialList?.credentials?.[0]?.id;
+                const streamIds =
+                    credentialList?.credentials?.map(credential => credential?.id) ?? [];
 
-                if (streamId) return readContentFromCeramic(streamId);
+                return Promise.all(
+                    streamIds.map(async streamId => readContentFromCeramic(streamId))
+                );
             },
             persistVerifiableCredential: async (_wallet, { title, id }) => {
                 return addCredentialStreamIdToIndex({ title, id });

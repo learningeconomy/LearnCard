@@ -1,12 +1,7 @@
-import vc from '@digitalbazaar/vc';
+import { verifyPresentation as vp } from 'didkit';
 
-import { VerifyPresentation } from './types';
+import { VP } from './types';
 
-const verifyPresentation = ({ presentation, options }: VerifyPresentation) => {
-  return vc.verify({
-    presentation,
-    ...options,
-  });
+export const verifyPresentation = async (presentation: VP) => {
+    return JSON.parse(await vp(JSON.stringify(presentation), '{}'));
 };
-
-export { verifyPresentation };
