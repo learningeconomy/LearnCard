@@ -1,52 +1,31 @@
 import { toUint8Array } from 'hex-lite';
-import { ModelAliases } from '@glazed/types';
+import init from 'didkit';
 
 import { generateWallet } from './base';
 import { getIDXPlugin } from './plugins/idx';
 import { DidKeyPlugin } from './plugins/didkey';
-import { VCPlugin } from './plugins/vc';
+import { getVCPlugin } from './plugins/vc';
 
 import { LearnCardWallet } from 'types/LearnCard';
+import { defaultCeramicIDXArgs } from './defaults';
 
 export const createWallet = async (
     defaultContents: any[],
-    modelData: any,
-    credentialAlias: string,
-    ceramicEndpoint: string,
-    defaultContentFamily: string
+    ceramicIDXArgs = defaultCeramicIDXArgs
 ): Promise<LearnCardWallet> => {
-    const baseWallet = await (
-        await (await generateWallet(defaultContents)).addPlugin(DidKeyPlugin)
-    ).addPlugin(VCPlugin);
+    const didkeyWallet = await (await generateWallet(defaultContents)).addPlugin(DidKeyPlugin);
+    const baseWallet = await didkeyWallet.addPlugin(await getVCPlugin(didkeyWallet));
 
-    return baseWallet.addPlugin(
-        await getIDXPlugin(
-            baseWallet,
-            modelData,
-            credentialAlias,
-            ceramicEndpoint,
-            defaultContentFamily
-        )
-    );
+    return baseWallet.addPlugin(await getIDXPlugin(baseWallet, ceramicIDXArgs));
 };
 
 /** Generates did documents from key and returns default wallet */
-export const walletFromKey = async (
-    key: string,
-    modelData: any,
-    credentialAlias: string,
-    ceramicEndpoint: string,
-    defaultContentFamily: string
-) => {
+export const walletFromKey = async (key: string, ceramicIDXArgs = defaultCeramicIDXArgs) => {
+    await init();
+
     const didDocuments = await DidKeyPlugin.pluginConstants.generateContentFromSeed(
         toUint8Array(key.padStart(64, '0'))
     );
 
-    return createWallet(
-        didDocuments,
-        modelData,
-        credentialAlias,
-        ceramicEndpoint,
-        defaultContentFamily
-    );
+    return createWallet(didDocuments, ceramicIDXArgs);
 };

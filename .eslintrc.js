@@ -67,9 +67,5 @@ module.exports = {
         'prefer-arrow-callback': ['warn', { allowNamedFunctions: true }],
         '@typescript-eslint/naming-convention': 'off',
         'react/require-default-props': 'off',
-        'jsx-a11y/label-has-associated-control': [
-            2,
-            { controlComponents: ['Toggle', 'IncrementStepper'] },
-        ],
     },
 };

@@ -1,31 +1,20 @@
-import vc from '@digitalbazaar/vc';
-import { Ed25519Signature2018 } from '@digitalbazaar/ed25519-signature-2018';
-import { Ed25519KeyPair } from '@transmute/did-key-ed25519';
+import { issueCredential as ic, keyToVerificationMethod } from 'didkit';
 
-import { IssueCredential } from './types';
+import { UnlockedWallet } from 'types/wallet';
+import { UnsignedVC } from './types';
 
-const issue = async ({ credential, options }: IssueCredential) => {
-  const signedVC = await vc.issue({
-    credential,
-    ...options,
-  });
-  return signedVC;
+export const issueCredential = async (wallet: UnlockedWallet, credential: UnsignedVC) => {
+    const signingKey = wallet.contents?.find((c: { name: string }) => c?.name === 'Signing Key');
+
+    if (!signingKey?.privateKeyJwk) {
+        throw new Error('Cannot issue credential: No signing key found');
+    }
+
+    const kp = JSON.stringify(signingKey.privateKeyJwk);
+    const options = JSON.stringify({
+        verificationMethod: await keyToVerificationMethod('key', kp),
+        proofPurpose: 'assertionMethod',
+    });
+
+    return JSON.parse(await ic(JSON.stringify(credential), options, kp));
 };
-
-const issueUsingWalletSuite = async ({
-  credential,
-  options,
-}: IssueCredential) => {
-  const wallet = options?.wallet;
-  const contents = JSON.parse(JSON.stringify(wallet.contents));
-  const key = contents?.find(
-    (c: { name: string }) => c?.name === 'Signing Key'
-  );
-  if (key) {
-    const signingKey = Ed25519KeyPair.from(key);
-    const suite = new Ed25519Signature2018({ key: signingKey });
-    return wallet.issue({ credential, options: { suite, ...options } });
-  }
-};
-
-export { issue, issueUsingWalletSuite };
