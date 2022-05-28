@@ -1,8 +1,4 @@
-.vc-thumbail-container {
-    background: #00BA88;
-}
-
-.vc-thumbail-container::after {
+.vc-thumbnail-container::after {
     content: "";
     background-color: #fff;
     border-bottom-left-radius: 120px;
@@ -13,8 +9,4 @@
     height: 70%;
     width: 100%;
     z-index: 1;
-}
-
-.vc-thumbnail-verification-badge-wrap {
-    border: solid 3px #00BA88;
 }
