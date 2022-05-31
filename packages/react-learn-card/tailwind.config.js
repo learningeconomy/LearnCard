@@ -53,8 +53,8 @@ module.exports = {
                     800: '#BF3000',
                     900: '#802000',
                 },
-            }
+            },
         },
     },
-    plugins: [],
+    plugins: [require('@tailwindcss/line-clamp')],
 };
