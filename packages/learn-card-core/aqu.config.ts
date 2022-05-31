@@ -33,7 +33,7 @@ const buildOptions: BuildOptions = {
     target: 'es6',
     // target: 'es2020',
     plugins: [wasmPlugin],
-    external: ['fs', 'path', 'crypto'],
+    external: ['fs', 'path', 'crypto', 'process'],
 };
 
 const options = { buildOptions };
