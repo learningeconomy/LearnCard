@@ -30,10 +30,8 @@ export const VCThumbnail: React.FC<VCThumbnailProps> = ({
                 onClick={onClick}
                 className={`flex flex-col items-center justify-between relative py-3 px-3 rounded-3xl shadow-3xl bg-emerald-700 max-w-sm vc-thumbnail-listview-container ${className}`}
             >
-                <div
-                    className='flex flex-row items-center justify-between mb-3 z-10'
-                >
-                    <div className="flex flex-row items-start justify-start w-1/4 text-left">
+                <div className="flex flex-row items-center justify-between mb-3 z-10">
+                    <div className="flex flex-row justify-center items-center w-1/4 text-center">
                         <div className="h-16 w-16 border-solid border-2 border-black bg-white">
                             <img
                                 className="h-full w-full object-cover"
@@ -44,13 +42,13 @@ export const VCThumbnail: React.FC<VCThumbnailProps> = ({
                     </div>
                     <div className="flex flex-col items-start justify-center w-3/4 text-left">
                         <h2
-                            className="text-base tracking-wide leading-snug text-left"
+                            className="text-base tracking-wide leading-snug text-left line-clamp-2"
                             data-testid="vc-thumbnail-title"
                         >
                             {title ?? ''}
                         </h2>
                         <p
-                            className="text-sm font-light text-center"
+                            className="text-sm font-light text-center line-clamp-1"
                             data-testid="vc-thumbnail-createdAt"
                         >
                             {createdAt ?? ''}
@@ -87,7 +85,7 @@ export const VCThumbnail: React.FC<VCThumbnailProps> = ({
                 <div className="flex flex-row items-start justify-between w-full">
                     <div className="flex flex-row items-start justify-start w-4/5">
                         <h2
-                            className="text-base tracking-wide leading-snug text-left"
+                            className="text-base tracking-wide leading-snug text-left line-clamp-2"
                             data-testid="vc-thumbnail-title"
                         >
                             {title ?? ''}
@@ -107,7 +105,7 @@ export const VCThumbnail: React.FC<VCThumbnailProps> = ({
                 </div>
                 <div className="w-full mt-2">
                     <p
-                        className="text-sm font-light text-center"
+                        className="text-sm font-light text-center line-clamp-1"
                         data-testid="vc-thumbnail-createdAt"
                     >
                         {createdAt ?? ''}
