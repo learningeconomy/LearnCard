@@ -4,6 +4,9 @@ module.exports = {
     content: ['./src/**/*.{js,jsx,ts,tsx}'],
     theme: {
         extend: {
+            boxShadow: {
+                '3xl': '0px 0px 8px rgba(0, 0, 0, 0.25)',
+            },
             colors: {
                 grayscale: {
                     50: '#6F7590',
