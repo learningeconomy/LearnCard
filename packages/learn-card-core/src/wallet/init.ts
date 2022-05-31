@@ -1,5 +1,5 @@
 import { toUint8Array } from 'hex-lite';
-import init, * as didkit from 'didkit';
+import init from 'didkit';
 
 import { generateWallet } from './base';
 import { getIDXPlugin } from './plugins/idx';
@@ -43,6 +43,8 @@ export const createWallet = async (
             await wallet.pluginMethods.addVerifiableCredentialInIdx(credential);
         },
 
+        readFromCeramic: wallet.pluginMethods.readContentFromCeramic,
+
         getTestVc: wallet.pluginMethods.getTestVc,
     };
 };
@@ -50,8 +52,6 @@ export const createWallet = async (
 /** Generates did documents from key and returns default wallet */
 export const walletFromKey = async (key: string, ceramicIDXArgs = defaultCeramicIDXArgs) => {
     await init();
-
-    (window as any).didkit = didkit;
 
     const didDocuments = await DidKeyPlugin.pluginConstants.generateContentFromSeed(
         toUint8Array(key.padStart(64, '0'))
