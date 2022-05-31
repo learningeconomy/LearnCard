@@ -38,7 +38,7 @@ export const VCThumbnail: React.FC<VCThumbnailProps> = ({
                             <img
                                 className="h-full w-full object-cover"
                                 src={issuerImage}
-                                alt="user image"
+                                alt="issuer image"
                             />
                         </div>
                     </div>
@@ -142,7 +142,7 @@ export const VCThumbnail: React.FC<VCThumbnailProps> = ({
                     <img
                         className="h-full w-full object-cover"
                         src={issuerImage}
-                        alt="user image"
+                        alt="main image"
                     />
                 </div>
             </div>
