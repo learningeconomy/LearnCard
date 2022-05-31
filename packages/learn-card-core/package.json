@@ -1,6 +1,6 @@
 {
   "name": "learn-card-core",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "",
   "main": "./dist/index.js",
   "module": "./dist/learn-card-core.esm.js",
@@ -70,14 +70,10 @@
     "@glazed/did-datastore": "^0.3.1",
     "@glazed/tile-loader": "^0.2.0",
     "@peculiar/webcrypto": "^1.4.0",
-    "@spruceid/didkit-wasm": "^0.2.1",
-    "@transmute/did-key-cipher": "0.2.1-unstable.42",
-    "@transmute/did-key-x25519": "0.3.0-unstable.8",
-    "@transmute/universal-wallet-test-vectors": "0.7.0-unstable.51",
     "dids": "^3.1.0",
     "hex-lite": "^1.5.0",
     "key-did-provider-ed25519": "^2.0.0",
-    "key-did-resolver": "^2.0.0"
+    "key-did-resolver": "1.2.1"
   },
   "pnpm": {
     "overrides": {

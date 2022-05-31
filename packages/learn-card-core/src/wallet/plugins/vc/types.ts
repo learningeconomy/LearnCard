@@ -37,10 +37,11 @@ export type VerificationCheck = {
 export type VCPluginMethods = {
     issueCredential: (credential: UnsignedVC) => Promise<VC>;
     verifyCredential: (credential: VC) => Promise<VerificationCheck>;
-    issuePresentation: (credential: VC, holder?: string) => Promise<VP>;
+    issuePresentation: (credential: VC) => Promise<VP>;
     verifyPresentation: (presentation: VP) => Promise<VerificationCheck>;
     getTestVc: (subject?: string) => UnsignedVC;
 
     // Dependent methods
     getSubjectDid: () => string;
+    getSubjectKeypair: () => Record<string, string>;
 };

@@ -1,9 +1,11 @@
-import {
+// eslint-disable no-use-before-define
+
+/* import {
     lockContents,
     unlockContents,
     exportContentsAsCredential,
     contentsFromEncryptedWalletCredential,
-} from './functions';
+} from './functions'; */
 
 import { Plugin, WalletStatus, LockedWallet, UnlockedWallet } from 'types/wallet';
 
@@ -62,7 +64,7 @@ const removeFromWallet = async <
     );
 };
 
-const lockWallet = async <
+/* const lockWallet = async <
     PluginNames extends string,
     PluginMethods extends Record<string, (...args: any[]) => any>,
     PluginConstants extends Record<string, any>
@@ -97,7 +99,8 @@ const lockWallet = async <
             }
         },
     } as LockedWallet<PluginNames, PluginMethods, PluginConstants>;
-};
+}; */
+
 const bindMethods = <
     PluginNames extends string,
     PluginMethods extends Record<string, (...args: any[]) => any>,
@@ -120,7 +123,7 @@ export const generateWallet = async <
 ): Promise<UnlockedWallet<PluginNames, PluginMethods, PluginConstants>> => {
     const { plugins = [] } = _wallet;
 
-    const exportFunction = async (password: string): Promise<any> => {
+    /* const exportFunction = async (password: string): Promise<any> => {
         return exportContentsAsCredential(password, contents);
     };
 
@@ -129,9 +132,9 @@ export const generateWallet = async <
 
         return generateWallet(
             await contentsFromEncryptedWalletCredential(password, encryptedWalletCredential),
-            wallet
+            _wallet
         );
-    };
+    }; */
 
     const { pluginMethods, pluginConstants } = plugins.reduce<{
         pluginMethods: PluginMethods;
@@ -154,11 +157,11 @@ export const generateWallet = async <
         remove: function (contentId: string) {
             return removeFromWallet(this, contentId);
         },
-        lock: async function (password: string) {
+        /* lock: async function (password: string) {
             return lockWallet(this, password);
         },
         export: exportFunction,
-        import: importFunction,
+        import: importFunction, */
         status: WalletStatus.Unlocked,
         plugins,
         pluginMethods,

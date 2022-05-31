@@ -13,10 +13,40 @@ export const createWallet = async (
     defaultContents: any[],
     ceramicIDXArgs = defaultCeramicIDXArgs
 ): Promise<LearnCardWallet> => {
-    const didkeyWallet = await (await generateWallet(defaultContents)).addPlugin(DidKeyPlugin);
-    const baseWallet = await didkeyWallet.addPlugin(await getVCPlugin(didkeyWallet));
+    await init();
 
-    return baseWallet.addPlugin(await getIDXPlugin(baseWallet, ceramicIDXArgs));
+    const didkeyWallet = await (await generateWallet(defaultContents)).addPlugin(DidKeyPlugin);
+    const didkeyAndVCWallet = await didkeyWallet.addPlugin(await getVCPlugin(didkeyWallet));
+    const wallet = await didkeyAndVCWallet.addPlugin(
+        await getIDXPlugin(didkeyAndVCWallet, ceramicIDXArgs)
+    );
+
+    return {
+        _wallet: wallet,
+
+        get did() {
+            return wallet.pluginMethods.getSubjectDid();
+        },
+        get keypair() {
+            return wallet.pluginMethods.getSubjectKeypair();
+        },
+
+        issueCredential: wallet.pluginMethods.issueCredential,
+        verifyCredential: wallet.pluginMethods.verifyCredential,
+        issuePresentation: wallet.pluginMethods.issuePresentation,
+        verifyPresentation: wallet.pluginMethods.verifyPresentation,
+
+        getCredential: wallet.pluginMethods.getVerifiableCredentialFromIndex,
+        getCredentials: wallet.pluginMethods.getVerifiableCredentialsFromIndex,
+        publishCredential: wallet.pluginMethods.publishContentToCeramic,
+        addCredential: async credential => {
+            await wallet.pluginMethods.addVerifiableCredentialInIdx(credential);
+        },
+
+        readFromCeramic: wallet.pluginMethods.readContentFromCeramic,
+
+        getTestVc: wallet.pluginMethods.getTestVc,
+    };
 };
 
 /** Generates did documents from key and returns default wallet */
