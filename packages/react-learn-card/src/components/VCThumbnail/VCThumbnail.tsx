@@ -1,7 +1,7 @@
 import React from 'react';
 
 import FatArrow from '../assets/images/icon.green.fat-arrow.png';
-import VerifiedArrow from '../assets/images/verified-check.png';
+import VerifiedCheck from '../assets/images/verified-check.png';
 
 import './VCThumbnail.css';
 
@@ -67,7 +67,7 @@ export const VCThumbnail: React.FC<VCThumbnailProps> = ({
                     <div className="flex items-center justify-center h-5/6 w-10/12 bg-white rounded-full border-solid border-4 border-emerald-700 overflow-hidden">
                         <img
                             className="h-full w-full object-cover"
-                            src={VerifiedArrow ?? ''}
+                            src={VerifiedCheck ?? ''}
                             alt="credential icon"
                         />
                     </div>
