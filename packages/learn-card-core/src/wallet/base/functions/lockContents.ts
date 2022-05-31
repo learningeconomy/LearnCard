@@ -1,4 +1,4 @@
-import { passwordToKey } from './passwordToKey';
+/* import { passwordToKey } from './passwordToKey';
 
 import { X25519KeyPair } from '@transmute/did-key-x25519';
 import { Cipher } from '@transmute/did-key-cipher';
@@ -42,4 +42,4 @@ export const lockContents = async (password: string, contents: any[]): Promise<a
     );
 
     return encryptedContents;
-};
+}; */

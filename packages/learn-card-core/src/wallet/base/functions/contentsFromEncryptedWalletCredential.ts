@@ -1,4 +1,4 @@
-import { unlockContents } from './unlockContents';
+/* import { unlockContents } from './unlockContents';
 export const contentsFromEncryptedWalletCredential = async (
   password: string,
   encryptedWalletCredential: any
@@ -7,4 +7,4 @@ export const contentsFromEncryptedWalletCredential = async (
     encryptedWalletCredential.credentialSubject.encryptedWalletContents,
   ]);
   return unlockedContents[0].contents;
-};
+}; */
