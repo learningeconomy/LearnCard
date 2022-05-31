@@ -56,6 +56,6 @@
     "typescript": "^4.5.4"
   },
   "dependencies": {
-    "learn-card-core": "workspace:../learn-card-core"
+    "learn-card-core": "workspace:*"
   }
 }
