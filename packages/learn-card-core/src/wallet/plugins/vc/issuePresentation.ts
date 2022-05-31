@@ -4,26 +4,24 @@ import { UnlockedWallet } from 'types/wallet';
 import { VC } from './types';
 
 export const issuePresentation = async (
-    wallet: UnlockedWallet,
-    credential: VC,
-    _holder?: string
+    wallet: UnlockedWallet<
+        any,
+        { getSubjectDid: () => string; getSubjectKeypair: () => Record<string, string> },
+        any
+    >,
+    credential: VC
 ) => {
-    const signingKey = wallet.contents?.find((c: { name: string }) => c?.name === 'Signing Key');
+    const did = wallet.pluginMethods.getSubjectDid();
 
-    let holder = _holder;
+    if (!did) throw new Error('Cannot create presentation: No holder key found');
 
-    if (!holder) {
-        const did = signingKey?.controller;
+    const holder = did;
 
-        if (!did) throw new Error('Cannot create presentation: No holder key found');
+    const _kp = wallet.pluginMethods.getSubjectKeypair();
 
-        holder = did;
-    }
-    if (!signingKey?.privateKeyJwk) {
-        throw new Error('Cannot issue credential: No signing key found');
-    }
+    if (!_kp) throw new Error('Cannot issue credential: Could not get subject keypair');
 
-    const kp = JSON.stringify(signingKey.privateKeyJwk);
+    const kp = JSON.stringify(_kp);
     const options = JSON.stringify({
         verificationMethod: await keyToVerificationMethod('key', kp),
         proofPurpose: 'assertionMethod',

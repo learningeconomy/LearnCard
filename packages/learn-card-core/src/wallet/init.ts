@@ -1,5 +1,5 @@
 import { toUint8Array } from 'hex-lite';
-import init from 'didkit';
+import init, * as didkit from 'didkit';
 
 import { generateWallet } from './base';
 import { getIDXPlugin } from './plugins/idx';
@@ -13,15 +13,45 @@ export const createWallet = async (
     defaultContents: any[],
     ceramicIDXArgs = defaultCeramicIDXArgs
 ): Promise<LearnCardWallet> => {
-    const didkeyWallet = await (await generateWallet(defaultContents)).addPlugin(DidKeyPlugin);
-    const baseWallet = await didkeyWallet.addPlugin(await getVCPlugin(didkeyWallet));
+    await init();
 
-    return baseWallet.addPlugin(await getIDXPlugin(baseWallet, ceramicIDXArgs));
+    const didkeyWallet = await (await generateWallet(defaultContents)).addPlugin(DidKeyPlugin);
+    const didkeyAndVCWallet = await didkeyWallet.addPlugin(await getVCPlugin(didkeyWallet));
+    const wallet = await didkeyAndVCWallet.addPlugin(
+        await getIDXPlugin(didkeyAndVCWallet, ceramicIDXArgs)
+    );
+
+    return {
+        _wallet: wallet,
+
+        get did() {
+            return wallet.pluginMethods.getSubjectDid();
+        },
+        get keypair() {
+            return wallet.pluginMethods.getSubjectKeypair();
+        },
+
+        issueCredential: wallet.pluginMethods.issueCredential,
+        verifyCredential: wallet.pluginMethods.verifyCredential,
+        issuePresentation: wallet.pluginMethods.issuePresentation,
+        verifyPresentation: wallet.pluginMethods.verifyPresentation,
+
+        getCredential: wallet.pluginMethods.getVerifiableCredentialFromIndex,
+        getCredentials: wallet.pluginMethods.getVerifiableCredentialsFromIndex,
+        publishCredential: wallet.pluginMethods.publishContentToCeramic,
+        addCredential: async credential => {
+            await wallet.pluginMethods.addVerifiableCredentialInIdx(credential);
+        },
+
+        getTestVc: wallet.pluginMethods.getTestVc,
+    };
 };
 
 /** Generates did documents from key and returns default wallet */
 export const walletFromKey = async (key: string, ceramicIDXArgs = defaultCeramicIDXArgs) => {
     await init();
+
+    (window as any).didkit = didkit;
 
     const didDocuments = await DidKeyPlugin.pluginConstants.generateContentFromSeed(
         toUint8Array(key.padStart(64, '0'))

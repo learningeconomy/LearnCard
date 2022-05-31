@@ -1,13 +1,17 @@
-import { issueCredential } from './issue';
+import { issueCredential } from './issueCredential';
 import { verifyCredential } from './verifyCredential';
-import { issuePresentation } from './createVerifiablePresentation';
+import { issuePresentation } from './issuePresentation';
 import { verifyPresentation } from './verifyPresentation';
 
 import { VCPluginMethods } from './types';
 import { Plugin, UnlockedWallet } from 'types/wallet';
 
 export const getVCPlugin = async (
-    wallet: UnlockedWallet<any, { getSubjectDid: () => string }, any>
+    wallet: UnlockedWallet<
+        any,
+        { getSubjectDid: () => string; getSubjectKeypair: () => Record<string, string> },
+        any
+    >
 ): Promise<Plugin<'VC', VCPluginMethods>> => {
     return {
         pluginMethods: {
