@@ -4,12 +4,11 @@ import KeyDidResolver from 'key-did-resolver';
 import { Ed25519Provider } from 'key-did-provider-ed25519';
 import { DIDDataStore } from '@glazed/did-datastore';
 import { TileLoader } from '@glazed/tile-loader';
-import { ModelAliases } from '@glazed/types';
 import { CeramicClient } from '@ceramicnetwork/http-client';
 import { CreateOpts } from '@ceramicnetwork/common';
 import { TileDocument, TileMetadataArgs } from '@ceramicnetwork/stream-tile';
 
-import { CredentialStreamId, CredentialsList, IDXPluginMethods } from './types';
+import { IDXCredential, CredentialsList, IDXPluginMethods, StorageType } from './types';
 import { Plugin, UnlockedWallet } from 'types/wallet';
 import { CeramicIDXArgs } from 'types/LearnCard';
 
@@ -53,7 +52,7 @@ export const getIDXPlugin = async (
         return (await dataStore.get(alias)) || { credentials: [] };
     };
 
-    const addCredentialStreamIdToIndex = async (record: CredentialStreamId, alias?: string) => {
+    const addCredentialStreamIdToIndex = async (record: IDXCredential, alias?: string) => {
         if (!record) throw new Error('record is required');
 
         if (!record.id) throw Error('No streamId provided');
@@ -65,7 +64,7 @@ export const getIDXPlugin = async (
 
         const existing = await getCredentialsListFromIndex(alias);
 
-        existing.credentials.push(record);
+        existing.credentials.push({ storageType: StorageType.ceramic, ...record });
 
         return dataStore.set(alias, existing);
     };
@@ -101,15 +100,16 @@ export const getIDXPlugin = async (
         pluginMethods: {
             getCredentialsListFromIndex: async (_wallet, alias = credentialAlias) =>
                 getCredentialsListFromIndex(alias),
+            publishContentToCeramic: async (_wallet, cred) => publishContentToCeramic(cred),
             readContentFromCeramic: async (_wallet, streamId: string) =>
                 readContentFromCeramic(streamId),
-            getVerifiableCredential: async (_wallet, title: string) => {
+            getVerifiableCredentialFromIndex: async (_wallet, title: string) => {
                 const credentialList = await getCredentialsListFromIndex();
                 const credential = credentialList?.credentials?.find(cred => cred?.title === title);
 
                 return credential && (await readContentFromCeramic(credential.id));
             },
-            getVerifiableCredentials: async () => {
+            getVerifiableCredentialsFromIndex: async () => {
                 const credentialList = await getCredentialsListFromIndex();
                 const streamIds =
                     credentialList?.credentials?.map(credential => credential?.id) ?? [];
@@ -118,10 +118,9 @@ export const getIDXPlugin = async (
                     streamIds.map(async streamId => readContentFromCeramic(streamId))
                 );
             },
-            persistVerifiableCredential: async (_wallet, { title, id }) => {
+            addVerifiableCredentialInIdx: async (_wallet, { title, id }) => {
                 return addCredentialStreamIdToIndex({ title, id });
             },
-            publishVerifiableCredential: async (_wallet, cred) => publishContentToCeramic(cred),
         },
         pluginConstants: {},
     };

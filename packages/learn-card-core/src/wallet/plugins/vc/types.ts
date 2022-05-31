@@ -43,4 +43,5 @@ export type VCPluginMethods = {
 
     // Dependent methods
     getSubjectDid: () => string;
+    getSubjectKeypair: () => Record<string, string>;
 };
