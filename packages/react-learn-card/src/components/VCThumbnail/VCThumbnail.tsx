@@ -1,7 +1,7 @@
 import React from 'react';
 
-import FatArrow from '../assets/images/icon.green.fat-arrow.png';
-import VerifiedCheck from '../assets/images/verified-check.png';
+import FatArrow from '../../assets/images/icon.green.fat-arrow.png';
+import VerifiedCheck from '../../assets/images/verified-check.png';
 
 import './VCThumbnail.css';
 
