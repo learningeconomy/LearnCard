@@ -42,13 +42,13 @@ export const VCThumbnail: React.FC<VCThumbnailProps> = ({
                     </div>
                     <div className="flex flex-col items-start justify-center w-3/4 text-left">
                         <h2
-                            className="text-base tracking-wide leading-snug text-left line-clamp-2"
+                            className="ml-1 sm:ml-0 md:ml-0 lg:ml-0 text-base tracking-wide leading-snug text-left line-clamp-2"
                             data-testid="vc-thumbnail-title"
                         >
                             {title ?? ''}
                         </h2>
                         <p
-                            className="text-sm font-light text-center line-clamp-1"
+                            className="ml-1 sm:ml-0 md:ml-0 lg:ml-0 text-sm font-light text-center line-clamp-1"
                             data-testid="vc-thumbnail-createdAt"
                         >
                             {createdAt ?? ''}
