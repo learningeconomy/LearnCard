@@ -4,7 +4,7 @@ import { render, fireEvent } from '@testing-library/react';
 
 import VCThumbnail from '../VCThumbnail';
 
-describe('Running Tests for VCThumbnail', () => {
+describe('Running Tests for VCThumbnail Full View', () => {
     test('Checks VCThumbnail renders with props', () => {
         const handleOnClick = jest.fn();
 
@@ -54,5 +54,51 @@ describe('Running Tests for VCThumbnail', () => {
 
         const userImage = getByAltText('user image');
         expect(userImage).not.toHaveAttribute('src');
+    });
+});
+
+describe('Running Tests for VCThumbnail List View', () => {
+    test('Checks VCThumbnail List View renders with props', () => {
+        const handleOnClick = jest.fn();
+
+        const { getByTestId, getByAltText } = render(
+            <VCThumbnail
+                title="This is a title!"
+                createdAt="05/01/2022"
+                issuerImage="https://issuerimage.png"
+                listView
+                onClick={handleOnClick}
+            />
+        );
+
+        fireEvent.click(getByTestId('vc-thumbnail-title'));
+        expect(handleOnClick).toHaveBeenCalledTimes(1);
+
+        const title = getByTestId('vc-thumbnail-title');
+        expect(title).toHaveTextContent('This is a title!');
+
+        const createdAt = getByTestId('vc-thumbnail-createdAt');
+        expect(createdAt).toHaveTextContent('05/01/2022');
+
+        const issuerImage = getByAltText('issuer image');
+        expect(issuerImage).toHaveAttribute('src', 'https://issuerimage.png');
+    });
+
+    test('Checks VCThumbnail List View renders without props', () => {
+        const handleOnClick = jest.fn();
+
+        const { getByTestId, getByAltText } = render(<VCThumbnail listView />);
+
+        fireEvent.click(getByTestId('vc-thumbnail-title'));
+        expect(handleOnClick).not.toHaveBeenCalledTimes(1);
+
+        const title = getByTestId('vc-thumbnail-title');
+        expect(title).toHaveTextContent('');
+
+        const createdAt = getByTestId('vc-thumbnail-createdAt');
+        expect(createdAt).toHaveTextContent('');
+
+        const issuerImage = getByAltText('issuer image');
+        expect(issuerImage).not.toHaveAttribute('src');
     });
 });
