@@ -70,7 +70,6 @@
     "@glazed/did-datastore": "^0.3.1",
     "@glazed/tile-loader": "^0.2.0",
     "@peculiar/webcrypto": "^1.4.0",
-    "@spruceid/didkit-wasm": "^0.2.1",
     "dids": "^3.1.0",
     "hex-lite": "^1.5.0",
     "key-did-provider-ed25519": "^2.0.0",
