@@ -1,4 +1,4 @@
-import { passwordToKey } from './passwordToKey';
+/* import { passwordToKey } from './passwordToKey';
 import { lockContents } from './lockContents';
 
 import { X25519KeyPair } from '@transmute/did-key-x25519';
@@ -32,4 +32,4 @@ export const exportContentsAsCredential = async (
         },
     };
     return encryptedWallet;
-};
+}; */

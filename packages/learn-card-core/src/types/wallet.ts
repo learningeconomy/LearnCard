@@ -43,12 +43,12 @@ export type LockedWallet<
     PluginConstants extends Record<string, any> = Record<never, never>
 > = BaseWallet<PluginNames, PluginMethods, PluginConstants> & {
     status: WalletStatus.Locked;
-    unlock: (
+    /* unlock: (
         password: string
     ) => Promise<
         | { success: true; wallet: UnlockedWallet<PluginNames, PluginMethods> }
         | { success: false; wallet: LockedWallet<PluginNames, PluginMethods> }
-    >;
+    >; */
 };
 
 export type UnlockedWallet<
@@ -61,12 +61,12 @@ export type UnlockedWallet<
     remove: (
         contentId: string
     ) => Promise<UnlockedWallet<PluginNames, PluginMethods, PluginConstants>>;
-    lock: (password: string) => Promise<LockedWallet<PluginNames, PluginMethods, PluginConstants>>;
+    /* lock: (password: string) => Promise<LockedWallet<PluginNames, PluginMethods, PluginConstants>>;
     export: (password: string) => Promise<any>;
     import: (
         encryptedWalletCredential: any,
         password: string
-    ) => Promise<UnlockedWallet<PluginNames, PluginMethods, PluginConstants>>;
+    ) => Promise<UnlockedWallet<PluginNames, PluginMethods, PluginConstants>>; */
     addPlugin: <
         Name extends string,
         Methods extends Record<string, (...args: any[]) => any> = Record<never, never>,

@@ -8,6 +8,9 @@ export const DidKeyPlugin: Plugin<'DID Key', DidKeyPluginMethods, DidKeyPluginCo
         getSubjectDid: wallet =>
             (wallet.contents as JWK[]).find(content => content.name === 'Signing Key')
                 ?.controller ?? '',
+        getSubjectKeypair: wallet =>
+            (wallet.contents as JWK[]).find(content => content.name === 'Signing Key')
+                ?.privateKeyJwk,
     },
     pluginConstants: {
         generateContentFromSeed,
