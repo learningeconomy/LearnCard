@@ -4,6 +4,9 @@ module.exports = {
     content: ['./src/**/*.{js,jsx,ts,tsx}'],
     theme: {
         extend: {
+            boxShadow: {
+                '3xl': '0px 0px 8px rgba(0, 0, 0, 0.25)',
+            },
             colors: {
                 grayscale: {
                     50: '#6F7590',
@@ -53,8 +56,8 @@ module.exports = {
                     800: '#BF3000',
                     900: '#802000',
                 },
-            }
+            },
         },
     },
-    plugins: [],
+    plugins: [require('@tailwindcss/line-clamp')],
 };
