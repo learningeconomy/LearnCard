@@ -103,5 +103,6 @@
     "node_modules",
     "src/**/*.test.tsx",
     "src/**/*.stories.tsx",
-  ]
+  ],
+  "include": ["src","src/declaration.d.ts"]
 }
