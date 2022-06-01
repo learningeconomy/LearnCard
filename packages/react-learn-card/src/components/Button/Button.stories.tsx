@@ -16,5 +16,5 @@ ButtonTest.args = {
     onClick: () => {
         console.log('Nice');
     },
-    text: 'Test!',
+    text: 'HELLO!',
 };
