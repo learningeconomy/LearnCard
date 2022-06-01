@@ -1,5 +1,5 @@
 .vc-thumbnail-container {
-    max-width: 240px;
+    max-width: 250px;
 }
 
 .vc-thumbnail-container::after {
@@ -40,14 +40,8 @@
     z-index: 1;
 }
 
-@media (max-width: 248px) { 
-    .vc-thumbnail-container::before {
-        height: 65%;
-    }
-}
-
 @media (max-width: 200px) { 
     .vc-thumbnail-container::before {
-        height: 70%;
+        height: 68%;
     }
 }

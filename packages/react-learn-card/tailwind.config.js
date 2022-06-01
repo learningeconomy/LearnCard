@@ -11,8 +11,8 @@ module.exports = {
                 '25pct': '25%',
             },
             screens: {
-                xxsm: { max: '248px' },
-                // => @media (max-width: 248px) { ... }
+                xxsm: { max: '240px' },
+                // => @media (max-width: 240px) { ... }
                 xxxsm: { max: '200px' },
                 // => @media (max-width: 200px) { ... }
             },
