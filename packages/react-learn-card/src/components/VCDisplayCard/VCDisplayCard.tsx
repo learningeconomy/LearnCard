@@ -24,10 +24,27 @@ type CredentialSubject = {
     achievement: CredentialSubjectAchievement;
 };
 
+type WalletUser = {
+    type?: string;
+    id?: string;
+    name?: string;
+    url?: string;
+    image?: string;
+};
+
+type Issuer = {
+    type?: string;
+    id?: string;
+    name?: string;
+    url?: string;
+    image?: string;
+};
+
 export type VCDisplayCardProps = {
     title?: string;
     createdAt?: string;
-    issuer?: string;
+    issuer?: Issuer;
+    issuee?: WalletUser;
     userImage?: string;
     className?: string;
     credentialSubject?: CredentialSubject;
@@ -38,14 +55,14 @@ export const VCDisplayCard: React.FC<VCDisplayCardProps> = ({
     title,
     createdAt,
     issuer,
+    issuee,
     credentialSubject,
-    userImage,
     className = '',
     onClick = () => {},
 }) => {
-
     const credentialAchievementImage = credentialSubject?.achievement?.image;
     const issuerImage = issuer?.image;
+    const issueeImage = issuee?.image;
 
     return (
         <div
@@ -78,7 +95,7 @@ export const VCDisplayCard: React.FC<VCDisplayCardProps> = ({
                             <img
                                 className="w-4/6 h-4/6 object-cover"
                                 src={issuerImage}
-                                alt="issuer image"
+                                alt="Issuer image"
                             />
                         </div>
                     </div>
@@ -87,8 +104,8 @@ export const VCDisplayCard: React.FC<VCDisplayCardProps> = ({
                         <div className="flex flex-row items-center justify-center h-full w-full rounded-full border-solid border-4 border-white overflow-hidden bg-white">
                             <img
                                 className="h-full w-full object-cover"
-                                src={userImage}
-                                alt="user image"
+                                src={issueeImage}
+                                alt="Issuee image"
                             />
                         </div>
                     </div>
@@ -99,7 +116,7 @@ export const VCDisplayCard: React.FC<VCDisplayCardProps> = ({
                         className="text-sm font-light text-center"
                         data-testid="vc-thumbnail-createdAt"
                     >
-                        Issued to Janet Yoon on {createdAt ?? ''} by Jobs for the Future(JFF)
+                        Issued to {issuee?.name} on {createdAt ?? ''} by {issuer?.name}
                     </p>
                 </div>
             </section>

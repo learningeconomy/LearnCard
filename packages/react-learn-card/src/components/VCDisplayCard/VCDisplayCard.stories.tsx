@@ -36,6 +36,13 @@ VCDisplayCardTest.args = {
         "url": "https://www.jff.org/",
         "image": "https://kayaelle.github.io/vc-ed/plugfest-1-2022/images/JFF_LogoLockup.png"
       },
+    issuee: {
+      "type": "Profile",
+      "id": "1234",
+      "name": "Janet Yoon",
+      "url": "https://ebae.com",
+      "image": "https://img.freepik.com/free-photo/pleasant-looking-serious-blonde-woman-with-long-hair-wears-blue-casual-sweater_273609-17050.jpg?w=2000"
+    }, 
     userImage: "https://img.freepik.com/free-photo/pleasant-looking-serious-blonde-woman-with-long-hair-wears-blue-casual-sweater_273609-17050.jpg?w=2000",
     credentialSubject: {
         "type": "AchievementSubject",
