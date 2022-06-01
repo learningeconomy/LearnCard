@@ -67,9 +67,9 @@ export const VCDisplayCard: React.FC<VCDisplayCardProps> = ({
     return (
         <div
             onClick={onClick}
-            className={`flex overflow-hidden flex-col items-center justify-between relative max-w-[22rem] max-h-[40rem] min-h-[40rem] p-7 rounded-3xl shadow-3xl bg-emerald-700 vc-display-card-full-container ${className}`}
+            className={`flex overflow-hidden flex-col items-center justify-between relative max-w-[22rem] h-[100%] max-h-[600px] min-h-[600px] p-7 rounded-3xl shadow-3xl bg-emerald-700 vc-display-card-full-container ${className}`}
         >
-            <section className="bg-white rounded-bl-[50%] rounded-br-[50%] absolute top-0 w-[110%] h-[80%]"></section>
+            <section className="bg-white rounded-bl-[50%] rounded-br-[50%] absolute top-0 w-[110%] h-[77%]"></section>
             <section className="flex flex-col items-center justify-center z-10 text-center">
                 <section className="max-w-[100px] max-h-[100px]">
                     <img
@@ -82,7 +82,7 @@ export const VCDisplayCard: React.FC<VCDisplayCardProps> = ({
                 <section className="flex flex-row items-start justify-between w-full">
                     <div className="flex flex-row items-start justify-start">
                         <h2
-                            className="text-2xl py-4 tracking-wide leading-snug text-center"
+                            className="text-2xl line-clamp-2 py-4 tracking-wide leading-snug text-center"
                             data-testid="vc-thumbnail-title"
                         >
                             {title ?? ''}
@@ -114,10 +114,11 @@ export const VCDisplayCard: React.FC<VCDisplayCardProps> = ({
 
                 <div className="w-full mt-2">
                     <p
-                        className="text-sm font-light text-center"
+                        className="text-sm font-light text-center line-clamp-2"
                         data-testid="vc-thumbnail-createdAt"
                     >
-                        Issued to {issuee?.name} on {createdAt ?? ''} by {issuer?.name}
+                        Issued to <span className="font-bold">{issuee?.name}</span> on{' '}
+                        {createdAt ?? ''} by <span className="font-bold"> {issuer?.name}</span>
                     </p>
                 </div>
 
