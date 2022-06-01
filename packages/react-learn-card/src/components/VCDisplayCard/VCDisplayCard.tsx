@@ -1,7 +1,7 @@
 import React from 'react';
 
 import FatArrow from '../../assets/images/icon.green.fat-arrow.png';
-import VerifiedCheck from '../../assets/images/verified-check.png';
+import FlipArrowRight from '../../assets/images/ArrowArcRight.svg';
 
 import './VCDisplayCard.css';
 
@@ -67,9 +67,10 @@ export const VCDisplayCard: React.FC<VCDisplayCardProps> = ({
     return (
         <div
             onClick={onClick}
-            className={`flex flex-col items-center justify-between relative max-w-[22rem] max-h-[40rem] min-h-[40rem] p-7 rounded-3xl shadow-3xl bg-emerald-700 vc-thumbnail-container ${className}`}
+            className={`flex overflow-hidden flex-col items-center justify-between relative max-w-[22rem] max-h-[40rem] min-h-[40rem] p-7 rounded-3xl shadow-3xl bg-emerald-700 vc-display-card-full-container ${className}`}
         >
-            <section className="flex flex-col items-center justify-center z-10 text-center w-full">
+            <section className="bg-white rounded-bl-[50%] rounded-br-[50%] absolute top-0 w-[110%] h-[80%]"></section>
+            <section className="flex flex-col items-center justify-center z-10 text-center">
                 <section className="max-w-[100px] max-h-[100px]">
                     <img
                         className="h-full w-full object-cover"
@@ -89,7 +90,7 @@ export const VCDisplayCard: React.FC<VCDisplayCardProps> = ({
                     </div>
                 </section>
 
-                <section className="flex flex-row items-center justify-center mt-2 w-full">
+                <section className="flex flex-row items-center justify-center mt-2 w-full my-2">
                     <div className="flex items-center justify-center h-16 w-16 shadow-3xl rounded-full overflow-hidden bg-white">
                         <div className="flex flex-row items-center justify-center rounded-full overflow-hidden bg-white w-10/12 h-5/6">
                             <img
@@ -119,6 +120,17 @@ export const VCDisplayCard: React.FC<VCDisplayCardProps> = ({
                         Issued to {issuee?.name} on {createdAt ?? ''} by {issuer?.name}
                     </p>
                 </div>
+
+                <button className="bg-white my-3 border-2 text-indigo-500 font-semibold py-2 px-4 border border-indigo-300 rounded-full">
+                    <span className="flex justify-center">
+                        <p className="flex items-center">Details</p>
+                        <img
+                            className="h-8 w-8 my-0 mx-4"
+                            src={FlipArrowRight ?? ''}
+                            alt="Flip Card"
+                        />
+                    </span>
+                </button>
             </section>
 
             <div className="flex items-center justify-center w-full">
