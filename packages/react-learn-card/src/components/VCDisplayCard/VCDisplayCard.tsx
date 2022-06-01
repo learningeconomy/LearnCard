@@ -5,12 +5,32 @@ import VerifiedCheck from '../../assets/images/verified-check.png';
 
 import './VCDisplayCard.css';
 
+type AchievementCriteria = {
+    type?: string;
+    narrative?: string;
+};
+
+type CredentialSubjectAchievement = {
+    type?: string;
+    name?: string;
+    description?: string;
+    criteria?: AchievementCriteria;
+    image?: string;
+};
+
+type CredentialSubject = {
+    type?: string;
+    id?: string;
+    achievement: CredentialSubjectAchievement;
+};
+
 export type VCDisplayCardProps = {
     title?: string;
     createdAt?: string;
     issuerImage?: string;
     userImage?: string;
     className?: string;
+    achievement?: CredentialSubject;
     onClick?: () => void;
 };
 
@@ -18,6 +38,7 @@ export const VCDisplayCard: React.FC<VCDisplayCardProps> = ({
     title,
     createdAt,
     issuerImage,
+    achievment,
     userImage,
     className = '',
     onClick = () => {},
@@ -25,7 +46,7 @@ export const VCDisplayCard: React.FC<VCDisplayCardProps> = ({
     return (
         <div
             onClick={onClick}
-            className={`flex flex-col items-center justify-between relative w-60 h-60 py-3 px-3 rounded-3xl shadow-3xl bg-emerald-700 vc-thumbnail-container ${className}`}
+            className={`flex flex-col items-center justify-between relative max-w-[22rem] max-h-[40rem] min-h-[40rem] py-3 px-3 rounded-3xl shadow-3xl bg-emerald-700 vc-thumbnail-container ${className}`}
         >
             <div className="flex flex-col items-center justify-center z-10 text-center w-full">
                 <div className="flex flex-row items-start justify-between w-full">
@@ -83,7 +104,11 @@ export const VCDisplayCard: React.FC<VCDisplayCardProps> = ({
 
             <div className="flex items-center justify-center w-full">
                 <div className="h-16 w-16 border-solid border-2 border-black bg-white">
-                    <img className="h-full w-full object-cover" src={issuerImage} alt="user image" />
+                    <img
+                        className="h-full w-full object-cover"
+                        src={issuerImage}
+                        alt="user image"
+                    />
                 </div>
             </div>
         </div>
