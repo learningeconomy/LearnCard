@@ -30,7 +30,7 @@ export type VCDisplayCardProps = {
     issuerImage?: string;
     userImage?: string;
     className?: string;
-    achievement?: CredentialSubject;
+    credentialSubject?: CredentialSubject;
     onClick?: () => void;
 };
 
@@ -38,17 +38,28 @@ export const VCDisplayCard: React.FC<VCDisplayCardProps> = ({
     title,
     createdAt,
     issuerImage,
-    achievment,
+    credentialSubject,
     userImage,
     className = '',
     onClick = () => {},
 }) => {
+
+    const credentialAchievementImage = credentialSubject?.achievement?.image;
+
     return (
         <div
             onClick={onClick}
             className={`flex flex-col items-center justify-between relative max-w-[22rem] max-h-[40rem] min-h-[40rem] py-3 px-3 rounded-3xl shadow-3xl bg-emerald-700 vc-thumbnail-container ${className}`}
         >
             <div className="flex flex-col items-center justify-center z-10 text-center w-full">
+                <section className="max-w-[100px] max-h-[100px]">
+                    <img
+                        className="h-full w-full object-cover"
+                        src={credentialAchievementImage ?? ''}
+                        alt="Credential Achievement Image"
+                    />
+                </section>
+
                 <div className="flex flex-row items-start justify-between w-full">
                     <div className="flex flex-row items-start justify-start w-4/5">
                         <h2
