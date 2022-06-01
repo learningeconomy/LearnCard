@@ -112,25 +112,14 @@ export const VCThumbnail: React.FC<VCThumbnailProps> = ({
         >
             <div className="h-full w-full absolute">
                 <div className="flex flex-col items-center justify-center z-10 text-center w-full">
-                    <div className="flex flex-row items-start justify-between w-full">
-                        <div className="flex flex-row items-start justify-start w-4/5 ml-3">
+                    <div className="flex flex-row items-center justify-center w-full px-2">
+                        <div className="flex flex-row items-center justify-center w-full">
                             <h2
-                                className="text-base tracking-wide leading-snug text-left line-clamp-2"
+                                className="text-base tracking-wide leading-snug text-center line-clamp-2"
                                 data-testid="vc-thumbnail-title"
                             >
                                 {title ?? ''}
                             </h2>
-                        </div>
-                        <div className="flex flex-row items-start justify-end w-1/5 mr-3">
-                            <div className="flex items-center justify-end h-8 w-8 rounded-full bg-white overflow-hidden">
-                                <div className="flex items-center justify-center h-5/6 w-10/12 bg-white rounded-full border-solid border-2 border-emerald-700 overflow-hidden">
-                                    <img
-                                        className="h-full w-full object-cover"
-                                        src={VerifiedCheck ?? ''}
-                                        alt="credential icon"
-                                    />
-                                </div>
-                            </div>
                         </div>
                     </div>
                     <div className="w-full mt-2">
@@ -172,6 +161,16 @@ export const VCThumbnail: React.FC<VCThumbnailProps> = ({
                             className="h-full w-full object-cover absolute top-0 left-0"
                             src={issuerImage}
                             alt="main image"
+                        />
+                    </div>
+                </div>
+
+                <div className="flex items-center justify-center absolute right-2 bottom-5 xxsm:bottom-3 h-8 w-8 rounded-full bg-white overflow-hidden">
+                    <div className="flex items-center justify-center h-5/6 w-10/12 bg-white rounded-full border-solid border-2 border-emerald-700 overflow-hidden">
+                        <img
+                            className="h-full w-full object-cover"
+                            src={VerifiedCheck ?? ''}
+                            alt="credential icon"
                         />
                     </div>
                 </div>
