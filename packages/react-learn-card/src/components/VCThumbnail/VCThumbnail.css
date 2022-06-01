@@ -1,4 +1,16 @@
+.vc-thumbnail-container {
+    max-width: 240px;
+}
+
 .vc-thumbnail-container::after {
+    content: '';
+    display: block;
+    padding-bottom: 100%;
+    top: 0;
+    left: 0;
+}
+
+.vc-thumbnail-container::before {
     content: '';
     background-color: #fff;
     border-top-left-radius: 24px;
@@ -10,7 +22,7 @@
     left: 0;
     height: 65%;
     width: 100%;
-    z-index: 1;
+    z-index: 0;
 }
 
 .vc-thumbnail-listview-container::after {
