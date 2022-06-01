@@ -3,46 +3,9 @@ import React from 'react';
 import FatArrow from '../../assets/images/icon.green.fat-arrow.png';
 import VerifiedCheck from '../../assets/images/verified-check.png';
 
-import './VCThumbnail.css';
+import { VCThumbnailProps } from './types';
 
-export type VCThumbnailProps = {
-    /**
-     * thumbnail title
-     * @type {string}
-     */
-    title?: string;
-    /**
-     * issue date
-     * @type {string}
-     */
-    createdAt?: string;
-    /**
-     * issuer image
-     * @type {string}
-     */
-    issuerImage?: string;
-    /**
-     * user image
-     * @type {string}
-     */
-    userImage?: string;
-    /**
-     * custom className
-     * @type {string}
-     */
-    className?: string;
-    /**
-     * condensed or full view
-     * of the thumbnail - defaulted to false
-     * @type {boolean}
-     */
-    listView?: boolean;
-    /**
-     *
-     * @type {function}
-     */
-    onClick?: () => void;
-};
+import './VCThumbnail.css';
 
 export const VCThumbnail: React.FC<VCThumbnailProps> = ({
     title,
