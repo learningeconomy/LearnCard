@@ -20,7 +20,7 @@
     position: absolute;
     top: 0;
     left: 0;
-    height: 65%;
+    height: 60%;
     width: 100%;
     z-index: 0;
 }
@@ -38,4 +38,16 @@
     height: 55%;
     width: 100%;
     z-index: 1;
+}
+
+@media (max-width: 248px) { 
+    .vc-thumbnail-container::before {
+        height: 65%;
+    }
+}
+
+@media (max-width: 200px) { 
+    .vc-thumbnail-container::before {
+        height: 70%;
+    }
 }

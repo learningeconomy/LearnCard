@@ -8,7 +8,13 @@ module.exports = {
                 '3xl': '0px 0px 8px rgba(0, 0, 0, 0.25)',
             },
             spacing: {
-                '25pct': '25%', 
+                '25pct': '25%',
+            },
+            screens: {
+                xxsm: { max: '248px' },
+                // => @media (max-width: 248px) { ... }
+                xxxsm: { max: '200px' },
+                // => @media (max-width: 200px) { ... }
             },
             colors: {
                 grayscale: {

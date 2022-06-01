@@ -108,7 +108,7 @@ export const VCThumbnail: React.FC<VCThumbnailProps> = ({
     return (
         <div
             onClick={onClick}
-            className={`relative py-3 rounded-3xl shadow-3xl bg-emerald-700 vc-thumbnail-container ${className}`}
+            className={`relative py-3 xxsm:py-1 rounded-3xl shadow-3xl bg-emerald-700 vc-thumbnail-container ${className}`}
         >
             <div className="h-full w-full absolute">
                 <div className="flex flex-col items-center justify-center z-10 text-center w-full">
@@ -142,7 +142,7 @@ export const VCThumbnail: React.FC<VCThumbnailProps> = ({
                         </p>
                     </div>
 
-                    <div className="flex flex-row items-center justify-center mt-3 w-full">
+                    <div className="flex flex-row items-center justify-center mt-3 xxsm:mt-1 w-full">
                         <div className="inline-block relative overflow-hidden rounded-full shadow-3xl h-0 bg-white w-1/4 pb-25pct">
                             <img
                                 className="h-5/6 w-10/12 left-1 top-1 absolute rounded-full object-cover"
@@ -166,7 +166,7 @@ export const VCThumbnail: React.FC<VCThumbnailProps> = ({
                     </div>
                 </div>
 
-                <div className="flex items-center justify-center w-full mt-4">
+                <div className="flex items-center justify-center w-full mt-4 xxxsm:mt-0">
                     <div className="border-solid border-2 border-black bg-white relative w-1/4 h-0 overflow-hidden pt-25pct pb-0 px-0">
                         <img
                             className="h-full w-full object-cover absolute top-0 left-0"
