@@ -165,7 +165,7 @@ export const VCThumbnail: React.FC<VCThumbnailProps> = ({
                     </div>
                 </div>
 
-                <div className="flex items-center justify-center absolute right-2 bottom-5 xxsm:bottom-3 h-8 w-8 rounded-full bg-white overflow-hidden">
+                <div className="flex items-center justify-center absolute right-2 bottom-5 xxsm:bottom-3 xxxsm:bottom-3 h-8 w-8 rounded-full bg-white overflow-hidden">
                     <div className="flex items-center justify-center h-5/6 w-10/12 bg-white rounded-full border-solid border-2 border-emerald-700 overflow-hidden">
                         <img
                             className="h-full w-full object-cover"
