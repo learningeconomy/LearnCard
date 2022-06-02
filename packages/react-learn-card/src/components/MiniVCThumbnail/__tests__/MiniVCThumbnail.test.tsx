@@ -52,7 +52,7 @@ describe('Running Tests for MiniVCThumbnail', () => {
         const issuerImage = queryByTestId('mini-vc-thumbnail-issuer');
         expect(issuerImage).not.toBeInTheDocument();
 
-        const badgeImage = queryByTestId('mini-vc-badge-issuer');
+        const badgeImage = queryByTestId('mini-vc-thumbnail-badge');
         expect(badgeImage).not.toBeInTheDocument();
     });
 });
