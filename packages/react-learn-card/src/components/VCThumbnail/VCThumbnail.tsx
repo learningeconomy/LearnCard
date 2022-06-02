@@ -17,14 +17,14 @@ export const VCThumbnail: React.FC<VCThumbnailProps> = ({
     listView = false,
     onClick = () => {},
 }) => {
-    let listViewElement: React.ReactNode | null = null;
+    let imageElement: React.ReactNode | null = null;
 
     if (issuerImage) {
-        listViewElement = (
+        imageElement = (
             <img className="h-full w-full object-cover" src={issuerImage} alt="issuer image" />
         );
     } else if (badgeImage) {
-        listViewElement = (
+        imageElement = (
             <img className="h-full w-full object-cover" src={badgeImage} alt="badge image" />
         );
     }
@@ -41,10 +41,10 @@ export const VCThumbnail: React.FC<VCThumbnailProps> = ({
                 className={`flex flex-col items-center justify-between relative py-3 px-3 rounded-3xl shadow-3xl bg-emerald-700 max-w-sm vc-thumbnail-listview-container ${className}`}
             >
                 <div className="flex flex-row items-center justify-between mb-3 z-10">
-                    {listViewElement && (
+                    {imageElement && (
                         <div className="flex flex-row justify-center items-center w-1/4 text-center">
                             <div className="h-16 w-16 border-solid border-2 border-black bg-white">
-                                {listViewElement}
+                                {imageElement}
                             </div>
                         </div>
                     )}
