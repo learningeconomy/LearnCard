@@ -144,7 +144,10 @@ export const VCThumbnail: React.FC<VCThumbnailProps> = ({
 
                 {badgeImage && (
                     <div className="flex items-center justify-center w-full mt-4 xxxsm:mt-0">
-                        <div className="border-solid border-2 border-black bg-white relative w-1/4 h-0 overflow-hidden pt-25pct pb-0 px-0" data-testid="vc-thumbnail-badge">
+                        <div
+                            className="border-solid border-2 border-black bg-white relative w-1/4 h-0 overflow-hidden pt-25pct pb-0 px-0"
+                            data-testid="vc-thumbnail-badge"
+                        >
                             <img
                                 className="h-full w-full object-cover absolute top-0 left-0"
                                 src={badgeImage}

@@ -14,7 +14,7 @@ describe('Running Tests for VCThumbnail Full View', () => {
                 createdAt="05/01/2022"
                 issuerImage="https://issuerimage.png"
                 userImage="https://userimage.png"
-                badgeImage='https://badgeimage.png'
+                badgeImage="https://badgeimage.png"
                 listView={false}
                 onClick={handleOnClick}
             />
