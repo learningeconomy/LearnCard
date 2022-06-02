@@ -25,9 +25,9 @@ export const MiniVCThumbnail: React.FC<MiniVCThumbnailProps> = ({
             <div className="flex flex-row items-center justify-between mb-3 z-10">
                 {issuerImage && (
                     <div className="flex flex-row justify-center items-center w-1/4 text-center">
-                        <div className="min-w-[48px] min-h-[48px] border-solid border-2 border-black bg-white">
+                        <div className="min-w-[40px] min-h-[40px] max-h-[48px] max-w-[48px] shadow-3xl p-1 rounded-full bg-white">
                             <img
-                                className="h-full w-full object-cover"
+                                className="h-full w-full object-cover rounded-full"
                                 src={issuerImage}
                                 alt="issuer image"
                             />
