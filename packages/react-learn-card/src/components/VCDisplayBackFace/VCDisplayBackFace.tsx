@@ -12,26 +12,6 @@ const VCDisplayBackFace: React.FC<VCDisplayCardProps> = ({
     credentialSubject,
     className = '',
 }) => {
-    const credentialAchievementImage = credentialSubject?.achievement?.image;
-    const issuerImage = issuer?.image;
-    const issueeImage = issuee?.image;
-
-    console.log('////credentialSubject', credentialSubject);
-
-    // credentialSubject: {
-    //     "type": "AchievementSubject",
-    //     "id": "did:key:123",
-    //     "achievement": {
-    //       "type": "Achievement",
-    //       "name": "Our Wallet Passed JFF Plugfest #1 2022",
-    //       "description": "This wallet can display this Open Badge 3.0",
-    //       "criteria": {
-    //         "type": "Criteria",
-    //         "narrative": "The first cohort of the JFF Plugfest 1 in May/June of 2021 collaborated to push interoperability of VCs in education forward.",
-    //       },
-    //       "image": "https://w3c-ccg.github.io/vc-ed/plugfest-1-2022/images/plugfest-1-badge-image.png",
-    //     },
-
     const descriptionText = credentialSubject?.achievement?.description;
     const criteriaText = credentialSubject?.achievement?.criteria?.narrative;
     const issuerUrl = issuer?.url;
@@ -65,7 +45,9 @@ const VCDisplayBackFace: React.FC<VCDisplayCardProps> = ({
                         <h6 className="line-clamp-4 text-grayscale-900 font-bold uppercase text-xs tracking-wider  subpixel-antialiased">
                             Criteria
                         </h6>
-                        <p className="line-clamp-4 subpixel-antialiased text-grayscale-600 ">{criteriaText}</p>
+                        <p className="line-clamp-4 subpixel-antialiased text-grayscale-600 ">
+                            {criteriaText}
+                        </p>
                     </div>
 
                     {issuerUrl && (
