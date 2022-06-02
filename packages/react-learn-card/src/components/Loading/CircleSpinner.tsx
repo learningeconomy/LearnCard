@@ -2,9 +2,9 @@ import React from 'react';
 
 import './CircleSpinner.css';
 
-enum CircleLoadingState {
-    loading,
-    finishedLoading,
+export enum CircleLoadingState {
+    spin,
+    stop,
 }
 
 export type CircleSpinnerProps = {
@@ -19,7 +19,7 @@ const CircleSpinner: React.FC<CircleSpinnerProps> = ({
     thickness = 8,
     color = '#40CBA6',
 }) => {
-    const spinnerClass = CircleLoadingState.loading ? 'lds-ring' : 'lds-ring static';
+    const spinnerClass = CircleLoadingState.stop ? 'lds-ring' : 'lds-ring static';
     return (
         <div className={spinnerClass}>
             <div></div>
