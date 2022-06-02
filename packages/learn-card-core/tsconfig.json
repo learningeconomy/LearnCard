@@ -7,7 +7,6 @@
     "esModuleInterop": true,
     "lib": ["dom", "es2017"],
     "noLib": false,
-    "rootDir": "src",
     "baseUrl": "src",
     "paths": {
         "types/*": ["types/*"],
