@@ -1,6 +1,6 @@
 import React from 'react';
 import VerificationCheckDisplay from '../../assets/images/vc.check.svg';
-import CircleSpinner from '../Loading/CircleSpinner';
+import CircleSpinner, { CircleLoadingState } from '../Loading/CircleSpinner';
 
 export type VCVerificationCheckProps = {
     size?: string | number;
@@ -33,7 +33,7 @@ export default VCVerificationCheck;
 
 export const VCVerificationCheckWithText: React.FC<VCVerificationCheckProps> = ({
     size = '60px',
-    loading = false,
+    loading = true,
 }) => {
     const spinnerStyle = {
         position: 'absolute',
@@ -42,6 +42,9 @@ export const VCVerificationCheckWithText: React.FC<VCVerificationCheckProps> = (
         height: '60px', //todo calculate this based on other
         width: '60px',
     };
+
+    const loadingState = loading ? CircleLoadingState.spin : CircleLoadingState.stop;
+
     return (
         <div className="flex vc-verification-full-wrapper items-center">
             <span className="text-white font-bold tracking-wider">Verified</span>
@@ -51,7 +54,7 @@ export const VCVerificationCheckWithText: React.FC<VCVerificationCheckProps> = (
             >
                 <VCVerificationCheck size={'44px'} loading={loading} />
                 <div className="vc-verification-spinner-overlay" style={spinnerStyle}>
-                    <CircleSpinner />
+                    <CircleSpinner loadingState={loadingState} />
                 </div>
             </div>
             <span className="text-white font-bold tracking-wider">Credential</span>
