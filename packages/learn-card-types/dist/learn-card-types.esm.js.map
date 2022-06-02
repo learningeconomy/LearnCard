@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../src/index.ts"],
+  "sourcesContent": ["export enum VerificationStatus {\n    Success = 'Success',\n    Failed = 'Failed',\n    Error = 'Error',\n}\n\nexport type VerificationItem = {\n    check: string;\n    status: VerificationStatus;\n    message?: string;\n    details?: string;\n};\n"],
+  "mappings": ";AAAO,IAAK,qBAAL,kBAAK,wBAAL;AACH,mCAAU;AACV,kCAAS;AACT,iCAAQ;AAHA;AAAA;",
+  "names": []
+}

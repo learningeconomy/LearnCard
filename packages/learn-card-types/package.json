@@ -1,0 +1,61 @@
+{
+  "name": "learn-card-types",
+  "version": "0.0.0",
+  "description": "Shared types for learn card",
+  "main": "./dist/index.js",
+  "module": "./dist/learn-card-types.esm.js",
+  "files": [
+    "dist"
+  ],
+  "size-limit": [
+    {
+      "path": "dist/learn-card-types.cjs.production.min.js",
+      "limit": "10 KB"
+    },
+    {
+      "path": "dist/learn-card-types.esm.js",
+      "limit": "10 KB"
+    }
+  ],
+  "scripts": {
+    "build": "aqu build",
+    "start": "aqu watch",
+    "lint": "aqu lint",
+    "lint:fix": "aqu lint --fix",
+    "test": "aqu test --passWithNoTests",
+    "test:watch": "aqu test --passWithNoTests --watch",
+    "test:coverage": "aqu test --silent --ci --coverage --coverageReporters=\"text\" --coverageReporters=\"text-summary\"",
+    "prepare": "aqu build",
+    "size": "size-limit",
+    "size:why": "size-limit --why"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "**/*.{js,jsx,ts,tsx,json}": "npm run lint:fix"
+  },
+  "author": "Taylor Beeston <beeston.taylor@gmail.com>",
+  "license": "MIT",
+  "homepage": "https://github.com/WeLibraryOS/LearnCard#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WeLibraryOS/LearnCard.git"
+  },
+  "bugs": {
+    "url": "https://github.com/WeLibraryOS/LearnCard/issues"
+  },
+  "devDependencies": {
+    "aqu": "0.3.2",
+    "np": "^7.6.1",
+    "lint-staged": "^13.0.0",
+    "husky": "^8.0.1",
+    "size-limit": "^7.0.8",
+    "@size-limit/preset-small-lib": "^7.0.8",
+    "typescript": "^4.7.2",
+    "@types/node": "^17.0.38"
+  },
+  "types": "./dist/learn-card-types.d.ts"
+}
