@@ -4,7 +4,7 @@ import { render, fireEvent } from '@testing-library/react';
 
 import MiniVCThumbnail from '../MiniVCThumbnail';
 
-describe('Running Tests for MiniVCThumbnail Full View', () => {
+describe('Running Tests for MiniVCThumbnail', () => {
     test('Checks MiniVCThumbnail renders with props', () => {
         const handleOnClick = jest.fn();
 
