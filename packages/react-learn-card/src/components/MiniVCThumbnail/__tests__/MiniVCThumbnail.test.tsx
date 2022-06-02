@@ -19,13 +19,13 @@ describe('Running Tests for MiniVCThumbnail Full View', () => {
             />
         );
 
-        fireEvent.click(getByTestId('vc-thumbnail-title'));
+        fireEvent.click(getByTestId('mini-vc-thumbnail'));
         expect(handleOnClick).toHaveBeenCalledTimes(1);
 
-        const title = getByTestId('vc-thumbnail-title');
+        const title = getByTestId('mini-vc-thumbnail-title');
         expect(title).toHaveTextContent('This is a title!');
 
-        const createdAt = getByTestId('vc-thumbnail-createdAt');
+        const createdAt = getByTestId('mini-vc-thumbnail-createdAt');
         expect(createdAt).toHaveTextContent('05/01/2022');
 
         const issuerImage = getByAltText('issuer image');
@@ -38,21 +38,21 @@ describe('Running Tests for MiniVCThumbnail Full View', () => {
     test('Checks MiniVCThumbnail renders without props', () => {
         const handleOnClick = jest.fn();
 
-        const { getByTestId, getByAltText } = render(<MiniVCThumbnail />);
+        const { getByTestId, queryByTestId } = render(<MiniVCThumbnail />);
 
-        fireEvent.click(getByTestId('vc-thumbnail-title'));
+        fireEvent.click(getByTestId('mini-vc-thumbnail'));
         expect(handleOnClick).not.toHaveBeenCalledTimes(1);
 
-        const title = getByTestId('vc-thumbnail-title');
+        const title = getByTestId('mini-vc-thumbnail-title');
         expect(title).toHaveTextContent('');
 
-        const createdAt = getByTestId('vc-thumbnail-createdAt');
+        const createdAt = getByTestId('mini-vc-thumbnail-createdAt');
         expect(createdAt).toHaveTextContent('');
 
-        const issuerImage = getByAltText('issuer image');
-        expect(issuerImage).not.toHaveAttribute('src');
+        const issuerImage = queryByTestId('mini-vc-thumbnail-issuer');
+        expect(issuerImage).not.toBeInTheDocument();
 
-        const badgeImage = getByAltText('badge image');
-        expect(badgeImage).not.toHaveAttribute('src');
+        const badgeImage = queryByTestId('mini-vc-badge-issuer');
+        expect(badgeImage).not.toBeInTheDocument();
     });
 });
