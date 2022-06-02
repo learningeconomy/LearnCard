@@ -1,5 +1,5 @@
 import React from 'react';
-import CircleSpinner, { CircleLoadingState } from '../Loading/CircleSpinner';
+import CircleSpinner from '../Loading/CircleSpinner';
 import VerificationFailedIcon from '../../assets/images/RedXCircle.svg';
 import VerificationPassedIcon from '../../assets/images/GreenCheckCircle.svg';
 import VerificationWarningIcon from '../../assets/images/YellowWarningCircle.svg';

@@ -12,8 +12,13 @@ const BACK_FACE = 'back';
 const FlippyCard: React.FC<FlippyCardProps> = ({ children }) => {
     const [flipState, setFlipState] = useState(FRONT_FACE);
 
+    if (children?.length > 3)
+        console.warn('More than two children passed into Flippy Card! 😳😳😳 Picking first two...');
+
+    if (!children) return <></>;
+
     const frontCard = children?.[0];
-    const backCard = children?.[1];
+    const backCard = children?.[1] || children?.[0];
 
     const handleClick = () => {
         if (flipState === FRONT_FACE) setFlipState(BACK_FACE);
