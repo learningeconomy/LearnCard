@@ -20,6 +20,11 @@ export type VCThumbnailProps = {
      */
     userImage?: string;
     /**
+     * badge image
+     * @type {string}
+     */
+    badgeImage?: string;
+    /**
      * custom className
      * @type {string}
      */

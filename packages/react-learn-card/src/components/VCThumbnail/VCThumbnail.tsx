@@ -12,10 +12,28 @@ export const VCThumbnail: React.FC<VCThumbnailProps> = ({
     createdAt,
     issuerImage,
     userImage,
+    badgeImage,
     className = '',
     listView = false,
     onClick = () => {},
 }) => {
+    let listViewElement: React.ReactNode | null = null;
+
+    if (issuerImage) {
+        listViewElement = (
+            <img className="h-full w-full object-cover" src={issuerImage} alt="issuer image" />
+        );
+    } else if (badgeImage) {
+        listViewElement = (
+            <img className="h-full w-full object-cover" src={badgeImage} alt="badge image" />
+        );
+    }
+
+    const titleClass =
+        issuerImage || badgeImage
+            ? 'items-start justify-center w-3/4 text-left'
+            : 'item-center justify-center w-full text-center';
+
     if (listView) {
         return (
             <div
@@ -23,16 +41,15 @@ export const VCThumbnail: React.FC<VCThumbnailProps> = ({
                 className={`flex flex-col items-center justify-between relative py-3 px-3 rounded-3xl shadow-3xl bg-emerald-700 max-w-sm vc-thumbnail-listview-container ${className}`}
             >
                 <div className="flex flex-row items-center justify-between mb-3 z-10">
-                    <div className="flex flex-row justify-center items-center w-1/4 text-center">
-                        <div className="h-16 w-16 border-solid border-2 border-black bg-white">
-                            <img
-                                className="h-full w-full object-cover"
-                                src={issuerImage}
-                                alt="issuer image"
-                            />
+                    {listViewElement && (
+                        <div className="flex flex-row justify-center items-center w-1/4 text-center">
+                            <div className="h-16 w-16 border-solid border-2 border-black bg-white">
+                                {listViewElement}
+                            </div>
                         </div>
-                    </div>
-                    <div className="flex flex-col items-start justify-center w-3/4 text-left">
+                    )}
+
+                    <div className={`flex flex-col  ${titleClass}`}>
                         <h2
                             className="ml-1 sm:ml-0 md:ml-0 lg:ml-0 text-base tracking-wide leading-snug text-left line-clamp-2"
                             data-testid="vc-thumbnail-title"
@@ -122,8 +139,8 @@ export const VCThumbnail: React.FC<VCThumbnailProps> = ({
                     <div className="border-solid border-2 border-black bg-white relative w-1/4 h-0 overflow-hidden pt-25pct pb-0 px-0">
                         <img
                             className="h-full w-full object-cover absolute top-0 left-0"
-                            src={issuerImage}
-                            alt="main image"
+                            src={badgeImage}
+                            alt="badge image"
                         />
                     </div>
                 </div>
