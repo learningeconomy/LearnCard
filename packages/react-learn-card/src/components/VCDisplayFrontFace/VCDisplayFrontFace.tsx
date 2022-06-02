@@ -2,6 +2,7 @@ import React from 'react';
 import { VCDisplayCardProps } from '../../types';
 import FatArrow from '../../assets/images/icon.green.fat-arrow.png';
 import FlipArrowRight from '../../assets/images/ArrowArcRight.svg';
+import { VCVerificationCheckWithText } from '../VCVerificationCheck/VCVerificationCheck';
 
 const VCDisplayFrontFace: React.FC<VCDisplayCardProps> = ({
     title,
@@ -85,13 +86,7 @@ const VCDisplayFrontFace: React.FC<VCDisplayCardProps> = ({
             </section>
 
             <div className="flex items-center justify-center w-full">
-                <div className="h-16 w-16 border-solid border-2 border-black bg-white">
-                    <img
-                        className="h-full w-full object-cover"
-                        src={issuerImage}
-                        alt="user image"
-                    />
-                </div>
+                <VCVerificationCheckWithText />
             </div>
         </div>
     );
