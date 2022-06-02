@@ -4,22 +4,24 @@ import init from 'didkit';
 import { generateWallet } from './base';
 import { getIDXPlugin } from './plugins/idx';
 import { DidKeyPlugin } from './plugins/didkey';
+import { ExpirationPlugin } from './plugins/expiration';
 import { getVCPlugin } from './plugins/vc';
 
-import { LearnCardWallet } from 'types/LearnCard';
+import { LearnCardConfig, LearnCardWallet } from 'types/LearnCard';
 import { defaultCeramicIDXArgs } from './defaults';
 
 export const createWallet = async (
     defaultContents: any[],
-    ceramicIDXArgs = defaultCeramicIDXArgs
+    { ceramicIdx = defaultCeramicIDXArgs, didkit }: Partial<LearnCardConfig> = {}
 ): Promise<LearnCardWallet> => {
-    await init();
+    await init(didkit);
 
     const didkeyWallet = await (await generateWallet(defaultContents)).addPlugin(DidKeyPlugin);
     const didkeyAndVCWallet = await didkeyWallet.addPlugin(await getVCPlugin(didkeyWallet));
-    const wallet = await didkeyAndVCWallet.addPlugin(
-        await getIDXPlugin(didkeyAndVCWallet, ceramicIDXArgs)
+    const idxWallet = await didkeyAndVCWallet.addPlugin(
+        await getIDXPlugin(didkeyAndVCWallet, ceramicIdx)
     );
+    const wallet = await idxWallet.addPlugin(ExpirationPlugin(idxWallet));
 
     return {
         _wallet: wallet,
@@ -50,12 +52,15 @@ export const createWallet = async (
 };
 
 /** Generates did documents from key and returns default wallet */
-export const walletFromKey = async (key: string, ceramicIDXArgs = defaultCeramicIDXArgs) => {
-    await init();
+export const walletFromKey = async (
+    key: string,
+    { ceramicIdx = defaultCeramicIDXArgs, didkit }: Partial<LearnCardConfig> = {}
+) => {
+    await init(didkit);
 
     const didDocuments = await DidKeyPlugin.pluginConstants.generateContentFromSeed(
         toUint8Array(key.padStart(64, '0'))
     );
 
-    return createWallet(didDocuments, ceramicIDXArgs);
+    return createWallet(didDocuments, { ceramicIdx, didkit });
 };
