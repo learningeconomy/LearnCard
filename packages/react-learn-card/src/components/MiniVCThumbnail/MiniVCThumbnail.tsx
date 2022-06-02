@@ -52,7 +52,7 @@ export const MiniVCThumbnail: React.FC<MiniVCThumbnailProps> = ({
             <div className="flex items-center justify-center w-full mt-3">
                 {badgeImage && (
                     <div className="flex item-center justify-center w-full -mt-3">
-                        <div className="h-20 w-20 border-solid border-1 border-black bg-white z-10">
+                        <div className="max-h-[80px] max-w-[80px] xxsm:h-[60px] xxsm:w-[60px] border-solid border-1 border-black bg-white z-10">
                             <img
                                 className="h-full w-full object-cover"
                                 src={badgeImage}
