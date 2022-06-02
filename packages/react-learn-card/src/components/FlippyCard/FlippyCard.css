@@ -1,12 +1,12 @@
 .flippy-wrapper-container {
-    perspective: 1200px;
+    perspective: 2600px;
 }
 
 .flippy-card {
     width: 100%;
     max-width: 400px;
     height: 100%;
-    max-height: 600px;
+    max-height: 1000px;
     position: relative;
     transition: transform 1s;
     transform-style: preserve-3d;
@@ -24,10 +24,10 @@
 }
 
 .card-face--front {
-    background: red;
+    position: absolute;
 }
 
 .card-face--back {
-    background: blue;
+    position:relative;
     transform: rotateY(180deg);
 }
