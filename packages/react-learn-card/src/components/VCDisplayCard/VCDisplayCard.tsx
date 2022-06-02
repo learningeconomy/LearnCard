@@ -1,6 +1,7 @@
 import React from 'react';
 import FlippyCard from '../FlippyCard/FlippyCard';
 import VCDisplayFrontFace from '../VCDisplayFrontFace/VCDisplayFrontFace';
+import VCDisplayBackFace from '../VCDisplayBackFace/VCDisplayBackFace';
 import { VCDisplayCardProps } from '../../types';
 import './VCDisplayCard.css';
 
@@ -22,7 +23,7 @@ export const VCDisplayCard: React.FC<VCDisplayCardProps> = ({
                 createdAt={createdAt}
                 className={className}
             />
-            <VCDisplayFrontFace
+            <VCDisplayBackFace
                 title={title}
                 credentialSubject={credentialSubject}
                 issuer={issuer}
