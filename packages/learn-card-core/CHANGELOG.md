@@ -1,5 +1,12 @@
 # learn-card-core
 
+## 0.2.1
+
+### Patch Changes
+
+-   Don't attach didkit to window object
+-   b16655b: Add Expiration Verification Plugin
+
 ## 0.2.0
 
 ### Minor Changes
