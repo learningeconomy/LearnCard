@@ -39,10 +39,14 @@ export const VCThumbnail: React.FC<VCThumbnailProps> = ({
             <div
                 onClick={onClick}
                 className={`flex flex-col items-center justify-between relative py-3 px-3 rounded-3xl shadow-3xl bg-emerald-700 max-w-sm vc-thumbnail-listview-container ${className}`}
+                data-testid="vc-thumbnail-list-view"
             >
                 <div className="flex flex-row items-center justify-between mb-3 z-10">
                     {imageElement && (
-                        <div className="flex flex-row justify-center items-center w-1/4 text-center">
+                        <div
+                            className="flex flex-row justify-center items-center w-1/4 text-center"
+                            data-testid="vc-thumbnail-image"
+                        >
                             <div className="h-16 w-16 border-solid border-2 border-black bg-white">
                                 {imageElement}
                             </div>
@@ -91,6 +95,7 @@ export const VCThumbnail: React.FC<VCThumbnailProps> = ({
         <div
             onClick={onClick}
             className={`relative py-3 xxsm:py-1 rounded-3xl shadow-3xl bg-emerald-700 vc-thumbnail-container ${vcThumbNailAltContainerClass} ${className}`}
+            data-testid="vc-thumbnail"
         >
             <div className="h-full w-full absolute">
                 <div className="flex flex-col items-center justify-center z-10 text-center w-full">
@@ -139,7 +144,7 @@ export const VCThumbnail: React.FC<VCThumbnailProps> = ({
 
                 {badgeImage && (
                     <div className="flex items-center justify-center w-full mt-4 xxxsm:mt-0">
-                        <div className="border-solid border-2 border-black bg-white relative w-1/4 h-0 overflow-hidden pt-25pct pb-0 px-0">
+                        <div className="border-solid border-2 border-black bg-white relative w-1/4 h-0 overflow-hidden pt-25pct pb-0 px-0" data-testid="vc-thumbnail-badge">
                             <img
                                 className="h-full w-full object-cover absolute top-0 left-0"
                                 src={badgeImage}
