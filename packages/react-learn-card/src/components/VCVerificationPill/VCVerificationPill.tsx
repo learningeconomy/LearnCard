@@ -8,7 +8,6 @@ enum VerifiableItemStatus {
     Success,
     Failed,
     Error,
-    Loading,
 }
 
 type ValidationDisplayItemProps = {
@@ -25,28 +24,24 @@ const StatusToBgColor = {
     [VerifiableItemStatus.Success]: 'bg-emerald-500',
     [VerifiableItemStatus.Failed]: 'bg-yellow-400',
     [VerifiableItemStatus.Error]: 'bg-rose-600',
-    [VerifiableItemStatus.Loading]: 'bg-grayscale-50',
 };
 
 const StatusToTextColor = {
     [VerifiableItemStatus.Success]: 'text-emerald-700',
     [VerifiableItemStatus.Failed]: 'text-yellow-400',
     [VerifiableItemStatus.Error]: 'text-rose-600',
-    [VerifiableItemStatus.Loading]: 'text-white',
 };
 
 const StatusToIcon = {
     [VerifiableItemStatus.Success]: VerificationPassedIcon,
     [VerifiableItemStatus.Failed]: VerificationWarningIcon,
     [VerifiableItemStatus.Error]: VerificationFailedIcon,
-    [VerifiableItemStatus.Loading]: null,
 };
 
 const StatusToText = {
     [VerifiableItemStatus.Success]: 'Verification Success',
     [VerifiableItemStatus.Error]: 'Verification Error ',
     [VerifiableItemStatus.Failed]: 'Verification Failed',
-    [VerifiableItemStatus.Loading]: null,
 };
 
 export const ValidationStateIndicator: React.FC<VerifiableStateIndicatorProps> = ({ status }) => {
@@ -56,16 +51,11 @@ export const ValidationStateIndicator: React.FC<VerifiableStateIndicatorProps> =
     return (
         <div className={`relative rounded-full w-[30px] h-[30px] ${bgColor}`}>
             <div className="relative w-[100%] h-[100%] flex items-center justify-center rounded-[50%] bg-white rounded-full overflow-hidden">
-                {status !== VerifiableItemStatus.Loading && (
-                    <img
-                        className="h-full w-full object-contain p-1"
-                        src={source ?? ''}
-                        alt="Verification Status Icon"
-                    />
-                )}
-                {status === VerifiableItemStatus.Loading && (
-                    <CircleSpinner size={30} marginOffset={1} thickness={3} color={'#41CEF2'} />
-                )}
+                <img
+                    className="h-full w-full object-contain p-1"
+                    src={source ?? ''}
+                    alt="Verification Status Icon"
+                />
             </div>
         </div>
     );
@@ -74,7 +64,7 @@ export const ValidationStateIndicator: React.FC<VerifiableStateIndicatorProps> =
 const VCVerificationPill: React.FC<ValidationDisplayItemProps> = ({
     message = 'Verification in progress....',
     details,
-    status = VerifiableItemStatus.Loading,
+    status = VerifiableItemStatus.Success,
 }) => {
     const statusColor = StatusToTextColor[status];
     const statusInfoText = StatusToText[status];
