@@ -7,6 +7,15 @@ module.exports = {
             boxShadow: {
                 '3xl': '0px 0px 8px rgba(0, 0, 0, 0.25)',
             },
+            spacing: {
+                '25pct': '25%',
+            },
+            screens: {
+                xxsm: { max: '240px' },
+                // => @media (max-width: 240px) { ... }
+                xxxsm: { max: '200px' },
+                // => @media (max-width: 200px) { ... }
+            },
             colors: {
                 grayscale: {
                     50: '#6F7590',

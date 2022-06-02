@@ -12,6 +12,7 @@ export type UnsignedVC = {
     credentialSubject: { id: string };
     id: string;
     issuanceDate: string;
+    expirationDate?: string;
     issuer: string;
     type: string[];
 };
@@ -45,3 +46,5 @@ export type VCPluginMethods = {
     getSubjectDid: () => string;
     getSubjectKeypair: () => Record<string, string>;
 };
+
+export type VerifyExtension = { verifyCredential: (credential: VC) => Promise<VerificationCheck> };
