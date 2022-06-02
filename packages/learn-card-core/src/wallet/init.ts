@@ -4,6 +4,7 @@ import init, * as didkitTest from 'didkit';
 import { generateWallet } from './base';
 import { getIDXPlugin } from './plugins/idx';
 import { DidKeyPlugin } from './plugins/didkey';
+import { ExpirationPlugin } from './plugins/expiration';
 import { getVCPlugin } from './plugins/vc';
 
 import { LearnCardConfig, LearnCardWallet } from 'types/LearnCard';
@@ -17,9 +18,10 @@ export const createWallet = async (
 
     const didkeyWallet = await (await generateWallet(defaultContents)).addPlugin(DidKeyPlugin);
     const didkeyAndVCWallet = await didkeyWallet.addPlugin(await getVCPlugin(didkeyWallet));
-    const wallet = await didkeyAndVCWallet.addPlugin(
+    const idxWallet = await didkeyAndVCWallet.addPlugin(
         await getIDXPlugin(didkeyAndVCWallet, ceramicIdx)
     );
+    const wallet = await idxWallet.addPlugin(ExpirationPlugin(idxWallet));
 
     return {
         _wallet: wallet,
