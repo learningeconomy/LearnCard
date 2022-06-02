@@ -1,4 +1,4 @@
-import { issueCredential as ic, keyToVerificationMethod } from '@src/didkit';
+import { issueCredential as ic, keyToVerificationMethod } from '@src/didkit/index';
 
 import { UnlockedWallet } from 'types/wallet';
 import { UnsignedVC } from './types';

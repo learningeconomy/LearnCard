@@ -1,4 +1,4 @@
-import { issuePresentation as ip, keyToVerificationMethod } from '@src/didkit';
+import { issuePresentation as ip, keyToVerificationMethod } from '@src/didkit/index';
 
 import { UnlockedWallet } from 'types/wallet';
 import { VC } from './types';

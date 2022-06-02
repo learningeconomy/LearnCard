@@ -1,4 +1,4 @@
-import { verifyPresentation as vp } from '@src/didkit';
+import { verifyPresentation as vp } from '@src/didkit/index';
 
 import { VP } from './types';
 

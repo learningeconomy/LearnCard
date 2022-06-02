@@ -1,5 +1,5 @@
 import { toUint8Array } from 'hex-lite';
-import init from '@src/didkit';
+import init from '@src/didkit/index';
 
 import { generateWallet } from './base';
 import { getIDXPlugin } from './plugins/idx';
