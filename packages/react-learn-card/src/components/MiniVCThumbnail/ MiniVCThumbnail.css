@@ -1,0 +1,18 @@
+.mini-vc-thumbnail-container {
+    max-width: 250px;
+}
+
+.mini-vc-thumbnail-container::after {
+    content: '';
+    background-color: #fff;
+    border-top-left-radius: 24px;
+    border-top-right-radius: 24px;
+    border-bottom-left-radius: 120px;
+    border-bottom-right-radius: 120px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 55%;
+    width: 100%;
+    z-index: 1;
+}
