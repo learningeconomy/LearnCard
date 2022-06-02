@@ -1,3 +1,5 @@
+import { VerificationItem } from 'learn-card-types';
+
 export type AchievementCriteria = {
     type?: string;
     narrative?: string;
@@ -42,4 +44,6 @@ export type VCDisplayCardProps = {
     className?: string;
     credentialSubject?: CredentialSubject;
     onClick?: () => void;
+    loading?: boolean;
+    verification?: VerificationItem[];
 };

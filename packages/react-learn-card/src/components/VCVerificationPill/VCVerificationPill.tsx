@@ -1,47 +1,43 @@
 import React from 'react';
+import { VerificationStatus } from 'learn-card-types';
+
 import CircleSpinner from '../Loading/CircleSpinner';
 import VerificationFailedIcon from '../../assets/images/RedXCircle.svg';
 import VerificationPassedIcon from '../../assets/images/GreenCheckCircle.svg';
 import VerificationWarningIcon from '../../assets/images/YellowWarningCircle.svg';
 
-enum VerifiableItemStatus {
-    Success,
-    Failed,
-    Error,
-}
-
-type ValidationDisplayItemProps = {
-    status?: VerifiableItemStatus;
+type VerificationDisplayItemProps = {
+    status?: VerificationStatus;
     message?: string;
     details?: string;
 };
 
 type VerifiableStateIndicatorProps = {
-    status: VerifiableItemStatus;
+    status: VerificationStatus;
 };
 
 const StatusToBgColor = {
-    [VerifiableItemStatus.Success]: 'bg-emerald-500',
-    [VerifiableItemStatus.Failed]: 'bg-yellow-400',
-    [VerifiableItemStatus.Error]: 'bg-rose-600',
+    [VerificationStatus.Success]: 'bg-emerald-500',
+    [VerificationStatus.Failed]: 'bg-yellow-400',
+    [VerificationStatus.Error]: 'bg-rose-600',
 };
 
 const StatusToTextColor = {
-    [VerifiableItemStatus.Success]: 'text-emerald-700',
-    [VerifiableItemStatus.Failed]: 'text-yellow-400',
-    [VerifiableItemStatus.Error]: 'text-rose-600',
+    [VerificationStatus.Success]: 'text-emerald-700',
+    [VerificationStatus.Failed]: 'text-yellow-400',
+    [VerificationStatus.Error]: 'text-rose-600',
 };
 
 const StatusToIcon = {
-    [VerifiableItemStatus.Success]: VerificationPassedIcon,
-    [VerifiableItemStatus.Failed]: VerificationWarningIcon,
-    [VerifiableItemStatus.Error]: VerificationFailedIcon,
+    [VerificationStatus.Success]: VerificationPassedIcon,
+    [VerificationStatus.Failed]: VerificationWarningIcon,
+    [VerificationStatus.Error]: VerificationFailedIcon,
 };
 
 const StatusToText = {
-    [VerifiableItemStatus.Success]: 'Verification Success',
-    [VerifiableItemStatus.Error]: 'Verification Error ',
-    [VerifiableItemStatus.Failed]: 'Verification Failed',
+    [VerificationStatus.Success]: 'Verification Success',
+    [VerificationStatus.Error]: 'Verification Error ',
+    [VerificationStatus.Failed]: 'Verification Failed',
 };
 
 export const ValidationStateIndicator: React.FC<VerifiableStateIndicatorProps> = ({ status }) => {
@@ -61,22 +57,23 @@ export const ValidationStateIndicator: React.FC<VerifiableStateIndicatorProps> =
     );
 };
 
-const VCVerificationPill: React.FC<ValidationDisplayItemProps> = ({
-    message = 'Verification in progress....',
+const VCVerificationPill: React.FC<VerificationDisplayItemProps> = ({
+    message = '',
     details,
-    status = VerifiableItemStatus.Success,
+    status = VerificationStatus.Success,
 }) => {
     const statusColor = StatusToTextColor[status];
     const statusInfoText = StatusToText[status];
+
     return (
         <section className="flex width-full bg-white p-2 px-5 my-3.5 justify-between items-center relative vc-verification-checklist-pill rounded-[22px]">
             <div className="vc-pill-left">
-                {status !== VerifiableItemStatus.Loading && (
-                    <p className={`text-[10px] font-bold status-text uppercase ${statusColor}`}>
-                        {statusInfoText}
-                    </p>
-                )}
+                <p className={`text-[10px] font-bold status-text uppercase ${statusColor}`}>
+                    {statusInfoText}
+                </p>
+
                 <p className="text-[12px] text-grayscale-900 vc-pill-text">{message}</p>
+
                 {details && <p className="text-[12px] text-gray-600"> {details}</p>}
             </div>
             <div className="vc-pill-right">
