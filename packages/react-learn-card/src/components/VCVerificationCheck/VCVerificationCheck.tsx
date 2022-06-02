@@ -1,5 +1,6 @@
 import React from 'react';
 import VerificationCheckDisplay from '../../assets/images/vc.check.svg';
+import CircleSpinner from '../Loading/CircleSpinner';
 
 export type VCVerificationCheckProps = {
     size?: string | number;
@@ -7,15 +8,20 @@ export type VCVerificationCheckProps = {
 };
 
 const VCVerificationCheck: React.FC<VCVerificationCheckProps> = ({
-    size = '35px',
+    size = '44px',
     loading = false,
 }) => {
+    const imageSize = {
+        width: size,
+        height: size,
+    }
     return (
-        <div className="vc-verification-wrapper">
+        <div className="vc-verification-wrapper" style={{ position: 'relative' }}>
             <div className="flex items-center justify-center rounded-[50%] bg-white rounded-full overflow-hidden">
                 <img
                     className="h-full w-full object-contain p-1"
                     src={VerificationCheckDisplay ?? ''}
+                    style={imageSize}
                     alt="Verification Icon"
                 />
             </div>
@@ -29,14 +35,24 @@ export const VCVerificationCheckWithText: React.FC<VCVerificationCheckProps> = (
     size = '60px',
     loading = false,
 }) => {
+    const spinnerStyle = {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        height: '60px', //todo calculate this based on other
+        width: '60px',
+    };
     return (
         <div className="flex vc-verification-full-wrapper items-center">
             <span className="text-white font-bold tracking-wider">Verified</span>
             <div
-                style={{ width: size, height: size }}
+                style={{ width: size, height: size, position: 'relative' }}
                 className={`flex items-center justify-center bg-white rounded-full ml-3 mr-3 overflow-hidden`}
             >
-                <VCVerificationCheck size={size} loading={loading} />
+                <VCVerificationCheck size={'44px'} loading={loading} />
+                <div className="vc-verification-spinner-overlay" style={spinnerStyle}>
+                    <CircleSpinner />
+                </div>
             </div>
             <span className="text-white font-bold tracking-wider">Credential</span>
         </div>
