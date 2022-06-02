@@ -6,7 +6,7 @@ import VerificationWarningIcon from '../../assets/images/YellowWarningCircle.svg
 
 enum VerifiableItemStatus {
     Success,
-    Warning,
+    Failed,
     Error,
     Loading,
 }
@@ -23,22 +23,29 @@ type VerifiableStateIndicatorProps = {
 
 const StatusToBgColor = {
     [VerifiableItemStatus.Success]: 'bg-emerald-500',
-    [VerifiableItemStatus.Warning]: 'bg-yellow-400',
+    [VerifiableItemStatus.Failed]: 'bg-yellow-400',
     [VerifiableItemStatus.Error]: 'bg-rose-600',
     [VerifiableItemStatus.Loading]: 'bg-grayscale-50',
 };
 
 const StatusToTextColor = {
     [VerifiableItemStatus.Success]: 'text-emerald-700',
-    [VerifiableItemStatus.Warning]: 'text-yellow-400',
+    [VerifiableItemStatus.Failed]: 'text-yellow-400',
     [VerifiableItemStatus.Error]: 'text-rose-600',
     [VerifiableItemStatus.Loading]: 'text-white',
 };
 
 const StatusToIcon = {
     [VerifiableItemStatus.Success]: VerificationPassedIcon,
-    [VerifiableItemStatus.Warning]: VerificationWarningIcon,
+    [VerifiableItemStatus.Failed]: VerificationWarningIcon,
     [VerifiableItemStatus.Error]: VerificationFailedIcon,
+    [VerifiableItemStatus.Loading]: null,
+};
+
+const StatusToText = {
+    [VerifiableItemStatus.Success]: 'Verification Success',
+    [VerifiableItemStatus.Error]: 'Verification Error ',
+    [VerifiableItemStatus.Failed]: 'Verification Failed',
     [VerifiableItemStatus.Loading]: null,
 };
 
@@ -70,14 +77,13 @@ const VCVerificationPill: React.FC<ValidationDisplayItemProps> = ({
     status = VerifiableItemStatus.Loading,
 }) => {
     const statusColor = StatusToTextColor[status];
+    const statusInfoText = StatusToText[status];
     return (
         <section className="flex width-full bg-white p-2 px-5 my-3.5 justify-between items-center relative vc-verification-checklist-pill rounded-[22px]">
             <div className="vc-pill-left">
                 {status !== VerifiableItemStatus.Loading && (
-                    <p
-                        className={`text-[10px] text-gray-900 font-bold status-text uppercase ${statusColor}`}
-                    >
-                        Verification Success
+                    <p className={`text-[10px] font-bold status-text uppercase ${statusColor}`}>
+                        {statusInfoText}
                     </p>
                 )}
                 <p className="text-[12px] text-grayscale-900 vc-pill-text">{message}</p>
