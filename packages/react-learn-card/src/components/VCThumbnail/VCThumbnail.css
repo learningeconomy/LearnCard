@@ -25,6 +25,15 @@
     z-index: 0;
 }
 
+/* alt container class */
+.vc-thumbnail-alt-container::after {
+    padding-bottom: 80%;
+}
+
+.vc-thumbnail-alt-container::before {
+    height: 80%;
+}
+
 .vc-thumbnail-listview-container::after {
     content: '';
     background-color: #fff;
@@ -41,7 +50,8 @@
 }
 
 @media (max-width: 200px) { 
-    .vc-thumbnail-container::before {
+    .vc-thumbnail-container::before,
+    .vc-thumbnail-alt-container::before {
         height: 68%;
     }
 }

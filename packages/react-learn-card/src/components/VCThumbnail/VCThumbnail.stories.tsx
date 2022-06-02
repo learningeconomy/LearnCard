@@ -19,6 +19,7 @@ VCThumbnailTest.args = {
     issuerImage: 'https://kayaelle.github.io/vc-ed/plugfest-1-2022/images/JFF_LogoLockup.png',
     userImage:
         'https://img.freepik.com/free-photo/pleasant-looking-serious-blonde-woman-with-long-hair-wears-blue-casual-sweater_273609-17050.jpg?w=2000',
+    badgeImage: 'https://w3c-ccg.github.io/vc-ed/plugfest-1-2022/images/plugfest-1-badge-image.png',
     listView: false,
     onClick: () => {
         console.log('Hello World');
