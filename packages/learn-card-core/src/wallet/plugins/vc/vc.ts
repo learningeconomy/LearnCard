@@ -9,7 +9,10 @@ import { Plugin, UnlockedWallet } from 'types/wallet';
 export const getVCPlugin = async (
     wallet: UnlockedWallet<
         any,
-        { getSubjectDid: () => string; getSubjectKeypair: () => Record<string, string> },
+        {
+            getSubjectDid: () => string;
+            getSubjectKeypair: () => Record<string, string>;
+        },
         any
     >
 ): Promise<Plugin<'VC', VCPluginMethods>> => {

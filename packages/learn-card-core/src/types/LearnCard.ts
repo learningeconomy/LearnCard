@@ -8,7 +8,7 @@ import { InitInput } from 'didkit';
 import { UnlockedWallet } from 'types/wallet';
 
 export type LearnCardRawWallet = UnlockedWallet<
-    'DID Key' | 'VC' | 'IDX',
+    'DID Key' | 'VC' | 'IDX' | 'Expiration',
     DidKeyPluginMethods & VCPluginMethods & IDXPluginMethods,
     DidKeyPluginConstants
 >;
