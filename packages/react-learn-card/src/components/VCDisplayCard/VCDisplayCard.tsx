@@ -12,6 +12,8 @@ export const VCDisplayCard: React.FC<VCDisplayCardProps> = ({
     issuee,
     credentialSubject,
     className = '',
+    loading,
+    verification,
 }) => {
     return (
         <FlippyCard>
@@ -22,6 +24,7 @@ export const VCDisplayCard: React.FC<VCDisplayCardProps> = ({
                 issuee={issuee}
                 createdAt={createdAt}
                 className={className}
+                loading={loading}
             />
             <VCDisplayBackFace
                 title={title}
@@ -30,6 +33,8 @@ export const VCDisplayCard: React.FC<VCDisplayCardProps> = ({
                 issuee={issuee}
                 createdAt={createdAt}
                 className={className}
+                loading={loading}
+                verification={verification}
             />
         </FlippyCard>
     );

@@ -5,12 +5,11 @@ import VCVerificationPill from '../VCVerificationPill/VCVerificationPill';
 import FlipArrowRight from '../../assets/images/ArrowArcRight.svg';
 
 const VCDisplayBackFace: React.FC<VCDisplayCardProps> = ({
-    title,
-    createdAt,
     issuer,
-    issuee,
     credentialSubject,
     className = '',
+    loading,
+    verification = [],
 }) => {
     const descriptionText = credentialSubject?.achievement?.description;
     const criteriaText = credentialSubject?.achievement?.criteria?.narrative;
@@ -70,13 +69,16 @@ const VCDisplayBackFace: React.FC<VCDisplayCardProps> = ({
                 </button>
 
                 <section className="flex-col items-center justify-center checklist-container justify-center w-[100%] width-full mt-[20px]">
-                    <VCVerificationCheckWithText />
+                    <VCVerificationCheckWithText loading={loading} />
                     <section>
-                        <VCVerificationPill />
-                        <VCVerificationPill />
-                        <VCVerificationPill />
-                        <VCVerificationPill />
-                        <VCVerificationPill />
+                        {verification.map(item => (
+                            <VCVerificationPill
+                                key={item.check}
+                                status={item.status}
+                                message={item.message}
+                                details={item.details}
+                            />
+                        ))}
                     </section>
                 </section>
             </section>

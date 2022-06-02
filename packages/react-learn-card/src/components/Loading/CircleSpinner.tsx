@@ -20,8 +20,9 @@ const CircleSpinner: React.FC<CircleSpinnerProps> = ({
     thickness = 4,
     color = '#40CBA6',
     marginOffset = 3,
+    loadingState = CircleLoadingState.stop,
 }) => {
-    const spinnerClass = CircleLoadingState.stop ? 'lds-ring' : 'lds-ring static';
+    const spinnerClass = loadingState === CircleLoadingState.spin ? 'lds-ring' : 'lds-ring static';
 
     // overall circumference height and width
     const outerStyle = {
@@ -36,7 +37,9 @@ const CircleSpinner: React.FC<CircleSpinnerProps> = ({
         width: `${Math.floor(size / 1.11111111)}px`,
         border: `${thickness}px solid #fff`,
         margin: `${marginOffset}px`,
-        borderColor: `${color} transparent transparent transparent`,
+        borderColor: `${color}${
+            loadingState === CircleLoadingState.spin ? ' transparent transparent transparent' : ''
+        }`,
     };
     return (
         <div className={spinnerClass} style={outerStyle}>

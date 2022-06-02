@@ -11,6 +11,7 @@ const VCDisplayFrontFace: React.FC<VCDisplayCardProps> = ({
     issuee,
     credentialSubject,
     className = '',
+    loading,
 }) => {
     const credentialAchievementImage = credentialSubject?.achievement?.image;
     const issuerImage = issuer?.image;
@@ -86,7 +87,7 @@ const VCDisplayFrontFace: React.FC<VCDisplayCardProps> = ({
             </section>
 
             <div className="flex items-center justify-center w-full">
-                <VCVerificationCheckWithText />
+                <VCVerificationCheckWithText loading={loading} />
             </div>
         </div>
     );
