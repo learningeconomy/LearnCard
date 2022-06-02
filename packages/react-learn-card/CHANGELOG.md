@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 1.1.0
+
+### Minor Changes
+
+-   Release list component
+
 ## 1.0.3
 
 ### Patch Changes
