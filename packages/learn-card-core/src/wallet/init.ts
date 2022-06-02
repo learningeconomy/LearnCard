@@ -1,5 +1,5 @@
 import { toUint8Array } from 'hex-lite';
-import init, * as didkitTest from 'didkit';
+import init from 'didkit';
 
 import { generateWallet } from './base';
 import { getIDXPlugin } from './plugins/idx';
@@ -57,8 +57,6 @@ export const walletFromKey = async (
     { ceramicIdx = defaultCeramicIDXArgs, didkit }: Partial<LearnCardConfig> = {}
 ) => {
     await init(didkit);
-
-    (window as any).didkit = didkitTest;
 
     const didDocuments = await DidKeyPlugin.pluginConstants.generateContentFromSeed(
         toUint8Array(key.padStart(64, '0'))
