@@ -7,10 +7,7 @@ export type VCVerificationCheckProps = {
     loading?: boolean;
 };
 
-const VCVerificationCheck: React.FC<VCVerificationCheckProps> = ({
-    size = '44px',
-    loading = false,
-}) => {
+const VCVerificationCheck: React.FC<VCVerificationCheckProps> = ({ size = '44px' }) => {
     const imageSize = {
         width: size,
         height: size,
@@ -46,7 +43,7 @@ export const VCVerificationCheckWithText: React.FC<VCVerificationCheckProps> = (
     const loadingState = loading ? CircleLoadingState.spin : CircleLoadingState.stop;
 
     return (
-        <div className="flex vc-verification-full-wrapper items-center">
+        <div className="flex vc-verification-full-wrapper justify-center items-center">
             <span className="text-white font-bold tracking-wider">Verified</span>
             <div
                 style={{ width: size, height: size, position: 'relative' }}
