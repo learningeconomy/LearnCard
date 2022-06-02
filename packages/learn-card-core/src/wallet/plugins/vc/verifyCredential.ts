@@ -1,4 +1,4 @@
-import { verifyCredential as vc } from 'didkit';
+import { verifyCredential as vc } from '@src/didkit';
 
 import { VC } from './types';
 

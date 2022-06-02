@@ -12,7 +12,8 @@
     "paths": {
         "types/*": ["types/*"],
         "@wallet/*": ["wallet/*"],
-        "didkit/*": ["didkit/*"]
+        "didkit/*": ["didkit/*"],
+        "@src/*": ["./*"]
     },
     "skipLibCheck": true,
     "allowSyntheticDefaultImports": true,

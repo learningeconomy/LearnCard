@@ -1,4 +1,4 @@
-import { generateEd25519KeyFromBytes, keyToDID } from 'didkit';
+import { generateEd25519KeyFromBytes, keyToDID } from '@src/didkit';
 import crypto from '../../base/crypto';
 
 import { JWK } from './types';
