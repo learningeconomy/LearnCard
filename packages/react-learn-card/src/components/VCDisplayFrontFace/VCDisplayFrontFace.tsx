@@ -77,7 +77,7 @@ const VCDisplayFrontFace: React.FC<VCDisplayCardProps> = ({
                     <span className="flex justify-center">
                         <p className="flex items-center">Details</p>
                         <img
-                            className="h-8 w-8 my-0 mx-4"
+                            className="h-8 w-8 my-0 mx-1"
                             src={FlipArrowRight ?? ''}
                             alt="Flip Card"
                         />

@@ -43,7 +43,7 @@ export const VCVerificationCheckWithText: React.FC<VCVerificationCheckProps> = (
     const loadingState = loading ? CircleLoadingState.spin : CircleLoadingState.stop;
 
     return (
-        <div className="flex vc-verification-full-wrapper justify-center items-center">
+        <div className="flex vc-verification-full-wrapper justify-center items-center translate-x-[10px]">
             <span className="text-white font-bold tracking-wider">Verified</span>
             <div
                 style={{ width: size, height: size, position: 'relative' }}
