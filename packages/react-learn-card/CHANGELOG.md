@@ -1,5 +1,16 @@
 # @welibraryos/react-learn-card
 
+## 1.2.0
+
+### Minor Changes
+
+-   Release Learn Card Types, add stuff to react-learn-card
+
+### Patch Changes
+
+-   Updated dependencies
+    -   learn-card-types@1.0.0
+
 ## 1.1.0
 
 ### Minor Changes
