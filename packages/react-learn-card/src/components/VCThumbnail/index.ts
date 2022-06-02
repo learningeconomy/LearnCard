@@ -3,3 +3,4 @@
  */
 
 export * from "./VCThumbnail";
+export * from "./types";

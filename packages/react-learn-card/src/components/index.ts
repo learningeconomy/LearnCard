@@ -3,4 +3,5 @@
  */
 
 export * from "./Button/index";
+export * from "./MiniVCThumbnail/index";
 export * from "./VCThumbnail/index";
