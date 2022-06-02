@@ -3,6 +3,7 @@ import { ModelAliases } from '@glazed/types';
 import { DidKeyPluginConstants, DidKeyPluginMethods } from '@wallet/plugins/didkey/types';
 import { IDXCredential, IDXPluginMethods } from '@wallet/plugins/idx/types';
 import { VCPluginMethods, UnsignedVC, VC, VerificationCheck, VP } from '@wallet/plugins/vc/types';
+import { InitInput } from 'didkit';
 
 import { UnlockedWallet } from 'types/wallet';
 
@@ -82,4 +83,9 @@ export type CeramicIDXArgs = {
     credentialAlias: string;
     ceramicEndpoint: string;
     defaultContentFamily: string;
+};
+
+export type LearnCardConfig = {
+    ceramicIdx: CeramicIDXArgs;
+    didkit: InitInput | Promise<InitInput>;
 };
