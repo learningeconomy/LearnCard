@@ -56,7 +56,7 @@ VCDisplayCardTest.args = {
             "narrative": "The first cohort of the JFF Plugfest 1 in May/June of 2021 collaborated to push interoperability of VCs in education forward.",
           },
           "image": "https://w3c-ccg.github.io/vc-ed/plugfest-1-2022/images/plugfest-1-badge-image.png",
-        },
+        },    
     proof: {
         "type": "Ed25519Signature2018",
         "created": "2022-05-31T21:09:29Z",

@@ -72,7 +72,7 @@ const VCDisplayFrontFace: React.FC<VCDisplayCardProps> = ({
                     </p>
                 </div>
 
-                <button className="bg-white my-3 border-2 text-indigo-500 font-semibold py-2 px-4 border border-indigo-300 rounded-full">
+                <button className="cursor-alias bg-white my-3 border-2 text-indigo-500 font-semibold py-2 px-4 border border-indigo-300 rounded-full">
                     <span className="flex justify-center">
                         <p className="flex items-center">Details</p>
                         <img
