@@ -10672,7 +10672,6 @@ packages:
       map-cache: 0.2.2
     dev: true
 
-<<<<<<< HEAD
   /fresh/0.5.2:
     resolution: {integrity: sha1-PYyt2Q2XZWn6g1qx+OSyOhBWBac=}
     engines: {node: '>= 0.6'}
@@ -10685,8 +10684,6 @@ packages:
       readable-stream: 2.3.7
     dev: true
 
-=======
->>>>>>> 6ce145b (:sparkles: Do not automatically bloat bundles)
   /fs-extra/10.1.0:
     resolution: {integrity: sha512-oRXApq54ETRj4eMiFzGnHWGy+zo5raudjuxN0b8H7s/RU2oW0Wvsx9O0ACRN/kRq9E8Vu/ReskGB5o3ji+FzHQ==}
     engines: {node: '>=12'}
@@ -10696,7 +10693,6 @@ packages:
       universalify: 2.0.0
     dev: true
 
-<<<<<<< HEAD
   /fs-extra/7.0.1:
     resolution: {integrity: sha512-YJDaCJZEnBmcbw13fvdAM9AwNOJwOzrE4pqMqBq5nFiEqXUqHwlK4B+3pUw6JNvfSPtX05xFHtYy/1ni01eGCw==}
     engines: {node: '>=6 <7 || >=8'}
@@ -10715,8 +10711,6 @@ packages:
       universalify: 0.1.2
     dev: true
 
-=======
->>>>>>> 6ce145b (:sparkles: Do not automatically bloat bundles)
   /fs-extra/9.1.0:
     resolution: {integrity: sha512-hcg3ZmepS30/7BSFqRvoo3DOMQu7IjqxO5nCDt+zM9XWjb33Wg7ziNT+Qvqbuc3+gWpzO02JubVyk2G4Zvo1OQ==}
     engines: {node: '>=10'}
