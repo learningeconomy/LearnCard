@@ -41,13 +41,6 @@ module.exports = {
         'max-len': 'off',
         'comma-dangle': 'off',
         'no-console': 'off',
-        'no-restricted-syntax': [
-            'error',
-            {
-                selector: "CallExpression[callee.object.name='console']",
-                message: 'Please use logger instead of console (see metrics-alarms.md)',
-            },
-        ],
         'function-paren-newline': 'off',
         'implicit-arrow-linebreak': 'off',
         'arrow-body-style': 'off',

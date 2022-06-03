@@ -9,11 +9,12 @@ export type FlippyCardProps = {
 const FRONT_FACE = 'front';
 const BACK_FACE = 'back';
 
-const FlippyCard: React.FC<FlippyCardProps> = ({ children }) => {
+export const FlippyCard: React.FC<FlippyCardProps> = ({ children }) => {
     const [flipState, setFlipState] = useState(FRONT_FACE);
 
-    if (children?.length > 3)
+    if (children?.length > 3) {
         console.warn('More than two children passed into Flippy Card! 😳😳😳 Picking first two...');
+    }
 
     if (!children) return <></>;
 
