@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 1.7.0
+
+### Minor Changes
+
+-   Create VCCard component
+
 ## 1.6.0
 
 ### Minor Changes
