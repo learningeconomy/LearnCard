@@ -1,45 +1,18 @@
-import { VerificationItem } from 'learn-card-types';
+import { VerificationItem, VC, Issuer, CredentialSubject } from 'learn-card-types';
 
-export type AchievementCriteria = {
-    type?: string;
-    narrative?: string;
-};
-
-export type CredentialSubjectAchievement = {
-    type?: string;
-    name?: string;
-    description?: string;
-    criteria?: AchievementCriteria;
-    image?: string;
-};
-
-export type CredentialSubject = {
-    type?: string;
-    id?: string;
-    achievement: CredentialSubjectAchievement;
-};
-
-export type WalletUser = {
-    type?: string;
-    id?: string;
-    name?: string;
-    url?: string;
-    image?: string;
-};
-
-export type Issuer = {
-    type?: string;
-    id?: string;
-    name?: string;
-    url?: string;
-    image?: string;
+export type CredentialInfo = {
+    title?: string;
+    createdAt?: string;
+    issuer?: Issuer;
+    issuee?: Issuer;
+    credentialSubject?: CredentialSubject;
 };
 
 export type VCDisplayCardProps = {
     title?: string;
     createdAt?: string;
     issuer?: Issuer;
-    issuee?: WalletUser;
+    issuee?: Issuer;
     userImage?: string;
     className?: string;
     credentialSubject?: CredentialSubject;
