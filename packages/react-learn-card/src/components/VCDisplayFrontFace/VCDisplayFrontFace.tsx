@@ -14,8 +14,10 @@ const VCDisplayFrontFace: React.FC<VCDisplayCardProps> = ({
     loading,
 }) => {
     const credentialAchievementImage = credentialSubject?.achievement?.image;
-    const issuerImage = issuer?.image;
-    const issueeImage = issuee?.image;
+    const issuerName = typeof issuer === 'object' ? issuer.name : issuer;
+    const issueeName = typeof issuee === 'object' ? issuee.name : issuee;
+    const issuerImage = typeof issuer === 'object' ? issuer.image : '';
+    const issueeImage = typeof issuee === 'object' ? issuee.image : '';
 
     return (
         <div
@@ -69,8 +71,8 @@ const VCDisplayFrontFace: React.FC<VCDisplayCardProps> = ({
                         className="text-sm font-light text-center line-clamp-2"
                         data-testid="vc-thumbnail-createdAt"
                     >
-                        Issued to <span className="font-bold">{issuee?.name}</span> on{' '}
-                        {createdAt ?? ''} by <span className="font-bold"> {issuer?.name}</span>
+                        Issued to <span className="font-bold">{issueeName}</span> on{' '}
+                        {createdAt ?? ''} by <span className="font-bold"> {issuerName}</span>
                     </p>
                 </div>
 

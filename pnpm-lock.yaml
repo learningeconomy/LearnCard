@@ -119,6 +119,7 @@ importers:
       barrelsby: ^2.3.4
       chromatic: ^6.5.4
       css-loader: ^6.7.1
+      date-fns: ^2.28.0
       dts-bundle-generator: ^6.10.0
       esbuild: ^0.14.38
       esbuild-jest: ^0.5.0
@@ -138,6 +139,7 @@ importers:
       tailwindcss: ^3.0.24
       typescript: ^4.5.4
     dependencies:
+      date-fns: 2.28.0
       learn-card-core: link:../learn-card-core
       learn-card-types: link:../learn-card-types
       rollup-plugin-img: 1.1.0
@@ -9044,6 +9046,11 @@ packages:
   /date-fns/1.30.1:
     resolution: {integrity: sha512-hBSVCvSmWC+QypYObzwGOd9wqdDpOt+0wl0KbU+R+uuZBS1jN8VsD1ss3irQDknRj5NvxiTF6oj/nDRnN/UQNw==}
     dev: true
+
+  /date-fns/2.28.0:
+    resolution: {integrity: sha512-8d35hViGYx/QH0icHYCeLmsLmMUheMmTyV9Fcm6gvNwdw31yXXH+O85sOBJ+OLnLQMKZowvpKb6FgMIQjcpvQw==}
+    engines: {node: '>=0.11'}
+    dev: false
 
   /debug/2.6.9:
     resolution: {integrity: sha512-bC7ElrdJaJnPbAP+1EotYvqZsb3ecl5wi6Bfi6BJTUcNowp6cvspg0jXznRTKDjm/E7AdgFBVeAPVMNcKGsHMA==}

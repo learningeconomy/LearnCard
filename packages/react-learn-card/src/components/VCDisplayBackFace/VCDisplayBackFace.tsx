@@ -4,7 +4,7 @@ import { VCVerificationCheckWithText } from '../VCVerificationCheck/VCVerificati
 import VCVerificationPill from '../VCVerificationPill/VCVerificationPill';
 import FlipArrowRight from '../../assets/images/ArrowArcRight.svg';
 
-const VCDisplayBackFace: React.FC<VCDisplayCardProps> = ({
+export const VCDisplayBackFace: React.FC<VCDisplayCardProps> = ({
     issuer,
     credentialSubject,
     className = '',
@@ -13,7 +13,7 @@ const VCDisplayBackFace: React.FC<VCDisplayCardProps> = ({
 }) => {
     const descriptionText = credentialSubject?.achievement?.description;
     const criteriaText = credentialSubject?.achievement?.criteria?.narrative;
-    const issuerUrl = issuer?.url;
+    const issuerUrl = typeof issuer === 'object' ? issuer.url : '';
 
     return (
         <div
