@@ -7,11 +7,11 @@ export type VCVerificationCheckProps = {
     loading?: boolean;
 };
 
-const VCVerificationCheck: React.FC<VCVerificationCheckProps> = ({ size = '44px' }) => {
+export const VCVerificationCheck: React.FC<VCVerificationCheckProps> = ({ size = '44px' }) => {
     const imageSize = {
         width: size,
         height: size,
-    }
+    };
     return (
         <div className="vc-verification-wrapper" style={{ position: 'relative' }}>
             <div className="flex items-center justify-center rounded-[50%] bg-white rounded-full overflow-hidden">
@@ -32,7 +32,7 @@ export const VCVerificationCheckWithText: React.FC<VCVerificationCheckProps> = (
     size = '60px',
     loading = true,
 }) => {
-    const spinnerStyle = {
+    const spinnerStyle: React.CSSProperties = {
         position: 'absolute',
         top: 0,
         left: 0,
