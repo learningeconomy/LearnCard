@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { walletFromKey } from 'learn-card-core';
+import React from 'react';
 import { VC, Issuer, VerificationItem } from 'learn-card-types';
 import { format } from 'date-fns';
 
@@ -7,7 +6,6 @@ import FlippyCard from '../FlippyCard/FlippyCard';
 import VCDisplayFrontFace from '../VCDisplayFrontFace/VCDisplayFrontFace';
 import VCDisplayBackFace from '../VCDisplayBackFace/VCDisplayBackFace';
 import { CredentialInfo } from '../../types';
-import './VCDisplayCard.css';
 
 export type VCDisplayCardPropsReal = {
     credential: VC;
@@ -31,10 +29,9 @@ export const VCDisplayCard: React.FC<VCDisplayCardPropsReal> = ({
     credential,
     issueeOverride,
     className = '',
+    loading = false,
+    verification = [],
 }) => {
-    const [loading, setLoading] = useState(true);
-    const [vcVerification, setVCVerification] = useState<VerificationItem[]>([]);
-
     const {
         title,
         createdAt,
@@ -43,19 +40,6 @@ export const VCDisplayCard: React.FC<VCDisplayCardPropsReal> = ({
         credentialSubject,
     } = getInfoFromCredential(credential);
     const issuee = issueeOverride || _issuee;
-
-    useEffect(() => {
-        const verify = async () => {
-            const wallet = await walletFromKey('');
-
-            const verification = await wallet.verifyCredential(credential);
-
-            setVCVerification(verification);
-            setLoading(false);
-        };
-
-        verify();
-    }, []);
 
     return (
         <FlippyCard>
@@ -76,7 +60,7 @@ export const VCDisplayCard: React.FC<VCDisplayCardPropsReal> = ({
                 createdAt={createdAt}
                 className={className}
                 loading={loading}
-                verification={vcVerification}
+                verification={verification}
             />
         </FlippyCard>
     );

@@ -2,6 +2,7 @@ import React from 'react';
 import { VCDisplayCardProps } from '../../types';
 import FatArrow from '../../assets/images/icon.green.fat-arrow.png';
 import FlipArrowRight from '../../assets/images/ArrowArcRight.svg';
+import DefaultFace from '../../assets/images/default-face.jpeg';
 import { VCVerificationCheckWithText } from '../VCVerificationCheck/VCVerificationCheck';
 
 const VCDisplayFrontFace: React.FC<VCDisplayCardProps> = ({
@@ -59,7 +60,7 @@ const VCDisplayFrontFace: React.FC<VCDisplayCardProps> = ({
                         <div className="flex flex-row items-center justify-center h-full w-full rounded-full border-solid border-4 border-white overflow-hidden bg-white">
                             <img
                                 className="h-full w-full object-cover"
-                                src={issueeImage}
+                                src={issueeImage || DefaultFace}
                                 alt="Issuee image"
                             />
                         </div>
