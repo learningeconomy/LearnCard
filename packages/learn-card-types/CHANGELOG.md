@@ -1,5 +1,11 @@
 # learn-card-types
 
+## 1.2.0
+
+### Minor Changes
+
+-   Update Update VCDisplayCard to accept a credential
+
 ## 1.1.0
 
 ### Minor Changes
