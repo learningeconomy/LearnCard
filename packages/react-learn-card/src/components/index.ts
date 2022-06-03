@@ -6,6 +6,7 @@ export * from "./Button/index";
 export * from "./FlippyCard/index";
 export * from "./Loading/index";
 export * from "./MiniVCThumbnail/index";
+export * from "./VCCard/index";
 export * from "./VCDisplayBackFace/index";
 export * from "./VCDisplayCard/index";
 export * from "./VCDisplayFrontFace/index";
