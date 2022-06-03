@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 0.3.4
+
+### Patch Changes
+
+-   Change message to just Valid
+
 ## 0.3.3
 
 ### Patch Changes
