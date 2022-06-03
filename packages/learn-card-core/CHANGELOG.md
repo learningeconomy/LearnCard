@@ -1,5 +1,13 @@
 # learn-card-core
 
+## 0.3.1
+
+### Patch Changes
+
+-   0a650d4: Move VC types to learn-card-types
+-   Updated dependencies [0a650d4]
+    -   learn-card-types@1.1.0
+
 ## 0.3.0
 
 ### Minor Changes

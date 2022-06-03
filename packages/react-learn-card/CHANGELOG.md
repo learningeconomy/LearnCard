@@ -1,5 +1,13 @@
 # @welibraryos/react-learn-card
 
+## 1.4.3
+
+### Patch Changes
+
+-   Updated dependencies [0a650d4]
+    -   learn-card-types@1.1.0
+    -   learn-card-core@0.3.1
+
 ## 1.4.2
 
 ### Patch Changes
