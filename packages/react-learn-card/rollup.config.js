@@ -16,7 +16,7 @@ export default [
             { file: packageJson.module, format: 'esm', sourcemap: true },
         ],
         plugins: [
-            postcss({ minimize: true }),
+            postcss({ minimize: true, inject: { insertAt: 'top' } }),
             peerDepsExternal(),
             image(),
             resolve(),
