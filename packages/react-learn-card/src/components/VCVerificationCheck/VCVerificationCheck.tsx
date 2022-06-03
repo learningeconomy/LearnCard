@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import VerificationCheckDisplay from '../../assets/images/vc.check.svg';
 import CircleSpinner, { CircleLoadingState } from '../Loading/CircleSpinner';
 
@@ -32,6 +32,8 @@ export const VCVerificationCheckWithText: React.FC<VCVerificationCheckProps> = (
     size = '60px',
     loading = true,
 }) => {
+    const [defaultLoading, setDefaultLoading] = useState(true);
+
     const spinnerStyle: React.CSSProperties = {
         position: 'absolute',
         top: 0,
@@ -40,7 +42,15 @@ export const VCVerificationCheckWithText: React.FC<VCVerificationCheckProps> = (
         width: '60px',
     };
 
-    const loadingState = loading ? CircleLoadingState.spin : CircleLoadingState.stop;
+    useEffect(() => {
+        let timer1 = setTimeout(() => setDefaultLoading(false), 3 * 1000);
+        return () => {
+            clearTimeout(timer1);
+        };
+    });
+
+    const loadingState =
+        loading || defaultLoading ? CircleLoadingState.spin : CircleLoadingState.stop;
 
     return (
         <div className="flex vc-verification-full-wrapper justify-center items-center translate-x-[10px]">
