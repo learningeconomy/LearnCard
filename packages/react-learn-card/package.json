@@ -4,9 +4,11 @@
   "description": "",
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",
+  "types": "dist/index.d.ts",
+  "files": ["dist"],
   "scripts": {
     "generate-barrels": "barrelsby -D -e \".*\\.(stories)|(test)|(\\.d\\.).*\" -d ./src/components -l all",
-    "build": "pnpm generate-barrels && rollup -c",
+    "build": "pnpm generate-barrels && rollup -c && dts-bundle-generator src/index.ts -o dist/index.d.ts",
     "prepare": "pnpm build",
     "test": "jest",
     "storybook": "start-storybook -p 6006",
@@ -39,14 +41,13 @@
     "barrelsby": "^2.3.4",
     "chromatic": "^6.5.4",
     "css-loader": "^6.7.1",
+    "dts-bundle-generator": "^6.10.0",
     "esbuild": "^0.14.38",
     "esbuild-jest": "^0.5.0",
     "jest": "^28.0.3",
     "jest-environment-jsdom": "^28.0.2",
     "postcss": "^8.4.13",
     "postcss-loader": "^6.2.1",
-    "react": "17.0.2",
-    "react-dom": "17.0.2",
     "rollup": "^2.71.1",
     "rollup-plugin-dts": "^4.2.1",
     "rollup-plugin-peer-deps-external": "^2.2.4",
@@ -60,5 +61,9 @@
     "learn-card-core": "workspace:*",
     "learn-card-types": "workspace:*",
     "rollup-plugin-img": "^1.1.0"
+  },
+  "peerDependencies": {
+    "react": "^16.8.0 || ^17.0.0 || ^18.0.0",
+    "react-dom": "^16.8.0 || ^17.0.0 || ^18.0.0"
   }
 }
