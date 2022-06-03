@@ -1,4 +1,5 @@
 import { ModelAliases } from '@glazed/types';
+import { VerificationItem } from 'learn-card-types';
 
 import { DidKeyPluginConstants, DidKeyPluginMethods } from '@wallet/plugins/didkey/types';
 import { IDXCredential, IDXPluginMethods } from '@wallet/plugins/idx/types';
@@ -31,7 +32,7 @@ export type LearnCardWallet = {
      *
      * Empty error/warnings arrays means verification was successful
      */
-    verifyCredential: (credential: VC) => Promise<VerificationCheck>;
+    verifyCredential: (credential: VC) => Promise<VerificationItem[]>;
     /** Creates a signed Verifiable Presentation from a signed Verifiable Credential */
     issuePresentation: (credential: VC) => Promise<VP>;
     /**

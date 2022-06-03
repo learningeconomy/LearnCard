@@ -49,7 +49,8 @@
     "dids": "^3.1.0",
     "hex-lite": "^1.5.0",
     "key-did-provider-ed25519": "^2.0.0",
-    "key-did-resolver": "1.2.1"
+    "key-did-resolver": "1.2.1",
+    "learn-card-types": "workspace:*"
   },
   "pnpm": {
     "overrides": {
