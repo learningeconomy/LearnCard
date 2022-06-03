@@ -1,11 +1,13 @@
 {
   "name": "react-learn-card",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "",
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",
   "types": "dist/index.d.ts",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "generate-barrels": "barrelsby -D -e \".*\\.(stories)|(test)|(\\.d\\.).*\" -d ./src/components -l all",
     "build": "pnpm generate-barrels && rollup -c && dts-bundle-generator src/index.ts -o dist/index.d.ts",
