@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 0.3.2
+
+### Patch Changes
+
+-   Better proof message
+
 ## 0.3.1
 
 ### Patch Changes
