@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 1.4.0
+
+### Minor Changes
+
+-   Actually fix exports
+
 ## 1.3.0
 
 ### Minor Changes
