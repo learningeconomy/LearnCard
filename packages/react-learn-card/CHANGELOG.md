@@ -1,5 +1,17 @@
 # @welibraryos/react-learn-card
 
+## 1.5.0
+
+### Minor Changes
+
+-   Update Update VCDisplayCard to accept a credential
+
+### Patch Changes
+
+-   Updated dependencies
+    -   learn-card-types@1.2.0
+    -   learn-card-core@0.3.3
+
 ## 1.4.4
 
 ### Patch Changes
