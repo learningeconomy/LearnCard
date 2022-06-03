@@ -31,7 +31,7 @@ export const verifyCredential = (
             verificationItems.push({
                 status: VerificationStatus.Success,
                 check,
-                message: check === 'proof' ? 'Credential is verified' : check,
+                message: check === 'proof' ? 'Valid' : check,
             });
         });
 
