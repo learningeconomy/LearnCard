@@ -1,7 +1,7 @@
 import { issuePresentation as ip, keyToVerificationMethod } from 'didkit';
+import { VC } from 'learn-card-types';
 
 import { UnlockedWallet } from 'types/wallet';
-import { VC } from './types';
 
 export const issuePresentation = async (
     wallet: UnlockedWallet<

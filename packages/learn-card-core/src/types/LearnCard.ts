@@ -1,12 +1,14 @@
 import { ModelAliases } from '@glazed/types';
-import { VerificationItem } from 'learn-card-types';
+import { VerificationItem, UnsignedVC, VC, VP } from 'learn-card-types';
 
 import { DidKeyPluginConstants, DidKeyPluginMethods } from '@wallet/plugins/didkey/types';
 import { IDXCredential, IDXPluginMethods } from '@wallet/plugins/idx/types';
-import { VCPluginMethods, UnsignedVC, VC, VerificationCheck, VP } from '@wallet/plugins/vc/types';
+import { VCPluginMethods, VerificationCheck } from '@wallet/plugins/vc/types';
 import { InitInput } from 'didkit';
 
 import { UnlockedWallet } from 'types/wallet';
+
+export * from 'learn-card-types';
 
 export type LearnCardRawWallet = UnlockedWallet<
     'DID Key' | 'VC' | 'IDX' | 'Expiration',

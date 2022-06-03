@@ -1,6 +1,6 @@
 import { VerificationItem, VerificationStatus } from 'learn-card-types';
+import { VC } from 'learn-card-types';
 
-import { VC } from '@wallet/plugins/vc/types';
 import { LearnCardRawWallet } from 'types/LearnCard';
 
 export const verifyCredential = (
