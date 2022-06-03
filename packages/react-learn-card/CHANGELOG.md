@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 1.4.2
+
+### Patch Changes
+
+-   Inject CSS at top of head
+
 ## 1.4.1
 
 ### Patch Changes
