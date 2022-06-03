@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 1.6.0
+
+### Minor Changes
+
+-   Verify inside of VCDisplayCard
+
 ## 1.5.1
 
 ### Patch Changes
