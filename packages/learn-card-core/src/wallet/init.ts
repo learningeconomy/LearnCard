@@ -6,6 +6,7 @@ import { getIDXPlugin } from './plugins/idx';
 import { DidKeyPlugin } from './plugins/didkey';
 import { ExpirationPlugin } from './plugins/expiration';
 import { getVCPlugin } from './plugins/vc';
+import { verifyCredential } from './verify';
 
 import { LearnCardConfig, LearnCardWallet } from 'types/LearnCard';
 import { defaultCeramicIDXArgs } from './defaults';
@@ -34,7 +35,7 @@ export const createWallet = async (
         },
 
         issueCredential: wallet.pluginMethods.issueCredential,
-        verifyCredential: wallet.pluginMethods.verifyCredential,
+        verifyCredential: verifyCredential(wallet),
         issuePresentation: wallet.pluginMethods.issuePresentation,
         verifyPresentation: wallet.pluginMethods.verifyPresentation,
 
