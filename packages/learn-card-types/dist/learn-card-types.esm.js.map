@@ -1,7 +1,7 @@
 {
   "version": 3,
   "sources": ["../src/index.ts"],
-  "sourcesContent": ["export enum VerificationStatus {\n    Success = 'Success',\n    Failed = 'Failed',\n    Error = 'Error',\n}\n\nexport type VerificationItem = {\n    check: string;\n    status: VerificationStatus;\n    message?: string;\n    details?: string;\n};\n"],
+  "sourcesContent": ["export enum VerificationStatus {\n    Success = 'Success',\n    Failed = 'Failed',\n    Error = 'Error',\n}\n\nexport type VerificationItem = {\n    check: string;\n    status: VerificationStatus;\n    message?: string;\n    details?: string;\n};\n\nexport type Proof = {\n    type: string;\n    proofPurpose: string;\n    verificationMethod: string;\n    jws: string;\n    created: string;\n};\n\nexport type UnsignedVC = {\n    [key: string]: any;\n    '@context': string | string[];\n    credentialSubject: { id: string };\n    id: string;\n    issuanceDate: string;\n    expirationDate?: string;\n    issuer: string;\n    type: string[];\n};\n\nexport type VC = UnsignedVC & { proof: Proof };\n\nexport type UnsignedVP = {\n    [key: string]: any;\n    '@context': string | string[];\n    holder: string;\n    type: string[];\n    verifiableCredential: VC;\n};\n\nexport type VP = UnsignedVP & { proof: Proof };\n"],
   "mappings": ";AAAO,IAAK,qBAAL,kBAAK,wBAAL;AACH,mCAAU;AACV,kCAAS;AACT,iCAAQ;AAHA;AAAA;",
   "names": []
 }

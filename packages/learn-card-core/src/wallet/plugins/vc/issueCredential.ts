@@ -1,7 +1,7 @@
 import { issueCredential as ic, keyToVerificationMethod } from 'didkit';
+import { UnsignedVC } from 'learn-card-types';
 
 import { UnlockedWallet } from 'types/wallet';
-import { UnsignedVC } from './types';
 
 export const issueCredential = async (
     wallet: UnlockedWallet<any, { getSubjectKeypair: () => Record<string, string> }, any>,
