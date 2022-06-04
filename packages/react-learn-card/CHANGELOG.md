@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 1.7.2
+
+### Patch Changes
+
+-   Fix Safari bug where backface is not hidden on Flippy Card
+
 ## 1.7.1
 
 ### Patch Changes
