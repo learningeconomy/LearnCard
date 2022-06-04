@@ -1,5 +1,11 @@
 # learn-card-types
 
+## 1.2.1
+
+### Patch Changes
+
+-   Add minimum time for verification loader animation
+
 ## 1.2.0
 
 ### Minor Changes

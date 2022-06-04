@@ -1,5 +1,14 @@
 # @welibraryos/react-learn-card
 
+## 1.7.1
+
+### Patch Changes
+
+-   Add minimum time for verification loader animation
+-   Updated dependencies
+    -   learn-card-core@0.3.5
+    -   learn-card-types@1.2.1
+
 ## 1.7.0
 
 ### Minor Changes

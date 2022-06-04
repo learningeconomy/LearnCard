@@ -1,5 +1,13 @@
 # learn-card-core
 
+## 0.3.5
+
+### Patch Changes
+
+-   Add minimum time for verification loader animation
+-   Updated dependencies
+    -   learn-card-types@1.2.1
+
 ## 0.3.4
 
 ### Patch Changes
