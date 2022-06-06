@@ -1,15 +1,13 @@
-# learn-card-core
+# @learncard/core
 
-> 
-
-[![npm version](https://img.shields.io/npm/v/learn-card-core)](https://www.npmjs.com/package/learn-card-core)
-[![npm downloads](https://img.shields.io/npm/dw/learn-card-core)](https://www.npmjs.com/package/learn-card-core)
-[![vulnerabilities](https://img.shields.io/snyk/vulnerabilities/npm/learn-card-core)](https://www.npmjs.com/package/learn-card-core)
+[![npm version](https://img.shields.io/npm/v/@learncard/core)](https://www.npmjs.com/package/@learncard/core)
+[![npm downloads](https://img.shields.io/npm/dw/@learncard/core)](https://www.npmjs.com/package/@learncard/core)
+[![vulnerabilities](https://img.shields.io/snyk/vulnerabilities/npm/@learncard/core)](https://www.npmjs.com/package/@learncard/core)
 
 ## Install
 
 ```bash
-pnpm i learn-card-core
+pnpm i @learncard/core
 ```
 
 ## Usage
@@ -21,7 +19,7 @@ up to 64 characters long. If it is less than 64 characters, `walletFromKey` will
 the string with 0's until it is 64 characters long.
 
 ```js
-import { walletFromKey } from "learn-card-core";
+import { walletFromKey } from "@learncard/core";
 
 const wallet = await walletFromKey('unique-identifier-that-is-up-to-and-preferably64-characters-long');
 ```
