@@ -1,4 +1,4 @@
-import { UnsignedVC, VC, VP } from 'learn-card-types';
+import { UnsignedVC, VC, VP } from '@learncard/types';
 
 export type VerificationCheck = {
     checks: string[];

@@ -1,6 +1,6 @@
 {
-  "name": "react-learn-card",
-  "version": "1.7.2",
+  "name": "@learncard/react",
+  "version": "2.0.0",
   "description": "",
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",
@@ -21,6 +21,7 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
+    "@learncard/types": "workspace:*",
     "@rollup/plugin-commonjs": "^22.0.0",
     "@rollup/plugin-node-resolve": "^13.3.0",
     "@rollup/plugin-typescript": "^8.3.2",
@@ -61,8 +62,7 @@
   },
   "dependencies": {
     "date-fns": "^2.28.0",
-    "learn-card-core": "workspace:*",
-    "learn-card-types": "workspace:*",
+    "@learncard/core": "workspace:*",
     "rollup-plugin-img": "^1.1.0"
   },
   "peerDependencies": {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { VC, Issuer, VerificationItem } from 'learn-card-types';
+import { VC, Issuer, VerificationItem } from '@learncard/types';
 import { format } from 'date-fns';
 
 import FlippyCard from '../FlippyCard/FlippyCard';

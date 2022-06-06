@@ -1,7 +1,6 @@
 import React from 'react';
-import { VerificationStatus } from 'learn-card-types';
+import { VerificationStatus } from '@learncard/types';
 
-import CircleSpinner from '../Loading/CircleSpinner';
 import VerificationFailedIcon from '../../assets/images/RedXCircle.svg';
 import VerificationPassedIcon from '../../assets/images/GreenCheckCircle.svg';
 import VerificationWarningIcon from '../../assets/images/YellowWarningCircle.svg';

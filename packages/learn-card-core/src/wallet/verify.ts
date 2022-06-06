@@ -1,5 +1,4 @@
-import { VerificationItem, VerificationStatus } from 'learn-card-types';
-import { VC } from 'learn-card-types';
+import { VC, VerificationItem, VerificationStatus } from '@learncard/types';
 
 import { LearnCardRawWallet } from 'types/LearnCard';
 

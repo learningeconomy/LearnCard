@@ -44,6 +44,7 @@ importers:
       '@glazed/did-datastore': ^0.3.1
       '@glazed/tile-loader': ^0.2.0
       '@glazed/types': ^0.2.0
+      '@learncard/types': workspace:*
       '@peculiar/webcrypto': ^1.4.0
       '@types/node': ^17.0.31
       aqu: 0.3.2
@@ -53,7 +54,6 @@ importers:
       hex-lite: ^1.5.0
       key-did-provider-ed25519: ^2.0.0
       key-did-resolver: 1.2.1
-      learn-card-types: workspace:*
       typescript: ^4.6.4
     dependencies:
       '@ceramicnetwork/common': 2.0.4
@@ -68,9 +68,9 @@ importers:
       hex-lite: 1.5.0
       key-did-provider-ed25519: 2.0.0
       key-did-resolver: 1.2.1
-      learn-card-types: link:../learn-card-types
     devDependencies:
       '@glazed/types': 0.2.0
+      '@learncard/types': link:../learn-card-types
       '@types/node': 17.0.31
       aqu: 0.3.2
       esbuild: 0.14.38
@@ -99,6 +99,8 @@ importers:
 
   packages/react-learn-card:
     specifiers:
+      '@learncard/core': workspace:*
+      '@learncard/types': workspace:*
       '@rollup/plugin-commonjs': ^22.0.0
       '@rollup/plugin-node-resolve': ^13.3.0
       '@rollup/plugin-typescript': ^8.3.2
@@ -127,8 +129,6 @@ importers:
       esbuild-jest: ^0.5.0
       jest: ^28.0.3
       jest-environment-jsdom: ^28.0.2
-      learn-card-core: workspace:*
-      learn-card-types: workspace:*
       postcss: ^8.4.13
       postcss-loader: ^6.2.1
       rollup: ^2.71.1
@@ -141,11 +141,11 @@ importers:
       tailwindcss: ^3.0.24
       typescript: ^4.5.4
     dependencies:
+      '@learncard/core': link:../learn-card-core
       date-fns: 2.28.0
-      learn-card-core: link:../learn-card-core
-      learn-card-types: link:../learn-card-types
       rollup-plugin-img: 1.1.0
     devDependencies:
+      '@learncard/types': link:../learn-card-types
       '@rollup/plugin-commonjs': 22.0.0_rollup@2.75.4
       '@rollup/plugin-node-resolve': 13.3.0_rollup@2.75.4
       '@rollup/plugin-typescript': 8.3.2_fhccwvuidnlu6ze5rhm47nc5cm
@@ -399,7 +399,7 @@ packages:
     resolution: {integrity: sha512-LVtS6TqjJHFc+nYeITRo6VLXve70xmq7wPhWTqDJusJEgGmkAACWwMiTNrvfoQo6hEhFwAIixNkvB0jPXDL8Wg==}
     engines: {node: '>=6.9.0'}
     dependencies:
-      '@babel/types': 7.17.10
+      '@babel/types': 7.18.4
     dev: true
 
   /@babel/helper-module-transforms/7.17.7:
@@ -467,7 +467,7 @@ packages:
     resolution: {integrity: sha512-txyMCGroZ96i+Pxr3Je3lzEJjqwaRC9buMUgtomcrLe5Nd0+fk1h0LLA+ixUF5OW7AhHuQ7Es1WcQJZmZsz2XA==}
     engines: {node: '>=6.9.0'}
     dependencies:
-      '@babel/types': 7.17.10
+      '@babel/types': 7.18.4
     dev: true
 
   /@babel/helper-skip-transparent-expression-wrappers/7.16.0:
@@ -481,7 +481,7 @@ packages:
     resolution: {integrity: sha512-xbWoy/PFoxSWazIToT9Sif+jJTlrMcndIsaOKvTA6u7QEo7ilkRZpjew18/W3c7nm8fXdUDXh02VXTbZ0pGDNw==}
     engines: {node: '>=6.9.0'}
     dependencies:
-      '@babel/types': 7.17.10
+      '@babel/types': 7.18.4
     dev: true
 
   /@babel/helper-validator-identifier/7.16.7:
@@ -2510,14 +2510,14 @@ packages:
       '@jest/test-result': 28.1.0
       '@jest/transform': 28.1.0
       '@jest/types': 28.1.0
-      '@types/node': 17.0.31
+      '@types/node': 17.0.38
       ansi-escapes: 4.3.2
       chalk: 4.1.2
       ci-info: 3.3.0
       exit: 0.1.2
       graceful-fs: 4.2.10
       jest-changed-files: 28.0.2
-      jest-config: 28.1.0_@types+node@17.0.31
+      jest-config: 28.1.0_@types+node@17.0.38
       jest-haste-map: 28.1.0
       jest-message-util: 28.1.0
       jest-regex-util: 28.0.2
@@ -2555,7 +2555,7 @@ packages:
     dependencies:
       '@jest/fake-timers': 28.1.0
       '@jest/types': 28.1.0
-      '@types/node': 17.0.31
+      '@types/node': 17.0.38
       jest-mock: 28.1.0
     dev: true
 
@@ -2594,7 +2594,7 @@ packages:
     dependencies:
       '@jest/types': 28.1.0
       '@sinonjs/fake-timers': 9.1.2
-      '@types/node': 17.0.31
+      '@types/node': 17.0.38
       jest-message-util: 28.1.0
       jest-mock: 28.1.0
       jest-util: 28.1.0
@@ -2848,7 +2848,7 @@ packages:
       '@jest/schemas': 28.0.2
       '@types/istanbul-lib-coverage': 2.0.4
       '@types/istanbul-reports': 3.0.1
-      '@types/node': 17.0.31
+      '@types/node': 17.0.38
       '@types/yargs': 17.0.10
       chalk: 4.1.2
     dev: true
@@ -5098,7 +5098,7 @@ packages:
   /@types/jsdom/16.2.14:
     resolution: {integrity: sha512-6BAy1xXEmMuHeAJ4Fv4yXKwBDTGTOseExKE3OaHiNycdHdZw59KfYzrt0DkDluvwmik1HRt6QS7bImxUmpSy+w==}
     dependencies:
-      '@types/node': 17.0.31
+      '@types/node': 17.0.38
       '@types/parse5': 6.0.3
       '@types/tough-cookie': 4.0.2
     dev: true
@@ -11958,7 +11958,7 @@ packages:
       - supports-color
     dev: true
 
-  /jest-config/28.1.0_@types+node@17.0.31:
+  /jest-config/28.1.0_@types+node@17.0.38:
     resolution: {integrity: sha512-aOV80E9LeWrmflp7hfZNn/zGA4QKv/xsn2w8QCBP0t0+YqObuCWTSgNbHJ0j9YsTuCO08ZR/wsvlxqqHX20iUA==}
     engines: {node: ^12.13.0 || ^14.15.0 || ^16.10.0 || >=17.0.0}
     peerDependencies:
@@ -11973,7 +11973,7 @@ packages:
       '@babel/core': 7.17.10
       '@jest/test-sequencer': 28.1.0
       '@jest/types': 28.1.0
-      '@types/node': 17.0.31
+      '@types/node': 17.0.38
       babel-jest: 28.1.0_@babel+core@7.17.10
       chalk: 4.1.2
       ci-info: 3.3.0
@@ -12315,7 +12315,7 @@ packages:
     engines: {node: ^10.13.0 || ^12.13.0 || ^14.15.0 || >=15.0.0}
     dependencies:
       '@jest/types': 27.5.1
-      '@types/node': 17.0.31
+      '@types/node': 17.0.38
     dev: true
 
   /jest-mock/28.1.0:
@@ -12323,7 +12323,7 @@ packages:
     engines: {node: ^12.13.0 || ^14.15.0 || ^16.10.0 || >=17.0.0}
     dependencies:
       '@jest/types': 28.1.0
-      '@types/node': 17.0.31
+      '@types/node': 17.0.38
     dev: true
 
   /jest-pnp-resolver/1.2.2_jest-resolve@26.6.2:
@@ -12638,7 +12638,7 @@ packages:
     engines: {node: ^12.13.0 || ^14.15.0 || ^16.10.0 || >=17.0.0}
     dependencies:
       '@jest/types': 28.1.0
-      '@types/node': 17.0.31
+      '@types/node': 17.0.38
       chalk: 4.1.2
       ci-info: 3.3.0
       graceful-fs: 4.2.10
@@ -12729,7 +12729,7 @@ packages:
     resolution: {integrity: sha512-KWYVV1c4i+jbMpaBC+U++4Va0cp8OisU185o73T1vo99hqi7w8tSJfUXYswwqqrjzwxa6KpRK54WhPvwf5w6PQ==}
     engines: {node: '>= 10.13.0'}
     dependencies:
-      '@types/node': 17.0.31
+      '@types/node': 17.0.38
       merge-stream: 2.0.0
       supports-color: 7.2.0
     dev: true
