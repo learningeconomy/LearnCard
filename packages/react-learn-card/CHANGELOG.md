@@ -1,11 +1,19 @@
 # @welibraryos/react-learn-card
 
+## 2.0.1
+
+### Patch Changes
+
+-   Update ReadMe
+-   Updated dependencies
+    -   @learncard/core@1.0.1
+
 ## 2.0.0
 
 ### Major Changes
 
 -   Rename to @learncard/react
- 
+
 ## 1.7.2
 
 ### Patch Changes
