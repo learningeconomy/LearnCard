@@ -1,4 +1,4 @@
-import { VerificationItem, VC, Issuer, CredentialSubject } from 'learn-card-types';
+import { VerificationItem, VC, Issuer, CredentialSubject } from '@learncard/types';
 
 export type CredentialInfo = {
     title?: string;

@@ -1,5 +1,5 @@
 import { issueCredential as ic, keyToVerificationMethod } from 'didkit';
-import { UnsignedVC } from 'learn-card-types';
+import { UnsignedVC } from '@learncard/types';
 
 import { UnlockedWallet } from 'types/wallet';
 

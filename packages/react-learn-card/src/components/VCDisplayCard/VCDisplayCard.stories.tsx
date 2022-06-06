@@ -2,7 +2,7 @@ import React from 'react';
 import { Story, Meta } from '@storybook/react';
 
 import VCDisplayCard, { VCDisplayCardPropsReal } from './VCDisplayCard';
-import { VerificationStatus } from 'learn-card-types';
+import { VerificationStatus } from '@learncard/types';
 
 export default {
     title: 'VCDisplayCard',

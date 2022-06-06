@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { walletFromKey } from 'learn-card-core';
-import { VC, Issuer, VerificationItem } from 'learn-card-types';
+import { walletFromKey } from '@learncard/core';
+import { VC, Issuer, VerificationItem } from '@learncard/types';
 
 import { VCDisplayCard } from '../VCDisplayCard';
 

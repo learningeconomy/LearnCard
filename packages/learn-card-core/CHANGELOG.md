@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 1.0.0
+
+### Major Changes
+
+-   Rename to @learncard/core
+
 ## 0.3.5
 
 ### Patch Changes

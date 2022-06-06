@@ -1,5 +1,5 @@
 import { issuePresentation as ip, keyToVerificationMethod } from 'didkit';
-import { VC } from 'learn-card-types';
+import { VC } from '@learncard/types';
 
 import { UnlockedWallet } from 'types/wallet';
 

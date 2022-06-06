@@ -1,5 +1,11 @@
 # learn-card-types
 
+## 2.0.0
+
+### Major Changes
+
+-   Rename to @learncard/types
+
 ## 1.2.1
 
 ### Patch Changes
