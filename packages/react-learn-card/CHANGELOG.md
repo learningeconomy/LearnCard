@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.1.0
+
+### Minor Changes
+
+-   Improve Tree-Shakeability
+
 ## 2.0.1
 
 ### Patch Changes
