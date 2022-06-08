@@ -1,3 +1,4 @@
+import glob from 'glob';
 import resolve from '@rollup/plugin-node-resolve';
 import postcss from 'rollup-plugin-postcss';
 import commonjs from '@rollup/plugin-commonjs';
@@ -10,18 +11,18 @@ const packageJson = require('./package.json');
 
 export default [
     {
-        input: 'src/index.ts',
+        input: ['src/index.ts', ...glob.sync('src/?(components)/**/index.ts')],
         output: [
-            { file: packageJson.main, format: 'cjs', sourcemap: true },
-            { file: packageJson.module, format: 'esm', sourcemap: true },
+            { dir: packageJson.main, format: 'cjs', sourcemap: true, exports: 'named' },
+            { dir: packageJson.module, format: 'esm', sourcemap: true },
         ],
         plugins: [
             postcss({ minimize: true, inject: { insertAt: 'top' } }),
             peerDepsExternal(),
             image(),
             resolve(),
+            typescript(),
             commonjs(),
-            typescript({ tsconfig: './tsconfig.json' }),
             terser(),
         ],
     },
