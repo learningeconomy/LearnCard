@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 1.1.1
+
+### Patch Changes
+
+-   Better verification messages
+
 ## 1.1.0
 
 ### Minor Changes

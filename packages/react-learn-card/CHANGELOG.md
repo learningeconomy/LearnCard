@@ -1,5 +1,16 @@
 # @welibraryos/react-learn-card
 
+## 2.2.0
+
+### Minor Changes
+
+-   Fix broken exports and use esbuild instead of terser for bundling
+
+### Patch Changes
+
+-   Updated dependencies
+    -   @learncard/core@1.1.1
+
 ## 2.1.2
 
 ### Patch Changes
