@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 1.1.0
+
+### Minor Changes
+
+-   Remove pluginConstants and force instantiation with key
+
 ## 1.0.2
 
 ### Patch Changes
