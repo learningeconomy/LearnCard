@@ -4,7 +4,7 @@ import { UnsignedVC } from '@learncard/types';
 import { UnlockedWallet } from 'types/wallet';
 
 export const issueCredential = async (
-    wallet: UnlockedWallet<any, { getSubjectKeypair: () => Record<string, string> }, any>,
+    wallet: UnlockedWallet<any, { getSubjectKeypair: () => Record<string, string> }>,
     credential: UnsignedVC
 ) => {
     const _kp = wallet.pluginMethods.getSubjectKeypair();

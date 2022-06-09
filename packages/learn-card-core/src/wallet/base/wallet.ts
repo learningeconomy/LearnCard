@@ -7,53 +7,47 @@
     contentsFromEncryptedWalletCredential,
 } from './functions'; */
 
-import { Plugin, WalletStatus, LockedWallet, UnlockedWallet } from 'types/wallet';
+import { Plugin, WalletStatus, UnlockedWallet } from 'types/wallet';
 
 const addPluginToWallet = async <
     Name extends string,
     Methods extends Record<string, (...args: any[]) => any> = Record<never, never>,
-    Constants extends Record<string, any> = Record<never, never>,
     PluginNames extends string = '',
-    PluginMethods extends Record<string, (...args: any[]) => any> = Record<never, never>,
-    PluginConstants extends Record<string, any> = Record<never, never>
+    PluginMethods extends Record<string, (...args: any[]) => any> = Record<never, never>
 >(
-    wallet: UnlockedWallet<PluginNames, PluginMethods, PluginConstants>,
-    plugin: Plugin<Name, Methods, Constants>
+    wallet: UnlockedWallet<PluginNames, PluginMethods>,
+    plugin: Plugin<Name, Methods>
 ): Promise<
     UnlockedWallet<
         '' extends PluginNames ? Name : PluginNames | Name,
-        Record<never, never> extends PluginMethods ? Methods : PluginMethods & Methods,
-        Record<never, never> extends PluginConstants ? Constants : PluginConstants & Constants
+        Record<never, never> extends PluginMethods ? Methods : PluginMethods & Methods
     >
 > => {
     return generateWallet<
         '' extends PluginNames ? Name : PluginNames | Name,
-        Record<never, never> extends PluginMethods ? Methods : PluginMethods & Methods,
-        Record<never, never> extends PluginConstants ? Constants : PluginConstants & Constants
+        Record<never, never> extends PluginMethods ? Methods : PluginMethods & Methods
     >(wallet.contents, {
-        plugins: [...wallet.plugins, plugin as Plugin<any, any, any>],
+        plugins: [...wallet.plugins, plugin as Plugin<any, any>],
     });
 };
 
 const addToWallet = async <
     PluginNames extends string,
-    PluginMethods extends Record<string, (...args: any[]) => any>,
-    PluginConstants extends Record<string, any>
+    PluginMethods extends Record<string, (...args: any[]) => any>
 >(
-    wallet: UnlockedWallet<PluginNames, PluginMethods, PluginConstants>,
+    wallet: UnlockedWallet<PluginNames, PluginMethods>,
     content: any
-): Promise<UnlockedWallet<PluginNames, PluginMethods, PluginConstants>> => {
+): Promise<UnlockedWallet<PluginNames, PluginMethods>> => {
     return generateWallet([...wallet.contents, content], wallet);
 };
 
 const removeFromWallet = async <
     PluginNames extends string,
-    PluginMethods extends Record<string, (...args: any[]) => any>,
-    PluginConstants extends Record<string, any>
+    PluginMethods extends Record<string, (...args: any[]) => any>
 >(
-    wallet: UnlockedWallet<PluginNames, PluginMethods, PluginConstants>,
+    wallet: UnlockedWallet<PluginNames, PluginMethods>,
     contentId: string
-): Promise<UnlockedWallet<PluginNames, PluginMethods, PluginConstants>> => {
+): Promise<UnlockedWallet<PluginNames, PluginMethods>> => {
     const clonedContents = JSON.parse(JSON.stringify(wallet.contents));
 
     const content = clonedContents.find((c: any) => c.id === contentId);
@@ -103,10 +97,9 @@ const removeFromWallet = async <
 
 const bindMethods = <
     PluginNames extends string,
-    PluginMethods extends Record<string, (...args: any[]) => any>,
-    PluginConstants extends Record<string, any>
+    PluginMethods extends Record<string, (...args: any[]) => any>
 >(
-    wallet: UnlockedWallet<PluginNames, PluginMethods, PluginConstants>,
+    wallet: UnlockedWallet<PluginNames, PluginMethods>,
     pluginMethods: PluginMethods
 ): PluginMethods =>
     Object.fromEntries(
@@ -115,12 +108,11 @@ const bindMethods = <
 
 export const generateWallet = async <
     PluginNames extends string,
-    PluginMethods extends Record<string, (...args: any[]) => any> = Record<never, never>,
-    PluginConstants extends Record<string, any> = Record<never, never>
+    PluginMethods extends Record<string, (...args: any[]) => any> = Record<never, never>
 >(
     contents: any[] = [],
-    _wallet: Partial<UnlockedWallet<any, PluginMethods, PluginConstants>> = {}
-): Promise<UnlockedWallet<PluginNames, PluginMethods, PluginConstants>> => {
+    _wallet: Partial<UnlockedWallet<any, PluginMethods>> = {}
+): Promise<UnlockedWallet<PluginNames, PluginMethods>> => {
     const { plugins = [] } = _wallet;
 
     /* const exportFunction = async (password: string): Promise<any> => {
@@ -136,20 +128,13 @@ export const generateWallet = async <
         );
     }; */
 
-    const { pluginMethods, pluginConstants } = plugins.reduce<{
-        pluginMethods: PluginMethods;
-        pluginConstants: PluginConstants;
-    }>(
-        ({ pluginMethods, pluginConstants }, plugin) => {
-            const newPluginMethods = { ...pluginMethods, ...plugin.pluginMethods };
-            const newPluginConstants = { ...pluginConstants, ...plugin.pluginConstants };
+    const pluginMethods = plugins.reduce<PluginMethods>((cumulativePluginMethods, plugin) => {
+        const newPluginMethods = { ...cumulativePluginMethods, ...plugin.pluginMethods };
 
-            return { pluginMethods: newPluginMethods, pluginConstants: newPluginConstants };
-        },
-        { pluginMethods: {} as PluginMethods, pluginConstants: {} as PluginConstants }
-    );
+        return newPluginMethods;
+    }, {} as PluginMethods);
 
-    const wallet: UnlockedWallet<PluginNames, PluginMethods, PluginConstants> = {
+    const wallet: UnlockedWallet<PluginNames, PluginMethods> = {
         contents: [...contents],
         add: function (content: any) {
             return addToWallet(this, content);
@@ -165,11 +150,10 @@ export const generateWallet = async <
         status: WalletStatus.Unlocked,
         plugins,
         pluginMethods,
-        pluginConstants,
         addPlugin: function (plugin) {
             return addPluginToWallet(this, plugin);
         },
-    } as UnlockedWallet<PluginNames, PluginMethods, PluginConstants>;
+    } as UnlockedWallet<PluginNames, PluginMethods>;
 
     if (pluginMethods) wallet.pluginMethods = bindMethods(wallet, pluginMethods);
 

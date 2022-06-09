@@ -1,9 +1,8 @@
-import { toUint8Array } from 'hex-lite';
 import init from 'didkit';
 
 import { generateWallet } from './base';
 import { getIDXPlugin } from './plugins/idx';
-import { DidKeyPlugin } from './plugins/didkey';
+import { getDidKeyPlugin } from './plugins/didkey';
 import { ExpirationPlugin } from './plugins/expiration';
 import { getVCPlugin } from './plugins/vc';
 import { verifyCredential } from './verify';
@@ -11,14 +10,23 @@ import { verifyCredential } from './verify';
 import { LearnCardConfig, LearnCardWallet } from 'types/LearnCard';
 import { defaultCeramicIDXArgs } from './defaults';
 
-export const createWallet = async (
-    defaultContents: any[],
-    { ceramicIdx = defaultCeramicIDXArgs, didkit }: Partial<LearnCardConfig> = {}
+/** Generates a LearnCard Wallet from a 64 character seed string */
+export const walletFromKey = async (
+    key: string,
+    {
+        ceramicIdx = defaultCeramicIDXArgs,
+        didkit,
+        defaultContents = [],
+    }: Partial<LearnCardConfig> = {}
 ): Promise<LearnCardWallet> => {
     await init(didkit);
 
-    const didkeyWallet = await (await generateWallet(defaultContents)).addPlugin(DidKeyPlugin);
+    const didkeyWallet = await (
+        await generateWallet(defaultContents)
+    ).addPlugin(await getDidKeyPlugin(key));
+
     const didkeyAndVCWallet = await didkeyWallet.addPlugin(await getVCPlugin(didkeyWallet));
+
     const idxWallet = await didkeyAndVCWallet.addPlugin(
         await getIDXPlugin(didkeyAndVCWallet, ceramicIdx)
     );
@@ -50,18 +58,4 @@ export const createWallet = async (
 
         getTestVc: wallet.pluginMethods.getTestVc,
     };
-};
-
-/** Generates did documents from key and returns default wallet */
-export const walletFromKey = async (
-    key: string,
-    { ceramicIdx = defaultCeramicIDXArgs, didkit }: Partial<LearnCardConfig> = {}
-) => {
-    await init(didkit);
-
-    const didDocuments = await DidKeyPlugin.pluginConstants.generateContentFromSeed(
-        toUint8Array(key.padStart(64, '0'))
-    );
-
-    return createWallet(didDocuments, { ceramicIdx, didkit });
 };

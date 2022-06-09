@@ -16,8 +16,5 @@ export type JWK = {
 export type DidKeyPluginMethods = {
     getSubjectDid: () => string;
     getSubjectKeypair: () => Record<string, string>;
-};
-
-export type DidKeyPluginConstants = {
-    generateContentFromSeed: (seed: Uint8Array) => Promise<JWK[]>;
+    getKey: () => string;
 };

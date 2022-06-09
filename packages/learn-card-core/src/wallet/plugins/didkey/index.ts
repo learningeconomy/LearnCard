@@ -1,18 +1,20 @@
-import { generateContentFromSeed } from './generateContentFromSeed';
+import { generateEd25519KeyFromBytes, keyToDID } from 'didkit';
+import { toUint8Array } from 'hex-lite';
 
-import { DidKeyPluginMethods, DidKeyPluginConstants, JWK } from './types';
+import { DidKeyPluginMethods } from './types';
 import { Plugin } from 'types/wallet';
 
-export const DidKeyPlugin: Plugin<'DID Key', DidKeyPluginMethods, DidKeyPluginConstants> = {
-    pluginMethods: {
-        getSubjectDid: wallet =>
-            (wallet.contents as JWK[]).find(content => content.name === 'Signing Key')
-                ?.controller ?? '',
-        getSubjectKeypair: wallet =>
-            (wallet.contents as JWK[]).find(content => content.name === 'Signing Key')
-                ?.privateKeyJwk,
-    },
-    pluginConstants: {
-        generateContentFromSeed,
-    },
+export const getDidKeyPlugin = async (
+    key: string
+): Promise<Plugin<'DID Key', DidKeyPluginMethods>> => {
+    const keypair = JSON.parse(generateEd25519KeyFromBytes(toUint8Array(key.padStart(64, '0'))));
+    const did = keyToDID('key', JSON.stringify(keypair));
+
+    return {
+        pluginMethods: {
+            getSubjectDid: () => did,
+            getSubjectKeypair: () => keypair,
+            getKey: () => key,
+        },
+    };
 };
