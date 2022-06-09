@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 1.0.2
+
+### Patch Changes
+
+-   Remove unused IDX package
+
 ## 1.0.1
 
 ### Patch Changes
