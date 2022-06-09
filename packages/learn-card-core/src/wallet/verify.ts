@@ -1,6 +1,34 @@
 import { VC, VerificationItem, VerificationStatus } from '@learncard/types';
+import { format } from 'date-fns';
 
 import { LearnCardRawWallet } from 'types/LearnCard';
+
+const transformErrorMessage = (error: string, credential: VC): string => {
+    if (error.startsWith('expiration')) {
+        return credential.expirationDate
+            ? `Invalid • Expired ${format(
+                  new Date(credential.expirationDate),
+                  'dd MMM yyyy'
+              ).toUpperCase()}`
+            : 'Invalid • Expired';
+    }
+
+    return error;
+};
+
+const transformCheckMessage = (check: string, credential: VC): string => {
+    return (
+        {
+            proof: 'Valid',
+            expiration: credential.expirationDate
+                ? `Valid • Expires ${format(
+                      new Date(credential.expirationDate),
+                      'dd MMM yyyy'
+                  ).toUpperCase()}`
+                : 'Valid • Does Not Expire',
+        }[check] || check
+    );
+};
 
 export const verifyCredential = (
     wallet: LearnCardRawWallet
@@ -14,7 +42,7 @@ export const verifyCredential = (
             verificationItems.push({
                 status: VerificationStatus.Failed,
                 check: 'hmm',
-                details: error,
+                details: transformErrorMessage(error, credential),
             });
         });
 
@@ -30,7 +58,7 @@ export const verifyCredential = (
             verificationItems.push({
                 status: VerificationStatus.Success,
                 check,
-                message: check === 'proof' ? 'Valid' : check,
+                message: transformCheckMessage(check, credential),
             });
         });
 

@@ -14,7 +14,7 @@ export const getDidKeyPlugin = async (
         pluginMethods: {
             getSubjectDid: () => did,
             getSubjectKeypair: () => keypair,
-            getKey: () => key,
+            getKey: () => key.padStart(64, '0'),
         },
     };
 };
