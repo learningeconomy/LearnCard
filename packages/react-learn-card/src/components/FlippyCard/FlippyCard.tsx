@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
 
-import './FlippyCard.css';
-
 export type FlippyCardProps = {
     children: React.ReactChild[];
 };

@@ -4,8 +4,6 @@ import VerifiedCheck from '../../assets/images/verified-check.png';
 
 import { MiniVCThumbnailProps } from './types';
 
-import './ MiniVCThumbnail.css';
-
 export const MiniVCThumbnail: React.FC<MiniVCThumbnailProps> = ({
     title,
     createdAt,
