@@ -6,8 +6,7 @@ import { UnlockedWallet } from 'types/wallet';
 export const issuePresentation = async (
     wallet: UnlockedWallet<
         any,
-        { getSubjectDid: () => string; getSubjectKeypair: () => Record<string, string> },
-        any
+        { getSubjectDid: () => string; getSubjectKeypair: () => Record<string, string> }
     >,
     credential: VC
 ) => {

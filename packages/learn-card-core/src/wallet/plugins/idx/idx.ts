@@ -13,7 +13,7 @@ import { Plugin, UnlockedWallet } from 'types/wallet';
 import { CeramicIDXArgs } from 'types/LearnCard';
 
 const getCeramicClientFromWalletSuite = async (
-    wallet: UnlockedWallet<any, any, any>,
+    wallet: UnlockedWallet<any, { getKey: () => string }>,
     ceramicEndpoint: string
 ): Promise<CeramicClient> => {
     const client = new CeramicClient(ceramicEndpoint);
@@ -25,8 +25,7 @@ const getCeramicClientFromWalletSuite = async (
     // use wallet secret key
     // TODO: this is repeating work already done in the wallet. understand what the Ed25519Provider is doing to determine
     // if we can just pass wallet signing key here instead of creating a duplicate from same seed.
-    const contents = JSON.parse(JSON.stringify(wallet.contents));
-    const key = contents?.find((c: { name: string }) => c?.name === 'DID Key Secret')?.value ?? '';
+    const key = wallet.pluginMethods.getKey();
 
     const ceramicProvider = new Ed25519Provider(toUint8Array(key));
     client.did!.setProvider(ceramicProvider);
@@ -37,7 +36,7 @@ const getCeramicClientFromWalletSuite = async (
 };
 
 export const getIDXPlugin = async (
-    wallet: UnlockedWallet<any, any, any>,
+    wallet: UnlockedWallet<any, { getKey: () => string }>,
     { modelData, credentialAlias, ceramicEndpoint, defaultContentFamily }: CeramicIDXArgs
 ): Promise<Plugin<'IDX', IDXPluginMethods>> => {
     const ceramic = await getCeramicClientFromWalletSuite(wallet, ceramicEndpoint);
@@ -122,6 +121,5 @@ export const getIDXPlugin = async (
                 return addCredentialStreamIdToIndex({ title, id });
             },
         },
-        pluginConstants: {},
     };
 };

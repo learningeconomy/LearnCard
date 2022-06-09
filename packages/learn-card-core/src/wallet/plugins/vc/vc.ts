@@ -12,8 +12,7 @@ export const getVCPlugin = async (
         {
             getSubjectDid: () => string;
             getSubjectKeypair: () => Record<string, string>;
-        },
-        any
+        }
     >
 ): Promise<Plugin<'VC', VCPluginMethods>> => {
     return {
@@ -36,6 +35,5 @@ export const getVCPlugin = async (
                 };
             },
         },
-        pluginConstants: {},
     };
 };

@@ -19,5 +19,4 @@ export const ExpirationPlugin = (
             return verificationCheck;
         },
     },
-    pluginConstants: {},
 });
