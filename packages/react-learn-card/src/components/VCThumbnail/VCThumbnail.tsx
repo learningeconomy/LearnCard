@@ -5,8 +5,6 @@ import VerifiedCheck from '../../assets/images/verified-check.png';
 
 import { VCThumbnailProps } from './types';
 
-import './VCThumbnail.css';
-
 export const VCThumbnail: React.FC<VCThumbnailProps> = ({
     title,
     createdAt,

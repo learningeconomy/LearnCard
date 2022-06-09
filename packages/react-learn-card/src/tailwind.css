@@ -1,3 +1,161 @@
 @import 'tailwindcss/base';
 @import 'tailwindcss/components';
 @import 'tailwindcss/utilities';
+
+.lds-ring {
+    display: inline-block;
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.lds-ring div {
+    box-sizing: border-box;
+    display: block;
+    position: absolute;
+    width: 54px;
+    height: 54px;
+    margin: 3px;
+    border: 4px solid #fff;
+    border-radius: 50%;
+    animation: lds-ring 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+    border-color: #40cba6 transparent transparent transparent;
+}
+
+.lds-ring.static div {
+    animation: none;
+    border-color: #40cba6;
+}
+
+.lds-ring div:nth-child(1) {
+    animation-delay: -0.45s;
+}
+.lds-ring div:nth-child(2) {
+    animation-delay: -0.3s;
+}
+.lds-ring div:nth-child(3) {
+    animation-delay: -0.15s;
+}
+@keyframes lds-ring {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.flippy-wrapper-container {
+    perspective: 2600px;
+}
+
+.flippy-card {
+    width: 100%;
+    max-width: 400px;
+    height: 100%;
+    max-height: 1000px;
+    position: relative;
+    transition: transform 1s;
+    transform-style: preserve-3d;
+    -webkit-transform-style: preserve-3d;
+}
+
+.flippy-card.is-flipped {
+    transform: rotateY(180deg);
+}
+
+.card-face {
+    position: absolute;
+    height: 100%;
+    width: 100%;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    transform-style: preserve-3d;
+    -webkit-transform-style: preserve-3d;
+}
+
+.card-face--front {
+    position: absolute;
+}
+
+.card-face--back {
+    position: relative;
+    transform: rotateY(180deg);
+}
+
+.mini-vc-thumbnail-container {
+    max-width: 250px;
+}
+
+.mini-vc-thumbnail-container::after {
+    content: '';
+    background-color: #fff;
+    border-top-left-radius: 24px;
+    border-top-right-radius: 24px;
+    border-bottom-left-radius: 120px;
+    border-bottom-right-radius: 120px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 65%;
+    width: 100%;
+    z-index: 1;
+}
+
+.vc-thumbnail-container {
+    max-width: 250px;
+}
+
+.vc-thumbnail-container::after {
+    content: '';
+    display: block;
+    padding-bottom: 100%;
+    top: 0;
+    left: 0;
+}
+
+.vc-thumbnail-container::before {
+    content: '';
+    background-color: #fff;
+    border-top-left-radius: 24px;
+    border-top-right-radius: 24px;
+    border-bottom-left-radius: 120px;
+    border-bottom-right-radius: 120px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 60%;
+    width: 100%;
+    z-index: 0;
+}
+
+/* alt container class */
+.vc-thumbnail-alt-container::after {
+    padding-bottom: 80%;
+}
+
+.vc-thumbnail-alt-container::before {
+    height: 80%;
+}
+
+.vc-thumbnail-listview-container::after {
+    content: '';
+    background-color: #fff;
+    border-top-left-radius: 24px;
+    border-top-right-radius: 24px;
+    border-bottom-left-radius: 120px;
+    border-bottom-right-radius: 120px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 55%;
+    width: 100%;
+    z-index: 1;
+}
+
+@media (max-width: 200px) {
+    .vc-thumbnail-container::before,
+    .vc-thumbnail-alt-container::before {
+        height: 68%;
+    }
+}

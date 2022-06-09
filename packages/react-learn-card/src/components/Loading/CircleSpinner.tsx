@@ -1,7 +1,5 @@
 import React from 'react';
 
-import './CircleSpinner.css';
-
 export enum CircleLoadingState {
     spin,
     stop,
