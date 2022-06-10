@@ -33,7 +33,7 @@ export type VCDisplayCardProps = {
 export type RoundedSquareProps = {
     title?: string;
     description?: string;
-    iconSrc?: Icons | string;
+    iconSrc?: string;
     count?: string | number;
     onClick?: () => void;
     bgColor?: string;
