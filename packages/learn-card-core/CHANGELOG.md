@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 1.1.3
+
+### Patch Changes
+
+-   Fix botched release
+
 ## 1.1.2
 
 ### Patch Changes
