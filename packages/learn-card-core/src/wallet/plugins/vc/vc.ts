@@ -26,7 +26,7 @@ export const getVCPlugin = async (
                 const did = _wallet.pluginMethods.getSubjectDid();
 
                 return {
-                    '@context': 'https://www.w3.org/2018/credentials/v1',
+                    '@context': ['https://www.w3.org/2018/credentials/v1'],
                     id: 'http://example.org/credentials/3731',
                     type: ['VerifiableCredential'],
                     issuer: did,

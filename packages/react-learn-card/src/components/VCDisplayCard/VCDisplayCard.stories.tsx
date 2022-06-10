@@ -2,7 +2,7 @@ import React from 'react';
 import { Story, Meta } from '@storybook/react';
 
 import VCDisplayCard, { VCDisplayCardPropsReal } from './VCDisplayCard';
-import { VerificationStatus } from '@learncard/types';
+import { VerificationStatusEnum } from '@learncard/types';
 
 export default {
     title: 'VCDisplayCard',
@@ -52,5 +52,11 @@ VCDisplayCardTest.args = {
         name: 'Test Person',
     },
     loading: false,
-    verification: [{ check: 'proof', status: VerificationStatus.Success, message: 'Valid' }],
+    verification: [
+        {
+            check: 'proof',
+            status: VerificationStatusEnum.Success,
+            message: 'Valid • Does Not Expire',
+        },
+    ],
 };

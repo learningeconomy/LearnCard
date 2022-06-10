@@ -4,6 +4,7 @@ import FatArrow from '../../assets/images/icon.green.fat-arrow.png';
 import FlipArrowRight from '../../assets/images/ArrowArcRight.svg';
 import DefaultFace from '../../assets/images/default-face.jpeg';
 import { VCVerificationCheckWithText } from '../VCVerificationCheck/VCVerificationCheck';
+import { getImageFromProfile, getNameFromProfile } from '../../helpers/credential.helpers';
 
 const VCDisplayFrontFace: React.FC<VCDisplayCardProps> = ({
     title,
@@ -15,10 +16,10 @@ const VCDisplayFrontFace: React.FC<VCDisplayCardProps> = ({
     loading,
 }) => {
     const credentialAchievementImage = credentialSubject?.achievement?.image;
-    const issuerName = typeof issuer === 'object' ? issuer.name : issuer;
-    const issueeName = typeof issuee === 'object' ? issuee.name : issuee;
-    const issuerImage = typeof issuer === 'object' ? issuer.image : '';
-    const issueeImage = typeof issuee === 'object' ? issuee.image : '';
+    const issuerName = getNameFromProfile(issuer ?? '');
+    const issueeName = getNameFromProfile(issuee ?? '');
+    const issuerImage = getImageFromProfile(issuer ?? '');
+    const issueeImage = getImageFromProfile(issuee ?? '');
 
     return (
         <div

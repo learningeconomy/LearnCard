@@ -5,6 +5,7 @@ import commonjs from '@rollup/plugin-commonjs';
 import image from 'rollup-plugin-img';
 import esbuild from 'rollup-plugin-esbuild';
 import peerDepsExternal from 'rollup-plugin-peer-deps-external';
+import dts from 'rollup-plugin-dts';
 
 const packageJson = require('./package.json');
 
@@ -23,5 +24,10 @@ export default [
             commonjs(),
             esbuild(),
         ],
+    },
+    {
+        input: ['src/index.ts'],
+        output: [{ file: packageJson.types, format: 'es' }],
+        plugins: [postcss({ inject: false }), image(), dts()],
     },
 ];

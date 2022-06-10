@@ -1,4 +1,4 @@
-import { VerificationItem, VC, Issuer, CredentialSubject } from '@learncard/types';
+import { VerificationItem, VC, Profile, CredentialSubject } from '@learncard/types';
 
 export enum Icons {
     sheckelsIcon,
@@ -12,16 +12,16 @@ export enum Icons {
 export type CredentialInfo = {
     title?: string;
     createdAt?: string;
-    issuer?: Issuer;
-    issuee?: Issuer;
+    issuer?: Profile;
+    issuee?: Profile;
     credentialSubject?: CredentialSubject;
 };
 
 export type VCDisplayCardProps = {
     title?: string;
     createdAt?: string;
-    issuer?: Issuer;
-    issuee?: Issuer;
+    issuer?: Profile;
+    issuee?: Profile;
     userImage?: string;
     className?: string;
     credentialSubject?: CredentialSubject;

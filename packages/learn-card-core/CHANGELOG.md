@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 1.1.2
+
+### Patch Changes
+
+-   Upgrade @learncard/types to use zod and implement types for VCs/OBv3
+
 ## 1.1.1
 
 ### Patch Changes

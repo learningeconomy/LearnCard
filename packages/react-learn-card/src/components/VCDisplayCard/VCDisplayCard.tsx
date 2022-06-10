@@ -1,5 +1,5 @@
 import React from 'react';
-import { VC, Issuer, VerificationItem } from '@learncard/types';
+import { AchievementCredential, VC, Profile, VerificationItem } from '@learncard/types';
 import { format } from 'date-fns';
 
 import FlippyCard from '../FlippyCard/FlippyCard';
@@ -8,19 +8,23 @@ import VCDisplayBackFace from '../VCDisplayBackFace/VCDisplayBackFace';
 import { CredentialInfo } from '../../types';
 
 export type VCDisplayCardPropsReal = {
-    credential: VC;
-    issueeOverride?: Issuer;
+    credential: VC | AchievementCredential;
+    issueeOverride?: Profile;
     className?: string;
     loading?: boolean;
     verification?: VerificationItem[];
 };
 
-const getInfoFromCredential = (credential: VC): CredentialInfo => {
-    const { issuer, credentialSubject, issuanceDate } = credential;
+const getInfoFromCredential = (credential: VC | AchievementCredential): CredentialInfo => {
+    const { issuer, issuanceDate } = credential;
 
-    const title = credential.credentialSubject.achievement?.name;
+    const credentialSubject = Array.isArray(credential.credentialSubject)
+        ? credential.credentialSubject[0]
+        : credential.credentialSubject;
+
+    const title = credentialSubject.achievement?.name;
     const createdAt = format(new Date(issuanceDate), 'dd MMM yyyy').toUpperCase();
-    const issuee = credential.credentialSubject.id;
+    const issuee = credentialSubject.id;
 
     return { title, createdAt, issuer, issuee, credentialSubject };
 };

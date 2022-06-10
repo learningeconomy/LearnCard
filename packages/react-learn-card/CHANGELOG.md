@@ -1,5 +1,13 @@
 # @welibraryos/react-learn-card
 
+## 2.2.1
+
+### Patch Changes
+
+-   Upgrade @learncard/types to use zod and implement types for VCs/OBv3
+-   Updated dependencies
+    -   @learncard/core@1.1.2
+
 ## 2.2.0
 
 ### Minor Changes

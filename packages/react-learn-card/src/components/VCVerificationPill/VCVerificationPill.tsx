@@ -1,5 +1,5 @@
 import React from 'react';
-import { VerificationStatus } from '@learncard/types';
+import { VerificationStatus, VerificationStatusEnum } from '@learncard/types';
 
 import VerificationFailedIcon from '../../assets/images/RedXCircle.svg';
 import VerificationPassedIcon from '../../assets/images/GreenCheckCircle.svg';
@@ -16,27 +16,27 @@ type VerifiableStateIndicatorProps = {
 };
 
 const StatusToBgColor = {
-    [VerificationStatus.Success]: 'bg-emerald-500',
-    [VerificationStatus.Failed]: 'bg-yellow-400',
-    [VerificationStatus.Error]: 'bg-rose-600',
+    [VerificationStatusEnum.Success]: 'bg-emerald-500',
+    [VerificationStatusEnum.Failed]: 'bg-yellow-400',
+    [VerificationStatusEnum.Error]: 'bg-rose-600',
 };
 
 const StatusToTextColor = {
-    [VerificationStatus.Success]: 'text-emerald-700',
-    [VerificationStatus.Failed]: 'text-yellow-400',
-    [VerificationStatus.Error]: 'text-rose-600',
+    [VerificationStatusEnum.Success]: 'text-emerald-700',
+    [VerificationStatusEnum.Failed]: 'text-yellow-400',
+    [VerificationStatusEnum.Error]: 'text-rose-600',
 };
 
 const StatusToIcon = {
-    [VerificationStatus.Success]: VerificationPassedIcon,
-    [VerificationStatus.Failed]: VerificationWarningIcon,
-    [VerificationStatus.Error]: VerificationFailedIcon,
+    [VerificationStatusEnum.Success]: VerificationPassedIcon,
+    [VerificationStatusEnum.Failed]: VerificationWarningIcon,
+    [VerificationStatusEnum.Error]: VerificationFailedIcon,
 };
 
 const StatusToText = {
-    [VerificationStatus.Success]: 'Verification Success',
-    [VerificationStatus.Error]: 'Verification Error ',
-    [VerificationStatus.Failed]: 'Verification Failed',
+    [VerificationStatusEnum.Success]: 'Verification Success',
+    [VerificationStatusEnum.Error]: 'Verification Error ',
+    [VerificationStatusEnum.Failed]: 'Verification Failed',
 };
 
 export const ValidationStateIndicator: React.FC<VerifiableStateIndicatorProps> = ({ status }) => {
@@ -59,7 +59,7 @@ export const ValidationStateIndicator: React.FC<VerifiableStateIndicatorProps> =
 const VCVerificationPill: React.FC<VerificationDisplayItemProps> = ({
     message = '',
     details,
-    status = VerificationStatus.Success,
+    status = VerificationStatusEnum.Success,
 }) => {
     const statusColor = StatusToTextColor[status];
     const statusInfoText = StatusToText[status];
