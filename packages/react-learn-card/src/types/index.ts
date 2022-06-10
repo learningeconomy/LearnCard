@@ -1,5 +1,14 @@
 import { VerificationItem, VC, Issuer, CredentialSubject } from '@learncard/types';
 
+export enum Icons {
+    sheckelsIcon,
+    userIcon,
+    trophyIcon,
+    briefcaseIcon,
+    graduationIcon,
+    lightbulbIcon,
+}
+
 export type CredentialInfo = {
     title?: string;
     createdAt?: string;
@@ -19,4 +28,13 @@ export type VCDisplayCardProps = {
     onClick?: () => void;
     loading?: boolean;
     verification?: VerificationItem[];
+};
+
+export type RoundedSquareProps = {
+    title?: string;
+    description?: string;
+    iconSrc?: Icons | string;
+    count?: string | number;
+    onClick?: () => void;
+    bgColor?: string;
 };
