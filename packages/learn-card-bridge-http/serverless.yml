@@ -1,0 +1,28 @@
+# serverless.yml
+
+service: learn-card-http-bridge
+
+plugins:
+  - serverless-esbuild
+
+custom:
+  esbuild:
+    packager: pnpm
+
+provider:
+  name: aws
+  runtime: nodejs14.x
+  stage: dev
+  region: us-east-1
+  httpApi:
+    cors: true
+
+functions:
+  get:
+    handler: lambda.handler
+    events:
+      - httpApi: 'GET /credentials'
+      - httpApi: 'GET /credentials/{id}'
+      - httpApi: 'DELETE /credentials/{id}'
+      - httpApi: 'POST /credentials/issue'
+      - httpApi: 'POST /credentials/status'
