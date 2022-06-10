@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { walletFromKey } from '@learncard/core';
-import { VC, Issuer, VerificationItem } from '@learncard/types';
+import { VC, Profile, VerificationItem } from '@learncard/types';
 
 import { VCDisplayCard } from '../VCDisplayCard';
 
 export type VCCardProps = {
     credential: VC;
-    issueeOverride?: Issuer;
+    issueeOverride?: Profile;
     className?: string;
 };
 

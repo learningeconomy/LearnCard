@@ -1,2 +1,3 @@
 packages:
   - 'packages/*'
+  - '!packages/learn-card-bridge-http'

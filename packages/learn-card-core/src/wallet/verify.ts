@@ -1,4 +1,4 @@
-import { VC, VerificationItem, VerificationStatus } from '@learncard/types';
+import { VC, VerificationItem, VerificationStatusEnum } from '@learncard/types';
 import { format } from 'date-fns';
 
 import { LearnCardRawWallet } from 'types/LearnCard';
@@ -40,7 +40,7 @@ export const verifyCredential = (
 
         rawVerificationCheck.errors.forEach(error => {
             verificationItems.push({
-                status: VerificationStatus.Failed,
+                status: VerificationStatusEnum.Failed,
                 check: 'hmm',
                 details: transformErrorMessage(error, credential),
             });
@@ -48,7 +48,7 @@ export const verifyCredential = (
 
         rawVerificationCheck.warnings.forEach(warning => {
             verificationItems.push({
-                status: VerificationStatus.Error,
+                status: VerificationStatusEnum.Error,
                 check: 'hmm',
                 message: warning,
             });
@@ -56,7 +56,7 @@ export const verifyCredential = (
 
         rawVerificationCheck.checks.forEach(check => {
             verificationItems.push({
-                status: VerificationStatus.Success,
+                status: VerificationStatusEnum.Success,
                 check,
                 message: transformCheckMessage(check, credential),
             });
