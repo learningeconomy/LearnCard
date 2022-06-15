@@ -10,12 +10,24 @@ export const LearnCardCreditCardFrontFace: React.FC<LearnCardCreditCardFrontFace
     userImage,
     qrCodeValue,
     className,
+    showActionButton = false,
+    actionButtonText = 'Open Card',
+    onClick = () => {},
 }) => {
     return (
         <div
             className={`flex flex-row justify-center items-start pt-9 max-w-xs max-h-[200px] min-h-[200px] rounded-[20px] shadow-3xl bg-white relative overflow-hidden ${className}`}
         >
             <div className="absolute h-[400px] w-[400px] rounded-full bg-grayscale-900 top-[-50%] left-[-68%]" />
+            {showActionButton && (
+                <button
+                    type="button"
+                    className="absolute top-2 right-4 bg-grayscale-50 border-[2px] rounded-3xl border-solid border-color-grayscale-900 min-w-[110px] p-[2px] font-bold text-xs tracking-wide leading-snug text-center text-white"
+                    onClick={onClick}
+                >
+                    {actionButtonText}
+                </button>
+            )}
             {/* <div className="absolute h-full w-[60%] rounded-br-[20px] rounded-tr-[20px] bg-cyan-200 top-0 left-0" /> */}
             <div className="flex flex-row justify-between items-start w-full h-full relative">
                 <div className="flex flex-col">
@@ -34,6 +46,7 @@ export const LearnCardCreditCardFrontFace: React.FC<LearnCardCreditCardFrontFace
                         />
                     </div>
                 </div>
+
                 {qrCodeValue && (
                     <div className="flex justify-center items-center pr-4">
                         <div className="max-w-[110px] h-auto">
