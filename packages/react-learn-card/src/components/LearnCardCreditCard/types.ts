@@ -17,13 +17,15 @@ export type LearnCardCreditCardFrontFaceProps = {
     /**
      * show or hide an action button
      * @type {boolean}
+     * @param {boolean=} false - Action button hidden by default.
      */
-    showActionButton?: false;
+    showActionButton?: boolean;
     /**
      * action button text
      * @type {boolean}
+     * @param {boolean=} "Open Card" - set as default text.
      */
-    ActionButtonText?: false;
+    actionButtonText?: string;
     /**
      *
      * action button click handler
