@@ -2,6 +2,7 @@ import React from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 
 import CardChip from '../../assets/images/card-chip.svg';
+import MasterCardLogo from '../../assets/images/master-card-logo.svg';
 
 export const LearnCardCreditCardFrontFace: React.FC<{ userImage: string }> = ({ userImage }) => {
     return (
@@ -14,10 +15,10 @@ export const LearnCardCreditCardFrontFace: React.FC<{ userImage: string }> = ({ 
                         <p className="text-xs text-white font-bold tracking-[7px] mb-2">
                             LEARNCARD
                         </p>
-                        <img src={CardChip ?? ''} alt="card chip" />
+                        <img src={CardChip ?? ''} alt="card chip" className="h-[30px] w-[42px]" />
                     </div>
 
-                    <div className="inline-block relative overflow-hidden rounded-full shadow-3xl h-0 bg-white w-1/2 pb-[50%] mt-2 ml-2">
+                    <div className="inline-block relative overflow-hidden rounded-full shadow-3xl h-0 bg-white w-1/2 pb-[50%] mt-2 ml-4">
                         <img
                             className="w-full h-full absolute rounded-full object-cover border-solid border-2 border-white"
                             src={userImage}
@@ -32,9 +33,12 @@ export const LearnCardCreditCardFrontFace: React.FC<{ userImage: string }> = ({ 
                             value="https://www.npmjs.com/package/@learncard/react"
                         />
                     </div>
-
-                    {/* <img src="" alt="mastercard icon" /> */}
                 </div>
+                <img
+                    src={MasterCardLogo ?? ''}
+                    alt="mastercard icon"
+                    className="absolute bottom-0 right-4"
+                />
             </div>
         </div>
     );
