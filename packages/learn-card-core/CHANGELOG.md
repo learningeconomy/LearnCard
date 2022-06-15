@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 1.1.4
+
+### Patch Changes
+
+-   Fix type exports
+
 ## 1.1.3
 
 ### Patch Changes
