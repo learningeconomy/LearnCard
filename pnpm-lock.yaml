@@ -134,6 +134,7 @@ importers:
       jest-environment-jsdom: ^28.0.2
       postcss: ^8.4.13
       postcss-loader: ^6.2.1
+      qrcode.react: ^3.0.2
       rollup: ^2.71.1
       rollup-plugin-dts: ^4.2.2
       rollup-plugin-esbuild: ^4.9.1
@@ -146,6 +147,7 @@ importers:
     dependencies:
       '@learncard/core': link:../learn-card-core
       date-fns: 2.28.0
+      qrcode.react: 3.0.2
       rollup-plugin-img: 1.1.0
     devDependencies:
       '@learncard/types': link:../learn-card-types
@@ -16396,6 +16398,12 @@ packages:
   /pvutils/1.0.17:
     resolution: {integrity: sha512-wLHYUQxWaXVQvKnwIDWFVKDJku9XDCvyhhxoq8dc5MFdIlRenyPI9eSfEtcvgHgD7FlvCyGAlWgOzRnZD99GZQ==}
     engines: {node: '>=6.0.0'}
+    dev: false
+
+  /qrcode.react/3.0.2:
+    resolution: {integrity: sha512-8F3SGxSkNb3fMIHdlseqjFjLbsPrF3WvF/1MOboSUUHytT537W8f/FtbdA3XFIHDrc+TrRBjTI/QLmwhAIGWWw==}
+    peerDependencies:
+      react: ^16.8.0 || ^17.0.0 || ^18.0.0
     dev: false
 
   /qs/6.10.3:
