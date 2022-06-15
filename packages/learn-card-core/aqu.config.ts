@@ -10,6 +10,6 @@ const buildOptions: BuildOptions = {
     external: ['fs', 'path', 'crypto', 'process'],
 };
 
-const options = { buildOptions };
+const options = { buildOptions, declaration: 'normal' };
 
 export default options;
