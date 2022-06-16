@@ -23,11 +23,11 @@ export const RoundedSquare: React.FC<RoundedSquareProps> = ({
     return (
         <section
             onClick={onClick}
-            className={`relative ${bgColor}  py-[15px] px-[15px] min-w-[162px] max-w-[200px] min-h-[158px] max-h-[200px] rounded-[40px] rounded-square-card-container`}
+            className={`relative ${bgColor}  py-[15px] px-[15px] w-[170px] h-[170px] rounded-[40px] rounded-square-card-container`}
         >
-            <div className="w-full h-full py-[10px] relative">
+            <div className="w-full py-[10px] relative">
                 <h3 className="line-clamp-2 font-bold text-[17px] text-grayscale-900">{title}</h3>
-                <p className="text-[10px] text-grayscale-900 text-opacity-60">{description}</p>
+                <p className="line-clamp-2 text-[10px] text-grayscale-900 text-opacity-60">{description}</p>
             </div>
 
             <div className="flex w-full justify-end icon-display absolute right-[20px] bottom-[15px]">
