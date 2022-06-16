@@ -6,6 +6,8 @@ import { LearnCardCreditCardBackFaceProps } from './types';
 
 export const LearnCardCreditCardBackFace: React.FC<LearnCardCreditCardBackFaceProps> = ({
     className,
+    card,
+    user,
 }) => {
     return (
         <div
@@ -26,9 +28,9 @@ export const LearnCardCreditCardBackFace: React.FC<LearnCardCreditCardBackFacePr
 
             <div className="flex flex-row justify-between items-center px-3 pt-2 w-full text-white">
                 <div className="">
-                    <p className="text-[10px] font-medium">@userhandle_longuserhandle_990990</p>
-                    <p className="text-sm tracking-wider">USER FULL NAME</p>
-                    <p className="text-[10px] tracking-wider">MEMBER SINCE 2022</p>
+                    <p className="text-[10px] font-medium">{user?.username}</p>
+                    <p className="text-sm tracking-wider">{user?.userFullName}</p>
+                    <p className="text-[10px] tracking-wider">MEMBER SINCE {card?.cardIssueDate}</p>
                 </div>
                 <div>
                     <img src={ContactlessSymbol} alt="contactless icon" />
@@ -37,10 +39,10 @@ export const LearnCardCreditCardBackFace: React.FC<LearnCardCreditCardBackFacePr
 
             <div className="flex flex-row justify-between items-center px-3 pt-2 w-full text-white">
                 <div className="flex flex-col">
-                    <p className="text-sm tracking-wider">0000 0000 0000 0000</p>
+                    <p className="text-sm tracking-wider">{card?.cardNumber}</p>
                     <div className="flex flex-row justify-between items-center">
-                        <p className="text-[10px] tracking-wider">EXP 00/00</p>
-                        <p className="text-[10px] tracking-wider">SEC CODE 123</p>
+                        <p className="text-[10px] tracking-wider">EXP {card?.cardExpirationDate}</p>
+                        <p className="text-[10px] tracking-wider">SEC {card?.cardSecurityCode}</p>
                     </div>
                 </div>
                 <div>
