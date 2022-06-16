@@ -3,6 +3,7 @@
  */
 
 export * from "./Button/index";
+export * from "./CircleIcon/index";
 export * from "./FlippyCard/index";
 export * from "./Loading/index";
 export * from "./MiniVCThumbnail/index";
