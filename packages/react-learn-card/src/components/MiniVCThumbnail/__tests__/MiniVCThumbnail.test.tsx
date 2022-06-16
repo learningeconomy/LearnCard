@@ -44,10 +44,10 @@ describe('Running Tests for MiniVCThumbnail', () => {
         expect(handleOnClick).not.toHaveBeenCalledTimes(1);
 
         const title = getByTestId('mini-vc-thumbnail-title');
-        expect(title).toHaveTextContent('');
+        expect(title).toBeEmptyDOMElement();
 
         const createdAt = getByTestId('mini-vc-thumbnail-createdAt');
-        expect(createdAt).toHaveTextContent('');
+        expect(createdAt).toBeEmptyDOMElement();
 
         const issuerImage = queryByTestId('mini-vc-thumbnail-issuer');
         expect(issuerImage).not.toBeInTheDocument();

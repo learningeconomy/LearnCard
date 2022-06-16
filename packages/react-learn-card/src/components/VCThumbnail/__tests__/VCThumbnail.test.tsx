@@ -48,10 +48,10 @@ describe('Running Tests for VCThumbnail Full View', () => {
         expect(handleOnClick).not.toHaveBeenCalledTimes(1);
 
         const title = getByTestId('vc-thumbnail-title');
-        expect(title).toHaveTextContent('');
+        expect(title).toBeEmptyDOMElement();
 
         const createdAt = getByTestId('vc-thumbnail-createdAt');
-        expect(createdAt).toHaveTextContent('');
+        expect(createdAt).toBeEmptyDOMElement();
 
         const issuerImage = getByAltText('issuer image');
         expect(issuerImage).not.toHaveAttribute('src');
@@ -100,10 +100,10 @@ describe('Running Tests for VCThumbnail List View', () => {
         expect(handleOnClick).not.toHaveBeenCalledTimes(1);
 
         const title = getByTestId('vc-thumbnail-title');
-        expect(title).toHaveTextContent('');
+        expect(title).toBeEmptyDOMElement();
 
         const createdAt = getByTestId('vc-thumbnail-createdAt');
-        expect(createdAt).toHaveTextContent('');
+        expect(createdAt).toBeEmptyDOMElement();
 
         const imageElement = queryByTestId('vc-thumbnail-image');
         expect(imageElement).not.toBeInTheDocument();
