@@ -18,7 +18,7 @@ export type LearnCardCreditCardUserProps = {
      * user full name
      * @type {string}
      */
-    userFullName: string;
+    fullName: string;
 };
 
 export type LearnCardCreditCardProps = {

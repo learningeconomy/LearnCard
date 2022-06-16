@@ -29,7 +29,7 @@ export const LearnCardCreditCardBackFace: React.FC<LearnCardCreditCardBackFacePr
             <div className="flex flex-row justify-between items-center px-3 pt-2 w-full text-white">
                 <div className="">
                     <p className="text-[10px] font-medium">{user?.username}</p>
-                    <p className="text-sm tracking-wider">{user?.userFullName}</p>
+                    <p className="text-sm tracking-wider">{user?.fullName}</p>
                     <p className="text-[10px] tracking-wider">MEMBER SINCE {card?.cardIssueDate}</p>
                 </div>
                 <div>
