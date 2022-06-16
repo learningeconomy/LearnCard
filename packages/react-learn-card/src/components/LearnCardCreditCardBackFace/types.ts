@@ -31,7 +31,7 @@ export type LearnCardCreditCardProps = {
      * card issue date
      * @type {string}
      */
-    cardIssueDate: string;
+    cardIssueDate?: string;
     /**
      * card expiration date
      * @type {string}
@@ -41,5 +41,5 @@ export type LearnCardCreditCardProps = {
      * card security code
      * @type {string}
      */
-    cardSecurityCode: string;
+    cardSecurityCode?: string;
 };

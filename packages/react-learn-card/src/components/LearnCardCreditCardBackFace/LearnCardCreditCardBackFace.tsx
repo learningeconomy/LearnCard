@@ -28,9 +28,14 @@ export const LearnCardCreditCardBackFace: React.FC<LearnCardCreditCardBackFacePr
 
             <div className="flex flex-row justify-between items-center px-3 pt-2 w-full text-white">
                 <div className="">
-                    <p className="text-[10px] font-medium">{user?.username}</p>
+                    {user?.username && <p className="text-[10px] font-medium">{user?.username}</p>}
+
                     <p className="text-sm tracking-wider">{user?.fullName}</p>
-                    <p className="text-[10px] tracking-wider">MEMBER SINCE {card?.cardIssueDate}</p>
+                    {card?.cardIssueDate && (
+                        <p className="text-[10px] tracking-wider">
+                            MEMBER SINCE {card?.cardIssueDate}
+                        </p>
+                    )}
                 </div>
                 <div>
                     <img src={ContactlessSymbol} alt="contactless icon" />
@@ -42,7 +47,11 @@ export const LearnCardCreditCardBackFace: React.FC<LearnCardCreditCardBackFacePr
                     <p className="text-sm tracking-wider">{card?.cardNumber}</p>
                     <div className="flex flex-row justify-between items-center">
                         <p className="text-[10px] tracking-wider">EXP {card?.cardExpirationDate}</p>
-                        <p className="text-[10px] tracking-wider">SEC {card?.cardSecurityCode}</p>
+                        {card?.cardSecurityCode && (
+                            <p className="text-[10px] tracking-wider">
+                                SEC {card?.cardSecurityCode}
+                            </p>
+                        )}
                     </div>
                 </div>
                 <div>
