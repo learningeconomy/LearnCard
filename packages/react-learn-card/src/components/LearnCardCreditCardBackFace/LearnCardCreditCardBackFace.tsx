@@ -1,65 +1,57 @@
 import React from 'react';
-import { QRCodeSVG } from 'qrcode.react';
+
+import ContactlessSymbol from '../../assets/images/contactless-symbol.svg';
 
 import { LearnCardCreditCardBackFaceProps } from './types';
 
-import CardChip from '../../assets/images/card-chip.svg';
-import MasterCardLogo from '../../assets/images/master-card-logo.svg';
-
 export const LearnCardCreditCardBackFace: React.FC<LearnCardCreditCardBackFaceProps> = ({
-    userImage,
-    qrCodeValue,
-    showActionButton = false,
-    actionButtonText = 'Open Card',
-    onClick = () => {},
     className,
 }) => {
     return (
         <div
-            className={`flex flex-row justify-center items-start pt-9 max-w-xs max-h-[200px] min-h-[200px] rounded-[20px] shadow-3xl bg-white relative overflow-hidden ${className}`}
+            className={`flex flex-col justify-start items-start max-w-xs max-h-[200px] min-h-[200px] rounded-[20px] shadow-3xl bg-grayscale-900 relative overflow-hidden ${className}`}
         >
-            <div className="absolute h-[400px] w-[400px] rounded-full bg-grayscale-900 top-[-50%] left-[-68%]" />
-            {showActionButton && (
-                <button
-                    type="button"
-                    className="absolute top-2 right-4 bg-grayscale-50 border-[2px] rounded-3xl border-solid border-color-grayscale-900 min-w-[110px] p-[2px] font-bold text-xs tracking-wide leading-snug text-center text-white"
-                    onClick={onClick}
-                >
-                    {actionButtonText}
-                </button>
-            )}
-            {/* <div className="absolute h-full w-[60%] rounded-br-[20px] rounded-tr-[20px] bg-cyan-200 top-0 left-0" /> */}
-            <div className="flex flex-row justify-between items-start w-full h-full relative">
-                <div className="flex flex-col">
-                    <div className="pl-8">
-                        <p className="text-xs text-white font-bold tracking-[7px] mb-2">
-                            LEARNCARD
-                        </p>
-                        <img src={CardChip ?? ''} alt="card chip" className="h-[30px] w-[42px]" />
-                    </div>
+            <div className="flex justify-between items-center w-full px-3 pt-4 text-white">
+                <p className="text-[6px]">
+                    Please visit LearnCard app or learncard.com for assistance
+                </p>
+                <p className="text-[6px]">854-000-000-24</p>
+            </div>
 
-                    <div className="inline-block relative overflow-hidden rounded-full shadow-3xl h-0 bg-white w-1/2 pb-[50%] mt-2 ml-4">
-                        <img
-                            className="w-full h-full absolute rounded-full object-cover border-solid border-2 border-white"
-                            src={userImage}
-                            alt="user image"
-                        />
+            <div className="w-full h-8 bg-white mt-1" />
+
+            <div className="flex justify-end items-center w-full px-3 mt-1 text-white">
+                <p className="text-[6px]">IDEMIA 0 00000 00000 0/00</p>
+            </div>
+
+            <div className="flex flex-row justify-between items-center px-3 pt-2 w-full text-white">
+                <div className="">
+                    <p className="text-[10px] font-medium">@userhandle_longuserhandle_990990</p>
+                    <p className="text-sm tracking-wider">USER FULL NAME</p>
+                    <p className="text-[10px] tracking-wider">MEMBER SINCE 2022</p>
+                </div>
+                <div>
+                    <img src={ContactlessSymbol} alt="contactless icon" />
+                </div>
+            </div>
+
+            <div className="flex flex-row justify-between items-center px-3 pt-2 w-full text-white">
+                <div className="flex flex-col">
+                    <p className="text-sm tracking-wider">0000 0000 0000 0000</p>
+                    <div className="flex flex-row justify-between items-center">
+                        <p className="text-[10px] tracking-wider">EXP 00/00</p>
+                        <p className="text-[10px] tracking-wider">SEC CODE 123</p>
                     </div>
                 </div>
+                <div>
+                    <div className="h-[33px] w-[55px] rounded-[60px] bg-white" />
+                </div>
+            </div>
 
-                {qrCodeValue && (
-                    <div className="flex justify-center items-center pr-4">
-                        <div className="max-w-[110px] h-auto">
-                            <QRCodeSVG className="h-full w-full" value={qrCodeValue} />
-                        </div>
-                    </div>
-                )}
-
-                <img
-                    src={MasterCardLogo ?? ''}
-                    alt="mastercard icon"
-                    className="absolute bottom-0 right-4"
-                />
+            <div className="flex justify-start items-center w-full px-3 py-2 text-white">
+                <p className="text-[6px]">
+                    Issued by the bank of Tennessee pursuant to license by Mastercard International
+                </p>
             </div>
         </div>
     );
