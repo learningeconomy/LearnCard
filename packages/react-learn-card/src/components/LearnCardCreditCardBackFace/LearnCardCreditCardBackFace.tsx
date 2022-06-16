@@ -27,12 +27,27 @@ export const LearnCardCreditCardBackFace: React.FC<LearnCardCreditCardBackFacePr
             </div>
 
             <div className="flex flex-row justify-between items-center px-3 pt-2 w-full text-white">
-                <div className="">
-                    {user?.username && <p className="text-[10px] font-medium">{user?.username}</p>}
+                <div>
+                    {user?.username && (
+                        <p
+                            className="text-[10px] font-medium"
+                            data-testid="credit-card-backface-username"
+                        >
+                            {user?.username}
+                        </p>
+                    )}
 
-                    <p className="text-sm tracking-wider">{user?.fullName}</p>
+                    <p
+                        className="text-sm tracking-wider"
+                        data-testid="credit-card-backface-fullname"
+                    >
+                        {user?.fullName ?? ''}
+                    </p>
                     {card?.cardIssueDate && (
-                        <p className="text-[10px] tracking-wider">
+                        <p
+                            className="text-[10px] tracking-wider"
+                            data-testid="credit-card-backface-issueDate"
+                        >
                             MEMBER SINCE {card?.cardIssueDate}
                         </p>
                     )}
@@ -44,12 +59,25 @@ export const LearnCardCreditCardBackFace: React.FC<LearnCardCreditCardBackFacePr
 
             <div className="flex flex-row justify-between items-center px-3 pt-2 w-full text-white">
                 <div className="flex flex-col">
-                    <p className="text-sm tracking-wider">{card?.cardNumber}</p>
+                    <p
+                        className="text-sm tracking-wider"
+                        data-testid="credit-card-backface-cardNum"
+                    >
+                        {card?.cardNumber ?? ''}
+                    </p>
                     <div className="flex flex-row justify-between items-center">
-                        <p className="text-[10px] tracking-wider">EXP {card?.cardExpirationDate}</p>
+                        <p
+                            className="text-[10px] tracking-wider"
+                            data-testid="credit-card-backface-expDate"
+                        >
+                            EXP {card?.cardExpirationDate ?? ''}
+                        </p>
                         {card?.cardSecurityCode && (
-                            <p className="text-[10px] tracking-wider">
-                                SEC {card?.cardSecurityCode}
+                            <p
+                                className="text-[10px] tracking-wider"
+                                data-testid="credit-card-backface-secCode"
+                            >
+                                SEC {card?.cardSecurityCode ?? ''}
                             </p>
                         )}
                     </div>
