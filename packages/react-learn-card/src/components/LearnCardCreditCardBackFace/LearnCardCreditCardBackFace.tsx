@@ -44,7 +44,7 @@ export const LearnCardCreditCardBackFace: React.FC<LearnCardCreditCardBackFacePr
                     </div>
                 </div>
                 <div>
-                    <div className="h-[33px] w-[55px] rounded-[60px] bg-white" />
+                    <div className="h-[33px] w-[55px] rounded-[60px] bg-gradient-to-r from-[#F4F5F5] to-[#E3E5E8]" />
                 </div>
             </div>
 
