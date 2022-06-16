@@ -24,6 +24,7 @@ export const LearnCardCreditCardFrontFace: React.FC<LearnCardCreditCardFrontFace
                     type="button"
                     className="absolute top-2 right-4 bg-grayscale-50 border-[2px] rounded-3xl border-solid border-color-grayscale-900 min-w-[110px] p-[2px] font-bold text-xs tracking-wide leading-snug text-center text-white"
                     onClick={onClick}
+                    data-testid="credit-card-frontface-button"
                 >
                     {actionButtonText}
                 </button>
@@ -38,19 +39,26 @@ export const LearnCardCreditCardFrontFace: React.FC<LearnCardCreditCardFrontFace
                         <img src={CardChip ?? ''} alt="card chip" className="h-[30px] w-[42px]" />
                     </div>
 
-                    <div className="inline-block relative overflow-hidden rounded-full shadow-3xl h-0 bg-white w-1/2 pb-[50%] mt-2 ml-4">
-                        <img
-                            className="w-full h-full absolute rounded-full object-cover border-solid border-2 border-white"
-                            src={userImage}
-                            alt="user image"
-                        />
-                    </div>
+                    {userImage && (
+                        <div className="inline-block relative overflow-hidden rounded-full shadow-3xl h-0 bg-white w-1/2 pb-[50%] mt-2 ml-4">
+                            <img
+                                className="w-full h-full absolute rounded-full object-cover border-solid border-2 border-white"
+                                src={userImage}
+                                alt="user image"
+                                data-testId="credit-card-frontface-userImg"
+                            />
+                        </div>
+                    )}
                 </div>
 
                 {qrCodeValue && (
                     <div className="flex justify-center items-center pr-4">
                         <div className="max-w-[110px] h-auto">
-                            <QRCodeSVG className="h-full w-full" value={qrCodeValue} />
+                            <QRCodeSVG
+                                className="h-full w-full"
+                                value={qrCodeValue}
+                                data-testid="credit-card-qr-code"
+                            />
                         </div>
                     </div>
                 )}
