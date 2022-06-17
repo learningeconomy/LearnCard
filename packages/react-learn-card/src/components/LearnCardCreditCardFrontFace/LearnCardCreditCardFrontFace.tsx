@@ -52,12 +52,13 @@ export const LearnCardCreditCardFrontFace: React.FC<LearnCardCreditCardFrontFace
                 </div>
 
                 {qrCodeValue && (
-                    <div className="flex justify-center items-center pr-4">
-                        <div className="max-w-[110px] h-auto">
+                    <div className="flex justify-center items-center pr-4 relative">
+                        <div className="max-w-[110px] h-auto relative qr-code-container">
                             <QRCodeSVG
                                 className="h-full w-full"
                                 value={qrCodeValue}
                                 data-testid="credit-card-qr-code"
+                                bgColor="transparent"
                             />
                         </div>
                     </div>
