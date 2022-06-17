@@ -18,7 +18,7 @@ module.exports = {
             },
             colors: {
                 grayscale: {
-                    50: '#6F7590',
+                    50: '#FBFBFC',
                     100: '#EFF0F5',
                     200: '#E2E3E9',
                     300: '#C5C8D3',
