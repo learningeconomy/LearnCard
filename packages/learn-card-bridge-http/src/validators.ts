@@ -27,7 +27,7 @@ export type UpdateStatusEndpoint = z.infer<typeof UpdateStatusEndpointValidator>
 
 export const VerifyCredentialEndpointValidator = z.object({
     verifiableCredential: VCValidator,
-    options: z.object({ challenge: z.string(), domain: z.string() }).optional(),
+    options: z.object({ challenge: z.string().optional(), domain: z.string().optional() }).optional(),
 });
 export type VerifyCredentialEndpoint = z.infer<typeof VerifyCredentialEndpointValidator>;
 
