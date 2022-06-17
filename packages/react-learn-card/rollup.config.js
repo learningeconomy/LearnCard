@@ -1,4 +1,5 @@
 import glob from 'glob';
+import json from '@rollup/plugin-json';
 import resolve from '@rollup/plugin-node-resolve';
 import postcss from 'rollup-plugin-postcss';
 import commonjs from '@rollup/plugin-commonjs';
@@ -17,6 +18,7 @@ export default [
             { dir: packageJson.module, format: 'esm', sourcemap: true },
         ],
         plugins: [
+            json(),
             peerDepsExternal(),
             postcss({ minimize: true, inject: { insertAt: 'top' } }),
             image(),
