@@ -7,9 +7,18 @@ const buildOptions: BuildOptions = {
     plugins: [
         copy({ assets: [{ keepStructure: true, from: ['./src/didkit/pkg/*'], to: ['./didkit'] }] }),
     ],
-    external: ['fs', 'path', 'crypto', 'process'],
+    external: [
+        'fs',
+        'path',
+        'crypto',
+        'process',
+        'abortcontroller-polyfill',
+        'abort-controller',
+        'isomorphic-fetch',
+        'isomorphic-webcrypto',
+    ],
 };
 
-const options = { buildOptions, declaration: 'normal' };
+const options = { buildOptions };
 
 export default options;

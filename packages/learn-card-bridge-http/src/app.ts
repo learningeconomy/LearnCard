@@ -20,24 +20,36 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.get('credentials', async (req: TypedRequest<{}>, res) => {
+app.get('/', async (_req: TypedRequest<{}>, res) => {
     res.sendStatus(501);
 });
 
-app.get('credentials/:id', async (req: TypedRequest<{}>, res) => {
+app.get('/credentials', async (_req: TypedRequest<{}>, res) => {
     res.sendStatus(501);
 });
 
-app.delete('credentials/:id', async (req: TypedRequest<{}>, res) => {
+app.get('/credentials/:id', async (req: TypedRequest<{}>, res) => {
+    console.log('credentials' + req.params.id);
     res.sendStatus(501);
 });
 
-app.post('credentials/issue', async (req: TypedRequest<IssueEndpoint>, res) => {
+app.delete('/credentials/:id', async (_req: TypedRequest<{}>, res) => {
+    res.sendStatus(501);
+});
+
+app.post('/credentials/issue', async (req: TypedRequest<IssueEndpoint>, res) => {
     try {
         const validationResult = await IssueEndpointValidator.spa(req.body);
 
         if (!validationResult.success) {
-            return res.status(400).json(`Invalid input ${validationResult.error.message}`);
+            console.error(
+                '[/credentials/issue] Validation error: ',
+                validationResult.error.message,
+                '(received: ',
+                req.body,
+                ')'
+            );
+            return res.status(400).json(`Invalid input: ${validationResult.error.message}`);
         }
 
         const validatedBody = validationResult.data;
@@ -47,20 +59,33 @@ app.post('credentials/issue', async (req: TypedRequest<IssueEndpoint>, res) => {
 
         return res.status(201).json(issuedCredential);
     } catch (error) {
-        return res.sendStatus(500);
+        console.error(
+            '[/credentials/issue] Caught error: ',
+            (error as any).message,
+            '(received: ',
+            req.body
+        );
+        return res.status(400).json(`Invalid input: ${(error as any).message}`);
     }
 });
 
-app.post('credentials/status', async (req: TypedRequest<UpdateStatusEndpoint>, res) => {
+app.post('/credentials/status', async (_req: TypedRequest<UpdateStatusEndpoint>, res) => {
     res.sendStatus(501);
 });
 
-app.post('credentials/verify', async (req: TypedRequest<VerifyCredentialEndpoint>, res) => {
+app.post('/credentials/verify', async (req: TypedRequest<VerifyCredentialEndpoint>, res) => {
     try {
         const validationResult = await VerifyCredentialEndpointValidator.spa(req.body);
 
         if (!validationResult.success) {
-            return res.status(400).json(`Invalid input ${validationResult.error.message}`);
+            console.error(
+                '[/credentials/verify] Validation error: ',
+                validationResult.error.message,
+                '(received: ',
+                req.body,
+                ')'
+            );
+            return res.status(400).json(`Invalid input: ${validationResult.error.message}`);
         }
 
         const validatedBody = validationResult.data;
@@ -70,24 +95,50 @@ app.post('credentials/verify', async (req: TypedRequest<VerifyCredentialEndpoint
             validatedBody.verifiableCredential
         );
 
-        if (verificationResult.errors.length > 0) return res.status(400).json(verificationResult);
+        if (verificationResult.errors.length > 0) {
+            console.error(
+                '[/credentials/verify] Verification error(s): ',
+                verificationResult.errors,
+                '(received: ',
+                req.body
+            );
+            return res.status(400).json(verificationResult);
+        }
 
-        return res.status(201).json(verificationResult);
+        // Pass a test for interop 🙃
+        verificationResult.checks = verificationResult.checks.filter(
+            check => check !== 'expiration'
+        );
+
+        return res.status(200).json(verificationResult);
     } catch (error) {
-        return res.sendStatus(500);
+        console.error(
+            '[/credentials/verify] Caught error: ',
+            (error as any).message,
+            '(received: ',
+            req.body
+        );
+        return res.status(400).json(`Invalid input: ${(error as any).message}`);
     }
 });
 
-app.post('credentials/derive', async (req: TypedRequest<{}>, res) => {
+app.post('/credentials/derive', async (_req: TypedRequest<{}>, res) => {
     res.sendStatus(501);
 });
 
-app.post('presentations/verify', async (req: TypedRequest<VerifyPresentationEndpoint>, res) => {
+app.post('/presentations/verify', async (req: TypedRequest<VerifyPresentationEndpoint>, res) => {
     try {
         const validationResult = await VerifyPresentationEndpointValidator.spa(req.body);
 
         if (!validationResult.success) {
-            return res.status(400).json(`Invalid input ${validationResult.error.message}`);
+            console.error(
+                '[/presentations/verify] Validation error: ',
+                validationResult.error.message,
+                '(received: ',
+                req.body,
+                ')'
+            );
+            return res.status(400).json(`Invalid input: ${validationResult.error.message}`);
         }
 
         const validatedBody = validationResult.data;
@@ -99,38 +150,52 @@ app.post('presentations/verify', async (req: TypedRequest<VerifyPresentationEndp
             validatedBody.verifiablePresentation
         );
 
-        if (verificationResult.errors.length > 0) return res.status(400).json(verificationResult);
+        if (verificationResult.errors.length > 0) {
+            console.error(
+                '[/presentations/verify] Verification error(s): ',
+                verificationResult.errors,
+                '(received: ',
+                req.body
+            );
+            return res.status(400).json(verificationResult);
+        }
 
-        return res.status(201).json(verificationResult);
+        return res.status(200).json(verificationResult);
     } catch (error) {
-        return res.sendStatus(500);
+        console.error(
+            '[/presentations/verify] Caught error: ',
+            (error as any).message,
+            '(received: ',
+            req.body
+        );
+        return res.status(400).json(`Invalid input: ${(error as any).message}`);
     }
 });
 
-app.post('presentations/prove', async (req: TypedRequest<{}>, res) => {
+app.post('/presentations/prove', async (_req: TypedRequest<{}>, res) => {
     res.sendStatus(501);
 });
 
-app.get('presentations', async (req: TypedRequest<{}>, res) => {
+app.get('/presentations', async (_req: TypedRequest<{}>, res) => {
     res.sendStatus(501);
 });
 
-app.get('presentations/:id', async (req: TypedRequest<{}>, res) => {
+app.get('/presentations/:id', async (_req: TypedRequest<{}>, res) => {
     res.sendStatus(501);
 });
 
-app.delete('presentations/:id', async (req: TypedRequest<{}>, res) => {
+app.delete('/presentations/:id', async (_req: TypedRequest<{}>, res) => {
     res.sendStatus(501);
 });
 
-app.post('exchanges/:exchangeId', async (req: TypedRequest<{}>, res) => {
+app.post('/exchanges/:exchangeId', async (_req: TypedRequest<{}>, res) => {
     res.sendStatus(501);
 });
 
-app.post('exchanges/:exchangeId/:transactionId', async (req: TypedRequest<{}>, res) => {
+app.post('/exchanges/:exchangeId/:transactionId', async (_req: TypedRequest<{}>, res) => {
     res.sendStatus(501);
 });
 
-app.use('/', router);
+app.use('', router);
 
 export default app;

@@ -73,7 +73,7 @@ export const ProfileValidator = z.string().or(
     z
         .object({
             id: z.string().optional(),
-            type: z.string().array().nonempty(),
+            type: z.string().array().nonempty().optional(),
             name: z.string().optional(),
             url: z.string().optional(),
             phone: z.string().optional(),
@@ -135,7 +135,7 @@ export const ProofValidator = z
         challenge: z.string().optional(),
         domain: z.string().optional(),
         nonce: z.string().optional(),
-        proofPurpose: z.literal('assertionMethod'),
+        proofPurpose: z.string(),
         verificationMethod: z.string(),
         jws: z.string().optional(),
     })
@@ -152,7 +152,7 @@ export const UnsignedVPValidator = z
         '@context': ContextValidator,
         id: z.string().optional(),
         type: z.string().array().nonempty(),
-        verifiableCredential: VCValidator,
+        verifiableCredential: VCValidator.or(VCValidator.array()),
         holder: z.string().optional(),
     })
     .catchall(z.any());
