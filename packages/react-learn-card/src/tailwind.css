@@ -164,7 +164,7 @@
     z-index: 4;
 }
 
-.qr-code-upper-left-yellow-overlay {
+.qr-code-upper-left-yellow {
     position: absolute;
     top: 0;
     left: 0;
@@ -173,17 +173,6 @@
     background-color: #fde047;
     mix-blend-mode: overlay;
     z-index: 5;
-}
-
-.qr-code-upper-left-yellow {
-    position: absolute;
-    top: 0;
-    left: 0;
-    height: 25%;
-    width: 25%;
-    background-color: #fde047;
-    mix-blend-mode: color;
-    z-index: 4;
 }
 
 .qr-code-bottom-left-purple-square {
