@@ -58,6 +58,7 @@ export const LearnCardCreditCardFrontFace: React.FC<LearnCardCreditCardFrontFace
                             <div className="qr-code-upper-right-pink-square" />
                             <div className="qr-code-bottom-left-purple-square" />
                             <div className="qr-code-green-blob" />
+                            <div className="qr-code-green-blob-2" />
                             <div className="qr-code-blue-blob" />
                             <div className="qr-code-orange-blob" />
                             <QRCodeSVG
