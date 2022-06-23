@@ -1,6 +1,7 @@
 import React from 'react';
 
-import { NotificationProps, NotificationTypeEnum, NotificationTypeStyles } from './types';
+import { NotificationProps, NotificationTypeStyles } from './types';
+import { NotificationTypeEnum } from '../../constants/notifications';
 
 const Notification: React.FC<NotificationProps> = ({
     title,
@@ -8,11 +9,14 @@ const Notification: React.FC<NotificationProps> = ({
     issuerName,
     issueDate,
     className,
+    notificationType = NotificationTypeEnum.Achievement,
 }) => {
-    const notificationStyles = NotificationTypeStyles[NotificationTypeEnum.Achievements]; // NotificationTypeEnum['skills']
+    const notificationStyles = NotificationTypeStyles[notificationType]; // NotificationTypeEnum['skills']
 
     return (
-        <div className="flex justify-center items-center relative w-full rounded-3xl shadow-2xl py-3 bg-white">
+        <div
+            className={`flex justify-center items-center relative w-full rounded-3xl shadow-2xl py-3 bg-white ${className}`}
+        >
             <div
                 className={`absolute flex items-center justify-center top-2 right-2 h-8 w-8 overflow-hidden rounded-full z-10 ${notificationStyles.iconCircleStyles}`}
             >
@@ -28,16 +32,14 @@ const Notification: React.FC<NotificationProps> = ({
                         />
                     </div>
                     <div className="text-left ml-3">
-                        <h4 className="font-bold tracking-wide line-clamp-1">
-                            Title of Credential
-                        </h4>
+                        <h4 className="font-bold tracking-wide line-clamp-1">{title}</h4>
                         <p
                             className={`font-semibold p-0 m-0 leading-none tracking-wide line-clamp-1 ${notificationStyles?.textStyles}`}
                         >
                             Achievement / Achievment Type
                         </p>
                         <p className="text-grayscale-600 p-0 m-0 leading-none tracking-wide mt-[1px] line-clamp-1">
-                            Issued by Issuer Name • 04 Apr 22
+                            Issued by {issuerName} • {issueDate}
                         </p>
                     </div>
                 </div>
