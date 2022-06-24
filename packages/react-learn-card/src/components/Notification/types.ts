@@ -17,11 +17,6 @@ export type NotificationProps = {
     onClick: () => void;
 };
 
-export enum NotificationStatusEnum {
-    Claimed = 'claimed',
-    Unclaimed = 'unclaimed',
-}
-
 export const NotificationTypeStyles = {
     [NotificationTypeEnum.Currency]: {
         viewButtonStyles: 'border-cyan-400 text-cyan-400',
