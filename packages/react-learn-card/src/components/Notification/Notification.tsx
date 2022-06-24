@@ -66,7 +66,7 @@ const Notification: React.FC<NotificationProps> = ({
                         className={`flex items-center justify-center flex-1 rounded-[24px] border-2 border-solid font-semibold py-2 px-3 tracking-wide ${claimButtonStyles}`}
                         onClick={handleClaim}
                     >
-                        {isClaimed && <Checkmark className="h-[30px]" />}{' '}
+                        {isClaimed && <Checkmark className="h-[24px] p-0 m-0" />}{' '}
                         {isClaimed ? 'Claimed' : 'Claim'}
                     </button>
                 </div>
