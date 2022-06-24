@@ -2,17 +2,11 @@ import { VerificationItem, VC, Profile, CredentialSubject } from '@learncard/typ
 
 export enum Icons {
     sheckelsIcon,
-    coinsWhiteIcon,
     userIcon,
-    userWhiteIcon,
     trophyIcon,
-    trophyWhiteIcon,
     briefcaseIcon,
-    briefcaseWhiteIcon,
     graduationIcon,
-    graduationWhiteIcon,
     lightbulbIcon,
-    lightbulbWhiteIcon,
 }
 
 export type CredentialInfo = {
