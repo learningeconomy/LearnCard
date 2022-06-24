@@ -3,6 +3,8 @@ import React, { useState } from 'react';
 import { NotificationProps, NotificationTypeStyles } from './types';
 import { NotificationTypeEnum } from '../../constants/notifications';
 
+import Checkmark from '../svgs/Checkmark';
+
 const Notification: React.FC<NotificationProps> = ({
     title,
     issuerImage,
@@ -61,9 +63,10 @@ const Notification: React.FC<NotificationProps> = ({
                     </button>
                     <button
                         type="button"
-                        className={`flex-1 rounded-[24px] border-2 border-solid font-semibold py-2 px-3 tracking-wide ${claimButtonStyles}`}
+                        className={`flex items-center justify-center flex-1 rounded-[24px] border-2 border-solid font-semibold py-2 px-3 tracking-wide ${claimButtonStyles}`}
                         onClick={handleClaim}
                     >
+                        {isClaimed && <Checkmark className="h-[30px]" />}{' '}
                         {isClaimed ? 'Claimed' : 'Claim'}
                     </button>
                 </div>
