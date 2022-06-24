@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 import { NotificationProps, NotificationTypeStyles } from './types';
 import { NotificationTypeEnum } from '../../constants/notifications';
@@ -10,8 +10,16 @@ const Notification: React.FC<NotificationProps> = ({
     issueDate,
     className,
     notificationType = NotificationTypeEnum.Achievement,
+    onClick = () => {},
 }) => {
+    const [isClaimed, setIsClaimed] = useState<boolean>(false);
+
+    const handleClaim = () => setIsClaimed(!isClaimed);
+
     const notificationStyles = NotificationTypeStyles[notificationType]; // NotificationTypeEnum['skills']
+    const claimButtonStyles = isClaimed
+        ? notificationStyles.claimedButtonStyles
+        : notificationStyles.unclaimedButtonStyles;
 
     return (
         <div
@@ -34,9 +42,9 @@ const Notification: React.FC<NotificationProps> = ({
                     <div className="text-left ml-3">
                         <h4 className="font-bold tracking-wide line-clamp-1">{title}</h4>
                         <p
-                            className={`font-semibold p-0 m-0 leading-none tracking-wide line-clamp-1 ${notificationStyles?.textStyles}`}
+                            className={`font-semibold p-0 m-0 leading-none tracking-wide line-clamp-1 capitalize ${notificationStyles?.textStyles}`}
                         >
-                            Achievement / Achievment Type
+                            {notificationType} / lorem ipsum
                         </p>
                         <p className="text-grayscale-600 p-0 m-0 leading-none tracking-wide mt-[1px] line-clamp-1">
                             Issued by {issuerName} • {issueDate}
@@ -45,6 +53,7 @@ const Notification: React.FC<NotificationProps> = ({
                 </div>
                 <div className="flex items-center justify-between w-full mt-3">
                     <button
+                        onClick={onClick}
                         type="button"
                         className={`flex-1 rounded-[24px] border-solid border-2 bg-white font-semibold mr-2 py-2 px-3 tracking-wide ${notificationStyles?.viewButtonStyles}`}
                     >
@@ -52,9 +61,10 @@ const Notification: React.FC<NotificationProps> = ({
                     </button>
                     <button
                         type="button"
-                        className={`flex-1 rounded-[24px] border-2 text-white border-solid font-semibold py-2 px-3 tracking-wide ${notificationStyles?.claimButtonStyles}`}
+                        className={`flex-1 rounded-[24px] border-2 border-solid font-semibold py-2 px-3 tracking-wide ${claimButtonStyles}`}
+                        onClick={handleClaim}
                     >
-                        Claim
+                        {isClaimed ? 'Claimed' : 'Claim'}
                     </button>
                 </div>
             </div>
