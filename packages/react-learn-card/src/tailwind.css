@@ -244,6 +244,21 @@
     /* mix-blend-mode: lighten; */
 }
 
+
+@media (max-width: 340px) {
+    .credit-card-front-face-overlay {
+        left: -85%;
+    }
+
+    .credit-card-front-face-title {
+        font-size: 10px;
+    }
+
+    .qr-code-container {
+        max-width: 95px;
+    }
+}
+
 @media (max-width: 200px) {
     .vc-thumbnail-container::before,
     .vc-thumbnail-alt-container::before {

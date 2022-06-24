@@ -16,9 +16,9 @@ export const LearnCardCreditCardFrontFace: React.FC<LearnCardCreditCardFrontFace
 }) => {
     return (
         <div
-            className={`flex flex-row justify-center items-start pt-9 max-w-xs max-h-[200px] min-h-[200px] rounded-[20px] shadow-3xl bg-white relative overflow-hidden ${className}`}
+            className={`flex flex-row justify-center items-start pt-9 max-w-xs max-h-[200px] min-h-[200px] rounded-[20px] shadow-3xl bg-white relative overflow-hidden credit-card-front-face ${className}`}
         >
-            <div className="absolute h-[400px] w-[400px] rounded-full bg-grayscale-900 top-[-50%] left-[-68%]" />
+            <div className="absolute h-[400px] w-[400px] rounded-full bg-grayscale-900 top-[-50%] left-[-68%] credit-card-front-face-overlay" />
             {showActionButton && (
                 <button
                     type="button"
@@ -31,9 +31,9 @@ export const LearnCardCreditCardFrontFace: React.FC<LearnCardCreditCardFrontFace
             )}
             {/* <div className="absolute h-full w-[60%] rounded-br-[20px] rounded-tr-[20px] bg-cyan-200 top-0 left-0" /> */}
             <div className="flex flex-row justify-between items-start w-full h-full relative">
-                <div className="flex flex-col">
+                <div className="flex flex-1 flex-col">
                     <div className="pl-8">
-                        <p className="text-xs text-white font-bold tracking-[7px] mb-2">
+                        <p className="w-full text-xs text-white font-bold tracking-[7px] mb-2 credit-card-front-face-title">
                             LEARNCARD
                         </p>
                         <img src={CardChip ?? ''} alt="card chip" className="h-[30px] w-[42px]" />
@@ -52,7 +52,7 @@ export const LearnCardCreditCardFrontFace: React.FC<LearnCardCreditCardFrontFace
                 </div>
 
                 {qrCodeValue && (
-                    <div className="flex justify-center items-center pr-4 relative">
+                    <div className="flex flex-1 justify-center items-center pr-4 ml-4 relative">
                         <div className="max-w-[110px] h-auto relative qr-code-container">
                             <div className="qr-code-upper-left-yellow" />
                             <div className="qr-code-upper-right-pink-square" />
