@@ -1,6 +1,6 @@
 export enum NotificationTypeEnum {
     Currency = 'currency',
-    Identification = 'identification',
+    ID = 'id',
     Achievement = 'achievement',
     Skill = 'skill',
     Job = 'job',

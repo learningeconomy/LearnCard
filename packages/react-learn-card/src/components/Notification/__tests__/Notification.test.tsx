@@ -1,6 +1,6 @@
 import React from 'react';
 import '@testing-library/jest-dom';
-import { render, fireEvent, screen } from '@testing-library/react';
+import { render, fireEvent } from '@testing-library/react';
 
 import Notification from '../Notification';
 import { NotificationTypeEnum } from '../../../constants/notifications';
@@ -53,14 +53,12 @@ describe('Running Tests for Notification', () => {
     });
 
     test('Renders Notification of Type: Identification', () => {
-        const { getByTestId } = render(
-            <Notification notificationType={NotificationTypeEnum.Identification} />
-        );
+        const { getByTestId } = render(<Notification notificationType={NotificationTypeEnum.ID} />);
 
         const notificationType = getByTestId('notification-type');
-        expect(notificationType).toHaveTextContent(NotificationTypeEnum.Identification);
+        expect(notificationType).toHaveTextContent(NotificationTypeEnum.ID);
 
-        const iconComponent = getByTestId(`${NotificationTypeEnum.Identification}-icon`);
+        const iconComponent = getByTestId(`${NotificationTypeEnum.ID}-icon`);
         expect(iconComponent).toBeInTheDocument();
     });
 

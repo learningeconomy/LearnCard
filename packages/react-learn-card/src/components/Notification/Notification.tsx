@@ -55,10 +55,10 @@ const Notification: React.FC<NotificationProps> = ({
                             {title}
                         </h4>
                         <p
-                            className={`font-semibold p-0 m-0 leading-none tracking-wide line-clamp-1 capitalize ${textStyles}`}
+                            className={`font-semibold p-0 m-0 leading-none tracking-wide line-clamp-1 ${textStyles}`}
                             data-testid="notification-type"
                         >
-                            {notificationType} / lorem ipsum
+                            {notificationType} / <span className="normal-case">lorem ipsum</span>
                         </p>
                         <p
                             className="text-grayscale-600 p-0 m-0 leading-none tracking-wide mt-[1px] line-clamp-1"
