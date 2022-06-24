@@ -18,18 +18,23 @@ const Notification: React.FC<NotificationProps> = ({
 
     const handleClaim = () => setIsClaimed(!isClaimed);
 
-    const notificationStyles = NotificationTypeStyles[notificationType]; // NotificationTypeEnum['skills']
-    const { IconComponent } = notificationStyles;
-    const claimButtonStyles = isClaimed
-        ? notificationStyles.claimedButtonStyles
-        : notificationStyles.unclaimedButtonStyles;
+    const {
+        IconComponent,
+        iconCircleStyles,
+        textStyles,
+        viewButtonStyles,
+        claimedButtonStyles,
+        unclaimedButtonStyles,
+    } = NotificationTypeStyles[notificationType];
+
+    const claimButtonStyles = isClaimed ? claimedButtonStyles : unclaimedButtonStyles;
 
     return (
         <div
             className={`flex justify-center items-center relative w-full rounded-3xl shadow-2xl py-3 bg-white ${className}`}
         >
             <div
-                className={`absolute flex items-center justify-center top-2 right-2 h-8 w-8 overflow-hidden rounded-full z-10 ${notificationStyles.iconCircleStyles}`}
+                className={`absolute flex items-center justify-center top-2 right-2 h-8 w-8 overflow-hidden rounded-full z-10 ${iconCircleStyles}`}
             >
                 <IconComponent className="h-4/5 text-white" />
             </div>
@@ -45,7 +50,7 @@ const Notification: React.FC<NotificationProps> = ({
                     <div className="text-left ml-3">
                         <h4 className="font-bold tracking-wide line-clamp-1">{title}</h4>
                         <p
-                            className={`font-semibold p-0 m-0 leading-none tracking-wide line-clamp-1 capitalize ${notificationStyles?.textStyles}`}
+                            className={`font-semibold p-0 m-0 leading-none tracking-wide line-clamp-1 capitalize ${textStyles}`}
                         >
                             {notificationType} / lorem ipsum
                         </p>
@@ -58,7 +63,7 @@ const Notification: React.FC<NotificationProps> = ({
                     <button
                         onClick={onClick}
                         type="button"
-                        className={`flex-1 rounded-[24px] border-solid border-2 bg-white font-semibold mr-2 py-2 px-3 tracking-wide ${notificationStyles?.viewButtonStyles}`}
+                        className={`flex-1 rounded-[24px] border-solid border-2 bg-white font-semibold mr-2 py-2 px-3 tracking-wide ${viewButtonStyles}`}
                     >
                         View
                     </button>
