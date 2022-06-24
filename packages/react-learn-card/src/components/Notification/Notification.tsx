@@ -19,6 +19,7 @@ const Notification: React.FC<NotificationProps> = ({
     const handleClaim = () => setIsClaimed(!isClaimed);
 
     const notificationStyles = NotificationTypeStyles[notificationType]; // NotificationTypeEnum['skills']
+    const { IconComponent } = notificationStyles;
     const claimButtonStyles = isClaimed
         ? notificationStyles.claimedButtonStyles
         : notificationStyles.unclaimedButtonStyles;
@@ -30,7 +31,7 @@ const Notification: React.FC<NotificationProps> = ({
             <div
                 className={`absolute flex items-center justify-center top-2 right-2 h-8 w-8 overflow-hidden rounded-full z-10 ${notificationStyles.iconCircleStyles}`}
             >
-                <img src={notificationStyles?.icon} alt="status icon" className="h-4/5" />
+                <IconComponent className="h-4/5 text-white" />
             </div>
             <div className="flex flex-col justify-center items-center relative w-11/12">
                 <div className="flex flex-row items-center justify-start w-full">
