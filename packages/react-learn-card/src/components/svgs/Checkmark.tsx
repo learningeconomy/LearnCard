@@ -2,7 +2,12 @@ import React from 'react';
 
 const Checkmark: React.FC<{ className?: string }> = ({ className = '' }) => {
     return (
-        <svg viewBox="0 0 26 27" fill="transparent" className={className}>
+        <svg
+            viewBox="0 0 26 27"
+            fill="transparent"
+            className={className}
+            data-testid="checkmark-icon"
+        >
             <g>
                 <path
                     d="M21 7.25049L10.5 17.75L5.25 12.5005"

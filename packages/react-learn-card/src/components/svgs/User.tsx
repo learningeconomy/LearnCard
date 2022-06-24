@@ -2,7 +2,12 @@ import React from 'react';
 
 const User: React.FC<{ className?: string }> = ({ className = '' }) => {
     return (
-        <svg viewBox="0 0 31 31" fill="none" className={className}>
+        <svg
+            viewBox="0 0 31 31"
+            fill="none"
+            className={className}
+            data-testid="identification-icon"
+        >
             <path
                 d="M15.5 19.25C19.6421 19.25 23 15.8921 23 11.75C23 7.60786 19.6421 4.25 15.5 4.25C11.3579 4.25 8 7.60786 8 11.75C8 15.8921 11.3579 19.25 15.5 19.25Z"
                 stroke="currentColor"
