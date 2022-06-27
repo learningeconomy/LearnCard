@@ -11,7 +11,7 @@ import { UnlockedWallet } from 'types/wallet';
 // export * from '@learncard/types';
 
 export type LearnCardRawWallet = UnlockedWallet<
-    'DID Key' | 'VC' | 'IDX' | 'Expiration',
+    'DID Key' | 'VC' | 'IDX' | 'Expiration' | 'Ethereum',
     DidKeyPluginMethods & VCPluginMethods & IDXPluginMethods
 >;
 
@@ -78,6 +78,11 @@ export type LearnCardWallet = {
      * You can use this to test out implementations that use this library!
      */
     getTestVc: (subject?: string) => UnsignedVC;
+
+    /**
+     * Returns your ethereum balance
+     */
+    checkMyEth: () => number;
 };
 
 export type CeramicIDXArgs = {
@@ -91,4 +96,5 @@ export type LearnCardConfig = {
     ceramicIdx: CeramicIDXArgs;
     didkit: InitInput | Promise<InitInput>;
     defaultContents: any[];
+    ethereumAddress: string;
 };

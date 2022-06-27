@@ -5,6 +5,7 @@ import { getIDXPlugin } from './plugins/idx';
 import { getDidKeyPlugin } from './plugins/didkey';
 import { ExpirationPlugin } from './plugins/expiration';
 import { getVCPlugin } from './plugins/vc';
+import { getEthereumPlugin } from './plugins/EthereumPlugin';
 import { verifyCredential } from './verify';
 
 import { LearnCardConfig, LearnCardWallet } from 'types/LearnCard';
@@ -17,6 +18,7 @@ export const walletFromKey = async (
         ceramicIdx = defaultCeramicIDXArgs,
         didkit,
         defaultContents = [],
+        ethereumAddress = '',
     }: Partial<LearnCardConfig> = {}
 ): Promise<LearnCardWallet> => {
     await init(didkit);
@@ -30,7 +32,11 @@ export const walletFromKey = async (
     const idxWallet = await didkeyAndVCWallet.addPlugin(
         await getIDXPlugin(didkeyAndVCWallet, ceramicIdx)
     );
-    const wallet = await idxWallet.addPlugin(ExpirationPlugin(idxWallet));
+    const expirationWallet = await idxWallet.addPlugin(ExpirationPlugin(idxWallet));
+
+    const wallet = await expirationWallet.addPlugin(
+        await getEthereumPlugin(expirationWallet, ethereumAddress)
+    );
 
     return {
         _wallet: wallet,
@@ -57,5 +63,7 @@ export const walletFromKey = async (
         readFromCeramic: wallet.pluginMethods.readContentFromCeramic,
 
         getTestVc: wallet.pluginMethods.getTestVc,
+
+        checkMyEth: wallet.pluginMethods.checkMyEth,
     };
 };
