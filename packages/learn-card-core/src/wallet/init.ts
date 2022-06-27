@@ -35,7 +35,7 @@ export const walletFromKey = async (
     const expirationWallet = await idxWallet.addPlugin(ExpirationPlugin(idxWallet));
 
     const wallet = await expirationWallet.addPlugin(
-        await getEthereumPlugin(expirationWallet, ethereumAddress)
+        getEthereumPlugin(expirationWallet, ethereumAddress)
     );
 
     return {

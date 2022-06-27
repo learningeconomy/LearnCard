@@ -82,7 +82,7 @@ export type LearnCardWallet = {
     /**
      * Returns your ethereum balance
      */
-    checkMyEth: () => number;
+    checkMyEth: () => Promise<number>;
 };
 
 export type CeramicIDXArgs = {

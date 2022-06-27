@@ -1,5 +1,5 @@
 export type EthereumPluginMethods = {
-    checkMyEth: () => number;
+    checkMyEth: () => Promise<number>;
     // changeMyAddress: (address: string) => void;
 
     // getSubjectDid: () => string;

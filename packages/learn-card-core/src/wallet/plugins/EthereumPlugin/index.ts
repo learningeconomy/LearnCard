@@ -1,6 +1,6 @@
 // import { Plugin } from 'types/wallet';
 import { Plugin, UnlockedWallet } from 'types/wallet';
-// import ethers from 'ethers';
+import { ethers } from 'ethers';
 
 import { EthereumPluginMethods } from './types';
 
@@ -12,9 +12,22 @@ export const getEthereumPlugin = (
 
     return {
         pluginMethods: {
-            checkMyEth: () => {
+            checkMyEth: async () => {
                 console.log('🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆');
-                // console.log('ethers.getDefaultProvider():', ethers.getDefaultProvider());
+
+                if (!myAddress) {
+                    throw new Error("Can't check ETH: No ethereum address provided.");
+                }
+
+                const provider = ethers.getDefaultProvider();
+
+                const balance = await provider.getBalance(myAddress);
+
+                console.log('balance:', balance);
+
+                const formattedBalance = ethers.utils.formatEther(balance);
+
+                console.log('formattedBalance:', formattedBalance);
 
                 return parseInt(myAddress);
             },
