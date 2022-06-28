@@ -1,5 +1,7 @@
 import crypto from 'isomorphic-webcrypto';
 
-globalThis.crypto = crypto;
+if (!window) {
+    globalThis.crypto = crypto;
+}
 
 export default crypto;
