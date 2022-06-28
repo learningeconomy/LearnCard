@@ -16,6 +16,7 @@
     "build": "pnpm generate-barrels && rollup -c",
     "prepare": "pnpm build",
     "test": "jest",
+    "test-watch": "jest --watch",
     "storybook": "start-storybook -p 6006",
     "build-storybook": "build-storybook",
     "chromatic": "npx chromatic"
