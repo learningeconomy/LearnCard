@@ -6,10 +6,10 @@ import Notification from '../Notification';
 import { NotificationTypeEnum } from '../../../constants/notifications';
 
 describe('Running Tests for Notification', () => {
-    test('Renders Notification of Type: Currency with props', () => {
+    it('Renders Notification of Type: Currency with props', () => {
         const handleOnClick = jest.fn();
 
-        const { getByTestId, getByAltText, queryByTestId } = render(
+        const { getByTestId, getByAltText, queryByTestId, getByRole } = render(
             <Notification
                 title="Title of Credential"
                 issuerImage="https://issuerimage.png"
@@ -38,10 +38,10 @@ describe('Running Tests for Notification', () => {
         const iconComponent = getByTestId(`${NotificationTypeEnum.Currency}-icon`);
         expect(iconComponent).toBeInTheDocument();
 
-        fireEvent.click(getByTestId('notification-view-button'));
+        fireEvent.click(getByRole('notification-view-button'));
         expect(handleOnClick).toHaveBeenCalledTimes(1);
 
-        const claimButton = getByTestId('notification-claim-button');
+        const claimButton = getByRole('notification-claim-button');
         expect(claimButton).toHaveTextContent('Claim');
         expect(queryByTestId('checkmark-icon')).not.toBeInTheDocument();
 
@@ -52,7 +52,7 @@ describe('Running Tests for Notification', () => {
         expect(queryByTestId('checkmark-icon')).toBeInTheDocument();
     });
 
-    test('Renders Notification of Type: Identification', () => {
+    it('Renders Notification of Type: Identification', () => {
         const { getByTestId } = render(<Notification notificationType={NotificationTypeEnum.ID} />);
 
         const notificationType = getByTestId('notification-type');
@@ -62,7 +62,7 @@ describe('Running Tests for Notification', () => {
         expect(iconComponent).toBeInTheDocument();
     });
 
-    test('Renders Notification of Type: Achievement', () => {
+    it('Renders Notification of Type: Achievement', () => {
         const { getByTestId } = render(
             <Notification notificationType={NotificationTypeEnum.Achievement} />
         );
@@ -74,7 +74,7 @@ describe('Running Tests for Notification', () => {
         expect(iconComponent).toBeInTheDocument();
     });
 
-    test('Renders Notification of Type: Skill', () => {
+    it('Renders Notification of Type: Skill', () => {
         const { getByTestId } = render(
             <Notification notificationType={NotificationTypeEnum.Skill} />
         );
@@ -86,7 +86,7 @@ describe('Running Tests for Notification', () => {
         expect(iconComponent).toBeInTheDocument();
     });
 
-    test('Renders Notification of Type: Job', () => {
+    it('Renders Notification of Type: Job', () => {
         const { getByTestId } = render(
             <Notification notificationType={NotificationTypeEnum.Job} />
         );
@@ -98,7 +98,7 @@ describe('Running Tests for Notification', () => {
         expect(iconComponent).toBeInTheDocument();
     });
 
-    test('Renders Notification of Type: Learning', () => {
+    it('Renders Notification of Type: Learning', () => {
         const { getByTestId } = render(
             <Notification notificationType={NotificationTypeEnum.Learning} />
         );
