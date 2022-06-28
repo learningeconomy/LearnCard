@@ -40,7 +40,5 @@ Please make sure to update tests as appropriate.
 
 **[Learning Economy Foundation (LEF)](https://www.learningeconomy.io)** is a 501(c)(3) non-profit organization leveraging global standards and web3 protocols to bring quality skills and equal opportunity to every human on earth, and address the persistent inequities that exist around the globe in education and employment. We help you build the future of education and work with:
 
-
-
 ## License
-[MIT](https://choosealicense.com/licenses/mit/)
+MIT © [Learning Economy Foundation](https://github.com/Learning-Economy-Foundation)
