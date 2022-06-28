@@ -38,17 +38,18 @@ describe('Running Tests for Notification', () => {
         const iconComponent = getByTestId(`${NotificationTypeEnum.Currency}-icon`);
         expect(iconComponent).toBeInTheDocument();
 
-        fireEvent.click(getByRole('notification-view-button'));
+        fireEvent.click(getByRole('button', { name: /view/i }));
         expect(handleOnClick).toHaveBeenCalledTimes(1);
 
-        const claimButton = getByRole('notification-claim-button');
+        const claimButton = getByRole('button', { name: /claim/i });
         expect(claimButton).toHaveTextContent('Claim');
         expect(queryByTestId('checkmark-icon')).not.toBeInTheDocument();
 
         fireEvent.click(claimButton);
         expect(handleOnClick).toHaveBeenCalledTimes(1);
 
-        expect(claimButton).toHaveTextContent('Claimed');
+        const claimedButton = getByRole('button', { name: /claimed/i });
+        expect(claimedButton).toHaveTextContent('Claimed');
         expect(queryByTestId('checkmark-icon')).toBeInTheDocument();
     });
 

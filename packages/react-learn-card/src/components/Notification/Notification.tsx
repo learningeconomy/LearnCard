@@ -74,7 +74,8 @@ const Notification: React.FC<NotificationProps> = ({
                         onClick={onClick}
                         type="button"
                         className={`flex-1 rounded-[24px] border-solid border-2 bg-white font-semibold mr-2 py-2 px-3 tracking-wide ${viewButtonStyles}`}
-                        role="notification-view-button"
+                        role="button"
+                        name="notification-view-button"
                     >
                         View
                     </button>
@@ -82,7 +83,8 @@ const Notification: React.FC<NotificationProps> = ({
                         type="button"
                         className={`flex items-center justify-center flex-1 rounded-[24px] border-2 border-solid font-semibold py-2 px-3 tracking-wide ${claimButtonStyles}`}
                         onClick={handleClaim}
-                        role="notification-claim-button"
+                        role="button"
+                        name="notification-claim-button"
                     >
                         {isClaimed && <Checkmark className="h-[24px] p-0 m-0" />}{' '}
                         {isClaimed ? 'Claimed' : 'Claim'}
