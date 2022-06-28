@@ -16,6 +16,7 @@
     "build": "pnpm generate-barrels && rollup -c",
     "prepare": "pnpm build",
     "test": "jest",
+    "test-watch": "jest --watch",
     "storybook": "start-storybook -p 6006",
     "build-storybook": "build-storybook",
     "chromatic": "npx chromatic"
@@ -40,7 +41,7 @@
     "@svgr/rollup": "^6.2.1",
     "@tailwindcss/line-clamp": "^0.4.0",
     "@testing-library/jest-dom": "^5.16.4",
-    "@testing-library/react": "^12.1.5",
+    "@testing-library/react": "^13.0.0",
     "@testing-library/user-event": "^14.1.1",
     "@types/jest": "^27.5.0",
     "@types/react": "^17.0.2",
@@ -52,8 +53,7 @@
     "esbuild": "^0.14.38",
     "esbuild-jest": "^0.5.0",
     "glob": "^8.0.3",
-    "jest": "^28.0.3",
-    "jest-environment-jsdom": "^28.0.2",
+    "jest": "27",
     "postcss": "^8.4.13",
     "postcss-loader": "^6.2.1",
     "rollup": "^2.71.1",
@@ -68,6 +68,8 @@
   "dependencies": {
     "@learncard/core": "workspace:*",
     "date-fns": "^2.28.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
     "rollup-plugin-img": "^1.1.0"
   },
   "peerDependencies": {

@@ -10,6 +10,7 @@
     "alwaysStrict": true,
     "strictNullChecks": true,
     "noUncheckedIndexedAccess": true,
+    "jsx": "react",
 
     "noImplicitAny": true,
     "noImplicitReturns": true,

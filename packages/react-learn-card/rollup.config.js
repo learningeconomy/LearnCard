@@ -28,6 +28,7 @@ export default [
             commonjs(),
             esbuild(),
         ],
+        external: ['react', 'react-dom'],
     },
     {
         input: ['src/index.ts'],
