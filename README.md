@@ -14,7 +14,7 @@ The LearnCard is a key primitive in the architecture for a [global network of le
 All LearnCard documentation can be found at:
 **INSERT GITBOOK LINK**
 
-The Apollo Client API reference can be found at:
+The LearnCard reference can be found at:
 **INSERT GITBOOK LINK to API**
 
 
