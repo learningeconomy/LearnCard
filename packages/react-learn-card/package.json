@@ -55,6 +55,8 @@
     "jest-environment-jsdom": "^28.0.2",
     "postcss": "^8.4.13",
     "postcss-loader": "^6.2.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
     "rollup": "^2.71.1",
     "rollup-plugin-dts": "^4.2.2",
     "rollup-plugin-esbuild": "^4.9.1",
