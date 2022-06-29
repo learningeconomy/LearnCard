@@ -1,20 +1,18 @@
 import React from 'react';
 import '@testing-library/jest-dom';
 import userEvent from '@testing-library/user-event';
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 
 import CircleIcon from '../CircleIcon';
 
 describe('Running Tests for CircleIcon', () => {
     it('Renders important props', () => {
-        const { getByAltText, getByText } = render(
-            <CircleIcon iconSrc="iconSrcProp" count="count text" />
-        );
+        render(<CircleIcon iconSrc="iconSrcProp" count="count text" />);
 
-        const img = getByAltText('Icon image');
+        const img = screen.getByAltText('Icon image');
         expect(img).toHaveAttribute('src', 'iconSrcProp');
 
-        const countText = getByText('count text');
+        const countText = screen.getByText('count text');
         expect(countText).toBeInTheDocument();
     });
 
