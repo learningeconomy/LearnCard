@@ -27,7 +27,9 @@ export const RoundedSquare: React.FC<RoundedSquareProps> = ({
         >
             <div className="w-full py-[10px] relative">
                 <h3 className="line-clamp-2 font-bold text-[17px] text-grayscale-900">{title}</h3>
-                <p className="line-clamp-2 text-[10px] text-grayscale-900 text-opacity-60">{description}</p>
+                <p className="line-clamp-2 text-[10px] text-grayscale-900 text-opacity-60">
+                    {description}
+                </p>
             </div>
 
             <div className="flex w-full justify-end icon-display absolute right-[20px] bottom-[15px]">
