@@ -2,6 +2,7 @@
 
 
 # LearnCard SDK
+[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](CODE_OF_CONDUCT.md)
 The LearnCard SDK is an open-source digital wallet, ID, credentialing technology, and UX to enable any individual or organization to seamlessly **issue, earn, store, share, and spend currency and credentials.**
 
 ## About
