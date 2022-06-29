@@ -1,6 +1,7 @@
 import React from 'react';
 import '@testing-library/jest-dom';
-import { render, fireEvent } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { render } from '@testing-library/react';
 
 import CircleIcon from '../CircleIcon';
 
@@ -26,15 +27,14 @@ describe('Running Tests for CircleIcon', () => {
         expect(containerStyle.padding).toBe('2px');
     });
 
-    it('Uses the given onClick handler', () => {
-        let flipOnClick = false;
-        const doStuff = () => {
-            flipOnClick = true;
-        };
-        const { container } = render(<CircleIcon onClick={doStuff} />);
+    it('calls onClick', async () => {
+        const handleOnClick = jest.fn();
+        const user = userEvent.setup();
 
-        expect(flipOnClick).toBe(false);
-        fireEvent.click(container.firstChild);
-        expect(flipOnClick).toBe(true);
+        const { container } = render(<CircleIcon onClick={handleOnClick} />);
+
+        expect(handleOnClick).not.toBeCalled();
+        await user.click(container.firstChild);
+        expect(handleOnClick).toBeCalled();
     });
 });
