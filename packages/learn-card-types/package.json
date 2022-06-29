@@ -37,7 +37,7 @@
   "lint-staged": {
     "**/*.{js,jsx,ts,tsx,json}": "npm run lint:fix"
   },
-  "author": "Taylor Beeston <beeston.taylor@gmail.com>",
+  "author": "Learning Economy Foundation (www.learningeconomy.io)",
   "license": "MIT",
   "homepage": "https://github.com/WeLibraryOS/LearnCard#readme",
   "repository": {
