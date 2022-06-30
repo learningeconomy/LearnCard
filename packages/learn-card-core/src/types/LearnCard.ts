@@ -82,9 +82,19 @@ export type LearnCardWallet = {
     getTestVc: (subject?: string) => UnsignedVC;
 
     /**
-     * Returns your ethereum balance
+     * Returns your ETH balance
      */
-    checkMyEth: () => Promise<number>;
+    checkMyEth: () => Promise<string>;
+
+    /**
+     * Returns your DAI balance
+     */
+    checkMyDai: () => Promise<string>;
+
+    /**
+     * Returns your USDC balance
+     */
+    checkMyUsdc: () => Promise<string>;
 };
 
 export type CeramicIDXArgs = {
