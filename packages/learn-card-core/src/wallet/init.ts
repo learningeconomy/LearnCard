@@ -9,7 +9,7 @@ import { getEthereumPlugin } from './plugins/EthereumPlugin';
 import { verifyCredential } from './verify';
 
 import { LearnCardConfig, LearnCardWallet } from 'types/LearnCard';
-import { defaultCeramicIDXArgs } from './defaults';
+import { defaultCeramicIDXArgs, defaultEthereumArgs } from './defaults';
 
 /** Generates a LearnCard Wallet from a 64 character seed string */
 export const walletFromKey = async (
@@ -18,7 +18,7 @@ export const walletFromKey = async (
         ceramicIdx = defaultCeramicIDXArgs,
         didkit,
         defaultContents = [],
-        ethereumAddress = '',
+        ethereumConfig = defaultEthereumArgs,
     }: Partial<LearnCardConfig> = {}
 ): Promise<LearnCardWallet> => {
     await init(didkit);
@@ -35,7 +35,7 @@ export const walletFromKey = async (
     const expirationWallet = await idxWallet.addPlugin(ExpirationPlugin(idxWallet));
 
     const wallet = await expirationWallet.addPlugin(
-        getEthereumPlugin(expirationWallet, ethereumAddress)
+        getEthereumPlugin(expirationWallet, ethereumConfig)
     );
 
     return {

@@ -1,4 +1,6 @@
 import { CeramicIDXArgs } from 'types/LearnCard';
+import { EthereumConfig } from './plugins/EthereumPlugin/types';
+import { EthereumNetworks } from './plugins/EthereumPlugin/types';
 
 export const defaultCeramicIDXArgs: CeramicIDXArgs = {
     modelData: {
@@ -17,4 +19,10 @@ export const defaultCeramicIDXArgs: CeramicIDXArgs = {
     credentialAlias: 'MyVerifiableCredentials',
     ceramicEndpoint: 'https://ceramic-node.welibrary.io:7007',
     defaultContentFamily: 'SuperSkills',
+};
+
+export const defaultEthereumArgs: EthereumConfig = {
+    address: '',
+    infuraProjectId: '',
+    network: EthereumNetworks.mainnet,
 };

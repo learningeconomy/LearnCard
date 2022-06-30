@@ -2,26 +2,39 @@
 import { Plugin, UnlockedWallet } from 'types/wallet';
 import { ethers } from 'ethers';
 
-import { EthereumPluginMethods } from './types';
+import { EthereumConfig, EthereumNetworks, EthereumPluginMethods } from './types';
 
 export const getEthereumPlugin = (
     initWallet: UnlockedWallet<string, { getSubjectDid: () => string }>,
-    _myAddress: string
+    config: EthereumConfig
 ): Plugin<'Ethereum', EthereumPluginMethods> => {
-    let myAddress = _myAddress;
+    const { address, infuraProjectId, network = EthereumNetworks.mainnet } = config;
+
+    const getProvider = () => {
+        if (infuraProjectId) {
+            console.log('🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧');
+
+            const url = `https://${network}.infura.io/v3/${infuraProjectId}`;
+            const provider = new ethers.providers.JsonRpcProvider(url);
+            return provider;
+        }
+
+        return ethers.getDefaultProvider();
+    };
 
     return {
         pluginMethods: {
             checkMyEth: async () => {
                 console.log('🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆');
+                console.log('network:', network);
 
-                if (!myAddress) {
+                if (!address) {
                     throw new Error("Can't check ETH: No ethereum address provided.");
                 }
 
-                const provider = ethers.getDefaultProvider();
+                const provider = getProvider();
 
-                const balance = await provider.getBalance(myAddress);
+                const balance = await provider.getBalance(address);
 
                 console.log('balance:', balance);
 
@@ -29,7 +42,7 @@ export const getEthereumPlugin = (
 
                 console.log('formattedBalance:', formattedBalance);
 
-                return parseInt(myAddress);
+                return parseInt(formattedBalance);
             },
             /* changeMyAddress: (_wallet: any, addressToUse: string) => {
                 myAddress = addressToUse;

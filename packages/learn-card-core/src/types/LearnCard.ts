@@ -4,11 +4,13 @@ import { VerificationItem, UnsignedVC, VC, VP } from '@learncard/types';
 import { DidKeyPluginMethods } from '@wallet/plugins/didkey/types';
 import { IDXCredential, IDXPluginMethods } from '@wallet/plugins/idx/types';
 import { VCPluginMethods, VerificationCheck } from '@wallet/plugins/vc/types';
+import { EthereumConfig } from '@wallet/plugins/EthereumPlugin/types';
 import { InitInput } from 'didkit';
 
 import { UnlockedWallet } from 'types/wallet';
 
 // export * from '@learncard/types';
+// export { EthereumNetworks } from '@wallet/plugins/EthereumPlugin/types';
 
 export type LearnCardRawWallet = UnlockedWallet<
     'DID Key' | 'VC' | 'IDX' | 'Expiration' | 'Ethereum',
@@ -96,5 +98,5 @@ export type LearnCardConfig = {
     ceramicIdx: CeramicIDXArgs;
     didkit: InitInput | Promise<InitInput>;
     defaultContents: any[];
-    ethereumAddress: string;
+    ethereumConfig: EthereumConfig;
 };
