@@ -1,7 +1,7 @@
 import React from 'react';
 import '@testing-library/jest-dom';
 import userEvent from '@testing-library/user-event';
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 
 import RoundedSquare from '../RoundedSquare';
 
@@ -17,29 +17,22 @@ describe('RoundedSquare', () => {
     });
 
     it('renders description', async () => {
-        const screen = render(<RoundedSquare description="Description!" />);
+        render(<RoundedSquare description="Description!" />);
 
         expect(screen.getByText('Description!')).toBeInTheDocument;
     });
 
     it('renders count', async () => {
-        const screen = render(<RoundedSquare count="28" />);
+        render(<RoundedSquare count="29" />);
 
-        expect(screen.getByText('28')).toBeInTheDocument;
+        expect(screen.getByText('29')).toBeInTheDocument;
     });
 
     it('calls onClick', async () => {
         const handleOnClick = jest.fn();
         const user = userEvent.setup();
 
-        const screen = render(
-            <RoundedSquare
-                title="Title!"
-                description="Description!"
-                count="28"
-                onClick={handleOnClick}
-            />
-        );
+        render(<RoundedSquare onClick={handleOnClick} />);
 
         await user.click(screen.getByRole('button'));
         expect(handleOnClick).toBeCalled();
