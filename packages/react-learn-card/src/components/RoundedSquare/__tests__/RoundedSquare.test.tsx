@@ -13,19 +13,19 @@ describe('RoundedSquare', () => {
     it('renders title', async () => {
         const screen = render(<RoundedSquare title="Title!" />);
 
-        expect(screen.getByText('Title!')).toBeInTheDocument;
+        expect(screen.getByText('Title!')).toBeInTheDocument();
     });
 
     it('renders description', async () => {
         render(<RoundedSquare description="Description!" />);
 
-        expect(screen.getByText('Description!')).toBeInTheDocument;
+        expect(screen.getByText('Description!')).toBeInTheDocument();
     });
 
     it('renders count', async () => {
         render(<RoundedSquare count="29" />);
 
-        expect(screen.getByText('29')).toBeInTheDocument;
+        expect(screen.getByText('29')).toBeInTheDocument();
     });
 
     it('calls onClick', async () => {
