@@ -15,6 +15,6 @@ export type JWK = {
 
 export type DidKeyPluginMethods = {
     getSubjectDid: () => string;
-    getSubjectKeypair: () => Record<string, string>;
+    getSubjectKeypair: () => { kty: string; crv: string; x: string; d: string };
     getKey: () => string;
 };

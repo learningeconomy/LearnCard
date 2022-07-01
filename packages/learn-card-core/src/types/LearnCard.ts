@@ -8,7 +8,7 @@ import { InitInput } from 'didkit';
 
 import { UnlockedWallet } from 'types/wallet';
 
-// export * from '@learncard/types';
+export * from '@learncard/types';
 
 export type LearnCardRawWallet = UnlockedWallet<
     'DID Key' | 'VC' | 'IDX' | 'Expiration',
@@ -24,7 +24,7 @@ export type LearnCardWallet = {
     /** Wallet holder's did */
     did: string;
     /** Wallet holder's ed25519 key pair */
-    keypair: Record<string, string>;
+    keypair: { kty: string; crv: string; x: string; d: string };
 
     /** Signs an unsigned Verifiable Credential, returning the signed VC */
     issueCredential: (credential: UnsignedVC) => Promise<VC>;
