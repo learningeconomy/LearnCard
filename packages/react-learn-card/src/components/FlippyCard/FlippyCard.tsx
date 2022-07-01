@@ -27,10 +27,10 @@ export const FlippyCard: React.FC<FlippyCardProps> = ({ children }) => {
     const flipCardCSSClass = flipState === FRONT_FACE ? 'flippy-card' : 'flippy-card is-flipped';
 
     return (
-        <div className="flippy-wrapper-container">
-            <div className={flipCardCSSClass} onClick={handleClick}>
-                <section className="card-face card-face--front">{frontCard}</section>
-                <section className="card-face card-face--back">{backCard}</section>
+        <div data-testid="flippy-card-wrapper" className="flippy-wrapper-container">
+            <div data-testid="flippy-card" className={flipCardCSSClass} onClick={handleClick}>
+                <section data-testid="flippy-card-front" className="card-face card-face--front">{frontCard}</section>
+                <section data-testid="flippy-card-back" className="card-face card-face--back">{backCard}</section>
             </div>
         </div>
     );
