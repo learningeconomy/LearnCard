@@ -45,7 +45,7 @@ export const LearnCardCreditCardFrontFace: React.FC<LearnCardCreditCardFrontFace
                                 className="w-full h-full absolute rounded-full object-cover border-solid border-2 border-white"
                                 src={userImage}
                                 alt="user image"
-                                data-testId="credit-card-frontface-userImg"
+                                data-testid="credit-card-frontface-userImg"
                             />
                         </div>
                     )}
