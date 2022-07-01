@@ -9,7 +9,7 @@
     "start": "rollup -c && node dist/index.js",
     "build": "rollup -c"
   },
-  "author": "",
+  "author": "Learning Economy Foundation (www.learningeconomy.io)",
   "license": "MIT",
   "dependencies": {
     "@learncard/core": "workspace:*",
