@@ -1,14 +1,14 @@
 import React from 'react';
 import '@testing-library/jest-dom';
-import { render, fireEvent } from '@testing-library/react';
+import { render, fireEvent, screen } from '@testing-library/react';
 
 import LearnCardCreditCardFrontFace from '../LearnCardCreditCardFrontFace';
 
-describe('Running Tests for LearnCardCreditCardFrontFace', () => {
+describe('LearnCardCreditCardFrontFace', () => {
     test('Checks LearnCardCreditCardFrontFace renders with props', () => {
         const handleOnClick = jest.fn();
 
-        const { getByTestId, queryByTestId, getByAltText } = render(
+        render(
             <LearnCardCreditCardFrontFace
                 userImage="https://img.freepik.com/free-photo/pleasant-looking-serious-blonde-woman-with-long-hair-wears-blue-casual-sweater_273609-17050.jpg?w=2000"
                 qrCodeValue="https://www.npmjs.com/package/@learncard/react"
@@ -18,7 +18,7 @@ describe('Running Tests for LearnCardCreditCardFrontFace', () => {
             />
         );
 
-        const actionButton = getByTestId('credit-card-frontface-button');
+        const actionButton = screen.getByTestId('credit-card-frontface-button');
 
         expect(actionButton).toBeInTheDocument();
         expect(actionButton).toHaveTextContent('Open Card');
@@ -26,21 +26,21 @@ describe('Running Tests for LearnCardCreditCardFrontFace', () => {
         fireEvent.click(actionButton);
         expect(handleOnClick).toHaveBeenCalledTimes(1);
 
-        const userImage = getByAltText('user image');
+        const userImage = screen.getByAltText('user image');
         expect(userImage).toHaveAttribute(
             'src',
             'https://img.freepik.com/free-photo/pleasant-looking-serious-blonde-woman-with-long-hair-wears-blue-casual-sweater_273609-17050.jpg?w=2000'
         );
 
-        const qrCode = queryByTestId('credit-card-qr-code');
+        const qrCode = screen.queryByTestId('credit-card-qr-code');
         expect(qrCode).toBeInTheDocument();
     });
 
     test('Checks LearnCardCreditCardFrontFace renders without props', () => {
-        const { queryByTestId } = render(<LearnCardCreditCardFrontFace />);
+        render(<LearnCardCreditCardFrontFace />);
 
-        expect(queryByTestId('credit-card-frontface-button')).not.toBeInTheDocument();
-        expect(queryByTestId('credit-card-frontface-userImg')).not.toBeInTheDocument();
-        expect(queryByTestId('credit-card-qr-code')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('credit-card-frontface-button')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('credit-card-frontface-userImg')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('credit-card-qr-code')).not.toBeInTheDocument();
     });
 });
