@@ -3,6 +3,12 @@ import { format } from 'date-fns';
 
 import { LearnCardRawWallet } from 'types/LearnCard';
 
+const transformErrorCheck = (error: string, _credential: VC): string => {
+    const prefix = error.split(' error')[0];
+
+    return prefix || error;
+};
+
 const transformErrorMessage = (error: string, credential: VC): string => {
     if (error.startsWith('expiration')) {
         return credential.expirationDate
@@ -41,7 +47,7 @@ export const verifyCredential = (
         rawVerificationCheck.errors.forEach(error => {
             verificationItems.push({
                 status: VerificationStatusEnum.Failed,
-                check: 'hmm',
+                check: transformErrorCheck(error, credential),
                 details: transformErrorMessage(error, credential),
             });
         });
