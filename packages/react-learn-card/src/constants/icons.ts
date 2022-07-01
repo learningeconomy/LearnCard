@@ -4,6 +4,7 @@ import trophy from '../assets/images/trophy.svg';
 import briefcase from '../assets/images/briefcase.svg';
 import graduation from '../assets/images/graduation.svg';
 import lightbulb from '../assets/images/lightbulb.svg';
+
 import { Icons } from '../types';
 export { coins, user, trophy, briefcase, graduation, lightbulb };
 
