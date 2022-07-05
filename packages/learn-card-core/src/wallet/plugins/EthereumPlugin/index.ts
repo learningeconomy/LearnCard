@@ -4,7 +4,7 @@ import { ethers } from 'ethers';
 import { EthereumConfig, EthereumNetworks, EthereumPluginMethods } from './types';
 
 export const getEthereumPlugin = (
-    initWallet: UnlockedWallet<string, { getSubjectDid: () => string }>,
+    initWallet: UnlockedWallet<string, { getSubjectDid: () => string }>, // unused rn, but I'll be using it in the next ETH plugin PR
     config: EthereumConfig
 ): Plugin<'Ethereum', EthereumPluginMethods> => {
     const { address, infuraProjectId, network = EthereumNetworks.mainnet } = config;
