@@ -1,4 +1,3 @@
-// import { Plugin } from 'types/wallet';
 import { Plugin, UnlockedWallet } from 'types/wallet';
 import { ethers } from 'ethers';
 
@@ -20,7 +19,6 @@ export const getEthereumPlugin = (
     }
 
     const checkErc20TokenBalance = async (tokenContractAddress: string) => {
-        // TODO find a better way than calling this in every method
         if (!address) {
             throw new Error("Can't check balance: No address provided.");
         }
@@ -56,10 +54,6 @@ export const getEthereumPlugin = (
                 const usdcBalance = await checkErc20TokenBalance(usdcAddress);
                 return usdcBalance;
             },
-
-            /* changeMyAddress: (_wallet: any, addressToUse: string) => {
-                myAddress = addressToUse;
-            }, */
 
             // ...initWallet.pluginMethods,
         },
