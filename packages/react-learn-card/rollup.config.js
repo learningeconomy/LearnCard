@@ -7,6 +7,7 @@ import image from 'rollup-plugin-img';
 import esbuild from 'rollup-plugin-esbuild';
 import peerDepsExternal from 'rollup-plugin-peer-deps-external';
 import dts from 'rollup-plugin-dts';
+import svgr from '@svgr/rollup'
 
 const packageJson = require('./package.json');
 
@@ -22,6 +23,7 @@ export default [
             peerDepsExternal(),
             postcss({ minimize: true, inject: { insertAt: 'top' } }),
             image(),
+            svgr(),
             resolve(),
             commonjs(),
             esbuild(),

@@ -40,7 +40,9 @@ export const CountCircle: React.FC<CountCircleProps> = ({
             style={style}
         >
             <div className={`w-full h-full`}>
-                <p className="line-clamp-1 font-semibold text-grayscale-900 text-[12px]">{count}</p>
+                <p className="w-full h-full line-clamp-1 font-semibold text-grayscale-900 text-[12px]">
+                    {count}
+                </p>
             </div>
         </section>
     );

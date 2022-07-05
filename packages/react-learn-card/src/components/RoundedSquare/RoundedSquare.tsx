@@ -21,9 +21,9 @@ export const RoundedSquare: React.FC<RoundedSquareProps> = ({
     bgColor = 'bg-cyan-200',
 }) => {
     return (
-        <section
+        <button
             onClick={onClick}
-            className={`relative ${bgColor}  py-[15px] px-[15px] w-[170px] h-[170px] rounded-[40px] rounded-square-card-container`}
+            className={`flex relative ${bgColor}  py-[15px] px-[15px] w-[170px] h-[170px] rounded-[40px] rounded-square-card-container`}
         >
             <div className="w-full py-[10px] relative">
                 <h3 className="line-clamp-2 font-bold text-[17px] text-grayscale-900">{title}</h3>
@@ -35,7 +35,7 @@ export const RoundedSquare: React.FC<RoundedSquareProps> = ({
             <div className="flex w-full justify-end icon-display absolute right-[20px] bottom-[15px]">
                 <CircleIcon iconSrc={iconSrc} count={count} />
             </div>
-        </section>
+        </button>
     );
 };
 
