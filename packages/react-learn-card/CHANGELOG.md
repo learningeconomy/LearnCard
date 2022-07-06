@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.2.6
+
+### Patch Changes
+
+-   Fix Notification export
+
 ## 2.2.5
 
 ### Patch Changes
