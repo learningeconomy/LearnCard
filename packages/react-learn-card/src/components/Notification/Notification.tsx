@@ -5,7 +5,7 @@ import { NotificationTypeEnum } from '../../constants/notifications';
 
 import Checkmark from '../svgs/Checkmark';
 
-const Notification: React.FC<NotificationProps> = ({
+export const Notification: React.FC<NotificationProps> = ({
     title,
     issuerImage,
     issuerName,
