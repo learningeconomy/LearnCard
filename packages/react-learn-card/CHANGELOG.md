@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.2.5
+
+### Patch Changes
+
+-   Clean dist folder before building
+
 ## 2.2.4
 
 ### Patch Changes
