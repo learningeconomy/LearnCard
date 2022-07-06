@@ -1,5 +1,12 @@
 # @welibraryos/react-learn-card
 
+## 2.2.4
+
+### Patch Changes
+
+-   Notification component
+-   9ddcfab: Notification component
+
 ## 2.2.3
 
 ### Patch Changes
