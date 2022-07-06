@@ -1,6 +1,6 @@
 import React from 'react';
 
-const Checkmark: React.FC<{ className?: string }> = ({ className = '' }) => {
+export const Checkmark: React.FC<{ className?: string }> = ({ className = '' }) => {
     return (
         <svg
             viewBox="0 0 26 27"
