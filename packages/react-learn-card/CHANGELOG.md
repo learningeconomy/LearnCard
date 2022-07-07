@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.2.8
+
+### Patch Changes
+
+-   Fix css issues
+
 ## 2.2.7
 
 ### Patch Changes
