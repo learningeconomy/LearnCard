@@ -1,3 +1,10 @@
+import { KeyPair } from '../didkit/types';
+
+export type DependentMethods = {
+    generateEd25519KeyFromBytes: (bytes: Uint8Array) => KeyPair;
+    keyToDid: (type: string, keypair: KeyPair) => string;
+};
+
 export type JWK = {
     id: string;
     type: string | string[];
