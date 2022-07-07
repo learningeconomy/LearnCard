@@ -1,5 +1,42 @@
 # @welibraryos/react-learn-card
 
+## 2.3.0
+
+### Minor Changes
+
+-   Require consumers to import css
+
+## 2.2.8
+
+### Patch Changes
+
+-   Fix css issues
+
+## 2.2.7
+
+### Patch Changes
+
+-   Remove sideEffects array
+
+## 2.2.6
+
+### Patch Changes
+
+-   Fix Notification export
+
+## 2.2.5
+
+### Patch Changes
+
+-   Clean dist folder before building
+
+## 2.2.4
+
+### Patch Changes
+
+-   Notification component
+-   9ddcfab: Notification component
+
 ## 2.2.3
 
 ### Patch Changes
