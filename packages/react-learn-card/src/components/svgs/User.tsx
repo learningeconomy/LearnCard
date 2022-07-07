@@ -1,6 +1,6 @@
 import React from 'react';
 
-const User: React.FC<{ className?: string }> = ({ className = '' }) => {
+export const User: React.FC<{ className?: string }> = ({ className = '' }) => {
     return (
         <svg viewBox="0 0 31 31" fill="none" className={className} data-testid="id-icon">
             <path

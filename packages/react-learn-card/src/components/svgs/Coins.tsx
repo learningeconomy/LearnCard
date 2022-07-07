@@ -1,6 +1,6 @@
 import React from 'react';
 
-const Coins: React.FC<{ className?: string }> = ({ className = '' }) => {
+export const Coins: React.FC<{ className?: string }> = ({ className = '' }) => {
     return (
         <svg viewBox="0 0 31 30" fill="none" className={className} data-testid="currency-icon">
             <path

@@ -1,6 +1,6 @@
 import React from 'react';
 
-const Graduation: React.FC<{ className?: string }> = ({ className = '' }) => {
+export const Graduation: React.FC<{ className?: string }> = ({ className = '' }) => {
     return (
         <svg viewBox="0 0 31 31" fill="none" className={className} data-testid="learning-icon">
             <path

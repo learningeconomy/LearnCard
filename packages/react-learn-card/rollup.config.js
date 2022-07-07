@@ -3,11 +3,12 @@ import json from '@rollup/plugin-json';
 import resolve from '@rollup/plugin-node-resolve';
 import postcss from 'rollup-plugin-postcss';
 import commonjs from '@rollup/plugin-commonjs';
+import del from 'rollup-plugin-delete';
 import image from 'rollup-plugin-img';
 import esbuild from 'rollup-plugin-esbuild';
 import peerDepsExternal from 'rollup-plugin-peer-deps-external';
 import dts from 'rollup-plugin-dts';
-import svgr from '@svgr/rollup'
+import svgr from '@svgr/rollup';
 
 const packageJson = require('./package.json');
 
@@ -19,6 +20,7 @@ export default [
             { dir: packageJson.module, format: 'esm', sourcemap: true },
         ],
         plugins: [
+            del({ targets: [packageJson.main, packageJson.module] }),
             json(),
             peerDepsExternal(),
             postcss({ minimize: true, inject: { insertAt: 'top' } }),
