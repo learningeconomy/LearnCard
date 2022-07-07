@@ -1,21 +1,19 @@
 import { Plugin, UnlockedWallet } from 'types/wallet';
 import { ethers } from 'ethers';
 
-import { EthereumConfig, EthereumNetworks, EthereumPluginMethods } from './types';
+import { EthereumConfig, EthereumPluginMethods } from './types';
 
 export const getEthereumPlugin = (
     initWallet: UnlockedWallet<string, { getSubjectDid: () => string }>, // unused rn, but I'll be using it in the next ETH plugin PR
     config: EthereumConfig
 ): Plugin<'Ethereum', EthereumPluginMethods> => {
-    const { address, infuraProjectId, network = EthereumNetworks.mainnet } = config;
+    const { address, infuraProjectId, network = 'mainnet' } = config;
 
-    // let provider: ethers.providers.JsonRpcProvider;
-    let provider: any; // TODO properly type this
+    let provider: ethers.providers.Provider;
     if (infuraProjectId) {
-        const url = `https://${network}.infura.io/v3/${infuraProjectId}`;
-        provider = new ethers.providers.JsonRpcProvider(url);
+        provider = new ethers.providers.InfuraProvider(network, infuraProjectId);
     } else {
-        provider = ethers.getDefaultProvider();
+        provider = ethers.getDefaultProvider(network);
     }
 
     const checkErc20TokenBalance = async (tokenContractAddress: string) => {
