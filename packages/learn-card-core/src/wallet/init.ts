@@ -9,6 +9,7 @@ import { verifyCredential } from './verify';
 
 import { LearnCardConfig, LearnCardWallet } from 'types/LearnCard';
 import { defaultCeramicIDXArgs } from './defaults';
+import { getDidKitPlugin } from './plugins/didkit';
 
 /** Generates a LearnCard Wallet from a 64 character seed string */
 export const walletFromKey = async (
@@ -21,9 +22,11 @@ export const walletFromKey = async (
 ): Promise<LearnCardWallet> => {
     await init(didkit);
 
-    const didkeyWallet = await (
+    const didkitWallet = await (
         await generateWallet(defaultContents)
-    ).addPlugin(await getDidKeyPlugin(key));
+    ).addPlugin(await getDidKitPlugin(didkit));
+
+    const didkeyWallet = await didkitWallet.addPlugin(await getDidKeyPlugin(didkitWallet, key));
 
     const didkeyAndVCWallet = await didkeyWallet.addPlugin(await getVCPlugin(didkeyWallet));
 

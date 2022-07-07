@@ -1,22 +1,19 @@
-import { issueCredential as ic, keyToVerificationMethod } from 'didkit';
 import { UnsignedVC } from '@learncard/types';
 
+import { DependentMethods, VCPluginMethods } from './types';
 import { UnlockedWallet } from 'types/wallet';
 
-export const issueCredential = async (
-    wallet: UnlockedWallet<any, { getSubjectKeypair: () => Record<string, string> }>,
-    credential: UnsignedVC
-) => {
-    const _kp = wallet.pluginMethods.getSubjectKeypair();
+export const issueCredential = (initWallet: UnlockedWallet<string, DependentMethods>) => {
+    return async (wallet: UnlockedWallet<string, VCPluginMethods>, credential: UnsignedVC) => {
+        const kp = wallet.pluginMethods.getSubjectKeypair();
 
-    if (!_kp) throw new Error('Cannot issue credential: Could not get subject keypair');
+        if (!kp) throw new Error('Cannot issue credential: Could not get subject keypair');
 
-    const kp = JSON.stringify(_kp);
+        const options = {
+            verificationMethod: await initWallet.pluginMethods.keyToVerificationMethod('key', kp),
+            proofPurpose: 'assertionMethod',
+        };
 
-    const options = JSON.stringify({
-        verificationMethod: await keyToVerificationMethod('key', kp),
-        proofPurpose: 'assertionMethod',
-    });
-
-    return JSON.parse(await ic(JSON.stringify(credential), options, kp));
+        return initWallet.pluginMethods.issueCredential(credential, options, kp);
+    };
 };
