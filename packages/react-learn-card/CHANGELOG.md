@@ -1,11 +1,25 @@
 # @welibraryos/react-learn-card
 
+## 2.2.6
+
+### Patch Changes
+
+-   Fix Notification export
+
+## 2.2.5
+
+### Patch Changes
+
+-   Clean dist folder before building
+
 ## 2.2.4
 
 ### Patch Changes
 
 -   Updated dependencies
     -   @learncard/core@1.2.0
+-   Notification component
+-   9ddcfab: Notification component
 
 ## 2.2.3
 
