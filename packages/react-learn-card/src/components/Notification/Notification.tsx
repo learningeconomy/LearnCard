@@ -49,7 +49,7 @@ export const Notification: React.FC<NotificationProps> = ({
                     </div>
                     <div className="text-left ml-3">
                         <h4
-                            className="font-bold tracking-wide line-clamp-1"
+                            className="font-bold tracking-wide line-clamp-1 text-black"
                             data-testid="notification-title"
                         >
                             {title}
@@ -72,7 +72,6 @@ export const Notification: React.FC<NotificationProps> = ({
                 <div className="flex items-center justify-between w-full mt-3">
                     <button
                         onClick={onClick}
-                        type="button"
                         className={`flex-1 rounded-[24px] border-solid border-2 bg-white font-semibold mr-2 py-2 px-3 tracking-wide ${viewButtonStyles}`}
                         role="button"
                         name="notification-view-button"
@@ -80,7 +79,6 @@ export const Notification: React.FC<NotificationProps> = ({
                         View
                     </button>
                     <button
-                        type="button"
                         className={`flex items-center justify-center flex-1 rounded-[24px] border-2 border-solid font-semibold py-2 px-3 tracking-wide ${claimButtonStyles}`}
                         onClick={handleClaim}
                         role="button"
