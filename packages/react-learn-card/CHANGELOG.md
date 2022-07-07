@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.3.0
+
+### Minor Changes
+
+-   Require consumers to import css
+
 ## 2.2.8
 
 ### Patch Changes
