@@ -20,8 +20,10 @@ pnpm install @learncard/react
 
 ## Usage
 
-```js
+```ts
 import React, { useState, useEffect } from "react";
+import '@learncard/react/dist/base.css'; // if not already using tailwind
+import '@learncard/react/dist/main.css';
 import { walletFromKey } from "@learncard/core";
 import { VCCard } from "@learncard/react";
 import { VC } from "@learncard/types";
@@ -45,7 +47,29 @@ const Test = () => {
 };
 ```
 
+### Styles
+
+`@learncard/react` uses [tailwind](https://tailwindcss.com/) for styles, and exports two css files
+for consumers: `base.css` and `main.css`. If you are already using Tailwind, you do not need to import
+`base.css`, as it is simply re-exposing `@tailwind base` and `@tailwindcss/components`. However, you
+_will_ need to import `main.css`, because it imports the tailwind classes used by our components, as
+well as our bespoke CSS classes.
+
+#### If using Tailwind already
+
+```ts
+import '@learncard/react/dist/main.css';
+```
+
+#### If not using Tailwind already
+
+```ts
+import '@learncard/react/dist/base.css';
+import '@learncard/react/dist/main.css';
+```
+
 ## Contributing
+
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
 Please make sure to update tests as appropriate.
