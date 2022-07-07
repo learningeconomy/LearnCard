@@ -1,15 +1,12 @@
 {
   "name": "@learncard/react",
-  "version": "2.2.6",
+  "version": "2.2.7",
   "description": "",
   "main": "dist/cjs",
   "module": "dist/esm",
   "types": "dist/index.d.ts",
   "files": [
     "dist"
-  ],
-  "sideEffects": [
-    "dist/esm/index.js"
   ],
   "scripts": {
     "generate-barrels": "barrelsby -D -e \".*\\.(stories)|(test)|(\\.d\\.).*\" -d ./src/components -l all",

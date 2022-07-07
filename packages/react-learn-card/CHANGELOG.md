@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.2.7
+
+### Patch Changes
+
+-   Remove sideEffects array
+
 ## 2.2.6
 
 ### Patch Changes
