@@ -19,7 +19,7 @@ program
 
         console.log(gradient(['cyan', 'green'])(figlet.textSync('Learn Card', 'Big Money-ne')));
         console.log('Welcome to the Learn Card CLI!');
-        console.log(`You're seed is ${seed}\n`);
+        console.log(`Your seed is ${seed}\n`);
 
         console.log('Creating wallet...');
 
