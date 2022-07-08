@@ -1,5 +1,11 @@
 # @learncard/cli
 
+## 1.0.2
+
+### Patch Changes
+
+-   Fix bad shebang
+
 ## 1.0.1
 
 ### Patch Changes
