@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 1.1.5
+
+### Patch Changes
+
+-   Release @learncard/cli
+
 ## 1.1.4
 
 ### Patch Changes
