@@ -26,6 +26,7 @@ program
         globalThis.walletFromKey = walletFromKey;
         globalThis.wallet = await walletFromKey(seed);
 
+        // delete 'Creating wallet...' message
         process.stdout.moveCursor(0, -1);
         process.stdout.clearLine(1);
 
