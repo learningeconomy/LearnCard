@@ -1,21 +1,26 @@
 [<img src="https://user-images.githubusercontent.com/2185016/176284693-4ca14052-d067-4ea5-b170-c6cd2594ee23.png" width="400"/>](image.png)
 
-# @learncard/http-bridge
+# @learncard/cli
 
-[![npm version](https://img.shields.io/npm/v/@learncard/http-bridge)](https://www.npmjs.com/package/@learncard/http-bridge)
-[![npm downloads](https://img.shields.io/npm/dw/@learncard/http-bridge)](https://www.npmjs.com/package/@learncard/http-bridge)
-[![vulnerabilities](https://img.shields.io/snyk/vulnerabilities/npm/@learncard/http-bridge)](https://www.npmjs.com/package/@learncard/http-bridge)
+[![npm version](https://img.shields.io/npm/v/@learncard/http-bridge)](https://www.npmjs.com/package/@learncard/cli)
+[![npm downloads](https://img.shields.io/npm/dw/@learncard/http-bridge)](https://www.npmjs.com/package/@learncard/cli)
+[![vulnerabilities](https://img.shields.io/snyk/vulnerabilities/npm/@learncard/http-bridge)](https://www.npmjs.com/package/@learncard/cli)
 
-**LearnCard Bridge - HTTP** is a suite of tools with a simple CLI for deploying a serverless execution environment for LearnCard Core exposed over an HTTP API.
+**LearnCard CLI** is an easy to use node REPL that instantiates a Learn Card wallet for you and gives
+you all the tools you need to easily play around with the Learn Card SDK!
 
 ## Documentation
 All LearnCard documentation can be found at:
 https://app.gitbook.com/o/6uDv1QDlxaaZC7i8EaGb/s/FXvEJ9j3Vf3FW5Nc557n/
-## Install
 
-- Clone this repo
-- Set up AWS CLI
-- Run `npx serverless deploy`
+## Usage
+
+```bash
+npx @learncard/cli
+
+# Optionally specify a seed
+npx @learncard/cli 1b498556081a298261313657c32d5d0a9ce8285dc4d659e6787392207e4a7ac2
+```
 
 ## Contributing
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
