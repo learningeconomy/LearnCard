@@ -41,6 +41,8 @@
 
 ### Patch Changes
 
+-   Updated dependencies
+    -   @learncard/core@1.2.0
 -   Notification component
 -   9ddcfab: Notification component
 
