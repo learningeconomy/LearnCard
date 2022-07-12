@@ -1,6 +1,6 @@
 {
   "name": "@learncard/react",
-  "version": "2.2.6",
+  "version": "2.3.1",
   "description": "",
   "main": "dist/cjs",
   "module": "dist/esm",
@@ -8,9 +8,7 @@
   "files": [
     "dist"
   ],
-  "sideEffects": [
-    "dist/esm/index.js"
-  ],
+  "sideEffects": false,
   "scripts": {
     "generate-barrels": "barrelsby -D -e \".*\\.(stories)|(test)|(\\.d\\.).*\" -d ./src/components -l all",
     "build": "pnpm generate-barrels && rollup -c",
@@ -62,7 +60,7 @@
     "rollup-plugin-dts": "^4.2.2",
     "rollup-plugin-esbuild": "^4.9.1",
     "rollup-plugin-peer-deps-external": "^2.2.4",
-    "rollup-plugin-postcss": "^4.0.2",
+    "rollup-plugin-styles": "^4.0.0",
     "style-loader": "^3.3.1",
     "tailwindcss": "^3.0.24",
     "typescript": "^4.5.4"

@@ -1,5 +1,30 @@
 # @welibraryos/react-learn-card
 
+## 2.3.1
+
+### Patch Changes
+
+-   Updated dependencies
+    -   @learncard/core@1.1.5
+
+## 2.3.0
+
+### Minor Changes
+
+-   Require consumers to import css
+
+## 2.2.8
+
+### Patch Changes
+
+-   Fix css issues
+
+## 2.2.7
+
+### Patch Changes
+
+-   Remove sideEffects array
+
 ## 2.2.6
 
 ### Patch Changes
