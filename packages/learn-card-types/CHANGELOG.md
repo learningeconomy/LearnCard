@@ -1,5 +1,11 @@
 # learn-card-types
 
+## 2.1.2
+
+### Patch Changes
+
+-   Move didkit into its own plugin
+
 ## 2.1.1
 
 ### Patch Changes

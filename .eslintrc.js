@@ -60,5 +60,6 @@ module.exports = {
         'prefer-arrow-callback': ['warn', { allowNamedFunctions: true }],
         '@typescript-eslint/naming-convention': 'off',
         'react/require-default-props': 'off',
+        'import/no-extraneous-dependencies': 'off',
     },
 };
