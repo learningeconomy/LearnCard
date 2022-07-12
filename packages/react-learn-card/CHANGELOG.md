@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.3.2
+
+### Patch Changes
+
+-   Learn Card Card View
+
 ## 2.3.1
 
 ### Patch Changes
