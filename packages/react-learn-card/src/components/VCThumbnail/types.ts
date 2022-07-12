@@ -30,9 +30,9 @@ export type VCThumbnailProps = {
      */
     className?: string;
     /**
-     * condensed or full view
-     * of the thumbnail - defaulted to false
+     * condensed or full view of the thumbnail
      * @type {boolean}
+     * @param {boolean=} false - shows full view by default.
      */
     listView?: boolean;
     /**
