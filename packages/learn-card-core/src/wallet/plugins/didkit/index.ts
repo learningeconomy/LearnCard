@@ -14,7 +14,7 @@ import { Plugin } from 'types/wallet';
 
 export const getDidKitPlugin = async (
     input?: InitInput | Promise<InitInput>
-): Promise<Plugin<'Didkit', DidkitPluginMethods>> => {
+): Promise<Plugin<'DIDKit', DidkitPluginMethods>> => {
     await init(input);
 
     return {

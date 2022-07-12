@@ -11,7 +11,7 @@ import { UnlockedWallet } from 'types/wallet';
 export * from '@learncard/types';
 
 export type LearnCardRawWallet = UnlockedWallet<
-    'Didkit' | 'DID Key' | 'VC' | 'IDX' | 'Expiration',
+    'DIDKit' | 'DID Key' | 'VC' | 'IDX' | 'Expiration',
     DidKeyPluginMethods & VCPluginMethods & IDXPluginMethods
 >;
 
