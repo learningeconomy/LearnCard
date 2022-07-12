@@ -11,7 +11,6 @@ export type VCCardProps = {
 };
 
 export const VCCard: React.FC<VCCardProps> = ({ credential, issueeOverride, className = '' }) => {
-    console.log(React.version);
     const [loading, setLoading] = useState(true);
     const [vcVerification, setVCVerification] = useState<VerificationItem[]>([]);
 
