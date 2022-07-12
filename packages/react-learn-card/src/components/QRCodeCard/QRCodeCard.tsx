@@ -3,7 +3,7 @@ import { QRCodeSVG } from 'qrcode.react';
 
 import { QRCodeCardProps } from './types';
 
-export const LearnCardCreditCardFrontFace: React.FC<QRCodeCardProps> = ({
+export const QRCodeCard: React.FC<QRCodeCardProps> = ({
     userHandle,
     qrCodeValue,
     className,
@@ -41,4 +41,4 @@ export const LearnCardCreditCardFrontFace: React.FC<QRCodeCardProps> = ({
     );
 };
 
-export default LearnCardCreditCardFrontFace;
+export default QRCodeCard;

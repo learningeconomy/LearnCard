@@ -1,6 +1,13 @@
 import { z } from 'zod';
 import { CredentialSubjectValidator, ProfileValidator } from './vc';
 
+export const VerificationCheckValidator = z.object({
+    checks: z.string().array(),
+    warnings: z.string().array(),
+    errors: z.string().array(),
+});
+export type VerificationCheck = z.infer<typeof VerificationCheckValidator>;
+
 export const VerificationStatusValidator = z.enum(['Success', 'Failed', 'Error']);
 export type VerificationStatus = z.infer<typeof VerificationStatusValidator>;
 export const VerificationStatusEnum = VerificationStatusValidator.enum;

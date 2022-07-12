@@ -1,5 +1,16 @@
 # learn-card-core
 
+## 1.2.0
+
+### Minor Changes
+
+-   Move didkit into its own plugin
+## 1.1.5
+
+### Patch Changes
+
+-   Release @learncard/cli
+
 ## 1.1.4
 
 ### Patch Changes

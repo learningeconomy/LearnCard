@@ -1,6 +1,6 @@
 {
   "name": "@learncard/core",
-  "version": "1.1.4",
+  "version": "1.2.0",
   "description": "",
   "main": "./dist/index.js",
   "module": "./dist/core.esm.js",
@@ -42,11 +42,11 @@
   "types": "./dist/core.d.ts",
   "dependencies": {
     "@ceramicnetwork/common": "^2.2.1",
-    "@ceramicnetwork/http-client": "2.2.1",
+    "@ceramicnetwork/http-client": "2.3.0",
     "@ceramicnetwork/stream-tile": "^2.2.2",
     "@ceramicnetwork/streamid": "^2.1.0",
     "@glazed/did-datastore": "^0.3.2",
-    "@glazed/tile-loader": "^0.2.0",
+    "@glazed/tile-loader": "^0.2.1",
     "abort-controller": "^3.0.0",
     "date-fns": "^2.28.0",
     "dids": "^3.2.0",
