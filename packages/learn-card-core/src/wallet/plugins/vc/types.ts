@@ -2,7 +2,7 @@ import { UnsignedVC, VC, UnsignedVP, VP, VerificationCheck } from '@learncard/ty
 import { KeyPair, ProofOptions } from '../didkit/types';
 
 export type DependentMethods = {
-    getSubjectDid: () => string;
+    getSubjectDid: (type: 'key') => string;
     getSubjectKeypair: () => KeyPair;
     keyToVerificationMethod: (type: string, keypair: KeyPair) => Promise<string>;
     issueCredential: (

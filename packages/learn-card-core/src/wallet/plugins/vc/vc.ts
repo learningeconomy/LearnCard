@@ -19,7 +19,7 @@ export const getVCPlugin = async (
             issuePresentation: issuePresentation(wallet),
             verifyPresentation: verifyPresentation(wallet),
             getTestVc: (_wallet, subject = 'did:example:d23dd687a7dc6787646f2eb98d0') => {
-                const did = _wallet.pluginMethods.getSubjectDid();
+                const did = _wallet.pluginMethods.getSubjectDid('key');
 
                 return {
                     '@context': ['https://www.w3.org/2018/credentials/v1'],
