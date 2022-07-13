@@ -13,6 +13,7 @@
     "paths": {
         "types/*": ["types/*"],
         "@wallet/*": ["wallet/*"],
+        "@helpers/*": ["wallet/helpers/*"],
         "didkit/*": ["didkit/*"]
     },
     "skipLibCheck": true,

@@ -1,3 +1,5 @@
+import { recycleDependents } from '@helpers/wallet.helpers';
+
 import { issueCredential } from './issueCredential';
 import { verifyCredential } from './verifyCredential';
 import { issuePresentation } from './issuePresentation';
@@ -11,7 +13,7 @@ export const getVCPlugin = async (
 ): Promise<Plugin<'VC', VCPluginMethods>> => {
     return {
         pluginMethods: {
-            ...wallet.pluginMethods,
+            ...recycleDependents(wallet.pluginMethods),
             issueCredential: issueCredential(wallet),
             verifyCredential: verifyCredential(wallet),
             issuePresentation: issuePresentation(wallet),
