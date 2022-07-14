@@ -1,3 +1,5 @@
+import { recycleDependents } from '@helpers/wallet.helpers';
+
 import { issueCredential } from './issueCredential';
 import { verifyCredential } from './verifyCredential';
 import { issuePresentation } from './issuePresentation';
@@ -11,13 +13,13 @@ export const getVCPlugin = async (
 ): Promise<Plugin<'VC', VCPluginMethods>> => {
     return {
         pluginMethods: {
-            ...wallet.pluginMethods,
+            ...recycleDependents(wallet.pluginMethods),
             issueCredential: issueCredential(wallet),
             verifyCredential: verifyCredential(wallet),
             issuePresentation: issuePresentation(wallet),
             verifyPresentation: verifyPresentation(wallet),
             getTestVc: (_wallet, subject = 'did:example:d23dd687a7dc6787646f2eb98d0') => {
-                const did = _wallet.pluginMethods.getSubjectDid();
+                const did = _wallet.pluginMethods.getSubjectDid('key');
 
                 return {
                     '@context': ['https://www.w3.org/2018/credentials/v1'],

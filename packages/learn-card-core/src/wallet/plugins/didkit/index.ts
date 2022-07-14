@@ -9,7 +9,7 @@ import init, {
     verifyPresentation,
 } from 'didkit';
 
-import { DidkitPluginMethods } from './types';
+import { DidkitPluginMethods, DidMethod } from './types';
 import { Plugin } from 'types/wallet';
 
 export const getDidKitPlugin = async (
@@ -17,12 +17,26 @@ export const getDidKitPlugin = async (
 ): Promise<Plugin<'DIDKit', DidkitPluginMethods>> => {
     await init(input);
 
+    const memoizedDids: Partial<Record<DidMethod, string>> = {};
+
     return {
         pluginMethods: {
             generateEd25519KeyFromBytes: (_wallet, bytes) =>
                 JSON.parse(generateEd25519KeyFromBytes(bytes)),
 
-            keyToDid: (_wallet, type, keypair) => keyToDID(type, JSON.stringify(keypair)),
+            keyToDid: (_wallet, type, keypair) => {
+                const memoizedDid = memoizedDids[type];
+
+                if (!memoizedDid) {
+                    const did = keyToDID(type, JSON.stringify(keypair));
+
+                    memoizedDids[type] = did;
+
+                    return did;
+                }
+
+                return memoizedDid;
+            },
 
             keyToVerificationMethod: async (_wallet, type, keypair) =>
                 keyToVerificationMethod(type, JSON.stringify(keypair)),

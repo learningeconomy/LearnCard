@@ -68,7 +68,7 @@ program
         console.log('┌─────────────────────────┬──────────────────────────────────────┐');
         console.log('│        Description      │            Command                   │');
         console.log('├─────────────────────────┼──────────────────────────────────────┤');
-        console.log(`│           View your did │ ${g.wallet}.did;                          │`);
+        console.log(`│           View your did │ ${g.wallet}.did();                        │`);
         console.log(`│ Generate an unsigned VC │ ${g.wallet}.getTestVc();                  │`);
         console.log(`│       Issue a signed VC │ await ${g.wallet}.issueCredential(uvc);   │`);
         console.log(`│      Verify a signed VC │ await ${g.wallet}.verifyCredential(vc);   │`);

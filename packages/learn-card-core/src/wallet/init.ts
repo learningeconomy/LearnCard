@@ -38,9 +38,8 @@ export const walletFromKey = async (
     return {
         _wallet: wallet,
 
-        get did() {
-            return wallet.pluginMethods.getSubjectDid();
-        },
+        did: (type = 'key') => wallet.pluginMethods.getSubjectDid(type),
+
         get keypair() {
             return wallet.pluginMethods.getSubjectKeypair();
         },

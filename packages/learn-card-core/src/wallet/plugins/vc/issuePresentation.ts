@@ -5,7 +5,7 @@ import { UnlockedWallet } from 'types/wallet';
 
 export const issuePresentation = (initWallet: UnlockedWallet<string, DependentMethods>) => {
     return async (wallet: UnlockedWallet<string, VCPluginMethods>, credential: VC) => {
-        const did = wallet.pluginMethods.getSubjectDid();
+        const did = wallet.pluginMethods.getSubjectDid('key');
 
         if (!did) throw new Error('Cannot create presentation: No holder key found');
 
