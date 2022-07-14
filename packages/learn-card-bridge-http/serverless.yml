@@ -1,5 +1,7 @@
 # serverless.yml
 
+useDotenv: true
+
 service: learn-card-http-bridge
 
 plugins:

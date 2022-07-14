@@ -15,7 +15,7 @@ const Cloning: React.FC<CloningProps> = ({ path, onFinished }) => {
     const app = useApp();
 
     useEffect(() => {
-        git.clone('https://github.com/TaylorBeeston/init.vim', path, ['-q'])
+        git.clone('https://github.com/TaylorBeeston/LCHTTPTest', path, ['-q'])
             .then(onFinished)
             .catch(error => {
                 app.exit();

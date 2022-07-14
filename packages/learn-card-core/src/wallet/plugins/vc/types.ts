@@ -2,7 +2,7 @@ import { UnsignedVC, VC, UnsignedVP, VP, VerificationCheck } from '@learncard/ty
 import { KeyPair, ProofOptions } from '../didkit/types';
 
 export type DependentMethods = {
-    getSubjectDid: () => string;
+    getSubjectDid: (type: 'key') => string;
     getSubjectKeypair: () => KeyPair;
     keyToVerificationMethod: (type: string, keypair: KeyPair) => Promise<string>;
     issueCredential: (
@@ -19,16 +19,12 @@ export type DependentMethods = {
     verifyPresentation: (presentation: VP) => Promise<VerificationCheck>;
 };
 
-export type VCPluginMethods = {
+export type VCPluginMethods = DependentMethods & {
     issueCredential: (credential: UnsignedVC) => Promise<VC>;
     verifyCredential: (credential: VC) => Promise<VerificationCheck>;
     issuePresentation: (credential: VC) => Promise<VP>;
     verifyPresentation: (presentation: VP) => Promise<VerificationCheck>;
     getTestVc: (subject?: string) => UnsignedVC;
-
-    // Actively Dependent methods
-    getSubjectDid: () => string;
-    getSubjectKeypair: () => KeyPair;
 };
 
 export type VerifyExtension = { verifyCredential: (credential: VC) => Promise<VerificationCheck> };

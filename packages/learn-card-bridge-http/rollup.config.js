@@ -6,7 +6,7 @@ const packageJson = require('./package.json');
 export default [
     {
         input: ['cli/index.tsx'],
-        output: [{ file: packageJson.bin, format: 'cjs' }],
+        output: [{ file: packageJson.bin, format: 'cjs', banner: '#!/usr/bin/env node' }],
         plugins: [json(), esbuild()],
     },
 ];
