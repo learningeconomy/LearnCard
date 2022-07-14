@@ -7,7 +7,7 @@ import init, {
     verifyCredential,
     issuePresentation,
     verifyPresentation,
-} from 'didkit';
+} from '@didkit/index';
 
 import { DidkitPluginMethods } from './types';
 import { Plugin } from 'types/wallet';

@@ -163,12 +163,14 @@ importers:
       date-fns: ^2.28.0
       dids: ^3.2.0
       esbuild: ^0.14.38
+      esbuild-jest: ^0.5.0
       esbuild-plugin-copy: ^1.3.0
       hex-lite: ^1.5.0
       isomorphic-fetch: ^3.0.0
       isomorphic-webcrypto: ^2.3.8
       key-did-provider-ed25519: ^2.0.0
       key-did-resolver: 1.4.4
+      ts-jest: ^28.0.5
       tsc-alias: ^1.6.9
       typescript: ^4.6.4
     dependencies:
@@ -193,7 +195,9 @@ importers:
       '@types/node': 17.0.45
       aqu: 0.3.2
       esbuild: 0.14.47
+      esbuild-jest: 0.5.0_esbuild@0.14.47
       esbuild-plugin-copy: 1.3.0_esbuild@0.14.47
+      ts-jest: 28.0.5_6vtzbgpbems4joemkk7l27poq4
       tsc-alias: 1.6.11
       typescript: 4.7.4
 
@@ -3643,6 +3647,13 @@ packages:
       - supports-color
     dev: true
 
+  /@jest/schemas/28.1.3:
+    resolution: {integrity: sha512-/l/VWsdt/aBXgjshLWOFyFt3IVdYypu5y2Wn2rOO1un6nkqIn8SLXzgIMYXFyYsRWDyF5EthmKJMIdJvk08grg==}
+    engines: {node: ^12.13.0 || ^14.15.0 || ^16.10.0 || >=17.0.0}
+    dependencies:
+      '@sinclair/typebox': 0.24.19
+    dev: true
+
   /@jest/source-map/26.6.2:
     resolution: {integrity: sha512-YwYcCwAnNmOVsZ8mr3GfnzdXDAl4LaenZP5z+G0c8bzC9/dugL8zRmxZzdoTl4IaS3CryS1uWnROLPFmb6lVvA==}
     engines: {node: '>= 10.14.2'}
@@ -3775,6 +3786,18 @@ packages:
       '@types/istanbul-reports': 3.0.1
       '@types/node': 18.0.0
       '@types/yargs': 16.0.4
+      chalk: 4.1.2
+    dev: true
+
+  /@jest/types/28.1.3:
+    resolution: {integrity: sha512-RyjiyMUZrKz/c+zlMFO1pm70DcIlST8AeWTkoUdZevew44wcNZQHsEVOiCVtgVnlFFD82FPaXycys58cf2muVQ==}
+    engines: {node: ^12.13.0 || ^14.15.0 || ^16.10.0 || >=17.0.0}
+    dependencies:
+      '@jest/schemas': 28.1.3
+      '@types/istanbul-lib-coverage': 2.0.4
+      '@types/istanbul-reports': 3.0.1
+      '@types/node': 18.0.0
+      '@types/yargs': 17.0.10
       chalk: 4.1.2
     dev: true
 
@@ -4259,6 +4282,10 @@ packages:
       rxjs: 6.6.7
     transitivePeerDependencies:
       - zenObservable
+    dev: true
+
+  /@sinclair/typebox/0.24.19:
+    resolution: {integrity: sha512-gHJu8cdYTD5p4UqmQHrxaWrtb/jkH5imLXzuBypWhKzNkW0qfmgz+w1xaJccWVuJta1YYUdlDiPHXRTR4Ku0MQ==}
     dev: true
 
   /@sindresorhus/is/0.14.0:
@@ -14154,6 +14181,18 @@ packages:
       picomatch: 2.3.1
     dev: true
 
+  /jest-util/28.1.3:
+    resolution: {integrity: sha512-XdqfpHwpcSRko/C35uLYFM2emRAltIIKZiJ9eAmhjsj0CqZMa0p1ib0R5fWIqGhn1a103DebTbpqIaP1qCQ6tQ==}
+    engines: {node: ^12.13.0 || ^14.15.0 || ^16.10.0 || >=17.0.0}
+    dependencies:
+      '@jest/types': 28.1.3
+      '@types/node': 18.0.0
+      chalk: 4.1.2
+      ci-info: 3.3.2
+      graceful-fs: 4.2.10
+      picomatch: 2.3.1
+    dev: true
+
   /jest-validate/26.6.2:
     resolution: {integrity: sha512-NEYZ9Aeyj0i5rQqbq+tpIOom0YS1u2MVu6+euBsvpgIme+FOfRmoC4R5p0JiAUpaFvFy24xgrpMknarR/93XjQ==}
     engines: {node: '>= 10.14.2'}
@@ -19525,6 +19564,36 @@ packages:
       semver: 7.3.7
       typescript: 4.7.4
       yargs-parser: 20.2.9
+    dev: true
+
+  /ts-jest/28.0.5_6vtzbgpbems4joemkk7l27poq4:
+    resolution: {integrity: sha512-Sx9FyP9pCY7pUzQpy4FgRZf2bhHY3za576HMKJFs+OnQ9jS96Du5vNsDKkyedQkik+sEabbKAnCliv9BEsHZgQ==}
+    engines: {node: ^12.13.0 || ^14.15.0 || ^16.10.0 || >=17.0.0}
+    hasBin: true
+    peerDependencies:
+      '@babel/core': '>=7.0.0-beta.0 <8'
+      babel-jest: ^28.0.0
+      esbuild: '*'
+      jest: ^28.0.0
+      typescript: '>=4.3'
+    peerDependenciesMeta:
+      '@babel/core':
+        optional: true
+      babel-jest:
+        optional: true
+      esbuild:
+        optional: true
+    dependencies:
+      bs-logger: 0.2.6
+      esbuild: 0.14.47
+      fast-json-stable-stringify: 2.1.0
+      jest-util: 28.1.3
+      json5: 2.2.1
+      lodash.memoize: 4.1.2
+      make-error: 1.3.6
+      semver: 7.3.7
+      typescript: 4.7.4
+      yargs-parser: 21.0.1
     dev: true
 
   /ts-node/10.8.2_qiyc72axg2v44xl4yovan2v55u:
