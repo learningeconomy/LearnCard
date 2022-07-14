@@ -41,7 +41,9 @@ describe('LearnCard SDK', () => {
         it('should determinstically create a did', async () => {
             const wallet = await getWallet();
 
-            expect(wallet.did).toEqual('did:key:z6Mkv1o2GEgtXjFdEMfLtupcKhGRydM8V7VHzii7Uh4aHoqH');
+            expect(wallet.did()).toEqual(
+                'did:key:z6Mkv1o2GEgtXjFdEMfLtupcKhGRydM8V7VHzii7Uh4aHoqH'
+            );
         });
 
         it('should determinstically create a keypair', async () => {
@@ -57,14 +59,6 @@ describe('LearnCard SDK', () => {
     });
 
     describe('Credentials', () => {
-        it('should provide a test VC', async () => {
-            const wallet = await getWallet();
-
-            const testVc = wallet.getTestVc();
-
-            await expect(UnsignedVCValidator.parseAsync(testVc)).resolves.toBeDefined();
-        });
-
         it('should be able to issue a credential', async () => {
             const wallet = await getWallet();
 
@@ -93,7 +87,7 @@ describe('LearnCard SDK', () => {
             const otherWallet = await getWallet('b'.repeat(64));
 
             const issuedVc = await wallet.issueCredential(wallet.getTestVc());
-            issuedVc.issuer = otherWallet.did;
+            issuedVc.issuer = otherWallet.did();
 
             const verificationResult = await wallet.verifyCredential(issuedVc);
 
@@ -157,6 +151,20 @@ describe('LearnCard SDK', () => {
 
             expect(verificationResult.errors).toHaveLength(0);
             expect(verificationResult.checks).not.toHaveLength(0);
+        });
+    });
+
+    describe('Persistence', () => {
+        /* TODO: Need ability to delete credentials before testing persistence! */
+    });
+
+    describe('Testing', () => {
+        it('should provide a test VC', async () => {
+            const wallet = await getWallet();
+
+            const testVc = wallet.getTestVc();
+
+            await expect(UnsignedVCValidator.parseAsync(testVc)).resolves.toBeDefined();
         });
     });
 });
