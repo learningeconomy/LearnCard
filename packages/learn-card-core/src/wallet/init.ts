@@ -1,5 +1,3 @@
-import init from 'didkit';
-
 import { generateWallet } from './base';
 import { getIDXPlugin } from './plugins/idx';
 import { getDidKeyPlugin } from './plugins/didkey';
@@ -20,8 +18,6 @@ export const walletFromKey = async (
         defaultContents = [],
     }: Partial<LearnCardConfig> = {}
 ): Promise<LearnCardWallet> => {
-    await init(didkit);
-
     const didkitWallet = await (
         await generateWallet(defaultContents)
     ).addPlugin(await getDidKitPlugin(didkit));
