@@ -12,10 +12,10 @@
     "start": "aqu watch",
     "lint": "aqu lint",
     "lint:fix": "aqu lint --fix",
-    "test": "jest --passWithNoTests",
-    "test:watch": "jest --passWithNoTests --watch",
+    "test": "jest",
+    "test:watch": "jest --watch",
     "test:coverage": "jest --silent --ci --coverage --coverageReporters=\"text\" --coverageReporters=\"text-summary\"",
-    "prepare": "pnpm build"
+    "prepare": "pnpm test && pnpm build"
   },
   "author": "Learning Economy Foundation (www.learningeconomy.io)",
   "license": "MIT",
