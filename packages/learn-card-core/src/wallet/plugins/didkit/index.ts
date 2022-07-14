@@ -7,7 +7,7 @@ import init, {
     verifyCredential,
     issuePresentation,
     verifyPresentation,
-} from 'didkit';
+} from '@didkit/index';
 
 import { DidkitPluginMethods, DidMethod } from './types';
 import { Plugin } from 'types/wallet';
@@ -53,11 +53,13 @@ export const getDidKitPlugin = async (
             verifyCredential: async (_wallet, credential) =>
                 JSON.parse(await verifyCredential(JSON.stringify(credential), '{}')),
 
-            issuePresentation: async (presentation, options, keypair) =>
-                issuePresentation(
-                    JSON.stringify(presentation),
-                    JSON.stringify(options),
-                    JSON.stringify(keypair)
+            issuePresentation: async (_wallet, presentation, options, keypair) =>
+                JSON.parse(
+                    await issuePresentation(
+                        JSON.stringify(presentation),
+                        JSON.stringify(options),
+                        JSON.stringify(keypair)
+                    )
                 ),
 
             verifyPresentation: async (_wallet, presentation) =>

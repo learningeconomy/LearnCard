@@ -8,13 +8,13 @@
     "esModuleInterop": true,
     "lib": ["dom", "es2017"],
     "noLib": false,
-    "rootDir": "src",
-    "baseUrl": "src",
+    "rootDir": ".",
+    "baseUrl": ".",
     "paths": {
-        "types/*": ["types/*"],
-        "@wallet/*": ["wallet/*"],
-        "@helpers/*": ["wallet/helpers/*"],
-        "didkit/*": ["didkit/*"]
+        "types/*": ["src/types/*"],
+        "@wallet/*": ["src/wallet/*"],
+        "@helpers/*": ["src/wallet/helpers/*"],
+        "@didkit/*": ["src/didkit/*"]
     },
     "skipLibCheck": true,
     "allowSyntheticDefaultImports": true,

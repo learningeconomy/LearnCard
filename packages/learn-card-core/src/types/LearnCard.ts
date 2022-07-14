@@ -5,7 +5,7 @@ import { DidMethod } from '@wallet/plugins/didkit/types';
 import { DidKeyPluginMethods } from '@wallet/plugins/didkey/types';
 import { IDXCredential, IDXPluginMethods } from '@wallet/plugins/idx/types';
 import { VCPluginMethods } from '@wallet/plugins/vc/types';
-import { InitInput } from 'didkit';
+import { InitInput } from '@didkit/index';
 
 import { UnlockedWallet } from 'types/wallet';
 
