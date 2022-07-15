@@ -46,10 +46,18 @@ describe('LearnCard SDK', () => {
             );
         });
 
+        it('should support lots of did methods', async () => {
+            const wallet = await getWallet();
+
+            expect(() => wallet.did()).not.toThrow();
+            expect(() => wallet.did('key')).not.toThrow();
+            expect(() => wallet.did('ethr')).not.toThrow();
+        });
+
         it('should determinstically create a keypair', async () => {
             const wallet = await getWallet();
 
-            expect(wallet.keypair).toEqual({
+            expect(wallet.keypair()).toEqual({
                 kty: 'OKP',
                 crv: 'Ed25519',
                 x: '5zTqbCtiV95yNV5HKqBaTEh-a0Y8Ap7TBt8vAbVja1g',
