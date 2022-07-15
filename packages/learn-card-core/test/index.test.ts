@@ -46,14 +46,6 @@ describe('LearnCard SDK', () => {
             );
         });
 
-        it('should support lots of did methods', async () => {
-            const wallet = await getWallet();
-
-            expect(() => wallet.did()).not.toThrow();
-            expect(() => wallet.did('key')).not.toThrow();
-            expect(() => wallet.did('ethr')).not.toThrow();
-        });
-
         it('should determinstically create a keypair', async () => {
             const wallet = await getWallet();
 
@@ -63,6 +55,41 @@ describe('LearnCard SDK', () => {
                 x: '5zTqbCtiV95yNV5HKqBaTEh-a0Y8Ap7TBt8vAbVja1g',
                 d: 'qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqo',
             });
+        });
+
+        describe('Did Methods Supported', () => {
+            [
+                'key',
+                'tz',
+                'ethr',
+                'pkh:tz',
+                'pkh:tezos',
+                'pkh:sol',
+                'pkh:solana',
+                'pkh:eth',
+                'pkh:celo',
+                'pkh:poly',
+                'pkh:btc',
+                'pkh:doge',
+                'pkh:eip155',
+                'pkh:bip122',
+            ].forEach(method =>
+                it(method, async () => {
+                    const wallet = await getWallet();
+
+                    expect(() => wallet.did(method)).not.toThrow();
+                })
+            );
+        });
+
+        describe('Keypair Algorithms Supported', () => {
+            ['ed25519', 'secp256k1'].forEach(algorithm =>
+                it(algorithm, async () => {
+                    const wallet = await getWallet();
+
+                    expect(() => wallet.keypair(algorithm)).not.toThrow();
+                })
+            );
         });
     });
 
