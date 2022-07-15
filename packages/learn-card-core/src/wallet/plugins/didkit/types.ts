@@ -1,6 +1,21 @@
 import { UnsignedVC, UnsignedVP, VC, VP, VerificationCheck } from '@learncard/types';
 
-export type DidMethod = 'key' | 'tz' | 'pkh:tz' | 'pkh:tezos' | 'pkh:sol' | 'pkh:solana';
+export type DidMethod =
+    | 'key'
+    | 'tz'
+    | 'ethr'
+    | `pkh:${
+          | 'tz'
+          | 'tezos'
+          | 'sol'
+          | 'solana'
+          | 'eth'
+          | 'celo'
+          | 'poly'
+          | 'btc'
+          | 'doge'
+          | 'eip155'
+          | 'bip122'}`;
 
 export type KeyPair = { kty: string; crv: string; x: string; y?: string; d: string };
 
