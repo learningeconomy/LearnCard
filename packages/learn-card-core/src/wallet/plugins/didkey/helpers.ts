@@ -23,7 +23,13 @@ export const getAlgorithmForDidMethod = <DidMethod extends string>(
     didMethod: DidMethod
 ): Algorithm => {
     if (ED25519_METHODS.includes(didMethod)) return 'ed25519';
-    if (SECP256K1_METHODS.includes(didMethod)) return 'secp256k1';
+    if (
+        SECP256K1_METHODS.includes(didMethod) ||
+        didMethod.startsWith('pkh:eip155:') ||
+        didMethod.startsWith('pkh:bip122:')
+    ) {
+        return 'secp256k1';
+    }
 
     throw new Error('Unspported Did Method');
 };

@@ -72,7 +72,12 @@ describe('LearnCard SDK', () => {
                 'pkh:btc',
                 'pkh:doge',
                 'pkh:eip155',
+                'pkh:eip155:1',
+                'pkh:eip155:42220',
+                'pkh:eip155:137',
                 'pkh:bip122',
+                'pkh:bip122:000000000019d6689c085ae165831e93',
+                'pkh:bip122:1a91e3dace36e2be3bf030a65679fe82',
             ].forEach(method =>
                 it(method, async () => {
                     const wallet = await getWallet();

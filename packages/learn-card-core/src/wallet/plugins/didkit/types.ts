@@ -15,7 +15,9 @@ export type DidMethod =
           | 'btc'
           | 'doge'
           | 'eip155'
-          | 'bip122'}`;
+          | 'bip122'}`
+    | `pkh:eip155:${string}`
+    | `pkh:bip122:${string}`;
 
 export type KeyPair = { kty: string; crv: string; x: string; y?: string; d: string };
 
