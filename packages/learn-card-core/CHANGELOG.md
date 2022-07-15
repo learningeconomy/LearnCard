@@ -1,10 +1,23 @@
 # learn-card-core
 
+## 1.3.0
+
+### Minor Changes
+
+-   Add more did methods
+
+### Patch Changes
+
+-   Add tests
+
+*   Plugin-ify Didkit
+
 ## 1.2.0
 
 ### Minor Changes
 
 -   Move didkit into its own plugin
+
 ## 1.1.5
 
 ### Patch Changes
