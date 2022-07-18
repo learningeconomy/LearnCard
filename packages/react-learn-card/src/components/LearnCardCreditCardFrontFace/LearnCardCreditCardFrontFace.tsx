@@ -24,7 +24,6 @@ export const LearnCardCreditCardFrontFace: React.FC<LearnCardCreditCardFrontFace
                 <div className="absolute top-[-40px] left-0 w-[55%] h-[140%] rounded-tr-[150px] rounded-br-[150px] bg-grayscale-900 credit-card-bubble" />
                 {showActionButton && (
                     <button
-                        type="button"
                         className="absolute top-2 right-4 bg-grayscale-500 border-[2px] rounded-3xl border-solid border-color-grayscale-900 min-w-[110px] p-[2px] font-bold text-xs tracking-wide leading-snug text-center text-white"
                         onClick={onClick}
                         data-testid="credit-card-frontface-button"
