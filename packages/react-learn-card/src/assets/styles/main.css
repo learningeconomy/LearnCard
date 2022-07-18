@@ -243,6 +243,12 @@
 }
 
 @media (max-width: 414px) {
+    .credit-card-front-face, 
+    .credit-card-back-face {
+        max-height: 210px;
+        min-height: 210px;
+    }
+
     .credit-card-qr-code-container {
         margin: 0;
         padding: 0;
@@ -255,6 +261,12 @@
 }
 
 @media (max-width: 375px) {
+    .credit-card-front-face, 
+    .credit-card-back-face {
+        max-height: 200px;
+        min-height: 200px;
+    }
+
     .credit-card-qr-code-container {
         margin: 0;
         padding: 0;
@@ -262,6 +274,12 @@
 }
 
 @media (max-width: 320px) {
+    .credit-card-front-face, 
+    .credit-card-back-face {
+        max-height: 200px;
+        min-height: 200px;
+    }
+
     .credit-card-front-face-title {
         font-size: 9px;
     }

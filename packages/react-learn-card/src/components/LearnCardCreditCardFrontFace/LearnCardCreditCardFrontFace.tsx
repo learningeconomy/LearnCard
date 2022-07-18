@@ -15,9 +15,11 @@ export const LearnCardCreditCardFrontFace: React.FC<LearnCardCreditCardFrontFace
     onClick = () => {},
 }) => {
     return (
-        <div className="flex justify-center items-center max-w-[375px] rounded-[20px]">
+        <div
+            className={`flex justify-center items-center max-w-[375px] rounded-[20px] ${className}`}
+        >
             <div
-                className={`flex flex-row justify-center items-start pt-9 w-full max-h-[200px] min-h-[200px] rounded-[20px] shadow-3xl relative overflow-hidden credit-card-front-face ${className}`}
+                className={`flex flex-row justify-center items-start pt-9 w-full min-h-[220px] rounded-[20px] shadow-3xl relative overflow-hidden credit-card-front-face`}
             >
                 <div className="absolute top-[-40px] left-0 w-[55%] h-[140%] rounded-tr-[150px] rounded-br-[150px] bg-grayscale-900 credit-card-bubble" />
                 {showActionButton && (
@@ -79,7 +81,7 @@ export const LearnCardCreditCardFrontFace: React.FC<LearnCardCreditCardFrontFace
                     <img
                         src={MasterCardLogo ?? ''}
                         alt="mastercard icon"
-                        className="absolute bottom-[-5px] right-4 learn-card-mastercard-logo"
+                        className="absolute bottom-[-8px] right-4 learn-card-mastercard-logo"
                     />
                 </div>
             </div>
