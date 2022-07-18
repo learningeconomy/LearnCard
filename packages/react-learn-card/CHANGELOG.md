@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.3.3
+
+### Patch Changes
+
+-   Fix Learn Card - Card mobile styles
+
 ## 2.3.2
 
 ### Patch Changes
