@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.3.4
+
+### Patch Changes
+
+-   Fix learn card - front face card component
+
 ## 2.3.3
 
 ### Patch Changes
