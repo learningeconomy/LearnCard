@@ -191,7 +191,7 @@
     height: 35%;
     width: 100%;
     border-radius: 0px 0px 161px 100px;
-    background-color: #00BA88;
+    background-color: #00ba88;
     mix-blend-mode: color;
     z-index: 4;
 }
@@ -203,7 +203,7 @@
     height: 60%;
     width: 100%;
     border-radius: 0px 0px 161px 150px;
-    background-color: #00BA88;
+    background-color: #00ba88;
     mix-blend-mode: color;
     z-index: 4;
 }
@@ -215,7 +215,7 @@
     left: 0px;
     height: 50%;
     width: 55%;
-    background-color: #7DD3FC;
+    background-color: #7dd3fc;
     mix-blend-mode: color;
     z-index: 4;
 }
@@ -226,7 +226,7 @@
     right: 0;
     height: 60%;
     width: 100%;
-    background-color: #FF4000;
+    background-color: #ff4000;
     border-radius: 100px 0px 0px 100px;
     mix-blend-mode: color;
     z-index: 3;
@@ -242,18 +242,41 @@
     /* mix-blend-mode: lighten; */
 }
 
-
-@media (max-width: 340px) {
-    .credit-card-front-face-overlay {
-        left: -85%;
+@media (max-width: 414px) {
+    .credit-card-qr-code-container {
+        margin: 0;
+        padding: 0;
+        margin-left: 35px;
     }
 
+    .credit-card-master-card-logo {
+        bottom: -10px;
+    }
+}
+
+@media (max-width: 375px) {
+    .credit-card-qr-code-container {
+        margin: 0;
+        padding: 0;
+    }
+}
+
+@media (max-width: 320px) {
     .credit-card-front-face-title {
-        font-size: 10px;
+        font-size: 9px;
     }
 
-    .qr-code-container {
-        max-width: 95px;
+    .credit-card-bubble {
+        width: 58%;
+    }
+
+    .credit-card-master-card-logo {
+        bottom: -15px;
+    }
+
+    .credit-card-qr-code-container {
+        padding-left: 15px;
+        padding-right: 15px;
     }
 }
 
