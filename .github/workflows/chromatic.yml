@@ -6,6 +6,9 @@ name: 'Chromatic'
 # Event for the workflow
 on: push
 
+env:
+  CI: true
+
 # List of jobs
 jobs:
   chromatic-deployment:
@@ -13,15 +16,40 @@ jobs:
     runs-on: ubuntu-latest
     # Job steps
     steps:
-      - uses: actions/checkout@v1
+      - name: Checkout Repo
+        uses: actions/checkout@v1
+
+      - name: Setup Node.js 16.x
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16.x
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2.0.1
+        id: pnpm-install
+        with:
+          version: 7
+          run_install: false
+
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        run: |
+          echo "::set-output name=pnpm_cache_dir::$(pnpm store path)"
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ steps.pnpm-cache.outputs.pnpm_cache_dir }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
       - name: Install dependencies
-        run: npm i -g pnpm && pnpm i
-        # 👇 Adds Chromatic as a step in the workflow
+        run: pnpm i
+
       - name: Publish to Chromatic
         uses: chromaui/action@v1
-        # Chromatic GitHub Action options
         with:
-          # 👇 Chromatic projectToken, refer to the manage page to obtain it.
           projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
           exitZeroOnChanges: true # 👈 Option to prevent the workflow from failing
           workingDir: packages/react-learn-card
