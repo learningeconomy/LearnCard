@@ -1,11 +1,23 @@
 # @welibraryos/react-learn-card
 
-## 2.3.3
+## 2.3.5
 
 ### Patch Changes
 
 -   Updated dependencies []:
     -   @learncard/core@1.3.0
+
+## 2.3.4
+
+### Patch Changes
+
+-   Fix learn card - front face card component
+
+## 2.3.3
+
+### Patch Changes
+
+-   Fix Learn Card - Card mobile styles
 
 ## 2.3.2
 
