@@ -9,7 +9,6 @@ concurrency: ${{ github.workflow }}-${{ github.ref }}
 
 env:
   CI: true
-  PNPM_CACHE_DIR: .pnpm-store
 
 jobs:
   release:
@@ -20,17 +19,31 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Setup Node.js 16.x
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v3
         with:
           node-version: 16.x
 
       - name: Install pnpm
-        run: npm i pnpm@latest -g
+        uses: pnpm/action-setup@v2.0.1
+        id: pnpm-install
+        with:
+          version: 7
+          run_install: false
 
-      - name: Setup pnpm config
-        run: pnpm config set store-dir $PNPM_CACHE_DIR
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        run: |
+          echo "::set-output name=pnpm_cache_dir::$(pnpm store path)"
 
-      - name: Install Dependencies
+      - name: Setup pnpm cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ steps.pnpm-cache.outputs.pnpm_cache_dir }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
         run: pnpm i
 
       - name: Create Release Pull Request or Publish to npm
