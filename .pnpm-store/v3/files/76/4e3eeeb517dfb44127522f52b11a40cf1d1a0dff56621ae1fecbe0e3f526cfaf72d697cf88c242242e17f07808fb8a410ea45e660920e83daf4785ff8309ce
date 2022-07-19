@@ -1,6 +1,0 @@
-framework module UMReactNativeAdapter {
-  umbrella header "UMReactNativeAdapter.h"
-
-  export *
-  module * { export * }
-}

@@ -1,4 +1,0 @@
-{
-  "format": "iife",
-  "outfile": "./dist/index.js"
-}

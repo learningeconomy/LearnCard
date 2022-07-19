@@ -1,1 +1,0 @@
-{"version":3,"file":"unreachable-case-error.js","sourceRoot":"","sources":["../src/unreachable-case-error.ts"],"names":[],"mappings":"AAGA,MAAM,OAAO,oBAAqB,SAAQ,KAAK;IAC7C,YAAY,OAAc,EAAE,OAAe;QACzC,KAAK,CAAC,aAAa,IAAI,CAAC,SAAS,CAAC,OAAO,CAAC,KAAK,OAAO,EAAE,CAAC,CAAA;IAC3D,CAAC;CACF"}
