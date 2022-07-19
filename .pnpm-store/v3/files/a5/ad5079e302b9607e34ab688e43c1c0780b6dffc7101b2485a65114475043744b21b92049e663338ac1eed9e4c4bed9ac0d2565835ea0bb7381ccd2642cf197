@@ -1,0 +1,33 @@
+{
+  "name": "pretty-repl",
+  "keywords": [
+    "repl",
+    "syntax highlighting",
+    "colors",
+    "cli"
+  ],
+  "version": "3.1.1",
+  "description": "Extends repl.REPLServer to allow for a colorize function",
+  "main": "index.js",
+  "engines": {
+    "node": ">=11"
+  },
+  "scripts": {
+    "test": "node ./test/index.spec.js | tap-spec"
+  },
+  "author": "Massimiliano Marcon <me@marcon.me>",
+  "license": "MIT",
+  "repository": "github:mmarcon/pretty-repl",
+  "dependencies": {
+    "ansi-regex": "^5.0.0",
+    "chalk": "^4.1.1",
+    "emphasize": "^3.0.0",
+    "strip-ansi": "^6.0.0"
+  },
+  "devDependencies": {
+    "semistandard": "^14.2.0",
+    "stdio-mock": "^1.1.0",
+    "tap-spec": "^5.0.0",
+    "tape": "^4.13.2"
+  }
+}

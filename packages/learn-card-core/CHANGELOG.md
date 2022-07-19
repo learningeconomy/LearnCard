@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 1.3.1
+
+### Patch Changes
+
+-   [#27](https://github.com/WeLibraryOS/LearnCard/pull/27) [`da81189`](https://github.com/WeLibraryOS/LearnCard/commit/da811895ae672f4287fbcd2026bf1aac5a6447e1) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Test
+
 ## 1.3.0
 
 ### Minor Changes

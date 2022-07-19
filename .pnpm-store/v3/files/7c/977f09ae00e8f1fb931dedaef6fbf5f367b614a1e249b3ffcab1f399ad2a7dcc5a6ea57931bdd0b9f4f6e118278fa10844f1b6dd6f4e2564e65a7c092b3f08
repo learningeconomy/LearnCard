@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>apg-exp</title>
+<meta charset="utf-8">
+<link rel="stylesheet" href="./css/BrightSide.css" type="text/css" />
+<script type="text/javascript" src="./import.js"></script>
+</head>
+<body>
+ <div id="wrap">
+  <div id="header"></div>
+  <div id="content-wrap">
+   <img src="./images/PointLobosCropped.jpg" width="820" height="120" alt="headerphoto" class="no-border" />
+   <div id="sidebar"></div>
+   <div id="main-2col">
+    <!-- page content goes here -->
+    <h1>Method: test()</h1>
+    <p>
+     The
+     <kbd>test()</kbd>
+     method executes a search for a match in the specified string. It operates like the
+     <kbd>
+      <a href="./exec.html">exec()</a>
+     </kbd>
+     method in most regards, including modes, but operates with less overhead.
+    </p>
+    <h3>Syntax</h3>
+    <pre>
+var exp = new apgExp(pattern[, flags]);
+var result = exp.test(str);</pre>
+    <h3>Parameters</h3>
+    <ul>
+     <li><kbd>str:</kbd> string/array: The string to search for a pattern match in. May be a string or array of integer
+      character codes.</li>
+    </ul>
+    <h3>Return</h3>
+    <p>
+     If a match is found,
+     <kbd>true</kbd>
+     is returned, otherwise
+     <kbd>false</kbd>
+     .
+    </p>
+    <h3>Example</h3>
+    <pre>
+var pattern, str, exp, result;
+pattern = 'pattern = "abc"\n';
+exp = new apgExp(pattern);
+result = exp.test("---abc");
+console.log("result: " + result);
+result = exp.test([45, 45, 45, 97, 98, 99]);
+console.log("result: " + result);
+result = exp.test("xyz");
+console.log("result: " + result);
+/* returns */
+result: true
+result: true
+result: false
+</pre>
+   </div>
+  </div>
+  <div id="footer"></div>
+ </div>
+</body>
+</html>

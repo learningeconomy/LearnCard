@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>apg-exp</title>
+<meta charset="utf-8">
+<link rel="stylesheet" href="./css/BrightSide.css" type="text/css" />
+<script type="text/javascript" src="./import.js"></script>
+</head>
+<body>
+ <div id="wrap">
+  <div id="header"></div>
+  <div id="content-wrap">
+   <img src="./images/PointLobosCropped.jpg" width="820" height="120" alt="headerphoto" class="no-border" />
+   <div id="sidebar"></div>
+   <div id="main-2col">
+    <!-- page content goes here -->
+    <h1>Method: maxCallStackDepth()</h1>
+    <p>
+    <kbd>maxCallStackDepth()</kbd> returns an estimate of the maximum call stack depth.
+    It is well known that recursive-descent parsers can exhibit exponential behavior
+    for some patterns. This is due to recursion which opens the possibility that
+    the parser may extend deep into the parse tree. This function is a simple
+    helper to estimate the maximum call depth or recursion depth
+    available to the current JavaScript engine. Because the call depth
+    is limited by the call-stack space, the actual depth will be dependent
+    on how much data a recursive function leaves on each stack frame.
+    Therefore, the return of this function should be regarded as an upper bound.
+    </p>
+    <h3>Syntax</h3>
+    <pre>
+var exp = new apgExp(pattern[, flags]);
+var depth = exp.maxCallStackDepth();</pre>
+    <h3>Parameters</h3>
+    <p>
+    <i>none</i>
+    </p>
+    <h3>Return</h3>
+    <p>integer: An upper bound on the current JavaScript engine's call stack depth.</p>
+    <h3>Example</h3>
+    <pre>
+var pattern, exp, result;
+pattern  = 'word  = "abc"\n';
+exp = new apgExp(pattern);
+result = exp.maxCallStackDepth();
+console.log("max depth: "+result);
+/* returns */
+max depth: 15699
+</pre>
+   </div>
+  </div>
+  <div id="footer"></div>
+ </div>
+</body>
+</html>

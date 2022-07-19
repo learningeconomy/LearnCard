@@ -1,0 +1,12 @@
+{
+  "types": "./dist/${safeName}.d.ts",
+  "devDependencies": {
+    "@types/react": "^${versions.reactTypes}",
+    "@types/react-dom": "^${versions.reactDomTypes}",
+    "typescript": "^${versions.typescript}",
+    "react-dom": "^${versions.reactDom}"
+  },
+  "peerDependencies": {
+    "react": ">=16"
+  }
+}

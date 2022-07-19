@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>apg-exp</title>
+<meta charset="utf-8">
+<link rel="stylesheet" href="./css/apgexp.css" type="text/css" />
+<link rel="stylesheet" href="./css/BrightSide.css" type="text/css" />
+<script type="text/javascript" src="./import.js"></script>
+</head>
+<body>
+ <div id="wrap">
+  <div id="header"></div>
+  <div id="content-wrap">
+   <img src="./images/PointLobosCropped.jpg" width="820" height="120" alt="headerphoto" class="no-border" />
+   <div id="sidebar"></div>
+   <div id="main-2col">
+    <!-- page content goes here -->
+    <h1>Methods: toText(), toHtml() and toHtmlPage()</h1>
+    <h3>Syntax</h3>
+    <pre>
+var exp    = new apgExp(pattern[, flags]);
+var result = exp.exec(input);
+var text = exp.toText();
+var html = exp.toHtml();
+var page = exp.toHtmlPage();
+</pre>
+    <p>
+    These functions format the <a href="./lastMatch.html">last match</a> properties
+    of the <kbd>exp</kbd> object for display.
+    </p>
+    <h3>Example 1</h3>
+    <pre>
+var pattern, exp, str, result;
+pattern  = 'word  = alpha *(alpha / num)\n';
+pattern += 'alpha = %d65-90 / %d97-122\n';
+pattern += 'num   = %d48-57\n';
+exp = new apgExp(pattern);
+str = "---ab12...";
+result = exp.exec(str);
+console.log(exp.toText());
+/* result */
+  last match:
+   lastIndex: 0
+       flags: ""
+      global: false
+      sticky: false
+     unicode: false
+       debug: false
+       input: ---ab12...
+ leftContext: ---
+   lastMatch: ab12
+rightContext: ...
+       rules: word : ab12
+            : alpha : b
+            : num : 2
+
+alias:
+ ["$_"]: ---ab12...
+ ["$`"]: ---
+ ["$&"]: ab12
+ ["$'"]: ...
+ ["${word}"]: ab12
+ ["${alpha}"]: b
+ ["${num}"]: 2
+</pre>
+    <h3>Example 2</h3>
+    Same as Example 1, except format the object for HTML page display.
+    <kbd>exp.toHtmlPage()</kbd> displays the same HTML but wraps it in
+    a complete page header and body.
+    Include the <kbd>apg-lib</kbd> style sheet.
+    <pre>
+&lt;link rel="stylesheet" href="./apg-js/dist/apg-lib-bundle.css" type="text/css" /></pre>
+    <pre>
+/* same as Example 1 */
+$("#this-page").html(exp.toHtml());
+/* result */
+</pre>
+<table class="apg-left-table margin">
+<caption>last match:</caption>
+<tr><th>item</th><th>value</th></tr>
+<tr><td>lastIndex</td><td>0</td></tr>
+<tr><td>flags</td><td>&#34;&#34;</td></tr>
+<tr><td>global</td><td>false</td></tr>
+<tr><td>sticky</td><td>false</td></tr>
+<tr><td>unicode</td><td>false</td></tr>
+<tr><td>debug</td><td>false</td></tr>
+<th>item</th><th>phrase</th></tr>
+<tr><td>input</td><td><span class="apg-remainder">---ab12...</span></td></tr>
+<tr><td>leftContext</td><td><span class="apg-remainder">---</span></td></tr>
+<tr><td>lastMatch</td><td><span class="apg-match">ab12</span></td></tr>
+<tr><td>rightContext</td><td><span class="apg-remainder">...</span></td></tr>
+<tr><th>rule</th><th>phrase</th></tr>
+<tr><td>word</td><td><span class="apg-remainder">ab12</span></td></tr>
+<tr><td>alpha</td><td><span class="apg-remainder">b</span></td></tr>
+<tr><td>num</td><td><span class="apg-remainder">2</span></td></tr>
+<tr><th>alias</th><th>phrase</th></tr>
+<tr><td>["$_"]</td><td><span class="apg-remainder">---ab12...</span></td></tr>
+<tr><td>["$`"]</td><td><span class="apg-remainder">---</span></td></tr>
+<tr><td>["$&"]</td><td><span class="apg-match">ab12</span></td></tr>
+<tr><td>["$'"]</td><td><span class="apg-remainder">...</span></td></tr>
+<tr><td>["${word}"]</td><td><span class="apg-remainder">ab12</span></td></tr>
+<tr><td>["${alpha}"]</td><td><span class="apg-remainder">b</span></td></tr>
+<tr><td>["${num}"]</td><td><span class="apg-remainder">2</span></td></tr>
+</table>
+   </div>
+  </div>
+  <div id="footer"></div>
+ </div>
+</body>
+</html>

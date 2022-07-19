@@ -1,0 +1,82 @@
+{
+  "name": "jet-logger",
+  "version": "1.1.5",
+  "description": "A super quick, easy to setup logging tool for NodeJS/TypeScript.",
+  "main": "./lib/index.js",
+  "typings": "./lib/index.d.ts",
+  "directories": {
+    "lib": "lib"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/seanpmaxwell/jet-logger.git"
+  },
+  "keywords": [
+    "logger",
+    "logging",
+    "log",
+    "console",
+    "print",
+    "node",
+    "nodejs",
+    "overnight",
+    "overnightjs",
+    "overnightjs/logger",
+    "winston",
+    "jet",
+    "simple",
+    "easy",
+    "quick",
+    "jet-logger",
+    "best",
+    "type",
+    "typescript",
+    "script",
+    "env",
+    "environment",
+    "variables"
+  ],
+  "author": "sean maxwell",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/seanpmaxwell/jet-logger/issues"
+  },
+  "homepage": "https://github.com/seanpmaxwell/jet-logger#readme",
+  "dependencies": {
+    "colors": "1.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^14.11.8",
+    "@typescript-eslint/eslint-plugin": "^4.4.0",
+    "@typescript-eslint/parser": "^4.4.0",
+    "eslint": "^7.11.0",
+    "typescript": "^4.0.3"
+  },
+  "eslintConfig": {
+    "parser": "@typescript-eslint/parser",
+    "plugins": [
+      "@typescript-eslint"
+    ],
+    "extends": [
+      "eslint:recommended",
+      "plugin:@typescript-eslint/recommended",
+      "plugin:@typescript-eslint/recommended-requiring-type-checking"
+    ],
+    "parserOptions": {
+      "project": "./tsconfig.json"
+    },
+    "rules": {
+      "no-console": 0,
+      "no-extra-boolean-cast": 0,
+      "@typescript-eslint/restrict-plus-operands": 0,
+      "@typescript-eslint/explicit-module-boundary-types": 0,
+      "@typescript-eslint/no-explicit-any": 0,
+      "@typescript-eslint/no-unsafe-member-access": 0,
+      "@typescript-eslint/no-unsafe-call": 0,
+      "@typescript-eslint/no-unsafe-assignment": 0
+    }
+  }
+}

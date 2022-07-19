@@ -1,0 +1,92 @@
+'use strict';
+
+var path = require('path');
+var esbuild = require('esbuild');
+
+function _interopDefaultLegacy (e) { return e && typeof e === 'object' && 'default' in e ? e : { 'default': e }; }
+
+var path__default = /*#__PURE__*/_interopDefaultLegacy(path);
+
+const loaders = [
+    "js",
+    "jsx",
+    "ts",
+    "tsx",
+    "json"
+];
+const getExt = (str)=>{
+    const basename = path__default['default'].basename(str);
+    const firstDot = basename.indexOf('.');
+    const lastDot = basename.lastIndexOf('.');
+    const extname = path__default['default'].extname(basename).replace(/(\.[a-z0-9]+).*/i, '$1');
+    if (firstDot === lastDot) return extname;
+    return basename.slice(firstDot, lastDot) + extname;
+};
+
+const createTransformer = (options)=>({
+        process (content, filename, config, opts) {
+            const sources = {
+                code: content
+            };
+            const ext = getExt(filename), extName = path.extname(filename).slice(1);
+            const enableSourcemaps = (options === null || options === void 0 ? void 0 : options.sourcemap) || false;
+            const loader = (options === null || options === void 0 ? void 0 : options.loaders) && (options === null || options === void 0 ? void 0 : options.loaders[ext]) ? options.loaders[ext] : loaders.includes(extName) ? extName : 'text';
+            const sourcemaps = enableSourcemaps ? {
+                sourcemap: true,
+                sourcesContent: false,
+                sourcefile: filename
+            } : {
+            };
+            /// this logic or code from 
+            /// https://github.com/threepointone/esjest-transform/blob/main/src/index.js
+            /// this will support the jest.mock
+            /// https://github.com/aelbore/esbuild-jest/issues/12
+            /// TODO: transform the jest.mock to a function using babel traverse/parse then hoist it
+            if (sources.code.indexOf("ock(") >= 0 || (opts === null || opts === void 0 ? void 0 : opts.instrument)) {
+                const source = require('./transformer').babelTransform({
+                    sourceText: content,
+                    sourcePath: filename,
+                    config,
+                    options: opts
+                });
+                sources.code = source;
+            }
+            const result = esbuild.transformSync(sources.code, {
+                loader,
+                format: (options === null || options === void 0 ? void 0 : options.format) || 'cjs',
+                target: (options === null || options === void 0 ? void 0 : options.target) || 'es2018',
+                ...(options === null || options === void 0 ? void 0 : options.jsxFactory) ? {
+                    jsxFactory: options.jsxFactory
+                } : {
+                },
+                ...(options === null || options === void 0 ? void 0 : options.jsxFragment) ? {
+                    jsxFragment: options.jsxFragment
+                } : {
+                },
+                ...sourcemaps
+            });
+            let { map , code  } = result;
+            if (enableSourcemaps) {
+                map = {
+                    ...JSON.parse(result.map),
+                    sourcesContent: null
+                };
+                // Append the inline sourcemap manually to ensure the "sourcesContent"
+                // is null. Otherwise, breakpoints won't pause within the actual source.
+                code = code + '\n//# sourceMappingURL=data:application/json;base64,' + Buffer.from(JSON.stringify(map)).toString('base64');
+            } else {
+                map = null;
+            }
+            return {
+                code,
+                map
+            };
+        }
+    })
+;
+const transformer = {
+    canInstrument: true,
+    createTransformer
+};
+
+module.exports = transformer;

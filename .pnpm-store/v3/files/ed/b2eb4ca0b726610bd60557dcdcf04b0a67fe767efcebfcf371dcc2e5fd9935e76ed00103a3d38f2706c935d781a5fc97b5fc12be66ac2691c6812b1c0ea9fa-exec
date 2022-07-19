@@ -1,0 +1,43 @@
+{
+  "name": "@ceramicnetwork/streamid",
+  "version": "2.2.0",
+  "description": "Ceramic Stream Ids",
+  "keywords": [
+    "ceramic",
+    "StreamId"
+  ],
+  "main": "./lib/index.js",
+  "types": "./lib/index.d.ts",
+  "type": "module",
+  "files": [
+    "lib"
+  ],
+  "directories": {
+    "lib": "./lib"
+  },
+  "sideEffects": false,
+  "exports": {
+    ".": "./lib/index.js"
+  },
+  "scripts": {
+    "test": "NODE_OPTIONS=--experimental-vm-modules npx jest --silent --coverage",
+    "build": "npx tsc --project tsconfig.json",
+    "prepublishOnly": "npm run build",
+    "prebuild": "npm run clean",
+    "lint": "npx eslint ./src --ext .js,.jsx,.ts,.tsx",
+    "clean": "npx rimraf ./lib"
+  },
+  "author": "Zach Ferland <zachferland@gmail.com>",
+  "license": "(Apache-2.0 OR MIT)",
+  "dependencies": {
+    "@ipld/dag-cbor": "^7.0.0",
+    "multiformats": "^9.5.8",
+    "typescript-memoize": "^1.1.0",
+    "uint8arrays": "^3.0.0",
+    "varint": "^6.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "gitHead": "43aa0781b7722fa116e98cc89fe9b38203753a3a"
+}

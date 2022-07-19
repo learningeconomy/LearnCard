@@ -1,0 +1,171 @@
+;
+; ABNF for JavaScript APG 2.0 SABNF
+; RFC 5234 with some restrictions and additions.
+; Updated 11/24/2015 for RFC 7405 case-sensitive literal string notation
+;  - accepts %s"string" as a case-sensitive string
+;  - accepts %i"string" as a case-insensitive string
+;  - accepts "string" as a case-insensitive string
+;
+; Some restrictions:
+;   1. Rules must begin at first character of each line.
+;      Indentations on first rule and rules thereafter are not allowed.
+;   2. Relaxed line endings. CRLF, LF or CR are accepted as valid line ending.
+;   3. Prose values, i.e. <prose value>, are accepted as valid grammar syntax.
+;      However, a working parser cannot be generated from them.
+;
+; Super set (SABNF) additions:
+;   1. Look-ahead (syntactic predicate) operators are accepted as element prefixes.
+;      & is the positive look-ahead operator, succeeds and backtracks if the look-ahead phrase is found
+;      ! is the negative look-ahead operator, succeeds and backtracks if the look-ahead phrase is NOT found
+;      e.g. &%d13 or &rule or !(A / B)
+;   2. User-Defined Terminals (UDT) of the form, u_name and e_name are accepted.
+;      'name' is alpha followed by alpha/num/hyphen just like a rule name.
+;      u_name may be used as an element but no rule definition is given.
+;      e.g. rule = A / u_myUdt
+;           A = "a"
+;      would be a valid grammar.
+;   3. Case-sensitive, single-quoted strings are accepted.
+;      e.g. 'abc' would be equivalent to %d97.98.99
+;      (kept for backward compatibility, but superseded by %s"abc")  
+; New 12/26/2015
+;   4. Look-behind operators are accepted as element prefixes.
+;      && is the positive look-behind operator, succeeds and backtracks if the look-behind phrase is found
+;      !! is the negative look-behind operator, succeeds and backtracks if the look-behind phrase is NOT found
+;      e.g. &&%d13 or &&rule or !!(A / B)
+;   5. Back reference operators, i.e. \rulename, are accepted.
+;      A back reference operator acts like a TLS or TBS terminal except that the phrase it attempts
+;      to match is a phrase previously matched by the rule 'rulename'.
+;      There are two modes of previous phrase matching - the parent-frame mode and the universal mode.
+;      In universal mode, \rulename matches the last match to 'rulename' regardless of where it was found.
+;      In parent-frame mode, \rulename matches only the last match found on the parent's frame or parse tree level.
+;      Back reference modifiers can be used to specify case and mode.
+;      \A defaults to case-insensitive and universal mode, e.g. \A === \%i%uA
+;      Modifiers %i and %s determine case-insensitive and case-sensitive mode, respectively.
+;      Modifiers %u and %p determine universal mode and parent frame mode, respectively.
+;      Case and mode modifiers can appear in any order, e.g. \%s%pA === \%p%sA. 
+;   7. String begin anchor, ABG(%^) matches the beginning of the input string location.
+;      Returns EMPTY or NOMATCH. Never consumes any characters.
+;   8. String end anchor, AEN(%$) matches the end of the input string location.
+;      Returns EMPTY or NOMATCH. Never consumes any characters.
+;
+File            = *(BlankLine / Rule / RuleError)
+BlankLine       = *(%d32/%d9) [comment] LineEnd
+Rule            = RuleLookup owsp Alternation ((owsp LineEnd)
+                / (LineEndError LineEnd))
+RuleLookup      = RuleNameTest owsp DefinedAsTest
+RuleNameTest    = RuleName/RuleNameError
+RuleName        = alphanum
+RuleNameError   = 1*(%d33-60/%d62-126)
+DefinedAsTest   = DefinedAs / DefinedAsError
+DefinedAsError  = 1*2%d33-126
+DefinedAs       = IncAlt / Defined
+Defined         = %d61
+IncAlt          = %d61.47
+RuleError       = 1*(%d32-126 / %d9  / LineContinue) LineEnd
+LineEndError    = 1*(%d32-126 / %d9  / LineContinue)
+Alternation     = Concatenation *(owsp AltOp Concatenation)
+Concatenation   = Repetition *(CatOp Repetition)
+Repetition      = [Modifier] (Group / Option / BasicElement / BasicElementErr)
+Modifier        = (Predicate [RepOp])
+                / RepOp
+Predicate       = BkaOp
+                / BknOp
+                / AndOp
+                / NotOp
+BasicElement    = UdtOp
+                / RnmOp
+                / TrgOp
+                / TbsOp
+                / TlsOp
+                / ClsOp
+                / BkrOp
+                / AbgOp
+                / AenOp
+                / ProsVal
+BasicElementErr = 1*(%d33-40/%d42-46/%d48-92/%d94-126)
+Group           = GroupOpen  Alternation (GroupClose / GroupError)
+GroupError      = 1*(%d33-40/%d42-46/%d48-92/%d94-126) ; same as BasicElementErr
+GroupOpen       = %d40 owsp
+GroupClose      = owsp %d41
+Option          = OptionOpen Alternation (OptionClose / OptionError)
+OptionError     = 1*(%d33-40/%d42-46/%d48-92/%d94-126) ; same as BasicElementErr
+OptionOpen      = %d91 owsp
+OptionClose     = owsp %d93
+RnmOp           = alphanum
+BkrOp           = %d92 [bkrModifier] bkr-name
+bkrModifier     = (cs [um / pm]) / (ci [um / pm]) / (um [cs /ci]) / (pm [cs / ci])
+cs              = '%s'
+ci              = '%i'
+um              = '%u'
+pm              = '%p'
+bkr-name        = uname / ename / rname
+rname           = alphanum
+uname           = %d117.95 alphanum
+ename           = %d101.95 alphanum
+UdtOp           = udt-empty
+                / udt-non-empty
+udt-non-empty   = %d117.95 alphanum
+udt-empty       = %d101.95 alphanum
+RepOp           = (rep-min StarOp rep-max)
+                / (rep-min StarOp)
+                / (StarOp rep-max)
+                / StarOp
+                / rep-min-max
+AltOp           = %d47 owsp
+CatOp           = wsp
+StarOp          = %d42
+AndOp           = %d38
+NotOp           = %d33
+BkaOp           = %d38.38
+BknOp           = %d33.33
+AbgOp           = %d37.94
+AenOp           = %d37.36
+TrgOp           = %d37 ((Dec dmin %d45 dmax) / (Hex xmin %d45 xmax) / (Bin bmin %d45 bmax))
+TbsOp           = %d37 ((Dec dString *(%d46 dString)) / (Hex xString *(%d46 xString)) / (Bin bString *(%d46 bString)))
+TlsOp           = TlsCase TlsOpen TlsString TlsClose
+TlsCase         = ["%i" / "%s"]
+TlsOpen         = %d34
+TlsClose        = %d34
+TlsString       = *(%d32-33/%d35-126/StringTab)
+StringTab       = %d9
+ClsOp           = ClsOpen ClsString ClsClose
+ClsOpen         = %d39
+ClsClose        = %d39
+ClsString       = *(%d32-38/%d40-126/StringTab)
+ProsVal         = ProsValOpen ProsValString ProsValClose
+ProsValOpen     = %d60
+ProsValString   = *(%d32-61/%d63-126/StringTab)
+ProsValClose    = %d62
+rep-min         = rep-num
+rep-min-max     = rep-num
+rep-max         = rep-num
+rep-num         = 1*(%d48-57)
+dString         = dnum
+xString         = xnum
+bString         = bnum
+Dec             = (%d68/%d100)
+Hex             = (%d88/%d120)
+Bin             = (%d66/%d98)
+dmin            = dnum
+dmax            = dnum
+bmin            = bnum
+bmax            = bnum
+xmin            = xnum
+xmax            = xnum
+dnum            = 1*(%d48-57)
+bnum            = 1*%d48-49
+xnum            = 1*(%d48-57 / %d65-70 / %d97-102)
+;
+; Basics
+alphanum        = (%d97-122/%d65-90) *(%d97-122/%d65-90/%d48-57/%d45)
+owsp            = *space
+wsp             = 1*space
+space           = %d32
+                / %d9
+                / comment
+                / LineContinue
+comment         = %d59 *(%d32-126 / %d9)
+LineEnd         = %d13.10
+                / %d10
+                / %d13
+LineContinue    = (%d13.10 / %d10 / %d13) (%d32 / %d9)

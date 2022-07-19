@@ -1,0 +1,33 @@
+{
+    "name": "@esbuild-plugins/node-resolve",
+    "version": "0.1.4",
+    "description": "",
+    "main": "dist/index.js",
+    "module": "esm/index.js",
+    "types": "dist/index.d.ts",
+    "repository": "https://github.com/remorses/esbuild-plugins.git",
+    "scripts": {
+        "build": "tsc && tsc -m es6 --outDir esm",
+        "watch": "tsc -w"
+    },
+    "files": [
+        "dist",
+        "src",
+        "esm"
+    ],
+    "keywords": [],
+    "author": "Tommaso De Rossi, morse <beats.by.morse@gmail.com>",
+    "license": "ISC",
+    "devDependencies": {
+        "test-support": "*"
+    },
+    "dependencies": {
+        "@types/resolve": "^1.17.1",
+        "debug": "^4.3.1",
+        "escape-string-regexp": "^4.0.0",
+        "resolve": "^1.19.0"
+    },
+    "peerDependencies": {
+        "esbuild": "*"
+    }
+}

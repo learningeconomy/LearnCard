@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>apg-exp</title>
+<meta charset="utf-8">
+<link rel="stylesheet" href="./css/BrightSide.css" type="text/css" />
+<script type="text/javascript" src="./import.js"></script>
+</head>
+<body>
+ <div id="wrap">
+  <div id="header"></div>
+  <div id="content-wrap">
+   <img src="./images/PointLobosCropped.jpg" width="820" height="120" alt="headerphoto" class="no-border" />
+   <div id="sidebar"></div>
+   <div id="main-2col">
+    <!-- page content goes here -->
+    <h1>Property: trace</h1>
+    <h3>Syntax</h3>
+    <pre>
+var exp    = new apgExp(pattern, "d");
+var result = exp.exec(input);
+var html   = exp.trace.toHtml();
+</pre>
+    <p>
+    If the debug mode flag is set, then <kbd>exp.trace</kbd> is the <b>APG</b> trace object.
+    <kbd>exp.trace</kbd> can be used to display the path of the parser through the parse tree.
+    If the debug property is not set, <kbd>exp.trace</kbd> is undefined.
+    </p>
+    <h3>Example</h3>
+    <p>
+    See the <a href="./debug.html">debug mode example</a>.
+    </p>
+   </div>
+  </div>
+  <div id="footer"></div>
+ </div>
+</body>
+</html>

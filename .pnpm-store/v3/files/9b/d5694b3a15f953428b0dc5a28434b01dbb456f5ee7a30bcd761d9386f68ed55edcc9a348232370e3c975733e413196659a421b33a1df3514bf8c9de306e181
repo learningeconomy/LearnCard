@@ -1,0 +1,1 @@
+{"version":3,"file":"SignerAlgorithm.d.ts","sourceRoot":"","sources":["../src/SignerAlgorithm.ts"],"names":[],"mappings":"AAAA,OAAO,EAAU,eAAe,EAAE,MAAM,OAAO,CAAA;AAQ/C,wBAAgB,eAAe,CAAC,WAAW,CAAC,EAAE,OAAO,GAAG,eAAe,CAYtE;AAED,wBAAgB,gBAAgB,IAAI,eAAe,CASlD;AAiBD,iBAAS,SAAS,CAAC,GAAG,EAAE,MAAM,GAAG,eAAe,CAI/C;AAED,eAAe,SAAS,CAAA"}

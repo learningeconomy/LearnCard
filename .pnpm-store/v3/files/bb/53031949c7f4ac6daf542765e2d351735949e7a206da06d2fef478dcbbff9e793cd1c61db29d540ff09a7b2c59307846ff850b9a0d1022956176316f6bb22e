@@ -1,0 +1,43 @@
+{
+  "name": "hex-lite",
+  "amdName": "hexLite",
+  "version": "1.5.0",
+  "description": "isomorphic hex library in 256 bytes",
+  "main": "node/hex-lite.js",
+  "module": "node/hex-lite.mjs",
+  "browser": {
+    "./node/hex-lite.js": "./dist/hex-lite.js",
+    "./node/hex-lite.mjs": "./dist/hex-lite.mjs"
+  },
+  "scripts": {
+    "dev": "microbundle watch",
+    "build": "microbundle --entry browser.mjs --output dist && microbundle --entry node.mjs --output node && microbundle --entry browser-fast.mjs --output fast",
+    "prepublish": "npm run build",
+    "pretest": "npm run build",
+    "test": "node test",
+    "release": "npm test && git commit -am $npm_package_version && git tag $npm_package_version && git push && git push --tags && npm publish"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kevlened/hex-lite.git"
+  },
+  "files": [
+    "index.js",
+    "dist",
+    "fast"
+  ],
+  "keywords": [
+    "hex",
+    "buffer",
+    "ArrayBuffer",
+    "Uint8Array"
+  ],
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/kevlened/hex-lite/issues"
+  },
+  "homepage": "https://github.com/kevlened/hex-lite#readme",
+  "devDependencies": {
+    "microbundle": "^0.2.4"
+  }
+}

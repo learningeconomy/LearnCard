@@ -1,0 +1,2 @@
+function r(r){return r.reduce(function(r,n){return r+("00"+n.toString(16)).slice(-2)},"")}function n(r){var n=0,t=r.length,e=[];if(t%2)throw new Error("invalid hex:"+r);for(;n<t;n+=2)e.push(parseInt(r.substr(n,2),16));return new Uint8Array(e)}function t(n){return r(new Uint8Array(n))}function e(r){return n(r).buffer}exports.fromUint8Array=r,exports.toUint8Array=n,exports.fromBuffer=t,exports.toBuffer=e;
+//# sourceMappingURL=hex-lite.js.map

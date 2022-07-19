@@ -1,0 +1,31 @@
+{
+  "name": "dts-bundle-generator",
+  "version": "5.9.0",
+  "description": "DTS Bundle Generator",
+  "main": "dist/bundle-generator.js",
+  "typings": "dist/bundle-generator.d.ts",
+  "bin": "dist/bin/dts-bundle-generator.js",
+  "files": [
+    "config-schema.d.ts",
+    "dist/**/*.d.ts",
+    "dist/**/*.js"
+  ],
+  "author": "Evgeniy Timokhov",
+  "bugs": {
+    "url": "https://github.com/timocov/dts-bundle-generator/issues"
+  },
+  "homepage": "https://github.com/timocov/dts-bundle-generator",
+  "dependencies": {
+    "typescript": ">=3.0.1",
+    "yargs": "^15.3.1"
+  },
+  "license": "MIT",
+  "readme": "README.md",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/timocov/dts-bundle-generator.git"
+  },
+  "engines": {
+    "node": ">=12.0.0"
+  }
+}

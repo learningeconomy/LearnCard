@@ -1,0 +1,7 @@
+{
+  "types": "./dist/${safeName}.d.ts",
+  "devDependencies": {
+    "typescript": "^${versions.typescript}",
+    "@types/node": "^${versions.nodeTypes}"
+  }
+}

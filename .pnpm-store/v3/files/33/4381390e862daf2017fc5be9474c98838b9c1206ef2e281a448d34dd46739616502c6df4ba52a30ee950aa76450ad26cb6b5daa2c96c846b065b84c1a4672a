@@ -1,0 +1,58 @@
+{
+  "name": "ceramic-cacao",
+  "version": "1.1.1",
+  "description": "Typescript library for Ceramic OCAP",
+  "main": "./lib/index.cjs",
+  "module": "./lib/index.mjs",
+  "types": "./lib/index.d.ts",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./lib/index.mjs",
+      "require": "./lib/index.cjs"
+    }
+  },
+  "files": [
+    "lib/*"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "test": "./node_modules/.bin/jest",
+    "build": "microbundle --compress=false --format esm,cjs",
+    "lint": "./node_modules/.bin/eslint ./src --ext .js,.ts",
+    "prebuild": "npm run clean",
+    "prepublishOnly": "npm run build",
+    "clean": "rm -rf ./lib"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ceramicnetwork/cacao.git"
+  },
+  "author": "Haardik <hhaardik@uwaterloo.ca>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ceramicnetwork/cacao/issues"
+  },
+  "homepage": "https://github.com/ceramicnetwork/cacao#readme",
+  "devDependencies": {
+    "@babel/core": "^7.16.7",
+    "@babel/preset-env": "^7.16.8",
+    "@babel/preset-typescript": "^7.16.7",
+    "@types/jest": "^27.4.0",
+    "@typescript-eslint/eslint-plugin": "^5.4.0",
+    "@typescript-eslint/parser": "^5.4.0",
+    "eslint": "^8.6.0",
+    "eslint-config-3box": "^0.4.0",
+    "jest": "^27.4.7",
+    "microbundle": "^0.14.2",
+    "prettier": "^2.4.1",
+    "typescript": "^4.5.4"
+  },
+  "dependencies": {
+    "@ethersproject/wallet": "^5.5.0",
+    "@ipld/dag-cbor": "^7.0.1",
+    "apg-js": "^4.1.1",
+    "caip": "^1.0.0",
+    "multiformats": "^9.5.1"
+  }
+}

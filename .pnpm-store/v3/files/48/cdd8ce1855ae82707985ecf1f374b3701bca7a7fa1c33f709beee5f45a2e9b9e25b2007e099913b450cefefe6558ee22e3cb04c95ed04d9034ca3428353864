@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>apg-exp</title>
+<meta charset="utf-8">
+<link rel="stylesheet" href="./css/apgexp.css" type="text/css" />
+<link rel="stylesheet" href="./css/BrightSide.css" type="text/css" />
+<script type="text/javascript" src="./import.js"></script>
+</head>
+<body>
+ <div id="wrap">
+  <div id="header"></div>
+  <div id="content-wrap">
+   <img src="./images/PointLobosCropped.jpg" width="820" height="120" alt="headerphoto" class="no-border" />
+   <div id="sidebar"></div>
+   <div id="main-2col">
+    <!-- page content goes here -->
+    <h1>Property: Source</h1>
+    <p>
+    The <kbd>apgExp</kbd> object retains a copy of the input pattern in the <kbd>source</kbd> property.
+    </p>
+    <h3>Syntax</h3>
+    <pre>
+var exp    = new apgExp(pattern);
+</pre>
+    <h3>Parameters</h3>
+    <p>
+     <kbd>exp.source:</kbd> Copy of <kbd>pattern</kbd>.
+    </p>
+    <p>
+     <kbd>exp.sourceToText():</kbd> Returns source as text.
+    </p>
+    <p>
+     <kbd>exp.sourceToHtml():</kbd> Returns source as HTML.
+    </p>
+    <p>
+     <kbd>exp.sourceToHtmlPage():</kbd> Returns source as HTML, wrapped in a header and body for to make a complete HTML page..
+    </p>
+    <h3>Example 1</h3>
+    <pre>
+var pattern, exp;
+pattern  = 'word  = alpha *(alpha / num)\n';
+pattern += 'alpha = %d65-90 / %d97-122\n';
+pattern += 'num   = %d48-57\n';
+exp = new apgExp(pattern);
+console.log("source:");
+console.log(exp.source);
+/ * result */
+source:
+word  = alpha *(alpha / num)
+alpha = %d65-90 / %d97-122
+num   = %d48-57
+</pre>
+    <h3>Example 2</h3>
+    The <kbd>sourceToText()</kbd> function returns the pattern.
+    It simply returns <kbd>exp.source</kbd> and is mostly for
+    symmetry in the output functions. 
+    <pre>
+/* same as Example 1 */
+console.log("source:");
+console.log(exp.sourceToText());
+/ * result */
+source:
+word  = alpha *(alpha / num)
+alpha = %d65-90 / %d97-122
+num   = %d48-57
+</pre>
+    <h3>Example 3</h3>
+    <kbd>exp.sourceToHtml()</kbd> returns the pattern
+    formatted as HTML. HTML characters, such as "&lt;" and control characters are converted
+    to entities and special display formats.
+    The display page header should include the <kbd>apgexp.css</kbd> style sheet. e.g.
+    <pre>
+&lt;link rel="stylesheet" href="./apg-js/dist/apg-lib-bundle.css" type="text/css" />
+</pre>
+
+    <kbd>exp.sourceToHtml()</kbd> returns the same, except wrapped
+    in a complete page header and body.
+    <pre>
+/* same as Example 1 */
+$("#this-page").html(exp.sourceToHtml());
+/ * result */
+word&nbsp;&nbsp;=&nbsp;alpha&nbsp;*(alpha&nbsp;/&nbsp;num)<span class="apg-ctrl-char">LF</span>
+alpha&nbsp;=&nbsp;%d65-90&nbsp;/&nbsp;%d97-122<span class="apg-ctrl-char">LF</span>
+num&nbsp;&nbsp;&nbsp;=&nbsp;%d48-57<span class="apg-ctrl-char">LF</span>
+</pre>
+   </div>
+  </div>
+  <div id="footer"></div>
+ </div>
+</body>
+</html>

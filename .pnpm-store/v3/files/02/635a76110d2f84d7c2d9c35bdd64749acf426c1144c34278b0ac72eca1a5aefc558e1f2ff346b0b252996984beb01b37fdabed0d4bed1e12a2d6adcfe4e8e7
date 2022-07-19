@@ -1,0 +1,36 @@
+{
+  "name": "esbuild-jest",
+  "version": "0.5.0",
+  "description": "Jest plugin to use esbuild for transformation",
+  "main": "esbuild-jest.js",
+  "module": "esbuild-jest.es.js",
+  "typings": "esbuild-jest.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aelbore/esbuild-jest.git"
+  },
+  "keywords": [
+    "esbuild",
+    "jest",
+    "test"
+  ],
+  "author": "Arjay Elbore <aelbore.sg@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/aelbore/esbuild-jest/issues"
+  },
+  "homepage": "https://github.com/aelbore/esbuild-jest#readme",
+  "peerDependencies": {
+    "esbuild": ">=0.8.50"
+  },
+  "dependencies": {
+    "@babel/core": "^7.12.17",
+    "@babel/plugin-transform-modules-commonjs": "^7.12.13",
+    "babel-jest": "^26.6.3"
+  },
+  "babel": {
+    "presets": [
+      "@babel/preset-typescript"
+    ]
+  }
+}

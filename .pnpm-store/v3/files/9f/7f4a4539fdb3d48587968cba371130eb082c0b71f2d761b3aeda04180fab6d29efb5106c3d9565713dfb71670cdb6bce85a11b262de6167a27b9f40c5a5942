@@ -1,0 +1,39 @@
+{
+  "colors": {
+    "active": "#000000",
+    "match": "#264BFF",
+    "empty": "#0fbd0f",
+    "nomatch": "#FF4000",
+    "error": "#FF4000",
+    "lookAhead": "#1A97BA",
+    "lookBehind": "#5F1687",
+    "remainder": "#999999",
+    "lineEnd": "#000000",
+    "phrase": "#000000",
+    "phraseBackground": "#8caae6",
+    "ruleLink": "#003399",
+    "ruleLinkHover": "#8caae6"
+  },
+  "classes": {
+    "monospace": "apg-mono",
+    "active": "apg-active",
+    "empty": "apg-empty",
+    "match": "apg-match",
+    "nomatch": "apg-nomatch",
+    "lookAhead": "apg-lh-match",
+    "lookBehind": "apg-lb-match",
+    "remainder": "apg-remainder",
+    "ctrlChar": "apg-ctrl-char",
+    "lineEnd": "apg-line-end",
+    "error": "apg-error",
+    "phrase": "apg-phrase",
+    "emptyPhrase": "apg-empty-phrase",
+    "state": "apg-state",
+    "stats": "apg-stats",
+    "trace": "apg-trace",
+    "grammar": "apg-grammar",
+    "rules": "apg-rules",
+    "rulesLink": "apg-rules-link",
+    "attributes": "apg-attrs"
+  }
+}

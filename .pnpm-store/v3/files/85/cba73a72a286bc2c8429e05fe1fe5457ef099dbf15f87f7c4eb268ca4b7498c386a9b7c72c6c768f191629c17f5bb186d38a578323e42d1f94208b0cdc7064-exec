@@ -1,0 +1,1 @@
+{"version":3,"file":"logger-provider-browser.d.ts","sourceRoot":"","sources":["../src/logger-provider-browser.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,iBAAiB,EAAE,aAAa,EAAE,MAAM,sBAAsB,CAAA;AACvE,OAAO,EAAE,kBAAkB,EAAE,MAAM,kBAAkB,CAAA;AAKrD,qBAAa,cAAe,SAAQ,kBAAkB;IACpD,SAAS,CAAC,qBAAqB,IAAI,iBAAiB;IAI7C,iBAAiB,CAAC,WAAW,EAAE,MAAM,GAAG,aAAa;CAG7D"}

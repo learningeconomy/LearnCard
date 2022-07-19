@@ -1,0 +1,50 @@
+{
+  "name": "lookpath",
+  "version": "1.2.2",
+  "description": "The minimum and most straightforward way to check if command exists and where the executable is.",
+  "engines": {
+    "npm": ">=6.13.4"
+  },
+  "main": "./lib/index.js",
+  "bin": {
+    "lookpath": "bin/lookpath.js"
+  },
+  "types": "./lib/index.d.ts",
+  "scripts": {
+    "build": "rm -rf ./lib && tsc",
+    "lint": "eslint ./src/index.ts ./tests/lookpath.spec.ts",
+    "test": "jest",
+    "validate": "npm run build && node ./bin/lookpath.js npm",
+    "release": "npm run build && npm run validate && npm publish"
+  },
+  "author": "otiai10",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/otiai10/lookpath.git"
+  },
+  "keywords": [
+    "exec.LookPath",
+    "command",
+    "exists"
+  ],
+  "bugs": {
+    "url": "https://github.com/otiai10/lookpath/issues"
+  },
+  "homepage": "https://github.com/otiai10/lookpath#readme",
+  "devDependencies": {
+    "@types/jest": "^26.0.4",
+    "@types/node": "^15.0.1",
+    "@typescript-eslint/eslint-plugin": "^4.0.0",
+    "@typescript-eslint/parser": "^4.14.1",
+    "eslint": "^7.4.0",
+    "jest": "^26.1.0",
+    "ts-jest": "^26.1.2",
+    "typescript": "^4.1.3"
+  },
+  "jest": {
+    "transform": {
+      "^.+\\.tsx?$": "ts-jest"
+    }
+  }
+}

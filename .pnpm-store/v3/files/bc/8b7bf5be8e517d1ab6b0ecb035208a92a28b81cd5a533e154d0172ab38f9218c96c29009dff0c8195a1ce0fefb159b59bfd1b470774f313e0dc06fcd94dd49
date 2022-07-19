@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>apg-exp</title>
+<meta charset="utf-8">
+<link rel="stylesheet" href="./css/BrightSide.css" type="text/css" />
+<script type="text/javascript" src="./import.js"></script>
+</head>
+<body>
+ <div id="wrap">
+  <div id="header"></div>
+  <div id="content-wrap">
+   <img src="./images/PointLobosCropped.jpg" width="820" height="120" alt="headerphoto" class="no-border" />
+   <div id="sidebar"></div>
+   <div id="main-2col">
+    <!-- page content goes here -->
+    <h1>Global Mode</h1>
+    <h3>Syntax</h3>
+    <pre>
+var exp    = new apgExp(pattern, "g");
+</pre>
+    <p>
+    The pattern match attempt is made at the index, <kbd><a href="./lastIndex.html">exp.lastIndex</a></kbd>.
+    The user can set <kbd>exp.lastIndex</kbd> to any value prior to the match attempt.
+    If a match is not found <kbd>exp.lastIndex</kbd> is incremented by one and the attempt repeated.
+    This repeats until either a match is found or
+    the end of string is reached.
+    In global mode if a match is found, <kbd>exp.lastIndex</kbd> is 
+    incremented by the length of the matched pattern, or one if the length is zero.
+    (Some patterns allow matches to empty strings. In this case <kbd>exp.lastIndex</kbd>
+    is incremented by one to prevent infinite loops and to allow the global search to continue.)
+    This allows for an iteration over all matched patterns in the <kbd>input</kbd> string.
+    When the match fails, <kbd>exp.lastIndex</kbd> is then reset to zero.
+    </p>
+    <h3>Example</h3>
+    <p>
+    <pre>
+var pattern, str, exp, result;    
+pattern = 'pattern = "abc"\n';
+str = "---abc---ABC---";
+exp = new apgExp(pattern, "g");
+while(result = exp.exec(str)){
+  console.log("found: " + result[0] + " :at: " + result.index);
+}
+/* returns */
+found: abc :at: 3
+found: ABC :at: 9
+</pre>
+   </div>
+  </div>
+  <div id="footer"></div>
+ </div>
+</body>
+</html>

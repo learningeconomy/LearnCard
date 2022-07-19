@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>apg-exp</title>
+<meta charset="utf-8">
+<link rel="stylesheet" href="./css/BrightSide.css" type="text/css" />
+<script type="text/javascript" src="./import.js"></script>
+</head>
+<body>
+ <div id="wrap">
+  <div id="header"></div>
+  <div id="content-wrap">
+   <img src="./images/PointLobosCropped.jpg" width="820" height="120" alt="headerphoto" class="no-border" />
+   <div id="sidebar"></div>
+   <div id="main-2col">
+    <!-- page content goes here -->
+    <h1>Flags & Modes</h1>
+    <p>
+    The optional <kbd>flags</kbd> parameter modifies the mode of the pattern-matching operation.
+    </p>
+    <h3>Syntax</h3>
+    <pre>
+var exp    = new apgExp(pattern[, flags]);
+var result = exp.exec(input);</pre>
+     <p>The <kbd>flags</kbd> parameter may be absent, <kbd>undefined</kbd>, <kbd>null</kbd> or a string of any of the case-insensitive characters <kbd>"gyud"</kbd>.
+     The string may be empty, the characters may be in any order and characters may appear more than once.
+     However, any character not in the list above will cause an <kbd>ApgExpError</kbd> exception to be thrown.</p>
+    <p>
+    The <kbd>exp</kbd> object has 
+    <a href="./global.html">gobal</a>, 
+    <a href="./sticky.html">sticky</a>, 
+    <a href="./unicode.html">unicode</a> and 
+    <a href="./debug.html">debug</a> boolean flag properties.
+    These are all initially <kbd>false</kbd> indicating default mode.
+    The <kbd>exp.flags</kbd> property is the flags string in a normalized format.
+    </p>
+    <h3>Flag Values</h3>
+    <ul>
+     <li>absent, <kbd>undefined</kbd>, <kbd>null</kbd> or <kbd>""</kbd> - default mode</li>
+    <li>g - Sets the <kbd>exp.global</kbd> property. global mode</li>
+    <li>y - Sets the <kbd>exp.sticky</kbd> property. sticky mode</li>
+    <li>u - Sets the <kbd>exp.unicode</kbd> property. Unicode mode</li>
+    <li>d - Sets the <kbd>exp.debug</kbd> property. debug mode</li>
+     </ul>
+    </ul>
+    <p>
+    If both the global and sticky flags are set, <kbd>"gy"</kbd>, global is ignored and sticky mode is used.
+    </p>
+    <h3>Modes</h3>
+    <p><b>default mode</b> - The pattern match attempt is made at the index, <kbd><a href="./lastIndex.html">exp.lastIndex</a></kbd>.
+    The user can set <kbd>exp.lastIndex</kbd> to any value prior to the match attempt.
+    If a match is found, <kbd><a href="./result.html">result</a></kbd> is returned and <kbd>exp.lastIndex</kbd> is reset to zero.
+    If a match is not found <kbd>exp.lastIndex</kbd> is incremented by one and the attempt repeated.
+    This repeats until either a match is found or
+    the end of string is reached.
+    In all cases, <kbd>exp.lastIndex</kbd> is reset to zero after the search.</p>
+    
+    <p><b>global mode</b> - The pattern match is attempted exactly as for default mode.
+    However, if a match is found, <kbd>exp.lastIndex</kbd> is <i>not</i> set to zero.
+    It is incremented by the length of the matched pattern, or one if the length is zero.
+    (Some patterns allow matches to empty strings. In this case <kbd>exp.lastIndex</kbd>
+    is incremented by one to prevent infinite loops and to allow the global search to continue.)
+    This allows for an iteration over all matched patterns in the <kbd>input</kbd> string.
+    When the match fails, <kbd>exp.lastIndex</kbd> is then reset to zero.
+    (<a href="./global.html">example</a>)
+    </p>
+    
+    <p><b>sticky mode</b> - The search is anchored at <kbd>exp.lastIndex</kbd>.
+    This means that either a match is found starting at <kbd>exp.lastIndex</kbd> or the search fails.
+    However, if a match is found, <kbd>exp.lastIndex</kbd> is set to the first character in the string
+    following the matched pattern, just as with global mode.
+    This allows a loop to iterate over all <i>consecutive</i> matches in the input string
+    (<a href="./sticky.html">example</a>)
+    </p>
+    
+    <p><b>Unicode mode</b> - The pattern match is attempted according to the current mode above.
+    If a match is found, the <kbd><a href="./result.html">result</a></kbd> values are returned as arrays of integer character codes
+    rather than strings. 
+    (<a href="./unicode.html">example</a>)
+    </p>
+    
+    <p><b>debug mode</b> - Exposes the <b>APG</b> trace object.
+    <kbd>exp.trace</kbd> can be used to display the path of the parser through the parse tree.
+    If the debug property is <kbd>false</kbd>, <kbd>exp.trace</kbd> is undefined.
+    (<a href="./debug.html">example</a>)
+    </p>
+   </div>
+  </div>
+  <div id="footer"></div>
+ </div>
+</body>
+</html>

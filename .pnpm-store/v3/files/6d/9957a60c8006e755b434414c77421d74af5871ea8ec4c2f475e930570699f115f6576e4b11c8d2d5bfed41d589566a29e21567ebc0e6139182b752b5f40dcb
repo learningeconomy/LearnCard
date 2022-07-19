@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>apg-exp</title>
+<meta charset="utf-8">
+<link rel="stylesheet" href="./css/BrightSide.css" type="text/css" />
+<link rel="stylesheet" href="./css/apgexp.css" type="text/css" />
+<script type="text/javascript" src="./import.js"></script>
+</head>
+<body>
+ <div id="wrap">
+  <div id="header"></div>
+  <div id="content-wrap">
+   <img src="./images/PointLobosCropped.jpg" width="820" height="120" alt="headerphoto" class="no-border" />
+   <div id="sidebar"></div>
+   <div id="main-2col">
+    <h1>The result Object</h1>
+    <p>
+    The result object contains the phrase matched by the pattern in the input string along with other information.
+    It has the location in the string where the match was found and parsing information.
+    It also has the location and phrase matched for <i>all</i> matches to <i>all</i> pattern syntax rules.
+    </p>
+    <h3>Syntax</h3>
+    <pre>
+var exp    = new apgExp(pattern[, flags]);
+var result = exp.exec(input);</pre>
+    <h3>Properties</h3>
+<table class="apg-left-table margin">
+<tr><td>[0]</td><td>string/array<sup>&#134;</sup></td><td>the matched phrase</td></tr>
+<tr><td>input</td><td>string/array<sup>&#134;</sup></td><td>a copy of the input string</td></tr>
+<tr><td>index</td><td>integer</td><td>the index or offset from the beginning of the input string to the matched phrase</td></tr>
+<tr><td>length</td><td>integer</td><td>the length of the matched phrase</td></tr>
+<tr><td>treeDepth</td><td>integer</td><td>the actual maximum depth reached in the parse tree by the parser during the match</td></tr>
+<tr><td>nodeHits</td><td>integer</td><td>the actual number of unit steps required by the parser to make the match</td></tr>
+<tr><td>rules</td><td>object</td><td>An object with phrase information for each of the named rules defined in the pattern syntax.
+      The first rule in the pattern defines the entire phrase to be matched.
+      The property, <kbd>result[0]</kbd>, is just an alias for the first-named phrase.</td></tr>
+<tr><td></td><td>rules[name]</td><td>null if no match to rule "name" was found</td></tr>
+<tr><td></td><td>rules[name]</td><td>an array of phrase objects, one item for each phrase</td></tr>
+<tr><td></td><td>rules[name][0]</td><td>{phrase: string/array<sup>&#134;</sup>, index: integer}</td></tr>
+</table>
+      <p><sup>&#134;</sup> If Unicode mode is <kbd>true</kbd>, i.e. <kbd>flags = "u"</kbd>, phrase is an array 
+      of integer character codes, otherwise it is a string.</p>
+    <h3>Methods</h3>
+    <ul>
+     <li>toText()</li>
+     <ul>
+      <li>displays the result object in text format, suitable for output with <kbd>console.log()</kbd></li>
+     </ul>
+     <li>toHtml()</li>
+     <ul>
+      <li>displays the result object in HTML format, suitable for display on a web page</li>
+     </ul>
+     <li>toHtmlPage()</li>
+     <ul>
+      <li>displays the result object in HTML format as a complete, stand-alone web page</li>
+     </ul>
+    </ul>
+    <h3>Example 1</h3>
+    <p>The following set up is used for all three examples. Example 1 is figurative.
+    It illustrates the format of the <kbd>rules</kbd> object.</p>
+<pre>
+var pattern, str, exp, result;
+pattern  = 'word  = 1*(alpha / num)\n';
+pattern += 'alpha = %d65-90 / %d97-122\n';
+pattern += 'num   = %d48-57\n';
+str = "ab12";
+exp = new apgExp(pattern);
+result = exp.exec(str);
+/* result */
+</pre>
+<table class="apg-left-table margin">
+<tr><th>item</th><th>value</th></tr>
+<tr><td>[0]</td><td>ab12</td></tr>
+<tr><td>input</td><td>ab12</td></tr>
+<tr><td>index</td><td>0</td></tr>
+<tr><td>length</td><td>4</td></tr>
+<tr><td>tree depth</td><td>6</td></tr>
+<tr><td>node hits</td><td>26</td></tr>
+<tr><td>rules["word"][0]</td><td>{phrase: "ab12", index: 0}</td></tr>
+<tr><td>rules["alpha"][0]</td><td>{phrase: "a", index: 0}</td></tr>
+<tr><td>rules["alpha"][1]</td><td>{phrase: "b", index: 1}</td></tr>
+<tr><td>rules["num"][0]</td><td>{phrase: "1", index: 2}</td></tr>
+<tr><td>rules["num"][1]</td><td>{phrase: "2", index: 3}</td></tr>
+</table>
+    <h3>Example 2</h3>
+    <p>Example 2 shows the same <kbd>result</kbd> object as example 1,
+    but shows how it is actually displayed with the <kbd>toText()</kbd> function.</p>
+<pre>
+console.log(result.toText());
+/* result */
+    result:
+       [0]: ab12
+     input: ab12
+     index: 0
+    length: 4
+tree depth: 7
+ node hits: 26
+     rules: word : 0: ab12
+          : alpha : 0: a
+          : alpha : 1: b
+          : num : 2: 1
+          : num : 3: 2
+</pre>
+    <h3>Example 3</h3>
+    <p>Example 3 shows the same <kbd>result</kbd> object as example 1,
+    but shows how it is actually displayed with the <kbd>toHtml()</kbd> function.
+    The <kbd>toHtmlPage()</kbd> function would give the same output
+    but wrapped in a complete HTML page header and footer.</p>
+<pre>
+$("#this-page").html(result.toHtml());
+/* result */
+</pre>
+<table class="apg-left-table margin" >
+<caption>result:</caption>
+<tr><th>item</th><th>value</th><th>phrase</th></tr>
+<tr><td>[0]</td><td>0</td><td><span class="apg-match">ab12</span></td></tr>
+<tr><td>input</td><td>0</td><td><span class="apg-remainder">ab12</span></td></tr>
+<tr><td>index</td><td>0</td><td></td></tr>
+<tr><td>length</td><td>4</td><td></td></tr>
+<tr><td>tree depth</td><td>7</td><td></td></tr>
+<tr><td>node hits</td><td>26</td><td></td></tr>
+<tr><th>rules</th><th>index</th><th>phrase</th></tr>
+<tr><td>word</td><td>0</td><td><span class="apg-match">ab12</span></td>
+<tr><td>alpha</td><td>0</td><td><span class="apg-match">a</span></td>
+<tr><td>alpha</td><td>1</td><td><span class="apg-match">b</span></td>
+<tr><td>num</td><td>2</td><td><span class="apg-match">1</span></td>
+<tr><td>num</td><td>3</td><td><span class="apg-match">2</span></td>
+</table>
+<p>&nbsp;</p>
+   </div>
+  </div>
+  <div id="footer"></div>
+ </div>
+</body>
+</html>

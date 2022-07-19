@@ -1,0 +1,15 @@
+{
+  "name": "example",
+  "version": "0.0.0",
+  "private": true,
+  "dependencies": {
+    "${name}": "file:.."
+  },
+  "scripts": {
+    "start": "aqu build && node ./dist/index.js",
+    "prepublishOnly": "echo \"This package is an example. It is not intended to be published.\" && exit 1"
+  },
+  "devDependencies": {
+    "aqu": "file:../node_modules/aqu"
+  }
+}

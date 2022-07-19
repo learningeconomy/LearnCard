@@ -1,0 +1,25 @@
+{
+    "name": "@types/figlet",
+    "version": "1.5.4",
+    "description": "TypeScript definitions for figlet",
+    "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/figlet",
+    "license": "MIT",
+    "contributors": [
+        {
+            "name": "nobody",
+            "url": "https://github.com/DefinitelyTyped",
+            "githubUsername": "DefinitelyTyped"
+        }
+    ],
+    "main": "",
+    "types": "index.d.ts",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+        "directory": "types/figlet"
+    },
+    "scripts": {},
+    "dependencies": {},
+    "typesPublisherContentHash": "ab2ee9beb566a14e3cd105302f882102ea0fca1d1ed59cfa01d837d31fb0c1a4",
+    "typeScriptVersion": "3.6"
+}

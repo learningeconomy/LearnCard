@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>apg-exp</title>
+<meta charset="utf-8">
+<link rel="stylesheet" href="./css/BrightSide.css" type="text/css" />
+<script type="text/javascript" src="./import.js"></script>
+</head>
+<body>
+ <div id="wrap">
+  <div id="header"></div>
+  <div id="content-wrap">
+   <img src="./images/PointLobosCropped.jpg" width="820" height="120" alt="headerphoto" class="no-border" />
+   <div id="sidebar"></div>
+   <div id="main-2col">
+    <h1>Method: exec()</h1>
+    <p>The <kbd>exec()</kbd> method executes a search for a match in a specified string.
+    </p>
+    <h3>Syntax</h3>
+    <pre>
+var exp = new apgExp(pattern[, flags]);
+var result = exp.exec(str);</pre>
+    <h3>Parameters</h3>
+    <ul>
+     <li><kbd>str:</kbd> string/array: The string to search for a pattern match in.
+     May be a string or array of integer character codes.</li>
+    </ul>
+    <h3>Return</h3>
+    <p>
+    If the match succeeds, a <kbd><a href="./result.html">result</a></kbd> object
+    is returned, otherwise null.
+    </p>
+    <h3>Example</h3>
+    <pre>
+var pattern, str, exp, result;
+var printResult = function(result){
+  if(result){
+    console.log("found: " + result[0] + " :at: " + result.index);
+  }else{
+    console.log("not found: result: " + result);
+  }
+}
+pattern = 'pattern = "abc"\n';
+exp = new apgExp(pattern);
+result = exp.exec("---abc");
+printResult(result);
+result = exp.exec([45, 45, 45, 97, 98, 99]);
+printResult(result);
+result = exp.exec("xyz");
+printResult(result);
+/* returns */
+found: abc :at: 3
+found: abc :at: 3
+not found: result: null
+</pre>
+    </p>
+   </div>
+  </div>
+  <div id="footer"></div>
+ </div>
+</body>
+</html>

@@ -1,0 +1,40 @@
+{
+  "name": "ink-use-stdout-dimensions",
+  "version": "1.0.5",
+  "license": "MIT",
+  "description": "React hook for subscribing to stdout dimensions in Ink",
+  "main": "./build/index.js",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:cameronhunter/ink-monorepo.git",
+    "directory": "packages/ink-use-stdout-dimensions"
+  },
+  "scripts": {
+    "prebuild": "rm -rf ./build",
+    "build": "tsc --outDir ./build",
+    "demo": "ts-node --transpile-only ./demo/index.tsx"
+  },
+  "peerDependencies": {
+    "ink": ">=2.0.0",
+    "react": ">=16.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^16.9.17",
+    "ink": "^2.6.0",
+    "react": "^16.12.0",
+    "ts-node": "^8.6.2"
+  },
+  "keywords": [
+    "ink-hook",
+    "ink",
+    "hook",
+    "react",
+    "terminal",
+    "term",
+    "console",
+    "command-line",
+    "stdout",
+    "dimensions"
+  ],
+  "gitHead": "99a99e7bb13bee76c0eace3ff3fc2ce2611ea3a7"
+}

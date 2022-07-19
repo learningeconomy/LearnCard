@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>apg-exp</title>
+<meta charset="utf-8">
+<link rel="stylesheet" href="./css/BrightSide.css" type="text/css" />
+<script type="text/javascript" src="./import.js"></script>
+</head>
+<body>
+ <div id="wrap">
+  <div id="header"></div>
+  <div id="content-wrap">
+   <img src="./images/PointLobosCropped.jpg" width="820" height="120" alt="headerphoto" class="no-border" />
+   <div id="sidebar"></div>
+   <div id="main-2col">
+    <!-- page content goes here -->
+    <h1>Method: split()</h1>
+    <p>
+    <kbd>split()</kbd> splits the input string into an array of strings,
+    each of which is the sub-string separating the patterns matched.
+    It works very similarly to JavaScript's 
+    <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/split">String.split(separator)</a>
+    function when <kbd>separator</kbd> is a regular expression.
+    </p>
+    <h3>Syntax</h3>
+    <pre>
+var exp = new apgExp(pattern[, flags]);
+var result = exp.split(str[, limit]);</pre>
+    <h3>Parameters</h3>
+    <p>
+    <ul>
+     <li>str: string: The string to match patterns in.</li>
+     <li>limit: integer > 0: default: <kbd>Infinity</kbd>: The maximum number of matches to find.</li>
+    </ul>
+    </p>
+    <h3>Return</h3>
+    <p>Returns an array of strings. The modes or <kbd>flags</kbd> parameters are ignored.
+    An attempt is made to match the pattern in the input string up to and including
+    <kbd>limit</kbd> times.
+    </p>
+    <ul style="list-style-type: disc;">
+     <li>
+<kbd>str</kbd> is empty, <kbd>null</kbd> or <kbd>undefined</kbd>: The array
+    contains a single, empty string.
+        </li>
+     <li>
+     <kbd>pattern</kbd> matches the entire input string, <kbd>str</kbd>:  The array
+    contains a single, empty string.
+     </li>
+     <li>
+     <kbd>pattern</kbd> does not match: The array contains a single string, a copy of the original string.
+     </li>
+     <li>
+     <kbd>pattern</kbd> finds matches multiple times: The array contains multiple strings, 
+     each being a sub-string of the input string&mdash;the
+     prefix, separator and suffix sub-strings, if any.
+     </li>
+     <li>
+     <kbd>pattern</kbd> is an empty string <kbd>""</kbd>: The array contains one string each
+     for each character in the input string. In this regard it acts like JavaScript's
+     String.split("").
+     </li>
+    </ul>
+    <h3>Example 1</h3>
+    <p>Split the string at the semicolons, spaces optional.</p>
+    <pre>
+var pattern, exp, str, result;
+pattern  = 'pattern = owsp ";" owsp\n';
+pattern += 'owsp    = *%d32\n';
+str = "one;two ;three ; four";
+exp = new apgExp(pattern);
+result = exp.split(str);
+console.log("   str: " + str);
+console.log("result: " + result);
+/ * result */
+   str: one;two ;three ; four
+result: one,two,three,four
+</pre>
+    <h3>Example 2</h3>
+    <p>Split the string into all of its constituent characters.</p>
+    <pre>
+var pattern, exp, str, result;
+pattern  = 'pattern = ""\n';
+str = "one;two;three;four";
+exp = new apgExp(pattern);
+result = exp.split(str);
+console.log("   str: " + str);
+console.log("result: " + result);
+/ * result */
+   str: one;two;three;four
+result: o,n,e,;,t,w,o,;,t,h,r,e,e,;,f,o,u,r
+</pre>
+   </div>
+  </div>
+  <div id="footer"></div>
+ </div>
+</body>
+</html>

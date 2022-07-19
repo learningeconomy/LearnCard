@@ -1,0 +1,25 @@
+import fetch from 'cross-fetch';
+import { mergeAbortSignals, TimedAbortSignal, abortable } from './abort-signal-utils.js';
+const DEFAULT_FETCH_TIMEOUT = 60 * 1000 * 3;
+export async function fetchJson(url, opts = {}) {
+    if (opts.body) {
+        Object.assign(opts, {
+            body: JSON.stringify(opts.body),
+            headers: { 'Content-Type': 'application/json' },
+        });
+    }
+    const timeoutLength = opts.timeout || DEFAULT_FETCH_TIMEOUT;
+    const timedAbortSignal = new TimedAbortSignal(timeoutLength);
+    const signal = opts.signal
+        ? mergeAbortSignals([opts.signal, timedAbortSignal.signal])
+        : timedAbortSignal.signal;
+    const res = await abortable(signal, (abortSignal) => {
+        return fetch(String(url), { ...opts, signal: abortSignal });
+    }).finally(() => timedAbortSignal.clear());
+    if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`HTTP request to '${url}' failed with status '${res.statusText}': ${text}`);
+    }
+    return res.json();
+}
+//# sourceMappingURL=http-utils.js.map

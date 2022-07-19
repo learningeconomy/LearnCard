@@ -1,0 +1,84 @@
+{
+	"name": "ink-gradient",
+	"version": "2.0.0",
+	"description": "Gradient color component for Ink",
+	"license": "MIT",
+	"repository": "sindresorhus/ink-gradient",
+	"funding": "https://github.com/sponsors/sindresorhus",
+	"author": {
+		"name": "Sindre Sorhus",
+		"email": "sindresorhus@gmail.com",
+		"url": "https://sindresorhus.com"
+	},
+	"main": "dist.js",
+	"engines": {
+		"node": ">=10"
+	},
+	"scripts": {
+		"build": "babel index.js --out-file=dist.js",
+		"prepublish": "npm run build",
+		"pretest": "npm run build",
+		"test": "xo && ava"
+	},
+	"files": [
+		"dist.js"
+	],
+	"keywords": [
+		"ink-component",
+		"ink",
+		"component",
+		"gradient",
+		"gradients",
+		"color",
+		"colors",
+		"rainbow",
+		"style",
+		"styles",
+		"react",
+		"jsx",
+		"terminal",
+		"term",
+		"console",
+		"command-line"
+	],
+	"dependencies": {
+		"gradient-string": "^1.2.0",
+		"prop-types": "^15.7.2",
+		"strip-ansi": "^6.0.0"
+	},
+	"devDependencies": {
+		"@babel/cli": "^7.2.3",
+		"@babel/core": "^7.3.3",
+		"@babel/preset-react": "^7.0.0",
+		"ava": "^2.4.0",
+		"clear-module": "^4.1.1",
+		"eslint-config-xo-react": "^0.23.0",
+		"eslint-plugin-react": "^7.7.0",
+		"eslint-plugin-react-hooks": "^4.0.8",
+		"ink": "^3.0.3",
+		"ink-testing-library": "^2.0.1",
+		"react": "^16.8.2",
+		"xo": "^0.33.0"
+	},
+	"peerDependencies": {
+		"ink": ">=3.0.0",
+		"react": ">=16.8.0"
+	},
+	"babel": {
+		"presets": [
+			"@ava/stage-4",
+			"@babel/preset-react"
+		]
+	},
+	"ava": {
+		"color": true
+	},
+	"xo": {
+		"extends": [
+			"xo-react"
+		],
+		"rules": {
+			"react/require-default-props": "off"
+		}
+	}
+}

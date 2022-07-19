@@ -1,0 +1,19 @@
+import { QuoteCharacter } from '../options/quoteCharacter';
+import { SemicolonCharacter } from '../options/noSemicolon';
+import { Logger } from '../options/logger';
+import { BaseUrl } from '../options/baseUrl';
+import { Directory } from '../interfaces/directory.interface';
+import { StructureOption } from '../options/options';
+export declare const buildBarrel: ({ directory, barrelType, quoteCharacter, semicolonCharacter, barrelName, logger, baseUrl, exportDefault, local, include, exclude, }: {
+    directory: Directory;
+    barrelType: StructureOption;
+    quoteCharacter: QuoteCharacter;
+    semicolonCharacter: SemicolonCharacter;
+    barrelName: string;
+    logger: Logger;
+    baseUrl: BaseUrl;
+    exportDefault: boolean;
+    local: boolean;
+    include: string[];
+    exclude: string[];
+}) => void;

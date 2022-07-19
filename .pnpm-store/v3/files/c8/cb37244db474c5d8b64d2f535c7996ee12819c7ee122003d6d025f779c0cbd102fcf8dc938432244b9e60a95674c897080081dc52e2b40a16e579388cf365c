@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>apg-exp</title>
+<meta charset="utf-8">
+<link rel="stylesheet" href="./css/BrightSide.css" type="text/css" />
+<script type="text/javascript" src="./import.js"></script>
+</head>
+<body>
+ <div id="wrap">
+  <div id="header"></div>
+  <div id="content-wrap">
+   <img src="./images/PointLobosCropped.jpg" width="820" height="120" alt="headerphoto" class="no-border" />
+   <div id="sidebar"></div>
+   <div id="main-2col">
+    <!-- page content goes here -->
+    <h1>Last Match Properties</h1>
+    <p>
+    After a successful pattern-matching attempt, the apgExp object retains
+    information about the last-matched patterns or phrases. Unlike the
+    <a href="./result.html">result</a> object which retains <i>all</i>
+    matched phrases for all rule names, the apgExp object retains only the last matched.
+    </p>
+    <h3>Syntax</h3>
+    <pre>
+var exp    = new apgExp(pattern[, flags]);
+var result = exe.exec(input);    
+</pre>
+    <h3>Last Match Properties</h3>
+    <ul>
+     <li><kbd>exe.input</kbd> (alias <kbd>exe["$_"]</kbd>): 
+     A copy of the input string<sup>&#134;</sup>.</li>
+     <li><kbd>exe.lastMatch</kbd> (alias <kbd>exe["$&"]</kbd>): 
+     A copy of the last-matched pattern - same as <a href="./result.html">result[0]</a></li>
+     <li><kbd>exe.leftContext</kbd> (alias <kbd>exe["$`"]</kbd>): 
+     Prefix of the input string up to the first character of the matched pattern.</li>
+     <li><kbd>exe.rightContext</kbd> (alias <kbd>exe["$'"]</kbd>): 
+     Suffix of the input string, the phrase following the matched pattern.</li>
+     <li><kbd>exe.rules</kbd> (alias <kbd>exe["${rule-name}"]</kbd>): 
+     The last-matched phrase for the named rule.</li>
+    </ul>
+      <p><sup>&#134;</sup> If Unicode mode is <kbd>true</kbd>, i.e. <kbd>flags = "u"</kbd>, all strings are arrays 
+      of integer character codes, otherwise it is a JavaScript string.</p>
+    <h3>See Also</h3>
+    <ul>
+     <li><kbd><a href="./toText.html">exe.toText()</a></kbd></li>
+     <li><kbd><a href="./toText.html">exe.toHtml()</a></kbd></li>
+     <li><kbd><a href="./toText.html">exe.toHtmlPage()</a></kbd></li>
+    </ul>
+    <h3>Example</h3>
+    <p>
+    <pre>
+var pattern, exp, str, result;
+pattern  = 'word  = alpha *(alpha / num)\n';
+pattern += 'alpha = %d65-90 / %d97-122\n';
+pattern += 'num   = %d48-57\n';
+exp = new apgExp(pattern);
+str = "---ab12...";
+result = exp.exec(str);
+console.log("exp.leftContext : "+exp.leftContext);
+console.log('exp["$`"]       : '+exp["$`"]);
+console.log("exp.lastMatch   : "+exp.lastMatch);
+console.log('exp["$&"]       : '+exp["$&"]);
+console.log("exp.rightContext: "+exp.rightContext);
+console.log('exp["$\'"]       : '+exp["$'"]);
+console.log("exp.rules.word  : "+exp.rules.word);
+console.log("exp[${word}]    : "+exp["${word}"]);
+console.log("exp.rules.alpha : "+exp.rules.alpha);
+console.log("exp[${alpha}]   : "+exp["${alpha}"]);
+console.log("exp.rules.num   : "+exp.rules.num);
+console.log("exp[${num}]     : "+exp["${num}"]);
+/* result */
+exp.leftContext : ---
+exp["$`"]       : ---
+exp.lastMatch   : ab12
+exp["$&"]       : ab12
+exp.rightContext: ...
+exp["$'"]       : ...
+exp.rules.word  : ab12
+exp[${word}]    : ab12
+exp.rules.alpha : b
+exp[${alpha}]   : b
+exp.rules.num   : 2
+exp[${num}]     : 2
+</pre>
+    </p>
+   </div>
+  </div>
+  <div id="footer"></div>
+ </div>
+</body>
+</html>
