@@ -1,12 +1,11 @@
 {
-  "name": "@learncard/discord-bot",
+  "name": "learn-card-discord-bot",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "rollup -c && ts-node src/Bot.ts",
-    "build": "rollup -c",
+    "start": "ts-node src/Bot.ts",
     "prepare": "pnpm build"
   },
   "author": "Learning Economy Foundation (www.learningeconomy.io)",
@@ -14,9 +13,6 @@
   "dependencies": {
     "@learncard/core": "workspace:*",
     "@learncard/types": "workspace:*",
-    "@rollup/plugin-json": "^4.1.0",
-    "rollup": "^2.71.1",
-    "rollup-plugin-esbuild": "^4.9.1",
     "discord.js": "^13.6.0"
   },
   "devDependencies": {
