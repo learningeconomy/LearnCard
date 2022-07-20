@@ -302,6 +302,59 @@ export function generateEd25519KeyFromBytes(bytes) {
 }
 
 /**
+ * @returns {string}
+ */
+export function generateSecp256k1Key() {
+    try {
+        const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+        wasm.generateSecp256k1Key(retptr);
+        var r0 = getInt32Memory0()[retptr / 4 + 0];
+        var r1 = getInt32Memory0()[retptr / 4 + 1];
+        var r2 = getInt32Memory0()[retptr / 4 + 2];
+        var r3 = getInt32Memory0()[retptr / 4 + 3];
+        var ptr0 = r0;
+        var len0 = r1;
+        if (r3) {
+            ptr0 = 0;
+            len0 = 0;
+            throw takeObject(r2);
+        }
+        return getStringFromWasm0(ptr0, len0);
+    } finally {
+        wasm.__wbindgen_add_to_stack_pointer(16);
+        wasm.__wbindgen_free(ptr0, len0);
+    }
+}
+
+/**
+ * @param {Uint8Array} bytes
+ * @returns {string}
+ */
+export function generateSecp256k1KeyFromBytes(bytes) {
+    try {
+        const retptr = wasm.__wbindgen_add_to_stack_pointer(-16);
+        const ptr0 = passArray8ToWasm0(bytes, wasm.__wbindgen_malloc);
+        const len0 = WASM_VECTOR_LEN;
+        wasm.generateSecp256k1KeyFromBytes(retptr, ptr0, len0);
+        var r0 = getInt32Memory0()[retptr / 4 + 0];
+        var r1 = getInt32Memory0()[retptr / 4 + 1];
+        var r2 = getInt32Memory0()[retptr / 4 + 2];
+        var r3 = getInt32Memory0()[retptr / 4 + 3];
+        var ptr1 = r0;
+        var len1 = r1;
+        if (r3) {
+            ptr1 = 0;
+            len1 = 0;
+            throw takeObject(r2);
+        }
+        return getStringFromWasm0(ptr1, len1);
+    } finally {
+        wasm.__wbindgen_add_to_stack_pointer(16);
+        wasm.__wbindgen_free(ptr1, len1);
+    }
+}
+
+/**
  * @param {string} method_pattern
  * @param {string} jwk
  * @returns {string}
@@ -707,7 +760,7 @@ function handleError(f, args) {
 function getArrayU8FromWasm0(ptr, len) {
     return getUint8Memory0().subarray(ptr / 1, ptr / 1 + len);
 }
-function __wbg_adapter_108(arg0, arg1, arg2, arg3) {
+function __wbg_adapter_110(arg0, arg1, arg2, arg3) {
     wasm.wasm_bindgen__convert__closures__invoke2_mut__h3ecfeb7a01c1be81(
         arg0,
         arg1,
@@ -940,7 +993,7 @@ async function init(input) {
                 const a = state0.a;
                 state0.a = 0;
                 try {
-                    return __wbg_adapter_108(a, state0.b, arg0, arg1);
+                    return __wbg_adapter_110(a, state0.b, arg0, arg1);
                 } finally {
                     state0.a = a;
                 }
@@ -1046,8 +1099,8 @@ async function init(input) {
         const ret = wasm.memory;
         return addHeapObject(ret);
     };
-    imports.wbg.__wbindgen_closure_wrapper10902 = function (arg0, arg1, arg2) {
-        const ret = makeMutClosure(arg0, arg1, 3717, __wbg_adapter_24);
+    imports.wbg.__wbindgen_closure_wrapper10913 = function (arg0, arg1, arg2) {
+        const ret = makeMutClosure(arg0, arg1, 3725, __wbg_adapter_24);
         return addHeapObject(ret);
     };
 

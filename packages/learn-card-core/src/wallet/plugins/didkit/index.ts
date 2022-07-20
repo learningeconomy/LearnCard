@@ -1,6 +1,7 @@
 import init, {
     InitInput,
     generateEd25519KeyFromBytes,
+    generateSecp256k1KeyFromBytes,
     keyToDID,
     keyToVerificationMethod,
     issueCredential,
@@ -23,6 +24,9 @@ export const getDidKitPlugin = async (
         pluginMethods: {
             generateEd25519KeyFromBytes: (_wallet, bytes) =>
                 JSON.parse(generateEd25519KeyFromBytes(bytes)),
+
+            generateSecp256k1KeyFromBytes: (_wallet, bytes) =>
+                JSON.parse(generateSecp256k1KeyFromBytes(bytes)),
 
             keyToDid: (_wallet, type, keypair) => {
                 const memoizedDid = memoizedDids[type];
