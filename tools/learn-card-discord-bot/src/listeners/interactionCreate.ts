@@ -42,7 +42,7 @@ const handleModalSubmit = async (
 
     if (!modal) {
         console.error('No modal found', interaction);
-        interaction.deferReply();
+        await interaction.deferReply();
     }
 
     modal.submit(client, interaction, wallet);
