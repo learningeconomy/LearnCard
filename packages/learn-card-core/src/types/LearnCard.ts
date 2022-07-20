@@ -2,7 +2,7 @@ import { ModelAliases } from '@glazed/types';
 import { VerificationItem, UnsignedVC, VC, VP, VerificationCheck } from '@learncard/types';
 
 import { DidMethod } from '@wallet/plugins/didkit/types';
-import { DidKeyPluginMethods } from '@wallet/plugins/didkey/types';
+import { Algorithm, DidKeyPluginMethods } from '@wallet/plugins/didkey/types';
 import { IDXCredential, IDXPluginMethods } from '@wallet/plugins/idx/types';
 import { VCPluginMethods } from '@wallet/plugins/vc/types';
 import { InitInput } from '@didkit/index';
@@ -25,7 +25,7 @@ export type LearnCardWallet = {
     /** Wallet holder's did */
     did: (type?: DidMethod) => string;
     /** Wallet holder's ed25519 key pair */
-    keypair: { kty: string; crv: string; x: string; d: string };
+    keypair: (type?: Algorithm) => { kty: string; crv: string; x: string; y?: string; d: string };
 
     /** Signs an unsigned Verifiable Credential, returning the signed VC */
     issueCredential: (credential: UnsignedVC) => Promise<VC>;

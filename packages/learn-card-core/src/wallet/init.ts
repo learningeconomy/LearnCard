@@ -35,10 +35,7 @@ export const walletFromKey = async (
         _wallet: wallet,
 
         did: (type = 'key') => wallet.pluginMethods.getSubjectDid(type),
-
-        get keypair() {
-            return wallet.pluginMethods.getSubjectKeypair();
-        },
+        keypair: (type = 'ed25519') => wallet.pluginMethods.getSubjectKeypair(type),
 
         issueCredential: wallet.pluginMethods.issueCredential,
         verifyCredential: verifyCredential(wallet),

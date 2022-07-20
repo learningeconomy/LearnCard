@@ -1,8 +1,25 @@
 import { UnsignedVC, UnsignedVP, VC, VP, VerificationCheck } from '@learncard/types';
 
-export type DidMethod = 'key' | 'tz' | 'pkh:tz' | 'pkh:tezos' | 'pkh:sol' | 'pkh:solana';
+export type DidMethod =
+    | 'key'
+    | 'tz'
+    | 'ethr'
+    | `pkh:${
+          | 'tz'
+          | 'tezos'
+          | 'sol'
+          | 'solana'
+          | 'eth'
+          | 'celo'
+          | 'poly'
+          | 'btc'
+          | 'doge'
+          | 'eip155'
+          | 'bip122'}`
+    | `pkh:eip155:${string}`
+    | `pkh:bip122:${string}`;
 
-export type KeyPair = { kty: string; crv: string; x: string; d: string };
+export type KeyPair = { kty: string; crv: string; x: string; y?: string; d: string };
 
 export type ProofOptions = {
     verificationMethod: string;
@@ -11,6 +28,7 @@ export type ProofOptions = {
 
 export type DidkitPluginMethods = {
     generateEd25519KeyFromBytes: (bytes: Uint8Array) => KeyPair;
+    generateSecp256k1KeyFromBytes: (bytes: Uint8Array) => KeyPair;
     keyToDid: (type: DidMethod, keypair: KeyPair) => string;
     keyToVerificationMethod: (type: string, keypair: KeyPair) => Promise<string>;
     issueCredential: (

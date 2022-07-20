@@ -20,6 +20,15 @@ export function generateEd25519Key(): string;
 */
 export function generateEd25519KeyFromBytes(bytes: Uint8Array): string;
 /**
+* @returns {string}
+*/
+export function generateSecp256k1Key(): string;
+/**
+* @param {Uint8Array} bytes
+* @returns {string}
+*/
+export function generateSecp256k1KeyFromBytes(bytes: Uint8Array): string;
+/**
 * @param {string} method_pattern
 * @param {string} jwk
 * @returns {string}
@@ -168,6 +177,8 @@ export interface InitOutput {
   readonly resolveDID: (a: number, b: number, c: number, d: number) => number;
   readonly generateEd25519Key: (a: number) => void;
   readonly generateEd25519KeyFromBytes: (a: number, b: number, c: number) => void;
+  readonly generateSecp256k1Key: (a: number) => void;
+  readonly generateSecp256k1KeyFromBytes: (a: number, b: number, c: number) => void;
   readonly keyToDID: (a: number, b: number, c: number, d: number, e: number) => void;
   readonly keyToVerificationMethod: (a: number, b: number, c: number, d: number) => number;
   readonly issueCredential: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
