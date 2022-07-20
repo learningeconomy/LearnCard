@@ -3,7 +3,8 @@ import { BaseCommandInteraction } from 'discord.js';
 export const IssueCredential: Command = {
     name: 'issue_credential',
     description: 'Issues credential to DID.',
-    type: 'CHAT_INPUT',
+    type: 1,
+    deferReply: true,
     run: async (client: Client, interaction: BaseCommandInteraction, wallet: UnlockedWallet) => {
         console.log(wallet);
 
