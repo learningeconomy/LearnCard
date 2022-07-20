@@ -18,7 +18,7 @@
     "@learncard/core": "workspace:*",
     "@learncard/types": "workspace:*",
     "@rollup/plugin-json": "^4.1.0",
-    "discord.js": "^13.6.0",
+    "discord.js": "^14.0.3",
     "dotenv": "^16.0.1",
     "rollup": "^2.71.1",
     "rollup-plugin-esbuild": "^4.9.1"

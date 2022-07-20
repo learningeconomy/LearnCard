@@ -1,4 +1,4 @@
-import { Client, Intents } from 'discord.js';
+import { Client, GatewayIntentBits } from 'discord.js';
 import dotenv from 'dotenv';
 import { getWallet } from './wallet/learncard';
 import ready from './listeners/ready';
@@ -22,7 +22,7 @@ if (!token) {
 }
 
 const client = new Client({
-    intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES],
+    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages],
 });
 
 getWallet(seed).then((wallet: UnlockedWallet) => {
