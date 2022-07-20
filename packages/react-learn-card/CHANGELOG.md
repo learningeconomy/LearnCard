@@ -1,5 +1,12 @@
 # @welibraryos/react-learn-card
 
+## 2.3.7
+
+### Patch Changes
+
+-   Updated dependencies [[`e72b559`](https://github.com/WeLibraryOS/LearnCard/commit/e72b55994495e4bc6156b08abdd166c77fae67b7)]:
+    -   @learncard/core@1.4.0
+
 ## 2.3.6
 
 ### Patch Changes
