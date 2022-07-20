@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 1.4.0
+
+### Minor Changes
+
+-   [#26](https://github.com/WeLibraryOS/LearnCard/pull/26) [`e72b559`](https://github.com/WeLibraryOS/LearnCard/commit/e72b55994495e4bc6156b08abdd166c77fae67b7) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add secp256k1 keypair support and related did methods
+
 ## 1.3.1
 
 ### Patch Changes
