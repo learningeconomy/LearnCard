@@ -8,7 +8,7 @@ import {
 } from 'discord.js';
 import { VC } from '@learncard/types';
 
-let credentials: VC[] = [];
+let credentials: object[] = [];
 
 export const AddCredential: Command = {
     name: 'add-credential',
@@ -17,9 +17,6 @@ export const AddCredential: Command = {
     run: async (client: Client, interaction: BaseCommandInteraction, wallet: UnlockedWallet) => {
         console.log('Adding Credentials to db.', credentials);
 
-        credentials.push(await wallet.getTestVc());
-
-        console.log('Credentials added!', credentials);
         const modal = new ModalBuilder()
             .setCustomId('add-credential-modal')
             .setTitle('Add Credential');
@@ -71,6 +68,16 @@ export const AddCredentialModal = {
             credentialImage
         );
 
+        credentials.push({
+            name: credentialName,
+            description: credentialDescription,
+            criteria: credentialCriteria,
+            image: credentialImage,
+        });
         await interaction.deferReply();
+        await interaction.followUp({
+            ephemeral: true,
+            content: `Credential Added: \n - ${credentialName} \n - ${credentialDescription} \n - ${credentialCriteria} \n - ${credentialImage}`,
+        });
     },
 };
