@@ -49,12 +49,52 @@ describe('LearnCard SDK', () => {
         it('should determinstically create a keypair', async () => {
             const wallet = await getWallet();
 
-            expect(wallet.keypair).toEqual({
+            expect(wallet.keypair()).toEqual({
                 kty: 'OKP',
                 crv: 'Ed25519',
                 x: '5zTqbCtiV95yNV5HKqBaTEh-a0Y8Ap7TBt8vAbVja1g',
                 d: 'qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqo',
             });
+        });
+
+        describe('Did Methods Supported', () => {
+            [
+                'key',
+                'tz',
+                'ethr',
+                'pkh:tz',
+                'pkh:tezos',
+                'pkh:sol',
+                'pkh:solana',
+                'pkh:eth',
+                'pkh:celo',
+                'pkh:poly',
+                'pkh:btc',
+                'pkh:doge',
+                'pkh:eip155',
+                'pkh:eip155:1',
+                'pkh:eip155:42220',
+                'pkh:eip155:137',
+                'pkh:bip122',
+                'pkh:bip122:000000000019d6689c085ae165831e93',
+                'pkh:bip122:1a91e3dace36e2be3bf030a65679fe82',
+            ].forEach(method =>
+                it(method, async () => {
+                    const wallet = await getWallet();
+
+                    expect(() => wallet.did(method)).not.toThrow();
+                })
+            );
+        });
+
+        describe('Keypair Algorithms Supported', () => {
+            ['ed25519', 'secp256k1'].forEach(algorithm =>
+                it(algorithm, async () => {
+                    const wallet = await getWallet();
+
+                    expect(() => wallet.keypair(algorithm)).not.toThrow();
+                })
+            );
         });
     });
 

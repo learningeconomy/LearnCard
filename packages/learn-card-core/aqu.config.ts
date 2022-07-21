@@ -7,6 +7,7 @@ const buildOptions: BuildOptions = {
     plugins: [
         copy({ assets: [{ keepStructure: true, from: ['./src/didkit/pkg/*'], to: ['./didkit'] }] }),
     ],
+    sourcemap: true,
     external: [
         'fs',
         'path',
