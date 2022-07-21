@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 1.5.0
+
+### Minor Changes
+
+-   [#19](https://github.com/WeLibraryOS/LearnCard/pull/19) [`de4e724`](https://github.com/WeLibraryOS/LearnCard/commit/de4e7244961f0ef91b91e6cbf32a43f29ff58b96) Thanks [@smurflo2](https://github.com/smurflo2)! - Ethereum plugin! (hello world / base scaffolding)
+
 ## 1.4.0
 
 ### Minor Changes
