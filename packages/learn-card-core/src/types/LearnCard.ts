@@ -1,6 +1,7 @@
 import { ModelAliases } from '@glazed/types';
-import { VerificationItem, UnsignedVC, VC, VP } from '@learncard/types';
+import { VerificationItem, UnsignedVC, VC, VP, VerificationCheck } from '@learncard/types';
 
+import { DidMethod } from '@wallet/plugins/didkit/types';
 import { DidKeyPluginMethods } from '@wallet/plugins/didkey/types';
 import { EthereumPluginMethods } from '@wallet/plugins/EthereumPlugin/types';
 import { IDXCredential, IDXPluginMethods } from '@wallet/plugins/idx/types';
@@ -13,8 +14,8 @@ import { UnlockedWallet } from 'types/wallet';
 export * from '@learncard/types';
 
 export type LearnCardRawWallet = UnlockedWallet<
-    'DID Key' | 'VC' | 'IDX' | 'Expiration' | 'Ethereum',
-    DidKeyPluginMethods & VCPluginMethods & IDXPluginMethods & EthereumPluginMethods
+    'DIDKit' | 'DID Key' | 'VC' | 'IDX' | 'Expiration' | 'Ethereum',
+    DidKeyPluginMethods<DidMethod> & VCPluginMethods & IDXPluginMethods & EthereumPluginMethods
 >;
 
 export type LearnCardWallet = {
@@ -24,7 +25,7 @@ export type LearnCardWallet = {
     // DidKey stuff
 
     /** Wallet holder's did */
-    did: string;
+    did: (type?: DidMethod) => string;
     /** Wallet holder's ed25519 key pair */
     keypair: { kty: string; crv: string; x: string; d: string };
 

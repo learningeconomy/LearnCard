@@ -1,29 +1,25 @@
+import { recycleDependents } from '@helpers/wallet.helpers';
+
 import { issueCredential } from './issueCredential';
 import { verifyCredential } from './verifyCredential';
 import { issuePresentation } from './issuePresentation';
 import { verifyPresentation } from './verifyPresentation';
 
-import { VCPluginMethods } from './types';
+import { DependentMethods, VCPluginMethods } from './types';
 import { Plugin, UnlockedWallet } from 'types/wallet';
 
 export const getVCPlugin = async (
-    wallet: UnlockedWallet<
-        any,
-        {
-            getSubjectDid: () => string;
-            getSubjectKeypair: () => Record<string, string>;
-        }
-    >
+    wallet: UnlockedWallet<string, DependentMethods>
 ): Promise<Plugin<'VC', VCPluginMethods>> => {
     return {
         pluginMethods: {
-            ...wallet.pluginMethods,
-            issueCredential,
-            verifyCredential: async (_wallet, credential) => verifyCredential(credential),
-            issuePresentation,
-            verifyPresentation: async (_wallet, presentation) => verifyPresentation(presentation),
+            ...recycleDependents(wallet.pluginMethods),
+            issueCredential: issueCredential(wallet),
+            verifyCredential: verifyCredential(wallet),
+            issuePresentation: issuePresentation(wallet),
+            verifyPresentation: verifyPresentation(wallet),
             getTestVc: (_wallet, subject = 'did:example:d23dd687a7dc6787646f2eb98d0') => {
-                const did = _wallet.pluginMethods.getSubjectDid();
+                const did = _wallet.pluginMethods.getSubjectDid('key');
 
                 return {
                     '@context': ['https://www.w3.org/2018/credentials/v1'],

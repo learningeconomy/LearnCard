@@ -1,5 +1,44 @@
 # @welibraryos/react-learn-card
 
+## 2.3.6
+
+### Patch Changes
+
+-   Updated dependencies [[`da81189`](https://github.com/WeLibraryOS/LearnCard/commit/da811895ae672f4287fbcd2026bf1aac5a6447e1)]:
+    -   @learncard/core@1.3.1
+
+## 2.3.5
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@1.3.0
+
+## 2.3.4
+
+### Patch Changes
+
+-   Fix learn card - front face card component
+
+## 2.3.3
+
+### Patch Changes
+
+-   Fix Learn Card - Card mobile styles
+
+## 2.3.2
+
+### Patch Changes
+
+-   Learn Card Card View
+
+## 2.3.1
+
+### Patch Changes
+
+-   Updated dependencies
+    -   @learncard/core@1.1.5
+
 ## 2.3.0
 
 ### Minor Changes
@@ -34,6 +73,8 @@
 
 ### Patch Changes
 
+-   Updated dependencies
+    -   @learncard/core@1.2.0
 -   Notification component
 -   9ddcfab: Notification component
 

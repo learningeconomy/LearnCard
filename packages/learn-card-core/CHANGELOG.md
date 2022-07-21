@@ -1,5 +1,35 @@
 # learn-card-core
 
+## 1.3.1
+
+### Patch Changes
+
+-   [#27](https://github.com/WeLibraryOS/LearnCard/pull/27) [`da81189`](https://github.com/WeLibraryOS/LearnCard/commit/da811895ae672f4287fbcd2026bf1aac5a6447e1) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Test
+
+## 1.3.0
+
+### Minor Changes
+
+-   Add more did methods
+
+### Patch Changes
+
+-   Add tests
+
+*   Plugin-ify Didkit
+
+## 1.2.0
+
+### Minor Changes
+
+-   Move didkit into its own plugin
+
+## 1.1.5
+
+### Patch Changes
+
+-   Release @learncard/cli
+
 ## 1.1.4
 
 ### Patch Changes

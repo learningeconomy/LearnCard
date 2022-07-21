@@ -1,3 +1,6 @@
+import path from 'node:path';
+import { writeFile } from 'node:fs/promises';
+
 import React, { useState } from 'react';
 import { Box, useApp } from 'ink';
 import { useImmer } from 'use-immer';
@@ -30,6 +33,14 @@ const App: React.FC<AppProps> = ({ name = 'LearnCardHTTPBridge' }) => {
         seed: randomSeed,
     });
 
+    const postClone = async () => {
+        await writeFile(
+            path.join(process.cwd(), `${state.name}/packages/learn-card-bridge-http`, '.env'),
+            `WALLET_SEED=${state.seed}`
+        );
+        setStep('info');
+    };
+
     const COMPONENTS: Record<Step, React.ReactNode> = {
         form: (
             <Form
@@ -39,7 +50,7 @@ const App: React.FC<AppProps> = ({ name = 'LearnCardHTTPBridge' }) => {
                 onCancel={() => app.exit()}
             />
         ),
-        cloning: <Cloning path={state.name} onFinished={() => setStep('info')} />,
+        cloning: <Cloning path={state.name} onFinished={postClone} />,
         info: <Info path={state.name} />,
     };
 

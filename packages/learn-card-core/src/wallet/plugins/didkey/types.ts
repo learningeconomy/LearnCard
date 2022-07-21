@@ -1,3 +1,10 @@
+import { KeyPair } from '../didkit/types';
+
+export type DependentMethods<T extends string> = {
+    generateEd25519KeyFromBytes: (bytes: Uint8Array) => KeyPair;
+    keyToDid: (type: T, keypair: KeyPair) => string;
+};
+
 export type JWK = {
     id: string;
     type: string | string[];
@@ -13,8 +20,8 @@ export type JWK = {
     generatedFrom?: [string];
 };
 
-export type DidKeyPluginMethods = {
-    getSubjectDid: () => string;
+export type DidKeyPluginMethods<T extends string> = {
+    getSubjectDid: (type: T) => string;
     getSubjectKeypair: () => { kty: string; crv: string; x: string; d: string };
     getKey: () => string;
 };

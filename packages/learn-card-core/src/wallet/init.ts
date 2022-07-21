@@ -1,5 +1,3 @@
-import init from 'didkit';
-
 import { generateWallet } from './base';
 import { getIDXPlugin } from './plugins/idx';
 import { getDidKeyPlugin } from './plugins/didkey';
@@ -10,6 +8,7 @@ import { verifyCredential } from './verify';
 
 import { LearnCardConfig, LearnCardWallet } from 'types/LearnCard';
 import { defaultCeramicIDXArgs, defaultEthereumArgs } from './defaults';
+import { getDidKitPlugin } from './plugins/didkit';
 
 /** Generates a LearnCard Wallet from a 64 character seed string */
 export const walletFromKey = async (
@@ -21,11 +20,11 @@ export const walletFromKey = async (
         ethereumConfig = defaultEthereumArgs,
     }: Partial<LearnCardConfig> = {}
 ): Promise<LearnCardWallet> => {
-    await init(didkit);
-
-    const didkeyWallet = await (
+    const didkitWallet = await (
         await generateWallet(defaultContents)
-    ).addPlugin(await getDidKeyPlugin(key));
+    ).addPlugin(await getDidKitPlugin(didkit));
+
+    const didkeyWallet = await didkitWallet.addPlugin(await getDidKeyPlugin(didkitWallet, key));
 
     const didkeyAndVCWallet = await didkeyWallet.addPlugin(await getVCPlugin(didkeyWallet));
 
@@ -41,9 +40,8 @@ export const walletFromKey = async (
     return {
         _wallet: wallet,
 
-        get did() {
-            return wallet.pluginMethods.getSubjectDid();
-        },
+        did: (type = 'key') => wallet.pluginMethods.getSubjectDid(type),
+
         get keypair() {
             return wallet.pluginMethods.getSubjectKeypair();
         },

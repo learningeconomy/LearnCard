@@ -1,6 +1,10 @@
-import { verifyCredential as vc } from 'didkit';
 import { VC } from '@learncard/types';
 
-export const verifyCredential = async (credential: VC) => {
-    return JSON.parse(await vc(JSON.stringify(credential), '{}'));
+import { DependentMethods, VCPluginMethods } from './types';
+import { UnlockedWallet } from 'types/wallet';
+
+export const verifyCredential = (initWallet: UnlockedWallet<string, DependentMethods>) => {
+    return async (_wallet: UnlockedWallet<string, VCPluginMethods>, credential: VC) => {
+        return initWallet.pluginMethods.verifyCredential(credential);
+    };
 };
