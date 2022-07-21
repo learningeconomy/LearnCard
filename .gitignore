@@ -21,3 +21,7 @@ node_modules
 *.njsproj
 *.sln
 *.sw?
+
+# Changset
+packages/*/.changeset/config.json
+packages/*/.changeset/README.md
