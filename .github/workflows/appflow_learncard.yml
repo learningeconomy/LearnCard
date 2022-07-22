@@ -17,5 +17,5 @@ jobs:
           build-type: app-store
           environment: LearnCard
           build-stack: macOS - 2021.10
-          certificate: iOS Lego SSL Distribution Certificate
+          certificate: iOS LearnCard Distribution Certificate
           destinations: App Store Connect - LearnCard
