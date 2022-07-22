@@ -1,0 +1,21 @@
+name: Build LearnCard with Appflow
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-ios:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build iOS with Appflow
+        uses: ionic-team/appflow-build@v1
+        with:
+          token: ${{ secrets.APPFLOW_TOKEN }}
+          app-id: ff5def27
+          platform: iOS
+          build-type: app-store
+          environment: LearnCard
+          build-stack: macOS - 2021.10
+          certificate: iOS Lego SSL Distribution Certificate
+          destinations: App Store Connect - LearnCard
