@@ -1,22 +1,22 @@
 import { BaseCommandInteraction, Client, Interaction, InteractionType } from 'discord.js';
 import { Commands, Modals } from './../Commands';
 import { UnlockedWallet } from '@learncard/types';
+import { Context } from 'src/types/index';
 
-export default (client: Client, wallet: UnlockedWallet): void => {
+export default (context: Context): void => {
     console.log('Initiating interactionCreate listener...');
-    client.on('interactionCreate', async (interaction: Interaction) => {
+    context.client.on('interactionCreate', async (interaction: Interaction) => {
         if (interaction.type === InteractionType.ApplicationCommand) {
-            await handleSlashCommand(client, interaction, wallet);
+            await handleSlashCommand(context, interaction);
         } else if (interaction.type === InteractionType.ModalSubmit) {
-            await handleModalSubmit(client, interaction, wallet);
+            await handleModalSubmit(context, interaction);
         }
     });
 };
 
 const handleSlashCommand = async (
-    client: Client,
-    interaction: BaseCommandInteraction,
-    wallet: UnlockedWallet
+    context: Context,
+    interaction: BaseCommandInteraction
 ): Promise<void> => {
     console.log('Handling slash command', interaction);
     const slashCommand = Commands.find(c => c.name === interaction.commandName);
@@ -28,13 +28,12 @@ const handleSlashCommand = async (
     if (slashCommand.deferReply) {
         await interaction.deferReply();
     }
-    slashCommand.run(client, interaction, wallet);
+    slashCommand.run(context, interaction);
 };
 
 const handleModalSubmit = async (
-    client: Client,
-    interaction: BaseCommandInteraction,
-    wallet: UnlockedWallet
+    context: Context,
+    interaction: BaseCommandInteraction
 ): Promise<void> => {
     console.log('Handling modal submit', interaction);
 
@@ -45,5 +44,5 @@ const handleModalSubmit = async (
         await interaction.deferReply();
     }
 
-    modal.submit(client, interaction, wallet);
+    modal.submit(context, interaction);
 };

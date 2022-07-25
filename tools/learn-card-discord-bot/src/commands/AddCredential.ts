@@ -8,15 +8,13 @@ import {
 } from 'discord.js';
 import { VC } from '@learncard/types';
 
-let credentials: object[] = [];
+import { createCredentialTemplate } from '../accesslayer/credentialtemplates/create/index';
 
 export const AddCredential: Command = {
     name: 'add-credential',
     description: 'Adds a credential template.',
     type: ApplicationCommandOptionType.ChatInput,
-    run: async (client: Client, interaction: BaseCommandInteraction, wallet: UnlockedWallet) => {
-        console.log('Adding Credentials to db.', credentials);
-
+    run: async (context: Context, interaction: BaseCommandInteraction) => {
         const modal = new ModalBuilder()
             .setCustomId('add-credential-modal')
             .setTitle('Add Credential');
@@ -54,7 +52,7 @@ export const AddCredential: Command = {
 
 export const AddCredentialModal = {
     modal_id: 'add-credential-modal',
-    submit: async (client: Client, interaction: Interaction, wallet: UnlockedWallet) => {
+    submit: async (context: Context, interaction: Interaction) => {
         const credentialName = interaction.fields.getTextInputValue('credentialName');
         const credentialDescription = interaction.fields.getTextInputValue('credentialDescription');
         const credentialCriteria = interaction.fields.getTextInputValue('credentialCriteria');
@@ -68,12 +66,16 @@ export const AddCredentialModal = {
             credentialImage
         );
 
-        credentials.push({
-            name: credentialName,
-            description: credentialDescription,
-            criteria: credentialCriteria,
-            image: credentialImage,
-        });
+        await createCredentialTemplate(
+            {
+                name: credentialName,
+                description: credentialDescription,
+                criteria: credentialCriteria,
+                image: credentialImage,
+            },
+            context
+        );
+
         await interaction.deferReply();
         await interaction.followUp({
             ephemeral: true,

@@ -1,10 +1,12 @@
 import { Client, GatewayIntentBits } from 'discord.js';
 import dotenv from 'dotenv';
 import { getWallet } from './wallet/learncard';
+import cache from './cache/index';
 import ready from './listeners/ready';
 import interactionCreate from './listeners/interactionCreate';
 import messageCreate from './listeners/messageCreate';
 import { UnlockedWallet } from '@learncard/core';
+import { Context } from './types/index';
 
 console.log('Bot is starting...');
 
@@ -26,9 +28,15 @@ const client = new Client({
 });
 
 getWallet(seed).then((wallet: UnlockedWallet) => {
-    ready(client);
-    interactionCreate(client, wallet);
-    messageCreate(client);
+    const context: Context = {
+        wallet,
+        client,
+        cache,
+    };
+
+    ready(context);
+    interactionCreate(context);
+    messageCreate(context);
 
     client.login(token);
 });
