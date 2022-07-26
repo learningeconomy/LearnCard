@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "bin": "dist/index.js",
   "scripts": {
-    "deploy": "shx cp ../learn-card-core/src/didkit/pkg/didkit_wasm_bg.wasm src/didkit_wasm_bg.wasm && serverless deploy",
+    "serverless-deploy": "shx cp ../learn-card-core/src/didkit/pkg/didkit_wasm_bg.wasm src/didkit_wasm_bg.wasm && serverless deploy",
     "start": "rollup -c && node dist/index.js",
     "build": "rollup -c"
   },
