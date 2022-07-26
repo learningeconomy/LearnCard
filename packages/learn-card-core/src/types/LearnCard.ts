@@ -96,6 +96,8 @@ export type LearnCardWallet = {
      * Returns your USDC balance
      */
     checkMyUsdc: () => Promise<string>;
+
+    test: () => void;
 };
 
 export type CeramicIDXArgs = {

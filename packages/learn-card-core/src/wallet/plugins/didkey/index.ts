@@ -27,6 +27,11 @@ export const getDidKeyPlugin = async <DidMethod extends string>(
         pluginMethods: {
             getSubjectDid: (_wallet, type) => {
                 if (!memoizedDids[type]) {
+                    console.log(
+                        '🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧 getSubjectDid (generate new)'
+                    );
+                    console.log('type:', type);
+
                     const algorithm = getAlgorithmForDidMethod(type);
                     memoizedDids[type] = wallet.pluginMethods.keyToDid(type, keyPairs[algorithm]);
                 }

@@ -62,5 +62,6 @@ export const walletFromKey = async (
         checkMyEth: wallet.pluginMethods.checkMyEth,
         checkMyDai: wallet.pluginMethods.checkMyDai,
         checkMyUsdc: wallet.pluginMethods.checkMyUsdc,
+        test: wallet.pluginMethods.test,
     };
 };

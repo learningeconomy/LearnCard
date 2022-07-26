@@ -17,6 +17,8 @@ export const getEthereumPlugin = (
         provider = ethers.getDefaultProvider(network);
     }
 
+    console.log('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥');
+
     const checkErc20TokenBalance = async (tokenContractAddress: string) => {
         if (!address) {
             throw new Error("Can't check balance: No address provided.");
@@ -52,6 +54,14 @@ export const getEthereumPlugin = (
                 const usdcAddress = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';
                 const usdcBalance = await checkErc20TokenBalance(usdcAddress);
                 return usdcBalance;
+            },
+            test: () => {
+                console.log('🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆 test');
+
+                // const test = initWallet.pluginMethods.getSubjectDid('ethr');
+                // const test2 = initWallet.pluginMethods.getSubjectDid('pkh:eth');
+
+                // console.log('test:', test);
             },
 
             // ...initWallet.pluginMethods,
