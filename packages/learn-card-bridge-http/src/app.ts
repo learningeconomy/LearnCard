@@ -59,13 +59,8 @@ app.post('/credentials/issue', async (req: TypedRequest<IssueEndpoint>, res) => 
 
         return res.status(201).json(issuedCredential);
     } catch (error) {
-        console.error(
-            '[/credentials/issue] Caught error: ',
-            (error as any).message,
-            '(received: ',
-            req.body
-        );
-        return res.status(400).json(`Invalid input: ${(error as any).message}`);
+        console.error('[/credentials/issue] Caught error: ', error, '(received: ', req.body);
+        return res.status(400).json(`Invalid input: ${error}`);
     }
 });
 
@@ -112,13 +107,8 @@ app.post('/credentials/verify', async (req: TypedRequest<VerifyCredentialEndpoin
 
         return res.status(200).json(verificationResult);
     } catch (error) {
-        console.error(
-            '[/credentials/verify] Caught error: ',
-            (error as any).message,
-            '(received: ',
-            req.body
-        );
-        return res.status(400).json(`Invalid input: ${(error as any).message}`);
+        console.error('[/credentials/verify] Caught error: ', error, '(received: ', req.body);
+        return res.status(400).json(`Invalid input: ${error}`);
     }
 });
 
@@ -162,13 +152,8 @@ app.post('/presentations/verify', async (req: TypedRequest<VerifyPresentationEnd
 
         return res.status(200).json(verificationResult);
     } catch (error) {
-        console.error(
-            '[/presentations/verify] Caught error: ',
-            (error as any).message,
-            '(received: ',
-            req.body
-        );
-        return res.status(400).json(`Invalid input: ${(error as any).message}`);
+        console.error('[/presentations/verify] Caught error: ', error, '(received: ', req.body);
+        return res.status(400).json(`Invalid input: ${error}`);
     }
 });
 
