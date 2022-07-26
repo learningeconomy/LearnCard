@@ -1,5 +1,12 @@
 # @learncard/create-http-bridge
 
+## 1.0.5
+
+### Patch Changes
+
+-   Updated dependencies [[`de4e724`](https://github.com/WeLibraryOS/LearnCard/commit/de4e7244961f0ef91b91e6cbf32a43f29ff58b96)]:
+    -   @learncard/core@1.5.0
+
 ## 1.0.4
 
 ### Patch Changes
