@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 1.5.1
+
+### Patch Changes
+
+-   [#35](https://github.com/WeLibraryOS/LearnCard/pull/35) [`4028716`](https://github.com/WeLibraryOS/LearnCard/commit/40287160de54d06f7baff000dee6f59f08f8623a) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix cross-fetch error
+
 ## 1.5.0
 
 ### Minor Changes
