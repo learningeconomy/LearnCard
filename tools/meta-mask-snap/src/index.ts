@@ -1,20 +1,30 @@
-import { walletFromKey } from '@learncard/core';
+import { walletFromKey, LearnCardWallet } from '@learncard/core';
 
 import didkit from './didkit_wasm_bg.wasm';
 
 import { OnRpcRequestHandler } from '@metamask/snap-types';
 
+let memoizedWallet: LearnCardWallet;
+
+const getWallet = async () => {
+    if (memoizedWallet) return memoizedWallet;
+
+    console.log('Making new wallet');
+
+    const newWallet = await walletFromKey('a', {
+        didkit: Uint8Array.from(atob(didkit), c => c.charCodeAt(0)),
+    });
+
+    memoizedWallet = newWallet;
+
+    return memoizedWallet;
+};
+
 export const onRpcRequest: OnRpcRequestHandler = async ({ origin, request }) => {
-    console.log('SWEET');
+    const nice = await getWallet();
+
     switch (request.method) {
         case 'hello':
-            console.log('Hello');
-
-            const nice = await walletFromKey('a', {
-                didkit: Uint8Array.from(atob(didkit), c => c.charCodeAt(0)),
-            });
-            console.log(nice.did());
-
             return wallet.request({
                 method: 'snap_confirm',
                 params: [
