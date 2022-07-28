@@ -16,11 +16,14 @@
   ],
   "scripts": {
     "build:website": "node ./scripts/build-website.js",
-    "build": "rollup -c",
+    "pre:build": "shx cp ../../packages/learn-card-core/src/didkit/pkg/didkit_wasm_bg.wasm src/didkit_wasm_bg.wasm",
+    "build": "pnpm pre:build && rollup -c && pnpm post:build",
+    "post:build": "./fixBundle.sh",
     "manifest": "mm-snap manifest --fix",
     "eval": "mm-snap eval -b dist/bundle.js",
     "serve": "mm-snap serve",
     "clean": "rimraf dist/*",
+    "dev": "pnpm build && pnpm manifest && pnpm eval && pnpm serve",
     "test": "echo 'TODO'"
   },
   "devDependencies": {
@@ -43,10 +46,11 @@
     "prettier": "^2.3.2",
     "rimraf": "^3.0.2",
     "rollup": "^2.71.1",
+    "rollup-plugin-base64": "^1.0.1",
     "rollup-plugin-commonjs": "^10.1.0",
     "rollup-plugin-delete": "^2.0.0",
     "rollup-plugin-esbuild": "^4.9.1",
-    "rollup-plugin-polyfill-node": "^0.10.2"
+    "shx": "^0.3.4"
   },
   "engines": {
     "node": ">=16.0.0"

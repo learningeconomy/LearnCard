@@ -1,5 +1,5 @@
 import del from 'rollup-plugin-delete';
-import nodePolyfills from 'rollup-plugin-polyfill-node';
+import { base64 } from 'rollup-plugin-base64';
 import resolve from '@rollup/plugin-node-resolve';
 import commonjs from 'rollup-plugin-commonjs';
 import esbuild from 'rollup-plugin-esbuild';
@@ -11,12 +11,13 @@ const snapConfig = {
     output: {
         file: './dist/bundle.js',
         format: 'cjs',
+        banner: 'var require = () => "window.crypto";',
     },
     plugins: [
         del({ targets: ['./dist'] }),
-        // nodePolyfills({ include: 'crypto' }),
         commonjs(),
-        resolve({ browser: true, preferBuiltins: false }),
+        resolve({ browser: true, preferBuiltins: true }),
+        base64({ include: '**/*.wasm' }),
         esbuild(),
         snaps(),
     ],

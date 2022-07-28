@@ -162,11 +162,13 @@ importers:
       '@types/node': ^17.0.31
       abort-controller: ^3.0.0
       aqu: 0.3.2
+      cross-fetch: ^3.1.5
       date-fns: ^2.28.0
       dids: ^3.2.0
       esbuild: ^0.14.38
       esbuild-jest: ^0.5.0
       esbuild-plugin-copy: ^1.3.0
+      ethers: ^5.6.9
       hex-lite: ^1.5.0
       isomorphic-fetch: ^3.0.0
       isomorphic-webcrypto: ^2.3.8
@@ -184,8 +186,10 @@ importers:
       '@glazed/did-datastore': 0.3.2
       '@glazed/tile-loader': 0.2.1
       abort-controller: 3.0.0
+      cross-fetch: 3.1.5
       date-fns: 2.28.0
       dids: 3.2.0
+      ethers: 5.6.9
       hex-lite: 1.5.0
       isomorphic-fetch: 3.0.0
       isomorphic-webcrypto: 2.3.8
@@ -349,10 +353,11 @@ importers:
       prettier: ^2.3.2
       rimraf: ^3.0.2
       rollup: ^2.71.1
+      rollup-plugin-base64: ^1.0.1
       rollup-plugin-commonjs: ^10.1.0
       rollup-plugin-delete: ^2.0.0
       rollup-plugin-esbuild: ^4.9.1
-      rollup-plugin-polyfill-node: ^0.10.2
+      shx: ^0.3.4
     dependencies:
       '@learncard/core': link:../../packages/learn-card-core
     devDependencies:
@@ -375,10 +380,11 @@ importers:
       prettier: 2.7.1
       rimraf: 3.0.2
       rollup: 2.75.6
+      rollup-plugin-base64: 1.0.1_rollup@2.75.6
       rollup-plugin-commonjs: 10.1.0_rollup@2.75.6
       rollup-plugin-delete: 2.0.0
       rollup-plugin-esbuild: 4.9.1_rollup@2.75.6
-      rollup-plugin-polyfill-node: 0.10.2_rollup@2.75.6
+      shx: 0.3.4
 
 packages:
 
@@ -3268,7 +3274,6 @@ packages:
       '@ethersproject/logger': 5.6.0
       '@ethersproject/properties': 5.6.0
       '@ethersproject/strings': 5.6.1
-    dev: true
 
   /@ethersproject/abstract-provider/5.6.1:
     resolution: {integrity: sha512-BxlIgogYJtp1FS8Muvj8YfdClk3unZH0vRMVX791Z9INBNT/kuACZ9GzaY1Y4yFq+YSy6/w4gzj3HCRKrK9hsQ==}
@@ -3340,7 +3345,6 @@ packages:
       '@ethersproject/logger': 5.6.0
       '@ethersproject/properties': 5.6.0
       '@ethersproject/transactions': 5.6.2
-    dev: true
 
   /@ethersproject/hash/5.6.1:
     resolution: {integrity: sha512-L1xAHurbaxG8VVul4ankNX5HgQ8PNCTrnVXEiFnE9xoRnaUcgfD12tZINtDinSllxPLCtGwguQxJ5E6keE84pA==}
@@ -3438,7 +3442,6 @@ packages:
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
-    dev: true
 
   /@ethersproject/random/5.6.1:
     resolution: {integrity: sha512-/wtPNHwbmng+5yi3fkipA8YBT59DdkGRoC2vWk09Dci/q5DlgnMkhIycjHlavrvrjJBkFjO/ueLyT+aUDfc4lA==}
@@ -3478,7 +3481,6 @@ packages:
       '@ethersproject/logger': 5.6.0
       '@ethersproject/sha2': 5.6.1
       '@ethersproject/strings': 5.6.1
-    dev: true
 
   /@ethersproject/strings/5.6.1:
     resolution: {integrity: sha512-2X1Lgk6Jyfg26MUnsHiT456U9ijxKUybz8IM1Vih+NJxYtXhmvKBcHOmvGqpFSVJ0nQ4ZCoIViR8XlRw1v/+Cw==}
@@ -3506,7 +3508,6 @@ packages:
       '@ethersproject/bignumber': 5.6.2
       '@ethersproject/constants': 5.6.1
       '@ethersproject/logger': 5.6.0
-    dev: true
 
   /@ethersproject/wallet/5.6.2:
     resolution: {integrity: sha512-lrgh0FDQPuOnHcF80Q3gHYsSUODp6aJLAdDmDV0xKCN/T7D99ta1jGVhulg3PY8wiXEngD0DfM0I2XKXlrqJfg==}
@@ -4904,17 +4905,6 @@ packages:
       is-reference: 1.2.1
       magic-string: 0.25.9
       resolve: 1.22.0
-      rollup: 2.75.6
-    dev: true
-
-  /@rollup/plugin-inject/4.0.4_rollup@2.75.6:
-    resolution: {integrity: sha512-4pbcU4J/nS+zuHk+c+OL3WtmEQhqxlZ9uqfjQMQDOHOPld7PsCd8k5LWs8h5wjwJN7MgnAn768F2sDxEP4eNFQ==}
-    peerDependencies:
-      rollup: ^1.20.0 || ^2.0.0
-    dependencies:
-      '@rollup/pluginutils': 3.1.0_rollup@2.75.6
-      estree-walker: 2.0.2
-      magic-string: 0.25.9
       rollup: 2.75.6
     dev: true
 
@@ -8977,7 +8967,6 @@ packages:
 
   /bech32/1.1.4:
     resolution: {integrity: sha512-s0IrSOzLlbvX7yp4WBfPITzpAU8sqQcpsmwXDiKwrG4r491vwCO/XpejasRNl0piBMe/DvP4Tz0mIS/X1DPJBQ==}
-    dev: true
 
   /before-after-hook/2.2.2:
     resolution: {integrity: sha512-3pZEU3NT5BFUo/AD5ERPWOgQOCZITni6iavr5AUw5AUwQjMlI0kzu5btnyD39AF0gUEsDPwJT+oY1ORBJijPjQ==}
@@ -12606,7 +12595,6 @@ packages:
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
-    dev: true
 
   /ethjs-abi/0.2.0:
     resolution: {integrity: sha512-ELExSTNV7rm9WA22pA3kxNmaQz1o/peM8X1pZdWypEhuNzFjOR+hIV09Mcfw69Q0kbdd7JNGAFb5dyoL/bnItA==}
@@ -20367,6 +20355,14 @@ packages:
       bn.js: 5.2.1
     dev: true
 
+  /rollup-plugin-base64/1.0.1_rollup@2.75.6:
+    resolution: {integrity: sha512-IbdX8fjuXO/Op3hYmRPjVo0VwcSenwsQDaDTFdoe+70B5ZGoLMtr96L2yhHXCfxv7HwZVvxZqLsuWj6VwzRt3g==}
+    dependencies:
+      '@rollup/pluginutils': 3.1.0_rollup@2.75.6
+    transitivePeerDependencies:
+      - rollup
+    dev: true
+
   /rollup-plugin-commonjs/10.1.0_rollup@2.75.6:
     resolution: {integrity: sha512-jlXbjZSQg8EIeAAvepNwhJj++qJWNJw1Cl0YnOqKtP5Djx+fFGkp3WRh+W0ASCaFG5w1jhmzDxgu3SJuVxPF4Q==}
     deprecated: This package has been deprecated and is no longer maintained. Please use @rollup/plugin-commonjs.
@@ -20447,15 +20443,6 @@ packages:
     peerDependencies:
       rollup: '*'
     dependencies:
-      rollup: 2.75.6
-    dev: true
-
-  /rollup-plugin-polyfill-node/0.10.2_rollup@2.75.6:
-    resolution: {integrity: sha512-5GMywXiLiuQP6ZzED/LO/Q0HyDi2W6b8VN+Zd3oB0opIjyRs494Me2ZMaqKWDNbGiW4jvvzl6L2n4zRgxS9cSQ==}
-    peerDependencies:
-      rollup: ^1.20.0 || ^2.0.0
-    dependencies:
-      '@rollup/plugin-inject': 4.0.4_rollup@2.75.6
       rollup: 2.75.6
     dev: true
 
@@ -23374,7 +23361,6 @@ packages:
         optional: true
       utf-8-validate:
         optional: true
-    dev: true
 
   /ws/7.5.8:
     resolution: {integrity: sha512-ri1Id1WinAX5Jqn9HejiGb8crfRio0Qgu8+MtL36rlTA6RLsMdWt1Az/19A2Qij6uSHUMphEFaTKa4WG+UNHNw==}
