@@ -7,14 +7,14 @@ import snaps from '@metamask/rollup-plugin-snaps';
 
 /** @type {RollupOptions} */
 const snapConfig = {
-    input: './src/index.ts',
+    input: './snap/index.ts',
     output: {
-        file: './dist/bundle.js',
+        file: './out/snap.js',
         format: 'cjs',
         banner: 'var require = () => "window.crypto";',
     },
     plugins: [
-        del({ targets: ['./dist'] }),
+        del({ targets: ['./out'] }),
         commonjs(),
         resolve({ browser: true, preferBuiltins: true }),
         base64({ include: '**/*.wasm' }),

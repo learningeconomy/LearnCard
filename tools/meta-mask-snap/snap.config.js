@@ -1,5 +1,6 @@
 module.exports = {
     cliOptions: {
-        src: './src/index.ts',
+        src: './snap/index.ts',
+        port: 3002,
     },
 };

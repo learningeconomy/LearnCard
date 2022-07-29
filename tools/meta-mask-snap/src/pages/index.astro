@@ -1,0 +1,33 @@
+---
+import Layout from '@layouts/Layout.astro';
+import LoadingIndicator from '@components/LoadingIndicator';
+import SnapInfo from '@components/SnapInfo';
+---
+
+<Layout title="Welcome to Astro.">
+    <main class="fixed w-full h-full flex flex-col items-center justify-center bg-green-900">
+        <section class="flex flex-col p-4 h-3/4 w-3/4 border rounded bg-green-50">
+            <header class="flex justify-center items-center p-4">
+                <h1>Learn Card</h1>
+            </header>
+            <section class="p-4 flex-grow overflow-auto border-y">
+                <LoadingIndicator client:idle />
+                <SnapInfo client:idle />
+            </section>
+        </section>
+    </main>
+</Layout>
+
+<script>
+    import { isSnapReady } from '@state/snapState';
+    import { snapId } from '@constants/snapConstants';
+
+    setTimeout(async () => {
+        await ethereum.request({
+            method: 'wallet_enable',
+            params: [{ wallet_snap: { [snapId]: {} } }],
+        });
+
+        isSnapReady.set(true);
+    }, 1000);
+</script>

@@ -4,13 +4,25 @@
     "declaration": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
-    "module": "CommonJS",
-    "moduleResolution": "node",
     "useUnknownInCatchVariables": false,
     "sourceMap": true,
     "strict": true,
-    "target": "ES2017",
-    "typeRoots": ["./node_modules/@types"]
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "typeRoots": ["./node_modules/@types"],
+    "types": ["astro/client"],
+    "jsx": "react",
+    "baseUrl": ".",
+    "paths": {
+        "@layouts/*": ["./src/layouts/*"],
+        "@components/*": ["./src/components/*"],
+        "@helpers/*": ["./src/helpers/*"],
+        "@state/*": ["./src/state/*"],
+        "@constants/*": ["./src/constants/*"]
+    }
   },
   "include": ["src"]
 }

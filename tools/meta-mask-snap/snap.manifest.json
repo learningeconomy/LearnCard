@@ -7,18 +7,19 @@
     "url": "https://github.com/MetaMask/snap-template.git"
   },
   "source": {
-    "shasum": "GtVAWCHJfiVPAItt1AL1u7Rkiiy8Th+G2SrbX54xNn8=",
+    "shasum": "tBhjMoYLiz+MNv5pO5ZIIFs+T1SFNhVM/a4QlrfaREw=",
     "location": {
       "npm": {
-        "filePath": "dist/bundle.js",
+        "filePath": "out/snap.js",
         "iconPath": "images/icon.svg",
-        "packageName": "@metamask/template-snap",
+        "packageName": "@learncard/meta-mask-snap",
         "registry": "https://registry.npmjs.org/"
       }
     }
   },
   "initialPermissions": {
     "snap_confirm": {},
+    "snap_getBip44Entropy_60": {},
     "endowment:network-access": {}
   },
   "manifestVersion": "0.1"
