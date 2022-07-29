@@ -31,7 +31,7 @@ VCDisplayCardTest.args = {
             url: 'https://www.jff.org/',
             image: 'https://kayaelle.github.io/vc-ed/plugfest-1-2022/images/JFF_LogoLockup.png',
         },
-        issuanceDate: new Date().toISOString(),
+        issuanceDate: '2022-07-27T19:57:31.512Z',
         credentialSubject: {
             type: 'AchievementSubject',
             id: 'did:example:123',

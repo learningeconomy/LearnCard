@@ -5,6 +5,8 @@ export function getVersion(a: number): void;
 export function resolveDID(a: number, b: number, c: number, d: number): number;
 export function generateEd25519Key(a: number): void;
 export function generateEd25519KeyFromBytes(a: number, b: number, c: number): void;
+export function generateSecp256k1Key(a: number): void;
+export function generateSecp256k1KeyFromBytes(a: number, b: number, c: number): void;
 export function keyToDID(a: number, b: number, c: number, d: number, e: number): void;
 export function keyToVerificationMethod(a: number, b: number, c: number, d: number): number;
 export function issueCredential(a: number, b: number, c: number, d: number, e: number, f: number): number;
