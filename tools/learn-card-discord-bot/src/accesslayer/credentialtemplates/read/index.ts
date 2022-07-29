@@ -12,3 +12,11 @@ export const getCredentialTemplates = async (context: Context): CredentialTempla
     );
     return templates;
 };
+
+export const getCredentialTemplateById = async (
+    id: string,
+    context: Context
+): Promise<CredentialTemplate> => {
+    const templateJSON = await context.cache.get(`${PREFIX}${id}`);
+    return templateJSON ? JSON.parse(templateJSON) : null;
+};
