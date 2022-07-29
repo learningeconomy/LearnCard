@@ -7,6 +7,7 @@ const buildOptions: BuildOptions = {
     plugins: [
         copy({ assets: [{ keepStructure: true, from: ['./src/didkit/pkg/*'], to: ['./didkit'] }] }),
     ],
+    sourcemap: true,
     external: [
         'fs',
         'path',
@@ -16,6 +17,7 @@ const buildOptions: BuildOptions = {
         'abort-controller',
         'isomorphic-fetch',
         'isomorphic-webcrypto',
+        'cross-fetch',
     ],
 };
 
