@@ -21,7 +21,7 @@ export const RegisterDID: Command = {
     ],
     run: async (context: Context, interaction: BaseCommandInteraction) => {
         const targetedUser = interaction.options.getUser('holder');
-        const did = interaction.options.getString('did');
+        const did = interaction.options.getString('did').replace('🔑', ':key:');
         const { user: currentUser } = interaction;
 
         console.log(

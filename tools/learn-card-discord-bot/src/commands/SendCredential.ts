@@ -11,6 +11,8 @@ import {
     getCredentialTemplateById,
 } from '../accesslayer/credentialtemplates/read';
 
+import { CredentialTemplate } from '../types';
+
 export const SendCredential: Command = {
     name: 'send-credential',
     description: 'Send a credential to another user.',
@@ -60,6 +62,35 @@ export const SendCredential: Command = {
 };
 
 // TODO: Handle send credential template. Then update message, then select user.
+//
+
+const constructCredentialForSubject = (
+    issuer: string | object,
+    template: CredentialTemplate,
+    didSubject: string
+) => {
+    const { name, description, criteria, image } = template;
+    return {
+        '@context': ['https://www.w3.org/2018/credentials/v1'],
+        type: ['VerifiableCredential', 'OpenBadgeCredential'],
+        issuer,
+        issuanceDate: new Date().toISOString(),
+        credentialSubject: {
+            type: 'AchievementSubject',
+            id: didSubject,
+            achievement: {
+                type: 'Achievement',
+                name,
+                description,
+                criteria: {
+                    type: 'Criteria',
+                    narrative: criteria,
+                },
+                image,
+            },
+        },
+    };
+};
 
 export const SendCredentialSelection = {
     component_id: 'credential-template',
@@ -84,27 +115,15 @@ export const SendCredentialSelection = {
         if (!subjectDID) {
             console.error(
                 'Subject does not have an associated DID. Use the /register-did command.',
-                subjectUser
+                subjectUserId
             );
         }
 
-        const unsignedVc = await wallet.getTestVc();
-
-        unsignedVc.credentialSubject = {
-            id: subjectDID,
-            type: 'AchievementSubject',
-            achievement: {
-                type: 'Achievement',
-                name: credentialTemplate.name,
-                description: credentialTemplate.description,
-                criteria: {
-                    type: 'Criteria',
-                    narrative: credentialTemplate.criteria,
-                },
-                image: credentialTemplate.image,
-            },
-        };
-        unsignedVc.type = ['VerifiableCredential', 'OpenBadgeCredential'];
+        const unsignedVc = constructCredentialForSubject(
+            wallet.did('key'),
+            credentialTemplate,
+            subjectDID
+        );
 
         console.log('unsignedVc', unsignedVc);
         const vc = await wallet.issueCredential(unsignedVc);
