@@ -6,7 +6,6 @@ import { Context } from 'src/types/index';
 export default (context: Context): void => {
     console.log('Initiating interactionCreate listener...');
     context.client.on('interactionCreate', async (interaction: Interaction) => {
-        console.log('Interaction!', interaction);
         if (interaction.type === InteractionType.ApplicationCommand) {
             await handleSlashCommand(context, interaction);
         } else if (interaction.type === InteractionType.ModalSubmit) {

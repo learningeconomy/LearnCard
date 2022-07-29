@@ -41,6 +41,6 @@ export const RegisterDID: Command = {
             context
         );
 
-        await interaction.reply({ content: 'DID Registered Successfully.', ephemeral: true });
+        await interaction.reply({ content: 'DID Registered Successfully. 🚀', ephemeral: true });
     },
 };

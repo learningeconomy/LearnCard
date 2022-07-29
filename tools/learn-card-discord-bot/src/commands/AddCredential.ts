@@ -79,7 +79,7 @@ export const AddCredentialModal = {
         await interaction.deferReply();
         await interaction.followUp({
             ephemeral: true,
-            content: `Credential Added: \n - ${credentialName} \n - ${credentialDescription} \n - ${credentialCriteria} \n - ${credentialImage}`,
+            content: `**Credential Added** ✅ \n - ${credentialName} \n - ${credentialDescription} \n - ${credentialCriteria} \n - ${credentialImage}`,
         });
     },
 };

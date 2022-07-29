@@ -61,9 +61,6 @@ export const SendCredential: Command = {
     },
 };
 
-// TODO: Handle send credential template. Then update message, then select user.
-//
-
 const constructCredentialForSubject = (
     issuer: string | object,
     template: CredentialTemplate,
@@ -71,7 +68,10 @@ const constructCredentialForSubject = (
 ) => {
     const { name, description, criteria, image } = template;
     return {
-        '@context': ['https://www.w3.org/2018/credentials/v1'],
+        '@context': [
+            'https://www.w3.org/2018/credentials/v1',
+            'https://w3c-ccg.github.io/vc-ed/plugfest-1-2022/jff-vc-edu-plugfest-1-context.json',
+        ],
         type: ['VerifiableCredential', 'OpenBadgeCredential'],
         issuer,
         issuanceDate: new Date().toISOString(),
@@ -96,12 +96,9 @@ export const SendCredentialSelection = {
     component_id: 'credential-template',
     submit: async (context: Context, interaction: Interaction) => {
         const { client, wallet } = context;
-        console.log('SUBMIT HANDLE SELECT CREDENTIAL', interaction);
 
         const credentialTemplateSelected = interaction.values[0];
-
         const subjectUserId = interaction.message.content;
-        console.log('Credential Template selected', credentialTemplateSelected, subjectUserId);
 
         await interaction.deferReply();
 
@@ -117,6 +114,11 @@ export const SendCredentialSelection = {
                 'Subject does not have an associated DID. Use the /register-did command.',
                 subjectUserId
             );
+            await interaction.followUp({
+                ephemeral: true,
+                content: `Subject user does not have an associated DID. Use the /register-did command.`,
+            });
+            return;
         }
 
         const unsignedVc = constructCredentialForSubject(
@@ -125,23 +127,30 @@ export const SendCredentialSelection = {
             subjectDID
         );
 
-        console.log('unsignedVc', unsignedVc);
         const vc = await wallet.issueCredential(unsignedVc);
-        console.log('VC!', vc);
         const streamId = await wallet.publishCredential(vc);
 
         const claimCredentialLink = `https://learncard.app/claim-credential/${streamId}`;
-        const subjectUser = await client.users.fetch(subjectUserId);
-        subjectUser.send(
-            `Hello! You have received a credential. Click this link to claim: ${claimCredentialLink}`
-        );
+        let subjectUser;
+        try {
+            subjectUser = await client.users.fetch(subjectUserId);
 
-        console.log('GOT SUBJECT USER!', subjectUser);
+            subjectUser.send(
+                `Hello! You have received a credential: ${credentialTemplate.name} 🎉 \n Click this link to claim: ${claimCredentialLink}`
+            );
+        } catch (e) {
+            console.error('Error sending message to user.', e);
+            await interaction.followUp({
+                ephemeral: true,
+                content: `**${credentialTemplate.name}** successfully issued to (${subjectDID}) ✅, but failed to send message to user 🔧. \n 
+                            Share this link with them to claim: ${claimCredentialLink}} 🍄`,
+            });
+            return;
+        }
+
         await interaction.followUp({
             ephemeral: true,
-            content: `Credential send: \n - ${JSON.stringify(
-                credentialTemplate
-            )} \n - ${subjectDID}`,
+            content: `**${credentialTemplate.name}** successfully sent to @${subjectUser.username} 🎓✅`,
         });
     },
 };
