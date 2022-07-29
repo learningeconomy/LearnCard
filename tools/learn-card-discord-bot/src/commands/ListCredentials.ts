@@ -9,14 +9,13 @@ export const ListCredentials: Command = {
     run: async (context: Context, interaction: BaseCommandInteraction) => {
         const credentialTemplates = await getCredentialTemplates(context);
 
-        console.log(credentialTemplates);
+        const listOfCredentials = credentialTemplates
+            .map(t => t.name)
+            .reduce((list, name) => '- ' + name + '\n' + list, '');
 
-        const stringifiedTemplates = JSON.stringify(credentialTemplates);
-
-        const content = '```' + stringifiedTemplates + '```';
         await interaction.followUp({
             ephemeral: true,
-            content,
+            content: `**Credential Templates**\n ${listOfCredentials}`,
         });
     },
 };
