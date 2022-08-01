@@ -6,10 +6,10 @@ import { issuePresentation } from './issuePresentation';
 import { verifyPresentation } from './verifyPresentation';
 
 import { DependentMethods, VCPluginMethods } from './types';
-import { Plugin, UnlockedWallet } from 'types/wallet';
+import { Plugin, Wallet } from 'types/wallet';
 
 export const getVCPlugin = async (
-    wallet: UnlockedWallet<string, DependentMethods>
+    wallet: Wallet<string, DependentMethods>
 ): Promise<Plugin<'VC', VCPluginMethods>> => {
     return {
         pluginMethods: {
