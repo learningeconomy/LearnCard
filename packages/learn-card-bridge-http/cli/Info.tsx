@@ -69,7 +69,7 @@ const Info: React.FC<InfoProps> = ({ path }) => {
                 </Text>
                 <Text>
                     <Text color="green">{'$ '}</Text>
-                    <SyntaxHighlight code="pnpm exec serverless deploy" language="bash" />
+                    <SyntaxHighlight code="pnpm serverless-deploy" language="bash" />
                 </Text>
             </Box>
         </Box>
