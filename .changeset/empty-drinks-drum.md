@@ -1,5 +1,5 @@
 ---
-'@learncard/core': minor
+'@learncard/core': major
 ---
 
 TS Refactor UnlockedWallet -> Wallet
