@@ -1,4 +1,4 @@
-import { UnlockedWallet } from 'types/wallet';
+import { Wallet } from 'types/wallet';
 
 /**
  * Type helper to allow a plugin to depend on methods without re-exporting them
@@ -19,7 +19,7 @@ export const recycleDependents = <
 >(
     _methods: Methods
 ): {
-    [Key in keyof Methods]: <T extends UnlockedWallet<any, Methods>>(
+    [Key in keyof Methods]: <T extends Wallet<any, Methods>>(
         wallet: T,
         ...args: Parameters<Methods[Key]>
     ) => ReturnType<Methods[Key]>;
