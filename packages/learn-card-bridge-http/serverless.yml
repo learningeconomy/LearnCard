@@ -17,9 +17,11 @@ provider:
   runtime: nodejs14.x
   stage: dev
   region: us-east-1
-  timeout: 30
+  timeout: 29
   httpApi:
     cors: true
+  environment: 
+    WALLET_SEED: ${env:WALLET_SEED}
 
 functions:
   api:

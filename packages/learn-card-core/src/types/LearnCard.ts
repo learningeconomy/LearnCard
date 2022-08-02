@@ -9,11 +9,11 @@ import { VCPluginMethods } from '@wallet/plugins/vc/types';
 import { EthereumConfig } from '@wallet/plugins/EthereumPlugin/types';
 import { InitInput } from '@didkit/index';
 
-import { UnlockedWallet } from 'types/wallet';
+import { Wallet } from 'types/wallet';
 
 export * from '@learncard/types';
 
-export type LearnCardRawWallet = UnlockedWallet<
+export type LearnCardRawWallet = Wallet<
     'DIDKit' | 'DID Key' | 'VC' | 'IDX' | 'Expiration' | 'Ethereum',
     DidKeyPluginMethods<DidMethod> & VCPluginMethods & IDXPluginMethods & EthereumPluginMethods
 >;
