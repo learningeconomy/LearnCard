@@ -12,23 +12,9 @@ import SnapInfo from '@components/SnapInfo';
                 <img src={LearnCard} alt="Learn Card" />
             </header>
             <section class="p-4 flex-grow overflow-auto border-y">
-                <LoadingIndicator client:idle />
+                <LoadingIndicator client:only />
                 <SnapInfo client:idle />
             </section>
         </section>
     </main>
 </Layout>
-
-<script>
-    import { isSnapReady } from '@state/snapState';
-    import { snapId } from '@constants/snapConstants';
-
-    setTimeout(async () => {
-        await ethereum.request({
-            method: 'wallet_enable',
-            params: [{ wallet_snap: { [snapId]: {} } }],
-        });
-
-        isSnapReady.set(true);
-    }, 1000);
-</script>

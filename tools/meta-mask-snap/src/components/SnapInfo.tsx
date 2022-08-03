@@ -26,7 +26,7 @@ const SnapInfo: React.FC = () => {
 
     return (
         <section className="h-full flex flex-col gap-2">
-            <header className="p-4 border-b flex gap-4">
+            <header className="p-4 flex gap-4">
                 <Button component={<Did />}>View Dids</Button>
                 <Button component={<IssueCredential />}>Issue Credential</Button>
                 <Button component={<VerifyCredential />}>Verify Credential</Button>
@@ -34,7 +34,7 @@ const SnapInfo: React.FC = () => {
                 <Button component={<VerifyPresentation />}>Verify Presentation</Button>
             </header>
 
-            <section className="flex-grow overflow-auto">{modal}</section>
+            <section className="flex-grow border-t overflow-auto">{modal}</section>
         </section>
     );
 };
