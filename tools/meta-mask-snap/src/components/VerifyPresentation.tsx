@@ -1,21 +1,22 @@
 import React, { useState } from 'react';
+import { VP, VerificationCheck } from '@learncard/types';
 
 import { useIsSnapReady } from '@state/snapState';
 
 import { sendRequest } from '@helpers/rpc.helpers';
 
 const VerifyPresentation: React.FC = () => {
-    const [presentation, setPresentation] = useState('');
-    const [response, setResponse] = useState('');
+    const [presentation, setPresentation] = useState<VP>();
+    const [response, setResponse] = useState<VerificationCheck>();
 
     const isSnapReady = useIsSnapReady();
 
     const verifyPresentation = async () => {
+        if (!presentation) return;
+
         const res = await sendRequest({ method: 'verifyPresentation', presentation });
 
-        if (typeof res === 'string') {
-            setResponse(JSON.stringify(JSON.parse(res), undefined, 4));
-        }
+        if (res) setResponse(res);
     };
 
     if (!isSnapReady) return <></>;
@@ -24,8 +25,8 @@ const VerifyPresentation: React.FC = () => {
         <section className="p-2 border rounded flex flex-col gap-2 items-center justify-center">
             <textarea
                 className="w-1/2 h-80 p-4"
-                onChange={e => setPresentation(e.target.value)}
-                value={presentation}
+                onChange={e => setPresentation(JSON.parse(e.target.value))}
+                value={JSON.stringify(presentation, undefined, 4)}
             />
             <button
                 className="border rounded bg-blue-200 w-1/2"
@@ -38,7 +39,7 @@ const VerifyPresentation: React.FC = () => {
                 <section className="w-full bg-gray-100 rounded border flex flex-col gap-2">
                     <span className="text-grey-600 border-b text-center">Response</span>
                     <output className="overflow-auto">
-                        <pre>{response}</pre>
+                        <pre>{JSON.stringify(response, undefined, 4)}</pre>
                     </output>
                 </section>
             )}

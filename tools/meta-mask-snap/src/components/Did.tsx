@@ -18,7 +18,7 @@ const Did: React.FC = () => {
 
         const _did = await sendRequest({ method: 'did', didMethod: method });
 
-        if (typeof did === 'string') setDid(_did);
+        if (typeof _did === 'string') setDid(_did);
     };
 
     useEffect(() => {

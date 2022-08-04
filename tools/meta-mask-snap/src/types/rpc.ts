@@ -1,0 +1,64 @@
+import { z } from 'zod';
+import {
+    UnsignedVCValidator,
+    VCValidator,
+    VPValidator,
+    VerificationItemValidator,
+    VerificationCheckValidator,
+} from '@learncard/types';
+
+import { getRpcMethod, GetRPCMethodType, getAPIEndpoint, GetAPIEndpointType } from './helpers';
+
+// Endpoint Methods
+
+export const Did = getRpcMethod('did', { didMethod: z.string().optional() }, z.string(), {
+    skipSerializationKeys: ['didMethod'],
+    serializeReturnValue: false,
+});
+export type DidTypes = GetRPCMethodType<typeof Did>;
+
+export const IssueCredential = getRpcMethod(
+    'issueCredential',
+    { credential: UnsignedVCValidator },
+    VCValidator
+);
+export type IssueCredentialTypes = GetRPCMethodType<typeof IssueCredential>;
+
+export const IssuePresentation = getRpcMethod(
+    'issuePresentation',
+    { credential: VCValidator },
+    VPValidator
+);
+export type IssuePresentationTypes = GetRPCMethodType<typeof IssuePresentation>;
+
+export const TestVC = getRpcMethod('getTestVc', {}, UnsignedVCValidator);
+export type TestVCTypes = GetRPCMethodType<typeof TestVC>;
+
+export const VerifyCredential = getRpcMethod(
+    'verifyCredential',
+    { credential: VCValidator },
+    VerificationItemValidator.array()
+);
+export type VerifyCredentialTypes = GetRPCMethodType<typeof VerifyCredential>;
+
+export const VerifyPresentation = getRpcMethod(
+    'verifyPresentation',
+    { presentation: VPValidator },
+    VerificationCheckValidator
+);
+export type VerifyPresentationTypes = GetRPCMethodType<typeof VerifyPresentation>;
+
+// API Endpoints
+
+export const CredentialRPCAPI = getAPIEndpoint({ Did, IssueCredential, IssuePresentation });
+export type CredentialRPCAPITypes = GetAPIEndpointType<typeof CredentialRPCAPI>;
+
+export const LearnCardRPCAPI = getAPIEndpoint({
+    Did,
+    TestVC,
+    IssueCredential,
+    VerifyCredential,
+    IssuePresentation,
+    VerifyPresentation,
+});
+export type LearnCardRPCAPITypes = GetAPIEndpointType<typeof LearnCardRPCAPI>;

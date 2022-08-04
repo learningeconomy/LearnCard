@@ -371,8 +371,10 @@ importers:
       rollup-plugin-delete: ^2.0.0
       rollup-plugin-esbuild: ^4.9.1
       shx: ^0.3.4
+      zod: ^3.17.3
     dependencies:
       '@learncard/core': link:../../packages/learn-card-core
+      zod: 3.17.3
     devDependencies:
       '@astrojs/react': 0.4.2_biqbaboplfbrettd7655fr4n2y
       '@astrojs/tailwind': 0.2.5

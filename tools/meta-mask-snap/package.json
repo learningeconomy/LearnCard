@@ -14,7 +14,6 @@
     "snap.manifest.json"
   ],
   "scripts": {
-    "build:website": "node ./scripts/build-website.js",
     "pre:build": "shx cp ../../packages/learn-card-core/src/didkit/pkg/didkit_wasm_bg.wasm snap/didkit_wasm_bg.wasm",
     "build": "pnpm pre:build && rollup -c && pnpm post:build",
     "post:build": "./fixBundle.sh",
@@ -23,14 +22,15 @@
     "astro:serve": "astro dev",
     "snap:serve": "mm-snap serve",
     "serve": "concurrently npm:*:serve",
+    "snap:dev": "pnpm build && pnpm manifest && pnpm eval && pnpm snap:serve",
+    "astro:dev": "pnpm astro:serve",
     "dev": "pnpm build && pnpm manifest && pnpm eval && pnpm serve",
-    "astro:dev": "astro dev",
-    "start": "pnpm build && pnpm manifest && pnpm eval && astro dev",
     "test": "echo 'TODO'"
   },
   "devDependencies": {
     "@astrojs/react": "^0.4.2",
     "@astrojs/tailwind": "^0.2.5",
+    "@learncard/types": "workspace:*",
     "@metamask/auto-changelog": "^2.5.0",
     "@metamask/eslint-config": "^8.0.0",
     "@metamask/eslint-config-jest": "^8.0.0",
@@ -68,6 +68,7 @@
     "node": ">=16.0.0"
   },
   "dependencies": {
-    "@learncard/core": "workspace:*"
+    "@learncard/core": "workspace:*",
+    "zod": "^3.17.3"
   }
 }
