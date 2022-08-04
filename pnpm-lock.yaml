@@ -44,11 +44,12 @@ importers:
       '@astrojs/tailwind': ^0.2.5
       '@learncard/core': workspace:*
       '@learncard/meta-mask-snap': workspace:*
+      '@learncard/react': workspace:*
       '@learncard/types': workspace:*
       '@metamask/providers': ^9.0.0
       '@nanostores/react': ^0.2.0
       '@types/react': ^17.0.2
-      astro: 1.0.0-rc.2
+      astro: 1.0.0-rc.6
       concurrently: ^7.3.0
       nanostores: ^0.5.13
       prettier-plugin-astro: ^0.1.2
@@ -58,6 +59,7 @@ importers:
     dependencies:
       '@learncard/core': link:../../packages/learn-card-core
       '@learncard/meta-mask-snap': link:../../services/meta-mask-snap
+      '@learncard/react': link:../../packages/react-learn-card
       '@nanostores/react': 0.2.0_7derxg7euf3oeygpqb2msz3twa
       nanostores: 0.5.13
       zod: 3.17.3
@@ -67,7 +69,7 @@ importers:
       '@learncard/types': link:../../packages/learn-card-types
       '@metamask/providers': 9.0.0
       '@types/react': 17.0.47
-      astro: 1.0.0-rc.2
+      astro: 1.0.0-rc.6
       concurrently: 7.3.0
       prettier-plugin-astro: 0.1.2
       react: 18.2.0
@@ -447,22 +449,19 @@ packages:
       vscode-uri: 3.0.3
     dev: true
 
-  /@astrojs/markdown-remark/0.13.0:
-    resolution: {integrity: sha512-TZ3Z40xf5TjEUA4lURq3qbq/Y7eMfwKGhTf0bp0T659uU9Jxi2ZV8KVR4EcXRj/UMoaDOlCTY8dANWHrh3WLjw==}
+  /@astrojs/markdown-remark/0.14.0:
+    resolution: {integrity: sha512-H0OGW2AXXlcw7rm7vqACHidViRgz0Ud4kmh9DEsA2Y60goB0cj6bA97zmweatEHXNe8miUMOygeihvqeMmYwyg==}
     dependencies:
       '@astrojs/micromark-extension-mdx-jsx': 1.0.3
-      '@astrojs/prism': 0.6.1
+      '@astrojs/prism': 0.7.0
       acorn: 8.7.1
       acorn-jsx: 5.3.2_acorn@8.7.1
-      assert: 2.0.0
       github-slugger: 1.4.0
       mdast-util-mdx-expression: 1.3.0
       mdast-util-mdx-jsx: 1.2.0
-      mdast-util-to-string: 3.1.0
       micromark-extension-mdx-expression: 1.0.3
       micromark-extension-mdx-md: 1.0.0
       micromark-util-combine-extensions: 1.0.0
-      prismjs: 1.28.0
       rehype-raw: 6.1.1
       rehype-stringify: 9.0.3
       remark-gfm: 3.0.1
@@ -492,9 +491,11 @@ packages:
       vfile-message: 3.1.2
     dev: true
 
-  /@astrojs/prism/0.6.1:
-    resolution: {integrity: sha512-/Hoppze9XPUfCIx44EUzKe3Tg7alr1MHl2++QJlDRQZfKfIvMBvf8mRMSPh7vzfayH6IlFaQUS/jMtGUWKt9wA==}
+  /@astrojs/prism/0.7.0:
+    resolution: {integrity: sha512-5gh4BL9BlgCKBru0crQI3Y7GQCCC389wLBy+0yPnfss/pA0rVgCupRnGcs3oinsRopymOlNblEDfJXdTbCWEtg==}
     engines: {node: ^14.18.0 || >=16.12.0}
+    dependencies:
+      prismjs: 1.28.0
     dev: true
 
   /@astrojs/react/0.4.2_biqbaboplfbrettd7655fr4n2y:
@@ -8711,15 +8712,14 @@ packages:
     resolution: {integrity: sha512-Z7tMw1ytTXt5jqMcOP+OQteU1VuNK9Y02uuJtKQ1Sv69jXQKKg5cibLwGJow8yzZP+eAc18EmLGPal0bp36rvQ==}
     engines: {node: '>=8'}
 
-  /astro/1.0.0-rc.2:
-    resolution: {integrity: sha512-a950/UCWM6f/l6xGiO8AiAdXMyOuSJk/FRMZXevH7p0H5ze5j4yTyMv0e43rztfk4jIshjdJdg4dV9xzg8P+QQ==}
+  /astro/1.0.0-rc.6:
+    resolution: {integrity: sha512-mJfgUPlbuODLsEkt+R/4ReYet2WKETKvs4whJJS6CDQnAMZKNNcjM33GvYUoU5MAWUwVaobVr8fuUeKHU6RopA==}
     engines: {node: ^14.18.0 || >=16.12.0, npm: '>=6.14.0'}
     hasBin: true
     dependencies:
       '@astrojs/compiler': 0.22.1
       '@astrojs/language-server': 0.20.3
-      '@astrojs/markdown-remark': 0.13.0
-      '@astrojs/prism': 0.6.1
+      '@astrojs/markdown-remark': 0.14.0
       '@astrojs/telemetry': 0.4.1
       '@astrojs/webapi': 0.12.0
       '@babel/core': 7.18.5
@@ -8739,7 +8739,6 @@ packages:
       eol: 0.9.1
       es-module-lexer: 0.10.5
       esbuild: 0.14.47
-      estree-walker: 3.0.1
       execa: 6.1.0
       fast-glob: 3.2.11
       github-slugger: 1.4.0
@@ -8748,7 +8747,6 @@ packages:
       html-escaper: 3.0.3
       kleur: 4.1.5
       magic-string: 0.25.9
-      micromorph: 0.1.2
       mime: 3.0.0
       ora: 6.1.2
       path-browserify: 1.0.1
@@ -8756,7 +8754,6 @@ packages:
       postcss: 8.4.14
       postcss-load-config: 3.1.4_postcss@8.4.14
       preferred-pm: 3.0.3
-      prismjs: 1.28.0
       prompts: 2.4.2
       recast: 0.20.5
       rehype: 12.0.1
@@ -8766,14 +8763,13 @@ packages:
       shiki: 0.10.1
       sirv: 2.0.2
       slash: 4.0.0
-      sourcemap-codec: 1.4.8
       string-width: 5.1.2
       strip-ansi: 7.0.1
       supports-esm: 1.0.0
       tsconfig-resolver: 3.0.1
       unist-util-visit: 4.1.0
       vfile: 5.3.4
-      vite: 3.0.2
+      vite: 3.0.4
       yargs-parser: 21.0.1
       zod: 3.17.3
     transitivePeerDependencies:
@@ -12582,10 +12578,6 @@ packages:
 
   /estree-walker/2.0.2:
     resolution: {integrity: sha512-Rfkk/Mp/DL7JVje3u18FxFujQlTNR2q6QfMSMB7AvCBx91NGj/ba3kCfza0f6dVDbw7YlRf/nDrn7pQrCCyQ/w==}
-
-  /estree-walker/3.0.1:
-    resolution: {integrity: sha512-woY0RUD87WzMBUiZLx8NsYr23N5BKsOMZHhu2hoNRVh6NXGfoiT1KOL8G3UHlJAnEDGmfa5ubNA/AacfG+Kb0g==}
-    dev: true
 
   /esutils/2.0.3:
     resolution: {integrity: sha512-kVscqXk4OCp68SZ0dkgEKVi6/8ij300KBWTJq32P/dYeWTSwK41WyTxalN1eRmA5Z9UU/LX9D7FWSmV9SAYx6g==}
@@ -18321,10 +18313,6 @@ packages:
     dependencies:
       braces: 3.0.2
       picomatch: 2.3.1
-
-  /micromorph/0.1.2:
-    resolution: {integrity: sha512-pDEgWjUoCMBwME8z8UiCOO6FKH0It1LASFh8hFSk8uSyfyw6rqY4PBk2LiIEPaVHwtLDhozp4Pr0I+yAUfCpiA==}
-    dev: true
 
   /miller-rabin/4.0.1:
     resolution: {integrity: sha512-115fLhvZVqWwHPbClyntxEVfVDfl9DLLTuJvq3g2O/Oxi8AiNouAHvDSzHS0viUJc+V5vm3eq91Xwqn9dp4jRA==}
@@ -24304,8 +24292,8 @@ packages:
       vfile-message: 3.1.2
     dev: true
 
-  /vite/3.0.2:
-    resolution: {integrity: sha512-TAqydxW/w0U5AoL5AsD9DApTvGb2iNbGs3sN4u2VdT1GFkQVUfgUldt+t08TZgi23uIauh1TUOQJALduo9GXqw==}
+  /vite/3.0.4:
+    resolution: {integrity: sha512-NU304nqnBeOx2MkQnskBQxVsa0pRAH5FphokTGmyy8M3oxbvw7qAXts2GORxs+h/2vKsD+osMhZ7An6yK6F1dA==}
     engines: {node: ^14.18.0 || >=16.0.0}
     hasBin: true
     peerDependencies:
