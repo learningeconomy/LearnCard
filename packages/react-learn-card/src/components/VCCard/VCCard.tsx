@@ -16,7 +16,7 @@ export const VCCard: React.FC<VCCardProps> = ({ credential, issueeOverride, clas
 
     useEffect(() => {
         const verify = async () => {
-            const wallet = await walletFromKey('');
+            const wallet = await walletFromKey('a'.repeat(64));
             const verification = await wallet.verifyCredential(credential);
             setVCVerification(verification);
             setLoading(false);
