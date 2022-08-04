@@ -1,6 +1,5 @@
 {
   "compilerOptions": {
-    "composite": true,
     "declaration": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
@@ -12,18 +11,7 @@
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "typeRoots": ["./node_modules/@types"],
-    "types": ["astro/client"],
-    "jsx": "react",
-    "baseUrl": ".",
-    "paths": {
-        "@assets/*": ["./src/assets/*"],
-        "@layouts/*": ["./src/layouts/*"],
-        "@components/*": ["./src/components/*"],
-        "@helpers/*": ["./src/helpers/*"],
-        "@state/*": ["./src/state/*"],
-        "@constants/*": ["./src/constants/*"]
-    }
+    "typeRoots": ["./node_modules/@types"]
   },
-  "include": ["src"]
+  "include": ["src", "src/types/rpc.ts"]
 }

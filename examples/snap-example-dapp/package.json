@@ -1,0 +1,43 @@
+{
+  "name": "@learncard/snap-example-dapp",
+  "version": "1.0.0",
+  "description": "An example dapp using the Learn Card MetaMask Snap",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/WeLibraryOS/LearnCard.git"
+  },
+  "license": "MIT",
+  "main": "src/index.js",
+  "files": [
+    "dist/"
+  ],
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview"
+  },
+  "devDependencies": {
+    "@astrojs/react": "^0.4.2",
+    "@astrojs/tailwind": "^0.2.5",
+    "@learncard/types": "workspace:*",
+    "@metamask/providers": "^9.0.0",
+    "@types/react": "^17.0.2",
+    "astro": "1.0.0-rc.2",
+    "concurrently": "^7.3.0",
+    "prettier-plugin-astro": "^0.1.2",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "dependencies": {
+    "@learncard/core": "workspace:*",
+    "@learncard/meta-mask-snap": "workspace:*",
+    "@nanostores/react": "^0.2.0",
+    "nanostores": "^0.5.13",
+    "zod": "^3.17.3"
+  }
+}

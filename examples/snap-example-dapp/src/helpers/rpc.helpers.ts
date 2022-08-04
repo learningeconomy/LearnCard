@@ -1,5 +1,5 @@
 import { snapId } from '@constants/snapConstants';
-import { LearnCardRPCAPI, LearnCardRPCAPITypes } from '../types/rpc';
+import { LearnCardRPCAPI, LearnCardRPCAPITypes } from '@learncard/meta-mask-snap';
 
 export const sendRequest = async <
     Method extends LearnCardRPCAPITypes[keyof LearnCardRPCAPITypes]['method']

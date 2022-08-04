@@ -4,13 +4,13 @@
   "description": "A MetaMask Snap template.",
   "repository": {
     "type": "git",
-    "url": "https://github.com/WeLibraryOS/LearnCard.git"
+    "url": "https://github.com/MetaMask/snap-template.git"
   },
   "source": {
     "shasum": "LD74oeizw6r+V7LZ6mujJJvk0zhoLdtLoukyr77ZHOA=",
     "location": {
       "npm": {
-        "filePath": "dist/snap.js",
+        "filePath": "out/snap.js",
         "iconPath": "images/icon.svg",
         "packageName": "@learncard/meta-mask-snap",
         "registry": "https://registry.npmjs.org/"
