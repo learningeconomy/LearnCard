@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 2.0.0
+
+### Major Changes
+
+-   [#33](https://github.com/WeLibraryOS/LearnCard/pull/33) [`a131966`](https://github.com/WeLibraryOS/LearnCard/commit/a13196655378bcb51c35aaad2165b9bccac0526c) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - TS Refactor UnlockedWallet -> Wallet
+
 ## 1.5.1
 
 ### Patch Changes
