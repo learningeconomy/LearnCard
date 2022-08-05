@@ -1,71 +1,50 @@
-# @metamask/template-snap
+[<img src="https://user-images.githubusercontent.com/2185016/176284693-4ca14052-d067-4ea5-b170-c6cd2594ee23.png" width="400"/>](image.png)
+# MetaMask Snap Example Dapp
 
-The "Hello, world!" of MetaMask Snaps, and also a GitHub template repository.
-For instructions, see [the MetaMask documentation](https://docs.metamask.io/guide/snaps.html#serving-a-snap-to-your-local-environment).
+The LearnCard MetaMask Snap allows MetaMask users to view, issue, verify, present, and persist DIDs and Verifiable Credentials
+via the LearnCard SDK. It allows dapps to use these methods without gaining access to the user's sensitive key material.
+This is an example dapp built using [Astro](https://astro.build/) that demonstrates how to use the snap!
 
-## How To Use This Template
+## Documentation
+All LearnCard documentation can be found at:
+https://app.gitbook.com/o/6uDv1QDlxaaZC7i8EaGb/s/FXvEJ9j3Vf3FW5Nc557n/
 
-This repository contains the files you need to start your snap project. First, log into GitHub, then click the "Use this template" button to clone this repository into a new project. Once your new repository is created, you can modify the source code to make it your own. For a step by step guide, read [The 5-Minute Snap Tutorial](https://github.com/Montoya/gas-fee-snap#readme).
+## Install
 
-## Cloning
+First clone the repo, then install all dependencies/build all packages
 
-If you clone or create this repository outside the MetaMask GitHub organization, you probably want to run `./scripts/cleanup.sh` to remove some files that will not work properly outside the MetaMask GitHub organization.
-
-This repository contains other GitHub Actions that you may find useful, see `.github/workflows` and [Releasing & Publishing](#releasing-publishing) below for more information.
-
-Note that the `action-publish-relase.yml` workflow contains a step that publishes the frontend of this snap (contained in the `public/` directory) to GitHub pages.
-If you do not want to publish the frontend to GitHub pages, simply remove the step named "Publish to GitHub Pages" in that workflow.
-
-If you don't wish to use any of the existing GitHub actions in this repository, simply delete the `.github/workflows` directory.
-
-## Contributing
-
-### Setup
-
-```shell
-yarn install
+```bash
+git clone git@github.com:WeLibraryOS/LearnCard.git
+cd LearnCard
+pnpm i
 ```
 
-### Testing and Linting
+## Run the app
 
-Run `yarn test` to run the tests once.
+Then open two terminals and start the snap dev server, as well as this app's dev server
 
-Run `yarn lint` to run the linter, or run `yarn lint:fix` to run the linter and fix any automatically fixable issues.
+```bash
+# Terminal 1
+cd services/meta-mask-snap
+pnpm dev
+```
 
-### Releasing & Publishing
+```bash
+# Terminal 2
+cd examples/snap-example-dapp
+pnpm dev
+```
 
-The project follows the same release process as the other libraries in the MetaMask organization. The GitHub Actions [`action-create-release-pr`](https://github.com/MetaMask/action-create-release-pr) and [`action-publish-release`](https://github.com/MetaMask/action-publish-release) are used to automate the release process; see those repositories for more information about how they work.
+## Contributing
+Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
-1. Choose a release version.
+Please make sure to update tests as appropriate.
 
-   - The release version should be chosen according to SemVer. Analyze the changes to see whether they include any breaking changes, new features, or deprecations, then choose the appropriate SemVer version. See [the SemVer specification](https://semver.org/) for more information.
+## Who is Learning Economy Foundation?
 
-2. If this release is backporting changes onto a previous release, then ensure there is a major version branch for that version (e.g. `1.x` for a `v1` backport release).
+**[Learning Economy Foundation (LEF)](https://www.learningeconomy.io)** is a 501(c)(3) non-profit organization leveraging global standards and web3 protocols to bring quality skills and equal opportunity to every human on earth, and address the persistent inequities that exist around the globe in education and employment. We help you build the future of education and work with:
 
-   - The major version branch should be set to the most recent release with that major version. For example, when backporting a `v1.0.2` release, you'd want to ensure there was a `1.x` branch that was set to the `v1.0.1` tag.
 
-3. Trigger the [`workflow_dispatch`](https://docs.github.com/en/actions/reference/events-that-trigger-workflows#workflow_dispatch) event [manually](https://docs.github.com/en/actions/managing-workflow-runs/manually-running-a-workflow) for the `Create Release Pull Request` action to create the release PR.
+## License
 
-   - For a backport release, the base branch should be the major version branch that you ensured existed in step 2. For a normal release, the base branch should be the main branch for that repository (which should be the default value).
-   - This should trigger the [`action-create-release-pr`](https://github.com/MetaMask/action-create-release-pr) workflow to create the release PR.
-
-4. Update the changelog to move each change entry into the appropriate change category ([See here](https://keepachangelog.com/en/1.0.0/#types) for the full list of change categories, and the correct ordering), and edit them to be more easily understood by users of the package.
-
-   - Generally any changes that don't affect consumers of the package (e.g. lockfile changes or development environment changes) are omitted. Exceptions may be made for changes that might be of interest despite not having an effect upon the published package (e.g. major test improvements, security improvements, improved documentation, etc.).
-   - Try to explain each change in terms that users of the package would understand (e.g. avoid referencing internal variables/concepts).
-   - Consolidate related changes into one change entry if it makes it easier to explain.
-   - Run `yarn auto-changelog validate --rc` to check that the changelog is correctly formatted.
-
-5. Review and QA the release.
-
-   - If changes are made to the base branch, the release branch will need to be updated with these changes and review/QA will need to restart again. As such, it's probably best to avoid merging other PRs into the base branch while review is underway.
-
-6. Squash & Merge the release.
-
-   - This should trigger the [`action-publish-release`](https://github.com/MetaMask/action-publish-release) workflow to tag the final release commit and publish the release on GitHub.
-
-7. Publish the release on npm.
-
-   - Be very careful to use a clean local environment to publish the release, and follow exactly the same steps used during CI.
-   - Use `npm publish --dry-run` to examine the release contents to ensure the correct files are included. Compare to previous releases if necessary (e.g. using `https://unpkg.com/browse/[package name]@[package version]/`).
-   - Once you are confident the release contents are correct, publish the release using `npm publish`.
+MIT © [Learning Economy Foundation](https://github.com/Learning-Economy-Foundation)
