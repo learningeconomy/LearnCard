@@ -1,126 +1,43 @@
-import { z } from 'zod';
-import { walletFromKey, LearnCardWallet, DidMethod } from '@learncard/core';
-import { OnRpcRequestHandler } from '@metamask/snap-types';
-import { MetaMaskInpageProvider } from '@metamask/providers';
+import type { MetaMaskInpageProvider } from '@metamask/providers';
 
-import { LearnCardRPCAPI } from '../src/types/rpc';
+import { LearnCardRPCAPI, LearnCardRPCAPITypes } from './types/rpc';
 
-import didkit from './didkit_wasm_bg.wasm';
-import { RPCMethod } from '../src/types/helpers';
-
-const serializeResponse = async <Serializer extends RPCMethod>(
-    serializer: Serializer,
-    data: z.infer<Serializer['returnValue']['validator']>
-) => {
-    const serializedResult = await serializer.returnValue.serializer.spa(data);
-
-    if (!serializedResult.success) throw new Error('Internal Error');
-
-    return serializedResult.data;
-};
-
-// Types that should be available globally within a Snap
 declare global {
-    const wallet: MetaMaskInpageProvider;
+    const ethereum: MetaMaskInpageProvider;
 }
 
-let memoizedWallet: LearnCardWallet;
+export * from './types/rpc';
 
-const getWallet = async () => {
-    if (memoizedWallet) return memoizedWallet;
+/**
+ * Sends a request to the LearnCard MetaMask Snap with automatic validation, serialization, and
+ * deserialization
+ */
+export const sendRequest = async <
+    Method extends LearnCardRPCAPITypes[keyof LearnCardRPCAPITypes]['method']
+>(
+    params: { method: Method } & LearnCardRPCAPITypes['validator'],
+    snapId = 'npm:@learncard/meta-mask-snap'
+): Promise<LearnCardRPCAPITypes[Method]['returnValue']['validator'] | undefined> => {
+    const serializedParams = await LearnCardRPCAPI[params.method].arguments.serializer.spa(params);
 
-    const entropy = await wallet.request<{ publicKey: string; privateKey: string }>({
-        method: 'snap_getBip44Entropy_60',
-    });
+    if (!serializedParams.success) {
+        console.error('Serialization error!', serializedParams.error);
 
-    const newWallet = await walletFromKey(entropy.privateKey, {
-        didkit: Uint8Array.from(atob(didkit), c => c.charCodeAt(0)),
-    });
-
-    memoizedWallet = newWallet;
-
-    return memoizedWallet;
-};
-
-export const onRpcRequest: OnRpcRequestHandler = async ({ request: _request }) => {
-    const result = await LearnCardRPCAPI.deserializer.spa(_request);
-
-    if (!result.success) throw new Error('Invalid Request');
-
-    const request = result.data;
-
-    const lcWallet = await getWallet();
-
-    if (request.method === 'did') {
-        return serializeResponse(LearnCardRPCAPI.did, lcWallet.did(request.didMethod as DidMethod));
+        return undefined;
     }
 
-    if (request.method === 'getTestVc')
-        return serializeResponse(LearnCardRPCAPI.getTestVc, lcWallet.getTestVc());
+    const result = await LearnCardRPCAPI[params.method].returnValue.deserializer.spa(
+        await ethereum.request({
+            method: 'wallet_invokeSnap',
+            params: [snapId, serializedParams.data],
+        })
+    );
 
-    if (request.method === 'issueCredential') {
-        const permission = await wallet.request({
-            method: 'snap_confirm',
-            params: [
-                {
-                    prompt: 'Issuing Credential',
-                    description: 'Would you like to issue the following credential?',
-                    textAreaContent: JSON.stringify(request.credential, undefined, 4).slice(
-                        0,
-                        1800
-                    ),
-                },
-            ],
-        });
+    if (!result.success) {
+        console.error('Deserialization error!', result.error);
 
-        if (permission) {
-            return serializeResponse(
-                LearnCardRPCAPI.issueCredential,
-                await lcWallet.issueCredential(request.credential)
-            );
-        }
-
-        throw new Error('Did not get permission to issue credential');
+        return undefined;
     }
 
-    if (request.method === 'verifyCredential') {
-        return serializeResponse(
-            LearnCardRPCAPI.verifyCredential,
-            await lcWallet.verifyCredential(request.credential)
-        );
-    }
-
-    if (request.method === 'issuePresentation') {
-        const permission = await wallet.request({
-            method: 'snap_confirm',
-            params: [
-                {
-                    prompt: 'Issuing Presentation',
-                    description: 'Would you like to issue the following presentation?',
-                    textAreaContent: JSON.stringify(request.credential, undefined, 4).slice(
-                        0,
-                        1800
-                    ),
-                },
-            ],
-        });
-
-        if (permission) {
-            return serializeResponse(
-                LearnCardRPCAPI.issuePresentation,
-                await lcWallet.issuePresentation(request.credential)
-            );
-        }
-
-        throw new Error('Did not get permission to issue credential');
-    }
-
-    if (request.method === 'verifyPresentation') {
-        return serializeResponse(
-            LearnCardRPCAPI.verifyPresentation,
-            await lcWallet.verifyPresentation(request.presentation)
-        );
-    }
-
-    throw new Error('Method not found.');
+    return result.data;
 };

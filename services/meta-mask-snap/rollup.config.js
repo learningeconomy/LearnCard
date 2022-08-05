@@ -11,7 +11,7 @@ const packageJson = require('./package.json');
 /** @type {RollupOptions[]} */
 const snapConfig = [
     {
-        input: './src/index.ts',
+        input: './src/snap.ts',
         output: {
             file: './dist/snap.js',
             format: 'cjs',
@@ -27,7 +27,7 @@ const snapConfig = [
         ],
     },
     {
-        input: './src/types/rpc.ts',
+        input: './src/index.ts',
         output: [
             { file: packageJson.main, format: 'cjs', sourcemap: true },
             { file: packageJson.module, format: 'esm', sourcemap: true },
@@ -40,7 +40,7 @@ const snapConfig = [
         ],
     },
     {
-        input: './src/types/rpc.ts',
+        input: './src/index.ts',
         output: { file: packageJson.types, format: 'es' },
         plugins: [dts()],
     },
