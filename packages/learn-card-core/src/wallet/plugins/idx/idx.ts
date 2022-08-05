@@ -9,11 +9,11 @@ import { CreateOpts } from '@ceramicnetwork/common';
 import { TileDocument, TileMetadataArgs } from '@ceramicnetwork/stream-tile';
 
 import { IDXCredential, CredentialsList, IDXPluginMethods, StorageType } from './types';
-import { Plugin, UnlockedWallet } from 'types/wallet';
+import { Plugin, Wallet } from 'types/wallet';
 import { CeramicIDXArgs } from 'types/LearnCard';
 
 const getCeramicClientFromWalletSuite = async (
-    wallet: UnlockedWallet<any, { getKey: () => string }>,
+    wallet: Wallet<any, { getKey: () => string }>,
     ceramicEndpoint: string
 ): Promise<CeramicClient> => {
     const client = new CeramicClient(ceramicEndpoint);
@@ -36,7 +36,7 @@ const getCeramicClientFromWalletSuite = async (
 };
 
 export const getIDXPlugin = async (
-    wallet: UnlockedWallet<any, { getKey: () => string }>,
+    wallet: Wallet<any, { getKey: () => string }>,
     { modelData, credentialAlias, ceramicEndpoint, defaultContentFamily }: CeramicIDXArgs
 ): Promise<Plugin<'IDX', IDXPluginMethods>> => {
     const ceramic = await getCeramicClientFromWalletSuite(wallet, ceramicEndpoint);
