@@ -63,7 +63,16 @@ export const getIDXPlugin = async (
 
         const existing = await getCredentialsListFromIndex(alias);
 
-        existing.credentials.push({ storageType: StorageType.ceramic, ...record });
+        const indexOfExistingCredential = existing.credentials.findIndex(credential => {
+            return credential.title === record.title;
+        });
+
+        if (indexOfExistingCredential > -1) {
+            existing.credentials[indexOfExistingCredential] = {
+                storageType: StorageType.ceramic,
+                ...record,
+            };
+        } else existing.credentials.push({ storageType: StorageType.ceramic, ...record });
 
         return dataStore.set(alias, existing);
     };
