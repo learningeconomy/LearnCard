@@ -50,10 +50,10 @@ export type LearnCardWallet = {
     verifyPresentation: (presentation: VP) => Promise<VerificationCheck>;
 
     /** Returns the credential marked with `title` from IDX */
-    getCredential: (title: string) => Promise<any>;
+    getCredential: (title: string) => Promise<VC>;
 
     /** Returns all credentials from IDX */
-    getCredentials: () => Promise<any[]>;
+    getCredentials: () => Promise<VC[]>;
 
     /** Returns all credentials from IDX */
     getCredentialsList: () => Promise<IDXCredential[]>;
@@ -65,7 +65,7 @@ export type LearnCardWallet = {
      *
      * Resolving a stream ID can be done by passing the stream ID to `readFromCeramic`
      */
-    publishCredential: (credential: any) => Promise<string>;
+    publishCredential: (credential: VC) => Promise<string>;
 
     /**
      * Adds a stream ID  pointing to a credential (such as the one returned by `publishCredential`)
