@@ -68,6 +68,20 @@ export const getIDXPlugin = async (
         return dataStore.set(alias, existing);
     };
 
+    const removeCredentialStreamIdToIndex = async (title: string, alias?: string) => {
+        if (!title) throw new Error('record is required');
+
+        if (!alias) alias = credentialAlias;
+
+        const existing = await getCredentialsListFromIndex(alias);
+
+        existing.credentials = existing.credentials.filter(
+            credential => credential.title !== title
+        );
+
+        return dataStore.set(alias, existing);
+    };
+
     const publishContentToCeramic = async (
         content: any,
         metadata: TileMetadataArgs = {},
@@ -119,6 +133,9 @@ export const getIDXPlugin = async (
             },
             addVerifiableCredentialInIdx: async (_wallet, { title, id }) => {
                 return addCredentialStreamIdToIndex({ title, id });
+            },
+            removeVerifiableCredentialInIdx: async (_wallet, title) => {
+                return removeCredentialStreamIdToIndex(title);
             },
         },
     };

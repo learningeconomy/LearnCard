@@ -7,6 +7,7 @@ export type IDXPluginMethods = {
     getVerifiableCredentialFromIndex: (title: string) => Promise<any>;
     getVerifiableCredentialsFromIndex: () => Promise<any>;
     addVerifiableCredentialInIdx: (cred: IDXCredential) => Promise<StreamID>;
+    removeVerifiableCredentialInIdx: (title: string) => Promise<StreamID>;
 };
 
 export enum StorageType {
