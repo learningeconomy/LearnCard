@@ -46,6 +46,7 @@ importers:
       '@learncard/meta-mask-snap': workspace:*
       '@learncard/react': workspace:*
       '@learncard/types': workspace:*
+      '@metamask/detect-provider': ^1.2.0
       '@metamask/providers': ^9.0.0
       '@nanostores/react': ^0.2.0
       '@types/react': ^17.0.2
@@ -60,6 +61,7 @@ importers:
       '@learncard/core': link:../../packages/learn-card-core
       '@learncard/meta-mask-snap': link:../../services/meta-mask-snap
       '@learncard/react': link:../../packages/react-learn-card
+      '@metamask/detect-provider': 1.2.0
       '@nanostores/react': 0.2.0_7derxg7euf3oeygpqb2msz3twa
       nanostores: 0.5.13
       zod: 3.17.3
@@ -4491,6 +4493,11 @@ packages:
       - supports-color
       - utf-8-validate
     dev: true
+
+  /@metamask/detect-provider/1.2.0:
+    resolution: {integrity: sha512-ocA76vt+8D0thgXZ7LxFPyqw3H7988qblgzddTDA6B8a/yU0uKV42QR/DhA+Jh11rJjxW0jKvwb5htA6krNZDQ==}
+    engines: {node: '>= 10'}
+    dev: false
 
   /@metamask/eslint-config-jest/8.0.0_yekynbrfyvru4m5rhq7scvowqy:
     resolution: {integrity: sha512-m2/crRcaiRO8z6NC04+AudfjgIXvdrUy2oDjecjELa3nmgkJ+cVemCfioREpjaXoXW/soNImZXbgLrA98uQ6ig==}
