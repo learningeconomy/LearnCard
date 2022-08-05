@@ -26,17 +26,20 @@ export type LearnCardWallet = {
 
     /** Wallet holder's did */
     did: (type?: DidMethod) => string;
+
     /** Wallet holder's ed25519 key pair */
     keypair: (type?: Algorithm) => { kty: string; crv: string; x: string; y?: string; d: string };
 
     /** Signs an unsigned Verifiable Credential, returning the signed VC */
     issueCredential: (credential: UnsignedVC) => Promise<VC>;
+
     /**
      * Verifies a signed Verifiable Credential
      *
      * Empty error/warnings arrays means verification was successful
      */
     verifyCredential: (credential: VC) => Promise<VerificationItem[]>;
+
     /** Creates a signed Verifiable Presentation from a signed Verifiable Credential */
     issuePresentation: (credential: VC) => Promise<VP>;
     /**
@@ -47,9 +50,14 @@ export type LearnCardWallet = {
     verifyPresentation: (presentation: VP) => Promise<VerificationCheck>;
 
     /** Returns the credential marked with `title` from IDX */
-    getCredential: (title: string) => Promise<any>;
+    getCredential: (title: string) => Promise<VC>;
+
     /** Returns all credentials from IDX */
-    getCredentials: () => Promise<any[]>;
+    getCredentials: () => Promise<VC[]>;
+
+    /** Returns all credentials from IDX */
+    getCredentialsList: () => Promise<IDXCredential[]>;
+
     /**
      * Publishes a credential to Ceramic, returning the credential's stream ID
      *
@@ -57,7 +65,8 @@ export type LearnCardWallet = {
      *
      * Resolving a stream ID can be done by passing the stream ID to `readFromCeramic`
      */
-    publishCredential: (credential: any) => Promise<string>;
+    publishCredential: (credential: VC) => Promise<string>;
+
     /**
      * Adds a stream ID  pointing to a credential (such as the one returned by `publishCredential`)
      * to IDX with a bespoke title
@@ -66,6 +75,15 @@ export type LearnCardWallet = {
      * or by using `getCredentials` to get a list of all credentials that have been added to IDX
      */
     addCredential: (credential: IDXCredential) => Promise<void>;
+
+    /**
+     * Adds a stream ID  pointing to a credential (such as the one returned by `publishCredential`)
+     * to IDX with a bespoke title
+     *
+     * The credential may then be retrieved using `getCredential` and passing in that bespoke title,
+     * or by using `getCredentials` to get a list of all credentials that have been added to IDX
+     */
+    removeCredential: (title: string) => Promise<void>;
 
     /**
      * Resolves a stream ID, returning its contents

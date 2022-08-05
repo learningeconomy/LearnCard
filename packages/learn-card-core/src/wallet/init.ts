@@ -50,9 +50,15 @@ export const walletFromKey = async (
 
         getCredential: wallet.pluginMethods.getVerifiableCredentialFromIndex,
         getCredentials: wallet.pluginMethods.getVerifiableCredentialsFromIndex,
+        getCredentialsList: async () => {
+            return (await wallet.pluginMethods.getCredentialsListFromIndex()).credentials;
+        },
         publishCredential: wallet.pluginMethods.publishContentToCeramic,
         addCredential: async credential => {
             await wallet.pluginMethods.addVerifiableCredentialInIdx(credential);
+        },
+        removeCredential: async title => {
+            await wallet.pluginMethods.removeVerifiableCredentialInIdx(title);
         },
 
         readFromCeramic: wallet.pluginMethods.readContentFromCeramic,
