@@ -1,11 +1,11 @@
 {
   "name": "@learncard/create-http-bridge",
-  "version": "1.0.4",
+  "version": "1.0.7",
   "description": "Instantly create and deploy a Learn Card Bridge HTTP API via AWS Lambda!",
   "main": "dist/index.js",
   "bin": "dist/index.js",
   "scripts": {
-    "deploy": "shx cp ../learn-card-core/src/didkit/pkg/didkit_wasm_bg.wasm src/didkit_wasm_bg.wasm && serverless deploy",
+    "serverless-deploy": "shx cp ../learn-card-core/src/didkit/pkg/didkit_wasm_bg.wasm src/didkit_wasm_bg.wasm && serverless deploy",
     "start": "rollup -c && node dist/index.js",
     "build": "rollup -c"
   },

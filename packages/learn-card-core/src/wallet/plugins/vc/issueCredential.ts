@@ -1,10 +1,10 @@
 import { UnsignedVC } from '@learncard/types';
 
 import { DependentMethods, VCPluginMethods } from './types';
-import { UnlockedWallet } from 'types/wallet';
+import { Wallet } from 'types/wallet';
 
-export const issueCredential = (initWallet: UnlockedWallet<string, DependentMethods>) => {
-    return async (wallet: UnlockedWallet<string, VCPluginMethods>, credential: UnsignedVC) => {
+export const issueCredential = (initWallet: Wallet<string, DependentMethods>) => {
+    return async (wallet: Wallet<string, VCPluginMethods>, credential: UnsignedVC) => {
         const kp = wallet.pluginMethods.getSubjectKeypair();
 
         if (!kp) throw new Error('Cannot issue credential: Could not get subject keypair');

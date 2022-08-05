@@ -162,6 +162,7 @@ importers:
       '@types/node': ^17.0.31
       abort-controller: ^3.0.0
       aqu: 0.3.2
+      cross-fetch: ^3.1.5
       date-fns: ^2.28.0
       dids: ^3.2.0
       esbuild: ^0.14.38
@@ -185,6 +186,7 @@ importers:
       '@glazed/did-datastore': 0.3.2
       '@glazed/tile-loader': 0.2.1
       abort-controller: 3.0.0
+      cross-fetch: 3.1.5
       date-fns: 2.28.0
       dids: 3.2.0
       ethers: 5.6.9
@@ -18171,6 +18173,7 @@ packages:
       rollup: 2.75.6
     transitivePeerDependencies:
       - supports-color
+    dev: false
 
   /rollup-plugin-img/1.1.0:
     resolution: {integrity: sha512-44JyY0wBQFNjM2pB7Yv1uUwMW4S1bjdnzLmUPShrDeACSMvn798i9ttwiBkfls+QjSY0qLrNqMacUTDX93Q0MA==}

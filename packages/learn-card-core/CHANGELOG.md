@@ -1,5 +1,23 @@
 # learn-card-core
 
+## 2.0.0
+
+### Major Changes
+
+-   [#33](https://github.com/WeLibraryOS/LearnCard/pull/33) [`a131966`](https://github.com/WeLibraryOS/LearnCard/commit/a13196655378bcb51c35aaad2165b9bccac0526c) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - TS Refactor UnlockedWallet -> Wallet
+
+## 1.5.1
+
+### Patch Changes
+
+-   [#35](https://github.com/WeLibraryOS/LearnCard/pull/35) [`4028716`](https://github.com/WeLibraryOS/LearnCard/commit/40287160de54d06f7baff000dee6f59f08f8623a) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix cross-fetch error
+
+## 1.5.0
+
+### Minor Changes
+
+-   [#19](https://github.com/WeLibraryOS/LearnCard/pull/19) [`de4e724`](https://github.com/WeLibraryOS/LearnCard/commit/de4e7244961f0ef91b91e6cbf32a43f29ff58b96) Thanks [@smurflo2](https://github.com/smurflo2)! - Ethereum plugin! (hello world / base scaffolding)
+
 ## 1.4.0
 
 ### Minor Changes

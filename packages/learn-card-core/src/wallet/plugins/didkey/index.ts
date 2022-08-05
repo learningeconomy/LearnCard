@@ -3,11 +3,11 @@ import { toUint8Array } from 'hex-lite';
 import { isHex, getAlgorithmForDidMethod } from './helpers';
 
 import { DependentMethods, DidKeyPluginMethods, Algorithm } from './types';
-import { Plugin, UnlockedWallet } from 'types/wallet';
+import { Plugin, Wallet } from 'types/wallet';
 import { KeyPair } from '../didkit/types';
 
 export const getDidKeyPlugin = async <DidMethod extends string>(
-    wallet: UnlockedWallet<string, DependentMethods<DidMethod>>,
+    wallet: Wallet<string, DependentMethods<DidMethod>>,
     key: string
 ): Promise<Plugin<'DID Key', DidKeyPluginMethods<DidMethod>>> => {
     if (key.length === 0) throw new Error("Please don't use an empty string for a key!");

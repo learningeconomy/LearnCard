@@ -17,6 +17,8 @@ const buildOptions: BuildOptions = {
         'abort-controller',
         'isomorphic-fetch',
         'isomorphic-webcrypto',
+        'cross-fetch',
+        'ethers',
     ],
 };
 
