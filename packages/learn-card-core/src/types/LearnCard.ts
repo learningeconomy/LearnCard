@@ -55,6 +55,9 @@ export type LearnCardWallet = {
     /** Returns all credentials from IDX */
     getCredentials: () => Promise<any[]>;
 
+    /** Returns all credentials from IDX */
+    getCredentialsList: () => Promise<IDXCredential[]>;
+
     /**
      * Publishes a credential to Ceramic, returning the credential's stream ID
      *
