@@ -1,5 +1,12 @@
 # @welibraryos/react-learn-card
 
+## 2.3.11
+
+### Patch Changes
+
+-   Updated dependencies [[`7adc30e`](https://github.com/WeLibraryOS/LearnCard/commit/7adc30eba700da4c6886a086d48c40b9820dc05a), [`b07187c`](https://github.com/WeLibraryOS/LearnCard/commit/b07187c4384152ec7f4c5be35a8f2b31a3aff079)]:
+    -   @learncard/core@2.0.1
+
 ## 2.3.10
 
 ### Patch Changes
