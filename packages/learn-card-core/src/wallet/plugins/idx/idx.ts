@@ -45,9 +45,7 @@ export const getIDXPlugin = async (
 
     const dataStore = new DIDDataStore({ ceramic, model: modelData });
 
-    const getCredentialsListFromIndex = async (
-        alias = credentialAlias
-    ): Promise<CredentialsList> => {
+    const getCredentialsListFromIdx = async (alias = credentialAlias): Promise<CredentialsList> => {
         return (await dataStore.get(alias)) || { credentials: [] };
     };
 
@@ -61,9 +59,18 @@ export const getIDXPlugin = async (
 
         if (!alias) alias = credentialAlias;
 
-        const existing = await getCredentialsListFromIndex(alias);
+        const existing = await getCredentialsListFromIdx(alias);
 
-        existing.credentials.push({ storageType: StorageType.ceramic, ...record });
+        const indexOfExistingCredential = existing.credentials.findIndex(credential => {
+            return credential.title === record.title;
+        });
+
+        if (indexOfExistingCredential > -1) {
+            existing.credentials[indexOfExistingCredential] = {
+                storageType: StorageType.ceramic,
+                ...record,
+            };
+        } else existing.credentials.push({ storageType: StorageType.ceramic, ...record });
 
         return dataStore.set(alias, existing);
     };
@@ -97,19 +104,19 @@ export const getIDXPlugin = async (
 
     return {
         pluginMethods: {
-            getCredentialsListFromIndex: async (_wallet, alias = credentialAlias) =>
-                getCredentialsListFromIndex(alias),
+            getCredentialsListFromIdx: async (_wallet, alias = credentialAlias) =>
+                getCredentialsListFromIdx(alias),
             publishContentToCeramic: async (_wallet, cred) => publishContentToCeramic(cred),
             readContentFromCeramic: async (_wallet, streamId: string) =>
                 readContentFromCeramic(streamId),
             getVerifiableCredentialFromIndex: async (_wallet, title: string) => {
-                const credentialList = await getCredentialsListFromIndex();
+                const credentialList = await getCredentialsListFromIdx();
                 const credential = credentialList?.credentials?.find(cred => cred?.title === title);
 
                 return credential && (await readContentFromCeramic(credential.id));
             },
             getVerifiableCredentialsFromIndex: async () => {
-                const credentialList = await getCredentialsListFromIndex();
+                const credentialList = await getCredentialsListFromIdx();
                 const streamIds =
                     credentialList?.credentials?.map(credential => credential?.id) ?? [];
 

@@ -1,7 +1,7 @@
 import { StreamID } from '@ceramicnetwork/streamid';
 
 export type IDXPluginMethods = {
-    getCredentialsListFromIndex: (alias?: string) => Promise<CredentialsList>;
+    getCredentialsListFromIdx: (alias?: string) => Promise<CredentialsList>;
     publishContentToCeramic: (cred: any) => Promise<string>;
     readContentFromCeramic: (streamId: string) => Promise<any>;
     getVerifiableCredentialFromIndex: (title: string) => Promise<any>;
