@@ -48,10 +48,10 @@ export const walletFromKey = async (
         issuePresentation: wallet.pluginMethods.issuePresentation,
         verifyPresentation: wallet.pluginMethods.verifyPresentation,
 
-        getCredential: wallet.pluginMethods.getVerifiableCredentialFromIndex,
-        getCredentials: wallet.pluginMethods.getVerifiableCredentialsFromIndex,
+        getCredential: wallet.pluginMethods.getVerifiableCredentialFromIdx,
+        getCredentials: wallet.pluginMethods.getVerifiableCredentialsFromIdx,
         getCredentialsList: async () => {
-            return (await wallet.pluginMethods.getCredentialsListFromIndex()).credentials;
+            return (await wallet.pluginMethods.getCredentialsListFromIdx()).credentials;
         },
         publishCredential: wallet.pluginMethods.publishContentToCeramic,
         addCredential: async credential => {

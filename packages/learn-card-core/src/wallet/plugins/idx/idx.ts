@@ -49,7 +49,7 @@ export const getIDXPlugin = async (
         return (await dataStore.get(alias)) || { credentials: [] };
     };
 
-    const addCredentialStreamIdToIndex = async (record: IDXCredential, alias?: string) => {
+    const addCredentialStreamIdToIdx = async (record: IDXCredential, alias?: string) => {
         if (!record) throw new Error('record is required');
 
         if (!record.id) throw Error('No streamId provided');
@@ -75,12 +75,12 @@ export const getIDXPlugin = async (
         return dataStore.set(alias, existing);
     };
 
-    const removeCredentialStreamIdToIndex = async (title: string, alias?: string) => {
+    const removeCredentialFromIdx = async (title: string, alias?: string) => {
         if (!title) throw new Error('record is required');
 
         if (!alias) alias = credentialAlias;
 
-        const existing = await getCredentialsListFromIndex(alias);
+        const existing = await getCredentialsListFromIdx(alias);
 
         existing.credentials = existing.credentials.filter(
             credential => credential.title !== title
@@ -123,13 +123,13 @@ export const getIDXPlugin = async (
             publishContentToCeramic: async (_wallet, cred) => publishContentToCeramic(cred),
             readContentFromCeramic: async (_wallet, streamId: string) =>
                 readContentFromCeramic(streamId),
-            getVerifiableCredentialFromIndex: async (_wallet, title: string) => {
+            getVerifiableCredentialFromIdx: async (_wallet, title: string) => {
                 const credentialList = await getCredentialsListFromIdx();
                 const credential = credentialList?.credentials?.find(cred => cred?.title === title);
 
                 return credential && (await readContentFromCeramic(credential.id));
             },
-            getVerifiableCredentialsFromIndex: async () => {
+            getVerifiableCredentialsFromIdx: async () => {
                 const credentialList = await getCredentialsListFromIdx();
                 const streamIds =
                     credentialList?.credentials?.map(credential => credential?.id) ?? [];
@@ -139,10 +139,10 @@ export const getIDXPlugin = async (
                 );
             },
             addVerifiableCredentialInIdx: async (_wallet, { title, id }) => {
-                return addCredentialStreamIdToIndex({ title, id });
+                return addCredentialStreamIdToIdx({ title, id });
             },
             removeVerifiableCredentialInIdx: async (_wallet, title) => {
-                return removeCredentialStreamIdToIndex(title);
+                return removeCredentialFromIdx(title);
             },
         },
     };

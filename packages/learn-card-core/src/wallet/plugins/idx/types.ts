@@ -5,8 +5,8 @@ export type IDXPluginMethods = {
     getCredentialsListFromIdx: (alias?: string) => Promise<CredentialsList>;
     publishContentToCeramic: (cred: any) => Promise<string>;
     readContentFromCeramic: (streamId: string) => Promise<any>;
-    getVerifiableCredentialFromIndex: (title: string) => Promise<VC>;
-    getVerifiableCredentialsFromIndex: () => Promise<VC[]>;
+    getVerifiableCredentialFromIdx: (title: string) => Promise<VC>;
+    getVerifiableCredentialsFromIdx: () => Promise<VC[]>;
     addVerifiableCredentialInIdx: (cred: IDXCredential) => Promise<StreamID>;
     removeVerifiableCredentialInIdx: (title: string) => Promise<StreamID>;
 };
