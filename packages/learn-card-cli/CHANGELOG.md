@@ -1,5 +1,12 @@
 # @learncard/cli
 
+## 1.1.5
+
+### Patch Changes
+
+-   Updated dependencies [[`4c6c11f`](https://github.com/WeLibraryOS/LearnCard/commit/4c6c11f30b81b103017883d7f57bd89e2f7d623e), [`7c09ebf`](https://github.com/WeLibraryOS/LearnCard/commit/7c09ebf0106ec207ac1aa2d7bcf1437d275328d7)]:
+    -   @learncard/core@2.1.0
+
 ## 1.1.4
 
 ### Patch Changes
