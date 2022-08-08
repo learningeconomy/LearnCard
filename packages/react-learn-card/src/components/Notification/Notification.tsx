@@ -59,7 +59,7 @@ export const Notification: React.FC<NotificationProps> = ({
                         >
                             {notificationType}{' '}
                             <span
-                                className="text-grayscale-600 normal-case font-medium text-sm"
+                                className="text-grayscale-600 normal-case font-normal text-sm"
                                 data-testid="notification-cred-issue-date"
                             >
                                 • {issueDate}
