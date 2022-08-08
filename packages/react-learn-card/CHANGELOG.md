@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.3.13
+
+### Patch Changes
+
+-   [#47](https://github.com/WeLibraryOS/LearnCard/pull/47) [`b544330`](https://github.com/WeLibraryOS/LearnCard/commit/b5443302b0843c377fa5a364e3810482f391f275) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: Notification polishes
+
 ## 2.3.12
 
 ### Patch Changes
