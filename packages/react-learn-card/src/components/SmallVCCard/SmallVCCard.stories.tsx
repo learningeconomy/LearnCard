@@ -5,7 +5,7 @@ import SmallVCCard from './SmallVCCard';
 import { SmallVCCardProps } from '../../types';
 
 export default {
-    title: 'RoundedSquare',
+    title: 'SmallVCCard',
     component: SmallVCCard,
     argTypes: {},
 } as Meta<typeof SmallVCCard>;
