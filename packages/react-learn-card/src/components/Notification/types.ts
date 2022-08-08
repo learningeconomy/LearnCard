@@ -11,7 +11,6 @@ export type NotificationProps = {
     notificationType: NotificationTypeEnum;
     title: string;
     issuerImage?: string;
-    issuerName: string;
     issueDate: string;
     className?: string;
     onClick: () => void;
