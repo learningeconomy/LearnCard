@@ -30,6 +30,22 @@ export const getVCPlugin = async (
                     credentialSubject: { id: subject },
                 };
             },
+            getTestVp: async (_wallet, _credential) => {
+                const credential =
+                    _credential ||
+                    (await _wallet.pluginMethods.issueCredential(
+                        _wallet.pluginMethods.getTestVc()
+                    ));
+
+                const did = _wallet.pluginMethods.getSubjectDid('key');
+
+                return {
+                    '@context': ['https://www.w3.org/2018/credentials/v1'],
+                    type: ['VerifiablePresentation'],
+                    holder: did,
+                    verifiableCredential: credential,
+                };
+            },
         },
     };
 };

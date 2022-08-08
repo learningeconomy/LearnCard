@@ -1,5 +1,12 @@
 import { ModelAliases } from '@glazed/types';
-import { VerificationItem, UnsignedVC, VC, VP, VerificationCheck } from '@learncard/types';
+import {
+    VerificationItem,
+    UnsignedVC,
+    VC,
+    VP,
+    VerificationCheck,
+    UnsignedVP,
+} from '@learncard/types';
 
 import { DidMethod } from '@wallet/plugins/didkit/types';
 import { Algorithm, DidKeyPluginMethods } from '@wallet/plugins/didkey/types';
@@ -38,7 +45,7 @@ export type LearnCardWallet = {
      */
     verifyCredential: (credential: VC) => Promise<VerificationItem[]>;
     /** Creates a signed Verifiable Presentation from a signed Verifiable Credential */
-    issuePresentation: (credential: VC) => Promise<VP>;
+    issuePresentation: (presentation: UnsignedVP) => Promise<VP>;
     /**
      * Verifies a signed Verifiable Presentation
      *
@@ -81,6 +88,14 @@ export type LearnCardWallet = {
      * You can use this to test out implementations that use this library!
      */
     getTestVc: (subject?: string) => UnsignedVC;
+
+    /**
+     * Wraps a crednetial in an exmaple presentaion. If no credential is provided, a new one will be
+     * generated using getTestVc
+     *
+     * You can use this to test out implementations that use this library!
+     */
+    getTestVp: (credential?: VC) => Promise<UnsignedVP>;
 
     /**
      * Returns your ETH balance
