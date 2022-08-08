@@ -3,9 +3,22 @@ import { ethers } from 'ethers';
 
 import { EthereumConfig, EthereumPluginMethods } from './types';
 import { DidMethod } from '@wallet/plugins/didkit/types';
+import { Algorithm } from '@wallet/plugins/didkey/types'; // Have to include this in order for getSubjectKeypair to not throw a type error
 
 export const getEthereumPlugin = (
-    initWallet: Wallet<string, { getSubjectDid: (type: DidMethod) => string }>, // unused rn, but I'll be using it in the next ETH plugin PR
+    initWallet: Wallet<
+        string,
+        {
+            getSubjectDid: (type: DidMethod) => string;
+            getSubjectKeypair: (type?: Algorithm) => {
+                kty: string;
+                crv: string;
+                x: string;
+                y?: string;
+                d: string;
+            };
+        }
+    >,
     config: EthereumConfig
 ): Plugin<'Ethereum', EthereumPluginMethods> => {
     const { address, infuraProjectId, network = 'mainnet' } = config;
@@ -16,8 +29,6 @@ export const getEthereumPlugin = (
     } else {
         provider = ethers.getDefaultProvider(network);
     }
-
-    console.log('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥');
 
     const checkErc20TokenBalance = async (tokenContractAddress: string) => {
         if (!address) {
@@ -55,8 +66,33 @@ export const getEthereumPlugin = (
                 const usdcBalance = await checkErc20TokenBalance(usdcAddress);
                 return usdcBalance;
             },
-            test: () => {
+            test: async () => {
                 console.log('🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆 test');
+
+                console.log('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥');
+                const ethDid = initWallet.pluginMethods.getSubjectDid('ethr');
+                const pkhEthDid = initWallet.pluginMethods.getSubjectDid('pkh:eth');
+                const eipDid = initWallet.pluginMethods.getSubjectDid('pkh:eip155');
+
+                const secpKeypair = initWallet.pluginMethods.getSubjectKeypair('secp256k1');
+
+                console.log('ethDid:', ethDid);
+                console.log('pkhEthDid:', pkhEthDid);
+                console.log('eipDid:', eipDid);
+
+                console.log('secpKeypair:', secpKeypair);
+
+                const maybePrivateKey = Buffer.from(secpKeypair.d, 'base64').toString('hex');
+                console.log('maybePrivateKey:', maybePrivateKey);
+
+                const wallet = new ethers.Wallet(maybePrivateKey, provider);
+
+                console.log('wallet.address :', wallet.address);
+
+                /* console.log('🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧');
+                const gasPrice = await provider.getGasPrice();
+
+                console.log('gasPrice:', gasPrice); */
 
                 // const test = initWallet.pluginMethods.getSubjectDid('ethr');
                 // const test2 = initWallet.pluginMethods.getSubjectDid('pkh:eth');
