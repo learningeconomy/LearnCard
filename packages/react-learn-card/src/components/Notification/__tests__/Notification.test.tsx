@@ -13,7 +13,6 @@ describe('Notification', () => {
             <Notification
                 title="Title of Credential"
                 issuerImage="https://issuerimage.png"
-                issuerName="Jack Daniel's"
                 issueDate="04 Apr 22"
                 notificationType={NotificationTypeEnum.Currency}
                 onClick={handleOnClick}
@@ -22,9 +21,6 @@ describe('Notification', () => {
 
         const title = screen.getByTestId('notification-title');
         expect(title).toHaveTextContent('Title of Credential');
-
-        const issuerName = screen.getByTestId('notification-issuer-name');
-        expect(issuerName).toHaveTextContent("Jack Daniel's");
 
         const credIssueDate = screen.getByTestId('notification-cred-issue-date');
         expect(credIssueDate).toHaveTextContent('04 Apr 22');

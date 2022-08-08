@@ -19,7 +19,7 @@ NotificationTest.args = {
     issuerImage:
         'https://upload.wikimedia.org/wikipedia/en/thumb/a/a8/Jack_Daniels_Logo.svg/1200px-Jack_Daniels_Logo.svg.png',
     issuerName: "Jack Daniel's",
-    issueDate: '04 Apr 22',
+    issueDate: '04 Apr 2022',
     className: '',
     notificationType: NotificationTypeEnum.Achievement,
 };
