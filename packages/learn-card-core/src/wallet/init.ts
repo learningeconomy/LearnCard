@@ -64,6 +64,7 @@ export const walletFromKey = async (
         readFromCeramic: wallet.pluginMethods.readContentFromCeramic,
 
         getTestVc: wallet.pluginMethods.getTestVc,
+        getTestVp: wallet.pluginMethods.getTestVp,
 
         checkMyEth: wallet.pluginMethods.checkMyEth,
         checkMyDai: wallet.pluginMethods.checkMyDai,
