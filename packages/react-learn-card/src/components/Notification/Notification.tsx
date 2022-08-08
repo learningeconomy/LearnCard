@@ -8,7 +8,6 @@ import Checkmark from '../svgs/Checkmark';
 export const Notification: React.FC<NotificationProps> = ({
     title,
     issuerImage,
-    issuerName,
     issueDate,
     className,
     notificationType = NotificationTypeEnum.Achievement,
@@ -58,14 +57,13 @@ export const Notification: React.FC<NotificationProps> = ({
                             className={`font-semibold p-0 m-0 leading-none tracking-wide line-clamp-1 ${textStyles}`}
                             data-testid="notification-type"
                         >
-                            {notificationType} / <span className="normal-case">lorem ipsum</span>
-                        </p>
-                        <p
-                            className="text-grayscale-600 p-0 m-0 leading-none tracking-wide mt-[1px] line-clamp-1"
-                            data-testid="notification-issuer-name"
-                        >
-                            Issued by {issuerName} •{' '}
-                            <span data-testid="notification-cred-issue-date">{issueDate}</span>
+                            {notificationType}{' '}
+                            <span
+                                className="text-grayscale-600 normal-case font-medium text-sm"
+                                data-testid="notification-cred-issue-date"
+                            >
+                                • {issueDate}
+                            </span>
                         </p>
                     </div>
                 </div>
