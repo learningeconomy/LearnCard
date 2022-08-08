@@ -1,5 +1,29 @@
 # learn-card-core
 
+## 2.1.0
+
+### Minor Changes
+
+-   [#42](https://github.com/WeLibraryOS/LearnCard/pull/42) [`4c6c11f`](https://github.com/WeLibraryOS/LearnCard/commit/4c6c11f30b81b103017883d7f57bd89e2f7d623e) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Expose removeCredential and getCredentialsList methods
+
+### Patch Changes
+
+-   [`7c09ebf`](https://github.com/WeLibraryOS/LearnCard/commit/7c09ebf0106ec207ac1aa2d7bcf1437d275328d7) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix build issues
+
+## 2.0.1
+
+### Patch Changes
+
+-   [#41](https://github.com/WeLibraryOS/LearnCard/pull/41) [`7adc30e`](https://github.com/WeLibraryOS/LearnCard/commit/7adc30eba700da4c6886a086d48c40b9820dc05a) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Overwrite credentials when adding with the same title
+
+*   [#43](https://github.com/WeLibraryOS/LearnCard/pull/43) [`b07187c`](https://github.com/WeLibraryOS/LearnCard/commit/b07187c4384152ec7f4c5be35a8f2b31a3aff079) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix ethers failing on node 18
+
+## 2.0.0
+
+### Major Changes
+
+-   [#33](https://github.com/WeLibraryOS/LearnCard/pull/33) [`a131966`](https://github.com/WeLibraryOS/LearnCard/commit/a13196655378bcb51c35aaad2165b9bccac0526c) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - TS Refactor UnlockedWallet -> Wallet
+
 ## 1.5.1
 
 ### Patch Changes

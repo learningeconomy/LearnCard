@@ -45,13 +45,11 @@ export const getIDXPlugin = async (
 
     const dataStore = new DIDDataStore({ ceramic, model: modelData });
 
-    const getCredentialsListFromIndex = async (
-        alias = credentialAlias
-    ): Promise<CredentialsList> => {
+    const getCredentialsListFromIdx = async (alias = credentialAlias): Promise<CredentialsList> => {
         return (await dataStore.get(alias)) || { credentials: [] };
     };
 
-    const addCredentialStreamIdToIndex = async (record: IDXCredential, alias?: string) => {
+    const addCredentialStreamIdToIdx = async (record: IDXCredential, alias?: string) => {
         if (!record) throw new Error('record is required');
 
         if (!record.id) throw Error('No streamId provided');
@@ -61,9 +59,32 @@ export const getIDXPlugin = async (
 
         if (!alias) alias = credentialAlias;
 
-        const existing = await getCredentialsListFromIndex(alias);
+        const existing = await getCredentialsListFromIdx(alias);
 
-        existing.credentials.push({ storageType: StorageType.ceramic, ...record });
+        const indexOfExistingCredential = existing.credentials.findIndex(credential => {
+            return credential.title === record.title;
+        });
+
+        if (indexOfExistingCredential > -1) {
+            existing.credentials[indexOfExistingCredential] = {
+                storageType: StorageType.ceramic,
+                ...record,
+            };
+        } else existing.credentials.push({ storageType: StorageType.ceramic, ...record });
+
+        return dataStore.set(alias, existing);
+    };
+
+    const removeCredentialFromIdx = async (title: string, alias?: string) => {
+        if (!title) throw new Error('record is required');
+
+        if (!alias) alias = credentialAlias;
+
+        const existing = await getCredentialsListFromIdx(alias);
+
+        existing.credentials = existing.credentials.filter(
+            credential => credential.title !== title
+        );
 
         return dataStore.set(alias, existing);
     };
@@ -97,19 +118,19 @@ export const getIDXPlugin = async (
 
     return {
         pluginMethods: {
-            getCredentialsListFromIndex: async (_wallet, alias = credentialAlias) =>
-                getCredentialsListFromIndex(alias),
+            getCredentialsListFromIdx: async (_wallet, alias = credentialAlias) =>
+                getCredentialsListFromIdx(alias),
             publishContentToCeramic: async (_wallet, cred) => publishContentToCeramic(cred),
             readContentFromCeramic: async (_wallet, streamId: string) =>
                 readContentFromCeramic(streamId),
-            getVerifiableCredentialFromIndex: async (_wallet, title: string) => {
-                const credentialList = await getCredentialsListFromIndex();
+            getVerifiableCredentialFromIdx: async (_wallet, title: string) => {
+                const credentialList = await getCredentialsListFromIdx();
                 const credential = credentialList?.credentials?.find(cred => cred?.title === title);
 
                 return credential && (await readContentFromCeramic(credential.id));
             },
-            getVerifiableCredentialsFromIndex: async () => {
-                const credentialList = await getCredentialsListFromIndex();
+            getVerifiableCredentialsFromIdx: async () => {
+                const credentialList = await getCredentialsListFromIdx();
                 const streamIds =
                     credentialList?.credentials?.map(credential => credential?.id) ?? [];
 
@@ -118,7 +139,10 @@ export const getIDXPlugin = async (
                 );
             },
             addVerifiableCredentialInIdx: async (_wallet, { title, id }) => {
-                return addCredentialStreamIdToIndex({ title, id });
+                return addCredentialStreamIdToIdx({ title, id });
+            },
+            removeVerifiableCredentialInIdx: async (_wallet, title) => {
+                return removeCredentialFromIdx(title);
             },
         },
     };
