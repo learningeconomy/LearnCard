@@ -21,7 +21,7 @@ export const getEthereumPlugin = (
     >,
     config: EthereumConfig
 ): Plugin<'Ethereum', EthereumPluginMethods> => {
-    const { address, infuraProjectId, network = 'mainnet' } = config;
+    const { infuraProjectId, network = 'mainnet' } = config;
 
     // Provider
     let provider: ethers.providers.Provider;

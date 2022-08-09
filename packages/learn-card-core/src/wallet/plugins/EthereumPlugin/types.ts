@@ -9,7 +9,6 @@ export type EthereumPluginMethods = {
 };
 
 export type EthereumConfig = {
-    address: string;
     infuraProjectId?: string;
     network?: providers.Networkish;
 };

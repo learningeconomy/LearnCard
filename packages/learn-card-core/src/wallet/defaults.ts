@@ -21,7 +21,6 @@ export const defaultCeramicIDXArgs: CeramicIDXArgs = {
 };
 
 export const defaultEthereumArgs: EthereumConfig = {
-    address: '',
     infuraProjectId: '',
     network: 'mainnet',
 };
