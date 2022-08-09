@@ -123,6 +123,24 @@ const getWallet = async () => {
 
     const newWallet = await walletFromKey(entropy.privateKey, {
         didkit: Uint8Array.from(window.atob(didkit), c => c.charCodeAt(0)),
+        ceramicIdx: {
+            ceramicEndpoint: 'https://ceramic-node.staging.welibrary.io:7007',
+            modelData: {
+                definitions: {
+                    MyVerifiableCredentials:
+                        'kjzl6cwe1jw1461695j0dmtvjmtcjhqdtx63calspn0r5p2ti110pzbkboabozr',
+                },
+                schemas: {
+                    AchievementVerifiableCredential:
+                        'ceramic://k3y52l7qbv1frybe3lenawavapwpg38ut3enaqrw03s8nemi1ycq6lvsg1nifb37k',
+                    VerifiableCredentialsList:
+                        'ceramic://k3y52l7qbv1fryp70yk4y1xv2aedxjnkrbdezyot13gnjkyrdn6lhs1k5irkosl4w',
+                },
+                tiles: {},
+            },
+            credentialAlias: 'MyVerifiableCredentials',
+            defaultContentFamily: 'SuperSkills-local',
+        },
     });
 
     memoizedWallet = newWallet;
