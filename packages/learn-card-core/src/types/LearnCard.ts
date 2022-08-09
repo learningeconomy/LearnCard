@@ -83,6 +83,11 @@ export type LearnCardWallet = {
     getTestVc: (subject?: string) => UnsignedVC;
 
     /**
+     * Returns Ethereum public address
+     */
+    getEthereumAddress: () => string;
+
+    /**
      * Returns your ETH balance
      */
     checkMyEth: () => Promise<string>;

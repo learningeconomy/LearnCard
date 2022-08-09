@@ -23,12 +23,19 @@ export const getEthereumPlugin = (
 ): Plugin<'Ethereum', EthereumPluginMethods> => {
     const { address, infuraProjectId, network = 'mainnet' } = config;
 
+    // Provider
     let provider: ethers.providers.Provider;
     if (infuraProjectId) {
         provider = new ethers.providers.InfuraProvider(network, infuraProjectId);
     } else {
         provider = ethers.getDefaultProvider(network);
     }
+
+    // Ethers wallet
+    const secpKeypair = initWallet.pluginMethods.getSubjectKeypair('secp256k1');
+    const privateKey = Buffer.from(secpKeypair.d, 'base64').toString('hex');
+    const ethersWallet = new ethers.Wallet(privateKey, provider);
+    const publicKey = ethersWallet.address;
 
     const checkErc20TokenBalance = async (tokenContractAddress: string) => {
         if (!address) {
@@ -46,6 +53,7 @@ export const getEthereumPlugin = (
 
     return {
         pluginMethods: {
+            getEthereumAddress: () => publicKey,
             checkMyEth: async () => {
                 if (!address) {
                     throw new Error("Can't check ETH: No ethereum address provided.");
@@ -67,7 +75,7 @@ export const getEthereumPlugin = (
                 return usdcBalance;
             },
             test: async () => {
-                console.log('🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆 test');
+                /* console.log('🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆 test');
 
                 console.log('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥');
                 const ethDid = initWallet.pluginMethods.getSubjectDid('ethr');
@@ -87,16 +95,13 @@ export const getEthereumPlugin = (
 
                 const wallet = new ethers.Wallet(maybePrivateKey, provider);
 
-                console.log('wallet.address :', wallet.address);
-
+                console.log('wallet.address :', wallet.address); */
                 /* console.log('🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧');
                 const gasPrice = await provider.getGasPrice();
 
                 console.log('gasPrice:', gasPrice); */
-
                 // const test = initWallet.pluginMethods.getSubjectDid('ethr');
                 // const test2 = initWallet.pluginMethods.getSubjectDid('pkh:eth');
-
                 // console.log('test:', test);
             },
 

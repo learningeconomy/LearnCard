@@ -207,4 +207,18 @@ describe('LearnCard SDK', () => {
             await expect(UnsignedVCValidator.parseAsync(testVc)).resolves.toBeDefined();
         });
     });
+
+    describe('Ethereum Plugin', () => {
+        it('Should generate a valid Ethereum address', async () => {
+            const wallet = await getWallet();
+
+            // eipDid is something like: "did:pkh:eip155:1:0x8fd379246834eac74B8419FfdA202CF8051F7A03"
+            const eipDid: string = wallet._wallet.pluginMethods.getSubjectDid('pkh:eip155');
+            const expectedPublicAddress = eipDid.substring(eipDid.lastIndexOf(':') + 1);
+
+            const actualPublicAddress = wallet.getEthereumAddress();
+
+            expect(actualPublicAddress).toEqual(expectedPublicAddress);
+        });
+    });
 });
