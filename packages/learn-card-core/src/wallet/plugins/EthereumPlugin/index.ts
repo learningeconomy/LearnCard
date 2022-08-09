@@ -101,8 +101,15 @@ export const getEthereumPlugin = (
                 return network;
             },
             changeEthereumNetwork: (_wallet, _network: ethers.providers.Networkish) => {
-                network = _network;
-                provider = getProvider();
+                const oldNetwork = network;
+                try {
+                    network = _network;
+                    provider = getProvider();
+                } catch (e) {
+                    network = oldNetwork;
+                    provider = getProvider();
+                    throw e;
+                }
             },
             addInfuraProjectId: (_wallet, infuraProjectIdToAdd) => {
                 infuraProjectId = infuraProjectIdToAdd;
