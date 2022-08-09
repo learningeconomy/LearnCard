@@ -15,7 +15,7 @@ const snapConfig = [
         output: {
             file: './dist/snap.js',
             format: 'cjs',
-            banner: 'var require = () => "window.crypto";',
+            banner: 'var require = () => "window.crypto";\nvar self = window;',
         },
         plugins: [
             del({ targets: ['./dist/snap.js'] }),
@@ -25,6 +25,7 @@ const snapConfig = [
             esbuild(),
             snaps(),
         ],
+        external: ['isomorphic-fetch', 'cross-fetch'],
     },
     {
         input: './src/index.ts',
