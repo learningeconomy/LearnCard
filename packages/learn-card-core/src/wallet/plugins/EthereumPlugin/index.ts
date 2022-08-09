@@ -23,6 +23,12 @@ export const getEthereumPlugin = (
 ): Plugin<'Ethereum', EthereumPluginMethods> => {
     let { infuraProjectId, network = 'mainnet' } = config;
 
+    // Ethers wallet
+    const secpKeypair = initWallet.pluginMethods.getSubjectKeypair('secp256k1');
+    const privateKey = Buffer.from(secpKeypair.d, 'base64').toString('hex');
+    let ethersWallet = new ethers.Wallet(privateKey);
+    const publicKey: string = ethersWallet.address;
+
     // Provider
     const getProvider = () => {
         let provider: ethers.providers.Provider;
@@ -32,15 +38,10 @@ export const getEthereumPlugin = (
             provider = ethers.getDefaultProvider(network);
         }
 
+        ethersWallet = ethersWallet.connect(provider);
         return provider;
     };
     let provider = getProvider();
-
-    // Ethers wallet
-    const secpKeypair = initWallet.pluginMethods.getSubjectKeypair('secp256k1');
-    const privateKey = Buffer.from(secpKeypair.d, 'base64').toString('hex');
-    const ethersWallet = new ethers.Wallet(privateKey, provider);
-    const publicKey: string = ethersWallet.address;
 
     const checkErc20TokenBalance = async (tokenContractAddress: string) => {
         const erc20Abi = require('./erc20.abi.json');
@@ -55,6 +56,7 @@ export const getEthereumPlugin = (
     return {
         pluginMethods: {
             getEthereumAddress: () => publicKey,
+
             checkMyEth: async () => {
                 const balance = await provider.getBalance(publicKey);
                 const formattedBalance = ethers.utils.formatEther(balance);
@@ -71,13 +73,6 @@ export const getEthereumPlugin = (
                 const usdcBalance = await checkErc20TokenBalance(usdcAddress);
                 return usdcBalance;
             },
-            getCurrentEthereumNetwork: () => {
-                return network;
-            },
-            changeEthereumNetwork: (_wallet, _network: ethers.providers.Networkish) => {
-                network = _network;
-                provider = getProvider();
-            },
             checkEthForAddress: async (_wallet, address) => {
                 if (!address) {
                     throw new Error('No address provided');
@@ -87,6 +82,27 @@ export const getEthereumPlugin = (
                 const formattedBalance = ethers.utils.formatEther(balance);
 
                 return formattedBalance;
+            },
+            transferEth: async (_wallet, amountInEther, toAddress) => {
+                const transaction = {
+                    to: toAddress,
+
+                    // Convert ETH to wei
+                    value: ethers.utils.parseEther(amountInEther.toString()),
+                };
+
+                return await ethersWallet
+                    .sendTransaction(transaction)
+                    .then(transactionObject => transactionObject.hash);
+            },
+
+            /* Configuration-type methods */
+            getCurrentEthereumNetwork: () => {
+                return network;
+            },
+            changeEthereumNetwork: (_wallet, _network: ethers.providers.Networkish) => {
+                network = _network;
+                provider = getProvider();
             },
             addInfuraProjectId: (_wallet, infuraProjectIdToAdd) => {
                 infuraProjectId = infuraProjectIdToAdd;

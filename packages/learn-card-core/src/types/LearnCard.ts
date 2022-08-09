@@ -109,6 +109,11 @@ export type LearnCardWallet = {
     checkEthForAddress: (address: string) => Promise<string>;
 
     /**
+     * Transfer ETH to an the specified address
+     */
+    transferEth: (amountInEth: number, toAddress: string) => Promise<string>;
+
+    /**
      * Get your current Ethereum network
      */
     getCurrentEthereumNetwork: () => ethers.providers.Networkish;

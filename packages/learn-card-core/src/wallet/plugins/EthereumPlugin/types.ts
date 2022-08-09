@@ -6,6 +6,7 @@ export type EthereumPluginMethods = {
     checkMyDai: () => Promise<string>;
     checkMyUsdc: () => Promise<string>;
     checkEthForAddress: (address: string) => Promise<string>;
+    transferEth: (amountInEther: number, toAddress: string) => Promise<string>;
     getCurrentEthereumNetwork: () => providers.Networkish;
     changeEthereumNetwork: (network: providers.Networkish) => void;
     addInfuraProjectId: (infuraProjectIdToAdd: string) => void;

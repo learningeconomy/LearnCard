@@ -64,6 +64,7 @@ export const walletFromKey = async (
         checkMyDai: wallet.pluginMethods.checkMyDai,
         checkMyUsdc: wallet.pluginMethods.checkMyUsdc,
         checkEthForAddress: wallet.pluginMethods.checkEthForAddress,
+        transferEth: wallet.pluginMethods.transferEth,
         getCurrentEthereumNetwork: wallet.pluginMethods.getCurrentEthereumNetwork,
         changeEthereumNetwork: wallet.pluginMethods.changeEthereumNetwork,
         addInfuraProjectId: wallet.pluginMethods.addInfuraProjectId,
