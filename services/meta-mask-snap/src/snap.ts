@@ -101,6 +101,13 @@ const HANDLERS: {
             await lcWallet.verifyPresentation(request.presentation)
         );
     },
+
+    getCredential: async (lcWallet, request) => {
+        return serializeResponse(
+            LearnCardRPCAPI.getCredential,
+            (await lcWallet.getCredential(request.title)) ?? null
+        );
+    },
 };
 
 let memoizedWallet: LearnCardWallet;
