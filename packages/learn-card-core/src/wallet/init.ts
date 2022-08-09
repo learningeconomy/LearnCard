@@ -63,6 +63,10 @@ export const walletFromKey = async (
         checkMyEth: wallet.pluginMethods.checkMyEth,
         checkMyDai: wallet.pluginMethods.checkMyDai,
         checkMyUsdc: wallet.pluginMethods.checkMyUsdc,
+        checkEthForAddress: wallet.pluginMethods.checkEthForAddress,
+        getCurrentEthereumNetwork: wallet.pluginMethods.getCurrentEthereumNetwork,
+        changeEthereumNetwork: wallet.pluginMethods.changeEthereumNetwork,
+        addInfuraProjectId: wallet.pluginMethods.addInfuraProjectId,
         test: wallet.pluginMethods.test,
     };
 };

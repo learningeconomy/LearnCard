@@ -10,6 +10,7 @@ import { EthereumConfig } from '@wallet/plugins/EthereumPlugin/types';
 import { InitInput } from '@didkit/index';
 
 import { Wallet } from 'types/wallet';
+import { ethers } from 'ethers';
 
 export * from '@learncard/types';
 
@@ -101,6 +102,27 @@ export type LearnCardWallet = {
      * Returns your USDC balance
      */
     checkMyUsdc: () => Promise<string>;
+
+    /**
+     * Returns the ETH balance for the given address
+     */
+    checkEthForAddress: (address: string) => Promise<string>;
+
+    /**
+     * Get your current Ethereum network
+     */
+    getCurrentEthereumNetwork: () => ethers.providers.Networkish;
+
+    /**
+     * Change your Ethereum network
+     */
+    changeEthereumNetwork: (network: ethers.providers.Networkish) => void;
+
+    /**
+     * Add an infura project id to an existing wallet.
+     * Really only useful for testing with the CLI right now...
+     */
+    addInfuraProjectId: (infuraProjectIdToAdd: string) => void;
 
     test: () => void;
 };

@@ -21,15 +21,20 @@ export const getEthereumPlugin = (
     >,
     config: EthereumConfig
 ): Plugin<'Ethereum', EthereumPluginMethods> => {
-    const { infuraProjectId, network = 'mainnet' } = config;
+    let { infuraProjectId, network = 'mainnet' } = config;
 
     // Provider
-    let provider: ethers.providers.Provider;
-    if (infuraProjectId) {
-        provider = new ethers.providers.InfuraProvider(network, infuraProjectId);
-    } else {
-        provider = ethers.getDefaultProvider(network);
-    }
+    const getProvider = () => {
+        let provider: ethers.providers.Provider;
+        if (infuraProjectId) {
+            provider = new ethers.providers.InfuraProvider(network, infuraProjectId);
+        } else {
+            provider = ethers.getDefaultProvider(network);
+        }
+
+        return provider;
+    };
+    let provider = getProvider();
 
     // Ethers wallet
     const secpKeypair = initWallet.pluginMethods.getSubjectKeypair('secp256k1');
@@ -66,7 +71,40 @@ export const getEthereumPlugin = (
                 const usdcBalance = await checkErc20TokenBalance(usdcAddress);
                 return usdcBalance;
             },
+            getCurrentEthereumNetwork: () => {
+                return network;
+            },
+            changeEthereumNetwork: (_wallet, _network: ethers.providers.Networkish) => {
+                network = _network;
+                provider = getProvider();
+            },
+            checkEthForAddress: async (_wallet, address) => {
+                if (!address) {
+                    throw new Error('No address provided');
+                }
+
+                const balance = await provider.getBalance(address);
+                const formattedBalance = ethers.utils.formatEther(balance);
+
+                return formattedBalance;
+            },
+            addInfuraProjectId: (_wallet, infuraProjectIdToAdd) => {
+                infuraProjectId = infuraProjectIdToAdd;
+                provider = getProvider();
+            },
             test: async () => {
+                const eipDid = initWallet.pluginMethods.getSubjectDid('pkh:eip155');
+                const secpKeypair = initWallet.pluginMethods.getSubjectKeypair('secp256k1');
+
+                // attempt to construct public key from secp keypair
+                const test = Buffer.from(`${secpKeypair.x}${secpKeypair.y}`, 'base64').toString(
+                    'hex'
+                );
+
+                console.log('🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆');
+                console.log('eipDid:', eipDid);
+                console.log('test:', test);
+
                 /* console.log('🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆 test');
 
                 console.log('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥');
