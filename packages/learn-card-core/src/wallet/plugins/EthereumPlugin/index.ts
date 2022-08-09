@@ -35,17 +35,13 @@ export const getEthereumPlugin = (
     const secpKeypair = initWallet.pluginMethods.getSubjectKeypair('secp256k1');
     const privateKey = Buffer.from(secpKeypair.d, 'base64').toString('hex');
     const ethersWallet = new ethers.Wallet(privateKey, provider);
-    const publicKey = ethersWallet.address;
+    const publicKey: string = ethersWallet.address;
 
     const checkErc20TokenBalance = async (tokenContractAddress: string) => {
-        if (!address) {
-            throw new Error("Can't check balance: No address provided.");
-        }
-
         const erc20Abi = require('./erc20.abi.json');
         const contract = new ethers.Contract(tokenContractAddress, erc20Abi, provider);
 
-        const balance = await contract.balanceOf(address);
+        const balance = await contract.balanceOf(publicKey);
         const formattedBalance = ethers.utils.formatUnits(balance);
 
         return formattedBalance;
@@ -55,11 +51,7 @@ export const getEthereumPlugin = (
         pluginMethods: {
             getEthereumAddress: () => publicKey,
             checkMyEth: async () => {
-                if (!address) {
-                    throw new Error("Can't check ETH: No ethereum address provided.");
-                }
-
-                const balance = await provider.getBalance(address);
+                const balance = await provider.getBalance(publicKey);
                 const formattedBalance = ethers.utils.formatEther(balance);
 
                 return formattedBalance;
