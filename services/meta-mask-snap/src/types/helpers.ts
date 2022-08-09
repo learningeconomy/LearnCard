@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 /** Adds a string serialization transform to a zod validator type */
 export type SerializeValidator<Validator extends z.ZodTypeAny> = z.ZodEffects<Validator, string>;
+
 /** Adds a string deserialization transform to a zod validator type */
 export type DeserializeValidator<Validator extends z.ZodTypeAny> = z.ZodEffects<
     z.ZodType<string>,
