@@ -61,6 +61,7 @@ export const walletFromKey = async (
 
         getEthereumAddress: wallet.pluginMethods.getEthereumAddress,
         getBalance: wallet.pluginMethods.getBalance,
+        getBalanceForAddress: wallet.pluginMethods.getBalanceForAddress,
         checkMyEth: wallet.pluginMethods.checkMyEth,
         checkMyDai: wallet.pluginMethods.checkMyDai,
         checkMyUsdc: wallet.pluginMethods.checkMyUsdc,

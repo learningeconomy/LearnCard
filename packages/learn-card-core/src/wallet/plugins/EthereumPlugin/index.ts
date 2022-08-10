@@ -2,6 +2,8 @@ import { Plugin, Wallet } from 'types/wallet';
 import { ethers } from 'ethers';
 
 import { EthereumConfig, EthereumPluginMethods } from './types';
+import { isAddress } from './helpers';
+
 import { DidMethod } from '@wallet/plugins/didkit/types';
 import { Algorithm } from '@wallet/plugins/didkey/types'; // Have to include this in order for getSubjectKeypair to not throw a type error
 
@@ -54,11 +56,42 @@ export const getEthereumPlugin = (
     }[];
 
     // Methods
-    const checkErc20TokenBalance = async (tokenContractAddress: string) => {
+    const getBalance = async (walletAddress = publicKey, tokenSymbolOrAddress = 'ETH') => {
+        if (!tokenSymbolOrAddress || tokenSymbolOrAddress === 'ETH') {
+            // check ETH by default
+            const balance = await provider.getBalance(walletAddress);
+            const formattedBalance = ethers.utils.formatEther(balance);
+
+            return formattedBalance;
+        }
+
+        let tokenAddress;
+        if (isAddress(tokenSymbolOrAddress)) {
+            tokenAddress = tokenSymbolOrAddress;
+        } else {
+            // Check known addresses for symbol
+            tokenAddress = await getTokenAddressFromSymbol(tokenSymbolOrAddress);
+
+            if (!tokenAddress) {
+                throw new Error(
+                    `Unable to determine token address for \"${tokenSymbolOrAddress}\"`
+                );
+            }
+        }
+
+        const balance = await checkErc20TokenBalance(tokenAddress, walletAddress);
+
+        return balance;
+    };
+
+    const checkErc20TokenBalance = async (
+        tokenContractAddress: string,
+        walletPublicAddress = publicKey
+    ) => {
         const erc20Abi = require('./erc20.abi.json');
         const contract = new ethers.Contract(tokenContractAddress, erc20Abi, provider);
 
-        const balance = await contract.balanceOf(publicKey);
+        const balance = await contract.balanceOf(walletPublicAddress);
         const formattedBalance = ethers.utils.formatUnits(balance);
 
         return formattedBalance;
@@ -71,11 +104,6 @@ export const getEthereumPlugin = (
         }
 
         const { chainId: currentChainId } = await provider.getNetwork();
-
-        /* console.log(
-            'defaultTokenList.filter(t => t.chainId === currentChainId):',
-            defaultTokenList.filter(t => t.chainId === currentChainId)
-        ); */
 
         const token = defaultTokenList.find(
             token => token.chainId === currentChainId && token.symbol === symbol
@@ -92,35 +120,10 @@ export const getEthereumPlugin = (
         pluginMethods: {
             getEthereumAddress: () => publicKey,
 
-            getBalance: async (_wallet, symbolOrAddress = 'ETH') => {
-                if (!symbolOrAddress || symbolOrAddress === 'ETH') {
-                    // assume we're checking ETH
-                    const balance = await provider.getBalance(publicKey);
-                    const formattedBalance = ethers.utils.formatEther(balance);
-
-                    return formattedBalance;
-                }
-
-                let tokenAddress;
-                // TODO turn this if into a helper
-                if (symbolOrAddress.startsWith('0x') && symbolOrAddress.length === 42) {
-                    tokenAddress = symbolOrAddress;
-                } else {
-                    // Check known addresses for symbol
-                    tokenAddress = await getTokenAddressFromSymbol(symbolOrAddress);
-
-                    if (!tokenAddress) {
-                        throw new Error(
-                            `Unable to determine token address for \"${symbolOrAddress}\"`
-                        );
-                    }
-                }
-
-                const balance = await checkErc20TokenBalance(tokenAddress);
-
-                return balance;
-            },
-            // getBalanceForAddress: async (_wallet, symbolOrAddress) => {},
+            getBalance: async (_wallet, symbolOrAddress = 'ETH') =>
+                getBalance(publicKey, symbolOrAddress),
+            getBalanceForAddress: async (_wallet, walletAddress, symbolOrAddress) =>
+                getBalance(walletAddress, symbolOrAddress),
 
             checkMyEth: async () => {
                 const balance = await provider.getBalance(publicKey);
