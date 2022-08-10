@@ -84,6 +84,12 @@ export const AddCredential = getRpcMethod(
 );
 export type AddCredentialTypes = GetRPCMethodType<typeof AddCredential>;
 
+export const RemoveCredential = getRpcMethod('removeCredential', { title: z.string() }, z.null(), {
+    skipSerializationKeys: ['title'],
+    serializeReturnValue: false,
+});
+export type RemoveCredentialTypes = GetRPCMethodType<typeof RemoveCredential>;
+
 // API Endpoints
 
 export const CredentialRPCAPI = getAPIEndpoint({ Did, IssueCredential, IssuePresentation });
@@ -101,5 +107,6 @@ export const LearnCardRPCAPI = getAPIEndpoint({
     GetCredentialsList,
     PublishCredential,
     AddCredential,
+    RemoveCredential,
 });
 export type LearnCardRPCAPITypes = GetAPIEndpointType<typeof LearnCardRPCAPI>;
