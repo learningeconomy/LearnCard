@@ -12,6 +12,7 @@ export * from "./MiniVCThumbnail/index";
 export * from "./Notification/index";
 export * from "./QRCodeCard/index";
 export * from "./RoundedSquare/index";
+export * from "./SmallAchievementCard/index";
 export * from "./VCCard/index";
 export * from "./VCDisplayBackFace/index";
 export * from "./VCDisplayCard/index";
