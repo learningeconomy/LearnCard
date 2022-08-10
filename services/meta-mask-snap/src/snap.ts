@@ -141,6 +141,13 @@ const HANDLERS: {
 
         return serializeResponse(LearnCardRPCAPI.removeCredential, null);
     },
+
+    readFromCeramic: async (lcWallet, request) => {
+        return serializeResponse(
+            LearnCardRPCAPI.readFromCeramic,
+            await lcWallet.readFromCeramic(request.id)
+        );
+    },
 };
 
 let memoizedWallet: LearnCardWallet;

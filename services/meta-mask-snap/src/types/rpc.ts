@@ -90,6 +90,11 @@ export const RemoveCredential = getRpcMethod('removeCredential', { title: z.stri
 });
 export type RemoveCredentialTypes = GetRPCMethodType<typeof RemoveCredential>;
 
+export const ReadFromCeramic = getRpcMethod('readFromCeramic', { id: z.string() }, VCValidator, {
+    skipSerializationKeys: ['id'],
+});
+export type ReadFromCeramicTypes = GetRPCMethodType<typeof ReadFromCeramic>;
+
 // API Endpoints
 
 export const CredentialRPCAPI = getAPIEndpoint({ Did, IssueCredential, IssuePresentation });
@@ -108,5 +113,6 @@ export const LearnCardRPCAPI = getAPIEndpoint({
     PublishCredential,
     AddCredential,
     RemoveCredential,
+    ReadFromCeramic,
 });
 export type LearnCardRPCAPITypes = GetAPIEndpointType<typeof LearnCardRPCAPI>;
