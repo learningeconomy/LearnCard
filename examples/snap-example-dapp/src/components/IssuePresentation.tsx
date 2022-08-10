@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { VC, VP } from '@learncard/types';
+import { UnsignedVP, VP } from '@learncard/types';
 
 import TextBox from '@components/input/TextBox';
 
@@ -8,21 +8,26 @@ import { useIsSnapReady } from '@state/snapState';
 import { sendRequest } from '@helpers/rpc.helpers';
 
 const IssuePresentation: React.FC = () => {
-    const [credential, setCredential] = useState<VC>({
+    const [presentation, setPresentation] = useState<UnsignedVP>({
         '@context': ['https://www.w3.org/2018/credentials/v1'],
-        id: 'http://example.org/credentials/3731',
-        type: ['VerifiableCredential'],
-        issuer: 'did:key:z6MkjgL1J895LHXCtgjaQ7rdfTHQFZWuZEV9aJAY8sgeJjG8',
-        issuanceDate: '2020-08-19T21:41:50Z',
-        credentialSubject: { id: 'did:example:d23dd687a7dc6787646f2eb98d0' },
-        proof: {
-            type: 'Ed25519Signature2018',
-            created: '2022-08-10T04:43:47.376Z',
-            proofPurpose: 'assertionMethod',
-            verificationMethod:
-                'did:key:z6MkjgL1J895LHXCtgjaQ7rdfTHQFZWuZEV9aJAY8sgeJjG8#z6MkjgL1J895LHXCtgjaQ7rdfTHQFZWuZEV9aJAY8sgeJjG8',
-            jws: 'eyJhbGciOiJFZERTQSIsImNyaXQiOlsiYjY0Il0sImI2NCI6ZmFsc2V9..8VbqDuusArFw80UueeaZ2gCOkPhcU0uedOM-Ae_aZUpA_ahCjs_KRTqG75NoeAGG9B1Yr8fVUi39r74wQxh2CQ',
+        type: ['VerifiablePresentation'],
+        verifiableCredential: {
+            '@context': ['https://www.w3.org/2018/credentials/v1'],
+            id: 'http://example.org/credentials/3731',
+            type: ['VerifiableCredential'],
+            issuer: 'did:key:z6MkjgL1J895LHXCtgjaQ7rdfTHQFZWuZEV9aJAY8sgeJjG8',
+            issuanceDate: '2020-08-19T21:41:50Z',
+            credentialSubject: { id: 'did:example:d23dd687a7dc6787646f2eb98d0' },
+            proof: {
+                type: 'Ed25519Signature2018',
+                created: '2022-08-10T04:43:47.376Z',
+                proofPurpose: 'assertionMethod',
+                verificationMethod:
+                    'did:key:z6MkjgL1J895LHXCtgjaQ7rdfTHQFZWuZEV9aJAY8sgeJjG8#z6MkjgL1J895LHXCtgjaQ7rdfTHQFZWuZEV9aJAY8sgeJjG8',
+                jws: 'eyJhbGciOiJFZERTQSIsImNyaXQiOlsiYjY0Il0sImI2NCI6ZmFsc2V9..8VbqDuusArFw80UueeaZ2gCOkPhcU0uedOM-Ae_aZUpA_ahCjs_KRTqG75NoeAGG9B1Yr8fVUi39r74wQxh2CQ',
+            },
         },
+        holder: 'did:key:z6MkjgL1J895LHXCtgjaQ7rdfTHQFZWuZEV9aJAY8sgeJjG8',
     });
     const [response, setResponse] = useState<VP>();
     const [loading, setLoading] = useState(false);
@@ -30,11 +35,11 @@ const IssuePresentation: React.FC = () => {
     const isSnapReady = useIsSnapReady();
 
     const issuePresentation = async () => {
-        if (!credential) return;
+        if (!presentation) return;
 
         try {
             setLoading(true);
-            const res = await sendRequest({ method: 'issuePresentation', credential });
+            const res = await sendRequest({ method: 'issuePresentation', presentation });
 
             if (res) setResponse(res);
         } catch (error) {
@@ -50,9 +55,9 @@ const IssuePresentation: React.FC = () => {
         <section className="p-2 border rounded flex flex-col gap-2 items-center justify-center">
             <TextBox
                 multiline
-                label="Credential:"
-                value={JSON.stringify(credential, undefined, 4)}
-                onChange={value => setCredential(JSON.parse(value))}
+                label="Presentation:"
+                value={JSON.stringify(presentation, undefined, 4)}
+                onChange={value => setPresentation(JSON.parse(value))}
             />
 
             <button

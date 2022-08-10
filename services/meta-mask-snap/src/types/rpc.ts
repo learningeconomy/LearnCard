@@ -5,6 +5,7 @@ import {
     VPValidator,
     VerificationItemValidator,
     VerificationCheckValidator,
+    UnsignedVPValidator,
 } from '@learncard/types';
 
 import { getRpcMethod, GetRPCMethodType, getAPIEndpoint, GetAPIEndpointType } from './helpers';
@@ -26,7 +27,7 @@ export type IssueCredentialTypes = GetRPCMethodType<typeof IssueCredential>;
 
 export const IssuePresentation = getRpcMethod(
     'issuePresentation',
-    { credential: VCValidator },
+    { presentation: UnsignedVPValidator },
     VPValidator
 );
 export type IssuePresentationTypes = GetRPCMethodType<typeof IssuePresentation>;

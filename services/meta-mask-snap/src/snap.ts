@@ -77,7 +77,7 @@ const HANDLERS: {
                 {
                     prompt: 'Issuing Presentation',
                     description: 'Would you like to issue the following presentation?',
-                    textAreaContent: JSON.stringify(request.credential, undefined, 4).slice(
+                    textAreaContent: JSON.stringify(request.presentation, undefined, 4).slice(
                         0,
                         1800
                     ),
@@ -88,7 +88,7 @@ const HANDLERS: {
         if (permission) {
             return serializeResponse(
                 LearnCardRPCAPI.issuePresentation,
-                await lcWallet.issuePresentation(request.credential)
+                await lcWallet.issuePresentation(request.presentation)
             );
         }
 
