@@ -108,6 +108,12 @@ const HANDLERS: {
             (await lcWallet.getCredential(request.title)) ?? null
         );
     },
+
+    addCredential: async (lcWallet, request) => {
+        await lcWallet.addCredential({ title: request.title, id: request.id });
+
+        return serializeResponse(LearnCardRPCAPI.addCredential, null);
+    },
 };
 
 let memoizedWallet: LearnCardWallet;

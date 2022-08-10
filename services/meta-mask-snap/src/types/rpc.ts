@@ -56,6 +56,14 @@ export const GetCredential = getRpcMethod(
 );
 export type GetCredentialTypes = GetRPCMethodType<typeof GetCredential>;
 
+export const AddCredential = getRpcMethod(
+    'addCredential',
+    { id: z.string(), title: z.string() },
+    z.null(),
+    { skipSerializationKeys: ['title', 'id'], serializeReturnValue: false }
+);
+export type AddCredentialTypes = GetRPCMethodType<typeof AddCredential>;
+
 // API Endpoints
 
 export const CredentialRPCAPI = getAPIEndpoint({ Did, IssueCredential, IssuePresentation });
@@ -69,5 +77,6 @@ export const LearnCardRPCAPI = getAPIEndpoint({
     IssuePresentation,
     VerifyPresentation,
     GetCredential,
+    AddCredential,
 });
 export type LearnCardRPCAPITypes = GetAPIEndpointType<typeof LearnCardRPCAPI>;
