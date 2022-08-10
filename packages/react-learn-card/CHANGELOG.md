@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.3.15
+
+### Patch Changes
+
+-   [#50](https://github.com/WeLibraryOS/LearnCard/pull/50) [`9c857c5`](https://github.com/WeLibraryOS/LearnCard/commit/9c857c5457f3340bf83093e58f4578a62ac745d6) Thanks [@goblincore](https://github.com/goblincore)! - Add basic achievement display card component to react-learncard
+
 ## 2.3.14
 
 ### Patch Changes
