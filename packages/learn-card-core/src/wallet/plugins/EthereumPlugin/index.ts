@@ -124,44 +124,6 @@ export const getEthereumPlugin = (
                 getBalance(publicKey, symbolOrAddress),
             getBalanceForAddress: async (_wallet, walletAddress, symbolOrAddress) =>
                 getBalance(walletAddress, symbolOrAddress),
-
-            checkMyEth: async () => {
-                const balance = await provider.getBalance(publicKey);
-                const formattedBalance = ethers.utils.formatEther(balance);
-
-                return formattedBalance;
-            },
-            checkMyDai: async () => {
-                const daiAddress = '0x6B175474E89094C44Da98b954EedeAC495271d0F';
-                const daiBalance = await checkErc20TokenBalance(daiAddress);
-                return daiBalance;
-            },
-            checkMyUsdc: async () => {
-                let usdcAddress;
-                switch (network) {
-                    case 'mainnet':
-                        usdcAddress = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';
-                        break;
-                    case 'goerli':
-                        usdcAddress = '0x07865c6e87b9f70255377e024ace6630c1eaa37f';
-                        break;
-                    default:
-                        throw new Error(`USDC Contract address unkown for network: ${network}`);
-                }
-
-                const usdcBalance = await checkErc20TokenBalance(usdcAddress);
-                return usdcBalance;
-            },
-            checkEthForAddress: async (_wallet, address) => {
-                if (!address) {
-                    throw new Error('No address provided');
-                }
-
-                const balance = await provider.getBalance(address);
-                const formattedBalance = ethers.utils.formatEther(balance);
-
-                return formattedBalance;
-            },
             transferEth: async (_wallet, amountInEther, toAddress) => {
                 const transaction = {
                     to: toAddress,

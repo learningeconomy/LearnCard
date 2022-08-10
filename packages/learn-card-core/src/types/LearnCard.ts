@@ -101,26 +101,6 @@ export type LearnCardWallet = {
     getBalanceForAddress: (walletAddress: string, symbolOrAddress?: string) => Promise<string>;
 
     /**
-     * Returns your ETH balance
-     */
-    checkMyEth: () => Promise<string>;
-
-    /**
-     * Returns your DAI balance
-     */
-    checkMyDai: () => Promise<string>;
-
-    /**
-     * Returns your USDC balance
-     */
-    checkMyUsdc: () => Promise<string>;
-
-    /**
-     * Returns the ETH balance for the given address
-     */
-    checkEthForAddress: (address: string) => Promise<string>;
-
-    /**
      * Transfer ETH to an the specified address
      */
     transferEth: (amountInEth: number, toAddress: string) => Promise<string>;
