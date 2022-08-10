@@ -1,16 +1,16 @@
 import React from 'react';
 import { Story, Meta } from '@storybook/react';
 
-import SmallVCCard from './SmallVCCard';
-import { SmallVCCardProps } from '../../types';
+import SmallVCCard from './SmallAchievementCard';
+import { SmallAchievementCardProps } from '../../types';
 
 export default {
-    title: 'SmallVCCard',
+    title: 'Mini Achievement Display Card',
     component: SmallVCCard,
     argTypes: {},
 } as Meta<typeof SmallVCCard>;
 
-const Template: Story<SmallVCCardProps> = args => <SmallVCCard {...args} />;
+const Template: Story<SmallAchievementCardProps> = args => <SmallVCCard {...args} />;
 
 export const SmallVCCardTest = Template.bind({});
 SmallVCCardTest.args = {

@@ -1,7 +1,8 @@
 import React from 'react';
-import { SmallVCCardProps } from '../../types';
+import { SmallAchievementCardProps } from '../../types';
 import { Trophy } from '../svgs';
-export const SmallVCCard: React.FC<SmallVCCardProps> = ({
+
+export const SmallAchievementCard: React.FC<SmallAchievementCardProps> = ({
     title = 'Title Lorem Ipsum',
     thumbImgSrc,
     date = 'Apr 20, 2022',
@@ -42,4 +43,4 @@ export const SmallVCCard: React.FC<SmallVCCardProps> = ({
     );
 };
 
-export default SmallVCCard;
+export default SmallAchievementCard;

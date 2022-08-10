@@ -39,7 +39,7 @@ export type RoundedSquareProps = {
     bgColor?: string;
 };
 
-export type SmallVCCardProps = {
+export type SmallAchievementCardProps = {
     title?: string;
     thumbImgSrc?: string;
     date?: string;
