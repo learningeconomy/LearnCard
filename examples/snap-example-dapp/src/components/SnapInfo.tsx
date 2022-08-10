@@ -6,6 +6,7 @@ import GetCredential from '@components/GetCredential';
 import GetCredentials from '@components/GetCredentials';
 import IssueCredential from '@components/IssueCredential';
 import VerifyCredential from '@components/VerifyCredential';
+import RemoveCredential from '@components/RemoveCredential';
 import PublishCredential from '@components/PublishCredential';
 import IssuePresentation from '@components/IssuePresentation';
 import VerifyPresentation from '@components/VerifyPresentation';
@@ -38,6 +39,7 @@ const SnapInfo: React.FC = () => {
                 <Button component={<GetCredentials />}>Get Credentials</Button>
                 <Button component={<IssueCredential />}>Issue Credential</Button>
                 <Button component={<VerifyCredential />}>Verify Credential</Button>
+                <Button component={<RemoveCredential />}>Remove Credential</Button>
                 <Button component={<PublishCredential />}>Publish Credential</Button>
                 <Button component={<IssuePresentation />}>Issue Presentation</Button>
                 <Button component={<VerifyPresentation />}>Verify Presentation</Button>
