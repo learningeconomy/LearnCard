@@ -7,8 +7,9 @@ import { TileLoader } from '@glazed/tile-loader';
 import { CeramicClient } from '@ceramicnetwork/http-client';
 import { CreateOpts } from '@ceramicnetwork/common';
 import { TileDocument, TileMetadataArgs } from '@ceramicnetwork/stream-tile';
+import { IDXCredential, StorageTypeEnum } from '@learncard/types';
 
-import { IDXCredential, CredentialsList, IDXPluginMethods, StorageType } from './types';
+import { CredentialsList, IDXPluginMethods } from './types';
 import { Plugin, Wallet } from 'types/wallet';
 import { CeramicIDXArgs } from 'types/LearnCard';
 
@@ -67,10 +68,10 @@ export const getIDXPlugin = async (
 
         if (indexOfExistingCredential > -1) {
             existing.credentials[indexOfExistingCredential] = {
-                storageType: StorageType.ceramic,
+                storageType: StorageTypeEnum.ceramic,
                 ...record,
             };
-        } else existing.credentials.push({ storageType: StorageType.ceramic, ...record });
+        } else existing.credentials.push({ storageType: StorageTypeEnum.ceramic, ...record });
 
         return dataStore.set(alias, existing);
     };
