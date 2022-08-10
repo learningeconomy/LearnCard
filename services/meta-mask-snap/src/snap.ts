@@ -123,6 +123,13 @@ const HANDLERS: {
         );
     },
 
+    publishCredential: async (lcWallet, request) => {
+        return serializeResponse(
+            LearnCardRPCAPI.publishCredential,
+            await lcWallet.publishCredential(request.credential)
+        );
+    },
+
     addCredential: async (lcWallet, request) => {
         await lcWallet.addCredential({ title: request.title, id: request.id });
 

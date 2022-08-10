@@ -68,6 +68,14 @@ export const GetCredentialsList = getRpcMethod(
 );
 export type GetCredentialsListTypes = GetRPCMethodType<typeof GetCredentialsList>;
 
+export const PublishCredential = getRpcMethod(
+    'publishCredential',
+    { credential: VCValidator },
+    z.string(),
+    { serializeReturnValue: false }
+);
+export type PublishCredentialTypes = GetRPCMethodType<typeof PublishCredential>;
+
 export const AddCredential = getRpcMethod(
     'addCredential',
     { id: z.string(), title: z.string() },
@@ -91,6 +99,7 @@ export const LearnCardRPCAPI = getAPIEndpoint({
     GetCredential,
     GetCredentials,
     GetCredentialsList,
+    PublishCredential,
     AddCredential,
 });
 export type LearnCardRPCAPITypes = GetAPIEndpointType<typeof LearnCardRPCAPI>;
