@@ -36,7 +36,7 @@ export const SmallVCCard: React.FC<SmallVCCardProps> = ({
                     {title}
                 </p>
             </section>
-            <p className="achievement-card-date mt-[5px] text-grayscale-500 text-[12px]">{date}</p>
+            <p className="achievement-card-date mt-[5px] text-grayscale-500 text-[12px] w-full text-center">{date}</p>
             <section className="achievement-card-footer"></section>
         </button>
     );
