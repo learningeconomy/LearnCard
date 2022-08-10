@@ -12,21 +12,26 @@ const LoadingIndicator: React.FC = () => {
     const loading = useIsSnapLoading();
 
     const loadSnap = async () => {
-        const provider: any = await detectEthereumProvider();
-        const isFlask = (await provider?.request({ method: 'web3_clientVersion' }))?.includes(
-            'flask'
-        );
+        try {
+            const provider: any = await detectEthereumProvider();
+            const isFlask = (await provider?.request({ method: 'web3_clientVersion' }))?.includes(
+                'flask'
+            );
 
-        if (!isFlask) return setNeedsFlask(true);
+            if (!isFlask) return setNeedsFlask(true);
 
-        isSnapLoading.set(true);
+            isSnapLoading.set(true);
 
-        await ethereum.request({
-            method: 'wallet_enable',
-            params: [{ wallet_snap: { [snapId]: {} } }],
-        });
+            await ethereum.request({
+                method: 'wallet_enable',
+                params: [{ wallet_snap: { [snapId]: {} } }],
+            });
 
-        isSnapReady.set(true);
+            isSnapReady.set(true);
+        } catch (error) {
+            console.error(error);
+            isSnapLoading.set(false);
+        }
     };
 
     useEffect(() => {
