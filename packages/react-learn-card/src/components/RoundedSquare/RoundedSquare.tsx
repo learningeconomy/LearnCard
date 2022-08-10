@@ -29,7 +29,7 @@ export const RoundedSquare: React.FC<RoundedSquareProps> = ({
                 <h3 className="line-clamp-2 font-bold text-[17px] text-grayscale-900">{title}</h3>
             </div>
 
-            <div className="flex w-full justify-end icon-display absolute right-[20px] bottom-[15px]">
+            <div className="flex w-full justify-end icon-display absolute right-[20px] bottom-[15px] max-h-[50px] max-w-[50px]">
                 <CircleIcon iconSrc={iconSrc} count={count} />
             </div>
         </button>
