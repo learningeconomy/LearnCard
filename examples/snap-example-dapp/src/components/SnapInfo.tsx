@@ -8,6 +8,7 @@ import IssueCredential from '@components/IssueCredential';
 import VerifyCredential from '@components/VerifyCredential';
 import IssuePresentation from '@components/IssuePresentation';
 import VerifyPresentation from '@components/VerifyPresentation';
+import GetCredentialsList from '@components/GetCredentialsList';
 
 import { useIsSnapReady } from '@state/snapState';
 import { modalComponent, useModalStore } from '@state/modal';
@@ -38,6 +39,7 @@ const SnapInfo: React.FC = () => {
                 <Button component={<VerifyCredential />}>Verify Credential</Button>
                 <Button component={<IssuePresentation />}>Issue Presentation</Button>
                 <Button component={<VerifyPresentation />}>Verify Presentation</Button>
+                <Button component={<GetCredentialsList />}>Get Credentials List</Button>
             </header>
 
             <section className="flex-grow border-t overflow-auto">{modal}</section>

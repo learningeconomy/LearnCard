@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { VC } from '@learncard/types';
+import { IDXCredential } from '@learncard/types';
 
 import { useIsSnapReady } from '@state/snapState';
 
 import { sendRequest } from '@helpers/rpc.helpers';
 
 const GetCredentials: React.FC = () => {
-    const [response, setResponse] = useState<VC[]>();
+    const [response, setResponse] = useState<IDXCredential[]>();
     const [loading, setLoading] = useState(false);
 
     const isSnapReady = useIsSnapReady();
@@ -15,9 +15,9 @@ const GetCredentials: React.FC = () => {
         try {
             setLoading(true);
 
-            const credentials = await sendRequest({ method: 'getCredentials' });
+            const credentialsList = await sendRequest({ method: 'getCredentialsList' });
 
-            if (credentials) setResponse(credentials);
+            if (credentialsList) setResponse(credentialsList);
         } catch (error) {
             console.error(error);
         } finally {
@@ -39,7 +39,7 @@ const GetCredentials: React.FC = () => {
                 onClick={getCredentials}
                 disabled={loading}
             >
-                {loading ? 'Getting Credentials...' : 'Get Credentials'}
+                {loading ? 'Getting Credentials List...' : 'Get Credentials List'}
             </button>
 
             {response && (
