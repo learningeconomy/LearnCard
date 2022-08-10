@@ -1,8 +1,9 @@
 import React from 'react';
 
 import Did from '@components/Did';
-import GetCredential from '@components/GetCredential';
 import AddCredential from '@components/AddCredential';
+import GetCredential from '@components/GetCredential';
+import GetCredentials from '@components/GetCredentials';
 import IssueCredential from '@components/IssueCredential';
 import VerifyCredential from '@components/VerifyCredential';
 import IssuePresentation from '@components/IssuePresentation';
@@ -30,8 +31,9 @@ const SnapInfo: React.FC = () => {
         <section className="h-full flex flex-col gap-2">
             <header className="p-4 flex gap-4">
                 <Button component={<Did />}>View Dids</Button>
-                <Button component={<GetCredential />}>Get Credential</Button>
                 <Button component={<AddCredential />}>Add Credential</Button>
+                <Button component={<GetCredential />}>Get Credential</Button>
+                <Button component={<GetCredentials />}>Get Credentials</Button>
                 <Button component={<IssueCredential />}>Issue Credential</Button>
                 <Button component={<VerifyCredential />}>Verify Credential</Button>
                 <Button component={<IssuePresentation />}>Issue Presentation</Button>
