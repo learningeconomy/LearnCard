@@ -43,6 +43,17 @@ export const getEthereumPlugin = (
     };
     let provider = getProvider();
 
+    let defaultTokenList: {
+        chainId: number;
+        address: string;
+        name: string;
+        symbol: string;
+        decimals: number;
+        logoURI: string;
+        extensions: any;
+    }[];
+
+    // Methods
     const checkErc20TokenBalance = async (tokenContractAddress: string) => {
         const erc20Abi = require('./erc20.abi.json');
         const contract = new ethers.Contract(tokenContractAddress, erc20Abi, provider);
@@ -53,9 +64,63 @@ export const getEthereumPlugin = (
         return formattedBalance;
     };
 
+    const getTokenAddressFromSymbol = async (symbol: string) => {
+        if (!defaultTokenList) {
+            defaultTokenList =
+                require('@uniswap/default-token-list/build/uniswap-default.tokenlist.json').tokens;
+        }
+
+        const { chainId: currentChainId } = await provider.getNetwork();
+
+        /* console.log(
+            'defaultTokenList.filter(t => t.chainId === currentChainId):',
+            defaultTokenList.filter(t => t.chainId === currentChainId)
+        ); */
+
+        const token = defaultTokenList.find(
+            token => token.chainId === currentChainId && token.symbol === symbol
+        );
+
+        if (token) {
+            return token.address;
+        } else {
+            return undefined;
+        }
+    };
+
     return {
         pluginMethods: {
             getEthereumAddress: () => publicKey,
+
+            getBalance: async (_wallet, symbolOrAddress = 'ETH') => {
+                if (!symbolOrAddress || symbolOrAddress === 'ETH') {
+                    // assume we're checking ETH
+                    const balance = await provider.getBalance(publicKey);
+                    const formattedBalance = ethers.utils.formatEther(balance);
+
+                    return formattedBalance;
+                }
+
+                let tokenAddress;
+                // TODO turn this if into a helper
+                if (symbolOrAddress.startsWith('0x') && symbolOrAddress.length === 42) {
+                    tokenAddress = symbolOrAddress;
+                } else {
+                    // Check known addresses for symbol
+                    tokenAddress = await getTokenAddressFromSymbol(symbolOrAddress);
+
+                    if (!tokenAddress) {
+                        throw new Error(
+                            `Unable to determine token address for \"${symbolOrAddress}\"`
+                        );
+                    }
+                }
+
+                const balance = await checkErc20TokenBalance(tokenAddress);
+
+                return balance;
+            },
+            // getBalanceForAddress: async (_wallet, symbolOrAddress) => {},
 
             checkMyEth: async () => {
                 const balance = await provider.getBalance(publicKey);
@@ -69,7 +134,18 @@ export const getEthereumPlugin = (
                 return daiBalance;
             },
             checkMyUsdc: async () => {
-                const usdcAddress = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';
+                let usdcAddress;
+                switch (network) {
+                    case 'mainnet':
+                        usdcAddress = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';
+                        break;
+                    case 'goerli':
+                        usdcAddress = '0x07865c6e87b9f70255377e024ace6630c1eaa37f';
+                        break;
+                    default:
+                        throw new Error(`USDC Contract address unkown for network: ${network}`);
+                }
+
                 const usdcBalance = await checkErc20TokenBalance(usdcAddress);
                 return usdcBalance;
             },
@@ -116,7 +192,9 @@ export const getEthereumPlugin = (
                 provider = getProvider();
             },
             test: async () => {
-                const eipDid = initWallet.pluginMethods.getSubjectDid('pkh:eip155');
+                console.log(test);
+
+                /* const eipDid = initWallet.pluginMethods.getSubjectDid('pkh:eip155');
                 const secpKeypair = initWallet.pluginMethods.getSubjectKeypair('secp256k1');
 
                 // attempt to construct public key from secp keypair
@@ -126,7 +204,7 @@ export const getEthereumPlugin = (
 
                 console.log('🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆');
                 console.log('eipDid:', eipDid);
-                console.log('test:', test);
+                console.log('test:', test); */
 
                 /* console.log('🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆 test');
 

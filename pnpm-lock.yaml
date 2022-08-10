@@ -160,6 +160,7 @@ importers:
       '@learncard/types': workspace:*
       '@types/jest': ^27.5.0
       '@types/node': ^17.0.31
+      '@uniswap/default-token-list': ^4.1.0
       abort-controller: ^3.0.0
       aqu: 0.3.2
       cross-fetch: ^3.1.5
@@ -185,6 +186,7 @@ importers:
       '@ceramicnetwork/streamid': 2.2.0
       '@glazed/did-datastore': 0.3.2
       '@glazed/tile-loader': 0.2.1
+      '@uniswap/default-token-list': 4.1.0
       abort-controller: 3.0.0
       cross-fetch: 3.1.5
       date-fns: 2.28.0
@@ -6938,6 +6940,10 @@ packages:
       invariant: 2.2.4
     dev: false
     optional: true
+
+  /@uniswap/default-token-list/4.1.0:
+    resolution: {integrity: sha512-NxFW4OhYpnAunD37CKDRadG5ujp3r6cYnfBzTD1Eq4jwdr3ULt01xGqGljq0SuGAGhTsD+bmR46vPg3TdDwW0g==}
+    dev: false
 
   /@webassemblyjs/ast/1.11.1:
     resolution: {integrity: sha512-ukBh14qFLjxTQNTXocdyksN5QdM28S1CxHt2rdskFyL+xFV7VremuBLVbmCePj+URalXBENx/9Lm7lnhihtCSw==}

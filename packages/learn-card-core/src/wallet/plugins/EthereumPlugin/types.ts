@@ -2,6 +2,7 @@ import { providers } from 'ethers';
 
 export type EthereumPluginMethods = {
     getEthereumAddress: () => string; // TODO is there a way for this to just be a property?
+    getBalance: (symbolOrAddress?: string) => Promise<string>;
     checkMyEth: () => Promise<string>;
     checkMyDai: () => Promise<string>;
     checkMyUsdc: () => Promise<string>;

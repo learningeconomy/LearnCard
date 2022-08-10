@@ -89,6 +89,12 @@ export type LearnCardWallet = {
     getEthereumAddress: () => string;
 
     /**
+     * Get the balance of an ERC20 token
+     *   Defaults to ETH if symbolOrAddress is not provided
+     */
+    getBalance: (symbolOrAddress?: string) => Promise<string>;
+
+    /**
      * Returns your ETH balance
      */
     checkMyEth: () => Promise<string>;
