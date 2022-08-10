@@ -47,7 +47,7 @@ export type LearnCardWallet = {
      */
     verifyCredential: (credential: VC) => Promise<VerificationItem[]>;
 
-    /** Creates a signed Verifiable Presentation from a signed Verifiable Credential */
+    /** Signs an unsigned Verifiable Presentation, returning the signed VP */
     issuePresentation: (presentation: UnsignedVP) => Promise<VP>;
     /**
      * Verifies a signed Verifiable Presentation
