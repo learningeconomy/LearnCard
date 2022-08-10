@@ -57,7 +57,7 @@ export const GetCredential = getRpcMethod(
 );
 export type GetCredentialTypes = GetRPCMethodType<typeof GetCredential>;
 
-export const GetCredentials = getRpcMethod('getCredentials', {}, z.array(VCValidator));
+export const GetCredentials = getRpcMethod('getCredentials', {}, VCValidator.array());
 export type GetCredentialsTypes = GetRPCMethodType<typeof GetCredentials>;
 
 export const AddCredential = getRpcMethod(
