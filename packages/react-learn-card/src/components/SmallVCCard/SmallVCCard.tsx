@@ -10,7 +10,7 @@ export const SmallVCCard: React.FC<SmallVCCardProps> = ({
     return (
         <button
             onClick={onClick}
-            className={`flex relative $ py-[15px] px-[15px] w-[170px] h-[170px] rounded-[40px] rounded-square-card-container`}
+            className={`flex shadow-[0_0_8px_0px_rgba(0,0,0,0.2)] relative $ py-[15px] px-[15px] w-[160px] h-[209px] rounded-[20px] rounded-square-card-container`}
         >
             <p>{title}</p>
         </button>
