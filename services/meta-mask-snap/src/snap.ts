@@ -14,7 +14,10 @@ const serializeResponse = async <Serializer extends RPCMethod>(
 ) => {
     const serializedResult = await serializer.returnValue.serializer.spa(data);
 
-    if (!serializedResult.success) throw new Error('Internal Error');
+    if (!serializedResult.success) {
+        console.error(serializedResult.error);
+        throw new Error('Internal Error');
+    }
 
     return serializedResult.data;
 };
@@ -107,6 +110,10 @@ const HANDLERS: {
             LearnCardRPCAPI.getCredential,
             (await lcWallet.getCredential(request.title)) ?? null
         );
+    },
+
+    getCredentials: async lcWallet => {
+        return serializeResponse(LearnCardRPCAPI.getCredentials, await lcWallet.getCredentials());
     },
 
     addCredential: async (lcWallet, request) => {
