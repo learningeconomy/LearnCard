@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 3.0.0
+
+### Major Changes
+
+-   [#46](https://github.com/WeLibraryOS/LearnCard/pull/46) [`60e0f5b`](https://github.com/WeLibraryOS/LearnCard/commit/60e0f5b6ddaeb124959e87ac61189b2638c0b32b) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - wallet.issuePresentation now accepts an unsigned VP, and _not_ a VC! To get a test VP, use the newly exposed getTestVp method
+
 ## 2.1.0
 
 ### Minor Changes

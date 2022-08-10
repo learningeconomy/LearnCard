@@ -1,6 +1,12 @@
 import { readFile } from 'fs/promises';
 
-import { UnsignedVCValidator, VC, VCValidator, VPValidator } from '@learncard/types';
+import {
+    UnsignedVCValidator,
+    VC,
+    VCValidator,
+    UnsignedVPValidator,
+    VPValidator,
+} from '@learncard/types';
 
 import { persistenceMocks } from './mocks/persistence';
 
@@ -183,7 +189,7 @@ describe('LearnCard SDK', () => {
             const wallet = await getWallet();
 
             const issuedVc = await wallet.issueCredential(wallet.getTestVc());
-            const issuedVp = await wallet.issuePresentation(issuedVc);
+            const issuedVp = await wallet.issuePresentation(await wallet.getTestVp(issuedVc));
 
             await expect(VPValidator.parseAsync(issuedVp)).resolves.toBeDefined();
         });
@@ -192,7 +198,7 @@ describe('LearnCard SDK', () => {
             const wallet = await getWallet();
 
             const issuedVc = await wallet.issueCredential(wallet.getTestVc());
-            const issuedVp = await wallet.issuePresentation(issuedVc);
+            const issuedVp = await wallet.issuePresentation(await wallet.getTestVp(issuedVc));
             const verificationResult = await wallet.verifyPresentation(issuedVp);
 
             expect(verificationResult.errors).toHaveLength(0);
@@ -360,6 +366,14 @@ describe('LearnCard SDK', () => {
             const testVc = wallet.getTestVc();
 
             await expect(UnsignedVCValidator.parseAsync(testVc)).resolves.toBeDefined();
+        });
+
+        it('should provide a test VP', async () => {
+            const wallet = await getWallet();
+
+            const testVc = await wallet.getTestVp();
+
+            await expect(UnsignedVPValidator.parseAsync(testVc)).resolves.toBeDefined();
         });
     });
 });
