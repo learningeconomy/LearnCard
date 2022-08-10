@@ -116,6 +116,13 @@ const HANDLERS: {
         return serializeResponse(LearnCardRPCAPI.getCredentials, await lcWallet.getCredentials());
     },
 
+    getCredentialsList: async lcWallet => {
+        return serializeResponse(
+            LearnCardRPCAPI.getCredentialsList,
+            await lcWallet.getCredentialsList()
+        );
+    },
+
     addCredential: async (lcWallet, request) => {
         await lcWallet.addCredential({ title: request.title, id: request.id });
 
