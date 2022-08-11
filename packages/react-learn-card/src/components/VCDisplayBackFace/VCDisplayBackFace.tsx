@@ -3,6 +3,7 @@ import { VCDisplayCardProps } from '../../types';
 import { VCVerificationCheckWithText } from '../VCVerificationCheck/VCVerificationCheck';
 import VCVerificationPill from '../VCVerificationPill/VCVerificationPill';
 import FlipArrowRight from '../../assets/images/ArrowArcRight.svg';
+import { getNameFromProfile } from '../../helpers/credential.helpers';
 
 export const VCDisplayBackFace: React.FC<VCDisplayCardProps> = ({
     issuer,
@@ -14,6 +15,7 @@ export const VCDisplayBackFace: React.FC<VCDisplayCardProps> = ({
     const descriptionText = credentialSubject?.achievement?.description;
     const criteriaText = credentialSubject?.achievement?.criteria?.narrative;
     const issuerUrl = typeof issuer === 'object' ? issuer.url : '';
+    const issuerName = getNameFromProfile(issuer ?? '');
 
     return (
         <div
@@ -46,6 +48,15 @@ export const VCDisplayBackFace: React.FC<VCDisplayCardProps> = ({
                         </h6>
                         <p className="line-clamp-4 subpixel-antialiased text-grayscale-600 text-[14px] ">
                             {criteriaText}
+                        </p>
+                    </div>
+
+                    <div className="width-full mt-7">
+                        <h6 className="line-clamp-4 text-grayscale-900 font-bold uppercase text-xs tracking-wider  subpixel-antialiased">
+                            Issuer
+                        </h6>
+                        <p className="line-clamp-1 subpixel-antialiased text-grayscale-600 text-[14px] ">
+                            {issuerName}
                         </p>
                     </div>
 
