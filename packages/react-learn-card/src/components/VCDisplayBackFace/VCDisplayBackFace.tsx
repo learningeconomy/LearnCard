@@ -3,6 +3,7 @@ import { VCDisplayCardProps } from '../../types';
 import { VCVerificationCheckWithText } from '../VCVerificationCheck/VCVerificationCheck';
 import VCVerificationPill from '../VCVerificationPill/VCVerificationPill';
 import FlipArrowRight from '../../assets/images/ArrowArcRight.svg';
+import { getNameFromProfile } from '../../helpers/credential.helpers';
 
 export const VCDisplayBackFace: React.FC<VCDisplayCardProps> = ({
     issuer,
@@ -14,13 +15,14 @@ export const VCDisplayBackFace: React.FC<VCDisplayCardProps> = ({
     const descriptionText = credentialSubject?.achievement?.description;
     const criteriaText = credentialSubject?.achievement?.criteria?.narrative;
     const issuerUrl = typeof issuer === 'object' ? issuer.url : '';
+    const issuerName = getNameFromProfile(issuer ?? '');
 
     return (
         <div
             className={`flex overflow-hidden flex-col items-center justify-between relative max-w-[400px] h-[100%] max-h-[1100px] min-h-[600px] p-7 rounded-3xl shadow-3xl bg-emerald-700 vc-display-card-full-container ${className}`}
         >
             <section className="flex max-h-[150px] items-end bg-white rounded-bl-[50%] rounded-br-[50%] absolute top-0 w-[110%] h-[55%] min-h-[400px]"></section>
-            <section className="flex flex-col items-center justify-center z-10 text-left">
+            <section className="flex flex-col items-center justify-center z-10 text-left credential-details-container max-w-[100%] relative">
                 <section className="flex flex-row items-start justify-start w-full line-clamp-2">
                     <h3
                         className="text-2xl line-clamp-2 tracking-wide leading-snug text-left text-emerald-700"
@@ -30,22 +32,31 @@ export const VCDisplayBackFace: React.FC<VCDisplayCardProps> = ({
                     </h3>
                 </section>
 
-                <section className="flex flex-col mt-2 w-full my-2">
+                <section className="flex flex-col mt-2 w-full my-2 min-h-[200px] credential-details-info">
                     <div className="width-full">
-                        <h6 className="line-clamp-4 text-grayscale-900 font-bold uppercase text-xs tracking-wider subpixel-antialiased">
+                        <h6 className="line-clamp-1 text-grayscale-900 font-bold uppercase text-xs tracking-wider subpixel-antialiased">
                             Description
                         </h6>
-                        <p className="line-clamp-4 subpixel-antialiased text-grayscale-600 ">
+                        <p className="line-clamp-4 subpixel-antialiased text-grayscale-600 text-[14px]">
                             {descriptionText}
                         </p>
                     </div>
 
                     <div className="width-full mt-7">
-                        <h6 className="line-clamp-4 text-grayscale-900 font-bold uppercase text-xs tracking-wider  subpixel-antialiased">
+                        <h6 className="line-clamp-1 text-grayscale-900 font-bold uppercase text-xs tracking-wider  subpixel-antialiased">
                             Criteria
                         </h6>
-                        <p className="line-clamp-4 subpixel-antialiased text-grayscale-600 ">
+                        <p className="line-clamp-4 subpixel-antialiased text-grayscale-600 text-[14px] ">
                             {criteriaText}
+                        </p>
+                    </div>
+
+                    <div className="width-full mt-7 line-clamp-1 overflow-hidden vc-issuer-name-info">
+                        <h6 className="line-clamp-1 text-grayscale-900 font-bold uppercase text-xs tracking-wider subpixel-antialiased">
+                            Issuer
+                        </h6>
+                        <p className="max-w-[344px] line-clamp-1 subpixel-antialiased text-grayscale-600 text-[14px] block overflow-ellipsis break-all">
+                            {issuerName}
                         </p>
                     </div>
 
