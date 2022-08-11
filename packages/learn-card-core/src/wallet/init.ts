@@ -1,14 +1,14 @@
-import { generateWallet } from './base';
-import { getIDXPlugin } from './plugins/idx';
-import { getDidKeyPlugin } from './plugins/didkey';
-import { ExpirationPlugin } from './plugins/expiration';
-import { getVCPlugin } from './plugins/vc';
-import { getEthereumPlugin } from './plugins/EthereumPlugin';
-import { verifyCredential } from './verify';
+import { generateWallet } from '@wallet/base';
+import { getIDXPlugin } from '@wallet/plugins/idx';
+import { getDidKitPlugin } from '@wallet/plugins/didkit';
+import { getDidKeyPlugin } from '@wallet/plugins/didkey';
+import { ExpirationPlugin } from '@wallet/plugins/expiration';
+import { getVCPlugin } from '@wallet/plugins/vc';
+import { getEthereumPlugin } from '@wallet/plugins/EthereumPlugin';
+import { verifyCredential } from '@wallet/verify';
 
-import { LearnCardConfig, LearnCardWallet } from 'types/LearnCard';
-import { defaultCeramicIDXArgs, defaultEthereumArgs } from './defaults';
-import { getDidKitPlugin } from './plugins/didkit';
+import { LearnCardConfig, LearnCard } from 'types/LearnCard';
+import { defaultCeramicIDXArgs, defaultEthereumArgs } from '@wallet/defaults';
 
 /** Generates a LearnCard Wallet from a 64 character seed string */
 export const walletFromKey = async (
@@ -19,7 +19,7 @@ export const walletFromKey = async (
         defaultContents = [],
         ethereumConfig = defaultEthereumArgs,
     }: Partial<LearnCardConfig> = {}
-): Promise<LearnCardWallet> => {
+): Promise<LearnCard> => {
     const didkitWallet = await (
         await generateWallet(defaultContents)
     ).addPlugin(await getDidKitPlugin(didkit));

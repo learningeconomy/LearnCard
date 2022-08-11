@@ -25,12 +25,7 @@ export type LearnCardRawWallet = Wallet<
     DidKeyPluginMethods<DidMethod> & VCPluginMethods & IDXPluginMethods & EthereumPluginMethods
 >;
 
-export type LearnCardWallet = {
-    /** Raw IoE wallet instance. You shouldn't need to drop down to this level! */
-    _wallet: LearnCardRawWallet;
-
-    // DidKey stuff
-
+export type AllLearnCardMethods = {
     /** Wallet holder's did */
     did: (type?: DidMethod) => string;
 
@@ -131,6 +126,13 @@ export type LearnCardWallet = {
     checkMyUsdc: () => Promise<string>;
 };
 
+export type LearnCard<
+    Methods extends keyof AllLearnCardMethods = keyof AllLearnCardMethods,
+    RawWallet extends Wallet<any, any> = LearnCardRawWallet
+> = {
+    /** Raw IoE wallet instance. You shouldn't need to drop down to this level! */
+    _wallet: RawWallet;
+} & Pick<AllLearnCardMethods, Methods>;
 export type CeramicIDXArgs = {
     modelData: ModelAliases;
     credentialAlias: string;
