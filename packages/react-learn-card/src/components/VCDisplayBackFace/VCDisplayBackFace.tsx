@@ -30,7 +30,7 @@ export const VCDisplayBackFace: React.FC<VCDisplayCardProps> = ({
                     </h3>
                 </section>
 
-                <section className="flex flex-col mt-2 w-full my-2">
+                <section className="flex flex-col mt-2 w-full my-2 min-h-[200px] credential-details-info">
                     <div className="width-full">
                         <h6 className="line-clamp-4 text-grayscale-900 font-bold uppercase text-xs tracking-wider subpixel-antialiased">
                             Description
