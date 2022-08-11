@@ -26,7 +26,7 @@ const VCDisplayFrontFace: React.FC<VCDisplayCardProps> = ({
             className={`flex overflow-hidden flex-col items-center justify-between relative max-w-[400px] h-[100%] max-h-[600px] min-h-[600px] p-7 rounded-3xl shadow-3xl bg-emerald-700 vc-display-card-full-container ${className}`}
         >
             <section className="bg-white rounded-bl-[50%] rounded-br-[50%] absolute top-0 w-[110%] h-[77%]"></section>
-            <section className="flex flex-col items-center justify-center z-10 text-center">
+            <section className="flex flex-col items-center justify-center z-10 text-center credential-thumb-img">
                 <section className="max-w-[100px] max-h-[100px]">
                     <img
                         className="h-full w-full object-cover"

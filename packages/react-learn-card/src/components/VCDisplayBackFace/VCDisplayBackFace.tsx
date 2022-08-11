@@ -35,7 +35,7 @@ export const VCDisplayBackFace: React.FC<VCDisplayCardProps> = ({
                         <h6 className="line-clamp-4 text-grayscale-900 font-bold uppercase text-xs tracking-wider subpixel-antialiased">
                             Description
                         </h6>
-                        <p className="line-clamp-4 subpixel-antialiased text-grayscale-600 ">
+                        <p className="line-clamp-4 subpixel-antialiased text-grayscale-600 text-[14px]">
                             {descriptionText}
                         </p>
                     </div>
@@ -44,7 +44,7 @@ export const VCDisplayBackFace: React.FC<VCDisplayCardProps> = ({
                         <h6 className="line-clamp-4 text-grayscale-900 font-bold uppercase text-xs tracking-wider  subpixel-antialiased">
                             Criteria
                         </h6>
-                        <p className="line-clamp-4 subpixel-antialiased text-grayscale-600 ">
+                        <p className="line-clamp-4 subpixel-antialiased text-grayscale-600 text-[14px] ">
                             {criteriaText}
                         </p>
                     </div>
