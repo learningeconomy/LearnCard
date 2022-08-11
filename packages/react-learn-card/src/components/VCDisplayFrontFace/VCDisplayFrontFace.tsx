@@ -46,7 +46,7 @@ const VCDisplayFrontFace: React.FC<VCDisplayCardProps> = ({
                     </div>
                 </section>
 
-                <section className="flex flex-row items-center justify-center mt-2 w-full my-2">
+                <section className="flex flex-row items-center justify-center mt-2 w-full my-2 vc-card-issuer-thumbs">
                     <div className="flex items-center justify-center h-16 w-16 shadow-3xl rounded-full overflow-hidden bg-white">
                         <div className="flex flex-row items-center justify-center rounded-full overflow-hidden bg-white w-10/12 h-5/6">
                             <img
@@ -68,7 +68,7 @@ const VCDisplayFrontFace: React.FC<VCDisplayCardProps> = ({
                     </div>
                 </section>
 
-                <div className="w-full mt-2">
+                <div className="w-full mt-2 vc-card-issued-to-info">
                     <p
                         className="text-sm font-light text-center line-clamp-2"
                         data-testid="vc-thumbnail-createdAt"
