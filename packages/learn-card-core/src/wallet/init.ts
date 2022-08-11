@@ -7,8 +7,24 @@ import { getVCPlugin } from '@wallet/plugins/vc';
 import { getEthereumPlugin } from '@wallet/plugins/EthereumPlugin';
 import { verifyCredential } from '@wallet/verify';
 
-import { LearnCardConfig, LearnCard } from 'types/LearnCard';
+import { LearnCardConfig, LearnCard, EmptyLearnCard } from 'types/LearnCard';
 import { defaultCeramicIDXArgs, defaultEthereumArgs } from '@wallet/defaults';
+
+/** Generates an empty wallet with no key material */
+export const emptyWallet = async ({
+    didkit,
+}: Partial<Pick<LearnCardConfig, 'didkit'>> = {}): Promise<EmptyLearnCard> => {
+    const didkitWallet = await (await generateWallet()).addPlugin(await getDidKitPlugin(didkit));
+
+    const wallet = await didkitWallet.addPlugin(ExpirationPlugin(didkitWallet));
+
+    return {
+        _wallet: wallet,
+
+        verifyCredential: verifyCredential(wallet),
+        verifyPresentation: wallet.pluginMethods.verifyPresentation,
+    };
+};
 
 /** Generates a LearnCard Wallet from a 64 character seed string */
 export const walletFromKey = async (

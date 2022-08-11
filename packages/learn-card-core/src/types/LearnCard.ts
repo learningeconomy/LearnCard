@@ -12,7 +12,8 @@ import { DidMethod } from '@wallet/plugins/didkit/types';
 import { Algorithm, DidKeyPluginMethods } from '@wallet/plugins/didkey/types';
 import { EthereumPluginMethods } from '@wallet/plugins/EthereumPlugin/types';
 import { IDXCredential, IDXPluginMethods } from '@wallet/plugins/idx/types';
-import { VCPluginMethods } from '@wallet/plugins/vc/types';
+import { VCPluginMethods, VerifyExtension } from '@wallet/plugins/vc/types';
+import { DidkitPluginMethods } from '@wallet/plugins/didkit/types';
 import { EthereumConfig } from '@wallet/plugins/EthereumPlugin/types';
 import { InitInput } from '@didkit/index';
 
@@ -133,6 +134,12 @@ export type LearnCard<
     /** Raw IoE wallet instance. You shouldn't need to drop down to this level! */
     _wallet: RawWallet;
 } & Pick<AllLearnCardMethods, Methods>;
+
+export type EmptyLearnCard = LearnCard<
+    'verifyCredential' | 'verifyPresentation',
+    Wallet<'DIDKit' | 'Expiration', DidkitPluginMethods & VerifyExtension>
+>;
+
 export type CeramicIDXArgs = {
     modelData: ModelAliases;
     credentialAlias: string;
