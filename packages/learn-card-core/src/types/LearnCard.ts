@@ -101,9 +101,13 @@ export type LearnCardWallet = {
     getBalanceForAddress: (walletAddress: string, symbolOrAddress?: string) => Promise<string>;
 
     /**
-     * Transfer ETH to an the specified address
+     * Transfer tokens to a given address
      */
-    transferEth: (amountInEth: number, toAddress: string) => Promise<string>;
+    transferTokens: (
+        tokenSymbolOrAddress: string,
+        amount: number,
+        toAddress: string
+    ) => Promise<string>;
 
     /**
      * Get your current Ethereum network

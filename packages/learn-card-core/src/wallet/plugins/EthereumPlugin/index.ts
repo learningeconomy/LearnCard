@@ -3,9 +3,12 @@ import { ethers } from 'ethers';
 
 import { EthereumConfig, EthereumPluginMethods } from './types';
 import { isAddress } from './helpers';
+import hardcodedTokens from './hardcodedTokens';
 
 import { DidMethod } from '@wallet/plugins/didkit/types';
 import { Algorithm } from '@wallet/plugins/didkey/types'; // Have to include this in order for getSubjectKeypair to not throw a type error
+
+const ERC20ABI = require('./erc20.abi.json');
 
 export const getEthereumPlugin = (
     initWallet: Wallet<
@@ -84,24 +87,66 @@ export const getEthereumPlugin = (
         return balance;
     };
 
+    /* From Ethereum-compatible numbers to human-readable numbers  */
+    const formatUnits = async (units: ethers.BigNumberish, symbolOrAddress: string) => {
+        const token = await getTokenFromSymbolOrAddress(symbolOrAddress);
+
+        return ethers.utils.formatUnits(units, token?.decimals);
+    };
+
+    /* From human-readable numbers to Ethereum-compatible numbers */
+    const parseUnits = async (units: string, symbolOrAddress: string) => {
+        const token = await getTokenFromSymbolOrAddress(symbolOrAddress);
+
+        return ethers.utils.parseUnits(units, token?.decimals);
+    };
+
     const checkErc20TokenBalance = async (
         tokenContractAddress: string,
         walletPublicAddress = publicKey
     ) => {
-        const erc20Abi = require('./erc20.abi.json');
-        const contract = new ethers.Contract(tokenContractAddress, erc20Abi, provider);
+        const contract = new ethers.Contract(tokenContractAddress, ERC20ABI, provider);
 
         const balance = await contract.balanceOf(walletPublicAddress);
-        const formattedBalance = ethers.utils.formatUnits(balance);
+        const formattedBalance = formatUnits(balance, tokenContractAddress);
 
         return formattedBalance;
     };
 
-    const getTokenAddressFromSymbol = async (symbol: string) => {
+    const getDefaultTokenList = () => {
         if (!defaultTokenList) {
             defaultTokenList =
-                require('@uniswap/default-token-list/build/uniswap-default.tokenlist.json').tokens;
+                require('@uniswap/default-token-list/build/uniswap-default.tokenlist.json').tokens.concat(
+                    hardcodedTokens
+                );
         }
+        return defaultTokenList;
+    };
+
+    const getTokenFromSymbolOrAddress = async (symbolOrAddress: string) => {
+        let token;
+        if (isAddress(symbolOrAddress)) {
+            token = await getTokenFromAddress(symbolOrAddress);
+        } else {
+            token = await getTokenFromSymbol(symbolOrAddress);
+        }
+        return token;
+    };
+
+    const getTokenFromAddress = async (address: string) => {
+        getDefaultTokenList();
+
+        const { chainId: currentChainId } = await provider.getNetwork();
+
+        const token = defaultTokenList.find(
+            token => token.chainId === currentChainId && token.address === address
+        );
+
+        return token;
+    };
+
+    const getTokenFromSymbol = async (symbol: string) => {
+        getDefaultTokenList();
 
         const { chainId: currentChainId } = await provider.getNetwork();
 
@@ -109,11 +154,11 @@ export const getEthereumPlugin = (
             token => token.chainId === currentChainId && token.symbol === symbol
         );
 
-        if (token) {
-            return token.address;
-        } else {
-            return undefined;
-        }
+        return token;
+    };
+
+    const getTokenAddressFromSymbol = async (symbol: string) => {
+        return (await getTokenFromSymbol(symbol))?.address;
     };
 
     return {
@@ -124,17 +169,45 @@ export const getEthereumPlugin = (
                 getBalance(publicKey, symbolOrAddress),
             getBalanceForAddress: async (_wallet, walletAddress, symbolOrAddress) =>
                 getBalance(walletAddress, symbolOrAddress),
-            transferEth: async (_wallet, amountInEther, toAddress) => {
-                const transaction = {
-                    to: toAddress,
 
-                    // Convert ETH to wei
-                    value: ethers.utils.parseEther(amountInEther.toString()),
-                };
+            transferTokens: async (_wallet, tokenSymbolOrAddress, amount, toAddress) => {
+                if (tokenSymbolOrAddress === 'ETH') {
+                    const transaction = {
+                        to: toAddress,
 
-                return await ethersWallet
-                    .sendTransaction(transaction)
-                    .then(transactionObject => transactionObject.hash);
+                        // Convert ETH to wei
+                        value: ethers.utils.parseEther(amount.toString()),
+                    };
+
+                    return await ethersWallet
+                        .sendTransaction(transaction)
+                        .then(transactionObject => transactionObject.hash);
+                }
+
+                let tokenAddress;
+                if (isAddress(tokenSymbolOrAddress)) {
+                    tokenAddress = tokenSymbolOrAddress;
+                } else {
+                    // Check known addresses for symbol
+                    tokenAddress = await getTokenAddressFromSymbol(tokenSymbolOrAddress);
+
+                    if (!tokenAddress) {
+                        throw new Error(
+                            `Unable to determine token address for \"${tokenSymbolOrAddress}\"`
+                        );
+                    }
+                }
+
+                const tokenContract = new ethers.Contract(tokenAddress, ERC20ABI, ethersWallet);
+
+                // const gas = ethers.utils.formatUnits(await provider.getGasPrice());
+
+                await tokenContract.transfer(
+                    toAddress,
+                    await parseUnits(amount.toString(), tokenContract.address)
+                );
+
+                return '...'; // TODO what should be returned here? nothing? transaction hash?
             },
 
             /* Configuration-type methods */

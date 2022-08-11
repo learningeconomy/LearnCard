@@ -4,7 +4,11 @@ export type EthereumPluginMethods = {
     getEthereumAddress: () => string; // TODO is there a way for this to just be a property?
     getBalance: (symbolOrAddress?: string) => Promise<string>;
     getBalanceForAddress: (walletAddress: string, symbolOrAddress?: string) => Promise<string>;
-    transferEth: (amountInEther: number, toAddress: string) => Promise<string>;
+    transferTokens: (
+        tokenSymbolOrAddress: string,
+        amount: number,
+        toAddress: string
+    ) => Promise<string>;
     getCurrentEthereumNetwork: () => providers.Networkish;
     changeEthereumNetwork: (network: providers.Networkish) => void;
     addInfuraProjectId: (infuraProjectIdToAdd: string) => void;
