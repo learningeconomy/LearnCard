@@ -112,12 +112,12 @@ export type LearnCardWallet = {
     /**
      * Get your current Ethereum network
      */
-    getCurrentEthereumNetwork: () => ethers.providers.Networkish;
+    getCurrentNetwork: () => ethers.providers.Networkish;
 
     /**
      * Change your Ethereum network
      */
-    changeEthereumNetwork: (network: ethers.providers.Networkish) => void;
+    changeNetwork: (network: ethers.providers.Networkish) => void;
 
     /**
      * Add an infura project id to an existing wallet.

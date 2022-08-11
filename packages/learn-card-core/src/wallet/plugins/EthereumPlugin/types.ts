@@ -9,8 +9,8 @@ export type EthereumPluginMethods = {
         amount: number,
         toAddress: string
     ) => Promise<string>;
-    getCurrentEthereumNetwork: () => providers.Networkish;
-    changeEthereumNetwork: (network: providers.Networkish) => void;
+    getCurrentNetwork: () => providers.Networkish;
+    changeNetwork: (network: providers.Networkish) => void;
     addInfuraProjectId: (infuraProjectIdToAdd: string) => void;
     test: () => void;
 };

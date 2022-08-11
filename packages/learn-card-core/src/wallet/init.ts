@@ -63,8 +63,8 @@ export const walletFromKey = async (
         getBalance: wallet.pluginMethods.getBalance,
         getBalanceForAddress: wallet.pluginMethods.getBalanceForAddress,
         transferTokens: wallet.pluginMethods.transferTokens,
-        getCurrentEthereumNetwork: wallet.pluginMethods.getCurrentEthereumNetwork,
-        changeEthereumNetwork: wallet.pluginMethods.changeEthereumNetwork,
+        getCurrentNetwork: wallet.pluginMethods.getCurrentNetwork,
+        changeNetwork: wallet.pluginMethods.changeNetwork,
         addInfuraProjectId: wallet.pluginMethods.addInfuraProjectId,
         test: wallet.pluginMethods.test,
     };

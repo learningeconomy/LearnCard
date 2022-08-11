@@ -211,10 +211,10 @@ export const getEthereumPlugin = (
             },
 
             /* Configuration-type methods */
-            getCurrentEthereumNetwork: () => {
+            getCurrentNetwork: () => {
                 return network;
             },
-            changeEthereumNetwork: (_wallet, _network: ethers.providers.Networkish) => {
+            changeNetwork: (_wallet, _network: ethers.providers.Networkish) => {
                 const oldNetwork = network;
                 try {
                     network = _network;
