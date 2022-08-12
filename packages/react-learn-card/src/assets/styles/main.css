@@ -66,8 +66,8 @@
     position: absolute;
     height: 100%;
     width: 100%;
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
+   transform:  scaleX(-1) translateZ(-1px);
+  
     transform-style: preserve-3d;
     -webkit-transform-style: preserve-3d;
 }
@@ -78,7 +78,7 @@
 
 .card-face--back {
     position: relative;
-    transform: rotateY(180deg);
+    transform: rotateY(180deg) scaleX(-1) translateZ(-1px);;
 }
 
 .mini-vc-thumbnail-container {
