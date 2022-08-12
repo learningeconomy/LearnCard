@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.3.17
+
+### Patch Changes
+
+-   [#55](https://github.com/WeLibraryOS/LearnCard/pull/55) [`833c348`](https://github.com/WeLibraryOS/LearnCard/commit/833c3488b28c74c865545e09d9030aed79a15d8f) Thanks [@goblincore](https://github.com/goblincore)! - Fix Safari flipipy card animation glitch
+
 ## 2.3.16
 
 ### Patch Changes
