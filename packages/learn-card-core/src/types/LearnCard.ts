@@ -13,7 +13,8 @@ import { DidMethod } from '@wallet/plugins/didkit/types';
 import { Algorithm, DidKeyPluginMethods } from '@wallet/plugins/didkey/types';
 import { EthereumPluginMethods } from '@wallet/plugins/EthereumPlugin/types';
 import { IDXPluginMethods } from '@wallet/plugins/idx/types';
-import { VCPluginMethods } from '@wallet/plugins/vc/types';
+import { VCPluginMethods, VerifyExtension } from '@wallet/plugins/vc/types';
+import { DidkitPluginMethods } from '@wallet/plugins/didkit/types';
 import { EthereumConfig } from '@wallet/plugins/EthereumPlugin/types';
 import { InitInput } from '@didkit/index';
 
@@ -26,12 +27,7 @@ export type LearnCardRawWallet = Wallet<
     DidKeyPluginMethods<DidMethod> & VCPluginMethods & IDXPluginMethods & EthereumPluginMethods
 >;
 
-export type LearnCardWallet = {
-    /** Raw IoE wallet instance. You shouldn't need to drop down to this level! */
-    _wallet: LearnCardRawWallet;
-
-    // DidKey stuff
-
+export type AllLearnCardMethods = {
     /** Wallet holder's did */
     did: (type?: DidMethod) => string;
 
@@ -131,6 +127,19 @@ export type LearnCardWallet = {
      */
     checkMyUsdc: () => Promise<string>;
 };
+
+export type LearnCard<
+    Methods extends keyof AllLearnCardMethods = keyof AllLearnCardMethods,
+    RawWallet extends Wallet<any, any> = LearnCardRawWallet
+> = {
+    /** Raw IoE wallet instance. You shouldn't need to drop down to this level! */
+    _wallet: RawWallet;
+} & Pick<AllLearnCardMethods, Methods>;
+
+export type EmptyLearnCard = LearnCard<
+    'verifyCredential' | 'verifyPresentation',
+    Wallet<'DIDKit' | 'Expiration', DidkitPluginMethods & VerifyExtension>
+>;
 
 export type CeramicIDXArgs = {
     modelData: ModelAliases;

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { walletFromKey } from '@learncard/core';
+import { emptyWallet } from '@learncard/core';
 import { VC, Profile, VerificationItem } from '@learncard/types';
 
 import { VCDisplayCard } from '../VCDisplayCard';
@@ -16,14 +16,14 @@ export const VCCard: React.FC<VCCardProps> = ({ credential, issueeOverride, clas
 
     useEffect(() => {
         const verify = async () => {
-            const wallet = await walletFromKey('a'.repeat(64));
+            const wallet = await emptyWallet();
             const verification = await wallet.verifyCredential(credential);
             setVCVerification(verification);
             setLoading(false);
         };
 
         verify();
-    }, []);
+    }, [credential]);
 
     return (
         <VCDisplayCard
