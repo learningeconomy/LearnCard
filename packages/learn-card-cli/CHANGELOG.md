@@ -1,5 +1,14 @@
 # @learncard/cli
 
+## 1.1.7
+
+### Patch Changes
+
+-   [#53](https://github.com/WeLibraryOS/LearnCard/pull/53) [`7d40878`](https://github.com/WeLibraryOS/LearnCard/commit/7d40878f7f15d80b03701bdec859f2e7135559dd) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add emptyWallet function to CLI
+
+-   Updated dependencies [[`7d40878`](https://github.com/WeLibraryOS/LearnCard/commit/7d40878f7f15d80b03701bdec859f2e7135559dd), [`7d40878`](https://github.com/WeLibraryOS/LearnCard/commit/7d40878f7f15d80b03701bdec859f2e7135559dd)]:
+    -   @learncard/core@4.0.0
+
 ## 1.1.6
 
 ### Patch Changes
