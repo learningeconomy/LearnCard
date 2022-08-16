@@ -19,12 +19,12 @@
     "preview": "astro preview"
   },
   "devDependencies": {
-    "@astrojs/react": "^0.4.2",
-    "@astrojs/tailwind": "^0.2.5",
+    "@astrojs/react": "^1.0.0",
+    "@astrojs/tailwind": "^1.0.0",
     "@learncard/types": "workspace:*",
     "@metamask/providers": "^9.0.0",
     "@types/react": "^17.0.2",
-    "astro": "1.0.0-rc.6",
+    "astro": "1.0.6",
     "concurrently": "^7.3.0",
     "prettier-plugin-astro": "^0.1.2",
     "react": "^18.0.0",

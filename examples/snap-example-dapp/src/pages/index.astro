@@ -14,7 +14,7 @@ import '@learncard/react/dist/main.css';
                 <img src={LearnCard} alt="Learn Card" />
             </header>
             <section class="p-4 flex-grow overflow-auto border-y">
-                <LoadingIndicator client:only />
+                <LoadingIndicator client:only="react" />
                 <SnapInfo client:idle />
             </section>
         </section>
