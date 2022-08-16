@@ -8,7 +8,13 @@ import { CeramicClient } from '@ceramicnetwork/http-client';
 import { CreateOpts } from '@ceramicnetwork/common';
 import { TileDocument, TileMetadataArgs } from '@ceramicnetwork/stream-tile';
 
-import { IDXCredential, CredentialsList, IDXPluginMethods, StorageType } from './types';
+import {
+    IDXCredential,
+    CredentialsList,
+    IDXPluginMethods,
+    StorageType,
+    CredentialsListValidator,
+} from './types';
 import { Plugin, Wallet } from 'types/wallet';
 import { CeramicIDXArgs } from 'types/LearnCard';
 
@@ -46,7 +52,17 @@ export const getIDXPlugin = async (
     const dataStore = new DIDDataStore({ ceramic, model: modelData });
 
     const getCredentialsListFromIdx = async (alias = credentialAlias): Promise<CredentialsList> => {
-        return (await dataStore.get(alias)) || { credentials: [] };
+        const list = await dataStore.get(alias);
+
+        if (!list) return { credentials: [] };
+
+        const validationResult = await CredentialsListValidator.spa(list);
+
+        if (validationResult.success) return validationResult.data;
+
+        console.error(validationResult.error);
+
+        throw new Error('Invalid credentials list stored in IDX');
     };
 
     const addCredentialStreamIdToIdx = async (record: IDXCredential, alias?: string) => {

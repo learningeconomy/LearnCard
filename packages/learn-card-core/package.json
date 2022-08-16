@@ -58,7 +58,8 @@
     "isomorphic-fetch": "^3.0.0",
     "isomorphic-webcrypto": "^2.3.8",
     "key-did-provider-ed25519": "^2.0.0",
-    "key-did-resolver": "1.4.4"
+    "key-did-resolver": "1.4.4",
+    "zod": "^3.17.3"
   },
   "pnpm": {
     "overrides": {
