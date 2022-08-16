@@ -22,7 +22,7 @@
     "prepare": "pnpm build",
     "manifest": "mm-snap manifest --fix",
     "eval": "mm-snap eval -b dist/snap.js",
-    "serve": "mm-snap serve",
+    "serve": "serve -Cl 3002",
     "dev": "pnpm build && pnpm manifest && pnpm eval && pnpm serve",
     "test": "echo 'TODO'"
   },
@@ -42,6 +42,7 @@
     "rollup-plugin-commonjs": "^10.1.0",
     "rollup-plugin-delete": "^2.0.0",
     "rollup-plugin-esbuild": "^4.9.1",
+    "serve": "^14.0.1",
     "shx": "^0.3.4"
   },
   "engines": {
