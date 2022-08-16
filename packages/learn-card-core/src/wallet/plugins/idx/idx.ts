@@ -16,7 +16,7 @@ import {
     CredentialsListValidator,
 } from './types';
 import { Plugin, Wallet } from 'types/wallet';
-import { CeramicIDXArgs } from 'types/LearnCard';
+import { CeramicIDXArgs, IDXCredentialValidator } from 'types/LearnCard';
 
 const getCeramicClientFromWalletSuite = async (
     wallet: Wallet<any, { getKey: () => string }>,
@@ -69,6 +69,8 @@ export const getIDXPlugin = async (
         if (!record) throw new Error('record is required');
 
         if (!record.id) throw Error('No streamId provided');
+
+        IDXCredentialValidator.parse(record);
 
         // check streamId format
         if (record.id.indexOf('ceramic://') === -1) record.id = 'ceramic://' + record.id;
