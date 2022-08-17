@@ -209,7 +209,7 @@ describe('LearnCard SDK', () => {
     });
 
     describe('Ethereum Plugin', () => {
-        it('Should generate a valid Ethereum address', async () => {
+        it('should generate a valid Ethereum address', async () => {
             const wallet = await getWallet();
 
             // eipDid is something like: "did:pkh:eip155:1:0x8fd379246834eac74B8419FfdA202CF8051F7A03"
@@ -220,5 +220,39 @@ describe('LearnCard SDK', () => {
 
             expect(actualPublicAddress).toEqual(expectedPublicAddress);
         });
+        it("should know what network it's on", async () => {
+            const wallet = await getWallet();
+
+            const defaultNetwork = 'mainnet';
+            expect(wallet.getCurrentNetwork()).toEqual(defaultNetwork);
+        });
+        it('should be able to change networks', async () => {
+            const wallet = await getWallet();
+
+            const defaultNetwork = 'mainnet';
+            expect(wallet.getCurrentNetwork()).toEqual(defaultNetwork);
+
+            const newNetwork = 'goerli';
+            wallet.changeNetwork(newNetwork);
+            expect(wallet.getCurrentNetwork()).toEqual(newNetwork);
+        });
+        it('should support adding an infura project ID', async () => {
+            const wallet = await getWallet();
+
+            // Don't think this can be tested more thoroughly without exposing the provider
+            expect(() => wallet.addInfuraProjectId('1234')).not.toThrowError();
+        });
+        //it('test mocks', async () => {
+        // at top of file...
+        // // Mocks
+        // import { ethers } from 'ethers';
+        // jest.m0ck('ethers'); // won't compile event if this is commented out (when it's spelled correctly)
+
+        //    const wallet = await getWallet();
+
+        //   ethers.getDefaultProvider.mockResolvedValue({ getBalance: x => console.log(x) });
+
+        //  wallet.getBalance();
+        //  });
     });
 });
