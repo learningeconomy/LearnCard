@@ -66,6 +66,5 @@ export const walletFromKey = async (
         getCurrentNetwork: wallet.pluginMethods.getCurrentNetwork,
         changeNetwork: wallet.pluginMethods.changeNetwork,
         addInfuraProjectId: wallet.pluginMethods.addInfuraProjectId,
-        test: wallet.pluginMethods.test,
     };
 };

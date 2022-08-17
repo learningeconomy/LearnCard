@@ -12,7 +12,6 @@ export type EthereumPluginMethods = {
     getCurrentNetwork: () => providers.Networkish;
     changeNetwork: (network: providers.Networkish) => void;
     addInfuraProjectId: (infuraProjectIdToAdd: string) => void;
-    test: () => void;
 };
 
 export type EthereumConfig = {

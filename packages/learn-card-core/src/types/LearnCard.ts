@@ -124,8 +124,6 @@ export type LearnCardWallet = {
      * Really only useful for testing with the CLI right now...
      */
     addInfuraProjectId: (infuraProjectIdToAdd: string) => void;
-
-    test: () => void;
 };
 
 export type CeramicIDXArgs = {

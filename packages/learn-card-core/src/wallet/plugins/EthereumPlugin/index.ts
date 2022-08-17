@@ -229,52 +229,6 @@ export const getEthereumPlugin = (
                 infuraProjectId = infuraProjectIdToAdd;
                 provider = getProvider();
             },
-            test: async () => {
-                console.log(test);
-
-                /* const eipDid = initWallet.pluginMethods.getSubjectDid('pkh:eip155');
-                const secpKeypair = initWallet.pluginMethods.getSubjectKeypair('secp256k1');
-
-                // attempt to construct public key from secp keypair
-                const test = Buffer.from(`${secpKeypair.x}${secpKeypair.y}`, 'base64').toString(
-                    'hex'
-                );
-
-                console.log('🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆');
-                console.log('eipDid:', eipDid);
-                console.log('test:', test); */
-
-                /* console.log('🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆 test');
-
-                console.log('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥');
-                const ethDid = initWallet.pluginMethods.getSubjectDid('ethr');
-                const pkhEthDid = initWallet.pluginMethods.getSubjectDid('pkh:eth');
-                const eipDid = initWallet.pluginMethods.getSubjectDid('pkh:eip155');
-
-                const secpKeypair = initWallet.pluginMethods.getSubjectKeypair('secp256k1');
-
-                console.log('ethDid:', ethDid);
-                console.log('pkhEthDid:', pkhEthDid);
-                console.log('eipDid:', eipDid);
-
-                console.log('secpKeypair:', secpKeypair);
-
-                const maybePrivateKey = Buffer.from(secpKeypair.d, 'base64').toString('hex');
-                console.log('maybePrivateKey:', maybePrivateKey);
-
-                const wallet = new ethers.Wallet(maybePrivateKey, provider);
-
-                console.log('wallet.address :', wallet.address); */
-                /* console.log('🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧');
-                const gasPrice = await provider.getGasPrice();
-
-                console.log('gasPrice:', gasPrice); */
-                // const test = initWallet.pluginMethods.getSubjectDid('ethr');
-                // const test2 = initWallet.pluginMethods.getSubjectDid('pkh:eth');
-                // console.log('test:', test);
-            },
-
-            // ...initWallet.pluginMethods,
         },
     };
 };
