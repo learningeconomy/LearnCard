@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { walletFromKey, LearnCardWallet, DidMethod } from '@learncard/core';
+import { initLearnCard, LearnCard, DidMethod } from '@learncard/core';
 import { OnRpcRequestHandler } from '@metamask/snap-types';
 import { MetaMaskInpageProvider } from '@metamask/providers';
 
@@ -29,7 +29,7 @@ declare global {
 
 const HANDLERS: {
     [Method in LearnCardRPCAPITypes[keyof LearnCardRPCAPITypes]['method']]: (
-        lcWallet: LearnCardWallet,
+        lcWallet: LearnCard,
         request: LearnCardRPCAPITypes[Method]['arguments']['deserializer']
     ) => Promise<LearnCardRPCAPITypes[Method]['returnValue']['serializer']>;
 } = {
@@ -150,7 +150,7 @@ const HANDLERS: {
     },
 };
 
-let memoizedWallet: LearnCardWallet;
+let memoizedWallet: LearnCard;
 
 const getWallet = async () => {
     if (memoizedWallet) return memoizedWallet;
@@ -161,7 +161,8 @@ const getWallet = async () => {
 
     if (!entropy?.privateKey) throw new Error('Could not get wallet entropy');
 
-    const newWallet = await walletFromKey(entropy.privateKey, {
+    const newWallet = await initLearnCard({
+        seed: entropy.privateKey,
         didkit: Uint8Array.from(window.atob(didkit), c => c.charCodeAt(0)),
     });
 
