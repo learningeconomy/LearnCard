@@ -51,7 +51,9 @@ const getTokenFromAddress = async (address: string, tokenList: TokenList, chainI
 };
 
 const getTokenFromSymbol = async (symbol: string, tokenList: TokenList, chainId: number) => {
-    const token = tokenList.find(token => token.chainId === chainId && token.symbol === symbol);
+    const token = tokenList.find(
+        token => token.chainId === chainId && token.symbol.toUpperCase() === symbol.toUpperCase()
+    );
 
     return token;
 };
