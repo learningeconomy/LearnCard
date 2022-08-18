@@ -14,6 +14,18 @@ export const getDidKeyPlugin = async <DidMethod extends string>(
     if (!isHex(key)) throw new Error('Key must be a hexadecimal string!');
     if (key.length > 64) throw new Error('Key must be less than 64 characters');
 
+    if (key.length < 64) {
+        console.warn(
+            'Warning: A wallet has been initialized with a seed that is less than 32 bytes, and will be padded with zeroes'
+        );
+        console.warn(
+            'Please instantiate wallets using 32 bytes that have been randomly generated in a cryptographically secure fashion!'
+        );
+        console.warn(
+            'See https://app.gitbook.com/o/6uDv1QDlxaaZC7i8EaGb/s/FXvEJ9j3Vf3FW5Nc557n/learn-card-packages/learncard-core/instantiation#key-generation for details'
+        );
+    }
+
     const seed = key.padStart(64, '0');
     const seedBytes = toUint8Array(seed);
 
