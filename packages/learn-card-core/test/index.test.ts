@@ -10,19 +10,16 @@ import {
 
 import { persistenceMocks } from './mocks/persistence';
 
-import { walletFromKey } from '../src';
-import { LearnCardWallet } from '../src/types/LearnCard';
+import { initLearnCard } from '../src/wallet/init';
+import { LearnCard } from '../src/types/LearnCard';
 
-let wallets: Record<
-    string,
-    { wallet: LearnCardWallet; persistenceMocks: Partial<LearnCardWallet> }
-> = {};
+let wallets: Record<string, { wallet: LearnCard; persistenceMocks: Partial<LearnCard> }> = {};
 
 const getWallet = async (seed = 'a'.repeat(64), mockPersistence = true) => {
     if (!wallets[seed]) {
         const didkit = readFile(require.resolve('../src/didkit/pkg/didkit_wasm_bg.wasm'));
 
-        const wallet = await walletFromKey(seed, { didkit });
+        const wallet = await initLearnCard({ seed, didkit });
 
         wallets[seed] = { wallet, persistenceMocks: persistenceMocks() };
     }
@@ -37,15 +34,15 @@ describe('LearnCard SDK', () => {
         });
 
         it('should not allow an empty string for a seed', async () => {
-            await expect(walletFromKey('')).rejects.toThrow();
+            await expect(initLearnCard({ seed: '' })).rejects.toThrow();
         });
 
         it('should only allow hex strings for a seed', async () => {
-            await expect(walletFromKey('z'.repeat(64))).rejects.toThrow();
+            await expect(initLearnCard({ seed: 'z'.repeat(64) })).rejects.toThrow();
         });
 
         it('should only allow strings that are 64 characters or less', async () => {
-            await expect(walletFromKey('a'.repeat(65))).rejects.toThrow();
+            await expect(initLearnCard({ seed: 'a'.repeat(65) })).rejects.toThrow();
         });
     });
 
