@@ -155,7 +155,7 @@ export type LearnCardConfig = {
     ethereumConfig: EthereumConfig;
 };
 
-export type EmptyInit = InitFunction<undefined, 'didkit', EmptyLearnCard>;
-export type KeyInit = InitFunction<{ seed: string }, keyof LearnCardConfig, LearnCard>;
+export type EmptyWallet = InitFunction<undefined, 'didkit', EmptyLearnCard>;
+export type WalletFromKey = InitFunction<{ seed: string }, keyof LearnCardConfig, LearnCard>;
 
-export type InitLearnCard = GenericInitFunction<[EmptyInit, KeyInit]>;
+export type InitLearnCard = GenericInitFunction<[EmptyWallet, WalletFromKey]>;

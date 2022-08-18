@@ -1,14 +1,14 @@
 import { emptyWallet } from './initializers/emptyWallet';
 import { walletFromKey } from './initializers/walletFromKey';
 
-import { InitLearnCard, EmptyInit, KeyInit } from 'types/LearnCard';
+import { InitLearnCard, EmptyWallet, WalletFromKey } from 'types/LearnCard';
 
 export * from './initializers/emptyWallet';
 export * from './initializers/walletFromKey';
 
 // Overloads (Unfortunately necessary boilerplate 😢)
-export async function initLearnCard(config?: EmptyInit['args']): Promise<EmptyInit['returnValue']>;
-export async function initLearnCard(config: KeyInit['args']): Promise<KeyInit['returnValue']>;
+export function initLearnCard(config?: EmptyWallet['args']): Promise<EmptyWallet['returnValue']>;
+export function initLearnCard(config: WalletFromKey['args']): Promise<WalletFromKey['returnValue']>;
 
 // Implementation
 export async function initLearnCard(

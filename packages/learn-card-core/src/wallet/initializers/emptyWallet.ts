@@ -3,11 +3,11 @@ import { getDidKitPlugin } from '@wallet/plugins/didkit';
 import { ExpirationPlugin } from '@wallet/plugins/expiration';
 import { verifyCredential } from '@wallet/verify';
 
-import { EmptyInit } from 'types/LearnCard';
+import { EmptyWallet } from 'types/LearnCard';
 
 /** Generates an empty wallet with no key material */
-export const emptyWallet = async ({ didkit }: EmptyInit['args'] = {}): Promise<
-    EmptyInit['returnValue']
+export const emptyWallet = async ({ didkit }: EmptyWallet['args'] = {}): Promise<
+    EmptyWallet['returnValue']
 > => {
     const didkitWallet = await (await generateWallet()).addPlugin(await getDidKitPlugin(didkit));
 
