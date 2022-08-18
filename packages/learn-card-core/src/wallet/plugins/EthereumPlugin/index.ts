@@ -120,9 +120,7 @@ export const getEthereumPlugin = (
                         value: ethers.utils.parseEther(amount.toString()),
                     };
 
-                    return await ethersWallet
-                        .sendTransaction(transaction)
-                        .then(transactionObject => transactionObject.hash);
+                    return (await ethersWallet.sendTransaction(transaction)).hash;
                 }
 
                 const tokenAddress = await getTokenAddress(tokenSymbolOrAddress);
