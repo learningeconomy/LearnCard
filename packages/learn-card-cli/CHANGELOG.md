@@ -1,5 +1,16 @@
 # @learncard/cli
 
+## 1.2.0
+
+### Minor Changes
+
+-   [#60](https://github.com/WeLibraryOS/LearnCard/pull/60) [`100899e`](https://github.com/WeLibraryOS/LearnCard/commit/100899e32db4385758dc1b3559da7b64f705d305) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Expose initLearnCard method
+
+### Patch Changes
+
+-   Updated dependencies [[`100899e`](https://github.com/WeLibraryOS/LearnCard/commit/100899e32db4385758dc1b3559da7b64f705d305)]:
+    -   @learncard/core@4.1.0
+
 ## 1.1.7
 
 ### Patch Changes
