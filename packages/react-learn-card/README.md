@@ -24,7 +24,7 @@ pnpm install @learncard/react
 import React, { useState, useEffect } from "react";
 import '@learncard/react/dist/base.css'; // if not already using tailwind
 import '@learncard/react/dist/main.css';
-import { walletFromKey } from "@learncard/core";
+import { initLearnCard } from "@learncard/core";
 import { VCCard } from "@learncard/react";
 import { VC } from "@learncard/types";
 
@@ -33,7 +33,7 @@ const Test = () => {
     
     useEffect(() => {
         const getVc = async () => {
-            const wallet = await walletFromKey(''); // Bad practice! You should be generating keys...
+            const wallet = await initLearnCard({ seed: '' }); // Bad practice! You should be generating keys...
             const uvc = wallet.getTestVc();
             setVc(await wallet.issueCredential(uvc));
         };
