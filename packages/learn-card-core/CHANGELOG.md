@@ -1,5 +1,25 @@
 # learn-card-core
 
+## 4.1.0
+
+### Minor Changes
+
+-   [#60](https://github.com/WeLibraryOS/LearnCard/pull/60) [`100899e`](https://github.com/WeLibraryOS/LearnCard/commit/100899e32db4385758dc1b3559da7b64f705d305) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add `initLearnCard` instantiation function
+
+    While not strictly a breaking change (`walletFromKey` and `emptyWallet` are still exported and useable
+    directly!), we now heavily advise changing instantiation methods to use `initLearnCard` instead of
+    `walletFromKey` or `emptyWallet` directly!
+
+    ```ts
+    // old way
+    const wallet = await walletFromKey('a');
+    const emptyWallet = await emptyWallet();
+
+    // new way
+    const wallet = await initLearnCard({ seed: 'a' });
+    const emptyWallet = await initLearnCard();
+    ```
+
 ## 4.0.0
 
 ### Major Changes
