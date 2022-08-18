@@ -11,9 +11,7 @@ export type InitFunction<
     returnValue: ReturnValue;
 };
 
-export type InitArgs<InitFunctions extends InitFunction<any, any, any>[]> =
-    InitFunctions[number]['args'];
-
-export type InitReturnValue<InitFunctions extends InitFunction<any, any, any>[]> = Promise<
-    InitFunctions[number]['returnValue']
->;
+export type GenericInitFunction<InitFunctions extends InitFunction<any, any, any>[]> = {
+    args: InitFunctions[number]['args'];
+    returnValue: Promise<InitFunctions[number]['returnValue']>;
+};
