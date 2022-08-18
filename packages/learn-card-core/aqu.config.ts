@@ -18,6 +18,7 @@ const buildOptions: BuildOptions = {
         'isomorphic-fetch',
         'isomorphic-webcrypto',
         'cross-fetch',
+        'ethers',
     ],
 };
 

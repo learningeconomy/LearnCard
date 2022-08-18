@@ -1,7 +1,7 @@
-import { VC, VerificationItem, VerificationStatusEnum } from '@learncard/types';
+import { VC, VerificationCheck, VerificationItem, VerificationStatusEnum } from '@learncard/types';
 import { format } from 'date-fns';
 
-import { LearnCardRawWallet } from 'types/LearnCard';
+import { Wallet } from 'types/wallet';
 
 const transformErrorCheck = (error: string, _credential: VC): string => {
     const prefix = error.split(' error')[0];
@@ -37,7 +37,7 @@ const transformCheckMessage = (check: string, credential: VC): string => {
 };
 
 export const verifyCredential = (
-    wallet: LearnCardRawWallet
+    wallet: Wallet<string, { verifyCredential: (credential: VC) => Promise<VerificationCheck> }>
 ): ((credential: VC) => Promise<VerificationItem[]>) => {
     return async (credential: VC): Promise<VerificationItem[]> => {
         const rawVerificationCheck = await wallet.pluginMethods.verifyCredential(credential);

@@ -1,14 +1,30 @@
-import { generateWallet } from './base';
-import { getIDXPlugin } from './plugins/idx';
-import { getDidKeyPlugin } from './plugins/didkey';
-import { ExpirationPlugin } from './plugins/expiration';
-import { getVCPlugin } from './plugins/vc';
-import { getEthereumPlugin } from './plugins/EthereumPlugin';
-import { verifyCredential } from './verify';
+import { generateWallet } from '@wallet/base';
+import { getIDXPlugin } from '@wallet/plugins/idx';
+import { getDidKitPlugin } from '@wallet/plugins/didkit';
+import { getDidKeyPlugin } from '@wallet/plugins/didkey';
+import { ExpirationPlugin } from '@wallet/plugins/expiration';
+import { getVCPlugin } from '@wallet/plugins/vc';
+import { getEthereumPlugin } from '@wallet/plugins/EthereumPlugin';
+import { verifyCredential } from '@wallet/verify';
 
-import { LearnCardConfig, LearnCardWallet } from 'types/LearnCard';
-import { defaultCeramicIDXArgs, defaultEthereumArgs } from './defaults';
-import { getDidKitPlugin } from './plugins/didkit';
+import { LearnCardConfig, LearnCard, EmptyLearnCard } from 'types/LearnCard';
+import { defaultCeramicIDXArgs, defaultEthereumArgs } from '@wallet/defaults';
+
+/** Generates an empty wallet with no key material */
+export const emptyWallet = async ({
+    didkit,
+}: Partial<Pick<LearnCardConfig, 'didkit'>> = {}): Promise<EmptyLearnCard> => {
+    const didkitWallet = await (await generateWallet()).addPlugin(await getDidKitPlugin(didkit));
+
+    const wallet = await didkitWallet.addPlugin(ExpirationPlugin(didkitWallet));
+
+    return {
+        _wallet: wallet,
+
+        verifyCredential: verifyCredential(wallet),
+        verifyPresentation: wallet.pluginMethods.verifyPresentation,
+    };
+};
 
 /** Generates a LearnCard Wallet from a 64 character seed string */
 export const walletFromKey = async (
@@ -19,7 +35,7 @@ export const walletFromKey = async (
         defaultContents = [],
         ethereumConfig = defaultEthereumArgs,
     }: Partial<LearnCardConfig> = {}
-): Promise<LearnCardWallet> => {
+): Promise<LearnCard> => {
     const didkitWallet = await (
         await generateWallet(defaultContents)
     ).addPlugin(await getDidKitPlugin(didkit));
@@ -48,16 +64,23 @@ export const walletFromKey = async (
         issuePresentation: wallet.pluginMethods.issuePresentation,
         verifyPresentation: wallet.pluginMethods.verifyPresentation,
 
-        getCredential: wallet.pluginMethods.getVerifiableCredentialFromIndex,
-        getCredentials: wallet.pluginMethods.getVerifiableCredentialsFromIndex,
+        getCredential: wallet.pluginMethods.getVerifiableCredentialFromIdx,
+        getCredentials: wallet.pluginMethods.getVerifiableCredentialsFromIdx,
+        getCredentialsList: async () => {
+            return (await wallet.pluginMethods.getCredentialsListFromIdx()).credentials;
+        },
         publishCredential: wallet.pluginMethods.publishContentToCeramic,
         addCredential: async credential => {
             await wallet.pluginMethods.addVerifiableCredentialInIdx(credential);
+        },
+        removeCredential: async title => {
+            await wallet.pluginMethods.removeVerifiableCredentialInIdx(title);
         },
 
         readFromCeramic: wallet.pluginMethods.readContentFromCeramic,
 
         getTestVc: wallet.pluginMethods.getTestVc,
+        getTestVp: wallet.pluginMethods.getTestVp,
 
         checkMyEth: wallet.pluginMethods.checkMyEth,
         checkMyDai: wallet.pluginMethods.checkMyDai,

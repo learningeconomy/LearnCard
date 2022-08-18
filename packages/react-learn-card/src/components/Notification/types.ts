@@ -11,7 +11,6 @@ export type NotificationProps = {
     notificationType: NotificationTypeEnum;
     title: string;
     issuerImage?: string;
-    issuerName: string;
     issueDate: string;
     className?: string;
     onClick: () => void;
@@ -19,11 +18,11 @@ export type NotificationProps = {
 
 export const NotificationTypeStyles = {
     [NotificationTypeEnum.Currency]: {
-        viewButtonStyles: 'border-cyan-400 text-cyan-400',
-        unclaimedButtonStyles: 'text-white bg-cyan-400 border-cyan-400',
-        claimedButtonStyles: 'text-cyan-400 bg-cyan-50 border-cyan-50',
-        textStyles: 'text-cyan-400 capitalize',
-        iconCircleStyles: 'bg-cyan-400',
+        viewButtonStyles: 'border-cyan-600 text-cyan-600',
+        unclaimedButtonStyles: 'text-white bg-cyan-600 border-cyan-600',
+        claimedButtonStyles: 'text-cyan-600 bg-cyan-50 border-cyan-50',
+        textStyles: 'text-cyan-600 capitalize',
+        iconCircleStyles: 'bg-cyan-600',
         IconComponent: Coins,
     },
     [NotificationTypeEnum.ID]: {
