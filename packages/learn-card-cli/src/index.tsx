@@ -1,6 +1,6 @@
 import repl from 'pretty-repl';
 
-import { walletFromKey } from '@learncard/core';
+import { emptyWallet, walletFromKey } from '@learncard/core';
 import gradient from 'gradient-string';
 import figlet from 'figlet';
 import { program } from 'commander';
@@ -11,6 +11,7 @@ import packageJson from '../package.json';
 
 const g = {
     wallet: gradient(['cyan', 'green'])('wallet'),
+    emptyWallet: gradient(['cyan', 'green'])('emptyWallet'),
     walletFromKey: gradient(['cyan', 'green'])('walletFromKey'),
     seed: gradient(['cyan', 'green'])('seed'),
     generateRandomSeed: gradient(['cyan', 'green'])('generateRandomSeed'),
@@ -33,6 +34,7 @@ program
 
         globalThis.seed = seed;
         globalThis.generateRandomSeed = generateRandomSeed;
+        globalThis.emptyWallet = emptyWallet;
         globalThis.walletFromKey = walletFromKey;
         globalThis.wallet = await walletFromKey(seed);
 
@@ -48,6 +50,7 @@ program
         console.log('│      Variable      │           Description         │');
         console.log('├────────────────────┼───────────────────────────────┤');
         console.log(`│             ${g.wallet} │ Learn Card Wallet             │`);
+        console.log(`│        ${g.emptyWallet} │ Wallet Instantiation Function │`);
         console.log(`│      ${g.walletFromKey} │ Wallet Instantiation Function │`);
         console.log(`│               ${g.seed} │ Seed used to generate wallet  │`);
         console.log(`│ ${g.generateRandomSeed} │ Generates a random seed       │`);
@@ -81,6 +84,7 @@ program
         repl.start({
             colorize: (input: string) => {
                 return input
+                    .replace('emptyWallet', g.emptyWallet)
                     .replace('walletFromKey', g.walletFromKey)
                     .replace('wallet', g.wallet)
                     .replace('seed', g.seed)

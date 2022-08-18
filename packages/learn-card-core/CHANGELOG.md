@@ -1,5 +1,53 @@
 # learn-card-core
 
+## 4.0.0
+
+### Major Changes
+
+-   [#53](https://github.com/WeLibraryOS/LearnCard/pull/53) [`7d40878`](https://github.com/WeLibraryOS/LearnCard/commit/7d40878f7f15d80b03701bdec859f2e7135559dd) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - LearnCardWallet -> LearnCard generic type
+
+    To better accomadate different methods of instantiation, the `LearnCardWallet` type has been made
+    generic. Additionally, we have renamed it to just `LearnCard`. `LearnCard` now takes in two (optional)
+    generic parameters: the names of the method it exposes (allowing a slimmer `LearnCard` object to be
+    made that does not expose all functionality), and the wallet type of `_wallet`.
+
+    Migration Steps:
+
+    -   Change any existing reference to `LearnCardWallet` to `LearnCard`
+
+### Patch Changes
+
+-   [#53](https://github.com/WeLibraryOS/LearnCard/pull/53) [`7d40878`](https://github.com/WeLibraryOS/LearnCard/commit/7d40878f7f15d80b03701bdec859f2e7135559dd) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add `emptyWallet` function
+
+    This function allows consumers to instantiate an empty wallet that can only be used for verifying
+    credentials and presentations. This can be very useful if you need to quickly verify a credential,
+    but don't want to provide dummy key material and waste time building an object with functionality
+    you won't be using!
+
+## 3.0.0
+
+### Major Changes
+
+-   [#46](https://github.com/WeLibraryOS/LearnCard/pull/46) [`60e0f5b`](https://github.com/WeLibraryOS/LearnCard/commit/60e0f5b6ddaeb124959e87ac61189b2638c0b32b) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - wallet.issuePresentation now accepts an unsigned VP, and _not_ a VC! To get a test VP, use the newly exposed getTestVp method
+
+## 2.1.0
+
+### Minor Changes
+
+-   [#42](https://github.com/WeLibraryOS/LearnCard/pull/42) [`4c6c11f`](https://github.com/WeLibraryOS/LearnCard/commit/4c6c11f30b81b103017883d7f57bd89e2f7d623e) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Expose removeCredential and getCredentialsList methods
+
+### Patch Changes
+
+-   [`7c09ebf`](https://github.com/WeLibraryOS/LearnCard/commit/7c09ebf0106ec207ac1aa2d7bcf1437d275328d7) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix build issues
+
+## 2.0.1
+
+### Patch Changes
+
+-   [#41](https://github.com/WeLibraryOS/LearnCard/pull/41) [`7adc30e`](https://github.com/WeLibraryOS/LearnCard/commit/7adc30eba700da4c6886a086d48c40b9820dc05a) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Overwrite credentials when adding with the same title
+
+*   [#43](https://github.com/WeLibraryOS/LearnCard/pull/43) [`b07187c`](https://github.com/WeLibraryOS/LearnCard/commit/b07187c4384152ec7f4c5be35a8f2b31a3aff079) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix ethers failing on node 18
+
 ## 2.0.0
 
 ### Major Changes

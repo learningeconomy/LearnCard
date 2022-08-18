@@ -1,21 +1,33 @@
 import { readFile } from 'fs/promises';
 
-import { UnsignedVCValidator, VCValidator, VPValidator } from '@learncard/types';
+import {
+    UnsignedVCValidator,
+    VC,
+    VCValidator,
+    UnsignedVPValidator,
+    VPValidator,
+} from '@learncard/types';
+
+import { persistenceMocks } from './mocks/persistence';
 
 import { walletFromKey } from '../src';
 import { LearnCardWallet } from '../src/types/LearnCard';
 
-let wallets: Record<string, LearnCardWallet> = {};
+let wallets: Record<
+    string,
+    { wallet: LearnCardWallet; persistenceMocks: Partial<LearnCardWallet> }
+> = {};
 
-const getWallet = async (seed = 'a'.repeat(64)) => {
+const getWallet = async (seed = 'a'.repeat(64), mockPersistence = true) => {
     if (!wallets[seed]) {
         const didkit = readFile(require.resolve('../src/didkit/pkg/didkit_wasm_bg.wasm'));
 
         const wallet = await walletFromKey(seed, { didkit });
-        wallets[seed] = wallet;
+
+        wallets[seed] = { wallet, persistenceMocks: persistenceMocks() };
     }
 
-    return wallets[seed];
+    return { ...wallets[seed].wallet, ...(mockPersistence ? wallets[seed].persistenceMocks : {}) };
 };
 
 describe('LearnCard SDK', () => {
@@ -177,7 +189,7 @@ describe('LearnCard SDK', () => {
             const wallet = await getWallet();
 
             const issuedVc = await wallet.issueCredential(wallet.getTestVc());
-            const issuedVp = await wallet.issuePresentation(issuedVc);
+            const issuedVp = await wallet.issuePresentation(await wallet.getTestVp(issuedVc));
 
             await expect(VPValidator.parseAsync(issuedVp)).resolves.toBeDefined();
         });
@@ -186,7 +198,7 @@ describe('LearnCard SDK', () => {
             const wallet = await getWallet();
 
             const issuedVc = await wallet.issueCredential(wallet.getTestVc());
-            const issuedVp = await wallet.issuePresentation(issuedVc);
+            const issuedVp = await wallet.issuePresentation(await wallet.getTestVp(issuedVc));
             const verificationResult = await wallet.verifyPresentation(issuedVp);
 
             expect(verificationResult.errors).toHaveLength(0);
@@ -195,7 +207,156 @@ describe('LearnCard SDK', () => {
     });
 
     describe('Persistence', () => {
-        /* TODO: Need ability to delete credentials before testing persistence! */
+        // Empty out wallet prior to testing
+        beforeEach(async () => {
+            const wallet = await getWallet();
+
+            const credentials = await wallet.getCredentialsList();
+
+            await Promise.all(
+                credentials.map(async credential => {
+                    return wallet.removeCredential(credential.title);
+                })
+            );
+        }, 30000);
+
+        it('should start with an empty wallet', async () => {
+            const wallet = await getWallet();
+
+            const credentials = await wallet.getCredentialsList();
+
+            expect(credentials).toHaveLength(0);
+        });
+
+        it('should be able to publish a credential', async () => {
+            const wallet = await getWallet();
+
+            const uvc = wallet.getTestVc();
+            const vc = await wallet.issueCredential(uvc);
+            const id = await wallet.publishCredential(vc);
+
+            expect(id).toBeTruthy();
+        }, 20000);
+
+        it('should be able to read a published credential', async () => {
+            const wallet = await getWallet();
+
+            const uvc = wallet.getTestVc();
+            const vc = await wallet.issueCredential(uvc);
+            const id = await wallet.publishCredential(vc);
+
+            const readVc = await wallet.readFromCeramic(id);
+
+            expect(readVc).toEqual(vc);
+        }, 20000);
+
+        it('should be able to add a credential', async () => {
+            const wallet = await getWallet();
+
+            const uvc = wallet.getTestVc();
+            const vc = await wallet.issueCredential(uvc);
+            const id = await wallet.publishCredential(vc);
+
+            await wallet.addCredential({ id, title: 'test' });
+
+            const credentials = await wallet.getCredentialsList();
+
+            expect(credentials).toHaveLength(1);
+            expect(credentials).toEqual(
+                expect.arrayContaining([expect.objectContaining({ title: 'test' })])
+            );
+        }, 20000);
+
+        it('should be able to get a credential', async () => {
+            const wallet = await getWallet();
+
+            const uvc = wallet.getTestVc();
+            const vc = await wallet.issueCredential(uvc);
+            const id = await wallet.publishCredential(vc);
+
+            await wallet.addCredential({ id, title: 'test' });
+
+            const credential = await wallet.getCredential('test');
+
+            expect(credential).toEqual(vc);
+        }, 20000);
+
+        it('should be able to list credential ids', async () => {
+            const addNewCredential = async (vc: VC, title: string) => {
+                const id = await wallet.publishCredential(vc);
+
+                await wallet.addCredential({ id, title });
+            };
+
+            const wallet = await getWallet();
+
+            const uvc = wallet.getTestVc();
+            const vc = await wallet.issueCredential(uvc);
+
+            await Promise.all([
+                addNewCredential(vc, 'test'),
+                addNewCredential(vc, 'test2'),
+                addNewCredential(vc, 'test3'),
+            ]);
+
+            const credentialsList = await wallet.getCredentialsList();
+
+            expect(credentialsList).toHaveLength(3);
+            expect(credentialsList).toEqual(
+                expect.arrayContaining([
+                    expect.objectContaining({ title: 'test' }),
+                    expect.objectContaining({ title: 'test2' }),
+                    expect.objectContaining({ title: 'test3' }),
+                ])
+            );
+        }, 20000);
+
+        it('should be able to list credentials', async () => {
+            const addNewCredential = async (vc: VC, title: string) => {
+                const id = await wallet.publishCredential(vc);
+
+                await wallet.addCredential({ id, title });
+            };
+
+            const wallet = await getWallet();
+
+            const uvc = wallet.getTestVc();
+            const vc = await wallet.issueCredential(uvc);
+
+            await Promise.all([
+                addNewCredential(vc, 'test'),
+                addNewCredential(vc, 'test2'),
+                addNewCredential(vc, 'test3'),
+            ]);
+
+            const credentialsList = await wallet.getCredentials();
+
+            expect(credentialsList).toHaveLength(3);
+            expect(credentialsList).toEqual(expect.arrayContaining([vc]));
+        }, 20000);
+
+        it('should be able to remove a credential', async () => {
+            const wallet = await getWallet();
+
+            const uvc = wallet.getTestVc();
+            const vc = await wallet.issueCredential(uvc);
+            const id = await wallet.publishCredential(vc);
+
+            await wallet.addCredential({ id, title: 'test' });
+
+            const credentials = await wallet.getCredentialsList();
+
+            expect(credentials).toHaveLength(1);
+            expect(credentials).toEqual(
+                expect.arrayContaining([expect.objectContaining({ title: 'test' })])
+            );
+
+            await wallet.removeCredential('test');
+
+            const emptyCredentials = await wallet.getCredentialsList();
+
+            expect(emptyCredentials).toHaveLength(0);
+        }, 30000);
     });
 
     describe('Testing', () => {
@@ -205,6 +366,14 @@ describe('LearnCard SDK', () => {
             const testVc = wallet.getTestVc();
 
             await expect(UnsignedVCValidator.parseAsync(testVc)).resolves.toBeDefined();
+        });
+
+        it('should provide a test VP', async () => {
+            const wallet = await getWallet();
+
+            const testVc = await wallet.getTestVp();
+
+            await expect(UnsignedVPValidator.parseAsync(testVc)).resolves.toBeDefined();
         });
     });
 

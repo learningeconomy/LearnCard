@@ -1,5 +1,65 @@
 # @welibraryos/react-learn-card
 
+## 2.3.18
+
+### Patch Changes
+
+-   [#53](https://github.com/WeLibraryOS/LearnCard/pull/53) [`7d40878`](https://github.com/WeLibraryOS/LearnCard/commit/7d40878f7f15d80b03701bdec859f2e7135559dd) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Use `emptyWallet` to instantiate a `LearnCard` in `VCCard`
+
+    Previously, this component was providing dummy key material and instantiating a full-blown `LearnCard`
+    object even though it only made use of verification functionality. Now, it calls `emptyWallet` and
+    instantiates a much smaller `LearnCard` without needing to provide dummy key material
+
+-   Updated dependencies [[`7d40878`](https://github.com/WeLibraryOS/LearnCard/commit/7d40878f7f15d80b03701bdec859f2e7135559dd), [`7d40878`](https://github.com/WeLibraryOS/LearnCard/commit/7d40878f7f15d80b03701bdec859f2e7135559dd)]:
+    -   @learncard/core@4.0.0
+
+## 2.3.17
+
+### Patch Changes
+
+-   [#55](https://github.com/WeLibraryOS/LearnCard/pull/55) [`833c348`](https://github.com/WeLibraryOS/LearnCard/commit/833c3488b28c74c865545e09d9030aed79a15d8f) Thanks [@goblincore](https://github.com/goblincore)! - Fix Safari flipipy card animation glitch
+
+## 2.3.16
+
+### Patch Changes
+
+-   [#52](https://github.com/WeLibraryOS/LearnCard/pull/52) [`045428b`](https://github.com/WeLibraryOS/LearnCard/commit/045428be878dff6ba71c72ecf1205df4708f7fb1) Thanks [@goblincore](https://github.com/goblincore)! - [WE-2277] VC Display Card Update
+
+## 2.3.15
+
+### Patch Changes
+
+-   [#50](https://github.com/WeLibraryOS/LearnCard/pull/50) [`9c857c5`](https://github.com/WeLibraryOS/LearnCard/commit/9c857c5457f3340bf83093e58f4578a62ac745d6) Thanks [@goblincore](https://github.com/goblincore)! - Add basic achievement display card component to react-learncard
+
+## 2.3.14
+
+### Patch Changes
+
+-   Updated dependencies [[`60e0f5b`](https://github.com/WeLibraryOS/LearnCard/commit/60e0f5b6ddaeb124959e87ac61189b2638c0b32b)]:
+    -   @learncard/core@3.0.0
+
+## 2.3.13
+
+### Patch Changes
+
+-   [#47](https://github.com/WeLibraryOS/LearnCard/pull/47) [`b544330`](https://github.com/WeLibraryOS/LearnCard/commit/b5443302b0843c377fa5a364e3810482f391f275) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: Notification polishes
+
+## 2.3.12
+
+### Patch Changes
+
+-   [#42](https://github.com/WeLibraryOS/LearnCard/pull/42) [`4c6c11f`](https://github.com/WeLibraryOS/LearnCard/commit/4c6c11f30b81b103017883d7f57bd89e2f7d623e) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Bump jest to latest
+
+-   Updated dependencies [[`4c6c11f`](https://github.com/WeLibraryOS/LearnCard/commit/4c6c11f30b81b103017883d7f57bd89e2f7d623e), [`7c09ebf`](https://github.com/WeLibraryOS/LearnCard/commit/7c09ebf0106ec207ac1aa2d7bcf1437d275328d7)]:
+    -   @learncard/core@2.1.0
+
+## 2.3.11
+
+### Patch Changes
+
+-   Updated dependencies [[`7adc30e`](https://github.com/WeLibraryOS/LearnCard/commit/7adc30eba700da4c6886a086d48c40b9820dc05a), [`b07187c`](https://github.com/WeLibraryOS/LearnCard/commit/b07187c4384152ec7f4c5be35a8f2b31a3aff079)]:
+    -   @learncard/core@2.0.1
+
 ## 2.3.10
 
 ### Patch Changes

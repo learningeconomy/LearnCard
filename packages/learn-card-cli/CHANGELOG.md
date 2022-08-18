@@ -1,5 +1,35 @@
 # @learncard/cli
 
+## 1.1.7
+
+### Patch Changes
+
+-   [#53](https://github.com/WeLibraryOS/LearnCard/pull/53) [`7d40878`](https://github.com/WeLibraryOS/LearnCard/commit/7d40878f7f15d80b03701bdec859f2e7135559dd) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add emptyWallet function to CLI
+
+-   Updated dependencies [[`7d40878`](https://github.com/WeLibraryOS/LearnCard/commit/7d40878f7f15d80b03701bdec859f2e7135559dd), [`7d40878`](https://github.com/WeLibraryOS/LearnCard/commit/7d40878f7f15d80b03701bdec859f2e7135559dd)]:
+    -   @learncard/core@4.0.0
+
+## 1.1.6
+
+### Patch Changes
+
+-   Updated dependencies [[`60e0f5b`](https://github.com/WeLibraryOS/LearnCard/commit/60e0f5b6ddaeb124959e87ac61189b2638c0b32b)]:
+    -   @learncard/core@3.0.0
+
+## 1.1.5
+
+### Patch Changes
+
+-   Updated dependencies [[`4c6c11f`](https://github.com/WeLibraryOS/LearnCard/commit/4c6c11f30b81b103017883d7f57bd89e2f7d623e), [`7c09ebf`](https://github.com/WeLibraryOS/LearnCard/commit/7c09ebf0106ec207ac1aa2d7bcf1437d275328d7)]:
+    -   @learncard/core@2.1.0
+
+## 1.1.4
+
+### Patch Changes
+
+-   Updated dependencies [[`7adc30e`](https://github.com/WeLibraryOS/LearnCard/commit/7adc30eba700da4c6886a086d48c40b9820dc05a), [`b07187c`](https://github.com/WeLibraryOS/LearnCard/commit/b07187c4384152ec7f4c5be35a8f2b31a3aff079)]:
+    -   @learncard/core@2.0.1
+
 ## 1.1.3
 
 ### Patch Changes

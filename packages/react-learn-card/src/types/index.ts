@@ -38,3 +38,10 @@ export type RoundedSquareProps = {
     onClick?: () => void;
     bgColor?: string;
 };
+
+export type SmallAchievementCardProps = {
+    title?: string;
+    thumbImgSrc?: string;
+    date?: string;
+    onClick?: () => void;
+};

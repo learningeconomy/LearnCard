@@ -22,9 +22,10 @@ export type DependentMethods = {
 export type VCPluginMethods = DependentMethods & {
     issueCredential: (credential: UnsignedVC) => Promise<VC>;
     verifyCredential: (credential: VC) => Promise<VerificationCheck>;
-    issuePresentation: (credential: VC) => Promise<VP>;
+    issuePresentation: (credential: UnsignedVP) => Promise<VP>;
     verifyPresentation: (presentation: VP) => Promise<VerificationCheck>;
     getTestVc: (subject?: string) => UnsignedVC;
+    getTestVp: (credential?: VC) => Promise<UnsignedVP>;
 };
 
 export type VerifyExtension = { verifyCredential: (credential: VC) => Promise<VerificationCheck> };
