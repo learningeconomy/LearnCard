@@ -8,7 +8,7 @@ export * from './initializers/walletFromKey';
 
 // Overloads (Unfortunately necessary boilerplate 😢)
 export async function initLearnCard(config?: EmptyInit['args']): Promise<EmptyInit['returnValue']>;
-export async function initLearnCard(config?: KeyInit['args']): Promise<KeyInit['returnValue']>;
+export async function initLearnCard(config: KeyInit['args']): Promise<KeyInit['returnValue']>;
 
 // Implementation
 export async function initLearnCard(
