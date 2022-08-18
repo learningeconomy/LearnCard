@@ -18,3 +18,15 @@ export type EthereumConfig = {
     infuraProjectId?: string;
     network?: providers.Networkish;
 };
+
+export type Token = {
+    chainId: number;
+    address: string;
+    name: string;
+    symbol: string;
+    decimals: number;
+    logoURI: string;
+    extensions: any;
+};
+
+export type TokenList = Token[];

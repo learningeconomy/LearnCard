@@ -1,8 +1,13 @@
 import { Plugin, Wallet } from 'types/wallet';
 import { ethers } from 'ethers';
 
-import { EthereumConfig, EthereumPluginMethods } from './types';
-import { isAddress } from './helpers';
+import { EthereumConfig, EthereumPluginMethods, TokenList } from './types';
+import {
+    formatUnits,
+    parseUnits,
+    getTokenFromSymbolOrAddress,
+    getChainIdFromProvider,
+} from './helpers';
 import hardcodedTokens from './hardcodedTokens';
 
 import { DidMethod, KeyPair } from '@wallet/plugins/didkit/types';
@@ -42,17 +47,24 @@ export const getEthereumPlugin = (
     };
     let provider = getProvider();
 
-    let defaultTokenList: {
-        chainId: number;
-        address: string;
-        name: string;
-        symbol: string;
-        decimals: number;
-        logoURI: string;
-        extensions: any;
-    }[];
+    const getDefaultTokenList = (): TokenList => {
+        return require('@uniswap/default-token-list/build/uniswap-default.tokenlist.json').tokens.concat(
+            hardcodedTokens
+        );
+    };
+    const defaultTokenList: TokenList = getDefaultTokenList();
 
-    // Methods
+    const getTokenAddress = async (tokenSymbolOrAddress: string) => {
+        return (
+            await getTokenFromSymbolOrAddress(
+                tokenSymbolOrAddress,
+                defaultTokenList,
+                await getChainIdFromProvider(provider)
+            )
+        )?.address;
+    };
+
+    // Core Methods
     const getBalance = async (walletAddress = publicKey, tokenSymbolOrAddress = 'ETH') => {
         if (!tokenSymbolOrAddress || tokenSymbolOrAddress === 'ETH') {
             // check ETH by default
@@ -62,97 +74,32 @@ export const getEthereumPlugin = (
             return formattedBalance;
         }
 
-        let tokenAddress;
-        if (isAddress(tokenSymbolOrAddress)) {
-            tokenAddress = tokenSymbolOrAddress;
-        } else {
-            // Check known addresses for symbol
-            tokenAddress = await getTokenAddressFromSymbol(tokenSymbolOrAddress);
+        const tokenAddress = await getTokenAddress(tokenSymbolOrAddress);
 
-            if (!tokenAddress) {
-                throw new Error(
-                    `Unable to determine token address for \"${tokenSymbolOrAddress}\"`
-                );
-            }
+        if (!tokenAddress) {
+            throw new Error(`Unable to determine token address for \"${tokenSymbolOrAddress}\"`);
         }
 
-        const balance = await checkErc20TokenBalance(tokenAddress, walletAddress);
+        const balance = await getErc20TokenBalance(tokenAddress, walletAddress);
 
         return balance;
     };
 
-    /* From Ethereum-compatible numbers to human-readable numbers  */
-    const formatUnits = async (units: ethers.BigNumberish, symbolOrAddress: string) => {
-        const token = await getTokenFromSymbolOrAddress(symbolOrAddress);
-
-        return ethers.utils.formatUnits(units, token?.decimals);
-    };
-
-    /* From human-readable numbers to Ethereum-compatible numbers */
-    const parseUnits = async (units: string, symbolOrAddress: string) => {
-        const token = await getTokenFromSymbolOrAddress(symbolOrAddress);
-
-        return ethers.utils.parseUnits(units, token?.decimals);
-    };
-
-    const checkErc20TokenBalance = async (
+    const getErc20TokenBalance = async (
         tokenContractAddress: string,
         walletPublicAddress = publicKey
     ) => {
         const contract = new ethers.Contract(tokenContractAddress, ERC20ABI, provider);
 
         const balance = await contract.balanceOf(walletPublicAddress);
-        const formattedBalance = formatUnits(balance, tokenContractAddress);
+        const formattedBalance = formatUnits(
+            balance,
+            tokenContractAddress,
+            defaultTokenList,
+            await getChainIdFromProvider(provider)
+        );
 
         return formattedBalance;
-    };
-
-    const getDefaultTokenList = () => {
-        if (!defaultTokenList) {
-            defaultTokenList =
-                require('@uniswap/default-token-list/build/uniswap-default.tokenlist.json').tokens.concat(
-                    hardcodedTokens
-                );
-        }
-        return defaultTokenList;
-    };
-
-    const getTokenFromSymbolOrAddress = async (symbolOrAddress: string) => {
-        let token;
-        if (isAddress(symbolOrAddress)) {
-            token = await getTokenFromAddress(symbolOrAddress);
-        } else {
-            token = await getTokenFromSymbol(symbolOrAddress);
-        }
-        return token;
-    };
-
-    const getTokenFromAddress = async (address: string) => {
-        getDefaultTokenList();
-
-        const { chainId: currentChainId } = await provider.getNetwork();
-
-        const token = defaultTokenList.find(
-            token => token.chainId === currentChainId && token.address === address
-        );
-
-        return token;
-    };
-
-    const getTokenFromSymbol = async (symbol: string) => {
-        getDefaultTokenList();
-
-        const { chainId: currentChainId } = await provider.getNetwork();
-
-        const token = defaultTokenList.find(
-            token => token.chainId === currentChainId && token.symbol === symbol
-        );
-
-        return token;
-    };
-
-    const getTokenAddressFromSymbol = async (symbol: string) => {
-        return (await getTokenFromSymbol(symbol))?.address;
     };
 
     return {
@@ -178,18 +125,11 @@ export const getEthereumPlugin = (
                         .then(transactionObject => transactionObject.hash);
                 }
 
-                let tokenAddress;
-                if (isAddress(tokenSymbolOrAddress)) {
-                    tokenAddress = tokenSymbolOrAddress;
-                } else {
-                    // Check known addresses for symbol
-                    tokenAddress = await getTokenAddressFromSymbol(tokenSymbolOrAddress);
-
-                    if (!tokenAddress) {
-                        throw new Error(
-                            `Unable to determine token address for \"${tokenSymbolOrAddress}\"`
-                        );
-                    }
+                const tokenAddress = await getTokenAddress(tokenSymbolOrAddress);
+                if (!tokenAddress) {
+                    throw new Error(
+                        `Unable to determine token address for \"${tokenSymbolOrAddress}\"`
+                    );
                 }
 
                 const tokenContract = new ethers.Contract(tokenAddress, ERC20ABI, ethersWallet);
@@ -198,7 +138,12 @@ export const getEthereumPlugin = (
 
                 await tokenContract.transfer(
                     toAddress,
-                    await parseUnits(amount.toString(), tokenContract.address)
+                    await parseUnits(
+                        amount.toString(),
+                        tokenContract.address,
+                        defaultTokenList,
+                        await getChainIdFromProvider(provider)
+                    )
                 );
 
                 return '...'; // TODO what should be returned here? nothing? transaction hash?
