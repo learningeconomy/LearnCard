@@ -136,17 +136,17 @@ export const getEthereumPlugin = (
 
                 // const gas = ethers.utils.formatUnits(await provider.getGasPrice());
 
-                await tokenContract.transfer(
-                    toAddress,
-                    await parseUnits(
-                        amount.toString(),
-                        tokenContract.address,
-                        defaultTokenList,
-                        await getChainIdFromProvider(provider)
+                return (
+                    await tokenContract.transfer(
+                        toAddress,
+                        await parseUnits(
+                            amount.toString(),
+                            tokenContract.address,
+                            defaultTokenList,
+                            await getChainIdFromProvider(provider)
+                        )
                     )
-                );
-
-                return '...'; // TODO what should be returned here? nothing? transaction hash?
+                ).hash;
             },
 
             /* Configuration-type methods */
