@@ -15,6 +15,7 @@ import { IDXCredential, IDXPluginMethods } from '@wallet/plugins/idx/types';
 import { VCPluginMethods, VerifyExtension } from '@wallet/plugins/vc/types';
 import { DidkitPluginMethods } from '@wallet/plugins/didkit/types';
 import { EthereumConfig } from '@wallet/plugins/EthereumPlugin/types';
+import { VpqrPluginMethods } from '@wallet/plugins/vpqr/types';
 import { InitInput } from '@didkit/index';
 
 import { Wallet } from 'types/wallet';
@@ -22,8 +23,12 @@ import { Wallet } from 'types/wallet';
 export * from '@learncard/types';
 
 export type LearnCardRawWallet = Wallet<
-    'DIDKit' | 'DID Key' | 'VC' | 'IDX' | 'Expiration' | 'Ethereum',
-    DidKeyPluginMethods<DidMethod> & VCPluginMethods & IDXPluginMethods & EthereumPluginMethods
+    'DIDKit' | 'DID Key' | 'VC' | 'IDX' | 'Expiration' | 'Ethereum' | 'Vpqr',
+    DidKeyPluginMethods<DidMethod> &
+        VCPluginMethods &
+        IDXPluginMethods &
+        EthereumPluginMethods &
+        VpqrPluginMethods
 >;
 
 export type AllLearnCardMethods = {
@@ -125,6 +130,16 @@ export type AllLearnCardMethods = {
      * Returns your USDC balance
      */
     checkMyUsdc: () => Promise<string>;
+
+    /**
+     * Returns a VP from a QR code string.
+     */
+    VPfromQrCode: (text: string) => Promise<VP>;
+
+    /**
+     * Returns a QR-embeddable data string from a VP
+     */
+    VPtoQrCode: (vp: VP) => Promise<string>;
 };
 
 export type LearnCard<

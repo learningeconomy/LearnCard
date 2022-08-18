@@ -6,6 +6,7 @@ import { ExpirationPlugin } from '@wallet/plugins/expiration';
 import { getVCPlugin } from '@wallet/plugins/vc';
 import { getEthereumPlugin } from '@wallet/plugins/EthereumPlugin';
 import { verifyCredential } from '@wallet/verify';
+import { getVpqrPlugin } from '@wallet/plugins/vpqr';
 
 import { LearnCardConfig, LearnCard, EmptyLearnCard } from 'types/LearnCard';
 import { defaultCeramicIDXArgs, defaultEthereumArgs } from '@wallet/defaults';
@@ -49,9 +50,11 @@ export const walletFromKey = async (
     );
     const expirationWallet = await idxWallet.addPlugin(ExpirationPlugin(idxWallet));
 
-    const wallet = await expirationWallet.addPlugin(
+    const ethWallet = await expirationWallet.addPlugin(
         getEthereumPlugin(expirationWallet, ethereumConfig)
     );
+
+    const wallet = await ethWallet.addPlugin(await getVpqrPlugin());
 
     return {
         _wallet: wallet,
@@ -85,5 +88,8 @@ export const walletFromKey = async (
         checkMyEth: wallet.pluginMethods.checkMyEth,
         checkMyDai: wallet.pluginMethods.checkMyDai,
         checkMyUsdc: wallet.pluginMethods.checkMyUsdc,
+
+        VPfromQrCode: wallet.pluginMethods.VPfromQrCode,
+        VPtoQrCode: wallet.pluginMethods.VPtoQrCode,
     };
 };
