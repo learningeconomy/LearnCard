@@ -10,19 +10,16 @@ import {
 
 import { persistenceMocks } from './mocks/persistence';
 
-import { walletFromKey } from '../src';
-import { LearnCardWallet } from '../src/types/LearnCard';
+import { initLearnCard } from '../src';
+import { LearnCard } from '../src/types/LearnCard';
 
-let wallets: Record<
-    string,
-    { wallet: LearnCardWallet; persistenceMocks: Partial<LearnCardWallet> }
-> = {};
+let wallets: Record<string, { wallet: LearnCard; persistenceMocks: Partial<LearnCard> }> = {};
 
 const getWallet = async (seed = 'a'.repeat(64), mockPersistence = true) => {
     if (!wallets[seed]) {
         const didkit = readFile(require.resolve('../src/didkit/pkg/didkit_wasm_bg.wasm'));
 
-        const wallet = await walletFromKey(seed, { didkit });
+        const wallet = await initLearnCard({ seed, didkit });
 
         wallets[seed] = { wallet, persistenceMocks: persistenceMocks() };
     }
@@ -31,21 +28,62 @@ const getWallet = async (seed = 'a'.repeat(64), mockPersistence = true) => {
 };
 
 describe('LearnCard SDK', () => {
+    describe('emptyWallet', () => {
+        it('should work', async () => {
+            await expect(initLearnCard()).resolves.toBeDefined();
+        });
+
+        it('should allow verifying a credential', async () => {
+            const wallet = await getWallet();
+            const emptyWallet = await initLearnCard();
+
+            const issuedVc = await wallet.issueCredential(wallet.getTestVc());
+            const verificationResult = await emptyWallet.verifyCredential(issuedVc);
+
+            expect(verificationResult).not.toHaveLength(0);
+            expect(verificationResult).toEqual(
+                expect.arrayContaining([
+                    expect.not.objectContaining({ status: 'Failed' }),
+                    expect.objectContaining({ status: 'Success' }),
+                ])
+            );
+        });
+
+        it('should allow verifying a presentation', async () => {
+            const wallet = await getWallet();
+            const emptyWallet = await initLearnCard();
+
+            const issuedVp = await wallet.issuePresentation(await wallet.getTestVp());
+            const verificationResult = await emptyWallet.verifyPresentation(issuedVp);
+
+            expect(verificationResult.errors).toHaveLength(0);
+            expect(verificationResult.checks).not.toHaveLength(0);
+        });
+
+        it('should only allow verification methods', async () => {
+            const emptyWallet = await initLearnCard();
+            const { _wallet, ...methods } = emptyWallet;
+            const { verifyCredential, verifyPresentation } = emptyWallet;
+
+            expect(methods).toEqual({ verifyCredential, verifyPresentation });
+        });
+    });
+
     describe('walletFromKey', () => {
         it('should work', async () => {
             await expect(getWallet()).resolves.toBeDefined();
         });
 
         it('should not allow an empty string for a seed', async () => {
-            await expect(walletFromKey('')).rejects.toThrow();
+            await expect(initLearnCard({ seed: '' })).rejects.toThrow();
         });
 
         it('should only allow hex strings for a seed', async () => {
-            await expect(walletFromKey('z'.repeat(64))).rejects.toThrow();
+            await expect(initLearnCard({ seed: 'z'.repeat(64) })).rejects.toThrow();
         });
 
         it('should only allow strings that are 64 characters or less', async () => {
-            await expect(walletFromKey('a'.repeat(65))).rejects.toThrow();
+            await expect(initLearnCard({ seed: 'a'.repeat(65) })).rejects.toThrow();
         });
     });
 
@@ -188,8 +226,7 @@ describe('LearnCard SDK', () => {
         it('should be able to issue a presentation', async () => {
             const wallet = await getWallet();
 
-            const issuedVc = await wallet.issueCredential(wallet.getTestVc());
-            const issuedVp = await wallet.issuePresentation(await wallet.getTestVp(issuedVc));
+            const issuedVp = await wallet.issuePresentation(await wallet.getTestVp());
 
             await expect(VPValidator.parseAsync(issuedVp)).resolves.toBeDefined();
         });
@@ -197,8 +234,7 @@ describe('LearnCard SDK', () => {
         it('should be able to verify a presentation', async () => {
             const wallet = await getWallet();
 
-            const issuedVc = await wallet.issueCredential(wallet.getTestVc());
-            const issuedVp = await wallet.issuePresentation(await wallet.getTestVp(issuedVc));
+            const issuedVp = await wallet.issuePresentation(await wallet.getTestVp());
             const verificationResult = await wallet.verifyPresentation(issuedVp);
 
             expect(verificationResult.errors).toHaveLength(0);
