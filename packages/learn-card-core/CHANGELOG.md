@@ -1,5 +1,29 @@
 # learn-card-core
 
+## 4.0.0
+
+### Major Changes
+
+-   [#53](https://github.com/WeLibraryOS/LearnCard/pull/53) [`7d40878`](https://github.com/WeLibraryOS/LearnCard/commit/7d40878f7f15d80b03701bdec859f2e7135559dd) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - LearnCardWallet -> LearnCard generic type
+
+    To better accomadate different methods of instantiation, the `LearnCardWallet` type has been made
+    generic. Additionally, we have renamed it to just `LearnCard`. `LearnCard` now takes in two (optional)
+    generic parameters: the names of the method it exposes (allowing a slimmer `LearnCard` object to be
+    made that does not expose all functionality), and the wallet type of `_wallet`.
+
+    Migration Steps:
+
+    -   Change any existing reference to `LearnCardWallet` to `LearnCard`
+
+### Patch Changes
+
+-   [#53](https://github.com/WeLibraryOS/LearnCard/pull/53) [`7d40878`](https://github.com/WeLibraryOS/LearnCard/commit/7d40878f7f15d80b03701bdec859f2e7135559dd) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add `emptyWallet` function
+
+    This function allows consumers to instantiate an empty wallet that can only be used for verifying
+    credentials and presentations. This can be very useful if you need to quickly verify a credential,
+    but don't want to provide dummy key material and waste time building an object with functionality
+    you won't be using!
+
 ## 3.0.0
 
 ### Major Changes
