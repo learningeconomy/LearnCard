@@ -17,6 +17,7 @@ import { DidkitPluginMethods } from '@wallet/plugins/didkit/types';
 import { EthereumConfig } from '@wallet/plugins/EthereumPlugin/types';
 import { InitInput } from '@didkit/index';
 
+import { InitFunction, GenericInitFunction } from 'types/helpers';
 import { Wallet } from 'types/wallet';
 
 export * from '@learncard/types';
@@ -153,3 +154,8 @@ export type LearnCardConfig = {
     defaultContents: any[];
     ethereumConfig: EthereumConfig;
 };
+
+export type EmptyWallet = InitFunction<undefined, 'didkit', EmptyLearnCard>;
+export type WalletFromKey = InitFunction<{ seed: string }, keyof LearnCardConfig, LearnCard>;
+
+export type InitLearnCard = GenericInitFunction<[EmptyWallet, WalletFromKey]>;
