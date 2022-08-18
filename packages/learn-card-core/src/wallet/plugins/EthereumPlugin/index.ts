@@ -6,7 +6,7 @@ import { isAddress } from './helpers';
 import hardcodedTokens from './hardcodedTokens';
 
 import { DidMethod } from '@wallet/plugins/didkit/types';
-import { Algorithm } from '@wallet/plugins/didkey/types'; // Have to include this in order for getSubjectKeypair to not throw a type error
+import { Algorithm, KeyPair } from '@wallet/plugins/didkey/types'; // Have to include this in order for getSubjectKeypair to not throw a type error
 
 const ERC20ABI = require('./erc20.abi.json');
 
@@ -15,13 +15,7 @@ export const getEthereumPlugin = (
         string,
         {
             getSubjectDid: (type: DidMethod) => string;
-            getSubjectKeypair: (type?: Algorithm) => {
-                kty: string;
-                crv: string;
-                x: string;
-                y?: string;
-                d: string;
-            };
+            getSubjectKeypair: (type?: Algorithm) => KeyPair;
         }
     >,
     config: EthereumConfig
