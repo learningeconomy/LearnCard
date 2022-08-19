@@ -1,3 +1,4 @@
+import fs from 'fs/promises';
 import repl from 'pretty-repl';
 
 import { initLearnCard, emptyWallet, walletFromKey } from '@learncard/core';
@@ -38,7 +39,10 @@ program
         globalThis.emptyWallet = emptyWallet;
         globalThis.walletFromKey = walletFromKey;
         globalThis.initLearnCard = initLearnCard;
-        globalThis.wallet = await initLearnCard({ seed });
+        globalThis.wallet = await initLearnCard({
+            seed,
+            didkit: fs.readFile(require.resolve('@learncard/core/dist/didkit/didkit_wasm_bg.wasm')),
+        });
 
         // delete 'Creating wallet...' message
         process.stdout.moveCursor(0, -1);
