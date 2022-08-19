@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "bin": "dist/index.js",
   "scripts": {
-    "start": "rollup -c && node dist/index.js",
+    "start": "rollup -c && node --enable-source-maps dist/index.js",
     "build": "rollup -c",
     "prepare": "pnpm build"
   },
