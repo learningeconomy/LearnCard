@@ -5,5 +5,4 @@ declare module 'hex-lite' {
     function fromBuffer(buffer: ArrayBuffer): string;
 }
 
-declare module '@digitalcredentials/vpqr';
-declare module '@transmute/jsonld-document-loader';
+declare module '@digitalbazaar/vpqr';

@@ -47,7 +47,7 @@
     "@ceramicnetwork/http-client": "2.3.0",
     "@ceramicnetwork/stream-tile": "^2.2.2",
     "@ceramicnetwork/streamid": "^2.1.0",
-    "@digitalcredentials/vpqr": "^2.2.1",
+    "@digitalbazaar/vpqr": "^3.0.0",
     "@glazed/did-datastore": "^0.3.2",
     "@glazed/tile-loader": "^0.2.1",
     "@uniswap/default-token-list": "^4.1.0",

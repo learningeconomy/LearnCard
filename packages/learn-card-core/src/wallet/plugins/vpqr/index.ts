@@ -1,25 +1,28 @@
-import { toQrCode, fromQrCode } from '@digitalcredentials/vpqr';
-import fetch from 'cross-fetch';
-import { documentLoaderFactory } from '@transmute/jsonld-document-loader';
+import { toQrCode, fromQrCode } from '@digitalbazaar/vpqr';
 
-import { VpqrPluginMethods } from './types';
-import { Plugin } from 'types/wallet';
+import { DependentMethods, VpqrPluginMethods } from './types';
+import { Wallet, Plugin } from 'types/wallet';
 
-export const getVpqrPlugin = async (): Promise<Plugin<'Vpqr', VpqrPluginMethods>> => {
-    const documentLoader = documentLoaderFactory.build({
-        ['//www.w3.org/2018/credentials/v1']: async (iri: URL) => {
-            const res = await fetch(iri);
-            return res.json;
-        },
-    });
+export const getVpqrPlugin = (
+    wallet: Wallet<string, DependentMethods>
+): Plugin<'Vpqr', VpqrPluginMethods> => {
     return {
         pluginMethods: {
-            VPfromQrCode: async text => {
-                return (await fromQrCode({ text, documentLoader }))?.vp;
+            VPfromQrCode: async (_wallet, text) => {
+                return (
+                    await fromQrCode({
+                        text,
+                        documentLoader: wallet.pluginMethods.contextLoader,
+                    })
+                )?.vp;
             },
-            VPtoQrCode: async vp => {
-                return (await toQrCode({ vp, documentLoader, diagnose: console.log }))
-                    ?.imageDataUrl;
+            VPtoQrCode: async (_wallet, vp) => {
+                return (
+                    await toQrCode({
+                        vp,
+                        documentLoader: wallet.pluginMethods.contextLoader,
+                    })
+                )?.imageDataUrl;
             },
         },
     };

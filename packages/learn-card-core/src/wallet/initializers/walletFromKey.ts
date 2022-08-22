@@ -71,6 +71,7 @@ export const walletFromKey = async (
 
         VPfromQrCode: wallet.pluginMethods.VPfromQrCode,
         VPtoQrCode: wallet.pluginMethods.VPtoQrCode,
+
         getEthereumAddress: wallet.pluginMethods.getEthereumAddress,
         getBalance: wallet.pluginMethods.getBalance,
         getBalanceForAddress: wallet.pluginMethods.getBalanceForAddress,
