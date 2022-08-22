@@ -69,11 +69,14 @@ export const walletFromKey = async (
         getTestVc: wallet.pluginMethods.getTestVc,
         getTestVp: wallet.pluginMethods.getTestVp,
 
-        checkMyEth: wallet.pluginMethods.checkMyEth,
-        checkMyDai: wallet.pluginMethods.checkMyDai,
-        checkMyUsdc: wallet.pluginMethods.checkMyUsdc,
-
         VPfromQrCode: wallet.pluginMethods.VPfromQrCode,
         VPtoQrCode: wallet.pluginMethods.VPtoQrCode,
+        getEthereumAddress: wallet.pluginMethods.getEthereumAddress,
+        getBalance: wallet.pluginMethods.getBalance,
+        getBalanceForAddress: wallet.pluginMethods.getBalanceForAddress,
+        transferTokens: wallet.pluginMethods.transferTokens,
+        getCurrentNetwork: wallet.pluginMethods.getCurrentNetwork,
+        changeNetwork: wallet.pluginMethods.changeNetwork,
+        addInfuraProjectId: wallet.pluginMethods.addInfuraProjectId,
     };
 };
