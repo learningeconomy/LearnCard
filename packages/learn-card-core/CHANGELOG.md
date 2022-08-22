@@ -1,5 +1,20 @@
 # learn-card-core
 
+## 5.0.0
+
+### Major Changes
+
+-   [#59](https://github.com/WeLibraryOS/LearnCard/pull/59) [`5c5f28b`](https://github.com/WeLibraryOS/LearnCard/commit/5c5f28b1db1a9527e56946522ea94d444a7f1eed) Thanks [@smurflo2](https://github.com/smurflo2)! - Significant functionality upgrade for Ethereum plugin.
+
+    Can now generically check balance of and transfer ERC20 tokens.
+
+    Public/private key is now generated from wallet seed material.
+    BREAKING CHANGE: The ethereumAddress parameter has been removed from the ethereumConfig object passed into walletFromKey. That parameter should be removed from calling code. If you need to check the balance for a particular public address, the 'getBalanceForAddress' method can be used.
+
+### Patch Changes
+
+-   [#63](https://github.com/WeLibraryOS/LearnCard/pull/63) [`fab5557`](https://github.com/WeLibraryOS/LearnCard/commit/fab55579a1e75b438425ea019a1ac63ecb5634fe) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Expose contextLoader in didkit plugin
+
 ## 4.1.0
 
 ### Minor Changes
