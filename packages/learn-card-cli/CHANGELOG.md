@@ -1,5 +1,16 @@
 # @learncard/cli
 
+## 1.3.0
+
+### Minor Changes
+
+-   [#63](https://github.com/WeLibraryOS/LearnCard/pull/63) [`fab5557`](https://github.com/WeLibraryOS/LearnCard/commit/fab55579a1e75b438425ea019a1ac63ecb5634fe) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Use most up-to-date wasm file
+
+### Patch Changes
+
+-   Updated dependencies [[`5c5f28b`](https://github.com/WeLibraryOS/LearnCard/commit/5c5f28b1db1a9527e56946522ea94d444a7f1eed), [`fab5557`](https://github.com/WeLibraryOS/LearnCard/commit/fab55579a1e75b438425ea019a1ac63ecb5634fe)]:
+    -   @learncard/core@5.0.0
+
 ## 1.2.0
 
 ### Minor Changes
