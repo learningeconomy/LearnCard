@@ -1,6 +1,7 @@
+import fs from 'fs/promises';
 import repl from 'pretty-repl';
 
-import { emptyWallet, walletFromKey } from '@learncard/core';
+import { initLearnCard, emptyWallet, walletFromKey } from '@learncard/core';
 import gradient from 'gradient-string';
 import figlet from 'figlet';
 import { program } from 'commander';
@@ -13,6 +14,7 @@ const g = {
     wallet: gradient(['cyan', 'green'])('wallet'),
     emptyWallet: gradient(['cyan', 'green'])('emptyWallet'),
     walletFromKey: gradient(['cyan', 'green'])('walletFromKey'),
+    initLearnCard: gradient(['cyan', 'green'])('initLearnCard'),
     seed: gradient(['cyan', 'green'])('seed'),
     generateRandomSeed: gradient(['cyan', 'green'])('generateRandomSeed'),
 };
@@ -36,7 +38,11 @@ program
         globalThis.generateRandomSeed = generateRandomSeed;
         globalThis.emptyWallet = emptyWallet;
         globalThis.walletFromKey = walletFromKey;
-        globalThis.wallet = await walletFromKey(seed);
+        globalThis.initLearnCard = initLearnCard;
+        globalThis.wallet = await initLearnCard({
+            seed,
+            didkit: fs.readFile(require.resolve('@learncard/core/dist/didkit/didkit_wasm_bg.wasm')),
+        });
 
         // delete 'Creating wallet...' message
         process.stdout.moveCursor(0, -1);
@@ -52,6 +58,7 @@ program
         console.log(`│             ${g.wallet} │ Learn Card Wallet             │`);
         console.log(`│        ${g.emptyWallet} │ Wallet Instantiation Function │`);
         console.log(`│      ${g.walletFromKey} │ Wallet Instantiation Function │`);
+        console.log(`│      ${g.initLearnCard} │ Wallet Instantiation Function │`);
         console.log(`│               ${g.seed} │ Seed used to generate wallet  │`);
         console.log(`│ ${g.generateRandomSeed} │ Generates a random seed       │`);
         console.log('└────────────────────┴───────────────────────────────┘');
@@ -86,6 +93,7 @@ program
                 return input
                     .replace('emptyWallet', g.emptyWallet)
                     .replace('walletFromKey', g.walletFromKey)
+                    .replace('initLearnCard', g.initLearnCard)
                     .replace('wallet', g.wallet)
                     .replace('seed', g.seed)
                     .replace('generateRandomSeed', g.generateRandomSeed);

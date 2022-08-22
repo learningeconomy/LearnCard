@@ -168,6 +168,11 @@ export function verifyInvocationSignature(invocation: string): Promise<any>;
 * @returns {Promise<any>}
 */
 export function verifyInvocation(invocation: string, delegation: string): Promise<any>;
+/**
+* @param {string} url
+* @returns {Promise<any>}
+*/
+export function contextLoader(url: string): Promise<any>;
 
 export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembly.Module;
 
@@ -200,6 +205,7 @@ export interface InitOutput {
   readonly completeInvokeCapability: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
   readonly verifyInvocationSignature: (a: number, b: number) => number;
   readonly verifyInvocation: (a: number, b: number, c: number, d: number) => number;
+  readonly contextLoader: (a: number, b: number) => number;
   readonly didkit_error_message: () => number;
   readonly didkit_error_code: () => number;
   readonly SHA1DCUpdate: (a: number, b: number, c: number) => void;
@@ -215,12 +221,21 @@ export interface InitOutput {
   readonly __wbindgen_malloc: (a: number) => number;
   readonly __wbindgen_realloc: (a: number, b: number, c: number) => number;
   readonly __wbindgen_export_2: WebAssembly.Table;
-  readonly _dyn_core__ops__function__FnMut__A____Output___R_as_wasm_bindgen__closure__WasmClosure___describe__invoke__h91a8814f66f14b17: (a: number, b: number, c: number) => void;
+  readonly _dyn_core__ops__function__FnMut__A____Output___R_as_wasm_bindgen__closure__WasmClosure___describe__invoke__h47a829c6210a1ab1: (a: number, b: number, c: number) => void;
   readonly __wbindgen_add_to_stack_pointer: (a: number) => number;
   readonly __wbindgen_free: (a: number, b: number) => void;
   readonly __wbindgen_exn_store: (a: number) => void;
-  readonly wasm_bindgen__convert__closures__invoke2_mut__h3ecfeb7a01c1be81: (a: number, b: number, c: number, d: number) => void;
+  readonly wasm_bindgen__convert__closures__invoke2_mut__h68d8a804a96909b8: (a: number, b: number, c: number, d: number) => void;
 }
+
+/**
+* Synchronously compiles the given `bytes` and instantiates the WebAssembly module.
+*
+* @param {BufferSource} bytes
+*
+* @returns {InitOutput}
+*/
+export function initSync(bytes: BufferSource): InitOutput;
 
 /**
 * If `module_or_path` is {RequestInfo} or {URL}, makes a request and
