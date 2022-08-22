@@ -43,4 +43,5 @@ export type DidkitPluginMethods = {
         keypair: KeyPair
     ) => Promise<VP>;
     verifyPresentation: (presentation: VP) => Promise<VerificationCheck>;
+    contextLoader: (url: string) => Promise<Record<string, any>>;
 };

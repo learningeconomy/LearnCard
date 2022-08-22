@@ -8,6 +8,7 @@ import init, {
     verifyCredential,
     issuePresentation,
     verifyPresentation,
+    contextLoader,
 } from '@didkit/index';
 
 import { DidkitPluginMethods, DidMethod } from './types';
@@ -68,6 +69,8 @@ export const getDidKitPlugin = async (
 
             verifyPresentation: async (_wallet, presentation) =>
                 JSON.parse(await verifyPresentation(JSON.stringify(presentation), '{}')),
+
+            contextLoader: async (_wallet, url) => JSON.parse(await contextLoader(url)),
         },
     };
 };
