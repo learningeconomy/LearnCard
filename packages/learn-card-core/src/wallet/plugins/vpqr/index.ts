@@ -12,7 +12,9 @@ export const getVpqrPlugin = (
                 return (
                     await fromQrCode({
                         text,
-                        documentLoader: wallet.pluginMethods.contextLoader,
+                        documentLoader: async (url: string) => ({
+                            document: await wallet.pluginMethods.contextLoader(url),
+                        }),
                     })
                 )?.vp;
             },
@@ -20,7 +22,9 @@ export const getVpqrPlugin = (
                 return (
                     await toQrCode({
                         vp,
-                        documentLoader: wallet.pluginMethods.contextLoader,
+                        documentLoader: async (url: string) => ({
+                            document: await wallet.pluginMethods.contextLoader(url),
+                        }),
                     })
                 )?.imageDataUrl;
             },
