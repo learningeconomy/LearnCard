@@ -21,14 +21,14 @@ pnpm i @learncard/core
 
 ### Instantiation
 
-Instantiate a wallet using `walletFromKey`. This method accepts a unique identifier string that is 
-up to 64 characters long. If it is less than 64 characters, `walletFromKey` will pad the start of
+Instantiate a wallet using `initLearnCard`. This method accepts a unique identifier string that is 
+up to 64 characters long. If it is less than 64 characters, `initLearnCard` will pad the start of
 the string with 0's until it is 64 characters long.
 
 ```js
-import { walletFromKey } from "@learncard/core";
+import { initLearnCard } from "@learncard/core";
 
-const wallet = await walletFromKey('unique-identifier-that-is-up-to-and-preferably64-characters-long');
+const wallet = await initLearnCard({ seed: 'a'.repeat(64) });
 ```
 
 ### Issuing/Verifying Credentials and Presentations
