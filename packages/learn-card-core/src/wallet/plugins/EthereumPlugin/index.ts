@@ -1,60 +1,171 @@
 import { Plugin, Wallet } from 'types/wallet';
 import { ethers } from 'ethers';
 
-import { EthereumConfig, EthereumPluginMethods } from './types';
-import { DidMethod } from '@wallet/plugins/didkit/types';
+import { EthereumConfig, EthereumPluginMethods, TokenList } from './types';
+import {
+    formatUnits,
+    parseUnits,
+    getTokenFromSymbolOrAddress,
+    getChainIdFromProvider,
+} from './helpers';
+import hardcodedTokens from './hardcodedTokens';
+
+import { DidMethod, KeyPair } from '@wallet/plugins/didkit/types';
+import { Algorithm } from '@wallet/plugins/didkey/types'; // Have to include this in order for getSubjectKeypair to not throw a type error
+
+const ERC20ABI = require('./erc20.abi.json');
 
 export const getEthereumPlugin = (
-    initWallet: Wallet<string, { getSubjectDid: (type: DidMethod) => string }>, // unused rn, but I'll be using it in the next ETH plugin PR
+    initWallet: Wallet<
+        string,
+        {
+            getSubjectDid: (type: DidMethod) => string;
+            getSubjectKeypair: (type?: Algorithm) => KeyPair;
+        }
+    >,
     config: EthereumConfig
 ): Plugin<'Ethereum', EthereumPluginMethods> => {
-    const { address, infuraProjectId, network = 'mainnet' } = config;
+    let { infuraProjectId, network = 'mainnet' } = config;
 
-    let provider: ethers.providers.Provider;
-    if (infuraProjectId) {
-        provider = new ethers.providers.InfuraProvider(network, infuraProjectId);
-    } else {
-        provider = ethers.getDefaultProvider(network);
-    }
+    // Ethers wallet
+    const secpKeypair = initWallet.pluginMethods.getSubjectKeypair('secp256k1');
+    const privateKey = Buffer.from(secpKeypair.d, 'base64').toString('hex');
+    let ethersWallet = new ethers.Wallet(privateKey);
+    const publicKey: string = ethersWallet.address;
 
-    const checkErc20TokenBalance = async (tokenContractAddress: string) => {
-        if (!address) {
-            throw new Error("Can't check balance: No address provided.");
+    // Provider
+    const getProvider = () => {
+        let provider: ethers.providers.Provider;
+        if (infuraProjectId) {
+            provider = new ethers.providers.InfuraProvider(network, infuraProjectId);
+        } else {
+            provider = ethers.getDefaultProvider(network);
         }
 
-        const erc20Abi = require('./erc20.abi.json');
-        const contract = new ethers.Contract(tokenContractAddress, erc20Abi, provider);
+        ethersWallet = ethersWallet.connect(provider);
+        return provider;
+    };
+    let provider = getProvider();
 
-        const balance = await contract.balanceOf(address);
-        const formattedBalance = ethers.utils.formatUnits(balance);
+    const getDefaultTokenList = (): TokenList => {
+        return require('@uniswap/default-token-list/build/uniswap-default.tokenlist.json').tokens.concat(
+            hardcodedTokens
+        );
+    };
+    const defaultTokenList: TokenList = getDefaultTokenList();
+
+    const getTokenAddress = async (tokenSymbolOrAddress: string) => {
+        return (
+            await getTokenFromSymbolOrAddress(
+                tokenSymbolOrAddress,
+                defaultTokenList,
+                await getChainIdFromProvider(provider)
+            )
+        )?.address;
+    };
+
+    // Core Methods
+    const getBalance = async (walletAddress = publicKey, tokenSymbolOrAddress = 'ETH') => {
+        if (!tokenSymbolOrAddress || tokenSymbolOrAddress === 'ETH') {
+            // check ETH by default
+            const balance = await provider.getBalance(walletAddress);
+            const formattedBalance = ethers.utils.formatEther(balance);
+
+            return formattedBalance;
+        }
+
+        const tokenAddress = await getTokenAddress(tokenSymbolOrAddress);
+
+        if (!tokenAddress) {
+            throw new Error(`Unable to determine token address for \"${tokenSymbolOrAddress}\"`);
+        }
+
+        const balance = await getErc20TokenBalance(tokenAddress, walletAddress);
+
+        return balance;
+    };
+
+    const getErc20TokenBalance = async (
+        tokenContractAddress: string,
+        walletPublicAddress = publicKey
+    ) => {
+        const contract = new ethers.Contract(tokenContractAddress, ERC20ABI, provider);
+
+        const balance = await contract.balanceOf(walletPublicAddress);
+        const formattedBalance = formatUnits(
+            balance,
+            tokenContractAddress,
+            defaultTokenList,
+            await getChainIdFromProvider(provider)
+        );
 
         return formattedBalance;
     };
 
     return {
         pluginMethods: {
-            checkMyEth: async () => {
-                if (!address) {
-                    throw new Error("Can't check ETH: No ethereum address provided.");
+            getEthereumAddress: () => publicKey,
+
+            getBalance: async (_wallet, symbolOrAddress = 'ETH') =>
+                getBalance(publicKey, symbolOrAddress),
+            getBalanceForAddress: async (_wallet, walletAddress, symbolOrAddress) =>
+                getBalance(walletAddress, symbolOrAddress),
+
+            transferTokens: async (_wallet, tokenSymbolOrAddress, amount, toAddress) => {
+                if (tokenSymbolOrAddress === 'ETH') {
+                    const transaction = {
+                        to: toAddress,
+
+                        // Convert ETH to wei
+                        value: ethers.utils.parseEther(amount.toString()),
+                    };
+
+                    return (await ethersWallet.sendTransaction(transaction)).hash;
                 }
 
-                const balance = await provider.getBalance(address);
-                const formattedBalance = ethers.utils.formatEther(balance);
+                const tokenAddress = await getTokenAddress(tokenSymbolOrAddress);
+                if (!tokenAddress) {
+                    throw new Error(
+                        `Unable to determine token address for \"${tokenSymbolOrAddress}\"`
+                    );
+                }
 
-                return formattedBalance;
-            },
-            checkMyDai: async () => {
-                const daiAddress = '0x6B175474E89094C44Da98b954EedeAC495271d0F';
-                const daiBalance = await checkErc20TokenBalance(daiAddress);
-                return daiBalance;
-            },
-            checkMyUsdc: async () => {
-                const usdcAddress = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';
-                const usdcBalance = await checkErc20TokenBalance(usdcAddress);
-                return usdcBalance;
+                const tokenContract = new ethers.Contract(tokenAddress, ERC20ABI, ethersWallet);
+
+                // const gas = ethers.utils.formatUnits(await provider.getGasPrice());
+
+                return (
+                    await tokenContract.transfer(
+                        toAddress,
+                        await parseUnits(
+                            amount.toString(),
+                            tokenContract.address,
+                            defaultTokenList,
+                            await getChainIdFromProvider(provider)
+                        )
+                    )
+                ).hash;
             },
 
-            // ...initWallet.pluginMethods,
+            /* Configuration-type methods */
+            getCurrentNetwork: () => {
+                return network;
+            },
+            changeNetwork: (_wallet, _network: ethers.providers.Networkish) => {
+                const oldNetwork = network;
+                try {
+                    network = _network;
+                    provider = getProvider();
+                } catch (e) {
+                    network = oldNetwork;
+                    provider = getProvider();
+                    throw e;
+                }
+            },
+            addInfuraProjectId: (_wallet, infuraProjectIdToAdd) => {
+                infuraProjectId = infuraProjectIdToAdd;
+                provider = getProvider();
+            },
         },
     };
 };
