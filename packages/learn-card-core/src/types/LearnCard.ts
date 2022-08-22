@@ -20,6 +20,7 @@ import { InitInput } from '@didkit/index';
 
 import { InitFunction, GenericInitFunction } from 'types/helpers';
 import { Wallet } from 'types/wallet';
+import { ethers } from 'ethers';
 
 export * from '@learncard/types';
 
@@ -114,19 +115,46 @@ export type AllLearnCardMethods = {
     getTestVp: (credential?: VC) => Promise<UnsignedVP>;
 
     /**
-     * Returns your ETH balance
+     * Returns Ethereum public address
      */
-    checkMyEth: () => Promise<string>;
+    getEthereumAddress: () => string;
 
     /**
-     * Returns your DAI balance
+     * Get the balance of an ERC20 token
+     *   Defaults to ETH if symbolOrAddress is not provided
      */
-    checkMyDai: () => Promise<string>;
+    getBalance: (symbolOrAddress?: string) => Promise<string>;
 
     /**
-     * Returns your USDC balance
+     * Get the balance of an ERC20 token for a given address
+     *   Defaults to ETH if symbolOrAddress is not provided
      */
-    checkMyUsdc: () => Promise<string>;
+    getBalanceForAddress: (walletAddress: string, symbolOrAddress?: string) => Promise<string>;
+
+    /**
+     * Transfer tokens to a given address
+     */
+    transferTokens: (
+        tokenSymbolOrAddress: string,
+        amount: number,
+        toAddress: string
+    ) => Promise<string>;
+
+    /**
+     * Get your current Ethereum network
+     */
+    getCurrentNetwork: () => ethers.providers.Networkish;
+
+    /**
+     * Change your Ethereum network
+     */
+    changeNetwork: (network: ethers.providers.Networkish) => void;
+
+    /**
+     * Add an infura project id to an existing wallet.
+     * Really only useful for testing with the CLI right now...
+     */
+    addInfuraProjectId: (infuraProjectIdToAdd: string) => void;
 };
 
 export type LearnCard<
