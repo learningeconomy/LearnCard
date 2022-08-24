@@ -161,14 +161,14 @@ export type AllLearnCardMethods = {
     addInfuraProjectId: (infuraProjectIdToAdd: string) => void;
 
     /**
-     * Returns a VP from a QR code string.
+     * Returns a Verifiable Presentation (VP) from a QR code base-64 image data string containing a VP compressed by CBOR-LD.
      */
-    VPfromQrCode: (text: string) => Promise<VP>;
+    vpFromQrCode: (text: string) => Promise<VP>;
 
     /**
-     * Returns a QR-embeddable data string from a VP
+     * Returns a QR-embeddable base-64 image data string from a Verifiable Presentation, compressed using CBOR-LD.
      */
-    VPtoQrCode: (vp: VP) => Promise<string>;
+    vpToQrCode: (vp: VP) => Promise<string>;
 };
 
 export type LearnCard<

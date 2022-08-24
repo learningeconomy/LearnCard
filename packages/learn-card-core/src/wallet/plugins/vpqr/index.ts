@@ -8,7 +8,7 @@ export const getVpqrPlugin = (
 ): Plugin<'Vpqr', VpqrPluginMethods> => {
     return {
         pluginMethods: {
-            VPfromQrCode: async (_wallet, text) => {
+            vpFromQrCode: async (_wallet, text) => {
                 return (
                     await fromQrCode({
                         text,
@@ -18,7 +18,7 @@ export const getVpqrPlugin = (
                     })
                 )?.vp;
             },
-            VPtoQrCode: async (_wallet, vp) => {
+            vpToQrCode: async (_wallet, vp) => {
                 return (
                     await toQrCode({
                         vp,
