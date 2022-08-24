@@ -12,10 +12,12 @@ export type RoundedSquareProps = {
     bgColor?: string;
 };
 
+const 
+
 export const RoundedSquare: React.FC<RoundedSquareProps> = ({
     title = 'Learning History',
     description = 'Lorem ipsum sit dalor amet',
-    iconSrc = ICONS_TO_SOURCE[Icons.sheckelsIcon],
+    iconSrc = ICONS_TO_SOURCE[Icons.coinsIcon],
     count = '28',
     onClick = () => {},
     bgColor = 'bg-cyan-200',

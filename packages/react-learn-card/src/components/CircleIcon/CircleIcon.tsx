@@ -49,7 +49,7 @@ export const CountCircle: React.FC<CountCircleProps> = ({
 };
 
 export const CircleIcon: React.FC<CircleIconProps> = ({
-    iconSrc = ICONS_TO_SOURCE[Icons.sheckelsIcon],
+    iconSrc = ICONS_TO_SOURCE[Icons.coinsIcon],
     size = '52px',
     count = '28',
     innerPadding = '6px',
