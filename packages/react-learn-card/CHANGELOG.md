@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.3.21
+
+### Patch Changes
+
+-   [#65](https://github.com/WeLibraryOS/LearnCard/pull/65) [`b413a7f`](https://github.com/WeLibraryOS/LearnCard/commit/b413a7f7147e344eb65c3ed9cd68ac08193e60b9) Thanks [@gerardopar](https://github.com/gerardopar)! - Credit card front face prop update
+
 ## 2.3.20
 
 ### Patch Changes
