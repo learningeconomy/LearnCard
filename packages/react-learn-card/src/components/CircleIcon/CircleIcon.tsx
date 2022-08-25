@@ -10,6 +10,7 @@ export type CircleIconProps = {
     bgColor?: string;
     innerPadding?: string;
     size?: string;
+    hideCount?: boolean;
 };
 
 export type CountCircleProps = {
@@ -18,12 +19,14 @@ export type CountCircleProps = {
     innerPadding?: string;
     onClick?: () => {};
     bgColor?: string;
+    className?: string;
 };
 
 export const CountCircle: React.FC<CountCircleProps> = ({
     size = 'auto',
     count = '28',
     innerPadding = '3px 5px',
+    className,
     onClick = () => {},
     bgColor = 'bg-grayscale-50',
 }) => {
@@ -36,7 +39,7 @@ export const CountCircle: React.FC<CountCircleProps> = ({
     return (
         <section
             onClick={onClick}
-            className={`${bgColor} rounded-full circle-icon-wrapper text-center absolute right-[-15px] top-[-15px] min-w-[25px]`}
+            className={`${bgColor} rounded-full circle-icon-wrapper text-center absolute right-[-15px] top-[-15px] min-w-[25px] ${className}`}
             style={style}
         >
             <div className={`w-full h-full`}>
@@ -55,6 +58,7 @@ export const CircleIcon: React.FC<CircleIconProps> = ({
     innerPadding = '6px',
     onClick = () => {},
     bgColor = 'bg-grayscale-900',
+    hideCount = true,
 }) => {
     const style = {
         width: size,
@@ -69,7 +73,7 @@ export const CircleIcon: React.FC<CircleIconProps> = ({
             style={style}
         >
             <div className={`relative w-full h-full`}>
-                <CountCircle count={count} />
+                {!hideCount && <CountCircle count={count} />}
                 <img className="h-full w-full object-cover" src={iconSrc ?? ''} alt="Icon image" />
             </div>
         </section>
