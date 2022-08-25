@@ -5,6 +5,11 @@ export type LearnCardCreditCardFrontFaceProps = {
      */
     userImage?: string;
     /**
+     * custom image component
+     * @type {React.ReactNode}
+     */
+    userImageComponent?: React.ReactNode;
+    /**
      * qr code value
      * @type {string}
      */
