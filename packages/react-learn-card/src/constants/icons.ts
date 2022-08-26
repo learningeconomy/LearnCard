@@ -9,7 +9,7 @@ import { Icons } from '../types';
 export { coins, user, trophy, briefcase, graduation, lightbulb };
 
 export const ICONS_TO_SOURCE = {
-    [Icons.sheckelsIcon]: coins,
+    [Icons.coinsIcon]: coins,
     [Icons.userIcon]: user,
     [Icons.trophyIcon]: trophy,
     [Icons.briefcaseIcon]: briefcase,
