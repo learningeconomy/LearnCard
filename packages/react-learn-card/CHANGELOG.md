@@ -1,11 +1,16 @@
 # @welibraryos/react-learn-card
 
+## 2.3.23
+
+### Patch Changes
+
+-   [#69](https://github.com/WeLibraryOS/LearnCard/pull/69) [`a5ca571`](https://github.com/WeLibraryOS/LearnCard/commit/a5ca57166c62aea0ce40ceb2d84f8d12cad23e1e) Thanks [@goblincore](https://github.com/goblincore)! - fix build error from rollup-plugin-img and add additional img source prop to rounded card component
+
 ## 2.3.22
 
 ### Patch Changes
 
 -   [#67](https://github.com/WeLibraryOS/LearnCard/pull/67) [`db2e9be`](https://github.com/WeLibraryOS/LearnCard/commit/db2e9beee227698e95b8da71e37046b2d0c006a9) Thanks [@goblincore](https://github.com/goblincore)! - Update wallet components with new assets
-
 
 ## 2.3.21
 
