@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.3.24
+
+### Patch Changes
+
+-   [#71](https://github.com/WeLibraryOS/LearnCard/pull/71) [`1b7a85a`](https://github.com/WeLibraryOS/LearnCard/commit/1b7a85aa7e61da07ed20e9297cd865b7cdd657d5) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Better Image Handling in Build Pipeline
+
 ## 2.3.23
 
 ### Patch Changes
