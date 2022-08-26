@@ -278,8 +278,8 @@ importers:
       rollup-plugin-delete: ^2.0.0
       rollup-plugin-dts: ^4.2.2
       rollup-plugin-esbuild: ^4.9.1
-      rollup-plugin-img: ^1.1.0
       rollup-plugin-peer-deps-external: ^2.2.4
+      rollup-plugin-smart-asset: ^2.1.2
       rollup-plugin-styles: ^4.0.0
       style-loader: ^3.3.1
       tailwindcss: ^3.0.24
@@ -290,7 +290,6 @@ importers:
       qrcode.react: 3.1.0_react@18.2.0
       react: 18.2.0
       react-dom: 18.2.0_react@18.2.0
-      rollup-plugin-img: 1.1.0
     devDependencies:
       '@learncard/types': link:../learn-card-types
       '@rollup/plugin-commonjs': 22.0.1_rollup@2.75.6
@@ -330,9 +329,10 @@ importers:
       rollup-plugin-dts: 4.2.2_63sirsnfvviu2qxghjzgkmnlpm
       rollup-plugin-esbuild: 4.9.1_ktu2kzacvi5wdos6kd33ysa7ja
       rollup-plugin-peer-deps-external: 2.2.4_rollup@2.75.6
+      rollup-plugin-smart-asset: 2.1.2_rollup@2.75.6
       rollup-plugin-styles: 4.0.0_rollup@2.75.6
       style-loader: 3.3.1
-      tailwindcss: 3.1.4
+      tailwindcss: 3.1.4_postcss@8.4.14
       typescript: 4.7.4
 
 packages:
@@ -6223,7 +6223,7 @@ packages:
     peerDependencies:
       tailwindcss: '>=2.0.0 || >=3.0.0 || >=3.0.0-alpha.1'
     dependencies:
-      tailwindcss: 3.1.4
+      tailwindcss: 3.1.4_postcss@8.4.14
     dev: true
 
   /@testing-library/dom/8.14.0:
@@ -8266,6 +8266,10 @@ packages:
 
   /big.js/5.2.2:
     resolution: {integrity: sha512-vyL2OymJxmarO8gxMr0mhChsO9QGwhynfuu4+MHTAW6czfq9humCB7rKpUjDd9YUiDPU4mzpyupFSvOClAwbmQ==}
+    dev: true
+
+  /big.js/6.2.1:
+    resolution: {integrity: sha512-bCtHMwL9LeDIozFn+oNhhFoq+yQ3BNdnsLSASUxLciOb1vgvpHsIO1dsENiGMgbb4SkP5TrzWzRiLddn8ahVOQ==}
     dev: true
 
   /binary-extensions/1.13.1:
@@ -11156,6 +11160,7 @@ packages:
 
   /estree-walker/0.6.1:
     resolution: {integrity: sha512-SqmZANLWS0mnatqbSfRP5g8OXZC12Fgg1IwNtLsyHDzJizORW4khDfjPqJZsemPWBB2uqykUah5YpQ6epsqC/w==}
+    dev: true
 
   /estree-walker/1.0.1:
     resolution: {integrity: sha512-1fMXF3YP4pZZVozF8j/ZLfvnR8NSIljt56UhbZ5PeeDmmGHpgpdwQt7ITlGvYaQukCvuBRMLEiKiYC+oeIg4cg==}
@@ -18515,18 +18520,25 @@ packages:
       - supports-color
     dev: false
 
-  /rollup-plugin-img/1.1.0:
-    resolution: {integrity: sha512-44JyY0wBQFNjM2pB7Yv1uUwMW4S1bjdnzLmUPShrDeACSMvn798i9ttwiBkfls+QjSY0qLrNqMacUTDX93Q0MA==}
-    dependencies:
-      rollup-pluginutils: 2.8.2
-    dev: false
-
   /rollup-plugin-peer-deps-external/2.2.4_rollup@2.75.6:
     resolution: {integrity: sha512-AWdukIM1+k5JDdAqV/Cxd+nejvno2FVLVeZ74NKggm3Q5s9cbbcOgUPGdbxPi4BXu7xGaZ8HG12F+thImYu/0g==}
     peerDependencies:
       rollup: '*'
     dependencies:
       rollup: 2.75.6
+    dev: true
+
+  /rollup-plugin-smart-asset/2.1.2_rollup@2.75.6:
+    resolution: {integrity: sha512-Y/gD3abliw3F20uY6ILpmH6sokXKntuTFKvDdLEJxHFcyQRsTb12u2KbsapqPZDa4JN/Nxx7BslYlZ/KmYAtPg==}
+    peerDependencies:
+      rollup: '>0.60'
+    dependencies:
+      big.js: 6.2.1
+      magic-string: 0.25.9
+      mime: 2.6.0
+      mkdirp: 1.0.4
+      rollup: 2.75.6
+      rollup-pluginutils: 2.8.2
     dev: true
 
   /rollup-plugin-styles/4.0.0_rollup@2.75.6:
@@ -18560,6 +18572,7 @@ packages:
     resolution: {integrity: sha512-EEp9NhnUkwY8aif6bxgovPHMoMoNr2FulJziTndpt5H9RdwC47GSGuII9XxpSdzVGM0GWrNPHV6ie1LTNJPaLQ==}
     dependencies:
       estree-walker: 0.6.1
+    dev: true
 
   /rollup/2.75.6:
     resolution: {integrity: sha512-OEf0TgpC9vU6WGROJIk1JA3LR5vk/yvqlzxqdrE2CzzXnqKXNzbAwlWUXis8RS3ZPe7LAq+YUxsRa0l3r27MLA==}
@@ -19673,10 +19686,12 @@ packages:
       strip-ansi: 6.0.1
     dev: true
 
-  /tailwindcss/3.1.4:
+  /tailwindcss/3.1.4_postcss@8.4.14:
     resolution: {integrity: sha512-NrxbFV4tYsga/hpWbRyUfIaBrNMXDxx5BsHgBS4v5tlyjf+sDsgBg5m9OxjrXIqAS/uR9kicxLKP+bEHI7BSeQ==}
     engines: {node: '>=12.13.0'}
     hasBin: true
+    peerDependencies:
+      postcss: ^8.0.9
     dependencies:
       arg: 5.0.2
       chokidar: 3.5.3
@@ -20358,6 +20373,7 @@ packages:
   /unified/9.2.0:
     resolution: {integrity: sha512-vx2Z0vY+a3YoTj8+pttM3tiJHCwY5UFbYdiWrwBEbHmK8pvsPj2rtAX2BFfgXen8T39CJWblWRDT4L5WGXtDdg==}
     dependencies:
+      '@types/unist': 2.0.6
       bail: 1.0.5
       extend: 3.0.2
       is-buffer: 2.0.5
