@@ -3,7 +3,7 @@ import json from '@rollup/plugin-json';
 import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
 import del from 'rollup-plugin-delete';
-import image from 'rollup-plugin-img';
+import smartAsset from 'rollup-plugin-smart-asset';
 import esbuild from 'rollup-plugin-esbuild';
 import peerDepsExternal from 'rollup-plugin-peer-deps-external';
 import dts from 'rollup-plugin-dts';
@@ -32,14 +32,13 @@ export default [
         ],
         plugins: [
             del({ targets: [packageJson.main, packageJson.module] }),
+            smartAsset({
+                url: 'copy',
+                keepImport: true,
+                extensions: ['.svg', '.gif', '.png', '.jpg', '.webp', '.jpeg'],
+            }),
             json(),
             peerDepsExternal(),
-            image({
-                output: `dist/images`,
-                extensions: /\.(png|jpg|jpeg|gif|svg)$/, // support png|jpg|jpeg|gif|svg, and it's alse the default value
-                limit: 8192, // default 8192(8k)
-                exclude: 'node_modules/**',
-            }),
             svgr(),
             resolve(),
             commonjs(),
@@ -55,6 +54,13 @@ export default [
     {
         input: ['src/index.ts'],
         output: [{ file: packageJson.types, format: 'es' }],
-        plugins: [image(), dts()],
+        plugins: [
+            smartAsset({
+                url: 'copy',
+                keepImport: true,
+                extensions: ['.svg', '.gif', '.png', '.jpg', '.webp', '.jpeg'],
+            }),
+            dts(),
+        ],
     },
 ];
