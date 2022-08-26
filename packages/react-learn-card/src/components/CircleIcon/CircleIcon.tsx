@@ -11,6 +11,7 @@ export type CircleIconProps = {
     innerPadding?: string;
     size?: string;
     hideCount?: boolean;
+    borderColor?: string;
 };
 
 export type CountCircleProps = {
@@ -42,8 +43,8 @@ export const CountCircle: React.FC<CountCircleProps> = ({
             className={`${bgColor} rounded-full circle-icon-wrapper text-center absolute right-[-15px] top-[-15px] min-w-[25px] ${className}`}
             style={style}
         >
-            <div className={`w-full h-full`}>
-                <p className="w-full h-full line-clamp-1 font-semibold text-grayscale-900 text-[12px]">
+            <div className={`h-full`}>
+                <p className="h-full line-clamp-1 font-semibold text-grayscale-900 text-[12px]">
                     {count}
                 </p>
             </div>
