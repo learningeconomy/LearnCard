@@ -15,6 +15,7 @@ import { IDXCredential, IDXPluginMethods } from '@wallet/plugins/idx/types';
 import { VCPluginMethods, VerifyExtension } from '@wallet/plugins/vc/types';
 import { DidkitPluginMethods } from '@wallet/plugins/didkit/types';
 import { EthereumConfig } from '@wallet/plugins/EthereumPlugin/types';
+import { VpqrPluginMethods } from '@wallet/plugins/vpqr/types';
 import { InitInput } from '@didkit/index';
 
 import { InitFunction, GenericInitFunction } from 'types/helpers';
@@ -24,8 +25,12 @@ import { ethers } from 'ethers';
 export * from '@learncard/types';
 
 export type LearnCardRawWallet = Wallet<
-    'DIDKit' | 'DID Key' | 'VC' | 'IDX' | 'Expiration' | 'Ethereum',
-    DidKeyPluginMethods<DidMethod> & VCPluginMethods & IDXPluginMethods & EthereumPluginMethods
+    'DIDKit' | 'DID Key' | 'VC' | 'IDX' | 'Expiration' | 'Ethereum' | 'Vpqr',
+    DidKeyPluginMethods<DidMethod> &
+        VCPluginMethods &
+        IDXPluginMethods &
+        EthereumPluginMethods &
+        VpqrPluginMethods
 >;
 
 export type AllLearnCardMethods = {
@@ -154,6 +159,16 @@ export type AllLearnCardMethods = {
      * Really only useful for testing with the CLI right now...
      */
     addInfuraProjectId: (infuraProjectIdToAdd: string) => void;
+
+    /**
+     * Returns a Verifiable Presentation (VP) from a QR code base-64 image data string containing a VP compressed by CBOR-LD.
+     */
+    vpFromQrCode: (text: string) => Promise<VP>;
+
+    /**
+     * Returns a QR-embeddable base-64 image data string from a Verifiable Presentation, compressed using CBOR-LD.
+     */
+    vpToQrCode: (vp: VP) => Promise<string>;
 };
 
 export type LearnCard<
