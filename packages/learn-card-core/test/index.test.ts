@@ -1,5 +1,8 @@
 import { readFile } from 'fs/promises';
 
+import QrCode from 'qrcode-reader';
+import Jimp from 'jimp';
+
 import {
     UnsignedVCValidator,
     VC,
@@ -459,5 +462,52 @@ describe('LearnCard SDK', () => {
 
         //  wallet.getBalance();
         //  });
+    });
+
+    describe('VPQR Plugin', () => {
+        it('should generate a base-64 QR code image for a Verifiable Presentation', async () => {
+            const wallet = await getWallet();
+
+            const image = await wallet.vpToQrCode(await wallet.issuePresentation(await wallet.getTestVp()));
+            expect(image).toContain('data:image');
+        });
+        it('should decode a Verifiable Presentation embedded in a QR code', async () => {
+            const wallet = await getWallet();
+
+            const qrImageText =
+                'VP1-B3ECQDJABQEIRQ5MBDBXBQ6ECDECACWBC5UA6UIU5YZY6FFIVGNU3ZTNM2TIC5WTH3N4HK26LJ2MHJZ2F5ODT35YYPSTQDAIRDBYIEALYDRSXQYLNOBWGKLTPOJTS6Y3SMVSGK3TUNFQWY4ZPGM3TGMIYOKSRQ5AYNAMJVAQ2MMB7J3QZAKKRRIDYSBSXSSTIMJDWG2KPNFFEMWSFKJKFCU2JONEW2TTZMFMFC2KPNRZWSWLKLEYES3BQONEW2SJSJZBUSNS2NVDHGYZSKY4S4LTXJF5DOM3JMIZVG3CWLBUE44LIGZKXG6KGMIWWC3SHMY4DO5DQIVGXUNSQNUYVO5CFGQ3VAVDCO5LWSYKKKRSFMNSOOVXEQZLJMVYVUT2FGRES2MKGJIZTE4CBIRDUO3TZMRBXCQLHDCSBRKQYVCBRSBABLARO2APKEKO4M4PCSUKTG2N4ZWWNJUBO3JT5W6DVNPFU5GDU45C6XBZ565MCF3IB5IRJ3RTR4KKRKM3JXTG2ZVGQF3NGPW3YOVV4WTUYOTTUL24HHX3RQ5MBDBWBRAVBDBYHQJ3ENFSDUZLYMFWXA3DFHJSDEM3EMQ3DQN3BG5SGGNRXHA3TMNBWMYZGKYRZHBSDAGEIDJPT3HE6DCGIEGIEAFMCF3IB5IRJ3RTR4KKRKM3JXTG2ZVGQF3NGPW3YOVV4WTUYOTTUL24HHX3Q';
+            const verifiablePresentation = await wallet.vpFromQrCode(qrImageText);
+            expect(verifiablePresentation).toHaveProperty('@context');
+        });
+        it('should generate a base-64 QR code image and be able to decode it back into a Verifiable Presentation', done => {
+            new Promise(async (resolve, reject) => {
+                const wallet = await getWallet();
+
+                const verifiablePresentation = await wallet.issuePresentation(
+                    await wallet.getTestVp()
+                );
+                const imageString = await wallet.vpToQrCode(verifiablePresentation);
+
+                const base64Image = imageString.split(';base64,').pop();
+                const buffer = new Buffer.from(base64Image, 'base64');
+
+                const image = await Jimp.read(buffer);
+
+                const qrcode = new QrCode();
+                qrcode.callback = async (err, value) => {
+                    try {
+                        const qrImageText = value.result;
+                        const decodedVerifiablePresentation = await wallet.vpFromQrCode(
+                            qrImageText
+                        );
+                        expect(decodedVerifiablePresentation).toEqual(verifiablePresentation);
+                        done();
+                    } catch (e) {
+                        done(e);
+                    }
+                };
+                qrcode.decode(image.bitmap);
+            });
+        });
     });
 });
