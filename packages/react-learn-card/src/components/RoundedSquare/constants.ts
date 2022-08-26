@@ -1,9 +1,9 @@
-import coinsGraphic from '../../assets/images/walletcurrency.png';
-import idsGraphic from '../../assets/images/walletids.png';
-import jobhistoryGraphic from '../../assets/images/walletjobhistory.png';
-import learningHistoryGraphic from '../../assets/images/walletlearninghistory.png';
-import skillsGraphic from '../../assets/images/walletskills.png';
-import achievementsGraphic from '../../assets/images/walletTrophy.png';
+import coinsGraphic from '../../assets/images/walletcurrency.webp';
+import idsGraphic from '../../assets/images/walletids.webp';
+import jobhistoryGraphic from '../../assets/images/walletjobhistory.webp';
+import learningHistoryGraphic from '../../assets/images/walletlearninghistory.webp';
+import skillsGraphic from '../../assets/images/walletskills.webp';
+import achievementsGraphic from '../../assets/images/walletTrophy.webp';
 
 export const WALLET_SUBTYPES = {
     ACHIEVEMENTS: 'achievements',
