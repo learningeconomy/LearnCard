@@ -465,7 +465,7 @@ describe('LearnCard SDK', () => {
         it('should generate a base-64 QR code image for a Verifiable Presentation', async () => {
             const wallet = await getWallet();
 
-            const image = await wallet.vpToQrCode(await wallet.getTestVp());
+            const image = await wallet.vpToQrCode(await wallet.issuePresentation(await wallet.getTestVp()));
             expect(image).toContain('data:image');
         });
         it('should decode a Verifiable Presentation embedded in a QR code', async () => {
