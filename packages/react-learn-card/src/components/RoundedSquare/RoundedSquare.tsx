@@ -11,6 +11,7 @@ export type RoundedSquareProps = {
     description?: string;
     type?: string;
     iconSrc?: string;
+    imgSrc?: string;
     count?: string | number;
     onClick?: () => void;
     bgColor?: string;
@@ -20,12 +21,13 @@ export const RoundedSquare: React.FC<RoundedSquareProps> = ({
     title = 'Currencies',
     description = 'Lorem ipsum sit dalor amet',
     iconSrc = ICONS_TO_SOURCE[Icons.trophyIcon],
+    imgSrc,
     type = WALLET_SUBTYPES.ACHIEVEMENTS,
     count = '28',
     onClick = () => {},
     bgColor,
 }) => {
-    const imgSrc = TYPE_TO_IMG_SRC[type];
+    const imgSource = imgSrc || TYPE_TO_IMG_SRC[type];
     const backgroundColor = bgColor ?? `bg-${TYPE_TO_WALLET_COLOR[type]}`;
     const circleClass = `flex w-full justify-end icon-display absolute right-[15px] bottom-[10px] max-h-[40px] max-w-[40px]`;
 
@@ -46,7 +48,7 @@ export const RoundedSquare: React.FC<RoundedSquareProps> = ({
                 </section>
 
                 <div className="graphic-background relative flex justify-center">
-                    <img className="max-w-[130px]" src={imgSrc} />
+                    <img className="max-w-[130px]" src={imgSource} />
                 </div>
             </div>
 

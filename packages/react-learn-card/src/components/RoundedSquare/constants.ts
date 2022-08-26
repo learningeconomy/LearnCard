@@ -1,8 +1,8 @@
-import coinsGraphic from '../../assets/images/wallet-currency.png';
-import idsGraphic from '../../assets/images/wallet-ids.png';
-import jobhistoryGraphic from '../../assets/images/wallet-jobhistory.png';
-import learningHistoryGraphic from '../../assets/images/wallet-learninghistory.png';
-import skillsGraphic from '../../assets/images/wallet-skills.png';
+import coinsGraphic from '../../assets/images/walletcurrency.png';
+import idsGraphic from '../../assets/images/walletids.png';
+import jobhistoryGraphic from '../../assets/images/walletjobhistory.png';
+import learningHistoryGraphic from '../../assets/images/walletlearninghistory.png';
+import skillsGraphic from '../../assets/images/walletskills.png';
 import achievementsGraphic from '../../assets/images/walletTrophy.png';
 
 export const WALLET_SUBTYPES = {
