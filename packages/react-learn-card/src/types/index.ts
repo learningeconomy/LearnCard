@@ -1,7 +1,7 @@
 import { VerificationItem, VC, Profile, CredentialSubject } from '@learncard/types';
 
 export enum Icons {
-    sheckelsIcon,
+    coinsIcon,
     userIcon,
     trophyIcon,
     briefcaseIcon,
