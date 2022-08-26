@@ -34,7 +34,12 @@ export default [
             del({ targets: [packageJson.main, packageJson.module] }),
             json(),
             peerDepsExternal(),
-            image(),
+            image({
+                output: `dist/images`,
+                extensions: /\.(png|jpg|jpeg|gif|svg)$/, // support png|jpg|jpeg|gif|svg, and it's alse the default value
+                limit: 8192, // default 8192(8k)
+                exclude: 'node_modules/**',
+            }),
             svgr(),
             resolve(),
             commonjs(),
