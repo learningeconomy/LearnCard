@@ -1,5 +1,6 @@
 import React from 'react';
 import { CourseCardProps } from '../../types';
+import CourseCardPlaceholder from '../../assets/images/lhplaceholder.png';
 
 export const CourseCard: React.FC<CourseCardProps> = ({
     status = 'Enrolled',
@@ -16,9 +17,22 @@ export const CourseCard: React.FC<CourseCardProps> = ({
     return (
         <div
             onClick={onClick}
-            className={`flex justify-center items-center relative w-full rounded-3xl shadow-2xl py-3 bg-white ${className}`}
+            className={`flex shadow-[0_0_8px_0px_rgba(0,0,0,0.2)] relative $ py-[10px] px-[15px] max-w-[400px] h-[130px] rounded-[20px] ${className}`}
         >
-            Course Card
+            <img
+                src={CourseCardPlaceholder}
+                className="course-card-img w-[100px] h-[111px] mr-[10px]"
+            />
+
+            <div className="course-card-detail-info">
+                <div className="text-sm">
+                    <span>{status}</span>
+                    <span className="spacer-dot mx-[3px]">•</span>
+                    <span>{semester}</span>
+                </div>
+                <p className="course-card-title text-sm">{title}</p>
+                <div className="course-card-counts"></div>
+            </div>
         </div>
     );
 };
