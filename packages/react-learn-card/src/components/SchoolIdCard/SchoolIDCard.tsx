@@ -4,7 +4,7 @@ import Barcode from 'react-barcode';
 
 import { SchoolIDCardProps } from './types';
 
-const SchoolIDCard: React.FC<SchoolIDCardProps> = ({
+export const SchoolIDCard: React.FC<SchoolIDCardProps> = ({
     userImage,
     userName,
     text = null,
