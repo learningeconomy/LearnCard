@@ -242,6 +242,29 @@
     /* mix-blend-mode: lighten; */
 }
 
+.barcode-container {
+    margin: 0;
+    padding: 0;
+    position: absolute;
+    top: 50%;
+    right: 0;
+    transform: translate(80px, -50%);
+}
+
+.barcode-wrap {
+    transform: rotate(270deg);
+    border-radius: 16px;
+    padding: 0;
+    margin: 0;
+}
+
+.barcode-wrap > svg {
+    border-radius: 16px;
+    height: 30px;
+    margin: 0;
+    padding: 0;
+}
+
 @media (max-width: 414px) {
     .credit-card-front-face,
     .credit-card-back-face {
