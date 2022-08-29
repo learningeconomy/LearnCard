@@ -64,6 +64,7 @@ export type SkillsCardProps = {
     level?: string;
     category?: string;
     levelCount?: string | number;
+    skillColor?: string;
     onClick?: () => void;
     className?: string;
 };
