@@ -12,19 +12,40 @@ type SkillStatListItemIndicatorProps = {
     className?: string;
 };
 
+type MoreSkillsListItemProps = {
+    count?: number | string;
+    percent?: string;
+};
+
 const SkillStatListItemIndicator: React.FC<SkillStatListItemIndicatorProps> = ({
     className = 'bg-emerald-700',
 }) => {
-    return <span className={`${className} skill-item-stat-indicator`}></span>;
+    return (
+        <span
+            className={`${className} skill-item-stat-indicator w-[10px] h-[10px] rounded-[3px] mr-[10px]`}
+        ></span>
+    );
 };
 
 const SkillStatListItem: React.FC<SkillStatListItemProps> = ({ name, percent, className }) => {
     const colorIndicator = <SkillStatListItemIndicator />;
     return (
         <div className="flex items-center justify-between px-[10px] skill-stat-list-item flex text-xs h-[20px] py-[5px] shadow-[0_1px_3px_rgba(0,0,0,0.3)] mt-[10px] rounded-[10px] text-grayscale-900 font-semibold">
-            <span>
+            <span className="flex justify-center items-center">
                 {colorIndicator}
                 {name}
+            </span>
+            <span>{percent}%</span>
+        </div>
+    );
+};
+
+const MoreSkillsListItem: React.FC<MoreSkillsListItemProps> = ({ count, percent, className }) => {
+    const colorIndicator = <SkillStatListItemIndicator className="bg-grayscale-200" />;
+    return (
+        <div className="flex items-center justify-between px-[10px] skill-stat-list-item flex text-xs h-[20px] py-[5px] shadow-[0_1px_3px_rgba(0,0,0,0.3)] mt-[10px] rounded-[10px] text-grayscale-900 font-semibold">
+            <span className="flex justify-center items-center">
+                {colorIndicator}+{count} more
             </span>
             <span>{percent}%</span>
         </div>
@@ -39,9 +60,16 @@ export const SkillsCard: React.FC<SkillsStatsCardProps> = ({
 }) => {
     const title = `${totalCount} Skill Categories`;
 
+    const showMore = skills?.length > 3;
+
     const renderSkillsList = skills?.slice(0, 3).map(skill => {
         return <SkillStatListItem name={skill?.name} percent={skill?.percent} key={skill?.name} />;
     });
+
+    if (showMore) {
+        const otherLength = skills?.length - 3;
+        renderSkillsList?.push(<MoreSkillsListItem count={otherLength} percent={'27'} />);
+    }
 
     return (
         <div
