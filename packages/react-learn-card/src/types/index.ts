@@ -59,11 +59,11 @@ export type CourseCardProps = {
 };
 
 export type SkillsCardProps = {
-    count?: string | number;
+    count?: number;
     title?: string;
     level?: string;
     category?: string;
-    levelCount?: string | number;
+    levelCount?: number;
     skillColor?: string;
     onClick?: () => void;
     className?: string;

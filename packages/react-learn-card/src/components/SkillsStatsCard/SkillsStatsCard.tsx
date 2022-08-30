@@ -15,6 +15,7 @@ type SkillStatListItemIndicatorProps = {
 type MoreSkillsListItemProps = {
     count?: number | string;
     percent?: string;
+    className?: string;
 };
 
 const SkillStatListItemIndicator: React.FC<SkillStatListItemIndicatorProps> = ({
@@ -52,7 +53,7 @@ const MoreSkillsListItem: React.FC<MoreSkillsListItemProps> = ({ count, percent,
     );
 };
 
-export const SkillsCard: React.FC<SkillsStatsCardProps> = ({
+export const SkillsStatsCard: React.FC<SkillsStatsCardProps> = ({
     totalCount = 0,
     skills = [],
     className,
@@ -88,4 +89,4 @@ export const SkillsCard: React.FC<SkillsStatsCardProps> = ({
     );
 };
 
-export default SkillsCard;
+export default SkillsStatsCard;
