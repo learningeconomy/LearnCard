@@ -1,5 +1,13 @@
 # @welibraryos/react-learn-card
 
+## 2.3.26
+
+### Patch Changes
+
+-   [#76](https://github.com/WeLibraryOS/LearnCard/pull/76) [`f88e82a`](https://github.com/WeLibraryOS/LearnCard/commit/f88e82a87cd12f30105639c2339561a72aa20d7e) Thanks [@goblincore](https://github.com/goblincore)! - Fix type errors to fix build
+
+*   [#75](https://github.com/WeLibraryOS/LearnCard/pull/75) [`2808d37`](https://github.com/WeLibraryOS/LearnCard/commit/2808d37a4889d9fafd341b472e4c7dbb68eef40a) Thanks [@goblincore](https://github.com/goblincore)! - Add Course Card, Skill Card components
+
 ## 2.3.25
 
 ### Patch Changes
