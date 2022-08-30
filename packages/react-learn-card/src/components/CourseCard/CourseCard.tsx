@@ -6,13 +6,13 @@ import MiniTrophyIcon from '../../assets/images/minitrophy.svg';
 import MiniJobIcon from '../../assets/images/minijob.svg';
 import MiniPuzzleIcon from '../../assets/images/minipuzzle.svg';
 
-const TYPE_TO_COURSE_MINI_ICON = {
+const TYPE_TO_COURSE_MINI_ICON: any = {
     ['job']: MiniJobIcon,
     ['achievement']: MiniTrophyIcon,
     ['skill']: MiniPuzzleIcon,
 };
 
-const TYPE_TO_COLOR = {
+const TYPE_TO_COLOR: any = {
     ['job']: 'bg-emerald-700',
     ['achievement']: 'bg-spice-500',
     ['skill']: 'bg-indigo-500',
@@ -86,7 +86,6 @@ export const CourseCard: React.FC<CourseCardProps> = ({
             </div>
         </div>
     );
-    å;
 };
 
 export default CourseCard;

@@ -31,7 +31,7 @@ export const SkillsCard: React.FC<SkillsCardProps> = ({
     onClick = () => {},
 }) => {
     const renderSkillsMeter = () => {
-        const num = parseInt(levelCount ?? 0);
+        const num = levelCount;
         const skillMeter = [...Array(10).keys()].map(counter => {
             console.log('///counter', counter, 'num', num);
             const filled = counter < num;
