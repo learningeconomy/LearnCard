@@ -18,4 +18,9 @@ QRCodeCardTest.args = {
     userHandle: '@janetyoon',
     qrCodeValue: 'https://www.npmjs.com/package/@learncard/react',
     className: '',
+    text: (
+        <p className="flex items-center justify-center w-full text-xl text-black font-bold tracking-[9px]">
+            LEARNCARD
+        </p>
+    ),
 };

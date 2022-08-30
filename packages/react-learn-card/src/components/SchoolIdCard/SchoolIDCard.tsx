@@ -13,9 +13,9 @@ export const SchoolIDCard: React.FC<SchoolIDCardProps> = ({
     className,
     containerClassName,
 }) => {
-    let textEl: React.ReactNode | string | null = null;
+    let textEl: React.ReactNode | null = null;
     if (typeof text === 'string') {
-        textEl = <h1>{text}</h1>;
+        textEl = <h3 className="text-xs font-bold uppercase text-black">{text}</h3>;
     } else {
         textEl = text;
     }

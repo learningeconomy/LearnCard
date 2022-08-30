@@ -45,3 +45,39 @@ export type SmallAchievementCardProps = {
     date?: string;
     onClick?: () => void;
 };
+
+export type CourseCardProps = {
+    status?: string;
+    title?: string;
+    semester?: string;
+    skillCount?: string | number;
+    thumbSrc?: string;
+    jobCount?: string | number;
+    className?: string;
+    achievementCount: string | number;
+    onClick?: () => void;
+};
+
+export type SkillsCardProps = {
+    count?: string | number;
+    title?: string;
+    level?: string;
+    category?: string;
+    levelCount?: string | number;
+    skillColor?: string;
+    onClick?: () => void;
+    className?: string;
+};
+
+export type SkillStat = {
+    name?: string;
+    percent: number | string;
+    className?: string;
+}
+
+export type SkillsStatsCardProps = {
+    totalCount?: string | number;
+    skills?: SkillStat[];
+    className?: string;
+    onClick?: () => void;
+}
