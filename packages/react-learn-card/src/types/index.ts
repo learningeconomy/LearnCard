@@ -87,4 +87,6 @@ export type SkillVerticalCardProps = {
     completed?: number;
     total?: number;
     thumbImg?: string;
-}
+    onClick?: () => void;
+    className?: string;
+};
