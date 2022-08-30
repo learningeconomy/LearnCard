@@ -73,11 +73,18 @@ export type SkillStat = {
     name?: string;
     percent: number | string;
     className?: string;
-}
+};
 
 export type SkillsStatsCardProps = {
     totalCount?: string | number;
     skills?: SkillStat[];
     className?: string;
     onClick?: () => void;
+};
+
+export type SkillVerticalCardProps = {
+    title: string;
+    completed?: number;
+    total?: number;
+    thumbImg?: string;
 }
