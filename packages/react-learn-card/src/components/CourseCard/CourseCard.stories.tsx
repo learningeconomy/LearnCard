@@ -15,7 +15,7 @@ const Template: Story<CourseCardProps> = args => <CourseCard {...args} />;
 export const CourseCardTest = Template.bind({});
 CourseCardTest.args = {
     status: 'Enrolled',
-    title: 'ENGL 1020 - Critical Thinking and Augmentation',
+    title: 'MECH 1340 Digital Fundamentals and Programmable Logic Controllers',
     semester: 'Fall 2022',
     jobCount: 1,
     achievementCount: 4,
