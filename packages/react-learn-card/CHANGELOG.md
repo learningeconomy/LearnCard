@@ -1,5 +1,14 @@
 # @welibraryos/react-learn-card
 
+## 2.3.25
+
+### Patch Changes
+
+-   [#74](https://github.com/WeLibraryOS/LearnCard/pull/74) [`b06f5de`](https://github.com/WeLibraryOS/LearnCard/commit/b06f5de90c8aa91aeddd9d1c92ba40044ad1461f) Thanks [@gerardopar](https://github.com/gerardopar)! - Id card
+
+-   Updated dependencies [[`9942f25`](https://github.com/WeLibraryOS/LearnCard/commit/9942f25ccc39797bc74ad63cf7d4878b2619b208), [`9942f25`](https://github.com/WeLibraryOS/LearnCard/commit/9942f25ccc39797bc74ad63cf7d4878b2619b208), [`9942f25`](https://github.com/WeLibraryOS/LearnCard/commit/9942f25ccc39797bc74ad63cf7d4878b2619b208)]:
+    -   @learncard/core@5.1.0
+
 ## 2.3.24
 
 ### Patch Changes
