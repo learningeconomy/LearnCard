@@ -38,8 +38,8 @@ const VCDisplayFrontFace: React.FC<VCDisplayCardProps> = ({
                 <section className="flex flex-row items-start justify-between w-full line-clamp-2">
                     <div className="flex flex-row items-start justify-start line-clamp-2 py-4 ">
                         <h3
-                            className="text-2xl line-clamp-2 tracking-wide leading-snug text-center vc-display-title "
-                            data-testid="vc-thumbnail-title text-gray-900 font-medium"
+                            className="text-2xl line-clamp-2 tracking-wide leading-snug text-center vc-display-title text-gray-900 font-medium"
+                            data-testid="vc-thumbnail-title"
                         >
                             {title ?? ''}
                         </h3>
