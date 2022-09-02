@@ -38,8 +38,8 @@ const VCDisplayFrontFace: React.FC<VCDisplayCardProps> = ({
                 <section className="flex flex-row items-start justify-between w-full line-clamp-2">
                     <div className="flex flex-row items-start justify-start line-clamp-2 py-4 ">
                         <h3
-                            className="text-2xl line-clamp-2 tracking-wide leading-snug text-center"
-                            data-testid="vc-thumbnail-title"
+                            className="text-2xl line-clamp-2 tracking-wide leading-snug text-center vc-display-title "
+                            data-testid="vc-thumbnail-title text-gray-900 font-medium"
                         >
                             {title ?? ''}
                         </h3>
@@ -70,11 +70,11 @@ const VCDisplayFrontFace: React.FC<VCDisplayCardProps> = ({
 
                 <div className="w-full mt-2 vc-card-issued-to-info">
                     <p
-                        className="text-sm font-light text-center line-clamp-2"
+                        className="text-sm font-light text-center line-clamp-2 vc-display-issue-details text-gray-900"
                         data-testid="vc-thumbnail-createdAt"
                     >
-                        Issued to <span className="font-bold">{issueeName}</span> on{' '}
-                        {createdAt ?? ''} by <span className="font-bold"> {issuerName}</span>
+                        Issued to <span className="font-bold text-gray-900">{issueeName}</span> on{' '}
+                        {createdAt ?? ''} by <span className="font-bold text-gray-900"> {issuerName}</span>
                     </p>
                 </div>
 
