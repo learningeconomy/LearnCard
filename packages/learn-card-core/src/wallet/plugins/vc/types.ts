@@ -1,6 +1,20 @@
 import { UnsignedVC, VC, UnsignedVP, VP, VerificationCheck } from '@learncard/types';
 import { KeyPair, ProofOptions } from '../didkit/types';
 
+export type TestVcArgs =
+    | { type: 'basic'; did?: string; subject?: string }
+    | {
+          type: 'achievement';
+          did?: string;
+          subject?: string;
+          name?: string;
+          achievementName?: string;
+          description?: string;
+          criteriaNarrative?: string;
+      };
+
+export type GetTestVc = (args?: TestVcArgs) => UnsignedVC;
+
 export type DependentMethods = {
     getSubjectDid: (type: 'key') => string;
     getSubjectKeypair: () => KeyPair;
@@ -24,7 +38,7 @@ export type VCPluginMethods = DependentMethods & {
     verifyCredential: (credential: VC) => Promise<VerificationCheck>;
     issuePresentation: (credential: UnsignedVP) => Promise<VP>;
     verifyPresentation: (presentation: VP) => Promise<VerificationCheck>;
-    getTestVc: (subject?: string) => UnsignedVC;
+    getTestVc: GetTestVc;
     getTestVp: (credential?: VC) => Promise<UnsignedVP>;
 };
 

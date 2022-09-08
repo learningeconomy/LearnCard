@@ -12,7 +12,7 @@ import { DidMethod } from '@wallet/plugins/didkit/types';
 import { Algorithm, DidKeyPluginMethods } from '@wallet/plugins/didkey/types';
 import { EthereumPluginMethods } from '@wallet/plugins/EthereumPlugin/types';
 import { IDXCredential, IDXPluginMethods } from '@wallet/plugins/idx/types';
-import { VCPluginMethods, VerifyExtension } from '@wallet/plugins/vc/types';
+import { VCPluginMethods, VerifyExtension, GetTestVc } from '@wallet/plugins/vc/types';
 import { DidkitPluginMethods } from '@wallet/plugins/didkit/types';
 import { EthereumConfig } from '@wallet/plugins/EthereumPlugin/types';
 import { VpqrPluginMethods } from '@wallet/plugins/vpqr/types';
@@ -108,7 +108,7 @@ export type AllLearnCardMethods = {
      *
      * You can use this to test out implementations that use this library!
      */
-    getTestVc: (subject?: string) => UnsignedVC;
+    getTestVc: GetTestVc;
 
     /**
      * Wraps a crednetial in an exmaple presentaion. If no credential is provided, a new one will be
