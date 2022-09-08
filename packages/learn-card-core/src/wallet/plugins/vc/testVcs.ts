@@ -1,19 +1,6 @@
 import { UnsignedVC, UnsignedAchievementCredential } from '@learncard/types';
 
-export const getBasicVc = ({
-    did = 'did:example:d23dd687a7dc6787646f2eb98d0',
-    subject = 'did:example:d23dd687a7dc6787646f2eb98d0',
-}: {
-    did?: string;
-    subject?: string;
-}): UnsignedVC => ({
-    '@context': ['https://www.w3.org/2018/credentials/v1'],
-    id: 'http://example.org/credentials/3731',
-    type: ['VerifiableCredential'],
-    issuer: did,
-    issuanceDate: '2020-08-19T21:41:50Z',
-    credentialSubject: { id: subject },
-});
+import { TestVcs } from './types';
 
 export const getAchievementCredential = ({
     did = 'did:example:d23dd687a7dc6787646f2eb98d0',
@@ -22,6 +9,7 @@ export const getAchievementCredential = ({
     achievementName = 'Teamwork',
     description = 'This badge recognizes the development of the capacity to collaborate within a group environment.',
     criteriaNarrative = 'Team members are nominated for this badge by their peers and recognized upon review by Example Corp management.',
+    issuanceDate = '2020-08-19T21:41:50Z',
 }: {
     did?: string;
     subject?: string;
@@ -29,6 +17,7 @@ export const getAchievementCredential = ({
     achievementName?: string;
     description?: string;
     criteriaNarrative?: string;
+    issuanceDate?: string;
 }): UnsignedAchievementCredential => ({
     '@context': [
         'https://www.w3.org/2018/credentials/v1',
@@ -37,7 +26,7 @@ export const getAchievementCredential = ({
     id: 'http://example.com/credentials/3527',
     type: ['VerifiableCredential', 'OpenBadgeCredential'],
     issuer: did,
-    issuanceDate: '2010-01-01T00:00:00Z',
+    issuanceDate,
     name,
     credentialSubject: {
         id: subject,
@@ -51,3 +40,48 @@ export const getAchievementCredential = ({
         },
     },
 });
+
+export const TEST_VCs: { [Key in keyof TestVcs]: (args: TestVcs[Key]) => UnsignedVC } = {
+    basic: ({
+        did = 'did:example:d23dd687a7dc6787646f2eb98d0',
+        subject = 'did:example:d23dd687a7dc6787646f2eb98d0',
+        issuanceDate = '2020-08-19T21:41:50Z',
+    }) => ({
+        '@context': ['https://www.w3.org/2018/credentials/v1'],
+        id: 'http://example.org/credentials/3731',
+        type: ['VerifiableCredential'],
+        issuer: did,
+        issuanceDate,
+        credentialSubject: { id: subject },
+    }),
+    achievement: ({
+        did = 'did:example:d23dd687a7dc6787646f2eb98d0',
+        subject = 'did:example:d23dd687a7dc6787646f2eb98d0',
+        name = 'Teamwork Badge',
+        achievementName = 'Teamwork',
+        description = 'This badge recognizes the development of the capacity to collaborate within a group environment.',
+        criteriaNarrative = 'Team members are nominated for this badge by their peers and recognized upon review by Example Corp management.',
+        issuanceDate = '2020-08-19T21:41:50Z',
+    }): UnsignedAchievementCredential => ({
+        '@context': [
+            'https://www.w3.org/2018/credentials/v1',
+            'https://imsglobal.github.io/openbadges-specification/context.json',
+        ],
+        id: 'http://example.com/credentials/3527',
+        type: ['VerifiableCredential', 'OpenBadgeCredential'],
+        issuer: did,
+        issuanceDate,
+        name,
+        credentialSubject: {
+            id: subject,
+            type: ['AchievementSubject'],
+            achievement: {
+                id: 'https://example.com/achievements/21st-century-skills/teamwork',
+                type: ['Achievement'],
+                criteria: { narrative: criteriaNarrative },
+                description,
+                name: achievementName,
+            },
+        },
+    }),
+};

@@ -4,7 +4,7 @@ import { issueCredential } from './issueCredential';
 import { verifyCredential } from './verifyCredential';
 import { issuePresentation } from './issuePresentation';
 import { verifyPresentation } from './verifyPresentation';
-import { getBasicVc, getAchievementCredential } from './testVcs';
+import { TEST_VCs } from './testVcs';
 
 import { DependentMethods, VCPluginMethods } from './types';
 import { Plugin, Wallet } from 'types/wallet';
@@ -23,20 +23,14 @@ export const getVCPlugin = async (
                 const defaults = {
                     did: _wallet.pluginMethods.getSubjectDid('key'),
                     subject: 'did:example:d23dd687a7dc6787646f2eb98d0',
+                    issuanceDate: '2020-08-19T21:41:50Z',
                 };
 
                 const { type = 'basic', ...functionArgs } = args;
 
-                if (type === 'basic') return getBasicVc({ ...defaults, ...functionArgs });
+                if (!(type in TEST_VCs)) throw new Error('Invalid Test VC Type!');
 
-                if (type === 'achievement') {
-                    return getAchievementCredential({
-                        ...defaults,
-                        ...functionArgs,
-                    });
-                }
-
-                throw new Error('Invalid Test VC Type!');
+                return TEST_VCs[type]({ ...defaults, ...functionArgs });
             },
             getTestVp: async (_wallet, _credential) => {
                 const credential =

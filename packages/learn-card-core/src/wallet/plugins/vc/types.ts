@@ -1,19 +1,21 @@
 import { UnsignedVC, VC, UnsignedVP, VP, VerificationCheck } from '@learncard/types';
 import { KeyPair, ProofOptions } from '../didkit/types';
+import { DiscriminatedUnionize } from 'types/helpers';
 
-export type TestVcArgs =
-    | { type: 'basic'; did?: string; subject?: string }
-    | {
-          type: 'achievement';
-          did?: string;
-          subject?: string;
-          name?: string;
-          achievementName?: string;
-          description?: string;
-          criteriaNarrative?: string;
-      };
+export type TestVcs = {
+    basic: { did?: string; subject?: string; issuanceDate?: string };
+    achievement: {
+        did?: string;
+        subject?: string;
+        name?: string;
+        achievementName?: string;
+        description?: string;
+        criteriaNarrative?: string;
+        issuanceDate?: string;
+    };
+};
 
-export type GetTestVc = (args?: TestVcArgs) => UnsignedVC;
+export type GetTestVc = (args?: DiscriminatedUnionize<TestVcs>) => UnsignedVC;
 
 export type DependentMethods = {
     getSubjectDid: (type: 'key') => string;
