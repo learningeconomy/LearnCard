@@ -13,6 +13,15 @@ export type TestVcs = {
         criteriaNarrative?: string;
         issuanceDate?: string;
     };
+    fullAchievement: {
+        did?: string;
+        subject?: string;
+        name?: string;
+        achievementName?: string;
+        description?: string;
+        issuanceDate?: string;
+        expirationDate?: string;
+    };
 };
 
 export type GetTestVc = (args?: DiscriminatedUnionize<TestVcs>) => UnsignedVC;
