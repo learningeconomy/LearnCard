@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.3.27
+
+### Patch Changes
+
+-   [#78](https://github.com/WeLibraryOS/LearnCard/pull/78) [`3149715`](https://github.com/WeLibraryOS/LearnCard/commit/3149715875dd007c54ca0a67b7424b025efdc558) Thanks [@goblincore](https://github.com/goblincore)! - fix: [WE-2340] Fix VC display text not showing in dark mode
+
 ## 2.3.26
 
 ### Patch Changes
