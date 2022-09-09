@@ -29,8 +29,12 @@ export const FlippyCard: React.FC<FlippyCardProps> = ({ children }) => {
     return (
         <div data-testid="flippy-card-wrapper" className="flippy-wrapper-container">
             <div data-testid="flippy-card" className={flipCardCSSClass} onClick={handleClick}>
-                <section data-testid="flippy-card-front" className="card-face card-face--front">{frontCard}</section>
-                <section data-testid="flippy-card-back" className="card-face card-face--back">{backCard}</section>
+                <section data-testid="flippy-card-front" className="card-face card-face--front">
+                    {frontCard}
+                </section>
+                <section data-testid="flippy-card-back" className="card-face card-face--back">
+                    {backCard}
+                </section>
             </div>
         </div>
     );
