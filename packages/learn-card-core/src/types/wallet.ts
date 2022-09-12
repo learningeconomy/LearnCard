@@ -1,39 +1,32 @@
+import { CachingPlane, StoragePlane, WalletCaching, WalletStorage } from './planes';
+import { UnionToIntersection } from './utilities';
+
+export type GetPluginMethods<Plugins extends Plugin[]> = UnionToIntersection<
+    NonNullable<Plugins[number]['_methods']>
+>;
+
 export type Plugin<
-    Name extends string,
+    Name extends string = string,
     PublicMethods extends Record<string, (...args: any[]) => any> = Record<never, never>
 > = {
-    name?: Name;
+    name: Name;
+    storage?: StoragePlane;
+    caching?: CachingPlane;
     pluginMethods: {
-        [Key in keyof PublicMethods]: <T extends Wallet<any, PublicMethods>>(
+        [Key in keyof PublicMethods]: <T extends Wallet<[Plugin<Name, PublicMethods>]>>(
             wallet: T,
             ...args: Parameters<PublicMethods[Key]>
         ) => ReturnType<PublicMethods[Key]>;
     };
+    _methods?: PublicMethods;
 };
 
-export type PublicFieldsObj<
-    PluginMethods extends Record<string, (...args: any[]) => any> = Record<never, never>
-> = {
+export type Wallet<Plugins extends Plugin[] = [], PluginMethods = GetPluginMethods<Plugins>> = {
+    storage: WalletStorage<Plugins>;
+    caching: WalletCaching<Plugins>;
+    plugins: Plugins;
     pluginMethods: PluginMethods;
-};
-
-export type Wallet<
-    PluginNames extends string = '',
-    PluginMethods extends Record<string, (...args: any[]) => any> = Record<never, never>
-> = PublicFieldsObj<PluginMethods> & {
-    contents: any[];
-    plugins: Plugin<PluginNames, Record<string, (...args: any[]) => any>>[];
-    add: (content: any) => Promise<Wallet<PluginNames, PluginMethods>>;
-    remove: (contentId: string) => Promise<Wallet<PluginNames, PluginMethods>>;
-    addPlugin: <
-        Name extends string,
-        Methods extends Record<string, (...args: any[]) => any> = Record<never, never>
-    >(
-        plugin: Plugin<Name, Methods>
-    ) => Promise<
-        Wallet<
-            '' extends PluginNames ? Name : PluginNames | Name,
-            Record<never, never> extends PluginMethods ? Methods : PluginMethods & Methods
-        >
-    >;
+    addPlugin: <NewPlugin extends Plugin>(
+        plugin: NewPlugin
+    ) => Promise<Wallet<[...Plugins, NewPlugin]>>;
 };

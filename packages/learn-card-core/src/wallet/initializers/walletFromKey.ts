@@ -2,7 +2,7 @@ import { generateWallet } from '@wallet/base';
 import { getIDXPlugin } from '@wallet/plugins/idx';
 import { getDidKitPlugin } from '@wallet/plugins/didkit';
 import { getDidKeyPlugin } from '@wallet/plugins/didkey';
-import { ExpirationPlugin } from '@wallet/plugins/expiration';
+import { expirationPlugin } from '@wallet/plugins/expiration';
 import { getVCPlugin } from '@wallet/plugins/vc';
 import { getEthereumPlugin } from '@wallet/plugins/EthereumPlugin';
 import { getVpqrPlugin } from '@wallet/plugins/vpqr';
@@ -17,13 +17,10 @@ export const walletFromKey = async (
     {
         ceramicIdx = defaultCeramicIDXArgs,
         didkit,
-        defaultContents = [],
         ethereumConfig = defaultEthereumArgs,
     }: Partial<LearnCardConfig> = {}
 ): Promise<LearnCard> => {
-    const didkitWallet = await (
-        await generateWallet(defaultContents)
-    ).addPlugin(await getDidKitPlugin(didkit));
+    const didkitWallet = await (await generateWallet()).addPlugin(await getDidKitPlugin(didkit));
 
     const didkeyWallet = await didkitWallet.addPlugin(await getDidKeyPlugin(didkitWallet, key));
 
@@ -32,7 +29,7 @@ export const walletFromKey = async (
     const idxWallet = await didkeyAndVCWallet.addPlugin(
         await getIDXPlugin(didkeyAndVCWallet, ceramicIdx)
     );
-    const expirationWallet = await idxWallet.addPlugin(ExpirationPlugin(idxWallet));
+    const expirationWallet = await idxWallet.addPlugin(expirationPlugin(idxWallet));
 
     const ethWallet = await expirationWallet.addPlugin(
         getEthereumPlugin(expirationWallet, ethereumConfig)

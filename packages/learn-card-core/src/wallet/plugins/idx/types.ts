@@ -1,5 +1,7 @@
 import { StreamID } from '@ceramicnetwork/streamid';
 import { VC } from '@learncard/types';
+import { Plugin } from 'types/wallet';
+import { StoragePlugin, CachingPlugin } from 'types/planes';
 
 export type IDXPluginMethods = {
     getCredentialsListFromIdx: (alias?: string) => Promise<CredentialsList>;
@@ -24,3 +26,5 @@ export type IDXCredential = {
 export type CredentialsList = {
     credentials: IDXCredential[];
 };
+
+export type IDXPlugin = CachingPlugin<StoragePlugin<Plugin<'IDX', IDXPluginMethods>>>;

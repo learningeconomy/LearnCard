@@ -2,14 +2,14 @@ import { toUint8Array } from 'hex-lite';
 
 import { isHex, getAlgorithmForDidMethod } from './helpers';
 
-import { DependentMethods, DidKeyPluginMethods, Algorithm } from './types';
-import { Plugin, Wallet } from 'types/wallet';
+import { DependentMethods, Algorithm, DidKeyPlugin } from './types';
+import { Wallet } from 'types/wallet';
 import { KeyPair } from '../didkit/types';
 
 export const getDidKeyPlugin = async <DidMethod extends string>(
-    wallet: Wallet<string, DependentMethods<DidMethod>>,
+    wallet: Wallet<any, DependentMethods<DidMethod>>,
     key: string
-): Promise<Plugin<'DID Key', DidKeyPluginMethods<DidMethod>>> => {
+): Promise<DidKeyPlugin<DidMethod>> => {
     if (key.length === 0) throw new Error("Please don't use an empty string for a key!");
     if (!isHex(key)) throw new Error('Key must be a hexadecimal string!');
     if (key.length > 64) throw new Error('Key must be less than 64 characters');
@@ -36,6 +36,7 @@ export const getDidKeyPlugin = async <DidMethod extends string>(
     };
 
     return {
+        name: 'DID Key',
         pluginMethods: {
             getSubjectDid: (_wallet, type) => {
                 if (!memoizedDids[type]) {

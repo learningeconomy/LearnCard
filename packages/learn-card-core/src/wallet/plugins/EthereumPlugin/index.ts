@@ -1,7 +1,7 @@
-import { Plugin, Wallet } from 'types/wallet';
+import { Wallet } from 'types/wallet';
 import { ethers } from 'ethers';
 
-import { EthereumConfig, EthereumPluginMethods, TokenList } from './types';
+import { EthereumConfig, EthereumPlugin, TokenList } from './types';
 import {
     formatUnits,
     parseUnits,
@@ -17,14 +17,14 @@ const ERC20ABI = require('./erc20.abi.json');
 
 export const getEthereumPlugin = (
     initWallet: Wallet<
-        string,
+        any,
         {
             getSubjectDid: (type: DidMethod) => string;
             getSubjectKeypair: (type?: Algorithm) => KeyPair;
         }
     >,
     config: EthereumConfig
-): Plugin<'Ethereum', EthereumPluginMethods> => {
+): EthereumPlugin => {
     let { infuraProjectId, network = 'mainnet' } = config;
 
     // Ethers wallet
@@ -103,6 +103,7 @@ export const getEthereumPlugin = (
     };
 
     return {
+        name: 'Ethereum',
         pluginMethods: {
             getEthereumAddress: () => publicKey,
 

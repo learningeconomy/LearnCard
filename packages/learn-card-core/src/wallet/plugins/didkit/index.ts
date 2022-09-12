@@ -11,17 +11,17 @@ import init, {
     contextLoader,
 } from '@didkit/index';
 
-import { DidkitPluginMethods, DidMethod } from './types';
-import { Plugin } from 'types/wallet';
+import { DIDKitPlugin, DidMethod } from './types';
 
 export const getDidKitPlugin = async (
     input?: InitInput | Promise<InitInput>
-): Promise<Plugin<'DIDKit', DidkitPluginMethods>> => {
+): Promise<DIDKitPlugin> => {
     await init(input);
 
     const memoizedDids: Partial<Record<DidMethod, string>> = {};
 
     return {
+        name: 'DIDKit',
         pluginMethods: {
             generateEd25519KeyFromBytes: (_wallet, bytes) =>
                 JSON.parse(generateEd25519KeyFromBytes(bytes)),

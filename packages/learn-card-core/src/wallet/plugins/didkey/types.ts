@@ -1,3 +1,4 @@
+import { Plugin } from 'types/wallet';
 import { KeyPair } from '../didkit/types';
 
 export type Algorithm = 'ed25519' | 'secp256k1';
@@ -34,3 +35,8 @@ export type DidKeyPluginMethods<DidMethod extends string> = {
     };
     getKey: () => string;
 };
+
+export type DidKeyPlugin<DidMethod extends string = string> = Plugin<
+    'DID Key',
+    DidKeyPluginMethods<DidMethod>
+>;

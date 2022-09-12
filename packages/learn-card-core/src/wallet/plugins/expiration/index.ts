@@ -1,9 +1,9 @@
-import { VerifyExtension } from '../vc/types';
-import { Plugin, Wallet } from 'types/wallet';
+import { VerifyExtension } from '../vc';
+import { Wallet } from 'types/wallet';
+import { ExpirationPlugin } from './types';
 
-export const ExpirationPlugin = (
-    wallet: Wallet<any, VerifyExtension>
-): Plugin<'Expiration', VerifyExtension> => ({
+export const expirationPlugin = (wallet: Wallet<any, VerifyExtension>): ExpirationPlugin => ({
+    name: 'Expiration',
     pluginMethods: {
         verifyCredential: async (_wallet, credential) => {
             const verificationCheck = await wallet.pluginMethods.verifyCredential(credential);

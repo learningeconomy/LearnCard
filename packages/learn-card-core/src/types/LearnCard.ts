@@ -8,29 +8,32 @@ import {
     UnsignedVP,
 } from '@learncard/types';
 
-import { DidMethod } from '@wallet/plugins/didkit/types';
-import { Algorithm, DidKeyPluginMethods } from '@wallet/plugins/didkey/types';
-import { EthereumPluginMethods } from '@wallet/plugins/EthereumPlugin/types';
-import { IDXCredential, IDXPluginMethods } from '@wallet/plugins/idx/types';
-import { VCPluginMethods, VerifyExtension } from '@wallet/plugins/vc/types';
-import { DidkitPluginMethods } from '@wallet/plugins/didkit/types';
+import { DIDKitPlugin, DidMethod } from '@wallet/plugins/didkit/types';
+import { Algorithm, DidKeyPlugin } from '@wallet/plugins/didkey/types';
+import { EthereumPlugin } from '@wallet/plugins/EthereumPlugin/types';
+import { IDXCredential, IDXPlugin } from '@wallet/plugins/idx/types';
+import { VCPlugin } from '@wallet/plugins/vc/types';
 import { EthereumConfig } from '@wallet/plugins/EthereumPlugin/types';
-import { VpqrPluginMethods } from '@wallet/plugins/vpqr/types';
+import { VpqrPlugin } from '@wallet/plugins/vpqr/types';
 import { InitInput } from '@didkit/index';
 
 import { InitFunction, GenericInitFunction } from 'types/helpers';
 import { Wallet } from 'types/wallet';
 import { ethers } from 'ethers';
+import { ExpirationPlugin } from '@wallet/plugins/expiration/types';
 
 export * from '@learncard/types';
 
 export type LearnCardRawWallet = Wallet<
-    'DIDKit' | 'DID Key' | 'VC' | 'IDX' | 'Expiration' | 'Ethereum' | 'Vpqr',
-    DidKeyPluginMethods<DidMethod> &
-        VCPluginMethods &
-        IDXPluginMethods &
-        EthereumPluginMethods &
-        VpqrPluginMethods
+    [
+        DIDKitPlugin,
+        DidKeyPlugin<DidMethod>,
+        VCPlugin,
+        IDXPlugin,
+        ExpirationPlugin,
+        EthereumPlugin,
+        VpqrPlugin
+    ]
 >;
 
 export type AllLearnCardMethods = {
@@ -181,7 +184,7 @@ export type LearnCard<
 
 export type EmptyLearnCard = LearnCard<
     'verifyCredential' | 'verifyPresentation',
-    Wallet<'DIDKit' | 'Expiration', DidkitPluginMethods & VerifyExtension>
+    Wallet<[DIDKitPlugin, ExpirationPlugin]>
 >;
 
 export type CeramicIDXArgs = {
@@ -194,7 +197,6 @@ export type CeramicIDXArgs = {
 export type LearnCardConfig = {
     ceramicIdx: CeramicIDXArgs;
     didkit: InitInput | Promise<InitInput>;
-    defaultContents: any[];
     ethereumConfig: EthereumConfig;
 };
 

@@ -37,7 +37,7 @@ const transformCheckMessage = (check: string, credential: VC): string => {
 };
 
 export const verifyCredential = (
-    wallet: Wallet<string, { verifyCredential: (credential: VC) => Promise<VerificationCheck> }>
+    wallet: Wallet<any, { verifyCredential: (credential: VC) => Promise<VerificationCheck> }>
 ): ((credential: VC) => Promise<VerificationItem[]>) => {
     return async (credential: VC): Promise<VerificationItem[]> => {
         const rawVerificationCheck = await wallet.pluginMethods.verifyCredential(credential);

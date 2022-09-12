@@ -1,4 +1,5 @@
 import { UnsignedVC, UnsignedVP, VC, VP, VerificationCheck } from '@learncard/types';
+import { Plugin } from 'types/wallet';
 
 export type DidMethod =
     | 'key'
@@ -45,3 +46,5 @@ export type DidkitPluginMethods = {
     verifyPresentation: (presentation: VP) => Promise<VerificationCheck>;
     contextLoader: (url: string) => Promise<Record<string, any>>;
 };
+
+export type DIDKitPlugin = Plugin<'DIDKit', DidkitPluginMethods>;

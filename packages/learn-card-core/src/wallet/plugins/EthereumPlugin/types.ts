@@ -1,4 +1,5 @@
 import { providers } from 'ethers';
+import { Plugin } from 'types/wallet';
 
 export type EthereumPluginMethods = {
     getEthereumAddress: () => string; // TODO is there a way for this to just be a property?
@@ -30,3 +31,5 @@ export type Token = {
 };
 
 export type TokenList = Token[];
+
+export type EthereumPlugin = Plugin<'Ethereum', EthereumPluginMethods>;

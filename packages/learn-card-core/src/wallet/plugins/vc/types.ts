@@ -1,4 +1,5 @@
 import { UnsignedVC, VC, UnsignedVP, VP, VerificationCheck } from '@learncard/types';
+import { Plugin } from 'types/wallet';
 import { KeyPair, ProofOptions } from '../didkit/types';
 
 export type DependentMethods = {
@@ -29,3 +30,5 @@ export type VCPluginMethods = DependentMethods & {
 };
 
 export type VerifyExtension = { verifyCredential: (credential: VC) => Promise<VerificationCheck> };
+
+export type VCPlugin = Plugin<'VC', VCPluginMethods>;

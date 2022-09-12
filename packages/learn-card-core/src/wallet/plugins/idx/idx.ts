@@ -8,8 +8,8 @@ import { CeramicClient } from '@ceramicnetwork/http-client';
 import { CreateOpts } from '@ceramicnetwork/common';
 import { TileDocument, TileMetadataArgs } from '@ceramicnetwork/stream-tile';
 
-import { IDXCredential, CredentialsList, IDXPluginMethods, StorageType } from './types';
-import { Plugin, Wallet } from 'types/wallet';
+import { IDXCredential, CredentialsList, StorageType, IDXPlugin } from './types';
+import { Wallet } from 'types/wallet';
 import { CeramicIDXArgs } from 'types/LearnCard';
 
 const getCeramicClientFromWalletSuite = async (
@@ -38,7 +38,7 @@ const getCeramicClientFromWalletSuite = async (
 export const getIDXPlugin = async (
     wallet: Wallet<any, { getKey: () => string }>,
     { modelData, credentialAlias, ceramicEndpoint, defaultContentFamily }: CeramicIDXArgs
-): Promise<Plugin<'IDX', IDXPluginMethods>> => {
+): Promise<IDXPlugin> => {
     const ceramic = await getCeramicClientFromWalletSuite(wallet, ceramicEndpoint);
 
     const loader = new TileLoader({ ceramic });
@@ -117,6 +117,38 @@ export const getIDXPlugin = async (
     };
 
     return {
+        name: 'IDX',
+        caching: {
+            getLocal: () => {
+                console.log('caching.IDX.getLocal');
+            },
+            setLocal: () => {
+                console.log('caching.IDX.setLocal');
+            },
+            getRemote: () => {
+                console.log('caching.IDX.getRemote');
+            },
+            setRemote: () => {
+                console.log('caching.IDX.setRemote');
+            },
+        },
+        storage: {
+            get: () => {
+                console.log('storage.IDX.get');
+            },
+            getMany: () => {
+                console.log('storage.IDX.getMany');
+            },
+            upload: () => {
+                console.log('storage.IDX.upload');
+            },
+            set: () => {
+                console.log('storage.IDX.set');
+            },
+            remove: () => {
+                console.log('storage.IDX.remove');
+            },
+        },
         pluginMethods: {
             getCredentialsListFromIdx: async (_wallet, alias = credentialAlias) =>
                 getCredentialsListFromIdx(alias),
