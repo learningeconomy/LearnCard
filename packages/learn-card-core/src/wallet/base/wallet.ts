@@ -1,5 +1,5 @@
 import { Plugin, Wallet, GetPluginMethods } from 'types/wallet';
-import { StoragePlane, WalletCaching, WalletCachingPlane, WalletStorage } from 'types/planes';
+import { StoragePlane, WalletCache, WalletCachePlane, WalletStorage } from 'types/planes';
 
 const addPluginToWallet = async <NewPlugin extends Plugin, Plugins extends Plugin[]>(
     wallet: Wallet<Plugins>,
@@ -22,25 +22,45 @@ const bindStoragePlane = <Plugins extends Plugin[] = [], PluginMethods = GetPlug
     );
 
     const all: StoragePlane = {
-        get: () => {
+        get: query => {
             console.log('storage.all.get');
-            return wallet.plugins.map(plugin => plugin.storage?.get()).filter(Boolean);
+            return wallet.plugins
+                .map(
+                    plugin =>
+                        wallet.cache.all.get({
+                            name: plugin.name,
+                            operation: 'get',
+                            query,
+                        }) ?? plugin.storage?.get(query)
+                )
+                .filter(Boolean);
         },
-        getMany: () => {
+        getMany: query => {
             console.log('storage.all.getMany');
-            return wallet.plugins.map(plugin => plugin.storage?.getMany()).filter(Boolean);
+            return wallet.plugins
+                .map(
+                    plugin =>
+                        wallet.cache.all.get({
+                            name: plugin.name,
+                            operation: 'getMany',
+                            query,
+                        }) ?? plugin.storage?.getMany(query)
+                )
+                .filter(Boolean);
         },
-        upload: () => {
+        upload: data => {
             console.log('storage.all.upload');
-            return wallet.plugins.map(plugin => plugin.storage?.upload()).filter(Boolean);
+            return wallet.plugins.map(plugin => plugin.storage?.upload(data)).filter(Boolean);
         },
-        set: () => {
+        set: (query, data) => {
             console.log('storage.all.set');
-            return wallet.plugins.map(plugin => plugin.storage?.set()).filter(Boolean);
+            wallet.cache.all.set({ name: 'all', operation: 'set', query, data });
+            return wallet.plugins.map(plugin => plugin.storage?.set(query, data)).filter(Boolean);
         },
-        remove: () => {
+        remove: query => {
             console.log('storage.all.remove');
-            return wallet.plugins.map(plugin => plugin.storage?.remove()).filter(Boolean);
+            wallet.cache.all.set({ name: 'all', operation: 'remove', query });
+            return wallet.plugins.map(plugin => plugin.storage?.remove(query)).filter(Boolean);
         },
     };
 
@@ -49,54 +69,43 @@ const bindStoragePlane = <Plugins extends Plugin[] = [], PluginMethods = GetPlug
 
 const bindCachingPlane = <Plugins extends Plugin[] = [], PluginMethods = GetPluginMethods<Plugins>>(
     wallet: Wallet<Plugins, PluginMethods>
-): WalletCaching<Plugins> => {
-    const individualPlanes = wallet.plugins.reduce<WalletCaching<Plugins>>((acc, cur) => {
-        const { caching } = cur;
+): WalletCache<Plugins> => {
+    const individualPlanes = wallet.plugins.reduce<WalletCache<Plugins>>((acc, cur) => {
+        const { cache } = cur;
 
-        if (caching) {
+        if (cache) {
             // Have to index as 'all' because TS seems to hate it otherwise 🙃
             acc[cur.name as 'all'] = {
-                get: () => {
-                    if ('getLocal' in caching) caching.getLocal();
-                    if ('getRemote' in caching) caching.getRemote();
-                },
-                set: () => {
-                    if ('setLocal' in caching) caching.setLocal();
-                    if ('setRemote' in caching) caching.setRemote();
-                },
+                get: args => cache.getLocal?.(args) ?? cache.getRemote?.(args),
+                set: args => cache.setLocal?.(args) ?? cache.setRemote?.(args),
+                flush: cache.flush,
             };
         }
 
         return acc;
-    }, {} as WalletCaching<Plugins>);
+    }, {} as WalletCache<Plugins>);
 
-    const all: WalletCachingPlane = {
-        get: () => {
+    const all: WalletCachePlane = {
+        get: args => {
             console.log('caching.all.get');
             return wallet.plugins
-                .map(plugin => {
-                    if (!plugin.caching) return;
-
-                    if ('getLocal' in plugin.caching) return plugin.caching.getLocal();
-                    if ('getRemote' in plugin.caching) return plugin.caching.getRemote();
-                })
+                .map(plugin => plugin.cache?.getLocal?.(args) ?? plugin.cache?.getRemote?.(args))
                 .filter(Boolean);
         },
 
-        set: () => {
+        set: args => {
             console.log('caching.all.set');
             return wallet.plugins
-                .map(plugin => {
-                    if (!plugin.caching) return;
-
-                    if ('setLocal' in plugin.caching) return plugin.caching.setLocal();
-                    if ('setRemote' in plugin.caching) return plugin.caching.setRemote();
-                })
+                .map(plugin => plugin.cache?.setLocal?.(args) ?? plugin.cache?.setRemote?.(args))
                 .filter(Boolean);
+        },
+        flush: () => {
+            console.log('caching.all.flush');
+            return wallet.plugins.map(plugin => plugin.cache?.flush());
         },
     };
 
-    return { ...individualPlanes, all } as WalletCaching<Plugins>;
+    return { ...individualPlanes, all } as WalletCache<Plugins>;
 };
 
 const bindMethods = <Plugins extends Plugin[] = [], PluginMethods = GetPluginMethods<Plugins>>(
@@ -123,7 +132,7 @@ export const generateWallet = async <
 
     const wallet: Wallet<Plugins, PluginMethods> = {
         storage: {} as WalletStorage<Plugins>,
-        caching: {} as WalletCaching<Plugins>,
+        cache: {} as WalletCache<Plugins>,
         plugins: plugins as Plugins,
         pluginMethods,
         addPlugin: function (plugin) {
@@ -132,7 +141,7 @@ export const generateWallet = async <
     };
 
     wallet.storage = bindStoragePlane(wallet);
-    wallet.caching = bindCachingPlane(wallet);
+    wallet.cache = bindCachingPlane(wallet);
 
     if (pluginMethods) wallet.pluginMethods = bindMethods(wallet, pluginMethods);
 

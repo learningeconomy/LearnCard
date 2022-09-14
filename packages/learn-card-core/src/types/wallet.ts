@@ -1,4 +1,4 @@
-import { CachingPlane, StoragePlane, WalletCaching, WalletStorage } from './planes';
+import { CachePlane, StoragePlane, WalletCache, WalletStorage } from './planes';
 import { UnionToIntersection } from './utilities';
 
 export type GetPluginMethods<Plugins extends Plugin[]> = UnionToIntersection<
@@ -11,7 +11,7 @@ export type Plugin<
 > = {
     name: Name;
     storage?: StoragePlane;
-    caching?: CachingPlane;
+    cache?: CachePlane;
     pluginMethods: {
         [Key in keyof PublicMethods]: <T extends Wallet<[Plugin<Name, PublicMethods>]>>(
             wallet: T,
@@ -23,7 +23,7 @@ export type Plugin<
 
 export type Wallet<Plugins extends Plugin[] = [], PluginMethods = GetPluginMethods<Plugins>> = {
     storage: WalletStorage<Plugins>;
-    caching: WalletCaching<Plugins>;
+    cache: WalletCache<Plugins>;
     plugins: Plugins;
     pluginMethods: PluginMethods;
     addPlugin: <NewPlugin extends Plugin>(

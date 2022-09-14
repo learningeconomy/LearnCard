@@ -7,11 +7,11 @@ export type FilterForPlane<Plugins extends Plugin[], Plane extends keyof Plugins
 }[number];
 
 export type StoragePlane = {
-    get: () => void;
-    getMany: () => void;
-    upload: () => void;
-    set: () => void;
-    remove: () => void;
+    get: (query: string) => void;
+    getMany: (query: string) => void;
+    upload: (data: string) => void;
+    set: (query: string, data: string) => void;
+    remove: (query: string) => void;
 };
 
 export type StoragePlugin<P extends Plugin> = P & { storage: StoragePlane };
@@ -21,19 +21,38 @@ export type WalletStorage<Plugins extends Plugin[]> = { all: StoragePlane } & Re
     StoragePlane
 >;
 
-export type CachingPlane =
-    | { getLocal: () => void; setLocal: () => void }
-    | { getRemote: () => void; setRemote: () => void }
-    | { getLocal: () => void; getRemote: () => void; setLocal: () => void; setRemote: () => void };
-
-export type WalletCachingPlane = {
-    get: () => void;
-    set: () => void;
+export type CachePlane = {
+    getLocal?: (args: { name: string; operation: 'get' | 'getMany'; query: any }) => any;
+    getRemote?: (args: { name: string; operation: 'get' | 'getMany'; query: any }) => any;
+    setLocal?: (args: {
+        name: string;
+        operation: 'upload' | 'set' | 'remove';
+        query: any;
+        data?: any;
+    }) => void;
+    setRemote?: (args: {
+        name: string;
+        operation: 'upload' | 'set' | 'remove';
+        query: any;
+        data?: any;
+    }) => void;
+    flush: () => void;
 };
 
-export type CachingPlugin<P extends Plugin> = P & { caching: CachingPlane };
+export type WalletCachePlane = {
+    get: (args: { name: string; operation: 'get' | 'getMany'; query: any }) => any;
+    set: (args: {
+        name: string;
+        operation: 'upload' | 'set' | 'remove';
+        query: any;
+        data?: any;
+    }) => void;
+    flush: () => void;
+};
 
-export type WalletCaching<Plugins extends Plugin[]> = { all: WalletCachingPlane } & Record<
-    FilterForPlane<Plugins, 'caching'>,
-    WalletCachingPlane
+export type CachePlugin<P extends Plugin> = P & { cache: CachePlane };
+
+export type WalletCache<Plugins extends Plugin[]> = { all: WalletCachePlane } & Record<
+    FilterForPlane<Plugins, 'cache'>,
+    WalletCachePlane
 >;

@@ -118,7 +118,7 @@ export const getIDXPlugin = async (
 
     return {
         name: 'IDX',
-        caching: {
+        cache: {
             getLocal: () => {
                 console.log('caching.IDX.getLocal');
             },
@@ -130,6 +130,9 @@ export const getIDXPlugin = async (
             },
             setRemote: () => {
                 console.log('caching.IDX.setRemote');
+            },
+            flush: () => {
+                console.log('caching.IDX.flush');
             },
         },
         storage: {
