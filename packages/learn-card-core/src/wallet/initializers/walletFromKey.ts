@@ -64,6 +64,8 @@ export const walletFromKey = async (
             await wallet.pluginMethods.removeVerifiableCredentialInIdx(title);
         },
 
+        resolveDid: wallet.pluginMethods.resolveDid,
+
         readFromCeramic: wallet.pluginMethods.readContentFromCeramic,
 
         getTestVc: wallet.pluginMethods.getTestVc,
