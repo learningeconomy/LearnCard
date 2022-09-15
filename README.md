@@ -22,6 +22,7 @@ https://docs.learncard.com
 - [LearnCard React](./packages/react-learn-card) – dedicated set of flexible and reusable Storybook UX components for credential and currency visualization and interactions.
 - [LearnCard Bridge - HTTP](./packages/learn-card-bridge-http) – simple CLI and CloudFormation IaC to easily spin up a dedicated execution environment for LearnCard Core exposed over an HTTP API.
 - [LearnCard CLI](./packages/learn-card-cli) - an easy to use node REPL; instantiates a LearnCard + all the tools you need to easily play around with the LearnCard SDK.
+- LearnCard DWN - Decentralized Web Nodes as a service for storing and retrieving credentials.
 - LearnCard App - iOS, Android, and Web implementation of LearnCard Core & UX; customizable, whitelabel-able, and modular to support pathways and communities.
 
 ## Installation
