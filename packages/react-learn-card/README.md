@@ -9,7 +9,7 @@
 
 ## Documentation
 All LearnCard documentation can be found at:
-https://app.gitbook.com/o/6uDv1QDlxaaZC7i8EaGb/s/FXvEJ9j3Vf3FW5Nc557n/
+https://docs.learncard.com
 
 
 ## Install
