@@ -135,7 +135,7 @@ describe('LearnCard SDK', () => {
                 it(method, async () => {
                     const wallet = await getWallet();
 
-                    expect(() => wallet.did(method)).not.toThrow();
+                    expect(() => wallet.did(method as any)).not.toThrow();
                 })
             );
         });
@@ -145,7 +145,7 @@ describe('LearnCard SDK', () => {
                 it(algorithm, async () => {
                     const wallet = await getWallet();
 
-                    expect(() => wallet.keypair(algorithm)).not.toThrow();
+                    expect(() => wallet.keypair(algorithm as any)).not.toThrow();
                 })
             );
         });
@@ -204,7 +204,7 @@ describe('LearnCard SDK', () => {
                 result => result.check === 'expiration'
             );
 
-            expect(expirationObject.status).toEqual('Success');
+            expect(expirationObject?.status).toEqual('Success');
         });
 
         it('should fail an expired credential', async () => {
@@ -221,7 +221,7 @@ describe('LearnCard SDK', () => {
                 result => result.check === 'expiration'
             );
 
-            expect(expirationObject.status).toEqual('Failed');
+            expect(expirationObject?.status).toEqual('Failed');
         });
     });
 
@@ -468,7 +468,9 @@ describe('LearnCard SDK', () => {
         it('should generate a base-64 QR code image for a Verifiable Presentation', async () => {
             const wallet = await getWallet();
 
-            const image = await wallet.vpToQrCode(await wallet.issuePresentation(await wallet.getTestVp()));
+            const image = await wallet.vpToQrCode(
+                await wallet.issuePresentation(await wallet.getTestVp())
+            );
             expect(image).toContain('data:image');
         });
         it('should decode a Verifiable Presentation embedded in a QR code', async () => {
@@ -489,12 +491,12 @@ describe('LearnCard SDK', () => {
                 const imageString = await wallet.vpToQrCode(verifiablePresentation);
 
                 const base64Image = imageString.split(';base64,').pop();
-                const buffer = new Buffer.from(base64Image, 'base64');
+                const buffer = Buffer.from(base64Image ?? '', 'base64');
 
                 const image = await Jimp.read(buffer);
 
-                const qrcode = new QrCode();
-                qrcode.callback = async (err, value) => {
+                const qrcode = new (QrCode as any)() as any;
+                qrcode.callback = async (err: any, value: any) => {
                     try {
                         const qrImageText = value.result;
                         const decodedVerifiablePresentation = await wallet.vpFromQrCode(

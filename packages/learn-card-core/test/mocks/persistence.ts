@@ -23,7 +23,7 @@ export const persistenceMocks = () => {
     const getCredential = async (title: string) => {
         const credential = credentials.find(cred => cred.title === title);
 
-        return readFromCeramic(credential.id);
+        return readFromCeramic(credential?.id ?? '');
     };
 
     const getCredentials = async () =>

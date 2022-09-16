@@ -26,3 +26,5 @@ declare module '@digitalbazaar/vpqr' {
         diagnose?: typeof console.log;
     }): Promise<{ vp: VP }>;
 }
+
+declare module 'qrcode-reader' {}
