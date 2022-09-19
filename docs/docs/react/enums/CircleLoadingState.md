@@ -14,7 +14,7 @@ custom_edit_url: null
 
 #### Defined in
 
-[packages/react-learn-card/src/components/Loading/CircleSpinner.tsx:4](https://github.com/WeLibraryOS/LearnCard/blob/18c738df/packages/react-learn-card/src/components/Loading/CircleSpinner.tsx#L4)
+[packages/react-learn-card/src/components/Loading/CircleSpinner.tsx:4](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/react-learn-card/src/components/Loading/CircleSpinner.tsx#L4)
 
 ___
 
@@ -24,4 +24,4 @@ ___
 
 #### Defined in
 
-[packages/react-learn-card/src/components/Loading/CircleSpinner.tsx:5](https://github.com/WeLibraryOS/LearnCard/blob/18c738df/packages/react-learn-card/src/components/Loading/CircleSpinner.tsx#L5)
+[packages/react-learn-card/src/components/Loading/CircleSpinner.tsx:5](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/react-learn-card/src/components/Loading/CircleSpinner.tsx#L5)

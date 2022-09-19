@@ -26,7 +26,7 @@ custom_edit_url: null
 
 #### Defined in
 
-[packages/react-learn-card/src/components/Button/Button.tsx:3](https://github.com/WeLibraryOS/LearnCard/blob/18c738df/packages/react-learn-card/src/components/Button/Button.tsx#L3)
+[packages/react-learn-card/src/components/Button/Button.tsx:3](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/react-learn-card/src/components/Button/Button.tsx#L3)
 
 ___
 
@@ -49,7 +49,7 @@ ___
 
 #### Defined in
 
-[packages/react-learn-card/src/components/CircleIcon/CircleIcon.tsx:6](https://github.com/WeLibraryOS/LearnCard/blob/18c738df/packages/react-learn-card/src/components/CircleIcon/CircleIcon.tsx#L6)
+[packages/react-learn-card/src/components/CircleIcon/CircleIcon.tsx:6](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/react-learn-card/src/components/CircleIcon/CircleIcon.tsx#L6)
 
 ___
 
@@ -69,7 +69,7 @@ ___
 
 #### Defined in
 
-[packages/react-learn-card/src/components/Loading/CircleSpinner.tsx:8](https://github.com/WeLibraryOS/LearnCard/blob/18c738df/packages/react-learn-card/src/components/Loading/CircleSpinner.tsx#L8)
+[packages/react-learn-card/src/components/Loading/CircleSpinner.tsx:8](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/react-learn-card/src/components/Loading/CircleSpinner.tsx#L8)
 
 ___
 
@@ -90,7 +90,7 @@ ___
 
 #### Defined in
 
-[packages/react-learn-card/src/components/CircleIcon/CircleIcon.tsx:17](https://github.com/WeLibraryOS/LearnCard/blob/18c738df/packages/react-learn-card/src/components/CircleIcon/CircleIcon.tsx#L17)
+[packages/react-learn-card/src/components/CircleIcon/CircleIcon.tsx:17](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/react-learn-card/src/components/CircleIcon/CircleIcon.tsx#L17)
 
 ___
 
@@ -106,7 +106,7 @@ ___
 
 #### Defined in
 
-[packages/react-learn-card/src/components/FlippyCard/FlippyCard.tsx:3](https://github.com/WeLibraryOS/LearnCard/blob/18c738df/packages/react-learn-card/src/components/FlippyCard/FlippyCard.tsx#L3)
+[packages/react-learn-card/src/components/FlippyCard/FlippyCard.tsx:3](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/react-learn-card/src/components/FlippyCard/FlippyCard.tsx#L3)
 
 ___
 
@@ -124,7 +124,7 @@ ___
 
 #### Defined in
 
-[packages/react-learn-card/src/components/LearnCardCreditCardBackFace/types.ts:1](https://github.com/WeLibraryOS/LearnCard/blob/18c738df/packages/react-learn-card/src/components/LearnCardCreditCardBackFace/types.ts#L1)
+[packages/react-learn-card/src/components/LearnCardCreditCardBackFace/types.ts:1](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/react-learn-card/src/components/LearnCardCreditCardBackFace/types.ts#L1)
 
 ___
 
@@ -146,7 +146,7 @@ ___
 
 #### Defined in
 
-[packages/react-learn-card/src/components/LearnCardCreditCardFrontFace/types.ts:1](https://github.com/WeLibraryOS/LearnCard/blob/18c738df/packages/react-learn-card/src/components/LearnCardCreditCardFrontFace/types.ts#L1)
+[packages/react-learn-card/src/components/LearnCardCreditCardFrontFace/types.ts:1](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/react-learn-card/src/components/LearnCardCreditCardFrontFace/types.ts#L1)
 
 ___
 
@@ -165,7 +165,7 @@ ___
 
 #### Defined in
 
-[packages/react-learn-card/src/components/LearnCardCreditCardBackFace/types.ts:24](https://github.com/WeLibraryOS/LearnCard/blob/18c738df/packages/react-learn-card/src/components/LearnCardCreditCardBackFace/types.ts#L24)
+[packages/react-learn-card/src/components/LearnCardCreditCardBackFace/types.ts:24](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/react-learn-card/src/components/LearnCardCreditCardBackFace/types.ts#L24)
 
 ___
 
@@ -182,7 +182,7 @@ ___
 
 #### Defined in
 
-[packages/react-learn-card/src/components/LearnCardCreditCardBackFace/types.ts:11](https://github.com/WeLibraryOS/LearnCard/blob/18c738df/packages/react-learn-card/src/components/LearnCardCreditCardBackFace/types.ts#L11)
+[packages/react-learn-card/src/components/LearnCardCreditCardBackFace/types.ts:11](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/react-learn-card/src/components/LearnCardCreditCardBackFace/types.ts#L11)
 
 ___
 
@@ -203,7 +203,7 @@ ___
 
 #### Defined in
 
-[packages/react-learn-card/src/components/MiniVCThumbnail/types.ts:1](https://github.com/WeLibraryOS/LearnCard/blob/18c738df/packages/react-learn-card/src/components/MiniVCThumbnail/types.ts#L1)
+[packages/react-learn-card/src/components/MiniVCThumbnail/types.ts:1](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/react-learn-card/src/components/MiniVCThumbnail/types.ts#L1)
 
 ___
 
@@ -224,7 +224,7 @@ ___
 
 #### Defined in
 
-[packages/react-learn-card/src/components/Notification/types.ts:10](https://github.com/WeLibraryOS/LearnCard/blob/18c738df/packages/react-learn-card/src/components/Notification/types.ts#L10)
+[packages/react-learn-card/src/components/Notification/types.ts:10](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/react-learn-card/src/components/Notification/types.ts#L10)
 
 ___
 
@@ -243,7 +243,7 @@ ___
 
 #### Defined in
 
-[packages/react-learn-card/src/components/QRCodeCard/types.ts:1](https://github.com/WeLibraryOS/LearnCard/blob/18c738df/packages/react-learn-card/src/components/QRCodeCard/types.ts#L1)
+[packages/react-learn-card/src/components/QRCodeCard/types.ts:1](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/react-learn-card/src/components/QRCodeCard/types.ts#L1)
 
 ___
 
@@ -266,7 +266,7 @@ ___
 
 #### Defined in
 
-[packages/react-learn-card/src/components/RoundedSquare/RoundedSquare.tsx:9](https://github.com/WeLibraryOS/LearnCard/blob/18c738df/packages/react-learn-card/src/components/RoundedSquare/RoundedSquare.tsx#L9)
+[packages/react-learn-card/src/components/RoundedSquare/RoundedSquare.tsx:9](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/react-learn-card/src/components/RoundedSquare/RoundedSquare.tsx#L9)
 
 ___
 
@@ -288,7 +288,7 @@ ___
 
 #### Defined in
 
-[packages/react-learn-card/src/components/SchoolIdCard/types.ts:1](https://github.com/WeLibraryOS/LearnCard/blob/18c738df/packages/react-learn-card/src/components/SchoolIdCard/types.ts#L1)
+[packages/react-learn-card/src/components/SchoolIdCard/types.ts:1](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/react-learn-card/src/components/SchoolIdCard/types.ts#L1)
 
 ___
 
@@ -306,7 +306,7 @@ ___
 
 #### Defined in
 
-[packages/react-learn-card/src/components/VCCard/VCCard.tsx:7](https://github.com/WeLibraryOS/LearnCard/blob/18c738df/packages/react-learn-card/src/components/VCCard/VCCard.tsx#L7)
+[packages/react-learn-card/src/components/VCCard/VCCard.tsx:7](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/react-learn-card/src/components/VCCard/VCCard.tsx#L7)
 
 ___
 
@@ -326,7 +326,7 @@ ___
 
 #### Defined in
 
-[packages/react-learn-card/src/components/VCDisplayCard/VCDisplayCard.tsx:10](https://github.com/WeLibraryOS/LearnCard/blob/18c738df/packages/react-learn-card/src/components/VCDisplayCard/VCDisplayCard.tsx#L10)
+[packages/react-learn-card/src/components/VCDisplayCard/VCDisplayCard.tsx:10](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/react-learn-card/src/components/VCDisplayCard/VCDisplayCard.tsx#L10)
 
 ___
 
@@ -349,7 +349,7 @@ ___
 
 #### Defined in
 
-[packages/react-learn-card/src/components/VCThumbnail/types.ts:1](https://github.com/WeLibraryOS/LearnCard/blob/18c738df/packages/react-learn-card/src/components/VCThumbnail/types.ts#L1)
+[packages/react-learn-card/src/components/VCThumbnail/types.ts:1](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/react-learn-card/src/components/VCThumbnail/types.ts#L1)
 
 ___
 
@@ -366,7 +366,7 @@ ___
 
 #### Defined in
 
-[packages/react-learn-card/src/components/VCVerificationCheck/VCVerificationCheck.tsx:5](https://github.com/WeLibraryOS/LearnCard/blob/18c738df/packages/react-learn-card/src/components/VCVerificationCheck/VCVerificationCheck.tsx#L5)
+[packages/react-learn-card/src/components/VCVerificationCheck/VCVerificationCheck.tsx:5](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/react-learn-card/src/components/VCVerificationCheck/VCVerificationCheck.tsx#L5)
 
 ## Variables
 
@@ -423,7 +423,7 @@ ___
 
 #### Defined in
 
-[packages/react-learn-card/src/components/Notification/types.ts:19](https://github.com/WeLibraryOS/LearnCard/blob/18c738df/packages/react-learn-card/src/components/Notification/types.ts#L19)
+[packages/react-learn-card/src/components/Notification/types.ts:19](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/react-learn-card/src/components/Notification/types.ts#L19)
 
 ___
 
@@ -433,7 +433,7 @@ ___
 
 #### Defined in
 
-[packages/react-learn-card/src/components/RoundedSquare/constants.ts:17](https://github.com/WeLibraryOS/LearnCard/blob/18c738df/packages/react-learn-card/src/components/RoundedSquare/constants.ts#L17)
+[packages/react-learn-card/src/components/RoundedSquare/constants.ts:17](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/react-learn-card/src/components/RoundedSquare/constants.ts#L17)
 
 ___
 
@@ -443,7 +443,7 @@ ___
 
 #### Defined in
 
-[packages/react-learn-card/src/components/RoundedSquare/constants.ts:26](https://github.com/WeLibraryOS/LearnCard/blob/18c738df/packages/react-learn-card/src/components/RoundedSquare/constants.ts#L26)
+[packages/react-learn-card/src/components/RoundedSquare/constants.ts:26](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/react-learn-card/src/components/RoundedSquare/constants.ts#L26)
 
 ___
 
@@ -464,7 +464,7 @@ ___
 
 #### Defined in
 
-[packages/react-learn-card/src/components/RoundedSquare/constants.ts:8](https://github.com/WeLibraryOS/LearnCard/blob/18c738df/packages/react-learn-card/src/components/RoundedSquare/constants.ts#L8)
+[packages/react-learn-card/src/components/RoundedSquare/constants.ts:8](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/react-learn-card/src/components/RoundedSquare/constants.ts#L8)
 
 ## Functions
 

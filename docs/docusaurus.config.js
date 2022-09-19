@@ -39,6 +39,17 @@ const config = {
         [
             'docusaurus-plugin-typedoc',
             {
+                id: 'types',
+                entryPoints: ['../packages/learn-card-types/src/index.ts'],
+                tsconfig: '../packages/learn-card-types/tsconfig.json',
+                out: 'types',
+                sidebar: { categoryLabel: '@learncard/types' },
+                watch: true,
+            },
+        ],
+        [
+            'docusaurus-plugin-typedoc',
+            {
                 id: 'react',
                 entryPoints: ['../packages/react-learn-card/src/index.ts'],
                 tsconfig: '../packages/react-learn-card/tsconfig.json',
@@ -73,7 +84,9 @@ const config = {
                 title: 'LearnCard',
                 logo: { alt: 'My Site Logo', src: 'img/logo.svg' },
                 items: [
-                    { to: 'docs/api', label: 'API', position: 'left' },
+                    { to: 'docs/core', label: '@learncard/core', position: 'left' },
+                    { to: 'docs/react', label: '@learncard/react', position: 'left' },
+                    { to: 'docs/types', label: '@learncard/types', position: 'left' },
                     {
                         href: 'https://github.com/learningeconomy/LearnCard',
                         label: 'GitHub',
@@ -86,14 +99,15 @@ const config = {
                 links: [
                     {
                         title: 'Docs',
-                        items: [{ label: 'API', to: '/docs/api' }],
+                        items: [
+                            { label: '@learncard/core', to: '/docs/core' },
+                            { label: '@learncard/react', to: '/docs/react' },
+                            { label: '@learncard/types', to: '/docs/types' },
+                        ],
                     },
                     {
                         title: 'Community',
-                        items: [
-                            { label: 'Discord', href: 'https://discordapp.com/invite/docusaurus' },
-                            { label: 'Twitter', href: 'https://twitter.com/docusaurus' },
-                        ],
+                        items: [{ label: 'Discord', href: 'https://discord.gg/VYXptxkdSs' }],
                     },
                     {
                         title: 'More',
