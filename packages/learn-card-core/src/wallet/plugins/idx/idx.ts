@@ -8,9 +8,8 @@ import { CeramicClient } from '@ceramicnetwork/http-client';
 import { CreateOpts } from '@ceramicnetwork/common';
 import { TileDocument, TileMetadataArgs } from '@ceramicnetwork/stream-tile';
 
-import { IDXCredential, CredentialsList, IDXPluginMethods, StorageType } from './types';
+import { IDXCredential, CredentialsList, IDXPluginMethods, CeramicIDXArgs } from './types';
 import { Plugin, Wallet } from 'types/wallet';
-import { CeramicIDXArgs } from 'types/LearnCard';
 
 const getCeramicClientFromWalletSuite = async (
     wallet: Wallet<any, { getKey: () => string }>,
@@ -35,6 +34,9 @@ const getCeramicClientFromWalletSuite = async (
     return client;
 };
 
+/**
+ * @group Plugins
+ */
 export const getIDXPlugin = async (
     wallet: Wallet<any, { getKey: () => string }>,
     { modelData, credentialAlias, ceramicEndpoint, defaultContentFamily }: CeramicIDXArgs
@@ -67,10 +69,10 @@ export const getIDXPlugin = async (
 
         if (indexOfExistingCredential > -1) {
             existing.credentials[indexOfExistingCredential] = {
-                storageType: StorageType.ceramic,
+                storageType: 'ceramic',
                 ...record,
             };
-        } else existing.credentials.push({ storageType: StorageType.ceramic, ...record });
+        } else existing.credentials.push({ storageType: 'ceramic', ...record });
 
         return dataStore.set(alias, existing);
     };

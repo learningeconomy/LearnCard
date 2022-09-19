@@ -5,11 +5,14 @@ import { verifyCredential } from './verifyCredential';
 import { issuePresentation } from './issuePresentation';
 import { verifyPresentation } from './verifyPresentation';
 
-import { DependentMethods, VCPluginMethods } from './types';
+import { VCPluginDependentMethods, VCPluginMethods } from './types';
 import { Plugin, Wallet } from 'types/wallet';
 
+/**
+ * @group Plugins
+ */
 export const getVCPlugin = async (
-    wallet: Wallet<string, DependentMethods>
+    wallet: Wallet<string, VCPluginDependentMethods>
 ): Promise<Plugin<'VC', VCPluginMethods>> => {
     return {
         pluginMethods: {

@@ -1,3 +1,4 @@
+/** @group Universal Wallets */
 export type Plugin<
     Name extends string,
     PublicMethods extends Record<string, (...args: any[]) => any> = Record<never, never>
@@ -11,12 +12,14 @@ export type Plugin<
     };
 };
 
+/** @group Universal Wallets */
 export type PublicFieldsObj<
     PluginMethods extends Record<string, (...args: any[]) => any> = Record<never, never>
 > = {
     pluginMethods: PluginMethods;
 };
 
+/** @group Universal Wallets */
 export type Wallet<
     PluginNames extends string = '',
     PluginMethods extends Record<string, (...args: any[]) => any> = Record<never, never>

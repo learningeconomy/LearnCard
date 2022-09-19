@@ -5,7 +5,11 @@ import { verifyCredential } from '@wallet/verify';
 
 import { EmptyWallet } from 'types/LearnCard';
 
-/** Generates an empty wallet with no key material */
+/**
+ * Generates an empty wallet with no key material
+ *
+ * @group Init Functions
+ */
 export const emptyWallet = async ({ didkit }: EmptyWallet['args'] = {}): Promise<
     EmptyWallet['returnValue']
 > => {
