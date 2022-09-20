@@ -1,0 +1,11 @@
+#############################################
+##  Configuration for Netlify deployments  ##
+#############################################
+
+# Global Context Default
+[build]
+command = "npm run build"
+publish = "build/"
+
+[build.environment]
+NPM_FLAGS="--prefix=/dev/null"
