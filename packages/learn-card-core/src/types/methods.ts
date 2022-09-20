@@ -43,7 +43,7 @@ export type NewCredential = NewCredentialFunction;
 /**
  * Wraps a VC in a simple Presentation
  */
-export type NewPresentation = (credential: VC, did?: string) => Promise<UnsignedVP>;
+export type NewPresentation = (credential: VC, args?: { did?: string }) => Promise<UnsignedVP>;
 
 /**
  * Signs an unsigned Verifiable Credential, returning the signed VC
