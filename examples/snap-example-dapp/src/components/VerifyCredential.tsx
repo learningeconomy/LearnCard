@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { VC, VerificationItem } from '@learncard/types';
-import { VCDisplayCard } from '@learncard/react';
 
 import TextBox from '@components/input/TextBox';
 
@@ -75,8 +74,6 @@ const VerifyCredential: React.FC = () => {
             {response && viewingCredential && (
                 <section className="w-full bg-gray-100 rounded border flex flex-col items-center gap-2">
                     <span className="text-grey-600 border-b text-center">Response</span>
-
-                    <VCDisplayCard credential={viewingCredential} verification={response} />
 
                     <output className="overflow-auto">
                         <pre>{JSON.stringify(response, undefined, 4)}</pre>
