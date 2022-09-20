@@ -7,12 +7,11 @@ import { TileLoader } from '@glazed/tile-loader';
 import { CeramicClient } from '@ceramicnetwork/http-client';
 import { CreateOpts } from '@ceramicnetwork/common';
 import { TileDocument, TileMetadataArgs } from '@ceramicnetwork/stream-tile';
+import { IDXCredential, StorageTypeEnum } from '@learncard/types';
 
 import {
-    IDXCredential,
     CredentialsList,
     IDXPluginMethods,
-    StorageTypeEnum,
     CredentialsListValidator,
     IDXCredentialValidator,
 } from './types';

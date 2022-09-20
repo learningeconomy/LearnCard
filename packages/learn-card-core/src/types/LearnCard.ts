@@ -6,12 +6,13 @@ import {
     VP,
     VerificationCheck,
     UnsignedVP,
+    IDXCredential,
 } from '@learncard/types';
 
 import { DidMethod } from '@wallet/plugins/didkit/types';
 import { Algorithm, DidKeyPluginMethods } from '@wallet/plugins/didkey/types';
 import { EthereumPluginMethods } from '@wallet/plugins/EthereumPlugin/types';
-import { IDXCredential, IDXPluginMethods } from '@wallet/plugins/idx/types';
+import { IDXPluginMethods } from '@wallet/plugins/idx/types';
 import { VCPluginMethods, VerifyExtension } from '@wallet/plugins/vc/types';
 import { DidkitPluginMethods } from '@wallet/plugins/didkit/types';
 import { EthereumConfig } from '@wallet/plugins/EthereumPlugin/types';
@@ -50,7 +51,7 @@ export type AllLearnCardMethods = {
      */
     verifyCredential: (credential: VC) => Promise<VerificationItem[]>;
 
-    /** Creates a signed Verifiable Presentation from a signed Verifiable Credential */
+    /** Signs an unsigned Verifiable Presentation, returning the signed VP */
     issuePresentation: (presentation: UnsignedVP) => Promise<VP>;
     /**
      * Verifies a signed Verifiable Presentation
