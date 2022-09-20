@@ -182,6 +182,7 @@ importers:
       ts-jest: ^28.0.5
       tsc-alias: ^1.6.9
       typescript: ^4.6.4
+      zod: ^3.17.3
     dependencies:
       '@ceramicnetwork/common': 2.3.0
       '@ceramicnetwork/http-client': 2.3.0
@@ -201,6 +202,7 @@ importers:
       isomorphic-webcrypto: 2.3.8
       key-did-provider-ed25519: 2.0.0
       key-did-resolver: 1.4.4
+      zod: 3.17.3
     devDependencies:
       '@glazed/types': 0.2.0
       '@learncard/types': link:../learn-card-types

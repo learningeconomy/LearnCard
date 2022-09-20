@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { StreamID } from '@ceramicnetwork/streamid';
 import { VC } from '@learncard/types';
 
@@ -11,16 +12,26 @@ export type IDXPluginMethods = {
     removeVerifiableCredentialInIdx: (title: string) => Promise<StreamID>;
 };
 
-export enum StorageType {
-    ceramic = 'ceramic',
-}
+export const StorageTypeValidator = z.enum(['ceramic']);
+export const StorageTypeEnum = StorageTypeValidator.enum;
+export type StorageType = z.infer<typeof StorageTypeValidator>;
 
-export type IDXCredential = {
-    id: string;
-    title: string;
-    storageType?: StorageType;
-};
+export const CredentialMetadataValidator = z
+    .object({ name: z.string().optional(), image: z.string().optional() })
+    .catchall(z.any());
+export type CredentialMetadata = z.infer<typeof CredentialMetadataValidator>;
 
-export type CredentialsList = {
-    credentials: IDXCredential[];
-};
+export const IDXCredentialValidator = z
+    .object({
+        id: z.string(),
+        title: z.string(),
+        storageType: StorageTypeValidator.optional(),
+        metadata: CredentialMetadataValidator.optional(),
+    })
+    .strict();
+export type IDXCredential = z.infer<typeof IDXCredentialValidator>;
+
+export const CredentialsListValidator = z
+    .object({ credentials: IDXCredentialValidator.array() })
+    .strict();
+export type CredentialsList = z.infer<typeof CredentialsListValidator>;
