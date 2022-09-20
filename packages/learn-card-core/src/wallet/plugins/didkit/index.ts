@@ -15,6 +15,12 @@ import init, {
 import { DidkitPluginMethods, DidMethod } from './types';
 import { Plugin } from 'types/wallet';
 
+export * from './types';
+
+/**
+ *
+ * @group Plugins
+ */
 export const getDidKitPlugin = async (
     input?: InitInput | Promise<InitInput>
 ): Promise<Plugin<'DIDKit', DidkitPluginMethods>> => {

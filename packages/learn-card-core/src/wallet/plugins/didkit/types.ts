@@ -1,5 +1,6 @@
 import { UnsignedVC, UnsignedVP, VC, VP, VerificationCheck } from '@learncard/types';
 
+/** @group DIDKit Plugin */
 export type DidMethod =
     | 'key'
     | 'tz'
@@ -19,13 +20,16 @@ export type DidMethod =
     | `pkh:eip155:${string}`
     | `pkh:bip122:${string}`;
 
+/** @group DIDKit Plugin */
 export type KeyPair = { kty: string; crv: string; x: string; y?: string; d: string };
 
+/** @group DIDKit Plugin */
 export type ProofOptions = {
     verificationMethod: string;
     proofPurpose: string;
 };
 
+/** @group DIDKit Plugin */
 export type DidkitPluginMethods = {
     generateEd25519KeyFromBytes: (bytes: Uint8Array) => KeyPair;
     generateSecp256k1KeyFromBytes: (bytes: Uint8Array) => KeyPair;

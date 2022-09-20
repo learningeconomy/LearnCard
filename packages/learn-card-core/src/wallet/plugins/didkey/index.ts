@@ -6,6 +6,12 @@ import { DependentMethods, DidKeyPluginMethods, Algorithm } from './types';
 import { Plugin, Wallet } from 'types/wallet';
 import { KeyPair } from '../didkit/types';
 
+export * from './types';
+
+/**
+ *
+ * @group Plugins
+ */
 export const getDidKeyPlugin = async <DidMethod extends string>(
     wallet: Wallet<string, DependentMethods<DidMethod>>,
     key: string
