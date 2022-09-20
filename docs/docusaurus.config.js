@@ -65,13 +65,7 @@ const config = {
             'classic',
             /** @type {import('@docusaurus/preset-classic').Options} */
             ({
-                docs: {
-                    sidebarPath: require.resolve('./sidebars.js'),
-                    // Please change this to your repo.
-                    // Remove this to remove the "edit this page" links.
-                    editUrl:
-                        'https://github.com/facebook/docusaurus/tree/main/packages/create-docusaurus/templates/shared/',
-                },
+                docs: { sidebarPath: require.resolve('./sidebars.js') },
                 theme: { customCss: require.resolve('./src/css/custom.css') },
             }),
         ],
@@ -81,9 +75,10 @@ const config = {
         /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
         ({
             navbar: {
-                title: 'LearnCard',
-                logo: { alt: 'My Site Logo', src: 'img/logo.svg' },
+                title: 'LearnCard API Reference',
+                logo: { alt: 'LearnCard', src: 'img/LearnCard.png' },
                 items: [
+                    { to: 'https://docs.learncard.com', label: 'Guides', position: 'left' },
                     { to: 'docs/core', label: '@learncard/core', position: 'left' },
                     { to: 'docs/react', label: '@learncard/react', position: 'left' },
                     { to: 'docs/types', label: '@learncard/types', position: 'left' },
@@ -100,6 +95,7 @@ const config = {
                     {
                         title: 'Docs',
                         items: [
+                            { label: 'Guides', to: 'https://docs.learncard.com' },
                             { label: '@learncard/core', to: '/docs/core' },
                             { label: '@learncard/react', to: '/docs/react' },
                             { label: '@learncard/types', to: '/docs/types' },
@@ -107,7 +103,10 @@ const config = {
                     },
                     {
                         title: 'Community',
-                        items: [{ label: 'Discord', href: 'https://discord.gg/VYXptxkdSs' }],
+                        items: [
+                            { label: 'LearnCard', href: 'https://learncard.com' },
+                            { label: 'Discord', href: 'https://discord.gg/VYXptxkdSs' },
+                        ],
                     },
                     {
                         title: 'More',
