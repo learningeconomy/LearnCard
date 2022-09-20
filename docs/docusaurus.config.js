@@ -10,7 +10,7 @@ const config = {
     tagline: 'Powering Wallets of the Future',
     url: 'https://learncarddocs.netlify.app/',
     baseUrl: '/',
-    onBrokenLinks: 'warn',
+    onBrokenLinks: 'throw',
     onBrokenMarkdownLinks: 'warn',
     favicon: 'img/favicon.ico',
 
