@@ -1,6 +1,4 @@
-import { VC } from '@learncard/types';
-
-import { IDXCredential } from '../../src/wallet/plugins/idx/types';
+import { VC, IDXCredential } from '@learncard/types';
 
 export const persistenceMocks = () => {
     let credentials: IDXCredential[] = [];
