@@ -34,7 +34,7 @@ or by using `getCredentials` to get a list of all credentials that have been add
 
 #### Defined in
 
-types/methods.ts:109
+[types/methods.ts:109](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/types/methods.ts#L109)
 
 ___
 
@@ -61,7 +61,7 @@ Really only useful for testing with the CLI right now...
 
 #### Defined in
 
-types/methods.ts:208
+[types/methods.ts:208](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/types/methods.ts#L208)
 
 ___
 
@@ -100,7 +100,7 @@ ___
 
 #### Defined in
 
-types/methods.ts:227
+[types/methods.ts:227](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/types/methods.ts#L227)
 
 ___
 
@@ -126,7 +126,7 @@ Change your Ethereum network
 
 #### Defined in
 
-types/methods.ts:200
+[types/methods.ts:200](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/types/methods.ts#L200)
 
 ___
 
@@ -152,7 +152,7 @@ Wallet holder's did
 
 #### Defined in
 
-types/methods.ts:22
+[types/methods.ts:22](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/types/methods.ts#L22)
 
 ___
 
@@ -179,7 +179,7 @@ Get the balance of an ERC20 token
 
 #### Defined in
 
-types/methods.ts:164
+[types/methods.ts:164](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/types/methods.ts#L164)
 
 ___
 
@@ -207,7 +207,7 @@ Get the balance of an ERC20 token for a given address
 
 #### Defined in
 
-types/methods.ts:172
+[types/methods.ts:172](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/types/methods.ts#L172)
 
 ___
 
@@ -233,7 +233,7 @@ Returns the credential marked with `title` from IDX
 
 #### Defined in
 
-types/methods.ts:73
+[types/methods.ts:73](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/types/methods.ts#L73)
 
 ___
 
@@ -253,7 +253,7 @@ Returns all credentials from IDX
 
 #### Defined in
 
-types/methods.ts:80
+[types/methods.ts:80](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/types/methods.ts#L80)
 
 ___
 
@@ -273,7 +273,7 @@ Returns all credentials from IDX
 
 #### Defined in
 
-types/methods.ts:87
+[types/methods.ts:87](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/types/methods.ts#L87)
 
 ___
 
@@ -293,7 +293,7 @@ Get your current Ethereum network
 
 #### Defined in
 
-types/methods.ts:193
+[types/methods.ts:193](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/types/methods.ts#L193)
 
 ___
 
@@ -313,7 +313,7 @@ Returns Ethereum public address
 
 #### Defined in
 
-types/methods.ts:156
+[types/methods.ts:156](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/types/methods.ts#L156)
 
 ___
 
@@ -341,7 +341,7 @@ You can use this to test out implementations that use this library!
 
 #### Defined in
 
-types/methods.ts:139
+[types/methods.ts:139](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/types/methods.ts#L139)
 
 ___
 
@@ -370,7 +370,7 @@ You can use this to test out implementations that use this library!
 
 #### Defined in
 
-types/methods.ts:149
+[types/methods.ts:149](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/types/methods.ts#L149)
 
 ___
 
@@ -396,7 +396,7 @@ Signs an unsigned Verifiable Credential, returning the signed VC
 
 #### Defined in
 
-types/methods.ts:42
+[types/methods.ts:42](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/types/methods.ts#L42)
 
 ___
 
@@ -422,7 +422,7 @@ Creates a signed Verifiable Presentation from a signed Verifiable Credential
 
 #### Defined in
 
-types/methods.ts:58
+[types/methods.ts:58](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/types/methods.ts#L58)
 
 ___
 
@@ -456,7 +456,7 @@ Wallet holder's ed25519 key pair
 
 #### Defined in
 
-types/methods.ts:29
+[types/methods.ts:29](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/types/methods.ts#L29)
 
 ___
 
@@ -486,7 +486,7 @@ Resolving a stream ID can be done by passing the stream ID to `readFromCeramic`
 
 #### Defined in
 
-types/methods.ts:98
+[types/methods.ts:98](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/types/methods.ts#L98)
 
 ___
 
@@ -515,7 +515,7 @@ that was published
 
 #### Defined in
 
-types/methods.ts:130
+[types/methods.ts:130](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/types/methods.ts#L130)
 
 ___
 
@@ -545,7 +545,7 @@ or by using `getCredentials` to get a list of all credentials that have been add
 
 #### Defined in
 
-types/methods.ts:120
+[types/methods.ts:120](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/types/methods.ts#L120)
 
 ___
 
@@ -573,7 +573,7 @@ Transfer tokens to a given address
 
 #### Defined in
 
-types/methods.ts:182
+[types/methods.ts:182](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/types/methods.ts#L182)
 
 ___
 
@@ -601,7 +601,7 @@ Empty error/warnings arrays means verification was successful
 
 #### Defined in
 
-types/methods.ts:51
+[types/methods.ts:51](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/types/methods.ts#L51)
 
 ___
 
@@ -629,7 +629,7 @@ Empry error/warnings arrays means verification was successful
 
 #### Defined in
 
-types/methods.ts:66
+[types/methods.ts:66](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/types/methods.ts#L66)
 
 ___
 
@@ -655,7 +655,7 @@ Returns a Verifiable Presentation (VP) from a QR code base-64 image data string 
 
 #### Defined in
 
-types/methods.ts:215
+[types/methods.ts:215](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/types/methods.ts#L215)
 
 ___
 
@@ -681,7 +681,7 @@ Returns a QR-embeddable base-64 image data string from a Verifiable Presentation
 
 #### Defined in
 
-types/methods.ts:222
+[types/methods.ts:222](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/types/methods.ts#L222)
 
 ## DidKey Plugin
 
@@ -691,7 +691,7 @@ types/methods.ts:222
 
 #### Defined in
 
-[wallet/plugins/didkey/types.ts:4](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/learn-card-core/src/wallet/plugins/didkey/types.ts#L4)
+[wallet/plugins/didkey/types.ts:4](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/wallet/plugins/didkey/types.ts#L4)
 
 ___
 
@@ -715,7 +715,7 @@ ___
 
 #### Defined in
 
-[wallet/plugins/didkey/types.ts:7](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/learn-card-core/src/wallet/plugins/didkey/types.ts#L7)
+[wallet/plugins/didkey/types.ts:7](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/wallet/plugins/didkey/types.ts#L7)
 
 ___
 
@@ -739,7 +739,7 @@ ___
 
 #### Defined in
 
-[wallet/plugins/didkey/types.ts:30](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/learn-card-core/src/wallet/plugins/didkey/types.ts#L30)
+[wallet/plugins/didkey/types.ts:30](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/wallet/plugins/didkey/types.ts#L30)
 
 ___
 
@@ -766,7 +766,7 @@ ___
 
 #### Defined in
 
-[wallet/plugins/didkey/types.ts:14](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/learn-card-core/src/wallet/plugins/didkey/types.ts#L14)
+[wallet/plugins/didkey/types.ts:14](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/wallet/plugins/didkey/types.ts#L14)
 
 ## IDXPlugin
 
@@ -785,7 +785,7 @@ ___
 
 #### Defined in
 
-[wallet/plugins/idx/types.ts:6](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/learn-card-core/src/wallet/plugins/idx/types.ts#L6)
+[wallet/plugins/idx/types.ts:6](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/wallet/plugins/idx/types.ts#L6)
 
 ___
 
@@ -801,7 +801,7 @@ ___
 
 #### Defined in
 
-[wallet/plugins/idx/types.ts:35](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/learn-card-core/src/wallet/plugins/idx/types.ts#L35)
+[wallet/plugins/idx/types.ts:35](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/wallet/plugins/idx/types.ts#L35)
 
 ___
 
@@ -819,7 +819,7 @@ ___
 
 #### Defined in
 
-[wallet/plugins/idx/types.ts:28](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/learn-card-core/src/wallet/plugins/idx/types.ts#L28)
+[wallet/plugins/idx/types.ts:28](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/wallet/plugins/idx/types.ts#L28)
 
 ___
 
@@ -841,7 +841,7 @@ ___
 
 #### Defined in
 
-[wallet/plugins/idx/types.ts:14](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/learn-card-core/src/wallet/plugins/idx/types.ts#L14)
+[wallet/plugins/idx/types.ts:14](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/wallet/plugins/idx/types.ts#L14)
 
 ___
 
@@ -851,7 +851,7 @@ ___
 
 #### Defined in
 
-[wallet/plugins/idx/types.ts:25](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/learn-card-core/src/wallet/plugins/idx/types.ts#L25)
+[wallet/plugins/idx/types.ts:25](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/wallet/plugins/idx/types.ts#L25)
 
 ## DIDKit Plugin
 
@@ -861,7 +861,7 @@ ___
 
 #### Defined in
 
-[wallet/plugins/didkit/types.ts:4](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/learn-card-core/src/wallet/plugins/didkit/types.ts#L4)
+[wallet/plugins/didkit/types.ts:4](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/wallet/plugins/didkit/types.ts#L4)
 
 ___
 
@@ -885,7 +885,7 @@ ___
 
 #### Defined in
 
-[wallet/plugins/didkit/types.ts:33](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/learn-card-core/src/wallet/plugins/didkit/types.ts#L33)
+[wallet/plugins/didkit/types.ts:33](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/wallet/plugins/didkit/types.ts#L33)
 
 ___
 
@@ -905,7 +905,7 @@ ___
 
 #### Defined in
 
-[wallet/plugins/didkit/types.ts:24](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/learn-card-core/src/wallet/plugins/didkit/types.ts#L24)
+[wallet/plugins/didkit/types.ts:24](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/wallet/plugins/didkit/types.ts#L24)
 
 ___
 
@@ -922,7 +922,7 @@ ___
 
 #### Defined in
 
-[wallet/plugins/didkit/types.ts:27](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/learn-card-core/src/wallet/plugins/didkit/types.ts#L27)
+[wallet/plugins/didkit/types.ts:27](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/wallet/plugins/didkit/types.ts#L27)
 
 ## LearnCard
 
@@ -932,7 +932,7 @@ ___
 
 #### Defined in
 
-[types/LearnCard.ts:43](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/learn-card-core/src/types/LearnCard.ts#L43)
+[types/LearnCard.ts:43](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/types/LearnCard.ts#L43)
 
 ___
 
@@ -949,7 +949,7 @@ ___
 
 #### Defined in
 
-[types/LearnCard.ts:32](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/learn-card-core/src/types/LearnCard.ts#L32)
+[types/LearnCard.ts:32](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/types/LearnCard.ts#L32)
 
 ___
 
@@ -968,7 +968,7 @@ ___
 
 #### Defined in
 
-[types/LearnCard.ts:49](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/learn-card-core/src/types/LearnCard.ts#L49)
+[types/LearnCard.ts:49](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/types/LearnCard.ts#L49)
 
 ## Init Functions
 
@@ -978,7 +978,7 @@ ___
 
 #### Defined in
 
-[types/LearnCard.ts:57](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/learn-card-core/src/types/LearnCard.ts#L57)
+[types/LearnCard.ts:57](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/types/LearnCard.ts#L57)
 
 ___
 
@@ -988,7 +988,7 @@ ___
 
 #### Defined in
 
-[types/LearnCard.ts:62](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/learn-card-core/src/types/LearnCard.ts#L62)
+[types/LearnCard.ts:62](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/types/LearnCard.ts#L62)
 
 ___
 
@@ -998,7 +998,7 @@ ___
 
 #### Defined in
 
-[types/LearnCard.ts:59](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/learn-card-core/src/types/LearnCard.ts#L59)
+[types/LearnCard.ts:59](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/types/LearnCard.ts#L59)
 
 ___
 
@@ -1020,7 +1020,7 @@ Generates an empty wallet with no key material
 
 #### Defined in
 
-[wallet/initializers/emptyWallet.ts:13](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/learn-card-core/src/wallet/initializers/emptyWallet.ts#L13)
+[wallet/initializers/emptyWallet.ts:13](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/wallet/initializers/emptyWallet.ts#L13)
 
 ___
 
@@ -1042,7 +1042,7 @@ Generates an Empty Wallet
 
 #### Defined in
 
-[wallet/init.ts:16](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/learn-card-core/src/wallet/init.ts#L16)
+[wallet/init.ts:16](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/wallet/init.ts#L16)
 
 ▸ **initLearnCard**(`config`): `Promise`<[`WalletFromKey`](modules.md#walletfromkey)[``"returnValue"``]\>
 
@@ -1060,7 +1060,7 @@ Generates a full wallet from a 32 byte seed
 
 #### Defined in
 
-[wallet/init.ts:23](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/learn-card-core/src/wallet/init.ts#L23)
+[wallet/init.ts:23](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/wallet/init.ts#L23)
 
 ___
 
@@ -1083,7 +1083,7 @@ Generates a LearnCard Wallet from a 64 character seed string
 
 #### Defined in
 
-[wallet/initializers/walletFromKey.ts:19](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/learn-card-core/src/wallet/initializers/walletFromKey.ts#L19)
+[wallet/initializers/walletFromKey.ts:19](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/wallet/initializers/walletFromKey.ts#L19)
 
 ## Ethereum Plugin
 
@@ -1100,7 +1100,7 @@ Generates a LearnCard Wallet from a 64 character seed string
 
 #### Defined in
 
-[wallet/plugins/EthereumPlugin/types.ts:19](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/learn-card-core/src/wallet/plugins/EthereumPlugin/types.ts#L19)
+[wallet/plugins/EthereumPlugin/types.ts:19](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/wallet/plugins/EthereumPlugin/types.ts#L19)
 
 ___
 
@@ -1122,7 +1122,7 @@ ___
 
 #### Defined in
 
-[wallet/plugins/EthereumPlugin/types.ts:4](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/learn-card-core/src/wallet/plugins/EthereumPlugin/types.ts#L4)
+[wallet/plugins/EthereumPlugin/types.ts:4](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/wallet/plugins/EthereumPlugin/types.ts#L4)
 
 ___
 
@@ -1144,7 +1144,7 @@ ___
 
 #### Defined in
 
-[wallet/plugins/EthereumPlugin/types.ts:25](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/learn-card-core/src/wallet/plugins/EthereumPlugin/types.ts#L25)
+[wallet/plugins/EthereumPlugin/types.ts:25](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/wallet/plugins/EthereumPlugin/types.ts#L25)
 
 ___
 
@@ -1154,7 +1154,7 @@ ___
 
 #### Defined in
 
-[wallet/plugins/EthereumPlugin/types.ts:36](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/learn-card-core/src/wallet/plugins/EthereumPlugin/types.ts#L36)
+[wallet/plugins/EthereumPlugin/types.ts:36](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/wallet/plugins/EthereumPlugin/types.ts#L36)
 
 ## Universal Wallets
 
@@ -1164,7 +1164,7 @@ ___
 
 #### Defined in
 
-[types/LearnCard.ts:20](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/learn-card-core/src/types/LearnCard.ts#L20)
+[types/LearnCard.ts:20](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/types/LearnCard.ts#L20)
 
 ___
 
@@ -1188,7 +1188,7 @@ ___
 
 #### Defined in
 
-[types/wallet.ts:2](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/learn-card-core/src/types/wallet.ts#L2)
+[types/wallet.ts:2](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/types/wallet.ts#L2)
 
 ___
 
@@ -1205,7 +1205,7 @@ ___
 
 #### Defined in
 
-[types/wallet.ts:23](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/learn-card-core/src/types/wallet.ts#L23)
+[types/wallet.ts:23](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/types/wallet.ts#L23)
 
 ___
 
@@ -1233,7 +1233,7 @@ ___
 
 #### Defined in
 
-[wallet/base/wallet.ts:66](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/learn-card-core/src/wallet/base/wallet.ts#L66)
+[wallet/base/wallet.ts:66](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/wallet/base/wallet.ts#L66)
 
 ## VC Plugin
 
@@ -1255,7 +1255,7 @@ ___
 
 #### Defined in
 
-[wallet/plugins/vc/types.ts:5](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/learn-card-core/src/wallet/plugins/vc/types.ts#L5)
+[wallet/plugins/vc/types.ts:5](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/wallet/plugins/vc/types.ts#L5)
 
 ___
 
@@ -1265,7 +1265,7 @@ ___
 
 #### Defined in
 
-[wallet/plugins/vc/types.ts:24](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/learn-card-core/src/wallet/plugins/vc/types.ts#L24)
+[wallet/plugins/vc/types.ts:24](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/wallet/plugins/vc/types.ts#L24)
 
 ___
 
@@ -1281,7 +1281,7 @@ ___
 
 #### Defined in
 
-[wallet/plugins/vc/types.ts:34](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/learn-card-core/src/wallet/plugins/vc/types.ts#L34)
+[wallet/plugins/vc/types.ts:34](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/wallet/plugins/vc/types.ts#L34)
 
 ## VPQR Plugin
 
@@ -1297,7 +1297,7 @@ ___
 
 #### Defined in
 
-[wallet/plugins/vpqr/types.ts:10](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/learn-card-core/src/wallet/plugins/vpqr/types.ts#L10)
+[wallet/plugins/vpqr/types.ts:10](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/wallet/plugins/vpqr/types.ts#L10)
 
 ___
 
@@ -1314,7 +1314,7 @@ ___
 
 #### Defined in
 
-[wallet/plugins/vpqr/types.ts:4](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/learn-card-core/src/wallet/plugins/vpqr/types.ts#L4)
+[wallet/plugins/vpqr/types.ts:4](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/wallet/plugins/vpqr/types.ts#L4)
 
 ## Plugins
 
@@ -1334,7 +1334,7 @@ ___
 
 #### Defined in
 
-[wallet/plugins/expiration/index.ts:7](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/learn-card-core/src/wallet/plugins/expiration/index.ts#L7)
+[wallet/plugins/expiration/index.ts:7](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/wallet/plugins/expiration/index.ts#L7)
 
 ___
 
@@ -1361,7 +1361,7 @@ ___
 
 #### Defined in
 
-[wallet/plugins/didkey/index.ts:15](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/learn-card-core/src/wallet/plugins/didkey/index.ts#L15)
+[wallet/plugins/didkey/index.ts:15](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/wallet/plugins/didkey/index.ts#L15)
 
 ___
 
@@ -1381,7 +1381,7 @@ ___
 
 #### Defined in
 
-[wallet/plugins/didkit/index.ts:23](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/learn-card-core/src/wallet/plugins/didkit/index.ts#L23)
+[wallet/plugins/didkit/index.ts:23](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/wallet/plugins/didkit/index.ts#L23)
 
 ___
 
@@ -1402,7 +1402,7 @@ ___
 
 #### Defined in
 
-[wallet/plugins/EthereumPlugin/index.ts:23](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/learn-card-core/src/wallet/plugins/EthereumPlugin/index.ts#L23)
+[wallet/plugins/EthereumPlugin/index.ts:23](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/wallet/plugins/EthereumPlugin/index.ts#L23)
 
 ___
 
@@ -1423,7 +1423,7 @@ ___
 
 #### Defined in
 
-[wallet/plugins/idx/idx.ts:40](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/learn-card-core/src/wallet/plugins/idx/idx.ts#L40)
+[wallet/plugins/idx/idx.ts:40](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/wallet/plugins/idx/idx.ts#L40)
 
 ___
 
@@ -1443,7 +1443,7 @@ ___
 
 #### Defined in
 
-[wallet/plugins/vc/vc.ts:14](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/learn-card-core/src/wallet/plugins/vc/vc.ts#L14)
+[wallet/plugins/vc/vc.ts:14](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/wallet/plugins/vc/vc.ts#L14)
 
 ___
 
@@ -1463,7 +1463,7 @@ ___
 
 #### Defined in
 
-[wallet/plugins/vpqr/index.ts:11](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/learn-card-core/src/wallet/plugins/vpqr/index.ts#L11)
+[wallet/plugins/vpqr/index.ts:11](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/wallet/plugins/vpqr/index.ts#L11)
 
 ## Functions
 
@@ -1486,7 +1486,7 @@ ___
 
 #### Defined in
 
-[wallet/base/functions/passwordToKey.ts:3](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/learn-card-core/src/wallet/base/functions/passwordToKey.ts#L3)
+[wallet/base/functions/passwordToKey.ts:3](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/wallet/base/functions/passwordToKey.ts#L3)
 
 ___
 
@@ -1506,4 +1506,4 @@ ___
 
 #### Defined in
 
-[wallet/base/functions/seedToId.ts:3](https://github.com/WeLibraryOS/LearnCard/blob/08e2cf79/packages/learn-card-core/src/wallet/base/functions/seedToId.ts#L3)
+[wallet/base/functions/seedToId.ts:3](https://github.com/WeLibraryOS/LearnCard/blob/324cd7ea/packages/learn-card-core/src/wallet/base/functions/seedToId.ts#L3)
