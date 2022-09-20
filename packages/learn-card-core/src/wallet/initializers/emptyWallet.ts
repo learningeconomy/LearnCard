@@ -18,5 +18,7 @@ export const emptyWallet = async ({ didkit }: EmptyWallet['args'] = {}): Promise
 
         verifyCredential: verifyCredential(wallet),
         verifyPresentation: wallet.pluginMethods.verifyPresentation,
+
+        resolveDid: wallet.pluginMethods.resolveDid,
     };
 };
