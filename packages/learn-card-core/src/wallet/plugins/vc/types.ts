@@ -1,30 +1,5 @@
 import { UnsignedVC, VC, UnsignedVP, VP, VerificationCheck } from '@learncard/types';
 import { KeyPair, ProofOptions } from '../didkit/types';
-import { DiscriminatedUnionize } from 'types/helpers';
-
-export type TestVcs = {
-    basic: { did?: string; subject?: string; issuanceDate?: string };
-    achievement: {
-        did?: string;
-        subject?: string;
-        name?: string;
-        achievementName?: string;
-        description?: string;
-        criteriaNarrative?: string;
-        issuanceDate?: string;
-    };
-    fullAchievement: {
-        did?: string;
-        subject?: string;
-        name?: string;
-        achievementName?: string;
-        description?: string;
-        issuanceDate?: string;
-        expirationDate?: string;
-    };
-};
-
-export type GetTestVc = (args?: DiscriminatedUnionize<TestVcs>) => UnsignedVC;
 
 /** @group VC Plugin */
 export type VCPluginDependentMethods = {
@@ -51,7 +26,7 @@ export type VCPluginMethods = VCPluginDependentMethods & {
     verifyCredential: (credential: VC) => Promise<VerificationCheck>;
     issuePresentation: (credential: UnsignedVP) => Promise<VP>;
     verifyPresentation: (presentation: VP) => Promise<VerificationCheck>;
-    getTestVc: GetTestVc;
+    getTestVc: (subject?: string) => UnsignedVC;
     getTestVp: (credential?: VC) => Promise<UnsignedVP>;
 };
 

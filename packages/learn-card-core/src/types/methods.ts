@@ -11,7 +11,7 @@ import {
     IDXCredential,
 } from '@learncard/types';
 
-import { GetTestVc as _GetTestVc } from '@wallet/plugins/vc/types';
+import { NewCredentialFunction } from '@wallet/plugins/vc-templates/types';
 import { DidMethod } from '@wallet/plugins/didkit/types';
 import { Algorithm } from '@wallet/plugins/didkey/types';
 
@@ -34,6 +34,16 @@ export type Keypair = (type?: Algorithm) => {
     y?: string;
     d: string;
 };
+
+/**
+ * Generates a new Unsigned VC from a template
+ */
+export type NewCredential = NewCredentialFunction;
+
+/**
+ * Wraps a VC in a simple Presentation
+ */
+export type NewPresentation = (credential: VC, did?: string) => Promise<UnsignedVP>;
 
 /**
  * Signs an unsigned Verifiable Credential, returning the signed VC
@@ -144,7 +154,7 @@ export type ReadFromCeramic = (streamId: string) => Promise<any>;
  *
  * @group LearnCard Methods
  */
-export type GetTestVc = _GetTestVc;
+export type GetTestVc = (subject?: string) => UnsignedVC;
 
 /**
  * Wraps a crednetial in an exmaple presentaion. If no credential is provided, a new one will be
@@ -235,6 +245,8 @@ export type VpToQrCode = (vp: VP) => Promise<string>;
 export type AllLearnCardMethods = {
     did: Did;
     keypair: Keypair;
+    newCredential: NewCredential;
+    newPresentation: NewPresentation;
     issueCredential: IssueCredential;
     verifyCredential: VerifyCredential;
     issuePresentation: IssuePresentation;
