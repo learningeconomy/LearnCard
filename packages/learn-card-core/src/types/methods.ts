@@ -37,11 +37,15 @@ export type Keypair = (type?: Algorithm) => {
 
 /**
  * Generates a new Unsigned VC from a template
+ *
+ * @group LearnCard Methods
  */
 export type NewCredential = NewCredentialFunction;
 
 /**
  * Wraps a VC in a simple Presentation
+ *
+ * @group LearnCard Methods
  */
 export type NewPresentation = (credential: VC, args?: { did?: string }) => Promise<UnsignedVP>;
 
