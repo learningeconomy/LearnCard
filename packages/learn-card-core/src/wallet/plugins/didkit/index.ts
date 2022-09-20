@@ -9,11 +9,18 @@ import init, {
     issuePresentation,
     verifyPresentation,
     contextLoader,
+    resolveDID,
 } from '@didkit/index';
 
 import { DidkitPluginMethods, DidMethod } from './types';
 import { Plugin } from 'types/wallet';
 
+export * from './types';
+
+/**
+ *
+ * @group Plugins
+ */
 export const getDidKitPlugin = async (
     input?: InitInput | Promise<InitInput>
 ): Promise<Plugin<'DIDKit', DidkitPluginMethods>> => {
@@ -71,6 +78,8 @@ export const getDidKitPlugin = async (
                 JSON.parse(await verifyPresentation(JSON.stringify(presentation), '{}')),
 
             contextLoader: async (_wallet, url) => JSON.parse(await contextLoader(url)),
+
+            resolveDid: async (_wallet, did) => JSON.parse(await resolveDID(did, '{}')),
         },
     };
 };

@@ -26,7 +26,8 @@ export type TestVcs = {
 
 export type GetTestVc = (args?: DiscriminatedUnionize<TestVcs>) => UnsignedVC;
 
-export type DependentMethods = {
+/** @group VC Plugin */
+export type VCPluginDependentMethods = {
     getSubjectDid: (type: 'key') => string;
     getSubjectKeypair: () => KeyPair;
     keyToVerificationMethod: (type: string, keypair: KeyPair) => Promise<string>;
@@ -44,7 +45,8 @@ export type DependentMethods = {
     verifyPresentation: (presentation: VP) => Promise<VerificationCheck>;
 };
 
-export type VCPluginMethods = DependentMethods & {
+/** @group VC Plugin */
+export type VCPluginMethods = VCPluginDependentMethods & {
     issueCredential: (credential: UnsignedVC) => Promise<VC>;
     verifyCredential: (credential: VC) => Promise<VerificationCheck>;
     issuePresentation: (credential: UnsignedVP) => Promise<VP>;
@@ -53,4 +55,5 @@ export type VCPluginMethods = DependentMethods & {
     getTestVp: (credential?: VC) => Promise<UnsignedVP>;
 };
 
+/** @group VC Plugin */
 export type VerifyExtension = { verifyCredential: (credential: VC) => Promise<VerificationCheck> };

@@ -11,7 +11,11 @@ import { verifyCredential } from '@wallet/verify';
 import { LearnCardConfig, LearnCard } from 'types/LearnCard';
 import { defaultCeramicIDXArgs, defaultEthereumArgs } from '@wallet/defaults';
 
-/** Generates a LearnCard Wallet from a 64 character seed string */
+/**
+ * Generates a LearnCard Wallet from a 64 character seed string
+ *
+ * @group Init Functions
+ */
 export const walletFromKey = async (
     key: string,
     {
@@ -63,6 +67,8 @@ export const walletFromKey = async (
         removeCredential: async title => {
             await wallet.pluginMethods.removeVerifiableCredentialInIdx(title);
         },
+
+        resolveDid: wallet.pluginMethods.resolveDid,
 
         readFromCeramic: wallet.pluginMethods.readContentFromCeramic,
 

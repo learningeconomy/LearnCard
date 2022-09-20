@@ -1,9 +1,9 @@
 import { UnsignedVC } from '@learncard/types';
 
-import { DependentMethods, VCPluginMethods } from './types';
+import { VCPluginDependentMethods, VCPluginMethods } from './types';
 import { Wallet } from 'types/wallet';
 
-export const issueCredential = (initWallet: Wallet<string, DependentMethods>) => {
+export const issueCredential = (initWallet: Wallet<string, VCPluginDependentMethods>) => {
     return async (wallet: Wallet<string, VCPluginMethods>, credential: UnsignedVC) => {
         const kp = wallet.pluginMethods.getSubjectKeypair();
 

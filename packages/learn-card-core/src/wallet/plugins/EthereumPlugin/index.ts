@@ -13,8 +13,13 @@ import hardcodedTokens from './hardcodedTokens';
 import { DidMethod, KeyPair } from '@wallet/plugins/didkit/types';
 import { Algorithm } from '@wallet/plugins/didkey/types'; // Have to include this in order for getSubjectKeypair to not throw a type error
 
+export * from './types';
+
 const ERC20ABI = require('./erc20.abi.json');
 
+/**
+ * @group Plugins
+ */
 export const getEthereumPlugin = (
     initWallet: Wallet<
         string,
