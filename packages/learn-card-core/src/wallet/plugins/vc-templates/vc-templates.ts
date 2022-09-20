@@ -31,8 +31,8 @@ export const getVCTemplatesPlugin = (
 
                 return VC_TEMPLATES[type]({ ...defaults, ...functionArgs });
             },
-            newPresentation: async (_wallet, credential, _did) => {
-                const did = _did || _wallet.pluginMethods.getSubjectDid?.('key');
+            newPresentation: async (_wallet, credential, args = {}) => {
+                const did = args?.did || _wallet.pluginMethods.getSubjectDid?.('key');
 
                 if (!did) throw new Error('Could not get issuer did!');
 

@@ -34,5 +34,5 @@ export type VCTemplatePluginDependentMethods = { getSubjectDid?: (type: 'key') =
 export type VCTemplatePluginMethods = {
     getSubjectDid?: (type: 'key') => string;
     newCredential: NewCredentialFunction;
-    newPresentation: (credential: VC, did?: string) => Promise<UnsignedVP>;
+    newPresentation: (credential: VC, args?: { did?: string }) => Promise<UnsignedVP>;
 };
