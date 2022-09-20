@@ -8,11 +8,11 @@ import {
     VP,
     VerificationCheck,
     UnsignedVP,
+    IDXCredential,
 } from '@learncard/types';
 
 import { DidMethod } from '@wallet/plugins/didkit/types';
 import { Algorithm } from '@wallet/plugins/didkey/types';
-import { IDXCredential } from '@wallet/plugins/idx/types';
 
 /**
  * Wallet holder's did
@@ -51,7 +51,7 @@ export type IssueCredential = (credential: UnsignedVC) => Promise<VC>;
 export type VerifyCredential = (credential: VC) => Promise<VerificationItem[]>;
 
 /**
- * Creates a signed Verifiable Presentation from a signed Verifiable Credential
+ * Signs an unsigned Verifiable Presentation, returning the signed VP
  *
  * @group LearnCard Methods
  */
@@ -118,6 +118,13 @@ export type AddCredential = (credential: IDXCredential) => Promise<void>;
  * @group LearnCard Methods
  */
 export type RemoveCredential = (title: string) => Promise<void>;
+
+/**
+ * Resolves a did to its did document
+ *
+ * @group LearnCard Methods
+ */
+export type ResolveDid = (did: string) => Promise<Record<string, any>>;
 
 /**
  * Resolves a stream ID, returning its contents
@@ -237,6 +244,7 @@ export type AllLearnCardMethods = {
     publishCredential: PublishCredential;
     addCredential: AddCredential;
     removeCredential: RemoveCredential;
+    resolveDid: ResolveDid;
     readFromCeramic: ReadFromCeramic;
     getTestVc: GetTestVc;
     getTestVp: GetTestVp;

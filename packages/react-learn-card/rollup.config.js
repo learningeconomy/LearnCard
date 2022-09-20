@@ -44,7 +44,7 @@ export default [
             commonjs(),
             esbuild(),
         ],
-        external: ['react', 'react-dom'],
+        external: ['react', 'react-dom', '@learncard/core'],
     },
     {
         input: ['src/assets/styles/main.css', 'src/assets/styles/base.css'],

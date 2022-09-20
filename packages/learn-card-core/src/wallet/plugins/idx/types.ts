@@ -1,6 +1,7 @@
 import { ModelAliases } from '@glazed/types';
+import { z } from 'zod';
 import { StreamID } from '@ceramicnetwork/streamid';
-import { VC } from '@learncard/types';
+import { VC, IDXCredential, IDXCredentialValidator } from '@learncard/types';
 
 /** @group IDXPlugin */
 export type CeramicIDXArgs = {
@@ -22,16 +23,8 @@ export type IDXPluginMethods = {
 };
 
 /** @group IDXPlugin */
-export type StorageType = 'ceramic';
-
+export const CredentialsListValidator = z
+    .object({ credentials: IDXCredentialValidator.array() })
+    .strict();
 /** @group IDXPlugin */
-export type IDXCredential = {
-    id: string;
-    title: string;
-    storageType?: StorageType;
-};
-
-/** @group IDXPlugin */
-export type CredentialsList = {
-    credentials: IDXCredential[];
-};
+export type CredentialsList = z.infer<typeof CredentialsListValidator>;

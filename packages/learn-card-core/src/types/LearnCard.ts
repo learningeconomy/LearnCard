@@ -41,7 +41,7 @@ export type LearnCard<
  * @group LearnCard
  */
 export type EmptyLearnCard = LearnCard<
-    'verifyCredential' | 'verifyPresentation',
+    'verifyCredential' | 'verifyPresentation' | 'resolveDid',
     Wallet<'DIDKit' | 'Expiration', DidkitPluginMethods & VerifyExtension>
 >;
 

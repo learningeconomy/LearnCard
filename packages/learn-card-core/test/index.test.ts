@@ -63,12 +63,12 @@ describe('LearnCard SDK', () => {
             expect(verificationResult.checks).not.toHaveLength(0);
         });
 
-        it('should only allow verification methods', async () => {
+        it('should only allow a subset of methods', async () => {
             const emptyWallet = await initLearnCard();
             const { _wallet, ...methods } = emptyWallet;
-            const { verifyCredential, verifyPresentation } = emptyWallet;
+            const { verifyCredential, verifyPresentation, resolveDid } = emptyWallet;
 
-            expect(methods).toEqual({ verifyCredential, verifyPresentation });
+            expect(methods).toEqual({ verifyCredential, verifyPresentation, resolveDid });
         });
     });
 
@@ -108,6 +108,17 @@ describe('LearnCard SDK', () => {
                 x: '5zTqbCtiV95yNV5HKqBaTEh-a0Y8Ap7TBt8vAbVja1g',
                 d: 'qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqo',
             });
+        });
+
+        it('should be able to resolve dids', async () => {
+            const wallet = await getWallet();
+            const otherWallet = await getWallet('b'.repeat(64));
+
+            await expect(wallet.resolveDid(wallet.did())).resolves.toBeDefined();
+            await expect(wallet.resolveDid(otherWallet.did())).resolves.toBeDefined();
+            await expect(wallet.resolveDid(wallet.did('pkh:eip155:1'))).resolves.not.toEqual(
+                await wallet.resolveDid(wallet.did())
+            );
         });
 
         describe('Did Methods Supported', () => {
