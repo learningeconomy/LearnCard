@@ -9,7 +9,12 @@ import { CreateOpts } from '@ceramicnetwork/common';
 import { TileDocument, TileMetadataArgs } from '@ceramicnetwork/stream-tile';
 import { IDXCredential, StorageTypeEnum } from '@learncard/types';
 
-import { CredentialsList, IDXPluginMethods } from './types';
+import {
+    CredentialsList,
+    IDXPluginMethods,
+    CredentialsListValidator,
+    IDXCredentialValidator,
+} from './types';
 import { Plugin, Wallet } from 'types/wallet';
 import { CeramicIDXArgs } from 'types/LearnCard';
 
@@ -47,10 +52,22 @@ export const getIDXPlugin = async (
     const dataStore = new DIDDataStore({ ceramic, model: modelData });
 
     const getCredentialsListFromIdx = async (alias = credentialAlias): Promise<CredentialsList> => {
-        return (await dataStore.get(alias)) || { credentials: [] };
+        const list = await dataStore.get(alias);
+
+        if (!list) return { credentials: [] };
+
+        const validationResult = await CredentialsListValidator.spa(list);
+
+        if (validationResult.success) return validationResult.data;
+
+        console.error(validationResult.error);
+
+        throw new Error('Invalid credentials list stored in IDX');
     };
 
-    const addCredentialStreamIdToIdx = async (record: IDXCredential, alias?: string) => {
+    const addCredentialStreamIdToIdx = async (_record: IDXCredential, alias?: string) => {
+        const record = IDXCredentialValidator.parse(_record);
+
         if (!record) throw new Error('record is required');
 
         if (!record.id) throw Error('No streamId provided');
@@ -139,8 +156,8 @@ export const getIDXPlugin = async (
                     streamIds.map(async streamId => readContentFromCeramic(streamId))
                 );
             },
-            addVerifiableCredentialInIdx: async (_wallet, { title, id }) => {
-                return addCredentialStreamIdToIdx({ title, id });
+            addVerifiableCredentialInIdx: async (_wallet, idxCredential) => {
+                return addCredentialStreamIdToIdx(idxCredential);
             },
             removeVerifiableCredentialInIdx: async (_wallet, title) => {
                 return removeCredentialFromIdx(title);

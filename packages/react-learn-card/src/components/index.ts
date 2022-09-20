@@ -4,6 +4,7 @@
 
 export * from "./Button/index";
 export * from "./CircleIcon/index";
+export * from "./CourseCard/index";
 export * from "./FlippyCard/index";
 export * from "./LearnCardCreditCardBackFace/index";
 export * from "./LearnCardCreditCardFrontFace/index";
@@ -12,6 +13,10 @@ export * from "./MiniVCThumbnail/index";
 export * from "./Notification/index";
 export * from "./QRCodeCard/index";
 export * from "./RoundedSquare/index";
+export * from "./SchoolIdCard/index";
+export * from "./SkillVerticalCard/index";
+export * from "./SkillsCard/index";
+export * from "./SkillsStatsCard/index";
 export * from "./SmallAchievementCard/index";
 export * from "./VCCard/index";
 export * from "./VCDisplayBackFace/index";

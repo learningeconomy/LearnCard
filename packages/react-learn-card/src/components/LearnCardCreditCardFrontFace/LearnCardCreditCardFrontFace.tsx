@@ -8,12 +8,30 @@ import MasterCardLogo from '../../assets/images/master-card-logo.svg';
 
 export const LearnCardCreditCardFrontFace: React.FC<LearnCardCreditCardFrontFaceProps> = ({
     userImage,
+    userImageComponent = null,
     qrCodeValue,
     className,
     showActionButton = false,
     actionButtonText = 'Open Card',
     onClick = () => {},
 }) => {
+    let userImageEl: React.ReactNode | null = null;
+
+    if (userImage) {
+        userImageEl = (
+            <div className="inline-block relative overflow-hidden rounded-full shadow-3xl h-0 bg-white w-1/2 pb-[50%] mt-2 ml-4">
+                <img
+                    className="w-full h-full absolute rounded-full object-cover border-solid border-2 border-white"
+                    src={userImage}
+                    alt="user image"
+                    data-testid="credit-card-frontface-userImg"
+                />
+            </div>
+        );
+    } else if (!userImage && userImageComponent) {
+        userImageEl = userImageComponent;
+    }
+
     return (
         <div
             className={`flex justify-center items-center max-w-[375px] rounded-[20px] ${className}`}
@@ -44,16 +62,7 @@ export const LearnCardCreditCardFrontFace: React.FC<LearnCardCreditCardFrontFace
                             />
                         </div>
 
-                        {userImage && (
-                            <div className="inline-block relative overflow-hidden rounded-full shadow-3xl h-0 bg-white w-1/2 pb-[50%] mt-2 ml-4">
-                                <img
-                                    className="w-full h-full absolute rounded-full object-cover border-solid border-2 border-white"
-                                    src={userImage}
-                                    alt="user image"
-                                    data-testid="credit-card-frontface-userImg"
-                                />
-                            </div>
-                        )}
+                        {userImageEl}
                     </div>
 
                     {qrCodeValue && (

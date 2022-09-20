@@ -5,6 +5,7 @@ import { getDidKeyPlugin } from '@wallet/plugins/didkey';
 import { ExpirationPlugin } from '@wallet/plugins/expiration';
 import { getVCPlugin } from '@wallet/plugins/vc';
 import { getEthereumPlugin } from '@wallet/plugins/EthereumPlugin';
+import { getVpqrPlugin } from '@wallet/plugins/vpqr';
 import { verifyCredential } from '@wallet/verify';
 
 import { LearnCardConfig, LearnCard } from 'types/LearnCard';
@@ -33,9 +34,11 @@ export const walletFromKey = async (
     );
     const expirationWallet = await idxWallet.addPlugin(ExpirationPlugin(idxWallet));
 
-    const wallet = await expirationWallet.addPlugin(
+    const ethWallet = await expirationWallet.addPlugin(
         getEthereumPlugin(expirationWallet, ethereumConfig)
     );
+
+    const wallet = await ethWallet.addPlugin(getVpqrPlugin(ethWallet));
 
     return {
         _wallet: wallet,
@@ -61,10 +64,15 @@ export const walletFromKey = async (
             await wallet.pluginMethods.removeVerifiableCredentialInIdx(title);
         },
 
+        resolveDid: wallet.pluginMethods.resolveDid,
+
         readFromCeramic: wallet.pluginMethods.readContentFromCeramic,
 
         getTestVc: wallet.pluginMethods.getTestVc,
         getTestVp: wallet.pluginMethods.getTestVp,
+
+        vpFromQrCode: wallet.pluginMethods.vpFromQrCode,
+        vpToQrCode: wallet.pluginMethods.vpToQrCode,
 
         getEthereumAddress: wallet.pluginMethods.getEthereumAddress,
         getBalance: wallet.pluginMethods.getBalance,

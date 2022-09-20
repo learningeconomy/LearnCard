@@ -16,12 +16,6 @@ describe('RoundedSquare', () => {
         expect(screen.getByText('Title!')).toBeInTheDocument();
     });
 
-    it('renders description', async () => {
-        render(<RoundedSquare description="Description!" />);
-
-        expect(screen.getByText('Description!')).toBeInTheDocument();
-    });
-
     it('renders count', async () => {
         render(<RoundedSquare count="29" />);
 

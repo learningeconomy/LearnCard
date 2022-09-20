@@ -1,5 +1,59 @@
 # @welibraryos/react-learn-card
 
+## 2.3.27
+
+### Patch Changes
+
+-   [#78](https://github.com/WeLibraryOS/LearnCard/pull/78) [`3149715`](https://github.com/WeLibraryOS/LearnCard/commit/3149715875dd007c54ca0a67b7424b025efdc558) Thanks [@goblincore](https://github.com/goblincore)! - fix: [WE-2340] Fix VC display text not showing in dark mode
+
+## 2.3.26
+
+### Patch Changes
+
+-   [#76](https://github.com/WeLibraryOS/LearnCard/pull/76) [`f88e82a`](https://github.com/WeLibraryOS/LearnCard/commit/f88e82a87cd12f30105639c2339561a72aa20d7e) Thanks [@goblincore](https://github.com/goblincore)! - Fix type errors to fix build
+
+*   [#75](https://github.com/WeLibraryOS/LearnCard/pull/75) [`2808d37`](https://github.com/WeLibraryOS/LearnCard/commit/2808d37a4889d9fafd341b472e4c7dbb68eef40a) Thanks [@goblincore](https://github.com/goblincore)! - Add Course Card, Skill Card components
+
+## 2.3.25
+
+### Patch Changes
+
+-   [#74](https://github.com/WeLibraryOS/LearnCard/pull/74) [`b06f5de`](https://github.com/WeLibraryOS/LearnCard/commit/b06f5de90c8aa91aeddd9d1c92ba40044ad1461f) Thanks [@gerardopar](https://github.com/gerardopar)! - Id card
+
+-   Updated dependencies [[`9942f25`](https://github.com/WeLibraryOS/LearnCard/commit/9942f25ccc39797bc74ad63cf7d4878b2619b208), [`9942f25`](https://github.com/WeLibraryOS/LearnCard/commit/9942f25ccc39797bc74ad63cf7d4878b2619b208), [`9942f25`](https://github.com/WeLibraryOS/LearnCard/commit/9942f25ccc39797bc74ad63cf7d4878b2619b208)]:
+    -   @learncard/core@5.1.0
+
+## 2.3.24
+
+### Patch Changes
+
+-   [#71](https://github.com/WeLibraryOS/LearnCard/pull/71) [`1b7a85a`](https://github.com/WeLibraryOS/LearnCard/commit/1b7a85aa7e61da07ed20e9297cd865b7cdd657d5) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Better Image Handling in Build Pipeline
+
+## 2.3.23
+
+### Patch Changes
+
+-   [#69](https://github.com/WeLibraryOS/LearnCard/pull/69) [`a5ca571`](https://github.com/WeLibraryOS/LearnCard/commit/a5ca57166c62aea0ce40ceb2d84f8d12cad23e1e) Thanks [@goblincore](https://github.com/goblincore)! - fix build error from rollup-plugin-img and add additional img source prop to rounded card component
+
+## 2.3.22
+
+### Patch Changes
+
+-   [#67](https://github.com/WeLibraryOS/LearnCard/pull/67) [`db2e9be`](https://github.com/WeLibraryOS/LearnCard/commit/db2e9beee227698e95b8da71e37046b2d0c006a9) Thanks [@goblincore](https://github.com/goblincore)! - Update wallet components with new assets
+
+## 2.3.21
+
+### Patch Changes
+
+-   [#65](https://github.com/WeLibraryOS/LearnCard/pull/65) [`b413a7f`](https://github.com/WeLibraryOS/LearnCard/commit/b413a7f7147e344eb65c3ed9cd68ac08193e60b9) Thanks [@gerardopar](https://github.com/gerardopar)! - Credit card front face prop update
+
+## 2.3.20
+
+### Patch Changes
+
+-   Updated dependencies [[`5c5f28b`](https://github.com/WeLibraryOS/LearnCard/commit/5c5f28b1db1a9527e56946522ea94d444a7f1eed), [`fab5557`](https://github.com/WeLibraryOS/LearnCard/commit/fab55579a1e75b438425ea019a1ac63ecb5634fe)]:
+    -   @learncard/core@5.0.0
+
 ## 2.3.19
 
 ### Patch Changes
