@@ -8,9 +8,9 @@ const darkCodeTheme = require('prism-react-renderer/themes/dracula');
 const config = {
     title: 'LearnCard',
     tagline: 'Powering Wallets of the Future',
-    url: 'https://api.docs.learncard.com',
+    url: 'https://learncarddocs.netlify.app/',
     baseUrl: '/',
-    onBrokenLinks: 'throw',
+    onBrokenLinks: 'warn',
     onBrokenMarkdownLinks: 'warn',
     favicon: 'img/favicon.ico',
 
