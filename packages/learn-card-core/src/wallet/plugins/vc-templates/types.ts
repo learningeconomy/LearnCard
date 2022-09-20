@@ -13,15 +13,6 @@ export type VcTemplates = {
         criteriaNarrative?: string;
         issuanceDate?: string;
     };
-    fullAchievement: {
-        did?: string;
-        subject?: string;
-        name?: string;
-        achievementName?: string;
-        description?: string;
-        issuanceDate?: string;
-        expirationDate?: string;
-    };
 };
 
 /** @group VC Templates Plugin */
