@@ -1,10 +1,14 @@
 ---
-'@learncard/core': major
+'@learncard/core': minor
 ---
 
-GetTestVC has been overhauled to allow getting different types of test VCs!
+New Plugin: VC Templates
 
-`wallet.getTestVc` has changed it's type signature
+- Allows creating new credentials/presentations easily based on pre-defined templates
 
-`wallet.getTestVc()` is identical
-`wallet.getTestVc('did:example:123')` would now be called like this: `wallet.getTestVc({ subject: 'did:example:123' })`
+New methods: newCredential and newPresentation
+
+- `wallet.newCredential()` is identical to `wallet.getTestVc()`
+- `wallet.newCredential({ type: 'achievement' })` will provide you with a _different_ credential, and 
+its fields are overwriteable via arguments passed to that function.
+E.g. `wallet.newCredential({ type: 'achievement', name: 'Nice!' })`
