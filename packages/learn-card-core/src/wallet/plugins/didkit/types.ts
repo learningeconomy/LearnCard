@@ -44,4 +44,5 @@ export type DidkitPluginMethods = {
     ) => Promise<VP>;
     verifyPresentation: (presentation: VP) => Promise<VerificationCheck>;
     contextLoader: (url: string) => Promise<Record<string, any>>;
+    resolveDid: (did: string) => Promise<Record<string, any>>;
 };

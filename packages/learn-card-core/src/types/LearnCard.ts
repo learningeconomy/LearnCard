@@ -95,6 +95,8 @@ export type AllLearnCardMethods = {
      */
     removeCredential: (title: string) => Promise<void>;
 
+    resolveDid: (did: string) => Promise<Record<string, any>>;
+
     /**
      * Resolves a stream ID, returning its contents
      *
@@ -180,7 +182,7 @@ export type LearnCard<
 } & Pick<AllLearnCardMethods, Methods>;
 
 export type EmptyLearnCard = LearnCard<
-    'verifyCredential' | 'verifyPresentation',
+    'verifyCredential' | 'verifyPresentation' | 'resolveDid',
     Wallet<'DIDKit' | 'Expiration', DidkitPluginMethods & VerifyExtension>
 >;
 
