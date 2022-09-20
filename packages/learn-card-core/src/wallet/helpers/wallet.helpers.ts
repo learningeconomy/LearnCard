@@ -13,6 +13,8 @@ import { Wallet } from 'types/wallet';
  * Using this method allows you to recycle dependents with arguments, and is more optimized
  * than simply spreading the original pluginMethods object because this is purely a type helper and
  * returns an empty object!
+ *
+ * @group Helper Functions
  */
 export const recycleDependents = <
     Methods extends Record<string, (...args: any[]) => any> = Record<never, never>

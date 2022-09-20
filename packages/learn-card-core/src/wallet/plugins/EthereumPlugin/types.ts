@@ -1,5 +1,6 @@
 import { providers } from 'ethers';
 
+/** @group Ethereum Plugin */
 export type EthereumPluginMethods = {
     getEthereumAddress: () => string; // TODO is there a way for this to just be a property?
     getBalance: (symbolOrAddress?: string) => Promise<string>;
@@ -14,11 +15,13 @@ export type EthereumPluginMethods = {
     addInfuraProjectId: (infuraProjectIdToAdd: string) => void;
 };
 
+/** @group Ethereum Plugin */
 export type EthereumConfig = {
     infuraProjectId?: string;
     network?: providers.Networkish;
 };
 
+/** @group Ethereum Plugin */
 export type Token = {
     chainId: number;
     address: string;
@@ -29,4 +32,5 @@ export type Token = {
     extensions: any;
 };
 
+/** @group Ethereum Plugin */
 export type TokenList = Token[];

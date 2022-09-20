@@ -7,16 +7,15 @@ import { TileLoader } from '@glazed/tile-loader';
 import { CeramicClient } from '@ceramicnetwork/http-client';
 import { CreateOpts } from '@ceramicnetwork/common';
 import { TileDocument, TileMetadataArgs } from '@ceramicnetwork/stream-tile';
-import { IDXCredential, StorageTypeEnum } from '@learncard/types';
+import { IDXCredential, IDXCredentialValidator, StorageTypeEnum } from '@learncard/types';
 
 import {
     CredentialsList,
-    IDXPluginMethods,
     CredentialsListValidator,
-    IDXCredentialValidator,
+    IDXPluginMethods,
+    CeramicIDXArgs,
 } from './types';
 import { Plugin, Wallet } from 'types/wallet';
-import { CeramicIDXArgs } from 'types/LearnCard';
 
 const getCeramicClientFromWalletSuite = async (
     wallet: Wallet<any, { getKey: () => string }>,
@@ -41,6 +40,9 @@ const getCeramicClientFromWalletSuite = async (
     return client;
 };
 
+/**
+ * @group Plugins
+ */
 export const getIDXPlugin = async (
     wallet: Wallet<any, { getKey: () => string }>,
     { modelData, credentialAlias, ceramicEndpoint, defaultContentFamily }: CeramicIDXArgs
