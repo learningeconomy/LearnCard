@@ -1,3 +1,5 @@
+import { InitInput } from '@didkit/index';
+
 import { DidMethod } from '@wallet/plugins/didkit/types';
 import { DidKeyPluginMethods } from '@wallet/plugins/didkey/types';
 import { EthereumPluginMethods } from '@wallet/plugins/EthereumPlugin/types';
@@ -6,7 +8,7 @@ import { VCPluginMethods, VerifyExtension } from '@wallet/plugins/vc/types';
 import { DidkitPluginMethods } from '@wallet/plugins/didkit/types';
 import { EthereumConfig } from '@wallet/plugins/EthereumPlugin/types';
 import { VpqrPluginMethods } from '@wallet/plugins/vpqr/types';
-import { InitInput } from '@didkit/index';
+import { CHAPIPluginMethods } from '@wallet/plugins/chapi';
 
 import { InitFunction, GenericInitFunction } from 'types/helpers';
 import { Wallet } from 'types/wallet';
@@ -18,12 +20,13 @@ export * from 'types/methods';
 
 /** @group Universal Wallets */
 export type LearnCardRawWallet = Wallet<
-    'DIDKit' | 'DID Key' | 'VC' | 'IDX' | 'Expiration' | 'Ethereum' | 'Vpqr',
+    'DIDKit' | 'DID Key' | 'VC' | 'IDX' | 'Expiration' | 'Ethereum' | 'Vpqr' | 'CHAPI',
     DidKeyPluginMethods<DidMethod> &
         VCPluginMethods &
         IDXPluginMethods &
         EthereumPluginMethods &
-        VpqrPluginMethods
+        VpqrPluginMethods &
+        CHAPIPluginMethods
 >;
 
 /**

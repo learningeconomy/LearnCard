@@ -13,6 +13,11 @@ import {
 
 import { DidMethod } from '@wallet/plugins/didkit/types';
 import { Algorithm } from '@wallet/plugins/didkey/types';
+import {
+    HandlerResponse,
+    CredentialRequestEvent,
+    CredentialStoreEvent,
+} from '@wallet/plugins/chapi/types';
 
 /**
  * Wallet holder's did
@@ -229,6 +234,31 @@ export type VpFromQrCode = (text: string) => Promise<VP>;
 export type VpToQrCode = (vp: VP) => Promise<string>;
 
 /**
+ * Sets up CHAPI
+ *
+ * @group LearnCard Methods
+ */
+export type InstallChapiHandler = () => Promise<void>;
+
+/**
+ * Activates CHAPI
+ *
+ * @group LearnCard Methods
+ */
+export type ActivateChapiHandler = (args: {
+    mediatorOrigin?: string;
+    get?: (event: CredentialRequestEvent) => Promise<HandlerResponse>;
+    store?: (event: CredentialStoreEvent) => Promise<HandlerResponse>;
+}) => Promise<void>;
+
+/**
+ * Receives a CHAPI Event
+ *
+ * @group LearnCard Methods
+ */
+export type ReceiveChapiEvent = () => Promise<CredentialRequestEvent | CredentialStoreEvent>;
+
+/**
  * @group LearnCard Methods
  */
 export type AllLearnCardMethods = {
@@ -257,4 +287,7 @@ export type AllLearnCardMethods = {
     addInfuraProjectId: AddInfuraProjectId;
     vpFromQrCode: VpFromQrCode;
     vpToQrCode: VpToQrCode;
+    installChapiHandler: InstallChapiHandler;
+    activateChapiHandler: ActivateChapiHandler;
+    receiveChapiEvent: ReceiveChapiEvent;
 };

@@ -10,6 +10,7 @@ import { verifyCredential } from '@wallet/verify';
 
 import { LearnCardConfig, LearnCard } from 'types/LearnCard';
 import { defaultCeramicIDXArgs, defaultEthereumArgs } from '@wallet/defaults';
+import { getCHAPIPlugin } from '@wallet/plugins/chapi';
 
 /**
  * Generates a LearnCard Wallet from a 64 character seed string
@@ -42,7 +43,9 @@ export const walletFromKey = async (
         getEthereumPlugin(expirationWallet, ethereumConfig)
     );
 
-    const wallet = await ethWallet.addPlugin(getVpqrPlugin(ethWallet));
+    const vpqrWallet = await ethWallet.addPlugin(getVpqrPlugin(ethWallet));
+
+    const wallet = await vpqrWallet.addPlugin(await getCHAPIPlugin(vpqrWallet));
 
     return {
         _wallet: wallet,
@@ -85,5 +88,9 @@ export const walletFromKey = async (
         getCurrentNetwork: wallet.pluginMethods.getCurrentNetwork,
         changeNetwork: wallet.pluginMethods.changeNetwork,
         addInfuraProjectId: wallet.pluginMethods.addInfuraProjectId,
+
+        installChapiHandler: wallet.pluginMethods.installChapiHandler,
+        activateChapiHandler: wallet.pluginMethods.activateChapiHandler,
+        receiveChapiEvent: wallet.pluginMethods.receiveChapiEvent,
     };
 };
