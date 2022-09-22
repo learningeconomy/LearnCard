@@ -1,0 +1,49 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="wallet-worker">
+    <h1>Very Nice :^)</h1>
+</Layout>
+
+<script>
+    import { initLearnCard } from '@learncard/core';
+
+    const wallet = await initLearnCard({ seed: 'a' });
+
+    try {
+        await wallet.installChapiHandler();
+    } catch (e) {
+        console.error('Error in loadOnce:', e);
+    }
+
+    wallet.activateChapiHandler({
+        mediatorOrigin: `https://authn.io/mediator?${encodeURIComponent(window.location.origin)}`,
+        store: async event => {
+            (window as any).event = event;
+            console.log({ event });
+            return { type: 'redirect', url: `${window.location.origin}/store` };
+
+            if (
+                confirm(
+                    `Would you like to store this credential?\n${JSON.stringify(
+                        event.event.credential.data.verifiableCredential[0]
+                    )}`
+                )
+            ) {
+                const id = await wallet.publishCredential(
+                    event.event.credential.data.verifiableCredential[0]
+                );
+                await wallet.addCredential({ title: 'nice', id });
+
+                return {
+                    type: 'response',
+                    dataType: 'VerifiablePresentation',
+                    data: event.event.credential.data,
+                };
+            }
+
+            return { type: 'response', data: null };
+        },
+    });
+</script>

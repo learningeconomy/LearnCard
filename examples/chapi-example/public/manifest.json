@@ -1,0 +1,6 @@
+{
+  "credential_handler": {
+    "url": "/wallet-worker",
+    "enabledTypes": ["VerifiablePresentation"]
+  }
+}
