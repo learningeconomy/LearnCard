@@ -66,9 +66,23 @@ describe('LearnCard SDK', () => {
         it('should only allow a subset of methods', async () => {
             const emptyWallet = await initLearnCard();
             const { _wallet, ...methods } = emptyWallet;
-            const { verifyCredential, verifyPresentation, resolveDid } = emptyWallet;
+            const {
+                verifyCredential,
+                verifyPresentation,
+                resolveDid,
+                installChapiHandler,
+                activateChapiHandler,
+                receiveChapiEvent,
+            } = emptyWallet;
 
-            expect(methods).toEqual({ verifyCredential, verifyPresentation, resolveDid });
+            expect(methods).toEqual({
+                verifyCredential,
+                verifyPresentation,
+                resolveDid,
+                installChapiHandler,
+                activateChapiHandler,
+                receiveChapiEvent,
+            });
         });
     });
 

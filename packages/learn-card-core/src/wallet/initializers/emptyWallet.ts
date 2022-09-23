@@ -1,6 +1,7 @@
 import { generateWallet } from '@wallet/base';
 import { getDidKitPlugin } from '@wallet/plugins/didkit';
 import { ExpirationPlugin } from '@wallet/plugins/expiration';
+import { getCHAPIPlugin } from '@wallet/plugins/chapi';
 import { verifyCredential } from '@wallet/verify';
 
 import { EmptyWallet } from 'types/LearnCard';
@@ -15,7 +16,9 @@ export const emptyWallet = async ({ didkit }: EmptyWallet['args'] = {}): Promise
 > => {
     const didkitWallet = await (await generateWallet()).addPlugin(await getDidKitPlugin(didkit));
 
-    const wallet = await didkitWallet.addPlugin(ExpirationPlugin(didkitWallet));
+    const expirationWallet = await didkitWallet.addPlugin(ExpirationPlugin(didkitWallet));
+
+    const wallet = await expirationWallet.addPlugin(await getCHAPIPlugin(expirationWallet));
 
     return {
         _wallet: wallet,
@@ -24,5 +27,9 @@ export const emptyWallet = async ({ didkit }: EmptyWallet['args'] = {}): Promise
         verifyPresentation: wallet.pluginMethods.verifyPresentation,
 
         resolveDid: wallet.pluginMethods.resolveDid,
+
+        installChapiHandler: wallet.pluginMethods.installChapiHandler,
+        activateChapiHandler: wallet.pluginMethods.activateChapiHandler,
+        receiveChapiEvent: wallet.pluginMethods.receiveChapiEvent,
     };
 };

@@ -44,8 +44,16 @@ export type LearnCard<
  * @group LearnCard
  */
 export type EmptyLearnCard = LearnCard<
-    'verifyCredential' | 'verifyPresentation' | 'resolveDid',
-    Wallet<'DIDKit' | 'Expiration', DidkitPluginMethods & VerifyExtension>
+    | 'verifyCredential'
+    | 'verifyPresentation'
+    | 'resolveDid'
+    | 'installChapiHandler'
+    | 'activateChapiHandler'
+    | 'receiveChapiEvent',
+    Wallet<
+        'DIDKit' | 'Expiration' | 'CHAPI',
+        DidkitPluginMethods & VerifyExtension & CHAPIPluginMethods
+    >
 >;
 
 /** @group LearnCard */

@@ -35,7 +35,16 @@ export const getCHAPIPlugin = async (
         ...recycleDependents(wallet.pluginMethods),
         pluginMethods: {
             installChapiHandler: async () => installHandler(),
-            activateChapiHandler: async (_wallet, { mediatorOrigin, get, store }) => {
+            activateChapiHandler: async (
+                _wallet,
+                {
+                    mediatorOrigin = `https://authn.io/mediator?${encodeURIComponent(
+                        window.location.origin
+                    )}`,
+                    get,
+                    store,
+                }
+            ) => {
                 return activateHandler({ mediatorOrigin, get, store });
             },
             receiveChapiEvent: async () => receiveCredentialEvent(),

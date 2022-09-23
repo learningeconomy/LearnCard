@@ -6,11 +6,11 @@ import { ExpirationPlugin } from '@wallet/plugins/expiration';
 import { getVCPlugin } from '@wallet/plugins/vc';
 import { getEthereumPlugin } from '@wallet/plugins/EthereumPlugin';
 import { getVpqrPlugin } from '@wallet/plugins/vpqr';
+import { getCHAPIPlugin } from '@wallet/plugins/chapi';
 import { verifyCredential } from '@wallet/verify';
 
 import { LearnCardConfig, LearnCard } from 'types/LearnCard';
 import { defaultCeramicIDXArgs, defaultEthereumArgs } from '@wallet/defaults';
-import { getCHAPIPlugin } from '@wallet/plugins/chapi';
 
 /**
  * Generates a LearnCard Wallet from a 64 character seed string

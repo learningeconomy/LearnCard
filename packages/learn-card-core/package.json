@@ -52,6 +52,7 @@
     "@digitalbazaar/vpqr": "^3.0.0",
     "@glazed/did-datastore": "^0.3.2",
     "@glazed/tile-loader": "^0.2.1",
+    "@learncard/helpers": "workspace:*",
     "@uniswap/default-token-list": "^4.1.0",
     "abort-controller": "^3.0.0",
     "credential-handler-polyfill": "^3.0.0",
