@@ -1,21 +1,55 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import Credentials from '../components/Credentials';
 ---
 
 <Layout title="Welcome to Astro.">
-    <main>
-        <h1>CHAPI</h1>
+    <section id="modal-container"></section>
 
-        <button type="button" id="test-storage">Test storage</button>
+    <main class="w-full h-full flex flex-col justify-center items-center p-4">
+        <header class="flex gap-2">
+            <img
+                class="h-24"
+                src="https://user-images.githubusercontent.com/2185016/190510561-294db809-09fd-4771-9749-6c0e0f4144fd.png"
+                alt="LearnCard"
+            />
+
+            <h1>LearnCard CHAPI Example</h1>
+        </header>
+
+        <h3 id="loading-wallet">Loading wallet...</h3>
+
+        <section class="flex justify-center items-center gap-2">
+            <p id="seed-display"></p>
+            <button type="button" id="change-seed" class="bg-red-100 rounded px-4 border opacity-0"
+                >Change</button
+            >
+        </section>
+
+        <section class="flex mb-4">
+            <button
+                disabled
+                type="button"
+                id="test-storage"
+                class="bg-green-100 rounded py-2 px-4 border opacity-0">Add Dummy Credential</button
+            >
+        </section>
+
+        <Credentials client:only="react" />
     </main>
 </Layout>
 
 <script>
     import { initLearnCard } from '@learncard/core';
+    import { _wallet, _seed } from '../stores/walletStore';
 
-    const wallet = await initLearnCard({ seed: 'a' });
+    const seed = _seed.get();
 
-    (window as any).wallet = wallet;
+    if (!seed) window.location.href = 'login';
+
+    const wallet = await initLearnCard({ seed });
+
+    _wallet.set(wallet);
 
     await wallet.installChapiHandler();
 
@@ -24,72 +58,29 @@ import Layout from '../layouts/Layout.astro';
 
         const wc = new WebCredential('VerifiablePresentation', vp);
 
-        const retValue = await window.navigator.credentials.store(wc);
+        const success = await window.navigator.credentials.store(wc);
 
-        console.log({ retValue });
+        if (success) window.location.reload();
     };
 
-    const button = document.getElementById('test-storage');
+    const changeSeed = () => {
+        _seed.set('');
+        _wallet.set(null);
+        window.location.href = 'login';
+    };
 
-    button?.addEventListener('click', testStorage);
+    const loadingWallet = document.getElementById('loading-wallet') as HTMLElement;
+    const storageButton = document.getElementById('test-storage') as HTMLButtonElement;
+    const seedDisplay = document.getElementById('seed-display') as HTMLElement;
+    const changeSeedButton = document.getElementById('change-seed') as HTMLButtonElement;
+
+    loadingWallet.remove();
+
+    storageButton.classList.remove('opacity-0');
+    storageButton.disabled = false;
+    storageButton.addEventListener('click', testStorage);
+
+    seedDisplay.innerHTML = `Your seed is: <span class="bg-white">${seed}</span>`;
+    changeSeedButton.classList.remove('opacity-0');
+    changeSeedButton.addEventListener('click', changeSeed);
 </script>
-
-<style>
-    :root {
-        --astro-gradient: linear-gradient(0deg, #4f39fa, #da62c4);
-    }
-
-    h1 {
-        margin: 2rem 0;
-    }
-
-    main {
-        margin: auto;
-        padding: 1em;
-        max-width: 60ch;
-    }
-
-    .text-gradient {
-        font-weight: 900;
-        background-image: var(--astro-gradient);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-size: 100% 200%;
-        background-position-y: 100%;
-        border-radius: 0.4rem;
-        animation: pulse 4s ease-in-out infinite;
-    }
-
-    @keyframes pulse {
-        0%,
-        100% {
-            background-position-y: 0%;
-        }
-        50% {
-            background-position-y: 80%;
-        }
-    }
-
-    .instructions {
-        line-height: 1.6;
-        margin: 1rem 0;
-        background: #4f39fa;
-        padding: 1rem;
-        border-radius: 0.4rem;
-        color: var(--color-bg);
-    }
-
-    .instructions code {
-        font-size: 0.875em;
-        border: 0.1em solid var(--color-border);
-        border-radius: 4px;
-        padding: 0.15em 0.25em;
-    }
-
-    .link-card-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(24ch, 1fr));
-        gap: 1rem;
-        padding: 0;
-    }
-</style>

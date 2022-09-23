@@ -4,26 +4,20 @@ import stdlibbrowser from 'node-stdlib-browser';
 import basicSsl from '@vitejs/plugin-basic-ssl';
 import react from '@astrojs/react';
 
-import tailwind from "@astrojs/tailwind";
+import tailwind from '@astrojs/tailwind';
 
 // https://astro.build/config
 export default defineConfig({
-  vite: {
-    plugins: [basicSsl()],
-    optimizeDeps: {
-      esbuildOptions: {
-        define: {
-          global: 'globalThis'
+    vite: {
+        plugins: [basicSsl()],
+        optimizeDeps: {
+            exclude: ['@learncard/core'],
+            esbuildOptions: {
+                define: { global: 'globalThis' },
+                plugins: [GlobalPolyfill({ process: true, buffer: true })],
+            },
         },
-        plugins: [GlobalPolyfill({
-          process: true,
-          buffer: true
-        })]
-      }
+        resolve: { alias: stdlibbrowser },
     },
-    resolve: {
-      alias: stdlibbrowser
-    }
-  },
-  integrations: [react(), tailwind()]
+    integrations: [react(), tailwind()],
 });
