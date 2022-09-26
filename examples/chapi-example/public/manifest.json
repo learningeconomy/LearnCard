@@ -1,4 +1,14 @@
 {
+  "name": "LearnCard Demo CHAPI Wallet",
+  "short_name": "LearnCard Demo CHAPI Wallet",
+  "icons": [
+    {
+      "sizes": "64x64",
+      "src": "icon.png",
+      "type": "image/png"
+    }
+
+  ],
   "credential_handler": {
     "url": "/wallet-worker",
     "enabledTypes": ["VerifiablePresentation"]
