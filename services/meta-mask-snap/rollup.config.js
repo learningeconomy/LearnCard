@@ -23,7 +23,7 @@ const snapConfig = [
             resolve({ browser: true, preferBuiltins: true }),
             base64({ include: '**/*.wasm' }),
             esbuild(),
-            snaps(),
+            snaps({ eval: false }),
         ],
         external: ['isomorphic-fetch', 'cross-fetch'],
     },
