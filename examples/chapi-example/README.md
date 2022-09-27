@@ -1,49 +1,40 @@
-# Welcome to [Astro](https://astro.build)
+[<img src="https://user-images.githubusercontent.com/2185016/190510561-294db809-09fd-4771-9749-6c0e0f4144fd.png" width="215"/>](https://learncard.com)
 
-[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/withastro/astro/tree/latest/examples/basics)
+# Chapi Exampe App
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+This is an example app built using [Astro](https://astro.build/) that demonstrates how to send and
+receive credentials with CHAPI using LearnCard!
 
-![basics](https://user-images.githubusercontent.com/4677417/186188965-73453154-fdec-4d6b-9c34-cb35c248ae5b.png)
+## Documentation
+All LearnCard documentation can be found at: https://docs.learncard.com
 
+## Install
 
-## 🚀 Project Structure
+First clone the repo, then install all dependencies/build all packages
 
-Inside of your Astro project, you'll see the following folders and files:
-
-```
-/
-├── public/
-│   └── favicon.svg
-├── src/
-│   ├── components/
-│   │   └── Card.astro
-│   ├── layouts/
-│   │   └── Layout.astro
-│   └── pages/
-│       └── index.astro
-└── package.json
+```bash
+git clone git@github.com:WeLibraryOS/LearnCard.git
+cd LearnCard
+pnpm i
 ```
 
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
+## Run the app
 
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
+```bash
+cd examples/chapi-example
+pnpm dev
+```
 
-Any static assets, like images, can be placed in the `public/` directory.
+## Contributing
+Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
-## 🧞 Commands
+Please make sure to update tests as appropriate.
 
-All commands are run from the root of the project, from a terminal:
+## Who is Learning Economy Foundation?
 
-| Command                | Action                                             |
-| :--------------------- | :------------------------------------------------- |
-| `npm install`          | Installs dependencies                              |
-| `npm run dev`          | Starts local dev server at `localhost:3000`        |
-| `npm run build`        | Build your production site to `./dist/`            |
-| `npm run preview`      | Preview your build locally, before deploying       |
-| `npm run astro ...`    | Run CLI commands like `astro add`, `astro preview` |
-| `npm run astro --help` | Get help using the Astro CLI                       |
+**[Learning Economy Foundation (LEF)](https://www.learningeconomy.io)** is a 501(c)(3) non-profit organization leveraging global standards and web3 protocols to bring quality skills and equal opportunity to every human on earth, and address the persistent inequities that exist around the globe in education and employment. We help you build the future of education and work with:
 
-## 👀 Want to learn more?
 
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+## License
+
+MIT © [Learning Economy Foundation](https://github.com/Learning-Economy-Foundation)
