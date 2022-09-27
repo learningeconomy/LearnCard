@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useStore } from '@nanostores/react';
 
-import { _wallet } from '../stores/walletStore';
+import { _wallet } from '@stores/walletStore';
 import type { IDXCredential } from '@learncard/core';
-import CredentialListItem from './CredentialListItem';
+import CredentialListItem from '@components/CredentialListItem';
 
 const Credentials: React.FC = () => {
     const [credentialsList, setCredentialsList] = useState<IDXCredential[]>();

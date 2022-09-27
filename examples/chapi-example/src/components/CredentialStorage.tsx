@@ -5,8 +5,8 @@ import { VCCard } from '@learncard/react';
 
 import '@learncard/react/dist/main.css';
 
-import { _wallet, _seed } from '../stores/walletStore';
-import { getCredentialFromVp } from '../helpers/credential.helpers';
+import { _wallet, _seed } from '@stores/walletStore';
+import { getCredentialFromVp } from '@helpers/credential.helpers';
 
 const CredentialStorage: React.FC = () => {
     const [event, setEvent] = useState<CredentialStoreEvent>();

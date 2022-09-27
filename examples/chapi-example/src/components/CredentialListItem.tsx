@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useStore } from '@nanostores/react';
 import type { IDXCredential, VC } from '@learncard/core';
 
-import CredentialModal from './CredentialModal';
+import CredentialModal from '@components/CredentialModal';
 
-import { _wallet } from '../stores/walletStore';
+import { _wallet } from '@stores/walletStore';
 
 export type CredentialListItemProps = {
     credential: IDXCredential;

@@ -1,6 +1,6 @@
 ---
-import Layout from '../layouts/Layout.astro';
-import Credentials from '../components/Credentials';
+import Layout from '@layouts/Layout.astro';
+import Credentials from '@components/Credentials';
 ---
 
 <Layout title="Welcome to Astro.">
@@ -56,9 +56,7 @@ import Credentials from '../components/Credentials';
     const testStorage = async () => {
         const vp = await wallet.issuePresentation(await wallet.getTestVp());
 
-        const wc = new WebCredential('VerifiablePresentation', vp);
-
-        const success = await window.navigator.credentials.store(wc);
+        const success = await wallet.storePresentationViaChapi(vp);
 
         if (success) window.location.reload();
     };
