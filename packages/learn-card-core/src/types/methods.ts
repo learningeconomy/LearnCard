@@ -259,6 +259,13 @@ export type ActivateChapiHandler = (args: {
 export type ReceiveChapiEvent = () => Promise<CredentialRequestEvent | CredentialStoreEvent>;
 
 /**
+ * Stores a VP via CHAPI
+ *
+ * @group LearnCard Methods
+ */
+export type StorePresentationViaChapi = (presentation: VP) => Promise<Credential | undefined>;
+
+/**
  * @group LearnCard Methods
  */
 export type AllLearnCardMethods = {
@@ -290,4 +297,5 @@ export type AllLearnCardMethods = {
     installChapiHandler: InstallChapiHandler;
     activateChapiHandler: ActivateChapiHandler;
     receiveChapiEvent: ReceiveChapiEvent;
+    storePresentationViaChapi: StorePresentationViaChapi;
 };

@@ -49,7 +49,8 @@ export type EmptyLearnCard = LearnCard<
     | 'resolveDid'
     | 'installChapiHandler'
     | 'activateChapiHandler'
-    | 'receiveChapiEvent',
+    | 'receiveChapiEvent'
+    | 'storePresentationViaChapi',
     Wallet<
         'DIDKit' | 'Expiration' | 'CHAPI',
         DidkitPluginMethods & VerifyExtension & CHAPIPluginMethods

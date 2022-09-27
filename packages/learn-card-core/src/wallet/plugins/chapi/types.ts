@@ -75,4 +75,5 @@ export type CHAPIPluginMethods = {
         store?: (event: CredentialStoreEvent) => Promise<HandlerResponse>;
     }) => Promise<void>;
     receiveChapiEvent: () => Promise<CredentialRequestEvent | CredentialStoreEvent>;
+    storePresentationViaChapi: (presentation: VP) => Promise<Credential | undefined>;
 };

@@ -25,6 +25,9 @@ export const getCHAPIPlugin = async (
                 receiveChapiEvent: async () => {
                     throw new Error('CHAPI is only available inside of a browser!');
                 },
+                storePresentationViaChapi: async () => {
+                    throw new Error('CHAPI is only available inside of a browser!');
+                },
             },
         };
     }
@@ -48,6 +51,11 @@ export const getCHAPIPlugin = async (
                 return activateHandler({ mediatorOrigin, get, store });
             },
             receiveChapiEvent: async () => receiveCredentialEvent(),
+            storePresentationViaChapi: async (_wallet, presentation) => {
+                const wc = new WebCredential('VerifiablePresentation', presentation);
+
+                return window.navigator.credentials.store(wc);
+            },
         },
     };
 };

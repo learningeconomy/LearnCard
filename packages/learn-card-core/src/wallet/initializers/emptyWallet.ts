@@ -31,5 +31,6 @@ export const emptyWallet = async ({ didkit }: EmptyWallet['args'] = {}): Promise
         installChapiHandler: wallet.pluginMethods.installChapiHandler,
         activateChapiHandler: wallet.pluginMethods.activateChapiHandler,
         receiveChapiEvent: wallet.pluginMethods.receiveChapiEvent,
+        storePresentationViaChapi: wallet.pluginMethods.storePresentationViaChapi,
     };
 };
