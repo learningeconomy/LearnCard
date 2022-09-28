@@ -11,6 +11,7 @@ import { verifyCredential } from '@wallet/verify';
 
 import { LearnCardConfig, LearnCard } from 'types/LearnCard';
 import { defaultCeramicIDXArgs, defaultEthereumArgs } from '@wallet/defaults';
+import { getVCTemplatesPlugin } from '@wallet/plugins/vc-templates';
 
 /**
  * Generates a LearnCard Wallet from a 64 character seed string
@@ -32,10 +33,12 @@ export const walletFromKey = async (
 
     const didkeyWallet = await didkitWallet.addPlugin(await getDidKeyPlugin(didkitWallet, key));
 
-    const didkeyAndVCWallet = await didkeyWallet.addPlugin(await getVCPlugin(didkeyWallet));
+    const didkeyAndVCWallet = await didkeyWallet.addPlugin(getVCPlugin(didkeyWallet));
 
-    const idxWallet = await didkeyAndVCWallet.addPlugin(
-        await getIDXPlugin(didkeyAndVCWallet, ceramicIdx)
+    const templateWallet = await didkeyAndVCWallet.addPlugin(getVCTemplatesPlugin());
+
+    const idxWallet = await templateWallet.addPlugin(
+        await getIDXPlugin(templateWallet, ceramicIdx)
     );
     const expirationWallet = await idxWallet.addPlugin(ExpirationPlugin(idxWallet));
 
@@ -52,6 +55,9 @@ export const walletFromKey = async (
 
         did: (type = 'key') => wallet.pluginMethods.getSubjectDid(type),
         keypair: (type = 'ed25519') => wallet.pluginMethods.getSubjectKeypair(type),
+
+        newCredential: wallet.pluginMethods.newCredential,
+        newPresentation: wallet.pluginMethods.newPresentation,
 
         issueCredential: wallet.pluginMethods.issueCredential,
         verifyCredential: verifyCredential(wallet),

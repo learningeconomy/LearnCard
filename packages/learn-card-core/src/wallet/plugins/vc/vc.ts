@@ -9,9 +9,9 @@ import { Plugin, Wallet } from 'types/wallet';
 /**
  * @group Plugins
  */
-export const getVCPlugin = async (
+export const getVCPlugin = (
     wallet: Wallet<string, VCPluginDependentMethods>
-): Promise<Plugin<'VC', VCPluginMethods, VCPluginDependentMethods>> => {
+): Plugin<'VC', VCPluginMethods, VCPluginDependentMethods> => {
     return {
         pluginMethods: {
             issueCredential: issueCredential(wallet),

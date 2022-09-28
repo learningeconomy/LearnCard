@@ -9,6 +9,7 @@ import { DidkitPluginMethods } from '@wallet/plugins/didkit/types';
 import { EthereumConfig } from '@wallet/plugins/EthereumPlugin/types';
 import { VpqrPluginMethods } from '@wallet/plugins/vpqr/types';
 import { CHAPIPluginMethods } from '@wallet/plugins/chapi';
+import { VCTemplatePluginMethods } from '@wallet/plugins/vc-templates';
 
 import { InitFunction, GenericInitFunction } from 'types/helpers';
 import { Wallet } from 'types/wallet';
@@ -23,11 +24,20 @@ export * from 'types/methods';
 
 /** @group Universal Wallets */
 export type LearnCardRawWallet = Wallet<
-    'DIDKit' | 'DID Key' | 'VC' | 'IDX' | 'Expiration' | 'Ethereum' | 'Vpqr' | 'CHAPI',
+    | 'DIDKit'
+    | 'DID Key'
+    | 'VC'
+    | 'VC Templates'
+    | 'IDX'
+    | 'Expiration'
+    | 'Ethereum'
+    | 'Vpqr'
+    | 'CHAPI',
     MergeObjects<
         [
             DidKeyPluginMethods<DidMethod>,
             VCPluginMethods,
+            VCTemplatePluginMethods,
             IDXPluginMethods,
             EthereumPluginMethods,
             VpqrPluginMethods,
@@ -51,6 +61,8 @@ export type LearnCard<
  * @group LearnCard
  */
 export type EmptyLearnCard = LearnCard<
+    | 'newCredential'
+    | 'newPresentation'
     | 'verifyCredential'
     | 'verifyPresentation'
     | 'resolveDid'
@@ -60,8 +72,10 @@ export type EmptyLearnCard = LearnCard<
     | 'storePresentationViaChapi'
     | 'storeCredentialViaChapiDidAuth',
     Wallet<
-        'DIDKit' | 'Expiration' | 'CHAPI',
-        MergeObjects<[DidkitPluginMethods, VerifyExtension, CHAPIPluginMethods]>
+        'DIDKit' | 'Expiration' | 'VC Templates' | 'CHAPI',
+        MergeObjects<
+            [DidkitPluginMethods, VerifyExtension, VCTemplatePluginMethods, CHAPIPluginMethods]
+        >
     >
 >;
 

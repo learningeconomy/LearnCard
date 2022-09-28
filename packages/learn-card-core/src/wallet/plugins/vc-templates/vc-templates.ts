@@ -1,0 +1,47 @@
+import { VC_TEMPLATES } from './templates';
+
+import { VCTemplatePluginDependentMethods, VCTemplatePluginMethods } from './types';
+import { Plugin } from 'types/wallet';
+
+/**
+ * @group Plugins
+ */
+export const getVCTemplatesPlugin = (): Plugin<
+    'VC Templates',
+    VCTemplatePluginMethods,
+    VCTemplatePluginDependentMethods
+> => {
+    return {
+        pluginMethods: {
+            newCredential: (_wallet, args = { type: 'basic' }) => {
+                const did = args.did || _wallet.pluginMethods.getSubjectDid?.('key');
+
+                if (!did) throw new Error('Could not get issuer did!');
+
+                const defaults = {
+                    did,
+                    subject: 'did:example:d23dd687a7dc6787646f2eb98d0',
+                    issuanceDate: '2020-08-19T21:41:50Z',
+                };
+
+                const { type = 'basic', ...functionArgs } = args;
+
+                if (!(type in VC_TEMPLATES)) throw new Error('Invalid Test VC Type!');
+
+                return VC_TEMPLATES[type]({ ...defaults, ...functionArgs });
+            },
+            newPresentation: async (_wallet, credential, args = {}) => {
+                const did = args?.did || _wallet.pluginMethods.getSubjectDid?.('key');
+
+                if (!did) throw new Error('Could not get issuer did!');
+
+                return {
+                    '@context': ['https://www.w3.org/2018/credentials/v1'],
+                    type: ['VerifiablePresentation'],
+                    holder: did,
+                    verifiableCredential: credential,
+                };
+            },
+        },
+    };
+};

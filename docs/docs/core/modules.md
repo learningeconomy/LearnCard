@@ -33,7 +33,7 @@ Activates CHAPI
 
 #### Defined in
 
-[packages/learn-card-core/src/types/methods.ts:263](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/types/methods.ts#L263)
+[packages/learn-card-core/src/types/methods.ts:278](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L278)
 
 ___
 
@@ -63,7 +63,7 @@ or by using `getCredentials` to get a list of all credentials that have been add
 
 #### Defined in
 
-[packages/learn-card-core/src/types/methods.ts:126](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/types/methods.ts#L126)
+[packages/learn-card-core/src/types/methods.ts:141](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L141)
 
 ___
 
@@ -90,7 +90,7 @@ Really only useful for testing with the CLI right now...
 
 #### Defined in
 
-[packages/learn-card-core/src/types/methods.ts:235](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/types/methods.ts#L235)
+[packages/learn-card-core/src/types/methods.ts:250](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L250)
 
 ___
 
@@ -120,6 +120,8 @@ ___
 | `issueCredential` | [`IssueCredential`](modules.md#issuecredential) |
 | `issuePresentation` | [`IssuePresentation`](modules.md#issuepresentation) |
 | `keypair` | [`Keypair`](modules.md#keypair-1) |
+| `newCredential` | [`NewCredential`](modules.md#newcredential) |
+| `newPresentation` | [`NewPresentation`](modules.md#newpresentation) |
 | `publishCredential` | [`PublishCredential`](modules.md#publishcredential) |
 | `readFromCeramic` | [`ReadFromCeramic`](modules.md#readfromceramic) |
 | `receiveChapiEvent` | [`ReceiveChapiEvent`](modules.md#receivechapievent) |
@@ -135,7 +137,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-core/src/types/methods.ts:298](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/types/methods.ts#L298)
+[packages/learn-card-core/src/types/methods.ts:313](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L313)
 
 ___
 
@@ -161,7 +163,7 @@ Change your Ethereum network
 
 #### Defined in
 
-[packages/learn-card-core/src/types/methods.ts:227](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/types/methods.ts#L227)
+[packages/learn-card-core/src/types/methods.ts:242](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L242)
 
 ___
 
@@ -187,7 +189,7 @@ Wallet holder's did
 
 #### Defined in
 
-[packages/learn-card-core/src/types/methods.ts:27](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/types/methods.ts#L27)
+[packages/learn-card-core/src/types/methods.ts:28](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L28)
 
 ___
 
@@ -214,7 +216,7 @@ Get the balance of an ERC20 token
 
 #### Defined in
 
-[packages/learn-card-core/src/types/methods.ts:191](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/types/methods.ts#L191)
+[packages/learn-card-core/src/types/methods.ts:206](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L206)
 
 ___
 
@@ -242,7 +244,7 @@ Get the balance of an ERC20 token for a given address
 
 #### Defined in
 
-[packages/learn-card-core/src/types/methods.ts:199](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/types/methods.ts#L199)
+[packages/learn-card-core/src/types/methods.ts:214](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L214)
 
 ___
 
@@ -268,7 +270,7 @@ Returns the credential marked with `title` from IDX
 
 #### Defined in
 
-[packages/learn-card-core/src/types/methods.ts:90](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/types/methods.ts#L90)
+[packages/learn-card-core/src/types/methods.ts:105](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L105)
 
 ___
 
@@ -288,7 +290,7 @@ Returns all credentials from IDX
 
 #### Defined in
 
-[packages/learn-card-core/src/types/methods.ts:97](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/types/methods.ts#L97)
+[packages/learn-card-core/src/types/methods.ts:112](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L112)
 
 ___
 
@@ -308,7 +310,7 @@ Returns all credentials from IDX
 
 #### Defined in
 
-[packages/learn-card-core/src/types/methods.ts:104](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/types/methods.ts#L104)
+[packages/learn-card-core/src/types/methods.ts:119](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L119)
 
 ___
 
@@ -328,7 +330,7 @@ Get your current Ethereum network
 
 #### Defined in
 
-[packages/learn-card-core/src/types/methods.ts:220](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/types/methods.ts#L220)
+[packages/learn-card-core/src/types/methods.ts:235](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L235)
 
 ___
 
@@ -348,7 +350,7 @@ Returns Ethereum public address
 
 #### Defined in
 
-[packages/learn-card-core/src/types/methods.ts:183](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/types/methods.ts#L183)
+[packages/learn-card-core/src/types/methods.ts:198](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L198)
 
 ___
 
@@ -376,7 +378,7 @@ You can use this to test out implementations that use this library!
 
 #### Defined in
 
-[packages/learn-card-core/src/types/methods.ts:166](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/types/methods.ts#L166)
+[packages/learn-card-core/src/types/methods.ts:181](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L181)
 
 ___
 
@@ -405,7 +407,7 @@ You can use this to test out implementations that use this library!
 
 #### Defined in
 
-[packages/learn-card-core/src/types/methods.ts:176](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/types/methods.ts#L176)
+[packages/learn-card-core/src/types/methods.ts:191](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L191)
 
 ___
 
@@ -425,7 +427,7 @@ Sets up CHAPI
 
 #### Defined in
 
-[packages/learn-card-core/src/types/methods.ts:256](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/types/methods.ts#L256)
+[packages/learn-card-core/src/types/methods.ts:271](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L271)
 
 ___
 
@@ -452,7 +454,7 @@ Signs an unsigned Verifiable Credential, returning the signed VC
 
 #### Defined in
 
-[packages/learn-card-core/src/types/methods.ts:47](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/types/methods.ts#L47)
+[packages/learn-card-core/src/types/methods.ts:62](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L62)
 
 ___
 
@@ -479,7 +481,7 @@ Signs an unsigned Verifiable Presentation, returning the signed VP
 
 #### Defined in
 
-[packages/learn-card-core/src/types/methods.ts:69](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/types/methods.ts#L69)
+[packages/learn-card-core/src/types/methods.ts:84](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L84)
 
 ___
 
@@ -513,7 +515,47 @@ Wallet holder's ed25519 key pair
 
 #### Defined in
 
-[packages/learn-card-core/src/types/methods.ts:34](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/types/methods.ts#L34)
+[packages/learn-card-core/src/types/methods.ts:35](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L35)
+
+___
+
+### NewCredential
+
+Ƭ **NewCredential**: `NewCredentialFunction`
+
+Generates a new Unsigned VC from a template
+
+#### Defined in
+
+[packages/learn-card-core/src/types/methods.ts:48](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L48)
+
+___
+
+### NewPresentation
+
+Ƭ **NewPresentation**: (`credential`: `VC`, `args?`: { `did?`: `string`  }) => `Promise`<`UnsignedVP`\>
+
+#### Type declaration
+
+▸ (`credential`, `args?`): `Promise`<`UnsignedVP`\>
+
+Wraps a VC in a simple Presentation
+
+##### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `credential` | `VC` |
+| `args?` | `Object` |
+| `args.did?` | `string` |
+
+##### Returns
+
+`Promise`<`UnsignedVP`\>
+
+#### Defined in
+
+[packages/learn-card-core/src/types/methods.ts:55](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L55)
 
 ___
 
@@ -543,7 +585,7 @@ Resolving a stream ID can be done by passing the stream ID to `readFromCeramic`
 
 #### Defined in
 
-[packages/learn-card-core/src/types/methods.ts:115](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/types/methods.ts#L115)
+[packages/learn-card-core/src/types/methods.ts:130](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L130)
 
 ___
 
@@ -572,7 +614,7 @@ that was published
 
 #### Defined in
 
-[packages/learn-card-core/src/types/methods.ts:157](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/types/methods.ts#L157)
+[packages/learn-card-core/src/types/methods.ts:172](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L172)
 
 ___
 
@@ -592,7 +634,7 @@ Receives a CHAPI Event
 
 #### Defined in
 
-[packages/learn-card-core/src/types/methods.ts:274](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/types/methods.ts#L274)
+[packages/learn-card-core/src/types/methods.ts:289](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L289)
 
 ___
 
@@ -622,7 +664,7 @@ or by using `getCredentials` to get a list of all credentials that have been add
 
 #### Defined in
 
-[packages/learn-card-core/src/types/methods.ts:137](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/types/methods.ts#L137)
+[packages/learn-card-core/src/types/methods.ts:152](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L152)
 
 ___
 
@@ -649,7 +691,7 @@ Resolves a did to its did document
 
 #### Defined in
 
-[packages/learn-card-core/src/types/methods.ts:144](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/types/methods.ts#L144)
+[packages/learn-card-core/src/types/methods.ts:159](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L159)
 
 ___
 
@@ -675,7 +717,7 @@ Stores a Credential via CHAPI using DIDAuth
 
 #### Defined in
 
-[packages/learn-card-core/src/types/methods.ts:288](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/types/methods.ts#L288)
+[packages/learn-card-core/src/types/methods.ts:303](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L303)
 
 ___
 
@@ -701,7 +743,7 @@ Stores a VP via CHAPI
 
 #### Defined in
 
-[packages/learn-card-core/src/types/methods.ts:281](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/types/methods.ts#L281)
+[packages/learn-card-core/src/types/methods.ts:296](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L296)
 
 ___
 
@@ -729,7 +771,7 @@ Transfer tokens to a given address
 
 #### Defined in
 
-[packages/learn-card-core/src/types/methods.ts:209](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/types/methods.ts#L209)
+[packages/learn-card-core/src/types/methods.ts:224](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L224)
 
 ___
 
@@ -758,7 +800,7 @@ Empty error/warnings arrays means verification was successful
 
 #### Defined in
 
-[packages/learn-card-core/src/types/methods.ts:59](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/types/methods.ts#L59)
+[packages/learn-card-core/src/types/methods.ts:74](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L74)
 
 ___
 
@@ -787,7 +829,7 @@ Empry error/warnings arrays means verification was successful
 
 #### Defined in
 
-[packages/learn-card-core/src/types/methods.ts:80](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/types/methods.ts#L80)
+[packages/learn-card-core/src/types/methods.ts:95](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L95)
 
 ___
 
@@ -813,7 +855,7 @@ Returns a Verifiable Presentation (VP) from a QR code base-64 image data string 
 
 #### Defined in
 
-[packages/learn-card-core/src/types/methods.ts:242](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/types/methods.ts#L242)
+[packages/learn-card-core/src/types/methods.ts:257](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L257)
 
 ___
 
@@ -839,7 +881,7 @@ Returns a QR-embeddable base-64 image data string from a Verifiable Presentation
 
 #### Defined in
 
-[packages/learn-card-core/src/types/methods.ts:249](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/types/methods.ts#L249)
+[packages/learn-card-core/src/types/methods.ts:264](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L264)
 
 ## DidKey Plugin
 
@@ -849,7 +891,7 @@ Returns a QR-embeddable base-64 image data string from a Verifiable Presentation
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/didkey/types.ts:4](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/wallet/plugins/didkey/types.ts#L4)
+[packages/learn-card-core/src/wallet/plugins/didkey/types.ts:4](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/didkey/types.ts#L4)
 
 ___
 
@@ -873,7 +915,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/didkey/types.ts:7](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/wallet/plugins/didkey/types.ts#L7)
+[packages/learn-card-core/src/wallet/plugins/didkey/types.ts:7](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/didkey/types.ts#L7)
 
 ___
 
@@ -897,7 +939,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/didkey/types.ts:30](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/wallet/plugins/didkey/types.ts#L30)
+[packages/learn-card-core/src/wallet/plugins/didkey/types.ts:30](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/didkey/types.ts#L30)
 
 ___
 
@@ -924,7 +966,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/didkey/types.ts:14](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/wallet/plugins/didkey/types.ts#L14)
+[packages/learn-card-core/src/wallet/plugins/didkey/types.ts:14](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/didkey/types.ts#L14)
 
 ## CHAPI Plugin
 
@@ -943,7 +985,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/chapi/types.ts:71](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/wallet/plugins/chapi/types.ts#L71)
+[packages/learn-card-core/src/wallet/plugins/chapi/types.ts:71](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/chapi/types.ts#L71)
 
 ___
 
@@ -963,7 +1005,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/chapi/types.ts:88](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/wallet/plugins/chapi/types.ts#L88)
+[packages/learn-card-core/src/wallet/plugins/chapi/types.ts:88](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/chapi/types.ts#L88)
 
 ___
 
@@ -1003,7 +1045,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/chapi/types.ts:18](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/wallet/plugins/chapi/types.ts#L18)
+[packages/learn-card-core/src/wallet/plugins/chapi/types.ts:18](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/chapi/types.ts#L18)
 
 ___
 
@@ -1043,7 +1085,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/chapi/types.ts:42](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/wallet/plugins/chapi/types.ts#L42)
+[packages/learn-card-core/src/wallet/plugins/chapi/types.ts:42](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/chapi/types.ts#L42)
 
 ___
 
@@ -1053,7 +1095,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/chapi/types.ts:66](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/wallet/plugins/chapi/types.ts#L66)
+[packages/learn-card-core/src/wallet/plugins/chapi/types.ts:66](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/chapi/types.ts#L66)
 
 ___
 
@@ -1096,7 +1138,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/chapi/types.ts:5](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/wallet/plugins/chapi/types.ts#L5)
+[packages/learn-card-core/src/wallet/plugins/chapi/types.ts:5](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/chapi/types.ts#L5)
 
 ## IDXPlugin
 
@@ -1115,7 +1157,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/idx/types.ts:7](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/wallet/plugins/idx/types.ts#L7)
+[packages/learn-card-core/src/wallet/plugins/idx/types.ts:7](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/idx/types.ts#L7)
 
 ___
 
@@ -1125,7 +1167,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/idx/types.ts:30](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/wallet/plugins/idx/types.ts#L30)
+[packages/learn-card-core/src/wallet/plugins/idx/types.ts:30](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/idx/types.ts#L30)
 
 ___
 
@@ -1147,7 +1189,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/idx/types.ts:15](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/wallet/plugins/idx/types.ts#L15)
+[packages/learn-card-core/src/wallet/plugins/idx/types.ts:15](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/idx/types.ts#L15)
 
 ___
 
@@ -1157,7 +1199,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/idx/types.ts:26](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/wallet/plugins/idx/types.ts#L26)
+[packages/learn-card-core/src/wallet/plugins/idx/types.ts:26](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/idx/types.ts#L26)
 
 ## DIDKit Plugin
 
@@ -1167,7 +1209,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/didkit/types.ts:4](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/wallet/plugins/didkit/types.ts#L4)
+[packages/learn-card-core/src/wallet/plugins/didkit/types.ts:4](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/didkit/types.ts#L4)
 
 ___
 
@@ -1192,7 +1234,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/didkit/types.ts:46](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/wallet/plugins/didkit/types.ts#L46)
+[packages/learn-card-core/src/wallet/plugins/didkit/types.ts:46](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/didkit/types.ts#L46)
 
 ___
 
@@ -1211,7 +1253,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/didkit/types.ts:38](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/wallet/plugins/didkit/types.ts#L38)
+[packages/learn-card-core/src/wallet/plugins/didkit/types.ts:38](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/didkit/types.ts#L38)
 
 ___
 
@@ -1231,7 +1273,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/didkit/types.ts:24](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/wallet/plugins/didkit/types.ts#L24)
+[packages/learn-card-core/src/wallet/plugins/didkit/types.ts:24](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/didkit/types.ts#L24)
 
 ___
 
@@ -1253,17 +1295,17 @@ ___
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/didkit/types.ts:27](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/wallet/plugins/didkit/types.ts#L27)
+[packages/learn-card-core/src/wallet/plugins/didkit/types.ts:27](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/didkit/types.ts#L27)
 
 ## LearnCard
 
 ### EmptyLearnCard
 
-Ƭ **EmptyLearnCard**: [`LearnCard`](modules.md#learncard)<``"verifyCredential"`` \| ``"verifyPresentation"`` \| ``"resolveDid"`` \| ``"installChapiHandler"`` \| ``"activateChapiHandler"`` \| ``"receiveChapiEvent"`` \| ``"storePresentationViaChapi"`` \| ``"storeCredentialViaChapiDidAuth"``, [`Wallet`](modules.md#wallet)<``"DIDKit"`` \| ``"Expiration"`` \| ``"CHAPI"``, [`MergeObjects`](modules.md#mergeobjects)<[[`DidkitPluginMethods`](modules.md#didkitpluginmethods), [`VerifyExtension`](modules.md#verifyextension), [`CHAPIPluginMethods`](modules.md#chapipluginmethods)]\>\>\>
+Ƭ **EmptyLearnCard**: [`LearnCard`](modules.md#learncard)<``"newCredential"`` \| ``"newPresentation"`` \| ``"verifyCredential"`` \| ``"verifyPresentation"`` \| ``"resolveDid"`` \| ``"installChapiHandler"`` \| ``"activateChapiHandler"`` \| ``"receiveChapiEvent"`` \| ``"storePresentationViaChapi"`` \| ``"storeCredentialViaChapiDidAuth"``, [`Wallet`](modules.md#wallet)<``"DIDKit"`` \| ``"Expiration"`` \| ``"VC Templates"`` \| ``"CHAPI"``, [`MergeObjects`](modules.md#mergeobjects)<[[`DidkitPluginMethods`](modules.md#didkitpluginmethods), [`VerifyExtension`](modules.md#verifyextension), `VCTemplatePluginMethods`, [`CHAPIPluginMethods`](modules.md#chapipluginmethods)]\>\>\>
 
 #### Defined in
 
-[packages/learn-card-core/src/types/LearnCard.ts:53](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/types/LearnCard.ts#L53)
+[packages/learn-card-core/src/types/LearnCard.ts:63](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/LearnCard.ts#L63)
 
 ___
 
@@ -1280,7 +1322,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-core/src/types/LearnCard.ts:42](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/types/LearnCard.ts#L42)
+[packages/learn-card-core/src/types/LearnCard.ts:52](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/LearnCard.ts#L52)
 
 ___
 
@@ -1299,7 +1341,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-core/src/types/LearnCard.ts:69](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/types/LearnCard.ts#L69)
+[packages/learn-card-core/src/types/LearnCard.ts:83](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/LearnCard.ts#L83)
 
 ## Init Functions
 
@@ -1309,7 +1351,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-core/src/types/LearnCard.ts:77](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/types/LearnCard.ts#L77)
+[packages/learn-card-core/src/types/LearnCard.ts:91](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/LearnCard.ts#L91)
 
 ___
 
@@ -1319,7 +1361,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-core/src/types/LearnCard.ts:82](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/types/LearnCard.ts#L82)
+[packages/learn-card-core/src/types/LearnCard.ts:96](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/LearnCard.ts#L96)
 
 ___
 
@@ -1329,7 +1371,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-core/src/types/LearnCard.ts:79](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/types/LearnCard.ts#L79)
+[packages/learn-card-core/src/types/LearnCard.ts:93](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/LearnCard.ts#L93)
 
 ___
 
@@ -1351,7 +1393,7 @@ Generates an empty wallet with no key material
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/initializers/emptyWallet.ts:14](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/wallet/initializers/emptyWallet.ts#L14)
+[packages/learn-card-core/src/wallet/initializers/emptyWallet.ts:15](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/initializers/emptyWallet.ts#L15)
 
 ___
 
@@ -1373,7 +1415,7 @@ Generates an Empty Wallet
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/init.ts:16](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/wallet/init.ts#L16)
+[packages/learn-card-core/src/wallet/init.ts:16](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/init.ts#L16)
 
 ▸ **initLearnCard**(`config`): `Promise`<[`WalletFromKey`](modules.md#walletfromkey)[``"returnValue"``]\>
 
@@ -1391,7 +1433,7 @@ Generates a full wallet from a 32 byte seed
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/init.ts:23](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/wallet/init.ts#L23)
+[packages/learn-card-core/src/wallet/init.ts:23](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/init.ts#L23)
 
 ___
 
@@ -1414,7 +1456,7 @@ Generates a LearnCard Wallet from a 64 character seed string
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/initializers/walletFromKey.ts:20](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/wallet/initializers/walletFromKey.ts#L20)
+[packages/learn-card-core/src/wallet/initializers/walletFromKey.ts:21](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/initializers/walletFromKey.ts#L21)
 
 ## Ethereum Plugin
 
@@ -1431,7 +1473,7 @@ Generates a LearnCard Wallet from a 64 character seed string
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/EthereumPlugin/types.ts:19](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/wallet/plugins/EthereumPlugin/types.ts#L19)
+[packages/learn-card-core/src/wallet/plugins/EthereumPlugin/types.ts:19](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/EthereumPlugin/types.ts#L19)
 
 ___
 
@@ -1453,7 +1495,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/EthereumPlugin/types.ts:4](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/wallet/plugins/EthereumPlugin/types.ts#L4)
+[packages/learn-card-core/src/wallet/plugins/EthereumPlugin/types.ts:4](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/EthereumPlugin/types.ts#L4)
 
 ___
 
@@ -1475,7 +1517,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/EthereumPlugin/types.ts:25](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/wallet/plugins/EthereumPlugin/types.ts#L25)
+[packages/learn-card-core/src/wallet/plugins/EthereumPlugin/types.ts:25](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/EthereumPlugin/types.ts#L25)
 
 ___
 
@@ -1485,17 +1527,17 @@ ___
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/EthereumPlugin/types.ts:36](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/wallet/plugins/EthereumPlugin/types.ts#L36)
+[packages/learn-card-core/src/wallet/plugins/EthereumPlugin/types.ts:36](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/EthereumPlugin/types.ts#L36)
 
 ## Universal Wallets
 
 ### LearnCardRawWallet
 
-Ƭ **LearnCardRawWallet**: [`Wallet`](modules.md#wallet)<``"DIDKit"`` \| ``"DID Key"`` \| ``"VC"`` \| ``"IDX"`` \| ``"Expiration"`` \| ``"Ethereum"`` \| ``"Vpqr"`` \| ``"CHAPI"``, [`MergeObjects`](modules.md#mergeobjects)<[[`DidKeyPluginMethods`](modules.md#didkeypluginmethods)<[`DidMethod`](modules.md#didmethod)\>, [`VCPluginMethods`](modules.md#vcpluginmethods), [`IDXPluginMethods`](modules.md#idxpluginmethods), [`EthereumPluginMethods`](modules.md#ethereumpluginmethods), [`VpqrPluginMethods`](modules.md#vpqrpluginmethods), [`CHAPIPluginMethods`](modules.md#chapipluginmethods)]\>\>
+Ƭ **LearnCardRawWallet**: [`Wallet`](modules.md#wallet)<``"DIDKit"`` \| ``"DID Key"`` \| ``"VC"`` \| ``"VC Templates"`` \| ``"IDX"`` \| ``"Expiration"`` \| ``"Ethereum"`` \| ``"Vpqr"`` \| ``"CHAPI"``, [`MergeObjects`](modules.md#mergeobjects)<[[`DidKeyPluginMethods`](modules.md#didkeypluginmethods)<[`DidMethod`](modules.md#didmethod)\>, [`VCPluginMethods`](modules.md#vcpluginmethods), `VCTemplatePluginMethods`, [`IDXPluginMethods`](modules.md#idxpluginmethods), [`EthereumPluginMethods`](modules.md#ethereumpluginmethods), [`VpqrPluginMethods`](modules.md#vpqrpluginmethods), [`CHAPIPluginMethods`](modules.md#chapipluginmethods)]\>\>
 
 #### Defined in
 
-[packages/learn-card-core/src/types/LearnCard.ts:25](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/types/LearnCard.ts#L25)
+[packages/learn-card-core/src/types/LearnCard.ts:26](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/LearnCard.ts#L26)
 
 ___
 
@@ -1520,7 +1562,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-core/src/types/wallet.ts:4](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/types/wallet.ts#L4)
+[packages/learn-card-core/src/types/wallet.ts:4](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/wallet.ts#L4)
 
 ___
 
@@ -1537,7 +1579,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-core/src/types/wallet.ts:26](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/types/wallet.ts#L26)
+[packages/learn-card-core/src/types/wallet.ts:26](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/wallet.ts#L26)
 
 ___
 
@@ -1565,7 +1607,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/base/wallet.ts:66](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/wallet/base/wallet.ts#L66)
+[packages/learn-card-core/src/wallet/base/wallet.ts:66](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/base/wallet.ts#L66)
 
 ## Utility Types
 
@@ -1581,7 +1623,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-core/src/types/utilities.ts:12](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/types/utilities.ts#L12)
+[packages/learn-card-core/src/types/utilities.ts:12](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/utilities.ts#L12)
 
 ## VC Plugin
 
@@ -1591,7 +1633,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/vc/types.ts:47](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/wallet/plugins/vc/types.ts#L47)
+[packages/learn-card-core/src/wallet/plugins/vc/types.ts:47](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/vc/types.ts#L47)
 
 ___
 
@@ -1613,7 +1655,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/vc/types.ts:6](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/wallet/plugins/vc/types.ts#L6)
+[packages/learn-card-core/src/wallet/plugins/vc/types.ts:6](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/vc/types.ts#L6)
 
 ___
 
@@ -1634,7 +1676,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/vc/types.ts:25](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/wallet/plugins/vc/types.ts#L25)
+[packages/learn-card-core/src/wallet/plugins/vc/types.ts:25](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/vc/types.ts#L25)
 
 ___
 
@@ -1650,7 +1692,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/vc/types.ts:50](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/wallet/plugins/vc/types.ts#L50)
+[packages/learn-card-core/src/wallet/plugins/vc/types.ts:50](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/vc/types.ts#L50)
 
 ## VPQR Plugin
 
@@ -1666,7 +1708,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/vpqr/types.ts:10](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/wallet/plugins/vpqr/types.ts#L10)
+[packages/learn-card-core/src/wallet/plugins/vpqr/types.ts:10](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/vpqr/types.ts#L10)
 
 ___
 
@@ -1683,7 +1725,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/vpqr/types.ts:4](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/wallet/plugins/vpqr/types.ts#L4)
+[packages/learn-card-core/src/wallet/plugins/vpqr/types.ts:4](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/vpqr/types.ts#L4)
 
 ## Plugins
 
@@ -1703,7 +1745,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/expiration/index.ts:7](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/wallet/plugins/expiration/index.ts#L7)
+[packages/learn-card-core/src/wallet/plugins/expiration/index.ts:7](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/expiration/index.ts#L7)
 
 ___
 
@@ -1717,7 +1759,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/chapi/chapi.ts:10](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/wallet/plugins/chapi/chapi.ts#L10)
+[packages/learn-card-core/src/wallet/plugins/chapi/chapi.ts:10](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/chapi/chapi.ts#L10)
 
 ___
 
@@ -1744,7 +1786,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/didkey/index.ts:16](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/wallet/plugins/didkey/index.ts#L16)
+[packages/learn-card-core/src/wallet/plugins/didkey/index.ts:16](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/didkey/index.ts#L16)
 
 ___
 
@@ -1764,7 +1806,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/didkit/index.ts:24](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/wallet/plugins/didkit/index.ts#L24)
+[packages/learn-card-core/src/wallet/plugins/didkit/index.ts:24](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/didkit/index.ts#L24)
 
 ___
 
@@ -1785,7 +1827,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/EthereumPlugin/index.ts:25](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/wallet/plugins/EthereumPlugin/index.ts#L25)
+[packages/learn-card-core/src/wallet/plugins/EthereumPlugin/index.ts:25](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/EthereumPlugin/index.ts#L25)
 
 ___
 
@@ -1806,13 +1848,13 @@ ___
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/idx/idx.ts:46](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/wallet/plugins/idx/idx.ts#L46)
+[packages/learn-card-core/src/wallet/plugins/idx/idx.ts:46](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/idx/idx.ts#L46)
 
 ___
 
 ### getVCPlugin
 
-▸ **getVCPlugin**(`wallet`): `Promise`<[`Plugin`](modules.md#plugin)<``"VC"``, [`VCPluginMethods`](modules.md#vcpluginmethods), [`VCPluginDependentMethods`](modules.md#vcplugindependentmethods)\>\>
+▸ **getVCPlugin**(`wallet`): [`Plugin`](modules.md#plugin)<``"VC"``, [`VCPluginMethods`](modules.md#vcpluginmethods), [`VCPluginDependentMethods`](modules.md#vcplugindependentmethods)\>
 
 #### Parameters
 
@@ -1822,11 +1864,11 @@ ___
 
 #### Returns
 
-`Promise`<[`Plugin`](modules.md#plugin)<``"VC"``, [`VCPluginMethods`](modules.md#vcpluginmethods), [`VCPluginDependentMethods`](modules.md#vcplugindependentmethods)\>\>
+[`Plugin`](modules.md#plugin)<``"VC"``, [`VCPluginMethods`](modules.md#vcpluginmethods), [`VCPluginDependentMethods`](modules.md#vcplugindependentmethods)\>
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/vc/vc.ts:12](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/wallet/plugins/vc/vc.ts#L12)
+[packages/learn-card-core/src/wallet/plugins/vc/vc.ts:12](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/vc/vc.ts#L12)
 
 ___
 
@@ -1846,7 +1888,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/vpqr/index.ts:11](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/wallet/plugins/vpqr/index.ts#L11)
+[packages/learn-card-core/src/wallet/plugins/vpqr/index.ts:11](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/vpqr/index.ts#L11)
 
 ## Functions
 
@@ -1869,7 +1911,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/base/functions/passwordToKey.ts:3](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/wallet/base/functions/passwordToKey.ts#L3)
+[packages/learn-card-core/src/wallet/base/functions/passwordToKey.ts:3](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/base/functions/passwordToKey.ts#L3)
 
 ___
 
@@ -1889,4 +1931,4 @@ ___
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/base/functions/seedToId.ts:3](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-core/src/wallet/base/functions/seedToId.ts#L3)
+[packages/learn-card-core/src/wallet/base/functions/seedToId.ts:3](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/base/functions/seedToId.ts#L3)

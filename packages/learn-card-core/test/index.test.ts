@@ -67,6 +67,8 @@ describe('LearnCard SDK', () => {
             const emptyWallet = await initLearnCard();
             const { _wallet, ...methods } = emptyWallet;
             const {
+                newCredential,
+                newPresentation,
                 verifyCredential,
                 verifyPresentation,
                 resolveDid,
@@ -78,6 +80,8 @@ describe('LearnCard SDK', () => {
             } = emptyWallet;
 
             expect(methods).toEqual({
+                newCredential,
+                newPresentation,
                 verifyCredential,
                 verifyPresentation,
                 resolveDid,

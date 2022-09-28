@@ -11,6 +11,7 @@ import {
     IDXCredential,
 } from '@learncard/types';
 
+import { NewCredentialFunction } from '@wallet/plugins/vc-templates/types';
 import { DidMethod, InputMetadata, ProofOptions } from '@wallet/plugins/didkit/types';
 import { Algorithm } from '@wallet/plugins/didkey/types';
 import {
@@ -38,6 +39,20 @@ export type Keypair = (type?: Algorithm) => {
     y?: string;
     d: string;
 };
+
+/**
+ * Generates a new Unsigned VC from a template
+ *
+ * @group LearnCard Methods
+ */
+export type NewCredential = NewCredentialFunction;
+
+/**
+ * Wraps a VC in a simple Presentation
+ *
+ * @group LearnCard Methods
+ */
+export type NewPresentation = (credential: VC, args?: { did?: string }) => Promise<UnsignedVP>;
 
 /**
  * Signs an unsigned Verifiable Credential, returning the signed VC
@@ -298,6 +313,8 @@ export type StoreCredentialViaChapiDidAuth = (
 export type AllLearnCardMethods = {
     did: Did;
     keypair: Keypair;
+    newCredential: NewCredential;
+    newPresentation: NewPresentation;
     issueCredential: IssueCredential;
     verifyCredential: VerifyCredential;
     issuePresentation: IssuePresentation;

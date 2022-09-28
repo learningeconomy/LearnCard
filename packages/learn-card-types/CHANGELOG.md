@@ -1,5 +1,11 @@
 # learn-card-types
 
+## 3.0.0
+
+### Major Changes
+
+-   [#79](https://github.com/learningeconomy/LearnCard/pull/79) [`c1befdc`](https://github.com/learningeconomy/LearnCard/commit/c1befdc8a30d3cc111d938c530493b1a5b87aa00) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix types that don't follow spec
+
 ## 2.2.1
 
 ### Patch Changes
