@@ -1,5 +1,20 @@
 # learn-card-core
 
+## 6.1.0
+
+### Minor Changes
+
+-   [#79](https://github.com/learningeconomy/LearnCard/pull/79) [`c1befdc`](https://github.com/learningeconomy/LearnCard/commit/c1befdc8a30d3cc111d938c530493b1a5b87aa00) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - New Plugin: VC Templates
+
+    -   Allows creating new credentials/presentations easily based on pre-defined templates
+
+    New methods: newCredential and newPresentation
+
+    -   `wallet.newCredential()` is identical to `wallet.getTestVc()`
+    -   `wallet.newCredential({ type: 'achievement' })` will provide you with a _different_ credential, and
+        its fields are overwriteable via arguments passed to that function.
+        E.g. `wallet.newCredential({ type: 'achievement', name: 'Nice!' })`
+
 ## 6.0.0
 
 ### Major Changes
