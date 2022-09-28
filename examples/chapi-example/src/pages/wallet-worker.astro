@@ -23,5 +23,8 @@ import Layout from '@layouts/Layout.astro';
         store: async () => {
             return { type: 'redirect', url: `${window.location.origin}/store` };
         },
+        get: async () => {
+            return { type: 'redirect', url: `${window.location.origin}/get` };
+        },
     });
 </script>
