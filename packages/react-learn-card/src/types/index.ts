@@ -113,4 +113,5 @@ export type JobListCard = {
     percentQualifiedDisplay?: string;
     postDateDisplay?: string;
     imgThumb?: string;
+    isBookmarked?: boolean;
 };
