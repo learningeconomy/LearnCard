@@ -11,6 +11,7 @@ import { InitInput } from '@didkit/index';
 import { InitFunction, GenericInitFunction } from 'types/helpers';
 import { Wallet } from 'types/wallet';
 import { AllLearnCardMethods } from 'types/methods';
+import { VCTemplatePluginMethods } from '@wallet/plugins/vc-templates';
 
 export * from 'types/methods';
 
@@ -18,9 +19,10 @@ export * from 'types/methods';
 
 /** @group Universal Wallets */
 export type LearnCardRawWallet = Wallet<
-    'DIDKit' | 'DID Key' | 'VC' | 'IDX' | 'Expiration' | 'Ethereum' | 'Vpqr',
+    'DIDKit' | 'DID Key' | 'VC' | 'VC Templates' | 'IDX' | 'Expiration' | 'Ethereum' | 'Vpqr',
     DidKeyPluginMethods<DidMethod> &
         VCPluginMethods &
+        VCTemplatePluginMethods &
         IDXPluginMethods &
         EthereumPluginMethods &
         VpqrPluginMethods
@@ -41,8 +43,11 @@ export type LearnCard<
  * @group LearnCard
  */
 export type EmptyLearnCard = LearnCard<
-    'verifyCredential' | 'verifyPresentation' | 'resolveDid',
-    Wallet<'DIDKit' | 'Expiration', DidkitPluginMethods & VerifyExtension>
+    'newCredential' | 'newPresentation' | 'verifyCredential' | 'verifyPresentation' | 'resolveDid',
+    Wallet<
+        'DIDKit' | 'Expiration' | 'VC Templates',
+        DidkitPluginMethods & VerifyExtension & VCTemplatePluginMethods
+    >
 >;
 
 /** @group LearnCard */

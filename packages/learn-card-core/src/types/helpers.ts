@@ -15,3 +15,7 @@ export type GenericInitFunction<InitFunctions extends InitFunction<any, any, any
     args: InitFunctions[number]['args'];
     returnValue: Promise<InitFunctions[number]['returnValue']>;
 };
+
+export type DiscriminatedUnionize<T extends object = {}, K extends string = 'type'> = {
+    [Key in keyof T]: { [Key2 in K]: Key } & T[Key];
+}[keyof T];

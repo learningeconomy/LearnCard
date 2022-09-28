@@ -11,9 +11,9 @@ import { Plugin, Wallet } from 'types/wallet';
 /**
  * @group Plugins
  */
-export const getVCPlugin = async (
+export const getVCPlugin = (
     wallet: Wallet<string, VCPluginDependentMethods>
-): Promise<Plugin<'VC', VCPluginMethods>> => {
+): Plugin<'VC', VCPluginMethods> => {
     return {
         pluginMethods: {
             ...recycleDependents(wallet.pluginMethods),
