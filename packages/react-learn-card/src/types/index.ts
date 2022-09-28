@@ -90,3 +90,27 @@ export type SkillVerticalCardProps = {
     onClick?: () => void;
     className?: string;
 };
+
+export type JobQualificationsCount = {
+    fulfilledCount: number;
+    totalRequiredCount: number;
+};
+
+export type JobQualificationDisplay = {
+    skills?: JobQualificationsCount;
+    achievements?: JobQualificationsCount;
+    courses?: JobQualificationsCount;
+};
+
+export type JobListCard = {
+    title?: string;
+    company?: string;
+    compensation?: string;
+    location?: string;
+    locationRequirement?: string;
+    timeRequirement?: string;
+    qualificationDisplay?: JobQualificationDisplay;
+    percentQualifiedDisplay?: string;
+    postDateDisplay?: string;
+    imgThumb?: string;
+};
