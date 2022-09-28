@@ -1,6 +1,7 @@
 import { generateWallet } from '@wallet/base';
 import { getDidKitPlugin } from '@wallet/plugins/didkit';
 import { ExpirationPlugin } from '@wallet/plugins/expiration';
+import { getVCTemplatesPlugin } from '@wallet/plugins/vc-templates';
 import { verifyCredential } from '@wallet/verify';
 
 import { EmptyWallet } from 'types/LearnCard';
@@ -15,10 +16,15 @@ export const emptyWallet = async ({ didkit }: EmptyWallet['args'] = {}): Promise
 > => {
     const didkitWallet = await (await generateWallet()).addPlugin(await getDidKitPlugin(didkit));
 
-    const wallet = await didkitWallet.addPlugin(ExpirationPlugin(didkitWallet));
+    const expirationWallet = await didkitWallet.addPlugin(ExpirationPlugin(didkitWallet));
+
+    const wallet = await expirationWallet.addPlugin(getVCTemplatesPlugin(expirationWallet));
 
     return {
         _wallet: wallet,
+
+        newCredential: wallet.pluginMethods.newCredential,
+        newPresentation: wallet.pluginMethods.newPresentation,
 
         verifyCredential: verifyCredential(wallet),
         verifyPresentation: wallet.pluginMethods.verifyPresentation,

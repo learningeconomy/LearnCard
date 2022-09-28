@@ -206,7 +206,7 @@ export const AchievementSubjectValidator = z
         activityStartDate: z.string().optional(),
         creditsEarned: z.number().optional(),
         achievement: AchievementValidator.optional(),
-        identifier: IdentityObjectValidator.optional(),
+        identifier: IdentityObjectValidator.array().optional(),
         image: ImageValidator.optional(),
         licenseNumber: z.string().optional(),
         narrative: z.string().optional(),
@@ -234,7 +234,7 @@ export type Evidence = z.infer<typeof EvidenceValidator>;
 export const UnsignedAchievementCredentialValidator = UnsignedVCValidator.extend({
     name: z.string().optional(),
     description: z.string().optional(),
-    image: z.string().optional(),
+    image: ImageValidator.optional(),
     credentialSubject: AchievementSubjectValidator.or(AchievementSubjectValidator.array()),
     endorsement: UnsignedVCValidator.array().optional(),
     evidence: EvidenceValidator.array().optional(),
