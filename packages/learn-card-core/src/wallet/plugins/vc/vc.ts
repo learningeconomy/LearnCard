@@ -1,5 +1,3 @@
-import { recycleDependents } from '@helpers/wallet.helpers';
-
 import { issueCredential } from './issueCredential';
 import { verifyCredential } from './verifyCredential';
 import { issuePresentation } from './issuePresentation';
@@ -13,10 +11,9 @@ import { Plugin, Wallet } from 'types/wallet';
  */
 export const getVCPlugin = (
     wallet: Wallet<string, VCPluginDependentMethods>
-): Plugin<'VC', VCPluginMethods> => {
+): Plugin<'VC', VCPluginMethods, VCPluginDependentMethods> => {
     return {
         pluginMethods: {
-            ...recycleDependents(wallet.pluginMethods),
             issueCredential: issueCredential(wallet),
             verifyCredential: verifyCredential(wallet),
             issuePresentation: issuePresentation(wallet),

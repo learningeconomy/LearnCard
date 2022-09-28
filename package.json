@@ -17,7 +17,7 @@
     "eslint-plugin-prettier": "^4.1.0",
     "eslint-plugin-react": "^7.30.1",
     "prettier": "^2.7.1",
-    "prettier-plugin-astro": "^0.1.2",
+    "prettier-plugin-astro": "^0.5.4",
     "tslib": "^2.4.0",
     "typescript": "^4.7.4"
   },

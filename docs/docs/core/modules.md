@@ -8,6 +8,35 @@ custom_edit_url: null
 
 ## LearnCard Methods
 
+### ActivateChapiHandler
+
+Ƭ **ActivateChapiHandler**: (`args`: { `get?`: (`event`: [`CredentialRequestEvent`](modules.md#credentialrequestevent)) => `Promise`<[`HandlerResponse`](modules.md#handlerresponse)\> ; `mediatorOrigin?`: `string` ; `store?`: (`event`: [`CredentialStoreEvent`](modules.md#credentialstoreevent)) => `Promise`<[`HandlerResponse`](modules.md#handlerresponse)\>  }) => `Promise`<`void`\>
+
+#### Type declaration
+
+▸ (`args`): `Promise`<`void`\>
+
+Activates CHAPI
+
+##### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `args` | `Object` |
+| `args.get?` | (`event`: [`CredentialRequestEvent`](modules.md#credentialrequestevent)) => `Promise`<[`HandlerResponse`](modules.md#handlerresponse)\> |
+| `args.mediatorOrigin?` | `string` |
+| `args.store?` | (`event`: [`CredentialStoreEvent`](modules.md#credentialstoreevent)) => `Promise`<[`HandlerResponse`](modules.md#handlerresponse)\> |
+
+##### Returns
+
+`Promise`<`void`\>
+
+#### Defined in
+
+[packages/learn-card-core/src/types/methods.ts:278](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L278)
+
+___
+
 ### AddCredential
 
 Ƭ **AddCredential**: (`credential`: `IDXCredential`) => `Promise`<`void`\>
@@ -34,7 +63,7 @@ or by using `getCredentials` to get a list of all credentials that have been add
 
 #### Defined in
 
-[packages/learn-card-core/src/types/methods.ts:124](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/types/methods.ts#L124)
+[packages/learn-card-core/src/types/methods.ts:141](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L141)
 
 ___
 
@@ -61,7 +90,7 @@ Really only useful for testing with the CLI right now...
 
 #### Defined in
 
-[packages/learn-card-core/src/types/methods.ts:230](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/types/methods.ts#L230)
+[packages/learn-card-core/src/types/methods.ts:250](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L250)
 
 ___
 
@@ -73,37 +102,42 @@ ___
 
 | Name | Type |
 | :------ | :------ |
-| `addCredential` | [`AddCredential`](../modules.md#addcredential-2) |
-| `addInfuraProjectId` | [`AddInfuraProjectId`](../modules.md#addinfuraprojectid-2) |
-| `changeNetwork` | [`ChangeNetwork`](../modules.md#changenetwork-2) |
-| `did` | [`Did`](../modules.md#did-2) |
-| `getBalance` | [`GetBalance`](../modules.md#getbalance-2) |
-| `getBalanceForAddress` | [`GetBalanceForAddress`](../modules.md#getbalanceforaddress-2) |
-| `getCredential` | [`GetCredential`](../modules.md#getcredential-2) |
-| `getCredentials` | [`GetCredentials`](../modules.md#getcredentials-2) |
-| `getCredentialsList` | [`GetCredentialsList`](../modules.md#getcredentialslist-2) |
-| `getCurrentNetwork` | [`GetCurrentNetwork`](../modules.md#getcurrentnetwork-2) |
-| `getEthereumAddress` | [`GetEthereumAddress`](../modules.md#getethereumaddress-2) |
-| `getTestVc` | [`GetTestVc`](../modules.md#gettestvc-2) |
-| `getTestVp` | [`GetTestVp`](../modules.md#gettestvp-2) |
-| `issueCredential` | [`IssueCredential`](../modules.md#issuecredential-2) |
-| `issuePresentation` | [`IssuePresentation`](../modules.md#issuepresentation-2) |
-| `keypair` | [`Keypair`](../modules.md#keypair-5) |
-| `newCredential` | [`NewCredential`](../modules.md#newcredential-2) |
-| `newPresentation` | [`NewPresentation`](../modules.md#newpresentation-2) |
-| `publishCredential` | [`PublishCredential`](../modules.md#publishcredential-2) |
-| `readFromCeramic` | [`ReadFromCeramic`](../modules.md#readfromceramic-2) |
-| `removeCredential` | [`RemoveCredential`](../modules.md#removecredential-2) |
-| `resolveDid` | [`ResolveDid`](../modules.md#resolvedid-2) |
-| `transferTokens` | [`TransferTokens`](../modules.md#transfertokens-2) |
-| `verifyCredential` | [`VerifyCredential`](../modules.md#verifycredential-2) |
-| `verifyPresentation` | [`VerifyPresentation`](../modules.md#verifypresentation-2) |
-| `vpFromQrCode` | [`VpFromQrCode`](../modules.md#vpfromqrcode-2) |
-| `vpToQrCode` | [`VpToQrCode`](../modules.md#vptoqrcode-2) |
+| `activateChapiHandler` | [`ActivateChapiHandler`](modules.md#activatechapihandler) |
+| `addCredential` | [`AddCredential`](modules.md#addcredential) |
+| `addInfuraProjectId` | [`AddInfuraProjectId`](modules.md#addinfuraprojectid) |
+| `changeNetwork` | [`ChangeNetwork`](modules.md#changenetwork) |
+| `did` | [`Did`](modules.md#did) |
+| `getBalance` | [`GetBalance`](modules.md#getbalance) |
+| `getBalanceForAddress` | [`GetBalanceForAddress`](modules.md#getbalanceforaddress) |
+| `getCredential` | [`GetCredential`](modules.md#getcredential) |
+| `getCredentials` | [`GetCredentials`](modules.md#getcredentials) |
+| `getCredentialsList` | [`GetCredentialsList`](modules.md#getcredentialslist) |
+| `getCurrentNetwork` | [`GetCurrentNetwork`](modules.md#getcurrentnetwork) |
+| `getEthereumAddress` | [`GetEthereumAddress`](modules.md#getethereumaddress) |
+| `getTestVc` | [`GetTestVc`](modules.md#gettestvc) |
+| `getTestVp` | [`GetTestVp`](modules.md#gettestvp) |
+| `installChapiHandler` | [`InstallChapiHandler`](modules.md#installchapihandler) |
+| `issueCredential` | [`IssueCredential`](modules.md#issuecredential) |
+| `issuePresentation` | [`IssuePresentation`](modules.md#issuepresentation) |
+| `keypair` | [`Keypair`](modules.md#keypair-1) |
+| `newCredential` | [`NewCredential`](modules.md#newcredential) |
+| `newPresentation` | [`NewPresentation`](modules.md#newpresentation) |
+| `publishCredential` | [`PublishCredential`](modules.md#publishcredential) |
+| `readFromCeramic` | [`ReadFromCeramic`](modules.md#readfromceramic) |
+| `receiveChapiEvent` | [`ReceiveChapiEvent`](modules.md#receivechapievent) |
+| `removeCredential` | [`RemoveCredential`](modules.md#removecredential) |
+| `resolveDid` | [`ResolveDid`](modules.md#resolvedid) |
+| `storeCredentialViaChapiDidAuth` | [`StoreCredentialViaChapiDidAuth`](modules.md#storecredentialviachapididauth) |
+| `storePresentationViaChapi` | [`StorePresentationViaChapi`](modules.md#storepresentationviachapi) |
+| `transferTokens` | [`TransferTokens`](modules.md#transfertokens) |
+| `verifyCredential` | [`VerifyCredential`](modules.md#verifycredential) |
+| `verifyPresentation` | [`VerifyPresentation`](modules.md#verifypresentation) |
+| `vpFromQrCode` | [`VpFromQrCode`](modules.md#vpfromqrcode) |
+| `vpToQrCode` | [`VpToQrCode`](modules.md#vptoqrcode) |
 
 #### Defined in
 
-[packages/learn-card-core/src/types/methods.ts:249](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/types/methods.ts#L249)
+[packages/learn-card-core/src/types/methods.ts:313](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L313)
 
 ___
 
@@ -129,13 +163,13 @@ Change your Ethereum network
 
 #### Defined in
 
-[packages/learn-card-core/src/types/methods.ts:222](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/types/methods.ts#L222)
+[packages/learn-card-core/src/types/methods.ts:242](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L242)
 
 ___
 
 ### Did
 
-Ƭ **Did**: (`type?`: [`DidMethod`](../modules.md#didmethod-2)) => `string`
+Ƭ **Did**: (`type?`: [`DidMethod`](modules.md#didmethod)) => `string`
 
 #### Type declaration
 
@@ -147,7 +181,7 @@ Wallet holder's did
 
 | Name | Type |
 | :------ | :------ |
-| `type?` | [`DidMethod`](../modules.md#didmethod-2) |
+| `type?` | [`DidMethod`](modules.md#didmethod) |
 
 ##### Returns
 
@@ -155,7 +189,7 @@ Wallet holder's did
 
 #### Defined in
 
-[packages/learn-card-core/src/types/methods.ts:23](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/types/methods.ts#L23)
+[packages/learn-card-core/src/types/methods.ts:28](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L28)
 
 ___
 
@@ -182,7 +216,7 @@ Get the balance of an ERC20 token
 
 #### Defined in
 
-[packages/learn-card-core/src/types/methods.ts:186](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/types/methods.ts#L186)
+[packages/learn-card-core/src/types/methods.ts:206](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L206)
 
 ___
 
@@ -210,7 +244,7 @@ Get the balance of an ERC20 token for a given address
 
 #### Defined in
 
-[packages/learn-card-core/src/types/methods.ts:194](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/types/methods.ts#L194)
+[packages/learn-card-core/src/types/methods.ts:214](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L214)
 
 ___
 
@@ -236,7 +270,7 @@ Returns the credential marked with `title` from IDX
 
 #### Defined in
 
-[packages/learn-card-core/src/types/methods.ts:88](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/types/methods.ts#L88)
+[packages/learn-card-core/src/types/methods.ts:105](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L105)
 
 ___
 
@@ -256,7 +290,7 @@ Returns all credentials from IDX
 
 #### Defined in
 
-[packages/learn-card-core/src/types/methods.ts:95](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/types/methods.ts#L95)
+[packages/learn-card-core/src/types/methods.ts:112](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L112)
 
 ___
 
@@ -276,7 +310,7 @@ Returns all credentials from IDX
 
 #### Defined in
 
-[packages/learn-card-core/src/types/methods.ts:102](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/types/methods.ts#L102)
+[packages/learn-card-core/src/types/methods.ts:119](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L119)
 
 ___
 
@@ -296,7 +330,7 @@ Get your current Ethereum network
 
 #### Defined in
 
-[packages/learn-card-core/src/types/methods.ts:215](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/types/methods.ts#L215)
+[packages/learn-card-core/src/types/methods.ts:235](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L235)
 
 ___
 
@@ -316,7 +350,7 @@ Returns Ethereum public address
 
 #### Defined in
 
-[packages/learn-card-core/src/types/methods.ts:178](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/types/methods.ts#L178)
+[packages/learn-card-core/src/types/methods.ts:198](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L198)
 
 ___
 
@@ -344,7 +378,7 @@ You can use this to test out implementations that use this library!
 
 #### Defined in
 
-[packages/learn-card-core/src/types/methods.ts:161](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/types/methods.ts#L161)
+[packages/learn-card-core/src/types/methods.ts:181](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L181)
 
 ___
 
@@ -373,17 +407,37 @@ You can use this to test out implementations that use this library!
 
 #### Defined in
 
-[packages/learn-card-core/src/types/methods.ts:171](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/types/methods.ts#L171)
+[packages/learn-card-core/src/types/methods.ts:191](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L191)
+
+___
+
+### InstallChapiHandler
+
+Ƭ **InstallChapiHandler**: () => `Promise`<`void`\>
+
+#### Type declaration
+
+▸ (): `Promise`<`void`\>
+
+Sets up CHAPI
+
+##### Returns
+
+`Promise`<`void`\>
+
+#### Defined in
+
+[packages/learn-card-core/src/types/methods.ts:271](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L271)
 
 ___
 
 ### IssueCredential
 
-Ƭ **IssueCredential**: (`credential`: `UnsignedVC`) => `Promise`<`VC`\>
+Ƭ **IssueCredential**: (`credential`: `UnsignedVC`, `signingOptions?`: `Partial`<[`ProofOptions`](modules.md#proofoptions)\>) => `Promise`<`VC`\>
 
 #### Type declaration
 
-▸ (`credential`): `Promise`<`VC`\>
+▸ (`credential`, `signingOptions?`): `Promise`<`VC`\>
 
 Signs an unsigned Verifiable Credential, returning the signed VC
 
@@ -392,6 +446,7 @@ Signs an unsigned Verifiable Credential, returning the signed VC
 | Name | Type |
 | :------ | :------ |
 | `credential` | `UnsignedVC` |
+| `signingOptions?` | `Partial`<[`ProofOptions`](modules.md#proofoptions)\> |
 
 ##### Returns
 
@@ -399,17 +454,17 @@ Signs an unsigned Verifiable Credential, returning the signed VC
 
 #### Defined in
 
-[packages/learn-card-core/src/types/methods.ts:57](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/types/methods.ts#L57)
+[packages/learn-card-core/src/types/methods.ts:62](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L62)
 
 ___
 
 ### IssuePresentation
 
-Ƭ **IssuePresentation**: (`presentation`: `UnsignedVP`) => `Promise`<`VP`\>
+Ƭ **IssuePresentation**: (`presentation`: `UnsignedVP`, `signingOptions?`: `Partial`<[`ProofOptions`](modules.md#proofoptions)\>) => `Promise`<`VP`\>
 
 #### Type declaration
 
-▸ (`presentation`): `Promise`<`VP`\>
+▸ (`presentation`, `signingOptions?`): `Promise`<`VP`\>
 
 Signs an unsigned Verifiable Presentation, returning the signed VP
 
@@ -418,6 +473,7 @@ Signs an unsigned Verifiable Presentation, returning the signed VP
 | Name | Type |
 | :------ | :------ |
 | `presentation` | `UnsignedVP` |
+| `signingOptions?` | `Partial`<[`ProofOptions`](modules.md#proofoptions)\> |
 
 ##### Returns
 
@@ -425,13 +481,13 @@ Signs an unsigned Verifiable Presentation, returning the signed VP
 
 #### Defined in
 
-[packages/learn-card-core/src/types/methods.ts:73](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/types/methods.ts#L73)
+[packages/learn-card-core/src/types/methods.ts:84](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L84)
 
 ___
 
 ### Keypair
 
-Ƭ **Keypair**: (`type?`: [`Algorithm`](../modules.md#algorithm-2)) => { `crv`: `string` ; `d`: `string` ; `kty`: `string` ; `x`: `string` ; `y?`: `string`  }
+Ƭ **Keypair**: (`type?`: [`Algorithm`](modules.md#algorithm)) => { `crv`: `string` ; `d`: `string` ; `kty`: `string` ; `x`: `string` ; `y?`: `string`  }
 
 #### Type declaration
 
@@ -443,7 +499,7 @@ Wallet holder's ed25519 key pair
 
 | Name | Type |
 | :------ | :------ |
-| `type?` | [`Algorithm`](../modules.md#algorithm-2) |
+| `type?` | [`Algorithm`](modules.md#algorithm) |
 
 ##### Returns
 
@@ -459,7 +515,7 @@ Wallet holder's ed25519 key pair
 
 #### Defined in
 
-[packages/learn-card-core/src/types/methods.ts:30](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/types/methods.ts#L30)
+[packages/learn-card-core/src/types/methods.ts:35](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L35)
 
 ___
 
@@ -471,7 +527,7 @@ Generates a new Unsigned VC from a template
 
 #### Defined in
 
-[packages/learn-card-core/src/types/methods.ts:43](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/types/methods.ts#L43)
+[packages/learn-card-core/src/types/methods.ts:48](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L48)
 
 ___
 
@@ -499,7 +555,7 @@ Wraps a VC in a simple Presentation
 
 #### Defined in
 
-[packages/learn-card-core/src/types/methods.ts:50](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/types/methods.ts#L50)
+[packages/learn-card-core/src/types/methods.ts:55](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L55)
 
 ___
 
@@ -529,7 +585,7 @@ Resolving a stream ID can be done by passing the stream ID to `readFromCeramic`
 
 #### Defined in
 
-[packages/learn-card-core/src/types/methods.ts:113](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/types/methods.ts#L113)
+[packages/learn-card-core/src/types/methods.ts:130](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L130)
 
 ___
 
@@ -558,7 +614,27 @@ that was published
 
 #### Defined in
 
-[packages/learn-card-core/src/types/methods.ts:152](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/types/methods.ts#L152)
+[packages/learn-card-core/src/types/methods.ts:172](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L172)
+
+___
+
+### ReceiveChapiEvent
+
+Ƭ **ReceiveChapiEvent**: () => `Promise`<[`CredentialRequestEvent`](modules.md#credentialrequestevent) \| [`CredentialStoreEvent`](modules.md#credentialstoreevent)\>
+
+#### Type declaration
+
+▸ (): `Promise`<[`CredentialRequestEvent`](modules.md#credentialrequestevent) \| [`CredentialStoreEvent`](modules.md#credentialstoreevent)\>
+
+Receives a CHAPI Event
+
+##### Returns
+
+`Promise`<[`CredentialRequestEvent`](modules.md#credentialrequestevent) \| [`CredentialStoreEvent`](modules.md#credentialstoreevent)\>
+
+#### Defined in
+
+[packages/learn-card-core/src/types/methods.ts:289](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L289)
 
 ___
 
@@ -588,17 +664,17 @@ or by using `getCredentials` to get a list of all credentials that have been add
 
 #### Defined in
 
-[packages/learn-card-core/src/types/methods.ts:135](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/types/methods.ts#L135)
+[packages/learn-card-core/src/types/methods.ts:152](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L152)
 
 ___
 
 ### ResolveDid
 
-Ƭ **ResolveDid**: (`did`: `string`) => `Promise`<`Record`<`string`, `any`\>\>
+Ƭ **ResolveDid**: (`did`: `string`, `inputMetadata?`: [`InputMetadata`](modules.md#inputmetadata)) => `Promise`<`Record`<`string`, `any`\>\>
 
 #### Type declaration
 
-▸ (`did`): `Promise`<`Record`<`string`, `any`\>\>
+▸ (`did`, `inputMetadata?`): `Promise`<`Record`<`string`, `any`\>\>
 
 Resolves a did to its did document
 
@@ -607,6 +683,7 @@ Resolves a did to its did document
 | Name | Type |
 | :------ | :------ |
 | `did` | `string` |
+| `inputMetadata?` | [`InputMetadata`](modules.md#inputmetadata) |
 
 ##### Returns
 
@@ -614,7 +691,59 @@ Resolves a did to its did document
 
 #### Defined in
 
-[packages/learn-card-core/src/types/methods.ts:142](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/types/methods.ts#L142)
+[packages/learn-card-core/src/types/methods.ts:159](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L159)
+
+___
+
+### StoreCredentialViaChapiDidAuth
+
+Ƭ **StoreCredentialViaChapiDidAuth**: (`credential`: `UnsignedVC`) => `Promise`<{ `success`: ``true``  } \| { `reason`: ``"did not auth"`` \| ``"auth failed verification"`` \| ``"did not store"`` ; `success`: ``false``  }\>
+
+#### Type declaration
+
+▸ (`credential`): `Promise`<{ `success`: ``true``  } \| { `reason`: ``"did not auth"`` \| ``"auth failed verification"`` \| ``"did not store"`` ; `success`: ``false``  }\>
+
+Stores a Credential via CHAPI using DIDAuth
+
+##### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `credential` | `UnsignedVC` |
+
+##### Returns
+
+`Promise`<{ `success`: ``true``  } \| { `reason`: ``"did not auth"`` \| ``"auth failed verification"`` \| ``"did not store"`` ; `success`: ``false``  }\>
+
+#### Defined in
+
+[packages/learn-card-core/src/types/methods.ts:303](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L303)
+
+___
+
+### StorePresentationViaChapi
+
+Ƭ **StorePresentationViaChapi**: (`presentation`: `VP`) => `Promise`<`Credential` \| `undefined`\>
+
+#### Type declaration
+
+▸ (`presentation`): `Promise`<`Credential` \| `undefined`\>
+
+Stores a VP via CHAPI
+
+##### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `presentation` | `VP` |
+
+##### Returns
+
+`Promise`<`Credential` \| `undefined`\>
+
+#### Defined in
+
+[packages/learn-card-core/src/types/methods.ts:296](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L296)
 
 ___
 
@@ -642,17 +771,17 @@ Transfer tokens to a given address
 
 #### Defined in
 
-[packages/learn-card-core/src/types/methods.ts:204](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/types/methods.ts#L204)
+[packages/learn-card-core/src/types/methods.ts:224](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L224)
 
 ___
 
 ### VerifyCredential
 
-Ƭ **VerifyCredential**: (`credential`: `VC`) => `Promise`<`VerificationItem`[]\>
+Ƭ **VerifyCredential**: (`credential`: `VC`, `options?`: `Partial`<[`ProofOptions`](modules.md#proofoptions)\>) => `Promise`<`VerificationItem`[]\>
 
 #### Type declaration
 
-▸ (`credential`): `Promise`<`VerificationItem`[]\>
+▸ (`credential`, `options?`): `Promise`<`VerificationItem`[]\>
 
 Verifies a signed Verifiable Credential
 
@@ -663,6 +792,7 @@ Empty error/warnings arrays means verification was successful
 | Name | Type |
 | :------ | :------ |
 | `credential` | `VC` |
+| `options?` | `Partial`<[`ProofOptions`](modules.md#proofoptions)\> |
 
 ##### Returns
 
@@ -670,17 +800,17 @@ Empty error/warnings arrays means verification was successful
 
 #### Defined in
 
-[packages/learn-card-core/src/types/methods.ts:66](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/types/methods.ts#L66)
+[packages/learn-card-core/src/types/methods.ts:74](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L74)
 
 ___
 
 ### VerifyPresentation
 
-Ƭ **VerifyPresentation**: (`presentation`: `VP`) => `Promise`<`VerificationCheck`\>
+Ƭ **VerifyPresentation**: (`presentation`: `VP`, `options?`: `Partial`<[`ProofOptions`](modules.md#proofoptions)\>) => `Promise`<`VerificationCheck`\>
 
 #### Type declaration
 
-▸ (`presentation`): `Promise`<`VerificationCheck`\>
+▸ (`presentation`, `options?`): `Promise`<`VerificationCheck`\>
 
 Verifies a signed Verifiable Presentation
 
@@ -691,6 +821,7 @@ Empry error/warnings arrays means verification was successful
 | Name | Type |
 | :------ | :------ |
 | `presentation` | `VP` |
+| `options?` | `Partial`<[`ProofOptions`](modules.md#proofoptions)\> |
 
 ##### Returns
 
@@ -698,7 +829,7 @@ Empry error/warnings arrays means verification was successful
 
 #### Defined in
 
-[packages/learn-card-core/src/types/methods.ts:81](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/types/methods.ts#L81)
+[packages/learn-card-core/src/types/methods.ts:95](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L95)
 
 ___
 
@@ -724,7 +855,7 @@ Returns a Verifiable Presentation (VP) from a QR code base-64 image data string 
 
 #### Defined in
 
-[packages/learn-card-core/src/types/methods.ts:237](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/types/methods.ts#L237)
+[packages/learn-card-core/src/types/methods.ts:257](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L257)
 
 ___
 
@@ -750,7 +881,7 @@ Returns a QR-embeddable base-64 image data string from a Verifiable Presentation
 
 #### Defined in
 
-[packages/learn-card-core/src/types/methods.ts:244](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/types/methods.ts#L244)
+[packages/learn-card-core/src/types/methods.ts:264](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/methods.ts#L264)
 
 ## DidKey Plugin
 
@@ -760,7 +891,7 @@ Returns a QR-embeddable base-64 image data string from a Verifiable Presentation
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/didkey/types.ts:4](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/wallet/plugins/didkey/types.ts#L4)
+[packages/learn-card-core/src/wallet/plugins/didkey/types.ts:4](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/didkey/types.ts#L4)
 
 ___
 
@@ -778,13 +909,13 @@ ___
 
 | Name | Type |
 | :------ | :------ |
-| `generateEd25519KeyFromBytes` | (`bytes`: `Uint8Array`) => [`KeyPair`](../modules.md#keypair-4) |
-| `generateSecp256k1KeyFromBytes` | (`bytes`: `Uint8Array`) => [`KeyPair`](../modules.md#keypair-4) |
-| `keyToDid` | (`type`: `T`, `keypair`: [`KeyPair`](../modules.md#keypair-4)) => `string` |
+| `generateEd25519KeyFromBytes` | (`bytes`: `Uint8Array`) => [`KeyPair`](modules.md#keypair) |
+| `generateSecp256k1KeyFromBytes` | (`bytes`: `Uint8Array`) => [`KeyPair`](modules.md#keypair) |
+| `keyToDid` | (`type`: `T`, `keypair`: [`KeyPair`](modules.md#keypair)) => `string` |
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/didkey/types.ts:7](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/wallet/plugins/didkey/types.ts#L7)
+[packages/learn-card-core/src/wallet/plugins/didkey/types.ts:7](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/didkey/types.ts#L7)
 
 ___
 
@@ -804,11 +935,11 @@ ___
 | :------ | :------ |
 | `getKey` | () => `string` |
 | `getSubjectDid` | (`type`: `DidMethod`) => `string` |
-| `getSubjectKeypair` | (`type?`: [`Algorithm`](../modules.md#algorithm-2)) => { `crv`: `string` ; `d`: `string` ; `kty`: `string` ; `x`: `string` ; `y?`: `string`  } |
+| `getSubjectKeypair` | (`type?`: [`Algorithm`](modules.md#algorithm)) => { `crv`: `string` ; `d`: `string` ; `kty`: `string` ; `x`: `string` ; `y?`: `string`  } |
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/didkey/types.ts:30](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/wallet/plugins/didkey/types.ts#L30)
+[packages/learn-card-core/src/wallet/plugins/didkey/types.ts:30](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/didkey/types.ts#L30)
 
 ___
 
@@ -835,7 +966,179 @@ ___
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/didkey/types.ts:14](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/wallet/plugins/didkey/types.ts#L14)
+[packages/learn-card-core/src/wallet/plugins/didkey/types.ts:14](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/didkey/types.ts#L14)
+
+## CHAPI Plugin
+
+### CHAPIPluginDependentMethods
+
+Ƭ **CHAPIPluginDependentMethods**: `Object`
+
+#### Type declaration
+
+| Name | Type |
+| :------ | :------ |
+| `getTestVp` | (`credential?`: `VC`) => `Promise`<`UnsignedVP`\> |
+| `issueCredential` | (`credential`: `UnsignedVC`, `signingOptions?`: `Partial`<[`ProofOptions`](modules.md#proofoptions)\>) => `Promise`<`VC`\> |
+| `issuePresentation` | (`credential`: `UnsignedVP`, `signingOptions?`: `Partial`<[`ProofOptions`](modules.md#proofoptions)\>) => `Promise`<`VP`\> |
+| `verifyPresentation` | (`presentation`: `VP`, `options?`: `Partial`<[`ProofOptions`](modules.md#proofoptions)\>) => `Promise`<`VerificationCheck`\> |
+
+#### Defined in
+
+[packages/learn-card-core/src/wallet/plugins/chapi/types.ts:71](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/chapi/types.ts#L71)
+
+___
+
+### CHAPIPluginMethods
+
+Ƭ **CHAPIPluginMethods**: `Object`
+
+#### Type declaration
+
+| Name | Type |
+| :------ | :------ |
+| `activateChapiHandler` | (`args`: { `get?`: (`event`: [`CredentialRequestEvent`](modules.md#credentialrequestevent)) => `Promise`<[`HandlerResponse`](modules.md#handlerresponse)\> ; `mediatorOrigin?`: `string` ; `store?`: (`event`: [`CredentialStoreEvent`](modules.md#credentialstoreevent)) => `Promise`<[`HandlerResponse`](modules.md#handlerresponse)\>  }) => `Promise`<`void`\> |
+| `installChapiHandler` | () => `Promise`<`void`\> |
+| `receiveChapiEvent` | () => `Promise`<[`CredentialRequestEvent`](modules.md#credentialrequestevent) \| [`CredentialStoreEvent`](modules.md#credentialstoreevent)\> |
+| `storeCredentialViaChapiDidAuth` | (`credential`: `UnsignedVC`) => `Promise`<{ `success`: ``true``  } \| { `reason`: ``"did not auth"`` \| ``"auth failed verification"`` \| ``"did not store"`` ; `success`: ``false``  }\> |
+| `storePresentationViaChapi` | (`presentation`: `VP`) => `Promise`<`Credential` \| `undefined`\> |
+
+#### Defined in
+
+[packages/learn-card-core/src/wallet/plugins/chapi/types.ts:88](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/chapi/types.ts#L88)
+
+___
+
+### CredentialRequestEvent
+
+Ƭ **CredentialRequestEvent**: `Object`
+
+#### Call signature
+
+• **new CredentialRequestEvent**(`args`): [`CredentialRequestEvent`](modules.md#credentialrequestevent)
+
+##### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `args` | `Object` |
+| `args.credentialHandler` | `any` |
+| `args.credentialRequestOptions` | `any` |
+| `args.credentialRequestOrigin` | `string` |
+| `args.hintKey` | `string` |
+
+##### Returns
+
+[`CredentialRequestEvent`](modules.md#credentialrequestevent)
+
+#### Type declaration
+
+| Name | Type |
+| :------ | :------ |
+| `_credentialHandler` | `any` |
+| `credentialRequestOptions` | `any` |
+| `credentialRequestOrigin` | `string` |
+| `hintKey` | `string` |
+| `openWindow` | (`url`: `string`) => `Promise`<`any`\> |
+| `respondWith` | (`handlerResponse`: `Promise`<``null`` \| { `data`: `any` ; `dataType`: `string`  }\>) => `void` |
+| `type` | `string` |
+
+#### Defined in
+
+[packages/learn-card-core/src/wallet/plugins/chapi/types.ts:18](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/chapi/types.ts#L18)
+
+___
+
+### CredentialStoreEvent
+
+Ƭ **CredentialStoreEvent**: `Object`
+
+#### Call signature
+
+• **new CredentialStoreEvent**(`args`): [`CredentialStoreEvent`](modules.md#credentialstoreevent)
+
+##### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `args` | `Object` |
+| `args.credential` | [`WebCredential`](modules.md#webcredential) |
+| `args.credentialHandler` | `any` |
+| `args.credentialRequestOrigin` | `string` |
+| `args.hintKey` | `string` |
+
+##### Returns
+
+[`CredentialStoreEvent`](modules.md#credentialstoreevent)
+
+#### Type declaration
+
+| Name | Type |
+| :------ | :------ |
+| `_credentialHandler` | `any` |
+| `credential` | [`WebCredential`](modules.md#webcredential) |
+| `credentialRequestOrigin` | `string` |
+| `hintKey` | `string` |
+| `openWindow` | (`url`: `string`) => `Promise`<`any`\> |
+| `respondWith` | (`handlerResponse`: `Promise`<``null`` \| { `data`: `any` ; `dataType`: `string`  }\>) => `void` |
+| `type` | `string` |
+
+#### Defined in
+
+[packages/learn-card-core/src/wallet/plugins/chapi/types.ts:42](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/chapi/types.ts#L42)
+
+___
+
+### HandlerResponse
+
+Ƭ **HandlerResponse**: { `type`: ``"redirect"`` ; `url`: `string`  } \| { `data`: `any` ; `dataType`: `string` ; `type`: ``"response"``  }
+
+#### Defined in
+
+[packages/learn-card-core/src/wallet/plugins/chapi/types.ts:66](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/chapi/types.ts#L66)
+
+___
+
+### WebCredential
+
+Ƭ **WebCredential**: `Object`
+
+#### Call signature
+
+• **new WebCredential**(`dataType`, `data`, `options?`): [`WebCredential`](modules.md#webcredential)
+
+##### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `dataType` | `string` |
+| `data` | `Object` |
+| `data.@context` | `string`[] |
+| `data.holder?` | `string` |
+| `data.id?` | `string` |
+| `data.proof` | { `[x: string]`: `any`; `challenge?`: `string` ; `created`: `string` ; `domain?`: `string` ; `jws?`: `string` ; `nonce?`: `string` ; `proofPurpose`: `string` ; `type`: `string` ; `verificationMethod`: `string`  } \| { `[x: string]`: `any`; `challenge?`: `string` ; `created`: `string` ; `domain?`: `string` ; `jws?`: `string` ; `nonce?`: `string` ; `proofPurpose`: `string` ; `type`: `string` ; `verificationMethod`: `string`  }[] |
+| `data.type` | [`string`, ...string[]] |
+| `data.verifiableCredential` | { `[x: string]`: `any`; `@context`: `string`[] ; `credentialSchema?`: { `id`: `string` ; `type`: `string`  }[] ; `credentialStatus?`: { `id`: `string` ; `type`: `string`  } ; `credentialSubject`: { `[x: string]`: `any`; `id?`: `string`  } \| { `[x: string]`: `any`; `id?`: `string`  }[] ; `expirationDate?`: `string` ; `id?`: `string` ; `issuanceDate`: `string` ; `issuer`: `string` \| { `[x: string]`: `any`; `additionalName?`: `string` ; `address?`: { `addressCountry?`: `string` ; `addressCountryCode?`: `string` ; `addressLocality?`: `string` ; `addressRegion?`: `string` ; `geo?`: { `latitude`: `number` ; `longitude`: `number` ; `type`: [`string`, ...string[]]  } ; `postOfficeBoxNumber?`: `string` ; `postalCode?`: `string` ; `streetAddress?`: `string` ; `type`: [`string`, ...string[]]  } ; `dateOfBirth?`: `string` ; `description?`: `string` ; `email?`: `string` ; `endorsement?`: `any`[] ; `familyName?`: `string` ; `familyNamePrefix?`: `string` ; `givenName?`: `string` ; `honorificPrefix?`: `string` ; `honorificSuffix?`: `string` ; `id?`: `string` ; `image?`: `string` \| { `caption?`: `string` ; `id`: `string` ; `type`: `string`  } ; `name?`: `string` ; `official?`: `string` ; `otherIdentifier?`: { `identifier`: `string` ; `identifierType`: `string` ; `type`: [`string`, ...string[]]  }[] ; `parentOrg?`: `any` ; `patronymicName?`: `string` ; `phone?`: `string` ; `type?`: [`string`, ...string[]] ; `url?`: `string`  } ; `proof`: { `[x: string]`: `any`; `challenge?`: `string` ; `created`: `string` ; `domain?`: `string` ; `jws?`: `string` ; `nonce?`: `string` ; `proofPurpose`: `string` ; `type`: `string` ; `verificationMethod`: `string`  } \| { `[x: string]`: `any`; `challenge?`: `string` ; `created`: `string` ; `domain?`: `string` ; `jws?`: `string` ; `nonce?`: `string` ; `proofPurpose`: `string` ; `type`: `string` ; `verificationMethod`: `string`  }[] ; `refreshService?`: { `[x: string]`: `any`; `id`: `string` ; `type`: `string`  } ; `type`: [`string`, ...string[]]  } \| { `[x: string]`: `any`; `@context`: `string`[] ; `credentialSchema?`: { `id`: `string` ; `type`: `string`  }[] ; `credentialStatus?`: { `id`: `string` ; `type`: `string`  } ; `credentialSubject`: { `[x: string]`: `any`; `id?`: `string`  } \| { `[x: string]`: `any`; `id?`: `string`  }[] ; `expirationDate?`: `string` ; `id?`: `string` ; `issuanceDate`: `string` ; `issuer`: `string` \| { `[x: string]`: `any`; `additionalName?`: `string` ; `address?`: { `addressCountry?`: `string` ; `addressCountryCode?`: `string` ; `addressLocality?`: `string` ; `addressRegion?`: `string` ; `geo?`: { `latitude`: `number` ; `longitude`: `number` ; `type`: [`string`, ...string[]]  } ; `postOfficeBoxNumber?`: `string` ; `postalCode?`: `string` ; `streetAddress?`: `string` ; `type`: [`string`, ...string[]]  } ; `dateOfBirth?`: `string` ; `description?`: `string` ; `email?`: `string` ; `endorsement?`: `any`[] ; `familyName?`: `string` ; `familyNamePrefix?`: `string` ; `givenName?`: `string` ; `honorificPrefix?`: `string` ; `honorificSuffix?`: `string` ; `id?`: `string` ; `image?`: `string` \| { `caption?`: `string` ; `id`: `string` ; `type`: `string`  } ; `name?`: `string` ; `official?`: `string` ; `otherIdentifier?`: { `identifier`: `string` ; `identifierType`: `string` ; `type`: [`string`, ...string[]]  }[] ; `parentOrg?`: `any` ; `patronymicName?`: `string` ; `phone?`: `string` ; `type?`: [`string`, ...string[]] ; `url?`: `string`  } ; `proof`: { `[x: string]`: `any`; `challenge?`: `string` ; `created`: `string` ; `domain?`: `string` ; `jws?`: `string` ; `nonce?`: `string` ; `proofPurpose`: `string` ; `type`: `string` ; `verificationMethod`: `string`  } \| { `[x: string]`: `any`; `challenge?`: `string` ; `created`: `string` ; `domain?`: `string` ; `jws?`: `string` ; `nonce?`: `string` ; `proofPurpose`: `string` ; `type`: `string` ; `verificationMethod`: `string`  }[] ; `refreshService?`: { `[x: string]`: `any`; `id`: `string` ; `type`: `string`  } ; `type`: [`string`, ...string[]]  }[] |
+| `options?` | `Object` |
+| `options.recommendedHandlerOrigins` | `string`[] |
+
+##### Returns
+
+[`WebCredential`](modules.md#webcredential)
+
+#### Type declaration
+
+| Name | Type |
+| :------ | :------ |
+| `data` | `VP` |
+| `dataType` | `string` |
+| `options` | { `recommendedHandlerOrigins`: `string`[]  } |
+| `options.recommendedHandlerOrigins` | `string`[] |
+| `type` | `string` |
+
+#### Defined in
+
+[packages/learn-card-core/src/wallet/plugins/chapi/types.ts:5](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/chapi/types.ts#L5)
 
 ## IDXPlugin
 
@@ -854,17 +1157,17 @@ ___
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/idx/types.ts:7](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/wallet/plugins/idx/types.ts#L7)
+[packages/learn-card-core/src/wallet/plugins/idx/types.ts:7](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/idx/types.ts#L7)
 
 ___
 
 ### CredentialsList
 
-Ƭ **CredentialsList**: `z.infer`<typeof [`CredentialsListValidator`](../modules.md#credentialslistvalidator-2)\>
+Ƭ **CredentialsList**: `z.infer`<typeof [`CredentialsListValidator`](modules.md#credentialslistvalidator)\>
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/idx/types.ts:30](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/wallet/plugins/idx/types.ts#L30)
+[packages/learn-card-core/src/wallet/plugins/idx/types.ts:30](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/idx/types.ts#L30)
 
 ___
 
@@ -877,7 +1180,7 @@ ___
 | Name | Type |
 | :------ | :------ |
 | `addVerifiableCredentialInIdx` | (`cred`: `IDXCredential`) => `Promise`<`StreamID`\> |
-| `getCredentialsListFromIdx` | (`alias?`: `string`) => `Promise`<[`CredentialsList`](../modules.md#credentialslist-2)\> |
+| `getCredentialsListFromIdx` | (`alias?`: `string`) => `Promise`<[`CredentialsList`](modules.md#credentialslist)\> |
 | `getVerifiableCredentialFromIdx` | (`title`: `string`) => `Promise`<`VC`\> |
 | `getVerifiableCredentialsFromIdx` | () => `Promise`<`VC`[]\> |
 | `publishContentToCeramic` | (`cred`: `any`) => `Promise`<`string`\> |
@@ -886,7 +1189,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/idx/types.ts:15](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/wallet/plugins/idx/types.ts#L15)
+[packages/learn-card-core/src/wallet/plugins/idx/types.ts:15](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/idx/types.ts#L15)
 
 ___
 
@@ -896,7 +1199,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/idx/types.ts:26](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/wallet/plugins/idx/types.ts#L26)
+[packages/learn-card-core/src/wallet/plugins/idx/types.ts:26](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/idx/types.ts#L26)
 
 ## DIDKit Plugin
 
@@ -906,7 +1209,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/didkit/types.ts:4](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/wallet/plugins/didkit/types.ts#L4)
+[packages/learn-card-core/src/wallet/plugins/didkit/types.ts:4](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/didkit/types.ts#L4)
 
 ___
 
@@ -919,19 +1222,38 @@ ___
 | Name | Type |
 | :------ | :------ |
 | `contextLoader` | (`url`: `string`) => `Promise`<`Record`<`string`, `any`\>\> |
-| `generateEd25519KeyFromBytes` | (`bytes`: `Uint8Array`) => [`KeyPair`](../modules.md#keypair-4) |
-| `generateSecp256k1KeyFromBytes` | (`bytes`: `Uint8Array`) => [`KeyPair`](../modules.md#keypair-4) |
-| `issueCredential` | (`credential`: `UnsignedVC`, `options`: [`ProofOptions`](../modules.md#proofoptions-2), `keypair`: [`KeyPair`](../modules.md#keypair-4)) => `Promise`<`VC`\> |
-| `issuePresentation` | (`presentation`: `UnsignedVP`, `options`: [`ProofOptions`](../modules.md#proofoptions-2), `keypair`: [`KeyPair`](../modules.md#keypair-4)) => `Promise`<`VP`\> |
-| `keyToDid` | (`type`: [`DidMethod`](../modules.md#didmethod-2), `keypair`: [`KeyPair`](../modules.md#keypair-4)) => `string` |
-| `keyToVerificationMethod` | (`type`: `string`, `keypair`: [`KeyPair`](../modules.md#keypair-4)) => `Promise`<`string`\> |
-| `resolveDid` | (`did`: `string`) => `Promise`<`Record`<`string`, `any`\>\> |
-| `verifyCredential` | (`credential`: `VC`) => `Promise`<`VerificationCheck`\> |
-| `verifyPresentation` | (`presentation`: `VP`) => `Promise`<`VerificationCheck`\> |
+| `generateEd25519KeyFromBytes` | (`bytes`: `Uint8Array`) => [`KeyPair`](modules.md#keypair) |
+| `generateSecp256k1KeyFromBytes` | (`bytes`: `Uint8Array`) => [`KeyPair`](modules.md#keypair) |
+| `issueCredential` | (`credential`: `UnsignedVC`, `options`: [`ProofOptions`](modules.md#proofoptions), `keypair`: [`KeyPair`](modules.md#keypair)) => `Promise`<`VC`\> |
+| `issuePresentation` | (`presentation`: `UnsignedVP`, `options`: [`ProofOptions`](modules.md#proofoptions), `keypair`: [`KeyPair`](modules.md#keypair)) => `Promise`<`VP`\> |
+| `keyToDid` | (`type`: [`DidMethod`](modules.md#didmethod), `keypair`: [`KeyPair`](modules.md#keypair)) => `string` |
+| `keyToVerificationMethod` | (`type`: `string`, `keypair`: [`KeyPair`](modules.md#keypair)) => `Promise`<`string`\> |
+| `resolveDid` | (`did`: `string`, `inputMetadata?`: [`InputMetadata`](modules.md#inputmetadata)) => `Promise`<`Record`<`string`, `any`\>\> |
+| `verifyCredential` | (`credential`: `VC`, `options?`: [`ProofOptions`](modules.md#proofoptions)) => `Promise`<`VerificationCheck`\> |
+| `verifyPresentation` | (`presentation`: `VP`, `options?`: [`ProofOptions`](modules.md#proofoptions)) => `Promise`<`VerificationCheck`\> |
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/didkit/types.ts:33](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/wallet/plugins/didkit/types.ts#L33)
+[packages/learn-card-core/src/wallet/plugins/didkit/types.ts:46](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/didkit/types.ts#L46)
+
+___
+
+### InputMetadata
+
+Ƭ **InputMetadata**: `Object`
+
+#### Type declaration
+
+| Name | Type |
+| :------ | :------ |
+| `accept?` | `string` |
+| `noCache?` | `boolean` |
+| `versionId?` | `string` |
+| `versionTime?` | `string` |
+
+#### Defined in
+
+[packages/learn-card-core/src/wallet/plugins/didkit/types.ts:38](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/didkit/types.ts#L38)
 
 ___
 
@@ -951,7 +1273,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/didkit/types.ts:24](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/wallet/plugins/didkit/types.ts#L24)
+[packages/learn-card-core/src/wallet/plugins/didkit/types.ts:24](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/didkit/types.ts#L24)
 
 ___
 
@@ -963,39 +1285,44 @@ ___
 
 | Name | Type |
 | :------ | :------ |
-| `proofPurpose` | `string` |
-| `verificationMethod` | `string` |
+| `challenge?` | `string` |
+| `checks?` | (``"Proof"`` \| ``"JWS"`` \| ``"CredentialStatus"``)[] |
+| `created?` | `string` |
+| `domain?` | `string` |
+| `proofPurpose?` | `string` |
+| `type?` | `string` |
+| `verificationMethod?` | `string` |
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/didkit/types.ts:27](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/wallet/plugins/didkit/types.ts#L27)
+[packages/learn-card-core/src/wallet/plugins/didkit/types.ts:27](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/didkit/types.ts#L27)
 
 ## LearnCard
 
 ### EmptyLearnCard
 
-Ƭ **EmptyLearnCard**: [`LearnCard`](../modules.md#learncard-2)<``"newCredential"`` \| ``"newPresentation"`` \| ``"verifyCredential"`` \| ``"verifyPresentation"`` \| ``"resolveDid"``, [`Wallet`](../modules.md#wallet-2)<``"DIDKit"`` \| ``"Expiration"`` \| ``"VC Templates"``, [`DidkitPluginMethods`](../modules.md#didkitpluginmethods-2) & [`VerifyExtension`](../modules.md#verifyextension-2) & `VCTemplatePluginMethods`\>\>
+Ƭ **EmptyLearnCard**: [`LearnCard`](modules.md#learncard)<``"newCredential"`` \| ``"newPresentation"`` \| ``"verifyCredential"`` \| ``"verifyPresentation"`` \| ``"resolveDid"`` \| ``"installChapiHandler"`` \| ``"activateChapiHandler"`` \| ``"receiveChapiEvent"`` \| ``"storePresentationViaChapi"`` \| ``"storeCredentialViaChapiDidAuth"``, [`Wallet`](modules.md#wallet)<``"DIDKit"`` \| ``"Expiration"`` \| ``"VC Templates"`` \| ``"CHAPI"``, [`MergeObjects`](modules.md#mergeobjects)<[[`DidkitPluginMethods`](modules.md#didkitpluginmethods), [`VerifyExtension`](modules.md#verifyextension), `VCTemplatePluginMethods`, [`CHAPIPluginMethods`](modules.md#chapipluginmethods)]\>\>\>
 
 #### Defined in
 
-[packages/learn-card-core/src/types/LearnCard.ts:45](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/types/LearnCard.ts#L45)
+[packages/learn-card-core/src/types/LearnCard.ts:63](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/LearnCard.ts#L63)
 
 ___
 
 ### LearnCard
 
-Ƭ **LearnCard**<`Methods`, `RawWallet`\>: { `_wallet`: `RawWallet`  } & `Pick`<[`AllLearnCardMethods`](../modules.md#alllearncardmethods-2), `Methods`\>
+Ƭ **LearnCard**<`Methods`, `RawWallet`\>: { `_wallet`: `RawWallet`  } & `Pick`<[`AllLearnCardMethods`](modules.md#alllearncardmethods), `Methods`\>
 
 #### Type parameters
 
 | Name | Type |
 | :------ | :------ |
-| `Methods` | extends keyof [`AllLearnCardMethods`](../modules.md#alllearncardmethods-2) = keyof [`AllLearnCardMethods`](../modules.md#alllearncardmethods-2) |
-| `RawWallet` | extends [`Wallet`](../modules.md#wallet-2)<`any`, `any`\> = [`LearnCardRawWallet`](../modules.md#learncardrawwallet-2) |
+| `Methods` | extends keyof [`AllLearnCardMethods`](modules.md#alllearncardmethods) = keyof [`AllLearnCardMethods`](modules.md#alllearncardmethods) |
+| `RawWallet` | extends [`Wallet`](modules.md#wallet)<`any`, `any`\> = [`LearnCardRawWallet`](modules.md#learncardrawwallet) |
 
 #### Defined in
 
-[packages/learn-card-core/src/types/LearnCard.ts:34](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/types/LearnCard.ts#L34)
+[packages/learn-card-core/src/types/LearnCard.ts:52](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/LearnCard.ts#L52)
 
 ___
 
@@ -1007,50 +1334,50 @@ ___
 
 | Name | Type |
 | :------ | :------ |
-| `ceramicIdx` | [`CeramicIDXArgs`](../modules.md#ceramicidxargs-2) |
+| `ceramicIdx` | [`CeramicIDXArgs`](modules.md#ceramicidxargs) |
 | `defaultContents` | `any`[] |
 | `didkit` | `InitInput` \| `Promise`<`InitInput`\> |
-| `ethereumConfig` | [`EthereumConfig`](../modules.md#ethereumconfig-2) |
+| `ethereumConfig` | [`EthereumConfig`](modules.md#ethereumconfig) |
 
 #### Defined in
 
-[packages/learn-card-core/src/types/LearnCard.ts:54](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/types/LearnCard.ts#L54)
+[packages/learn-card-core/src/types/LearnCard.ts:83](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/LearnCard.ts#L83)
 
 ## Init Functions
 
 ### EmptyWallet
 
-Ƭ **EmptyWallet**: `InitFunction`<`undefined`, ``"didkit"``, [`EmptyLearnCard`](../modules.md#emptylearncard-2)\>
+Ƭ **EmptyWallet**: `InitFunction`<`undefined`, ``"didkit"``, [`EmptyLearnCard`](modules.md#emptylearncard)\>
 
 #### Defined in
 
-[packages/learn-card-core/src/types/LearnCard.ts:62](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/types/LearnCard.ts#L62)
+[packages/learn-card-core/src/types/LearnCard.ts:91](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/LearnCard.ts#L91)
 
 ___
 
 ### InitLearnCard
 
-Ƭ **InitLearnCard**: `GenericInitFunction`<[[`EmptyWallet`](../modules.md#emptywallet-4), [`WalletFromKey`](../modules.md#walletfromkey-4)]\>
+Ƭ **InitLearnCard**: `GenericInitFunction`<[[`EmptyWallet`](modules.md#emptywallet), [`WalletFromKey`](modules.md#walletfromkey)]\>
 
 #### Defined in
 
-[packages/learn-card-core/src/types/LearnCard.ts:67](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/types/LearnCard.ts#L67)
+[packages/learn-card-core/src/types/LearnCard.ts:96](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/LearnCard.ts#L96)
 
 ___
 
 ### WalletFromKey
 
-Ƭ **WalletFromKey**: `InitFunction`<{ `seed`: `string`  }, keyof [`LearnCardConfig`](../modules.md#learncardconfig-2), [`LearnCard`](../modules.md#learncard-2)\>
+Ƭ **WalletFromKey**: `InitFunction`<{ `seed`: `string`  }, keyof [`LearnCardConfig`](modules.md#learncardconfig), [`LearnCard`](modules.md#learncard)\>
 
 #### Defined in
 
-[packages/learn-card-core/src/types/LearnCard.ts:64](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/types/LearnCard.ts#L64)
+[packages/learn-card-core/src/types/LearnCard.ts:93](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/LearnCard.ts#L93)
 
 ___
 
 ### emptyWallet
 
-▸ **emptyWallet**(`__namedParameters?`): `Promise`<[`EmptyLearnCard`](../modules.md#emptylearncard-2)\>
+▸ **emptyWallet**(`__namedParameters?`): `Promise`<[`EmptyLearnCard`](modules.md#emptylearncard)\>
 
 Generates an empty wallet with no key material
 
@@ -1058,21 +1385,21 @@ Generates an empty wallet with no key material
 
 | Name | Type |
 | :------ | :------ |
-| `__namedParameters` | `Partial`<`Pick`<[`LearnCardConfig`](../modules.md#learncardconfig-2), ``"didkit"``\>\> |
+| `__namedParameters` | `Partial`<`Pick`<[`LearnCardConfig`](modules.md#learncardconfig), ``"didkit"``\>\> |
 
 #### Returns
 
-`Promise`<[`EmptyLearnCard`](../modules.md#emptylearncard-2)\>
+`Promise`<[`EmptyLearnCard`](modules.md#emptylearncard)\>
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/initializers/emptyWallet.ts:14](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/wallet/initializers/emptyWallet.ts#L14)
+[packages/learn-card-core/src/wallet/initializers/emptyWallet.ts:15](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/initializers/emptyWallet.ts#L15)
 
 ___
 
 ### initLearnCard
 
-▸ **initLearnCard**(`config?`): `Promise`<[`EmptyWallet`](../modules.md#emptywallet-4)[``"returnValue"``]\>
+▸ **initLearnCard**(`config?`): `Promise`<[`EmptyWallet`](modules.md#emptywallet)[``"returnValue"``]\>
 
 Generates an Empty Wallet
 
@@ -1080,17 +1407,17 @@ Generates an Empty Wallet
 
 | Name | Type |
 | :------ | :------ |
-| `config?` | `Partial`<`Pick`<[`LearnCardConfig`](../modules.md#learncardconfig-2), ``"didkit"``\>\> |
+| `config?` | `Partial`<`Pick`<[`LearnCardConfig`](modules.md#learncardconfig), ``"didkit"``\>\> |
 
 #### Returns
 
-`Promise`<[`EmptyWallet`](../modules.md#emptywallet-4)[``"returnValue"``]\>
+`Promise`<[`EmptyWallet`](modules.md#emptywallet)[``"returnValue"``]\>
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/init.ts:16](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/wallet/init.ts#L16)
+[packages/learn-card-core/src/wallet/init.ts:16](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/init.ts#L16)
 
-▸ **initLearnCard**(`config`): `Promise`<[`WalletFromKey`](../modules.md#walletfromkey-4)[``"returnValue"``]\>
+▸ **initLearnCard**(`config`): `Promise`<[`WalletFromKey`](modules.md#walletfromkey)[``"returnValue"``]\>
 
 Generates a full wallet from a 32 byte seed
 
@@ -1098,21 +1425,21 @@ Generates a full wallet from a 32 byte seed
 
 | Name | Type |
 | :------ | :------ |
-| `config` | { `seed`: `string`  } & `Partial`<`Pick`<[`LearnCardConfig`](../modules.md#learncardconfig-2), keyof [`LearnCardConfig`](../modules.md#learncardconfig-2)\>\> |
+| `config` | { `seed`: `string`  } & `Partial`<`Pick`<[`LearnCardConfig`](modules.md#learncardconfig), keyof [`LearnCardConfig`](modules.md#learncardconfig)\>\> |
 
 #### Returns
 
-`Promise`<[`WalletFromKey`](../modules.md#walletfromkey-4)[``"returnValue"``]\>
+`Promise`<[`WalletFromKey`](modules.md#walletfromkey)[``"returnValue"``]\>
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/init.ts:23](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/wallet/init.ts#L23)
+[packages/learn-card-core/src/wallet/init.ts:23](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/init.ts#L23)
 
 ___
 
 ### walletFromKey
 
-▸ **walletFromKey**(`key`, `__namedParameters?`): `Promise`<[`LearnCard`](../modules.md#learncard-2)<keyof [`AllLearnCardMethods`](../modules.md#alllearncardmethods-2), [`LearnCardRawWallet`](../modules.md#learncardrawwallet-2)\>\>
+▸ **walletFromKey**(`key`, `__namedParameters?`): `Promise`<[`LearnCard`](modules.md#learncard)<keyof [`AllLearnCardMethods`](modules.md#alllearncardmethods), [`LearnCardRawWallet`](modules.md#learncardrawwallet)\>\>
 
 Generates a LearnCard Wallet from a 64 character seed string
 
@@ -1121,15 +1448,15 @@ Generates a LearnCard Wallet from a 64 character seed string
 | Name | Type |
 | :------ | :------ |
 | `key` | `string` |
-| `__namedParameters` | `Partial`<[`LearnCardConfig`](../modules.md#learncardconfig-2)\> |
+| `__namedParameters` | `Partial`<[`LearnCardConfig`](modules.md#learncardconfig)\> |
 
 #### Returns
 
-`Promise`<[`LearnCard`](../modules.md#learncard-2)<keyof [`AllLearnCardMethods`](../modules.md#alllearncardmethods-2), [`LearnCardRawWallet`](../modules.md#learncardrawwallet-2)\>\>
+`Promise`<[`LearnCard`](modules.md#learncard)<keyof [`AllLearnCardMethods`](modules.md#alllearncardmethods), [`LearnCardRawWallet`](modules.md#learncardrawwallet)\>\>
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/initializers/walletFromKey.ts:20](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/wallet/initializers/walletFromKey.ts#L20)
+[packages/learn-card-core/src/wallet/initializers/walletFromKey.ts:21](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/initializers/walletFromKey.ts#L21)
 
 ## Ethereum Plugin
 
@@ -1146,7 +1473,7 @@ Generates a LearnCard Wallet from a 64 character seed string
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/EthereumPlugin/types.ts:19](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/wallet/plugins/EthereumPlugin/types.ts#L19)
+[packages/learn-card-core/src/wallet/plugins/EthereumPlugin/types.ts:19](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/EthereumPlugin/types.ts#L19)
 
 ___
 
@@ -1168,7 +1495,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/EthereumPlugin/types.ts:4](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/wallet/plugins/EthereumPlugin/types.ts#L4)
+[packages/learn-card-core/src/wallet/plugins/EthereumPlugin/types.ts:4](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/EthereumPlugin/types.ts#L4)
 
 ___
 
@@ -1190,33 +1517,33 @@ ___
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/EthereumPlugin/types.ts:25](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/wallet/plugins/EthereumPlugin/types.ts#L25)
+[packages/learn-card-core/src/wallet/plugins/EthereumPlugin/types.ts:25](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/EthereumPlugin/types.ts#L25)
 
 ___
 
 ### TokenList
 
-Ƭ **TokenList**: [`Token`](../modules.md#token-2)[]
+Ƭ **TokenList**: [`Token`](modules.md#token)[]
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/EthereumPlugin/types.ts:36](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/wallet/plugins/EthereumPlugin/types.ts#L36)
+[packages/learn-card-core/src/wallet/plugins/EthereumPlugin/types.ts:36](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/EthereumPlugin/types.ts#L36)
 
 ## Universal Wallets
 
 ### LearnCardRawWallet
 
-Ƭ **LearnCardRawWallet**: [`Wallet`](../modules.md#wallet-2)<``"DIDKit"`` \| ``"DID Key"`` \| ``"VC"`` \| ``"VC Templates"`` \| ``"IDX"`` \| ``"Expiration"`` \| ``"Ethereum"`` \| ``"Vpqr"``, [`DidKeyPluginMethods`](../modules.md#didkeypluginmethods-2)<[`DidMethod`](../modules.md#didmethod-2)\> & [`VCPluginMethods`](../modules.md#vcpluginmethods-2) & `VCTemplatePluginMethods` & [`IDXPluginMethods`](../modules.md#idxpluginmethods-2) & [`EthereumPluginMethods`](../modules.md#ethereumpluginmethods-2) & [`VpqrPluginMethods`](../modules.md#vpqrpluginmethods-2)\>
+Ƭ **LearnCardRawWallet**: [`Wallet`](modules.md#wallet)<``"DIDKit"`` \| ``"DID Key"`` \| ``"VC"`` \| ``"VC Templates"`` \| ``"IDX"`` \| ``"Expiration"`` \| ``"Ethereum"`` \| ``"Vpqr"`` \| ``"CHAPI"``, [`MergeObjects`](modules.md#mergeobjects)<[[`DidKeyPluginMethods`](modules.md#didkeypluginmethods)<[`DidMethod`](modules.md#didmethod)\>, [`VCPluginMethods`](modules.md#vcpluginmethods), `VCTemplatePluginMethods`, [`IDXPluginMethods`](modules.md#idxpluginmethods), [`EthereumPluginMethods`](modules.md#ethereumpluginmethods), [`VpqrPluginMethods`](modules.md#vpqrpluginmethods), [`CHAPIPluginMethods`](modules.md#chapipluginmethods)]\>\>
 
 #### Defined in
 
-[packages/learn-card-core/src/types/LearnCard.ts:21](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/types/LearnCard.ts#L21)
+[packages/learn-card-core/src/types/LearnCard.ts:26](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/LearnCard.ts#L26)
 
 ___
 
 ### Plugin
 
-Ƭ **Plugin**<`Name`, `PublicMethods`\>: `Object`
+Ƭ **Plugin**<`Name`, `PublicMethods`, `DependentMethods`\>: `Object`
 
 #### Type parameters
 
@@ -1224,6 +1551,7 @@ ___
 | :------ | :------ |
 | `Name` | extends `string` |
 | `PublicMethods` | extends `Record`<`string`, (...`args`: `any`[]) => `any`\> = `Record`<`never`, `never`\> |
+| `DependentMethods` | extends `Record`<`string`, (...`args`: `any`[]) => `any`\> = `Record`<`never`, `never`\> |
 
 #### Type declaration
 
@@ -1234,13 +1562,13 @@ ___
 
 #### Defined in
 
-[packages/learn-card-core/src/types/wallet.ts:2](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/types/wallet.ts#L2)
+[packages/learn-card-core/src/types/wallet.ts:4](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/wallet.ts#L4)
 
 ___
 
 ### Wallet
 
-Ƭ **Wallet**<`PluginNames`, `PluginMethods`\>: `PublicFieldsObj`<`PluginMethods`\> & { `add`: (`content`: `any`) => `Promise`<[`Wallet`](../modules.md#wallet-2)<`PluginNames`, `PluginMethods`\>\> ; `addPlugin`: <Name, Methods\>(`plugin`: [`Plugin`](../modules.md#plugin-2)<`Name`, `Methods`\>) => `Promise`<[`Wallet`](../modules.md#wallet-2)<``""`` extends `PluginNames` ? `Name` : `PluginNames` \| `Name`, `Record`<`never`, `never`\> extends `PluginMethods` ? `Methods` : `PluginMethods` & `Methods`\>\> ; `contents`: `any`[] ; `plugins`: [`Plugin`](../modules.md#plugin-2)<`PluginNames`, `Record`<`string`, (...`args`: `any`[]) => `any`\>\>[] ; `remove`: (`contentId`: `string`) => `Promise`<[`Wallet`](../modules.md#wallet-2)<`PluginNames`, `PluginMethods`\>\>  }
+Ƭ **Wallet**<`PluginNames`, `PluginMethods`\>: `PublicFieldsObj`<`PluginMethods`\> & { `add`: (`content`: `any`) => `Promise`<[`Wallet`](modules.md#wallet)<`PluginNames`, `PluginMethods`\>\> ; `addPlugin`: <Name, Methods\>(`plugin`: [`Plugin`](modules.md#plugin)<`Name`, `Methods`\>) => `Promise`<[`Wallet`](modules.md#wallet)<``""`` extends `PluginNames` ? `Name` : `PluginNames` \| `Name`, `Record`<`never`, `never`\> extends `PluginMethods` ? `Methods` : [`MergeObjects`](modules.md#mergeobjects)<[`PluginMethods`, `Methods`]\>\>\> ; `contents`: `any`[] ; `plugins`: [`Plugin`](modules.md#plugin)<`PluginNames`, `Record`<`string`, (...`args`: `any`[]) => `any`\>\>[] ; `remove`: (`contentId`: `string`) => `Promise`<[`Wallet`](modules.md#wallet)<`PluginNames`, `PluginMethods`\>\>  }
 
 #### Type parameters
 
@@ -1251,13 +1579,13 @@ ___
 
 #### Defined in
 
-[packages/learn-card-core/src/types/wallet.ts:23](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/types/wallet.ts#L23)
+[packages/learn-card-core/src/types/wallet.ts:26](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/wallet.ts#L26)
 
 ___
 
 ### generateWallet
 
-▸ **generateWallet**<`PluginNames`, `PluginMethods`\>(`contents?`, `_wallet?`): `Promise`<[`Wallet`](../modules.md#wallet-2)<`PluginNames`, `PluginMethods`\>\>
+▸ **generateWallet**<`PluginNames`, `PluginMethods`\>(`contents?`, `_wallet?`): `Promise`<[`Wallet`](modules.md#wallet)<`PluginNames`, `PluginMethods`\>\>
 
 #### Type parameters
 
@@ -1271,17 +1599,43 @@ ___
 | Name | Type | Default value |
 | :------ | :------ | :------ |
 | `contents` | `any`[] | `[]` |
-| `_wallet` | `Partial`<[`Wallet`](../modules.md#wallet-2)<`any`, `PluginMethods`\>\> | `{}` |
+| `_wallet` | `Partial`<[`Wallet`](modules.md#wallet)<`any`, `PluginMethods`\>\> | `{}` |
 
 #### Returns
 
-`Promise`<[`Wallet`](../modules.md#wallet-2)<`PluginNames`, `PluginMethods`\>\>
+`Promise`<[`Wallet`](modules.md#wallet)<`PluginNames`, `PluginMethods`\>\>
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/base/wallet.ts:66](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/wallet/base/wallet.ts#L66)
+[packages/learn-card-core/src/wallet/base/wallet.ts:66](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/base/wallet.ts#L66)
+
+## Utility Types
+
+### MergeObjects
+
+Ƭ **MergeObjects**<`Objects`\>: `undefined` extends `Objects`[``2``] ? `Omit`<`Objects`[``0``], keyof `Objects`[``1``]\> & `Objects`[``1``] : `Omit`<[`MergeObjects`](modules.md#mergeobjects)<`RemoveLast`<`Objects`\>\>, keyof `Last`<`Objects`\>\> & `Last`<`Objects`\>
+
+#### Type parameters
+
+| Name | Type |
+| :------ | :------ |
+| `Objects` | extends `Record`<`string`, `any`\>[] |
+
+#### Defined in
+
+[packages/learn-card-core/src/types/utilities.ts:12](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/types/utilities.ts#L12)
 
 ## VC Plugin
+
+### VCImplicitWallet
+
+Ƭ **VCImplicitWallet**: [`Wallet`](modules.md#wallet)<`string`, [`VCPluginMethods`](modules.md#vcpluginmethods) & [`VCPluginDependentMethods`](modules.md#vcplugindependentmethods)\>
+
+#### Defined in
+
+[packages/learn-card-core/src/wallet/plugins/vc/types.ts:47](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/vc/types.ts#L47)
+
+___
 
 ### VCPluginDependentMethods
 
@@ -1292,26 +1646,37 @@ ___
 | Name | Type |
 | :------ | :------ |
 | `getSubjectDid` | (`type`: ``"key"``) => `string` |
-| `getSubjectKeypair` | () => [`KeyPair`](../modules.md#keypair-4) |
-| `issueCredential` | (`credential`: `UnsignedVC`, `options`: [`ProofOptions`](../modules.md#proofoptions-2), `keypair`: [`KeyPair`](../modules.md#keypair-4)) => `Promise`<`VC`\> |
-| `issuePresentation` | (`presentation`: `UnsignedVP`, `options`: [`ProofOptions`](../modules.md#proofoptions-2), `keypair`: [`KeyPair`](../modules.md#keypair-4)) => `Promise`<`VP`\> |
-| `keyToVerificationMethod` | (`type`: `string`, `keypair`: [`KeyPair`](../modules.md#keypair-4)) => `Promise`<`string`\> |
-| `verifyCredential` | (`credential`: `VC`) => `Promise`<`VerificationCheck`\> |
-| `verifyPresentation` | (`presentation`: `VP`) => `Promise`<`VerificationCheck`\> |
+| `getSubjectKeypair` | () => [`KeyPair`](modules.md#keypair) |
+| `issueCredential` | (`credential`: `UnsignedVC`, `options`: [`ProofOptions`](modules.md#proofoptions), `keypair`: [`KeyPair`](modules.md#keypair)) => `Promise`<`VC`\> |
+| `issuePresentation` | (`presentation`: `UnsignedVP`, `options`: [`ProofOptions`](modules.md#proofoptions), `keypair`: [`KeyPair`](modules.md#keypair)) => `Promise`<`VP`\> |
+| `keyToVerificationMethod` | (`type`: `string`, `keypair`: [`KeyPair`](modules.md#keypair)) => `Promise`<`string`\> |
+| `verifyCredential` | (`credential`: `VC`, `options?`: [`ProofOptions`](modules.md#proofoptions)) => `Promise`<`VerificationCheck`\> |
+| `verifyPresentation` | (`presentation`: `VP`, `options?`: [`ProofOptions`](modules.md#proofoptions)) => `Promise`<`VerificationCheck`\> |
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/vc/types.ts:5](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/wallet/plugins/vc/types.ts#L5)
+[packages/learn-card-core/src/wallet/plugins/vc/types.ts:6](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/vc/types.ts#L6)
 
 ___
 
 ### VCPluginMethods
 
-Ƭ **VCPluginMethods**: [`VCPluginDependentMethods`](../modules.md#vcplugindependentmethods-2) & { `getTestVc`: (`subject?`: `string`) => `UnsignedVC` ; `getTestVp`: (`credential?`: `VC`) => `Promise`<`UnsignedVP`\> ; `issueCredential`: (`credential`: `UnsignedVC`) => `Promise`<`VC`\> ; `issuePresentation`: (`credential`: `UnsignedVP`) => `Promise`<`VP`\> ; `verifyCredential`: (`credential`: `VC`) => `Promise`<`VerificationCheck`\> ; `verifyPresentation`: (`presentation`: `VP`) => `Promise`<`VerificationCheck`\>  }
+Ƭ **VCPluginMethods**: `Object`
+
+#### Type declaration
+
+| Name | Type |
+| :------ | :------ |
+| `getTestVc` | (`subject?`: `string`) => `UnsignedVC` |
+| `getTestVp` | (`credential?`: `VC`) => `Promise`<`UnsignedVP`\> |
+| `issueCredential` | (`credential`: `UnsignedVC`, `signingOptions?`: `Partial`<[`ProofOptions`](modules.md#proofoptions)\>) => `Promise`<`VC`\> |
+| `issuePresentation` | (`credential`: `UnsignedVP`, `signingOptions?`: `Partial`<[`ProofOptions`](modules.md#proofoptions)\>) => `Promise`<`VP`\> |
+| `verifyCredential` | (`credential`: `VC`, `options?`: `Partial`<[`ProofOptions`](modules.md#proofoptions)\>) => `Promise`<`VerificationCheck`\> |
+| `verifyPresentation` | (`presentation`: `VP`, `options?`: `Partial`<[`ProofOptions`](modules.md#proofoptions)\>) => `Promise`<`VerificationCheck`\> |
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/vc/types.ts:24](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/wallet/plugins/vc/types.ts#L24)
+[packages/learn-card-core/src/wallet/plugins/vc/types.ts:25](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/vc/types.ts#L25)
 
 ___
 
@@ -1327,7 +1692,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/vc/types.ts:34](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/wallet/plugins/vc/types.ts#L34)
+[packages/learn-card-core/src/wallet/plugins/vc/types.ts:50](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/vc/types.ts#L50)
 
 ## VPQR Plugin
 
@@ -1343,7 +1708,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/vpqr/types.ts:10](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/wallet/plugins/vpqr/types.ts#L10)
+[packages/learn-card-core/src/wallet/plugins/vpqr/types.ts:10](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/vpqr/types.ts#L10)
 
 ___
 
@@ -1360,33 +1725,47 @@ ___
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/vpqr/types.ts:4](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/wallet/plugins/vpqr/types.ts#L4)
+[packages/learn-card-core/src/wallet/plugins/vpqr/types.ts:4](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/vpqr/types.ts#L4)
 
 ## Plugins
 
 ### ExpirationPlugin
 
-▸ **ExpirationPlugin**(`wallet`): [`Plugin`](../modules.md#plugin-2)<``"Expiration"``, [`VerifyExtension`](../modules.md#verifyextension-2)\>
+▸ **ExpirationPlugin**(`wallet`): [`Plugin`](modules.md#plugin)<``"Expiration"``, [`VerifyExtension`](modules.md#verifyextension), `Record`<`never`, `never`\>\>
 
 #### Parameters
 
 | Name | Type |
 | :------ | :------ |
-| `wallet` | [`Wallet`](../modules.md#wallet-2)<`any`, [`VerifyExtension`](../modules.md#verifyextension-2)\> |
+| `wallet` | [`Wallet`](modules.md#wallet)<`any`, [`VerifyExtension`](modules.md#verifyextension)\> |
 
 #### Returns
 
-[`Plugin`](../modules.md#plugin-2)<``"Expiration"``, [`VerifyExtension`](../modules.md#verifyextension-2)\>
+[`Plugin`](modules.md#plugin)<``"Expiration"``, [`VerifyExtension`](modules.md#verifyextension), `Record`<`never`, `never`\>\>
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/expiration/index.ts:7](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/wallet/plugins/expiration/index.ts#L7)
+[packages/learn-card-core/src/wallet/plugins/expiration/index.ts:7](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/expiration/index.ts#L7)
+
+___
+
+### getCHAPIPlugin
+
+▸ **getCHAPIPlugin**(): `Promise`<[`Plugin`](modules.md#plugin)<``"CHAPI"``, [`CHAPIPluginMethods`](modules.md#chapipluginmethods), [`CHAPIPluginDependentMethods`](modules.md#chapiplugindependentmethods)\>\>
+
+#### Returns
+
+`Promise`<[`Plugin`](modules.md#plugin)<``"CHAPI"``, [`CHAPIPluginMethods`](modules.md#chapipluginmethods), [`CHAPIPluginDependentMethods`](modules.md#chapiplugindependentmethods)\>\>
+
+#### Defined in
+
+[packages/learn-card-core/src/wallet/plugins/chapi/chapi.ts:10](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/chapi/chapi.ts#L10)
 
 ___
 
 ### getDidKeyPlugin
 
-▸ **getDidKeyPlugin**<`DidMethod`\>(`wallet`, `key`): `Promise`<[`Plugin`](../modules.md#plugin-2)<``"DID Key"``, [`DidKeyPluginMethods`](../modules.md#didkeypluginmethods-2)<`DidMethod`\>\>\>
+▸ **getDidKeyPlugin**<`DidMethod`\>(`wallet`, `key`): `Promise`<[`Plugin`](modules.md#plugin)<``"DID Key"``, [`DidKeyPluginMethods`](modules.md#didkeypluginmethods)<`DidMethod`\>, `Record`<`never`, `never`\>\>\>
 
 #### Type parameters
 
@@ -1398,22 +1777,22 @@ ___
 
 | Name | Type |
 | :------ | :------ |
-| `wallet` | [`Wallet`](../modules.md#wallet-2)<`string`, [`DependentMethods`](../modules.md#dependentmethods-2)<`DidMethod`\>\> |
+| `wallet` | [`Wallet`](modules.md#wallet)<`string`, [`DependentMethods`](modules.md#dependentmethods)<`DidMethod`\>\> |
 | `key` | `string` |
 
 #### Returns
 
-`Promise`<[`Plugin`](../modules.md#plugin-2)<``"DID Key"``, [`DidKeyPluginMethods`](../modules.md#didkeypluginmethods-2)<`DidMethod`\>\>\>
+`Promise`<[`Plugin`](modules.md#plugin)<``"DID Key"``, [`DidKeyPluginMethods`](modules.md#didkeypluginmethods)<`DidMethod`\>, `Record`<`never`, `never`\>\>\>
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/didkey/index.ts:15](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/wallet/plugins/didkey/index.ts#L15)
+[packages/learn-card-core/src/wallet/plugins/didkey/index.ts:16](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/didkey/index.ts#L16)
 
 ___
 
 ### getDidKitPlugin
 
-▸ **getDidKitPlugin**(`input?`): `Promise`<[`Plugin`](../modules.md#plugin-2)<``"DIDKit"``, [`DidkitPluginMethods`](../modules.md#didkitpluginmethods-2)\>\>
+▸ **getDidKitPlugin**(`input?`): `Promise`<[`Plugin`](modules.md#plugin)<``"DIDKit"``, [`DidkitPluginMethods`](modules.md#didkitpluginmethods), `Record`<`never`, `never`\>\>\>
 
 #### Parameters
 
@@ -1423,93 +1802,93 @@ ___
 
 #### Returns
 
-`Promise`<[`Plugin`](../modules.md#plugin-2)<``"DIDKit"``, [`DidkitPluginMethods`](../modules.md#didkitpluginmethods-2)\>\>
+`Promise`<[`Plugin`](modules.md#plugin)<``"DIDKit"``, [`DidkitPluginMethods`](modules.md#didkitpluginmethods), `Record`<`never`, `never`\>\>\>
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/didkit/index.ts:24](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/wallet/plugins/didkit/index.ts#L24)
+[packages/learn-card-core/src/wallet/plugins/didkit/index.ts:24](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/didkit/index.ts#L24)
 
 ___
 
 ### getEthereumPlugin
 
-▸ **getEthereumPlugin**(`initWallet`, `config`): [`Plugin`](../modules.md#plugin-2)<``"Ethereum"``, [`EthereumPluginMethods`](../modules.md#ethereumpluginmethods-2)\>
+▸ **getEthereumPlugin**(`initWallet`, `config`): [`Plugin`](modules.md#plugin)<``"Ethereum"``, [`EthereumPluginMethods`](modules.md#ethereumpluginmethods), `Record`<`never`, `never`\>\>
 
 #### Parameters
 
 | Name | Type |
 | :------ | :------ |
-| `initWallet` | [`Wallet`](../modules.md#wallet-2)<`string`, { `getSubjectDid`: (`type`: [`DidMethod`](../modules.md#didmethod-2)) => `string` ; `getSubjectKeypair`: (`type?`: [`Algorithm`](../modules.md#algorithm-2)) => [`KeyPair`](../modules.md#keypair-4)  }\> |
-| `config` | [`EthereumConfig`](../modules.md#ethereumconfig-2) |
+| `initWallet` | [`Wallet`](modules.md#wallet)<`string`, { `getSubjectDid`: (`type`: [`DidMethod`](modules.md#didmethod)) => `string` ; `getSubjectKeypair`: (`type?`: [`Algorithm`](modules.md#algorithm)) => [`KeyPair`](modules.md#keypair)  }\> |
+| `config` | [`EthereumConfig`](modules.md#ethereumconfig) |
 
 #### Returns
 
-[`Plugin`](../modules.md#plugin-2)<``"Ethereum"``, [`EthereumPluginMethods`](../modules.md#ethereumpluginmethods-2)\>
+[`Plugin`](modules.md#plugin)<``"Ethereum"``, [`EthereumPluginMethods`](modules.md#ethereumpluginmethods), `Record`<`never`, `never`\>\>
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/EthereumPlugin/index.ts:23](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/wallet/plugins/EthereumPlugin/index.ts#L23)
+[packages/learn-card-core/src/wallet/plugins/EthereumPlugin/index.ts:25](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/EthereumPlugin/index.ts#L25)
 
 ___
 
 ### getIDXPlugin
 
-▸ **getIDXPlugin**(`wallet`, `__namedParameters`): `Promise`<[`Plugin`](../modules.md#plugin-2)<``"IDX"``, [`IDXPluginMethods`](../modules.md#idxpluginmethods-2)\>\>
+▸ **getIDXPlugin**(`wallet`, `__namedParameters`): `Promise`<[`Plugin`](modules.md#plugin)<``"IDX"``, [`IDXPluginMethods`](modules.md#idxpluginmethods), `Record`<`never`, `never`\>\>\>
 
 #### Parameters
 
 | Name | Type |
 | :------ | :------ |
-| `wallet` | [`Wallet`](../modules.md#wallet-2)<`any`, { `getKey`: () => `string`  }\> |
-| `__namedParameters` | [`CeramicIDXArgs`](../modules.md#ceramicidxargs-2) |
+| `wallet` | [`Wallet`](modules.md#wallet)<`any`, { `getKey`: () => `string`  }\> |
+| `__namedParameters` | [`CeramicIDXArgs`](modules.md#ceramicidxargs) |
 
 #### Returns
 
-`Promise`<[`Plugin`](../modules.md#plugin-2)<``"IDX"``, [`IDXPluginMethods`](../modules.md#idxpluginmethods-2)\>\>
+`Promise`<[`Plugin`](modules.md#plugin)<``"IDX"``, [`IDXPluginMethods`](modules.md#idxpluginmethods), `Record`<`never`, `never`\>\>\>
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/idx/idx.ts:46](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/wallet/plugins/idx/idx.ts#L46)
+[packages/learn-card-core/src/wallet/plugins/idx/idx.ts:46](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/idx/idx.ts#L46)
 
 ___
 
 ### getVCPlugin
 
-▸ **getVCPlugin**(`wallet`): [`Plugin`](../modules.md#plugin-2)<``"VC"``, [`VCPluginMethods`](../modules.md#vcpluginmethods-2)\>
+▸ **getVCPlugin**(`wallet`): [`Plugin`](modules.md#plugin)<``"VC"``, [`VCPluginMethods`](modules.md#vcpluginmethods), [`VCPluginDependentMethods`](modules.md#vcplugindependentmethods)\>
 
 #### Parameters
 
 | Name | Type |
 | :------ | :------ |
-| `wallet` | [`Wallet`](../modules.md#wallet-2)<`string`, [`VCPluginDependentMethods`](../modules.md#vcplugindependentmethods-2)\> |
+| `wallet` | [`Wallet`](modules.md#wallet)<`string`, [`VCPluginDependentMethods`](modules.md#vcplugindependentmethods)\> |
 
 #### Returns
 
-[`Plugin`](../modules.md#plugin-2)<``"VC"``, [`VCPluginMethods`](../modules.md#vcpluginmethods-2)\>
+[`Plugin`](modules.md#plugin)<``"VC"``, [`VCPluginMethods`](modules.md#vcpluginmethods), [`VCPluginDependentMethods`](modules.md#vcplugindependentmethods)\>
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/vc/vc.ts:14](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/wallet/plugins/vc/vc.ts#L14)
+[packages/learn-card-core/src/wallet/plugins/vc/vc.ts:12](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/vc/vc.ts#L12)
 
 ___
 
 ### getVpqrPlugin
 
-▸ **getVpqrPlugin**(`wallet`): [`Plugin`](../modules.md#plugin-2)<``"Vpqr"``, [`VpqrPluginMethods`](../modules.md#vpqrpluginmethods-2)\>
+▸ **getVpqrPlugin**(`wallet`): [`Plugin`](modules.md#plugin)<``"Vpqr"``, [`VpqrPluginMethods`](modules.md#vpqrpluginmethods), `Record`<`never`, `never`\>\>
 
 #### Parameters
 
 | Name | Type |
 | :------ | :------ |
-| `wallet` | [`Wallet`](../modules.md#wallet-2)<`string`, [`VpqrPluginDependentMethods`](../modules.md#vpqrplugindependentmethods-2)\> |
+| `wallet` | [`Wallet`](modules.md#wallet)<`string`, [`VpqrPluginDependentMethods`](modules.md#vpqrplugindependentmethods)\> |
 
 #### Returns
 
-[`Plugin`](../modules.md#plugin-2)<``"Vpqr"``, [`VpqrPluginMethods`](../modules.md#vpqrpluginmethods-2)\>
+[`Plugin`](modules.md#plugin)<``"Vpqr"``, [`VpqrPluginMethods`](modules.md#vpqrpluginmethods), `Record`<`never`, `never`\>\>
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/plugins/vpqr/index.ts:11](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/wallet/plugins/vpqr/index.ts#L11)
+[packages/learn-card-core/src/wallet/plugins/vpqr/index.ts:11](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/plugins/vpqr/index.ts#L11)
 
 ## Functions
 
@@ -1532,7 +1911,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/base/functions/passwordToKey.ts:3](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/wallet/base/functions/passwordToKey.ts#L3)
+[packages/learn-card-core/src/wallet/base/functions/passwordToKey.ts:3](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/base/functions/passwordToKey.ts#L3)
 
 ___
 
@@ -1552,4 +1931,4 @@ ___
 
 #### Defined in
 
-[packages/learn-card-core/src/wallet/base/functions/seedToId.ts:3](https://github.com/learningeconomy/LearnCard/blob/2bb0c1e1/packages/learn-card-core/src/wallet/base/functions/seedToId.ts#L3)
+[packages/learn-card-core/src/wallet/base/functions/seedToId.ts:3](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-core/src/wallet/base/functions/seedToId.ts#L3)

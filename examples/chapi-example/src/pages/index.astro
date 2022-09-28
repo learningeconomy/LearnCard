@@ -1,0 +1,84 @@
+---
+import Layout from '@layouts/Layout.astro';
+import Credentials from '@components/Credentials';
+---
+
+<Layout title="LearnCard CHAPI Example">
+    <section id="modal-container"></section>
+
+    <main class="w-full h-full flex flex-col justify-center items-center p-4">
+        <header class="flex gap-2">
+            <img
+                class="h-24"
+                src="https://user-images.githubusercontent.com/2185016/190510561-294db809-09fd-4771-9749-6c0e0f4144fd.png"
+                alt="LearnCard"
+            />
+
+            <h1>LearnCard CHAPI Example</h1>
+        </header>
+
+        <h3 id="loading-wallet">Loading wallet...</h3>
+
+        <section class="flex justify-center items-center gap-2">
+            <p id="seed-display"></p>
+            <button type="button" id="change-seed" class="bg-red-100 rounded px-4 border opacity-0"
+                >Change</button
+            >
+        </section>
+
+        <section class="flex mb-4">
+            <button
+                disabled
+                type="button"
+                id="test-storage"
+                class="bg-green-100 rounded py-2 px-4 border opacity-0">Add Dummy Credential</button
+            >
+        </section>
+
+        <Credentials client:only="react" />
+    </main>
+</Layout>
+
+<script>
+    import { initLearnCard } from '@learncard/core';
+    import { _wallet, _seed } from '../stores/walletStore';
+
+    const seed = _seed.get();
+
+    if (!seed) window.location.href = 'login';
+
+    const wallet = await initLearnCard({ seed });
+
+    (window as any).wallet = wallet;
+
+    _wallet.set(wallet);
+
+    await wallet.installChapiHandler();
+
+    const testStorage = async () => {
+        if (await wallet.storeCredentialViaChapiDidAuth(wallet.getTestVc())) {
+            window.location.reload();
+        }
+    };
+
+    const changeSeed = () => {
+        _seed.set('');
+        _wallet.set(null);
+        window.location.href = 'login';
+    };
+
+    const loadingWallet = document.getElementById('loading-wallet') as HTMLElement;
+    const storageButton = document.getElementById('test-storage') as HTMLButtonElement;
+    const seedDisplay = document.getElementById('seed-display') as HTMLElement;
+    const changeSeedButton = document.getElementById('change-seed') as HTMLButtonElement;
+
+    loadingWallet.remove();
+
+    storageButton.classList.remove('opacity-0');
+    storageButton.disabled = false;
+    storageButton.addEventListener('click', testStorage);
+
+    seedDisplay.innerHTML = `Your seed is: <span class="bg-white">${seed}</span>`;
+    changeSeedButton.classList.remove('opacity-0');
+    changeSeedButton.addEventListener('click', changeSeed);
+</script>

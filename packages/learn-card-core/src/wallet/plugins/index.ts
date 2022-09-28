@@ -5,3 +5,4 @@ export * from './idx';
 export * from './expiration';
 export * from './EthereumPlugin';
 export * from './vpqr';
+export * from './chapi';

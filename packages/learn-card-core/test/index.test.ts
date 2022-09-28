@@ -72,6 +72,11 @@ describe('LearnCard SDK', () => {
                 verifyCredential,
                 verifyPresentation,
                 resolveDid,
+                installChapiHandler,
+                activateChapiHandler,
+                receiveChapiEvent,
+                storePresentationViaChapi,
+                storeCredentialViaChapiDidAuth,
             } = emptyWallet;
 
             expect(methods).toEqual({
@@ -80,6 +85,11 @@ describe('LearnCard SDK', () => {
                 verifyCredential,
                 verifyPresentation,
                 resolveDid,
+                installChapiHandler,
+                activateChapiHandler,
+                receiveChapiEvent,
+                storePresentationViaChapi,
+                storeCredentialViaChapiDidAuth,
             });
         });
     });

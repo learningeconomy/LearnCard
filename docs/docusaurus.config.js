@@ -58,6 +58,17 @@ const config = {
                 watch: true,
             },
         ],
+        [
+            'docusaurus-plugin-typedoc',
+            {
+                id: 'helpers',
+                entryPoints: ['../packages/learn-card-helpers/src/index.ts'],
+                tsconfig: '../packages/learn-card-helpers/tsconfig.json',
+                out: 'helpers',
+                sidebar: { categoryLabel: '@learncard/helpers' },
+                watch: true,
+            },
+        ],
     ],
 
     presets: [

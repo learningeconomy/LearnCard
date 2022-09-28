@@ -1,19 +1,18 @@
-import { recycleDependents } from '@helpers/wallet.helpers';
-
 import { VC_TEMPLATES } from './templates';
 
 import { VCTemplatePluginDependentMethods, VCTemplatePluginMethods } from './types';
-import { Plugin, Wallet } from 'types/wallet';
+import { Plugin } from 'types/wallet';
 
 /**
  * @group Plugins
  */
-export const getVCTemplatesPlugin = (
-    wallet: Wallet<string, VCTemplatePluginDependentMethods>
-): Plugin<'VC Templates', VCTemplatePluginMethods> => {
+export const getVCTemplatesPlugin = (): Plugin<
+    'VC Templates',
+    VCTemplatePluginMethods,
+    VCTemplatePluginDependentMethods
+> => {
     return {
         pluginMethods: {
-            ...recycleDependents(wallet.pluginMethods),
             newCredential: (_wallet, args = { type: 'basic' }) => {
                 const did = args.did || _wallet.pluginMethods.getSubjectDid?.('key');
 

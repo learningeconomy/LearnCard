@@ -1,6 +1,7 @@
 import { generateWallet } from '@wallet/base';
 import { getDidKitPlugin } from '@wallet/plugins/didkit';
 import { ExpirationPlugin } from '@wallet/plugins/expiration';
+import { getCHAPIPlugin } from '@wallet/plugins/chapi';
 import { getVCTemplatesPlugin } from '@wallet/plugins/vc-templates';
 import { verifyCredential } from '@wallet/verify';
 
@@ -18,7 +19,9 @@ export const emptyWallet = async ({ didkit }: EmptyWallet['args'] = {}): Promise
 
     const expirationWallet = await didkitWallet.addPlugin(ExpirationPlugin(didkitWallet));
 
-    const wallet = await expirationWallet.addPlugin(getVCTemplatesPlugin(expirationWallet));
+    const templatesWallet = await expirationWallet.addPlugin(getVCTemplatesPlugin());
+
+    const wallet = await templatesWallet.addPlugin(await getCHAPIPlugin());
 
     return {
         _wallet: wallet,
@@ -30,5 +33,11 @@ export const emptyWallet = async ({ didkit }: EmptyWallet['args'] = {}): Promise
         verifyPresentation: wallet.pluginMethods.verifyPresentation,
 
         resolveDid: wallet.pluginMethods.resolveDid,
+
+        installChapiHandler: wallet.pluginMethods.installChapiHandler,
+        activateChapiHandler: wallet.pluginMethods.activateChapiHandler,
+        receiveChapiEvent: wallet.pluginMethods.receiveChapiEvent,
+        storePresentationViaChapi: wallet.pluginMethods.storePresentationViaChapi,
+        storeCredentialViaChapiDidAuth: wallet.pluginMethods.storeCredentialViaChapiDidAuth,
     };
 };

@@ -1,11 +1,14 @@
+import { MergeObjects } from './utilities';
+
 /** @group Universal Wallets */
 export type Plugin<
     Name extends string,
-    PublicMethods extends Record<string, (...args: any[]) => any> = Record<never, never>
+    PublicMethods extends Record<string, (...args: any[]) => any> = Record<never, never>,
+    DependentMethods extends Record<string, (...args: any[]) => any> = Record<never, never>
 > = {
     name?: Name;
     pluginMethods: {
-        [Key in keyof PublicMethods]: <T extends Wallet<any, PublicMethods>>(
+        [Key in keyof PublicMethods]: <T extends Wallet<any, PublicMethods & DependentMethods>>(
             wallet: T,
             ...args: Parameters<PublicMethods[Key]>
         ) => ReturnType<PublicMethods[Key]>;
@@ -36,7 +39,9 @@ export type Wallet<
     ) => Promise<
         Wallet<
             '' extends PluginNames ? Name : PluginNames | Name,
-            Record<never, never> extends PluginMethods ? Methods : PluginMethods & Methods
+            Record<never, never> extends PluginMethods
+                ? Methods
+                : MergeObjects<[PluginMethods, Methods]>
         >
     >;
 };

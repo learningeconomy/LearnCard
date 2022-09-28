@@ -19,11 +19,10 @@ export type VcTemplates = {
 export type NewCredentialFunction = (args?: DiscriminatedUnionize<VcTemplates>) => UnsignedVC;
 
 /** @group VC Templates Plugin */
-export type VCTemplatePluginDependentMethods = { getSubjectDid?: (type: 'key') => string } | {};
+export type VCTemplatePluginDependentMethods = { getSubjectDid?: (type: 'key') => string };
 
 /** @group VC Templates Plugin */
 export type VCTemplatePluginMethods = {
-    getSubjectDid?: (type: 'key') => string;
     newCredential: NewCredentialFunction;
     newPresentation: (credential: VC, args?: { did?: string }) => Promise<UnsignedVP>;
 };

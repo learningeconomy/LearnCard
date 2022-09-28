@@ -12,8 +12,13 @@ import {
 } from '@learncard/types';
 
 import { NewCredentialFunction } from '@wallet/plugins/vc-templates/types';
-import { DidMethod } from '@wallet/plugins/didkit/types';
+import { DidMethod, InputMetadata, ProofOptions } from '@wallet/plugins/didkit/types';
 import { Algorithm } from '@wallet/plugins/didkey/types';
+import {
+    HandlerResponse,
+    CredentialRequestEvent,
+    CredentialStoreEvent,
+} from '@wallet/plugins/chapi/types';
 
 /**
  * Wallet holder's did
@@ -54,7 +59,10 @@ export type NewPresentation = (credential: VC, args?: { did?: string }) => Promi
  *
  * @group LearnCard Methods
  */
-export type IssueCredential = (credential: UnsignedVC) => Promise<VC>;
+export type IssueCredential = (
+    credential: UnsignedVC,
+    signingOptions?: Partial<ProofOptions>
+) => Promise<VC>;
 
 /**
  * Verifies a signed Verifiable Credential
@@ -63,14 +71,20 @@ export type IssueCredential = (credential: UnsignedVC) => Promise<VC>;
  *
  * @group LearnCard Methods
  */
-export type VerifyCredential = (credential: VC) => Promise<VerificationItem[]>;
+export type VerifyCredential = (
+    credential: VC,
+    options?: Partial<ProofOptions>
+) => Promise<VerificationItem[]>;
 
 /**
  * Signs an unsigned Verifiable Presentation, returning the signed VP
  *
  * @group LearnCard Methods
  */
-export type IssuePresentation = (presentation: UnsignedVP) => Promise<VP>;
+export type IssuePresentation = (
+    presentation: UnsignedVP,
+    signingOptions?: Partial<ProofOptions>
+) => Promise<VP>;
 /**
  * Verifies a signed Verifiable Presentation
  *
@@ -78,7 +92,10 @@ export type IssuePresentation = (presentation: UnsignedVP) => Promise<VP>;
  *
  * @group LearnCard Methods
  */
-export type VerifyPresentation = (presentation: VP) => Promise<VerificationCheck>;
+export type VerifyPresentation = (
+    presentation: VP,
+    options?: Partial<ProofOptions>
+) => Promise<VerificationCheck>;
 
 /**
  * Returns the credential marked with `title` from IDX
@@ -139,7 +156,10 @@ export type RemoveCredential = (title: string) => Promise<void>;
  *
  * @group LearnCard Methods
  */
-export type ResolveDid = (did: string) => Promise<Record<string, any>>;
+export type ResolveDid = (
+    did: string,
+    inputMetadata?: InputMetadata
+) => Promise<Record<string, any>>;
 
 /**
  * Resolves a stream ID, returning its contents
@@ -244,6 +264,50 @@ export type VpFromQrCode = (text: string) => Promise<VP>;
 export type VpToQrCode = (vp: VP) => Promise<string>;
 
 /**
+ * Sets up CHAPI
+ *
+ * @group LearnCard Methods
+ */
+export type InstallChapiHandler = () => Promise<void>;
+
+/**
+ * Activates CHAPI
+ *
+ * @group LearnCard Methods
+ */
+export type ActivateChapiHandler = (args: {
+    mediatorOrigin?: string;
+    get?: (event: CredentialRequestEvent) => Promise<HandlerResponse>;
+    store?: (event: CredentialStoreEvent) => Promise<HandlerResponse>;
+}) => Promise<void>;
+
+/**
+ * Receives a CHAPI Event
+ *
+ * @group LearnCard Methods
+ */
+export type ReceiveChapiEvent = () => Promise<CredentialRequestEvent | CredentialStoreEvent>;
+
+/**
+ * Stores a VP via CHAPI
+ *
+ * @group LearnCard Methods
+ */
+export type StorePresentationViaChapi = (presentation: VP) => Promise<Credential | undefined>;
+
+/**
+ * Stores a Credential via CHAPI using DIDAuth
+ *
+ * @group LearnCard Methods
+ */
+export type StoreCredentialViaChapiDidAuth = (
+    credential: UnsignedVC
+) => Promise<
+    | { success: true }
+    | { success: false; reason: 'did not auth' | 'auth failed verification' | 'did not store' }
+>;
+
+/**
  * @group LearnCard Methods
  */
 export type AllLearnCardMethods = {
@@ -274,4 +338,9 @@ export type AllLearnCardMethods = {
     addInfuraProjectId: AddInfuraProjectId;
     vpFromQrCode: VpFromQrCode;
     vpToQrCode: VpToQrCode;
+    installChapiHandler: InstallChapiHandler;
+    activateChapiHandler: ActivateChapiHandler;
+    receiveChapiEvent: ReceiveChapiEvent;
+    storePresentationViaChapi: StorePresentationViaChapi;
+    storeCredentialViaChapiDidAuth: StoreCredentialViaChapiDidAuth;
 };
