@@ -18,7 +18,7 @@ export const emptyWallet = async ({ didkit }: EmptyWallet['args'] = {}): Promise
 
     const expirationWallet = await didkitWallet.addPlugin(ExpirationPlugin(didkitWallet));
 
-    const wallet = await expirationWallet.addPlugin(await getCHAPIPlugin(expirationWallet));
+    const wallet = await expirationWallet.addPlugin(await getCHAPIPlugin());
 
     return {
         _wallet: wallet,

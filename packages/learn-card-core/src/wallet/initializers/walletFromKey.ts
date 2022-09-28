@@ -45,7 +45,7 @@ export const walletFromKey = async (
 
     const vpqrWallet = await ethWallet.addPlugin(getVpqrPlugin(ethWallet));
 
-    const wallet = await vpqrWallet.addPlugin(await getCHAPIPlugin(vpqrWallet));
+    const wallet = await vpqrWallet.addPlugin(await getCHAPIPlugin());
 
     return {
         _wallet: wallet,

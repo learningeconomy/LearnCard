@@ -13,6 +13,9 @@ import { CHAPIPluginMethods } from '@wallet/plugins/chapi';
 import { InitFunction, GenericInitFunction } from 'types/helpers';
 import { Wallet } from 'types/wallet';
 import { AllLearnCardMethods } from 'types/methods';
+import { MergeObjects } from './utilities';
+
+export { MergeObjects } from './utilities';
 
 export * from 'types/methods';
 
@@ -21,12 +24,16 @@ export * from 'types/methods';
 /** @group Universal Wallets */
 export type LearnCardRawWallet = Wallet<
     'DIDKit' | 'DID Key' | 'VC' | 'IDX' | 'Expiration' | 'Ethereum' | 'Vpqr' | 'CHAPI',
-    DidKeyPluginMethods<DidMethod> &
-        VCPluginMethods &
-        IDXPluginMethods &
-        EthereumPluginMethods &
-        VpqrPluginMethods &
-        CHAPIPluginMethods
+    MergeObjects<
+        [
+            DidKeyPluginMethods<DidMethod>,
+            VCPluginMethods,
+            IDXPluginMethods,
+            EthereumPluginMethods,
+            VpqrPluginMethods,
+            CHAPIPluginMethods
+        ]
+    >
 >;
 
 /**
@@ -53,7 +60,7 @@ export type EmptyLearnCard = LearnCard<
     | 'storePresentationViaChapi',
     Wallet<
         'DIDKit' | 'Expiration' | 'CHAPI',
-        DidkitPluginMethods & VerifyExtension & CHAPIPluginMethods
+        MergeObjects<[DidkitPluginMethods, VerifyExtension, CHAPIPluginMethods]>
     >
 >;
 
