@@ -14,6 +14,7 @@ export const LearnCardCreditCardFrontFace: React.FC<LearnCardCreditCardFrontFace
     showActionButton = false,
     actionButtonText = 'Open Card',
     onClick = () => {},
+    children,
 }) => {
     let userImageEl: React.ReactNode | null = null;
 
@@ -93,6 +94,7 @@ export const LearnCardCreditCardFrontFace: React.FC<LearnCardCreditCardFrontFace
                     />
                 </div>
             </div>
+            {children}
         </div>
     );
 };
