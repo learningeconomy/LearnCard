@@ -1,5 +1,22 @@
 # learn-card-core
 
+## 6.2.0
+
+### Minor Changes
+
+-   [#85](https://github.com/learningeconomy/LearnCard/pull/85) [`02c7de0`](https://github.com/learningeconomy/LearnCard/commit/02c7de09f88ae78882d59c9f8ac898a7d5bac342) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add DependentMethods generic param to Plugin type
+
+*   [#85](https://github.com/learningeconomy/LearnCard/pull/85) [`02c7de0`](https://github.com/learningeconomy/LearnCard/commit/02c7de09f88ae78882d59c9f8ac898a7d5bac342) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Update logic for determing a Wallet's PluginMethods to fix plugins not overwriting methods correctly
+
+-   [#85](https://github.com/learningeconomy/LearnCard/pull/85) [`02c7de0`](https://github.com/learningeconomy/LearnCard/commit/02c7de09f88ae78882d59c9f8ac898a7d5bac342) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Create CHAPI Plugin
+
+### Patch Changes
+
+-   [#85](https://github.com/learningeconomy/LearnCard/pull/85) [`02c7de0`](https://github.com/learningeconomy/LearnCard/commit/02c7de09f88ae78882d59c9f8ac898a7d5bac342) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Create @learncard/helpers package
+
+-   Updated dependencies [[`02c7de0`](https://github.com/learningeconomy/LearnCard/commit/02c7de09f88ae78882d59c9f8ac898a7d5bac342)]:
+    -   @learncard/helpers@1.0.0
+
 ## 6.1.0
 
 ### Minor Changes
