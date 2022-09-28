@@ -34,8 +34,6 @@ const CredentialStorage: React.FC = () => {
 
     if (!event) return <h1>Loading...</h1>;
 
-    console.log({ event });
-
     const origin = event.credentialRequestOrigin;
     const presentation = event?.credentialRequestOptions?.web?.VerifiablePresentation;
 
