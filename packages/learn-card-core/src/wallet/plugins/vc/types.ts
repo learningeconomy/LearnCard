@@ -12,13 +12,13 @@ export type VCPluginDependentMethods = {
         options: ProofOptions,
         keypair: KeyPair
     ) => Promise<VC>;
-    verifyCredential: (credential: VC) => Promise<VerificationCheck>;
+    verifyCredential: (credential: VC, options?: ProofOptions) => Promise<VerificationCheck>;
     issuePresentation: (
         presentation: UnsignedVP,
         options: ProofOptions,
         keypair: KeyPair
     ) => Promise<VP>;
-    verifyPresentation: (presentation: VP) => Promise<VerificationCheck>;
+    verifyPresentation: (presentation: VP, options?: ProofOptions) => Promise<VerificationCheck>;
 };
 
 /** @group VC Plugin */
@@ -27,12 +27,18 @@ export type VCPluginMethods = {
         credential: UnsignedVC,
         signingOptions?: Partial<ProofOptions>
     ) => Promise<VC>;
-    verifyCredential: (credential: VC) => Promise<VerificationCheck>;
+    verifyCredential: (
+        credential: VC,
+        options?: Partial<ProofOptions>
+    ) => Promise<VerificationCheck>;
     issuePresentation: (
         credential: UnsignedVP,
         signingOptions?: Partial<ProofOptions>
     ) => Promise<VP>;
-    verifyPresentation: (presentation: VP) => Promise<VerificationCheck>;
+    verifyPresentation: (
+        presentation: VP,
+        options?: Partial<ProofOptions>
+    ) => Promise<VerificationCheck>;
     getTestVc: (subject?: string) => UnsignedVC;
     getTestVp: (credential?: VC) => Promise<UnsignedVP>;
 };

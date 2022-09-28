@@ -11,7 +11,7 @@ import {
     IDXCredential,
 } from '@learncard/types';
 
-import { DidMethod, ProofOptions } from '@wallet/plugins/didkit/types';
+import { DidMethod, InputMetadata, ProofOptions } from '@wallet/plugins/didkit/types';
 import { Algorithm } from '@wallet/plugins/didkey/types';
 import {
     HandlerResponse,
@@ -56,7 +56,10 @@ export type IssueCredential = (
  *
  * @group LearnCard Methods
  */
-export type VerifyCredential = (credential: VC) => Promise<VerificationItem[]>;
+export type VerifyCredential = (
+    credential: VC,
+    options?: Partial<ProofOptions>
+) => Promise<VerificationItem[]>;
 
 /**
  * Signs an unsigned Verifiable Presentation, returning the signed VP
@@ -74,7 +77,10 @@ export type IssuePresentation = (
  *
  * @group LearnCard Methods
  */
-export type VerifyPresentation = (presentation: VP) => Promise<VerificationCheck>;
+export type VerifyPresentation = (
+    presentation: VP,
+    options?: Partial<ProofOptions>
+) => Promise<VerificationCheck>;
 
 /**
  * Returns the credential marked with `title` from IDX
@@ -135,7 +141,10 @@ export type RemoveCredential = (title: string) => Promise<void>;
  *
  * @group LearnCard Methods
  */
-export type ResolveDid = (did: string) => Promise<Record<string, any>>;
+export type ResolveDid = (
+    did: string,
+    inputMetadata?: InputMetadata
+) => Promise<Record<string, any>>;
 
 /**
  * Resolves a stream ID, returning its contents
