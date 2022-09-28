@@ -14,7 +14,7 @@ custom_edit_url: null
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:168](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/obv3.ts#L168)
+[packages/learn-card-types/src/obv3.ts:168](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/obv3.ts#L168)
 
 ___
 
@@ -24,7 +24,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:247](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/obv3.ts#L247)
+[packages/learn-card-types/src/obv3.ts:247](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/obv3.ts#L247)
 
 ___
 
@@ -34,7 +34,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:10](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/vc.ts#L10)
+[packages/learn-card-types/src/vc.ts:10](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/vc.ts#L10)
 
 ___
 
@@ -44,7 +44,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:219](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/obv3.ts#L219)
+[packages/learn-card-types/src/obv3.ts:219](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/obv3.ts#L219)
 
 ___
 
@@ -54,7 +54,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:69](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/obv3.ts#L69)
+[packages/learn-card-types/src/obv3.ts:69](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/obv3.ts#L69)
 
 ___
 
@@ -64,7 +64,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:39](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/vc.ts#L39)
+[packages/learn-card-types/src/vc.ts:39](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/vc.ts#L39)
 
 ___
 
@@ -74,7 +74,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:32](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/obv3.ts#L32)
+[packages/learn-card-types/src/obv3.ts:32](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/obv3.ts#L32)
 
 ___
 
@@ -84,7 +84,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:21](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/obv3.ts#L21)
+[packages/learn-card-types/src/obv3.ts:21](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/obv3.ts#L21)
 
 ___
 
@@ -94,7 +94,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:4](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/vc.ts#L4)
+[packages/learn-card-types/src/vc.ts:4](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/vc.ts#L4)
 
 ___
 
@@ -104,7 +104,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/learncard.ts:30](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/learncard.ts#L30)
+[packages/learn-card-types/src/learncard.ts:30](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/learncard.ts#L30)
 
 ___
 
@@ -114,7 +114,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:108](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/vc.ts#L108)
+[packages/learn-card-types/src/vc.ts:108](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/vc.ts#L108)
 
 ___
 
@@ -124,7 +124,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:105](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/vc.ts#L105)
+[packages/learn-card-types/src/vc.ts:105](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/vc.ts#L105)
 
 ___
 
@@ -134,7 +134,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:102](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/vc.ts#L102)
+[packages/learn-card-types/src/vc.ts:102](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/vc.ts#L102)
 
 ___
 
@@ -144,7 +144,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:74](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/obv3.ts#L74)
+[packages/learn-card-types/src/obv3.ts:74](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/obv3.ts#L74)
 
 ___
 
@@ -154,7 +154,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:87](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/obv3.ts#L87)
+[packages/learn-card-types/src/obv3.ts:87](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/obv3.ts#L87)
 
 ___
 
@@ -164,7 +164,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:81](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/obv3.ts#L81)
+[packages/learn-card-types/src/obv3.ts:81](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/obv3.ts#L81)
 
 ___
 
@@ -174,7 +174,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:232](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/obv3.ts#L232)
+[packages/learn-card-types/src/obv3.ts:232](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/obv3.ts#L232)
 
 ___
 
@@ -184,7 +184,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:26](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/vc.ts#L26)
+[packages/learn-card-types/src/vc.ts:26](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/vc.ts#L26)
 
 ___
 
@@ -194,7 +194,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:70](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/vc.ts#L70)
+[packages/learn-card-types/src/vc.ts:70](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/vc.ts#L70)
 
 ___
 
@@ -204,7 +204,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:63](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/vc.ts#L63)
+[packages/learn-card-types/src/vc.ts:63](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/vc.ts#L63)
 
 ___
 
@@ -214,7 +214,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:177](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/obv3.ts#L177)
+[packages/learn-card-types/src/obv3.ts:177](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/obv3.ts#L177)
 
 ___
 
@@ -224,7 +224,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:19](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/vc.ts#L19)
+[packages/learn-card-types/src/vc.ts:19](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/vc.ts#L19)
 
 ___
 
@@ -234,7 +234,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:99](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/vc.ts#L99)
+[packages/learn-card-types/src/vc.ts:99](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/vc.ts#L99)
 
 ___
 
@@ -244,7 +244,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:143](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/vc.ts#L143)
+[packages/learn-card-types/src/vc.ts:143](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/vc.ts#L143)
 
 ___
 
@@ -254,7 +254,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:113](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/vc.ts#L113)
+[packages/learn-card-types/src/vc.ts:113](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/vc.ts#L113)
 
 ___
 
@@ -264,7 +264,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:94](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/obv3.ts#L94)
+[packages/learn-card-types/src/obv3.ts:94](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/obv3.ts#L94)
 
 ___
 
@@ -274,7 +274,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:199](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/obv3.ts#L199)
+[packages/learn-card-types/src/obv3.ts:199](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/obv3.ts#L199)
 
 ___
 
@@ -284,7 +284,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:142](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/obv3.ts#L142)
+[packages/learn-card-types/src/obv3.ts:142](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/obv3.ts#L142)
 
 ___
 
@@ -294,7 +294,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:187](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/obv3.ts#L187)
+[packages/learn-card-types/src/obv3.ts:187](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/obv3.ts#L187)
 
 ___
 
@@ -304,7 +304,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:112](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/obv3.ts#L112)
+[packages/learn-card-types/src/obv3.ts:112](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/obv3.ts#L112)
 
 ___
 
@@ -314,7 +314,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:125](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/obv3.ts#L125)
+[packages/learn-card-types/src/obv3.ts:125](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/obv3.ts#L125)
 
 ___
 
@@ -324,7 +324,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:242](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/obv3.ts#L242)
+[packages/learn-card-types/src/obv3.ts:242](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/obv3.ts#L242)
 
 ___
 
@@ -334,7 +334,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:129](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/vc.ts#L129)
+[packages/learn-card-types/src/vc.ts:129](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/vc.ts#L129)
 
 ___
 
@@ -344,7 +344,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:159](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/vc.ts#L159)
+[packages/learn-card-types/src/vc.ts:159](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/vc.ts#L159)
 
 ___
 
@@ -354,7 +354,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:148](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/vc.ts#L148)
+[packages/learn-card-types/src/vc.ts:148](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/vc.ts#L148)
 
 ___
 
@@ -364,7 +364,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:164](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/vc.ts#L164)
+[packages/learn-card-types/src/vc.ts:164](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/vc.ts#L164)
 
 ___
 
@@ -374,7 +374,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/learncard.ts:9](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/learncard.ts#L9)
+[packages/learn-card-types/src/learncard.ts:9](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/learncard.ts#L9)
 
 ___
 
@@ -384,7 +384,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/learncard.ts:21](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/learncard.ts#L21)
+[packages/learn-card-types/src/learncard.ts:21](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/learncard.ts#L21)
 
 ___
 
@@ -394,7 +394,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/learncard.ts:12](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/learncard.ts#L12)
+[packages/learn-card-types/src/learncard.ts:12](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/learncard.ts#L12)
 
 ## IDXPlugin
 
@@ -404,7 +404,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/idx.ts:17](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/idx.ts#L17)
+[packages/learn-card-types/src/idx.ts:17](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/idx.ts#L17)
 
 ___
 
@@ -414,7 +414,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/idx.ts:8](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/idx.ts#L8)
+[packages/learn-card-types/src/idx.ts:8](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/idx.ts#L8)
 
 ___
 
@@ -424,7 +424,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/idx.ts:11](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/idx.ts#L11)
+[packages/learn-card-types/src/idx.ts:11](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/idx.ts#L11)
 
 ___
 
@@ -434,7 +434,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/idx.ts:6](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/idx.ts#L6)
+[packages/learn-card-types/src/idx.ts:6](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/idx.ts#L6)
 
 ___
 
@@ -444,7 +444,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/idx.ts:4](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/idx.ts#L4)
+[packages/learn-card-types/src/idx.ts:4](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/idx.ts#L4)
 
 ## Variables
 
@@ -454,7 +454,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:244](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/obv3.ts#L244)
+[packages/learn-card-types/src/obv3.ts:244](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/obv3.ts#L244)
 
 ___
 
@@ -464,7 +464,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:6](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/vc.ts#L6)
+[packages/learn-card-types/src/vc.ts:6](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/vc.ts#L6)
 
 ___
 
@@ -474,7 +474,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:201](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/obv3.ts#L201)
+[packages/learn-card-types/src/obv3.ts:201](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/obv3.ts#L201)
 
 ___
 
@@ -484,7 +484,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:34](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/obv3.ts#L34)
+[packages/learn-card-types/src/obv3.ts:34](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/obv3.ts#L34)
 
 ___
 
@@ -494,7 +494,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:144](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/obv3.ts#L144)
+[packages/learn-card-types/src/obv3.ts:144](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/obv3.ts#L144)
 
 ___
 
@@ -504,7 +504,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:28](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/vc.ts#L28)
+[packages/learn-card-types/src/vc.ts:28](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/vc.ts#L28)
 
 ___
 
@@ -514,7 +514,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:10](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/obv3.ts#L10)
+[packages/learn-card-types/src/obv3.ts:10](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/obv3.ts#L10)
 
 ___
 
@@ -524,7 +524,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:23](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/obv3.ts#L23)
+[packages/learn-card-types/src/obv3.ts:23](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/obv3.ts#L23)
 
 ___
 
@@ -534,7 +534,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:3](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/vc.ts#L3)
+[packages/learn-card-types/src/vc.ts:3](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/vc.ts#L3)
 
 ___
 
@@ -544,7 +544,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/learncard.ts:23](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/learncard.ts#L23)
+[packages/learn-card-types/src/learncard.ts:23](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/learncard.ts#L23)
 
 ___
 
@@ -554,7 +554,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:107](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/vc.ts#L107)
+[packages/learn-card-types/src/vc.ts:107](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/vc.ts#L107)
 
 ___
 
@@ -564,7 +564,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:104](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/vc.ts#L104)
+[packages/learn-card-types/src/vc.ts:104](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/vc.ts#L104)
 
 ___
 
@@ -574,7 +574,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:101](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/vc.ts#L101)
+[packages/learn-card-types/src/vc.ts:101](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/vc.ts#L101)
 
 ___
 
@@ -584,7 +584,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:71](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/obv3.ts#L71)
+[packages/learn-card-types/src/obv3.ts:71](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/obv3.ts#L71)
 
 ___
 
@@ -594,7 +594,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:83](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/obv3.ts#L83)
+[packages/learn-card-types/src/obv3.ts:83](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/obv3.ts#L83)
 
 ___
 
@@ -604,7 +604,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:76](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/obv3.ts#L76)
+[packages/learn-card-types/src/obv3.ts:76](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/obv3.ts#L76)
 
 ___
 
@@ -614,7 +614,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:221](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/obv3.ts#L221)
+[packages/learn-card-types/src/obv3.ts:221](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/obv3.ts#L221)
 
 ___
 
@@ -624,7 +624,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:21](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/vc.ts#L21)
+[packages/learn-card-types/src/vc.ts:21](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/vc.ts#L21)
 
 ___
 
@@ -634,7 +634,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:65](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/vc.ts#L65)
+[packages/learn-card-types/src/vc.ts:65](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/vc.ts#L65)
 
 ___
 
@@ -644,7 +644,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:41](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/vc.ts#L41)
+[packages/learn-card-types/src/vc.ts:41](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/vc.ts#L41)
 
 ___
 
@@ -654,7 +654,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:170](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/obv3.ts#L170)
+[packages/learn-card-types/src/obv3.ts:170](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/obv3.ts#L170)
 
 ___
 
@@ -664,7 +664,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:12](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/vc.ts#L12)
+[packages/learn-card-types/src/vc.ts:12](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/vc.ts#L12)
 
 ___
 
@@ -674,7 +674,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:72](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/vc.ts#L72)
+[packages/learn-card-types/src/vc.ts:72](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/vc.ts#L72)
 
 ___
 
@@ -684,7 +684,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:131](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/vc.ts#L131)
+[packages/learn-card-types/src/vc.ts:131](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/vc.ts#L131)
 
 ___
 
@@ -694,7 +694,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:110](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/vc.ts#L110)
+[packages/learn-card-types/src/vc.ts:110](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/vc.ts#L110)
 
 ___
 
@@ -704,7 +704,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:89](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/obv3.ts#L89)
+[packages/learn-card-types/src/obv3.ts:89](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/obv3.ts#L89)
 
 ___
 
@@ -714,7 +714,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:127](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/obv3.ts#L127)
+[packages/learn-card-types/src/obv3.ts:127](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/obv3.ts#L127)
 
 ___
 
@@ -724,7 +724,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:179](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/obv3.ts#L179)
+[packages/learn-card-types/src/obv3.ts:179](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/obv3.ts#L179)
 
 ___
 
@@ -734,7 +734,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:96](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/obv3.ts#L96)
+[packages/learn-card-types/src/obv3.ts:96](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/obv3.ts#L96)
 
 ___
 
@@ -744,7 +744,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:189](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/obv3.ts#L189)
+[packages/learn-card-types/src/obv3.ts:189](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/obv3.ts#L189)
 
 ___
 
@@ -754,7 +754,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:114](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/obv3.ts#L114)
+[packages/learn-card-types/src/obv3.ts:114](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/obv3.ts#L114)
 
 ___
 
@@ -764,7 +764,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:234](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/obv3.ts#L234)
+[packages/learn-card-types/src/obv3.ts:234](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/obv3.ts#L234)
 
 ___
 
@@ -774,7 +774,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:115](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/vc.ts#L115)
+[packages/learn-card-types/src/vc.ts:115](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/vc.ts#L115)
 
 ___
 
@@ -784,7 +784,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:150](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/vc.ts#L150)
+[packages/learn-card-types/src/vc.ts:150](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/vc.ts#L150)
 
 ___
 
@@ -794,7 +794,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:145](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/vc.ts#L145)
+[packages/learn-card-types/src/vc.ts:145](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/vc.ts#L145)
 
 ___
 
@@ -804,7 +804,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:161](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/vc.ts#L161)
+[packages/learn-card-types/src/vc.ts:161](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/vc.ts#L161)
 
 ___
 
@@ -814,7 +814,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/learncard.ts:4](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/learncard.ts#L4)
+[packages/learn-card-types/src/learncard.ts:4](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/learncard.ts#L4)
 
 ___
 
@@ -824,7 +824,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/learncard.ts:15](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/learncard.ts#L15)
+[packages/learn-card-types/src/learncard.ts:15](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/learncard.ts#L15)
 
 ___
 
@@ -834,7 +834,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/learncard.ts:13](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/learncard.ts#L13)
+[packages/learn-card-types/src/learncard.ts:13](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/learncard.ts#L13)
 
 ___
 
@@ -844,4 +844,4 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/learncard.ts:11](https://github.com/learningeconomy/LearnCard/blob/4537706f/packages/learn-card-types/src/learncard.ts#L11)
+[packages/learn-card-types/src/learncard.ts:11](https://github.com/learningeconomy/LearnCard/blob/ccb17759/packages/learn-card-types/src/learncard.ts#L11)
