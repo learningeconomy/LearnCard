@@ -62,8 +62,10 @@ export const getDidKitPlugin = async (
                     )
                 ),
 
-            verifyCredential: async (_wallet, credential) =>
-                JSON.parse(await verifyCredential(JSON.stringify(credential), '{}')),
+            verifyCredential: async (_wallet, credential, options = {}) =>
+                JSON.parse(
+                    await verifyCredential(JSON.stringify(credential), JSON.stringify(options))
+                ),
 
             issuePresentation: async (_wallet, presentation, options, keypair) =>
                 JSON.parse(
@@ -74,12 +76,15 @@ export const getDidKitPlugin = async (
                     )
                 ),
 
-            verifyPresentation: async (_wallet, presentation) =>
-                JSON.parse(await verifyPresentation(JSON.stringify(presentation), '{}')),
+            verifyPresentation: async (_wallet, presentation, options = {}) =>
+                JSON.parse(
+                    await verifyPresentation(JSON.stringify(presentation), JSON.stringify(options))
+                ),
 
             contextLoader: async (_wallet, url) => JSON.parse(await contextLoader(url)),
 
-            resolveDid: async (_wallet, did) => JSON.parse(await resolveDID(did, '{}')),
+            resolveDid: async (_wallet, did, inputMetadata = {}) =>
+                JSON.parse(await resolveDID(did, JSON.stringify(inputMetadata))),
         },
     };
 };

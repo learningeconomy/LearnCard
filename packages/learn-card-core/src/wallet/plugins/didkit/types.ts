@@ -25,8 +25,21 @@ export type KeyPair = { kty: string; crv: string; x: string; y?: string; d: stri
 
 /** @group DIDKit Plugin */
 export type ProofOptions = {
-    verificationMethod: string;
-    proofPurpose: string;
+    type?: string;
+    verificationMethod?: string;
+    proofPurpose?: string;
+    created?: string;
+    challenge?: string;
+    domain?: string;
+    checks?: ('Proof' | 'JWS' | 'CredentialStatus')[];
+};
+
+/** @group DIDKit Plugin */
+export type InputMetadata = {
+    accept?: string;
+    versionId?: string;
+    versionTime?: string;
+    noCache?: boolean;
 };
 
 /** @group DIDKit Plugin */
@@ -40,13 +53,13 @@ export type DidkitPluginMethods = {
         options: ProofOptions,
         keypair: KeyPair
     ) => Promise<VC>;
-    verifyCredential: (credential: VC) => Promise<VerificationCheck>;
+    verifyCredential: (credential: VC, options?: ProofOptions) => Promise<VerificationCheck>;
     issuePresentation: (
         presentation: UnsignedVP,
         options: ProofOptions,
         keypair: KeyPair
     ) => Promise<VP>;
-    verifyPresentation: (presentation: VP) => Promise<VerificationCheck>;
+    verifyPresentation: (presentation: VP, options?: ProofOptions) => Promise<VerificationCheck>;
     contextLoader: (url: string) => Promise<Record<string, any>>;
-    resolveDid: (did: string) => Promise<Record<string, any>>;
+    resolveDid: (did: string, inputMetadata?: InputMetadata) => Promise<Record<string, any>>;
 };

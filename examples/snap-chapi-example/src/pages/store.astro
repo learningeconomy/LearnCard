@@ -1,0 +1,8 @@
+---
+import Layout from '../layouts/Layout.astro';
+import CredentialStorage from '../components/CredentialStorage';
+---
+
+<Layout title="wallet-worker">
+    <CredentialStorage client:only="react" />
+</Layout>

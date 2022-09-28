@@ -1,3 +1,5 @@
+import { Buffer } from 'buffer';
+
 import { Plugin, Wallet } from 'types/wallet';
 import { ethers } from 'ethers';
 

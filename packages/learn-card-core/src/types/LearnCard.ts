@@ -1,3 +1,5 @@
+import { InitInput } from '@didkit/index';
+
 import { DidMethod } from '@wallet/plugins/didkit/types';
 import { DidKeyPluginMethods } from '@wallet/plugins/didkey/types';
 import { EthereumPluginMethods } from '@wallet/plugins/EthereumPlugin/types';
@@ -6,12 +8,15 @@ import { VCPluginMethods, VerifyExtension } from '@wallet/plugins/vc/types';
 import { DidkitPluginMethods } from '@wallet/plugins/didkit/types';
 import { EthereumConfig } from '@wallet/plugins/EthereumPlugin/types';
 import { VpqrPluginMethods } from '@wallet/plugins/vpqr/types';
-import { InitInput } from '@didkit/index';
+import { CHAPIPluginMethods } from '@wallet/plugins/chapi';
+import { VCTemplatePluginMethods } from '@wallet/plugins/vc-templates';
 
 import { InitFunction, GenericInitFunction } from 'types/helpers';
 import { Wallet } from 'types/wallet';
 import { AllLearnCardMethods } from 'types/methods';
-import { VCTemplatePluginMethods } from '@wallet/plugins/vc-templates';
+import { MergeObjects } from './utilities';
+
+export { MergeObjects } from './utilities';
 
 export * from 'types/methods';
 
@@ -19,13 +24,26 @@ export * from 'types/methods';
 
 /** @group Universal Wallets */
 export type LearnCardRawWallet = Wallet<
-    'DIDKit' | 'DID Key' | 'VC' | 'VC Templates' | 'IDX' | 'Expiration' | 'Ethereum' | 'Vpqr',
-    DidKeyPluginMethods<DidMethod> &
-        VCPluginMethods &
-        VCTemplatePluginMethods &
-        IDXPluginMethods &
-        EthereumPluginMethods &
-        VpqrPluginMethods
+    | 'DIDKit'
+    | 'DID Key'
+    | 'VC'
+    | 'VC Templates'
+    | 'IDX'
+    | 'Expiration'
+    | 'Ethereum'
+    | 'Vpqr'
+    | 'CHAPI',
+    MergeObjects<
+        [
+            DidKeyPluginMethods<DidMethod>,
+            VCPluginMethods,
+            VCTemplatePluginMethods,
+            IDXPluginMethods,
+            EthereumPluginMethods,
+            VpqrPluginMethods,
+            CHAPIPluginMethods
+        ]
+    >
 >;
 
 /**
@@ -43,10 +61,21 @@ export type LearnCard<
  * @group LearnCard
  */
 export type EmptyLearnCard = LearnCard<
-    'newCredential' | 'newPresentation' | 'verifyCredential' | 'verifyPresentation' | 'resolveDid',
+    | 'newCredential'
+    | 'newPresentation'
+    | 'verifyCredential'
+    | 'verifyPresentation'
+    | 'resolveDid'
+    | 'installChapiHandler'
+    | 'activateChapiHandler'
+    | 'receiveChapiEvent'
+    | 'storePresentationViaChapi'
+    | 'storeCredentialViaChapiDidAuth',
     Wallet<
-        'DIDKit' | 'Expiration' | 'VC Templates',
-        DidkitPluginMethods & VerifyExtension & VCTemplatePluginMethods
+        'DIDKit' | 'Expiration' | 'VC Templates' | 'CHAPI',
+        MergeObjects<
+            [DidkitPluginMethods, VerifyExtension, VCTemplatePluginMethods, CHAPIPluginMethods]
+        >
     >
 >;
 

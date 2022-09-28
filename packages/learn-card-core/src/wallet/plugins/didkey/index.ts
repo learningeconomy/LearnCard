@@ -1,6 +1,7 @@
 import { toUint8Array } from 'hex-lite';
+import { isHex } from '@learncard/helpers';
 
-import { isHex, getAlgorithmForDidMethod } from './helpers';
+import { getAlgorithmForDidMethod } from './helpers';
 
 import { DependentMethods, DidKeyPluginMethods, Algorithm } from './types';
 import { Plugin, Wallet } from 'types/wallet';

@@ -1,0 +1,72 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Login">
+    <main class="w-full h-full flex flex-col justify-center items-center p-4">
+        <header class="flex gap-2">
+            <img
+                class="h-24"
+                src="https://user-images.githubusercontent.com/2185016/190510561-294db809-09fd-4771-9749-6c0e0f4144fd.png"
+                alt="LearnCard"
+            />
+
+            <h1>LearnCard CHAPI Example</h1>
+        </header>
+
+        <section
+            class="flex flex-col justify-center mb-8 rounded border bg-white p-4 max-w-[725px]"
+        >
+            <h3 class="bg-red-500 self-center text-white text-xl p-2 rounded mb-2">WARNING</h3>
+            <p>
+                In a real application, this seed should be considered extremely sensitive! If you
+                are using this demo app to build a real application, please take extreme caution to
+                keep this seed private and secure. In other words, do not display the seed to the
+                user at all, and do not user localStorage to store that key!!!
+            </p>
+        </section>
+
+        <form id="form" class="w-full flex flex-col justify-center items-center">
+            <output id="error-display"></output>
+            <label class="flex flex-col items-center w-full max-w-[725px]">
+                Please enter a seed to use for you wallet:
+                <input id="seed-input" class="w-full" type="text" />
+            </label>
+
+            <button type="submit" class="mt-2 bg-green-100 rounded py-2 px-4 border">Submit</button>
+        </form>
+    </main>
+</Layout>
+
+<script>
+    import { isHex } from '@learncard/helpers';
+
+    import { randomKey } from '../helpers/random.helpers';
+    import { _seed } from '../stores/walletStore';
+
+    const form = document.getElementById('form') as HTMLFormElement;
+    const seedInput = document.getElementById('seed-input') as HTMLInputElement;
+    const errorDisplay = document.getElementById('error-display') as HTMLElement;
+
+    const onSubmit = (event: SubmitEvent) => {
+        event.preventDefault();
+
+        const seed = seedInput.value;
+
+        if (seed.length === 0 || seed.length > 64) {
+            errorDisplay.innerText = 'Please enter a seed between 1 and 64 characters long';
+            return;
+        }
+
+        if (!isHex(seed)) {
+            errorDisplay.innerText = 'Please enter a valid hex string (i.e. only numbers and A-F)';
+            return;
+        }
+
+        _seed.set(seed);
+        window.location.href = '/';
+    };
+
+    form.onsubmit = onSubmit;
+    seedInput.value = randomKey();
+</script>
