@@ -25,8 +25,13 @@ export type KeyPair = { kty: string; crv: string; x: string; y?: string; d: stri
 
 /** @group DIDKit Plugin */
 export type ProofOptions = {
+    type?: string;
     verificationMethod: string;
     proofPurpose: string;
+    created?: string;
+    challenge?: string;
+    domain?: string;
+    checks?: ('Proof' | 'JWS' | 'CredentialStatus')[];
 };
 
 /** @group DIDKit Plugin */

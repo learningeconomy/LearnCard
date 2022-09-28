@@ -11,7 +11,7 @@ import {
     IDXCredential,
 } from '@learncard/types';
 
-import { DidMethod } from '@wallet/plugins/didkit/types';
+import { DidMethod, ProofOptions } from '@wallet/plugins/didkit/types';
 import { Algorithm } from '@wallet/plugins/didkey/types';
 import {
     HandlerResponse,
@@ -44,7 +44,10 @@ export type Keypair = (type?: Algorithm) => {
  *
  * @group LearnCard Methods
  */
-export type IssueCredential = (credential: UnsignedVC) => Promise<VC>;
+export type IssueCredential = (
+    credential: UnsignedVC,
+    signingOptions?: Partial<ProofOptions>
+) => Promise<VC>;
 
 /**
  * Verifies a signed Verifiable Credential
@@ -60,7 +63,10 @@ export type VerifyCredential = (credential: VC) => Promise<VerificationItem[]>;
  *
  * @group LearnCard Methods
  */
-export type IssuePresentation = (presentation: UnsignedVP) => Promise<VP>;
+export type IssuePresentation = (
+    presentation: UnsignedVP,
+    signingOptions?: Partial<ProofOptions>
+) => Promise<VP>;
 /**
  * Verifies a signed Verifiable Presentation
  *
