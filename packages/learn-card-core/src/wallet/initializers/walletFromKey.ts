@@ -93,5 +93,6 @@ export const walletFromKey = async (
         activateChapiHandler: wallet.pluginMethods.activateChapiHandler,
         receiveChapiEvent: wallet.pluginMethods.receiveChapiEvent,
         storePresentationViaChapi: wallet.pluginMethods.storePresentationViaChapi,
+        storeCredentialViaChapiDidAuth: wallet.pluginMethods.storeCredentialViaChapiDidAuth,
     };
 };

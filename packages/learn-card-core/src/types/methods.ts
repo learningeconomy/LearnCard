@@ -281,6 +281,18 @@ export type ReceiveChapiEvent = () => Promise<CredentialRequestEvent | Credentia
 export type StorePresentationViaChapi = (presentation: VP) => Promise<Credential | undefined>;
 
 /**
+ * Stores a Credential via CHAPI using DIDAuth
+ *
+ * @group LearnCard Methods
+ */
+export type StoreCredentialViaChapiDidAuth = (
+    credential: UnsignedVC
+) => Promise<
+    | { success: true }
+    | { success: false; reason: 'did not auth' | 'auth failed verification' | 'did not store' }
+>;
+
+/**
  * @group LearnCard Methods
  */
 export type AllLearnCardMethods = {
@@ -313,4 +325,5 @@ export type AllLearnCardMethods = {
     activateChapiHandler: ActivateChapiHandler;
     receiveChapiEvent: ReceiveChapiEvent;
     storePresentationViaChapi: StorePresentationViaChapi;
+    storeCredentialViaChapiDidAuth: StoreCredentialViaChapiDidAuth;
 };

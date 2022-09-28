@@ -49,16 +49,16 @@ import Credentials from '@components/Credentials';
 
     const wallet = await initLearnCard({ seed });
 
+    (window as any).wallet = wallet;
+
     _wallet.set(wallet);
 
     await wallet.installChapiHandler();
 
     const testStorage = async () => {
-        const vp = await wallet.issuePresentation(await wallet.getTestVp());
-
-        const success = await wallet.storePresentationViaChapi(vp);
-
-        if (success) window.location.reload();
+        if (await wallet.storeCredentialViaChapiDidAuth(wallet.getTestVc())) {
+            window.location.reload();
+        }
     };
 
     const changeSeed = () => {

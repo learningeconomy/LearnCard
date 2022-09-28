@@ -1,4 +1,5 @@
-import { VP } from '@learncard/types';
+import { UnsignedVC, VC, UnsignedVP, VP, VerificationCheck } from '@learncard/types';
+import { ProofOptions } from '../didkit/types';
 
 /** @group CHAPI Plugin */
 export type WebCredential = {
@@ -67,6 +68,23 @@ export type HandlerResponse =
     | { type: 'response'; dataType: string; data: any };
 
 /** @group CHAPI Plugin */
+export type CHAPIPluginDependentMethods = {
+    issueCredential: (
+        credential: UnsignedVC,
+        signingOptions?: Partial<ProofOptions>
+    ) => Promise<VC>;
+    issuePresentation: (
+        credential: UnsignedVP,
+        signingOptions?: Partial<ProofOptions>
+    ) => Promise<VP>;
+    verifyPresentation: (
+        presentation: VP,
+        options?: Partial<ProofOptions>
+    ) => Promise<VerificationCheck>;
+    getTestVp: (credential?: VC) => Promise<UnsignedVP>;
+};
+
+/** @group CHAPI Plugin */
 export type CHAPIPluginMethods = {
     installChapiHandler: () => Promise<void>;
     activateChapiHandler: (args: {
@@ -75,5 +93,11 @@ export type CHAPIPluginMethods = {
         store?: (event: CredentialStoreEvent) => Promise<HandlerResponse>;
     }) => Promise<void>;
     receiveChapiEvent: () => Promise<CredentialRequestEvent | CredentialStoreEvent>;
+    storeCredentialViaChapiDidAuth: (
+        credential: UnsignedVC
+    ) => Promise<
+        | { success: true }
+        | { success: false; reason: 'did not auth' | 'auth failed verification' | 'did not store' }
+    >;
     storePresentationViaChapi: (presentation: VP) => Promise<Credential | undefined>;
 };
