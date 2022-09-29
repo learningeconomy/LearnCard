@@ -73,6 +73,10 @@ export const JobListCard: React.FC<JobListCardProps> = ({
         qualificationDisplay?.skills?.totalRequiredCount ?? 0
     }`;
 
+    const qualifiedText = percentQualifiedDisplay
+        ? `${percentQualifiedDisplay} Qualified - Apply`
+        : 'Apply';
+
     return (
         <div
             className={`flex flex-col justify-between shadow-[0_0_8px_0px_rgba(0,0,0,0.2)] relative $ py-[10px] px-[15px] max-w-[400px] h-[260px] rounded-[20px] ${className}`}
@@ -125,10 +129,11 @@ export const JobListCard: React.FC<JobListCardProps> = ({
             </div>
 
             <button
+                type="button"
                 onClick={onClick}
                 className="mt-[10px] bg-cyan-700 py-[15px] px-[2px] rounded-[40px] text-grayscale-50 text-[17px] font-bold"
             >
-                {percentQualifiedDisplay} Qualified - Apply
+                {qualifiedText}
             </button>
         </div>
     );
