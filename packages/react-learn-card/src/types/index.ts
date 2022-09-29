@@ -114,6 +114,7 @@ export type JobListCardProps = {
     postDateDisplay?: string;
     imgThumb?: string;
     isBookmarked?: boolean;
+    className?: string;
     onBookmark?: () => void;
     onClick?: () => void;
 };
