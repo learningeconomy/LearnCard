@@ -42,5 +42,7 @@ JobListCardTest.args = {
     imgThumb: imgPlaceholder,
     isBookmarked: false,
     onBookmark: () => {},
-    onClick: () => {},
+    onClick: () => {
+        console.log('clicked');
+    },
 };
