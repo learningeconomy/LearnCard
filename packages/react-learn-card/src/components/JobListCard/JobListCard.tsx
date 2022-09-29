@@ -77,13 +77,18 @@ export const JobListCard: React.FC<JobListCardProps> = ({
         ? `${percentQualifiedDisplay}% Qualified - Apply`
         : 'Apply';
 
+    let topText = '';
+    if (!compensation && timeRequirement) topText = timeRequirement;
+    if (!timeRequirement && compensation) topText = compensation;
+    if (timeRequirement && compensation) topText = `${compensation} • ${timeRequirement}`;
+
     return (
         <div
             className={`flex flex-col justify-between shadow-[0_0_8px_0px_rgba(0,0,0,0.2)] relative $ py-[10px] px-[15px] max-w-[400px] h-[260px] rounded-[20px] ${className}`}
         >
             <div className="job-listing-top flex">
                 <div className="flex text-grayscale-500 text-xs uppercase w-full line-clamp-1">
-                    {compensation} • {timeRequirement}
+                    {topText}
                 </div>
             </div>
             <p className="text-grayscale-500 text-xs line-clamp-1 flex-shrink-0">
