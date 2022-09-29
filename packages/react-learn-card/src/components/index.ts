@@ -12,6 +12,7 @@ export * from "./Loading/index";
 export * from "./MiniVCThumbnail/index";
 export * from "./Notification/index";
 export * from "./QRCodeCard/index";
+export * from "./RoundedPill/index";
 export * from "./RoundedSquare/index";
 export * from "./SchoolIdCard/index";
 export * from "./SkillVerticalCard/index";
