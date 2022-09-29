@@ -1,12 +1,12 @@
 import React from 'react';
 import { JobListCardProps } from '../../types';
 
-import MiniTrophyIcon from '../../assets/images/minitrophy.svg';
-import MiniJobIcon from '../../assets/images/minijob.svg';
-import MiniPuzzleIcon from '../../assets/images/minipuzzle.svg';
+import MiniTrophyIcon from '../../assets/images/minitrophycolored.svg';
+import MiniGradIcon from '../../assets/images/minigradcapcolored.svg';
+import MiniPuzzleIcon from '../../assets/images/minipuzzlecolored.svg';
 
 const TYPE_TO_COURSE_MINI_ICON: any = {
-    ['job']: MiniJobIcon,
+    ['job']: MiniGradIcon,
     ['achievement']: MiniTrophyIcon,
     ['skill']: MiniPuzzleIcon,
 };
@@ -21,7 +21,7 @@ const TYPE_TO_TEXT_COLOR: any = {
     ['job']: 'text-emerald-700',
     ['achievement']: 'text-spice-500',
     ['skill']: 'text-indigo-600',
-}
+};
 
 type JobListingBubbleProps = {
     count: number | string;
@@ -63,24 +63,34 @@ export const JobListCard: React.FC<JobListCardProps> = ({
     onBookmark,
     onClick,
 }) => {
+    const courseCountDisplay = `${qualificationDisplay?.courses?.fulfilledCount ?? 0}/${
+        qualificationDisplay?.courses?.totalRequiredCount ?? 0
+    }`;
+    const achievementsCountDisplay = `${qualificationDisplay?.achievements?.fulfilledCount ?? 0}/${
+        qualificationDisplay?.achievements?.totalRequiredCount ?? 0
+    }`;
+    const skillsCountDisplay = `${qualificationDisplay?.skills?.fulfilledCount ?? 0}/${
+        qualificationDisplay?.skills?.totalRequiredCount ?? 0
+    }`;
+
     return (
         <div
             className={`flex flex-col justify-between shadow-[0_0_8px_0px_rgba(0,0,0,0.2)] relative $ py-[10px] px-[15px] max-w-[400px] h-[260px] rounded-[20px] ${className}`}
         >
             <div className="job-listing-top flex">
-                <div className="flex text-grayscale-500 text-xs uppercase w-full">
+                <div className="flex text-grayscale-500 text-xs uppercase w-full line-clamp-1">
                     {compensation} • {timeRequirement}
                 </div>
             </div>
-            <p className="text-grayscale-500 text-xs"> {postDateDisplay}</p>
+            <p className="text-grayscale-500 text-xs line-clamp-1"> {postDateDisplay}</p>
 
             <div className="job-listing-center flex">
                 <div className="job-listing-thumb"></div>
 
                 <div className="job-listing-description flex flex-col">
-                    <h4 className="text-lg font-bold">{title}</h4>
-                    <p className="text-sm">{company}</p>
-                    <span className="text-sm">
+                    <h4 className="text-lg font-bold line-clamp-2">{title}</h4>
+                    <p className="text-sm line-clamp-1">{company}</p>
+                    <span className="text-sm line-clamp-1">
                         {locationRequirement} • {location}
                     </span>
                 </div>
@@ -88,13 +98,28 @@ export const JobListCard: React.FC<JobListCardProps> = ({
 
             <div className="job-listing-qualifications">
                 <div className="course-card-counts-container flex items-center mt-[5px]">
-                    <JobListingBubble type={'job'} count={'4/5'} className={'mr-[5px]'} />
-                    <JobListingBubble type={'achievement'} count={'35/40'} className={'mr-[5px]'} />
-                    <JobListingBubble type={'skill'} count={'125/230'} className={'mr-[0px]'} />
+                    <JobListingBubble
+                        type={'job'}
+                        count={courseCountDisplay}
+                        className={'mr-[5px]'}
+                    />
+                    <JobListingBubble
+                        type={'achievement'}
+                        count={achievementsCountDisplay}
+                        className={'mr-[5px]'}
+                    />
+                    <JobListingBubble
+                        type={'skill'}
+                        count={skillsCountDisplay}
+                        className={'mr-[0px]'}
+                    />
                 </div>
             </div>
 
-            <button className="bg-cyan-700 py-[15px] px-[2px] rounded-[40px] text-grayscale-50 text-[17px] font-bold">
+            <button
+                onClick={onClick}
+                className="mt-[10px] bg-cyan-700 py-[15px] px-[2px] rounded-[40px] text-grayscale-50 text-[17px] font-bold"
+            >
                 {percentQualifiedDisplay} Qualified - Apply
             </button>
         </div>
