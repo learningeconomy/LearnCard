@@ -15,5 +15,5 @@ const Template: Story<RoundedPillProps> = args => <RoundedPill {...args} />;
 export const RoundedPillTest = Template.bind({});
 RoundedPillTest.args = {
     statusText: 'Earned',
-    type: 'Skill',
+    type: 'achievement',
 };

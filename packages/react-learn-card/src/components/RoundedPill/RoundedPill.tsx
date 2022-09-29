@@ -13,13 +13,21 @@ const TYPE_TO_COLOR_CLASS: any = {
     locked: 'bg-grayscale-100',
 };
 
+const TYPE_TO_ICON_BG_COLOR: any = {
+    skill: 'bg-indigo-500',
+    achievement: 'bg-spice-500',
+    course: 'bg-emerald-700',
+    locked: 'bg-grayscale-100',
+};
+
 export const RoundedPill: React.FC<RoundedPillProps> = ({
     statusText,
     type = 'skill',
     onClick,
 }) => {
     const backgroundColor = TYPE_TO_COLOR_CLASS[type];
-    const circleClass = `flex w-full justify-end icon-display absolute right-[15px] bottom-[10px] max-h-[40px] max-w-[40px]`;
+    const iconBgColor = TYPE_TO_ICON_BG_COLOR[type];
+    const circleClass = `flex w-full items-center justify-center icon-display h-[40px] w-[40px] rounded-full ${iconBgColor}  absolute flex-shrink-0 `;
 
     const handleClick = () => {
         onClick?.();
@@ -30,10 +38,18 @@ export const RoundedPill: React.FC<RoundedPillProps> = ({
     return (
         <button
             onClick={handleClick}
-            className={`flex relative ${backgroundColor} py-[15px] px-[15px] w-[170px] h-[170px] rounded-[40px] rounded-pill-el`}
+            className={`flex relative ${backgroundColor} items-center px-[5px] py-[2px]  w-[180px] h-[46px] rounded-[40px] rounded-pill-el`}
         >
-            <div>   <img className="h-full w-full object-cover" src={iconSrc ?? ''} alt="Icon image" /></div>
-            {statusText}
+            <div className={circleClass}>
+                <img
+                    className="h-full w-full object-cover max-h-[24px] max-w-[24px] flex-shrink-0 "
+                    src={iconSrc ?? ''}
+                    alt="Icon image"
+                />
+            </div>
+            <span className="font-semibold w-full flex items-center justify-center text-indigo-500 text-[14px]">
+                {statusText}
+            </span>
         </button>
     );
 };
