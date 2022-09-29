@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.3.33
+
+### Patch Changes
+
+-   [#95](https://github.com/learningeconomy/LearnCard/pull/95) [`426702f`](https://github.com/learningeconomy/LearnCard/commit/426702f50b8790a8eeb68908331a79c79043f4f5) Thanks [@goblincore](https://github.com/goblincore)! - Add Mini-Job display card
+
 ## 2.3.32
 
 ### Patch Changes
