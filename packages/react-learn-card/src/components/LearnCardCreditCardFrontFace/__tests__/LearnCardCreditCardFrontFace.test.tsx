@@ -15,6 +15,7 @@ describe('LearnCardCreditCardFrontFace', () => {
                 showActionButton
                 actionButtonText="Open Card"
                 onClick={handleOnClick}
+                children={<div>I am a child</div>}
             />
         );
 
