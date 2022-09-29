@@ -95,5 +95,6 @@ export type SkillVerticalCardProps = {
 
 export type RoundedPillProps = {
     statusText?: string;
-    type: string;
+    type?: string;
+    handleClick?: () => void;
 };
