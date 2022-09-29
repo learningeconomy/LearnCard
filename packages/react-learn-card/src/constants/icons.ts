@@ -6,7 +6,7 @@ import graduation from '../assets/images/graduation.svg';
 import lightbulb from '../assets/images/lightbulb.svg';
 
 import puzzlelight from '../assets/images/minipuzzle.svg';
-import trophylight from '../assets/images/trophy.svg';
+import trophylight from '../assets/images/minitrophy.svg';
 import gradcaplight from '../assets/images/gradcaplight.svg';
 
 import { Icons } from '../types';

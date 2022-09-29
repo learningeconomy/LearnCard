@@ -13,20 +13,27 @@ const TYPE_TO_COLOR_CLASS: any = {
     locked: 'bg-grayscale-100',
 };
 
-export const RoundedPill: React.FC<RoundedPillProps> = ({ statusText, type, onClick }) => {
+export const RoundedPill: React.FC<RoundedPillProps> = ({
+    statusText,
+    type = 'skill',
+    onClick,
+}) => {
     const backgroundColor = TYPE_TO_COLOR_CLASS[type];
     const circleClass = `flex w-full justify-end icon-display absolute right-[15px] bottom-[10px] max-h-[40px] max-w-[40px]`;
 
     const handleClick = () => {
         onClick?.();
-    }
+    };
+
+    const iconSrc = ICONS_TO_SOURCE[Icons.trophylight];
 
     return (
         <button
             onClick={handleClick}
             className={`flex relative ${backgroundColor} py-[15px] px-[15px] w-[170px] h-[170px] rounded-[40px] rounded-pill-el`}
         >
-            Earned
+            <div>   <img className="h-full w-full object-cover" src={iconSrc ?? ''} alt="Icon image" /></div>
+            {statusText}
         </button>
     );
 };
