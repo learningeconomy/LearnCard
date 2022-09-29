@@ -1,6 +1,6 @@
 import React from 'react';
 import { Story, Meta } from '@storybook/react';
-
+import imgPlaceholder from '../../assets/images/photoplaceholder.png';
 import JobListCard from './JobListCard';
 import { JobListCardProps } from '../../types';
 
@@ -39,7 +39,7 @@ JobListCardTest.args = {
     qualificationDisplay: dummyQualificationDisplay,
     percentQualifiedDisplay: '97%',
     postDateDisplay: '2 days ago',
-    imgThumb: '',
+    imgThumb: imgPlaceholder,
     isBookmarked: false,
     onBookmark: () => {},
     onClick: () => {},

@@ -41,7 +41,7 @@ export const JobListingBubble: React.FC<JobListingBubbleProps> = ({
         <div
             className={`course-card-stat-bubble px-[10px] rounded-[30px] flex ${bgColor} min-w-[48px] max-w-[100px] h-[30px] items-center ${className}`}
         >
-            <img src={imgSrc} className="pr-[5px]" />
+            <img src={imgSrc} />
             <span className={`flex items-center text-sm ${textColor} font-bold`}>{count}</span>
         </div>
     );
@@ -82,10 +82,18 @@ export const JobListCard: React.FC<JobListCardProps> = ({
                     {compensation} • {timeRequirement}
                 </div>
             </div>
-            <p className="text-grayscale-500 text-xs line-clamp-1"> {postDateDisplay}</p>
+            <p className="text-grayscale-500 text-xs line-clamp-1 flex-shrink-0">
+                {' '}
+                {postDateDisplay}
+            </p>
 
-            <div className="job-listing-center flex">
-                <div className="job-listing-thumb"></div>
+            <div className="job-listing-center flex mt-[5px]">
+                {imgThumb && (
+                    <img
+                        className="object-cover w-[78px] flex-shrink-0 items-center justify-center rounded-[15px] mr-[10px]"
+                        src={imgThumb}
+                    />
+                )}
 
                 <div className="job-listing-description flex flex-col">
                     <h4 className="text-lg font-bold line-clamp-2">{title}</h4>
@@ -96,8 +104,8 @@ export const JobListCard: React.FC<JobListCardProps> = ({
                 </div>
             </div>
 
-            <div className="job-listing-qualifications">
-                <div className="course-card-counts-container flex items-center mt-[5px]">
+            <div className="job-listing-qualifications mt-[10px]">
+                <div className="course-card-counts-container flex items-center">
                     <JobListingBubble
                         type={'job'}
                         count={courseCountDisplay}
