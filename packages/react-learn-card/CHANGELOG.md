@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.3.32
+
+### Patch Changes
+
+-   [#94](https://github.com/learningeconomy/LearnCard/pull/94) [`4e5cc2f`](https://github.com/learningeconomy/LearnCard/commit/4e5cc2fe935f99ca663bc9b7d75db2a86c0b7b23) Thanks [@smurflo2](https://github.com/smurflo2)! - Add children to credit card front face
+
 ## 2.3.31
 
 ### Patch Changes
