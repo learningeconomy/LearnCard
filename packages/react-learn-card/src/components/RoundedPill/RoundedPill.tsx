@@ -6,18 +6,18 @@ import { CountCircle } from '../CircleIcon';
 
 import { RoundedPillProps } from '../../types';
 
-const TYPE_TO_COLOR_CLASS: any = {
-    skill: 'bg-indigo-50',
-    achievement: 'bg-spice-50',
-    course: 'bg-emerald-50',
-    locked: 'bg-grayscale-100',
+const TYPE_TO_BG_COLOR_CLASS: any = {
+    skill: 'indigo-50',
+    achievement: 'spice-50',
+    course: 'emerald-50',
+    locked: 'grayscale-100',
 };
 
-const TYPE_TO_ICON_BG_COLOR: any = {
-    skill: 'bg-indigo-500',
-    achievement: 'bg-spice-500',
-    course: 'bg-emerald-700',
-    locked: 'bg-grayscale-100',
+const TYPE_TO_FOREGROUND_COLOR: any = {
+    skill: 'indigo-500',
+    achievement: 'spice-500',
+    course: 'emerald-700',
+    locked: 'grayscale-100',
 };
 
 export const RoundedPill: React.FC<RoundedPillProps> = ({
@@ -25,8 +25,8 @@ export const RoundedPill: React.FC<RoundedPillProps> = ({
     type = 'skill',
     onClick,
 }) => {
-    const backgroundColor = TYPE_TO_COLOR_CLASS[type];
-    const iconBgColor = TYPE_TO_ICON_BG_COLOR[type];
+    const backgroundColor = `bg-${TYPE_TO_BG_COLOR_CLASS[type]}`;
+    const iconBgColor = `bg-${TYPE_TO_FOREGROUND_COLOR[type]}`;
     const circleClass = `flex w-full items-center justify-center icon-display h-[40px] w-[40px] rounded-full ${iconBgColor}  absolute flex-shrink-0 `;
 
     const handleClick = () => {
@@ -34,6 +34,7 @@ export const RoundedPill: React.FC<RoundedPillProps> = ({
     };
 
     const iconSrc = ICONS_TO_SOURCE[Icons.trophylight];
+    const textColor = `text-${TYPE_TO_FOREGROUND_COLOR[type]}`;
 
     return (
         <button
@@ -47,7 +48,9 @@ export const RoundedPill: React.FC<RoundedPillProps> = ({
                     alt="Icon image"
                 />
             </div>
-            <span className="font-semibold w-full flex items-center justify-center text-indigo-500 text-[14px]">
+            <span
+                className={`font-semibold ${textColor} w-full flex items-center justify-center text-[14px]`}
+            >
                 {statusText}
             </span>
         </button>
