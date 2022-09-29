@@ -42,6 +42,8 @@ export type RoundedSquareProps = {
 export type SmallAchievementCardProps = {
     title?: string;
     thumbImgSrc?: string;
+    showStatus?: boolean;
+    showSkills?: boolean;
     date?: string;
     onClick?: () => void;
 };
