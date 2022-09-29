@@ -5,19 +5,19 @@ import MiniTrophyIcon from '../../assets/images/minitrophycolored.svg';
 import MiniGradIcon from '../../assets/images/minigradcapcolored.svg';
 import MiniPuzzleIcon from '../../assets/images/minipuzzlecolored.svg';
 
-const TYPE_TO_COURSE_MINI_ICON: any = {
+const TYPE_TO_COURSE_MINI_ICON = {
     ['job']: MiniGradIcon,
     ['achievement']: MiniTrophyIcon,
     ['skill']: MiniPuzzleIcon,
 };
 
-const TYPE_TO_COLOR: any = {
+const TYPE_TO_COLOR = {
     ['job']: 'bg-emerald-50',
     ['achievement']: 'bg-spice-50',
     ['skill']: 'bg-indigo-50',
 };
 
-const TYPE_TO_TEXT_COLOR: any = {
+const TYPE_TO_TEXT_COLOR = {
     ['job']: 'text-emerald-700',
     ['achievement']: 'text-spice-500',
     ['skill']: 'text-indigo-600',
@@ -25,7 +25,7 @@ const TYPE_TO_TEXT_COLOR: any = {
 
 type JobListingBubbleProps = {
     count: number | string;
-    type: string;
+    type: 'job' | 'achievement' | 'skill';
     className?: string;
 };
 
