@@ -74,7 +74,7 @@ export const JobListCard: React.FC<JobListCardProps> = ({
     }`;
 
     const qualifiedText = percentQualifiedDisplay
-        ? `${percentQualifiedDisplay} Qualified - Apply`
+        ? `${percentQualifiedDisplay}% Qualified - Apply`
         : 'Apply';
 
     return (
