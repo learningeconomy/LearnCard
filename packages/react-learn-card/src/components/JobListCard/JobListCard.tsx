@@ -6,21 +6,21 @@ import MiniGradIcon from '../../assets/images/minigradcapcolored.svg';
 import MiniPuzzleIcon from '../../assets/images/minipuzzlecolored.svg';
 
 const TYPE_TO_COURSE_MINI_ICON = {
-    ['job']: MiniGradIcon,
-    ['achievement']: MiniTrophyIcon,
-    ['skill']: MiniPuzzleIcon,
+    job: MiniGradIcon,
+    achievement: MiniTrophyIcon,
+    skill: MiniPuzzleIcon,
 };
 
 const TYPE_TO_COLOR = {
-    ['job']: 'bg-emerald-50',
-    ['achievement']: 'bg-spice-50',
-    ['skill']: 'bg-indigo-50',
+    job: 'bg-emerald-50',
+    achievement: 'bg-spice-50',
+    skill: 'bg-indigo-50',
 };
 
 const TYPE_TO_TEXT_COLOR = {
-    ['job']: 'text-emerald-700',
-    ['achievement']: 'text-spice-500',
-    ['skill']: 'text-indigo-600',
+    job: 'text-emerald-700',
+    achievement: 'text-spice-500',
+    skill: 'text-indigo-600',
 };
 
 type JobListingBubbleProps = {
