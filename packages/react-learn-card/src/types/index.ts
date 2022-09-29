@@ -102,7 +102,7 @@ export type JobQualificationDisplay = {
     courses?: JobQualificationsCount;
 };
 
-export type JobListCard = {
+export type JobListCardProps = {
     title?: string;
     company?: string;
     compensation?: string;
@@ -114,4 +114,6 @@ export type JobListCard = {
     postDateDisplay?: string;
     imgThumb?: string;
     isBookmarked?: boolean;
+    onBookmark?: () => void;
+    onClick?: () => void;
 };
