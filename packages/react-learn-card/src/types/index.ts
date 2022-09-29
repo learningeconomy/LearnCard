@@ -99,5 +99,6 @@ export type SkillVerticalCardProps = {
 export type RoundedPillProps = {
     statusText?: string;
     type?: string;
+    showCheckmark?: boolean;
     onClick?: () => void;
 };
