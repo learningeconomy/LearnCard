@@ -5,6 +5,48 @@ import MiniTrophyIcon from '../../assets/images/minitrophy.svg';
 import MiniJobIcon from '../../assets/images/minijob.svg';
 import MiniPuzzleIcon from '../../assets/images/minipuzzle.svg';
 
+const TYPE_TO_COURSE_MINI_ICON: any = {
+    ['job']: MiniJobIcon,
+    ['achievement']: MiniTrophyIcon,
+    ['skill']: MiniPuzzleIcon,
+};
+
+const TYPE_TO_COLOR: any = {
+    ['job']: 'bg-emerald-50',
+    ['achievement']: 'bg-spice-50',
+    ['skill']: 'bg-indigo-50',
+};
+
+const TYPE_TO_TEXT_COLOR: any = {
+    ['job']: 'text-emerald-700',
+    ['achievement']: 'text-spice-500',
+    ['skill']: 'text-indigo-600',
+}
+
+type JobListingBubbleProps = {
+    count: number | string;
+    type: string;
+    className?: string;
+};
+
+export const JobListingBubble: React.FC<JobListingBubbleProps> = ({
+    count = 0,
+    type = 'job',
+    className,
+}) => {
+    const imgSrc = TYPE_TO_COURSE_MINI_ICON[type];
+    const bgColor = TYPE_TO_COLOR[type];
+    const textColor = TYPE_TO_TEXT_COLOR[type];
+    return (
+        <div
+            className={`course-card-stat-bubble px-[10px] rounded-[30px] flex ${bgColor} min-w-[48px] max-w-[100px] h-[30px] items-center ${className}`}
+        >
+            <img src={imgSrc} className="pr-[5px]" />
+            <span className={`flex items-center text-sm ${textColor} font-bold`}>{count}</span>
+        </div>
+    );
+};
+
 export const JobListCard: React.FC<JobListCardProps> = ({
     company,
     className = 'job-listing-card',
@@ -44,7 +86,13 @@ export const JobListCard: React.FC<JobListCardProps> = ({
                 </div>
             </div>
 
-            <div className="job-listing-qualifications"></div>
+            <div className="job-listing-qualifications">
+                <div className="course-card-counts-container flex items-center mt-[5px]">
+                    <JobListingBubble type={'job'} count={'4/5'} className={'mr-[5px]'} />
+                    <JobListingBubble type={'achievement'} count={'35/40'} className={'mr-[5px]'} />
+                    <JobListingBubble type={'skill'} count={'125/230'} className={'mr-[0px]'} />
+                </div>
+            </div>
 
             <button className="bg-cyan-700 py-[15px] px-[2px] rounded-[40px] text-grayscale-50 text-[17px] font-bold">
                 {percentQualifiedDisplay} Qualified - Apply
