@@ -82,6 +82,11 @@ export const JobListCard: React.FC<JobListCardProps> = ({
     if (!timeRequirement && compensation) topText = compensation;
     if (timeRequirement && compensation) topText = `${compensation} • ${timeRequirement}`;
 
+    let locationText = '';
+    if (!location && locationRequirement) locationText = locationRequirement;
+    if (!locationRequirement && location) locationText = location;
+    if (locationRequirement && location) locationText = `${locationRequirement} • ${location}`;
+
     return (
         <div
             className={`flex flex-col justify-between shadow-[0_0_8px_0px_rgba(0,0,0,0.2)] relative $ py-[10px] px-[15px] max-w-[400px] h-[260px] rounded-[20px] ${className}`}
@@ -99,7 +104,7 @@ export const JobListCard: React.FC<JobListCardProps> = ({
             <div className="job-listing-center flex mt-[5px]">
                 {imgThumb && (
                     <img
-                        className="object-cover w-[78px] flex-shrink-0 items-center justify-center rounded-[15px] mr-[10px]"
+                        className="object-cover w-[80px] flex-shrink-0 items-center justify-center rounded-[15px] mr-[10px]"
                         src={imgThumb}
                     />
                 )}
@@ -107,29 +112,33 @@ export const JobListCard: React.FC<JobListCardProps> = ({
                 <div className="job-listing-description flex flex-col">
                     <h4 className="text-lg font-bold line-clamp-2">{title}</h4>
                     <p className="text-sm line-clamp-1">{company}</p>
-                    <span className="text-sm line-clamp-1">
-                        {locationRequirement} • {location}
-                    </span>
+                    <span className="text-sm line-clamp-1">{locationText}</span>
                 </div>
             </div>
 
             <div className="job-listing-qualifications mt-[10px]">
                 <div className="course-card-counts-container flex items-center">
-                    <JobListingBubble
-                        type={'job'}
-                        count={courseCountDisplay}
-                        className={'mr-[5px]'}
-                    />
-                    <JobListingBubble
-                        type={'achievement'}
-                        count={achievementsCountDisplay}
-                        className={'mr-[5px]'}
-                    />
-                    <JobListingBubble
-                        type={'skill'}
-                        count={skillsCountDisplay}
-                        className={'mr-[0px]'}
-                    />
+                    {qualificationDisplay?.courses?.fulfilledCount && (
+                        <JobListingBubble
+                            type={'job'}
+                            count={courseCountDisplay}
+                            className={'mr-[5px]'}
+                        />
+                    )}
+                    {qualificationDisplay?.achievements?.fulfilledCount && (
+                        <JobListingBubble
+                            type={'achievement'}
+                            count={achievementsCountDisplay}
+                            className={'mr-[5px]'}
+                        />
+                    )}
+                    {qualificationDisplay?.skills?.fulfilledCount && (
+                        <JobListingBubble
+                            type={'skill'}
+                            count={skillsCountDisplay}
+                            className={'mr-[0px]'}
+                        />
+                    )}
                 </div>
             </div>
 
