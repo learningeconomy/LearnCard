@@ -92,3 +92,8 @@ export type SkillVerticalCardProps = {
     onClick?: () => void;
     className?: string;
 };
+
+export type RoundedPillProps = {
+    statusText?: string;
+    type: string;
+};
