@@ -24,7 +24,7 @@ type CourseCardStatBubbleProps = {
     className?: string;
 };
 
-const CourseCardStatBubble: React.FC<CourseCardStatBubbleProps> = ({
+export const CourseCardStatBubble: React.FC<CourseCardStatBubbleProps> = ({
     count = 0,
     type = 'job',
     className,
