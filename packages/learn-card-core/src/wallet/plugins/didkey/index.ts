@@ -1,11 +1,11 @@
 import { toUint8Array } from 'hex-lite';
 import { isHex } from '@learncard/helpers';
+import { JWK } from '@learncard/types';
 
 import { getAlgorithmForDidMethod } from './helpers';
 
 import { DependentMethods, DidKeyPluginMethods, Algorithm } from './types';
 import { Plugin, Wallet } from 'types/wallet';
-import { KeyPair } from '../didkit/types';
 
 export * from './types';
 
@@ -37,7 +37,7 @@ export const getDidKeyPlugin = async <DidMethod extends string>(
     const seedBytes = toUint8Array(seed);
 
     const memoizedDids: Partial<Record<DidMethod, string>> = {};
-    const keyPairs: Record<Algorithm, KeyPair> = {
+    const keyPairs: Record<Algorithm, JWK> = {
         ed25519: wallet.pluginMethods.generateEd25519KeyFromBytes(seedBytes),
         secp256k1: wallet.pluginMethods.generateSecp256k1KeyFromBytes(seedBytes),
     };
