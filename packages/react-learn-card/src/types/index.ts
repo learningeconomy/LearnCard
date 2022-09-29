@@ -7,6 +7,9 @@ export enum Icons {
     briefcaseIcon,
     graduationIcon,
     lightbulbIcon,
+    gradcaplight,
+    trophylight,
+    puzzlelight,
 }
 
 export type CredentialInfo = {
@@ -96,5 +99,5 @@ export type SkillVerticalCardProps = {
 export type RoundedPillProps = {
     statusText?: string;
     type?: string;
-    handleClick?: () => void;
+    onClick?: () => void;
 };
