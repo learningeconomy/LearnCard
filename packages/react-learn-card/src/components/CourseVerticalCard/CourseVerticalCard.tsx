@@ -85,10 +85,10 @@ export const CourseVerticalCard: React.FC<CourseCardVerticalProps> = ({
             </section>
 
             <div className="course-card-detail-info flex flex-col justify-between">
-                <p className="course-card-title text-sm font-semibold line-clamp-2 mt-[4px]">
+                <p className="course-card-title text-sm text-center font-semibold line-clamp-2 mt-[4px]">
                     {title}
                 </p>
-                <div className="course-card-counts-container flex items-center my-[5px]">
+                <div className="course-card-counts-container flex items-center justify-center my-[5px]">
                     <CourseCardStatBubble
                         type={'achievement'}
                         count={achievementCount}
