@@ -28,4 +28,4 @@ E.g. 'abc123' is valid hex, 'zzz' is not
 
 #### Defined in
 
-[index.ts:6](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/learn-card-helpers/src/index.ts#L6)
+[index.ts:6](https://github.com/learningeconomy/LearnCard/blob/cea29cad/packages/learn-card-helpers/src/index.ts#L6)
