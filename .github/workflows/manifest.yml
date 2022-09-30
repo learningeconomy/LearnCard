@@ -57,4 +57,4 @@ jobs:
           git config --global user.email "beestontaylor@learningeconomy.io"
           git add .
           git status -v
-          [ -z "`git status --porcelain`" ] && git commit -m ":green_heart: Update snap.manifest.json" && git pull && git push
+          [ -z "`git status --porcelain`" ] && git commit -m ":green_heart: Update snap.manifest.json" && git pull && git push || echo "Nothing to see here!"
