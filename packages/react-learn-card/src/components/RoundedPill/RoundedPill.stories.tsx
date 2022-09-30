@@ -17,4 +17,5 @@ RoundedPillTest.args = {
     statusText: 'Earned',
     type: 'achievement',
     showCheckmark: true,
+    onClick: () => console.log('clicked!'),
 };
