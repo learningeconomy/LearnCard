@@ -1,15 +1,6 @@
 import React from 'react';
 import { JobListCardProps } from '../../types';
-
-import MiniTrophyIcon from '../../assets/images/minitrophycolored.svg';
-import MiniGradIcon from '../../assets/images/minigradcapcolored.svg';
-import MiniPuzzleIcon from '../../assets/images/minipuzzlecolored.svg';
-
-const TYPE_TO_COURSE_MINI_ICON = {
-    job: MiniGradIcon,
-    achievement: MiniTrophyIcon,
-    skill: MiniPuzzleIcon,
-};
+import { TYPE_TO_MINI_ICON } from '../RoundedSquare';
 
 const TYPE_TO_COLOR = {
     job: 'bg-emerald-50',
@@ -34,7 +25,7 @@ export const JobListingBubble: React.FC<JobListingBubbleProps> = ({
     type = 'job',
     className,
 }) => {
-    const imgSrc = TYPE_TO_COURSE_MINI_ICON[type];
+    const imgSrc = TYPE_TO_MINI_ICON[type];
     const bgColor = TYPE_TO_COLOR[type];
     const textColor = TYPE_TO_TEXT_COLOR[type];
     return (

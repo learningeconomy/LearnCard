@@ -19,6 +19,7 @@ AchievementCardTest.args = {
     showStatus: true,
     claimStatus: true,
     showSkills: true,
+    skillCount: 4,
     onClick: () => {
         console.log('//goodbye world');
     },
