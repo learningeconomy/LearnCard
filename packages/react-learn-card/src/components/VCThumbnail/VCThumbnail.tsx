@@ -10,12 +10,14 @@ export const VCThumbnail: React.FC<VCThumbnailProps> = ({
     createdAt,
     issuerImage,
     userImage,
+    userImageComponent,
     badgeImage,
     className = '',
     listView = false,
     onClick = () => {},
 }) => {
     let imageElement: React.ReactNode | null = null;
+    let userImageEl: React.ReactNode | null = null;
 
     if (issuerImage) {
         imageElement = (
@@ -25,6 +27,20 @@ export const VCThumbnail: React.FC<VCThumbnailProps> = ({
         imageElement = (
             <img className="h-full w-full object-cover" src={badgeImage} alt="badge image" />
         );
+    }
+
+    if (userImage) {
+        userImageEl = (
+            <div className="inline-block relative overflow-hidden rounded-full shadow-3xl h-0 bg-white w-1/4 pb-25pct">
+                <img
+                    className="w-full h-full absolute rounded-full object-cover border-solid border-4 border-white"
+                    src={userImage}
+                    alt="user image"
+                />
+            </div>
+        );
+    } else if (!userImage && userImageComponent) {
+        userImageEl = userImageComponent;
     }
 
     const titleClass =
@@ -130,13 +146,7 @@ export const VCThumbnail: React.FC<VCThumbnailProps> = ({
                             src={FatArrow ?? ''}
                             alt="fat arrow icon"
                         />
-                        <div className="inline-block relative overflow-hidden rounded-full shadow-3xl h-0 bg-white w-1/4 pb-25pct">
-                            <img
-                                className="w-full h-full absolute rounded-full object-cover border-solid border-4 border-white"
-                                src={userImage}
-                                alt="user image"
-                            />
-                        </div>
+                        {userImageEl}
                     </div>
                 </div>
 

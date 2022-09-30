@@ -11,6 +11,7 @@ const VCDisplayFrontFace: React.FC<VCDisplayCardProps> = ({
     createdAt,
     issuer,
     issuee,
+    subjectImageComponent,
     credentialSubject,
     className = '',
     loading,
@@ -20,6 +21,22 @@ const VCDisplayFrontFace: React.FC<VCDisplayCardProps> = ({
     const issueeName = getNameFromProfile(issuee ?? '');
     const issuerImage = getImageFromProfile(issuer ?? '');
     const issueeImage = getImageFromProfile(issuee ?? '');
+
+    let issueeImageEl: React.ReactNode | null = null;
+
+    if (issueeImage) {
+        issueeImageEl = (
+            <div className="flex flex-row items-center justify-center h-full w-full rounded-full border-solid border-4 border-white overflow-hidden bg-white">
+                <img
+                    className="h-full w-full object-cover"
+                    src={issueeImage || DefaultFace}
+                    alt="Issuee image"
+                />
+            </div>
+        );
+    } else if (!issueeImage && subjectImageComponent) {
+        issueeImageEl = subjectImageComponent;
+    }
 
     return (
         <div
@@ -58,13 +75,7 @@ const VCDisplayFrontFace: React.FC<VCDisplayCardProps> = ({
                     </div>
                     <img className="h-8 w-8 my-0 mx-4" src={FatArrow ?? ''} alt="fat arrow icon" />
                     <div className="flex items-center justify-center h-16 w-16 shadow-3xl rounded-full overflow-hidden bg-white">
-                        <div className="flex flex-row items-center justify-center h-full w-full rounded-full border-solid border-4 border-white overflow-hidden bg-white">
-                            <img
-                                className="h-full w-full object-cover"
-                                src={issueeImage || DefaultFace}
-                                alt="Issuee image"
-                            />
-                        </div>
+                        {issueeImageEl}
                     </div>
                 </section>
 
@@ -74,7 +85,8 @@ const VCDisplayFrontFace: React.FC<VCDisplayCardProps> = ({
                         data-testid="vc-thumbnail-createdAt"
                     >
                         Issued to <span className="font-bold text-gray-900">{issueeName}</span> on{' '}
-                        {createdAt ?? ''} by <span className="font-bold text-gray-900"> {issuerName}</span>
+                        {createdAt ?? ''} by{' '}
+                        <span className="font-bold text-gray-900"> {issuerName}</span>
                     </p>
                 </div>
 

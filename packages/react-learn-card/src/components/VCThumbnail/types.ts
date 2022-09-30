@@ -1,3 +1,5 @@
+import React from 'react';
+
 export type VCThumbnailProps = {
     /**
      * thumbnail title
@@ -19,6 +21,7 @@ export type VCThumbnailProps = {
      * @type {string}
      */
     userImage?: string;
+    userImageComponent?: React.ReactNode;
     /**
      * badge image
      * @type {string}
