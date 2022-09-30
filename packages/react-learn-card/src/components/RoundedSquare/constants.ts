@@ -11,7 +11,7 @@ import MiniPuzzleIcon from '../../assets/images/minipuzzlecolored.svg';
 import { LCSubtypes } from '../../types';
 
 export const TYPE_TO_MINI_ICON: any = {
-    [LCSubtypes.job]: MiniGradIcon,
+    [LCSubtypes.course]: MiniGradIcon,
     [LCSubtypes.achievement]: MiniTrophyIcon,
     [LCSubtypes.skill]: MiniPuzzleIcon,
 };

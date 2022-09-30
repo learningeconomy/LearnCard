@@ -12,8 +12,8 @@ export default {
 
 const Template: Story<LearnPillProps> = args => <LearnPill {...args} />;
 
-export const CourseVerticalCardTest = Template.bind({});
-CourseVerticalCardTest.args = {
+export const LearnPillTest = Template.bind({});
+LearnPillTest.args = {
     count: 0,
     type: LCSubtypes.skill,
     className: 'learn-pilled',
