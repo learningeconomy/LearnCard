@@ -1,7 +1,5 @@
 import React from 'react';
-import { Icons } from '../../types';
-import { ICONS_TO_SOURCE } from '../../constants/icons';
-
+import { TYPE_TO_ICON } from '../../constants/icons';
 import { RoundedPillProps } from '../../types';
 
 const TYPE_TO_BG_COLOR_CLASS: any = {
@@ -81,6 +79,8 @@ const LockedIcon: React.FC<InlineSVGProps> = ({ color = '#52597A', size = '20' }
     );
 };
 
+
+
 export const RoundedPill: React.FC<RoundedPillProps> = ({
     statusText,
     type = 'skill',
@@ -95,7 +95,8 @@ export const RoundedPill: React.FC<RoundedPillProps> = ({
         onClick?.();
     };
 
-    const iconSrc = ICONS_TO_SOURCE[Icons.trophylight];
+
+    const iconSrc = TYPE_TO_ICON[type];
     const textColor = `text-${TYPE_TO_FOREGROUND_COLOR[type]}`;
     const checkColor = TYPE_TO_CHECKMARK_COLOR[type];
     const locked = type === 'locked';

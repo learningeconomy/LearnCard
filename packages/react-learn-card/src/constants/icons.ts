@@ -33,3 +33,9 @@ export const ICONS_TO_SOURCE = {
     [Icons.trophylight]: trophylight,
     [Icons.gradcaplight]: gradcaplight,
 };
+
+export const TYPE_TO_ICON: any = {
+    course: puzzlelight,
+    achievement: trophylight,
+    skill: puzzlelight,
+};
