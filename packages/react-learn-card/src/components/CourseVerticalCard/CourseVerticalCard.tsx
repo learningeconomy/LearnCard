@@ -1,5 +1,8 @@
 import React from 'react';
-import { CourseCardProps, CourseCardVerticalProps } from '../../types';
+import { CourseCardVerticalProps } from '../../types';
+
+import { CircleCheckButton } from '../CircleCheckButton';
+
 import CourseCardPlaceholder from '../../assets/images/lhplaceholder.png';
 import { RoundedPill } from '../RoundedPill';
 import MiniTrophyIcon from '../../assets/images/minitrophy.svg';
@@ -53,12 +56,11 @@ export const CourseVerticalCard: React.FC<CourseCardVerticalProps> = ({
     achievementCount = 0,
     skillCount = 0,
     checked,
+    showChecked,
     onCheckClick,
     onClick,
 }) => {
     const claimBtnStatusType = claimStatus ? LCSubtypes.course : LCSubtypes.locked;
-    const skillIconSrc = TYPE_TO_MINI_ICON.skill;
-    const skillCountTxt = skillCount && skillCount > 1 ? 'Skills' : 'Skill';
 
     return (
         <div
@@ -73,10 +75,13 @@ export const CourseVerticalCard: React.FC<CourseCardVerticalProps> = ({
                     className="course-card-img h-full w-full object-cover rounded-[20px]"
                 />
 
-                <div className="absolute px-[10px] text-[14px] flex items-center justify-center text-indigo-600 skill-pill font-bold min-w-[100px] bottom-[10px] right-[9px] rounded-[20px] h-[30px] bg-indigo-50 ">
-                    <img src={skillIconSrc} className="flex items-center justify-center mr-[4px]" />
-                    +{skillCount} {skillCountTxt}
-                </div>
+                {showChecked && (
+                    <CircleCheckButton
+                        checked={checked}
+                        onClick={onCheckClick}
+                        className="absolute top-[5px] left-[5px]"
+                    />
+                )}
             </section>
 
             <div className="course-card-detail-info flex flex-col justify-between">
@@ -96,14 +101,16 @@ export const CourseVerticalCard: React.FC<CourseCardVerticalProps> = ({
                     />
                 </div>
             </div>
-            <div className="course-card-footer absolute bottom-[6px] left-[5px]">
-                <RoundedPill
-                    onClick={onClick}
-                    showCheckmark
-                    type={claimBtnStatusType}
-                    statusText={'Passed'}
-                />
-            </div>
+            {showStatus && (
+                <div className="course-card-footer absolute bottom-[6px] left-[5px]">
+                    <RoundedPill
+                        onClick={onClick}
+                        showCheckmark
+                        type={claimBtnStatusType}
+                        statusText={'Passed'}
+                    />
+                </div>
+            )}
         </div>
     );
 };
