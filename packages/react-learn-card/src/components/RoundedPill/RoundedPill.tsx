@@ -79,8 +79,6 @@ const LockedIcon: React.FC<InlineSVGProps> = ({ color = '#52597A', size = '20' }
     );
 };
 
-
-
 export const RoundedPill: React.FC<RoundedPillProps> = ({
     statusText,
     type = 'skill',
@@ -94,7 +92,6 @@ export const RoundedPill: React.FC<RoundedPillProps> = ({
     const handleClick = () => {
         onClick?.();
     };
-
 
     const iconSrc = TYPE_TO_ICON[type];
     const textColor = `text-${TYPE_TO_FOREGROUND_COLOR[type]}`;
