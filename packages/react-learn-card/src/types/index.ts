@@ -51,6 +51,16 @@ export type SmallAchievementCardProps = {
     onClick?: () => void;
 };
 
+export type AchievementCardProps = {
+    title?: string;
+    thumbImgSrc?: string;
+    showStatus?: boolean;
+    claimStatus?: boolean;
+    showSkills?: boolean;
+    date?: string;
+    onClick?: () => void;
+};
+
 export type CourseCardProps = {
     status?: string;
     title?: string;
@@ -96,9 +106,12 @@ export type SkillVerticalCardProps = {
     className?: string;
 };
 
+
+
 export type RoundedPillProps = {
     statusText?: string;
     type?: string;
+    status?: RoundedPillStatus;
     showCheckmark?: boolean;
     onClick?: () => void;
 };

@@ -124,7 +124,7 @@ export const RoundedPill: React.FC<RoundedPillProps> = ({
                         <Checkmark color={checkColor} />
                     </span>
                 )}
-                {!showCheckmark && locked && (
+                {locked && (
                     <span className="rounded-pill-checkmark mr-[5px]">
                         <LockedIcon />
                     </span>
