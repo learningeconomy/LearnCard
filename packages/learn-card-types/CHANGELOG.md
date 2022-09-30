@@ -1,5 +1,11 @@
 # learn-card-types
 
+## 3.0.2
+
+### Patch Changes
+
+-   [#107](https://github.com/learningeconomy/LearnCard/pull/107) [`d3e542d`](https://github.com/learningeconomy/LearnCard/commit/d3e542d412eb20644b2d14efa3d728cecdf53adc) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Expose KnownAchievementType
+
 ## 3.0.1
 
 ### Patch Changes
