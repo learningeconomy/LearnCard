@@ -1,5 +1,13 @@
 # @welibraryos/react-learn-card
 
+## 2.3.34
+
+### Patch Changes
+
+-   [#98](https://github.com/learningeconomy/LearnCard/pull/98) [`d85b8dc`](https://github.com/learningeconomy/LearnCard/commit/d85b8dce25482d7acff7b0629da53e51a09dcc9e) Thanks [@goblincore](https://github.com/goblincore)! - [WE-2345] Achievement display card update with status and skills
+
+*   [#98](https://github.com/learningeconomy/LearnCard/pull/98) [`d85b8dc`](https://github.com/learningeconomy/LearnCard/commit/d85b8dce25482d7acff7b0629da53e51a09dcc9e) Thanks [@goblincore](https://github.com/goblincore)! - Achievement display card update with status and skills
+
 ## 2.3.33
 
 ### Patch Changes
