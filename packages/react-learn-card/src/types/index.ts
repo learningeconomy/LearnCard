@@ -12,6 +12,13 @@ export enum Icons {
     puzzlelight,
 }
 
+export enum LCSubtypes {
+    job = 'job',
+    achievement = 'achievement',
+    skill = 'skill',
+    course = 'course',
+}
+
 export type CredentialInfo = {
     title?: string;
     createdAt?: string;
@@ -126,7 +133,7 @@ export type SkillVerticalCardProps = {
 
 export type RoundedPillProps = {
     statusText?: string;
-    type?: 'achievement' | 'skill' | 'course' | 'locked';
+    type?: LCSubtypes.course | LCSubtypes.achievement | LCSubtypes.skill | 'locked';
     onClick?: () => void;
     showCheckmark?: boolean;
 };
@@ -161,6 +168,6 @@ export type JobListCardProps = {
 
 export type LearnPillProps = {
     count: number | string;
-    type: 'job' | 'achievement' | 'skill';
+    type: LCSubtypes.course | LCSubtypes.achievement | LCSubtypes.skill;
     className?: string;
 };

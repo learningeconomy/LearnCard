@@ -1,20 +1,24 @@
 import React from 'react';
-import { LearnPillProps } from '../../types';
+import { LearnPillProps, LCSubtypes } from '../../types';
 import { TYPE_TO_MINI_ICON } from '../RoundedSquare';
 
-const TYPE_TO_COLOR = {
-    job: 'bg-emerald-50',
-    achievement: 'bg-spice-50',
-    skill: 'bg-indigo-50',
+const TYPE_TO_COLOR: any = {
+    [LCSubtypes.job]: 'bg-emerald-50',
+    [LCSubtypes.achievement]: 'bg-spice-50',
+    [LCSubtypes.skill]: 'bg-indigo-50',
 };
 
-const TYPE_TO_TEXT_COLOR = {
-    job: 'text-emerald-700',
-    achievement: 'text-spice-500',
-    skill: 'text-indigo-600',
+const TYPE_TO_TEXT_COLOR: any = {
+    [LCSubtypes.job]: 'text-emerald-700',
+    [LCSubtypes.achievement]: 'text-spice-500',
+    [LCSubtypes.skill]: 'text-indigo-600',
 };
 
-export const LearnPill: React.FC<LearnPillProps> = ({ count = 0, type = 'job', className }) => {
+export const LearnPill: React.FC<LearnPillProps> = ({
+    count = 0,
+    type = LCSubtypes.job,
+    className,
+}) => {
     const imgSrc = TYPE_TO_MINI_ICON[type];
     const bgColor = TYPE_TO_COLOR[type];
     const textColor = TYPE_TO_TEXT_COLOR[type];

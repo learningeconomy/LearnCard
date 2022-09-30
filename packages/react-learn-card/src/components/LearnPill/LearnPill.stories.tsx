@@ -14,7 +14,7 @@ const Template: Story<LearnPillProps> = args => <LearnPill {...args} />;
 
 export const CourseVerticalCardTest = Template.bind({});
 CourseVerticalCardTest.args = {
-    count = 0,
-    type = 'skill',
+    count: 0,
+    type: 'skill',
     className: 'learn-pilled',
 };
