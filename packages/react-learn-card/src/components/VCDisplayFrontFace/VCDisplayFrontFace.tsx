@@ -11,7 +11,7 @@ const VCDisplayFrontFace: React.FC<VCDisplayCardProps> = ({
     createdAt,
     issuer,
     issuee,
-    issueeImageComponent,
+    subjectImageComponent,
     credentialSubject,
     className = '',
     loading,
@@ -34,8 +34,8 @@ const VCDisplayFrontFace: React.FC<VCDisplayCardProps> = ({
                 />
             </div>
         );
-    } else if (!issueeImage && issueeImageComponent) {
-        issueeImageEl = issueeImageComponent;
+    } else if (!issueeImage && subjectImageComponent) {
+        issueeImageEl = subjectImageComponent;
     }
 
     return (

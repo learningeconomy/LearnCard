@@ -13,7 +13,7 @@ export type VCDisplayCardPropsReal = {
     className?: string;
     loading?: boolean;
     verification?: VerificationItem[];
-    issueeImageComponent?: React.ReactNode;
+    subjectImageComponent?: React.ReactNode;
 };
 
 const getInfoFromCredential = (credential: VC | AchievementCredential): CredentialInfo => {
@@ -36,7 +36,7 @@ export const VCDisplayCard: React.FC<VCDisplayCardPropsReal> = ({
     className = '',
     loading = false,
     verification = [],
-    issueeImageComponent,
+    subjectImageComponent,
 }) => {
     const {
         title,
@@ -54,7 +54,7 @@ export const VCDisplayCard: React.FC<VCDisplayCardPropsReal> = ({
                 credentialSubject={credentialSubject}
                 issuer={issuer}
                 issuee={issuee}
-                issueeImageComponent={issueeImageComponent}
+                subjectImageComponent={subjectImageComponent}
                 createdAt={createdAt}
                 className={className}
                 loading={loading}
