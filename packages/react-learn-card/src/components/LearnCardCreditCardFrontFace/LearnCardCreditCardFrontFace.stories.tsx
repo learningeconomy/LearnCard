@@ -24,4 +24,5 @@ LearnCardCreditCardFrontFaceTest.args = {
     actionButtonText: 'Open Card',
     onClick: () => {},
     className: '',
+    children: <></>,
 };

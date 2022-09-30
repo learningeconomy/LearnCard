@@ -57,6 +57,7 @@ export type AchievementCardProps = {
     showStatus?: boolean;
     claimStatus?: boolean;
     showSkills?: boolean;
+    skillCount?: number;
     date?: string;
     onClick?: () => void;
 };
@@ -106,12 +107,37 @@ export type SkillVerticalCardProps = {
     className?: string;
 };
 
-
-
 export type RoundedPillProps = {
     statusText?: string;
     type?: string;
-    status?: RoundedPillStatus;
+    onClick?: () => void;
     showCheckmark?: boolean;
+};
+
+export type JobQualificationsCount = {
+    fulfilledCount: number;
+    totalRequiredCount: number;
+};
+
+export type JobQualificationDisplay = {
+    skills?: JobQualificationsCount;
+    achievements?: JobQualificationsCount;
+    courses?: JobQualificationsCount;
+};
+
+export type JobListCardProps = {
+    title?: string;
+    company?: string;
+    compensation?: string;
+    location?: string;
+    locationRequirement?: string;
+    timeRequirement?: string;
+    qualificationDisplay?: JobQualificationDisplay;
+    percentQualifiedDisplay?: string;
+    postDateDisplay?: string;
+    imgThumb?: string;
+    isBookmarked?: boolean;
+    className?: string;
+    onBookmark?: () => void;
     onClick?: () => void;
 };

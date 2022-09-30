@@ -7,6 +7,7 @@ export * from "./Button/index";
 export * from "./CircleIcon/index";
 export * from "./CourseCard/index";
 export * from "./FlippyCard/index";
+export * from "./JobListCard/index";
 export * from "./LearnCardCreditCardBackFace/index";
 export * from "./LearnCardCreditCardFrontFace/index";
 export * from "./Loading/index";
