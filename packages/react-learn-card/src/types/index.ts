@@ -59,6 +59,8 @@ export type AchievementCardProps = {
     showSkills?: boolean;
     skillCount?: number;
     date?: string;
+    check?: boolean;
+    onCheckClick?: () => void;
     onClick?: () => void;
 };
 
@@ -70,7 +72,21 @@ export type CourseCardProps = {
     thumbSrc?: string;
     jobCount?: string | number;
     className?: string;
+    check?: boolean;
     achievementCount: string | number;
+    onClick?: () => void;
+};
+
+export type CourseCardVerticalProps = {
+    title?: string;
+    thumbImgSrc?: string;
+    showStatus?: boolean;
+    claimStatus?: boolean;
+    achievementCount?: number;
+    skillCount?: number;
+    date?: string;
+    checked?: boolean;
+    onCheckClick?: () => void;
     onClick?: () => void;
 };
 
