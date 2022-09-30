@@ -16,7 +16,7 @@ export const AchievementCard: React.FC<AchievementCardProps> = ({
 }) => {
     const thumbClass = thumbImgSrc ? 'bg-grayscale-50' : 'bg-indigo-200';
 
-    const claimBtnStatusType = claimStatus ? 'achievement' : 'locked';
+    const claimBtnStatusType = claimStatus ? LCSubtypes.achievement : LCSubtypes.locked;
     const skillIconSrc = TYPE_TO_MINI_ICON[LCSubtypes.skill];
     const skillCountTxt = skillCount && skillCount > 1 ? 'Skills' : 'Skill';
 

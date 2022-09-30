@@ -6,6 +6,7 @@ import MiniTrophyIcon from '../../assets/images/minitrophy.svg';
 import MiniJobIcon from '../../assets/images/minijob.svg';
 import MiniPuzzleIcon from '../../assets/images/minipuzzle.svg';
 import { TYPE_TO_MINI_ICON } from '../RoundedSquare';
+import { LCSubtypes } from '../../types';
 
 const TYPE_TO_COURSE_MINI_ICON: any = {
     ['job']: MiniJobIcon,
@@ -27,7 +28,7 @@ type CourseCardStatBubbleProps = {
 
 const CourseCardStatBubble: React.FC<CourseCardStatBubbleProps> = ({
     count = 0,
-    type = 'job',
+    type = LCSubtypes.job,
     className,
 }) => {
     const imgSrc = TYPE_TO_COURSE_MINI_ICON[type];
@@ -55,7 +56,7 @@ export const CourseVerticalCard: React.FC<CourseCardVerticalProps> = ({
     onCheckClick,
     onClick,
 }) => {
-    const claimBtnStatusType = claimStatus ? 'achievement' : 'locked';
+    const claimBtnStatusType = claimStatus ? LCSubtypes.course : LCSubtypes.locked;
     const skillIconSrc = TYPE_TO_MINI_ICON.skill;
     const skillCountTxt = skillCount && skillCount > 1 ? 'Skills' : 'Skill';
 
@@ -73,7 +74,7 @@ export const CourseVerticalCard: React.FC<CourseCardVerticalProps> = ({
                 />
 
                 <div className="absolute px-[10px] text-[14px] flex items-center justify-center text-indigo-600 skill-pill font-bold min-w-[100px] bottom-[10px] right-[9px] rounded-[20px] h-[30px] bg-indigo-50 ">
-                    <img src={skillIconSrc}  className="flex items-center justify-center mr-[4px]" />
+                    <img src={skillIconSrc} className="flex items-center justify-center mr-[4px]" />
                     +{skillCount} {skillCountTxt}
                 </div>
             </section>

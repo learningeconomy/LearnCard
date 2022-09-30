@@ -17,6 +17,7 @@ export enum LCSubtypes {
     achievement = 'achievement',
     skill = 'skill',
     course = 'course',
+    locked = 'locked',
 }
 
 export type CredentialInfo = {
