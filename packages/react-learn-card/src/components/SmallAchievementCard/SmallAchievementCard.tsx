@@ -1,11 +1,13 @@
 import React from 'react';
 import { SmallAchievementCardProps } from '../../types';
+import { RoundedPill } from '../RoundedPill';
 import { Trophy } from '../svgs';
 
 export const SmallAchievementCard: React.FC<SmallAchievementCardProps> = ({
     title = 'Title Lorem Ipsum',
     thumbImgSrc,
     date = 'Apr 20, 2022',
+    showStatus = false,
     onClick = () => {},
 }) => {
     const thumbClass = thumbImgSrc ? 'bg-grayscale-50' : 'bg-indigo-200';
@@ -37,8 +39,11 @@ export const SmallAchievementCard: React.FC<SmallAchievementCardProps> = ({
                     {title}
                 </p>
             </section>
-            <p className="achievement-card-date mt-[5px] text-grayscale-500 text-[12px] w-full text-center">{date}</p>
-            <section className="achievement-card-footer"></section>
+            <p className="achievement-card-date mt-[5px] text-grayscale-500 text-[12px] w-full text-center">
+                {date}
+            </p>
+            <section className="achievement-card-footer">
+            </section>
         </button>
     );
 };

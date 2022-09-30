@@ -7,6 +7,9 @@ export enum Icons {
     briefcaseIcon,
     graduationIcon,
     lightbulbIcon,
+    gradcaplight,
+    trophylight,
+    puzzlelight,
 }
 
 export type CredentialInfo = {
@@ -42,6 +45,19 @@ export type RoundedSquareProps = {
 export type SmallAchievementCardProps = {
     title?: string;
     thumbImgSrc?: string;
+    showStatus?: boolean;
+    showSkills?: boolean;
+    date?: string;
+    onClick?: () => void;
+};
+
+export type AchievementCardProps = {
+    title?: string;
+    thumbImgSrc?: string;
+    showStatus?: boolean;
+    claimStatus?: boolean;
+    showSkills?: boolean;
+    skillCount?: number;
     date?: string;
     onClick?: () => void;
 };
@@ -89,6 +105,13 @@ export type SkillVerticalCardProps = {
     thumbImg?: string;
     onClick?: () => void;
     className?: string;
+};
+
+export type RoundedPillProps = {
+    statusText?: string;
+    type?: 'achievement' | 'skill' | 'course' | 'locked';
+    onClick?: () => void;
+    showCheckmark?: boolean;
 };
 
 export type JobQualificationsCount = {
