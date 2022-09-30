@@ -1,10 +1,12 @@
 import { emptyWallet } from './initializers/emptyWallet';
 import { walletFromKey } from './initializers/walletFromKey';
+import { walletFromApiUrl } from './initializers/apiWallet';
 
-import { InitLearnCard, EmptyWallet, WalletFromKey } from 'types/LearnCard';
+import { InitLearnCard, EmptyWallet, WalletFromKey, WalletFromVcApi } from 'types/LearnCard';
 
 export * from './initializers/emptyWallet';
 export * from './initializers/walletFromKey';
+export * from './initializers/apiWallet';
 
 // Overloads (Unfortunately necessary boilerplate 😢)
 
@@ -22,6 +24,15 @@ export function initLearnCard(config?: EmptyWallet['args']): Promise<EmptyWallet
  */
 export function initLearnCard(config: WalletFromKey['args']): Promise<WalletFromKey['returnValue']>;
 
+/**
+ * Generates a wallet that can sign VCs/VPs from a VC API
+ *
+ * @group Init Functions
+ */
+export function initLearnCard(
+    config: WalletFromVcApi['args']
+): Promise<WalletFromVcApi['returnValue']>;
+
 // Implementation
 
 /**
@@ -32,6 +43,16 @@ export function initLearnCard(config: WalletFromKey['args']): Promise<WalletFrom
 export async function initLearnCard(
     config: InitLearnCard['args'] = {}
 ): InitLearnCard['returnValue'] {
+    if ('vcApi' in config) {
+        const { vcApi, did, ...apiConfig } = config;
+
+        return walletFromApiUrl(
+            typeof vcApi === 'string' ? vcApi : 'https://bridge.learncard.com',
+            vcApi === true ? 'did:key:z6MkjSz4mYqcn7dePGuktJ5PxecMkXQQHWRg8Lm6okATyFVh' : did,
+            apiConfig
+        );
+    }
+
     if ('seed' in config) {
         const { seed, ...keyConfig } = config;
 
