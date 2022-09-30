@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.3.35
+
+### Patch Changes
+
+-   [#101](https://github.com/learningeconomy/LearnCard/pull/101) [`08c1c30`](https://github.com/learningeconomy/LearnCard/commit/08c1c30e24a65853c0e04ae1c775d79cd55628e1) Thanks [@goblincore](https://github.com/goblincore)! - Add SkilTabCard, CircleCheckButton, Course Vertical Card, some light refactoring and updated types and props, main addition is checkmark related functionality to various card components
+
 ## 2.3.34
 
 ### Patch Changes
