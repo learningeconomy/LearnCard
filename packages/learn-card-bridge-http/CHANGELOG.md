@@ -1,5 +1,17 @@
 # @learncard/create-http-bridge
 
+## 1.1.0
+
+### Minor Changes
+
+-   [#100](https://github.com/learningeconomy/LearnCard/pull/100) [`f6734b2`](https://github.com/learningeconomy/LearnCard/commit/f6734b2dff7eade58dca5a03b8f46f058773c3b0) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add /did and /presentations/issue non-standard routes
+
+### Patch Changes
+
+-   Updated dependencies [[`f6734b2`](https://github.com/learningeconomy/LearnCard/commit/f6734b2dff7eade58dca5a03b8f46f058773c3b0), [`f6734b2`](https://github.com/learningeconomy/LearnCard/commit/f6734b2dff7eade58dca5a03b8f46f058773c3b0)]:
+    -   @learncard/types@3.0.1
+    -   @learncard/core@6.3.0
+
 ## 1.0.18
 
 ### Patch Changes
