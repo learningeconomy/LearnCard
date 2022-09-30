@@ -1,4 +1,5 @@
-[<img src="https://user-images.githubusercontent.com/2185016/176284693-4ca14052-d067-4ea5-b170-c6cd2594ee23.png" width="400"/>](image.png)
+[<img src="https://user-images.githubusercontent.com/2185016/190510561-294db809-09fd-4771-9749-6c0e0f4144fd.png" width="215"/>](https://learncard.com)
+
 # @learncard/types
 [![npm version](https://img.shields.io/npm/v/@learncard/types)](https://www.npmjs.com/package/@learncard/types)
 [![npm downloads](https://img.shields.io/npm/dw/@learncard/types)](https://www.npmjs.com/package/@learncard/types)
@@ -8,7 +9,7 @@ Shared types for learn card
 
 ## Documentation
 All LearnCard documentation can be found at:
-https://app.gitbook.com/o/6uDv1QDlxaaZC7i8EaGb/s/FXvEJ9j3Vf3FW5Nc557n/
+https://docs.learncard.com
 
 ## Install
 

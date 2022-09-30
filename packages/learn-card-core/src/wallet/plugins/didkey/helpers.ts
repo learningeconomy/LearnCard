@@ -17,8 +17,6 @@ export const SECP256K1_METHODS = [
     'pkh:bip122',
 ];
 
-export const isHex = (str: string) => /^[0-9a-f]+$/i.test(str);
-
 export const getAlgorithmForDidMethod = <DidMethod extends string>(
     didMethod: DidMethod
 ): Algorithm => {

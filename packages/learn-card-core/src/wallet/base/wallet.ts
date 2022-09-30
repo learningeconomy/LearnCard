@@ -62,6 +62,7 @@ const bindMethods = <
         Object.entries(pluginMethods).map(([key, method]) => [key, method.bind(wallet, wallet)])
     ) as PluginMethods;
 
+/** @group Universal Wallets */
 export const generateWallet = async <
     PluginNames extends string,
     PluginMethods extends Record<string, (...args: any[]) => any> = Record<never, never>

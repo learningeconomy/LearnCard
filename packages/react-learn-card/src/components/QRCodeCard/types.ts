@@ -10,6 +10,11 @@ export type QRCodeCardProps = {
      */
     qrCodeValue: string;
     /**
+     * text to display on the card
+     * @type {React.ReactNode | null}
+     */
+    text?: string;
+    /**
      * custom className
      * @type {string}
      */

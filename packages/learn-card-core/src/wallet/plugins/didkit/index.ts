@@ -8,11 +8,19 @@ import init, {
     verifyCredential,
     issuePresentation,
     verifyPresentation,
+    contextLoader,
+    resolveDID,
 } from '@didkit/index';
 
 import { DidkitPluginMethods, DidMethod } from './types';
 import { Plugin } from 'types/wallet';
 
+export * from './types';
+
+/**
+ *
+ * @group Plugins
+ */
 export const getDidKitPlugin = async (
     input?: InitInput | Promise<InitInput>
 ): Promise<Plugin<'DIDKit', DidkitPluginMethods>> => {
@@ -54,8 +62,10 @@ export const getDidKitPlugin = async (
                     )
                 ),
 
-            verifyCredential: async (_wallet, credential) =>
-                JSON.parse(await verifyCredential(JSON.stringify(credential), '{}')),
+            verifyCredential: async (_wallet, credential, options = {}) =>
+                JSON.parse(
+                    await verifyCredential(JSON.stringify(credential), JSON.stringify(options))
+                ),
 
             issuePresentation: async (_wallet, presentation, options, keypair) =>
                 JSON.parse(
@@ -66,8 +76,15 @@ export const getDidKitPlugin = async (
                     )
                 ),
 
-            verifyPresentation: async (_wallet, presentation) =>
-                JSON.parse(await verifyPresentation(JSON.stringify(presentation), '{}')),
+            verifyPresentation: async (_wallet, presentation, options = {}) =>
+                JSON.parse(
+                    await verifyPresentation(JSON.stringify(presentation), JSON.stringify(options))
+                ),
+
+            contextLoader: async (_wallet, url) => JSON.parse(await contextLoader(url)),
+
+            resolveDid: async (_wallet, did, inputMetadata = {}) =>
+                JSON.parse(await resolveDID(did, JSON.stringify(inputMetadata))),
         },
     };
 };

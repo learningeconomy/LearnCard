@@ -1,6 +1,6 @@
 {
   "name": "@learncard/core",
-  "version": "4.1.0",
+  "version": "6.3.1",
   "description": "",
   "main": "./dist/index.js",
   "module": "./dist/core.esm.js",
@@ -37,6 +37,8 @@
     "esbuild-jest": "^0.5.0",
     "esbuild-plugin-copy": "^1.3.0",
     "jest": "^28.1.3",
+    "jimp": "^0.16.1",
+    "qrcode-reader": "^1.0.4",
     "ts-jest": "^28.0.5",
     "tsc-alias": "^1.6.9",
     "typescript": "^4.6.4"
@@ -47,10 +49,13 @@
     "@ceramicnetwork/http-client": "2.3.0",
     "@ceramicnetwork/stream-tile": "^2.2.2",
     "@ceramicnetwork/streamid": "^2.1.0",
+    "@digitalbazaar/vpqr": "^3.0.0",
     "@glazed/did-datastore": "^0.3.2",
     "@glazed/tile-loader": "^0.2.1",
+    "@learncard/helpers": "workspace:*",
     "@uniswap/default-token-list": "^4.1.0",
     "abort-controller": "^3.0.0",
+    "credential-handler-polyfill": "^3.0.0",
     "cross-fetch": "^3.1.5",
     "date-fns": "^2.28.0",
     "dids": "^3.2.0",
@@ -59,7 +64,9 @@
     "isomorphic-fetch": "^3.0.0",
     "isomorphic-webcrypto": "^2.3.8",
     "key-did-provider-ed25519": "^2.0.0",
-    "key-did-resolver": "1.4.4"
+    "key-did-resolver": "1.4.4",
+    "web-credential-handler": "^2.0.0",
+    "zod": "^3.17.3"
   },
   "pnpm": {
     "overrides": {

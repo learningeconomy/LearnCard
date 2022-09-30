@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "composite": true,
+    "declaration": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "useUnknownInCatchVariables": false,
+    "sourceMap": true,
+    "strict": true,
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "typeRoots": ["./node_modules/@types"],
+    "types": ["astro/client"],
+    "jsx": "react",
+    "baseUrl": ".",
+    "paths": {
+        "@assets/*": ["./src/assets/*"],
+        "@layouts/*": ["./src/layouts/*"],
+        "@components/*": ["./src/components/*"],
+        "@helpers/*": ["./src/helpers/*"],
+        "@state/*": ["./src/state/*"],
+        "@constants/*": ["./src/constants/*"]
+    }
+  },
+  "include": ["src"]
+}

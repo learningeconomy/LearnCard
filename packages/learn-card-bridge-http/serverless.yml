@@ -29,6 +29,7 @@ functions:
     memorySize: 2048
     events:
       - httpApi: 'GET /'
+      - httpApi: 'GET /did'
       - httpApi: 'GET /credentials'
       - httpApi: 'GET /credentials/{id}'
       - httpApi: 'DELETE /credentials/{id}'
@@ -36,6 +37,7 @@ functions:
       - httpApi: 'POST /credentials/status'
       - httpApi: 'POST /credentials/verify'
       - httpApi: 'POST /credentials/derive'
+      - httpApi: 'POST /presentations/issue'
       - httpApi: 'POST /presentations/verify'
       - httpApi: 'POST /presentations/prove'
       - httpApi: 'GET /presentations'

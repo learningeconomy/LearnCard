@@ -2,8 +2,9 @@ import React from 'react';
 import { Story, Meta } from '@storybook/react';
 
 import RoundedSquare from './RoundedSquare';
-import {RoundedSquareProps, Icons } from '../../types';
+import { RoundedSquareProps, Icons } from '../../types';
 import { ICONS_TO_SOURCE } from '../../constants/icons';
+import { WALLET_SUBTYPES } from './constants';
 
 export default {
     title: 'RoundedSquare',
@@ -15,10 +16,12 @@ const Template: Story<RoundedSquareProps> = args => <RoundedSquare {...args} />;
 
 export const RoundedSquareTest = Template.bind({});
 RoundedSquareTest.args = {
-    title : 'Learning History',
-    description : 'Lorem ipsum sit dalor amet',
-    iconSrc : ICONS_TO_SOURCE[Icons.sheckelsIcon] as string,
-    count : '28',
-    onClick : () => { console.log('//goodbye world')},
-    bgColor : 'bg-cyan-200',
+    title: 'Achievements',
+    description: 'Lorem ipsum sit dalor amet',
+    iconSrc: ICONS_TO_SOURCE[Icons.trophyIcon] as string,
+    count: '28',
+    type: WALLET_SUBTYPES.ACHIEVEMENTS,
+    onClick: () => {
+        console.log('//goodbye world');
+    },
 };

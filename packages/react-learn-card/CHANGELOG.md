@@ -1,5 +1,133 @@
 # @welibraryos/react-learn-card
 
+## 2.3.37
+
+### Patch Changes
+
+-   Updated dependencies [[`e085abd`](https://github.com/learningeconomy/LearnCard/commit/e085abd72d3b4c085cdfc5c623864b40e35cf302)]:
+    -   @learncard/core@6.3.1
+
+## 2.3.36
+
+### Patch Changes
+
+-   Updated dependencies [[`f6734b2`](https://github.com/learningeconomy/LearnCard/commit/f6734b2dff7eade58dca5a03b8f46f058773c3b0)]:
+    -   @learncard/core@6.3.0
+
+## 2.3.35
+
+### Patch Changes
+
+-   [#101](https://github.com/learningeconomy/LearnCard/pull/101) [`08c1c30`](https://github.com/learningeconomy/LearnCard/commit/08c1c30e24a65853c0e04ae1c775d79cd55628e1) Thanks [@goblincore](https://github.com/goblincore)! - Add SkilTabCard, CircleCheckButton, Course Vertical Card, some light refactoring and updated types and props, main addition is checkmark related functionality to various card components
+
+## 2.3.34
+
+### Patch Changes
+
+-   [#98](https://github.com/learningeconomy/LearnCard/pull/98) [`d85b8dc`](https://github.com/learningeconomy/LearnCard/commit/d85b8dce25482d7acff7b0629da53e51a09dcc9e) Thanks [@goblincore](https://github.com/goblincore)! - [WE-2345] Achievement display card update with status and skills
+
+*   [#98](https://github.com/learningeconomy/LearnCard/pull/98) [`d85b8dc`](https://github.com/learningeconomy/LearnCard/commit/d85b8dce25482d7acff7b0629da53e51a09dcc9e) Thanks [@goblincore](https://github.com/goblincore)! - Achievement display card update with status and skills
+
+## 2.3.33
+
+### Patch Changes
+
+-   [#95](https://github.com/learningeconomy/LearnCard/pull/95) [`426702f`](https://github.com/learningeconomy/LearnCard/commit/426702f50b8790a8eeb68908331a79c79043f4f5) Thanks [@goblincore](https://github.com/goblincore)! - Add Mini-Job display card
+
+## 2.3.32
+
+### Patch Changes
+
+-   [#94](https://github.com/learningeconomy/LearnCard/pull/94) [`4e5cc2f`](https://github.com/learningeconomy/LearnCard/commit/4e5cc2fe935f99ca663bc9b7d75db2a86c0b7b23) Thanks [@smurflo2](https://github.com/smurflo2)! - Add children to credit card front face
+
+## 2.3.31
+
+### Patch Changes
+
+-   Updated dependencies [[`02c7de0`](https://github.com/learningeconomy/LearnCard/commit/02c7de09f88ae78882d59c9f8ac898a7d5bac342), [`02c7de0`](https://github.com/learningeconomy/LearnCard/commit/02c7de09f88ae78882d59c9f8ac898a7d5bac342), [`02c7de0`](https://github.com/learningeconomy/LearnCard/commit/02c7de09f88ae78882d59c9f8ac898a7d5bac342), [`02c7de0`](https://github.com/learningeconomy/LearnCard/commit/02c7de09f88ae78882d59c9f8ac898a7d5bac342)]:
+    -   @learncard/core@6.2.0
+
+## 2.3.30
+
+### Patch Changes
+
+-   Updated dependencies [[`c1befdc`](https://github.com/learningeconomy/LearnCard/commit/c1befdc8a30d3cc111d938c530493b1a5b87aa00)]:
+    -   @learncard/core@6.1.0
+
+## 2.3.29
+
+### Patch Changes
+
+-   [#82](https://github.com/learningeconomy/LearnCard/pull/82) [`7d6f1a4`](https://github.com/learningeconomy/LearnCard/commit/7d6f1a41656329f99c4acf560da3ec59d9e29104) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Update ReadMe
+
+-   Updated dependencies [[`7d6f1a4`](https://github.com/learningeconomy/LearnCard/commit/7d6f1a41656329f99c4acf560da3ec59d9e29104), [`7d6f1a4`](https://github.com/learningeconomy/LearnCard/commit/7d6f1a41656329f99c4acf560da3ec59d9e29104), [`7d6f1a4`](https://github.com/learningeconomy/LearnCard/commit/7d6f1a41656329f99c4acf560da3ec59d9e29104)]:
+    -   @learncard/core@6.0.0
+
+## 2.3.28
+
+### Patch Changes
+
+-   [#40](https://github.com/learningeconomy/LearnCard/pull/40) [`8a10504`](https://github.com/learningeconomy/LearnCard/commit/8a105049df0d1f4f8ede062ca72fecbf55896562) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Mark @learncard/core as external
+
+*   [#40](https://github.com/learningeconomy/LearnCard/pull/40) [`8a10504`](https://github.com/learningeconomy/LearnCard/commit/8a105049df0d1f4f8ede062ca72fecbf55896562) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix VCCard erroring from invalid key
+
+*   Updated dependencies [[`8a10504`](https://github.com/learningeconomy/LearnCard/commit/8a105049df0d1f4f8ede062ca72fecbf55896562), [`074989f`](https://github.com/learningeconomy/LearnCard/commit/074989f2eb4b7d8cb9b2d6a62451cdcf047d72d5), [`120744b`](https://github.com/learningeconomy/LearnCard/commit/120744bc4cf9d03254049fcf37707763b10ddeab), [`8a10504`](https://github.com/learningeconomy/LearnCard/commit/8a105049df0d1f4f8ede062ca72fecbf55896562), [`8a10504`](https://github.com/learningeconomy/LearnCard/commit/8a105049df0d1f4f8ede062ca72fecbf55896562)]:
+    -   @learncard/core@5.1.1
+
+## 2.3.27
+
+### Patch Changes
+
+-   [#78](https://github.com/WeLibraryOS/LearnCard/pull/78) [`3149715`](https://github.com/WeLibraryOS/LearnCard/commit/3149715875dd007c54ca0a67b7424b025efdc558) Thanks [@goblincore](https://github.com/goblincore)! - fix: [WE-2340] Fix VC display text not showing in dark mode
+
+## 2.3.26
+
+### Patch Changes
+
+-   [#76](https://github.com/WeLibraryOS/LearnCard/pull/76) [`f88e82a`](https://github.com/WeLibraryOS/LearnCard/commit/f88e82a87cd12f30105639c2339561a72aa20d7e) Thanks [@goblincore](https://github.com/goblincore)! - Fix type errors to fix build
+
+*   [#75](https://github.com/WeLibraryOS/LearnCard/pull/75) [`2808d37`](https://github.com/WeLibraryOS/LearnCard/commit/2808d37a4889d9fafd341b472e4c7dbb68eef40a) Thanks [@goblincore](https://github.com/goblincore)! - Add Course Card, Skill Card components
+
+## 2.3.25
+
+### Patch Changes
+
+-   [#74](https://github.com/WeLibraryOS/LearnCard/pull/74) [`b06f5de`](https://github.com/WeLibraryOS/LearnCard/commit/b06f5de90c8aa91aeddd9d1c92ba40044ad1461f) Thanks [@gerardopar](https://github.com/gerardopar)! - Id card
+
+-   Updated dependencies [[`9942f25`](https://github.com/WeLibraryOS/LearnCard/commit/9942f25ccc39797bc74ad63cf7d4878b2619b208), [`9942f25`](https://github.com/WeLibraryOS/LearnCard/commit/9942f25ccc39797bc74ad63cf7d4878b2619b208), [`9942f25`](https://github.com/WeLibraryOS/LearnCard/commit/9942f25ccc39797bc74ad63cf7d4878b2619b208)]:
+    -   @learncard/core@5.1.0
+
+## 2.3.24
+
+### Patch Changes
+
+-   [#71](https://github.com/WeLibraryOS/LearnCard/pull/71) [`1b7a85a`](https://github.com/WeLibraryOS/LearnCard/commit/1b7a85aa7e61da07ed20e9297cd865b7cdd657d5) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Better Image Handling in Build Pipeline
+
+## 2.3.23
+
+### Patch Changes
+
+-   [#69](https://github.com/WeLibraryOS/LearnCard/pull/69) [`a5ca571`](https://github.com/WeLibraryOS/LearnCard/commit/a5ca57166c62aea0ce40ceb2d84f8d12cad23e1e) Thanks [@goblincore](https://github.com/goblincore)! - fix build error from rollup-plugin-img and add additional img source prop to rounded card component
+
+## 2.3.22
+
+### Patch Changes
+
+-   [#67](https://github.com/WeLibraryOS/LearnCard/pull/67) [`db2e9be`](https://github.com/WeLibraryOS/LearnCard/commit/db2e9beee227698e95b8da71e37046b2d0c006a9) Thanks [@goblincore](https://github.com/goblincore)! - Update wallet components with new assets
+
+## 2.3.21
+
+### Patch Changes
+
+-   [#65](https://github.com/WeLibraryOS/LearnCard/pull/65) [`b413a7f`](https://github.com/WeLibraryOS/LearnCard/commit/b413a7f7147e344eb65c3ed9cd68ac08193e60b9) Thanks [@gerardopar](https://github.com/gerardopar)! - Credit card front face prop update
+
+## 2.3.20
+
+### Patch Changes
+
+-   Updated dependencies [[`5c5f28b`](https://github.com/WeLibraryOS/LearnCard/commit/5c5f28b1db1a9527e56946522ea94d444a7f1eed), [`fab5557`](https://github.com/WeLibraryOS/LearnCard/commit/fab55579a1e75b438425ea019a1ac63ecb5634fe)]:
+    -   @learncard/core@5.0.0
+
 ## 2.3.19
 
 ### Patch Changes
