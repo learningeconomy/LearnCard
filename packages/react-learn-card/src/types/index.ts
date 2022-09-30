@@ -12,6 +12,14 @@ export enum Icons {
     puzzlelight,
 }
 
+export enum LCSubtypes {
+    job = 'job',
+    achievement = 'achievement',
+    skill = 'skill',
+    course = 'course',
+    locked = 'locked',
+}
+
 export type CredentialInfo = {
     title?: string;
     createdAt?: string;
@@ -58,7 +66,9 @@ export type AchievementCardProps = {
     claimStatus?: boolean;
     showSkills?: boolean;
     skillCount?: number;
-    date?: string;
+    showChecked?: boolean;
+    checked?: boolean;
+    onCheckClick?: () => void;
     onClick?: () => void;
 };
 
@@ -70,7 +80,23 @@ export type CourseCardProps = {
     thumbSrc?: string;
     jobCount?: string | number;
     className?: string;
+    check?: boolean;
     achievementCount: string | number;
+    onClick?: () => void;
+};
+
+export type CourseCardVerticalProps = {
+    title?: string;
+    className?: string;
+    thumbImgSrc?: string;
+    showStatus?: boolean;
+    claimStatus?: boolean;
+    achievementCount?: number;
+    skillCount?: number;
+    date?: string;
+    checked?: boolean;
+    showChecked?: boolean;
+    onCheckClick?: () => void;
     onClick?: () => void;
 };
 
@@ -109,7 +135,7 @@ export type SkillVerticalCardProps = {
 
 export type RoundedPillProps = {
     statusText?: string;
-    type?: 'achievement' | 'skill' | 'course' | 'locked';
+    type?: LCSubtypes.course | LCSubtypes.achievement | LCSubtypes.skill | 'locked';
     onClick?: () => void;
     showCheckmark?: boolean;
 };
@@ -139,5 +165,28 @@ export type JobListCardProps = {
     isBookmarked?: boolean;
     className?: string;
     onBookmark?: () => void;
+    onClick?: () => void;
+};
+
+export type LearnPillProps = {
+    count: number | string;
+    type: LCSubtypes.course | LCSubtypes.achievement | LCSubtypes.skill;
+    className?: string;
+};
+
+export type CircleCheckButtonProps = {
+    onClick?: () => void;
+    className?: string;
+    bgColor?: string;
+    checked?: boolean;
+};
+
+export type SkillTabCardProps = {
+    title?: string;
+    description?: string;
+    checked?: boolean;
+    showChecked?: boolean;
+    className?: string;
+    onCheckClicked?: () => void;
     onClick?: () => void;
 };

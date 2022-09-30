@@ -1,28 +1,29 @@
 import React from 'react';
 import { JobListCardProps } from '../../types';
 import { TYPE_TO_MINI_ICON } from '../RoundedSquare';
+import { LCSubtypes } from '../../types';
 
-const TYPE_TO_COLOR = {
-    job: 'bg-emerald-50',
+const TYPE_TO_COLOR: any = {
+    course: 'bg-emerald-50',
     achievement: 'bg-spice-50',
     skill: 'bg-indigo-50',
 };
 
-const TYPE_TO_TEXT_COLOR = {
-    job: 'text-emerald-700',
+const TYPE_TO_TEXT_COLOR: any = {
+    course : 'text-emerald-700',
     achievement: 'text-spice-500',
     skill: 'text-indigo-600',
 };
 
 type JobListingBubbleProps = {
     count: number | string;
-    type: 'job' | 'achievement' | 'skill';
+    type: LCSubtypes.course | LCSubtypes.achievement | LCSubtypes.skill;
     className?: string;
 };
 
 export const JobListingBubble: React.FC<JobListingBubbleProps> = ({
     count = 0,
-    type = 'job',
+    type = LCSubtypes.skill,
     className,
 }) => {
     const imgSrc = TYPE_TO_MINI_ICON[type];
@@ -30,9 +31,9 @@ export const JobListingBubble: React.FC<JobListingBubbleProps> = ({
     const textColor = TYPE_TO_TEXT_COLOR[type];
     return (
         <div
-            className={`course-card-stat-bubble px-[10px] rounded-[30px] flex ${bgColor} min-w-[48px] max-w-[100px] h-[30px] items-center ${className}`}
+            className={`job-card-stat-bubble px-[10px] px-[5px] flex-nowrap rounded-[30px] flex ${bgColor} min-w-[48px] min-w-[90px] h-[30px] justify-center items-center ${className}`}
         >
-            <img src={imgSrc} />
+            <img src={imgSrc} className="mr-[3px]" />
             <span className={`flex items-center text-sm ${textColor} font-bold`}>{count}</span>
         </div>
     );
@@ -80,7 +81,7 @@ export const JobListCard: React.FC<JobListCardProps> = ({
 
     return (
         <div
-            className={`flex flex-col justify-between shadow-[0_0_8px_0px_rgba(0,0,0,0.2)] relative $ py-[10px] px-[15px] max-w-[400px] h-[260px] rounded-[20px] ${className}`}
+            className={`flex flex-col justify-between shadow-[0_0_8px_0px_rgba(0,0,0,0.2)] relative $ py-[10px] px-[15px] max-w-[400px] min-h-[260px] rounded-[20px] ${className}`}
         >
             <div className="job-listing-top flex">
                 <div className="flex text-grayscale-500 text-xs uppercase w-full line-clamp-1">
@@ -108,26 +109,26 @@ export const JobListCard: React.FC<JobListCardProps> = ({
             </div>
 
             <div className="job-listing-qualifications mt-[10px]">
-                <div className="course-card-counts-container flex items-center">
+                <div className="course-card-counts-container flex items-center flex-wrap">
                     {qualificationDisplay?.courses?.fulfilledCount && (
                         <JobListingBubble
-                            type={'job'}
+                            type={LCSubtypes.course}
                             count={courseCountDisplay}
-                            className={'mr-[5px]'}
+                            className={'mr-[5px] min-w-[100px]'}
                         />
                     )}
                     {qualificationDisplay?.achievements?.fulfilledCount && (
                         <JobListingBubble
-                            type={'achievement'}
+                            type={LCSubtypes.achievement}
                             count={achievementsCountDisplay}
-                            className={'mr-[5px]'}
+                            className={'mr-[5px] min-w-[100px]'}
                         />
                     )}
                     {qualificationDisplay?.skills?.fulfilledCount && (
                         <JobListingBubble
-                            type={'skill'}
+                            type={LCSubtypes.skill}
                             count={skillsCountDisplay}
-                            className={'mr-[0px]'}
+                            className={'mr-[0px min-w-[100px]]'}
                         />
                     )}
                 </div>
