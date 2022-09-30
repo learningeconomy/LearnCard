@@ -1,14 +1,11 @@
 import React from 'react';
 import { CourseCardVerticalProps } from '../../types';
-
 import { CircleCheckButton } from '../CircleCheckButton';
-
 import CourseCardPlaceholder from '../../assets/images/lhplaceholder.png';
 import { RoundedPill } from '../RoundedPill';
 import MiniTrophyIcon from '../../assets/images/minitrophy.svg';
 import MiniJobIcon from '../../assets/images/minijob.svg';
 import MiniPuzzleIcon from '../../assets/images/minipuzzle.svg';
-import { TYPE_TO_MINI_ICON } from '../RoundedSquare';
 import { LCSubtypes } from '../../types';
 
 const TYPE_TO_COURSE_MINI_ICON: any = {

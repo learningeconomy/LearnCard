@@ -66,8 +66,8 @@ export type AchievementCardProps = {
     claimStatus?: boolean;
     showSkills?: boolean;
     skillCount?: number;
-    date?: string;
-    check?: boolean;
+    showChecked?: boolean;
+    checked?: boolean;
     onCheckClick?: () => void;
     onClick?: () => void;
 };

@@ -1,6 +1,7 @@
 import React from 'react';
 import { AchievementCardProps } from '../../types';
 import { RoundedPill } from '../RoundedPill';
+import { CircleCheckButton } from '../CircleCheckButton';
 import { Trophy } from '../svgs';
 import { TYPE_TO_MINI_ICON } from '../RoundedSquare';
 import { LCSubtypes } from '../../types';
@@ -10,8 +11,11 @@ export const AchievementCard: React.FC<AchievementCardProps> = ({
     thumbImgSrc,
     claimStatus,
     showSkills = true,
+    showChecked,
+    checked,
     skillCount,
     showStatus = true,
+    onCheckClick,
     onClick = () => {},
 }) => {
     const thumbClass = thumbImgSrc ? 'bg-grayscale-50' : 'bg-indigo-200';
@@ -53,6 +57,14 @@ export const AchievementCard: React.FC<AchievementCardProps> = ({
                         />
                         +{skillCount} {skillCountTxt}
                     </div>
+                )}
+
+                {showChecked && (
+                    <CircleCheckButton
+                        checked={checked}
+                        onClick={onCheckClick}
+                        className="absolute top-[5px] left-[5px]"
+                    />
                 )}
             </section>
 
