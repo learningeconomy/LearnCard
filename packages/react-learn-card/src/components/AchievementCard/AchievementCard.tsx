@@ -32,7 +32,7 @@ export const AchievementCard: React.FC<AchievementCardProps> = ({
             >
                 {thumbImgSrc && (
                     <img
-                        className="h-full w-full object-contain rounded-[20px]"
+                        className="h-full w-full object-cover rounded-[20px]"
                         src={thumbImgSrc ?? ''}
                         alt="Credential Achievement Image"
                     />
