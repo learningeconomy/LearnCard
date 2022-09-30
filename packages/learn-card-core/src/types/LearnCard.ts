@@ -10,6 +10,7 @@ import { EthereumConfig } from '@wallet/plugins/EthereumPlugin/types';
 import { VpqrPluginMethods } from '@wallet/plugins/vpqr/types';
 import { CHAPIPluginMethods } from '@wallet/plugins/chapi';
 import { VCTemplatePluginMethods } from '@wallet/plugins/vc-templates';
+import { VCAPIPluginMethods } from '@wallet/plugins/vc-api/types';
 
 import { InitFunction, GenericInitFunction } from 'types/helpers';
 import { Wallet } from 'types/wallet';
@@ -79,6 +80,32 @@ export type EmptyLearnCard = LearnCard<
     >
 >;
 
+/**
+ * @group LearnCard
+ */
+export type VCAPILearnCard = LearnCard<
+    | 'did'
+    | 'newCredential'
+    | 'newPresentation'
+    | 'issueCredential'
+    | 'verifyCredential'
+    | 'issuePresentation'
+    | 'verifyPresentation'
+    | 'getTestVc'
+    | 'getTestVp'
+    | 'installChapiHandler'
+    | 'activateChapiHandler'
+    | 'receiveChapiEvent'
+    | 'storePresentationViaChapi'
+    | 'storeCredentialViaChapiDidAuth',
+    Wallet<
+        'VC API' | 'Expiration' | 'VC Templates' | 'CHAPI',
+        MergeObjects<
+            [VCAPIPluginMethods, VerifyExtension, VCTemplatePluginMethods, CHAPIPluginMethods]
+        >
+    >
+>;
+
 /** @group LearnCard */
 export type LearnCardConfig = {
     ceramicIdx: CeramicIDXArgs;
@@ -91,6 +118,12 @@ export type LearnCardConfig = {
 export type EmptyWallet = InitFunction<undefined, 'didkit', EmptyLearnCard>;
 /** @group Init Functions */
 export type WalletFromKey = InitFunction<{ seed: string }, keyof LearnCardConfig, LearnCard>;
+/** @group Init Functions */
+export type WalletFromVcApi = InitFunction<
+    { vcApi: true | string; did?: string },
+    'defaultContents',
+    VCAPILearnCard
+>;
 
 /** @group Init Functions */
-export type InitLearnCard = GenericInitFunction<[EmptyWallet, WalletFromKey]>;
+export type InitLearnCard = GenericInitFunction<[EmptyWallet, WalletFromKey, WalletFromVcApi]>;

@@ -1,22 +1,18 @@
-import { UnsignedVC, VC, UnsignedVP, VP, VerificationCheck } from '@learncard/types';
+import { JWK, UnsignedVC, VC, UnsignedVP, VP, VerificationCheck } from '@learncard/types';
 import { Wallet } from 'types/wallet';
-import { KeyPair, ProofOptions } from '../didkit/types';
+import { ProofOptions } from '../didkit/types';
 
 /** @group VC Plugin */
 export type VCPluginDependentMethods = {
     getSubjectDid: (type: 'key') => string;
-    getSubjectKeypair: () => KeyPair;
-    keyToVerificationMethod: (type: string, keypair: KeyPair) => Promise<string>;
-    issueCredential: (
-        credential: UnsignedVC,
-        options: ProofOptions,
-        keypair: KeyPair
-    ) => Promise<VC>;
+    getSubjectKeypair: () => JWK;
+    keyToVerificationMethod: (type: string, keypair: JWK) => Promise<string>;
+    issueCredential: (credential: UnsignedVC, options: ProofOptions, keypair: JWK) => Promise<VC>;
     verifyCredential: (credential: VC, options?: ProofOptions) => Promise<VerificationCheck>;
     issuePresentation: (
         presentation: UnsignedVP,
         options: ProofOptions,
-        keypair: KeyPair
+        keypair: JWK
     ) => Promise<VP>;
     verifyPresentation: (presentation: VP, options?: ProofOptions) => Promise<VerificationCheck>;
 };

@@ -1,4 +1,4 @@
-import { UnsignedVC, UnsignedVP, VC, VP, VerificationCheck } from '@learncard/types';
+import { JWK, UnsignedVC, UnsignedVP, VC, VP, VerificationCheck } from '@learncard/types';
 
 /** @group DIDKit Plugin */
 export type DidMethod =
@@ -21,9 +21,6 @@ export type DidMethod =
     | `pkh:bip122:${string}`;
 
 /** @group DIDKit Plugin */
-export type KeyPair = { kty: string; crv: string; x: string; y?: string; d: string };
-
-/** @group DIDKit Plugin */
 export type ProofOptions = {
     type?: string;
     verificationMethod?: string;
@@ -44,20 +41,16 @@ export type InputMetadata = {
 
 /** @group DIDKit Plugin */
 export type DidkitPluginMethods = {
-    generateEd25519KeyFromBytes: (bytes: Uint8Array) => KeyPair;
-    generateSecp256k1KeyFromBytes: (bytes: Uint8Array) => KeyPair;
-    keyToDid: (type: DidMethod, keypair: KeyPair) => string;
-    keyToVerificationMethod: (type: string, keypair: KeyPair) => Promise<string>;
-    issueCredential: (
-        credential: UnsignedVC,
-        options: ProofOptions,
-        keypair: KeyPair
-    ) => Promise<VC>;
+    generateEd25519KeyFromBytes: (bytes: Uint8Array) => JWK;
+    generateSecp256k1KeyFromBytes: (bytes: Uint8Array) => JWK;
+    keyToDid: (type: DidMethod, keypair: JWK) => string;
+    keyToVerificationMethod: (type: string, keypair: JWK) => Promise<string>;
+    issueCredential: (credential: UnsignedVC, options: ProofOptions, keypair: JWK) => Promise<VC>;
     verifyCredential: (credential: VC, options?: ProofOptions) => Promise<VerificationCheck>;
     issuePresentation: (
         presentation: UnsignedVP,
         options: ProofOptions,
-        keypair: KeyPair
+        keypair: JWK
     ) => Promise<VP>;
     verifyPresentation: (presentation: VP, options?: ProofOptions) => Promise<VerificationCheck>;
     contextLoader: (url: string) => Promise<Record<string, any>>;
