@@ -8,7 +8,7 @@ import {
 
 import { VCAPIPluginMethods } from './types';
 import { Plugin } from 'types/wallet';
-import { post } from './helpers';
+import { isSuccessful, post } from './helpers';
 
 /**
  * @group Plugins
@@ -39,7 +39,7 @@ export const getVCAPIPlugin = async ({
 
                 const response = await post(`${url}/credentials/issue`, { credential, options });
 
-                if (response.status !== 200) {
+                if (!isSuccessful(response.status)) {
                     throw new Error(`API Error: ${response.status} ${response.statusText}`);
                 }
 
@@ -53,7 +53,7 @@ export const getVCAPIPlugin = async ({
                     options,
                 });
 
-                if (response.status !== 200) {
+                if (!isSuccessful(response.status)) {
                     throw new Error(`API Error: ${response.status} ${response.statusText}`);
                 }
 
@@ -67,7 +67,7 @@ export const getVCAPIPlugin = async ({
                     options,
                 });
 
-                if (response.status !== 200) {
+                if (!isSuccessful(response.status)) {
                     throw new Error(`API Error: ${response.status} ${response.statusText}`);
                 }
 
@@ -81,7 +81,7 @@ export const getVCAPIPlugin = async ({
                     options,
                 });
 
-                if (response.status !== 200) {
+                if (!isSuccessful(response.status)) {
                     throw new Error(`API Error: ${response.status} ${response.statusText}`);
                 }
 
