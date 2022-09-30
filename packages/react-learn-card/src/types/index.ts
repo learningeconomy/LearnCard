@@ -33,6 +33,7 @@ export type VCDisplayCardProps = {
     createdAt?: string;
     issuer?: Profile;
     issuee?: Profile;
+    issueeImageComponent?: React.ReactNode;
     userImage?: string;
     className?: string;
     credentialSubject?: CredentialSubject;
