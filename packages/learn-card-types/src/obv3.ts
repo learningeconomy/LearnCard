@@ -31,41 +31,42 @@ export const AlignmentValidator = z.object({
 });
 export type Alignment = z.infer<typeof AlignmentValidator>;
 
-export const AchievementTypeValidator = z
-    .enum([
-        'Achievement',
-        'ApprenticeshipCertificate',
-        'Assessment',
-        'Assignment',
-        'AssociateDegree',
-        'Award',
-        'Badge',
-        'BachelorDegree',
-        'Certificate',
-        'CertificateOfCompletion',
-        'Certification',
-        'CommunityService',
-        'Competency',
-        'Course',
-        'CoCurricular',
-        'Degree',
-        'Diploma',
-        'DoctoralDegree',
-        'Fieldwork',
-        'GeneralEducationDevelopment',
-        'JourneymanCertificate',
-        'LearningProgram',
-        'License',
-        'Membership',
-        'ProfessionalDoctorate',
-        'QualityAssuranceCredential',
-        'MasterCertificate',
-        'MasterDegree',
-        'MicroCredential',
-        'ResearchDoctorate',
-        'SecondarySchoolDiploma',
-    ])
-    .or(z.string());
+export const KnownAchievementTypeValidator = z.enum([
+    'Achievement',
+    'ApprenticeshipCertificate',
+    'Assessment',
+    'Assignment',
+    'AssociateDegree',
+    'Award',
+    'Badge',
+    'BachelorDegree',
+    'Certificate',
+    'CertificateOfCompletion',
+    'Certification',
+    'CommunityService',
+    'Competency',
+    'Course',
+    'CoCurricular',
+    'Degree',
+    'Diploma',
+    'DoctoralDegree',
+    'Fieldwork',
+    'GeneralEducationDevelopment',
+    'JourneymanCertificate',
+    'LearningProgram',
+    'License',
+    'Membership',
+    'ProfessionalDoctorate',
+    'QualityAssuranceCredential',
+    'MasterCertificate',
+    'MasterDegree',
+    'MicroCredential',
+    'ResearchDoctorate',
+    'SecondarySchoolDiploma',
+]);
+export type KnownAchievementType = z.infer<typeof KnownAchievementTypeValidator>;
+
+export const AchievementTypeValidator = KnownAchievementTypeValidator.or(z.string());
 export type AchievementType = z.infer<typeof AchievementTypeValidator>;
 
 export const CriteriaValidator = z
