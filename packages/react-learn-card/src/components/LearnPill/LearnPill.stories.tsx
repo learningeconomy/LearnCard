@@ -1,6 +1,6 @@
 import React from 'react';
 import { Story, Meta } from '@storybook/react';
-
+import { LCSubtypes } from '../../types';
 import LearnPill from './LearnPill';
 import { LearnPillProps } from '../../types';
 
@@ -15,6 +15,6 @@ const Template: Story<LearnPillProps> = args => <LearnPill {...args} />;
 export const CourseVerticalCardTest = Template.bind({});
 CourseVerticalCardTest.args = {
     count: 0,
-    type: 'skill',
+    type: LCSubtypes.skill,
     className: 'learn-pilled',
 };

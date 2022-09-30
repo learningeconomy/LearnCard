@@ -1,28 +1,29 @@
 import React from 'react';
 import { JobListCardProps } from '../../types';
 import { TYPE_TO_MINI_ICON } from '../RoundedSquare';
+import { LCSubtypes } from '../../types';
 
-const TYPE_TO_COLOR = {
+const TYPE_TO_COLOR: any = {
     job: 'bg-emerald-50',
     achievement: 'bg-spice-50',
     skill: 'bg-indigo-50',
 };
 
-const TYPE_TO_TEXT_COLOR = {
-    job: 'text-emerald-700',
+const TYPE_TO_TEXT_COLOR: any = {
+    job : 'text-emerald-700',
     achievement: 'text-spice-500',
     skill: 'text-indigo-600',
 };
 
 type JobListingBubbleProps = {
     count: number | string;
-    type: 'job' | 'achievement' | 'skill';
+    type: LCSubtypes.job | LCSubtypes.achievement | LCSubtypes.skill;
     className?: string;
 };
 
 export const JobListingBubble: React.FC<JobListingBubbleProps> = ({
     count = 0,
-    type = 'job',
+    type = LCSubtypes.skill,
     className,
 }) => {
     const imgSrc = TYPE_TO_MINI_ICON[type];
@@ -111,21 +112,21 @@ export const JobListCard: React.FC<JobListCardProps> = ({
                 <div className="course-card-counts-container flex items-center">
                     {qualificationDisplay?.courses?.fulfilledCount && (
                         <JobListingBubble
-                            type={'job'}
+                            type={LCSubtypes.job}
                             count={courseCountDisplay}
                             className={'mr-[5px]'}
                         />
                     )}
                     {qualificationDisplay?.achievements?.fulfilledCount && (
                         <JobListingBubble
-                            type={'achievement'}
+                            type={LCSubtypes.achievement}
                             count={achievementsCountDisplay}
                             className={'mr-[5px]'}
                         />
                     )}
                     {qualificationDisplay?.skills?.fulfilledCount && (
                         <JobListingBubble
-                            type={'skill'}
+                            type={LCSubtypes.skill}
                             count={skillsCountDisplay}
                             className={'mr-[0px]'}
                         />
