@@ -1,0 +1,26 @@
+{
+  "version": "1.0.5",
+  "description": "A MetaMask Snap template.",
+  "proposedName": "MetaMask Template Snap",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/WeLibraryOS/LearnCard.git"
+  },
+  "source": {
+    "shasum": "TPVMvjkqVEQH+qYQrZIKdszypIAnopOcY8TK0RCJOX0=",
+    "location": {
+      "npm": {
+        "filePath": "dist/snap.js",
+        "iconPath": "images/icon.svg",
+        "packageName": "@learncard/meta-mask-snap",
+        "registry": "https://registry.npmjs.org/"
+      }
+    }
+  },
+  "initialPermissions": {
+    "snap_confirm": {},
+    "snap_getBip44Entropy_60": {},
+    "endowment:network-access": {}
+  },
+  "manifestVersion": "0.1"
+}
