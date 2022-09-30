@@ -56,7 +56,10 @@ import Credentials from '@components/Credentials';
     await wallet.installChapiHandler();
 
     const testStorage = async () => {
-        if (await wallet.storeCredentialViaChapiDidAuth(wallet.getTestVc())) {
+        // Test issuing from a different wallet using VC API
+        const testWallet = await initLearnCard({ vcApi: true });
+
+        if (await testWallet.storeCredentialViaChapiDidAuth(testWallet.getTestVc())) {
             window.location.reload();
         }
     };
