@@ -174,8 +174,19 @@ export type LearnPillProps = {
     className?: string;
 };
 
-export type CircleButtonProps = {
+export type CircleCheckButtonProps = {
     onClick?: () => void;
     className?: string;
+    bgColor?: string;
     checked?: boolean;
+};
+
+export type SkillTabCardProps = {
+    title?: string;
+    description?: string;
+    checked?: boolean;
+    showChecked?: boolean;
+    className?: string;
+    onCheckClicked?: () => void;
+    onClick?: () => void;
 };
