@@ -79,6 +79,7 @@ export type CourseCardProps = {
 
 export type CourseCardVerticalProps = {
     title?: string;
+    className?: string;
     thumbImgSrc?: string;
     showStatus?: boolean;
     claimStatus?: boolean;
@@ -156,4 +157,10 @@ export type JobListCardProps = {
     className?: string;
     onBookmark?: () => void;
     onClick?: () => void;
+};
+
+export type LearnPillProps = {
+    count: number | string;
+    type: 'job' | 'achievement' | 'skill';
+    className?: string;
 };
