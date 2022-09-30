@@ -95,6 +95,7 @@ export type CourseCardVerticalProps = {
     skillCount?: number;
     date?: string;
     checked?: boolean;
+    showChecked?: boolean;
     onCheckClick?: () => void;
     onClick?: () => void;
 };
@@ -171,4 +172,10 @@ export type LearnPillProps = {
     count: number | string;
     type: LCSubtypes.course | LCSubtypes.achievement | LCSubtypes.skill;
     className?: string;
+};
+
+export type CircleButtonProps = {
+    onClick?: () => void;
+    className?: string;
+    checked?: boolean;
 };

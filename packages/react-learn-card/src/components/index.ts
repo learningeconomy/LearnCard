@@ -4,6 +4,7 @@
 
 export * from "./AchievementCard/index";
 export * from "./Button/index";
+export * from "./CircleCheckButton/index";
 export * from "./CircleIcon/index";
 export * from "./CourseCard/index";
 export * from "./CourseVerticalCard/index";
