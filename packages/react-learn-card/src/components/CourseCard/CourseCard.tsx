@@ -69,7 +69,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({
                     <span className="spacer-dot mx-[3px]">•</span>
                     <span className="text-grayscale-500">{semester}</span>
                 </div>
-                <p className="course-card-title text-sm font-semibold">{title}</p>
+                <p className="course-card-title text-sm font-semibold line-clamp-2">{title}</p>
                 <div className="course-card-counts-container flex items-center mt-[5px]">
                     <CourseCardStatBubble type={'job'} count={jobCount} className={'mr-[5px]'} />
                     <CourseCardStatBubble

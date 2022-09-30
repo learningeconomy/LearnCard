@@ -17,9 +17,14 @@ AchievementCardTest.args = {
     title: 'Learning History',
     thumbImgSrc: null,
     showStatus: true,
+    showChecked: true,
+    checked: true,
     claimStatus: true,
     showSkills: true,
     skillCount: 4,
+    onCheckClick: () => {
+        console.log('checkers');
+    },
     onClick: () => {
         console.log('//goodbye world');
     },

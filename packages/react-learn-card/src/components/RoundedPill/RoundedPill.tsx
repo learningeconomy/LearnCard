@@ -28,7 +28,7 @@ type InlineSVGProps = {
     size?: string | number;
 };
 
-const Checkmark: React.FC<InlineSVGProps> = ({ color = '#00BA88', size = '20' }) => {
+export const CheckmarkSvg: React.FC<InlineSVGProps> = ({ color = '#00BA88', size = '20' }) => {
     return (
         <svg
             width={size}
@@ -119,7 +119,7 @@ export const RoundedPill: React.FC<RoundedPillProps> = ({
             >
                 {showCheckmark && !locked && (
                     <span className="rounded-pill-checkmark mr-[5px]">
-                        <Checkmark color={checkColor} />
+                        <CheckmarkSvg color={checkColor} />
                     </span>
                 )}
                 {locked && (
