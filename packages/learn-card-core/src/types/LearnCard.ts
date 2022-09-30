@@ -115,7 +115,7 @@ export type LearnCardConfig = {
 };
 
 /** @group Init Functions */
-export type EmptyWallet = InitFunction<undefined, 'didkit', EmptyLearnCard>;
+export type EmptyWallet = InitFunction<{}, 'didkit', EmptyLearnCard>;
 /** @group Init Functions */
 export type WalletFromKey = InitFunction<{ seed: string }, keyof LearnCardConfig, LearnCard>;
 /** @group Init Functions */
