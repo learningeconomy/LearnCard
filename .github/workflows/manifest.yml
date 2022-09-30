@@ -1,0 +1,60 @@
+# The MM Snap has a manifest file that _must be tracked_ in order for its build script to work, 
+# however it will unintentionally change when pnpm i is ran as it is techincally a build artifact.
+# 
+# This action simply runs pnpm i, then commits any changest that could have appeared as a result of
+# that. It is designed specifically to fix the snap file being updated and breaking releases
+
+name: Manifest
+
+on:
+  push:
+    branches-ignore:
+      - main
+
+env:
+  CI: true
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v2
+
+      - name: Setup Node.js 16.x
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16.x
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2.0.1
+        id: pnpm-install
+        with:
+          version: 7
+          run_install: false
+
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        run: |
+          echo "::set-output name=pnpm_cache_dir::$(pnpm store path)"
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ steps.pnpm-cache.outputs.pnpm_cache_dir }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm i
+
+      - name: Commit and push changes
+        run: |
+          git config --global pull.rebase true
+          git config --global user.name "Manifest Destiny"
+          git config --global user.email "beestontaylor@learningeconomy.io"
+          git add .
+          git status -v
+          [ -z "`git status --porcelain`" ] && git commit -m ":green_heart: Update snap.manifest.json" && git pull && git push
