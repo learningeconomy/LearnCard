@@ -7,7 +7,19 @@ export const QRCodeCard: React.FC<QRCodeCardProps> = ({
     userHandle,
     qrCodeValue,
     className,
+    text = null,
 }) => {
+    let textEl: React.ReactNode | null = null;
+    if (typeof text === 'string') {
+        textEl = (
+            <p className="flex items-center justify-center w-full text-xl text-black font-bold tracking-[9px]">
+                {text}
+            </p>
+        );
+    } else {
+        textEl = text;
+    }
+
     return (
         <div
             className={`flex flex-col justify-center items-start pt-9 rounded-[20px] shadow-3xl max-w-[400px] bg-white relative pb-8 overflow-hidden ${className}`}
@@ -34,9 +46,7 @@ export const QRCodeCard: React.FC<QRCodeCardProps> = ({
                 </p>
             )}
 
-            <p className="flex items-center justify-center w-full text-xl text-black font-bold tracking-[9px]">
-                LEARNCARD
-            </p>
+            {textEl}
         </div>
     );
 };

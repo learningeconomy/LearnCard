@@ -1,5 +1,6 @@
-import { UnsignedVC, UnsignedVP, VC, VP, VerificationCheck } from '@learncard/types';
+import { JWK, UnsignedVC, UnsignedVP, VC, VP, VerificationCheck } from '@learncard/types';
 
+/** @group DIDKit Plugin */
 export type DidMethod =
     | 'key'
     | 'tz'
@@ -19,28 +20,39 @@ export type DidMethod =
     | `pkh:eip155:${string}`
     | `pkh:bip122:${string}`;
 
-export type KeyPair = { kty: string; crv: string; x: string; y?: string; d: string };
-
+/** @group DIDKit Plugin */
 export type ProofOptions = {
-    verificationMethod: string;
-    proofPurpose: string;
+    type?: string;
+    verificationMethod?: string;
+    proofPurpose?: string;
+    created?: string;
+    challenge?: string;
+    domain?: string;
+    checks?: ('Proof' | 'JWS' | 'CredentialStatus')[];
 };
 
+/** @group DIDKit Plugin */
+export type InputMetadata = {
+    accept?: string;
+    versionId?: string;
+    versionTime?: string;
+    noCache?: boolean;
+};
+
+/** @group DIDKit Plugin */
 export type DidkitPluginMethods = {
-    generateEd25519KeyFromBytes: (bytes: Uint8Array) => KeyPair;
-    generateSecp256k1KeyFromBytes: (bytes: Uint8Array) => KeyPair;
-    keyToDid: (type: DidMethod, keypair: KeyPair) => string;
-    keyToVerificationMethod: (type: string, keypair: KeyPair) => Promise<string>;
-    issueCredential: (
-        credential: UnsignedVC,
-        options: ProofOptions,
-        keypair: KeyPair
-    ) => Promise<VC>;
-    verifyCredential: (credential: VC) => Promise<VerificationCheck>;
+    generateEd25519KeyFromBytes: (bytes: Uint8Array) => JWK;
+    generateSecp256k1KeyFromBytes: (bytes: Uint8Array) => JWK;
+    keyToDid: (type: DidMethod, keypair: JWK) => string;
+    keyToVerificationMethod: (type: string, keypair: JWK) => Promise<string>;
+    issueCredential: (credential: UnsignedVC, options: ProofOptions, keypair: JWK) => Promise<VC>;
+    verifyCredential: (credential: VC, options?: ProofOptions) => Promise<VerificationCheck>;
     issuePresentation: (
         presentation: UnsignedVP,
         options: ProofOptions,
-        keypair: KeyPair
+        keypair: JWK
     ) => Promise<VP>;
-    verifyPresentation: (presentation: VP) => Promise<VerificationCheck>;
+    verifyPresentation: (presentation: VP, options?: ProofOptions) => Promise<VerificationCheck>;
+    contextLoader: (url: string) => Promise<Record<string, any>>;
+    resolveDid: (did: string, inputMetadata?: InputMetadata) => Promise<Record<string, any>>;
 };

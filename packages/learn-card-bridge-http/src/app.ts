@@ -5,6 +5,7 @@ import { TypedRequest } from './types.helpers';
 import {
     IssueEndpoint,
     IssueEndpointValidator,
+    IssuePresentationEndpointValidator,
     UpdateStatusEndpoint,
     VerifyCredentialEndpoint,
     VerifyCredentialEndpointValidator,
@@ -22,6 +23,13 @@ app.use(express.json());
 
 app.get('/', async (_req: TypedRequest<{}>, res) => {
     res.sendStatus(501);
+});
+
+// This is non-standard! But very helpful for the VC-API plugin
+app.get('/did', async (_req: TypedRequest<{}>, res) => {
+    const wallet = await getWallet();
+
+    res.status(200).send(wallet.did());
 });
 
 app.get('/credentials', async (_req: TypedRequest<{}>, res) => {
@@ -114,6 +122,34 @@ app.post('/credentials/verify', async (req: TypedRequest<VerifyCredentialEndpoin
 
 app.post('/credentials/derive', async (_req: TypedRequest<{}>, res) => {
     res.sendStatus(501);
+});
+
+// This is non-standard! But very helpful for the VC-API plugin
+app.post('/presentations/issue', async (req: TypedRequest<IssueEndpoint>, res) => {
+    try {
+        const validationResult = await IssuePresentationEndpointValidator.spa(req.body);
+
+        if (!validationResult.success) {
+            console.error(
+                '[/presentations/issue] Validation error: ',
+                validationResult.error.message,
+                '(received: ',
+                req.body,
+                ')'
+            );
+            return res.status(400).json(`Invalid input: ${validationResult.error.message}`);
+        }
+
+        const validatedBody = validationResult.data;
+        const wallet = await getWallet();
+
+        const issuedPresentation = await wallet.issuePresentation(validatedBody.presentation);
+
+        return res.status(201).json(issuedPresentation);
+    } catch (error) {
+        console.error('[/presentations/issue] Caught error: ', error, '(received: ', req.body);
+        return res.status(400).json(`Invalid input: ${error}`);
+    }
 });
 
 app.post('/presentations/verify', async (req: TypedRequest<VerifyPresentationEndpoint>, res) => {

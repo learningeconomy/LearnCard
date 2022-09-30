@@ -1,5 +1,5 @@
-import { CeramicIDXArgs } from 'types/LearnCard';
-import { EthereumConfig } from './plugins/EthereumPlugin/types';
+import { CeramicIDXArgs } from '@wallet/plugins/idx/types';
+import { EthereumConfig } from '@wallet/plugins/EthereumPlugin/types';
 
 export const defaultCeramicIDXArgs: CeramicIDXArgs = {
     modelData: {

@@ -1,3 +1,7 @@
+import { Buffer } from 'buffer';
+
+import { JWK } from '@learncard/types';
+
 import { Plugin, Wallet } from 'types/wallet';
 import { ethers } from 'ethers';
 
@@ -10,17 +14,22 @@ import {
 } from './helpers';
 import hardcodedTokens from './hardcodedTokens';
 
-import { DidMethod, KeyPair } from '@wallet/plugins/didkit/types';
+import { DidMethod } from '@wallet/plugins/didkit/types';
 import { Algorithm } from '@wallet/plugins/didkey/types'; // Have to include this in order for getSubjectKeypair to not throw a type error
+
+export * from './types';
 
 const ERC20ABI = require('./erc20.abi.json');
 
+/**
+ * @group Plugins
+ */
 export const getEthereumPlugin = (
     initWallet: Wallet<
         string,
         {
             getSubjectDid: (type: DidMethod) => string;
-            getSubjectKeypair: (type?: Algorithm) => KeyPair;
+            getSubjectKeypair: (type?: Algorithm) => JWK;
         }
     >,
     config: EthereumConfig

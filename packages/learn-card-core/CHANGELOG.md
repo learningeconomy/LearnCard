@@ -1,5 +1,102 @@
 # learn-card-core
 
+## 6.3.1
+
+### Patch Changes
+
+-   [#104](https://github.com/learningeconomy/LearnCard/pull/104) [`e085abd`](https://github.com/learningeconomy/LearnCard/commit/e085abd72d3b4c085cdfc5c623864b40e35cf302) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix weird TS bug
+
+## 6.3.0
+
+### Minor Changes
+
+-   [#100](https://github.com/learningeconomy/LearnCard/pull/100) [`f6734b2`](https://github.com/learningeconomy/LearnCard/commit/f6734b2dff7eade58dca5a03b8f46f058773c3b0) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add VC API Plugin/Instantiation target
+
+## 6.2.0
+
+### Minor Changes
+
+-   [#85](https://github.com/learningeconomy/LearnCard/pull/85) [`02c7de0`](https://github.com/learningeconomy/LearnCard/commit/02c7de09f88ae78882d59c9f8ac898a7d5bac342) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add DependentMethods generic param to Plugin type
+
+*   [#85](https://github.com/learningeconomy/LearnCard/pull/85) [`02c7de0`](https://github.com/learningeconomy/LearnCard/commit/02c7de09f88ae78882d59c9f8ac898a7d5bac342) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Update logic for determing a Wallet's PluginMethods to fix plugins not overwriting methods correctly
+
+-   [#85](https://github.com/learningeconomy/LearnCard/pull/85) [`02c7de0`](https://github.com/learningeconomy/LearnCard/commit/02c7de09f88ae78882d59c9f8ac898a7d5bac342) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Create CHAPI Plugin
+
+### Patch Changes
+
+-   [#85](https://github.com/learningeconomy/LearnCard/pull/85) [`02c7de0`](https://github.com/learningeconomy/LearnCard/commit/02c7de09f88ae78882d59c9f8ac898a7d5bac342) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Create @learncard/helpers package
+
+-   Updated dependencies [[`02c7de0`](https://github.com/learningeconomy/LearnCard/commit/02c7de09f88ae78882d59c9f8ac898a7d5bac342)]:
+    -   @learncard/helpers@1.0.0
+
+## 6.1.0
+
+### Minor Changes
+
+-   [#79](https://github.com/learningeconomy/LearnCard/pull/79) [`c1befdc`](https://github.com/learningeconomy/LearnCard/commit/c1befdc8a30d3cc111d938c530493b1a5b87aa00) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - New Plugin: VC Templates
+
+    -   Allows creating new credentials/presentations easily based on pre-defined templates
+
+    New methods: newCredential and newPresentation
+
+    -   `wallet.newCredential()` is identical to `wallet.getTestVc()`
+    -   `wallet.newCredential({ type: 'achievement' })` will provide you with a _different_ credential, and
+        its fields are overwriteable via arguments passed to that function.
+        E.g. `wallet.newCredential({ type: 'achievement', name: 'Nice!' })`
+
+## 6.0.0
+
+### Major Changes
+
+-   [#82](https://github.com/learningeconomy/LearnCard/pull/82) [`7d6f1a4`](https://github.com/learningeconomy/LearnCard/commit/7d6f1a41656329f99c4acf560da3ec59d9e29104) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Stop re-exporting @learncard/types in @learncard/core
+
+### Patch Changes
+
+-   [#82](https://github.com/learningeconomy/LearnCard/pull/82) [`7d6f1a4`](https://github.com/learningeconomy/LearnCard/commit/7d6f1a41656329f99c4acf560da3ec59d9e29104) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Update ReadMe
+
+*   [#82](https://github.com/learningeconomy/LearnCard/pull/82) [`7d6f1a4`](https://github.com/learningeconomy/LearnCard/commit/7d6f1a41656329f99c4acf560da3ec59d9e29104) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Update exposed methods for better docs
+
+## 5.1.1
+
+### Patch Changes
+
+-   [#40](https://github.com/learningeconomy/LearnCard/pull/40) [`8a10504`](https://github.com/learningeconomy/LearnCard/commit/8a105049df0d1f4f8ede062ca72fecbf55896562) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix doc comment for issuePresentation
+
+*   [#58](https://github.com/learningeconomy/LearnCard/pull/58) [`074989f`](https://github.com/learningeconomy/LearnCard/commit/074989f2eb4b7d8cb9b2d6a62451cdcf047d72d5) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Widen IDXCredential type and validate it with zod
+
+-   [#81](https://github.com/learningeconomy/LearnCard/pull/81) [`120744b`](https://github.com/learningeconomy/LearnCard/commit/120744bc4cf9d03254049fcf37707763b10ddeab) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add resolveDid method
+
+*   [#40](https://github.com/learningeconomy/LearnCard/pull/40) [`8a10504`](https://github.com/learningeconomy/LearnCard/commit/8a105049df0d1f4f8ede062ca72fecbf55896562) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Don't overwrite global crypto object if it already exists
+
+-   [#40](https://github.com/learningeconomy/LearnCard/pull/40) [`8a10504`](https://github.com/learningeconomy/LearnCard/commit/8a105049df0d1f4f8ede062ca72fecbf55896562) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Move IDXCredential and StorageType types to @learncard/types
+
+## 5.1.0
+
+### Minor Changes
+
+-   [#62](https://github.com/WeLibraryOS/LearnCard/pull/62) [`9942f25`](https://github.com/WeLibraryOS/LearnCard/commit/9942f25ccc39797bc74ad63cf7d4878b2619b208) Thanks [@Custard7](https://github.com/Custard7)! - Add VPQR Plugin
+
+### Patch Changes
+
+-   [#62](https://github.com/WeLibraryOS/LearnCard/pull/62) [`9942f25`](https://github.com/WeLibraryOS/LearnCard/commit/9942f25ccc39797bc74ad63cf7d4878b2619b208) Thanks [@Custard7](https://github.com/Custard7)! - Add VPQR Plugin
+
+*   [#62](https://github.com/WeLibraryOS/LearnCard/pull/62) [`9942f25`](https://github.com/WeLibraryOS/LearnCard/commit/9942f25ccc39797bc74ad63cf7d4878b2619b208) Thanks [@Custard7](https://github.com/Custard7)! - Expose contextLoader in didkit plugin
+
+## 5.0.0
+
+### Major Changes
+
+-   [#59](https://github.com/WeLibraryOS/LearnCard/pull/59) [`5c5f28b`](https://github.com/WeLibraryOS/LearnCard/commit/5c5f28b1db1a9527e56946522ea94d444a7f1eed) Thanks [@smurflo2](https://github.com/smurflo2)! - Significant functionality upgrade for Ethereum plugin.
+
+    Can now generically check balance of and transfer ERC20 tokens.
+
+    Public/private key is now generated from wallet seed material.
+    BREAKING CHANGE: The ethereumAddress parameter has been removed from the ethereumConfig object passed into walletFromKey. That parameter should be removed from calling code. If you need to check the balance for a particular public address, the 'getBalanceForAddress' method can be used.
+
+### Patch Changes
+
+-   [#63](https://github.com/WeLibraryOS/LearnCard/pull/63) [`fab5557`](https://github.com/WeLibraryOS/LearnCard/commit/fab55579a1e75b438425ea019a1ac63ecb5634fe) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Expose contextLoader in didkit plugin
+
 ## 4.1.0
 
 ### Minor Changes

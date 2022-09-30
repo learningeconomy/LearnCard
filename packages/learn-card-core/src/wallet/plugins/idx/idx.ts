@@ -7,10 +7,15 @@ import { TileLoader } from '@glazed/tile-loader';
 import { CeramicClient } from '@ceramicnetwork/http-client';
 import { CreateOpts } from '@ceramicnetwork/common';
 import { TileDocument, TileMetadataArgs } from '@ceramicnetwork/stream-tile';
+import { IDXCredential, IDXCredentialValidator, StorageTypeEnum } from '@learncard/types';
 
-import { IDXCredential, CredentialsList, IDXPluginMethods, StorageType } from './types';
+import {
+    CredentialsList,
+    CredentialsListValidator,
+    IDXPluginMethods,
+    CeramicIDXArgs,
+} from './types';
 import { Plugin, Wallet } from 'types/wallet';
-import { CeramicIDXArgs } from 'types/LearnCard';
 
 const getCeramicClientFromWalletSuite = async (
     wallet: Wallet<any, { getKey: () => string }>,
@@ -35,6 +40,9 @@ const getCeramicClientFromWalletSuite = async (
     return client;
 };
 
+/**
+ * @group Plugins
+ */
 export const getIDXPlugin = async (
     wallet: Wallet<any, { getKey: () => string }>,
     { modelData, credentialAlias, ceramicEndpoint, defaultContentFamily }: CeramicIDXArgs
@@ -46,10 +54,22 @@ export const getIDXPlugin = async (
     const dataStore = new DIDDataStore({ ceramic, model: modelData });
 
     const getCredentialsListFromIdx = async (alias = credentialAlias): Promise<CredentialsList> => {
-        return (await dataStore.get(alias)) || { credentials: [] };
+        const list = await dataStore.get(alias);
+
+        if (!list) return { credentials: [] };
+
+        const validationResult = await CredentialsListValidator.spa(list);
+
+        if (validationResult.success) return validationResult.data;
+
+        console.error(validationResult.error);
+
+        throw new Error('Invalid credentials list stored in IDX');
     };
 
-    const addCredentialStreamIdToIdx = async (record: IDXCredential, alias?: string) => {
+    const addCredentialStreamIdToIdx = async (_record: IDXCredential, alias?: string) => {
+        const record = IDXCredentialValidator.parse(_record);
+
         if (!record) throw new Error('record is required');
 
         if (!record.id) throw Error('No streamId provided');
@@ -67,10 +87,10 @@ export const getIDXPlugin = async (
 
         if (indexOfExistingCredential > -1) {
             existing.credentials[indexOfExistingCredential] = {
-                storageType: StorageType.ceramic,
+                storageType: StorageTypeEnum.ceramic,
                 ...record,
             };
-        } else existing.credentials.push({ storageType: StorageType.ceramic, ...record });
+        } else existing.credentials.push({ storageType: StorageTypeEnum.ceramic, ...record });
 
         return dataStore.set(alias, existing);
     };
@@ -138,8 +158,8 @@ export const getIDXPlugin = async (
                     streamIds.map(async streamId => readContentFromCeramic(streamId))
                 );
             },
-            addVerifiableCredentialInIdx: async (_wallet, { title, id }) => {
-                return addCredentialStreamIdToIdx({ title, id });
+            addVerifiableCredentialInIdx: async (_wallet, idxCredential) => {
+                return addCredentialStreamIdToIdx(idxCredential);
             },
             removeVerifiableCredentialInIdx: async (_wallet, title) => {
                 return removeCredentialFromIdx(title);

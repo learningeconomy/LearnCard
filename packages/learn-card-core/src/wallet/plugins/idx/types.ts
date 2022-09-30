@@ -1,6 +1,17 @@
+import { ModelAliases } from '@glazed/types';
+import { z } from 'zod';
 import { StreamID } from '@ceramicnetwork/streamid';
-import { VC } from '@learncard/types';
+import { VC, IDXCredential, IDXCredentialValidator } from '@learncard/types';
 
+/** @group IDXPlugin */
+export type CeramicIDXArgs = {
+    modelData: ModelAliases;
+    credentialAlias: string;
+    ceramicEndpoint: string;
+    defaultContentFamily: string;
+};
+
+/** @group IDXPlugin */
 export type IDXPluginMethods = {
     getCredentialsListFromIdx: (alias?: string) => Promise<CredentialsList>;
     publishContentToCeramic: (cred: any) => Promise<string>;
@@ -11,16 +22,9 @@ export type IDXPluginMethods = {
     removeVerifiableCredentialInIdx: (title: string) => Promise<StreamID>;
 };
 
-export enum StorageType {
-    ceramic = 'ceramic',
-}
-
-export type IDXCredential = {
-    id: string;
-    title: string;
-    storageType?: StorageType;
-};
-
-export type CredentialsList = {
-    credentials: IDXCredential[];
-};
+/** @group IDXPlugin */
+export const CredentialsListValidator = z
+    .object({ credentials: IDXCredentialValidator.array() })
+    .strict();
+/** @group IDXPlugin */
+export type CredentialsList = z.infer<typeof CredentialsListValidator>;

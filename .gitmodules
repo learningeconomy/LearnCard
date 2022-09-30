@@ -1,0 +1,6 @@
+[submodule "lib/didkit"]
+	path = lib/didkit
+	url = https://github.com/TaylorBeeston/didkit.git
+[submodule "lib/ssi"]
+	path = lib/ssi
+	url = https://github.com/TaylorBeeston/ssi.git
