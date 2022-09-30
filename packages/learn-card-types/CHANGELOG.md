@@ -1,5 +1,11 @@
 # learn-card-types
 
+## 3.0.1
+
+### Patch Changes
+
+-   [#100](https://github.com/learningeconomy/LearnCard/pull/100) [`f6734b2`](https://github.com/learningeconomy/LearnCard/commit/f6734b2dff7eade58dca5a03b8f46f058773c3b0) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add JWK type
+
 ## 3.0.0
 
 ### Major Changes
