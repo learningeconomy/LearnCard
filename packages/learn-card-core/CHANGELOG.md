@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 6.3.1
+
+### Patch Changes
+
+-   [#104](https://github.com/learningeconomy/LearnCard/pull/104) [`e085abd`](https://github.com/learningeconomy/LearnCard/commit/e085abd72d3b4c085cdfc5c623864b40e35cf302) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix weird TS bug
+
 ## 6.3.0
 
 ### Minor Changes
