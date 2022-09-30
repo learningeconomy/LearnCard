@@ -14,7 +14,7 @@ custom_edit_url: null
 
 #### Defined in
 
-[packages/react-learn-card/src/components/Loading/CircleSpinner.tsx:4](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/react-learn-card/src/components/Loading/CircleSpinner.tsx#L4)
+[packages/react-learn-card/src/components/Loading/CircleSpinner.tsx:4](https://github.com/learningeconomy/LearnCard/blob/cea29cad/packages/react-learn-card/src/components/Loading/CircleSpinner.tsx#L4)
 
 ___
 
@@ -24,4 +24,4 @@ ___
 
 #### Defined in
 
-[packages/react-learn-card/src/components/Loading/CircleSpinner.tsx:5](https://github.com/learningeconomy/LearnCard/blob/408b77ea/packages/react-learn-card/src/components/Loading/CircleSpinner.tsx#L5)
+[packages/react-learn-card/src/components/Loading/CircleSpinner.tsx:5](https://github.com/learningeconomy/LearnCard/blob/cea29cad/packages/react-learn-card/src/components/Loading/CircleSpinner.tsx#L5)

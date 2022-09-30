@@ -73,6 +73,7 @@ export const getCHAPIPlugin = async (): Promise<
                     {
                         challenge,
                         domain,
+                        proofPurpose: 'authentication',
                     }
                 );
 
@@ -86,10 +87,8 @@ export const getCHAPIPlugin = async (): Promise<
                     credential.credentialSubject.id = subject;
                 }
 
-                const vp = await wallet.pluginMethods.issuePresentation(
-                    await wallet.pluginMethods.getTestVp(
-                        await wallet.pluginMethods.issueCredential(credential)
-                    )
+                const vp = await wallet.pluginMethods.getTestVp(
+                    await wallet.pluginMethods.issueCredential(credential)
                 );
 
                 const success = await wallet.pluginMethods.storePresentationViaChapi(vp);
