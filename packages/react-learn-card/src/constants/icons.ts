@@ -35,7 +35,7 @@ export const ICONS_TO_SOURCE = {
 };
 
 export const TYPE_TO_ICON: any = {
-    course: puzzlelight,
+    course: gradcaplight,
     achievement: trophylight,
     skill: puzzlelight,
 };
