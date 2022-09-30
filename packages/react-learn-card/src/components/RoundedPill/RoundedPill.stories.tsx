@@ -16,4 +16,5 @@ export const RoundedPillTest = Template.bind({});
 RoundedPillTest.args = {
     statusText: 'Earned',
     type: 'achievement',
+    showCheckmark: true,
 };
