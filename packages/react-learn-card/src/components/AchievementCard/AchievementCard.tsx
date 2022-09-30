@@ -41,7 +41,7 @@ export const AchievementCard: React.FC<AchievementCardProps> = ({
                 )}
 
                 {showSkills && skillCount && skillCount !== 0 && (
-                    <div className="absolute px-[10px] text-[14px] flex items-center justify-center text-indigo-600 skill-pill font-bold min-w-[100px] bottom-[10px] right-[13px] rounded-[20px] h-[30px] bg-indigo-50 ">
+                    <div className="absolute px-[10px] text-[14px] flex items-center justify-center text-indigo-600 skill-pill font-bold min-w-[100px] bottom-[15px] right-[9px] rounded-[20px] h-[30px] bg-indigo-50 ">
                         <img
                             src={skillIconSrc}
                             className="flex items-center justify-center mr-[4px]"
