@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 6.4.0
+
+### Minor Changes
+
+-   [#111](https://github.com/learningeconomy/LearnCard/pull/111) [`27e4ecd`](https://github.com/learningeconomy/LearnCard/commit/27e4ecd6641cf16b97d198434250f55135d09e97) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Use/expose generic parameter of IDXCredential type in LC methods
+
 ## 6.3.1
 
 ### Patch Changes
