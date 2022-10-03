@@ -13,18 +13,25 @@ export type CeramicIDXArgs = {
 
 /** @group IDXPlugin */
 export type IDXPluginMethods = {
-    getCredentialsListFromIdx: (alias?: string) => Promise<CredentialsList>;
+    getCredentialsListFromIdx: <Metadata extends Record<string, any> = Record<never, never>>(
+        alias?: string
+    ) => Promise<CredentialsList<Metadata>>;
     publishContentToCeramic: (cred: any) => Promise<string>;
     readContentFromCeramic: (streamId: string) => Promise<any>;
     getVerifiableCredentialFromIdx: (title: string) => Promise<VC>;
     getVerifiableCredentialsFromIdx: () => Promise<VC[]>;
-    addVerifiableCredentialInIdx: (cred: IDXCredential) => Promise<StreamID>;
+    addVerifiableCredentialInIdx: <Metadata extends Record<string, any> = Record<never, never>>(
+        cred: IDXCredential<Metadata>
+    ) => Promise<StreamID>;
     removeVerifiableCredentialInIdx: (title: string) => Promise<StreamID>;
 };
 
 /** @group IDXPlugin */
-export const CredentialsListValidator = z
+export type CredentialsList<Metadata extends Record<string, any> = Record<never, never>> = {
+    credentials: Array<IDXCredential<Metadata>>;
+};
+
+/** @group IDXPlugin */
+export const CredentialsListValidator: z.ZodType<CredentialsList> = z
     .object({ credentials: IDXCredentialValidator.array() })
     .strict();
-/** @group IDXPlugin */
-export type CredentialsList = z.infer<typeof CredentialsListValidator>;
