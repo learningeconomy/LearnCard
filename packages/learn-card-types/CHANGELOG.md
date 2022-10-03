@@ -1,5 +1,11 @@
 # learn-card-types
 
+## 3.1.0
+
+### Minor Changes
+
+-   [#111](https://github.com/learningeconomy/LearnCard/pull/111) [`27e4ecd`](https://github.com/learningeconomy/LearnCard/commit/27e4ecd6641cf16b97d198434250f55135d09e97) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix incorrect IDXCredential type, making it also correctly generic
+
 ## 3.0.2
 
 ### Patch Changes

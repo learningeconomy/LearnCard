@@ -1,5 +1,14 @@
 # @welibraryos/react-learn-card
 
+## 2.3.38
+
+### Patch Changes
+
+-   [#109](https://github.com/learningeconomy/LearnCard/pull/109) [`8843fda`](https://github.com/learningeconomy/LearnCard/commit/8843fda579ffb9b8adbb4d467143207e20dfe305) Thanks [@gerardopar](https://github.com/gerardopar)! - [WE-2405] - update components with profile images
+
+-   Updated dependencies [[`27e4ecd`](https://github.com/learningeconomy/LearnCard/commit/27e4ecd6641cf16b97d198434250f55135d09e97)]:
+    -   @learncard/core@6.4.0
+
 ## 2.3.37
 
 ### Patch Changes
