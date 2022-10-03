@@ -8,10 +8,18 @@ export const StorageTypeEnum = StorageTypeValidator.enum;
 export type StorageType = z.infer<typeof StorageTypeValidator>;
 
 /** @group IDXPlugin */
-export const IDXCredentialValidator = z.object({
-    id: z.string(),
-    title: z.string(),
-    storageType: StorageTypeValidator.optional(),
-});
+export type IDXCredential<Metadata extends Record<string, any> = Record<never, never>> = {
+    id: string;
+    title: string;
+    storageType?: StorageType;
+    [key: string]: any;
+} & Metadata;
+
 /** @group IDXPlugin */
-export type IDXCredential = z.infer<typeof IDXCredentialValidator>;
+export const IDXCredentialValidator: z.ZodType<IDXCredential> = z
+    .object({
+        id: z.string(),
+        title: z.string(),
+        storageType: StorageTypeValidator.optional(),
+    })
+    .catchall(z.any());

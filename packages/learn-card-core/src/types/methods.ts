@@ -116,7 +116,9 @@ export type GetCredentials = () => Promise<VC[]>;
  *
  * @group LearnCard Methods
  */
-export type GetCredentialsList = () => Promise<IDXCredential[]>;
+export type GetCredentialsList = <
+    Metadata extends Record<string, any> = Record<never, never>
+>() => Promise<IDXCredential<Metadata>[]>;
 
 /**
  * Publishes a credential to Ceramic, returning the credential's stream ID
@@ -138,7 +140,9 @@ export type PublishCredential = (credential: VC) => Promise<string>;
  *
  * @group LearnCard Methods
  */
-export type AddCredential = (credential: IDXCredential) => Promise<void>;
+export type AddCredential = <Metadata extends Record<string, any> = Record<never, never>>(
+    credential: IDXCredential<Metadata>
+) => Promise<void>;
 
 /**
  * Adds a stream ID  pointing to a credential (such as the one returned by `publishCredential`)

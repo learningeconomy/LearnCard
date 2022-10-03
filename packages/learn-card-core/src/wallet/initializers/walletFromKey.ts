@@ -66,8 +66,10 @@ export const walletFromKey = async (
 
         getCredential: wallet.pluginMethods.getVerifiableCredentialFromIdx,
         getCredentials: wallet.pluginMethods.getVerifiableCredentialsFromIdx,
-        getCredentialsList: async () => {
-            return (await wallet.pluginMethods.getCredentialsListFromIdx()).credentials;
+        getCredentialsList: async <
+            Metadata extends Record<string, any> = Record<never, never>
+        >() => {
+            return (await wallet.pluginMethods.getCredentialsListFromIdx<Metadata>()).credentials;
         },
         publishCredential: wallet.pluginMethods.publishContentToCeramic,
         addCredential: async credential => {
