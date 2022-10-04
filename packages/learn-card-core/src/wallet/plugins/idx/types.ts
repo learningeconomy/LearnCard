@@ -56,3 +56,30 @@ export type CredentialsList<Metadata extends Record<string, any> = Record<never,
 export const CredentialsListValidator: z.ZodType<CredentialsList> = z
     .object({ credentials: IDXCredentialValidator.array() })
     .strict();
+
+// Below types are temporary! They will be removed in the future when we are confident that everyone
+// has moved on to the new schema
+
+/** @group IDXPlugin */
+export type BackwardsCompatIDXCredential<
+    Metadata extends Record<string, any> = Record<never, never>
+    > = { [key: string]: any; id: string; title: string; storageType?: 'ceramic' } & Metadata;
+
+/** @group IDXPlugin */
+export const BackwardsCompatIDXCredentialValidator: z.ZodType<BackwardsCompatIDXCredential> = z
+    .object({ id: z.string(), title: z.string(), storageType: z.literal('ceramic').optional() })
+    .catchall(z.any());
+
+/** @group IDXPlugin */
+export type BackwardsCompatCredentialsList<
+    Metadata extends Record<string, any> = Record<never, never>
+    > = {
+        credentials: Array<IDXCredential<Metadata> | BackwardsCompatIDXCredential<Metadata>>;
+    };
+
+/** @group IDXPlugin */
+export const BackwardsCompatCredentialsListValidator: z.ZodType<BackwardsCompatCredentialsList> = z
+    .object({
+        credentials: IDXCredentialValidator.or(BackwardsCompatIDXCredentialValidator).array(),
+    })
+    .strict();

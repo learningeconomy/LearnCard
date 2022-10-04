@@ -7,7 +7,7 @@ import { TileLoader } from '@glazed/tile-loader';
 import { CeramicClient } from '@ceramicnetwork/http-client';
 import { CreateOpts } from '@ceramicnetwork/common';
 import { TileDocument, TileMetadataArgs } from '@ceramicnetwork/stream-tile';
-import { IDXCredentialValidator, VCValidator, VC } from '@learncard/types';
+import { IDXCredentialValidator, VCValidator, VC, IDXCredential } from '@learncard/types';
 
 import { streamIdToCeramicURI } from './helpers';
 
@@ -18,6 +18,7 @@ import {
     IDXPluginDependentMethods,
     CeramicIDXArgs,
     CeramicURIValidator,
+    BackwardsCompatCredentialsListValidator,
 } from './types';
 import { Plugin, Wallet } from 'types/wallet';
 
@@ -65,6 +66,32 @@ export const getIDXPlugin = async <URI extends string = ''>(
         const validationResult = await CredentialsListValidator.spa(list);
 
         if (validationResult.success) return validationResult.data;
+
+        const backwardsCompatValidationResult = await BackwardsCompatCredentialsListValidator.spa(
+            list
+        );
+
+        if (backwardsCompatValidationResult.success) {
+            const oldCreds = backwardsCompatValidationResult.data.credentials;
+
+            const newCreds = oldCreds.map(cred => {
+                if ('uri' in cred) return cred as IDXCredential;
+
+                const { title, id, storageType, ...rest } = cred;
+
+                return {
+                    ...rest,
+                    id: title,
+                    uri: `lc:ceramic:${id.replace('ceramic://', '')}`,
+                } as IDXCredential;
+            });
+
+            const credentialsList = { credentials: newCreds };
+
+            await dataStore.set(credentialAlias, credentialsList);
+
+            return credentialsList;
+        }
 
         console.error(validationResult.error);
 
