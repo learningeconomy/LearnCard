@@ -2,6 +2,7 @@ import { ModelAliases } from '@glazed/types';
 import { z } from 'zod';
 import { StreamID } from '@ceramicnetwork/streamid';
 import { VC, IDXCredential, IDXCredentialValidator } from '@learncard/types';
+import { ResolutionExtension } from '../vc-resolution';
 
 /** @group IDXPlugin */
 export type CeramicIDXArgs = {
@@ -12,7 +13,19 @@ export type CeramicIDXArgs = {
 };
 
 /** @group IDXPlugin */
-export type IDXPluginMethods = {
+export const CeramicURIValidator = z
+    .string()
+    .refine(
+        string => string.split(':').length === 3 && string.split(':')[0] === 'lc',
+        'URI must be of the form lc:${storage}:${url}'
+    )
+    .refine(
+        string => string.split(':')[1] === 'ceramic',
+        'URI must use storage type ceramic (i.e. must be lc:ceramic:${streamID})'
+    );
+
+/** @group IDXPlugin */
+export type IDXPluginMethods<URI extends string = ''> = {
     getCredentialsListFromIdx: <Metadata extends Record<string, any> = Record<never, never>>(
         alias?: string
     ) => Promise<CredentialsList<Metadata>>;
@@ -24,7 +37,12 @@ export type IDXPluginMethods = {
         cred: IDXCredential<Metadata>
     ) => Promise<StreamID>;
     removeVerifiableCredentialInIdx: (title: string) => Promise<StreamID>;
-};
+} & ResolutionExtension<URI | `lc:ceramic:${string}`>;
+
+/** @group IDXPlugin */
+export type IDXPluginDependentMethods<URI extends string = ''> = {
+    getKey: () => string;
+} & ResolutionExtension<URI>;
 
 /** @group IDXPlugin */
 export type CredentialsList<Metadata extends Record<string, any> = Record<never, never>> = {

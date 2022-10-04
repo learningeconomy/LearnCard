@@ -16,6 +16,7 @@ import { InitFunction, GenericInitFunction } from 'types/helpers';
 import { Wallet } from 'types/wallet';
 import { AllLearnCardMethods } from 'types/methods';
 import { MergeObjects } from './utilities';
+import { VCResolutionPluginMethods } from '@wallet/plugins/vc-resolution';
 
 export { MergeObjects } from './utilities';
 
@@ -29,6 +30,7 @@ export type LearnCardRawWallet = Wallet<
     | 'DID Key'
     | 'VC'
     | 'VC Templates'
+    | 'VC Resolution'
     | 'IDX'
     | 'Expiration'
     | 'Ethereum'
@@ -39,6 +41,7 @@ export type LearnCardRawWallet = Wallet<
             DidKeyPluginMethods<DidMethod>,
             VCPluginMethods,
             VCTemplatePluginMethods,
+            VCResolutionPluginMethods,
             IDXPluginMethods,
             EthereumPluginMethods,
             VpqrPluginMethods,
@@ -53,10 +56,10 @@ export type LearnCardRawWallet = Wallet<
 export type LearnCard<
     Methods extends keyof AllLearnCardMethods = keyof AllLearnCardMethods,
     RawWallet extends Wallet<any, any> = LearnCardRawWallet
-> = {
-    /** Raw IoE wallet instance. You shouldn't need to drop down to this level! */
-    _wallet: RawWallet;
-} & Pick<AllLearnCardMethods, Methods>;
+    > = {
+        /** Raw IoE wallet instance. You shouldn't need to drop down to this level! */
+        _wallet: RawWallet;
+    } & Pick<AllLearnCardMethods, Methods>;
 
 /**
  * @group LearnCard

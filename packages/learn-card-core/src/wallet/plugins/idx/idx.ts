@@ -7,18 +7,26 @@ import { TileLoader } from '@glazed/tile-loader';
 import { CeramicClient } from '@ceramicnetwork/http-client';
 import { CreateOpts } from '@ceramicnetwork/common';
 import { TileDocument, TileMetadataArgs } from '@ceramicnetwork/stream-tile';
-import { IDXCredential, IDXCredentialValidator, StorageTypeEnum } from '@learncard/types';
+import {
+    IDXCredential,
+    IDXCredentialValidator,
+    StorageTypeEnum,
+    VCValidator,
+} from '@learncard/types';
 
 import {
     CredentialsList,
     CredentialsListValidator,
     IDXPluginMethods,
+    IDXPluginDependentMethods,
     CeramicIDXArgs,
+    CeramicURIValidator,
 } from './types';
 import { Plugin, Wallet } from 'types/wallet';
+import { LC_URI } from '../vc-resolution';
 
-const getCeramicClientFromWalletSuite = async (
-    wallet: Wallet<any, { getKey: () => string }>,
+const getCeramicClientFromWalletSuite = async <URI extends string = ''>(
+    wallet: Wallet<any, IDXPluginDependentMethods<URI>>,
     ceramicEndpoint: string
 ): Promise<CeramicClient> => {
     const client = new CeramicClient(ceramicEndpoint);
@@ -43,10 +51,10 @@ const getCeramicClientFromWalletSuite = async (
 /**
  * @group Plugins
  */
-export const getIDXPlugin = async (
-    wallet: Wallet<any, { getKey: () => string }>,
+export const getIDXPlugin = async <URI extends string = ''>(
+    wallet: Wallet<any, IDXPluginDependentMethods<URI>>,
     { modelData, credentialAlias, ceramicEndpoint, defaultContentFamily }: CeramicIDXArgs
-): Promise<Plugin<'IDX', IDXPluginMethods>> => {
+): Promise<Plugin<'IDX', IDXPluginMethods<URI>>> => {
     const ceramic = await getCeramicClientFromWalletSuite(wallet, ceramicEndpoint);
 
     const loader = new TileLoader({ ceramic });
@@ -163,6 +171,21 @@ export const getIDXPlugin = async (
             },
             removeVerifiableCredentialInIdx: async (_wallet, title) => {
                 return removeCredentialFromIdx(title);
+            },
+            resolveCredential: async (_wallet, uri) => {
+                if (uri.startsWith('ceramic://')) {
+                    return VCValidator.parseAsync(await readContentFromCeramic(uri));
+                }
+
+                const verificationResult = await CeramicURIValidator.spa(uri);
+
+                if (!verificationResult.success) {
+                    return wallet.pluginMethods.resolveCredential(uri as LC_URI<URI>);
+                }
+
+                const streamId = verificationResult.data.split(':')[2];
+
+                return VCValidator.parseAsync(await readContentFromCeramic(streamId));
             },
         },
     };

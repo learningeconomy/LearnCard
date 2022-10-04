@@ -118,7 +118,7 @@ export type GetCredentials = () => Promise<VC[]>;
  */
 export type GetCredentialsList = <
     Metadata extends Record<string, any> = Record<never, never>
->() => Promise<IDXCredential<Metadata>[]>;
+    >() => Promise<IDXCredential<Metadata>[]>;
 
 /**
  * Publishes a credential to Ceramic, returning the credential's stream ID
@@ -174,6 +174,16 @@ export type ResolveDid = (
  * @group LearnCard Methods
  */
 export type ReadFromCeramic = (streamId: string) => Promise<any>;
+
+/**
+ * Resolves a LearnCard URI (e.g. lc:ceramic:1234561)
+ *
+ * This can be given the return value of `publishCredential` to gain access to the credential
+ * that was published
+ *
+ * @group LearnCard Methods
+ */
+export type ResolveCredential = (URI: '' | `lc:ceramic:${string}`) => Promise<VC>;
 
 /**
  * Returns an example credential, optionally allowing a subject's did to be passed in
@@ -331,6 +341,7 @@ export type AllLearnCardMethods = {
     removeCredential: RemoveCredential;
     resolveDid: ResolveDid;
     readFromCeramic: ReadFromCeramic;
+    resolveCredential: ResolveCredential;
     getTestVc: GetTestVc;
     getTestVp: GetTestVp;
     getEthereumAddress: GetEthereumAddress;
