@@ -19,6 +19,7 @@ import {
     CredentialRequestEvent,
     CredentialStoreEvent,
 } from '@wallet/plugins/chapi/types';
+import { CeramicURI } from '@wallet/plugins';
 
 /**
  * Wallet holder's did
@@ -102,7 +103,7 @@ export type VerifyPresentation = (
  *
  * @group LearnCard Methods
  */
-export type GetCredential = (title: string) => Promise<VC>;
+export type GetCredential = (title: string) => Promise<VC | undefined>;
 
 /**
  * Returns all credentials from IDX
@@ -118,25 +119,25 @@ export type GetCredentials = () => Promise<VC[]>;
  */
 export type GetCredentialsList = <
     Metadata extends Record<string, any> = Record<never, never>
->() => Promise<IDXCredential<Metadata>[]>;
+    >() => Promise<IDXCredential<Metadata>[]>;
 
 /**
- * Publishes a credential to Ceramic, returning the credential's stream ID
+ * Publishes a credential to Ceramic, returning the credential's Ceramic URI
  *
- * This stream ID may then be shared/persisted/resolved to gain access to the credential
+ * This URI may then be shared/persisted/resolved to gain access to the credential
  *
- * Resolving a stream ID can be done by passing the stream ID to `readFromCeramic`
+ * Resolving a URI can be done by passing the URI to `resolveCredential`
  *
  * @group LearnCard Methods
  */
-export type PublishCredential = (credential: VC) => Promise<string>;
+export type PublishCredential = (credential: VC) => Promise<CeramicURI>;
 
 /**
- * Adds a stream ID  pointing to a credential (such as the one returned by `publishCredential`)
- * to IDX with a bespoke title
+ * Adds a URI pointing to a credential (such as the one returned by `publishCredential`)
+ * to IDX with a bespoke ID
  *
- * The credential may then be retrieved using `getCredential` and passing in that bespoke title,
- * or by using `getCredentials` to get a list of all credentials that have been added to IDX
+ * The credential may then be retrieved using `getCredential` and passing in that bespoke ID,
+ * or by using `getCredentials`/`getCredentialsList` to get a list of all credentials that have been added to IDX
  *
  * @group LearnCard Methods
  */
@@ -145,15 +146,11 @@ export type AddCredential = <Metadata extends Record<string, any> = Record<never
 ) => Promise<void>;
 
 /**
- * Adds a stream ID  pointing to a credential (such as the one returned by `publishCredential`)
- * to IDX with a bespoke title
- *
- * The credential may then be retrieved using `getCredential` and passing in that bespoke title,
- * or by using `getCredentials` to get a list of all credentials that have been added to IDX
+ * Removes a credential from IDX by passing in its bespoke ID
  *
  * @group LearnCard Methods
  */
-export type RemoveCredential = (title: string) => Promise<void>;
+export type RemoveCredential = (id: string) => Promise<void>;
 
 /**
  * Resolves a did to its did document
@@ -168,12 +165,21 @@ export type ResolveDid = (
 /**
  * Resolves a stream ID, returning its contents
  *
+ * @group LearnCard Methods
+ */
+export type ReadFromCeramic = (streamId: string) => Promise<any>;
+
+/**
+ * Resolves a LearnCard URI (e.g. lc:ceramic:1234561)
+ *
  * This can be given the return value of `publishCredential` to gain access to the credential
  * that was published
  *
  * @group LearnCard Methods
  */
-export type ReadFromCeramic = (streamId: string) => Promise<any>;
+export type ResolveCredential = (
+    URI?: string | '' | `lc:ceramic:${string}`
+) => Promise<VC | undefined>;
 
 /**
  * Returns an example credential, optionally allowing a subject's did to be passed in
@@ -331,6 +337,7 @@ export type AllLearnCardMethods = {
     removeCredential: RemoveCredential;
     resolveDid: ResolveDid;
     readFromCeramic: ReadFromCeramic;
+    resolveCredential: ResolveCredential;
     getTestVc: GetTestVc;
     getTestVp: GetTestVp;
     getEthereumAddress: GetEthereumAddress;
