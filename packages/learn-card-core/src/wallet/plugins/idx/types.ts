@@ -34,7 +34,7 @@ export type IDXPluginMethods<URI extends string = ''> = {
     ) => Promise<CredentialsList<Metadata>>;
     publishContentToCeramic: (cred: any) => Promise<CeramicURI>;
     readContentFromCeramic: (streamId: string) => Promise<any>;
-    getVerifiableCredentialFromIdx: (title: string) => Promise<VC>;
+    getVerifiableCredentialFromIdx: (id: string) => Promise<VC | undefined>;
     getVerifiableCredentialsFromIdx: () => Promise<VC[]>;
     addVerifiableCredentialInIdx: <Metadata extends Record<string, any> = Record<never, never>>(
         cred: IDXCredential<Metadata>

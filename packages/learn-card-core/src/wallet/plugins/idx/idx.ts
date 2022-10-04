@@ -7,12 +7,9 @@ import { TileLoader } from '@glazed/tile-loader';
 import { CeramicClient } from '@ceramicnetwork/http-client';
 import { CreateOpts } from '@ceramicnetwork/common';
 import { TileDocument, TileMetadataArgs } from '@ceramicnetwork/stream-tile';
-import {
-    IDXCredential,
-    IDXCredentialValidator,
-    StorageTypeEnum,
-    VCValidator,
-} from '@learncard/types';
+import { IDXCredentialValidator, VCValidator, VC } from '@learncard/types';
+
+import { streamIdToCeramicURI } from './helpers';
 
 import {
     CredentialsList,
@@ -23,8 +20,6 @@ import {
     CeramicURIValidator,
 } from './types';
 import { Plugin, Wallet } from 'types/wallet';
-import { LC_URI } from '../vc-resolution';
-import { streamIdToCeramicURI } from './helpers';
 
 const getCeramicClientFromWalletSuite = async <URI extends string = ''>(
     wallet: Wallet<any, IDXPluginDependentMethods<URI>>,
@@ -76,44 +71,14 @@ export const getIDXPlugin = async <URI extends string = ''>(
         throw new Error('Invalid credentials list stored in IDX');
     };
 
-    const addCredentialStreamIdToIdx = async (_record: IDXCredential, alias?: string) => {
-        const record = IDXCredentialValidator.parse(_record);
-
-        if (!record) throw new Error('record is required');
-
-        if (!record.id) throw Error('No streamId provided');
-
-        // check streamId format
-        if (record.id.indexOf('ceramic://') === -1) record.id = 'ceramic://' + record.id;
+    const removeCredentialFromIdx = async (id: string, alias?: string) => {
+        if (!id) throw new Error('Must provide id to remove');
 
         if (!alias) alias = credentialAlias;
 
         const existing = await getCredentialsListFromIdx(alias);
 
-        const indexOfExistingCredential = existing.credentials.findIndex(credential => {
-            return credential.title === record.title;
-        });
-
-        if (indexOfExistingCredential > -1) {
-            existing.credentials[indexOfExistingCredential] = {
-                storageType: StorageTypeEnum.ceramic,
-                ...record,
-            };
-        } else existing.credentials.push({ storageType: StorageTypeEnum.ceramic, ...record });
-
-        return dataStore.set(alias, existing);
-    };
-
-    const removeCredentialFromIdx = async (title: string, alias?: string) => {
-        if (!title) throw new Error('record is required');
-
-        if (!alias) alias = credentialAlias;
-
-        const existing = await getCredentialsListFromIdx(alias);
-
-        existing.credentials = existing.credentials.filter(
-            credential => credential.title !== title
-        );
+        existing.credentials = existing.credentials.filter(credential => credential.id !== id);
 
         return dataStore.set(alias, existing);
     };
@@ -153,37 +118,59 @@ export const getIDXPlugin = async <URI extends string = ''>(
                 streamIdToCeramicURI(await publishContentToCeramic(cred)),
             readContentFromCeramic: async (_wallet, streamId: string) =>
                 readContentFromCeramic(streamId),
-            getVerifiableCredentialFromIdx: async (_wallet, title: string) => {
+            getVerifiableCredentialFromIdx: async (_wallet, id) => {
                 const credentialList = await getCredentialsListFromIdx();
-                const credential = credentialList?.credentials?.find(cred => cred?.title === title);
+                const credential = credentialList?.credentials?.find(cred => cred?.id === id);
 
-                return credential && (await readContentFromCeramic(credential.id));
+                return credential?.uri
+                    ? _wallet.pluginMethods.resolveCredential(credential.uri)
+                    : undefined;
             },
-            getVerifiableCredentialsFromIdx: async () => {
+            getVerifiableCredentialsFromIdx: async _wallet => {
                 const credentialList = await getCredentialsListFromIdx();
-                const streamIds =
-                    credentialList?.credentials?.map(credential => credential?.id) ?? [];
+                const uris = credentialList?.credentials?.map(credential => credential?.uri) ?? [];
 
-                return Promise.all(
-                    streamIds.map(async streamId => readContentFromCeramic(streamId))
-                );
+                return (
+                    await Promise.all(
+                        uris.map(async uri => _wallet.pluginMethods.resolveCredential(uri))
+                    )
+                ).filter((vc): vc is VC => !!vc);
             },
             addVerifiableCredentialInIdx: async (_wallet, idxCredential) => {
-                return streamIdToCeramicURI(await addCredentialStreamIdToIdx(idxCredential));
+                const record = IDXCredentialValidator.parse(idxCredential);
+
+                if (!record) throw new Error('record is required');
+
+                if (!record.uri) throw Error('No URI provided');
+
+                // Make sure URI can be resolved
+                await _wallet.pluginMethods.resolveCredential(record.uri);
+
+                const existing = await getCredentialsListFromIdx(credentialAlias);
+
+                const indexOfExistingCredential = existing.credentials.findIndex(credential => {
+                    return credential.id === record.id;
+                });
+
+                if (indexOfExistingCredential > -1) {
+                    existing.credentials[indexOfExistingCredential] = record;
+                } else existing.credentials.push(record);
+
+                return streamIdToCeramicURI(await dataStore.set(credentialAlias, existing));
             },
-            removeVerifiableCredentialInIdx: async (_wallet, title) => {
-                return removeCredentialFromIdx(title);
+            removeVerifiableCredentialInIdx: async (_wallet, id) => {
+                return removeCredentialFromIdx(id);
             },
             resolveCredential: async (_wallet, uri) => {
+                if (!uri) return undefined;
+
                 if (uri.startsWith('ceramic://')) {
                     return VCValidator.parseAsync(await readContentFromCeramic(uri));
                 }
 
                 const verificationResult = await CeramicURIValidator.spa(uri);
 
-                if (!verificationResult.success) {
-                    return wallet.pluginMethods.resolveCredential(uri as LC_URI<URI>);
-                }
+                if (!verificationResult.success) return wallet.pluginMethods.resolveCredential(uri);
 
                 const streamId = verificationResult.data.split(':')[2];
 

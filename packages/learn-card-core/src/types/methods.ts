@@ -103,7 +103,7 @@ export type VerifyPresentation = (
  *
  * @group LearnCard Methods
  */
-export type GetCredential = (title: string) => Promise<VC>;
+export type GetCredential = (title: string) => Promise<VC | undefined>;
 
 /**
  * Returns all credentials from IDX
@@ -133,11 +133,11 @@ export type GetCredentialsList = <
 export type PublishCredential = (credential: VC) => Promise<CeramicURI>;
 
 /**
- * Adds a stream ID  pointing to a credential (such as the one returned by `publishCredential`)
- * to IDX with a bespoke title
+ * Adds a URI pointing to a credential (such as the one returned by `publishCredential`)
+ * to IDX with a bespoke ID
  *
- * The credential may then be retrieved using `getCredential` and passing in that bespoke title,
- * or by using `getCredentials` to get a list of all credentials that have been added to IDX
+ * The credential may then be retrieved using `getCredential` and passing in that bespoke ID,
+ * or by using `getCredentials`/`getCredentialsList` to get a list of all credentials that have been added to IDX
  *
  * @group LearnCard Methods
  */
@@ -146,15 +146,11 @@ export type AddCredential = <Metadata extends Record<string, any> = Record<never
 ) => Promise<void>;
 
 /**
- * Adds a stream ID  pointing to a credential (such as the one returned by `publishCredential`)
- * to IDX with a bespoke title
- *
- * The credential may then be retrieved using `getCredential` and passing in that bespoke title,
- * or by using `getCredentials` to get a list of all credentials that have been added to IDX
+ * Removes a credential from IDX by passing in its bespoke ID
  *
  * @group LearnCard Methods
  */
-export type RemoveCredential = (title: string) => Promise<void>;
+export type RemoveCredential = (id: string) => Promise<void>;
 
 /**
  * Resolves a did to its did document
@@ -181,7 +177,9 @@ export type ReadFromCeramic = (streamId: string) => Promise<any>;
  *
  * @group LearnCard Methods
  */
-export type ResolveCredential = (URI: '' | `lc:ceramic:${string}`) => Promise<VC>;
+export type ResolveCredential = (
+    URI?: string | '' | `lc:ceramic:${string}`
+) => Promise<VC | undefined>;
 
 /**
  * Returns an example credential, optionally allowing a subject's did to be passed in
