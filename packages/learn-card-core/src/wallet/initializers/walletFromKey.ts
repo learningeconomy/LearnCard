@@ -12,6 +12,7 @@ import { verifyCredential } from '@wallet/verify';
 import { LearnCardConfig, LearnCard } from 'types/LearnCard';
 import { defaultCeramicIDXArgs, defaultEthereumArgs } from '@wallet/defaults';
 import { getVCTemplatesPlugin } from '@wallet/plugins/vc-templates';
+import { VCResolutionPlugin } from '@wallet/plugins/vc-resolution';
 
 /**
  * Generates a LearnCard Wallet from a 64 character seed string
@@ -37,8 +38,10 @@ export const walletFromKey = async (
 
     const templateWallet = await didkeyAndVCWallet.addPlugin(getVCTemplatesPlugin());
 
-    const idxWallet = await templateWallet.addPlugin(
-        await getIDXPlugin(templateWallet, ceramicIdx)
+    const resolutionWallet = await templateWallet.addPlugin(VCResolutionPlugin);
+
+    const idxWallet = await resolutionWallet.addPlugin(
+        await getIDXPlugin(resolutionWallet, ceramicIdx)
     );
     const expirationWallet = await idxWallet.addPlugin(ExpirationPlugin(idxWallet));
 
@@ -82,6 +85,7 @@ export const walletFromKey = async (
         resolveDid: wallet.pluginMethods.resolveDid,
 
         readFromCeramic: wallet.pluginMethods.readContentFromCeramic,
+        resolveCredential: wallet.pluginMethods.resolveCredential,
 
         getTestVc: wallet.pluginMethods.getTestVc,
         getTestVp: wallet.pluginMethods.getTestVp,
