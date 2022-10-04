@@ -13,6 +13,9 @@ export type CeramicIDXArgs = {
 };
 
 /** @group IDXPlugin */
+export type CeramicURI = `lc:ceramic:${string}`;
+
+/** @group IDXPlugin */
 export const CeramicURIValidator = z
     .string()
     .refine(
@@ -29,15 +32,15 @@ export type IDXPluginMethods<URI extends string = ''> = {
     getCredentialsListFromIdx: <Metadata extends Record<string, any> = Record<never, never>>(
         alias?: string
     ) => Promise<CredentialsList<Metadata>>;
-    publishContentToCeramic: (cred: any) => Promise<string>;
+    publishContentToCeramic: (cred: any) => Promise<CeramicURI>;
     readContentFromCeramic: (streamId: string) => Promise<any>;
     getVerifiableCredentialFromIdx: (title: string) => Promise<VC>;
     getVerifiableCredentialsFromIdx: () => Promise<VC[]>;
     addVerifiableCredentialInIdx: <Metadata extends Record<string, any> = Record<never, never>>(
         cred: IDXCredential<Metadata>
-    ) => Promise<StreamID>;
+    ) => Promise<CeramicURI>;
     removeVerifiableCredentialInIdx: (title: string) => Promise<StreamID>;
-} & ResolutionExtension<URI | `lc:ceramic:${string}`>;
+} & ResolutionExtension<URI | CeramicURI>;
 
 /** @group IDXPlugin */
 export type IDXPluginDependentMethods<URI extends string = ''> = {

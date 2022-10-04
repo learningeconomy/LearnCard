@@ -24,6 +24,7 @@ import {
 } from './types';
 import { Plugin, Wallet } from 'types/wallet';
 import { LC_URI } from '../vc-resolution';
+import { streamIdToCeramicURI } from './helpers';
 
 const getCeramicClientFromWalletSuite = async <URI extends string = ''>(
     wallet: Wallet<any, IDXPluginDependentMethods<URI>>,
@@ -148,7 +149,8 @@ export const getIDXPlugin = async <URI extends string = ''>(
         pluginMethods: {
             getCredentialsListFromIdx: async (_wallet, alias = credentialAlias) =>
                 getCredentialsListFromIdx(alias),
-            publishContentToCeramic: async (_wallet, cred) => publishContentToCeramic(cred),
+            publishContentToCeramic: async (_wallet, cred) =>
+                streamIdToCeramicURI(await publishContentToCeramic(cred)),
             readContentFromCeramic: async (_wallet, streamId: string) =>
                 readContentFromCeramic(streamId),
             getVerifiableCredentialFromIdx: async (_wallet, title: string) => {
@@ -167,7 +169,7 @@ export const getIDXPlugin = async <URI extends string = ''>(
                 );
             },
             addVerifiableCredentialInIdx: async (_wallet, idxCredential) => {
-                return addCredentialStreamIdToIdx(idxCredential);
+                return streamIdToCeramicURI(await addCredentialStreamIdToIdx(idxCredential));
             },
             removeVerifiableCredentialInIdx: async (_wallet, title) => {
                 return removeCredentialFromIdx(title);

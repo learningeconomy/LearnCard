@@ -19,6 +19,7 @@ import {
     CredentialRequestEvent,
     CredentialStoreEvent,
 } from '@wallet/plugins/chapi/types';
+import { CeramicURI } from '@wallet/plugins';
 
 /**
  * Wallet holder's did
@@ -121,15 +122,15 @@ export type GetCredentialsList = <
     >() => Promise<IDXCredential<Metadata>[]>;
 
 /**
- * Publishes a credential to Ceramic, returning the credential's stream ID
+ * Publishes a credential to Ceramic, returning the credential's Ceramic URI
  *
- * This stream ID may then be shared/persisted/resolved to gain access to the credential
+ * This URI may then be shared/persisted/resolved to gain access to the credential
  *
- * Resolving a stream ID can be done by passing the stream ID to `readFromCeramic`
+ * Resolving a URI can be done by passing the URI to `resolveCredential`
  *
  * @group LearnCard Methods
  */
-export type PublishCredential = (credential: VC) => Promise<string>;
+export type PublishCredential = (credential: VC) => Promise<CeramicURI>;
 
 /**
  * Adds a stream ID  pointing to a credential (such as the one returned by `publishCredential`)
@@ -167,9 +168,6 @@ export type ResolveDid = (
 
 /**
  * Resolves a stream ID, returning its contents
- *
- * This can be given the return value of `publishCredential` to gain access to the credential
- * that was published
  *
  * @group LearnCard Methods
  */
