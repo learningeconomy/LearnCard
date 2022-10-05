@@ -1,5 +1,17 @@
 # @learncard/cli
 
+## 1.5.0
+
+### Minor Changes
+
+-   [#115](https://github.com/learningeconomy/LearnCard/pull/115) [`efab28a`](https://github.com/learningeconomy/LearnCard/commit/efab28ae5c9487239537d220316f5a216d64fe58) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add @learncard/types to global as "types"
+
+### Patch Changes
+
+-   Updated dependencies [[`efab28a`](https://github.com/learningeconomy/LearnCard/commit/efab28ae5c9487239537d220316f5a216d64fe58)]:
+    -   @learncard/types@4.0.1
+    -   @learncard/core@7.0.0
+
 ## 1.4.9
 
 ### Patch Changes
