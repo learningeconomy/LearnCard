@@ -1,5 +1,12 @@
 # @learncard/cli
 
+## 1.5.1
+
+### Patch Changes
+
+-   Updated dependencies [[`e8f1ba3`](https://github.com/learningeconomy/LearnCard/commit/e8f1ba3594bc749caf18959962da4b85c97db4a6)]:
+    -   @learncard/core@7.0.1
+
 ## 1.5.0
 
 ### Minor Changes

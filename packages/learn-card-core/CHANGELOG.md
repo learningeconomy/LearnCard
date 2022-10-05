@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 7.0.1
+
+### Patch Changes
+
+-   [`e8f1ba3`](https://github.com/learningeconomy/LearnCard/commit/e8f1ba3594bc749caf18959962da4b85c97db4a6) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix VC Validation
+
 ## 7.0.0
 
 ### Major Changes
