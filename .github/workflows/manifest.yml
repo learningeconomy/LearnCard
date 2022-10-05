@@ -8,8 +8,8 @@ name: Manifest
 
 on:
   push:
-    branches:
-      - changeset-release/main
+    branches-ignore:
+      - main
 
 env:
   CI: true
