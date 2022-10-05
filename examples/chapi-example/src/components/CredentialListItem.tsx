@@ -17,7 +17,7 @@ const CredentialListItem: React.FC<CredentialListItemProps> = ({ credential: idx
 
     useEffect(() => {
         if (wallet && active && !credential) {
-            wallet.readFromCeramic(idxCredential.id).then(setCredential);
+            wallet.resolveCredential(idxCredential.uri).then(setCredential);
         }
     });
 
@@ -25,12 +25,12 @@ const CredentialListItem: React.FC<CredentialListItemProps> = ({ credential: idx
         if (!wallet) return;
 
         if (confirm('Are you sure you want to delete this credential?')) {
-            await wallet.removeCredential(idxCredential.title);
+            await wallet.removeCredential(idxCredential.id);
             window.location.reload();
         }
     };
 
-    let displayValue = idxCredential.title;
+    let displayValue: any = idxCredential.id;
 
     if (active) {
         displayValue = credential ? (
