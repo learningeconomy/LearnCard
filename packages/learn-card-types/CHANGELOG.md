@@ -1,5 +1,11 @@
 # learn-card-types
 
+## 4.0.0
+
+### Major Changes
+
+-   [#113](https://github.com/learningeconomy/LearnCard/pull/113) [`25349fe`](https://github.com/learningeconomy/LearnCard/commit/25349fe064c751a004092bcab24e1674fadfd5fe) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - BREAKING CHANGE: IDX Schema now uses ID and URI rather than streamID and Title
+
 ## 3.1.0
 
 ### Minor Changes
