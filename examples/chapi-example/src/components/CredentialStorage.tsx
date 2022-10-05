@@ -44,9 +44,9 @@ const CredentialStorage: React.FC = () => {
     const accept = async () => {
         const wallet = await getWallet();
 
-        const id = await wallet.publishCredential(credential);
+        const uri = await wallet.publishCredential(credential);
 
-        await wallet.addCredential({ title, id });
+        await wallet.addCredential({ id: title, uri });
 
         event.respondWith(
             Promise.resolve({ dataType: 'VerifiablePresentation', data: presentation })

@@ -26,7 +26,7 @@ custom_edit_url: null
 
 #### Defined in
 
-[packages/react-learn-card/src/components/Button/Button.tsx:3](https://github.com/learningeconomy/LearnCard/blob/cea29cad/packages/react-learn-card/src/components/Button/Button.tsx#L3)
+[packages/react-learn-card/src/components/Button/Button.tsx:3](https://github.com/learningeconomy/LearnCard/blob/1e4133fd5/packages/react-learn-card/src/components/Button/Button.tsx#L3)
 
 ___
 
@@ -49,7 +49,7 @@ ___
 
 #### Defined in
 
-[packages/react-learn-card/src/components/CircleIcon/CircleIcon.tsx:6](https://github.com/learningeconomy/LearnCard/blob/cea29cad/packages/react-learn-card/src/components/CircleIcon/CircleIcon.tsx#L6)
+[packages/react-learn-card/src/components/CircleIcon/CircleIcon.tsx:6](https://github.com/learningeconomy/LearnCard/blob/1e4133fd5/packages/react-learn-card/src/components/CircleIcon/CircleIcon.tsx#L6)
 
 ___
 
@@ -69,7 +69,7 @@ ___
 
 #### Defined in
 
-[packages/react-learn-card/src/components/Loading/CircleSpinner.tsx:8](https://github.com/learningeconomy/LearnCard/blob/cea29cad/packages/react-learn-card/src/components/Loading/CircleSpinner.tsx#L8)
+[packages/react-learn-card/src/components/Loading/CircleSpinner.tsx:8](https://github.com/learningeconomy/LearnCard/blob/1e4133fd5/packages/react-learn-card/src/components/Loading/CircleSpinner.tsx#L8)
 
 ___
 
@@ -90,7 +90,7 @@ ___
 
 #### Defined in
 
-[packages/react-learn-card/src/components/CircleIcon/CircleIcon.tsx:17](https://github.com/learningeconomy/LearnCard/blob/cea29cad/packages/react-learn-card/src/components/CircleIcon/CircleIcon.tsx#L17)
+[packages/react-learn-card/src/components/CircleIcon/CircleIcon.tsx:17](https://github.com/learningeconomy/LearnCard/blob/1e4133fd5/packages/react-learn-card/src/components/CircleIcon/CircleIcon.tsx#L17)
 
 ___
 
@@ -106,7 +106,7 @@ ___
 
 #### Defined in
 
-[packages/react-learn-card/src/components/FlippyCard/FlippyCard.tsx:3](https://github.com/learningeconomy/LearnCard/blob/cea29cad/packages/react-learn-card/src/components/FlippyCard/FlippyCard.tsx#L3)
+[packages/react-learn-card/src/components/FlippyCard/FlippyCard.tsx:3](https://github.com/learningeconomy/LearnCard/blob/1e4133fd5/packages/react-learn-card/src/components/FlippyCard/FlippyCard.tsx#L3)
 
 ___
 
@@ -124,7 +124,7 @@ ___
 
 #### Defined in
 
-[packages/react-learn-card/src/components/LearnCardCreditCardBackFace/types.ts:1](https://github.com/learningeconomy/LearnCard/blob/cea29cad/packages/react-learn-card/src/components/LearnCardCreditCardBackFace/types.ts#L1)
+[packages/react-learn-card/src/components/LearnCardCreditCardBackFace/types.ts:1](https://github.com/learningeconomy/LearnCard/blob/1e4133fd5/packages/react-learn-card/src/components/LearnCardCreditCardBackFace/types.ts#L1)
 
 ___
 
@@ -146,7 +146,7 @@ ___
 
 #### Defined in
 
-[packages/react-learn-card/src/components/LearnCardCreditCardFrontFace/types.ts:1](https://github.com/learningeconomy/LearnCard/blob/cea29cad/packages/react-learn-card/src/components/LearnCardCreditCardFrontFace/types.ts#L1)
+[packages/react-learn-card/src/components/LearnCardCreditCardFrontFace/types.ts:1](https://github.com/learningeconomy/LearnCard/blob/1e4133fd5/packages/react-learn-card/src/components/LearnCardCreditCardFrontFace/types.ts#L1)
 
 ___
 
@@ -165,7 +165,7 @@ ___
 
 #### Defined in
 
-[packages/react-learn-card/src/components/LearnCardCreditCardBackFace/types.ts:24](https://github.com/learningeconomy/LearnCard/blob/cea29cad/packages/react-learn-card/src/components/LearnCardCreditCardBackFace/types.ts#L24)
+[packages/react-learn-card/src/components/LearnCardCreditCardBackFace/types.ts:24](https://github.com/learningeconomy/LearnCard/blob/1e4133fd5/packages/react-learn-card/src/components/LearnCardCreditCardBackFace/types.ts#L24)
 
 ___
 
@@ -182,7 +182,7 @@ ___
 
 #### Defined in
 
-[packages/react-learn-card/src/components/LearnCardCreditCardBackFace/types.ts:11](https://github.com/learningeconomy/LearnCard/blob/cea29cad/packages/react-learn-card/src/components/LearnCardCreditCardBackFace/types.ts#L11)
+[packages/react-learn-card/src/components/LearnCardCreditCardBackFace/types.ts:11](https://github.com/learningeconomy/LearnCard/blob/1e4133fd5/packages/react-learn-card/src/components/LearnCardCreditCardBackFace/types.ts#L11)
 
 ___
 
@@ -203,7 +203,7 @@ ___
 
 #### Defined in
 
-[packages/react-learn-card/src/components/MiniVCThumbnail/types.ts:1](https://github.com/learningeconomy/LearnCard/blob/cea29cad/packages/react-learn-card/src/components/MiniVCThumbnail/types.ts#L1)
+[packages/react-learn-card/src/components/MiniVCThumbnail/types.ts:1](https://github.com/learningeconomy/LearnCard/blob/1e4133fd5/packages/react-learn-card/src/components/MiniVCThumbnail/types.ts#L1)
 
 ___
 
@@ -224,7 +224,7 @@ ___
 
 #### Defined in
 
-[packages/react-learn-card/src/components/Notification/types.ts:10](https://github.com/learningeconomy/LearnCard/blob/cea29cad/packages/react-learn-card/src/components/Notification/types.ts#L10)
+[packages/react-learn-card/src/components/Notification/types.ts:10](https://github.com/learningeconomy/LearnCard/blob/1e4133fd5/packages/react-learn-card/src/components/Notification/types.ts#L10)
 
 ___
 
@@ -243,7 +243,7 @@ ___
 
 #### Defined in
 
-[packages/react-learn-card/src/components/QRCodeCard/types.ts:1](https://github.com/learningeconomy/LearnCard/blob/cea29cad/packages/react-learn-card/src/components/QRCodeCard/types.ts#L1)
+[packages/react-learn-card/src/components/QRCodeCard/types.ts:1](https://github.com/learningeconomy/LearnCard/blob/1e4133fd5/packages/react-learn-card/src/components/QRCodeCard/types.ts#L1)
 
 ___
 
@@ -266,7 +266,7 @@ ___
 
 #### Defined in
 
-[packages/react-learn-card/src/components/RoundedSquare/RoundedSquare.tsx:9](https://github.com/learningeconomy/LearnCard/blob/cea29cad/packages/react-learn-card/src/components/RoundedSquare/RoundedSquare.tsx#L9)
+[packages/react-learn-card/src/components/RoundedSquare/RoundedSquare.tsx:9](https://github.com/learningeconomy/LearnCard/blob/1e4133fd5/packages/react-learn-card/src/components/RoundedSquare/RoundedSquare.tsx#L9)
 
 ___
 
@@ -288,7 +288,7 @@ ___
 
 #### Defined in
 
-[packages/react-learn-card/src/components/SchoolIdCard/types.ts:1](https://github.com/learningeconomy/LearnCard/blob/cea29cad/packages/react-learn-card/src/components/SchoolIdCard/types.ts#L1)
+[packages/react-learn-card/src/components/SchoolIdCard/types.ts:1](https://github.com/learningeconomy/LearnCard/blob/1e4133fd5/packages/react-learn-card/src/components/SchoolIdCard/types.ts#L1)
 
 ___
 
@@ -306,7 +306,7 @@ ___
 
 #### Defined in
 
-[packages/react-learn-card/src/components/VCCard/VCCard.tsx:7](https://github.com/learningeconomy/LearnCard/blob/cea29cad/packages/react-learn-card/src/components/VCCard/VCCard.tsx#L7)
+[packages/react-learn-card/src/components/VCCard/VCCard.tsx:7](https://github.com/learningeconomy/LearnCard/blob/1e4133fd5/packages/react-learn-card/src/components/VCCard/VCCard.tsx#L7)
 
 ___
 
@@ -322,11 +322,12 @@ ___
 | `credential` | `VC` \| `AchievementCredential` |
 | `issueeOverride?` | `Profile` |
 | `loading?` | `boolean` |
+| `subjectImageComponent?` | `React.ReactNode` |
 | `verification?` | `VerificationItem`[] |
 
 #### Defined in
 
-[packages/react-learn-card/src/components/VCDisplayCard/VCDisplayCard.tsx:10](https://github.com/learningeconomy/LearnCard/blob/cea29cad/packages/react-learn-card/src/components/VCDisplayCard/VCDisplayCard.tsx#L10)
+[packages/react-learn-card/src/components/VCDisplayCard/VCDisplayCard.tsx:10](https://github.com/learningeconomy/LearnCard/blob/1e4133fd5/packages/react-learn-card/src/components/VCDisplayCard/VCDisplayCard.tsx#L10)
 
 ___
 
@@ -346,10 +347,11 @@ ___
 | `onClick?` | () => `void` |  |
 | `title?` | `string` | thumbnail title |
 | `userImage?` | `string` | user image |
+| `userImageComponent?` | `React.ReactNode` | - |
 
 #### Defined in
 
-[packages/react-learn-card/src/components/VCThumbnail/types.ts:1](https://github.com/learningeconomy/LearnCard/blob/cea29cad/packages/react-learn-card/src/components/VCThumbnail/types.ts#L1)
+[packages/react-learn-card/src/components/VCThumbnail/types.ts:3](https://github.com/learningeconomy/LearnCard/blob/1e4133fd5/packages/react-learn-card/src/components/VCThumbnail/types.ts#L3)
 
 ___
 
@@ -366,7 +368,7 @@ ___
 
 #### Defined in
 
-[packages/react-learn-card/src/components/VCVerificationCheck/VCVerificationCheck.tsx:5](https://github.com/learningeconomy/LearnCard/blob/cea29cad/packages/react-learn-card/src/components/VCVerificationCheck/VCVerificationCheck.tsx#L5)
+[packages/react-learn-card/src/components/VCVerificationCheck/VCVerificationCheck.tsx:5](https://github.com/learningeconomy/LearnCard/blob/1e4133fd5/packages/react-learn-card/src/components/VCVerificationCheck/VCVerificationCheck.tsx#L5)
 
 ## Variables
 
@@ -423,7 +425,7 @@ ___
 
 #### Defined in
 
-[packages/react-learn-card/src/components/Notification/types.ts:19](https://github.com/learningeconomy/LearnCard/blob/cea29cad/packages/react-learn-card/src/components/Notification/types.ts#L19)
+[packages/react-learn-card/src/components/Notification/types.ts:19](https://github.com/learningeconomy/LearnCard/blob/1e4133fd5/packages/react-learn-card/src/components/Notification/types.ts#L19)
 
 ___
 
@@ -433,7 +435,17 @@ ___
 
 #### Defined in
 
-[packages/react-learn-card/src/components/RoundedSquare/constants.ts:17](https://github.com/learningeconomy/LearnCard/blob/cea29cad/packages/react-learn-card/src/components/RoundedSquare/constants.ts#L17)
+[packages/react-learn-card/src/components/RoundedSquare/constants.ts:28](https://github.com/learningeconomy/LearnCard/blob/1e4133fd5/packages/react-learn-card/src/components/RoundedSquare/constants.ts#L28)
+
+___
+
+### TYPE\_TO\_MINI\_ICON
+
+• `Const` **TYPE\_TO\_MINI\_ICON**: `any`
+
+#### Defined in
+
+[packages/react-learn-card/src/components/RoundedSquare/constants.ts:13](https://github.com/learningeconomy/LearnCard/blob/1e4133fd5/packages/react-learn-card/src/components/RoundedSquare/constants.ts#L13)
 
 ___
 
@@ -443,7 +455,7 @@ ___
 
 #### Defined in
 
-[packages/react-learn-card/src/components/RoundedSquare/constants.ts:26](https://github.com/learningeconomy/LearnCard/blob/cea29cad/packages/react-learn-card/src/components/RoundedSquare/constants.ts#L26)
+[packages/react-learn-card/src/components/RoundedSquare/constants.ts:37](https://github.com/learningeconomy/LearnCard/blob/1e4133fd5/packages/react-learn-card/src/components/RoundedSquare/constants.ts#L37)
 
 ___
 
@@ -464,9 +476,30 @@ ___
 
 #### Defined in
 
-[packages/react-learn-card/src/components/RoundedSquare/constants.ts:8](https://github.com/learningeconomy/LearnCard/blob/cea29cad/packages/react-learn-card/src/components/RoundedSquare/constants.ts#L8)
+[packages/react-learn-card/src/components/RoundedSquare/constants.ts:19](https://github.com/learningeconomy/LearnCard/blob/1e4133fd5/packages/react-learn-card/src/components/RoundedSquare/constants.ts#L19)
 
 ## Functions
+
+### AchievementCard
+
+▸ **AchievementCard**(`props`, `context?`): ``null`` \| `ReactElement`<`any`, `any`\>
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `props` | `PropsWithChildren`<`AchievementCardProps`\> |
+| `context?` | `any` |
+
+#### Returns
+
+``null`` \| `ReactElement`<`any`, `any`\>
+
+#### Defined in
+
+node_modules/.pnpm/@types+react@17.0.47/node_modules/@types/react/index.d.ts:543
+
+___
 
 ### Briefcase
 
@@ -519,6 +552,48 @@ ___
 | Name | Type |
 | :------ | :------ |
 | `props` | `PropsWithChildren`<{ `className?`: `string`  }\> |
+| `context?` | `any` |
+
+#### Returns
+
+``null`` \| `ReactElement`<`any`, `any`\>
+
+#### Defined in
+
+node_modules/.pnpm/@types+react@17.0.47/node_modules/@types/react/index.d.ts:543
+
+___
+
+### CheckmarkSvg
+
+▸ **CheckmarkSvg**(`props`, `context?`): ``null`` \| `ReactElement`<`any`, `any`\>
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `props` | `PropsWithChildren`<`InlineSVGProps`\> |
+| `context?` | `any` |
+
+#### Returns
+
+``null`` \| `ReactElement`<`any`, `any`\>
+
+#### Defined in
+
+node_modules/.pnpm/@types+react@17.0.47/node_modules/@types/react/index.d.ts:543
+
+___
+
+### CircleCheckButton
+
+▸ **CircleCheckButton**(`props`, `context?`): ``null`` \| `ReactElement`<`any`, `any`\>
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `props` | `PropsWithChildren`<`CircleCheckButtonProps`\> |
 | `context?` | `any` |
 
 #### Returns
@@ -615,6 +690,27 @@ node_modules/.pnpm/@types+react@17.0.47/node_modules/@types/react/index.d.ts:543
 
 ___
 
+### CourseVerticalCard
+
+▸ **CourseVerticalCard**(`props`, `context?`): ``null`` \| `ReactElement`<`any`, `any`\>
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `props` | `PropsWithChildren`<`CourseCardVerticalProps`\> |
+| `context?` | `any` |
+
+#### Returns
+
+``null`` \| `ReactElement`<`any`, `any`\>
+
+#### Defined in
+
+node_modules/.pnpm/@types+react@17.0.47/node_modules/@types/react/index.d.ts:543
+
+___
+
 ### FlippyCard
 
 ▸ **FlippyCard**(`props`, `context?`): ``null`` \| `ReactElement`<`any`, `any`\>
@@ -657,6 +753,48 @@ node_modules/.pnpm/@types+react@17.0.47/node_modules/@types/react/index.d.ts:543
 
 ___
 
+### JobListCard
+
+▸ **JobListCard**(`props`, `context?`): ``null`` \| `ReactElement`<`any`, `any`\>
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `props` | `PropsWithChildren`<`JobListCardProps`\> |
+| `context?` | `any` |
+
+#### Returns
+
+``null`` \| `ReactElement`<`any`, `any`\>
+
+#### Defined in
+
+node_modules/.pnpm/@types+react@17.0.47/node_modules/@types/react/index.d.ts:543
+
+___
+
+### JobListingBubble
+
+▸ **JobListingBubble**(`props`, `context?`): ``null`` \| `ReactElement`<`any`, `any`\>
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `props` | `PropsWithChildren`<`JobListingBubbleProps`\> |
+| `context?` | `any` |
+
+#### Returns
+
+``null`` \| `ReactElement`<`any`, `any`\>
+
+#### Defined in
+
+node_modules/.pnpm/@types+react@17.0.47/node_modules/@types/react/index.d.ts:543
+
+___
+
 ### LearnCardCreditCardBackFace
 
 ▸ **LearnCardCreditCardBackFace**(`props`, `context?`): ``null`` \| `ReactElement`<`any`, `any`\>
@@ -687,6 +825,27 @@ ___
 | Name | Type |
 | :------ | :------ |
 | `props` | `PropsWithChildren`<[`LearnCardCreditCardFrontFaceProps`](modules.md#learncardcreditcardfrontfaceprops)\> |
+| `context?` | `any` |
+
+#### Returns
+
+``null`` \| `ReactElement`<`any`, `any`\>
+
+#### Defined in
+
+node_modules/.pnpm/@types+react@17.0.47/node_modules/@types/react/index.d.ts:543
+
+___
+
+### LearnPill
+
+▸ **LearnPill**(`props`, `context?`): ``null`` \| `ReactElement`<`any`, `any`\>
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `props` | `PropsWithChildren`<`LearnPillProps`\> |
 | `context?` | `any` |
 
 #### Returns
@@ -783,6 +942,27 @@ node_modules/.pnpm/@types+react@17.0.47/node_modules/@types/react/index.d.ts:543
 
 ___
 
+### RoundedPill
+
+▸ **RoundedPill**(`props`, `context?`): ``null`` \| `ReactElement`<`any`, `any`\>
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `props` | `PropsWithChildren`<`RoundedPillProps`\> |
+| `context?` | `any` |
+
+#### Returns
+
+``null`` \| `ReactElement`<`any`, `any`\>
+
+#### Defined in
+
+node_modules/.pnpm/@types+react@17.0.47/node_modules/@types/react/index.d.ts:543
+
+___
+
 ### RoundedSquare
 
 ▸ **RoundedSquare**(`props`, `context?`): ``null`` \| `ReactElement`<`any`, `any`\>
@@ -813,6 +993,27 @@ ___
 | Name | Type |
 | :------ | :------ |
 | `props` | `PropsWithChildren`<[`SchoolIDCardProps`](modules.md#schoolidcardprops)\> |
+| `context?` | `any` |
+
+#### Returns
+
+``null`` \| `ReactElement`<`any`, `any`\>
+
+#### Defined in
+
+node_modules/.pnpm/@types+react@17.0.47/node_modules/@types/react/index.d.ts:543
+
+___
+
+### SkillTabCard
+
+▸ **SkillTabCard**(`props`, `context?`): ``null`` \| `ReactElement`<`any`, `any`\>
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `props` | `PropsWithChildren`<`SkillTabCardProps`\> |
 | `context?` | `any` |
 
 #### Returns
