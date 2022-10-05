@@ -1,5 +1,12 @@
 # @learncard/meta-mask-snap
 
+## 1.0.8
+
+### Patch Changes
+
+-   Updated dependencies [[`25349fe`](https://github.com/learningeconomy/LearnCard/commit/25349fe064c751a004092bcab24e1674fadfd5fe)]:
+    -   @learncard/core@7.0.0
+
 ## 1.0.7
 
 ### Patch Changes
