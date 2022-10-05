@@ -1,5 +1,11 @@
 # learn-card-types
 
+## 4.0.1
+
+### Patch Changes
+
+-   [#115](https://github.com/learningeconomy/LearnCard/pull/115) [`efab28a`](https://github.com/learningeconomy/LearnCard/commit/efab28ae5c9487239537d220316f5a216d64fe58) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix VC schema throwing if issuer.type is not an array
+
 ## 4.0.0
 
 ### Major Changes
