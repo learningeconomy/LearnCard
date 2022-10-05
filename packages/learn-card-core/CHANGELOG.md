@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 7.0.0
+
+### Major Changes
+
+-   [#113](https://github.com/learningeconomy/LearnCard/pull/113) [`25349fe`](https://github.com/learningeconomy/LearnCard/commit/25349fe064c751a004092bcab24e1674fadfd5fe) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - BREAKING CHANGE: IDX Schemas are now different, leveraging URIs rather than just StreamIDs. Old Schemas will be silently migrated, so this _should_ be pretty painless, but be advised of this change!
+
 ## 6.4.0
 
 ### Minor Changes
