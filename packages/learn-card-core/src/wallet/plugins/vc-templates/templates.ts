@@ -2,6 +2,8 @@ import {
     UnsignedVC,
     UnsignedAchievementCredential,
     UnsignedMembershipCredential,
+    UnsignedCourseCredential,
+    UnsignedCompetencyCredential,
 } from '@learncard/types';
 
 import { VcTemplates } from './types';
@@ -99,7 +101,7 @@ export const VC_TEMPLATES: { [Key in keyof VcTemplates]: (args: VcTemplates[Key]
             achievementNarrative = 'Learners must present source code showing the ability for a robot to accept manual or sensor input and perform conditional actions in response.',
             achievementDescription = 'This achievement represents developing capability to develop software for robotic applications.',
             achievementImage = 'https://example.com/achievements/robotics/robot-programming/image',
-        } = {}): UnsignedMembershipCredential => ({
+        } = {}): UnsignedCompetencyCredential => ({
             '@context': [
                 'https://www.w3.org/2018/credentials/v1',
                 'https://imsglobal.github.io/openbadges-specification/context.json',
@@ -136,7 +138,7 @@ export const VC_TEMPLATES: { [Key in keyof VcTemplates]: (args: VcTemplates[Key]
             achievementNarrative = 'The student successfully completed MECH 1310 with a passing grade.',
             achievementDescription = 'This course is a study of the basic electrical components in a mechatronics system.  Topics covered will include basic functions and physical properties of electrical components; the systematic flow of energy and measurement of components; troubleshooting techniques and strategies to identify, localize and correct malfunctions; and systematic preventive maintenance and electrical component safety.  Technical documentation such as data sheets, schematics, timing diagrams and system specifications will also be covered.',
             achievementImage = 'https://example.com/courses/mech/1310.png',
-        } = {}): UnsignedMembershipCredential => ({
+        } = {}): UnsignedCourseCredential => ({
             '@context': [
                 'https://www.w3.org/2018/credentials/v1',
                 'https://imsglobal.github.io/openbadges-specification/context.json',
