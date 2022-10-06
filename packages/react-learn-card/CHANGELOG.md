@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.3.41
+
+### Patch Changes
+
+-   [#118](https://github.com/learningeconomy/LearnCard/pull/118) [`7f98a90`](https://github.com/learningeconomy/LearnCard/commit/7f98a90df1e3ee8c2d39cabc754c6655e6072aa0) Thanks [@gerardopar](https://github.com/gerardopar)! - fix vc display card styles
+
 ## 2.3.40
 
 ### Patch Changes
