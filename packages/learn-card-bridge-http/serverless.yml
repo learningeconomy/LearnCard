@@ -6,11 +6,18 @@ service: learn-card-http-bridge
 
 plugins:
   - serverless-esbuild
+  - serverless-plugin-warmup
 
 custom:
   esbuild:
     packager: pnpm
     plugins: esbuildWasmPlugin.cjs
+  warmup:
+    default:
+      enabled: true
+      events:
+        - schedule: cron(0 * * * * *)
+
 
 provider:
   name: aws
@@ -45,3 +52,8 @@ functions:
       - httpApi: 'DELETE /presentations/{id}'
       - httpApi: 'POST /exchanges/{exchangeId}'
       - httpApi: 'POST /exchanges/{exchangeId}/{transactionId}'
+    warmup:
+      default:
+        enabled:
+          - dev
+          - prod
