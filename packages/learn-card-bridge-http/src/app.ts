@@ -47,6 +47,10 @@ app.delete('/credentials/:id', async (_req: TypedRequest<{}>, res) => {
 
 app.post('/credentials/issue', async (req: TypedRequest<IssueEndpoint>, res) => {
     try {
+        // If incoming credential doesn't have an issuanceDate, default it to right now
+        if (req.body?.credential && !('issuanceDate' in (req.body?.credential ?? {}))) {
+            req.body.credential.issuanceDate = new Date().toISOString();
+        }
         const validationResult = await IssueEndpointValidator.spa(req.body);
 
         if (!validationResult.success) {
