@@ -8,8 +8,10 @@ const _handler = serverlessHttp(app);
 
 export const handler: APIGatewayProxyHandlerV2 = async (event, context) => {
     if ((event as any).source === 'serverless-plugin-warmup') {
-        getWallet(); // Intentionally don't wait for the wallet to init!
-        return 'Warming lambda...';
+        console.log('[Warmup] Initializing wallet...');
+        await getWallet(); // Intentionally don't wait for the wallet to init!
+        console.log('[Warmup] Done!');
+        return 'All done! 😄';
     }
 
     return _handler(event, context);

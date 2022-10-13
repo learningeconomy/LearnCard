@@ -15,8 +15,6 @@ custom:
   warmup:
     default:
       enabled: true
-      events:
-        - schedule: cron(0 * * * * *)
 
 
 provider:
