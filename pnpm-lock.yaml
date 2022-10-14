@@ -195,6 +195,7 @@ importers:
       '@learncard/core': workspace:*
       '@learncard/types': workspace:*
       '@rollup/plugin-json': ^4.1.0
+      '@types/aws-lambda': ^8.10.106
       '@types/cors': ^2.8.12
       '@types/express': ^4.17.13
       '@types/figlet': ^1.5.4
@@ -222,6 +223,7 @@ importers:
       serverless-esbuild: ^1.25.0
       serverless-http: ^3.0.1
       serverless-plugin-typescript: ^2.1.0
+      serverless-plugin-warmup: ^8.1.0
       shx: ^0.3.4
       simple-git: ^3.9.0
       ts-node: ^10.8.1
@@ -250,10 +252,12 @@ importers:
       rollup-plugin-esbuild: 4.9.1_ktu2kzacvi5wdos6kd33ysa7ja
       serverless-esbuild: 1.31.0_esbuild@0.14.47
       serverless-http: 3.0.1
+      serverless-plugin-warmup: 8.1.0
       simple-git: 3.10.0
       use-immer: 0.7.0_immer@9.0.15+react@18.2.0
       zod: 3.17.3
     devDependencies:
+      '@types/aws-lambda': 8.10.106
       '@types/cors': 2.8.12
       '@types/express': 4.17.13
       '@types/figlet': 1.5.4
@@ -10560,6 +10564,10 @@ packages:
 
   /@types/aria-query/4.2.2:
     resolution: {integrity: sha512-HnYpAE1Y6kRyKM/XkEuiRQhTHvkzMBurTHnpFLYLBGPIylZNPs9jJcuOOYWxPLJCSEtmZT0Y8rHDokKN7rRTig==}
+    dev: true
+
+  /@types/aws-lambda/8.10.106:
+    resolution: {integrity: sha512-yzgMaql7aW1by1XuhKhovuhLyK/1A60lapFXDXXBeHmoyRGQFO2T8lkL3g8hAhHoW5PEvqPJFWPd8jvXiRnxeQ==}
     dev: true
 
   /@types/babel__core/7.1.19:
@@ -29684,6 +29692,10 @@ packages:
       serverless: 3.22.0
       typescript: 4.7.4
     dev: true
+
+  /serverless-plugin-warmup/8.1.0:
+    resolution: {integrity: sha512-zgfjYsrMDRWJ3H9jj6/FjMRl6qMLms9C7sTViNh2MH3QX8+A9YjEUUZltKp/L7qQO0J+VPa0somS8+u4L7fdrQ==}
+    dev: false
 
   /serverless/3.22.0:
     resolution: {integrity: sha512-S/C4jbTFW95AwAw2wSqQa28FCordHwj+sUt3SHPgLNq0ryWcagR03C7vvIEnunmb7Rj5uEIcvArmjuaYNYN0+w==}
