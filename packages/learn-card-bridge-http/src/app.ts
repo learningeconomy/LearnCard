@@ -47,6 +47,11 @@ app.delete('/credentials/:id', async (_req: TypedRequest<{}>, res) => {
 
 app.post('/credentials/issue', async (req: TypedRequest<IssueEndpoint>, res) => {
     try {
+        // If incoming credential doesn't have an issuanceDate, default it to right now
+        if (req.body?.credential && !('issuanceDate' in (req.body?.credential ?? {}))) {
+            req.body.credential.issuanceDate = new Date().toISOString();
+        }
+
         const validationResult = await IssueEndpointValidator.spa(req.body);
 
         if (!validationResult.success) {
@@ -62,8 +67,9 @@ app.post('/credentials/issue', async (req: TypedRequest<IssueEndpoint>, res) => 
 
         const validatedBody = validationResult.data;
         const wallet = await getWallet();
+        const { credentialStatus, ...options } = validatedBody.options ?? {};
 
-        const issuedCredential = await wallet.issueCredential(validatedBody.credential);
+        const issuedCredential = await wallet.issueCredential(validatedBody.credential, options);
 
         return res.status(201).json(issuedCredential);
     } catch (error) {
@@ -95,7 +101,8 @@ app.post('/credentials/verify', async (req: TypedRequest<VerifyCredentialEndpoin
         const wallet = await getWallet();
 
         const verificationResult = await wallet._wallet.pluginMethods.verifyCredential(
-            validatedBody.verifiableCredential
+            validatedBody.verifiableCredential,
+            validatedBody.options
         );
 
         if (verificationResult.errors.length > 0) {
@@ -143,7 +150,10 @@ app.post('/presentations/issue', async (req: TypedRequest<IssueEndpoint>, res) =
         const validatedBody = validationResult.data;
         const wallet = await getWallet();
 
-        const issuedPresentation = await wallet.issuePresentation(validatedBody.presentation);
+        const issuedPresentation = await wallet.issuePresentation(
+            validatedBody.presentation,
+            validatedBody.options
+        );
 
         return res.status(201).json(issuedPresentation);
     } catch (error) {
@@ -173,7 +183,8 @@ app.post('/presentations/verify', async (req: TypedRequest<VerifyPresentationEnd
         if ('presentation' in validatedBody) return res.sendStatus(501);
 
         const verificationResult = await wallet._wallet.pluginMethods.verifyPresentation(
-            validatedBody.verifiablePresentation
+            validatedBody.verifiablePresentation,
+            validatedBody.options
         );
 
         if (verificationResult.errors.length > 0) {
