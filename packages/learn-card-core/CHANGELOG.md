@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 7.0.2
+
+### Patch Changes
+
+-   [#121](https://github.com/learningeconomy/LearnCard/pull/121) [`00b119a`](https://github.com/learningeconomy/LearnCard/commit/00b119a56769bcdc921502a5ad0591d07ad667e8) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Default to Ed25519Signature2020 instead of Ed25519Signature2018 when issuing
+
 ## 7.0.1
 
 ### Patch Changes
