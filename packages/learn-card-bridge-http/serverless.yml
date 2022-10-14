@@ -6,11 +6,16 @@ service: learn-card-http-bridge
 
 plugins:
   - serverless-esbuild
+  - serverless-plugin-warmup
 
 custom:
   esbuild:
     packager: pnpm
     plugins: esbuildWasmPlugin.cjs
+  warmup:
+    default:
+      enabled: true
+
 
 provider:
   name: aws
@@ -29,6 +34,7 @@ functions:
     memorySize: 2048
     events:
       - httpApi: 'GET /'
+      - httpApi: 'GET /did'
       - httpApi: 'GET /credentials'
       - httpApi: 'GET /credentials/{id}'
       - httpApi: 'DELETE /credentials/{id}'
@@ -36,6 +42,7 @@ functions:
       - httpApi: 'POST /credentials/status'
       - httpApi: 'POST /credentials/verify'
       - httpApi: 'POST /credentials/derive'
+      - httpApi: 'POST /presentations/issue'
       - httpApi: 'POST /presentations/verify'
       - httpApi: 'POST /presentations/prove'
       - httpApi: 'GET /presentations'
@@ -43,3 +50,8 @@ functions:
       - httpApi: 'DELETE /presentations/{id}'
       - httpApi: 'POST /exchanges/{exchangeId}'
       - httpApi: 'POST /exchanges/{exchangeId}/{transactionId}'
+    warmup:
+      default:
+        enabled:
+          - dev
+          - prod

@@ -1,9 +1,14 @@
 import { toQrCode, fromQrCode } from '@digitalbazaar/vpqr';
 
-import { DependentMethods, VpqrPlugin } from './types';
-import { Wallet } from 'types/wallet';
+import { VpqrPlugin, VpqrPluginDependentMethods, VpqrPluginMethods } from './types';
+import { Wallet, Plugin } from 'types/wallet';
 
-export const getVpqrPlugin = (wallet: Wallet<any, DependentMethods>): VpqrPlugin => {
+export * from './types';
+
+/**
+ * @group Plugins
+ */
+export const getVpqrPlugin = (wallet: Wallet<any, VpqrPluginDependentMethods>): VpqrPlugin => {
     return {
         name: 'Vpqr',
         pluginMethods: {

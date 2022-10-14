@@ -1,19 +1,26 @@
 import { CachePlane, StoragePlane, WalletCache, WalletStorage } from './planes';
-import { UnionToIntersection } from './utilities';
+import { UnionToIntersection, MergeObjects } from './utilities';
 
-export type GetPluginMethods<Plugins extends Plugin[]> = UnionToIntersection<
-    NonNullable<Plugins[number]['_methods']>
->;
+/** @group Universal Wallets */
+export type GetPluginMethods<Plugins extends Plugin[]> = undefined extends Plugins[1]
+    ? NonNullable<Plugins[0]['_methods']>
+    : UnionToIntersection<
+          NonNullable<
+              MergeObjects<{ [Key in keyof Plugins]: NonNullable<Plugins[Key]['_methods']> }>
+          >
+      >;
 
+/** @group Universal Wallets */
 export type Plugin<
     Name extends string = string,
-    PublicMethods extends Record<string, (...args: any[]) => any> = Record<never, never>
+    PublicMethods extends Record<string, (...args: any[]) => any> = Record<never, never>,
+    DependentMethods extends Record<string, (...args: any[]) => any> = Record<never, never>
 > = {
     name: Name;
     storage?: StoragePlane;
     cache?: CachePlane;
     pluginMethods: {
-        [Key in keyof PublicMethods]: <T extends Wallet<[Plugin<Name, PublicMethods>]>>(
+        [Key in keyof PublicMethods]: <T extends Wallet<any, PublicMethods & DependentMethods>>(
             wallet: T,
             ...args: Parameters<PublicMethods[Key]>
         ) => ReturnType<PublicMethods[Key]>;
@@ -21,6 +28,14 @@ export type Plugin<
     _methods?: PublicMethods;
 };
 
+/** @group Universal Wallets */
+export type PublicFieldsObj<
+    PluginMethods extends Record<string, (...args: any[]) => any> = Record<never, never>
+> = {
+    pluginMethods: PluginMethods;
+};
+
+/** @group Universal Wallets */
 export type Wallet<Plugins extends Plugin[] = [], PluginMethods = GetPluginMethods<Plugins>> = {
     storage: WalletStorage<Plugins>;
     cache: WalletCache<Plugins>;

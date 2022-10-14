@@ -113,9 +113,13 @@ const bindMethods = <Plugins extends Plugin[] = [], PluginMethods = GetPluginMet
     pluginMethods: PluginMethods
 ): PluginMethods =>
     Object.fromEntries(
-        Object.entries(pluginMethods).map(([key, method]) => [key, method.bind(wallet, wallet)])
-    ) as PluginMethods;
+        Object.entries(pluginMethods as any).map(([key, method]: any) => [
+            key,
+            method.bind(wallet, wallet),
+        ])
+    ) as any as PluginMethods;
 
+/** @group Universal Wallets */
 export const generateWallet = async <
     Plugins extends Plugin[] = [],
     PluginMethods extends GetPluginMethods<Plugins> = GetPluginMethods<Plugins>
@@ -135,7 +139,7 @@ export const generateWallet = async <
         cache: {} as WalletCache<Plugins>,
         plugins: plugins as Plugins,
         pluginMethods,
-        addPlugin: function (plugin) {
+        addPlugin: function(plugin) {
             return addPluginToWallet(this, plugin);
         },
     };

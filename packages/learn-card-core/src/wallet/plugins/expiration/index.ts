@@ -2,6 +2,9 @@ import { VerifyExtension } from '../vc';
 import { Wallet } from 'types/wallet';
 import { ExpirationPlugin } from './types';
 
+/**
+ * @group Plugins
+ */
 export const expirationPlugin = (wallet: Wallet<any, VerifyExtension>): ExpirationPlugin => ({
     name: 'Expiration',
     pluginMethods: {

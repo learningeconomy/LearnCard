@@ -19,14 +19,14 @@ export const ImageValidator = z.string().or(
 export type Image = z.infer<typeof ImageValidator>;
 
 export const GeoCoordinatesValidator = z.object({
-    type: z.string().array().nonempty(),
+    type: z.string().min(1).or(z.string().array().nonempty()),
     latitude: z.number(),
     longitude: z.number(),
 });
 export type GeoCoordinates = z.infer<typeof GeoCoordinatesValidator>;
 
 export const AddressValidator = z.object({
-    type: z.string().array().nonempty(),
+    type: z.string().min(1).or(z.string().array().nonempty()),
     addressCountry: z.string().optional(),
     addressCountryCode: z.string().optional(),
     addressRegion: z.string().optional(),
@@ -63,7 +63,7 @@ export const IdentifierTypeValidator = z
 export type IdentifierType = z.infer<typeof IdentifierTypeValidator>;
 
 export const IdentifierEntryValidator = z.object({
-    type: z.string().array().nonempty(),
+    type: z.string().min(1).or(z.string().array().nonempty()),
     identifier: z.string(),
     identifierType: IdentifierTypeValidator,
 });
@@ -73,7 +73,7 @@ export const ProfileValidator = z.string().or(
     z
         .object({
             id: z.string().optional(),
-            type: z.string().array().nonempty().optional(),
+            type: z.string().or(z.string().array().nonempty().optional()),
             name: z.string().optional(),
             url: z.string().optional(),
             phone: z.string().optional(),

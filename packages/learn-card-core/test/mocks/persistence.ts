@@ -1,38 +1,38 @@
-import { VC } from '@learncard/types';
-
-import { IDXCredential } from '../../src/wallet/plugins/idx/types';
+import { VC, IDXCredential } from '@learncard/types';
 
 export const persistenceMocks = () => {
     let credentials: IDXCredential[] = [];
-    const streamIdMap: Record<string, VC> = {};
+    const uriMap: Record<string, VC> = {};
 
     const publishCredential = async (credential: VC) => {
-        const id = crypto.randomUUID();
+        const uri = crypto.randomUUID();
 
-        streamIdMap[id] = credential;
+        uriMap[uri] = credential;
 
-        return id;
+        return uri;
     };
 
-    const readFromCeramic = async (id: string) => streamIdMap[id];
+    const readFromCeramic = async (uri: string) => uriMap[uri];
+
+    const resolveCredential = async (uri: string) => uriMap[uri];
 
     const addCredential = async (credential: IDXCredential) => {
         credentials.push(credential);
     };
 
-    const getCredential = async (title: string) => {
-        const credential = credentials.find(cred => cred.title === title);
+    const getCredential = async (id: string) => {
+        const credential = credentials.find(cred => cred.id === id);
 
-        return readFromCeramic(credential.id);
+        return resolveCredential(credential?.uri ?? '');
     };
 
     const getCredentials = async () =>
-        Promise.all(credentials.map(credential => readFromCeramic(credential.id)));
+        Promise.all(credentials.map(credential => resolveCredential(credential.uri)));
 
     const getCredentialsList = async () => credentials;
 
-    const removeCredential = async (title: string) => {
-        credentials = credentials.filter(credential => credential.title !== title);
+    const removeCredential = async (id: string) => {
+        credentials = credentials.filter(credential => credential.id !== id);
     };
 
     return {
@@ -43,5 +43,6 @@ export const persistenceMocks = () => {
         getCredentials,
         getCredentialsList,
         removeCredential,
+        resolveCredential,
     };
 };

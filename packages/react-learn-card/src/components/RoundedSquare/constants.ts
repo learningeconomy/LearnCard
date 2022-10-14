@@ -5,6 +5,17 @@ import learningHistoryGraphic from '../../assets/images/walletlearninghistory.we
 import skillsGraphic from '../../assets/images/walletskills.webp';
 import achievementsGraphic from '../../assets/images/walletTrophy.webp';
 
+import MiniTrophyIcon from '../../assets/images/minitrophycolored.svg';
+import MiniGradIcon from '../../assets/images/minigradcapcolored.svg';
+import MiniPuzzleIcon from '../../assets/images/minipuzzlecolored.svg';
+import { LCSubtypes } from '../../types';
+
+export const TYPE_TO_MINI_ICON: any = {
+    [LCSubtypes.course]: MiniGradIcon,
+    [LCSubtypes.achievement]: MiniTrophyIcon,
+    [LCSubtypes.skill]: MiniPuzzleIcon,
+};
+
 export const WALLET_SUBTYPES = {
     ACHIEVEMENTS: 'achievements',
     IDS: 'ids',

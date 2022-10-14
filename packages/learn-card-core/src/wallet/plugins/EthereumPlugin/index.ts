@@ -1,3 +1,7 @@
+import { Buffer } from 'buffer';
+
+import { JWK } from '@learncard/types';
+
 import { Wallet } from 'types/wallet';
 import { ethers } from 'ethers';
 
@@ -10,17 +14,22 @@ import {
 } from './helpers';
 import hardcodedTokens from './hardcodedTokens';
 
-import { DidMethod, KeyPair } from '@wallet/plugins/didkit/types';
+import { DidMethod } from '@wallet/plugins/didkit/types';
 import { Algorithm } from '@wallet/plugins/didkey/types'; // Have to include this in order for getSubjectKeypair to not throw a type error
+
+export * from './types';
 
 const ERC20ABI = require('./erc20.abi.json');
 
+/**
+ * @group Plugins
+ */
 export const getEthereumPlugin = (
     initWallet: Wallet<
         any,
         {
             getSubjectDid: (type: DidMethod) => string;
-            getSubjectKeypair: (type?: Algorithm) => KeyPair;
+            getSubjectKeypair: (type?: Algorithm) => JWK;
         }
     >,
     config: EthereumConfig
@@ -64,6 +73,23 @@ export const getEthereumPlugin = (
         )?.address;
     };
 
+    const getErc20TokenBalance = async (
+        tokenContractAddress: string,
+        walletPublicAddress = publicKey
+    ) => {
+        const contract = new ethers.Contract(tokenContractAddress, ERC20ABI, provider);
+
+        const balance = await contract.balanceOf(walletPublicAddress);
+        const formattedBalance = formatUnits(
+            balance,
+            tokenContractAddress,
+            defaultTokenList,
+            await getChainIdFromProvider(provider)
+        );
+
+        return formattedBalance;
+    };
+
     // Core Methods
     const getBalance = async (walletAddress = publicKey, tokenSymbolOrAddress = 'ETH') => {
         if (!tokenSymbolOrAddress || tokenSymbolOrAddress === 'ETH') {
@@ -83,23 +109,6 @@ export const getEthereumPlugin = (
         const balance = await getErc20TokenBalance(tokenAddress, walletAddress);
 
         return balance;
-    };
-
-    const getErc20TokenBalance = async (
-        tokenContractAddress: string,
-        walletPublicAddress = publicKey
-    ) => {
-        const contract = new ethers.Contract(tokenContractAddress, ERC20ABI, provider);
-
-        const balance = await contract.balanceOf(walletPublicAddress);
-        const formattedBalance = formatUnits(
-            balance,
-            tokenContractAddress,
-            defaultTokenList,
-            await getChainIdFromProvider(provider)
-        );
-
-        return formattedBalance;
     };
 
     return {

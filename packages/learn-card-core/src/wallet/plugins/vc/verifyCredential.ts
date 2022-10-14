@@ -1,10 +1,15 @@
 import { VC } from '@learncard/types';
 
-import { DependentMethods, VCPluginMethods } from './types';
+import { ProofOptions } from '@wallet/plugins/didkit/types';
+import { VCImplicitWallet, VCPluginDependentMethods } from './types';
 import { Wallet } from 'types/wallet';
 
-export const verifyCredential = (initWallet: Wallet<any, DependentMethods>) => {
-    return async (_wallet: Wallet<any, VCPluginMethods>, credential: VC) => {
-        return initWallet.pluginMethods.verifyCredential(credential);
+export const verifyCredential = (initWallet: Wallet<any, VCPluginDependentMethods>) => {
+    return async (
+        _wallet: VCImplicitWallet,
+        credential: VC,
+        options: Partial<ProofOptions> = {}
+    ) => {
+        return initWallet.pluginMethods.verifyCredential(credential, options);
     };
 };

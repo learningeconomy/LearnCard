@@ -31,41 +31,42 @@ export const AlignmentValidator = z.object({
 });
 export type Alignment = z.infer<typeof AlignmentValidator>;
 
-export const AchievementTypeValidator = z
-    .enum([
-        'Achievement',
-        'ApprenticeshipCertificate',
-        'Assessment',
-        'Assignment',
-        'AssociateDegree',
-        'Award',
-        'Badge',
-        'BachelorDegree',
-        'Certificate',
-        'CertificateOfCompletion',
-        'Certification',
-        'CommunityService',
-        'Competency',
-        'Course',
-        'CoCurricular',
-        'Degree',
-        'Diploma',
-        'DoctoralDegree',
-        'Fieldwork',
-        'GeneralEducationDevelopment',
-        'JourneymanCertificate',
-        'LearningProgram',
-        'License',
-        'Membership',
-        'ProfessionalDoctorate',
-        'QualityAssuranceCredential',
-        'MasterCertificate',
-        'MasterDegree',
-        'MicroCredential',
-        'ResearchDoctorate',
-        'SecondarySchoolDiploma',
-    ])
-    .or(z.string());
+export const KnownAchievementTypeValidator = z.enum([
+    'Achievement',
+    'ApprenticeshipCertificate',
+    'Assessment',
+    'Assignment',
+    'AssociateDegree',
+    'Award',
+    'Badge',
+    'BachelorDegree',
+    'Certificate',
+    'CertificateOfCompletion',
+    'Certification',
+    'CommunityService',
+    'Competency',
+    'Course',
+    'CoCurricular',
+    'Degree',
+    'Diploma',
+    'DoctoralDegree',
+    'Fieldwork',
+    'GeneralEducationDevelopment',
+    'JourneymanCertificate',
+    'LearningProgram',
+    'License',
+    'Membership',
+    'ProfessionalDoctorate',
+    'QualityAssuranceCredential',
+    'MasterCertificate',
+    'MasterDegree',
+    'MicroCredential',
+    'ResearchDoctorate',
+    'SecondarySchoolDiploma',
+]);
+export type KnownAchievementType = z.infer<typeof KnownAchievementTypeValidator>;
+
+export const AchievementTypeValidator = KnownAchievementTypeValidator.or(z.string());
 export type AchievementType = z.infer<typeof AchievementTypeValidator>;
 
 export const CriteriaValidator = z
@@ -206,7 +207,7 @@ export const AchievementSubjectValidator = z
         activityStartDate: z.string().optional(),
         creditsEarned: z.number().optional(),
         achievement: AchievementValidator.optional(),
-        identifier: IdentityObjectValidator.optional(),
+        identifier: IdentityObjectValidator.array().optional(),
         image: ImageValidator.optional(),
         licenseNumber: z.string().optional(),
         narrative: z.string().optional(),
@@ -234,7 +235,7 @@ export type Evidence = z.infer<typeof EvidenceValidator>;
 export const UnsignedAchievementCredentialValidator = UnsignedVCValidator.extend({
     name: z.string().optional(),
     description: z.string().optional(),
-    image: z.string().optional(),
+    image: ImageValidator.optional(),
     credentialSubject: AchievementSubjectValidator.or(AchievementSubjectValidator.array()),
     endorsement: UnsignedVCValidator.array().optional(),
     evidence: EvidenceValidator.array().optional(),

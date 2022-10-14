@@ -1,0 +1,27 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="wallet-worker">
+    <h1>LearnCard CHAPI Example Wallet Worker</h1>
+
+    <h3>You probably shouldn't see this page...</h3>
+</Layout>
+
+<script>
+    import { initLearnCard } from '@learncard/core';
+
+    const wallet = await initLearnCard();
+
+    try {
+        await wallet.installChapiHandler();
+    } catch (e) {
+        console.error('Error in loadOnce:', e);
+    }
+
+    wallet.activateChapiHandler({
+        store: async () => {
+            return { type: 'redirect', url: `${window.location.origin}/store` };
+        },
+    });
+</script>

@@ -1,5 +1,108 @@
 # @welibraryos/react-learn-card
 
+## 2.3.41
+
+### Patch Changes
+
+-   [#118](https://github.com/learningeconomy/LearnCard/pull/118) [`7f98a90`](https://github.com/learningeconomy/LearnCard/commit/7f98a90df1e3ee8c2d39cabc754c6655e6072aa0) Thanks [@gerardopar](https://github.com/gerardopar)! - fix vc display card styles
+
+## 2.3.40
+
+### Patch Changes
+
+-   Updated dependencies [[`e8f1ba3`](https://github.com/learningeconomy/LearnCard/commit/e8f1ba3594bc749caf18959962da4b85c97db4a6)]:
+    -   @learncard/core@7.0.1
+
+## 2.3.39
+
+### Patch Changes
+
+-   Updated dependencies [[`25349fe`](https://github.com/learningeconomy/LearnCard/commit/25349fe064c751a004092bcab24e1674fadfd5fe)]:
+    -   @learncard/core@7.0.0
+
+## 2.3.38
+
+### Patch Changes
+
+-   [#109](https://github.com/learningeconomy/LearnCard/pull/109) [`8843fda`](https://github.com/learningeconomy/LearnCard/commit/8843fda579ffb9b8adbb4d467143207e20dfe305) Thanks [@gerardopar](https://github.com/gerardopar)! - [WE-2405] - update components with profile images
+
+-   Updated dependencies [[`27e4ecd`](https://github.com/learningeconomy/LearnCard/commit/27e4ecd6641cf16b97d198434250f55135d09e97)]:
+    -   @learncard/core@6.4.0
+
+## 2.3.37
+
+### Patch Changes
+
+-   Updated dependencies [[`e085abd`](https://github.com/learningeconomy/LearnCard/commit/e085abd72d3b4c085cdfc5c623864b40e35cf302)]:
+    -   @learncard/core@6.3.1
+
+## 2.3.36
+
+### Patch Changes
+
+-   Updated dependencies [[`f6734b2`](https://github.com/learningeconomy/LearnCard/commit/f6734b2dff7eade58dca5a03b8f46f058773c3b0)]:
+    -   @learncard/core@6.3.0
+
+## 2.3.35
+
+### Patch Changes
+
+-   [#101](https://github.com/learningeconomy/LearnCard/pull/101) [`08c1c30`](https://github.com/learningeconomy/LearnCard/commit/08c1c30e24a65853c0e04ae1c775d79cd55628e1) Thanks [@goblincore](https://github.com/goblincore)! - Add SkilTabCard, CircleCheckButton, Course Vertical Card, some light refactoring and updated types and props, main addition is checkmark related functionality to various card components
+
+## 2.3.34
+
+### Patch Changes
+
+-   [#98](https://github.com/learningeconomy/LearnCard/pull/98) [`d85b8dc`](https://github.com/learningeconomy/LearnCard/commit/d85b8dce25482d7acff7b0629da53e51a09dcc9e) Thanks [@goblincore](https://github.com/goblincore)! - [WE-2345] Achievement display card update with status and skills
+
+*   [#98](https://github.com/learningeconomy/LearnCard/pull/98) [`d85b8dc`](https://github.com/learningeconomy/LearnCard/commit/d85b8dce25482d7acff7b0629da53e51a09dcc9e) Thanks [@goblincore](https://github.com/goblincore)! - Achievement display card update with status and skills
+
+## 2.3.33
+
+### Patch Changes
+
+-   [#95](https://github.com/learningeconomy/LearnCard/pull/95) [`426702f`](https://github.com/learningeconomy/LearnCard/commit/426702f50b8790a8eeb68908331a79c79043f4f5) Thanks [@goblincore](https://github.com/goblincore)! - Add Mini-Job display card
+
+## 2.3.32
+
+### Patch Changes
+
+-   [#94](https://github.com/learningeconomy/LearnCard/pull/94) [`4e5cc2f`](https://github.com/learningeconomy/LearnCard/commit/4e5cc2fe935f99ca663bc9b7d75db2a86c0b7b23) Thanks [@smurflo2](https://github.com/smurflo2)! - Add children to credit card front face
+
+## 2.3.31
+
+### Patch Changes
+
+-   Updated dependencies [[`02c7de0`](https://github.com/learningeconomy/LearnCard/commit/02c7de09f88ae78882d59c9f8ac898a7d5bac342), [`02c7de0`](https://github.com/learningeconomy/LearnCard/commit/02c7de09f88ae78882d59c9f8ac898a7d5bac342), [`02c7de0`](https://github.com/learningeconomy/LearnCard/commit/02c7de09f88ae78882d59c9f8ac898a7d5bac342), [`02c7de0`](https://github.com/learningeconomy/LearnCard/commit/02c7de09f88ae78882d59c9f8ac898a7d5bac342)]:
+    -   @learncard/core@6.2.0
+
+## 2.3.30
+
+### Patch Changes
+
+-   Updated dependencies [[`c1befdc`](https://github.com/learningeconomy/LearnCard/commit/c1befdc8a30d3cc111d938c530493b1a5b87aa00)]:
+    -   @learncard/core@6.1.0
+
+## 2.3.29
+
+### Patch Changes
+
+-   [#82](https://github.com/learningeconomy/LearnCard/pull/82) [`7d6f1a4`](https://github.com/learningeconomy/LearnCard/commit/7d6f1a41656329f99c4acf560da3ec59d9e29104) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Update ReadMe
+
+-   Updated dependencies [[`7d6f1a4`](https://github.com/learningeconomy/LearnCard/commit/7d6f1a41656329f99c4acf560da3ec59d9e29104), [`7d6f1a4`](https://github.com/learningeconomy/LearnCard/commit/7d6f1a41656329f99c4acf560da3ec59d9e29104), [`7d6f1a4`](https://github.com/learningeconomy/LearnCard/commit/7d6f1a41656329f99c4acf560da3ec59d9e29104)]:
+    -   @learncard/core@6.0.0
+
+## 2.3.28
+
+### Patch Changes
+
+-   [#40](https://github.com/learningeconomy/LearnCard/pull/40) [`8a10504`](https://github.com/learningeconomy/LearnCard/commit/8a105049df0d1f4f8ede062ca72fecbf55896562) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Mark @learncard/core as external
+
+*   [#40](https://github.com/learningeconomy/LearnCard/pull/40) [`8a10504`](https://github.com/learningeconomy/LearnCard/commit/8a105049df0d1f4f8ede062ca72fecbf55896562) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix VCCard erroring from invalid key
+
+*   Updated dependencies [[`8a10504`](https://github.com/learningeconomy/LearnCard/commit/8a105049df0d1f4f8ede062ca72fecbf55896562), [`074989f`](https://github.com/learningeconomy/LearnCard/commit/074989f2eb4b7d8cb9b2d6a62451cdcf047d72d5), [`120744b`](https://github.com/learningeconomy/LearnCard/commit/120744bc4cf9d03254049fcf37707763b10ddeab), [`8a10504`](https://github.com/learningeconomy/LearnCard/commit/8a105049df0d1f4f8ede062ca72fecbf55896562), [`8a10504`](https://github.com/learningeconomy/LearnCard/commit/8a105049df0d1f4f8ede062ca72fecbf55896562)]:
+    -   @learncard/core@5.1.1
+
 ## 2.3.27
 
 ### Patch Changes

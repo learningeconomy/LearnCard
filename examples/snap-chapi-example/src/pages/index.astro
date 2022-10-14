@@ -1,0 +1,25 @@
+---
+import Layout from '@layouts/Layout.astro';
+import Credentials from '@components/Credentials';
+import LoadingIndicator from '@components/LoadingIndicator';
+---
+
+<Layout title="Welcome to Astro.">
+    <section id="modal-container"></section>
+
+    <main class="w-full h-full flex flex-col justify-center items-center p-4">
+        <header class="flex gap-2">
+            <img
+                class="h-24"
+                src="https://user-images.githubusercontent.com/2185016/190510561-294db809-09fd-4771-9749-6c0e0f4144fd.png"
+                alt="LearnCard"
+            />
+
+            <h1>LearnCard CHAPI Example</h1>
+        </header>
+
+        <LoadingIndicator client:only="react" />
+
+        <Credentials client:only="react" />
+    </main>
+</Layout>

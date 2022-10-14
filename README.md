@@ -1,5 +1,4 @@
-[<img src="https://user-images.githubusercontent.com/2185016/176284693-4ca14052-d067-4ea5-b170-c6cd2594ee23.png" width="400"/>](image.png)
-
+[<img src="https://user-images.githubusercontent.com/2185016/190510561-294db809-09fd-4771-9749-6c0e0f4144fd.png" width="215"/>](https://learncard.com)
 
 # LearnCard SDK
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](CODE_OF_CONDUCT.md)
@@ -14,7 +13,7 @@ The LearnCard is a key primitive in the architecture for a [global network of le
 
 ## Documentation
 All LearnCard documentation can be found at:
-https://app.gitbook.com/o/6uDv1QDlxaaZC7i8EaGb/s/FXvEJ9j3Vf3FW5Nc557n/
+https://docs.learncard.com
 
 
 ## Packages
@@ -22,6 +21,7 @@ https://app.gitbook.com/o/6uDv1QDlxaaZC7i8EaGb/s/FXvEJ9j3Vf3FW5Nc557n/
 - [LearnCard React](./packages/react-learn-card) – dedicated set of flexible and reusable Storybook UX components for credential and currency visualization and interactions.
 - [LearnCard Bridge - HTTP](./packages/learn-card-bridge-http) – simple CLI and CloudFormation IaC to easily spin up a dedicated execution environment for LearnCard Core exposed over an HTTP API.
 - [LearnCard CLI](./packages/learn-card-cli) - an easy to use node REPL; instantiates a LearnCard + all the tools you need to easily play around with the LearnCard SDK.
+- LearnCard DWN - Decentralized Web Nodes as a service for storing and retrieving credentials.
 - LearnCard App - iOS, Android, and Web implementation of LearnCard Core & UX; customizable, whitelabel-able, and modular to support pathways and communities.
 
 ## Installation

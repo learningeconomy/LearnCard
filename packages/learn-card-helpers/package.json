@@ -1,0 +1,42 @@
+{
+  "name": "@learncard/helpers",
+  "version": "1.0.0",
+  "description": "Shared helpers for LearnCard packages",
+  "main": "./dist/index.js",
+  "module": "./dist/helpers.esm.js",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "aqu build",
+    "start": "aqu watch",
+    "lint": "aqu lint",
+    "lint:fix": "aqu lint --fix",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --silent --ci --coverage --coverageReporters=\"text\" --coverageReporters=\"text-summary\"",
+    "prepare": "pnpm test && pnpm build"
+  },
+  "author": "Learning Economy Foundation (www.learningeconomy.io)",
+  "license": "MIT",
+  "homepage": "https://github.com/learningeconomy/LearnCard#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/learningeconomy/LearnCard.git"
+  },
+  "bugs": {
+    "url": "https://github.com/learningeconomy/LearnCard/issues"
+  },
+  "devDependencies": {
+    "@types/jest": "^27.5.0",
+    "@types/node": "^18.7.19",
+    "aqu": "0.4.3",
+    "esbuild": "^0.14.38",
+    "esbuild-jest": "^0.5.0",
+    "jest": "^28.1.3",
+    "jest-environment-jsdom": "^28.1.3",
+    "ts-jest": "^28.0.5",
+    "typescript": "^4.8.3"
+  },
+  "types": "./dist/helpers.d.ts"
+}

@@ -18,6 +18,11 @@ export const VCDisplayCardTest = Template.bind({});
 // For example data structure for plugfest
 
 VCDisplayCardTest.args = {
+    subjectImageComponent: (
+        <div className="flex flex-row items-center justify-center h-full w-full overflow-hidden bg-emerald-700 text-white font-medium text-3xl">
+            LC
+        </div>
+    ),
     credential: {
         '@context': [
             'https://www.w3.org/2018/credentials/v1',
