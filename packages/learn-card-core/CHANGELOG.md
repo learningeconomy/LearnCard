@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 7.0.3
+
+### Patch Changes
+
+-   [#124](https://github.com/learningeconomy/LearnCard/pull/124) [`2a4f635`](https://github.com/learningeconomy/LearnCard/commit/2a4f63521b2ce68961868359873064a25394dd99) Thanks [@smurflo2](https://github.com/smurflo2)! - Add getGasPrice method
+
 ## 7.0.2
 
 ### Patch Changes
