@@ -1,5 +1,14 @@
 # @learncard/meta-mask-snap
 
+## 1.0.11
+
+### Patch Changes
+
+-   [#124](https://github.com/learningeconomy/LearnCard/pull/124) [`2a4f635`](https://github.com/learningeconomy/LearnCard/commit/2a4f63521b2ce68961868359873064a25394dd99) Thanks [@smurflo2](https://github.com/smurflo2)! - Add getGasPrice method
+
+-   Updated dependencies [[`2a4f635`](https://github.com/learningeconomy/LearnCard/commit/2a4f63521b2ce68961868359873064a25394dd99)]:
+    -   @learncard/core@7.0.3
+
 ## 1.0.10
 
 ### Patch Changes

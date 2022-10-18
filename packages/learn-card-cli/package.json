@@ -1,6 +1,6 @@
 {
   "name": "@learncard/cli",
-  "version": "1.5.2",
+  "version": "1.5.3",
   "description": "Test out learn card!",
   "main": "dist/index.js",
   "bin": "dist/index.js",
