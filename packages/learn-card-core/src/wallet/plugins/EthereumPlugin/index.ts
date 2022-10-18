@@ -141,8 +141,6 @@ export const getEthereumPlugin = (
 
                 const tokenContract = new ethers.Contract(tokenAddress, ERC20ABI, ethersWallet);
 
-                // const gas = ethers.utils.formatUnits(await provider.getGasPrice());
-
                 return (
                     await tokenContract.transfer(
                         toAddress,
@@ -154,6 +152,10 @@ export const getEthereumPlugin = (
                         )
                     )
                 ).hash;
+            },
+
+            getGasPrice: async () => {
+                return ethers.utils.formatUnits(await provider.getGasPrice());
             },
 
             /* Configuration-type methods */
