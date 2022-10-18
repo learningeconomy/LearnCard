@@ -10,6 +10,7 @@ export type EthereumPluginMethods = {
         amount: number,
         toAddress: string
     ) => Promise<string>;
+    getGasPrice: () => Promise<string>;
     getCurrentNetwork: () => providers.Networkish;
     changeNetwork: (network: providers.Networkish) => void;
     addInfuraProjectId: (infuraProjectIdToAdd: string) => void;
