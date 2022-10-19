@@ -12,6 +12,7 @@ import { verifyCredential } from '@wallet/verify';
 import { LearnCardConfig, LearnCard } from 'types/LearnCard';
 import { defaultCeramicIDXArgs, defaultEthereumArgs } from '@wallet/defaults';
 import { getVCTemplatesPlugin } from '@wallet/plugins/vc-templates';
+import { VCResolutionPlugin } from '@wallet/plugins/vc-resolution';
 
 /**
  * Generates a LearnCard Wallet from a 64 character seed string
@@ -37,8 +38,10 @@ export const walletFromKey = async (
 
     const templateWallet = await didkeyAndVCWallet.addPlugin(getVCTemplatesPlugin());
 
-    const idxWallet = await templateWallet.addPlugin(
-        await getIDXPlugin(templateWallet, ceramicIdx)
+    const resolutionWallet = await templateWallet.addPlugin(VCResolutionPlugin);
+
+    const idxWallet = await resolutionWallet.addPlugin(
+        await getIDXPlugin(resolutionWallet, ceramicIdx)
     );
     const expirationWallet = await idxWallet.addPlugin(ExpirationPlugin(idxWallet));
 
@@ -66,8 +69,10 @@ export const walletFromKey = async (
 
         getCredential: wallet.pluginMethods.getVerifiableCredentialFromIdx,
         getCredentials: wallet.pluginMethods.getVerifiableCredentialsFromIdx,
-        getCredentialsList: async () => {
-            return (await wallet.pluginMethods.getCredentialsListFromIdx()).credentials;
+        getCredentialsList: async <
+            Metadata extends Record<string, any> = Record<never, never>
+        >() => {
+            return (await wallet.pluginMethods.getCredentialsListFromIdx<Metadata>()).credentials;
         },
         publishCredential: wallet.pluginMethods.publishContentToCeramic,
         addCredential: async credential => {
@@ -80,6 +85,7 @@ export const walletFromKey = async (
         resolveDid: wallet.pluginMethods.resolveDid,
 
         readFromCeramic: wallet.pluginMethods.readContentFromCeramic,
+        resolveCredential: wallet.pluginMethods.resolveCredential,
 
         getTestVc: wallet.pluginMethods.getTestVc,
         getTestVp: wallet.pluginMethods.getTestVp,
@@ -91,6 +97,7 @@ export const walletFromKey = async (
         getBalance: wallet.pluginMethods.getBalance,
         getBalanceForAddress: wallet.pluginMethods.getBalanceForAddress,
         transferTokens: wallet.pluginMethods.transferTokens,
+        getGasPrice: wallet.pluginMethods.getGasPrice,
         getCurrentNetwork: wallet.pluginMethods.getCurrentNetwork,
         changeNetwork: wallet.pluginMethods.changeNetwork,
         addInfuraProjectId: wallet.pluginMethods.addInfuraProjectId,

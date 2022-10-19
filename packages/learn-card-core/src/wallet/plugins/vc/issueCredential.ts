@@ -17,6 +17,7 @@ export const issueCredential = (initWallet: Wallet<string, VCPluginDependentMeth
         const options = {
             verificationMethod: await initWallet.pluginMethods.keyToVerificationMethod('key', kp),
             proofPurpose: 'assertionMethod',
+            type: 'Ed25519Signature2020',
             ...signingOptions,
         };
 

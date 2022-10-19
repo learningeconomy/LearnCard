@@ -1,5 +1,35 @@
 # learn-card-core
 
+## 7.0.3
+
+### Patch Changes
+
+-   [#124](https://github.com/learningeconomy/LearnCard/pull/124) [`2a4f635`](https://github.com/learningeconomy/LearnCard/commit/2a4f63521b2ce68961868359873064a25394dd99) Thanks [@smurflo2](https://github.com/smurflo2)! - Add getGasPrice method
+
+## 7.0.2
+
+### Patch Changes
+
+-   [#121](https://github.com/learningeconomy/LearnCard/pull/121) [`00b119a`](https://github.com/learningeconomy/LearnCard/commit/00b119a56769bcdc921502a5ad0591d07ad667e8) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Default to Ed25519Signature2020 instead of Ed25519Signature2018 when issuing
+
+## 7.0.1
+
+### Patch Changes
+
+-   [`e8f1ba3`](https://github.com/learningeconomy/LearnCard/commit/e8f1ba3594bc749caf18959962da4b85c97db4a6) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix VC Validation
+
+## 7.0.0
+
+### Major Changes
+
+-   [#113](https://github.com/learningeconomy/LearnCard/pull/113) [`25349fe`](https://github.com/learningeconomy/LearnCard/commit/25349fe064c751a004092bcab24e1674fadfd5fe) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - BREAKING CHANGE: IDX Schemas are now different, leveraging URIs rather than just StreamIDs. Old Schemas will be silently migrated, so this _should_ be pretty painless, but be advised of this change!
+
+## 6.4.0
+
+### Minor Changes
+
+-   [#111](https://github.com/learningeconomy/LearnCard/pull/111) [`27e4ecd`](https://github.com/learningeconomy/LearnCard/commit/27e4ecd6641cf16b97d198434250f55135d09e97) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Use/expose generic parameter of IDXCredential type in LC methods
+
 ## 6.3.1
 
 ### Patch Changes

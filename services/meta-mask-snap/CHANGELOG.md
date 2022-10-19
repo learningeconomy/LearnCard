@@ -1,5 +1,42 @@
 # @learncard/meta-mask-snap
 
+## 1.0.11
+
+### Patch Changes
+
+-   [#124](https://github.com/learningeconomy/LearnCard/pull/124) [`2a4f635`](https://github.com/learningeconomy/LearnCard/commit/2a4f63521b2ce68961868359873064a25394dd99) Thanks [@smurflo2](https://github.com/smurflo2)! - Add getGasPrice method
+
+-   Updated dependencies [[`2a4f635`](https://github.com/learningeconomy/LearnCard/commit/2a4f63521b2ce68961868359873064a25394dd99)]:
+    -   @learncard/core@7.0.3
+
+## 1.0.10
+
+### Patch Changes
+
+-   Updated dependencies [[`00b119a`](https://github.com/learningeconomy/LearnCard/commit/00b119a56769bcdc921502a5ad0591d07ad667e8)]:
+    -   @learncard/core@7.0.2
+
+## 1.0.9
+
+### Patch Changes
+
+-   Updated dependencies [[`e8f1ba3`](https://github.com/learningeconomy/LearnCard/commit/e8f1ba3594bc749caf18959962da4b85c97db4a6)]:
+    -   @learncard/core@7.0.1
+
+## 1.0.8
+
+### Patch Changes
+
+-   Updated dependencies [[`25349fe`](https://github.com/learningeconomy/LearnCard/commit/25349fe064c751a004092bcab24e1674fadfd5fe)]:
+    -   @learncard/core@7.0.0
+
+## 1.0.7
+
+### Patch Changes
+
+-   Updated dependencies [[`27e4ecd`](https://github.com/learningeconomy/LearnCard/commit/27e4ecd6641cf16b97d198434250f55135d09e97)]:
+    -   @learncard/core@6.4.0
+
 ## 1.0.6
 
 ### Patch Changes

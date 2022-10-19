@@ -1,5 +1,62 @@
 # @learncard/cli
 
+## 1.5.3
+
+### Patch Changes
+
+-   Updated dependencies [[`2a4f635`](https://github.com/learningeconomy/LearnCard/commit/2a4f63521b2ce68961868359873064a25394dd99)]:
+    -   @learncard/core@7.0.3
+
+## 1.5.2
+
+### Patch Changes
+
+-   Updated dependencies [[`00b119a`](https://github.com/learningeconomy/LearnCard/commit/00b119a56769bcdc921502a5ad0591d07ad667e8)]:
+    -   @learncard/core@7.0.2
+
+## 1.5.1
+
+### Patch Changes
+
+-   Updated dependencies [[`e8f1ba3`](https://github.com/learningeconomy/LearnCard/commit/e8f1ba3594bc749caf18959962da4b85c97db4a6)]:
+    -   @learncard/core@7.0.1
+
+## 1.5.0
+
+### Minor Changes
+
+-   [#115](https://github.com/learningeconomy/LearnCard/pull/115) [`efab28a`](https://github.com/learningeconomy/LearnCard/commit/efab28ae5c9487239537d220316f5a216d64fe58) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add @learncard/types to global as "types"
+
+### Patch Changes
+
+-   Updated dependencies [[`efab28a`](https://github.com/learningeconomy/LearnCard/commit/efab28ae5c9487239537d220316f5a216d64fe58)]:
+    -   @learncard/types@4.0.1
+    -   @learncard/core@7.0.0
+
+## 1.4.9
+
+### Patch Changes
+
+-   Updated dependencies [[`25349fe`](https://github.com/learningeconomy/LearnCard/commit/25349fe064c751a004092bcab24e1674fadfd5fe), [`25349fe`](https://github.com/learningeconomy/LearnCard/commit/25349fe064c751a004092bcab24e1674fadfd5fe)]:
+    -   @learncard/types@4.0.0
+    -   @learncard/core@7.0.0
+
+## 1.4.8
+
+### Patch Changes
+
+-   Updated dependencies [[`27e4ecd`](https://github.com/learningeconomy/LearnCard/commit/27e4ecd6641cf16b97d198434250f55135d09e97), [`27e4ecd`](https://github.com/learningeconomy/LearnCard/commit/27e4ecd6641cf16b97d198434250f55135d09e97)]:
+    -   @learncard/core@6.4.0
+    -   @learncard/types@3.1.0
+
+## 1.4.7
+
+### Patch Changes
+
+-   Updated dependencies [[`d3e542d`](https://github.com/learningeconomy/LearnCard/commit/d3e542d412eb20644b2d14efa3d728cecdf53adc)]:
+    -   @learncard/types@3.0.2
+    -   @learncard/core@6.3.1
+
 ## 1.4.6
 
 ### Patch Changes

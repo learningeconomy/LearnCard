@@ -15,7 +15,7 @@ env:
   CI: true
 
 jobs:
-  release:
+  manifest:
     name: Release
     runs-on: ubuntu-latest
     steps:
@@ -57,4 +57,4 @@ jobs:
           git config --global user.email "beestontaylor@learningeconomy.io"
           git add .
           git status -v
-          [ -z "`git status --porcelain`" ] && git commit -m ":green_heart: Update snap.manifest.json" && git pull && git push
+          git commit -m ":green_heart: Update snap.manifest.json" && git pull && git push || echo "Nothing to see here!"
