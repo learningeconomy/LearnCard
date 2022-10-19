@@ -25,9 +25,12 @@ export const walletFromKey = async (
         ceramicIdx = defaultCeramicIDXArgs,
         didkit,
         ethereumConfig = defaultEthereumArgs,
+        debug,
     }: Partial<LearnCardConfig> = {}
 ): Promise<LearnCard> => {
-    const didkitWallet = await (await generateWallet()).addPlugin(await getDidKitPlugin(didkit));
+    const didkitWallet = await (
+        await generateWallet({ debug })
+    ).addPlugin(await getDidKitPlugin(didkit));
 
     const didkeyWallet = await didkitWallet.addPlugin(await getDidKeyPlugin(didkitWallet, key));
 

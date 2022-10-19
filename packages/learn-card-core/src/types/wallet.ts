@@ -55,4 +55,5 @@ export type Wallet<Plugins extends Plugin[] = [], PluginMethods = GetPluginMetho
     addPlugin: <NewPlugin extends Plugin>(
         plugin: NewPlugin
     ) => Promise<Wallet<[...Plugins, NewPlugin]>>;
+    debug?: typeof console.log;
 };

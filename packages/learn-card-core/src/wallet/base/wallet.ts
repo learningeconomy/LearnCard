@@ -11,8 +11,9 @@ const addPluginToWallet = async <NewPlugin extends Plugin, Plugins extends Plugi
     wallet: Wallet<Plugins>,
     plugin: NewPlugin
 ): Promise<Wallet<[...Plugins, NewPlugin]>> => {
+    wallet.debug?.('Adding plugin', plugin.name);
     // eslint-disable-next-line
-    return generateWallet({ plugins: [...wallet.plugins, plugin] });
+    return generateWallet({ plugins: [...wallet.plugins, plugin], debug: wallet.debug });
 };
 
 const bindReadPlane = <Plugins extends Plugin[] = [], PluginMethods = GetPluginMethods<Plugins>>(
@@ -20,7 +21,7 @@ const bindReadPlane = <Plugins extends Plugin[] = [], PluginMethods = GetPluginM
 ): ReadPlane => {
     return {
         get: async uri => {
-            console.debug('wallet.read.get', uri);
+            wallet.debug?.('wallet.read.get', uri);
 
             const cachedResponse = await wallet.cache.getVc(uri);
 
@@ -65,7 +66,7 @@ const bindIndexPlane = <Plugins extends Plugin[] = [], PluginMethods = GetPlugin
 
     const all: Pick<IndexPlane, 'get'> = {
         get: async query => {
-            console.debug('wallet.index.all.get');
+            wallet.debug?.('wallet.index.all.get');
 
             const resultsWithDuplicates = (
                 await Promise.all(
@@ -89,7 +90,7 @@ const bindCachePlane = <Plugins extends Plugin[] = [], PluginMethods = GetPlugin
 ): CachePlane => {
     return {
         getIndex: async query => {
-            console.debug('wallet.cache.getIndex');
+            wallet.debug?.('wallet.cache.getIndex');
 
             try {
                 const index = await Promise.any(
@@ -106,7 +107,7 @@ const bindCachePlane = <Plugins extends Plugin[] = [], PluginMethods = GetPlugin
             }
         },
         setIndex: async (query, value) => {
-            console.debug('wallet.cache.setIndex');
+            wallet.debug?.('wallet.cache.setIndex');
 
             const result = await Promise.allSettled(
                 wallet.plugins.map(async plugin => {
@@ -119,7 +120,7 @@ const bindCachePlane = <Plugins extends Plugin[] = [], PluginMethods = GetPlugin
             return result.some(promiseResult => promiseResult.status === 'fulfilled');
         },
         getVc: async uri => {
-            console.debug('wallet.cache.getVc');
+            wallet.debug?.('wallet.cache.getVc');
 
             try {
                 const vc = await Promise.any(
@@ -136,7 +137,7 @@ const bindCachePlane = <Plugins extends Plugin[] = [], PluginMethods = GetPlugin
             }
         },
         setVc: async (uri, value) => {
-            console.debug('wallet.cache.setIndex');
+            wallet.debug?.('wallet.cache.setIndex');
 
             const result = await Promise.allSettled(
                 wallet.plugins.map(async plugin => {
@@ -187,6 +188,7 @@ export const generateWallet = async <
         addPlugin: function(plugin) {
             return addPluginToWallet(this, plugin);
         },
+        debug: _wallet.debug,
     };
 
     wallet.read = bindReadPlane(wallet);

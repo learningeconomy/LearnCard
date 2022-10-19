@@ -12,10 +12,12 @@ import { EmptyWallet } from 'types/LearnCard';
  *
  * @group Init Functions
  */
-export const emptyWallet = async ({ didkit }: EmptyWallet['args'] = {}): Promise<
+export const emptyWallet = async ({ didkit, debug }: EmptyWallet['args'] = {}): Promise<
     EmptyWallet['returnValue']
 > => {
-    const didkitWallet = await (await generateWallet()).addPlugin(await getDidKitPlugin(didkit));
+    const didkitWallet = await (
+        await generateWallet({ debug })
+    ).addPlugin(await getDidKitPlugin(didkit));
 
     const expirationWallet = await didkitWallet.addPlugin(expirationPlugin(didkitWallet));
 

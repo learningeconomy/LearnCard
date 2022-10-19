@@ -90,16 +90,17 @@ export type LearnCardConfig = {
     ceramicIdx: CeramicIDXArgs;
     didkit: InitInput | Promise<InitInput>;
     ethereumConfig: EthereumConfig;
+    debug?: typeof console.log;
 };
 
 /** @group Init Functions */
-export type EmptyWallet = InitFunction<{}, 'didkit', EmptyLearnCard>;
+export type EmptyWallet = InitFunction<{}, 'didkit' | 'debug', EmptyLearnCard>;
 /** @group Init Functions */
 export type WalletFromKey = InitFunction<{ seed: string }, keyof LearnCardConfig, LearnCard>;
 /** @group Init Functions */
 export type WalletFromVcApi = InitFunction<
     { vcApi: true | string; did?: string },
-    undefined,
+    'debug',
     VCAPILearnCard
 >;
 

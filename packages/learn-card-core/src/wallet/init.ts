@@ -44,12 +44,13 @@ export async function initLearnCard(
     config: InitLearnCard['args'] = {}
 ): InitLearnCard['returnValue'] {
     if ('vcApi' in config) {
-        const { vcApi, did } = config;
+        const { vcApi, did, debug } = config;
 
-        return walletFromApiUrl(
-            typeof vcApi === 'string' ? vcApi : 'https://bridge.learncard.com',
-            vcApi === true ? 'did:key:z6MkjSz4mYqcn7dePGuktJ5PxecMkXQQHWRg8Lm6okATyFVh' : did
-        );
+        return walletFromApiUrl({
+            url: typeof vcApi === 'string' ? vcApi : 'https://bridge.learncard.com',
+            did: vcApi === true ? 'did:key:z6MkjSz4mYqcn7dePGuktJ5PxecMkXQQHWRg8Lm6okATyFVh' : did,
+            debug,
+        });
     }
 
     if ('seed' in config) {

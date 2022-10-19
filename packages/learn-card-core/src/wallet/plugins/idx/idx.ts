@@ -188,27 +188,27 @@ export const getIDXPlugin = async <URI extends string = ''>(
         name: 'IDX',
         store: {
             upload: async vc => {
-                console.debug('wallet.store.IDX.upload');
+                wallet.debug?.('wallet.store.IDX.upload');
                 return uploadCredential(vc);
             },
         },
         read: {
             get: async uri => {
-                console.debug('wallet.read.IDX.get');
+                wallet.debug?.('wallet.read.IDX.get');
 
                 return resolveCredential(uri);
             },
         },
         index: {
             get: async () => {
-                console.debug('wallet.index.IDX.get');
+                wallet.debug?.('wallet.index.IDX.get');
 
                 const list = await getCredentialsListFromIdx();
 
                 return list.credentials;
             },
             add: async record => {
-                console.debug('wallet.index.IDX.add');
+                wallet.debug?.('wallet.index.IDX.add');
 
                 try {
                     await addCredentialInIdx(record);
@@ -221,13 +221,13 @@ export const getIDXPlugin = async <URI extends string = ''>(
                 }
             },
             update: async () => {
-                console.debug('wallet.index.IDX.update');
+                wallet.debug?.('wallet.index.IDX.update');
 
                 // TODO: Implement update
                 return false;
             },
             remove: async id => {
-                console.debug('wallet.index.IDX.remove');
+                wallet.debug?.('wallet.index.IDX.remove');
 
                 try {
                     await removeCredentialFromIdx(id);

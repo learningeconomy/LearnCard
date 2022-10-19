@@ -2,7 +2,7 @@ import { ModelAliases } from '@glazed/types';
 import { z } from 'zod';
 import { StreamID } from '@ceramicnetwork/streamid';
 import { Plugin } from 'types/wallet';
-import { IndexPlugin, StorePlugin, ReadPlugin, CachePlugin } from 'types/planes';
+import { IndexPlugin, StorePlugin, ReadPlugin } from 'types/planes';
 import { VC, IDXCredential, IDXCredentialValidator } from '@learncard/types';
 import { ResolutionExtension } from '../vc-resolution';
 

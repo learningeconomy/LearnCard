@@ -12,11 +12,18 @@ import { getVCAPIPlugin } from '@wallet/plugins/vc-api';
  *
  * @group Init Functions
  */
-export const walletFromApiUrl = async (
-    url: string,
-    did?: string
-): Promise<WalletFromVcApi['returnValue']> => {
-    const apiWallet = await (await generateWallet()).addPlugin(await getVCAPIPlugin({ url, did }));
+export const walletFromApiUrl = async ({
+    url,
+    did,
+    debug,
+}: {
+    url: string;
+    did?: string;
+    debug?: typeof console.log;
+}): Promise<WalletFromVcApi['returnValue']> => {
+    const apiWallet = await (
+        await generateWallet({ debug })
+    ).addPlugin(await getVCAPIPlugin({ url, did }));
 
     const expirationWallet = await apiWallet.addPlugin(expirationPlugin(apiWallet));
 
