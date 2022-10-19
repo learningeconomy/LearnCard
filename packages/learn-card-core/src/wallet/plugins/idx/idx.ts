@@ -137,40 +137,107 @@ export const getIDXPlugin = async <URI extends string = ''>(
         return (await loader.load(streamId))?.content;
     };
 
+    const uploadCredential = async (vc: VC) => {
+        await VCValidator.parseAsync(vc);
+
+        return streamIdToCeramicURI(await publishContentToCeramic(vc));
+    };
+
+    const resolveCredential = async (uri = '') => {
+        if (!uri) return undefined;
+
+        if (uri.startsWith('ceramic://')) {
+            return VCValidator.parseAsync(await readContentFromCeramic(uri));
+        }
+
+        const verificationResult = await CeramicURIValidator.spa(uri);
+
+        if (!verificationResult.success) return wallet.pluginMethods.resolveCredential(uri);
+
+        const streamId = verificationResult.data.split(':')[2];
+
+        return VCValidator.parseAsync(await readContentFromCeramic(streamId));
+    };
+
+    const addCredentialInIdx = async <T extends Record<string, any>>(
+        idxCredential: IDXCredential<T>
+    ) => {
+        const record = IDXCredentialValidator.parse(idxCredential);
+
+        if (!record) throw new Error('record is required');
+
+        if (!record.uri) throw Error('No URI provided');
+
+        // Make sure URI can be resolved
+        await resolveCredential(record.uri);
+
+        const existing = await getCredentialsListFromIdx(credentialAlias);
+
+        const indexOfExistingCredential = existing.credentials.findIndex(credential => {
+            return credential.id === record.id;
+        });
+
+        if (indexOfExistingCredential > -1) {
+            existing.credentials[indexOfExistingCredential] = record;
+        } else existing.credentials.push(record);
+
+        return streamIdToCeramicURI(await dataStore.set(credentialAlias, existing));
+    };
+
     return {
         name: 'IDX',
-        cache: {
-            getLocal: () => {
-                console.log('caching.IDX.getLocal');
-            },
-            setLocal: () => {
-                console.log('caching.IDX.setLocal');
-            },
-            getRemote: () => {
-                console.log('caching.IDX.getRemote');
-            },
-            setRemote: () => {
-                console.log('caching.IDX.setRemote');
-            },
-            flush: () => {
-                console.log('caching.IDX.flush');
+        store: {
+            upload: async vc => {
+                console.debug('wallet.store.IDX.upload');
+                return uploadCredential(vc);
             },
         },
-        storage: {
-            get: () => {
-                console.log('storage.IDX.get');
+        read: {
+            get: async uri => {
+                console.debug('wallet.read.IDX.get');
+
+                return resolveCredential(uri);
             },
-            getMany: () => {
-                console.log('storage.IDX.getMany');
+        },
+        index: {
+            get: async () => {
+                console.debug('wallet.index.IDX.get');
+
+                const list = await getCredentialsListFromIdx();
+
+                return list.credentials;
             },
-            upload: () => {
-                console.log('storage.IDX.upload');
+            add: async record => {
+                console.debug('wallet.index.IDX.add');
+
+                try {
+                    await addCredentialInIdx(record);
+
+                    return true;
+                } catch (error) {
+                    console.error('Error adding credential with IDX:', error);
+
+                    return false;
+                }
             },
-            set: () => {
-                console.log('storage.IDX.set');
+            update: async () => {
+                console.debug('wallet.index.IDX.update');
+
+                // TODO: Implement update
+                return false;
             },
-            remove: () => {
-                console.log('storage.IDX.remove');
+            remove: async id => {
+                console.debug('wallet.index.IDX.remove');
+
+                try {
+                    await removeCredentialFromIdx(id);
+
+                    return true;
+                } catch (error) {
+                    console.error('Error removing credential from IDX:', error);
+
+                    return false;
+                }
             },
         },
         pluginMethods: {
@@ -223,21 +290,7 @@ export const getIDXPlugin = async <URI extends string = ''>(
             removeVerifiableCredentialInIdx: async (_wallet, id) => {
                 return removeCredentialFromIdx(id);
             },
-            resolveCredential: async (_wallet, uri) => {
-                if (!uri) return undefined;
-
-                if (uri.startsWith('ceramic://')) {
-                    return VCValidator.parseAsync(await readContentFromCeramic(uri));
-                }
-
-                const verificationResult = await CeramicURIValidator.spa(uri);
-
-                if (!verificationResult.success) return wallet.pluginMethods.resolveCredential(uri);
-
-                const streamId = verificationResult.data.split(':')[2];
-
-                return VCValidator.parseAsync(await readContentFromCeramic(streamId));
-            },
+            resolveCredential: async (_wallet, uri) => resolveCredential(uri),
         },
     };
 };

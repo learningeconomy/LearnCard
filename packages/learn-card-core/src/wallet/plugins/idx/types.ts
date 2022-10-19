@@ -2,7 +2,7 @@ import { ModelAliases } from '@glazed/types';
 import { z } from 'zod';
 import { StreamID } from '@ceramicnetwork/streamid';
 import { Plugin } from 'types/wallet';
-import { StoragePlugin, CachePlugin } from 'types/planes';
+import { IndexPlugin, StorePlugin, ReadPlugin, CachePlugin } from 'types/planes';
 import { VC, IDXCredential, IDXCredentialValidator } from '@learncard/types';
 import { ResolutionExtension } from '../vc-resolution';
 
@@ -60,7 +60,7 @@ export const CredentialsListValidator: z.ZodType<CredentialsList> = z
     .strict();
 
 /** @group IDXPlugin */
-export type IDXPlugin = CachePlugin<StoragePlugin<Plugin<'IDX', IDXPluginMethods>>>;
+export type IDXPlugin = StorePlugin<IndexPlugin<ReadPlugin<Plugin<'IDX', IDXPluginMethods>>>>;
 
 // Below types are temporary! They will be removed in the future when we are confident that everyone
 // has moved on to the new schema
