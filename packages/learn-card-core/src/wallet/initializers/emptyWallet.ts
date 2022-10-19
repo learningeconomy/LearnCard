@@ -27,6 +27,9 @@ export const emptyWallet = async ({ didkit, debug }: EmptyWallet['args'] = {}): 
 
     return {
         _wallet: wallet,
+        read: wallet.read,
+        store: wallet.store,
+        index: wallet.index,
 
         newCredential: wallet.pluginMethods.newCredential,
         newPresentation: wallet.pluginMethods.newPresentation,

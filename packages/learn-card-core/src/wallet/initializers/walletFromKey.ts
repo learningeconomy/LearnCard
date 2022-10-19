@@ -55,6 +55,9 @@ export const walletFromKey = async (
 
     return {
         _wallet: wallet,
+        read: wallet.read,
+        store: wallet.store,
+        index: wallet.index,
 
         did: (type = 'key') => wallet.pluginMethods.getSubjectDid(type),
         keypair: (type = 'ed25519') => wallet.pluginMethods.getSubjectKeypair(type),

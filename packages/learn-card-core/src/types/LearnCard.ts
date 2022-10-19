@@ -45,7 +45,8 @@ export type LearnCard<
     > = {
         /** Raw IoE wallet instance. You shouldn't need to drop down to this level! */
         _wallet: RawWallet;
-    } & Pick<AllLearnCardMethods, Methods>;
+    } & Pick<AllLearnCardMethods, Methods> &
+    Pick<RawWallet, 'read' | 'store' | 'index'>;
 
 /**
  * @group LearnCard
