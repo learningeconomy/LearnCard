@@ -73,7 +73,7 @@ export const ProfileValidator = z.string().or(
     z
         .object({
             id: z.string().optional(),
-            type: z.string().array().nonempty().optional(),
+            type: z.string().or(z.string().array().nonempty().optional()),
             name: z.string().optional(),
             url: z.string().optional(),
             phone: z.string().optional(),
