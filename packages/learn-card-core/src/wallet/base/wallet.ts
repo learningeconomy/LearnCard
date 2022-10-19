@@ -1,5 +1,11 @@
 import { Plugin, Wallet, GetPluginMethods } from 'types/wallet';
-import { StoragePlane, WalletCache, WalletCachePlane, WalletStorage } from 'types/planes';
+import {
+    ReadPlane,
+    CachePlane,
+    IndexPlane,
+    WalletStorePlane,
+    WalletIndexPlane,
+} from 'types/planes';
 
 const addPluginToWallet = async <NewPlugin extends Plugin, Plugins extends Plugin[]>(
     wallet: Wallet<Plugins>,
@@ -9,103 +15,140 @@ const addPluginToWallet = async <NewPlugin extends Plugin, Plugins extends Plugi
     return generateWallet({ plugins: [...wallet.plugins, plugin] });
 };
 
-const bindStoragePlane = <Plugins extends Plugin[] = [], PluginMethods = GetPluginMethods<Plugins>>(
+const bindReadPlane = <Plugins extends Plugin[] = [], PluginMethods = GetPluginMethods<Plugins>>(
     wallet: Wallet<Plugins, PluginMethods>
-): WalletStorage<Plugins> => {
-    const individualPlanes = wallet.plugins.reduce<Omit<WalletStorage<Plugins>, 'all'>>(
+): ReadPlane => {
+    return {
+        get: async uri => {
+            console.debug('wallet.read.get', uri);
+
+            const cachedResponse = await wallet.cache.getVc(uri);
+
+            if (cachedResponse) return cachedResponse;
+
+            const vc = await Promise.any(
+                wallet.plugins.map(async plugin => {
+                    if (!plugin.read) throw new Error('Plugin is not a Read Plugin');
+
+                    return plugin.read.get(uri);
+                })
+            );
+
+            if (vc) await wallet.cache.setVc?.(uri, vc);
+
+            return vc;
+        },
+    };
+};
+
+const bindStorePlane = <Plugins extends Plugin[] = [], PluginMethods = GetPluginMethods<Plugins>>(
+    wallet: Wallet<Plugins, PluginMethods>
+): WalletStorePlane<Plugins> => {
+    return wallet.plugins.reduce((acc, cur) => {
+        if (cur.store) acc[cur.name as keyof typeof acc] = cur.store;
+
+        return acc;
+    }, {} as WalletStorePlane<Plugins>);
+};
+
+const bindIndexPlane = <Plugins extends Plugin[] = [], PluginMethods = GetPluginMethods<Plugins>>(
+    wallet: Wallet<Plugins, PluginMethods>
+): WalletIndexPlane<Plugins> => {
+    const individualPlanes = wallet.plugins.reduce<Omit<WalletIndexPlane<Plugins>, 'all'>>(
         (acc, cur) => {
-            if (cur.storage) (acc as any)[cur.name] = cur.storage;
+            if (cur.index) (acc as any)[cur.name] = cur.index;
 
             return acc;
         },
-        {} as Omit<WalletStorage<Plugins>, 'all'>
+        {} as Omit<WalletIndexPlane<Plugins>, 'all'>
     );
 
-    const all: StoragePlane = {
-        get: query => {
-            console.log('storage.all.get');
-            return wallet.plugins
-                .map(
-                    plugin =>
-                        wallet.cache.all.get({
-                            name: plugin.name,
-                            operation: 'get',
-                            query,
-                        }) ?? plugin.storage?.get(query)
+    const all: Pick<IndexPlane, 'get'> = {
+        get: async query => {
+            console.debug('wallet.index.all.get');
+
+            const resultsWithDuplicates = (
+                await Promise.all(
+                    wallet.plugins.map(async plugin => {
+                        if (!plugin.index) return [];
+
+                        return plugin.index.get(query);
+                    })
                 )
-                .filter(Boolean);
-        },
-        getMany: query => {
-            console.log('storage.all.getMany');
-            return wallet.plugins
-                .map(
-                    plugin =>
-                        wallet.cache.all.get({
-                            name: plugin.name,
-                            operation: 'getMany',
-                            query,
-                        }) ?? plugin.storage?.getMany(query)
-                )
-                .filter(Boolean);
-        },
-        upload: data => {
-            console.log('storage.all.upload');
-            return wallet.plugins.map(plugin => plugin.storage?.upload(data)).filter(Boolean);
-        },
-        set: (query, data) => {
-            console.log('storage.all.set');
-            wallet.cache.all.set({ name: 'all', operation: 'set', query, data });
-            return wallet.plugins.map(plugin => plugin.storage?.set(query, data)).filter(Boolean);
-        },
-        remove: query => {
-            console.log('storage.all.remove');
-            wallet.cache.all.set({ name: 'all', operation: 'remove', query });
-            return wallet.plugins.map(plugin => plugin.storage?.remove(query)).filter(Boolean);
+            ).flat();
+
+            return [...new Set(resultsWithDuplicates)];
         },
     };
 
-    return { ...individualPlanes, all } as WalletStorage<Plugins>;
+    return { ...individualPlanes, all } as WalletIndexPlane<Plugins>;
 };
 
-const bindCachingPlane = <Plugins extends Plugin[] = [], PluginMethods = GetPluginMethods<Plugins>>(
+const bindCachePlane = <Plugins extends Plugin[] = [], PluginMethods = GetPluginMethods<Plugins>>(
     wallet: Wallet<Plugins, PluginMethods>
-): WalletCache<Plugins> => {
-    const individualPlanes = wallet.plugins.reduce<WalletCache<Plugins>>((acc, cur) => {
-        const { cache } = cur;
+): CachePlane => {
+    return {
+        getIndex: async query => {
+            console.debug('wallet.cache.getIndex');
 
-        if (cache) {
-            // Have to index as 'all' because TS seems to hate it otherwise 🙃
-            acc[cur.name as 'all'] = {
-                get: args => cache.getLocal?.(args) ?? cache.getRemote?.(args),
-                set: args => cache.setLocal?.(args) ?? cache.setRemote?.(args),
-                flush: cache.flush,
-            };
-        }
+            try {
+                const index = await Promise.any(
+                    wallet.plugins.map(async plugin => {
+                        if (!plugin.cache) throw new Error('Plugin is not a Cache Plugin');
 
-        return acc;
-    }, {} as WalletCache<Plugins>);
+                        return plugin.cache.getIndex(query);
+                    })
+                );
 
-    const all: WalletCachePlane = {
-        get: args => {
-            console.log('caching.all.get');
-            return wallet.plugins
-                .map(plugin => plugin.cache?.getLocal?.(args) ?? plugin.cache?.getRemote?.(args))
-                .filter(Boolean);
+                return index;
+            } catch (error) {
+                return undefined;
+            }
         },
+        setIndex: async (query, value) => {
+            console.debug('wallet.cache.setIndex');
 
-        set: args => {
-            console.log('caching.all.set');
-            return wallet.plugins
-                .map(plugin => plugin.cache?.setLocal?.(args) ?? plugin.cache?.setRemote?.(args))
-                .filter(Boolean);
+            const result = await Promise.allSettled(
+                wallet.plugins.map(async plugin => {
+                    if (!plugin.cache) throw new Error('Plugin is not a Cache Plugin');
+
+                    return plugin.cache.setIndex(query, value);
+                })
+            );
+
+            return result.some(promiseResult => promiseResult.status === 'fulfilled');
         },
-        flush: () => {
-            console.log('caching.all.flush');
-            return wallet.plugins.map(plugin => plugin.cache?.flush());
+        getVc: async uri => {
+            console.debug('wallet.cache.getVc');
+
+            try {
+                const vc = await Promise.any(
+                    wallet.plugins.map(async plugin => {
+                        if (!plugin.cache) throw new Error('Plugin is not a Cache Plugin');
+
+                        return plugin.cache.getVc(uri);
+                    })
+                );
+
+                return vc;
+            } catch (error) {
+                return undefined;
+            }
+        },
+        setVc: async (uri, value) => {
+            console.debug('wallet.cache.setIndex');
+
+            const result = await Promise.allSettled(
+                wallet.plugins.map(async plugin => {
+                    if (!plugin.cache) throw new Error('Plugin is not a Cache Plugin');
+
+                    return plugin.cache.setVc(uri, value);
+                })
+            );
+
+            return result.some(promiseResult => promiseResult.status === 'fulfilled');
         },
     };
-
-    return { ...individualPlanes, all } as WalletCache<Plugins>;
 };
 
 const bindMethods = <Plugins extends Plugin[] = [], PluginMethods = GetPluginMethods<Plugins>>(
@@ -135,8 +178,10 @@ export const generateWallet = async <
     }, {} as PluginMethods);
 
     const wallet: Wallet<Plugins, PluginMethods> = {
-        storage: {} as WalletStorage<Plugins>,
-        cache: {} as WalletCache<Plugins>,
+        read: {} as ReadPlane,
+        store: {} as WalletStorePlane<Plugins>,
+        index: {} as WalletIndexPlane<Plugins>,
+        cache: {} as CachePlane,
         plugins: plugins as Plugins,
         pluginMethods,
         addPlugin: function(plugin) {
@@ -144,8 +189,10 @@ export const generateWallet = async <
         },
     };
 
-    wallet.storage = bindStoragePlane(wallet);
-    wallet.cache = bindCachingPlane(wallet);
+    wallet.read = bindReadPlane(wallet);
+    wallet.store = bindStorePlane(wallet);
+    wallet.index = bindIndexPlane(wallet);
+    wallet.cache = bindCachePlane(wallet);
 
     if (pluginMethods) wallet.pluginMethods = bindMethods(wallet, pluginMethods);
 

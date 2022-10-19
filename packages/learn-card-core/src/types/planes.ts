@@ -1,58 +1,57 @@
+import { IDXCredential, VC } from '@learncard/types';
 import { Plugin } from './wallet';
 
 export type FilterForPlane<Plugins extends Plugin[], Plane extends keyof Plugins[number]> = {
     [Index in keyof Plugins]: undefined extends Plugins[Index][Plane]
-        ? never
-        : Plugins[Index]['name'];
+    ? never
+    : Plugins[Index]['name'];
 }[number];
 
-export type StoragePlane = {
-    get: (query: string) => void;
-    getMany: (query: string) => void;
-    upload: (data: string) => void;
-    set: (query: string, data: string) => void;
-    remove: (query: string) => void;
+// --- Read ---
+
+export type ReadPlane = {
+    get: (uri: string) => Promise<VC | undefined>;
 };
 
-export type StoragePlugin<P extends Plugin> = P & { storage: StoragePlane };
+export type ReadPlugin<P extends Plugin> = P & { read: ReadPlane };
 
-export type WalletStorage<Plugins extends Plugin[]> = { all: StoragePlane } & Record<
-    FilterForPlane<Plugins, 'storage'>,
-    StoragePlane
+// --- Store ---
+
+export type StorePlane = {
+    upload: (vc: VC) => Promise<string | undefined>;
+    uploadMany?: (vcs: VC[]) => Promise<(string | undefined)[]>;
+};
+
+export type StorePlugin<P extends Plugin> = P & { store: StorePlane };
+
+export type WalletStorePlane<Plugins extends Plugin[]> = Record<
+    FilterForPlane<Plugins, 'store'>,
+    StorePlane
 >;
 
-export type CachePlane = {
-    getLocal?: (args: { name: string; operation: 'get' | 'getMany'; query: any }) => any;
-    getRemote?: (args: { name: string; operation: 'get' | 'getMany'; query: any }) => any;
-    setLocal?: (args: {
-        name: string;
-        operation: 'upload' | 'set' | 'remove';
-        query: any;
-        data?: any;
-    }) => void;
-    setRemote?: (args: {
-        name: string;
-        operation: 'upload' | 'set' | 'remove';
-        query: any;
-        data?: any;
-    }) => void;
-    flush: () => void;
+// --- Index ---
+
+export type IndexPlane = {
+    get: (query: Record<string, any>) => Promise<IDXCredential[]>;
+    add: (obj: IDXCredential) => Promise<boolean>;
+    update: (id: string, updates: Record<string, any>) => Promise<boolean>;
+    remove: (id: string) => Promise<boolean>;
 };
 
-export type WalletCachePlane = {
-    get: (args: { name: string; operation: 'get' | 'getMany'; query: any }) => any;
-    set: (args: {
-        name: string;
-        operation: 'upload' | 'set' | 'remove';
-        query: any;
-        data?: any;
-    }) => void;
-    flush: () => void;
+export type IndexPlugin<P extends Plugin> = P & { index: IndexPlane };
+
+export type WalletIndexPlane<Plugins extends Plugin[]> = { all: Pick<IndexPlane, 'get'> } & Record<
+    FilterForPlane<Plugins, 'index'>,
+    IndexPlane
+>;
+
+// --- Cache ---
+
+export type CachePlane = {
+    getIndex: (query: Record<string, any>) => Promise<IDXCredential[] | undefined>;
+    setIndex: (query: Record<string, any>, value: IDXCredential[]) => Promise<boolean>;
+    getVc: (uri: string) => Promise<VC | undefined>;
+    setVc: (uri: string, value: VC) => Promise<boolean>;
 };
 
 export type CachePlugin<P extends Plugin> = P & { cache: CachePlane };
-
-export type WalletCache<Plugins extends Plugin[]> = { all: WalletCachePlane } & Record<
-    FilterForPlane<Plugins, 'cache'>,
-    WalletCachePlane
->;
