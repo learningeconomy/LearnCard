@@ -323,6 +323,7 @@ importers:
       '@uniswap/default-token-list': ^4.1.0
       abort-controller: ^3.0.0
       aqu: 0.3.2
+      core-js: ^3.25.5
       credential-handler-polyfill: ^3.0.0
       cross-fetch: ^3.1.5
       date-fns: ^2.28.0
@@ -355,6 +356,7 @@ importers:
       '@learncard/helpers': link:../learn-card-helpers
       '@uniswap/default-token-list': 4.1.0
       abort-controller: 3.0.0
+      core-js: 3.25.5
       credential-handler-polyfill: 3.0.0
       cross-fetch: 3.1.5
       date-fns: 2.28.0
@@ -8216,7 +8218,7 @@ packages:
       metro-core: 0.72.3
       metro-react-native-babel-transformer: 0.72.1_@babel+core@7.19.1
       metro-resolver: 0.72.3
-      metro-runtime: 0.72.1
+      metro-runtime: 0.72.3
       readline: 1.3.0
     transitivePeerDependencies:
       - '@babel/core'
@@ -11107,7 +11109,7 @@ packages:
         optional: true
     dependencies:
       '@typescript-eslint/experimental-utils': 4.33.0_dyxdave6dwjbccc5dgiifcmuza
-      '@typescript-eslint/parser': 4.33.0_dyxdave6dwjbccc5dgiifcmuza
+      '@typescript-eslint/parser': 4.33.0_hxadhbs2xogijvk7vq4t2azzbu
       '@typescript-eslint/scope-manager': 4.33.0
       debug: 4.3.4
       eslint: 7.32.0
@@ -11192,7 +11194,7 @@ packages:
       - typescript
     dev: true
 
-  /@typescript-eslint/parser/4.33.0_dyxdave6dwjbccc5dgiifcmuza:
+  /@typescript-eslint/parser/4.33.0_hxadhbs2xogijvk7vq4t2azzbu:
     resolution: {integrity: sha512-ZohdsbXadjGBSK0/r+d87X0SBmKzOq4/S5nzK6SBgJspFo9/CUDJ7hjayuze+JK7CZQLDMroqytp7pOcFKTxZA==}
     engines: {node: ^10.12.0 || >=12.0.0}
     peerDependencies:
@@ -11204,10 +11206,10 @@ packages:
     dependencies:
       '@typescript-eslint/scope-manager': 4.33.0
       '@typescript-eslint/types': 4.33.0
-      '@typescript-eslint/typescript-estree': 4.33.0_typescript@4.8.3
+      '@typescript-eslint/typescript-estree': 4.33.0_typescript@4.7.4
       debug: 4.3.4
       eslint: 7.32.0
-      typescript: 4.8.3
+      typescript: 4.7.4
     transitivePeerDependencies:
       - supports-color
     dev: true
@@ -11328,6 +11330,27 @@ packages:
   /@typescript-eslint/types/5.38.0:
     resolution: {integrity: sha512-HHu4yMjJ7i3Cb+8NUuRCdOGu2VMkfmKyIJsOr9PfkBVYLYrtMCK/Ap50Rpov+iKpxDTfnqvDbuPLgBE5FwUNfA==}
     engines: {node: ^12.22.0 || ^14.17.0 || >=16.0.0}
+    dev: true
+
+  /@typescript-eslint/typescript-estree/4.33.0_typescript@4.7.4:
+    resolution: {integrity: sha512-rkWRY1MPFzjwnEVHsxGemDzqqddw2QbTJlICPD9p9I9LfsO8fdmfQPOX3uKfUaGRDFJbfrtm/sXhVXN4E+bzCA==}
+    engines: {node: ^10.12.0 || >=12.0.0}
+    peerDependencies:
+      typescript: '*'
+    peerDependenciesMeta:
+      typescript:
+        optional: true
+    dependencies:
+      '@typescript-eslint/types': 4.33.0
+      '@typescript-eslint/visitor-keys': 4.33.0
+      debug: 4.3.4
+      globby: 11.1.0
+      is-glob: 4.0.3
+      semver: 7.3.7
+      tsutils: 3.21.0_typescript@4.7.4
+      typescript: 4.7.4
+    transitivePeerDependencies:
+      - supports-color
     dev: true
 
   /@typescript-eslint/typescript-estree/4.33.0_typescript@4.8.3:
@@ -12229,7 +12252,7 @@ packages:
       '@babel/preset-react': 7.17.12_@babel+core@7.19.1
       '@esbuild-plugins/node-resolve': 0.1.4_esbuild@0.14.47
       '@typescript-eslint/eslint-plugin': 4.33.0_qkm6m2dvh7633pj2jigehwm774
-      '@typescript-eslint/parser': 4.33.0_dyxdave6dwjbccc5dgiifcmuza
+      '@typescript-eslint/parser': 4.33.0_hxadhbs2xogijvk7vq4t2azzbu
       chalk: 4.1.2
       chokidar: 3.5.3
       commander: 7.2.0
@@ -13864,7 +13887,7 @@ packages:
     dev: true
 
   /bytes/3.0.0:
-    resolution: {integrity: sha1-0ygVQE1olpn4Wk6k+odV3ROpYEg=}
+    resolution: {integrity: sha512-pMhOfFDPiv9t5jjIXkHosWmkSyQbvsgEVNkz0ERHbuLh2T/7j4Mqqpz523Fe8MVY89KC6Sh/QfS2sM+SjgFDcw==}
     engines: {node: '>= 0.8'}
 
   /bytes/3.1.0:
@@ -14916,6 +14939,11 @@ packages:
   /core-js/3.23.3:
     resolution: {integrity: sha512-oAKwkj9xcWNBAvGbT//WiCdOMpb9XQG92/Fe3ABFM/R16BsHgePG00mFOgKf7IsCtfj8tA1kHtf/VwErhriz5Q==}
     requiresBuild: true
+
+  /core-js/3.25.5:
+    resolution: {integrity: sha512-nbm6eZSjm+ZuBQxCUPQKQCoUEfFOXjUZ8dTTyikyKaWrTYmAVbykQfwsKE5dBK88u3QCkCrzsx/PPlKfhsvgpw==}
+    requiresBuild: true
+    dev: false
 
   /core-util-is/1.0.3:
     resolution: {integrity: sha512-ZQBvi1DcpJ4GDqanjucZ2Hj3wEO5pZDS89BWbkcrvdxksJorwUDDZamX9ldFkp9aw2lmBDLgkObEA4DWNJ9FYQ==}
