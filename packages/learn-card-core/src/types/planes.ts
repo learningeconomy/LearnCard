@@ -1,4 +1,4 @@
-import { IDXCredential, VC } from '@learncard/types';
+import { IDXCredential, VC, JWK } from '@learncard/types';
 import { Plugin } from './wallet';
 
 export type FilterForPlane<Plugins extends Plugin[], Plane extends keyof Plugins[number]> = {
@@ -55,3 +55,30 @@ export type CachePlane = {
 };
 
 export type CachePlugin<P extends Plugin> = P & { cache: CachePlane };
+
+// --- Identity ---
+
+export type GetDidMethodFromPlugin<P extends Plugin> = any extends P
+    ? never
+    : P['id'] extends undefined
+    ? never
+    : Parameters<NonNullable<P['id']>['did']>[0];
+
+export type GetAlgorithmFromPlugin<P extends Plugin> = any extends P
+    ? never
+    : P['id'] extends undefined
+    ? never
+    : Parameters<NonNullable<P['id']>['keypair']>[0];
+
+export type IdPlane<DidMethod extends string | undefined, Algorithm extends string | undefined> = {
+    did: (method?: DidMethod) => string;
+    keypair: (algorithm?: Algorithm) => JWK;
+};
+
+export type IdPlugin<P extends Plugin, DidMethod extends string, Algorithm extends string> = P & {
+    id: IdPlane<DidMethod, Algorithm>;
+};
+
+export type WalletIdPlane<Plugins extends Plugin[]> = any[] extends Plugins
+    ? any
+    : IdPlane<GetDidMethodFromPlugin<Plugins[number]>, GetAlgorithmFromPlugin<Plugins[number]>>;

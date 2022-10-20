@@ -1,4 +1,5 @@
 import { UnsignedVC, UnsignedVP, VC, VP, VerificationCheck } from '@learncard/types';
+import { IdPlugin } from 'types/planes';
 import { Plugin } from 'types/wallet';
 
 /** @group VC-API Plugin */
@@ -26,4 +27,4 @@ export type VCAPIPluginMethods = {
 };
 
 /** @group VC-API Plugin */
-export type VCAPIPlugin = Plugin<'VC API', VCAPIPluginMethods>;
+export type VCAPIPlugin = IdPlugin<Plugin<'VC API', VCAPIPluginMethods>, string, never>;

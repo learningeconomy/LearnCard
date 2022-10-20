@@ -32,6 +32,12 @@ export const getVCAPIPlugin = async ({
 
     return {
         name: 'VC API',
+        id: {
+            did: () => did!,
+            keypair: () => {
+                throw new Error('Cannot get keypair when using VC API');
+            },
+        },
         methods: {
             getSubjectDid: () => did!,
             issueCredential: async (_wallet, credential, options) => {

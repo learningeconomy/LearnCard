@@ -98,7 +98,7 @@ describe('LearnCard SDK', () => {
         it('should determinstically create a did', async () => {
             const wallet = await getWallet();
 
-            expect(wallet.invoke.getSubjectDid()).toEqual(
+            expect(wallet.id.did()).toEqual(
                 'did:key:z6Mkv1o2GEgtXjFdEMfLtupcKhGRydM8V7VHzii7Uh4aHoqH'
             );
         });
@@ -106,7 +106,7 @@ describe('LearnCard SDK', () => {
         it('should determinstically create a keypair', async () => {
             const wallet = await getWallet();
 
-            expect(wallet.invoke.getSubjectKeypair()).toEqual({
+            expect(wallet.id.keypair()).toEqual({
                 kty: 'OKP',
                 crv: 'Ed25519',
                 x: '5zTqbCtiV95yNV5HKqBaTEh-a0Y8Ap7TBt8vAbVja1g',
@@ -118,15 +118,11 @@ describe('LearnCard SDK', () => {
             const wallet = await getWallet();
             const otherWallet = await getWallet('b'.repeat(64));
 
+            await expect(wallet.invoke.resolveDid(wallet.id.did())).resolves.toBeDefined();
+            await expect(wallet.invoke.resolveDid(otherWallet.id.did())).resolves.toBeDefined();
             await expect(
-                wallet.invoke.resolveDid(wallet.invoke.getSubjectDid())
-            ).resolves.toBeDefined();
-            await expect(
-                wallet.invoke.resolveDid(otherWallet.invoke.getSubjectDid())
-            ).resolves.toBeDefined();
-            await expect(
-                wallet.invoke.resolveDid(wallet.invoke.getSubjectDid('pkh:eip155:1'))
-            ).resolves.not.toEqual(await wallet.invoke.resolveDid(wallet.invoke.getSubjectDid()));
+                wallet.invoke.resolveDid(wallet.id.did('pkh:eip155:1'))
+            ).resolves.not.toEqual(await wallet.invoke.resolveDid(wallet.id.did()));
         });
 
         describe('Did Methods Supported', () => {
@@ -154,7 +150,7 @@ describe('LearnCard SDK', () => {
                 it(method, async () => {
                     const wallet = await getWallet();
 
-                    expect(() => wallet.invoke.getSubjectDid(method as any)).not.toThrow();
+                    expect(() => wallet.id.did(method as any)).not.toThrow();
                 })
             );
         });
@@ -164,7 +160,7 @@ describe('LearnCard SDK', () => {
                 it(algorithm, async () => {
                     const wallet = await getWallet();
 
-                    expect(() => wallet.invoke.getSubjectKeypair(algorithm as any)).not.toThrow();
+                    expect(() => wallet.id.keypair(algorithm as any)).not.toThrow();
                 })
             );
         });
@@ -199,7 +195,7 @@ describe('LearnCard SDK', () => {
             const otherWallet = await getWallet('b'.repeat(64));
 
             const issuedVc = await wallet.invoke.issueCredential(wallet.invoke.getTestVc());
-            issuedVc.issuer = otherWallet.invoke.getSubjectDid();
+            issuedVc.issuer = otherWallet.id.did();
 
             const verificationResult = await wallet.invoke.verifyCredential(issuedVc);
 
@@ -443,7 +439,7 @@ describe('LearnCard SDK', () => {
             const wallet = await getWallet();
 
             // eipDid is something like: "did:pkh:eip155:1:0x8fd379246834eac74B8419FfdA202CF8051F7A03"
-            const eipDid: string = wallet.invoke.getSubjectDid('pkh:eip155');
+            const eipDid = wallet.id.did('pkh:eip155');
             const expectedPublicAddress = eipDid.substring(eipDid.lastIndexOf(':') + 1);
 
             const actualPublicAddress = wallet.invoke.getEthereumAddress();

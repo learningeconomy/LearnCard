@@ -81,7 +81,7 @@ program
         console.log('│        Description      │                   Command                   │');
         console.log('├─────────────────────────┼─────────────────────────────────────────────┤');
         console.log(
-            `│           View your did │ ${g.wallet}.invoke.getSubjectdid();              │`
+            `│           View your did │ ${g.wallet}.id.did();                            │`
         );
         console.log(
             `│ Generate an unsigned VC │ ${g.wallet}.invoke.getTestVc();                  │`

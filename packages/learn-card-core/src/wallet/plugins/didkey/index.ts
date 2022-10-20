@@ -43,22 +43,27 @@ export const getDidKeyPlugin = async <DidMethod extends string>(
         secp256k1: wallet.invoke.generateSecp256k1KeyFromBytes(seedBytes),
     };
 
+    const did = (method = defaultDidMethod) => {
+        if (!memoizedDids[method]) {
+            const algorithm = getAlgorithmForDidMethod(method);
+            memoizedDids[method] = wallet.invoke.keyToDid(method, keyPairs[algorithm]);
+        }
+
+        return memoizedDids[method]!;
+    };
+
+    const keypair = (algorithm: Algorithm = 'ed25519') => {
+        if (!keyPairs[algorithm]) throw new Error('Unsupported algorithm');
+
+        return keyPairs[algorithm];
+    };
+
     return {
         name: 'DID Key',
+        id: { did, keypair },
         methods: {
-            getSubjectDid: (_wallet, type = defaultDidMethod) => {
-                if (!memoizedDids[type]) {
-                    const algorithm = getAlgorithmForDidMethod(type);
-                    memoizedDids[type] = wallet.invoke.keyToDid(type, keyPairs[algorithm]);
-                }
-
-                return memoizedDids[type]!;
-            },
-            getSubjectKeypair: (_wallet, type = 'ed25519') => {
-                if (!keyPairs[type]) throw new Error('Unsupported algorithm');
-
-                return keyPairs[type];
-            },
+            getSubjectDid: (_wallet, method = defaultDidMethod) => did(method),
+            getSubjectKeypair: (_wallet, algorithm = 'ed25519') => keypair(algorithm),
             getKey: () => seed,
         },
     };

@@ -1,25 +1,27 @@
 import { Plugin } from 'types/wallet';
 import { JWK } from '@learncard/types';
+import { IdPlugin } from 'types/planes';
 
 /** @group DidKey Plugin */
 export type Algorithm = 'ed25519' | 'secp256k1';
 
 /** @group DidKey Plugin */
-export type DependentMethods<T extends string> = {
+export type DependentMethods<DidMethod extends string> = {
     generateEd25519KeyFromBytes: (bytes: Uint8Array) => JWK;
     generateSecp256k1KeyFromBytes: (bytes: Uint8Array) => JWK;
-    keyToDid: (type: T, keypair: JWK) => string;
+    keyToDid: (method: DidMethod, keypair: JWK) => string;
 };
 
 /** @group DidKey Plugin */
 export type DidKeyPluginMethods<DidMethod extends string> = {
-    getSubjectDid: (type?: DidMethod) => string;
-    getSubjectKeypair: (type?: Algorithm) => JWK;
+    getSubjectDid: (method?: DidMethod) => string;
+    getSubjectKeypair: (algorithm?: Algorithm) => JWK;
     getKey: () => string;
 };
 
 /** @group DidKey Plugin */
-export type DidKeyPlugin<DidMethod extends string = string> = Plugin<
-    'DID Key',
-    DidKeyPluginMethods<DidMethod>
+export type DidKeyPlugin<DidMethod extends string = string> = IdPlugin<
+    Plugin<'DID Key', DidKeyPluginMethods<DidMethod>, DependentMethods<DidMethod>>,
+    DidMethod,
+    Algorithm
 >;

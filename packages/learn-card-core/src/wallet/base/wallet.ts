@@ -5,7 +5,9 @@ import {
     IndexPlane,
     WalletStorePlane,
     WalletIndexPlane,
+    WalletIdPlane,
 } from 'types/planes';
+import { findFirstResult } from './helpers';
 
 const addPluginToWallet = async <NewPlugin extends Plugin, Plugins extends Plugin[]>(
     wallet: Wallet<Plugins>,
@@ -154,6 +156,47 @@ const bindCachePlane = <Plugins extends Plugin[] = [], PluginMethods = GetPlugin
     };
 };
 
+const bindIdPlane = <Plugins extends Plugin[] = [], PluginMethods = GetPluginMethods<Plugins>>(
+    wallet: Wallet<Plugins, PluginMethods>
+): WalletIdPlane<Plugins> => {
+    return {
+        did: method => {
+            wallet.debug?.('wallet.id.did', method);
+
+            const result = findFirstResult(wallet.plugins, plugin => {
+                try {
+                    if (!plugin.id) return undefined;
+
+                    return plugin.id.did(method);
+                } catch (error) {
+                    return undefined;
+                }
+            });
+
+            if (!result) throw new Error(`No plugin supports did method ${method}`);
+
+            return result;
+        },
+        keypair: type => {
+            wallet.debug?.('wallet.id.keypair', type);
+
+            const result = findFirstResult(wallet.plugins, plugin => {
+                try {
+                    if (!plugin.id) return undefined;
+
+                    return plugin.id.keypair(type);
+                } catch (error) {
+                    return undefined;
+                }
+            });
+
+            if (!result) throw new Error(`No plugin supports keypair type ${type}`);
+
+            return result;
+        },
+    };
+};
+
 const bindMethods = <Plugins extends Plugin[] = [], PluginMethods = GetPluginMethods<Plugins>>(
     wallet: Wallet<Plugins, PluginMethods>,
     pluginMethods: PluginMethods
@@ -185,6 +228,7 @@ export const generateWallet = async <
         store: {} as WalletStorePlane<Plugins>,
         index: {} as WalletIndexPlane<Plugins>,
         cache: {} as CachePlane,
+        id: {} as WalletIdPlane<Plugins>,
         plugins: plugins as Plugins,
         invoke: pluginMethods,
         addPlugin: function(plugin) {
@@ -197,6 +241,7 @@ export const generateWallet = async <
     wallet.store = bindStorePlane(wallet);
     wallet.index = bindIndexPlane(wallet);
     wallet.cache = bindCachePlane(wallet);
+    wallet.id = bindIdPlane(wallet);
 
     if (pluginMethods) wallet.invoke = bindMethods(wallet, pluginMethods);
 
