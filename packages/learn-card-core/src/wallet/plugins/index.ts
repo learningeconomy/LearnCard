@@ -1,3 +1,4 @@
+export * from './ceramic';
 export * from './didkit';
 export * from './didkey';
 export * from './vc';

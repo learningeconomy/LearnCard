@@ -1,4 +1,5 @@
 import { generateWallet } from '@wallet/base';
+import { getCeramicPlugin } from '@wallet/plugins/ceramic';
 import { getIDXPlugin } from '@wallet/plugins/idx';
 import { getDidKitPlugin } from '@wallet/plugins/didkit';
 import { getDidKeyPlugin } from '@wallet/plugins/didkey';
@@ -40,9 +41,11 @@ export const walletFromKey = async (
 
     const resolutionWallet = await templateWallet.addPlugin(VCResolutionPlugin);
 
-    const idxWallet = await resolutionWallet.addPlugin(
-        await getIDXPlugin(resolutionWallet, ceramicIdx)
+    const ceramicWallet = await resolutionWallet.addPlugin(
+        await getCeramicPlugin(resolutionWallet, ceramicIdx)
     );
+
+    const idxWallet = await ceramicWallet.addPlugin(await getIDXPlugin(ceramicWallet, ceramicIdx));
     const expirationWallet = await idxWallet.addPlugin(expirationPlugin(idxWallet));
 
     const ethWallet = await expirationWallet.addPlugin(

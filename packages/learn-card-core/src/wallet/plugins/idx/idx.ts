@@ -1,60 +1,26 @@
-import { DID } from 'dids';
-import { toUint8Array } from 'hex-lite';
-import KeyDidResolver from 'key-did-resolver';
-import { Ed25519Provider } from 'key-did-provider-ed25519';
 import { DIDDataStore } from '@glazed/did-datastore';
-import { TileLoader } from '@glazed/tile-loader';
-import { CeramicClient } from '@ceramicnetwork/http-client';
-import { CreateOpts } from '@ceramicnetwork/common';
-import { TileDocument, TileMetadataArgs } from '@ceramicnetwork/stream-tile';
-import { IDXCredentialValidator, VCValidator, VC, IDXCredential } from '@learncard/types';
+import { IDXCredentialValidator, VC, IDXCredential } from '@learncard/types';
 
-import { streamIdToCeramicURI } from './helpers';
+import { streamIdToCeramicURI } from '../ceramic/helpers';
 
 import {
     IDXPlugin,
     CredentialsList,
     CredentialsListValidator,
     IDXPluginDependentMethods,
-    CeramicIDXArgs,
-    CeramicURIValidator,
+    IDXArgs,
     BackwardsCompatCredentialsListValidator,
 } from './types';
 import { Wallet } from 'types/wallet';
-
-const getCeramicClientFromWalletSuite = async <URI extends string = ''>(
-    wallet: Wallet<any, IDXPluginDependentMethods<URI>>,
-    ceramicEndpoint: string
-): Promise<CeramicClient> => {
-    const client = new CeramicClient(ceramicEndpoint);
-    // only supporting did-key atm. this should be stripped into a config param
-    const resolver = { ...KeyDidResolver.getResolver() };
-    const did = new DID({ resolver });
-    client.did = did;
-
-    // use wallet secret key
-    // TODO: this is repeating work already done in the wallet. understand what the Ed25519Provider is doing to determine
-    // if we can just pass wallet signing key here instead of creating a duplicate from same seed.
-    const key = wallet.pluginMethods.getKey();
-
-    const ceramicProvider = new Ed25519Provider(toUint8Array(key));
-    client.did!.setProvider(ceramicProvider);
-
-    await client.did!.authenticate();
-
-    return client;
-};
 
 /**
  * @group Plugins
  */
 export const getIDXPlugin = async <URI extends string = ''>(
     wallet: Wallet<any, IDXPluginDependentMethods<URI>>,
-    { modelData, credentialAlias, ceramicEndpoint, defaultContentFamily }: CeramicIDXArgs
+    { modelData, credentialAlias }: IDXArgs
 ): Promise<IDXPlugin> => {
-    const ceramic = await getCeramicClientFromWalletSuite(wallet, ceramicEndpoint);
-
-    const loader = new TileLoader({ ceramic });
+    const ceramic = wallet.pluginMethods.getCeramicClient();
 
     const dataStore = new DIDDataStore({ ceramic, model: modelData });
 
@@ -110,55 +76,6 @@ export const getIDXPlugin = async <URI extends string = ''>(
         return dataStore.set(alias, existing);
     };
 
-    const publishContentToCeramic = async (
-        content: any,
-        metadata: TileMetadataArgs = {},
-        options: CreateOpts = {}
-    ) => {
-        if (!content) throw new Error('content is required');
-
-        // default to current authorized
-        if (!metadata.controllers) metadata.controllers = [ceramic.did!.id];
-
-        // use default
-        if (!metadata.family) metadata.family = defaultContentFamily;
-
-        // default to pinning
-        // TODO: expose
-        if (!('pin' in options)) options.pin = true;
-
-        // assuming TileDocument for now
-        const doc = await TileDocument.create(ceramic, content, metadata, options);
-
-        return doc.id.toString();
-    };
-
-    const readContentFromCeramic = async (streamId: string): Promise<any> => {
-        return (await loader.load(streamId))?.content;
-    };
-
-    const uploadCredential = async (vc: VC) => {
-        await VCValidator.parseAsync(vc);
-
-        return streamIdToCeramicURI(await publishContentToCeramic(vc));
-    };
-
-    const resolveCredential = async (uri = '') => {
-        if (!uri) return undefined;
-
-        if (uri.startsWith('ceramic://')) {
-            return VCValidator.parseAsync(await readContentFromCeramic(uri));
-        }
-
-        const verificationResult = await CeramicURIValidator.spa(uri);
-
-        if (!verificationResult.success) return wallet.pluginMethods.resolveCredential(uri);
-
-        const streamId = verificationResult.data.split(':')[2];
-
-        return VCValidator.parseAsync(await readContentFromCeramic(streamId));
-    };
-
     const addCredentialInIdx = async <T extends Record<string, any>>(
         idxCredential: IDXCredential<T>
     ) => {
@@ -169,7 +86,7 @@ export const getIDXPlugin = async <URI extends string = ''>(
         if (!record.uri) throw Error('No URI provided');
 
         // Make sure URI can be resolved
-        await resolveCredential(record.uri);
+        await wallet.pluginMethods.resolveCredential(record.uri);
 
         const existing = await getCredentialsListFromIdx(credentialAlias);
 
@@ -186,19 +103,6 @@ export const getIDXPlugin = async <URI extends string = ''>(
 
     return {
         name: 'IDX',
-        store: {
-            upload: async vc => {
-                wallet.debug?.('wallet.store.IDX.upload');
-                return uploadCredential(vc);
-            },
-        },
-        read: {
-            get: async uri => {
-                wallet.debug?.('wallet.read.IDX.get');
-
-                return resolveCredential(uri);
-            },
-        },
         index: {
             get: async () => {
                 wallet.debug?.('wallet.index.IDX.get');
@@ -243,10 +147,6 @@ export const getIDXPlugin = async <URI extends string = ''>(
         pluginMethods: {
             getCredentialsListFromIdx: async (_wallet, alias = credentialAlias) =>
                 getCredentialsListFromIdx(alias),
-            publishContentToCeramic: async (_wallet, cred) =>
-                streamIdToCeramicURI(await publishContentToCeramic(cred)),
-            readContentFromCeramic: async (_wallet, streamId: string) =>
-                readContentFromCeramic(streamId),
             getVerifiableCredentialFromIdx: async (_wallet, id) => {
                 const credentialList = await getCredentialsListFromIdx();
                 const credential = credentialList?.credentials?.find(cred => cred?.id === id);
@@ -290,7 +190,6 @@ export const getIDXPlugin = async <URI extends string = ''>(
             removeVerifiableCredentialInIdx: async (_wallet, id) => {
                 return removeCredentialFromIdx(id);
             },
-            resolveCredential: async (_wallet, uri) => resolveCredential(uri),
         },
     };
 };

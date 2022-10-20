@@ -2,51 +2,33 @@ import { ModelAliases } from '@glazed/types';
 import { z } from 'zod';
 import { StreamID } from '@ceramicnetwork/streamid';
 import { Plugin } from 'types/wallet';
-import { IndexPlugin, StorePlugin, ReadPlugin } from 'types/planes';
+import { IndexPlugin } from 'types/planes';
 import { VC, IDXCredential, IDXCredentialValidator } from '@learncard/types';
 import { ResolutionExtension } from '../vc-resolution';
+import { CeramicClient } from '@ceramicnetwork/http-client';
 
 /** @group IDXPlugin */
-export type CeramicIDXArgs = {
+export type IDXArgs = {
     modelData: ModelAliases;
     credentialAlias: string;
-    ceramicEndpoint: string;
-    defaultContentFamily: string;
 };
 
 /** @group IDXPlugin */
-export type CeramicURI = `lc:ceramic:${string}`;
-
-/** @group IDXPlugin */
-export const CeramicURIValidator = z
-    .string()
-    .refine(
-        string => string.split(':').length === 3 && string.split(':')[0] === 'lc',
-        'URI must be of the form lc:${storage}:${url}'
-    )
-    .refine(
-        string => string.split(':')[1] === 'ceramic',
-        'URI must use storage type ceramic (i.e. must be lc:ceramic:${streamID})'
-    );
-
-/** @group IDXPlugin */
-export type IDXPluginMethods<URI extends string = ''> = {
+export type IDXPluginMethods = {
     getCredentialsListFromIdx: <Metadata extends Record<string, any> = Record<never, never>>(
         alias?: string
     ) => Promise<CredentialsList<Metadata>>;
-    publishContentToCeramic: (cred: any) => Promise<CeramicURI>;
-    readContentFromCeramic: (streamId: string) => Promise<any>;
     getVerifiableCredentialFromIdx: (id: string) => Promise<VC | undefined>;
     getVerifiableCredentialsFromIdx: () => Promise<VC[]>;
     addVerifiableCredentialInIdx: <Metadata extends Record<string, any> = Record<never, never>>(
         cred: IDXCredential<Metadata>
-    ) => Promise<CeramicURI>;
+    ) => Promise<string>;
     removeVerifiableCredentialInIdx: (title: string) => Promise<StreamID>;
-} & ResolutionExtension<URI | CeramicURI>;
+};
 
 /** @group IDXPlugin */
 export type IDXPluginDependentMethods<URI extends string = ''> = {
-    getKey: () => string;
+    getCeramicClient: () => CeramicClient;
 } & ResolutionExtension<URI>;
 
 /** @group IDXPlugin */
@@ -60,7 +42,7 @@ export const CredentialsListValidator: z.ZodType<CredentialsList> = z
     .strict();
 
 /** @group IDXPlugin */
-export type IDXPlugin = StorePlugin<IndexPlugin<ReadPlugin<Plugin<'IDX', IDXPluginMethods>>>>;
+export type IDXPlugin = IndexPlugin<Plugin<'IDX', IDXPluginMethods, IDXPluginDependentMethods>>;
 
 // Below types are temporary! They will be removed in the future when we are confident that everyone
 // has moved on to the new schema

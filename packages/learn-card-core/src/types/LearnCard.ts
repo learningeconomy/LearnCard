@@ -5,7 +5,8 @@ import { DidKeyPlugin } from '@wallet/plugins/didkey/types';
 import { VCPlugin } from '@wallet/plugins/vc/types';
 import { VCTemplatePlugin } from '@wallet/plugins/vc-templates';
 import { VCResolutionPluginType } from '@wallet/plugins/vc-resolution';
-import { IDXPlugin, CeramicIDXArgs } from '@wallet/plugins/idx/types';
+import { CeramicPlugin, CeramicArgs } from '@wallet/plugins/ceramic/types';
+import { IDXPlugin, IDXArgs } from '@wallet/plugins/idx/types';
 import { ExpirationPlugin } from '@wallet/plugins/expiration/types';
 import { EthereumPlugin, EthereumConfig } from '@wallet/plugins/EthereumPlugin/types';
 import { VpqrPlugin } from '@wallet/plugins/vpqr/types';
@@ -28,6 +29,7 @@ export type LearnCardRawWallet = Wallet<
         VCPlugin,
         VCTemplatePlugin,
         VCResolutionPluginType,
+        CeramicPlugin,
         IDXPlugin,
         ExpirationPlugin,
         EthereumPlugin,
@@ -88,7 +90,7 @@ export type VCAPILearnCard = LearnCard<
 
 /** @group LearnCard */
 export type LearnCardConfig = {
-    ceramicIdx: CeramicIDXArgs;
+    ceramicIdx: CeramicArgs & IDXArgs;
     didkit: InitInput | Promise<InitInput>;
     ethereumConfig: EthereumConfig;
     debug?: typeof console.log;
