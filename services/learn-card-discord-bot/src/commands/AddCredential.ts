@@ -5,6 +5,7 @@ import {
     ApplicationCommandOptionType,
     TextInputBuilder,
     ActionRowBuilder,
+    PermissionsBitField,
 } from 'discord.js';
 import { VC } from '@learncard/types';
 
@@ -15,6 +16,15 @@ export const AddCredential: Command = {
     description: 'Adds a credential template.',
     type: ApplicationCommandOptionType.ChatInput,
     run: async (context: Context, interaction: BaseCommandInteraction) => {
+        const user = await interaction.guild.members.fetch(interaction.user.id);
+        if (!user.permissions.has(PermissionsBitField.Flags.ManageGuild)) {
+            await interaction.reply({
+                content:
+                    'You do not have permission to add a credential on this server.\n *You need permission:* `Manage Server`',
+            });
+            return;
+        }
+
         const modal = new ModalBuilder()
             .setCustomId('add-credential-modal')
             .setTitle('Add Credential');
@@ -73,7 +83,8 @@ export const AddCredentialModal = {
                 criteria: credentialCriteria,
                 image: credentialImage,
             },
-            context
+            context,
+            interaction.guildId
         );
 
         await interaction.deferReply();

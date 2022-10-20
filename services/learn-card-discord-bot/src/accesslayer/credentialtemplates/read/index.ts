@@ -1,8 +1,11 @@
 import { PREFIX } from '../create/index';
 import { Context, CredentialTemplate } from 'src/types/index';
 
-export const getCredentialTemplates = async (context: Context): CredentialTemplate[] => {
-    const templateKeys = await context.cache.keys(`${PREFIX}*`);
+export const getCredentialTemplates = async (
+    context: Context,
+    scope?: string
+): Promise<CredentialTemplate[]> => {
+    const templateKeys = await context.cache.keys(`${PREFIX}${scope ? scope + ':' : ''}*`);
     if (!templateKeys) return [];
     const templates = await Promise.all(
         templateKeys.map(async key => {
@@ -15,8 +18,9 @@ export const getCredentialTemplates = async (context: Context): CredentialTempla
 
 export const getCredentialTemplateById = async (
     id: string,
-    context: Context
+    context: Context,
+    scope?: string
 ): Promise<CredentialTemplate> => {
-    const templateJSON = await context.cache.get(`${PREFIX}${id}`);
+    const templateJSON = await context.cache.get(`${PREFIX}${scope || 'default'}:${id}`);
     return templateJSON ? JSON.parse(templateJSON) : null;
 };
