@@ -1,9 +1,9 @@
 import { generateWallet } from '@wallet/base';
 import { getDidKitPlugin } from '@wallet/plugins/didkit';
 import { expirationPlugin } from '@wallet/plugins/expiration';
-import { getCHAPIPlugin } from '@wallet/plugins/chapi';
 import { getVCTemplatesPlugin } from '@wallet/plugins/vc-templates';
-import { verifyCredential } from '@wallet/verify';
+import { getCHAPIPlugin } from '@wallet/plugins/chapi';
+import { getLearnCardPlugin } from '@wallet/plugins/learn-card';
 
 import { EmptyWallet } from 'types/LearnCard';
 
@@ -23,26 +23,7 @@ export const emptyWallet = async ({ didkit, debug }: EmptyWallet['args'] = {}): 
 
     const templatesWallet = await expirationWallet.addPlugin(getVCTemplatesPlugin());
 
-    const wallet = await templatesWallet.addPlugin(await getCHAPIPlugin());
+    const chapiWallet = await templatesWallet.addPlugin(await getCHAPIPlugin());
 
-    return {
-        _wallet: wallet,
-        read: wallet.read,
-        store: wallet.store,
-        index: wallet.index,
-
-        newCredential: wallet.invoke.newCredential,
-        newPresentation: wallet.invoke.newPresentation,
-
-        verifyCredential: verifyCredential(wallet),
-        verifyPresentation: wallet.invoke.verifyPresentation,
-
-        resolveDid: wallet.invoke.resolveDid,
-
-        installChapiHandler: wallet.invoke.installChapiHandler,
-        activateChapiHandler: wallet.invoke.activateChapiHandler,
-        receiveChapiEvent: wallet.invoke.receiveChapiEvent,
-        storePresentationViaChapi: wallet.invoke.storePresentationViaChapi,
-        storeCredentialViaChapiDidAuth: wallet.invoke.storeCredentialViaChapiDidAuth,
-    };
+    return chapiWallet.addPlugin(getLearnCardPlugin(chapiWallet));
 };

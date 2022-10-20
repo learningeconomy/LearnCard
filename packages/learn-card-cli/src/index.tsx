@@ -18,6 +18,7 @@ const g = {
     initLearnCard: gradient(['cyan', 'green'])('initLearnCard'),
     seed: gradient(['cyan', 'green'])('seed'),
     generateRandomSeed: gradient(['cyan', 'green'])('generateRandomSeed'),
+    types: gradient(['cyan', 'green'])('types'),
 };
 
 program
@@ -58,11 +59,10 @@ program
         console.log('│      Variable      │           Description         │');
         console.log('├────────────────────┼───────────────────────────────┤');
         console.log(`│             ${g.wallet} │ Learn Card Wallet             │`);
-        console.log(`│        ${g.emptyWallet} │ Wallet Instantiation Function │`);
-        console.log(`│      ${g.walletFromKey} │ Wallet Instantiation Function │`);
         console.log(`│      ${g.initLearnCard} │ Wallet Instantiation Function │`);
         console.log(`│               ${g.seed} │ Seed used to generate wallet  │`);
         console.log(`│ ${g.generateRandomSeed} │ Generates a random seed       │`);
+        console.log(`│              ${g.types} │ Helpful zod validators        │`);
         console.log('└────────────────────┴───────────────────────────────┘');
 
         console.log('');
@@ -77,16 +77,28 @@ program
 
         console.log("To get a feel for what's possible, try some of the following commands\n");
 
-        console.log('┌─────────────────────────┬──────────────────────────────────────┐');
-        console.log('│        Description      │            Command                   │');
-        console.log('├─────────────────────────┼──────────────────────────────────────┤');
-        console.log(`│           View your did │ ${g.wallet}.did();                        │`);
-        console.log(`│ Generate an unsigned VC │ ${g.wallet}.getTestVc();                  │`);
-        console.log(`│       Issue a signed VC │ await ${g.wallet}.issueCredential(uvc);   │`);
-        console.log(`│      Verify a signed VC │ await ${g.wallet}.verifyCredential(vc);   │`);
-        console.log(`│       Issue a signed VP │ await ${g.wallet}.issuePresentation(vc);  │`);
-        console.log(`│      Verify a signed VP │ await ${g.wallet}.verifyPresentation(vp); │`);
-        console.log('└─────────────────────────┴──────────────────────────────────────┘');
+        console.log('┌─────────────────────────┬─────────────────────────────────────────────┐');
+        console.log('│        Description      │                   Command                   │');
+        console.log('├─────────────────────────┼─────────────────────────────────────────────┤');
+        console.log(
+            `│           View your did │ ${g.wallet}.invoke.getSubjectdid();              │`
+        );
+        console.log(
+            `│ Generate an unsigned VC │ ${g.wallet}.invoke.getTestVc();                  │`
+        );
+        console.log(
+            `│       Issue a signed VC │ await ${g.wallet}.invoke.issueCredential(uvc);   │`
+        );
+        console.log(
+            `│      Verify a signed VC │ await ${g.wallet}.invoke.verifyCredential(vc);   │`
+        );
+        console.log(
+            `│       Issue a signed VP │ await ${g.wallet}.invoke.issuePresentation(vc);  │`
+        );
+        console.log(
+            `│      Verify a signed VP │ await ${g.wallet}.invoke.verifyPresentation(vp); │`
+        );
+        console.log('└─────────────────────────┴─────────────────────────────────────────────┘');
 
         console.log('');
 

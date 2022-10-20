@@ -1,11 +1,11 @@
 import { generateWallet } from '@wallet/base';
+import { getVCAPIPlugin } from '@wallet/plugins/vc-api';
 import { expirationPlugin } from '@wallet/plugins/expiration';
+import { getVCTemplatesPlugin } from '@wallet/plugins/vc-templates';
 import { getCHAPIPlugin } from '@wallet/plugins/chapi';
-import { verifyCredential } from '@wallet/verify';
+import { getLearnCardPlugin } from '@wallet/plugins/learn-card';
 
 import { WalletFromVcApi } from 'types/LearnCard';
-import { getVCTemplatesPlugin } from '@wallet/plugins/vc-templates';
-import { getVCAPIPlugin } from '@wallet/plugins/vc-api';
 
 /**
  * Generates a LearnCard Wallet from a 64 character seed string
@@ -29,31 +29,7 @@ export const walletFromApiUrl = async ({
 
     const templateWallet = await expirationWallet.addPlugin(getVCTemplatesPlugin());
 
-    const wallet = await templateWallet.addPlugin(await getCHAPIPlugin());
+    const chapiWallet = await templateWallet.addPlugin(await getCHAPIPlugin());
 
-    return {
-        _wallet: wallet,
-        read: wallet.read,
-        store: wallet.store,
-        index: wallet.index,
-
-        did: (type = 'key') => wallet.invoke.getSubjectDid(type),
-
-        newCredential: wallet.invoke.newCredential,
-        newPresentation: wallet.invoke.newPresentation,
-
-        issueCredential: wallet.invoke.issueCredential,
-        verifyCredential: verifyCredential(wallet),
-        issuePresentation: wallet.invoke.issuePresentation,
-        verifyPresentation: wallet.invoke.verifyPresentation,
-
-        getTestVc: wallet.invoke.getTestVc,
-        getTestVp: wallet.invoke.getTestVp,
-
-        installChapiHandler: wallet.invoke.installChapiHandler,
-        activateChapiHandler: wallet.invoke.activateChapiHandler,
-        receiveChapiEvent: wallet.invoke.receiveChapiEvent,
-        storePresentationViaChapi: wallet.invoke.storePresentationViaChapi,
-        storeCredentialViaChapiDidAuth: wallet.invoke.storeCredentialViaChapiDidAuth,
-    };
+    return chapiWallet.addPlugin(getLearnCardPlugin(chapiWallet));
 };

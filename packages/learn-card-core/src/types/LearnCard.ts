@@ -12,17 +12,17 @@ import { EthereumPlugin, EthereumConfig } from '@wallet/plugins/EthereumPlugin/t
 import { VpqrPlugin } from '@wallet/plugins/vpqr/types';
 import { CHAPIPlugin } from '@wallet/plugins/chapi';
 import { VCAPIPlugin } from '@wallet/plugins/vc-api/types';
+import { LearnCardPlugin } from '@wallet/plugins/learn-card';
 
 import { InitFunction, GenericInitFunction } from 'types/helpers';
 import { Wallet } from 'types/wallet';
-import { AllLearnCardMethods } from 'types/methods';
 
 export * from 'types/methods';
 
 // export * from '@learncard/types';
 
 /** @group Universal Wallets */
-export type LearnCardRawWallet = Wallet<
+export type LearnCardFromKey = Wallet<
     [
         DIDKitPlugin,
         DidKeyPlugin<DidMethod>,
@@ -34,58 +34,23 @@ export type LearnCardRawWallet = Wallet<
         ExpirationPlugin,
         EthereumPlugin,
         VpqrPlugin,
-        CHAPIPlugin
+        CHAPIPlugin,
+        LearnCardPlugin
     ]
 >;
 
 /**
  * @group LearnCard
  */
-export type LearnCard<
-    Methods extends keyof AllLearnCardMethods = keyof AllLearnCardMethods,
-    RawWallet extends Wallet<any, any> = LearnCardRawWallet
-    > = {
-        /** Raw IoE wallet instance. You shouldn't need to drop down to this level! */
-        _wallet: RawWallet;
-    } & Pick<AllLearnCardMethods, Methods> &
-    Pick<RawWallet, 'read' | 'store' | 'index'>;
-
-/**
- * @group LearnCard
- */
-export type EmptyLearnCard = LearnCard<
-    | 'newCredential'
-    | 'newPresentation'
-    | 'verifyCredential'
-    | 'verifyPresentation'
-    | 'resolveDid'
-    | 'installChapiHandler'
-    | 'activateChapiHandler'
-    | 'receiveChapiEvent'
-    | 'storePresentationViaChapi'
-    | 'storeCredentialViaChapiDidAuth',
-    Wallet<[DIDKitPlugin, ExpirationPlugin, VCTemplatePlugin, CHAPIPlugin]>
+export type EmptyLearnCard = Wallet<
+    [DIDKitPlugin, ExpirationPlugin, VCTemplatePlugin, CHAPIPlugin, LearnCardPlugin]
 >;
 
 /**
  * @group LearnCard
  */
-export type VCAPILearnCard = LearnCard<
-    | 'did'
-    | 'newCredential'
-    | 'newPresentation'
-    | 'issueCredential'
-    | 'verifyCredential'
-    | 'issuePresentation'
-    | 'verifyPresentation'
-    | 'getTestVc'
-    | 'getTestVp'
-    | 'installChapiHandler'
-    | 'activateChapiHandler'
-    | 'receiveChapiEvent'
-    | 'storePresentationViaChapi'
-    | 'storeCredentialViaChapiDidAuth',
-    Wallet<[VCAPIPlugin, ExpirationPlugin, VCTemplatePlugin, CHAPIPlugin]>
+export type VCAPILearnCard = Wallet<
+    [VCAPIPlugin, ExpirationPlugin, VCTemplatePlugin, CHAPIPlugin, LearnCardPlugin]
 >;
 
 /** @group LearnCard */
@@ -99,7 +64,7 @@ export type LearnCardConfig = {
 /** @group Init Functions */
 export type EmptyWallet = InitFunction<{}, 'didkit' | 'debug', EmptyLearnCard>;
 /** @group Init Functions */
-export type WalletFromKey = InitFunction<{ seed: string }, keyof LearnCardConfig, LearnCard>;
+export type WalletFromKey = InitFunction<{ seed: string }, keyof LearnCardConfig, LearnCardFromKey>;
 /** @group Init Functions */
 export type WalletFromVcApi = InitFunction<
     { vcApi: true | string; did?: string },

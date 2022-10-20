@@ -10,7 +10,7 @@ export type FilterForPlane<Plugins extends Plugin[], Plane extends keyof Plugins
 // --- Read ---
 
 export type ReadPlane = {
-    get: (uri: string) => Promise<VC | undefined>;
+    get: (uri?: string) => Promise<VC | undefined>;
 };
 
 export type ReadPlugin<P extends Plugin> = P & { read: ReadPlane };
@@ -18,8 +18,8 @@ export type ReadPlugin<P extends Plugin> = P & { read: ReadPlane };
 // --- Store ---
 
 export type StorePlane = {
-    upload: (vc: VC) => Promise<string | undefined>;
-    uploadMany?: (vcs: VC[]) => Promise<(string | undefined)[]>;
+    upload: (vc: VC) => Promise<string>;
+    uploadMany?: (vcs: VC[]) => Promise<string[]>;
 };
 
 export type StorePlugin<P extends Plugin> = P & { store: StorePlane };
@@ -32,7 +32,7 @@ export type WalletStorePlane<Plugins extends Plugin[]> = Record<
 // --- Index ---
 
 export type IndexPlane = {
-    get: (query: Record<string, any>) => Promise<IDXCredential[]>;
+    get: (query?: Record<string, any>) => Promise<IDXCredential[]>;
     add: (obj: IDXCredential) => Promise<boolean>;
     update: (id: string, updates: Record<string, any>) => Promise<boolean>;
     remove: (id: string) => Promise<boolean>;

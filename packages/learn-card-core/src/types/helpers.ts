@@ -1,9 +1,10 @@
-import { LearnCard, LearnCardConfig } from 'types/LearnCard';
+import { LearnCardConfig } from 'types/LearnCard';
+import { Wallet } from 'types/wallet';
 
 export type InitFunction<
     Args extends Record<string, any> = Record<string, any>,
     Config extends keyof LearnCardConfig | undefined = keyof LearnCardConfig,
-    ReturnValue extends LearnCard<any, any> = LearnCard<any, any>
+    ReturnValue extends Wallet<any, any> = Wallet<any, any>
     > = {
         args: Args &
         (undefined extends Config ? {} : Partial<Pick<LearnCardConfig, NonNullable<Config>>>);

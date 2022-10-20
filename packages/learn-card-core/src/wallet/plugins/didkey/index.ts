@@ -15,7 +15,8 @@ export * from './types';
  */
 export const getDidKeyPlugin = async <DidMethod extends string>(
     wallet: Wallet<any, DependentMethods<DidMethod>>,
-    key: string
+    key: string,
+    defaultDidMethod: DidMethod
 ): Promise<DidKeyPlugin<DidMethod>> => {
     if (key.length === 0) throw new Error("Please don't use an empty string for a key!");
     if (!isHex(key)) throw new Error('Key must be a hexadecimal string!');
@@ -45,7 +46,7 @@ export const getDidKeyPlugin = async <DidMethod extends string>(
     return {
         name: 'DID Key',
         methods: {
-            getSubjectDid: (_wallet, type) => {
+            getSubjectDid: (_wallet, type = defaultDidMethod) => {
                 if (!memoizedDids[type]) {
                     const algorithm = getAlgorithmForDidMethod(type);
                     memoizedDids[type] = wallet.invoke.keyToDid(type, keyPairs[algorithm]);

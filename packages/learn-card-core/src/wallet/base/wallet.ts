@@ -23,6 +23,8 @@ const bindReadPlane = <Plugins extends Plugin[] = [], PluginMethods = GetPluginM
         get: async uri => {
             wallet.debug?.('wallet.read.get', uri);
 
+            if (!uri) return undefined;
+
             const cachedResponse = await wallet.cache.getVc(uri);
 
             if (cachedResponse) return cachedResponse;
@@ -185,7 +187,7 @@ export const generateWallet = async <
         cache: {} as CachePlane,
         plugins: plugins as Plugins,
         invoke: pluginMethods,
-        addPlugin: function (plugin) {
+        addPlugin: function(plugin) {
             return addPluginToWallet(this, plugin);
         },
         debug: _wallet.debug,

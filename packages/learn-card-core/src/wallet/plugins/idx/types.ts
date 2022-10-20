@@ -17,7 +17,7 @@ export type IDXArgs = {
 export type IDXPluginMethods = {
     getCredentialsListFromIdx: <Metadata extends Record<string, any> = Record<never, never>>(
         alias?: string
-    ) => Promise<CredentialsList<Metadata>>;
+    ) => Promise<IDXCredential<Metadata>[]>;
     getVerifiableCredentialFromIdx: (id: string) => Promise<VC | undefined>;
     getVerifiableCredentialsFromIdx: () => Promise<VC[]>;
     addVerifiableCredentialInIdx: <Metadata extends Record<string, any> = Record<never, never>>(

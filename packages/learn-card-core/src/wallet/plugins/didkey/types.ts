@@ -13,7 +13,7 @@ export type DependentMethods<T extends string> = {
 
 /** @group DidKey Plugin */
 export type DidKeyPluginMethods<DidMethod extends string> = {
-    getSubjectDid: (type: DidMethod) => string;
+    getSubjectDid: (type?: DidMethod) => string;
     getSubjectKeypair: (type?: Algorithm) => JWK;
     getKey: () => string;
 };

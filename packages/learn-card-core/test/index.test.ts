@@ -14,11 +14,14 @@ import {
 import { persistenceMocks } from './mocks/persistence';
 
 import { initLearnCard } from '../src';
-import { LearnCard } from '../src/types/LearnCard';
+import { LearnCardFromKey } from '../src/types/LearnCard';
 
-let wallets: Record<string, { wallet: LearnCard; persistenceMocks: Partial<LearnCard> }> = {};
+let wallets: Record<
+    string,
+    { wallet: LearnCardFromKey; persistenceMocks: Partial<LearnCardFromKey> }
+> = {};
 
-const getWallet = async (seed = 'a'.repeat(64), mockPersistence = true) => {
+const getWallet = async (seed = 'a'.repeat(64), mockPersistence = false) => {
     if (!wallets[seed]) {
         const didkit = readFile(require.resolve('../src/didkit/pkg/didkit_wasm_bg.wasm'));
 
@@ -40,8 +43,8 @@ describe('LearnCard SDK', () => {
             const wallet = await getWallet();
             const emptyWallet = await initLearnCard();
 
-            const issuedVc = await wallet.issueCredential(wallet.getTestVc());
-            const verificationResult = await emptyWallet.verifyCredential(issuedVc);
+            const issuedVc = await wallet.invoke.issueCredential(wallet.invoke.getTestVc());
+            const verificationResult = await emptyWallet.invoke.verifyCredential(issuedVc);
 
             expect(verificationResult).not.toHaveLength(0);
             expect(verificationResult).toEqual(
@@ -56,41 +59,20 @@ describe('LearnCard SDK', () => {
             const wallet = await getWallet();
             const emptyWallet = await initLearnCard();
 
-            const issuedVp = await wallet.issuePresentation(await wallet.getTestVp());
-            const verificationResult = await emptyWallet.verifyPresentation(issuedVp);
+            const issuedVp = await wallet.invoke.issuePresentation(await wallet.invoke.getTestVp());
+            const verificationResult = await emptyWallet.invoke.verifyPresentation(issuedVp);
 
             expect(verificationResult.errors).toHaveLength(0);
             expect(verificationResult.checks).not.toHaveLength(0);
         });
 
         it('should only allow a subset of methods', async () => {
+            const wallet = await getWallet();
             const emptyWallet = await initLearnCard();
-            const { _wallet, ...methods } = emptyWallet;
-            const {
-                newCredential,
-                newPresentation,
-                verifyCredential,
-                verifyPresentation,
-                resolveDid,
-                installChapiHandler,
-                activateChapiHandler,
-                receiveChapiEvent,
-                storePresentationViaChapi,
-                storeCredentialViaChapiDidAuth,
-            } = emptyWallet;
 
-            expect(methods).toEqual({
-                newCredential,
-                newPresentation,
-                verifyCredential,
-                verifyPresentation,
-                resolveDid,
-                installChapiHandler,
-                activateChapiHandler,
-                receiveChapiEvent,
-                storePresentationViaChapi,
-                storeCredentialViaChapiDidAuth,
-            });
+            expect(Object.keys(emptyWallet.invoke).length).toBeLessThan(
+                Object.keys(wallet.invoke).length
+            );
         });
     });
 
@@ -116,7 +98,7 @@ describe('LearnCard SDK', () => {
         it('should determinstically create a did', async () => {
             const wallet = await getWallet();
 
-            expect(wallet.did()).toEqual(
+            expect(wallet.invoke.getSubjectDid()).toEqual(
                 'did:key:z6Mkv1o2GEgtXjFdEMfLtupcKhGRydM8V7VHzii7Uh4aHoqH'
             );
         });
@@ -124,7 +106,7 @@ describe('LearnCard SDK', () => {
         it('should determinstically create a keypair', async () => {
             const wallet = await getWallet();
 
-            expect(wallet.keypair()).toEqual({
+            expect(wallet.invoke.getSubjectKeypair()).toEqual({
                 kty: 'OKP',
                 crv: 'Ed25519',
                 x: '5zTqbCtiV95yNV5HKqBaTEh-a0Y8Ap7TBt8vAbVja1g',
@@ -136,11 +118,15 @@ describe('LearnCard SDK', () => {
             const wallet = await getWallet();
             const otherWallet = await getWallet('b'.repeat(64));
 
-            await expect(wallet.resolveDid(wallet.did())).resolves.toBeDefined();
-            await expect(wallet.resolveDid(otherWallet.did())).resolves.toBeDefined();
-            await expect(wallet.resolveDid(wallet.did('pkh:eip155:1'))).resolves.not.toEqual(
-                await wallet.resolveDid(wallet.did())
-            );
+            await expect(
+                wallet.invoke.resolveDid(wallet.invoke.getSubjectDid())
+            ).resolves.toBeDefined();
+            await expect(
+                wallet.invoke.resolveDid(otherWallet.invoke.getSubjectDid())
+            ).resolves.toBeDefined();
+            await expect(
+                wallet.invoke.resolveDid(wallet.invoke.getSubjectDid('pkh:eip155:1'))
+            ).resolves.not.toEqual(await wallet.invoke.resolveDid(wallet.invoke.getSubjectDid()));
         });
 
         describe('Did Methods Supported', () => {
@@ -168,7 +154,7 @@ describe('LearnCard SDK', () => {
                 it(method, async () => {
                     const wallet = await getWallet();
 
-                    expect(() => wallet.did(method as any)).not.toThrow();
+                    expect(() => wallet.invoke.getSubjectDid(method as any)).not.toThrow();
                 })
             );
         });
@@ -178,7 +164,7 @@ describe('LearnCard SDK', () => {
                 it(algorithm, async () => {
                     const wallet = await getWallet();
 
-                    expect(() => wallet.keypair(algorithm as any)).not.toThrow();
+                    expect(() => wallet.invoke.getSubjectKeypair(algorithm as any)).not.toThrow();
                 })
             );
         });
@@ -188,7 +174,7 @@ describe('LearnCard SDK', () => {
         it('should be able to issue a credential', async () => {
             const wallet = await getWallet();
 
-            const issuedVc = await wallet.issueCredential(wallet.getTestVc());
+            const issuedVc = await wallet.invoke.issueCredential(wallet.invoke.getTestVc());
 
             await expect(VCValidator.parseAsync(issuedVc)).resolves.toBeDefined();
         });
@@ -196,8 +182,8 @@ describe('LearnCard SDK', () => {
         it('should be able to verify a credential', async () => {
             const wallet = await getWallet();
 
-            const issuedVc = await wallet.issueCredential(wallet.getTestVc());
-            const verificationResult = await wallet.verifyCredential(issuedVc);
+            const issuedVc = await wallet.invoke.issueCredential(wallet.invoke.getTestVc());
+            const verificationResult = await wallet.invoke.verifyCredential(issuedVc);
 
             expect(verificationResult).not.toHaveLength(0);
             expect(verificationResult).toEqual(
@@ -212,10 +198,10 @@ describe('LearnCard SDK', () => {
             const wallet = await getWallet();
             const otherWallet = await getWallet('b'.repeat(64));
 
-            const issuedVc = await wallet.issueCredential(wallet.getTestVc());
-            issuedVc.issuer = otherWallet.did();
+            const issuedVc = await wallet.invoke.issueCredential(wallet.invoke.getTestVc());
+            issuedVc.issuer = otherWallet.invoke.getSubjectDid();
 
-            const verificationResult = await wallet.verifyCredential(issuedVc);
+            const verificationResult = await wallet.invoke.verifyCredential(issuedVc);
 
             expect(verificationResult).not.toHaveLength(0);
             expect(verificationResult).toEqual(
@@ -226,12 +212,12 @@ describe('LearnCard SDK', () => {
         it('should verify an unexpired credential', async () => {
             const wallet = await getWallet();
 
-            const uvc = wallet.getTestVc();
+            const uvc = wallet.invoke.getTestVc();
             uvc.expirationDate = new Date(Date.now() + 3600).toISOString();
 
-            const vc = await wallet.issueCredential(uvc);
+            const vc = await wallet.invoke.issueCredential(uvc);
 
-            const verificationResult = await wallet.verifyCredential(vc);
+            const verificationResult = await wallet.invoke.verifyCredential(vc);
 
             const expirationObject = verificationResult.find(
                 result => result.check === 'expiration'
@@ -243,12 +229,12 @@ describe('LearnCard SDK', () => {
         it('should fail an expired credential', async () => {
             const wallet = await getWallet();
 
-            const uvc = wallet.getTestVc();
+            const uvc = wallet.invoke.getTestVc();
             uvc.expirationDate = new Date(Date.now() - 3600).toISOString();
 
-            const vc = await wallet.issueCredential(uvc);
+            const vc = await wallet.invoke.issueCredential(uvc);
 
-            const verificationResult = await wallet.verifyCredential(vc);
+            const verificationResult = await wallet.invoke.verifyCredential(vc);
 
             const expirationObject = verificationResult.find(
                 result => result.check === 'expiration'
@@ -262,7 +248,7 @@ describe('LearnCard SDK', () => {
         it('should be able to issue a presentation', async () => {
             const wallet = await getWallet();
 
-            const issuedVp = await wallet.issuePresentation(await wallet.getTestVp());
+            const issuedVp = await wallet.invoke.issuePresentation(await wallet.invoke.getTestVp());
 
             await expect(VPValidator.parseAsync(issuedVp)).resolves.toBeDefined();
         });
@@ -270,24 +256,25 @@ describe('LearnCard SDK', () => {
         it('should be able to verify a presentation', async () => {
             const wallet = await getWallet();
 
-            const issuedVp = await wallet.issuePresentation(await wallet.getTestVp());
-            const verificationResult = await wallet.verifyPresentation(issuedVp);
+            const issuedVp = await wallet.invoke.issuePresentation(await wallet.invoke.getTestVp());
+            const verificationResult = await wallet.invoke.verifyPresentation(issuedVp);
 
             expect(verificationResult.errors).toHaveLength(0);
             expect(verificationResult.checks).not.toHaveLength(0);
         });
     });
 
-    describe('Persistence', () => {
+    // We are skipping persistence tests because they will slam our Ceramic node if we don't...
+    describe.skip('Persistence', () => {
         // Empty out wallet prior to testing
         beforeEach(async () => {
             const wallet = await getWallet();
 
-            const credentials = await wallet.getCredentialsList();
+            const credentials = await wallet.index.all.get();
 
             await Promise.all(
                 credentials.map(async credential => {
-                    return wallet.removeCredential(credential.id);
+                    return wallet.index.IDX.remove(credential.id);
                 })
             );
         }, 30000);
@@ -295,7 +282,7 @@ describe('LearnCard SDK', () => {
         it('should start with an empty wallet', async () => {
             const wallet = await getWallet();
 
-            const credentials = await wallet.getCredentialsList();
+            const credentials = await wallet.index.all.get();
 
             expect(credentials).toHaveLength(0);
         });
@@ -303,9 +290,9 @@ describe('LearnCard SDK', () => {
         it('should be able to publish a credential', async () => {
             const wallet = await getWallet();
 
-            const uvc = wallet.getTestVc();
-            const vc = await wallet.issueCredential(uvc);
-            const uri = await wallet.publishCredential(vc);
+            const uvc = wallet.invoke.getTestVc();
+            const vc = await wallet.invoke.issueCredential(uvc);
+            const uri = await wallet.store.Ceramic.upload(vc);
 
             expect(uri).toBeTruthy();
         }, 20000);
@@ -313,11 +300,11 @@ describe('LearnCard SDK', () => {
         it('should be able to read a published credential', async () => {
             const wallet = await getWallet();
 
-            const uvc = wallet.getTestVc();
-            const vc = await wallet.issueCredential(uvc);
-            const uri = await wallet.publishCredential(vc);
+            const uvc = wallet.invoke.getTestVc();
+            const vc = await wallet.invoke.issueCredential(uvc);
+            const uri = await wallet.store.Ceramic.upload(vc);
 
-            const readVc = await wallet.resolveCredential(uri);
+            const readVc = await wallet.read.get(uri);
 
             expect(readVc).toEqual(vc);
         }, 20000);
@@ -325,13 +312,13 @@ describe('LearnCard SDK', () => {
         it('should be able to add a credential', async () => {
             const wallet = await getWallet();
 
-            const uvc = wallet.getTestVc();
-            const vc = await wallet.issueCredential(uvc);
-            const uri = await wallet.publishCredential(vc);
+            const uvc = wallet.invoke.getTestVc();
+            const vc = await wallet.invoke.issueCredential(uvc);
+            const uri = await wallet.store.Ceramic.upload(vc);
 
-            await wallet.addCredential({ uri, id: 'test' });
+            await wallet.index.IDX.add({ uri, id: 'test' });
 
-            const credentials = await wallet.getCredentialsList();
+            const credentials = await wallet.index.all.get();
 
             expect(credentials).toHaveLength(1);
             expect(credentials).toEqual(
@@ -342,28 +329,30 @@ describe('LearnCard SDK', () => {
         it('should be able to get a credential', async () => {
             const wallet = await getWallet();
 
-            const uvc = wallet.getTestVc();
-            const vc = await wallet.issueCredential(uvc);
-            const uri = await wallet.publishCredential(vc);
+            const uvc = wallet.invoke.getTestVc();
+            const vc = await wallet.invoke.issueCredential(uvc);
+            const uri = await wallet.store.Ceramic.upload(vc);
 
-            await wallet.addCredential({ uri, id: 'test' });
+            await wallet.index.IDX.add({ uri, id: 'test' });
 
-            const credential = await wallet.getCredential('test');
+            const retrievedObject = await wallet.index.IDX.get({ id: 'test' });
+
+            const credential = await wallet.read.get(retrievedObject[0].uri);
 
             expect(credential).toEqual(vc);
         }, 20000);
 
         it('should be able to list credential ids', async () => {
             const addNewCredential = async (vc: VC, id: string) => {
-                const uri = await wallet.publishCredential(vc);
+                const uri = await wallet.store.Ceramic.upload(vc);
 
-                await wallet.addCredential({ uri, id });
+                await wallet.index.IDX.add({ uri, id });
             };
 
             const wallet = await getWallet();
 
-            const uvc = wallet.getTestVc();
-            const vc = await wallet.issueCredential(uvc);
+            const uvc = wallet.invoke.getTestVc();
+            const vc = await wallet.invoke.issueCredential(uvc);
 
             await Promise.all([
                 addNewCredential(vc, 'test'),
@@ -371,7 +360,7 @@ describe('LearnCard SDK', () => {
                 addNewCredential(vc, 'test3'),
             ]);
 
-            const credentialsList = await wallet.getCredentialsList();
+            const credentialsList = await wallet.index.all.get();
 
             expect(credentialsList).toHaveLength(3);
             expect(credentialsList).toEqual(
@@ -385,15 +374,15 @@ describe('LearnCard SDK', () => {
 
         it('should be able to list credentials', async () => {
             const addNewCredential = async (vc: VC, id: string) => {
-                const uri = await wallet.publishCredential(vc);
+                const uri = await wallet.store.Ceramic.upload(vc);
 
-                await wallet.addCredential({ id, uri });
+                await wallet.index.IDX.add({ id, uri });
             };
 
             const wallet = await getWallet();
 
-            const uvc = wallet.getTestVc();
-            const vc = await wallet.issueCredential(uvc);
+            const uvc = wallet.invoke.getTestVc();
+            const vc = await wallet.invoke.issueCredential(uvc);
 
             await Promise.all([
                 addNewCredential(vc, 'test'),
@@ -401,7 +390,7 @@ describe('LearnCard SDK', () => {
                 addNewCredential(vc, 'test3'),
             ]);
 
-            const credentials = await wallet.getCredentials();
+            const credentials = await wallet.index.IDX.get();
 
             expect(credentials).toHaveLength(3);
             expect(credentials).toEqual(expect.arrayContaining([vc]));
@@ -410,22 +399,22 @@ describe('LearnCard SDK', () => {
         it('should be able to remove a credential', async () => {
             const wallet = await getWallet();
 
-            const uvc = wallet.getTestVc();
-            const vc = await wallet.issueCredential(uvc);
-            const uri = await wallet.publishCredential(vc);
+            const uvc = wallet.invoke.getTestVc();
+            const vc = await wallet.invoke.issueCredential(uvc);
+            const uri = await wallet.store.Ceramic.upload(vc);
 
-            await wallet.addCredential({ uri, id: 'test' });
+            await wallet.index.IDX.add({ uri, id: 'test' });
 
-            const credentials = await wallet.getCredentialsList();
+            const credentials = await wallet.index.IDX.get();
 
             expect(credentials).toHaveLength(1);
             expect(credentials).toEqual(
                 expect.arrayContaining([expect.objectContaining({ id: 'test' })])
             );
 
-            await wallet.removeCredential('test');
+            await wallet.index.IDX.remove('test');
 
-            const emptyCredentials = await wallet.getCredentialsList();
+            const emptyCredentials = await wallet.index.IDX.get();
 
             expect(emptyCredentials).toHaveLength(0);
         }, 30000);
@@ -435,7 +424,7 @@ describe('LearnCard SDK', () => {
         it('should provide a test VC', async () => {
             const wallet = await getWallet();
 
-            const testVc = wallet.getTestVc();
+            const testVc = wallet.invoke.getTestVc();
 
             await expect(UnsignedVCValidator.parseAsync(testVc)).resolves.toBeDefined();
         });
@@ -443,7 +432,7 @@ describe('LearnCard SDK', () => {
         it('should provide a test VP', async () => {
             const wallet = await getWallet();
 
-            const testVc = await wallet.getTestVp();
+            const testVc = await wallet.invoke.getTestVp();
 
             await expect(UnsignedVPValidator.parseAsync(testVc)).resolves.toBeDefined();
         });
@@ -454,10 +443,10 @@ describe('LearnCard SDK', () => {
             const wallet = await getWallet();
 
             // eipDid is something like: "did:pkh:eip155:1:0x8fd379246834eac74B8419FfdA202CF8051F7A03"
-            const eipDid: string = wallet._wallet.pluginMethods.getSubjectDid('pkh:eip155');
+            const eipDid: string = wallet.invoke.getSubjectDid('pkh:eip155');
             const expectedPublicAddress = eipDid.substring(eipDid.lastIndexOf(':') + 1);
 
-            const actualPublicAddress = wallet.getEthereumAddress();
+            const actualPublicAddress = wallet.invoke.getEthereumAddress();
 
             expect(actualPublicAddress).toEqual(expectedPublicAddress);
         });
@@ -465,23 +454,23 @@ describe('LearnCard SDK', () => {
             const wallet = await getWallet();
 
             const defaultNetwork = 'mainnet';
-            expect(wallet.getCurrentNetwork()).toEqual(defaultNetwork);
+            expect(wallet.invoke.getCurrentNetwork()).toEqual(defaultNetwork);
         });
         it('should be able to change networks', async () => {
             const wallet = await getWallet();
 
             const defaultNetwork = 'mainnet';
-            expect(wallet.getCurrentNetwork()).toEqual(defaultNetwork);
+            expect(wallet.invoke.getCurrentNetwork()).toEqual(defaultNetwork);
 
             const newNetwork = 'goerli';
-            wallet.changeNetwork(newNetwork);
-            expect(wallet.getCurrentNetwork()).toEqual(newNetwork);
+            wallet.invoke.changeNetwork(newNetwork);
+            expect(wallet.invoke.getCurrentNetwork()).toEqual(newNetwork);
         });
         it('should support adding an infura project ID', async () => {
             const wallet = await getWallet();
 
             // Don't think this can be tested more thoroughly without exposing the provider
-            expect(() => wallet.addInfuraProjectId('1234')).not.toThrowError();
+            expect(() => wallet.invoke.addInfuraProjectId('1234')).not.toThrowError();
         });
         //it('test mocks', async () => {
         // at top of file...
@@ -501,8 +490,8 @@ describe('LearnCard SDK', () => {
         it('should generate a base-64 QR code image for a Verifiable Presentation', async () => {
             const wallet = await getWallet();
 
-            const image = await wallet.vpToQrCode(
-                await wallet.issuePresentation(await wallet.getTestVp())
+            const image = await wallet.invoke.vpToQrCode(
+                await wallet.invoke.issuePresentation(await wallet.invoke.getTestVp())
             );
             expect(image).toContain('data:image');
         });
@@ -511,17 +500,17 @@ describe('LearnCard SDK', () => {
 
             const qrImageText =
                 'VP1-B3ECQDJABQEIRQ5MBDBXBQ6ECDECACWBC5UA6UIU5YZY6FFIVGNU3ZTNM2TIC5WTH3N4HK26LJ2MHJZ2F5ODT35YYPSTQDAIRDBYIEALYDRSXQYLNOBWGKLTPOJTS6Y3SMVSGK3TUNFQWY4ZPGM3TGMIYOKSRQ5AYNAMJVAQ2MMB7J3QZAKKRRIDYSBSXSSTIMJDWG2KPNFFEMWSFKJKFCU2JONEW2TTZMFMFC2KPNRZWSWLKLEYES3BQONEW2SJSJZBUSNS2NVDHGYZSKY4S4LTXJF5DOM3JMIZVG3CWLBUE44LIGZKXG6KGMIWWC3SHMY4DO5DQIVGXUNSQNUYVO5CFGQ3VAVDCO5LWSYKKKRSFMNSOOVXEQZLJMVYVUT2FGRES2MKGJIZTE4CBIRDUO3TZMRBXCQLHDCSBRKQYVCBRSBABLARO2APKEKO4M4PCSUKTG2N4ZWWNJUBO3JT5W6DVNPFU5GDU45C6XBZ565MCF3IB5IRJ3RTR4KKRKM3JXTG2ZVGQF3NGPW3YOVV4WTUYOTTUL24HHX3RQ5MBDBWBRAVBDBYHQJ3ENFSDUZLYMFWXA3DFHJSDEM3EMQ3DQN3BG5SGGNRXHA3TMNBWMYZGKYRZHBSDAGEIDJPT3HE6DCGIEGIEAFMCF3IB5IRJ3RTR4KKRKM3JXTG2ZVGQF3NGPW3YOVV4WTUYOTTUL24HHX3Q';
-            const verifiablePresentation = await wallet.vpFromQrCode(qrImageText);
+            const verifiablePresentation = await wallet.invoke.vpFromQrCode(qrImageText);
             expect(verifiablePresentation).toHaveProperty('@context');
         });
         it('should generate a base-64 QR code image and be able to decode it back into a Verifiable Presentation', done => {
             new Promise(async (resolve, reject) => {
                 const wallet = await getWallet();
 
-                const verifiablePresentation = await wallet.issuePresentation(
-                    await wallet.getTestVp()
+                const verifiablePresentation = await wallet.invoke.issuePresentation(
+                    await wallet.invoke.getTestVp()
                 );
-                const imageString = await wallet.vpToQrCode(verifiablePresentation);
+                const imageString = await wallet.invoke.vpToQrCode(verifiablePresentation);
 
                 const base64Image = imageString.split(';base64,').pop();
                 const buffer = Buffer.from(base64Image ?? '', 'base64');
@@ -532,7 +521,7 @@ describe('LearnCard SDK', () => {
                 qrcode.callback = async (err: any, value: any) => {
                     try {
                         const qrImageText = value.result;
-                        const decodedVerifiablePresentation = await wallet.vpFromQrCode(
+                        const decodedVerifiablePresentation = await wallet.invoke.vpFromQrCode(
                             qrImageText
                         );
                         expect(decodedVerifiablePresentation).toEqual(verifiablePresentation);

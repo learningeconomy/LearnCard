@@ -146,7 +146,7 @@ export const getIDXPlugin = async <URI extends string = ''>(
         },
         methods: {
             getCredentialsListFromIdx: async (_wallet, alias = credentialAlias) =>
-                getCredentialsListFromIdx(alias),
+                (await getCredentialsListFromIdx(alias)).credentials,
             getVerifiableCredentialFromIdx: async (_wallet, id) => {
                 const credentialList = await getCredentialsListFromIdx();
                 const credential = credentialList?.credentials?.find(cred => cred?.id === id);
