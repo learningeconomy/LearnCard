@@ -4,6 +4,7 @@ import {
     SelectMenuBuilder,
     ActionRowBuilder,
     SlashCommandBuilder,
+    PermissionsBitField,
 } from 'discord.js';
 import { getDIDForSource } from '../accesslayer/didregistry/read';
 import {
@@ -27,7 +28,17 @@ export const SendCredential: Command = {
     ],
     run: async (context: Context, interaction: BaseCommandInteraction) => {
         const subject = interaction.options.getUser('subject');
-        const templates = await getCredentialTemplates(context);
+
+        const user = await interaction.guild.members.fetch(interaction.user.id);
+        if (!user.permissions.has(PermissionsBitField.Flags.ManageGuild)) {
+            await interaction.reply({
+                content:
+                    'You do not have permission to send a credential on this server.\n *You need permission:* `Manage Server`',
+            });
+            return;
+        }
+
+        const templates = await getCredentialTemplates(context, interaction.guildId);
         const options = templates.map((t: CredentialTemplate) => {
             return {
                 label: t.name,
@@ -104,7 +115,8 @@ export const SendCredentialSelection = {
 
         const credentialTemplate = await getCredentialTemplateById(
             credentialTemplateSelected,
-            context
+            context,
+            interaction.guildId
         );
         const subjectDID = await getDIDForSource(subjectUserId, context);
 

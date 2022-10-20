@@ -4,7 +4,14 @@ import { Context } from 'src/types/index';
 
 export const PREFIX = 'credentialtemplate:';
 
-export const createCredentialTemplate = async (template: CredentialTemplate, context: Context) => {
+export const createCredentialTemplate = async (
+    template: CredentialTemplate,
+    context: Context,
+    scope?: string
+) => {
     if (!template._id) template._id = randomUUID();
-    return context.cache.set(`${PREFIX}${template._id}`, JSON.stringify(template));
+    return context.cache.set(
+        `${PREFIX}${scope || 'default'}:${template._id}`,
+        JSON.stringify(template)
+    );
 };
