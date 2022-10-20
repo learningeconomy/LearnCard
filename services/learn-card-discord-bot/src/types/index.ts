@@ -26,3 +26,18 @@ export interface DIDAssocation {
     source: string;
     did: string;
 }
+
+export interface IssuerConfig {
+    _id: string;
+    seed: string;
+    guildId: string;
+    issuer: Issuer;
+}
+
+export interface Issuer {
+    type?: string;
+    id: string;
+    name?: string;
+    url?: string;
+    image?: string;
+}

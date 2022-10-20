@@ -6,13 +6,15 @@ import {
     SlashCommandBuilder,
     PermissionsBitField,
 } from 'discord.js';
+import { initLearnCard } from '@learncard/core';
 import { getDIDForSource } from '../accesslayer/didregistry/read';
 import {
     getCredentialTemplates,
     getCredentialTemplateById,
 } from '../accesslayer/credentialtemplates/read';
 
-import { CredentialTemplate } from '../types';
+import { CredentialTemplate, IssuerConfig } from '../types';
+import { getIssuerConfigById, getIssuerConfigs } from '../accesslayer/issuers/read';
 
 export const SendCredential: Command = {
     name: 'send-credential',
@@ -103,18 +105,24 @@ const constructCredentialForSubject = (
     };
 };
 
-export const SendCredentialSelection = {
-    component_id: 'credential-template',
+export const PickIssuerSelection = {
+    component_id: 'send-credential-issuer-selection',
     submit: async (context: Context, interaction: Interaction) => {
-        const { client, wallet } = context;
+        const { client } = context;
 
-        const credentialTemplateSelected = interaction.values[0];
-        const subjectUserId = interaction.message.content;
+        const issuerSelected = interaction.values[0];
+        const subjectUserIdAndTemplateId = interaction.message.content;
+        const [subjectUserId, templateId] = subjectUserIdAndTemplateId.split(':');
 
         await interaction.deferReply();
 
+        const issuerConfig = await getIssuerConfigById(
+            issuerSelected,
+            context,
+            interaction.guildId
+        );
         const credentialTemplate = await getCredentialTemplateById(
-            credentialTemplateSelected,
+            templateId,
             context,
             interaction.guildId
         );
@@ -133,14 +141,16 @@ export const SendCredentialSelection = {
             return;
         }
 
+        const issuer = await initLearnCard({ seed: issuerConfig.seed });
+
         const unsignedVc = constructCredentialForSubject(
-            wallet.did('key'),
+            issuer.did('key'),
             credentialTemplate,
             subjectDID
         );
 
-        const vc = await wallet.issueCredential(unsignedVc);
-        const streamId = await wallet.publishCredential(vc);
+        const vc = await issuer.issueCredential(unsignedVc);
+        const streamId = await issuer.publishCredential(vc);
 
         const claimCredentialLink = `https://learncard.app/claim-credential/${streamId}`;
         let subjectUser;
@@ -163,6 +173,46 @@ export const SendCredentialSelection = {
         await interaction.followUp({
             ephemeral: true,
             content: `**${credentialTemplate.name}** successfully sent to @${subjectUser.username} 🎓✅`,
+        });
+    },
+};
+
+export const SendCredentialSelection = {
+    component_id: 'credential-template',
+    submit: async (context: Context, interaction: Interaction) => {
+        const { client } = context;
+
+        const credentialTemplateSelected = interaction.values[0];
+        const subjectUserId = interaction.message.content;
+
+        const issuers = await getIssuerConfigs(context, interaction.guildId);
+        const options = issuers.map((t: IssuerConfig) => {
+            return {
+                label: t.issuer.name,
+                description: t.issuer.id,
+                value: t._id,
+            };
+        });
+
+        if (options?.length <= 0) {
+            console.error('No issuers exist yet. Please configure one using /configure-issuer.');
+            await interaction.reply({
+                content:
+                    'No issuers exist yet. Please create one with `/configure-issuer` command.',
+            });
+            return;
+        }
+
+        const issuerSelectMenu = new SelectMenuBuilder()
+            .setCustomId('send-credential-issuer-selection')
+            .setPlaceholder('Select Issuer')
+            .addOptions(options);
+
+        const firstActionRow = new ActionRowBuilder().addComponents([issuerSelectMenu]);
+
+        await interaction.reply({
+            content: `${subjectUserId}:${credentialTemplateSelected}`,
+            components: [firstActionRow],
         });
     },
 };
