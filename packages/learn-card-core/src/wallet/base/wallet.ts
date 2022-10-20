@@ -173,7 +173,7 @@ export const generateWallet = async <
     const { plugins = [] as unknown as Plugins } = _wallet;
 
     const pluginMethods = plugins.reduce<PluginMethods>((cumulativePluginMethods, plugin) => {
-        const newPluginMethods = { ...(cumulativePluginMethods as any), ...plugin.pluginMethods };
+        const newPluginMethods = { ...(cumulativePluginMethods as any), ...plugin.methods };
 
         return newPluginMethods;
     }, {} as PluginMethods);
@@ -184,8 +184,8 @@ export const generateWallet = async <
         index: {} as WalletIndexPlane<Plugins>,
         cache: {} as CachePlane,
         plugins: plugins as Plugins,
-        pluginMethods,
-        addPlugin: function(plugin) {
+        invoke: pluginMethods,
+        addPlugin: function (plugin) {
             return addPluginToWallet(this, plugin);
         },
         debug: _wallet.debug,
@@ -196,7 +196,7 @@ export const generateWallet = async <
     wallet.index = bindIndexPlane(wallet);
     wallet.cache = bindCachePlane(wallet);
 
-    if (pluginMethods) wallet.pluginMethods = bindMethods(wallet, pluginMethods);
+    if (pluginMethods) wallet.invoke = bindMethods(wallet, pluginMethods);
 
     return wallet;
 };

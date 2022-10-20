@@ -8,9 +8,9 @@ import { VCTemplatePlugin } from './types';
 export const getVCTemplatesPlugin = (): VCTemplatePlugin => {
     return {
         name: 'VC Templates',
-        pluginMethods: {
+        methods: {
             newCredential: (_wallet, args = { type: 'basic' }) => {
-                const did = args.did || _wallet.pluginMethods.getSubjectDid?.('key');
+                const did = args.did || _wallet.invoke.getSubjectDid?.('key');
 
                 if (!did) throw new Error('Could not get issuer did!');
 
@@ -27,7 +27,7 @@ export const getVCTemplatesPlugin = (): VCTemplatePlugin => {
                 return VC_TEMPLATES[type]({ ...defaults, ...functionArgs });
             },
             newPresentation: async (_wallet, credential, args = {}) => {
-                const did = args?.did || _wallet.pluginMethods.getSubjectDid?.('key');
+                const did = args?.did || _wallet.invoke.getSubjectDid?.('key');
 
                 if (!did) throw new Error('Could not get issuer did!');
 

@@ -4,7 +4,7 @@ import { JWK } from '@learncard/types';
 
 import { getAlgorithmForDidMethod } from './helpers';
 
-import { DidKeyPlugin, DependentMethods, DidKeyPluginMethods, Algorithm } from './types';
+import { DidKeyPlugin, DependentMethods, Algorithm } from './types';
 import { Wallet } from 'types/wallet';
 
 export * from './types';
@@ -38,17 +38,17 @@ export const getDidKeyPlugin = async <DidMethod extends string>(
 
     const memoizedDids: Partial<Record<DidMethod, string>> = {};
     const keyPairs: Record<Algorithm, JWK> = {
-        ed25519: wallet.pluginMethods.generateEd25519KeyFromBytes(seedBytes),
-        secp256k1: wallet.pluginMethods.generateSecp256k1KeyFromBytes(seedBytes),
+        ed25519: wallet.invoke.generateEd25519KeyFromBytes(seedBytes),
+        secp256k1: wallet.invoke.generateSecp256k1KeyFromBytes(seedBytes),
     };
 
     return {
         name: 'DID Key',
-        pluginMethods: {
+        methods: {
             getSubjectDid: (_wallet, type) => {
                 if (!memoizedDids[type]) {
                     const algorithm = getAlgorithmForDidMethod(type);
-                    memoizedDids[type] = wallet.pluginMethods.keyToDid(type, keyPairs[algorithm]);
+                    memoizedDids[type] = wallet.invoke.keyToDid(type, keyPairs[algorithm]);
                 }
 
                 return memoizedDids[type]!;

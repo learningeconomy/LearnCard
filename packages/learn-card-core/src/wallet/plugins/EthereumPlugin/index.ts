@@ -37,7 +37,7 @@ export const getEthereumPlugin = (
     let { infuraProjectId, network = 'mainnet' } = config;
 
     // Ethers wallet
-    const secpKeypair = initWallet.pluginMethods.getSubjectKeypair('secp256k1');
+    const secpKeypair = initWallet.invoke.getSubjectKeypair('secp256k1');
     const privateKey = Buffer.from(secpKeypair.d, 'base64').toString('hex');
     let ethersWallet = new ethers.Wallet(privateKey);
     const publicKey: string = ethersWallet.address;
@@ -113,7 +113,7 @@ export const getEthereumPlugin = (
 
     return {
         name: 'Ethereum',
-        pluginMethods: {
+        methods: {
             getEthereumAddress: () => publicKey,
 
             getBalance: async (_wallet, symbolOrAddress = 'ETH') =>

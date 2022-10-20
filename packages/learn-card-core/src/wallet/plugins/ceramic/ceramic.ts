@@ -34,7 +34,7 @@ export const getCeramicPlugin = async <URI extends string = ''>(
     // use wallet secret key
     // TODO: this is repeating work already done in the wallet. understand what the Ed25519Provider is doing to determine
     // if we can just pass wallet signing key here instead of creating a duplicate from same seed.
-    const key = wallet.pluginMethods.getKey();
+    const key = wallet.invoke.getKey();
 
     const ceramicProvider = new Ed25519Provider(toUint8Array(key));
     ceramic.did!.setProvider(ceramicProvider);
@@ -85,7 +85,7 @@ export const getCeramicPlugin = async <URI extends string = ''>(
 
         const verificationResult = await CeramicURIValidator.spa(uri);
 
-        if (!verificationResult.success) return wallet.pluginMethods.resolveCredential(uri);
+        if (!verificationResult.success) return wallet.invoke.resolveCredential(uri);
 
         const streamId = verificationResult.data.split(':')[2];
 
@@ -107,7 +107,7 @@ export const getCeramicPlugin = async <URI extends string = ''>(
                 return resolveCredential(uri);
             },
         },
-        pluginMethods: {
+        methods: {
             publishContentToCeramic: async (_wallet, cred) =>
                 streamIdToCeramicURI(await publishContentToCeramic(cred)),
             readContentFromCeramic: async (_wallet, streamId: string) =>

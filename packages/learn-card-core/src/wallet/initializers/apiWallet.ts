@@ -37,23 +37,23 @@ export const walletFromApiUrl = async ({
         store: wallet.store,
         index: wallet.index,
 
-        did: (type = 'key') => wallet.pluginMethods.getSubjectDid(type),
+        did: (type = 'key') => wallet.invoke.getSubjectDid(type),
 
-        newCredential: wallet.pluginMethods.newCredential,
-        newPresentation: wallet.pluginMethods.newPresentation,
+        newCredential: wallet.invoke.newCredential,
+        newPresentation: wallet.invoke.newPresentation,
 
-        issueCredential: wallet.pluginMethods.issueCredential,
+        issueCredential: wallet.invoke.issueCredential,
         verifyCredential: verifyCredential(wallet),
-        issuePresentation: wallet.pluginMethods.issuePresentation,
-        verifyPresentation: wallet.pluginMethods.verifyPresentation,
+        issuePresentation: wallet.invoke.issuePresentation,
+        verifyPresentation: wallet.invoke.verifyPresentation,
 
-        getTestVc: wallet.pluginMethods.getTestVc,
-        getTestVp: wallet.pluginMethods.getTestVp,
+        getTestVc: wallet.invoke.getTestVc,
+        getTestVp: wallet.invoke.getTestVp,
 
-        installChapiHandler: wallet.pluginMethods.installChapiHandler,
-        activateChapiHandler: wallet.pluginMethods.activateChapiHandler,
-        receiveChapiEvent: wallet.pluginMethods.receiveChapiEvent,
-        storePresentationViaChapi: wallet.pluginMethods.storePresentationViaChapi,
-        storeCredentialViaChapiDidAuth: wallet.pluginMethods.storeCredentialViaChapiDidAuth,
+        installChapiHandler: wallet.invoke.installChapiHandler,
+        activateChapiHandler: wallet.invoke.activateChapiHandler,
+        receiveChapiEvent: wallet.invoke.receiveChapiEvent,
+        storePresentationViaChapi: wallet.invoke.storePresentationViaChapi,
+        storeCredentialViaChapiDidAuth: wallet.invoke.storeCredentialViaChapiDidAuth,
     };
 };

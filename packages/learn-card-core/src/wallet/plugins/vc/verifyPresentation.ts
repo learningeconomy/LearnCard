@@ -10,6 +10,6 @@ export const verifyPresentation = (initWallet: Wallet<any, VCPluginDependentMeth
         presentation: VP,
         options: Partial<ProofOptions> = {}
     ) => {
-        return initWallet.pluginMethods.verifyPresentation(presentation, options);
+        return initWallet.invoke.verifyPresentation(presentation, options);
     };
 };

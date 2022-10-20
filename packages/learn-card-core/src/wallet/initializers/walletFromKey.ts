@@ -62,55 +62,55 @@ export const walletFromKey = async (
         store: wallet.store,
         index: wallet.index,
 
-        did: (type = 'key') => wallet.pluginMethods.getSubjectDid(type),
-        keypair: (type = 'ed25519') => wallet.pluginMethods.getSubjectKeypair(type),
+        did: (type = 'key') => wallet.invoke.getSubjectDid(type),
+        keypair: (type = 'ed25519') => wallet.invoke.getSubjectKeypair(type),
 
-        newCredential: wallet.pluginMethods.newCredential,
-        newPresentation: wallet.pluginMethods.newPresentation,
+        newCredential: wallet.invoke.newCredential,
+        newPresentation: wallet.invoke.newPresentation,
 
-        issueCredential: wallet.pluginMethods.issueCredential,
+        issueCredential: wallet.invoke.issueCredential,
         verifyCredential: verifyCredential(wallet),
-        issuePresentation: wallet.pluginMethods.issuePresentation,
-        verifyPresentation: wallet.pluginMethods.verifyPresentation,
+        issuePresentation: wallet.invoke.issuePresentation,
+        verifyPresentation: wallet.invoke.verifyPresentation,
 
-        getCredential: wallet.pluginMethods.getVerifiableCredentialFromIdx,
-        getCredentials: wallet.pluginMethods.getVerifiableCredentialsFromIdx,
+        getCredential: wallet.invoke.getVerifiableCredentialFromIdx,
+        getCredentials: wallet.invoke.getVerifiableCredentialsFromIdx,
         getCredentialsList: async <
             Metadata extends Record<string, any> = Record<never, never>
         >() => {
-            return (await wallet.pluginMethods.getCredentialsListFromIdx<Metadata>()).credentials;
+            return (await wallet.invoke.getCredentialsListFromIdx<Metadata>()).credentials;
         },
-        publishCredential: wallet.pluginMethods.publishContentToCeramic,
+        publishCredential: wallet.invoke.publishContentToCeramic,
         addCredential: async credential => {
-            await wallet.pluginMethods.addVerifiableCredentialInIdx(credential);
+            await wallet.invoke.addVerifiableCredentialInIdx(credential);
         },
         removeCredential: async title => {
-            await wallet.pluginMethods.removeVerifiableCredentialInIdx(title);
+            await wallet.invoke.removeVerifiableCredentialInIdx(title);
         },
 
-        resolveDid: wallet.pluginMethods.resolveDid,
+        resolveDid: wallet.invoke.resolveDid,
 
-        readFromCeramic: wallet.pluginMethods.readContentFromCeramic,
-        resolveCredential: wallet.pluginMethods.resolveCredential,
+        readFromCeramic: wallet.invoke.readContentFromCeramic,
+        resolveCredential: wallet.invoke.resolveCredential,
 
-        getTestVc: wallet.pluginMethods.getTestVc,
-        getTestVp: wallet.pluginMethods.getTestVp,
+        getTestVc: wallet.invoke.getTestVc,
+        getTestVp: wallet.invoke.getTestVp,
 
-        vpFromQrCode: wallet.pluginMethods.vpFromQrCode,
-        vpToQrCode: wallet.pluginMethods.vpToQrCode,
+        vpFromQrCode: wallet.invoke.vpFromQrCode,
+        vpToQrCode: wallet.invoke.vpToQrCode,
 
-        getEthereumAddress: wallet.pluginMethods.getEthereumAddress,
-        getBalance: wallet.pluginMethods.getBalance,
-        getBalanceForAddress: wallet.pluginMethods.getBalanceForAddress,
-        transferTokens: wallet.pluginMethods.transferTokens,
-        getCurrentNetwork: wallet.pluginMethods.getCurrentNetwork,
-        changeNetwork: wallet.pluginMethods.changeNetwork,
-        addInfuraProjectId: wallet.pluginMethods.addInfuraProjectId,
+        getEthereumAddress: wallet.invoke.getEthereumAddress,
+        getBalance: wallet.invoke.getBalance,
+        getBalanceForAddress: wallet.invoke.getBalanceForAddress,
+        transferTokens: wallet.invoke.transferTokens,
+        getCurrentNetwork: wallet.invoke.getCurrentNetwork,
+        changeNetwork: wallet.invoke.changeNetwork,
+        addInfuraProjectId: wallet.invoke.addInfuraProjectId,
 
-        installChapiHandler: wallet.pluginMethods.installChapiHandler,
-        activateChapiHandler: wallet.pluginMethods.activateChapiHandler,
-        receiveChapiEvent: wallet.pluginMethods.receiveChapiEvent,
-        storePresentationViaChapi: wallet.pluginMethods.storePresentationViaChapi,
-        storeCredentialViaChapiDidAuth: wallet.pluginMethods.storeCredentialViaChapiDidAuth,
+        installChapiHandler: wallet.invoke.installChapiHandler,
+        activateChapiHandler: wallet.invoke.activateChapiHandler,
+        receiveChapiEvent: wallet.invoke.receiveChapiEvent,
+        storePresentationViaChapi: wallet.invoke.storePresentationViaChapi,
+        storeCredentialViaChapiDidAuth: wallet.invoke.storeCredentialViaChapiDidAuth,
     };
 };

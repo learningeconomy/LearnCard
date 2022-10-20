@@ -10,7 +10,7 @@ export const getCHAPIPlugin = async (): Promise<CHAPIPlugin> => {
     if (typeof window === 'undefined') {
         return {
             name: 'CHAPI',
-            pluginMethods: {
+            methods: {
                 installChapiHandler: async () => {
                     throw new Error('CHAPI is only available inside of a browser!');
                 },
@@ -34,7 +34,7 @@ export const getCHAPIPlugin = async (): Promise<CHAPIPlugin> => {
 
     return {
         name: 'CHAPI',
-        pluginMethods: {
+        methods: {
             installChapiHandler: async () => installHandler(),
             activateChapiHandler: async (
                 _wallet,
@@ -67,14 +67,11 @@ export const getCHAPIPlugin = async (): Promise<CHAPIPlugin> => {
 
                 if (!res) return { success: false, reason: 'did not auth' };
 
-                const verification = await wallet.pluginMethods.verifyPresentation(
-                    (res as any).data,
-                    {
-                        challenge,
-                        domain,
-                        proofPurpose: 'authentication',
-                    }
-                );
+                const verification = await wallet.invoke.verifyPresentation((res as any).data, {
+                    challenge,
+                    domain,
+                    proofPurpose: 'authentication',
+                });
 
                 if (verification.warnings.length > 0 || verification.errors.length > 0) {
                     return { success: false, reason: 'auth failed verification' };
@@ -86,11 +83,11 @@ export const getCHAPIPlugin = async (): Promise<CHAPIPlugin> => {
                     credential.credentialSubject.id = subject;
                 }
 
-                const vp = await wallet.pluginMethods.getTestVp(
-                    await wallet.pluginMethods.issueCredential(credential)
+                const vp = await wallet.invoke.getTestVp(
+                    await wallet.invoke.issueCredential(credential)
                 );
 
-                const success = await wallet.pluginMethods.storePresentationViaChapi(vp);
+                const success = await wallet.invoke.storePresentationViaChapi(vp);
 
                 if (success) return { success: true };
 

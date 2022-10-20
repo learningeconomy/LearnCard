@@ -32,7 +32,7 @@ export const getVCAPIPlugin = async ({
 
     return {
         name: 'VC API',
-        pluginMethods: {
+        methods: {
             getSubjectDid: () => did!,
             issueCredential: async (_wallet, credential, options) => {
                 await UnsignedVCValidator.parseAsync(credential);
@@ -100,9 +100,7 @@ export const getVCAPIPlugin = async ({
             getTestVp: async (_wallet, _credential) => {
                 const credential =
                     _credential ||
-                    (await _wallet.pluginMethods.issueCredential(
-                        _wallet.pluginMethods.getTestVc()
-                    ));
+                    (await _wallet.invoke.issueCredential(_wallet.invoke.getTestVc()));
 
                 return {
                     '@context': ['https://www.w3.org/2018/credentials/v1'],

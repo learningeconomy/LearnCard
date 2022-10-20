@@ -31,18 +31,18 @@ export const emptyWallet = async ({ didkit, debug }: EmptyWallet['args'] = {}): 
         store: wallet.store,
         index: wallet.index,
 
-        newCredential: wallet.pluginMethods.newCredential,
-        newPresentation: wallet.pluginMethods.newPresentation,
+        newCredential: wallet.invoke.newCredential,
+        newPresentation: wallet.invoke.newPresentation,
 
         verifyCredential: verifyCredential(wallet),
-        verifyPresentation: wallet.pluginMethods.verifyPresentation,
+        verifyPresentation: wallet.invoke.verifyPresentation,
 
-        resolveDid: wallet.pluginMethods.resolveDid,
+        resolveDid: wallet.invoke.resolveDid,
 
-        installChapiHandler: wallet.pluginMethods.installChapiHandler,
-        activateChapiHandler: wallet.pluginMethods.activateChapiHandler,
-        receiveChapiEvent: wallet.pluginMethods.receiveChapiEvent,
-        storePresentationViaChapi: wallet.pluginMethods.storePresentationViaChapi,
-        storeCredentialViaChapiDidAuth: wallet.pluginMethods.storeCredentialViaChapiDidAuth,
+        installChapiHandler: wallet.invoke.installChapiHandler,
+        activateChapiHandler: wallet.invoke.activateChapiHandler,
+        receiveChapiEvent: wallet.invoke.receiveChapiEvent,
+        storePresentationViaChapi: wallet.invoke.storePresentationViaChapi,
+        storeCredentialViaChapiDidAuth: wallet.invoke.storeCredentialViaChapiDidAuth,
     };
 };

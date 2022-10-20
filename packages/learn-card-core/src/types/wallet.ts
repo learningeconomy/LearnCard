@@ -12,37 +12,30 @@ import { UnionToIntersection, MergeObjects } from './utilities';
 export type GetPluginMethods<Plugins extends Plugin[]> = undefined extends Plugins[1]
     ? NonNullable<Plugins[0]['_methods']>
     : UnionToIntersection<
-        NonNullable<
-            MergeObjects<{ [Key in keyof Plugins]: NonNullable<Plugins[Key]['_methods']> }>
-        >
-    >;
+          NonNullable<
+              MergeObjects<{ [Key in keyof Plugins]: NonNullable<Plugins[Key]['_methods']> }>
+          >
+      >;
 
 /** @group Universal Wallets */
 export type Plugin<
     Name extends string = string,
-    PublicMethods extends Record<string, (...args: any[]) => any> = Record<never, never>,
+    Methods extends Record<string, (...args: any[]) => any> = Record<never, never>,
     DependentMethods extends Record<string, (...args: any[]) => any> = Record<never, never>
-    > = {
-        name: Name;
-        read?: ReadPlane;
-        store?: StorePlane;
-        index?: IndexPlane;
-        cache?: CachePlane;
-        pluginMethods: {
-            [Key in keyof PublicMethods]: <T extends Wallet<any, PublicMethods & DependentMethods>>(
-                wallet: T,
-                ...args: Parameters<PublicMethods[Key]>
-            ) => ReturnType<PublicMethods[Key]>;
-        };
-        _methods?: PublicMethods;
+> = {
+    name: Name;
+    read?: ReadPlane;
+    store?: StorePlane;
+    index?: IndexPlane;
+    cache?: CachePlane;
+    methods: {
+        [Key in keyof Methods]: <T extends Wallet<any, Methods & DependentMethods>>(
+            wallet: T,
+            ...args: Parameters<Methods[Key]>
+        ) => ReturnType<Methods[Key]>;
     };
-
-/** @group Universal Wallets */
-export type PublicFieldsObj<
-    PluginMethods extends Record<string, (...args: any[]) => any> = Record<never, never>
-    > = {
-        pluginMethods: PluginMethods;
-    };
+    _methods?: Methods;
+};
 
 /** @group Universal Wallets */
 export type Wallet<Plugins extends Plugin[] = [], PluginMethods = GetPluginMethods<Plugins>> = {
@@ -51,7 +44,7 @@ export type Wallet<Plugins extends Plugin[] = [], PluginMethods = GetPluginMetho
     index: WalletIndexPlane<Plugins>;
     cache: CachePlane;
     plugins: Plugins;
-    pluginMethods: PluginMethods;
+    invoke: PluginMethods;
     addPlugin: <NewPlugin extends Plugin>(
         plugin: NewPlugin
     ) => Promise<Wallet<[...Plugins, NewPlugin]>>;

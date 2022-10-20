@@ -10,17 +10,17 @@ export const issueCredential = (initWallet: Wallet<any, VCPluginDependentMethods
         credential: UnsignedVC,
         signingOptions: Partial<ProofOptions> = {}
     ) => {
-        const kp = wallet.pluginMethods.getSubjectKeypair();
+        const kp = wallet.invoke.getSubjectKeypair();
 
         if (!kp) throw new Error('Cannot issue credential: Could not get subject keypair');
 
         const options = {
-            verificationMethod: await initWallet.pluginMethods.keyToVerificationMethod('key', kp),
+            verificationMethod: await initWallet.invoke.keyToVerificationMethod('key', kp),
             proofPurpose: 'assertionMethod',
             type: 'Ed25519Signature2020',
             ...signingOptions,
         };
 
-        return initWallet.pluginMethods.issueCredential(credential, options, kp);
+        return initWallet.invoke.issueCredential(credential, options, kp);
     };
 };

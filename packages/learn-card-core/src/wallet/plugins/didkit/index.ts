@@ -29,7 +29,7 @@ export const getDidKitPlugin = async (
 
     return {
         name: 'DIDKit',
-        pluginMethods: {
+        methods: {
             generateEd25519KeyFromBytes: (_wallet, bytes) =>
                 JSON.parse(generateEd25519KeyFromBytes(bytes)),
 

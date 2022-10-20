@@ -1,7 +1,7 @@
 import { toQrCode, fromQrCode } from '@digitalbazaar/vpqr';
 
-import { VpqrPlugin, VpqrPluginDependentMethods, VpqrPluginMethods } from './types';
-import { Wallet, Plugin } from 'types/wallet';
+import { VpqrPlugin, VpqrPluginDependentMethods } from './types';
+import { Wallet } from 'types/wallet';
 
 export * from './types';
 
@@ -11,13 +11,13 @@ export * from './types';
 export const getVpqrPlugin = (wallet: Wallet<any, VpqrPluginDependentMethods>): VpqrPlugin => {
     return {
         name: 'Vpqr',
-        pluginMethods: {
+        methods: {
             vpFromQrCode: async (_wallet, text) => {
                 return (
                     await fromQrCode({
                         text,
                         documentLoader: async (url: string) => ({
-                            document: await wallet.pluginMethods.contextLoader(url),
+                            document: await wallet.invoke.contextLoader(url),
                         }),
                     })
                 )?.vp;
@@ -27,7 +27,7 @@ export const getVpqrPlugin = (wallet: Wallet<any, VpqrPluginDependentMethods>): 
                     await toQrCode({
                         vp,
                         documentLoader: async (url: string) => ({
-                            document: await wallet.pluginMethods.contextLoader(url),
+                            document: await wallet.invoke.contextLoader(url),
                         }),
                     })
                 )?.imageDataUrl;

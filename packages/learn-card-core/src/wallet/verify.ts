@@ -40,7 +40,7 @@ export const verifyCredential = (
     wallet: Wallet<any, { verifyCredential: (credential: VC) => Promise<VerificationCheck> }>
 ): ((credential: VC) => Promise<VerificationItem[]>) => {
     return async (credential: VC): Promise<VerificationItem[]> => {
-        const rawVerificationCheck = await wallet.pluginMethods.verifyCredential(credential);
+        const rawVerificationCheck = await wallet.invoke.verifyCredential(credential);
 
         const verificationItems: VerificationItem[] = [];
 

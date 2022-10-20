@@ -7,7 +7,7 @@ export * from './types';
  */
 export const VCResolutionPlugin: VCResolutionPluginType = {
     name: 'VC Resolution',
-    pluginMethods: {
+    methods: {
         resolveCredential: async (_wallet, uri) => {
             throw new Error(`No Credential Resolution Plugins found that can resolve ${uri}`);
         },

@@ -7,9 +7,9 @@ import { ExpirationPlugin } from './types';
  */
 export const expirationPlugin = (wallet: Wallet<any, VerifyExtension>): ExpirationPlugin => ({
     name: 'Expiration',
-    pluginMethods: {
+    methods: {
         verifyCredential: async (_wallet, credential) => {
-            const verificationCheck = await wallet.pluginMethods.verifyCredential(credential);
+            const verificationCheck = await wallet.invoke.verifyCredential(credential);
 
             if (credential.expirationDate && new Date() > new Date(credential.expirationDate)) {
                 verificationCheck.errors.push('expiration error: Credential is expired');

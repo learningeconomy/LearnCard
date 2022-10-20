@@ -10,6 +10,6 @@ export const verifyCredential = (initWallet: Wallet<any, VCPluginDependentMethod
         credential: VC,
         options: Partial<ProofOptions> = {}
     ) => {
-        return initWallet.pluginMethods.verifyCredential(credential, options);
+        return initWallet.invoke.verifyCredential(credential, options);
     };
 };
