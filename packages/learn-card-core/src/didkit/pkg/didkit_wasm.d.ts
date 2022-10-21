@@ -209,6 +209,8 @@ export interface InitOutput {
   readonly didkit_error_message: () => number;
   readonly didkit_error_code: () => number;
   readonly SHA1DCUpdate: (a: number, b: number, c: number) => void;
+  readonly ubc_check: (a: number, b: number) => void;
+  readonly SHA1DCFinal: (a: number, b: number) => number;
   readonly sha1_compression_states: (a: number, b: number, c: number, d: number) => void;
   readonly SHA1DCInit: (a: number) => void;
   readonly SHA1DCSetSafeHash: (a: number, b: number) => void;
@@ -216,16 +218,14 @@ export interface InitOutput {
   readonly SHA1DCSetUseDetectColl: (a: number, b: number) => void;
   readonly SHA1DCSetDetectReducedRoundCollision: (a: number, b: number) => void;
   readonly SHA1DCSetCallback: (a: number, b: number) => void;
-  readonly ubc_check: (a: number, b: number) => void;
-  readonly SHA1DCFinal: (a: number, b: number) => number;
   readonly __wbindgen_malloc: (a: number) => number;
   readonly __wbindgen_realloc: (a: number, b: number, c: number) => number;
   readonly __wbindgen_export_2: WebAssembly.Table;
-  readonly _dyn_core__ops__function__FnMut__A____Output___R_as_wasm_bindgen__closure__WasmClosure___describe__invoke__h47a829c6210a1ab1: (a: number, b: number, c: number) => void;
+  readonly _dyn_core__ops__function__FnMut__A____Output___R_as_wasm_bindgen__closure__WasmClosure___describe__invoke__hf93d85b78df19dde: (a: number, b: number, c: number) => void;
   readonly __wbindgen_add_to_stack_pointer: (a: number) => number;
   readonly __wbindgen_free: (a: number, b: number) => void;
   readonly __wbindgen_exn_store: (a: number) => void;
-  readonly wasm_bindgen__convert__closures__invoke2_mut__h68d8a804a96909b8: (a: number, b: number, c: number, d: number) => void;
+  readonly wasm_bindgen__convert__closures__invoke2_mut__h4d6f2a8364143373: (a: number, b: number, c: number, d: number) => void;
 }
 
 /**
