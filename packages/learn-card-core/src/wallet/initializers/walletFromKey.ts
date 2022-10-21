@@ -101,6 +101,7 @@ export const walletFromKey = async (
         getCurrentNetwork: wallet.pluginMethods.getCurrentNetwork,
         changeNetwork: wallet.pluginMethods.changeNetwork,
         addInfuraProjectId: wallet.pluginMethods.addInfuraProjectId,
+        addAlchemyApiKey: wallet.pluginMethods.addAlchemyApiKey,
 
         installChapiHandler: wallet.pluginMethods.installChapiHandler,
         activateChapiHandler: wallet.pluginMethods.activateChapiHandler,

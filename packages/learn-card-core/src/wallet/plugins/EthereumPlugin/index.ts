@@ -34,7 +34,7 @@ export const getEthereumPlugin = (
     >,
     config: EthereumConfig
 ): Plugin<'Ethereum', EthereumPluginMethods> => {
-    let { infuraProjectId, network = 'mainnet' } = config;
+    let { infuraProjectId, alchemyApiKey, network = 'mainnet' } = config;
 
     // Ethers wallet
     const secpKeypair = initWallet.pluginMethods.getSubjectKeypair('secp256k1');
@@ -47,6 +47,8 @@ export const getEthereumPlugin = (
         let provider: ethers.providers.Provider;
         if (infuraProjectId) {
             provider = new ethers.providers.InfuraProvider(network, infuraProjectId);
+        } else if (alchemyApiKey) {
+            provider = new ethers.providers.AlchemyProvider(network, alchemyApiKey);
         } else {
             provider = ethers.getDefaultProvider(network);
         }
@@ -173,8 +175,12 @@ export const getEthereumPlugin = (
                     throw e;
                 }
             },
-            addInfuraProjectId: (_wallet, infuraProjectIdToAdd) => {
-                infuraProjectId = infuraProjectIdToAdd;
+            addInfuraProjectId: (_wallet, _infuraProjectId) => {
+                infuraProjectId = _infuraProjectId;
+                provider = getProvider();
+            },
+            addAlchemyApiKey: (_wallet, _alchemyApiKey) => {
+                alchemyApiKey = _alchemyApiKey;
                 provider = getProvider();
             },
         },

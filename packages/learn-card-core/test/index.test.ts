@@ -481,13 +481,19 @@ describe('LearnCard SDK', () => {
             const wallet = await getWallet();
 
             // Don't think this can be tested more thoroughly without exposing the provider
-            expect(() => wallet.addInfuraProjectId('1234')).not.toThrowError();
+            expect(() => wallet.addInfuraProjectId('abc1234')).not.toThrowError();
+        });
+        it('should support adding an Alchemy API key', async () => {
+            const wallet = await getWallet();
+
+            // Don't think this can be tested more thoroughly without exposing the provider
+            expect(() => wallet.addAlchemyApiKey('abc1234')).not.toThrowError();
         });
         //it('test mocks', async () => {
         // at top of file...
         // // Mocks
         // import { ethers } from 'ethers';
-        // jest.m0ck('ethers'); // won't compile event if this is commented out (when it's spelled correctly)
+        // jest.m0ck('ethers'); // won't compile even if this is commented out (when it's spelled correctly)
 
         //    const wallet = await getWallet();
 

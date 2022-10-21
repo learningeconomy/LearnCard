@@ -264,7 +264,15 @@ export type ChangeNetwork = (network: ethers.providers.Networkish) => void;
  *
  * @group LearnCard Methods
  */
-export type AddInfuraProjectId = (infuraProjectIdToAdd: string) => void;
+export type AddInfuraProjectId = (_infuraProjectId: string) => void;
+
+/**
+ * Add an Alchemy API key to an existing wallet.
+ * Really only useful for testing with the CLI right now...
+ *
+ * @group LearnCard Methods
+ */
+export type AddAlchemyApiKey = (_alchemyApiKey: string) => void;
 
 /**
  * Returns a Verifiable Presentation (VP) from a QR code base-64 image data string containing a VP compressed by CBOR-LD.
@@ -355,6 +363,7 @@ export type AllLearnCardMethods = {
     getCurrentNetwork: GetCurrentNetwork;
     changeNetwork: ChangeNetwork;
     addInfuraProjectId: AddInfuraProjectId;
+    addAlchemyApiKey: AddAlchemyApiKey;
     vpFromQrCode: VpFromQrCode;
     vpToQrCode: VpToQrCode;
     installChapiHandler: InstallChapiHandler;
