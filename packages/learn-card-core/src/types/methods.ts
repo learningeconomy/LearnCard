@@ -238,6 +238,13 @@ export type TransferTokens = (
 ) => Promise<string>;
 
 /**
+ * Get the gas price of the current network
+ *
+ * @group LearnCard Methods
+ */
+export type GetGasPrice = () => Promise<string>;
+
+/**
  * Get your current Ethereum network
  *
  * @group LearnCard Methods
@@ -344,6 +351,7 @@ export type AllLearnCardMethods = {
     getBalance: GetBalance;
     getBalanceForAddress: GetBalanceForAddress;
     transferTokens: TransferTokens;
+    getGasPrice: GetGasPrice;
     getCurrentNetwork: GetCurrentNetwork;
     changeNetwork: ChangeNetwork;
     addInfuraProjectId: AddInfuraProjectId;
