@@ -31,10 +31,10 @@ export const constructCredentialForSubject = (
 		issuer,
 		issuanceDate: new Date().toISOString(),
 		credentialSubject: {
-			type: 'AchievementSubject',
+			type: ['AchievementSubject'],
 			id: didSubject,
 			achievement: {
-				type: 'Achievement',
+				type: ['Achievement'],
 				achievementType: type,
 				name,
 				id: _id,
@@ -90,7 +90,6 @@ export const sendCredentialToSubject = async (
 		);
 
 		const vc = await issuer.issueCredential(unsignedVc);
-		console.log("VC!", vc);
 		const streamId = await issuer.publishCredential(vc);
 
 		data.claimCredentialLink = `https://learncard.app/claim-credential/${streamId}`;
@@ -107,7 +106,7 @@ export const sendCredentialToSubject = async (
 			);
 		} else {
 			subjectUser.send(
-				`Hello 👋! You have received a credential: **${credentialTemplate.name}** 🎉 \n To claim the credential, you need to setup your wallet or LearnCard. \n\n Please run \`/register-did\` to complete setup 🚧 `
+				`Hello 👋! You have received a credential: **${credentialTemplate.name}** 🎉 \n To claim the credential, you need to setup your wallet or LearnCard. \n\n Please run \`/register-did\` to complete setup 🚧\n\n*Need help?* Check out the guide: https://docs.learncard.com/learncard-services/discord-bot/register-learncard-did  `
 			);
 		}
 	} catch (e: object | undefined) {
