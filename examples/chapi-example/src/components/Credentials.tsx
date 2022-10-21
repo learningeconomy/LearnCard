@@ -10,7 +10,7 @@ const Credentials: React.FC = () => {
     const wallet = useStore(_wallet);
 
     useEffect(() => {
-        if (wallet) wallet.getCredentialsList().then(setCredentialsList);
+        if (wallet) wallet.index.all.get().then(setCredentialsList);
     }, [wallet]);
 
     if (!wallet || !credentialsList) return <></>;

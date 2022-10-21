@@ -2,6 +2,11 @@ import { VC, VerificationCheck, VerificationItem } from '@learncard/types';
 import { Plugin } from 'types/wallet';
 import { ProofOptions } from '../didkit';
 
+export type VerifyCredential = {
+    (vc: VC, options?: Partial<ProofOptions>): Promise<VerificationCheck>;
+    (vc: VC, options: Partial<ProofOptions>, prettify: true): Promise<VerificationItem[]>;
+};
+
 /** @group LearnCard Plugin */
 export type LearnCardPluginDependentMethods = {
     verifyCredential: (vc: VC, options?: Partial<ProofOptions>) => Promise<VerificationCheck>;
@@ -9,7 +14,7 @@ export type LearnCardPluginDependentMethods = {
 
 /** @group LearnCard Plugin */
 export type LearnCardPluginMethods = {
-    verifyCredential: (vc: VC, options?: Partial<ProofOptions>) => Promise<VerificationItem[]>;
+    verifyCredential: VerifyCredential;
 };
 
 /** @group LearnCard Plugin */

@@ -12,6 +12,6 @@ export const getLearnCardPlugin = (
 ): LearnCardPlugin => ({
     name: 'Learn Card',
     methods: {
-        verifyCredential: verifyCredential(wallet),
+        verifyCredential: verifyCredential(wallet) as any,
     },
 });

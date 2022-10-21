@@ -50,10 +50,13 @@ export const verifyCredential = (
 ): ((
     _wallet: any,
     credential: VC,
-    options?: Partial<ProofOptions>
-) => Promise<VerificationItem[]>) => {
-    return async (_wallet, credential, options) => {
+    options?: Partial<ProofOptions>,
+    prettify?: boolean
+) => Promise<VerificationItem[] | VerificationCheck>) => {
+    return async (_wallet, credential, options, prettify = false) => {
         const rawVerificationCheck = await wallet.invoke.verifyCredential(credential, options);
+
+        if (!prettify) return rawVerificationCheck;
 
         const verificationItems: VerificationItem[] = [];
 

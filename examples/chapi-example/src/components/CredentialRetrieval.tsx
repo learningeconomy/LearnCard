@@ -23,7 +23,7 @@ const CredentialStorage: React.FC = () => {
         const fetchData = async () => {
             const wallet = await getWallet();
 
-            const _event = await wallet.receiveChapiEvent();
+            const _event = await wallet.invoke.receiveChapiEvent();
 
             if ('credentialRequestOptions' in _event) setEvent(_event);
         };
@@ -48,7 +48,7 @@ const CredentialStorage: React.FC = () => {
             event.respondWith(
                 Promise.resolve({
                     dataType: 'VerifiablePresentation',
-                    data: await wallet.issuePresentation(await wallet.getTestVp(), {
+                    data: await wallet.invoke.issuePresentation(await wallet.invoke.getTestVp(), {
                         challenge,
                         domain,
                         proofPurpose: 'authentication',
