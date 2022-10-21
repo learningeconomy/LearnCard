@@ -1,6 +1,6 @@
 import { Command } from './Command';
 import { IssueCredential } from './commands/IssueCredential';
-import { AddCredential, AddCredentialModal } from './commands/AddCredential';
+import { AddCredential, AddCredentialModal, CredentialTypeSelection } from './commands/AddCredential';
 import { ListCredentials } from './commands/ListCredentials';
 import {
     SendCredential,
@@ -19,4 +19,4 @@ export const Commands: Command[] = [
     ConfigureIssuer,
 ];
 export const Modals: object[] = [AddCredentialModal, ConfigureIssuerModal];
-export const MessageComponents: object[] = [SendCredentialSelection, PickIssuerSelection];
+export const MessageComponents: object[] = [SendCredentialSelection, PickIssuerSelection, CredentialTypeSelection];

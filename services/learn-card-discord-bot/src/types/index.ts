@@ -14,6 +14,7 @@ export interface CredentialTemplate {
     description?: string;
     criteria?: string;
     image?: string;
+    type?: string;
 }
 
 export enum DIDAssociationType {
