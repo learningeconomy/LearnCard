@@ -6,15 +6,14 @@ import {
     SlashCommandBuilder,
     PermissionsBitField,
 } from 'discord.js';
-import { initLearnCard } from '@learncard/core';
-import { getDIDForSource } from '../accesslayer/didregistry/read';
+
 import {
     getCredentialTemplates,
-    getCredentialTemplateById,
 } from '../accesslayer/credentialtemplates/read';
 
 import { CredentialTemplate, IssuerConfig } from '../types';
-import { getIssuerConfigById, getIssuerConfigs } from '../accesslayer/issuers/read';
+import { getIssuerConfigs } from '../accesslayer/issuers/read';
+import { sendCredentialToSubject } from './helpers';
 
 export const SendCredential: Command = {
     name: 'send-credential',
@@ -74,114 +73,9 @@ export const SendCredential: Command = {
     },
 };
 
-const constructCredentialForSubject = (
-    issuer: string | object,
-    template: CredentialTemplate,
-    didSubject: string
-) => {
-    const { name, description, criteria, image } = template;
-    return {
-        '@context': [
-            'https://www.w3.org/2018/credentials/v1',
-            'https://w3c-ccg.github.io/vc-ed/plugfest-1-2022/jff-vc-edu-plugfest-1-context.json',
-        ],
-        type: ['VerifiableCredential', 'OpenBadgeCredential'],
-        issuer,
-        issuanceDate: new Date().toISOString(),
-        credentialSubject: {
-            type: 'AchievementSubject',
-            id: didSubject,
-            achievement: {
-                type: 'Achievement',
-                name,
-                description,
-                criteria: {
-                    type: 'Criteria',
-                    narrative: criteria,
-                },
-                image,
-            },
-        },
-    };
-};
-
-export const PickIssuerSelection = {
-    component_id: 'send-credential-issuer-selection',
-    submit: async (context: Context, interaction: Interaction) => {
-        const { client } = context;
-
-        const issuerSelected = interaction.values[0];
-        const subjectUserIdAndTemplateId = interaction.message.content;
-        const [subjectUserId, templateId] = subjectUserIdAndTemplateId.split(':');
-
-        await interaction.deferReply();
-
-        const issuerConfig = await getIssuerConfigById(
-            issuerSelected,
-            context,
-            interaction.guildId
-        );
-        const credentialTemplate = await getCredentialTemplateById(
-            templateId,
-            context,
-            interaction.guildId
-        );
-        const subjectDID = await getDIDForSource(subjectUserId, context);
-
-        console.log('Issuing credential for subject.', credentialTemplate, subjectDID);
-        if (!subjectDID) {
-            console.error(
-                'Subject does not have an associated DID. Use the /register-did command.',
-                subjectUserId
-            );
-            await interaction.followUp({
-                ephemeral: true,
-                content: `Subject user does not have an associated DID. Use the /register-did command.`,
-            });
-            return;
-        }
-
-        const issuer = await initLearnCard({ seed: issuerConfig.seed });
-
-        const unsignedVc = constructCredentialForSubject(
-            issuer.did('key'),
-            credentialTemplate,
-            subjectDID
-        );
-
-        const vc = await issuer.issueCredential(unsignedVc);
-        const streamId = await issuer.publishCredential(vc);
-
-        const claimCredentialLink = `https://learncard.app/claim-credential/${streamId}`;
-        let subjectUser;
-        try {
-            subjectUser = await client.users.fetch(subjectUserId);
-
-            subjectUser.send(
-                `Hello! You have received a credential: ${credentialTemplate.name} 🎉 \n Click this link to claim: ${claimCredentialLink}`
-            );
-        } catch (e) {
-            console.error('Error sending message to user.', e);
-            await interaction.followUp({
-                ephemeral: true,
-                content: `**${credentialTemplate.name}** successfully issued to (${subjectDID}) ✅, but failed to send message to user 🔧. \n 
-                            Share this link with them to claim: ${claimCredentialLink}} 🍄`,
-            });
-            return;
-        }
-
-        await interaction.followUp({
-            ephemeral: true,
-            content: `**${credentialTemplate.name}** successfully sent to @${subjectUser.username} 🎓✅`,
-        });
-    },
-};
-
 export const SendCredentialSelection = {
     component_id: 'credential-template',
     submit: async (context: Context, interaction: Interaction) => {
-        const { client } = context;
-
         const credentialTemplateSelected = interaction.values[0];
         const subjectUserId = interaction.message.content;
 
@@ -213,6 +107,47 @@ export const SendCredentialSelection = {
         await interaction.reply({
             content: `${subjectUserId}:${credentialTemplateSelected}`,
             components: [firstActionRow],
+        });
+    },
+};
+
+export const PickIssuerSelection = {
+    component_id: 'send-credential-issuer-selection',
+    submit: async (context: Context, interaction: Interaction) => {
+        const issuerSelected = interaction.values[0];
+        const subjectUserIdAndTemplateId = interaction.message.content;
+        const [subjectUserId, templateId] = subjectUserIdAndTemplateId.split(':');
+
+        await interaction.deferReply();
+
+        const {data, error} = await sendCredentialToSubject(
+            issuerSelected,
+            subjectUserId,
+            templateId,
+            interaction,
+            context
+        );
+
+        if (error) {
+            if (data.pendingVc) {
+                await interaction.followUp({
+                    ephemeral: true,
+                    content: `**${data.credentialTemplate?.name}** successfully issued to (${data.subjectUserName}) ✅, but failed to send message to user 🔧. \n 
+                                User must register their DID identity to claim, with \`/register-did\` ❌`,
+                });
+            } else {
+                await interaction.followUp({
+                    ephemeral: true,
+                    content: `**${data.credentialTemplate?.name}** successfully issued to ${data.subjectUserName} (${data.subjectUserName}) ✅, but failed to send message to user 🔧. \n 
+                            Share this link with them to claim: ${data.claimCredentialLink}} 🍄`,
+                });
+            }
+            return;
+        }
+
+        await interaction.followUp({
+            ephemeral: true,
+            content: `**${data.credentialTemplate?.name}** successfully sent to @${data.subjectUserName} 🎓✅`,
         });
     },
 };

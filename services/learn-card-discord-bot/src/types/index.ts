@@ -1,4 +1,4 @@
-import { UnlockedWallet } from '@learncard/types';
+import { UnlockedWallet, VC } from '@learncard/types';
 import { Client } from 'discord.js';
 import { Cache } from 'src/cache/index';
 
@@ -40,4 +40,25 @@ export interface Issuer {
     name?: string;
     url?: string;
     image?: string;
+}
+
+export interface PendingVc {
+    _id?: string;
+    guildId: string;
+    issuerConfigId: string;
+    subjectId: string;
+    credentialTemplateId: string;
+}
+
+export interface SendCredentialResponse {
+    data: SendCredentialData;
+    error?: object | undefined;
+}
+
+export interface SendCredentialData {
+    credentialTemplate?: CredentialTemplate
+    claimCredentialLink?: string;
+    subjectUserName?: string;
+    subjectDID?: string;
+    pendingVc?: PendingVc | undefined;
 }
