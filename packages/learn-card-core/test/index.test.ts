@@ -557,13 +557,19 @@ describe('LearnCard SDK', () => {
             const learnCard = await getLearnCard();
 
             // Don't think this can be tested more thoroughly without exposing the provider
-            expect(() => learnCard.invoke.addInfuraProjectId('1234')).not.toThrowError();
+            expect(() => learnCard.invoke.addInfuraProjectId('abc1234')).not.toThrowError();
+        });
+        it('should support adding an Alchemy API key', async () => {
+            const learnCard = await getLearnCard();
+
+            // Don't think this can be tested more thoroughly without exposing the provider
+            expect(() => learnCard.invoke.addAlchemyApiKey('abc1234')).not.toThrowError();
         });
         //it('test mocks', async () => {
         // at top of file...
         // // Mocks
         // import { ethers } from 'ethers';
-        // jest.m0ck('ethers'); // won't compile event if this is commented out (when it's spelled correctly)
+        // jest.m0ck('ethers'); // won't compile even if this is commented out (when it's spelled correctly)
 
         //    const learnCard = await getLearnCard();
 

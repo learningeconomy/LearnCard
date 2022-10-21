@@ -23,7 +23,7 @@ export const getEthereumPlugin = (
     initLearnCard: LearnCard<any, 'id'>,
     config: EthereumConfig
 ): EthereumPlugin => {
-    let { infuraProjectId, network = 'mainnet' } = config;
+    let { infuraProjectId, alchemyApiKey, network = 'mainnet' } = config;
 
     // Ethers wallet
     const secpKeypair = initLearnCard.id.keypair('secp256k1');
@@ -41,6 +41,8 @@ export const getEthereumPlugin = (
         let provider: ethers.providers.Provider;
         if (infuraProjectId) {
             provider = new ethers.providers.InfuraProvider(network, infuraProjectId);
+        } else if (alchemyApiKey) {
+            provider = new ethers.providers.AlchemyProvider(network, alchemyApiKey);
         } else {
             provider = ethers.getDefaultProvider(network);
         }
@@ -170,8 +172,12 @@ export const getEthereumPlugin = (
                     throw e;
                 }
             },
-            addInfuraProjectId: (_learnCard, infuraProjectIdToAdd) => {
-                infuraProjectId = infuraProjectIdToAdd;
+            addInfuraProjectId: (_learnCard, _infuraProjectId) => {
+                infuraProjectId = _infuraProjectId;
+                provider = getProvider();
+            },
+            addAlchemyApiKey: (_learnCard, _alchemyApiKey) => {
+                alchemyApiKey = _alchemyApiKey;
                 provider = getProvider();
             },
         },

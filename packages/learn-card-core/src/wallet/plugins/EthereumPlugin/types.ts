@@ -15,11 +15,13 @@ export type EthereumPluginMethods = {
     getCurrentNetwork: () => providers.Networkish;
     changeNetwork: (network: providers.Networkish) => void;
     addInfuraProjectId: (infuraProjectIdToAdd: string) => void;
+    addAlchemyApiKey: (alchemyApiKey: string) => void;
 };
 
 /** @group Ethereum Plugin */
 export type EthereumConfig = {
     infuraProjectId?: string;
+    alchemyApiKey?: string;
     network?: providers.Networkish;
 };
 
