@@ -6,7 +6,7 @@ import { deletePendingVcs } from '../accesslayer/pendingvcs/delete';
 
 export const RegisterDID: Command = {
     name: 'register-did',
-    description: 'Associate a did with your discord account.',
+    description: 'Manually associate a did with your discord account (admins only).',
     type: ApplicationCommandOptionType.ChatInput,
     options: [
         {
@@ -26,16 +26,15 @@ export const RegisterDID: Command = {
         const did = interaction.options.getString('did').replace('🔑', ':key:');
         const { user: currentUser } = interaction;
 
-        if (targetedUser && targetedUser.id !== currentUser.id) {
-            const initiator = await interaction.guild?.members.fetch(interaction.user.id);
+        const initiator = await interaction.guild?.members.fetch(interaction.user.id);
 
-            if (!initiator?.permissions.has(PermissionsBitField.Flags.ManageGuild)) {
-                await interaction.reply({
-                    content:
-                        'You do not have permission to register a DID for another user on this server.\n *You need permission:* `Manage Server`',
-                });
-                return;
-            }
+        if (!initiator?.permissions.has(PermissionsBitField.Flags.ManageGuild)) {
+            await interaction.reply({
+                content:
+                    'You do not have permission to manually register a DID on this server.\n *You need permission:* `Manage Server`',
+                ephemeral: true,
+            });
+            return;
         }
 
         console.log(

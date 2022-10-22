@@ -7,9 +7,7 @@ import {
     PermissionsBitField,
 } from 'discord.js';
 
-import {
-    getCredentialTemplates,
-} from '../accesslayer/credentialtemplates/read';
+import { getCredentialTemplates } from '../accesslayer/credentialtemplates/read';
 
 import { CredentialTemplate, IssuerConfig } from '../types';
 import { getIssuerConfigs } from '../accesslayer/issuers/read';
@@ -35,6 +33,7 @@ export const SendCredential: Command = {
             await interaction.reply({
                 content:
                     'You do not have permission to send a credential on this server.\n *You need permission:* `Manage Server`',
+                ephemeral: true,
             });
             return;
         }
@@ -55,6 +54,7 @@ export const SendCredential: Command = {
             await interaction.reply({
                 content:
                     'No credential templates exist yet. Please create one with /add-credential command.',
+                ephemeral: true,
             });
             return;
         }
@@ -120,7 +120,7 @@ export const PickIssuerSelection = {
 
         await interaction.deferReply();
 
-        const {data, error} = await sendCredentialToSubject(
+        const { data, error } = await sendCredentialToSubject(
             issuerSelected,
             subjectUserId,
             templateId,
@@ -133,7 +133,7 @@ export const PickIssuerSelection = {
                 await interaction.followUp({
                     ephemeral: true,
                     content: `**${data.credentialTemplate?.name}** successfully issued to (${data.subjectUserName}) ✅, but failed to send message to user 🔧. \n 
-                                User must register their DID identity to claim, with \`/register-did\` ❌`,
+                                User must register their DID identity to claim, with \`/start-connect-id\` ❌`,
                 });
             } else {
                 await interaction.followUp({

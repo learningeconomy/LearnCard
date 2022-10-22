@@ -23,6 +23,7 @@ export const AddCredential: Command = {
             await interaction.reply({
                 content:
                     'You do not have permission to add a credential on this server.\n *You need permission:* `Manage Server`',
+                    ephemeral: true
             });
             return;
         }

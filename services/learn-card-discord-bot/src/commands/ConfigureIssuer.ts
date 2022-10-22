@@ -23,6 +23,7 @@ export const ConfigureIssuer: Command = {
             await interaction.reply({
                 content:
                     'You do not have permission to configure an issuer on this server.\n *You need permission:* `Manage Server`',
+                ephemeral: true,
             });
             return;
         }

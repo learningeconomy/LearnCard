@@ -106,7 +106,7 @@ export const sendCredentialToSubject = async (
 			);
 		} else {
 			subjectUser.send(
-				`Hello 👋! You have received a credential: **${credentialTemplate.name}** 🎉 \n To claim the credential, you need to setup your wallet or LearnCard. \n\n Please run \`/register-did\` to complete setup 🚧\n\n*Need help?* Check out the guide: https://docs.learncard.com/learncard-services/discord-bot/register-learncard-did  `
+				`Hello 👋! You have received a credential: **${credentialTemplate.name}** 🎉 \n To claim the credential, you need to setup your wallet or LearnCard. \n\n Please run \`/start-connect-id\` to complete setup 🚧\n\n*Need help?* Check out the guide: https://docs.learncard.com/learncard-services/discord-bot/register-learncard-did  `
 			);
 		}
 	} catch (e: object | undefined) {
