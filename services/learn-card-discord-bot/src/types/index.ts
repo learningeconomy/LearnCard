@@ -22,10 +22,17 @@ export enum DIDAssociationType {
 }
 
 export interface DIDAssocation {
-    _id: string;
+    _id?: string;
     type: DIDAssociationType;
     source: string;
     did: string;
+}
+
+export interface DIDChallenge {
+    _id?: string;
+    type: DIDAssociationType;
+    source: string;
+    challenge: string;
 }
 
 export interface IssuerConfig {
