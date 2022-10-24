@@ -1,14 +1,29 @@
 import { Plugin, Wallet, GetPluginMethods } from 'types/wallet';
 import {
+    ControlPlane,
     GetPlanesForPlugins,
-    ReadPlane,
-    CachePlane,
+    GetPlaneProviders,
     IndexPlane,
+    WalletReadPlane,
     WalletStorePlane,
     WalletIndexPlane,
+    WalletCachePlane,
     WalletIdPlane,
 } from 'types/planes';
 import { findFirstResult } from './helpers';
+
+const getPlaneProviders = <Plugins extends Plugin[], Plane extends ControlPlane>(
+    plugins: Plugins,
+    plane: Plane
+): GetPlaneProviders<Plugins, Plane> => {
+    return plugins.reduce((providers, plugin) => {
+        if (plane in plugin) {
+            providers[plugin.name as keyof typeof providers] = { name: plugin.name } as any;
+        }
+
+        return providers;
+    }, {} as GetPlaneProviders<Plugins, Plane>);
+};
 
 const addPluginToWallet = async <NewPlugin extends Plugin, Plugins extends Plugin[]>(
     wallet: Wallet<Plugins>,
@@ -25,7 +40,7 @@ const generateReadPlane = <
     PluginMethods = GetPluginMethods<Plugins>
 >(
     wallet: Wallet<Plugins, ControlPlanes, PluginMethods> | Wallet<Plugins, 'cache', PluginMethods>
-): ReadPlane => {
+): WalletReadPlane<Plugins> => {
     return {
         get: async uri => {
             wallet.debug?.('wallet.read.get', uri);
@@ -50,6 +65,7 @@ const generateReadPlane = <
 
             return vc;
         },
+        providers: getPlaneProviders(wallet.plugins, 'read'),
     };
 };
 
@@ -60,11 +76,13 @@ const generateStorePlane = <
 >(
     wallet: Wallet<Plugins, ControlPlanes, PluginMethods>
 ): WalletStorePlane<Plugins> => {
-    return wallet.plugins.reduce((acc, cur) => {
-        if (cur.store) acc[cur.name as keyof typeof acc] = cur.store;
+    const pluginPlanes = wallet.plugins.reduce((acc, cur) => {
+        if (cur.store) acc[cur.name as keyof typeof acc] = cur.store as any;
 
         return acc;
     }, {} as WalletStorePlane<Plugins>);
+
+    return { ...pluginPlanes, providers: getPlaneProviders(wallet.plugins, 'store') };
 };
 
 const generateIndexPlane = <
@@ -74,14 +92,11 @@ const generateIndexPlane = <
 >(
     wallet: Wallet<Plugins, ControlPlanes, PluginMethods>
 ): WalletIndexPlane<Plugins> => {
-    const individualPlanes = wallet.plugins.reduce<Omit<WalletIndexPlane<Plugins>, 'all'>>(
-        (acc, cur) => {
-            if (cur.index) (acc as any)[cur.name] = cur.index;
+    const individualPlanes = wallet.plugins.reduce<WalletIndexPlane<Plugins>>((acc, cur) => {
+        if (cur.index) (acc as any)[cur.name] = cur.index;
 
-            return acc;
-        },
-        {} as Omit<WalletIndexPlane<Plugins>, 'all'>
-    );
+        return acc;
+    }, {} as WalletIndexPlane<Plugins>);
 
     const all: Pick<IndexPlane, 'get'> = {
         get: async query => {
@@ -101,7 +116,7 @@ const generateIndexPlane = <
         },
     };
 
-    return { ...individualPlanes, all } as WalletIndexPlane<Plugins>;
+    return { ...individualPlanes, all, providers: getPlaneProviders(wallet.plugins, 'index') };
 };
 
 const generateCachePlane = <
@@ -110,7 +125,7 @@ const generateCachePlane = <
     PluginMethods = GetPluginMethods<Plugins>
 >(
     wallet: Wallet<Plugins, ControlPlanes, PluginMethods>
-): CachePlane => {
+): WalletCachePlane<Plugins> => {
     return {
         getIndex: async query => {
             wallet.debug?.('wallet.cache.getIndex');
@@ -172,6 +187,7 @@ const generateCachePlane = <
 
             return result.some(promiseResult => promiseResult.status === 'fulfilled');
         },
+        providers: getPlaneProviders(wallet.plugins, 'cache'),
     };
 };
 
@@ -217,6 +233,7 @@ const generateIdPlane = <
 
             return result;
         },
+        providers: getPlaneProviders(wallet.plugins, 'id'),
     };
 };
 
@@ -252,10 +269,10 @@ export const generateWallet = async <
     }, {} as PluginMethods);
 
     const wallet: Wallet<Plugins, ControlPlanes, PluginMethods> = {
-        read: {} as ReadPlane,
+        read: {} as WalletReadPlane<Plugins>,
         store: {} as WalletStorePlane<Plugins>,
         index: {} as WalletIndexPlane<Plugins>,
-        cache: {} as CachePlane,
+        cache: {} as WalletCachePlane<Plugins>,
         id: {} as WalletIdPlane<Plugins>,
         plugins: plugins as Plugins,
         invoke: pluginMethods,

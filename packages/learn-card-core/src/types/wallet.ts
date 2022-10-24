@@ -6,8 +6,10 @@ import {
     IndexPlane,
     CachePlane,
     IdPlane,
+    WalletReadPlane,
     WalletStorePlane,
     WalletIndexPlane,
+    WalletCachePlane,
     WalletIdPlane,
 } from './planes';
 import { UnionToIntersection, MergeObjects } from './utilities';
@@ -16,10 +18,10 @@ import { UnionToIntersection, MergeObjects } from './utilities';
 export type GetPluginMethods<Plugins extends Plugin[]> = undefined extends Plugins[1]
     ? NonNullable<Plugins[0]['_methods']>
     : UnionToIntersection<
-        NonNullable<
-            MergeObjects<{ [Key in keyof Plugins]: NonNullable<Plugins[Key]['_methods']> }>
-        >
-    >;
+          NonNullable<
+              MergeObjects<{ [Key in keyof Plugins]: NonNullable<Plugins[Key]['_methods']> }>
+          >
+      >;
 
 /** @group Universal Wallets */
 export type Plugin<
@@ -27,40 +29,40 @@ export type Plugin<
     Methods extends Record<string, (...args: any[]) => any> = Record<never, never>,
     DependentControlPlanes extends ControlPlane = never,
     DependentMethods extends Record<string, (...args: any[]) => any> = Record<never, never>
-    > = {
-        name: Name;
-        read?: ReadPlane;
-        store?: StorePlane;
-        index?: IndexPlane;
-        cache?: CachePlane;
-        id?: IdPlane<never, never>;
-        methods: {
-            [Key in keyof Methods]: <
-                T extends Wallet<any, DependentControlPlanes, Methods & DependentMethods>
-                >(
-                wallet: T,
-                ...args: Parameters<Methods[Key]>
-            ) => ReturnType<Methods[Key]>;
-        };
-        _methods?: Methods;
+> = {
+    name: Name;
+    read?: ReadPlane;
+    store?: StorePlane;
+    index?: IndexPlane;
+    cache?: CachePlane;
+    id?: IdPlane<never, never>;
+    methods: {
+        [Key in keyof Methods]: <
+            T extends Wallet<any, DependentControlPlanes, Methods & DependentMethods>
+        >(
+            wallet: T,
+            ...args: Parameters<Methods[Key]>
+        ) => ReturnType<Methods[Key]>;
     };
+    _methods?: Methods;
+};
 
 /** @group Universal Wallets */
 export type Wallet<
     Plugins extends Plugin[] = [],
     ControlPlanes extends ControlPlane = GetPlanesForPlugins<Plugins>,
     PluginMethods = GetPluginMethods<Plugins>
-    > = {
-        plugins: Plugins;
-        invoke: PluginMethods;
-        addPlugin: <NewPlugin extends Plugin>(
-            plugin: NewPlugin
-        ) => Promise<Wallet<[...Plugins, NewPlugin]>>;
-        debug?: typeof console.log;
-    } & ([ControlPlanes] extends [1 & ControlPlanes] // Check for any/never and prevent it from requiring all planes
-        ? {}
-        : ('read' extends ControlPlanes ? { read: ReadPlane } : {}) &
-        ('store' extends ControlPlanes ? { store: WalletStorePlane<Plugins> } : {}) &
-        ('index' extends ControlPlanes ? { index: WalletIndexPlane<Plugins> } : {}) &
-        ('cache' extends ControlPlanes ? { cache: CachePlane } : {}) &
-        ('id' extends ControlPlanes ? { id: WalletIdPlane<Plugins> } : {}));
+> = {
+    plugins: Plugins;
+    invoke: PluginMethods;
+    addPlugin: <NewPlugin extends Plugin>(
+        plugin: NewPlugin
+    ) => Promise<Wallet<[...Plugins, NewPlugin]>>;
+    debug?: typeof console.log;
+} & ([ControlPlanes] extends [1 & ControlPlanes] // Check for any/never and prevent it from requiring all planes
+    ? {}
+    : ('read' extends ControlPlanes ? { read: WalletReadPlane<Plugins> } : {}) &
+          ('store' extends ControlPlanes ? { store: WalletStorePlane<Plugins> } : {}) &
+          ('index' extends ControlPlanes ? { index: WalletIndexPlane<Plugins> } : {}) &
+          ('cache' extends ControlPlanes ? { cache: WalletCachePlane<Plugins> } : {}) &
+          ('id' extends ControlPlanes ? { id: WalletIdPlane<Plugins> } : {}));
