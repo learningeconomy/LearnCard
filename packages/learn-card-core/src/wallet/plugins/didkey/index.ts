@@ -14,7 +14,7 @@ export * from './types';
  * @group Plugins
  */
 export const getDidKeyPlugin = async <DidMethod extends string>(
-    wallet: Wallet<any, DependentMethods<DidMethod>>,
+    wallet: Wallet<any, any, DependentMethods<DidMethod>>,
     key: string,
     defaultDidMethod: DidMethod
 ): Promise<DidKeyPlugin<DidMethod>> => {
@@ -60,7 +60,7 @@ export const getDidKeyPlugin = async <DidMethod extends string>(
 
     return {
         name: 'DID Key',
-        id: { did, keypair },
+        id: { did: did as any, keypair: keypair as any },
         methods: {
             getSubjectDid: (_wallet, method = defaultDidMethod) => did(method),
             getSubjectKeypair: (_wallet, algorithm = 'ed25519') => keypair(algorithm),

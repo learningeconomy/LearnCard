@@ -21,7 +21,7 @@ export type DidKeyPluginMethods<DidMethod extends string> = {
 
 /** @group DidKey Plugin */
 export type DidKeyPlugin<DidMethod extends string = string> = IdPlugin<
-    Plugin<'DID Key', DidKeyPluginMethods<DidMethod>, DependentMethods<DidMethod>>,
+    Plugin<'DID Key', DidKeyPluginMethods<DidMethod>, any, DependentMethods<DidMethod>>,
     DidMethod,
     Algorithm
 >;

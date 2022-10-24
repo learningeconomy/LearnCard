@@ -8,7 +8,7 @@ export * from './types';
  * @group Plugins
  */
 export const getLearnCardPlugin = (
-    wallet: Wallet<any, LearnCardPluginDependentMethods>
+    wallet: Wallet<any, any, LearnCardPluginDependentMethods>
 ): LearnCardPlugin => ({
     name: 'Learn Card',
     methods: {

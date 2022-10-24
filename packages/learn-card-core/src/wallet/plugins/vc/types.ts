@@ -40,10 +40,13 @@ export type VCPluginMethods = {
 };
 
 /** @group VC Plugin */
-export type VCImplicitWallet = Wallet<any, VCPluginMethods & VCPluginDependentMethods>;
+export type VCDependentWallet = Wallet<any, 'id', VCPluginDependentMethods>;
+
+/** @group VC Plugin */
+export type VCImplicitWallet = Wallet<any, 'id', VCPluginMethods & VCPluginDependentMethods>;
 
 /** @group VC Plugin */
 export type VerifyExtension = { verifyCredential: (credential: VC) => Promise<VerificationCheck> };
 
 /** @group VC Plugin */
-export type VCPlugin = Plugin<'VC', VCPluginMethods, VCPluginDependentMethods>;
+export type VCPlugin = Plugin<'VC', VCPluginMethods, 'id', VCPluginDependentMethods>;

@@ -21,5 +21,6 @@ export type LearnCardPluginMethods = {
 export type LearnCardPlugin = Plugin<
     'Learn Card',
     LearnCardPluginMethods,
+    any,
     LearnCardPluginDependentMethods
 >;

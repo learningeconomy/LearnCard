@@ -1,16 +1,15 @@
 import { UnsignedVP } from '@learncard/types';
 
 import { ProofOptions } from '@wallet/plugins/didkit/types';
-import { VCImplicitWallet, VCPluginDependentMethods } from './types';
-import { Wallet } from 'types/wallet';
+import { VCDependentWallet, VCImplicitWallet } from './types';
 
-export const issuePresentation = (initWallet: Wallet<any, VCPluginDependentMethods>) => {
+export const issuePresentation = (initWallet: VCDependentWallet) => {
     return async (
         wallet: VCImplicitWallet,
         presentation: UnsignedVP,
         signingOptions: Partial<ProofOptions> = {}
     ) => {
-        const kp = wallet.invoke.getSubjectKeypair();
+        const kp = wallet.id.keypair();
 
         if (!kp) throw new Error('Cannot issue credential: Could not get subject keypair');
 

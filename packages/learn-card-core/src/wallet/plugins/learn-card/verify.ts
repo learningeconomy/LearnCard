@@ -40,6 +40,7 @@ const transformCheckMessage = (check: string, credential: VC): string => {
 export const verifyCredential = (
     wallet: Wallet<
         any,
+        any,
         {
             verifyCredential: (
                 credential: VC,
@@ -48,7 +49,7 @@ export const verifyCredential = (
         }
     >
 ): ((
-    _wallet: any,
+    _wallet: Wallet<any, any, any>,
     credential: VC,
     options?: Partial<ProofOptions>,
     prettify?: boolean

@@ -12,4 +12,4 @@ export type VpqrPluginDependentMethods = {
     contextLoader: (url: string) => Promise<Record<string, any>>;
 };
 
-export type VpqrPlugin = Plugin<'Vpqr', VpqrPluginMethods>;
+export type VpqrPlugin = Plugin<'Vpqr', VpqrPluginMethods, any, VpqrPluginDependentMethods>;

@@ -43,7 +43,7 @@ export const CredentialsListValidator: z.ZodType<CredentialsList> = z
 
 /** @group IDXPlugin */
 export type IDXPlugin = IndexPlugin<
-    Plugin<'IDX', IDXPluginMethods, IDXPluginDependentMethods, 'read'>
+    Plugin<'IDX', IDXPluginMethods, 'read', IDXPluginDependentMethods>
 >;
 
 // Below types are temporary! They will be removed in the future when we are confident that everyone

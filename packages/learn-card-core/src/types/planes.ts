@@ -81,8 +81,8 @@ export type GetAlgorithmFromPlugin<P extends Plugin> = any extends P
     : Parameters<NonNullable<P['id']>['keypair']>[0];
 
 export type IdPlane<DidMethod extends string | undefined, Algorithm extends string | undefined> = {
-    did: (method?: DidMethod) => string;
-    keypair: (algorithm?: Algorithm) => JWK;
+    did: <T extends string | undefined = DidMethod>(method?: T) => string;
+    keypair: <T extends string | undefined = Algorithm>(algorithm?: T) => JWK;
 };
 
 export type IdPlugin<P extends Plugin, DidMethod extends string, Algorithm extends string> = P & {
@@ -90,5 +90,5 @@ export type IdPlugin<P extends Plugin, DidMethod extends string, Algorithm exten
 };
 
 export type WalletIdPlane<Plugins extends Plugin[]> = any[] extends Plugins
-    ? any
+    ? IdPlane<any, any>
     : IdPlane<GetDidMethodFromPlugin<Plugins[number]>, GetAlgorithmFromPlugin<Plugins[number]>>;

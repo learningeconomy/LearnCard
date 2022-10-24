@@ -8,7 +8,7 @@ export * from './types';
 /**
  * @group Plugins
  */
-export const getVpqrPlugin = (wallet: Wallet<any, VpqrPluginDependentMethods>): VpqrPlugin => {
+export const getVpqrPlugin = (wallet: Wallet<any, any, VpqrPluginDependentMethods>): VpqrPlugin => {
     return {
         name: 'Vpqr',
         methods: {

@@ -3,13 +3,12 @@ import { verifyCredential } from './verifyCredential';
 import { issuePresentation } from './issuePresentation';
 import { verifyPresentation } from './verifyPresentation';
 
-import { VCPlugin, VCPluginDependentMethods } from './types';
-import { Wallet } from 'types/wallet';
+import { VCDependentWallet, VCPlugin } from './types';
 
 /**
  * @group Plugins
  */
-export const getVCPlugin = (wallet: Wallet<any, VCPluginDependentMethods>): VCPlugin => {
+export const getVCPlugin = (wallet: VCDependentWallet): VCPlugin => {
     return {
         name: 'VC',
         methods: {

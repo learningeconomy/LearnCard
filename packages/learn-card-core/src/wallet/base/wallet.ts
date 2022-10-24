@@ -21,10 +21,10 @@ const addPluginToWallet = async <NewPlugin extends Plugin, Plugins extends Plugi
 
 const generateReadPlane = <
     Plugins extends Plugin[] = [],
-    PluginMethods = GetPluginMethods<Plugins>,
-    ControlPlanes extends GetPlanesForPlugins<Plugins> = GetPlanesForPlugins<Plugins>
+    ControlPlanes extends GetPlanesForPlugins<Plugins> = GetPlanesForPlugins<Plugins>,
+    PluginMethods = GetPluginMethods<Plugins>
 >(
-    wallet: Wallet<Plugins, PluginMethods, ControlPlanes> | Wallet<Plugins, PluginMethods, 'cache'>
+    wallet: Wallet<Plugins, ControlPlanes, PluginMethods> | Wallet<Plugins, 'cache', PluginMethods>
 ): ReadPlane => {
     return {
         get: async uri => {
@@ -55,10 +55,10 @@ const generateReadPlane = <
 
 const generateStorePlane = <
     Plugins extends Plugin[] = [],
-    PluginMethods = GetPluginMethods<Plugins>,
-    ControlPlanes extends GetPlanesForPlugins<Plugins> = GetPlanesForPlugins<Plugins>
+    ControlPlanes extends GetPlanesForPlugins<Plugins> = GetPlanesForPlugins<Plugins>,
+    PluginMethods = GetPluginMethods<Plugins>
 >(
-    wallet: Wallet<Plugins, PluginMethods, ControlPlanes>
+    wallet: Wallet<Plugins, ControlPlanes, PluginMethods>
 ): WalletStorePlane<Plugins> => {
     return wallet.plugins.reduce((acc, cur) => {
         if (cur.store) acc[cur.name as keyof typeof acc] = cur.store;
@@ -69,10 +69,10 @@ const generateStorePlane = <
 
 const generateIndexPlane = <
     Plugins extends Plugin[] = [],
-    PluginMethods = GetPluginMethods<Plugins>,
-    ControlPlanes extends GetPlanesForPlugins<Plugins> = GetPlanesForPlugins<Plugins>
+    ControlPlanes extends GetPlanesForPlugins<Plugins> = GetPlanesForPlugins<Plugins>,
+    PluginMethods = GetPluginMethods<Plugins>
 >(
-    wallet: Wallet<Plugins, PluginMethods, ControlPlanes>
+    wallet: Wallet<Plugins, ControlPlanes, PluginMethods>
 ): WalletIndexPlane<Plugins> => {
     const individualPlanes = wallet.plugins.reduce<Omit<WalletIndexPlane<Plugins>, 'all'>>(
         (acc, cur) => {
@@ -106,10 +106,10 @@ const generateIndexPlane = <
 
 const generateCachePlane = <
     Plugins extends Plugin[] = [],
-    PluginMethods = GetPluginMethods<Plugins>,
-    ControlPlanes extends GetPlanesForPlugins<Plugins> = GetPlanesForPlugins<Plugins>
+    ControlPlanes extends GetPlanesForPlugins<Plugins> = GetPlanesForPlugins<Plugins>,
+    PluginMethods = GetPluginMethods<Plugins>
 >(
-    wallet: Wallet<Plugins, PluginMethods, ControlPlanes>
+    wallet: Wallet<Plugins, ControlPlanes, PluginMethods>
 ): CachePlane => {
     return {
         getIndex: async query => {
@@ -177,13 +177,13 @@ const generateCachePlane = <
 
 const generateIdPlane = <
     Plugins extends Plugin[] = [],
-    PluginMethods = GetPluginMethods<Plugins>,
-    ControlPlanes extends GetPlanesForPlugins<Plugins> = GetPlanesForPlugins<Plugins>
+    ControlPlanes extends GetPlanesForPlugins<Plugins> = GetPlanesForPlugins<Plugins>,
+    PluginMethods = GetPluginMethods<Plugins>
 >(
-    wallet: Wallet<Plugins, PluginMethods, ControlPlanes>
+    wallet: Wallet<Plugins, ControlPlanes, PluginMethods>
 ): WalletIdPlane<Plugins> => {
     return {
-        did: method => {
+        did: (method: any) => {
             wallet.debug?.('wallet.id.did', method);
 
             const result = findFirstResult(wallet.plugins, plugin => {
@@ -200,20 +200,20 @@ const generateIdPlane = <
 
             return result;
         },
-        keypair: type => {
-            wallet.debug?.('wallet.id.keypair', type);
+        keypair: (algorithm: any) => {
+            wallet.debug?.('wallet.id.keypair', algorithm);
 
             const result = findFirstResult(wallet.plugins, plugin => {
                 try {
                     if (!plugin.id) return undefined;
 
-                    return plugin.id.keypair(type);
+                    return plugin.id.keypair(algorithm);
                 } catch (error) {
                     return undefined;
                 }
             });
 
-            if (!result) throw new Error(`No plugin supports keypair type ${type}`);
+            if (!result) throw new Error(`No plugin supports keypair type ${algorithm}`);
 
             return result;
         },
@@ -222,10 +222,10 @@ const generateIdPlane = <
 
 const bindMethods = <
     Plugins extends Plugin[] = [],
-    PluginMethods = GetPluginMethods<Plugins>,
-    ControlPlanes extends GetPlanesForPlugins<Plugins> = GetPlanesForPlugins<Plugins>
+    ControlPlanes extends GetPlanesForPlugins<Plugins> = GetPlanesForPlugins<Plugins>,
+    PluginMethods = GetPluginMethods<Plugins>
 >(
-    wallet: Wallet<Plugins, PluginMethods, ControlPlanes>,
+    wallet: Wallet<Plugins, ControlPlanes, PluginMethods>,
     pluginMethods: PluginMethods
 ): PluginMethods =>
     Object.fromEntries(
@@ -238,11 +238,11 @@ const bindMethods = <
 /** @group Universal Wallets */
 export const generateWallet = async <
     Plugins extends Plugin[] = [],
-    PluginMethods extends GetPluginMethods<Plugins> = GetPluginMethods<Plugins>,
-    ControlPlanes extends GetPlanesForPlugins<Plugins> = GetPlanesForPlugins<Plugins>
+    ControlPlanes extends GetPlanesForPlugins<Plugins> = GetPlanesForPlugins<Plugins>,
+    PluginMethods extends GetPluginMethods<Plugins> = GetPluginMethods<Plugins>
 >(
-    _wallet: Partial<Wallet<Plugins, PluginMethods, ControlPlanes>> = {}
-): Promise<Wallet<Plugins, PluginMethods, ControlPlanes>> => {
+    _wallet: Partial<Wallet<Plugins, ControlPlanes, PluginMethods>> = {}
+): Promise<Wallet<Plugins, ControlPlanes, PluginMethods>> => {
     const { plugins = [] as unknown as Plugins } = _wallet;
 
     const pluginMethods = plugins.reduce<PluginMethods>((cumulativePluginMethods, plugin) => {
@@ -251,7 +251,7 @@ export const generateWallet = async <
         return newPluginMethods;
     }, {} as PluginMethods);
 
-    const wallet: Wallet<Plugins, PluginMethods, ControlPlanes> = {
+    const wallet: Wallet<Plugins, ControlPlanes, PluginMethods> = {
         read: {} as ReadPlane,
         store: {} as WalletStorePlane<Plugins>,
         index: {} as WalletIndexPlane<Plugins>,

@@ -5,7 +5,7 @@ import { ExpirationPlugin } from './types';
 /**
  * @group Plugins
  */
-export const expirationPlugin = (wallet: Wallet<any, VerifyExtension>): ExpirationPlugin => ({
+export const expirationPlugin = (wallet: Wallet<any, any, VerifyExtension>): ExpirationPlugin => ({
     name: 'Expiration',
     methods: {
         verifyCredential: async (_wallet, credential) => {

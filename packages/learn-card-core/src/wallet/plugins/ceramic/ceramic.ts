@@ -22,7 +22,7 @@ import { Wallet } from 'types/wallet';
  * @group Plugins
  */
 export const getCeramicPlugin = async <URI extends string = ''>(
-    wallet: Wallet<any, CeramicPluginDependentMethods<URI>>,
+    wallet: Wallet<any, any, CeramicPluginDependentMethods<URI>>,
     { ceramicEndpoint, defaultContentFamily }: CeramicArgs
 ): Promise<CeramicPlugin> => {
     const ceramic = new CeramicClient(ceramicEndpoint);

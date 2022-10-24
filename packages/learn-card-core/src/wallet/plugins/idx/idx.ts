@@ -17,7 +17,7 @@ import { Wallet } from 'types/wallet';
  * @group Plugins
  */
 export const getIDXPlugin = async <URI extends string = ''>(
-    wallet: Wallet<any, IDXPluginDependentMethods<URI>, 'read'>,
+    wallet: Wallet<any, 'read', IDXPluginDependentMethods<URI>>,
     { modelData, credentialAlias }: IDXArgs
 ): Promise<IDXPlugin> => {
     const ceramic = wallet.invoke.getCeramicClient();
