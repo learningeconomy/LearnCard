@@ -1,11 +1,21 @@
 import { IDXCredential, VC, JWK } from '@learncard/types';
 import { Plugin } from './wallet';
 
+export type ControlPlane = 'read' | 'store' | 'index' | 'cache' | 'id';
+
 export type FilterForPlane<Plugins extends Plugin[], Plane extends keyof Plugins[number]> = {
     [Index in keyof Plugins]: undefined extends Plugins[Index][Plane]
     ? never
     : Plugins[Index]['name'];
 }[number];
+
+export type GetPlanesForPlugins<Plugins extends Plugin[]> = any[] extends Plugins
+    ? never
+    : {
+        [Index in keyof Plugins]: {
+            [Key in ControlPlane]: undefined extends Plugins[Index][Key] ? never : Key;
+        }[ControlPlane];
+    }[number];
 
 // --- Read ---
 

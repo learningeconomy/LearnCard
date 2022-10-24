@@ -42,7 +42,9 @@ export const CredentialsListValidator: z.ZodType<CredentialsList> = z
     .strict();
 
 /** @group IDXPlugin */
-export type IDXPlugin = IndexPlugin<Plugin<'IDX', IDXPluginMethods, IDXPluginDependentMethods>>;
+export type IDXPlugin = IndexPlugin<
+    Plugin<'IDX', IDXPluginMethods, IDXPluginDependentMethods, 'read'>
+>;
 
 // Below types are temporary! They will be removed in the future when we are confident that everyone
 // has moved on to the new schema

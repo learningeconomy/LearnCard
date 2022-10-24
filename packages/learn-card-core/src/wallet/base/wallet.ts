@@ -1,5 +1,6 @@
 import { Plugin, Wallet, GetPluginMethods } from 'types/wallet';
 import {
+    GetPlanesForPlugins,
     ReadPlane,
     CachePlane,
     IndexPlane,
@@ -15,11 +16,15 @@ const addPluginToWallet = async <NewPlugin extends Plugin, Plugins extends Plugi
 ): Promise<Wallet<[...Plugins, NewPlugin]>> => {
     wallet.debug?.('Adding plugin', plugin.name);
     // eslint-disable-next-line
-    return generateWallet({ plugins: [...wallet.plugins, plugin], debug: wallet.debug });
+    return (generateWallet as any)({ plugins: [...wallet.plugins, plugin], debug: wallet.debug });
 };
 
-const bindReadPlane = <Plugins extends Plugin[] = [], PluginMethods = GetPluginMethods<Plugins>>(
-    wallet: Wallet<Plugins, PluginMethods>
+const generateReadPlane = <
+    Plugins extends Plugin[] = [],
+    PluginMethods = GetPluginMethods<Plugins>,
+    ControlPlanes extends GetPlanesForPlugins<Plugins> = GetPlanesForPlugins<Plugins>
+>(
+    wallet: Wallet<Plugins, PluginMethods, ControlPlanes> | Wallet<Plugins, PluginMethods, 'cache'>
 ): ReadPlane => {
     return {
         get: async uri => {
@@ -27,9 +32,11 @@ const bindReadPlane = <Plugins extends Plugin[] = [], PluginMethods = GetPluginM
 
             if (!uri) return undefined;
 
-            const cachedResponse = await wallet.cache.getVc(uri);
+            if ('cache' in wallet) {
+                const cachedResponse = await wallet.cache.getVc(uri);
 
-            if (cachedResponse) return cachedResponse;
+                if (cachedResponse) return cachedResponse;
+            }
 
             const vc = await Promise.any(
                 wallet.plugins.map(async plugin => {
@@ -39,15 +46,19 @@ const bindReadPlane = <Plugins extends Plugin[] = [], PluginMethods = GetPluginM
                 })
             );
 
-            if (vc) await wallet.cache.setVc?.(uri, vc);
+            if (vc && 'cache' in wallet) await wallet.cache.setVc(uri, vc);
 
             return vc;
         },
     };
 };
 
-const bindStorePlane = <Plugins extends Plugin[] = [], PluginMethods = GetPluginMethods<Plugins>>(
-    wallet: Wallet<Plugins, PluginMethods>
+const generateStorePlane = <
+    Plugins extends Plugin[] = [],
+    PluginMethods = GetPluginMethods<Plugins>,
+    ControlPlanes extends GetPlanesForPlugins<Plugins> = GetPlanesForPlugins<Plugins>
+>(
+    wallet: Wallet<Plugins, PluginMethods, ControlPlanes>
 ): WalletStorePlane<Plugins> => {
     return wallet.plugins.reduce((acc, cur) => {
         if (cur.store) acc[cur.name as keyof typeof acc] = cur.store;
@@ -56,8 +67,12 @@ const bindStorePlane = <Plugins extends Plugin[] = [], PluginMethods = GetPlugin
     }, {} as WalletStorePlane<Plugins>);
 };
 
-const bindIndexPlane = <Plugins extends Plugin[] = [], PluginMethods = GetPluginMethods<Plugins>>(
-    wallet: Wallet<Plugins, PluginMethods>
+const generateIndexPlane = <
+    Plugins extends Plugin[] = [],
+    PluginMethods = GetPluginMethods<Plugins>,
+    ControlPlanes extends GetPlanesForPlugins<Plugins> = GetPlanesForPlugins<Plugins>
+>(
+    wallet: Wallet<Plugins, PluginMethods, ControlPlanes>
 ): WalletIndexPlane<Plugins> => {
     const individualPlanes = wallet.plugins.reduce<Omit<WalletIndexPlane<Plugins>, 'all'>>(
         (acc, cur) => {
@@ -89,8 +104,12 @@ const bindIndexPlane = <Plugins extends Plugin[] = [], PluginMethods = GetPlugin
     return { ...individualPlanes, all } as WalletIndexPlane<Plugins>;
 };
 
-const bindCachePlane = <Plugins extends Plugin[] = [], PluginMethods = GetPluginMethods<Plugins>>(
-    wallet: Wallet<Plugins, PluginMethods>
+const generateCachePlane = <
+    Plugins extends Plugin[] = [],
+    PluginMethods = GetPluginMethods<Plugins>,
+    ControlPlanes extends GetPlanesForPlugins<Plugins> = GetPlanesForPlugins<Plugins>
+>(
+    wallet: Wallet<Plugins, PluginMethods, ControlPlanes>
 ): CachePlane => {
     return {
         getIndex: async query => {
@@ -156,8 +175,12 @@ const bindCachePlane = <Plugins extends Plugin[] = [], PluginMethods = GetPlugin
     };
 };
 
-const bindIdPlane = <Plugins extends Plugin[] = [], PluginMethods = GetPluginMethods<Plugins>>(
-    wallet: Wallet<Plugins, PluginMethods>
+const generateIdPlane = <
+    Plugins extends Plugin[] = [],
+    PluginMethods = GetPluginMethods<Plugins>,
+    ControlPlanes extends GetPlanesForPlugins<Plugins> = GetPlanesForPlugins<Plugins>
+>(
+    wallet: Wallet<Plugins, PluginMethods, ControlPlanes>
 ): WalletIdPlane<Plugins> => {
     return {
         did: method => {
@@ -197,8 +220,12 @@ const bindIdPlane = <Plugins extends Plugin[] = [], PluginMethods = GetPluginMet
     };
 };
 
-const bindMethods = <Plugins extends Plugin[] = [], PluginMethods = GetPluginMethods<Plugins>>(
-    wallet: Wallet<Plugins, PluginMethods>,
+const bindMethods = <
+    Plugins extends Plugin[] = [],
+    PluginMethods = GetPluginMethods<Plugins>,
+    ControlPlanes extends GetPlanesForPlugins<Plugins> = GetPlanesForPlugins<Plugins>
+>(
+    wallet: Wallet<Plugins, PluginMethods, ControlPlanes>,
     pluginMethods: PluginMethods
 ): PluginMethods =>
     Object.fromEntries(
@@ -206,15 +233,16 @@ const bindMethods = <Plugins extends Plugin[] = [], PluginMethods = GetPluginMet
             key,
             method.bind(wallet, wallet),
         ])
-    ) as any as PluginMethods;
+    );
 
 /** @group Universal Wallets */
 export const generateWallet = async <
     Plugins extends Plugin[] = [],
-    PluginMethods extends GetPluginMethods<Plugins> = GetPluginMethods<Plugins>
+    PluginMethods extends GetPluginMethods<Plugins> = GetPluginMethods<Plugins>,
+    ControlPlanes extends GetPlanesForPlugins<Plugins> = GetPlanesForPlugins<Plugins>
 >(
-    _wallet: Partial<Wallet<Plugins, PluginMethods>> = {}
-): Promise<Wallet<Plugins, PluginMethods>> => {
+    _wallet: Partial<Wallet<Plugins, PluginMethods, ControlPlanes>> = {}
+): Promise<Wallet<Plugins, PluginMethods, ControlPlanes>> => {
     const { plugins = [] as unknown as Plugins } = _wallet;
 
     const pluginMethods = plugins.reduce<PluginMethods>((cumulativePluginMethods, plugin) => {
@@ -223,7 +251,7 @@ export const generateWallet = async <
         return newPluginMethods;
     }, {} as PluginMethods);
 
-    const wallet: Wallet<Plugins, PluginMethods> = {
+    const wallet: Wallet<Plugins, PluginMethods, ControlPlanes> = {
         read: {} as ReadPlane,
         store: {} as WalletStorePlane<Plugins>,
         index: {} as WalletIndexPlane<Plugins>,
@@ -232,16 +260,16 @@ export const generateWallet = async <
         plugins: plugins as Plugins,
         invoke: pluginMethods,
         addPlugin: function(plugin) {
-            return addPluginToWallet(this, plugin);
+            return addPluginToWallet(this as any, plugin);
         },
         debug: _wallet.debug,
     };
 
-    wallet.read = bindReadPlane(wallet);
-    wallet.store = bindStorePlane(wallet);
-    wallet.index = bindIndexPlane(wallet);
-    wallet.cache = bindCachePlane(wallet);
-    wallet.id = bindIdPlane(wallet);
+    (wallet as any).read = generateReadPlane(wallet);
+    (wallet as any).store = generateStorePlane(wallet);
+    (wallet as any).index = generateIndexPlane(wallet);
+    (wallet as any).cache = generateCachePlane(wallet);
+    (wallet as any).id = generateIdPlane(wallet);
 
     if (pluginMethods) wallet.invoke = bindMethods(wallet, pluginMethods);
 

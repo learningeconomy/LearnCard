@@ -17,7 +17,7 @@ import { Wallet } from 'types/wallet';
  * @group Plugins
  */
 export const getIDXPlugin = async <URI extends string = ''>(
-    wallet: Wallet<any, IDXPluginDependentMethods<URI>>,
+    wallet: Wallet<any, IDXPluginDependentMethods<URI>, 'read'>,
     { modelData, credentialAlias }: IDXArgs
 ): Promise<IDXPlugin> => {
     const ceramic = wallet.invoke.getCeramicClient();
@@ -86,7 +86,7 @@ export const getIDXPlugin = async <URI extends string = ''>(
         if (!record.uri) throw Error('No URI provided');
 
         // Make sure URI can be resolved
-        await wallet.invoke.resolveCredential(record.uri);
+        await wallet.read.get(record.uri);
 
         const existing = await getCredentialsListFromIdx(credentialAlias);
 
@@ -151,17 +151,15 @@ export const getIDXPlugin = async <URI extends string = ''>(
                 const credentialList = await getCredentialsListFromIdx();
                 const credential = credentialList?.credentials?.find(cred => cred?.id === id);
 
-                return credential?.uri
-                    ? _wallet.invoke.resolveCredential(credential.uri)
-                    : undefined;
+                return credential?.uri ? _wallet.read.get(credential.uri) : undefined;
             },
             getVerifiableCredentialsFromIdx: async _wallet => {
                 const credentialList = await getCredentialsListFromIdx();
                 const uris = credentialList?.credentials?.map(credential => credential?.uri) ?? [];
 
-                return (
-                    await Promise.all(uris.map(async uri => _wallet.invoke.resolveCredential(uri)))
-                ).filter((vc): vc is VC => !!vc);
+                return (await Promise.all(uris.map(async uri => _wallet.read.get(uri)))).filter(
+                    (vc): vc is VC => !!vc
+                );
             },
             addVerifiableCredentialInIdx: async (_wallet, idxCredential) => {
                 const record = IDXCredentialValidator.parse(idxCredential);
@@ -171,7 +169,7 @@ export const getIDXPlugin = async <URI extends string = ''>(
                 if (!record.uri) throw Error('No URI provided');
 
                 // Make sure URI can be resolved
-                await _wallet.invoke.resolveCredential(record.uri);
+                await _wallet.read.get(record.uri);
 
                 const existing = await getCredentialsListFromIdx(credentialAlias);
 
