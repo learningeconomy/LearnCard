@@ -11,6 +11,9 @@ import { VCDependentWallet, VCPlugin } from './types';
 export const getVCPlugin = (wallet: VCDependentWallet): VCPlugin => {
     return {
         name: 'VC',
+        displayName: 'VC',
+        description:
+            'Handles the infrastructure needed to issue and verify credentials and presentations',
         methods: {
             issueCredential: issueCredential(wallet),
             verifyCredential: verifyCredential(wallet),

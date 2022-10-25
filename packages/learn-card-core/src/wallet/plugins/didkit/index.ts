@@ -29,6 +29,9 @@ export const getDidKitPlugin = async (
 
     return {
         name: 'DIDKit',
+        displayName: 'DIDKit',
+        description:
+            'Provides an interface to DIDKit, which allows for the generation of key material, as well as signing and verifying credentials and presentations',
         methods: {
             generateEd25519KeyFromBytes: (_wallet, bytes) =>
                 JSON.parse(generateEd25519KeyFromBytes(bytes)),

@@ -11,6 +11,8 @@ export * from './types';
 export const getVpqrPlugin = (wallet: Wallet<any, any, VpqrPluginDependentMethods>): VpqrPlugin => {
     return {
         name: 'Vpqr',
+        displayName: 'VP QR',
+        description: 'Allows reading and creating QR codes with Verifiable Presentations in them',
         methods: {
             vpFromQrCode: async (_wallet, text) => {
                 return (

@@ -32,6 +32,9 @@ export const getVCAPIPlugin = async ({
 
     return {
         name: 'VC API',
+        displayName: 'VC API',
+        description:
+            'Handles issuing and signing credentials/presentations using an external VC API',
         id: {
             did: () => did!,
             keypair: () => {

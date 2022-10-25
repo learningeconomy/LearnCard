@@ -10,7 +10,9 @@ export * from './types';
 export const getLearnCardPlugin = (
     wallet: Wallet<any, any, LearnCardPluginDependentMethods>
 ): LearnCardPlugin => ({
-    name: 'Learn Card',
+    name: 'LearnCard',
+    displayName: 'LearnCard',
+    description: 'Adds opinionated LearnCard logic to a wallet',
     methods: {
         verifyCredential: verifyCredential(wallet) as any,
     },

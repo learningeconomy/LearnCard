@@ -18,20 +18,20 @@ export type GetPlanesForPlugins<Plugins extends Plugin[]> = any[] extends Plugin
           }[ControlPlane];
       }[number];
 
-export type GetPlaneProviders<Plugins extends Plugin[], Plane extends ControlPlane> =
-    any[] extends Plugins
-        ? any
-        : {
-              [Index in keyof Plugins]: undefined extends Plugins[Index][Plane]
-                  ? never
-                  : OmitNevers<
-                        {
-                            [Name in Plugins[number]['name']]: Name extends Plugins[Index]['name']
-                                ? { name: Name }
-                                : never;
-                        }
-                    >;
-          }[number];
+export type GetPlaneProviders<
+    Plugins extends Plugin[],
+    Plane extends ControlPlane
+> = any[] extends Plugins
+    ? any
+    : {
+          [Index in keyof Plugins]: undefined extends Plugins[Index][Plane]
+              ? never
+              : OmitNevers<{
+                    [Name in Plugins[number]['name']]: Name extends Plugins[Index]['name']
+                        ? { name: Name; displayName?: string; description?: string }
+                        : never;
+                }>;
+      }[number];
 
 // --- Read ---
 

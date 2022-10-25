@@ -1,4 +1,4 @@
-import { Plugin, Wallet, GetPluginMethods, AddImplicitWalletArgument } from 'types/wallet';
+import { Plugin, Wallet, GetPluginMethods } from 'types/wallet';
 import {
     ControlPlane,
     GetPlanesForPlugins,
@@ -18,7 +18,11 @@ const getPlaneProviders = <Plugins extends Plugin[], Plane extends ControlPlane>
 ): GetPlaneProviders<Plugins, Plane> => {
     return plugins.reduce((providers, plugin) => {
         if (plane in plugin) {
-            providers[plugin.name as keyof typeof providers] = { name: plugin.name } as any;
+            providers[plugin.name as keyof typeof providers] = {
+                name: plugin.name,
+                displayName: plugin.displayName,
+                description: plugin.description,
+            } as any;
         }
 
         return providers;
@@ -298,7 +302,7 @@ export const generateWallet = async <
         id: {} as WalletIdPlane<Plugins>,
         plugins: plugins as Plugins,
         invoke: pluginMethods,
-        addPlugin: function (plugin) {
+        addPlugin: function(plugin) {
             return addPluginToWallet(this as any, plugin);
         },
         debug: _wallet.debug,

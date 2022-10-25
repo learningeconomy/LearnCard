@@ -103,6 +103,8 @@ export const getIDXPlugin = async <URI extends string = ''>(
 
     return {
         name: 'IDX',
+        displayName: 'IDX',
+        description: 'Stores a bespoke index of credentials for an individual based on their did',
         index: {
             get: async _wallet => {
                 _wallet.debug?.('wallet.index.IDX.get');

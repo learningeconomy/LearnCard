@@ -7,6 +7,8 @@ import { ExpirationPlugin } from './types';
  */
 export const expirationPlugin = (wallet: Wallet<any, any, VerifyExtension>): ExpirationPlugin => ({
     name: 'Expiration',
+    displayName: 'Expiration Extension',
+    description: "Adds a check to make sure credentials aren't expired when verifying them",
     methods: {
         verifyCredential: async (_wallet, credential) => {
             const verificationCheck = await wallet.invoke.verifyCredential(credential);

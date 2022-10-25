@@ -107,6 +107,8 @@ export const getEthereumPlugin = (
 
     return {
         name: 'Ethereum',
+        displayName: 'Ethereum',
+        description: 'Provides access to currency',
         methods: {
             getEthereumAddress: () => publicKey,
 

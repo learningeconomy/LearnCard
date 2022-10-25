@@ -34,6 +34,9 @@ export const getCHAPIPlugin = async (): Promise<CHAPIPlugin> => {
 
     return {
         name: 'CHAPI',
+        displayName: 'CHAPI',
+        description:
+            'Credential Handler API. Allows sending/retrieving credentials across wallets and issuers',
         methods: {
             installChapiHandler: async () => installHandler(),
             activateChapiHandler: async (

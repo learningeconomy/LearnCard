@@ -61,6 +61,8 @@ export type Plugin<
     DependentMethods extends Record<string, (...args: any[]) => any> = Record<never, never>
 > = {
     name: Name;
+    displayName?: string;
+    description?: string;
     methods: AddImplicitWalletArgument<
         Methods,
         ControlPlanes,

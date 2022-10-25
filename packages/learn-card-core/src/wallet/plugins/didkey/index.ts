@@ -60,6 +60,8 @@ export const getDidKeyPlugin = async <DidMethod extends string>(
 
     return {
         name: 'DID Key',
+        displayName: 'DID Key',
+        description: 'Generates dids and JWKs using 32 Secure Random Bytes of Entropy',
         id: {
             did: (_wallet, method) => did(method as any),
             keypair: (_wallet, algorithm) => keypair(algorithm as any),

@@ -94,6 +94,9 @@ export const getCeramicPlugin = async <URI extends string = ''>(
 
     return {
         name: 'Ceramic',
+        displayName: 'Ceramic',
+        description:
+            'Uploads/resolves credentials using the Ceramic Network (https://ceramic.network/)',
         store: {
             upload: async (_wallet, vc) => {
                 wallet.debug?.('wallet.store.Ceramic.upload');

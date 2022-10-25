@@ -8,6 +8,8 @@ import { VCTemplatePlugin } from './types';
 export const getVCTemplatesPlugin = (): VCTemplatePlugin => {
     return {
         name: 'VC Templates',
+        displayName: 'VC Templates',
+        description: 'Allows for the easy creation of VCs and VPs based on predefined templates',
         methods: {
             newCredential: (_wallet, args = { type: 'basic' }) => {
                 const did = args.did || _wallet.id.did?.('key');

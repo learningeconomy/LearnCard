@@ -19,7 +19,7 @@ export type LearnCardPluginMethods = {
 
 /** @group LearnCard Plugin */
 export type LearnCardPlugin = Plugin<
-    'Learn Card',
+    'LearnCard',
     any,
     LearnCardPluginMethods,
     any,
