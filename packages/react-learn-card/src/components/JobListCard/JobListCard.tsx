@@ -16,7 +16,7 @@ const TYPE_TO_TEXT_COLOR: any = {
 };
 
 type JobListingBubbleProps = {
-    count: number | string;
+    count: number | string | undefined;
     type: LCSubtypes.course | LCSubtypes.achievement | LCSubtypes.skill;
     className?: string;
 };
