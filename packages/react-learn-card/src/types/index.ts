@@ -194,6 +194,7 @@ export type SkillTabCardProps = {
 
 export type JobHistoryCardProps = {
     title?: string;
+    company?: string;
     description?: string;
     dateRange?: string;
     jobType?: string;

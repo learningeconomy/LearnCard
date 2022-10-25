@@ -4,20 +4,29 @@ import { JobHistoryCardProps } from '../../types';
 export const JobHistoryCard: React.FC<JobHistoryCardProps> = ({
     className,
     title,
+    company,
     description,
     dateRange,
     jobType,
     onClick,
 }) => {
-    //const imgSrc = TYPE_TO_MINI_ICON[type];
-    //  const bgColor = TYPE_TO_COLOR[type];
-    // const textColor = TYPE_TO_TEXT_COLOR[type];
-
     return (
         <div
-            className={`relative job-card-stat-bubble px-[10px] px-[5px] flex-nowrap rounded-[30px] flex min-w-[48px] min-w-[90px] h-[30px] justify-center items-center ${className}`}
+            className={`flex h-[88px] max-w-[335px] justify-between shadow-[0_0_8px_0px_rgba(0,0,0,0.2)] relative $ py-[10px] px-[15px] rounded-[20px] ${className}`}
         >
-            JOB HISTORY CARD
+            {dateRange && (
+                <div className="flex flex-shrink-0 rounded-[20px]  bg-emerald-600 pl-[15px] font-bold text-grayscale-50 job-card-date-display w-[108px] h-full items-center">
+                    <p className="line-clamp-2">{dateRange}</p>
+                </div>
+            )}
+            <div className="flex flex-grow flex-col job-history-details-display pl-[12px]">
+                <p className="text-grayscale-900 font-bold line-clamp-1">{title}</p>
+                <p className="text-grayscale-600 text-sm line-clamp-1">{company}</p>
+                <p className="text-sm text-indigo-700 uppercase font-bold line-clamp-1">{jobType}</p>
+            </div>
+            <div className="flex">
+                <p></p>
+            </div>
         </div>
     );
 };
