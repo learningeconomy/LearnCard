@@ -18,7 +18,7 @@ export const JobHistoryCard: React.FC<JobHistoryCardProps> = ({
     return (
         <div
             onClick={handleClick}
-            className={`flex h-[88px] max-w-[335px] justify-between shadow-[0_0_8px_0px_rgba(0,0,0,0.2)] relative $ py-[10px] px-[15px] rounded-[20px] ${className}`}
+            className={`job-history-card flex h-[88px] max-w-[335px] justify-between shadow-[0_0_8px_0px_rgba(0,0,0,0.2)] relative $ py-[10px] px-[15px] rounded-[20px] ${className}`}
         >
             {dateRange && (
                 <div className="flex flex-shrink-0 rounded-[20px]  bg-emerald-600 pl-[15px] font-bold text-grayscale-50 job-card-date-display w-[108px] h-full items-center">
