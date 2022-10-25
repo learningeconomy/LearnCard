@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.3.44
+
+### Patch Changes
+
+-   [#128](https://github.com/learningeconomy/LearnCard/pull/128) [`e67119e`](https://github.com/learningeconomy/LearnCard/commit/e67119e978d4df324aa71235c3b202b3e8bdde7c) Thanks [@goblincore](https://github.com/goblincore)! - Small UI updates - add generic display card, job history card, update job listing card
+
 ## 2.3.43
 
 ### Patch Changes
