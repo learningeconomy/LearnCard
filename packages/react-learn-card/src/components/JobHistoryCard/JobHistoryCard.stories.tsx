@@ -17,6 +17,7 @@ JobHistoryCardTest.args = {
     title: 'Title of Job',
     company: 'Taco Bell',
     jobType: 'Full-Time',
+    showArrow: false,
     dateRange: 'JUL 2021 - JAN 2022',
     description: 'Job description history lorum ipsum potato tomato wee',
     onClick: () => {
