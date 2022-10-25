@@ -9,6 +9,8 @@ export * from "./CircleIcon/index";
 export * from "./CourseCard/index";
 export * from "./CourseVerticalCard/index";
 export * from "./FlippyCard/index";
+export * from "./GenericCard/index";
+export * from "./JobHistoryCard/index";
 export * from "./JobListCard/index";
 export * from "./LearnCardCreditCardBackFace/index";
 export * from "./LearnCardCreditCardFrontFace/index";
