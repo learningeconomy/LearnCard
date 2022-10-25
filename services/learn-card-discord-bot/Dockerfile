@@ -9,8 +9,8 @@ WORKDIR /root/monorepo
 COPY ../.. . 
 # ↑ Copy the whole repository and let pnpm filter what to run
 RUN pnpm install --filter "learn-card-discord-bot..."
-RUN pnpm build --filter "learn-card-discord-bot..."
-RUN pnpm test --if-present --filter "learn-card-discord-bot"
+#RUN pnpm build --filter "learn-card-discord-bot..."
+#RUN pnpm test --if-present --filter "learn-card-discord-bot"
 
 RUN ls -al -R
 
