@@ -198,4 +198,5 @@ export type JobHistoryCardProps = {
     dateRange?: string;
     jobType?: string;
     className?: string;
+    onClick?: () => void;
 };
