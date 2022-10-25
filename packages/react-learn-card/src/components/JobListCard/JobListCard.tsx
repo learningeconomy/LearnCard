@@ -10,13 +10,13 @@ const TYPE_TO_COLOR: any = {
 };
 
 const TYPE_TO_TEXT_COLOR: any = {
-    course : 'text-emerald-700',
+    course: 'text-emerald-700',
     achievement: 'text-spice-500',
     skill: 'text-indigo-600',
 };
 
 type JobListingBubbleProps = {
-    count: number | string;
+    count: number | string | undefined;
     type: LCSubtypes.course | LCSubtypes.achievement | LCSubtypes.skill;
     className?: string;
 };
@@ -29,6 +29,7 @@ export const JobListingBubble: React.FC<JobListingBubbleProps> = ({
     const imgSrc = TYPE_TO_MINI_ICON[type];
     const bgColor = TYPE_TO_COLOR[type];
     const textColor = TYPE_TO_TEXT_COLOR[type];
+    if (count === 0) return <></>;
     return (
         <div
             className={`job-card-stat-bubble px-[10px] px-[5px] flex-nowrap rounded-[30px] flex ${bgColor} min-w-[48px] min-w-[90px] h-[30px] justify-center items-center ${className}`}
@@ -55,15 +56,25 @@ export const JobListCard: React.FC<JobListCardProps> = ({
     onBookmark,
     onClick,
 }) => {
-    const courseCountDisplay = `${qualificationDisplay?.courses?.fulfilledCount ?? 0}/${
-        qualificationDisplay?.courses?.totalRequiredCount ?? 0
-    }`;
-    const achievementsCountDisplay = `${qualificationDisplay?.achievements?.fulfilledCount ?? 0}/${
-        qualificationDisplay?.achievements?.totalRequiredCount ?? 0
-    }`;
-    const skillsCountDisplay = `${qualificationDisplay?.skills?.fulfilledCount ?? 0}/${
-        qualificationDisplay?.skills?.totalRequiredCount ?? 0
-    }`;
+    const courseReqCount = qualificationDisplay?.courses?.totalRequiredCount;
+    const achievementsReqCount = qualificationDisplay?.achievements?.totalRequiredCount;
+    const skillsReqCount = qualificationDisplay?.skills?.totalRequiredCount;
+
+    const courseCountDisplay =
+        courseReqCount &&
+        `${qualificationDisplay?.courses?.fulfilledCount ?? 0}/${
+            qualificationDisplay?.courses?.totalRequiredCount ?? 0
+        }`;
+    const achievementsCountDisplay =
+        achievementsReqCount &&
+        `${qualificationDisplay?.achievements?.fulfilledCount ?? 0}/${
+            qualificationDisplay?.achievements?.totalRequiredCount ?? 0
+        }`;
+    const skillsCountDisplay =
+        skillsReqCount &&
+        `${qualificationDisplay?.skills?.fulfilledCount ?? 0}/${
+            qualificationDisplay?.skills?.totalRequiredCount ?? 0
+        }`;
 
     const qualifiedText = percentQualifiedDisplay
         ? `${percentQualifiedDisplay}% Qualified - Apply`
@@ -110,27 +121,23 @@ export const JobListCard: React.FC<JobListCardProps> = ({
 
             <div className="job-listing-qualifications mt-[10px]">
                 <div className="course-card-counts-container flex items-center flex-wrap">
-                    {qualificationDisplay?.courses?.fulfilledCount && (
-                        <JobListingBubble
-                            type={LCSubtypes.course}
-                            count={courseCountDisplay}
-                            className={'mr-[5px] min-w-[100px]'}
-                        />
-                    )}
-                    {qualificationDisplay?.achievements?.fulfilledCount && (
-                        <JobListingBubble
-                            type={LCSubtypes.achievement}
-                            count={achievementsCountDisplay}
-                            className={'mr-[5px] min-w-[100px]'}
-                        />
-                    )}
-                    {qualificationDisplay?.skills?.fulfilledCount && (
-                        <JobListingBubble
-                            type={LCSubtypes.skill}
-                            count={skillsCountDisplay}
-                            className={'mr-[0px min-w-[100px]]'}
-                        />
-                    )}
+                    <JobListingBubble
+                        type={LCSubtypes.course}
+                        count={courseCountDisplay}
+                        className={'mr-[5px] min-w-[100px]'}
+                    />
+
+                    <JobListingBubble
+                        type={LCSubtypes.achievement}
+                        count={achievementsCountDisplay}
+                        className={'mr-[5px] min-w-[100px]'}
+                    />
+
+                    <JobListingBubble
+                        type={LCSubtypes.skill}
+                        count={skillsCountDisplay}
+                        className={'mr-[0px min-w-[100px]]'}
+                    />
                 </div>
             </div>
 

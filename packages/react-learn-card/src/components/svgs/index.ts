@@ -5,6 +5,7 @@
 export * from "./Briefcase";
 export * from "./Checkmark";
 export * from "./Coins";
+export * from "./GenericArrow";
 export * from "./Graduation";
 export * from "./Lightbulb";
 export * from "./Trophy";
