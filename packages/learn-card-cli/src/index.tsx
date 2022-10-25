@@ -1,7 +1,7 @@
 import fs from 'fs/promises';
 import repl from 'pretty-repl';
 
-import { initLearnCard, emptyWallet, walletFromKey } from '@learncard/core';
+import { initLearnCard, emptyWallet, walletFromKey, getTestCache } from '@learncard/core';
 import types from '@learncard/types';
 import gradient from 'gradient-string';
 import figlet from 'figlet';
@@ -46,6 +46,7 @@ program
             didkit: fs.readFile(require.resolve('@learncard/core/dist/didkit/didkit_wasm_bg.wasm')),
         });
         globalThis.types = types;
+        globalThis.getTestCache = getTestCache;
 
         // delete 'Creating wallet...' message
         process.stdout.moveCursor(0, -1);
