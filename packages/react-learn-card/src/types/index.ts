@@ -191,3 +191,11 @@ export type SkillTabCardProps = {
     onCheckClicked?: () => void;
     onClick?: () => void;
 };
+
+export type JobHistoryCardProps = {
+    title?: string;
+    description?: string;
+    dateRange?: string;
+    jobType?: string;
+    className?: string;
+};
