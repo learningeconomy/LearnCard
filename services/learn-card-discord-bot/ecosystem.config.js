@@ -5,9 +5,11 @@ module.exports = {
     watch: '.',
     env: {
       NODE_ENV: "development",
+      PORT: 8080
     },
     env_production: {
       NODE_ENV: "production",
+      PORT: 8080
     }
   }, {
     script: './service-worker/',
