@@ -14,4 +14,4 @@ export type ResolutionExtension<URI extends string> = {
     resolveCredential: (uri?: LC_URI<URI>) => Promise<VC | undefined>;
 };
 
-export type VCResolutionPluginType = Plugin<'VC Resolution', VCResolutionPluginMethods>;
+export type VCResolutionPluginType = Plugin<'VC Resolution', any, VCResolutionPluginMethods>;

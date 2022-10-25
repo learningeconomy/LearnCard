@@ -49,4 +49,4 @@ export type VCImplicitWallet = Wallet<any, 'id', VCPluginMethods & VCPluginDepen
 export type VerifyExtension = { verifyCredential: (credential: VC) => Promise<VerificationCheck> };
 
 /** @group VC Plugin */
-export type VCPlugin = Plugin<'VC', VCPluginMethods, 'id', VCPluginDependentMethods>;
+export type VCPlugin = Plugin<'VC', any, VCPluginMethods, 'id', VCPluginDependentMethods>;

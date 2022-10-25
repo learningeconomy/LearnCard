@@ -60,7 +60,10 @@ export const getDidKeyPlugin = async <DidMethod extends string>(
 
     return {
         name: 'DID Key',
-        id: { did: did as any, keypair: keypair as any },
+        id: {
+            did: (_wallet, method) => did(method as any),
+            keypair: (_wallet, algorithm) => keypair(algorithm as any),
+        },
         methods: {
             getSubjectDid: (_wallet, method = defaultDidMethod) => did(method),
             getSubjectKeypair: (_wallet, algorithm = 'ed25519') => keypair(algorithm),

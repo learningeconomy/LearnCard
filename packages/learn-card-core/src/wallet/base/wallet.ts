@@ -1,4 +1,4 @@
-import { Plugin, Wallet, GetPluginMethods } from 'types/wallet';
+import { Plugin, Wallet, GetPluginMethods, AddImplicitWalletArgument } from 'types/wallet';
 import {
     ControlPlane,
     GetPlanesForPlugins,
@@ -10,7 +10,7 @@ import {
     WalletCachePlane,
     WalletIdPlane,
 } from 'types/planes';
-import { findFirstResult } from './helpers';
+import { findFirstResult, pluginImplementsPlane } from './helpers';
 
 const getPlaneProviders = <Plugins extends Plugin[], Plane extends ControlPlane>(
     plugins: Plugins,
@@ -24,6 +24,14 @@ const getPlaneProviders = <Plugins extends Plugin[], Plane extends ControlPlane>
         return providers;
     }, {} as GetPlaneProviders<Plugins, Plane>);
 };
+
+const bindWalletToFunctionsObject = (
+    wallet: Wallet<any, any, any>,
+    obj: Record<string, (...args: any[]) => any>
+) =>
+    Object.fromEntries(
+        Object.entries(obj).map(([key, method]) => [key, method.bind(wallet, wallet)])
+    ) as any;
 
 const addPluginToWallet = async <NewPlugin extends Plugin, Plugins extends Plugin[]>(
     wallet: Wallet<Plugins>,
@@ -55,9 +63,11 @@ const generateReadPlane = <
 
             const vc = await Promise.any(
                 wallet.plugins.map(async plugin => {
-                    if (!plugin.read) throw new Error('Plugin is not a Read Plugin');
+                    if (!pluginImplementsPlane(plugin, 'read')) {
+                        throw new Error('Plugin is not a Read Plugin');
+                    }
 
-                    return plugin.read.get(uri);
+                    return plugin.read.get(wallet as any, uri);
                 })
             );
 
@@ -76,10 +86,15 @@ const generateStorePlane = <
 >(
     wallet: Wallet<Plugins, ControlPlanes, PluginMethods>
 ): WalletStorePlane<Plugins> => {
-    const pluginPlanes = wallet.plugins.reduce((acc, cur) => {
-        if (cur.store) acc[cur.name as keyof typeof acc] = cur.store as any;
+    const pluginPlanes = wallet.plugins.reduce((planes, plugin) => {
+        if (pluginImplementsPlane(plugin, 'store')) {
+            planes[plugin.name as keyof typeof planes] = bindWalletToFunctionsObject(
+                wallet,
+                plugin.store
+            );
+        }
 
-        return acc;
+        return planes;
     }, {} as WalletStorePlane<Plugins>);
 
     return { ...pluginPlanes, providers: getPlaneProviders(wallet.plugins, 'store') };
@@ -92,10 +107,15 @@ const generateIndexPlane = <
 >(
     wallet: Wallet<Plugins, ControlPlanes, PluginMethods>
 ): WalletIndexPlane<Plugins> => {
-    const individualPlanes = wallet.plugins.reduce<WalletIndexPlane<Plugins>>((acc, cur) => {
-        if (cur.index) (acc as any)[cur.name] = cur.index;
+    const individualPlanes = wallet.plugins.reduce<WalletIndexPlane<Plugins>>((planes, plugin) => {
+        if (pluginImplementsPlane(plugin, 'index')) {
+            planes[plugin.name as keyof typeof planes] = bindWalletToFunctionsObject(
+                wallet,
+                plugin.index
+            );
+        }
 
-        return acc;
+        return planes;
     }, {} as WalletIndexPlane<Plugins>);
 
     const all: Pick<IndexPlane, 'get'> = {
@@ -105,9 +125,9 @@ const generateIndexPlane = <
             const resultsWithDuplicates = (
                 await Promise.all(
                     wallet.plugins.map(async plugin => {
-                        if (!plugin.index) return [];
+                        if (!pluginImplementsPlane(plugin, 'index')) return [];
 
-                        return plugin.index.get(query);
+                        return plugin.index.get(wallet as any, query);
                     })
                 )
             ).flat();
@@ -133,9 +153,11 @@ const generateCachePlane = <
             try {
                 const index = await Promise.any(
                     wallet.plugins.map(async plugin => {
-                        if (!plugin.cache) throw new Error('Plugin is not a Cache Plugin');
+                        if (!pluginImplementsPlane(plugin, 'cache')) {
+                            throw new Error('Plugin is not a Cache Plugin');
+                        }
 
-                        return plugin.cache.getIndex(query);
+                        return plugin.cache.getIndex(wallet as any, query);
                     })
                 );
 
@@ -149,9 +171,11 @@ const generateCachePlane = <
 
             const result = await Promise.allSettled(
                 wallet.plugins.map(async plugin => {
-                    if (!plugin.cache) throw new Error('Plugin is not a Cache Plugin');
+                    if (!pluginImplementsPlane(plugin, 'cache')) {
+                        throw new Error('Plugin is not a Cache Plugin');
+                    }
 
-                    return plugin.cache.setIndex(query, value);
+                    return plugin.cache.setIndex(wallet as any, query, value);
                 })
             );
 
@@ -163,9 +187,11 @@ const generateCachePlane = <
             try {
                 const vc = await Promise.any(
                     wallet.plugins.map(async plugin => {
-                        if (!plugin.cache) throw new Error('Plugin is not a Cache Plugin');
+                        if (!pluginImplementsPlane(plugin, 'cache')) {
+                            throw new Error('Plugin is not a Cache Plugin');
+                        }
 
-                        return plugin.cache.getVc(uri);
+                        return plugin.cache.getVc(wallet as any, uri);
                     })
                 );
 
@@ -179,9 +205,11 @@ const generateCachePlane = <
 
             const result = await Promise.allSettled(
                 wallet.plugins.map(async plugin => {
-                    if (!plugin.cache) throw new Error('Plugin is not a Cache Plugin');
+                    if (!pluginImplementsPlane(plugin, 'cache')) {
+                        throw new Error('Plugin is not a Cache Plugin');
+                    }
 
-                    return plugin.cache.setVc(uri, value);
+                    return plugin.cache.setVc(wallet as any, uri, value);
                 })
             );
 
@@ -204,7 +232,7 @@ const generateIdPlane = <
 
             const result = findFirstResult(wallet.plugins, plugin => {
                 try {
-                    if (!plugin.id) return undefined;
+                    if (!pluginImplementsPlane(plugin, 'id')) return undefined;
 
                     return plugin.id.did(method);
                 } catch (error) {
@@ -221,7 +249,7 @@ const generateIdPlane = <
 
             const result = findFirstResult(wallet.plugins, plugin => {
                 try {
-                    if (!plugin.id) return undefined;
+                    if (!pluginImplementsPlane(plugin, 'id')) return undefined;
 
                     return plugin.id.keypair(algorithm);
                 } catch (error) {
@@ -244,13 +272,7 @@ const bindMethods = <
 >(
     wallet: Wallet<Plugins, ControlPlanes, PluginMethods>,
     pluginMethods: PluginMethods
-): PluginMethods =>
-    Object.fromEntries(
-        Object.entries(pluginMethods as any).map(([key, method]: any) => [
-            key,
-            method.bind(wallet, wallet),
-        ])
-    );
+): PluginMethods => bindWalletToFunctionsObject(wallet, pluginMethods as any);
 
 /** @group Universal Wallets */
 export const generateWallet = async <
@@ -276,7 +298,7 @@ export const generateWallet = async <
         id: {} as WalletIdPlane<Plugins>,
         plugins: plugins as Plugins,
         invoke: pluginMethods,
-        addPlugin: function(plugin) {
+        addPlugin: function (plugin) {
             return addPluginToWallet(this as any, plugin);
         },
         debug: _wallet.debug,

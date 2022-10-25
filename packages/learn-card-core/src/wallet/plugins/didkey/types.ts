@@ -1,6 +1,5 @@
 import { Plugin } from 'types/wallet';
 import { JWK } from '@learncard/types';
-import { IdPlugin } from 'types/planes';
 
 /** @group DidKey Plugin */
 export type Algorithm = 'ed25519' | 'secp256k1';
@@ -20,8 +19,10 @@ export type DidKeyPluginMethods<DidMethod extends string> = {
 };
 
 /** @group DidKey Plugin */
-export type DidKeyPlugin<DidMethod extends string = string> = IdPlugin<
-    Plugin<'DID Key', DidKeyPluginMethods<DidMethod>, any, DependentMethods<DidMethod>>,
-    DidMethod,
-    Algorithm
+export type DidKeyPlugin<DidMethod extends string = string> = Plugin<
+    'DID Key',
+    'id',
+    DidKeyPluginMethods<DidMethod>,
+    any,
+    DependentMethods<DidMethod>
 >;

@@ -12,8 +12,6 @@ import {
 } from './helpers';
 import hardcodedTokens from './hardcodedTokens';
 
-import { Algorithm } from '@wallet/plugins/didkey/types';
-
 export * from './types';
 
 const ERC20ABI = require('./erc20.abi.json');
@@ -28,7 +26,7 @@ export const getEthereumPlugin = (
     let { infuraProjectId, network = 'mainnet' } = config;
 
     // Ethers wallet
-    const secpKeypair = initWallet.id.keypair<Algorithm>('secp256k1');
+    const secpKeypair = initWallet.id.keypair('secp256k1');
 
     if (!secpKeypair) {
         throw new Error('Wallet must support secp256k1 JWK in order to add Ethereum Plugin');

@@ -4,7 +4,7 @@ import { ProofOptions } from '../didkit/types';
 
 /** @group CHAPI Plugin */
 export type WebCredential = {
-    new(
+    new (
         dataType: string,
         data: VP,
         options?: { recommendedHandlerOrigins: string[] }
@@ -17,7 +17,7 @@ export type WebCredential = {
 
 /** @group CHAPI Plugin */
 export type CredentialRequestEvent = {
-    new(args: {
+    new (args: {
         credentialHandler: any;
         credentialRequestOrigin: string;
         credentialRequestOptions: any;
@@ -41,7 +41,7 @@ export type CredentialRequestEvent = {
 
 /** @group CHAPI Plugin */
 export type CredentialStoreEvent = {
-    new(args: {
+    new (args: {
         credentialHandler: any;
         credentialRequestOrigin: string;
         credential: WebCredential;
@@ -104,4 +104,10 @@ export type CHAPIPluginMethods = {
 };
 
 /** @group CHAPI Plugin */
-export type CHAPIPlugin = Plugin<'CHAPI', CHAPIPluginMethods, any, CHAPIPluginDependentMethods>;
+export type CHAPIPlugin = Plugin<
+    'CHAPI',
+    any,
+    CHAPIPluginMethods,
+    any,
+    CHAPIPluginDependentMethods
+>;

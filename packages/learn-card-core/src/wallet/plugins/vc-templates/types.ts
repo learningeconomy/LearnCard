@@ -31,6 +31,7 @@ export type VCTemplatePluginMethods = {
 /** @group VC Templates Plugin */
 export type VCTemplatePlugin = Plugin<
     'VC Templates',
+    any,
     VCTemplatePluginMethods,
     'id',
     VCTemplatePluginDependentMethods

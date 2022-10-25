@@ -2,7 +2,6 @@ import { ModelAliases } from '@glazed/types';
 import { z } from 'zod';
 import { StreamID } from '@ceramicnetwork/streamid';
 import { Plugin } from 'types/wallet';
-import { IndexPlugin } from 'types/planes';
 import { VC, IDXCredential, IDXCredentialValidator } from '@learncard/types';
 import { ResolutionExtension } from '../vc-resolution';
 import { CeramicClient } from '@ceramicnetwork/http-client';
@@ -42,9 +41,7 @@ export const CredentialsListValidator: z.ZodType<CredentialsList> = z
     .strict();
 
 /** @group IDXPlugin */
-export type IDXPlugin = IndexPlugin<
-    Plugin<'IDX', IDXPluginMethods, 'read', IDXPluginDependentMethods>
->;
+export type IDXPlugin = Plugin<'IDX', 'index', IDXPluginMethods, 'read', IDXPluginDependentMethods>;
 
 // Below types are temporary! They will be removed in the future when we are confident that everyone
 // has moved on to the new schema
@@ -52,7 +49,7 @@ export type IDXPlugin = IndexPlugin<
 /** @group IDXPlugin */
 export type BackwardsCompatIDXCredential<
     Metadata extends Record<string, any> = Record<never, never>
-    > = { [key: string]: any; id: string; title: string; storageType?: 'ceramic' } & Metadata;
+> = { [key: string]: any; id: string; title: string; storageType?: 'ceramic' } & Metadata;
 
 /** @group IDXPlugin */
 export const BackwardsCompatIDXCredentialValidator: z.ZodType<BackwardsCompatIDXCredential> = z
@@ -62,9 +59,9 @@ export const BackwardsCompatIDXCredentialValidator: z.ZodType<BackwardsCompatIDX
 /** @group IDXPlugin */
 export type BackwardsCompatCredentialsList<
     Metadata extends Record<string, any> = Record<never, never>
-    > = {
-        credentials: Array<IDXCredential<Metadata> | BackwardsCompatIDXCredential<Metadata>>;
-    };
+> = {
+    credentials: Array<IDXCredential<Metadata> | BackwardsCompatIDXCredential<Metadata>>;
+};
 
 /** @group IDXPlugin */
 export const BackwardsCompatCredentialsListValidator: z.ZodType<BackwardsCompatCredentialsList> = z

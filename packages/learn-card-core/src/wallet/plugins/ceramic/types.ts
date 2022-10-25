@@ -1,7 +1,6 @@
 import { z } from 'zod';
 import { CeramicClient } from '@ceramicnetwork/http-client';
 import { Plugin } from 'types/wallet';
-import { StorePlugin, ReadPlugin } from 'types/planes';
 import { ResolutionExtension } from '../vc-resolution';
 
 /** @group CeramicPlugin */
@@ -38,4 +37,4 @@ export type CeramicPluginDependentMethods<URI extends string = ''> = {
 } & ResolutionExtension<URI>;
 
 /** @group CeramicPlugin */
-export type CeramicPlugin = StorePlugin<ReadPlugin<Plugin<'Ceramic', CeramicPluginMethods>>>;
+export type CeramicPlugin = Plugin<'Ceramic', 'read' | 'store', CeramicPluginMethods>;

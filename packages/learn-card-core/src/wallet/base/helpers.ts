@@ -1,3 +1,6 @@
+import { Plugin } from 'types/wallet';
+import { ControlPlane } from 'types/planes';
+
 /** Type guard for removing null/undefined */
 export const isNotNull = <T>(item?: T | null): item is T => !!item;
 
@@ -17,4 +20,17 @@ export const findFirstResult = <T, U>(
 
         return callback(item);
     }, undefined);
+};
+
+export const pluginImplementsPlane = <Plane extends ControlPlane>(
+    plugin: Plugin,
+    plane: Plane
+): plugin is Plugin<any, Plane> => {
+    if (plane === 'read') return 'get' in (plugin.read ?? {});
+    if (plane === 'store') return 'upload' in (plugin.store ?? {});
+    if (plane === 'index') return 'get' in (plugin.index ?? {});
+    if (plane === 'cache') return 'getIndex' in (plugin.cache ?? {});
+    if (plane === 'id') return 'did' in (plugin.id ?? {});
+
+    return false;
 };

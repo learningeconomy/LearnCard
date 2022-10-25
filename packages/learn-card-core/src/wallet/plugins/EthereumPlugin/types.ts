@@ -37,4 +37,4 @@ export type Token = {
 export type TokenList = Token[];
 
 /** @group Ethereum Plugin */
-export type EthereumPlugin = Plugin<'Ethereum', EthereumPluginMethods, 'id'>;
+export type EthereumPlugin = Plugin<'Ethereum', any, EthereumPluginMethods, 'id'>;

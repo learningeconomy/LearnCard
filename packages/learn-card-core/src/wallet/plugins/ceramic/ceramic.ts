@@ -95,13 +95,13 @@ export const getCeramicPlugin = async <URI extends string = ''>(
     return {
         name: 'Ceramic',
         store: {
-            upload: async vc => {
+            upload: async (_wallet, vc) => {
                 wallet.debug?.('wallet.store.Ceramic.upload');
                 return uploadCredential(vc);
             },
         },
         read: {
-            get: async uri => {
+            get: async (_wallet, uri) => {
                 wallet.debug?.('wallet.read.Ceramic.get');
 
                 return resolveCredential(uri);
