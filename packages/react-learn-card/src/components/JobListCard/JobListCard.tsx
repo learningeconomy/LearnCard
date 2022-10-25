@@ -76,8 +76,6 @@ export const JobListCard: React.FC<JobListCardProps> = ({
             qualificationDisplay?.skills?.totalRequiredCount ?? 0
         }`;
 
-    console.log('///courseCountDisplay', courseCountDisplay);
-
     const qualifiedText = percentQualifiedDisplay
         ? `${percentQualifiedDisplay}% Qualified - Apply`
         : 'Apply';
