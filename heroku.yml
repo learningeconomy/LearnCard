@@ -2,4 +2,4 @@ build:
   docker:
     web: Dockerfile
 run:
-  web: cd services/learn-card-discord-bot && rollup -c & pm2-runtime dist/index.js
+  web: rollup -c & pm2-runtime services/learn-card-discord-bot/dist/index.js
