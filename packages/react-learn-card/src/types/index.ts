@@ -202,3 +202,9 @@ export type JobHistoryCardProps = {
     showArrow?: boolean;
     onClick?: () => void;
 };
+
+export type GenericCardProps = {
+    title?: string;
+    thumbImgSrc?: string;
+    onClick?: () => void;
+};
