@@ -22,6 +22,7 @@ const bespokeLc = await lc.addPlugin(plugin);
 -   The `did` method now has had its type loosened to just `string`
 -   The `verifyCredential` method now returns a `VerificationCheck` directly, unless you explicitly ask for the prettified version via a flag
     -   I.e. `wallet.verifyCredential(vc)` is now `wallet.invoke.verifyCredential(vc, {}, true)`
+- The `name` field is now _required_ for plugins, and they may optionally specify a `displayName` and `description`
 
 _Migration Steps_
 
