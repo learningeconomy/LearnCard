@@ -2,8 +2,8 @@ import { IDXCredential, VC } from '@learncard/types';
 import { TestCachePlugin } from './types';
 
 export const getTestCache = (): TestCachePlugin => {
-    let index: IDXCredential[] = [];
-    let vcs: Record<string, VC> = {};
+    let index: IDXCredential[] | undefined = undefined;
+    let vcs: Record<string, VC | undefined> = {};
 
     return {
         name: 'Test Cache',
@@ -19,6 +19,11 @@ export const getTestCache = (): TestCachePlugin => {
                 index = value;
                 return true;
             },
+            flushIndex: async _wallet => {
+                _wallet.debug?.('Test Cache, flushIndex');
+                index = undefined;
+                return true;
+            },
             getVc: async (_wallet, uri) => {
                 _wallet.debug?.('Test Cache, getVc', { uri, value: vcs[uri] });
                 return vcs[uri];
@@ -26,6 +31,11 @@ export const getTestCache = (): TestCachePlugin => {
             setVc: async (_wallet, uri, vc) => {
                 _wallet.debug?.('Test Cache, setVc', { uri, value: vc });
                 vcs[uri] = vc;
+                return true;
+            },
+            flushVc: async _wallet => {
+                _wallet.debug?.('Test Cache, flushVc');
+                vcs = {};
                 return true;
             },
         },

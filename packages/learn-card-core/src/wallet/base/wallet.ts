@@ -1,4 +1,4 @@
-import { Plugin, Wallet, GetPluginMethods } from 'types/wallet';
+import { Plugin, Wallet, GetPluginMethods, AddImplicitWalletArgument } from 'types/wallet';
 import {
     ControlPlane,
     GetPlanesForPlugins,
@@ -9,8 +9,14 @@ import {
     WalletIndexPlane,
     WalletCachePlane,
     WalletIdPlane,
+    StorePlane,
 } from 'types/planes';
-import { findFirstResult, pluginImplementsPlane } from './helpers';
+import {
+    findFirstResult,
+    pluginImplementsPlane,
+    walletImplementsPlane,
+    mapObject,
+} from './helpers';
 
 const getPlaneProviders = <Plugins extends Plugin[], Plane extends ControlPlane>(
     plugins: Plugins,
@@ -32,10 +38,7 @@ const getPlaneProviders = <Plugins extends Plugin[], Plane extends ControlPlane>
 const bindWalletToFunctionsObject = (
     wallet: Wallet<any, any, any>,
     obj: Record<string, (...args: any[]) => any>
-) =>
-    Object.fromEntries(
-        Object.entries(obj).map(([key, method]) => [key, method.bind(wallet, wallet)])
-    ) as any;
+) => mapObject(obj, method => method.bind(wallet, wallet));
 
 const addPluginToWallet = async <NewPlugin extends Plugin, Plugins extends Plugin[]>(
     wallet: Wallet<Plugins>,
@@ -54,15 +57,27 @@ const generateReadPlane = <
     wallet: Wallet<Plugins, ControlPlanes, PluginMethods> | Wallet<Plugins, 'cache', PluginMethods>
 ): WalletReadPlane<Plugins> => {
     return {
-        get: async uri => {
+        get: async (uri, { cache = 'cache-first' } = {}) => {
             wallet.debug?.('wallet.read.get', uri);
 
             if (!uri) return undefined;
 
-            if ('cache' in wallet) {
+            if (cache === 'cache-only' && !walletImplementsPlane(wallet, 'cache')) {
+                throw new Error('Cannot read from cache. Cache Plane is not implemented!');
+            }
+
+            if (walletImplementsPlane(wallet, 'cache') && cache !== 'skip-cache') {
                 const cachedResponse = await wallet.cache.getVc(uri);
 
-                if (cachedResponse) return cachedResponse;
+                if (cachedResponse) {
+                    if (cache === 'cache-first' && walletImplementsPlane(wallet, 'read')) {
+                        wallet.read
+                            .get(uri, { cache: 'skip-cache' })
+                            .then(res => wallet.cache.setVc(uri, res));
+                    }
+
+                    return cachedResponse;
+                }
             }
 
             const vc = await Promise.any(
@@ -75,13 +90,48 @@ const generateReadPlane = <
                 })
             );
 
-            if (vc && 'cache' in wallet) await wallet.cache.setVc(uri, vc);
+            if (vc && walletImplementsPlane(wallet, 'cache') && cache !== 'skip-cache') {
+                await wallet.cache.setVc(uri, vc);
+            }
 
             return vc;
         },
         providers: getPlaneProviders(wallet.plugins, 'read'),
     };
 };
+
+const addCachingToStorePlane = <
+    ControlPlanes extends ControlPlane = never,
+    Methods extends Record<string, (...args: any[]) => any> = Record<never, never>,
+    DependentControlPlanes extends ControlPlane = never,
+    DependentMethods extends Record<string, (...args: any[]) => any> = Record<never, never>
+>(
+    plane: AddImplicitWalletArgument<
+        StorePlane,
+        ControlPlanes,
+        Methods,
+        DependentControlPlanes,
+        DependentMethods
+    >
+): AddImplicitWalletArgument<
+    StorePlane,
+    ControlPlanes,
+    Methods,
+    DependentControlPlanes,
+    DependentMethods
+> => ({
+    upload: async (_wallet, vc, { cache = 'cache-first' } = {}) => {
+        const uri = await plane.upload(_wallet, vc);
+
+        if (cache !== 'skip-cache' && walletImplementsPlane(_wallet, 'cache')) {
+            await _wallet.cache.setVc(uri, vc);
+        }
+
+        return uri;
+    },
+    // TODO: Add caching to uploadMany
+    ...('uploadMany' in plane ? { uploadMany: plane.uploadMany } : {}),
+});
 
 const generateStorePlane = <
     Plugins extends Plugin[] = [],
@@ -94,8 +144,8 @@ const generateStorePlane = <
         if (pluginImplementsPlane(plugin, 'store')) {
             planes[plugin.name as keyof typeof planes] = bindWalletToFunctionsObject(
                 wallet,
-                plugin.store
-            );
+                addCachingToStorePlane(plugin.store)
+            ) as any;
         }
 
         return planes;
@@ -103,6 +153,76 @@ const generateStorePlane = <
 
     return { ...pluginPlanes, providers: getPlaneProviders(wallet.plugins, 'store') };
 };
+
+const addCachingToIndexPlane = <
+    ControlPlanes extends ControlPlane = never,
+    Methods extends Record<string, (...args: any[]) => any> = Record<never, never>,
+    DependentControlPlanes extends ControlPlane = never,
+    DependentMethods extends Record<string, (...args: any[]) => any> = Record<never, never>
+>(
+    plane: AddImplicitWalletArgument<
+        IndexPlane,
+        ControlPlanes,
+        Methods,
+        DependentControlPlanes,
+        DependentMethods
+    >
+): AddImplicitWalletArgument<
+    IndexPlane,
+    ControlPlanes,
+    Methods,
+    DependentControlPlanes,
+    DependentMethods
+> => ({
+    get: async (_wallet, query, { cache = 'cache-first' } = {}) => {
+        if (cache === 'cache-only' && !walletImplementsPlane(_wallet, 'cache')) {
+            throw new Error('Cannot read from cache. Cache Plane is not implemented!');
+        }
+
+        if (walletImplementsPlane(_wallet, 'cache') && cache !== 'skip-cache') {
+            const cachedResponse = await _wallet.cache.getIndex(query ?? {});
+
+            if (cachedResponse) {
+                if (cache === 'cache-first') {
+                    plane
+                        .get(_wallet, query, { cache: 'skip-cache' })
+                        .then(res => _wallet.cache.setIndex(query ?? {}, res));
+                }
+
+                return cachedResponse;
+            }
+        }
+
+        const list = await plane.get(_wallet, query);
+
+        if (list && walletImplementsPlane(_wallet, 'cache') && cache !== 'skip-cache') {
+            await _wallet.cache.setIndex(query ?? {}, list);
+        }
+
+        return list;
+    },
+    add: async (_wallet, record, { cache = 'cache-first' } = {}) => {
+        if (cache !== 'skip-cache' && walletImplementsPlane(_wallet, 'cache')) {
+            await _wallet.cache.flushIndex();
+        }
+
+        return plane.add(_wallet, record);
+    },
+    update: async (_wallet, id, update, { cache = 'cache-first' } = {}) => {
+        if (cache !== 'skip-cache' && walletImplementsPlane(_wallet, 'cache')) {
+            await _wallet.cache.flushIndex();
+        }
+
+        return plane.update(_wallet, id, update);
+    },
+    remove: async (_wallet, id, { cache = 'cache-first' } = {}) => {
+        if (cache !== 'skip-cache' && walletImplementsPlane(_wallet, 'cache')) {
+            await _wallet.cache.flushIndex();
+        }
+
+        return plane.remove(_wallet, id);
+    },
+});
 
 const generateIndexPlane = <
     Plugins extends Plugin[] = [],
@@ -115,16 +235,34 @@ const generateIndexPlane = <
         if (pluginImplementsPlane(plugin, 'index')) {
             planes[plugin.name as keyof typeof planes] = bindWalletToFunctionsObject(
                 wallet,
-                plugin.index
-            );
+                addCachingToIndexPlane(plugin.index)
+            ) as any;
         }
 
         return planes;
     }, {} as WalletIndexPlane<Plugins>);
 
     const all: Pick<IndexPlane, 'get'> = {
-        get: async query => {
+        get: async (query, { cache = 'cache-first' } = {}) => {
             wallet.debug?.('wallet.index.all.get');
+
+            if (cache === 'cache-only' && !walletImplementsPlane(wallet, 'cache')) {
+                throw new Error('Cannot read from cache. Cache Plane is not implemented!');
+            }
+
+            if (walletImplementsPlane(wallet, 'cache') && cache !== 'skip-cache') {
+                const cachedResponse = await wallet.cache.getIndex(query ?? {});
+
+                if (cachedResponse) {
+                    if (cache === 'cache-first' && walletImplementsPlane(wallet, 'index')) {
+                        wallet.index.all
+                            .get(query, { cache: 'skip-cache' })
+                            .then(res => wallet.cache.setIndex(query ?? {}, res));
+                    }
+
+                    return cachedResponse;
+                }
+            }
 
             const resultsWithDuplicates = (
                 await Promise.all(
@@ -136,7 +274,13 @@ const generateIndexPlane = <
                 )
             ).flat();
 
-            return [...new Set(resultsWithDuplicates)];
+            const results = [...new Set(resultsWithDuplicates)];
+
+            if (results && walletImplementsPlane(wallet, 'cache') && cache !== 'skip-cache') {
+                await wallet.cache.setIndex(query ?? {}, results);
+            }
+
+            return results;
         },
     };
 
@@ -185,6 +329,21 @@ const generateCachePlane = <
 
             return result.some(promiseResult => promiseResult.status === 'fulfilled');
         },
+        flushIndex: async () => {
+            wallet.debug?.('wallet.cache.flushIndex');
+
+            const result = await Promise.allSettled(
+                wallet.plugins.map(async plugin => {
+                    if (!pluginImplementsPlane(plugin, 'cache')) {
+                        throw new Error('Plugin is not a Cache Plugin');
+                    }
+
+                    return plugin.cache.flushIndex(wallet as any);
+                })
+            );
+
+            return result.some(promiseResult => promiseResult.status === 'fulfilled');
+        },
         getVc: async uri => {
             wallet.debug?.('wallet.cache.getVc');
 
@@ -205,7 +364,7 @@ const generateCachePlane = <
             }
         },
         setVc: async (uri, value) => {
-            wallet.debug?.('wallet.cache.setIndex');
+            wallet.debug?.('wallet.cache.setVc');
 
             const result = await Promise.allSettled(
                 wallet.plugins.map(async plugin => {
@@ -214,6 +373,21 @@ const generateCachePlane = <
                     }
 
                     return plugin.cache.setVc(wallet as any, uri, value);
+                })
+            );
+
+            return result.some(promiseResult => promiseResult.status === 'fulfilled');
+        },
+        flushVc: async () => {
+            wallet.debug?.('wallet.cache.flushVc');
+
+            const result = await Promise.allSettled(
+                wallet.plugins.map(async plugin => {
+                    if (!pluginImplementsPlane(plugin, 'cache')) {
+                        throw new Error('Plugin is not a Cache Plugin');
+                    }
+
+                    return plugin.cache.flushVc(wallet as any);
                 })
             );
 
@@ -272,11 +446,11 @@ const generateIdPlane = <
 const bindMethods = <
     Plugins extends Plugin[] = [],
     ControlPlanes extends GetPlanesForPlugins<Plugins> = GetPlanesForPlugins<Plugins>,
-    PluginMethods = GetPluginMethods<Plugins>
+    PluginMethods extends GetPluginMethods<Plugins> = GetPluginMethods<Plugins>
 >(
     wallet: Wallet<Plugins, ControlPlanes, PluginMethods>,
     pluginMethods: PluginMethods
-): PluginMethods => bindWalletToFunctionsObject(wallet, pluginMethods as any);
+): PluginMethods => bindWalletToFunctionsObject(wallet, pluginMethods as any) as any;
 
 /** @group Universal Wallets */
 export const generateWallet = async <
@@ -302,7 +476,7 @@ export const generateWallet = async <
         id: {} as WalletIdPlane<Plugins>,
         plugins: plugins as Plugins,
         invoke: pluginMethods,
-        addPlugin: function(plugin) {
+        addPlugin: function (plugin) {
             return addPluginToWallet(this as any, plugin);
         },
         debug: _wallet.debug,

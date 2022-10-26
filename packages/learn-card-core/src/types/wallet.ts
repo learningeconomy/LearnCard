@@ -1,11 +1,11 @@
 import {
     ControlPlane,
     GetPlanesForPlugins,
-    ReadPlane,
-    StorePlane,
-    IndexPlane,
-    CachePlane,
-    IdPlane,
+    PluginReadPlane,
+    PluginStorePlane,
+    PluginIndexPlane,
+    PluginCachePlane,
+    PluginIdPlane,
     WalletReadPlane,
     WalletStorePlane,
     WalletIndexPlane,
@@ -43,6 +43,7 @@ export type AddImplicitWalletArgument<
         ...args: Parameters<Functions[Key]>
     ) => ReturnType<Functions[Key]>;
 };
+
 /** @group Universal Wallets */
 export type GetPluginMethods<Plugins extends Plugin[]> = undefined extends Plugins[1]
     ? NonNullable<Plugins[0]['_methods']>
@@ -81,7 +82,7 @@ export type Plugin<
     : ('read' extends ControlPlanes
           ? {
                 read: AddImplicitWalletArgument<
-                    ReadPlane,
+                    PluginReadPlane,
                     ControlPlanes,
                     Methods,
                     DependentControlPlanes,
@@ -92,7 +93,7 @@ export type Plugin<
           ('store' extends ControlPlanes
               ? {
                     store: AddImplicitWalletArgument<
-                        StorePlane,
+                        PluginStorePlane,
                         ControlPlanes,
                         Methods,
                         DependentControlPlanes,
@@ -103,7 +104,7 @@ export type Plugin<
           ('index' extends ControlPlanes
               ? {
                     index: AddImplicitWalletArgument<
-                        IndexPlane,
+                        PluginIndexPlane,
                         ControlPlanes,
                         Methods,
                         DependentControlPlanes,
@@ -114,7 +115,7 @@ export type Plugin<
           ('cache' extends ControlPlanes
               ? {
                     cache: AddImplicitWalletArgument<
-                        CachePlane,
+                        PluginCachePlane,
                         ControlPlanes,
                         Methods,
                         DependentControlPlanes,
@@ -125,7 +126,7 @@ export type Plugin<
           ('id' extends ControlPlanes
               ? {
                     id: AddImplicitWalletArgument<
-                        IdPlane,
+                        PluginIdPlane,
                         ControlPlanes,
                         Methods,
                         DependentControlPlanes,

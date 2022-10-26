@@ -13,6 +13,11 @@ export type RemoveFirstArg<T extends (...args: any[]) => any> = (
 ) => ReturnType<T>;
 
 /** @group Utility Types */
+export type RemoveLastArg<T extends (...args: any[]) => any> = (
+    args: RemoveLast<Parameters<T>>
+) => ReturnType<T>;
+
+/** @group Utility Types */
 export type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (
     k: infer I
 ) => void

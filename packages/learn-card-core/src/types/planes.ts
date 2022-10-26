@@ -2,42 +2,50 @@ import { IDXCredential, VC, JWK } from '@learncard/types';
 import { Plugin } from './wallet';
 import { OmitNevers } from './helpers';
 
+export type CacheStrategy = 'cache-only' | 'cache-first' | 'skip-cache';
+
+export type PlaneOptions = {
+    cache?: CacheStrategy;
+};
+
 export type ControlPlane = 'read' | 'store' | 'index' | 'cache' | 'id';
 
 export type FilterForPlane<Plugins extends Plugin[], Plane extends ControlPlane> = {
     [Index in keyof Plugins]: undefined extends Plugins[Index][Plane]
-        ? never
-        : Plugins[Index]['name'];
+    ? never
+    : Plugins[Index]['name'];
 }[number];
 
 export type GetPlanesForPlugins<Plugins extends Plugin[]> = any[] extends Plugins
     ? never
     : {
-          [Index in keyof Plugins]: {
-              [Key in ControlPlane]: undefined extends Plugins[Index][Key] ? never : Key;
-          }[ControlPlane];
-      }[number];
+        [Index in keyof Plugins]: {
+            [Key in ControlPlane]: undefined extends Plugins[Index][Key] ? never : Key;
+        }[ControlPlane];
+    }[number];
 
-export type GetPlaneProviders<
-    Plugins extends Plugin[],
-    Plane extends ControlPlane
-> = any[] extends Plugins
+export type GetPlaneProviders<Plugins extends Plugin[], Plane extends ControlPlane> =
+    any[] extends Plugins
     ? any
     : {
-          [Index in keyof Plugins]: undefined extends Plugins[Index][Plane]
-              ? never
-              : OmitNevers<{
-                    [Name in Plugins[number]['name']]: Name extends Plugins[Index]['name']
-                        ? { name: Name; displayName?: string; description?: string }
-                        : never;
-                }>;
-      }[number];
+        [Index in keyof Plugins]: undefined extends Plugins[Index][Plane]
+        ? never
+        : OmitNevers<
+            {
+                [Name in Plugins[number]['name']]: Name extends Plugins[Index]['name']
+                ? { name: Name; displayName?: string; description?: string }
+                : never;
+            }
+        >;
+    }[number];
 
 // --- Read ---
 
 export type ReadPlane = {
-    get: (uri?: string) => Promise<VC | undefined>;
+    get: (uri?: string, options?: PlaneOptions) => Promise<VC | undefined>;
 };
+
+export type PluginReadPlane = ReadPlane;
 
 export type WalletReadPlane<Plugins extends Plugin[]> = ReadPlane & {
     providers: GetPlaneProviders<Plugins, 'read'>;
@@ -46,9 +54,11 @@ export type WalletReadPlane<Plugins extends Plugin[]> = ReadPlane & {
 // --- Store ---
 
 export type StorePlane = {
-    upload: (vc: VC) => Promise<string>;
-    uploadMany?: (vcs: VC[]) => Promise<string[]>;
+    upload: (vc: VC, options?: PlaneOptions) => Promise<string>;
+    uploadMany?: (vcs: VC[], options?: PlaneOptions) => Promise<string[]>;
 };
+
+export type PluginStorePlane = StorePlane;
 
 export type WalletStorePlane<Plugins extends Plugin[]> = Record<
     FilterForPlane<Plugins, 'store'>,
@@ -60,11 +70,13 @@ export type WalletStorePlane<Plugins extends Plugin[]> = Record<
 // --- Index ---
 
 export type IndexPlane = {
-    get: (query?: Record<string, any>) => Promise<IDXCredential[]>;
-    add: (obj: IDXCredential) => Promise<boolean>;
-    update: (id: string, updates: Record<string, any>) => Promise<boolean>;
-    remove: (id: string) => Promise<boolean>;
+    get: (query?: Record<string, any>, options?: PlaneOptions) => Promise<IDXCredential[]>;
+    add: (obj: IDXCredential, options?: PlaneOptions) => Promise<boolean>;
+    update: (id: string, updates: Record<string, any>, options?: PlaneOptions) => Promise<boolean>;
+    remove: (id: string, options?: PlaneOptions) => Promise<boolean>;
 };
+
+export type PluginIndexPlane = IndexPlane;
 
 export type WalletIndexPlane<Plugins extends Plugin[]> = {
     all: Pick<IndexPlane, 'get'>;
@@ -76,9 +88,12 @@ export type WalletIndexPlane<Plugins extends Plugin[]> = {
 export type CachePlane = {
     getIndex: (query: Record<string, any>) => Promise<IDXCredential[] | undefined>;
     setIndex: (query: Record<string, any>, value: IDXCredential[]) => Promise<boolean>;
+    flushIndex: () => Promise<boolean>;
     getVc: (uri: string) => Promise<VC | undefined>;
-    setVc: (uri: string, value: VC) => Promise<boolean>;
+    setVc: (uri: string, value: VC | undefined) => Promise<boolean>;
+    flushVc: () => Promise<boolean>;
 };
+export type PluginCachePlane = CachePlane;
 
 export type WalletCachePlane<Plugins extends Plugin[]> = CachePlane & {
     providers: GetPlaneProviders<Plugins, 'cache'>;
@@ -87,9 +102,11 @@ export type WalletCachePlane<Plugins extends Plugin[]> = CachePlane & {
 // --- Identity ---
 
 export type IdPlane = {
-    did: (method?: string) => string;
-    keypair: (algorithm?: string) => JWK;
+    did: (method?: string, options?: PlaneOptions) => string;
+    keypair: (algorithm?: string, options?: PlaneOptions) => JWK;
 };
+
+export type PluginIdPlane = IdPlane;
 
 export type WalletIdPlane<Plugins extends Plugin[]> = IdPlane & {
     providers: GetPlaneProviders<Plugins, 'id'>;

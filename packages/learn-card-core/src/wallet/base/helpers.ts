@@ -1,4 +1,4 @@
-import { Plugin } from 'types/wallet';
+import { Wallet, Plugin } from 'types/wallet';
 import { ControlPlane } from 'types/planes';
 
 /** Type guard for removing null/undefined */
@@ -33,4 +33,26 @@ export const pluginImplementsPlane = <Plane extends ControlPlane>(
     if (plane === 'id') return 'did' in (plugin.id ?? {});
 
     return false;
+};
+
+export const walletImplementsPlane = <Plane extends ControlPlane>(
+    wallet: Wallet<any, any, any>,
+    plane: Plane
+): wallet is Wallet<any, Plane> => {
+    if (plane === 'read') return 'read' in wallet;
+    if (plane === 'store') return 'store' in wallet;
+    if (plane === 'index') return 'index' in wallet;
+    if (plane === 'cache') return 'cache' in wallet;
+    if (plane === 'id') return 'id' in wallet;
+
+    return false;
+};
+
+export const mapObject = <T extends string, U, V>(
+    obj: Record<T, U>,
+    callback: (value: U, index: number) => V
+): Record<T, V> => {
+    return Object.fromEntries(
+        Object.entries<U>(obj).map(([key, value], index) => [key, callback(value, index)])
+    ) as any;
 };
