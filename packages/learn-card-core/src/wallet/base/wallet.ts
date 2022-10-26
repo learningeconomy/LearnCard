@@ -405,14 +405,14 @@ const generateIdPlane = <
     wallet: Wallet<Plugins, ControlPlanes, PluginMethods>
 ): WalletIdPlane<Plugins> => {
     return {
-        did: (method: any) => {
+        did: method => {
             wallet.debug?.('wallet.id.did', method);
 
             const result = findFirstResult(wallet.plugins, plugin => {
                 try {
                     if (!pluginImplementsPlane(plugin, 'id')) return undefined;
 
-                    return plugin.id.did(method);
+                    return plugin.id.did(wallet as any, method);
                 } catch (error) {
                     return undefined;
                 }
@@ -422,14 +422,14 @@ const generateIdPlane = <
 
             return result;
         },
-        keypair: (algorithm: any) => {
+        keypair: algorithm => {
             wallet.debug?.('wallet.id.keypair', algorithm);
 
             const result = findFirstResult(wallet.plugins, plugin => {
                 try {
                     if (!pluginImplementsPlane(plugin, 'id')) return undefined;
 
-                    return plugin.id.keypair(algorithm);
+                    return plugin.id.keypair(wallet as any, algorithm);
                 } catch (error) {
                     return undefined;
                 }
@@ -476,7 +476,7 @@ export const generateWallet = async <
         id: {} as WalletIdPlane<Plugins>,
         plugins: plugins as Plugins,
         invoke: pluginMethods,
-        addPlugin: function (plugin) {
+        addPlugin: function(plugin) {
             return addPluginToWallet(this as any, plugin);
         },
         debug: _wallet.debug,

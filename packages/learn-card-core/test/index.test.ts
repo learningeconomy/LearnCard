@@ -107,6 +107,12 @@ describe('LearnCard SDK', () => {
             );
         });
 
+        it('should make different dids', async () => {
+            const wallet = await getWallet();
+
+            expect(wallet.id.did()).not.toEqual(wallet.id.did('pkh:eip155:1'));
+        });
+
         it('should determinstically create a keypair', async () => {
             const wallet = await getWallet();
 
