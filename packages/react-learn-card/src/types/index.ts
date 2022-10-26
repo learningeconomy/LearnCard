@@ -81,6 +81,7 @@ export type CourseCardProps = {
     thumbSrc?: string;
     jobCount?: string | number;
     className?: string;
+    hideHeader?: boolean;
     check?: boolean;
     achievementCount: string | number;
     onClick?: () => void;
