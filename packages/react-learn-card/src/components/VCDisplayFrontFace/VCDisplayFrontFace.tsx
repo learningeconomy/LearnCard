@@ -45,11 +45,13 @@ const VCDisplayFrontFace: React.FC<VCDisplayCardProps> = ({
             <section className="bg-white rounded-bl-[50%] rounded-br-[50%] absolute top-0 w-[110%] h-[77%]"></section>
             <section className="flex flex-col items-center justify-center z-10 text-center credential-thumb-img">
                 <section className="max-w-[100px] max-h-[100px]">
-                    <img
-                        className="h-full w-full object-cover"
-                        src={credentialAchievementImage ?? ''}
-                        alt="Credential Achievement Image"
-                    />
+                    {credentialAchievementImage && (
+                        <img
+                            className="h-full w-full object-cover"
+                            src={credentialAchievementImage ?? ''}
+                            alt="Credential Achievement Image"
+                        />
+                    )}
                 </section>
 
                 <section className="flex flex-row items-start justify-between w-full line-clamp-2">
@@ -90,7 +92,7 @@ const VCDisplayFrontFace: React.FC<VCDisplayCardProps> = ({
                     </p>
                 </div>
 
-                <button className="cursor-alias bg-white my-3 border-2 text-indigo-500 font-semibold py-2 px-4 border border-indigo-300 rounded-full">
+                <button className="cursor-alias bg-white my-3 border-2 text-indigo-500 font-semibold py-2 px-4 shadow-3xl rounded-full">
                     <span className="flex justify-center">
                         <p className="flex items-center">Details</p>
                         <img
