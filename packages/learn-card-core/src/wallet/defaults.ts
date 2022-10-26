@@ -23,5 +23,6 @@ export const defaultCeramicIDXArgs: CeramicIDXArgs = {
 export const defaultEthereumArgs: EthereumConfig = {
     infuraProjectId: '',
     alchemyApiKey: '',
+    etherscanApiKey: '',
     network: 'mainnet',
 };

@@ -98,10 +98,12 @@ export const walletFromKey = async (
         getBalanceForAddress: wallet.pluginMethods.getBalanceForAddress,
         transferTokens: wallet.pluginMethods.transferTokens,
         getGasPrice: wallet.pluginMethods.getGasPrice,
+        getTransactionHistory: wallet.pluginMethods.getTransactionHistory,
         getCurrentNetwork: wallet.pluginMethods.getCurrentNetwork,
         changeNetwork: wallet.pluginMethods.changeNetwork,
         addInfuraProjectId: wallet.pluginMethods.addInfuraProjectId,
         addAlchemyApiKey: wallet.pluginMethods.addAlchemyApiKey,
+        addEtherscanApiKey: wallet.pluginMethods.addEtherscanApiKey,
 
         installChapiHandler: wallet.pluginMethods.installChapiHandler,
         activateChapiHandler: wallet.pluginMethods.activateChapiHandler,

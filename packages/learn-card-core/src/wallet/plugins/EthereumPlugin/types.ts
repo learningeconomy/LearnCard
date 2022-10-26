@@ -10,17 +10,20 @@ export type EthereumPluginMethods = {
         amount: number,
         toAddress: string
     ) => Promise<string>;
+    getTransactionHistory: () => Promise<providers.TransactionResponse[]>;
     getGasPrice: () => Promise<string>;
     getCurrentNetwork: () => providers.Networkish;
     changeNetwork: (network: providers.Networkish) => void;
-    addInfuraProjectId: (infuraProjectIdToAdd: string) => void;
-    addAlchemyApiKey: (alchemyApiKey: string) => void;
+    addInfuraProjectId: (_infuraProjectId: string) => void;
+    addAlchemyApiKey: (_alchemyApiKey: string) => void;
+    addEtherscanApiKey: (_etherscanApiKey: string) => void;
 };
 
 /** @group Ethereum Plugin */
 export type EthereumConfig = {
     infuraProjectId?: string;
     alchemyApiKey?: string;
+    etherscanApiKey?: string;
     network?: providers.Networkish;
 };
 

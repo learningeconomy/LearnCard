@@ -489,6 +489,12 @@ describe('LearnCard SDK', () => {
             // Don't think this can be tested more thoroughly without exposing the provider
             expect(() => wallet.addAlchemyApiKey('abc1234')).not.toThrowError();
         });
+        it('should support adding an Etherscan API key', async () => {
+            const wallet = await getWallet();
+
+            // Don't think this can be tested more thoroughly without exposing the provider
+            expect(() => wallet.addEtherscanApiKey('abc1234')).not.toThrowError();
+        });
         //it('test mocks', async () => {
         // at top of file...
         // // Mocks

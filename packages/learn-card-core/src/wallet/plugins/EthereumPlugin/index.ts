@@ -34,13 +34,15 @@ export const getEthereumPlugin = (
     >,
     config: EthereumConfig
 ): Plugin<'Ethereum', EthereumPluginMethods> => {
-    let { infuraProjectId, alchemyApiKey, network = 'mainnet' } = config;
+    let { infuraProjectId, alchemyApiKey, etherscanApiKey, network = 'mainnet' } = config;
 
     // Ethers wallet
     const secpKeypair = initWallet.pluginMethods.getSubjectKeypair('secp256k1');
     const privateKey = Buffer.from(secpKeypair.d, 'base64').toString('hex');
     let ethersWallet = new ethers.Wallet(privateKey);
     const publicKey: string = ethersWallet.address;
+
+    let etherscanProvider: ethers.providers.EtherscanProvider;
 
     // Provider
     const getProvider = () => {
@@ -49,9 +51,14 @@ export const getEthereumPlugin = (
             provider = new ethers.providers.InfuraProvider(network, infuraProjectId);
         } else if (alchemyApiKey) {
             provider = new ethers.providers.AlchemyProvider(network, alchemyApiKey);
+        } else if (etherscanApiKey) {
+            provider = new ethers.providers.EtherscanProvider(network, etherscanApiKey);
         } else {
             provider = ethers.getDefaultProvider(network);
         }
+
+        // Always initialized becuase we use it for transaction history
+        etherscanProvider = new ethers.providers.EtherscanProvider(network, etherscanApiKey);
 
         ethersWallet = ethersWallet.connect(provider);
         return provider;
@@ -156,6 +163,17 @@ export const getEthereumPlugin = (
                 ).hash;
             },
 
+            getTransactionHistory: async () => {
+                console.log('🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆');
+                return await etherscanProvider.getHistory(publicKey);
+                /* etherscanProvider.getHistory(publicKey).then(history => {
+                    history.forEach(tx => {
+                        console.log(tx);
+                    });
+                });
+                console.log('------------------------------------'); */
+            },
+
             getGasPrice: async () => {
                 return ethers.utils.formatUnits(await provider.getGasPrice());
             },
@@ -181,6 +199,10 @@ export const getEthereumPlugin = (
             },
             addAlchemyApiKey: (_wallet, _alchemyApiKey) => {
                 alchemyApiKey = _alchemyApiKey;
+                provider = getProvider();
+            },
+            addEtherscanApiKey: (_wallet, _etherscanApiKey) => {
+                etherscanApiKey = _etherscanApiKey;
                 provider = getProvider();
             },
         },

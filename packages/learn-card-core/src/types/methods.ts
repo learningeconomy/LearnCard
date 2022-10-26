@@ -238,6 +238,13 @@ export type TransferTokens = (
 ) => Promise<string>;
 
 /**
+ * Get the transaction history for this wallet
+ *
+ * @group LearnCard Methods
+ */
+export type GetTransactionHistory = () => Promise<ethers.providers.TransactionResponse[]>;
+
+/**
  * Get the gas price of the current network
  *
  * @group LearnCard Methods
@@ -273,6 +280,14 @@ export type AddInfuraProjectId = (_infuraProjectId: string) => void;
  * @group LearnCard Methods
  */
 export type AddAlchemyApiKey = (_alchemyApiKey: string) => void;
+
+/**
+ * Add an Etherscan API key to an existing wallet.
+ * Really only useful for testing with the CLI right now...
+ *
+ * @group LearnCard Methods
+ */
+export type AddEtherscanApiKey = (_etherscanApiKey: string) => void;
 
 /**
  * Returns a Verifiable Presentation (VP) from a QR code base-64 image data string containing a VP compressed by CBOR-LD.
@@ -359,11 +374,13 @@ export type AllLearnCardMethods = {
     getBalance: GetBalance;
     getBalanceForAddress: GetBalanceForAddress;
     transferTokens: TransferTokens;
+    getTransactionHistory: GetTransactionHistory;
     getGasPrice: GetGasPrice;
     getCurrentNetwork: GetCurrentNetwork;
     changeNetwork: ChangeNetwork;
     addInfuraProjectId: AddInfuraProjectId;
     addAlchemyApiKey: AddAlchemyApiKey;
+    addEtherscanApiKey: AddEtherscanApiKey;
     vpFromQrCode: VpFromQrCode;
     vpToQrCode: VpToQrCode;
     installChapiHandler: InstallChapiHandler;
