@@ -44,7 +44,11 @@ describe('LearnCard SDK', () => {
             const emptyWallet = await initLearnCard();
 
             const issuedVc = await wallet.invoke.issueCredential(wallet.invoke.getTestVc());
-            const verificationResult = await emptyWallet.invoke.verifyCredential(issuedVc);
+            const verificationResult = await emptyWallet.invoke.verifyCredential(
+                issuedVc,
+                {},
+                true
+            );
 
             expect(verificationResult).not.toHaveLength(0);
             expect(verificationResult).toEqual(
@@ -179,7 +183,7 @@ describe('LearnCard SDK', () => {
             const wallet = await getWallet();
 
             const issuedVc = await wallet.invoke.issueCredential(wallet.invoke.getTestVc());
-            const verificationResult = await wallet.invoke.verifyCredential(issuedVc);
+            const verificationResult = await wallet.invoke.verifyCredential(issuedVc, {}, true);
 
             expect(verificationResult).not.toHaveLength(0);
             expect(verificationResult).toEqual(
@@ -197,7 +201,7 @@ describe('LearnCard SDK', () => {
             const issuedVc = await wallet.invoke.issueCredential(wallet.invoke.getTestVc());
             issuedVc.issuer = otherWallet.id.did();
 
-            const verificationResult = await wallet.invoke.verifyCredential(issuedVc);
+            const verificationResult = await wallet.invoke.verifyCredential(issuedVc, {}, true);
 
             expect(verificationResult).not.toHaveLength(0);
             expect(verificationResult).toEqual(
@@ -213,7 +217,7 @@ describe('LearnCard SDK', () => {
 
             const vc = await wallet.invoke.issueCredential(uvc);
 
-            const verificationResult = await wallet.invoke.verifyCredential(vc);
+            const verificationResult = await wallet.invoke.verifyCredential(vc, {}, true);
 
             const expirationObject = verificationResult.find(
                 result => result.check === 'expiration'
@@ -230,7 +234,7 @@ describe('LearnCard SDK', () => {
 
             const vc = await wallet.invoke.issueCredential(uvc);
 
-            const verificationResult = await wallet.invoke.verifyCredential(vc);
+            const verificationResult = await wallet.invoke.verifyCredential(vc, {}, true);
 
             const expirationObject = verificationResult.find(
                 result => result.check === 'expiration'
