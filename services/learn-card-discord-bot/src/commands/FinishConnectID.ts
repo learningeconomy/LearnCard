@@ -61,7 +61,7 @@ export const FinishConnectIDModal = {
             return;
         }
 
-        const domain = 'discord://auth.learncard.com';
+        const domain = 'discord-bot.learncard.com';
         let vp;
 
         try {
