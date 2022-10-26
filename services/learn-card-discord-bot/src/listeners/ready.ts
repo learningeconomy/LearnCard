@@ -9,9 +9,6 @@ export default async ({ client }: Context): Promise<void> => {
             return;
         }
         await client.application.commands.set(Commands);
-
-        // console.log(await constructTallyMessage(client, "944320393169215498"));
-
         console.log(`${client.user.username} is online`);
     });
 };

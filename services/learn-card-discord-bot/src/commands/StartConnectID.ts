@@ -24,7 +24,7 @@ export const StartConnectID: Command = {
             context
         );
 
-        const authLink = `https://learncard.app/did-auth/${challenge}?domain=discord://auth.learncard.com`;
+        const authLink = `https://learncard.app/did-auth/${challenge}?domain=discord-bot.learncard.com`;
 
         if (existingDID) {
             await interaction.reply({
