@@ -49,6 +49,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({
     jobCount = 1,
     achievementCount = 4,
     thumbSrc,
+    hideHeader = false,
     skillCount = 9,
     className,
     onClick = () => {},
@@ -64,11 +65,13 @@ export const CourseCard: React.FC<CourseCardProps> = ({
             />
 
             <div className="course-card-detail-info flex flex-col justify-between">
-                <div className="text-sm">
-                    <span className="text-emerald-700 font-semibold">{status}</span>
-                    <span className="spacer-dot mx-[3px]">•</span>
-                    <span className="text-grayscale-500">{semester}</span>
-                </div>
+                {!hideHeader && (
+                    <div className="text-sm">
+                        <span className="text-emerald-700 font-semibold">{status}</span>
+                        <span className="spacer-dot mx-[3px]">•</span>
+                        <span className="text-grayscale-500">{semester}</span>
+                    </div>
+                )}
                 <p className="course-card-title text-sm font-semibold line-clamp-2">{title}</p>
                 <div className="course-card-counts-container flex items-center mt-[5px]">
                     <CourseCardStatBubble type={'job'} count={jobCount} className={'mr-[5px]'} />

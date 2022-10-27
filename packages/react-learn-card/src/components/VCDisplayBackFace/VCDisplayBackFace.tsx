@@ -69,7 +69,7 @@ export const VCDisplayBackFace: React.FC<VCDisplayCardProps> = ({
 
                 <div className="w-full mt-2"></div>
 
-                <button className="bg-white my-3 border-2 text-indigo-500 font-semibold py-2 px-4 border border-indigo-300 rounded-full">
+                <button className="bg-white my-3 border-2 text-indigo-500 font-semibold py-2 px-4 shadow-3xl rounded-full">
                     <span className="flex justify-center">
                         <img
                             className="h-8 w-8 my-0 mx-4 scale-x-[-1]"
