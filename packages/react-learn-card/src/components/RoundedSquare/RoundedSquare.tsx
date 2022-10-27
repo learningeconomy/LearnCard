@@ -3,8 +3,7 @@ import { Icons } from '../../types';
 import { ICONS_TO_SOURCE } from '../../constants/icons';
 import CircleIcon from '../CircleIcon/CircleIcon';
 import { CountCircle } from '../CircleIcon';
-import { TYPE_TO_IMG_SRC, TYPE_TO_WALLET_COLOR } from './constants';
-import { WALLET_SUBTYPES } from './constants';
+import { TYPE_TO_IMG_SRC, TYPE_TO_WALLET_COLOR, WALLET_SUBTYPES } from '../../constants';
 
 export type RoundedSquareProps = {
     title?: string;
