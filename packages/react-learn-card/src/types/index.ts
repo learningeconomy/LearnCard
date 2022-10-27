@@ -81,6 +81,7 @@ export type CourseCardProps = {
     thumbSrc?: string;
     jobCount?: string | number;
     className?: string;
+    hideHeader?: boolean;
     check?: boolean;
     achievementCount: string | number;
     onClick?: () => void;
@@ -189,5 +190,24 @@ export type SkillTabCardProps = {
     showChecked?: boolean;
     className?: string;
     onCheckClicked?: () => void;
+    onClick?: () => void;
+};
+
+export type JobHistoryCardProps = {
+    title?: string;
+    company?: string;
+    description?: string;
+    dateRange?: string;
+    jobType?: string;
+    className?: string;
+    showArrow?: boolean;
+    onClick?: () => void;
+};
+
+export type GenericCardProps = {
+    title?: string;
+    className?: string;
+    type?: string;
+    thumbImgSrc?: string;
     onClick?: () => void;
 };

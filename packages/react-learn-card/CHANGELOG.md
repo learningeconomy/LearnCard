@@ -1,5 +1,31 @@
 # @welibraryos/react-learn-card
 
+## 2.3.45
+
+### Patch Changes
+
+-   [#131](https://github.com/learningeconomy/LearnCard/pull/131) [`dd4931f`](https://github.com/learningeconomy/LearnCard/commit/dd4931f9e439c4f80b16c6f438aff3e4eee6b8af) Thanks [@goblincore](https://github.com/goblincore)! - Hide VC image when no image for vc, course card additional hide header prop, css changes for generic display card
+
+## 2.3.44
+
+### Patch Changes
+
+-   [#128](https://github.com/learningeconomy/LearnCard/pull/128) [`e67119e`](https://github.com/learningeconomy/LearnCard/commit/e67119e978d4df324aa71235c3b202b3e8bdde7c) Thanks [@goblincore](https://github.com/goblincore)! - Small UI updates - add generic display card, job history card, update job listing card
+
+## 2.3.43
+
+### Patch Changes
+
+-   Updated dependencies [[`2a4f635`](https://github.com/learningeconomy/LearnCard/commit/2a4f63521b2ce68961868359873064a25394dd99)]:
+    -   @learncard/core@7.0.3
+
+## 2.3.42
+
+### Patch Changes
+
+-   Updated dependencies [[`00b119a`](https://github.com/learningeconomy/LearnCard/commit/00b119a56769bcdc921502a5ad0591d07ad667e8)]:
+    -   @learncard/core@7.0.2
+
 ## 2.3.41
 
 ### Patch Changes
