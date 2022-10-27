@@ -12,7 +12,7 @@ export const GenericCard: React.FC<GenericCardProps> = ({
     return (
         <button
             onClick={onClick}
-            className={`flex flex-col overflow-hidden shadow-[0_0_8px_0px_rgba(0,0,0,0.2)] relative $ py-[0px] px-[0px] w-[160px] h-[209px] rounded-[20px] rounded-square-card-container`}
+            className={`generic-display-card-simple bg-white flex flex-col overflow-hidden shadow-[0_0_8px_0px_rgba(0,0,0,0.2)] relative $ py-[0px] px-[0px] w-[160px] h-[209px] rounded-[20px] rounded-square-card-container`}
         >
             <section className="flex generic-card-title w-full flex justify-center items-center  h-[76px]  bg-grayscale-900">
                 <p className="text-[14px] font-bold mt-[10px] text-center text-white line-clamp-2">
@@ -24,7 +24,7 @@ export const GenericCard: React.FC<GenericCardProps> = ({
             >
                 {thumbImgSrc && (
                     <img
-                        className="h-full w-full object-contain overflow-hidden"
+                        className="generic-display-card-img h-full w-full object-contain overflow-hidden"
                         src={thumbImgSrc ?? ''}
                         alt="Credential Achievement Image"
                     />
