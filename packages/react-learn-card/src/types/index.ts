@@ -20,6 +20,15 @@ export enum LCSubtypes {
     locked = 'locked',
 }
 
+export enum WalletCategoryTypes {
+    achievements = 'achievements',
+    ids = 'ids',
+    jobHistory = 'jobHistory',
+    currency = 'currency',
+    learningHistory = 'learningHistory',
+    skills = 'skills',
+}
+
 export type CredentialInfo = {
     title?: string;
     createdAt?: string;
@@ -207,7 +216,9 @@ export type JobHistoryCardProps = {
 export type GenericCardProps = {
     title?: string;
     className?: string;
-    type?: string;
+    type?: WalletCategoryTypes;
     thumbImgSrc?: string;
+    customThumbClass?: string;
+    customHeaderClass?: string;
     onClick?: () => void;
 };

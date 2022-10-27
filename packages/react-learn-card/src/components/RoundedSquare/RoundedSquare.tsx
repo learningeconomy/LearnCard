@@ -1,14 +1,14 @@
 import React from 'react';
-import { Icons } from '../../types';
+import { Icons, WalletCategoryTypes } from '../../types';
 import { ICONS_TO_SOURCE } from '../../constants/icons';
 import CircleIcon from '../CircleIcon/CircleIcon';
 import { CountCircle } from '../CircleIcon';
-import { TYPE_TO_IMG_SRC, TYPE_TO_WALLET_COLOR, WALLET_SUBTYPES } from '../../constants';
+import { TYPE_TO_IMG_SRC, TYPE_TO_WALLET_COLOR } from '../../constants';
 
 export type RoundedSquareProps = {
     title?: string;
     description?: string;
-    type?: string;
+    type?: WalletCategoryTypes;
     iconSrc?: string;
     imgSrc?: string;
     count?: string | number;
@@ -21,7 +21,7 @@ export const RoundedSquare: React.FC<RoundedSquareProps> = ({
     description = 'Lorem ipsum sit dalor amet',
     iconSrc = ICONS_TO_SOURCE[Icons.trophyIcon],
     imgSrc,
-    type = WALLET_SUBTYPES.ACHIEVEMENTS,
+    type = WalletCategoryTypes.achievements,
     count = '28',
     onClick = () => {},
     bgColor,
