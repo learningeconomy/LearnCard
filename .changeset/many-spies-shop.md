@@ -21,6 +21,7 @@ const bespokeLearnCard = await learnCard.addPlugin(plugin);
 -   The old `LearnCard` type has been removed
 -   The `Wallet` type has been renamed to `LearnCard`
 -   `generateWallet` has been renamed to `generateLearnCard`
+    - This function should now be considered private. If you'd like to construct a fully custom LearnCard, please use `initLearnCard({ custom: true })` instead
 -   The `did` method now has had its type loosened to just `string`
 -   The `verifyCredential` method now returns a `VerificationCheck` directly, unless you explicitly ask for the prettified version via a flag
     -   I.e. `wallet.verifyCredential(vc)` is now `wallet.invoke.verifyCredential(vc, {}, true)`
@@ -35,7 +36,7 @@ For the most part, you can simply rename calls and everything will just work
 -   `wallet.newCredential` is now `wallet.invoke.newCredential`
 -   `wallet.newPresentation` is now `wallet.invoke.newPresentation`
 -   `wallet.verifyCredential` is now `wallet.invoke.verifyCredential`
-    -   As per above, if you'd like to retain the same output format, you will need to pass true as the third argument, i.e.
+    -   As per above, if you'd like to retain the same output format, you will need to pass true as the third argument
         -   I.e. `wallet.verifyCredential(vc)` is now `wallet.invoke.verifyCredential(vc, {}, true)`
 -   `wallet.issueCredential` is now `wallet.invoke.issueCredential`
 -   `wallet.issuePresentation` is now `wallet.invoke.issuePresentation`
