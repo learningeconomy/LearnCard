@@ -1,6 +1,6 @@
 import React from 'react';
 import { JobListCardProps } from '../../types';
-import { TYPE_TO_MINI_ICON } from '../../constants';
+import { TYPE_TO_MINI_ICON } from '../../constants/';
 import { LCSubtypes } from '../../types';
 
 const TYPE_TO_COLOR: any = {

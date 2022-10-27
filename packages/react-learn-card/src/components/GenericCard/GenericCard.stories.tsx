@@ -1,8 +1,7 @@
 import React from 'react';
 import { Story, Meta } from '@storybook/react';
-
 import GenericCard from './GenericCard';
-import { SmallAchievementCardProps } from '../../types';
+import { GenericCardProps, WalletCategoryTypes } from '../../types';
 
 export default {
     title: 'Generic Card',
@@ -10,12 +9,13 @@ export default {
     argTypes: {},
 } as Meta<typeof GenericCard>;
 
-const Template: Story<SmallAchievementCardProps> = args => <GenericCard {...args} />;
+const Template: Story<GenericCardProps> = args => <GenericCard {...args} />;
 
 export const GenericCardTest = Template.bind({});
 GenericCardTest.args = {
     title: 'Title Title Title',
-    thumbImgSrc: null,
+    type: WalletCategoryTypes.skills,
+    thumbImgSrc: '',
     onClick: () => {
         console.log('//goodbye world');
     },
