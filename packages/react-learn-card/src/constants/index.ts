@@ -5,6 +5,7 @@ import learningHistoryGraphic from '../assets/images/walletlearninghistory.webp'
 import skillsGraphic from '../assets/images/walletskills.webp';
 import achievementsGraphic from '../assets/images/walletTrophy.webp';
 
+
 import MiniTrophyIcon from '../assets/images/minitrophycolored.svg';
 import MiniGradIcon from '../assets/images/minigradcapcolored.svg';
 import MiniPuzzleIcon from '../assets/images/minipuzzlecolored.svg';

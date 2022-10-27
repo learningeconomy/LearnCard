@@ -15,7 +15,7 @@ export const GenericCardTest = Template.bind({});
 GenericCardTest.args = {
     title: 'Title Title Title',
     type: WalletCategoryTypes.skills,
-    thumbImgSrc: null,
+    thumbImgSrc: '',
     onClick: () => {
         console.log('//goodbye world');
     },
