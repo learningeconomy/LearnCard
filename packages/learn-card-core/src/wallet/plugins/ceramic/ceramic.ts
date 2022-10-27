@@ -107,7 +107,15 @@ export const getCeramicPlugin = async <URI extends string = ''>(
             get: async (_wallet, uri) => {
                 wallet.debug?.('wallet.read.Ceramic.get');
 
-                return resolveCredential(uri);
+                if (!uri) return undefined;
+
+                const verificationResult = await CeramicURIValidator.spa(uri);
+
+                if (!verificationResult.success) return undefined;
+
+                const streamId = verificationResult.data.split(':')[2];
+
+                return VCValidator.parseAsync(await readContentFromCeramic(streamId));
             },
         },
         methods: {
