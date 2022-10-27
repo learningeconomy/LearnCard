@@ -1,7 +1,7 @@
 import fs from 'fs/promises';
 import repl from 'pretty-repl';
 
-import { initLearnCard, emptyWallet, walletFromKey, getTestCache } from '@learncard/core';
+import { initLearnCard, emptyLearnCard, learnCardFromKey, getTestCache } from '@learncard/core';
 import types from '@learncard/types';
 import gradient from 'gradient-string';
 import figlet from 'figlet';
@@ -12,9 +12,9 @@ import { generateRandomSeed } from './random';
 import packageJson from '../package.json';
 
 const g = {
-    wallet: gradient(['cyan', 'green'])('wallet'),
-    emptyWallet: gradient(['cyan', 'green'])('emptyWallet'),
-    walletFromKey: gradient(['cyan', 'green'])('walletFromKey'),
+    learnCard: gradient(['cyan', 'green'])('learnCard'),
+    emptyLearnCard: gradient(['cyan', 'green'])('emptyLearnCard'),
+    learnCardFromKey: gradient(['cyan', 'green'])('learnCardFromKey'),
     initLearnCard: gradient(['cyan', 'green'])('initLearnCard'),
     seed: gradient(['cyan', 'green'])('seed'),
     generateRandomSeed: gradient(['cyan', 'green'])('generateRandomSeed'),
@@ -38,10 +38,10 @@ program
 
         globalThis.seed = seed;
         globalThis.generateRandomSeed = generateRandomSeed;
-        globalThis.emptyWallet = emptyWallet;
-        globalThis.walletFromKey = walletFromKey;
+        globalThis.emptyLearnCard = emptyLearnCard;
+        globalThis.learnCardFromKey = learnCardFromKey;
         globalThis.initLearnCard = initLearnCard;
-        globalThis.wallet = await initLearnCard({
+        globalThis.learnCard = await initLearnCard({
             seed,
             didkit: fs.readFile(require.resolve('@learncard/core/dist/didkit/didkit_wasm_bg.wasm')),
         });
@@ -59,7 +59,7 @@ program
         console.log('├────────────────────┬───────────────────────────────┤');
         console.log('│      Variable      │           Description         │');
         console.log('├────────────────────┼───────────────────────────────┤');
-        console.log(`│             ${g.wallet} │ Learn Card Wallet             │`);
+        console.log(`│          ${g.learnCard} │ Learn Card Wallet             │`);
         console.log(`│      ${g.initLearnCard} │ Wallet Instantiation Function │`);
         console.log(`│               ${g.seed} │ Seed used to generate wallet  │`);
         console.log(`│ ${g.generateRandomSeed} │ Generates a random seed       │`);
@@ -72,44 +72,42 @@ program
             'For help/documentation regarding your wallet, please read the documentation at\n'
         );
 
-        console.log(
-            'https://app.gitbook.com/o/6uDv1QDlxaaZC7i8EaGb/s/FXvEJ9j3Vf3FW5Nc557n/learn-card-packages/learncard-core/quick-start\n'
-        );
+        console.log('https://docs.learncard.com/learn-card-sdk/learncard-core/quick-start\n');
 
         console.log("To get a feel for what's possible, try some of the following commands\n");
 
-        console.log('┌─────────────────────────┬─────────────────────────────────────────────┐');
-        console.log('│        Description      │                   Command                   │');
-        console.log('├─────────────────────────┼─────────────────────────────────────────────┤');
+        console.log('┌─────────────────────────┬────────────────────────────────────────────────┐');
+        console.log('│        Description      │                    Command                     │');
+        console.log('├─────────────────────────┼────────────────────────────────────────────────┤');
         console.log(
-            `│           View your did │ ${g.wallet}.id.did();                            │`
+            `│           View your did │ ${g.learnCard}.id.did();                            │`
         );
         console.log(
-            `│ Generate an unsigned VC │ ${g.wallet}.invoke.getTestVc();                  │`
+            `│ Generate an unsigned VC │ ${g.learnCard}.invoke.getTestVc();                  │`
         );
         console.log(
-            `│       Issue a signed VC │ await ${g.wallet}.invoke.issueCredential(uvc);   │`
+            `│       Issue a signed VC │ await ${g.learnCard}.invoke.issueCredential(uvc);   │`
         );
         console.log(
-            `│      Verify a signed VC │ await ${g.wallet}.invoke.verifyCredential(vc);   │`
+            `│      Verify a signed VC │ await ${g.learnCard}.invoke.verifyCredential(vc);   │`
         );
         console.log(
-            `│       Issue a signed VP │ await ${g.wallet}.invoke.issuePresentation(vc);  │`
+            `│       Issue a signed VP │ await ${g.learnCard}.invoke.issuePresentation(vc);  │`
         );
         console.log(
-            `│      Verify a signed VP │ await ${g.wallet}.invoke.verifyPresentation(vp); │`
+            `│      Verify a signed VP │ await ${g.learnCard}.invoke.verifyPresentation(vp); │`
         );
-        console.log('└─────────────────────────┴─────────────────────────────────────────────┘');
+        console.log('└─────────────────────────┴────────────────────────────────────────────────┘');
 
         console.log('');
 
         repl.start({
             colorize: (input: string) => {
                 return input
-                    .replace('emptyWallet', g.emptyWallet)
-                    .replace('walletFromKey', g.walletFromKey)
+                    .replace('emptyLearnCard', g.emptyLearnCard)
+                    .replace('learnCardFromKey', g.learnCardFromKey)
                     .replace('initLearnCard', g.initLearnCard)
-                    .replace('wallet', g.wallet)
+                    .replace('learnCard', g.learnCard)
                     .replace('seed', g.seed)
                     .replace('generateRandomSeed', g.generateRandomSeed);
             },
