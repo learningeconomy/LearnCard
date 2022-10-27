@@ -1,3 +1,5 @@
+import { CredentialRecord } from '@learncard/types';
+
 import { Plugin, LearnCard, GetPluginMethods, AddImplicitLearnCardArgument } from 'types/wallet';
 import {
     ControlPlane,
@@ -10,6 +12,7 @@ import {
     LearnCardCachePlane,
     LearnCardIdPlane,
     StorePlane,
+    PlaneOptions,
 } from 'types/planes';
 import {
     findFirstResult,
@@ -251,7 +254,10 @@ const generateIndexPlane = <
     );
 
     const all: Pick<IndexPlane, 'get'> = {
-        get: async (query, { cache = 'cache-first' } = {}) => {
+        get: async <Metadata extends Record<string, any> = Record<never, never>>(
+            query?: Record<string, any>,
+            { cache = 'cache-first' }: PlaneOptions = {}
+        ) => {
             learnCard.debug?.('learnCard.index.all.get');
 
             if (cache === 'cache-only' && !learnCardImplementsPlane(learnCard, 'cache')) {
@@ -259,7 +265,7 @@ const generateIndexPlane = <
             }
 
             if (learnCardImplementsPlane(learnCard, 'cache') && cache !== 'skip-cache') {
-                const cachedResponse = await learnCard.cache.getIndex(query ?? {});
+                const cachedResponse = await learnCard.cache.getIndex<Metadata>(query ?? {});
 
                 if (cachedResponse) {
                     if (cache === 'cache-first' && learnCardImplementsPlane(learnCard, 'index')) {
@@ -277,7 +283,9 @@ const generateIndexPlane = <
                     learnCard.plugins.map(async plugin => {
                         if (!pluginImplementsPlane(plugin, 'index')) return [];
 
-                        return plugin.index.get(learnCard as any, query);
+                        return plugin.index.get(learnCard as any, query) as Promise<
+                            CredentialRecord<Metadata>[]
+                        >;
                     })
                 )
             ).flat();
@@ -303,7 +311,9 @@ const generateCachePlane = <
     learnCard: LearnCard<Plugins, ControlPlanes, PluginMethods>
 ): LearnCardCachePlane<Plugins> => {
     return {
-        getIndex: async query => {
+        getIndex: async <Metadata extends Record<string, any> = Record<never, never>>(
+            query: Record<string, any>
+        ) => {
             learnCard.debug?.('learnCard.cache.getIndex');
 
             try {
@@ -313,7 +323,9 @@ const generateCachePlane = <
                             throw new Error('Plugin is not a Cache Plugin');
                         }
 
-                        return plugin.cache.getIndex(learnCard as any, query);
+                        return plugin.cache.getIndex(learnCard as any, query) as Promise<
+                            CredentialRecord<Metadata>[]
+                        >;
                     })
                 );
 
@@ -484,7 +496,7 @@ export const generateLearnCard = async <
         id: {} as LearnCardIdPlane<Plugins>,
         plugins: plugins as Plugins,
         invoke: pluginMethods,
-        addPlugin: function(plugin) {
+        addPlugin: function (plugin) {
             return addPluginToLearnCard(this as any, plugin);
         },
         debug: _learnCard.debug,

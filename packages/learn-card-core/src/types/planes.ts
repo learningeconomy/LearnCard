@@ -70,8 +70,14 @@ export type LearnCardStorePlane<Plugins extends Plugin[]> = Record<
 // --- Index ---
 
 export type IndexPlane = {
-    get: (query?: Record<string, any>, options?: PlaneOptions) => Promise<CredentialRecord[]>;
-    add: (obj: CredentialRecord, options?: PlaneOptions) => Promise<boolean>;
+    get: <Metadata extends Record<string, any> = Record<never, never>>(
+        query?: Record<string, any>,
+        options?: PlaneOptions
+    ) => Promise<CredentialRecord<Metadata>[]>;
+    add: <Metadata extends Record<string, any> = Record<never, never>>(
+        obj: CredentialRecord<Metadata>,
+        options?: PlaneOptions
+    ) => Promise<boolean>;
     update: (id: string, updates: Record<string, any>, options?: PlaneOptions) => Promise<boolean>;
     remove: (id: string, options?: PlaneOptions) => Promise<boolean>;
 };
@@ -86,8 +92,13 @@ export type LearnCardIndexPlane<Plugins extends Plugin[]> = {
 // --- Cache ---
 
 export type CachePlane = {
-    getIndex: (query: Record<string, any>) => Promise<CredentialRecord[] | undefined>;
-    setIndex: (query: Record<string, any>, value: CredentialRecord[]) => Promise<boolean>;
+    getIndex: <Metadata extends Record<string, any> = Record<never, never>>(
+        query: Record<string, any>
+    ) => Promise<CredentialRecord<Metadata>[] | undefined>;
+    setIndex: <Metadata extends Record<string, any> = Record<never, never>>(
+        query: Record<string, any>,
+        value: CredentialRecord<Metadata>[]
+    ) => Promise<boolean>;
     flushIndex: () => Promise<boolean>;
     getVc: (uri: string) => Promise<VC | undefined>;
     setVc: (uri: string, value: VC | undefined) => Promise<boolean>;
