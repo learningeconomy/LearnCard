@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.3.47
+
+### Patch Changes
+
+-   [#135](https://github.com/learningeconomy/LearnCard/pull/135) [`235c773`](https://github.com/learningeconomy/LearnCard/commit/235c7731aded77985cf9083c09c6200ff8599766) Thanks [@goblincore](https://github.com/goblincore)! - chore: rounded square update - add back constant exports and left justify title
+
 ## 2.3.46
 
 ### Patch Changes
