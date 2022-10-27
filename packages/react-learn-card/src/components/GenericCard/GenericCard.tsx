@@ -12,9 +12,10 @@ export const GenericCard: React.FC<GenericCardProps> = ({
     onClick = () => {},
 }) => {
     const thumbClass = `bg-${TYPE_TO_WALLET_DARK_COLOR[type]}` ?? 'bg-grayscale-50';
-    const defaultThumbClass = `flex h-[110px] m-auto ${thumbClass} w-[140px] overflow-hidden p-[15px] flex-col justify-center items-center w-full rounded-[20px] ${customThumbClass}`;
-    const imgSrc = thumbImgSrc ?? TYPE_TO_IMG_SRC[type];
+    const defaultThumbClass = `flex h-[110px] m-auto ${thumbClass} w-[140px] overflow-hidden flex-col justify-center items-center w-full rounded-[20px] ${customThumbClass}`;
+    const imgSrc = thumbImgSrc?.trim() !== '' ? thumbImgSrc : TYPE_TO_IMG_SRC[type];
 
+    console.log('//thumbImgSrc', thumbImgSrc);
     const headerBgColor = `bg-${TYPE_TO_WALLET_DARK_COLOR[type]}` ?? 'bg-grayscale-900';
     const defaultHeaderClass = `flex generic-card-title w-full flex justify-center items-center  h-[76px] ${headerBgColor} ${customHeaderClass}`;
     return (
@@ -28,15 +29,18 @@ export const GenericCard: React.FC<GenericCardProps> = ({
                 </p>
             </section>
             <section className={defaultThumbClass}>
-                {thumbImgSrc && (
+                {thumbImgSrc && thumbImgSrc?.trim() !== '' && (
                     <img
-                        className="generic-display-card-img h-full w-full  w-[140px] h-[119px] rounded-[20px] object-contain overflow-hidden"
+                        className="generic-display-card-img h-full w-full  w-[140px] h-[119px] rounded-[20px] object-cover overflow-hidden"
                         src={thumbImgSrc ?? ''}
                         alt="Credential Achievement Image"
                     />
                 )}
-                {(!thumbImgSrc || thumbImgSrc === '') && (
-                    <img className="max-w-[130px p-[10px]" src={imgSrc} />
+                {(!thumbImgSrc || thumbImgSrc?.trim() === '') && (
+                    <img
+                        className="max-w-[130px] w-full h-full p-[10px] object-contain"
+                        src={imgSrc}
+                    />
                 )}
             </section>
 
