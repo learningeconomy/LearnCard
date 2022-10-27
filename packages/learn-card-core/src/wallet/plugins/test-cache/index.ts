@@ -2,7 +2,7 @@ import { CredentialRecord, VC } from '@learncard/types';
 import { TestCachePlugin } from './types';
 
 export const getTestCache = (): TestCachePlugin => {
-    let index: CredentialRecord[] | undefined = undefined;
+    let index: Record<string, CredentialRecord[]> = {};
     let vcs: Record<string, VC | undefined> = {};
 
     return {
@@ -10,18 +10,18 @@ export const getTestCache = (): TestCachePlugin => {
         displayName: 'Test Cache',
         description: '[Testing] Tests Caching Implementation',
         cache: {
-            getIndex: async (_learnCard, query) => {
-                _learnCard.debug?.('Test Cache, getIndex', { query, value: index });
-                return index;
+            getIndex: async (_learnCard, name, query) => {
+                _learnCard.debug?.('Test Cache, getIndex', { name, query, value: index });
+                return index[name];
             },
-            setIndex: async (_learnCard, query, value) => {
-                _learnCard.debug?.('Test Cache, setIndex', { query, value });
-                index = value;
+            setIndex: async (_learnCard, name, query, value) => {
+                _learnCard.debug?.('Test Cache, setIndex', { name, query, value });
+                index[name] = value as any;
                 return true;
             },
             flushIndex: async _learnCard => {
                 _learnCard.debug?.('Test Cache, flushIndex');
-                index = undefined;
+                index = {};
                 return true;
             },
             getVc: async (_learnCard, uri) => {

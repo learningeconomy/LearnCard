@@ -174,7 +174,8 @@ const addCachingToIndexPlane = <
         Methods,
         DependentControlPlanes,
         DependentMethods
-    >
+    >,
+    name: string
 ): AddImplicitLearnCardArgument<
     IndexPlane,
     ControlPlanes,
@@ -188,13 +189,13 @@ const addCachingToIndexPlane = <
         }
 
         if (learnCardImplementsPlane(_learnCard, 'cache') && cache !== 'skip-cache') {
-            const cachedResponse = await _learnCard.cache.getIndex(query ?? {});
+            const cachedResponse = await _learnCard.cache.getIndex(name, query ?? {});
 
             if (cachedResponse) {
                 if (cache === 'cache-first') {
                     plane
                         .get(_learnCard, query, { cache: 'skip-cache' })
-                        .then(res => _learnCard.cache.setIndex(query ?? {}, res));
+                        .then(res => _learnCard.cache.setIndex(name, query ?? {}, res));
                 }
 
                 return cachedResponse;
@@ -204,7 +205,7 @@ const addCachingToIndexPlane = <
         const list = await plane.get(_learnCard, query);
 
         if (list && learnCardImplementsPlane(_learnCard, 'cache') && cache !== 'skip-cache') {
-            await _learnCard.cache.setIndex(query ?? {}, list);
+            await _learnCard.cache.setIndex(name, query ?? {}, list);
         }
 
         return list;
@@ -244,7 +245,7 @@ const generateIndexPlane = <
             if (pluginImplementsPlane(plugin, 'index')) {
                 planes[plugin.name as keyof typeof planes] = bindLearnCardToFunctionsObject(
                     learnCard,
-                    addCachingToIndexPlane(plugin.index)
+                    addCachingToIndexPlane(plugin.index, plugin.name)
                 ) as any;
             }
 
@@ -265,13 +266,13 @@ const generateIndexPlane = <
             }
 
             if (learnCardImplementsPlane(learnCard, 'cache') && cache !== 'skip-cache') {
-                const cachedResponse = await learnCard.cache.getIndex<Metadata>(query ?? {});
+                const cachedResponse = await learnCard.cache.getIndex<Metadata>('all', query ?? {});
 
                 if (cachedResponse) {
                     if (cache === 'cache-first' && learnCardImplementsPlane(learnCard, 'index')) {
                         learnCard.index.all
                             .get(query, { cache: 'skip-cache' })
-                            .then(res => learnCard.cache.setIndex(query ?? {}, res));
+                            .then(res => learnCard.cache.setIndex('all', query ?? {}, res));
                     }
 
                     return cachedResponse;
@@ -293,7 +294,7 @@ const generateIndexPlane = <
             const results = [...new Set(resultsWithDuplicates)];
 
             if (results && learnCardImplementsPlane(learnCard, 'cache') && cache !== 'skip-cache') {
-                await learnCard.cache.setIndex(query ?? {}, results);
+                await learnCard.cache.setIndex('all', query ?? {}, results);
             }
 
             return results;
@@ -312,6 +313,7 @@ const generateCachePlane = <
 ): LearnCardCachePlane<Plugins> => {
     return {
         getIndex: async <Metadata extends Record<string, any> = Record<never, never>>(
+            name: string,
             query: Record<string, any>
         ) => {
             learnCard.debug?.('learnCard.cache.getIndex');
@@ -323,7 +325,7 @@ const generateCachePlane = <
                             throw new Error('Plugin is not a Cache Plugin');
                         }
 
-                        return plugin.cache.getIndex(learnCard as any, query) as Promise<
+                        return plugin.cache.getIndex(learnCard as any, name, query) as Promise<
                             CredentialRecord<Metadata>[]
                         >;
                     })
@@ -334,7 +336,7 @@ const generateCachePlane = <
                 return undefined;
             }
         },
-        setIndex: async (query, value) => {
+        setIndex: async (name, query, value) => {
             learnCard.debug?.('learnCard.cache.setIndex');
 
             const result = await Promise.allSettled(
@@ -343,7 +345,7 @@ const generateCachePlane = <
                         throw new Error('Plugin is not a Cache Plugin');
                     }
 
-                    return plugin.cache.setIndex(learnCard as any, query, value);
+                    return plugin.cache.setIndex(learnCard as any, name, query, value);
                 })
             );
 

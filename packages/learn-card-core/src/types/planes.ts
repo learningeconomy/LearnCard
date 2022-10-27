@@ -93,9 +93,11 @@ export type LearnCardIndexPlane<Plugins extends Plugin[]> = {
 
 export type CachePlane = {
     getIndex: <Metadata extends Record<string, any> = Record<never, never>>(
+        plugin: string,
         query: Record<string, any>
     ) => Promise<CredentialRecord<Metadata>[] | undefined>;
     setIndex: <Metadata extends Record<string, any> = Record<never, never>>(
+        plugin: string,
         query: Record<string, any>,
         value: CredentialRecord<Metadata>[]
     ) => Promise<boolean>;
