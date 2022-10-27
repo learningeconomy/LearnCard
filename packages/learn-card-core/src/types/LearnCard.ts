@@ -33,6 +33,7 @@ export type EmptyLearnCard = InitFunction<
     'didkit' | 'debug',
     LearnCard<[DIDKitPlugin, ExpirationPlugin, VCTemplatePlugin, CHAPIPlugin, LearnCardPlugin]>
 >;
+
 /** @group Init Functions */
 export type LearnCardFromKey = InitFunction<
     { seed: string },
@@ -54,6 +55,7 @@ export type LearnCardFromKey = InitFunction<
         ]
     >
 >;
+
 /** @group Init Functions */
 export type LearnCardFromVcApi = InitFunction<
     { vcApi: true | string; did?: string },
@@ -62,6 +64,9 @@ export type LearnCardFromVcApi = InitFunction<
 >;
 
 /** @group Init Functions */
+export type CustomLearnCard = InitFunction<{ custom: true }, 'debug', LearnCard<[]>>;
+
+/** @group Init Functions */
 export type InitLearnCard = GenericInitFunction<
-    [EmptyLearnCard, LearnCardFromKey, LearnCardFromVcApi]
+    [EmptyLearnCard, LearnCardFromKey, LearnCardFromVcApi, CustomLearnCard]
 >;

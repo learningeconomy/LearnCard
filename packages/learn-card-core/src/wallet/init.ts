@@ -1,3 +1,4 @@
+import { customLearnCard } from './initializers/customLearnCard';
 import { emptyLearnCard } from './initializers/emptyLearnCard';
 import { learnCardFromKey } from './initializers/learnCardFromKey';
 import { learnCardFromApiUrl } from './initializers/apiLearnCard';
@@ -7,8 +8,10 @@ import {
     EmptyLearnCard,
     LearnCardFromKey,
     LearnCardFromVcApi,
+    CustomLearnCard,
 } from 'types/LearnCard';
 
+export * from './initializers/customLearnCard';
 export * from './initializers/emptyLearnCard';
 export * from './initializers/learnCardFromKey';
 export * from './initializers/apiLearnCard';
@@ -42,6 +45,15 @@ export function initLearnCard(
     config: LearnCardFromVcApi['args']
 ): Promise<LearnCardFromVcApi['returnValue']>;
 
+/**
+ * Generates a custom wallet with no plugins added
+ *
+ * @group Init Functions
+ */
+export function initLearnCard(
+    config: CustomLearnCard['args']
+): Promise<CustomLearnCard['returnValue']>;
+
 // Implementation
 
 /**
@@ -52,6 +64,10 @@ export function initLearnCard(
 export async function initLearnCard(
     config: InitLearnCard['args'] = {}
 ): InitLearnCard['returnValue'] {
+    if ('custom' in config) {
+        return customLearnCard({ debug: config.debug });
+    }
+
     if ('vcApi' in config) {
         const { vcApi, did, debug } = config;
 
