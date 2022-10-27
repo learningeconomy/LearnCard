@@ -4,7 +4,7 @@ import { Story, Meta } from '@storybook/react';
 import RoundedSquare from './RoundedSquare';
 import { RoundedSquareProps, Icons } from '../../types';
 import { ICONS_TO_SOURCE } from '../../constants/icons';
-import { WALLET_SUBTYPES } from './constants';
+import { WALLET_SUBTYPES } from '../../constants';
 
 export default {
     title: 'RoundedSquare',

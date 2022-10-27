@@ -1,14 +1,14 @@
-import coinsGraphic from '../../assets/images/walletcurrency.webp';
-import idsGraphic from '../../assets/images/walletids.webp';
-import jobhistoryGraphic from '../../assets/images/walletjobhistory.webp';
-import learningHistoryGraphic from '../../assets/images/walletlearninghistory.webp';
-import skillsGraphic from '../../assets/images/walletskills.webp';
-import achievementsGraphic from '../../assets/images/walletTrophy.webp';
+import coinsGraphic from '../assets/images/walletcurrency.webp';
+import idsGraphic from '../assets/images/walletids.webp';
+import jobhistoryGraphic from '../assets/images/walletjobhistory.webp';
+import learningHistoryGraphic from '../assets/images/walletlearninghistory.webp';
+import skillsGraphic from '../assets/images/walletskills.webp';
+import achievementsGraphic from '../assets/images/walletTrophy.webp';
 
-import MiniTrophyIcon from '../../assets/images/minitrophycolored.svg';
-import MiniGradIcon from '../../assets/images/minigradcapcolored.svg';
-import MiniPuzzleIcon from '../../assets/images/minipuzzlecolored.svg';
-import { LCSubtypes } from '../../types';
+import MiniTrophyIcon from '../assets/images/minitrophycolored.svg';
+import MiniGradIcon from '../assets/images/minigradcapcolored.svg';
+import MiniPuzzleIcon from '../assets/images/minipuzzlecolored.svg';
+import { LCSubtypes } from '../types';
 
 export const TYPE_TO_MINI_ICON: any = {
     [LCSubtypes.course]: MiniGradIcon,
