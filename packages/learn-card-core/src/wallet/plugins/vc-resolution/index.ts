@@ -10,7 +10,7 @@ export const VCResolutionPlugin: VCResolutionPluginType = {
     displayName: 'VC Resolution',
     description: '[Deprecated] Allows for a fallback mechanism of resolving credentials',
     methods: {
-        resolveCredential: async (_wallet, uri) => {
+        resolveCredential: async (_learnCard, uri) => {
             throw new Error(`No Credential Resolution Plugins found that can resolve ${uri}`);
         },
     },

@@ -43,7 +43,7 @@ export const getVCAPIPlugin = async ({
         },
         methods: {
             getSubjectDid: () => did!,
-            issueCredential: async (_wallet, credential, options) => {
+            issueCredential: async (_learnCard, credential, options) => {
                 await UnsignedVCValidator.parseAsync(credential);
 
                 const response = await post(`${url}/credentials/issue`, { credential, options });
@@ -54,7 +54,7 @@ export const getVCAPIPlugin = async ({
 
                 return VCValidator.parseAsync(await response.json());
             },
-            verifyCredential: async (_wallet, verifiableCredential, options) => {
+            verifyCredential: async (_learnCard, verifiableCredential, options) => {
                 await VCValidator.parseAsync(verifiableCredential);
 
                 const response = await post(`${url}/credentials/verify`, {
@@ -68,7 +68,7 @@ export const getVCAPIPlugin = async ({
 
                 return VerificationCheckValidator.parseAsync(await response.json());
             },
-            issuePresentation: async (_wallet, presentation, options) => {
+            issuePresentation: async (_learnCard, presentation, options) => {
                 await UnsignedVPValidator.parseAsync(presentation);
 
                 const response = await post(`${url}/presentations/issue`, {
@@ -82,7 +82,7 @@ export const getVCAPIPlugin = async ({
 
                 return VPValidator.parseAsync(await response.json());
             },
-            verifyPresentation: async (_wallet, verifiablePresentation, options) => {
+            verifyPresentation: async (_learnCard, verifiablePresentation, options) => {
                 await VPValidator.parseAsync(verifiablePresentation);
 
                 const response = await post(`${url}/presentations/verify`, {
@@ -96,7 +96,7 @@ export const getVCAPIPlugin = async ({
 
                 return VerificationCheckValidator.parseAsync(await response.json());
             },
-            getTestVc: (_wallet, subject = 'did:example:d23dd687a7dc6787646f2eb98d0') => {
+            getTestVc: (_learnCard, subject = 'did:example:d23dd687a7dc6787646f2eb98d0') => {
                 return {
                     '@context': ['https://www.w3.org/2018/credentials/v1'],
                     id: 'http://example.org/credentials/3731',
@@ -106,10 +106,10 @@ export const getVCAPIPlugin = async ({
                     credentialSubject: { id: subject },
                 };
             },
-            getTestVp: async (_wallet, _credential) => {
+            getTestVp: async (_learnCard, _credential) => {
                 const credential =
                     _credential ||
-                    (await _wallet.invoke.issueCredential(_wallet.invoke.getTestVc()));
+                    (await _learnCard.invoke.issueCredential(_learnCard.invoke.getTestVc()));
 
                 return {
                     '@context': ['https://www.w3.org/2018/credentials/v1'],

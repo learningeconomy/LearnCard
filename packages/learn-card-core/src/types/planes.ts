@@ -47,7 +47,7 @@ export type ReadPlane = {
 
 export type PluginReadPlane = ReadPlane;
 
-export type WalletReadPlane<Plugins extends Plugin[]> = ReadPlane & {
+export type LearnCardReadPlane<Plugins extends Plugin[]> = ReadPlane & {
     providers: GetPlaneProviders<Plugins, 'read'>;
 };
 
@@ -60,7 +60,7 @@ export type StorePlane = {
 
 export type PluginStorePlane = StorePlane;
 
-export type WalletStorePlane<Plugins extends Plugin[]> = Record<
+export type LearnCardStorePlane<Plugins extends Plugin[]> = Record<
     FilterForPlane<Plugins, 'store'>,
     StorePlane
 > & {
@@ -78,7 +78,7 @@ export type IndexPlane = {
 
 export type PluginIndexPlane = IndexPlane;
 
-export type WalletIndexPlane<Plugins extends Plugin[]> = {
+export type LearnCardIndexPlane<Plugins extends Plugin[]> = {
     all: Pick<IndexPlane, 'get'>;
     providers: GetPlaneProviders<Plugins, 'index'>;
 } & Record<FilterForPlane<Plugins, 'index'>, IndexPlane>;
@@ -95,7 +95,7 @@ export type CachePlane = {
 };
 export type PluginCachePlane = CachePlane;
 
-export type WalletCachePlane<Plugins extends Plugin[]> = CachePlane & {
+export type LearnCardCachePlane<Plugins extends Plugin[]> = CachePlane & {
     providers: GetPlaneProviders<Plugins, 'cache'>;
 };
 
@@ -108,6 +108,6 @@ export type IdPlane = {
 
 export type PluginIdPlane = IdPlane;
 
-export type WalletIdPlane<Plugins extends Plugin[]> = IdPlane & {
+export type LearnCardIdPlane<Plugins extends Plugin[]> = IdPlane & {
     providers: GetPlaneProviders<Plugins, 'id'>;
 };

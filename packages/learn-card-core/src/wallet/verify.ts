@@ -1,7 +1,7 @@
 import { VC, VerificationCheck, VerificationItem, VerificationStatusEnum } from '@learncard/types';
 import { format } from 'date-fns';
 
-import { Wallet } from 'types/wallet';
+import { LearnCard } from 'types/wallet';
 
 const transformErrorCheck = (error: string, _credential: VC): string => {
     const prefix = error.split(' error')[0];
@@ -13,9 +13,9 @@ const transformErrorMessage = (error: string, credential: VC): string => {
     if (error.startsWith('expiration')) {
         return credential.expirationDate
             ? `Invalid • Expired ${format(
-                  new Date(credential.expirationDate),
-                  'dd MMM yyyy'
-              ).toUpperCase()}`
+                new Date(credential.expirationDate),
+                'dd MMM yyyy'
+            ).toUpperCase()}`
             : 'Invalid • Expired';
     }
 
@@ -28,19 +28,19 @@ const transformCheckMessage = (check: string, credential: VC): string => {
             proof: 'Valid',
             expiration: credential.expirationDate
                 ? `Valid • Expires ${format(
-                      new Date(credential.expirationDate),
-                      'dd MMM yyyy'
-                  ).toUpperCase()}`
+                    new Date(credential.expirationDate),
+                    'dd MMM yyyy'
+                ).toUpperCase()}`
                 : 'Valid • Does Not Expire',
         }[check] || check
     );
 };
 
 export const verifyCredential = (
-    wallet: Wallet<any, { verifyCredential: (credential: VC) => Promise<VerificationCheck> }>
+    learnCard: LearnCard<any, { verifyCredential: (credential: VC) => Promise<VerificationCheck> }>
 ): ((credential: VC) => Promise<VerificationItem[]>) => {
     return async (credential: VC): Promise<VerificationItem[]> => {
-        const rawVerificationCheck = await wallet.invoke.verifyCredential(credential);
+        const rawVerificationCheck = await learnCard.invoke.verifyCredential(credential);
 
         const verificationItems: VerificationItem[] = [];
 

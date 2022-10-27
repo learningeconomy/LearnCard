@@ -1,4 +1,4 @@
-import { Wallet, Plugin } from 'types/wallet';
+import { LearnCard, Plugin } from 'types/wallet';
 import { ControlPlane } from 'types/planes';
 
 /** Type guard for removing null/undefined */
@@ -35,15 +35,15 @@ export const pluginImplementsPlane = <Plane extends ControlPlane>(
     return false;
 };
 
-export const walletImplementsPlane = <Plane extends ControlPlane>(
-    wallet: Wallet<any, any, any>,
+export const learnCardImplementsPlane = <Plane extends ControlPlane>(
+    learnCard: LearnCard<any, any, any>,
     plane: Plane
-): wallet is Wallet<any, Plane> => {
-    if (plane === 'read') return 'read' in wallet;
-    if (plane === 'store') return 'store' in wallet;
-    if (plane === 'index') return 'index' in wallet;
-    if (plane === 'cache') return 'cache' in wallet;
-    if (plane === 'id') return 'id' in wallet;
+): learnCard is LearnCard<any, Plane> => {
+    if (plane === 'read') return 'read' in learnCard;
+    if (plane === 'store') return 'store' in learnCard;
+    if (plane === 'index') return 'index' in learnCard;
+    if (plane === 'cache') return 'cache' in learnCard;
+    if (plane === 'id') return 'id' in learnCard;
 
     return false;
 };

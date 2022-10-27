@@ -16,13 +16,13 @@ import {
     CeramicArgs,
     CeramicURIValidator,
 } from './types';
-import { Wallet } from 'types/wallet';
+import { LearnCard } from 'types/wallet';
 
 /**
  * @group Plugins
  */
 export const getCeramicPlugin = async <URI extends string = ''>(
-    wallet: Wallet<any, any, CeramicPluginDependentMethods<URI>>,
+    learnCard: LearnCard<any, any, CeramicPluginDependentMethods<URI>>,
     { ceramicEndpoint, defaultContentFamily }: CeramicArgs
 ): Promise<CeramicPlugin> => {
     const ceramic = new CeramicClient(ceramicEndpoint);
@@ -34,7 +34,7 @@ export const getCeramicPlugin = async <URI extends string = ''>(
     // use wallet secret key
     // TODO: this is repeating work already done in the wallet. understand what the Ed25519Provider is doing to determine
     // if we can just pass wallet signing key here instead of creating a duplicate from same seed.
-    const key = wallet.invoke.getKey();
+    const key = learnCard.invoke.getKey();
 
     const ceramicProvider = new Ed25519Provider(toUint8Array(key));
     ceramic.did!.setProvider(ceramicProvider);
@@ -85,7 +85,7 @@ export const getCeramicPlugin = async <URI extends string = ''>(
 
         const verificationResult = await CeramicURIValidator.spa(uri);
 
-        if (!verificationResult.success) return wallet.invoke.resolveCredential(uri);
+        if (!verificationResult.success) return learnCard.invoke.resolveCredential(uri);
 
         const streamId = verificationResult.data.split(':')[2];
 
@@ -98,14 +98,14 @@ export const getCeramicPlugin = async <URI extends string = ''>(
         description:
             'Uploads/resolves credentials using the Ceramic Network (https://ceramic.network/)',
         store: {
-            upload: async (_wallet, vc) => {
-                wallet.debug?.('wallet.store.Ceramic.upload');
+            upload: async (_learnCard, vc) => {
+                _learnCard.debug?.('learnCard.store.Ceramic.upload');
                 return uploadCredential(vc);
             },
         },
         read: {
-            get: async (_wallet, uri) => {
-                wallet.debug?.('wallet.read.Ceramic.get');
+            get: async (_learnCard, uri) => {
+                _learnCard.debug?.('learnCard.read.Ceramic.get');
 
                 if (!uri) return undefined;
 
@@ -119,11 +119,11 @@ export const getCeramicPlugin = async <URI extends string = ''>(
             },
         },
         methods: {
-            publishContentToCeramic: async (_wallet, cred) =>
+            publishContentToCeramic: async (_learnCard, cred) =>
                 streamIdToCeramicURI(await publishContentToCeramic(cred)),
-            readContentFromCeramic: async (_wallet, streamId: string) =>
+            readContentFromCeramic: async (_learnCard, streamId: string) =>
                 readContentFromCeramic(streamId),
-            resolveCredential: async (_wallet, uri) => resolveCredential(uri),
+            resolveCredential: async (_learnCard, uri) => resolveCredential(uri),
             getCeramicClient: () => ceramic,
         },
     };

@@ -1,17 +1,19 @@
 import { VerifyExtension } from '../vc';
-import { Wallet } from 'types/wallet';
+import { LearnCard } from 'types/wallet';
 import { ExpirationPlugin } from './types';
 
 /**
  * @group Plugins
  */
-export const expirationPlugin = (wallet: Wallet<any, any, VerifyExtension>): ExpirationPlugin => ({
+export const expirationPlugin = (
+    learnCard: LearnCard<any, any, VerifyExtension>
+): ExpirationPlugin => ({
     name: 'Expiration',
     displayName: 'Expiration Extension',
     description: "Adds a check to make sure credentials aren't expired when verifying them",
     methods: {
-        verifyCredential: async (_wallet, credential) => {
-            const verificationCheck = await wallet.invoke.verifyCredential(credential);
+        verifyCredential: async (_learnCard, credential) => {
+            const verificationCheck = await learnCard.invoke.verifyCredential(credential);
 
             if (credential.expirationDate && new Date() > new Date(credential.expirationDate)) {
                 verificationCheck.errors.push('expiration error: Credential is expired');

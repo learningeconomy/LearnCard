@@ -15,41 +15,9 @@ import { VCAPIPlugin } from '@wallet/plugins/vc-api/types';
 import { LearnCardPlugin } from '@wallet/plugins/learn-card';
 
 import { InitFunction, GenericInitFunction } from 'types/helpers';
-import { Wallet } from 'types/wallet';
+import { LearnCard } from 'types/wallet';
 
 // export * from '@learncard/types';
-
-/** @group Universal Wallets */
-export type LearnCardFromKey = Wallet<
-    [
-        DIDKitPlugin,
-        DidKeyPlugin<DidMethod>,
-        VCPlugin,
-        VCTemplatePlugin,
-        VCResolutionPluginType,
-        CeramicPlugin,
-        IDXPlugin,
-        ExpirationPlugin,
-        EthereumPlugin,
-        VpqrPlugin,
-        CHAPIPlugin,
-        LearnCardPlugin
-    ]
->;
-
-/**
- * @group LearnCard
- */
-export type EmptyLearnCard = Wallet<
-    [DIDKitPlugin, ExpirationPlugin, VCTemplatePlugin, CHAPIPlugin, LearnCardPlugin]
->;
-
-/**
- * @group LearnCard
- */
-export type VCAPILearnCard = Wallet<
-    [VCAPIPlugin, ExpirationPlugin, VCTemplatePlugin, CHAPIPlugin, LearnCardPlugin]
->;
 
 /** @group LearnCard */
 export type LearnCardConfig = {
@@ -60,15 +28,40 @@ export type LearnCardConfig = {
 };
 
 /** @group Init Functions */
-export type EmptyWallet = InitFunction<{}, 'didkit' | 'debug', EmptyLearnCard>;
+export type EmptyLearnCard = InitFunction<
+    {},
+    'didkit' | 'debug',
+    LearnCard<[DIDKitPlugin, ExpirationPlugin, VCTemplatePlugin, CHAPIPlugin, LearnCardPlugin]>
+>;
 /** @group Init Functions */
-export type WalletFromKey = InitFunction<{ seed: string }, keyof LearnCardConfig, LearnCardFromKey>;
+export type LearnCardFromKey = InitFunction<
+    { seed: string },
+    keyof LearnCardConfig,
+    LearnCard<
+        [
+            DIDKitPlugin,
+            DidKeyPlugin<DidMethod>,
+            VCPlugin,
+            VCTemplatePlugin,
+            VCResolutionPluginType,
+            CeramicPlugin,
+            IDXPlugin,
+            ExpirationPlugin,
+            EthereumPlugin,
+            VpqrPlugin,
+            CHAPIPlugin,
+            LearnCardPlugin
+        ]
+    >
+>;
 /** @group Init Functions */
-export type WalletFromVcApi = InitFunction<
+export type LearnCardFromVcApi = InitFunction<
     { vcApi: true | string; did?: string },
     'debug',
-    VCAPILearnCard
+    LearnCard<[VCAPIPlugin, ExpirationPlugin, VCTemplatePlugin, CHAPIPlugin, LearnCardPlugin]>
 >;
 
 /** @group Init Functions */
-export type InitLearnCard = GenericInitFunction<[EmptyWallet, WalletFromKey, WalletFromVcApi]>;
+export type InitLearnCard = GenericInitFunction<
+    [EmptyLearnCard, LearnCardFromKey, LearnCardFromVcApi]
+>;

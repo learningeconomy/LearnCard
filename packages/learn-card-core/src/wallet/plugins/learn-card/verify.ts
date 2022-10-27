@@ -1,7 +1,7 @@
 import { VC, VerificationCheck, VerificationItem, VerificationStatusEnum } from '@learncard/types';
 import { format } from 'date-fns';
 
-import { Wallet } from 'types/wallet';
+import { LearnCard } from 'types/wallet';
 import { ProofOptions } from '../didkit';
 
 const transformErrorCheck = (error: string, _credential: VC): string => {
@@ -38,7 +38,7 @@ const transformCheckMessage = (check: string, credential: VC): string => {
 };
 
 export const verifyCredential = (
-    wallet: Wallet<
+    learnCard: LearnCard<
         any,
         any,
         {
@@ -49,13 +49,13 @@ export const verifyCredential = (
         }
     >
 ): ((
-    _wallet: Wallet<any, any, any>,
+    _learnCard: LearnCard<any, any, any>,
     credential: VC,
     options?: Partial<ProofOptions>,
     prettify?: boolean
 ) => Promise<VerificationItem[] | VerificationCheck>) => {
-    return async (_wallet, credential, options, prettify = false) => {
-        const rawVerificationCheck = await wallet.invoke.verifyCredential(credential, options);
+    return async (_learnCard, credential, options, prettify = false) => {
+        const rawVerificationCheck = await learnCard.invoke.verifyCredential(credential, options);
 
         if (!prettify) return rawVerificationCheck;
 

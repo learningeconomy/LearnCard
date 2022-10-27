@@ -1,6 +1,6 @@
 import { Buffer } from 'buffer';
 
-import { Wallet } from 'types/wallet';
+import { LearnCard } from 'types/wallet';
 import { ethers } from 'ethers';
 
 import { EthereumConfig, EthereumPlugin, TokenList } from './types';
@@ -20,16 +20,16 @@ const ERC20ABI = require('./erc20.abi.json');
  * @group Plugins
  */
 export const getEthereumPlugin = (
-    initWallet: Wallet<any, 'id'>,
+    initLearnCard: LearnCard<any, 'id'>,
     config: EthereumConfig
 ): EthereumPlugin => {
     let { infuraProjectId, network = 'mainnet' } = config;
 
     // Ethers wallet
-    const secpKeypair = initWallet.id.keypair('secp256k1');
+    const secpKeypair = initLearnCard.id.keypair('secp256k1');
 
     if (!secpKeypair) {
-        throw new Error('Wallet must support secp256k1 JWK in order to add Ethereum Plugin');
+        throw new Error('LearnCard must support secp256k1 JWK in order to add Ethereum Plugin');
     }
 
     const privateKey = Buffer.from(secpKeypair.d, 'base64').toString('hex');
@@ -112,12 +112,12 @@ export const getEthereumPlugin = (
         methods: {
             getEthereumAddress: () => publicKey,
 
-            getBalance: async (_wallet, symbolOrAddress = 'ETH') =>
+            getBalance: async (_learnCard, symbolOrAddress = 'ETH') =>
                 getBalance(publicKey, symbolOrAddress),
-            getBalanceForAddress: async (_wallet, walletAddress, symbolOrAddress) =>
+            getBalanceForAddress: async (_learnCard, walletAddress, symbolOrAddress) =>
                 getBalance(walletAddress, symbolOrAddress),
 
-            transferTokens: async (_wallet, tokenSymbolOrAddress, amount, toAddress) => {
+            transferTokens: async (_learnCard, tokenSymbolOrAddress, amount, toAddress) => {
                 if (tokenSymbolOrAddress === 'ETH') {
                     const transaction = {
                         to: toAddress,
@@ -159,7 +159,7 @@ export const getEthereumPlugin = (
             getCurrentNetwork: () => {
                 return network;
             },
-            changeNetwork: (_wallet, _network: ethers.providers.Networkish) => {
+            changeNetwork: (_learnCard, _network: ethers.providers.Networkish) => {
                 const oldNetwork = network;
                 try {
                     network = _network;
@@ -170,7 +170,7 @@ export const getEthereumPlugin = (
                     throw e;
                 }
             },
-            addInfuraProjectId: (_wallet, infuraProjectIdToAdd) => {
+            addInfuraProjectId: (_learnCard, infuraProjectIdToAdd) => {
                 infuraProjectId = infuraProjectIdToAdd;
                 provider = getProvider();
             },

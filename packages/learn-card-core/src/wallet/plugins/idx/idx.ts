@@ -11,16 +11,16 @@ import {
     IDXArgs,
     BackwardsCompatCredentialsListValidator,
 } from './types';
-import { Wallet } from 'types/wallet';
+import { LearnCard } from 'types/wallet';
 
 /**
  * @group Plugins
  */
 export const getIDXPlugin = async <URI extends string = ''>(
-    wallet: Wallet<any, 'read', IDXPluginDependentMethods<URI>>,
+    learnCard: LearnCard<any, 'read', IDXPluginDependentMethods<URI>>,
     { modelData, credentialAlias }: IDXArgs
 ): Promise<IDXPlugin> => {
-    const ceramic = wallet.invoke.getCeramicClient();
+    const ceramic = learnCard.invoke.getCeramicClient();
 
     const dataStore = new DIDDataStore({ ceramic, model: modelData });
 
@@ -86,7 +86,7 @@ export const getIDXPlugin = async <URI extends string = ''>(
         if (!record.uri) throw Error('No URI provided');
 
         // Make sure URI can be resolved
-        await wallet.read.get(record.uri);
+        await learnCard.read.get(record.uri);
 
         const existing = await getCredentialsListFromIdx(credentialAlias);
 
@@ -106,15 +106,15 @@ export const getIDXPlugin = async <URI extends string = ''>(
         displayName: 'IDX',
         description: 'Stores a bespoke index of credentials for an individual based on their did',
         index: {
-            get: async _wallet => {
-                _wallet.debug?.('wallet.index.IDX.get');
+            get: async _learnCard => {
+                _learnCard.debug?.('learnCard.index.IDX.get');
 
                 const list = await getCredentialsListFromIdx();
 
                 return list.credentials;
             },
-            add: async (_wallet, record) => {
-                _wallet.debug?.('wallet.index.IDX.add');
+            add: async (_learnCard, record) => {
+                _learnCard.debug?.('learnCard.index.IDX.add');
 
                 try {
                     await addCredentialInIdx(record);
@@ -126,14 +126,14 @@ export const getIDXPlugin = async <URI extends string = ''>(
                     return false;
                 }
             },
-            update: async _wallet => {
-                _wallet.debug?.('wallet.index.IDX.update');
+            update: async _learnCard => {
+                _learnCard.debug?.('learnCard.index.IDX.update');
 
                 // TODO: Implement update
                 return false;
             },
-            remove: async (_wallet, id) => {
-                _wallet.debug?.('wallet.index.IDX.remove');
+            remove: async (_learnCard, id) => {
+                _learnCard.debug?.('learnCard.index.IDX.remove');
 
                 try {
                     await removeCredentialFromIdx(id);
@@ -147,23 +147,23 @@ export const getIDXPlugin = async <URI extends string = ''>(
             },
         },
         methods: {
-            getCredentialsListFromIdx: async (_wallet, alias = credentialAlias) =>
+            getCredentialsListFromIdx: async (_learnCard, alias = credentialAlias) =>
                 (await getCredentialsListFromIdx(alias)).credentials,
-            getVerifiableCredentialFromIdx: async (_wallet, id) => {
+            getVerifiableCredentialFromIdx: async (_learnCard, id) => {
                 const credentialList = await getCredentialsListFromIdx();
                 const credential = credentialList?.credentials?.find(cred => cred?.id === id);
 
-                return credential?.uri ? _wallet.read.get(credential.uri) : undefined;
+                return credential?.uri ? _learnCard.read.get(credential.uri) : undefined;
             },
-            getVerifiableCredentialsFromIdx: async _wallet => {
+            getVerifiableCredentialsFromIdx: async _learnCard => {
                 const credentialList = await getCredentialsListFromIdx();
                 const uris = credentialList?.credentials?.map(credential => credential?.uri) ?? [];
 
-                return (await Promise.all(uris.map(async uri => _wallet.read.get(uri)))).filter(
+                return (await Promise.all(uris.map(async uri => _learnCard.read.get(uri)))).filter(
                     (vc): vc is VC => !!vc
                 );
             },
-            addVerifiableCredentialInIdx: async (_wallet, idxCredential) => {
+            addVerifiableCredentialInIdx: async (_learnCard, idxCredential) => {
                 const record = CredentialRecordValidator.parse(idxCredential);
 
                 if (!record) throw new Error('record is required');
@@ -171,7 +171,7 @@ export const getIDXPlugin = async <URI extends string = ''>(
                 if (!record.uri) throw Error('No URI provided');
 
                 // Make sure URI can be resolved
-                await _wallet.read.get(record.uri);
+                await _learnCard.read.get(record.uri);
 
                 const existing = await getCredentialsListFromIdx(credentialAlias);
 
@@ -185,7 +185,7 @@ export const getIDXPlugin = async <URI extends string = ''>(
 
                 return streamIdToCeramicURI(await dataStore.set(credentialAlias, existing));
             },
-            removeVerifiableCredentialInIdx: async (_wallet, id) => {
+            removeVerifiableCredentialInIdx: async (_learnCard, id) => {
                 return removeCredentialFromIdx(id);
             },
         },

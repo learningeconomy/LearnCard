@@ -6,52 +6,57 @@ import {
     PluginIndexPlane,
     PluginCachePlane,
     PluginIdPlane,
-    WalletReadPlane,
-    WalletStorePlane,
-    WalletIndexPlane,
-    WalletCachePlane,
-    WalletIdPlane,
+    LearnCardReadPlane,
+    LearnCardStorePlane,
+    LearnCardIndexPlane,
+    LearnCardCachePlane,
+    LearnCardIdPlane,
 } from './planes';
 import { UnionToIntersection, MergeObjects } from './utilities';
 
-export type GenerateWallet<
+export type GenerateLearnCard<
     NewControlPlanes extends ControlPlane = never,
     NewMethods extends Record<string, (...args: any[]) => any> = Record<never, never>,
     ControlPlanes extends ControlPlane = never,
     Methods extends Record<string, (...args: any[]) => any> = Record<never, never>
-> = Wallet<
-    any,
-    [ControlPlanes] extends [1 & ControlPlanes]
+    > = LearnCard<
+        any,
+        [ControlPlanes] extends [1 & ControlPlanes]
         ? NewControlPlanes
         : [NewControlPlanes] extends [1 & NewControlPlanes]
         ? ControlPlanes
         : ControlPlanes | NewControlPlanes,
-    NewMethods & Methods
->;
+        NewMethods & Methods
+    >;
 
-export type AddImplicitWalletArgument<
+export type AddImplicitLearnCardArgument<
     Functions extends Record<string, (...args: any[]) => any> = Record<never, never>,
     ControlPlanes extends ControlPlane = never,
     Methods extends Record<string, (...args: any[]) => any> = Record<never, never>,
     DependentControlPlanes extends ControlPlane = never,
     DependentMethods extends Record<string, (...args: any[]) => any> = Record<never, never>
-> = {
-    [Key in keyof Functions]: <
-        T extends GenerateWallet<ControlPlanes, Methods, DependentControlPlanes, DependentMethods>
-    >(
-        wallet: T,
-        ...args: Parameters<Functions[Key]>
-    ) => ReturnType<Functions[Key]>;
-};
+    > = {
+        [Key in keyof Functions]: <
+            T extends GenerateLearnCard<
+                ControlPlanes,
+                Methods,
+                DependentControlPlanes,
+                DependentMethods
+            >
+            >(
+            learnCard: T,
+            ...args: Parameters<Functions[Key]>
+        ) => ReturnType<Functions[Key]>;
+    };
 
 /** @group Universal Wallets */
 export type GetPluginMethods<Plugins extends Plugin[]> = undefined extends Plugins[1]
     ? NonNullable<Plugins[0]['_methods']>
     : UnionToIntersection<
-          NonNullable<
-              MergeObjects<{ [Key in keyof Plugins]: NonNullable<Plugins[Key]['_methods']> }>
-          >
-      >;
+        NonNullable<
+            MergeObjects<{ [Key in keyof Plugins]: NonNullable<Plugins[Key]['_methods']> }>
+        >
+    >;
 
 /** @group Universal Wallets */
 export type Plugin<
@@ -60,28 +65,28 @@ export type Plugin<
     Methods extends Record<string, (...args: any[]) => any> = Record<never, never>,
     DependentControlPlanes extends ControlPlane = never,
     DependentMethods extends Record<string, (...args: any[]) => any> = Record<never, never>
-> = {
-    name: Name;
-    displayName?: string;
-    description?: string;
-    methods: AddImplicitWalletArgument<
-        Methods,
-        ControlPlanes,
-        Methods,
-        DependentControlPlanes,
-        DependentMethods
-    >;
-    _methods?: Methods;
-    read?: {};
-    store?: {};
-    index?: {};
-    cache?: {};
-    id?: {};
-} & ([ControlPlanes] extends [1 & ControlPlanes] // Check for any/never and prevent it from requiring all planes
-    ? {}
-    : ('read' extends ControlPlanes
-          ? {
-                read: AddImplicitWalletArgument<
+    > = {
+        name: Name;
+        displayName?: string;
+        description?: string;
+        methods: AddImplicitLearnCardArgument<
+            Methods,
+            ControlPlanes,
+            Methods,
+            DependentControlPlanes,
+            DependentMethods
+        >;
+        _methods?: Methods;
+        read?: {};
+        store?: {};
+        index?: {};
+        cache?: {};
+        id?: {};
+    } & ([ControlPlanes] extends [1 & ControlPlanes] // Check for any/never and prevent it from requiring all planes
+        ? {}
+        : ('read' extends ControlPlanes
+            ? {
+                read: AddImplicitLearnCardArgument<
                     PluginReadPlane,
                     ControlPlanes,
                     Methods,
@@ -89,68 +94,68 @@ export type Plugin<
                     DependentMethods
                 >;
             }
-          : {}) &
-          ('store' extends ControlPlanes
-              ? {
-                    store: AddImplicitWalletArgument<
-                        PluginStorePlane,
-                        ControlPlanes,
-                        Methods,
-                        DependentControlPlanes,
-                        DependentMethods
-                    >;
-                }
-              : {}) &
-          ('index' extends ControlPlanes
-              ? {
-                    index: AddImplicitWalletArgument<
-                        PluginIndexPlane,
-                        ControlPlanes,
-                        Methods,
-                        DependentControlPlanes,
-                        DependentMethods
-                    >;
-                }
-              : {}) &
-          ('cache' extends ControlPlanes
-              ? {
-                    cache: AddImplicitWalletArgument<
-                        PluginCachePlane,
-                        ControlPlanes,
-                        Methods,
-                        DependentControlPlanes,
-                        DependentMethods
-                    >;
-                }
-              : {}) &
-          ('id' extends ControlPlanes
-              ? {
-                    id: AddImplicitWalletArgument<
-                        PluginIdPlane,
-                        ControlPlanes,
-                        Methods,
-                        DependentControlPlanes,
-                        DependentMethods
-                    >;
-                }
-              : {}));
+            : {}) &
+        ('store' extends ControlPlanes
+            ? {
+                store: AddImplicitLearnCardArgument<
+                    PluginStorePlane,
+                    ControlPlanes,
+                    Methods,
+                    DependentControlPlanes,
+                    DependentMethods
+                >;
+            }
+            : {}) &
+        ('index' extends ControlPlanes
+            ? {
+                index: AddImplicitLearnCardArgument<
+                    PluginIndexPlane,
+                    ControlPlanes,
+                    Methods,
+                    DependentControlPlanes,
+                    DependentMethods
+                >;
+            }
+            : {}) &
+        ('cache' extends ControlPlanes
+            ? {
+                cache: AddImplicitLearnCardArgument<
+                    PluginCachePlane,
+                    ControlPlanes,
+                    Methods,
+                    DependentControlPlanes,
+                    DependentMethods
+                >;
+            }
+            : {}) &
+        ('id' extends ControlPlanes
+            ? {
+                id: AddImplicitLearnCardArgument<
+                    PluginIdPlane,
+                    ControlPlanes,
+                    Methods,
+                    DependentControlPlanes,
+                    DependentMethods
+                >;
+            }
+            : {}));
 
 /** @group Universal Wallets */
-export type Wallet<
+export type LearnCard<
     Plugins extends Plugin[] = [],
     ControlPlanes extends ControlPlane = GetPlanesForPlugins<Plugins>,
     PluginMethods = GetPluginMethods<Plugins>
-> = {
-    plugins: Plugins;
-    invoke: PluginMethods;
-    addPlugin: <NewPlugin extends Plugin>(
-        plugin: NewPlugin
-    ) => Promise<Wallet<[...Plugins, NewPlugin]>>;
-    debug?: typeof console.log;
-} & ([ControlPlanes] extends [1 & ControlPlanes] // Check for any/never and prevent it from requiring all planes
-    ? {}
-    : ('read' extends ControlPlanes ? { read: WalletReadPlane<Plugins> } : {}) &
-          ('store' extends ControlPlanes ? { store: WalletStorePlane<Plugins> } : {}) &
-          ('index' extends ControlPlanes ? { index: WalletIndexPlane<Plugins> } : {}) &
-          ('cache' extends ControlPlanes ? { cache: WalletCachePlane<Plugins> } : {}) &
-          ('id' extends ControlPlanes ? { id: WalletIdPlane<Plugins> } : {}));
+    > = {
+        plugins: Plugins;
+        invoke: PluginMethods;
+        addPlugin: <NewPlugin extends Plugin>(
+            plugin: NewPlugin
+        ) => Promise<LearnCard<[...Plugins, NewPlugin]>>;
+        debug?: typeof console.log;
+    } & ([ControlPlanes] extends [1 & ControlPlanes] // Check for any/never and prevent it from requiring all planes
+        ? {}
+        : ('read' extends ControlPlanes ? { read: LearnCardReadPlane<Plugins> } : {}) &
+        ('store' extends ControlPlanes ? { store: LearnCardStorePlane<Plugins> } : {}) &
+        ('index' extends ControlPlanes ? { index: LearnCardIndexPlane<Plugins> } : {}) &
+        ('cache' extends ControlPlanes ? { cache: LearnCardCachePlane<Plugins> } : {}) &
+        ('id' extends ControlPlanes ? { id: LearnCardIdPlane<Plugins> } : {}));

@@ -40,7 +40,7 @@ export const getCHAPIPlugin = async (): Promise<CHAPIPlugin> => {
         methods: {
             installChapiHandler: async () => installHandler(),
             activateChapiHandler: async (
-                _wallet,
+                _learnCard,
                 {
                     mediatorOrigin = `https://authn.io/mediator?${encodeURIComponent(
                         window.location.origin
@@ -52,7 +52,7 @@ export const getCHAPIPlugin = async (): Promise<CHAPIPlugin> => {
                 return activateHandler({ mediatorOrigin, get, store });
             },
             receiveChapiEvent: async () => receiveCredentialEvent(),
-            storeCredentialViaChapiDidAuth: async (wallet, credential) => {
+            storeCredentialViaChapiDidAuth: async (_learnCard, credential) => {
                 const challenge = crypto.randomUUID();
                 const domain = window.location.origin;
 
@@ -70,7 +70,7 @@ export const getCHAPIPlugin = async (): Promise<CHAPIPlugin> => {
 
                 if (!res) return { success: false, reason: 'did not auth' };
 
-                const verification = await wallet.invoke.verifyPresentation((res as any).data, {
+                const verification = await _learnCard.invoke.verifyPresentation((res as any).data, {
                     challenge,
                     domain,
                     proofPurpose: 'authentication',
@@ -86,17 +86,17 @@ export const getCHAPIPlugin = async (): Promise<CHAPIPlugin> => {
                     credential.credentialSubject.id = subject;
                 }
 
-                const vp = await wallet.invoke.getTestVp(
-                    await wallet.invoke.issueCredential(credential)
+                const vp = await _learnCard.invoke.getTestVp(
+                    await _learnCard.invoke.issueCredential(credential)
                 );
 
-                const success = await wallet.invoke.storePresentationViaChapi(vp);
+                const success = await _learnCard.invoke.storePresentationViaChapi(vp);
 
                 if (success) return { success: true };
 
                 return { success: false, reason: 'did not store' };
             },
-            storePresentationViaChapi: async (_wallet, presentation) => {
+            storePresentationViaChapi: async (_learnCard, presentation) => {
                 const wc = new WebCredential('VerifiablePresentation', presentation);
 
                 return window.navigator.credentials.store(wc);

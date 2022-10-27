@@ -1,12 +1,17 @@
-import { emptyWallet } from './initializers/emptyWallet';
-import { walletFromKey } from './initializers/walletFromKey';
-import { walletFromApiUrl } from './initializers/apiWallet';
+import { emptyLearnCard } from './initializers/emptyLearnCard';
+import { learnCardFromKey } from './initializers/learnCardFromKey';
+import { learnCardFromApiUrl } from './initializers/apiLearnCard';
 
-import { InitLearnCard, EmptyWallet, WalletFromKey, WalletFromVcApi } from 'types/LearnCard';
+import {
+    InitLearnCard,
+    EmptyLearnCard,
+    LearnCardFromKey,
+    LearnCardFromVcApi,
+} from 'types/LearnCard';
 
-export * from './initializers/emptyWallet';
-export * from './initializers/walletFromKey';
-export * from './initializers/apiWallet';
+export * from './initializers/emptyLearnCard';
+export * from './initializers/learnCardFromKey';
+export * from './initializers/apiLearnCard';
 
 // Overloads (Unfortunately necessary boilerplate 😢)
 
@@ -15,14 +20,18 @@ export * from './initializers/apiWallet';
  *
  * @group Init Functions
  */
-export function initLearnCard(config?: EmptyWallet['args']): Promise<EmptyWallet['returnValue']>;
+export function initLearnCard(
+    config?: EmptyLearnCard['args']
+): Promise<EmptyLearnCard['returnValue']>;
 
 /**
  * Generates a full wallet from a 32 byte seed
  *
  * @group Init Functions
  */
-export function initLearnCard(config: WalletFromKey['args']): Promise<WalletFromKey['returnValue']>;
+export function initLearnCard(
+    config: LearnCardFromKey['args']
+): Promise<LearnCardFromKey['returnValue']>;
 
 /**
  * Generates a wallet that can sign VCs/VPs from a VC API
@@ -30,8 +39,8 @@ export function initLearnCard(config: WalletFromKey['args']): Promise<WalletFrom
  * @group Init Functions
  */
 export function initLearnCard(
-    config: WalletFromVcApi['args']
-): Promise<WalletFromVcApi['returnValue']>;
+    config: LearnCardFromVcApi['args']
+): Promise<LearnCardFromVcApi['returnValue']>;
 
 // Implementation
 
@@ -46,7 +55,7 @@ export async function initLearnCard(
     if ('vcApi' in config) {
         const { vcApi, did, debug } = config;
 
-        return walletFromApiUrl({
+        return learnCardFromApiUrl({
             url: typeof vcApi === 'string' ? vcApi : 'https://bridge.learncard.com',
             did: vcApi === true ? 'did:key:z6MkjSz4mYqcn7dePGuktJ5PxecMkXQQHWRg8Lm6okATyFVh' : did,
             debug,
@@ -56,8 +65,8 @@ export async function initLearnCard(
     if ('seed' in config) {
         const { seed, ...keyConfig } = config;
 
-        return walletFromKey(seed, keyConfig);
+        return learnCardFromKey(seed, keyConfig);
     }
 
-    return emptyWallet(config);
+    return emptyLearnCard(config);
 }

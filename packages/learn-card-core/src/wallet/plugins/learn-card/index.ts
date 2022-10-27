@@ -1,4 +1,4 @@
-import { Wallet } from 'types/wallet';
+import { LearnCard } from 'types/wallet';
 import { LearnCardPluginDependentMethods, LearnCardPlugin } from './types';
 import { verifyCredential } from './verify';
 
@@ -8,12 +8,12 @@ export * from './types';
  * @group Plugins
  */
 export const getLearnCardPlugin = (
-    wallet: Wallet<any, any, LearnCardPluginDependentMethods>
+    learnCard: LearnCard<any, any, LearnCardPluginDependentMethods>
 ): LearnCardPlugin => ({
     name: 'LearnCard',
     displayName: 'LearnCard',
-    description: 'Adds opinionated LearnCard logic to a wallet',
+    description: 'Adds opinionated logic to a LearnCard',
     methods: {
-        verifyCredential: verifyCredential(wallet) as any,
+        verifyCredential: verifyCredential(learnCard) as any,
     },
 });

@@ -1,4 +1,4 @@
-import { generateWallet } from '@wallet/base';
+import { generateLearnCard } from '@wallet/base';
 import { DidMethod, getDidKitPlugin } from '@wallet/plugins/didkit';
 import { getDidKeyPlugin } from '@wallet/plugins/didkey';
 import { getVCPlugin } from '@wallet/plugins/vc';
@@ -20,7 +20,7 @@ import { defaultCeramicIDXArgs, defaultEthereumArgs } from '@wallet/defaults';
  *
  * @group Init Functions
  */
-export const walletFromKey = async (
+export const learnCardFromKey = async (
     key: string,
     {
         ceramicIdx = defaultCeramicIDXArgs,
@@ -28,35 +28,33 @@ export const walletFromKey = async (
         ethereumConfig = defaultEthereumArgs,
         debug,
     }: Partial<LearnCardConfig> = {}
-): Promise<LearnCardFromKey> => {
-    const didkitWallet = await (
-        await generateWallet({ debug })
+): Promise<LearnCardFromKey['returnValue']> => {
+    const didkitLc = await (
+        await generateLearnCard({ debug })
     ).addPlugin(await getDidKitPlugin(didkit));
 
-    const didkeyWallet = await didkitWallet.addPlugin(
-        await getDidKeyPlugin<DidMethod>(didkitWallet, key, 'key')
+    const didkeyLc = await didkitLc.addPlugin(
+        await getDidKeyPlugin<DidMethod>(didkitLc, key, 'key')
     );
 
-    const didkeyAndVCWallet = await didkeyWallet.addPlugin(getVCPlugin(didkeyWallet));
+    const didkeyAndVCLc = await didkeyLc.addPlugin(getVCPlugin(didkeyLc));
 
-    const templateWallet = await didkeyAndVCWallet.addPlugin(getVCTemplatesPlugin());
+    const templateLc = await didkeyAndVCLc.addPlugin(getVCTemplatesPlugin());
 
-    const resolutionWallet = await templateWallet.addPlugin(VCResolutionPlugin);
+    const resolutionLc = await templateLc.addPlugin(VCResolutionPlugin);
 
-    const ceramicWallet = await resolutionWallet.addPlugin(
-        await getCeramicPlugin(resolutionWallet, ceramicIdx)
+    const ceramicLc = await resolutionLc.addPlugin(
+        await getCeramicPlugin(resolutionLc, ceramicIdx)
     );
 
-    const idxWallet = await ceramicWallet.addPlugin(await getIDXPlugin(ceramicWallet, ceramicIdx));
-    const expirationWallet = await idxWallet.addPlugin(expirationPlugin(idxWallet));
+    const idxLc = await ceramicLc.addPlugin(await getIDXPlugin(ceramicLc, ceramicIdx));
+    const expirationLc = await idxLc.addPlugin(expirationPlugin(idxLc));
 
-    const ethWallet = await expirationWallet.addPlugin(
-        getEthereumPlugin(expirationWallet, ethereumConfig)
-    );
+    const ethLc = await expirationLc.addPlugin(getEthereumPlugin(expirationLc, ethereumConfig));
 
-    const vpqrWallet = await ethWallet.addPlugin(getVpqrPlugin(ethWallet));
+    const vpqrLc = await ethLc.addPlugin(getVpqrPlugin(ethLc));
 
-    const chapiWallet = await vpqrWallet.addPlugin(await getCHAPIPlugin());
+    const chapiLc = await vpqrLc.addPlugin(await getCHAPIPlugin());
 
-    return chapiWallet.addPlugin(getLearnCardPlugin(chapiWallet));
+    return chapiLc.addPlugin(getLearnCardPlugin(chapiLc));
 };
