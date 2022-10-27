@@ -17,8 +17,6 @@ import { LearnCardPlugin } from '@wallet/plugins/learn-card';
 import { InitFunction, GenericInitFunction } from 'types/helpers';
 import { Wallet } from 'types/wallet';
 
-export * from 'types/methods';
-
 // export * from '@learncard/types';
 
 /** @group Universal Wallets */
