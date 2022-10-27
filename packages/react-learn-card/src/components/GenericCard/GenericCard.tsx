@@ -14,8 +14,6 @@ export const GenericCard: React.FC<GenericCardProps> = ({
     const thumbClass = `bg-${TYPE_TO_WALLET_DARK_COLOR[type]}` ?? 'bg-grayscale-50';
     const defaultThumbClass = `flex h-[110px] m-auto ${thumbClass} w-[140px] overflow-hidden flex-col justify-center items-center w-full rounded-[20px] ${customThumbClass}`;
     const imgSrc = thumbImgSrc?.trim() !== '' ? thumbImgSrc : TYPE_TO_IMG_SRC[type];
-
-    console.log('//thumbImgSrc', thumbImgSrc);
     const headerBgColor = `bg-${TYPE_TO_WALLET_DARK_COLOR[type]}` ?? 'bg-grayscale-900';
     const defaultHeaderClass = `flex generic-card-title w-full flex justify-center items-center  h-[76px] ${headerBgColor} ${customHeaderClass}`;
     return (
