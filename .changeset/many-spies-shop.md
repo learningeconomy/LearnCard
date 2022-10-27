@@ -10,15 +10,17 @@ _Breaking Changes_
     -   This means you can now call `addPlugin` directly on the return value of `initLearnCard`:
 
 ```ts
-const lc = await initLearnCard();
-const bespokeLc = await lc.addPlugin(plugin);
+const learnCard = await initLearnCard();
+const bespokeLearnCard = await learnCard.addPlugin(plugin);
 ```
 
 -   Universal Wallets now implement _Control Planes_ as well as just methods - These are top-level objects with standardized functions that allow plugins/consumers access to
     a unified interface for common operations. When it makes sense, a specific plugin implementing a plane
     can also be chosen, such as choosing where to store a credential when uploading. - There are currently five planes, with more planned for the future: - Read, which implements `get` - `get` simply resolves a URI to a VC - Store, which implements `upload` and (optionally) `uploadMany` - `upload` stores a VC and returns a URI that can be resolved - `uploadMany` stores an array of VCs, returning an array of URIs that can be resolved - Index, which implements `get`, `add`, `update`, and `remove` - `get` returns a list of the holder's credential objects (currently named `IDXCredential`s) - These objects contain (at a minimum) an `id` and a `uri` that can be resolved to a VC - `add` adds a credential to the holder's list - `update` updates an object in the holder's list - `remove` removes an object from the holder's list - Cache, which implements `getIndex`, `setIndex`, `flushIndex`, `getVc`, `setVc`, and `flushVc` - `getIndex` returns the hodler's credential list as it exists in the cache - `setIndex` sets the holder's credential list in the cache - `flushIndex` emptys the holder's credential list cache - `getVc` returns a VC for a URI if it exists in the cache - `setVc` sets a VC for a URI in the cache - `flushVc` emptys all VCs from the cache - Id, which implements `did` and `keypair` - `did` is identical to the previous `wallet.did` method, returning a did for a given method - `keypair` is identical to the previous `wallet.keypair` method, returning a JWK for a given cryptographic algorithm - Plugins implement planes via the second generic parameter to the `Plugin` type - For example, a plugin implementing the Read and Store planes would be typed like this: `Plugin<'Test', 'read' | 'store'>` - Plugins may continue to expose methods the same way they have, instead using the third generic parameter instead of the second: - For example, a plugin implementing the `getSubjectDid` method would be typed like this: `Plugin<'Test', any, { getSubjectDid: (did?: string) => string }>` - Plugins may depend on wallets that implement planes/methods in the same way - For example, a wallet implementing the id plane and the `getSubjectDid` method may be typed like this: `Wallet<any, 'id', { getSubjectDid: (did?: string) => string }>`
 -   The `pluginMethods` key has been renamed to `methods` when creating a plugin, and `invoke` when calling them from a wallet
--   The `LearnCard` type has been renamed to `LearnCardFromKey`, because it no longer represents a generic `LearnCard` object, but rather a specific wallet
+-   The old `LearnCard` type has been removed
+-   The `Wallet` type has been renamed to `LearnCard`
+-   `generateWallet` has been renamed to `generateLearnCard`
 -   The `did` method now has had its type loosened to just `string`
 -   The `verifyCredential` method now returns a `VerificationCheck` directly, unless you explicitly ask for the prettified version via a flag
     -   I.e. `wallet.verifyCredential(vc)` is now `wallet.invoke.verifyCredential(vc, {}, true)`
@@ -87,3 +89,17 @@ const vcs = await Promise.all(uris.map(async uri => lc.read.get(uri)));
 -   `wallet.receiveChapiEvent` is now `wallet.invoke.receiveChapiEvent`
 -   `wallet.storePresentationViaChapi` is now `wallet.invoke.storePresentationViaChapi`
 -   `wallet.storeCredentialViaChapiDidAuth` is now `wallet.invoke.storeCredentialViaChapiDidAuth`
+
+Because the `LearnCard` and `Wallet` types have changed, if you were using either, you will need to
+update your code:
+
+```ts
+let test: LearnCard | undefined = undefined; // Old
+
+let test: LearnCardFromKey['returnValue'] | undefined = undefined; // New
+let test: LearnCard<any> | undefined = undefined; // Also valid if you don't know which instantiation function will be used
+
+let test: Wallet<any, { getSubjectDid: (did?: string) => string }>; // Old
+
+let test: LearnCard<any, any, { getSubjectDid: (did?: string) => string }>; // New
+```
