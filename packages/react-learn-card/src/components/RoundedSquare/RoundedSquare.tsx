@@ -36,12 +36,12 @@ export const RoundedSquare: React.FC<RoundedSquareProps> = ({
             className={`flex relative ${backgroundColor} py-[15px] px-[15px] w-[170px] h-[170px] rounded-[40px] rounded-square-card-container`}
         >
             <div className="w-full relative">
-                <section className="title-headline-container flex items-center justify-between">
+                <section className="title-headline-container flex items-center">
                     <CountCircle
                         count={count}
                         className="solo-counter-circle right-[0px] top-[0px] relative"
                     />
-                    <h3 className="line-clamp-2 font-bold text-[13px] text-grayscale-900 text-left">
+                    <h3 className="line-clamp-2 font-bold text-[13px] text-grayscale-900 ml-[5px]">
                         {title}
                     </h3>
                 </section>
