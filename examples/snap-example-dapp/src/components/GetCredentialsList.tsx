@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { IDXCredential } from '@learncard/types';
+import { CredentialRecord } from '@learncard/types';
 
 import { useIsSnapReady } from '@state/snapState';
 
 import { sendRequest } from '@helpers/rpc.helpers';
 
 const GetCredentials: React.FC = () => {
-    const [response, setResponse] = useState<IDXCredential[]>();
+    const [response, setResponse] = useState<CredentialRecord[]>();
     const [loading, setLoading] = useState(false);
 
     const isSnapReady = useIsSnapReady();

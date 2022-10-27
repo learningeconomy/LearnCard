@@ -8,7 +8,7 @@ import {
     VP,
     VerificationCheck,
     UnsignedVP,
-    IDXCredential,
+    CredentialRecord,
 } from '@learncard/types';
 
 import { NewCredentialFunction } from '@wallet/plugins/vc-templates/types';
@@ -119,7 +119,7 @@ export type GetCredentials = () => Promise<VC[]>;
  */
 export type GetCredentialsList = <
     Metadata extends Record<string, any> = Record<never, never>
-    >() => Promise<IDXCredential<Metadata>[]>;
+    >() => Promise<CredentialRecord<Metadata>[]>;
 
 /**
  * Publishes a credential to Ceramic, returning the credential's Ceramic URI
@@ -142,7 +142,7 @@ export type PublishCredential = (credential: VC) => Promise<CeramicURI>;
  * @group LearnCard Methods
  */
 export type AddCredential = <Metadata extends Record<string, any> = Record<never, never>>(
-    credential: IDXCredential<Metadata>
+    credential: CredentialRecord<Metadata>
 ) => Promise<void>;
 
 /**

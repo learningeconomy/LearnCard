@@ -1,5 +1,5 @@
 import { DIDDataStore } from '@glazed/did-datastore';
-import { IDXCredentialValidator, VC, IDXCredential } from '@learncard/types';
+import { CredentialRecordValidator, VC, CredentialRecord } from '@learncard/types';
 
 import { streamIdToCeramicURI } from '../ceramic/helpers';
 
@@ -41,7 +41,7 @@ export const getIDXPlugin = async <URI extends string = ''>(
             const oldCreds = backwardsCompatValidationResult.data.credentials;
 
             const newCreds = oldCreds.map(cred => {
-                if ('uri' in cred) return cred as IDXCredential;
+                if ('uri' in cred) return cred as CredentialRecord;
 
                 const { title, id, storageType, ...rest } = cred;
 
@@ -49,7 +49,7 @@ export const getIDXPlugin = async <URI extends string = ''>(
                     ...rest,
                     id: title,
                     uri: `lc:ceramic:${id.replace('ceramic://', '')}`,
-                } as IDXCredential;
+                } as CredentialRecord;
             });
 
             const credentialsList = { credentials: newCreds };
@@ -77,9 +77,9 @@ export const getIDXPlugin = async <URI extends string = ''>(
     };
 
     const addCredentialInIdx = async <T extends Record<string, any>>(
-        idxCredential: IDXCredential<T>
+        idxCredential: CredentialRecord<T>
     ) => {
-        const record = IDXCredentialValidator.parse(idxCredential);
+        const record = CredentialRecordValidator.parse(idxCredential);
 
         if (!record) throw new Error('record is required');
 
@@ -164,7 +164,7 @@ export const getIDXPlugin = async <URI extends string = ''>(
                 );
             },
             addVerifiableCredentialInIdx: async (_wallet, idxCredential) => {
-                const record = IDXCredentialValidator.parse(idxCredential);
+                const record = CredentialRecordValidator.parse(idxCredential);
 
                 if (!record) throw new Error('record is required');
 

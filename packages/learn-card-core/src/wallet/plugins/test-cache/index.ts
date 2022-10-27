@@ -1,8 +1,8 @@
-import { IDXCredential, VC } from '@learncard/types';
+import { CredentialRecord, VC } from '@learncard/types';
 import { TestCachePlugin } from './types';
 
 export const getTestCache = (): TestCachePlugin => {
-    let index: IDXCredential[] | undefined = undefined;
+    let index: CredentialRecord[] | undefined = undefined;
     let vcs: Record<string, VC | undefined> = {};
 
     return {

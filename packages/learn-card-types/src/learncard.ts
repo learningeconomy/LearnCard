@@ -28,3 +28,13 @@ export const CredentialInfoValidator = z.object({
     credentialSubject: CredentialSubjectValidator.optional(),
 });
 export type CredentialInfo = z.infer<typeof CredentialInfoValidator>;
+
+export type CredentialRecord<Metadata extends Record<string, any> = Record<never, never>> = {
+    id: string;
+    uri: string;
+    [key: string]: any;
+} & Metadata;
+
+export const CredentialRecordValidator: z.ZodType<CredentialRecord> = z
+    .object({ id: z.string(), uri: z.string() })
+    .catchall(z.any());
