@@ -206,6 +206,8 @@ export type JobHistoryCardProps = {
 
 export type GenericCardProps = {
     title?: string;
+    className?: string;
+    type?: string;
     thumbImgSrc?: string;
     onClick?: () => void;
 };
