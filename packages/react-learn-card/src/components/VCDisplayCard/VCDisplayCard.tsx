@@ -11,6 +11,7 @@ export type VCDisplayCardPropsReal = {
     credential: VC | AchievementCredential;
     issueeOverride?: Profile;
     className?: string;
+    hideProfileBubbles?: boolean;
     loading?: boolean;
     verification?: VerificationItem[];
     subjectImageComponent?: React.ReactNode;
@@ -36,6 +37,7 @@ export const VCDisplayCard: React.FC<VCDisplayCardPropsReal> = ({
     className = '',
     loading = false,
     verification = [],
+    hideProfileBubbles = false,
     subjectImageComponent,
 }) => {
     const {
@@ -55,6 +57,7 @@ export const VCDisplayCard: React.FC<VCDisplayCardPropsReal> = ({
                 issuer={issuer}
                 issuee={issuee}
                 subjectImageComponent={subjectImageComponent}
+                hideProfileBubbles={hideProfileBubbles}
                 createdAt={createdAt}
                 className={className}
                 loading={loading}
