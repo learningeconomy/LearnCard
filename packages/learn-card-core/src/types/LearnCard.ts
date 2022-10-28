@@ -35,7 +35,7 @@ export type EmptyLearnCard = InitFunction<
 >;
 
 /** @group Init Functions */
-export type LearnCardFromKey = InitFunction<
+export type LearnCardFromSeed = InitFunction<
     { seed: string },
     keyof LearnCardConfig,
     LearnCard<
@@ -68,5 +68,5 @@ export type CustomLearnCard = InitFunction<{ custom: true }, 'debug', LearnCard<
 
 /** @group Init Functions */
 export type InitLearnCard = GenericInitFunction<
-    [EmptyLearnCard, LearnCardFromKey, LearnCardFromVcApi, CustomLearnCard]
+    [EmptyLearnCard, LearnCardFromSeed, LearnCardFromVcApi, CustomLearnCard]
 >;

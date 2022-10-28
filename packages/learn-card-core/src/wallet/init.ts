@@ -1,19 +1,19 @@
 import { customLearnCard } from './initializers/customLearnCard';
 import { emptyLearnCard } from './initializers/emptyLearnCard';
-import { learnCardFromKey } from './initializers/learnCardFromKey';
+import { learnCardFromSeed } from './initializers/learnCardFromSeed';
 import { learnCardFromApiUrl } from './initializers/apiLearnCard';
 
 import {
     InitLearnCard,
     EmptyLearnCard,
-    LearnCardFromKey,
+    LearnCardFromSeed,
     LearnCardFromVcApi,
     CustomLearnCard,
 } from 'types/LearnCard';
 
 export * from './initializers/customLearnCard';
 export * from './initializers/emptyLearnCard';
-export * from './initializers/learnCardFromKey';
+export * from './initializers/learnCardFromSeed';
 export * from './initializers/apiLearnCard';
 
 // Overloads (Unfortunately necessary boilerplate 😢)
@@ -33,8 +33,8 @@ export function initLearnCard(
  * @group Init Functions
  */
 export function initLearnCard(
-    config: LearnCardFromKey['args']
-): Promise<LearnCardFromKey['returnValue']>;
+    config: LearnCardFromSeed['args']
+): Promise<LearnCardFromSeed['returnValue']>;
 
 /**
  * Generates a wallet that can sign VCs/VPs from a VC API
@@ -81,7 +81,7 @@ export async function initLearnCard(
     if ('seed' in config) {
         const { seed, ...keyConfig } = config;
 
-        return learnCardFromKey(seed, keyConfig);
+        return learnCardFromSeed(seed, keyConfig);
     }
 
     return emptyLearnCard(config);

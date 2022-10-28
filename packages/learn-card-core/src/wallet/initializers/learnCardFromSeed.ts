@@ -12,7 +12,7 @@ import { getVpqrPlugin } from '@wallet/plugins/vpqr';
 import { getCHAPIPlugin } from '@wallet/plugins/chapi';
 import { getLearnCardPlugin } from '@wallet/plugins/learn-card';
 
-import { LearnCardConfig, LearnCardFromKey } from 'types/LearnCard';
+import { LearnCardConfig, LearnCardFromSeed } from 'types/LearnCard';
 import { defaultCeramicIDXArgs, defaultEthereumArgs } from '@wallet/defaults';
 
 /**
@@ -20,21 +20,21 @@ import { defaultCeramicIDXArgs, defaultEthereumArgs } from '@wallet/defaults';
  *
  * @group Init Functions
  */
-export const learnCardFromKey = async (
-    key: string,
+export const learnCardFromSeed = async (
+    seed: string,
     {
         ceramicIdx = defaultCeramicIDXArgs,
         didkit,
         ethereumConfig = defaultEthereumArgs,
         debug,
     }: Partial<LearnCardConfig> = {}
-): Promise<LearnCardFromKey['returnValue']> => {
+): Promise<LearnCardFromSeed['returnValue']> => {
     const didkitLc = await (
         await generateLearnCard({ debug })
     ).addPlugin(await getDidKitPlugin(didkit));
 
     const didkeyLc = await didkitLc.addPlugin(
-        await getDidKeyPlugin<DidMethod>(didkitLc, key, 'key')
+        await getDidKeyPlugin<DidMethod>(didkitLc, seed, 'key')
     );
 
     const didkeyAndVCLc = await didkeyLc.addPlugin(getVCPlugin(didkeyLc));
