@@ -208,16 +208,6 @@ export interface InitOutput {
   readonly contextLoader: (a: number, b: number) => number;
   readonly didkit_error_message: () => number;
   readonly didkit_error_code: () => number;
-  readonly SHA1DCUpdate: (a: number, b: number, c: number) => void;
-  readonly ubc_check: (a: number, b: number) => void;
-  readonly SHA1DCFinal: (a: number, b: number) => number;
-  readonly sha1_compression_states: (a: number, b: number, c: number, d: number) => void;
-  readonly SHA1DCInit: (a: number) => void;
-  readonly SHA1DCSetSafeHash: (a: number, b: number) => void;
-  readonly SHA1DCSetUseUBC: (a: number, b: number) => void;
-  readonly SHA1DCSetUseDetectColl: (a: number, b: number) => void;
-  readonly SHA1DCSetDetectReducedRoundCollision: (a: number, b: number) => void;
-  readonly SHA1DCSetCallback: (a: number, b: number) => void;
   readonly __wbindgen_malloc: (a: number) => number;
   readonly __wbindgen_realloc: (a: number, b: number, c: number) => number;
   readonly __wbindgen_export_2: WebAssembly.Table;
