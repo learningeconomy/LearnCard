@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { initLearnCard, LearnCard, DidMethod } from '@learncard/core';
+import { initLearnCard, LearnCardFromKey, DidMethod } from '@learncard/core';
 import { OnRpcRequestHandler } from '@metamask/snap-types';
 import { MetaMaskInpageProvider } from '@metamask/providers';
 
@@ -29,19 +29,22 @@ declare global {
 
 const HANDLERS: {
     [Method in LearnCardRPCAPITypes[keyof LearnCardRPCAPITypes]['method']]: (
-        lcWallet: LearnCard,
+        lc: LearnCardFromKey,
         request: LearnCardRPCAPITypes[Method]['arguments']['deserializer']
     ) => Promise<LearnCardRPCAPITypes[Method]['returnValue']['serializer']>;
 } = {
-    did: async (lcWallet, request) => {
-        return serializeResponse(LearnCardRPCAPI.did, lcWallet.did(request.didMethod as DidMethod));
+    did: async (learnCard, request) => {
+        return serializeResponse(
+            LearnCardRPCAPI.did,
+            learnCard.id.did(request.didMethod as DidMethod)
+        );
     },
 
-    getTestVc: async lcWallet => {
-        return serializeResponse(LearnCardRPCAPI.getTestVc, lcWallet.getTestVc());
+    getTestVc: async learnCard => {
+        return serializeResponse(LearnCardRPCAPI.getTestVc, learnCard.invoke.getTestVc());
     },
 
-    issueCredential: async (lcWallet, request) => {
+    issueCredential: async (learnCard, request) => {
         const permission = await wallet.request({
             method: 'snap_confirm',
             params: [
@@ -59,21 +62,21 @@ const HANDLERS: {
         if (permission) {
             return serializeResponse(
                 LearnCardRPCAPI.issueCredential,
-                await lcWallet.issueCredential(request.credential)
+                await learnCard.invoke.issueCredential(request.credential)
             );
         }
 
         throw new Error('Did not get permission to issue credential');
     },
 
-    verifyCredential: async (lcWallet, request) => {
+    verifyCredential: async (learnCard, request) => {
         return serializeResponse(
             LearnCardRPCAPI.verifyCredential,
-            await lcWallet.verifyCredential(request.credential)
+            await learnCard.invoke.verifyCredential(request.credential, {}, true)
         );
     },
 
-    issuePresentation: async (lcWallet, request) => {
+    issuePresentation: async (learnCard, request) => {
         const permission = await wallet.request({
             method: 'snap_confirm',
             params: [
@@ -91,69 +94,76 @@ const HANDLERS: {
         if (permission) {
             return serializeResponse(
                 LearnCardRPCAPI.issuePresentation,
-                await lcWallet.issuePresentation(request.presentation)
+                await learnCard.invoke.issuePresentation(request.presentation)
             );
         }
 
         throw new Error('Did not get permission to issue credential');
     },
 
-    verifyPresentation: async (lcWallet, request) => {
+    verifyPresentation: async (learnCard, request) => {
         return serializeResponse(
             LearnCardRPCAPI.verifyPresentation,
-            await lcWallet.verifyPresentation(request.presentation)
+            await learnCard.invoke.verifyPresentation(request.presentation)
         );
     },
 
-    getCredential: async (lcWallet, request) => {
+    getCredential: async (learnCard, request) => {
+        const uri = (await learnCard.index.all.get()).find(
+            record => record.id === request.title
+        )?.uri;
+
         return serializeResponse(
             LearnCardRPCAPI.getCredential,
-            (await lcWallet.getCredential(request.title)) ?? null
+            (await learnCard.read.get(uri)) ?? null
         );
     },
 
-    getCredentials: async lcWallet => {
-        return serializeResponse(LearnCardRPCAPI.getCredentials, await lcWallet.getCredentials());
+    getCredentials: async learnCard => {
+        return serializeResponse(
+            LearnCardRPCAPI.getCredentials,
+            await learnCard.invoke.getVerifiableCredentialsFromIdx()
+        );
     },
 
-    getCredentialsList: async lcWallet => {
+    getCredentialsList: async learnCard => {
         return serializeResponse(
             LearnCardRPCAPI.getCredentialsList,
-            await lcWallet.getCredentialsList()
+            await learnCard.index.all.get()
         );
     },
 
-    publishCredential: async (lcWallet, request) => {
+    publishCredential: async (learnCard, request) => {
         return serializeResponse(
             LearnCardRPCAPI.publishCredential,
-            await lcWallet.publishCredential(request.credential)
+            await learnCard.store.Ceramic.upload(request.credential)
         );
     },
 
-    addCredential: async (lcWallet, request) => {
-        await lcWallet.addCredential({ title: request.title, id: request.id });
+    addCredential: async (learnCard, request) => {
+        await learnCard.index.IDX.add({ id: request.title, uri: request.id });
 
         return serializeResponse(LearnCardRPCAPI.addCredential, null);
     },
 
-    removeCredential: async (lcWallet, request) => {
-        await lcWallet.removeCredential(request.title);
+    removeCredential: async (learnCard, request) => {
+        await learnCard.index.IDX.remove(request.title);
 
         return serializeResponse(LearnCardRPCAPI.removeCredential, null);
     },
 
-    readFromCeramic: async (lcWallet, request) => {
+    readFromCeramic: async (learnCard, request) => {
         return serializeResponse(
             LearnCardRPCAPI.readFromCeramic,
-            await lcWallet.readFromCeramic(request.id)
+            await learnCard.read.get(request.id)
         );
     },
 };
 
-let memoizedWallet: LearnCard;
+let memoizedLearnCard: LearnCardFromKey;
 
-const getWallet = async () => {
-    if (memoizedWallet) return memoizedWallet;
+const getLearnCard = async () => {
+    if (memoizedLearnCard) return memoizedLearnCard;
 
     const entropy = await wallet.request<{ publicKey: string; privateKey: string }>({
         method: 'snap_getBip44Entropy_60',
@@ -161,14 +171,14 @@ const getWallet = async () => {
 
     if (!entropy?.privateKey) throw new Error('Could not get wallet entropy');
 
-    const newWallet = await initLearnCard({
+    const newLearnCard = await initLearnCard({
         seed: entropy.privateKey,
         didkit: Uint8Array.from(window.atob(didkit), c => c.charCodeAt(0)),
     });
 
-    memoizedWallet = newWallet;
+    memoizedLearnCard = newLearnCard;
 
-    return memoizedWallet;
+    return memoizedLearnCard;
 };
 
 export const onRpcRequest: OnRpcRequestHandler = async ({ request: _request }) => {
@@ -178,10 +188,10 @@ export const onRpcRequest: OnRpcRequestHandler = async ({ request: _request }) =
 
     const request = result.data;
 
-    const lcWallet = await getWallet();
+    const learnCard = await getLearnCard();
 
     // TS can't tell that the request object is the same as the handler (because they both get typed
     // as unions with all valid methods), so we simply cast to any to defeat that warning since we
     // know that we have correctly selected the correct request handler for the request's method
-    return HANDLERS[request.method](lcWallet, request as any);
+    return HANDLERS[request.method](learnCard, request as any);
 };

@@ -1,7 +1,7 @@
 import { toQrCode, fromQrCode } from '@digitalbazaar/vpqr';
 
-import { VpqrPluginDependentMethods, VpqrPluginMethods } from './types';
-import { Wallet, Plugin } from 'types/wallet';
+import { VpqrPlugin, VpqrPluginDependentMethods } from './types';
+import { LearnCard } from 'types/wallet';
 
 export * from './types';
 
@@ -9,26 +9,29 @@ export * from './types';
  * @group Plugins
  */
 export const getVpqrPlugin = (
-    wallet: Wallet<string, VpqrPluginDependentMethods>
-): Plugin<'Vpqr', VpqrPluginMethods> => {
+    learnCard: LearnCard<any, any, VpqrPluginDependentMethods>
+): VpqrPlugin => {
     return {
-        pluginMethods: {
-            vpFromQrCode: async (_wallet, text) => {
+        name: 'Vpqr',
+        displayName: 'VP QR',
+        description: 'Allows reading and creating QR codes with Verifiable Presentations in them',
+        methods: {
+            vpFromQrCode: async (_learnCard, text) => {
                 return (
                     await fromQrCode({
                         text,
                         documentLoader: async (url: string) => ({
-                            document: await wallet.pluginMethods.contextLoader(url),
+                            document: await learnCard.invoke.contextLoader(url),
                         }),
                     })
                 )?.vp;
             },
-            vpToQrCode: async (_wallet, vp) => {
+            vpToQrCode: async (_learnCard, vp) => {
                 return (
                     await toQrCode({
                         vp,
                         documentLoader: async (url: string) => ({
-                            document: await wallet.pluginMethods.contextLoader(url),
+                            document: await learnCard.invoke.contextLoader(url),
                         }),
                     })
                 )?.imageDataUrl;

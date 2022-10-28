@@ -53,13 +53,13 @@ import Credentials from '@components/Credentials';
 
     _wallet.set(wallet);
 
-    await wallet.installChapiHandler();
+    await wallet.invoke.installChapiHandler();
 
     const testStorage = async () => {
         // Test issuing from a different wallet using VC API
         const testWallet = await initLearnCard({ vcApi: true });
 
-        if (await testWallet.storeCredentialViaChapiDidAuth(testWallet.getTestVc())) {
+        if (await testWallet.invoke.storeCredentialViaChapiDidAuth(testWallet.invoke.getTestVc())) {
             window.location.reload();
         }
     };

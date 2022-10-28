@@ -1,4 +1,5 @@
 import { UnsignedVC, VC, UnsignedVP, VP, VerificationCheck } from '@learncard/types';
+import { Plugin } from 'types/wallet';
 import { ProofOptions } from '../didkit/types';
 
 /** @group CHAPI Plugin */
@@ -101,3 +102,12 @@ export type CHAPIPluginMethods = {
     >;
     storePresentationViaChapi: (presentation: UnsignedVP | VP) => Promise<Credential | undefined>;
 };
+
+/** @group CHAPI Plugin */
+export type CHAPIPlugin = Plugin<
+    'CHAPI',
+    any,
+    CHAPIPluginMethods,
+    any,
+    CHAPIPluginDependentMethods
+>;

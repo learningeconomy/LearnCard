@@ -1,132 +1,72 @@
 import { InitInput } from '@didkit/index';
 
-import { DidMethod } from '@wallet/plugins/didkit/types';
-import { DidKeyPluginMethods } from '@wallet/plugins/didkey/types';
-import { EthereumPluginMethods } from '@wallet/plugins/EthereumPlugin/types';
-import { IDXPluginMethods, CeramicIDXArgs } from '@wallet/plugins/idx/types';
-import { VCPluginMethods, VerifyExtension } from '@wallet/plugins/vc/types';
-import { DidkitPluginMethods } from '@wallet/plugins/didkit/types';
-import { EthereumConfig } from '@wallet/plugins/EthereumPlugin/types';
-import { VpqrPluginMethods } from '@wallet/plugins/vpqr/types';
-import { CHAPIPluginMethods } from '@wallet/plugins/chapi';
-import { VCTemplatePluginMethods } from '@wallet/plugins/vc-templates';
-import { VCAPIPluginMethods } from '@wallet/plugins/vc-api/types';
+import { DIDKitPlugin, DidMethod } from '@wallet/plugins/didkit/types';
+import { DidKeyPlugin } from '@wallet/plugins/didkey/types';
+import { VCPlugin } from '@wallet/plugins/vc/types';
+import { VCTemplatePlugin } from '@wallet/plugins/vc-templates';
+import { VCResolutionPluginType } from '@wallet/plugins/vc-resolution';
+import { CeramicPlugin, CeramicArgs } from '@wallet/plugins/ceramic/types';
+import { IDXPlugin, IDXArgs } from '@wallet/plugins/idx/types';
+import { ExpirationPlugin } from '@wallet/plugins/expiration/types';
+import { EthereumPlugin, EthereumConfig } from '@wallet/plugins/EthereumPlugin/types';
+import { VpqrPlugin } from '@wallet/plugins/vpqr/types';
+import { CHAPIPlugin } from '@wallet/plugins/chapi';
+import { VCAPIPlugin } from '@wallet/plugins/vc-api/types';
+import { LearnCardPlugin } from '@wallet/plugins/learn-card';
 
 import { InitFunction, GenericInitFunction } from 'types/helpers';
-import { Wallet } from 'types/wallet';
-import { AllLearnCardMethods } from 'types/methods';
-import { MergeObjects } from './utilities';
-import { VCResolutionPluginMethods } from '@wallet/plugins/vc-resolution';
-
-export { MergeObjects } from './utilities';
-
-export * from 'types/methods';
+import { LearnCard } from 'types/wallet';
 
 // export * from '@learncard/types';
 
-/** @group Universal Wallets */
-export type LearnCardRawWallet = Wallet<
-    | 'DIDKit'
-    | 'DID Key'
-    | 'VC'
-    | 'VC Templates'
-    | 'VC Resolution'
-    | 'IDX'
-    | 'Expiration'
-    | 'Ethereum'
-    | 'Vpqr'
-    | 'CHAPI',
-    MergeObjects<
+/** @group LearnCard */
+export type LearnCardConfig = {
+    ceramicIdx: CeramicArgs & IDXArgs;
+    didkit: InitInput | Promise<InitInput>;
+    ethereumConfig: EthereumConfig;
+    debug?: typeof console.log;
+};
+
+/** @group Init Functions */
+export type EmptyLearnCard = InitFunction<
+    {},
+    'didkit' | 'debug',
+    LearnCard<[DIDKitPlugin, ExpirationPlugin, VCTemplatePlugin, CHAPIPlugin, LearnCardPlugin]>
+>;
+
+/** @group Init Functions */
+export type LearnCardFromSeed = InitFunction<
+    { seed: string },
+    keyof LearnCardConfig,
+    LearnCard<
         [
-            DidKeyPluginMethods<DidMethod>,
-            VCPluginMethods,
-            VCTemplatePluginMethods,
-            VCResolutionPluginMethods,
-            IDXPluginMethods,
-            EthereumPluginMethods,
-            VpqrPluginMethods,
-            CHAPIPluginMethods
+            DIDKitPlugin,
+            DidKeyPlugin<DidMethod>,
+            VCPlugin,
+            VCTemplatePlugin,
+            VCResolutionPluginType,
+            CeramicPlugin,
+            IDXPlugin,
+            ExpirationPlugin,
+            EthereumPlugin,
+            VpqrPlugin,
+            CHAPIPlugin,
+            LearnCardPlugin
         ]
     >
 >;
 
-/**
- * @group LearnCard
- */
-export type LearnCard<
-    Methods extends keyof AllLearnCardMethods = keyof AllLearnCardMethods,
-    RawWallet extends Wallet<any, any> = LearnCardRawWallet
-    > = {
-        /** Raw IoE wallet instance. You shouldn't need to drop down to this level! */
-        _wallet: RawWallet;
-    } & Pick<AllLearnCardMethods, Methods>;
-
-/**
- * @group LearnCard
- */
-export type EmptyLearnCard = LearnCard<
-    | 'newCredential'
-    | 'newPresentation'
-    | 'verifyCredential'
-    | 'verifyPresentation'
-    | 'resolveDid'
-    | 'installChapiHandler'
-    | 'activateChapiHandler'
-    | 'receiveChapiEvent'
-    | 'storePresentationViaChapi'
-    | 'storeCredentialViaChapiDidAuth',
-    Wallet<
-        'DIDKit' | 'Expiration' | 'VC Templates' | 'CHAPI',
-        MergeObjects<
-            [DidkitPluginMethods, VerifyExtension, VCTemplatePluginMethods, CHAPIPluginMethods]
-        >
-    >
->;
-
-/**
- * @group LearnCard
- */
-export type VCAPILearnCard = LearnCard<
-    | 'did'
-    | 'newCredential'
-    | 'newPresentation'
-    | 'issueCredential'
-    | 'verifyCredential'
-    | 'issuePresentation'
-    | 'verifyPresentation'
-    | 'getTestVc'
-    | 'getTestVp'
-    | 'installChapiHandler'
-    | 'activateChapiHandler'
-    | 'receiveChapiEvent'
-    | 'storePresentationViaChapi'
-    | 'storeCredentialViaChapiDidAuth',
-    Wallet<
-        'VC API' | 'Expiration' | 'VC Templates' | 'CHAPI',
-        MergeObjects<
-            [VCAPIPluginMethods, VerifyExtension, VCTemplatePluginMethods, CHAPIPluginMethods]
-        >
-    >
->;
-
-/** @group LearnCard */
-export type LearnCardConfig = {
-    ceramicIdx: CeramicIDXArgs;
-    didkit: InitInput | Promise<InitInput>;
-    defaultContents: any[];
-    ethereumConfig: EthereumConfig;
-};
-
 /** @group Init Functions */
-export type EmptyWallet = InitFunction<{}, 'didkit', EmptyLearnCard>;
-/** @group Init Functions */
-export type WalletFromKey = InitFunction<{ seed: string }, keyof LearnCardConfig, LearnCard>;
-/** @group Init Functions */
-export type WalletFromVcApi = InitFunction<
+export type LearnCardFromVcApi = InitFunction<
     { vcApi: true | string; did?: string },
-    'defaultContents',
-    VCAPILearnCard
+    'debug',
+    LearnCard<[VCAPIPlugin, ExpirationPlugin, VCTemplatePlugin, CHAPIPlugin, LearnCardPlugin]>
 >;
 
 /** @group Init Functions */
-export type InitLearnCard = GenericInitFunction<[EmptyWallet, WalletFromKey, WalletFromVcApi]>;
+export type CustomLearnCard = InitFunction<{ custom: true }, 'debug', LearnCard<[]>>;
+
+/** @group Init Functions */
+export type InitLearnCard = GenericInitFunction<
+    [EmptyLearnCard, LearnCardFromSeed, LearnCardFromVcApi, CustomLearnCard]
+>;

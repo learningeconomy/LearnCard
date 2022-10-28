@@ -1,11 +1,9 @@
 import { Buffer } from 'buffer';
 
-import { JWK } from '@learncard/types';
-
-import { Plugin, Wallet } from 'types/wallet';
+import { LearnCard } from 'types/wallet';
 import { ethers } from 'ethers';
 
-import { EthereumConfig, EthereumPluginMethods, TokenList } from './types';
+import { EthereumConfig, EthereumPlugin, TokenList } from './types';
 import {
     formatUnits,
     parseUnits,
@@ -13,9 +11,6 @@ import {
     getChainIdFromProvider,
 } from './helpers';
 import hardcodedTokens from './hardcodedTokens';
-
-import { DidMethod } from '@wallet/plugins/didkit/types';
-import { Algorithm } from '@wallet/plugins/didkey/types'; // Have to include this in order for getSubjectKeypair to not throw a type error
 
 export * from './types';
 
@@ -25,19 +20,18 @@ const ERC20ABI = require('./erc20.abi.json');
  * @group Plugins
  */
 export const getEthereumPlugin = (
-    initWallet: Wallet<
-        string,
-        {
-            getSubjectDid: (type: DidMethod) => string;
-            getSubjectKeypair: (type?: Algorithm) => JWK;
-        }
-    >,
+    initLearnCard: LearnCard<any, 'id'>,
     config: EthereumConfig
-): Plugin<'Ethereum', EthereumPluginMethods> => {
+): EthereumPlugin => {
     let { infuraProjectId, network = 'mainnet' } = config;
 
     // Ethers wallet
-    const secpKeypair = initWallet.pluginMethods.getSubjectKeypair('secp256k1');
+    const secpKeypair = initLearnCard.id.keypair('secp256k1');
+
+    if (!secpKeypair) {
+        throw new Error('LearnCard must support secp256k1 JWK in order to add Ethereum Plugin');
+    }
+
     const privateKey = Buffer.from(secpKeypair.d, 'base64').toString('hex');
     let ethersWallet = new ethers.Wallet(privateKey);
     const publicKey: string = ethersWallet.address;
@@ -73,6 +67,23 @@ export const getEthereumPlugin = (
         )?.address;
     };
 
+    const getErc20TokenBalance = async (
+        tokenContractAddress: string,
+        walletPublicAddress = publicKey
+    ) => {
+        const contract = new ethers.Contract(tokenContractAddress, ERC20ABI, provider);
+
+        const balance = await contract.balanceOf(walletPublicAddress);
+        const formattedBalance = formatUnits(
+            balance,
+            tokenContractAddress,
+            defaultTokenList,
+            await getChainIdFromProvider(provider)
+        );
+
+        return formattedBalance;
+    };
+
     // Core Methods
     const getBalance = async (walletAddress = publicKey, tokenSymbolOrAddress = 'ETH') => {
         if (!tokenSymbolOrAddress || tokenSymbolOrAddress === 'ETH') {
@@ -94,33 +105,19 @@ export const getEthereumPlugin = (
         return balance;
     };
 
-    const getErc20TokenBalance = async (
-        tokenContractAddress: string,
-        walletPublicAddress = publicKey
-    ) => {
-        const contract = new ethers.Contract(tokenContractAddress, ERC20ABI, provider);
-
-        const balance = await contract.balanceOf(walletPublicAddress);
-        const formattedBalance = formatUnits(
-            balance,
-            tokenContractAddress,
-            defaultTokenList,
-            await getChainIdFromProvider(provider)
-        );
-
-        return formattedBalance;
-    };
-
     return {
-        pluginMethods: {
+        name: 'Ethereum',
+        displayName: 'Ethereum',
+        description: 'Provides access to currency',
+        methods: {
             getEthereumAddress: () => publicKey,
 
-            getBalance: async (_wallet, symbolOrAddress = 'ETH') =>
+            getBalance: async (_learnCard, symbolOrAddress = 'ETH') =>
                 getBalance(publicKey, symbolOrAddress),
-            getBalanceForAddress: async (_wallet, walletAddress, symbolOrAddress) =>
+            getBalanceForAddress: async (_learnCard, walletAddress, symbolOrAddress) =>
                 getBalance(walletAddress, symbolOrAddress),
 
-            transferTokens: async (_wallet, tokenSymbolOrAddress, amount, toAddress) => {
+            transferTokens: async (_learnCard, tokenSymbolOrAddress, amount, toAddress) => {
                 if (tokenSymbolOrAddress === 'ETH') {
                     const transaction = {
                         to: toAddress,
@@ -162,7 +159,7 @@ export const getEthereumPlugin = (
             getCurrentNetwork: () => {
                 return network;
             },
-            changeNetwork: (_wallet, _network: ethers.providers.Networkish) => {
+            changeNetwork: (_learnCard, _network: ethers.providers.Networkish) => {
                 const oldNetwork = network;
                 try {
                     network = _network;
@@ -173,7 +170,7 @@ export const getEthereumPlugin = (
                     throw e;
                 }
             },
-            addInfuraProjectId: (_wallet, infuraProjectIdToAdd) => {
+            addInfuraProjectId: (_learnCard, infuraProjectIdToAdd) => {
                 infuraProjectId = infuraProjectIdToAdd;
                 provider = getProvider();
             },

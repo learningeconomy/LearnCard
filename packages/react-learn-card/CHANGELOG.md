@@ -1,5 +1,18 @@
 # @welibraryos/react-learn-card
 
+## 2.3.49
+
+### Patch Changes
+
+-   Updated dependencies [[`e7cfb63`](https://github.com/learningeconomy/LearnCard/commit/e7cfb636b21cfdd834e3b0cb028036819326a2f9), [`e7cfb63`](https://github.com/learningeconomy/LearnCard/commit/e7cfb636b21cfdd834e3b0cb028036819326a2f9)]:
+    -   @learncard/core@8.0.0
+
+## 2.3.48
+
+### Patch Changes
+
+-   [#137](https://github.com/learningeconomy/LearnCard/pull/137) [`b655513`](https://github.com/learningeconomy/LearnCard/commit/b6555139a5fcf653db514d8ee059bd9edd99fd54) Thanks [@goblincore](https://github.com/goblincore)! - chore: School ID card additional props and default image placeholder options
+
 ## 2.3.47
 
 ### Patch Changes

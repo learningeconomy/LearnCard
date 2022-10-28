@@ -62,18 +62,15 @@ export const JobListCard: React.FC<JobListCardProps> = ({
 
     const courseCountDisplay =
         courseReqCount &&
-        `${qualificationDisplay?.courses?.fulfilledCount ?? 0}/${
-            qualificationDisplay?.courses?.totalRequiredCount ?? 0
+        `${qualificationDisplay?.courses?.fulfilledCount ?? 0}/${qualificationDisplay?.courses?.totalRequiredCount ?? 0
         }`;
     const achievementsCountDisplay =
         achievementsReqCount &&
-        `${qualificationDisplay?.achievements?.fulfilledCount ?? 0}/${
-            qualificationDisplay?.achievements?.totalRequiredCount ?? 0
+        `${qualificationDisplay?.achievements?.fulfilledCount ?? 0}/${qualificationDisplay?.achievements?.totalRequiredCount ?? 0
         }`;
     const skillsCountDisplay =
         skillsReqCount &&
-        `${qualificationDisplay?.skills?.fulfilledCount ?? 0}/${
-            qualificationDisplay?.skills?.totalRequiredCount ?? 0
+        `${qualificationDisplay?.skills?.fulfilledCount ?? 0}/${qualificationDisplay?.skills?.totalRequiredCount ?? 0
         }`;
 
     const qualifiedText = percentQualifiedDisplay

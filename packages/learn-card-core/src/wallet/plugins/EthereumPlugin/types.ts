@@ -1,4 +1,5 @@
 import { providers } from 'ethers';
+import { Plugin } from 'types/wallet';
 
 /** @group Ethereum Plugin */
 export type EthereumPluginMethods = {
@@ -35,3 +36,6 @@ export type Token = {
 
 /** @group Ethereum Plugin */
 export type TokenList = Token[];
+
+/** @group Ethereum Plugin */
+export type EthereumPlugin = Plugin<'Ethereum', any, EthereumPluginMethods, 'id'>;
