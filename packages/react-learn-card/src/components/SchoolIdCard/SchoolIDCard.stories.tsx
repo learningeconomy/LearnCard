@@ -19,7 +19,7 @@ export const SchoolIDCardTest = Template.bind({});
 SchoolIDCardTest.args = {
     subjectInitials: 'JY',
     subjectInitialsClass: 'bg-yellow-400',
-    userImage: DefaultFace,
+    userImage: '',
     userName: 'Janet Yoon',
     text: (
         <h3 className="text-xs font-bold uppercase text-[#006937]">

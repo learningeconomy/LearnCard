@@ -5,7 +5,7 @@ export type SchoolIDCardProps = {
      * student image
      * @type {string}
      */
-    userImage: string;
+    userImage?: string;
     /**
      * student name
      * @type {string}
