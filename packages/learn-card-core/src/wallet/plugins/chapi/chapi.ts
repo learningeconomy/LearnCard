@@ -1,18 +1,16 @@
 import { loadOnce } from 'credential-handler-polyfill';
 import { installHandler, activateHandler, receiveCredentialEvent } from 'web-credential-handler';
 
-import { CHAPIPluginMethods, CHAPIPluginDependentMethods } from './types';
-import { Plugin } from 'types/wallet';
+import { CHAPIPlugin } from './types';
 
 /**
  * @group Plugins
  */
-export const getCHAPIPlugin = async (): Promise<
-    Plugin<'CHAPI', CHAPIPluginMethods, CHAPIPluginDependentMethods>
-> => {
+export const getCHAPIPlugin = async (): Promise<CHAPIPlugin> => {
     if (typeof window === 'undefined') {
         return {
-            pluginMethods: {
+            name: 'CHAPI',
+            methods: {
                 installChapiHandler: async () => {
                     throw new Error('CHAPI is only available inside of a browser!');
                 },
@@ -35,10 +33,14 @@ export const getCHAPIPlugin = async (): Promise<
     await loadOnce();
 
     return {
-        pluginMethods: {
+        name: 'CHAPI',
+        displayName: 'CHAPI',
+        description:
+            'Credential Handler API. Allows sending/retrieving credentials across wallets and issuers',
+        methods: {
             installChapiHandler: async () => installHandler(),
             activateChapiHandler: async (
-                _wallet,
+                _learnCard,
                 {
                     mediatorOrigin = `https://authn.io/mediator?${encodeURIComponent(
                         window.location.origin
@@ -50,7 +52,7 @@ export const getCHAPIPlugin = async (): Promise<
                 return activateHandler({ mediatorOrigin, get, store });
             },
             receiveChapiEvent: async () => receiveCredentialEvent(),
-            storeCredentialViaChapiDidAuth: async (wallet, credential) => {
+            storeCredentialViaChapiDidAuth: async (_learnCard, credential) => {
                 const challenge = crypto.randomUUID();
                 const domain = window.location.origin;
 
@@ -68,14 +70,11 @@ export const getCHAPIPlugin = async (): Promise<
 
                 if (!res) return { success: false, reason: 'did not auth' };
 
-                const verification = await wallet.pluginMethods.verifyPresentation(
-                    (res as any).data,
-                    {
-                        challenge,
-                        domain,
-                        proofPurpose: 'authentication',
-                    }
-                );
+                const verification = await _learnCard.invoke.verifyPresentation((res as any).data, {
+                    challenge,
+                    domain,
+                    proofPurpose: 'authentication',
+                });
 
                 if (verification.warnings.length > 0 || verification.errors.length > 0) {
                     return { success: false, reason: 'auth failed verification' };
@@ -87,17 +86,17 @@ export const getCHAPIPlugin = async (): Promise<
                     credential.credentialSubject.id = subject;
                 }
 
-                const vp = await wallet.pluginMethods.getTestVp(
-                    await wallet.pluginMethods.issueCredential(credential)
+                const vp = await _learnCard.invoke.getTestVp(
+                    await _learnCard.invoke.issueCredential(credential)
                 );
 
-                const success = await wallet.pluginMethods.storePresentationViaChapi(vp);
+                const success = await _learnCard.invoke.storePresentationViaChapi(vp);
 
                 if (success) return { success: true };
 
                 return { success: false, reason: 'did not store' };
             },
-            storePresentationViaChapi: async (_wallet, presentation) => {
+            storePresentationViaChapi: async (_learnCard, presentation) => {
                 const wc = new WebCredential('VerifiablePresentation', presentation);
 
                 return window.navigator.credentials.store(wc);

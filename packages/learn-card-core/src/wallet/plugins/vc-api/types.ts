@@ -1,4 +1,5 @@
 import { UnsignedVC, UnsignedVP, VC, VP, VerificationCheck } from '@learncard/types';
+import { Plugin } from 'types/wallet';
 
 /** @group VC-API Plugin */
 export type APIOptions = {
@@ -23,3 +24,6 @@ export type VCAPIPluginMethods = {
     getTestVc: (subject?: string) => UnsignedVC;
     getTestVp: (credential?: VC) => Promise<UnsignedVP>;
 };
+
+/** @group VC-API Plugin */
+export type VCAPIPlugin = Plugin<'VC API', 'id', VCAPIPluginMethods>;

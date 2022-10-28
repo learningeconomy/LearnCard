@@ -6,7 +6,7 @@ import {
     VerificationItemValidator,
     VerificationCheckValidator,
     UnsignedVPValidator,
-    IDXCredentialValidator,
+    CredentialRecordValidator,
 } from '@learncard/types';
 
 import { getRpcMethod, GetRPCMethodType, getAPIEndpoint, GetAPIEndpointType } from './helpers';
@@ -64,7 +64,7 @@ export type GetCredentialsTypes = GetRPCMethodType<typeof GetCredentials>;
 export const GetCredentialsList = getRpcMethod(
     'getCredentialsList',
     {},
-    IDXCredentialValidator.array()
+    CredentialRecordValidator.array()
 );
 export type GetCredentialsListTypes = GetRPCMethodType<typeof GetCredentialsList>;
 
