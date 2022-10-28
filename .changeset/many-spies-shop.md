@@ -25,7 +25,10 @@ const bespokeLearnCard = await learnCard.addPlugin(plugin);
 -   The `did` method now has had its type loosened to just `string`
 -   The `verifyCredential` method now returns a `VerificationCheck` directly, unless you explicitly ask for the prettified version via a flag
     -   I.e. `wallet.verifyCredential(vc)` is now `wallet.invoke.verifyCredential(vc, {}, true)`
-- The `name` field is now _required_ for plugins, and they may optionally specify a `displayName` and `description`
+-   The `name` field is now _required_ for plugins, and they may optionally specify a `displayName` and `description`
+-   `walletFromKey` has been renamed to `learnCardFromSeed`
+-   `walletFromApiUrl` has been renamed to `learnCardFromApiUrl`
+-   `emptyWallet` has been renamed to `emptyLearnCard`
 
 _Migration Steps_
 
@@ -97,7 +100,7 @@ update your code:
 ```ts
 let test: LearnCard | undefined = undefined; // Old
 
-let test: LearnCardFromKey['returnValue'] | undefined = undefined; // New
+let test: LearnCardFromSeed['returnValue'] | undefined = undefined; // New
 let test: LearnCard<any> | undefined = undefined; // Also valid if you don't know which instantiation function will be used
 
 let test: Wallet<any, { getSubjectDid: (did?: string) => string }>; // Old
