@@ -1,5 +1,11 @@
 # learn-card-types
 
+## 5.0.0
+
+### Major Changes
+
+-   [#130](https://github.com/learningeconomy/LearnCard/pull/130) [`e7cfb63`](https://github.com/learningeconomy/LearnCard/commit/e7cfb636b21cfdd834e3b0cb028036819326a2f9) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Rename IDXCredential to CredentialRecord
+
 ## 4.0.1
 
 ### Patch Changes
