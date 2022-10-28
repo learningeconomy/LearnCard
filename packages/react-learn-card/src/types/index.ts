@@ -43,6 +43,7 @@ export type VCDisplayCardProps = {
     issuer?: Profile;
     issuee?: Profile;
     subjectImageComponent?: React.ReactNode;
+    hideProfileBubbles?: boolean;
     userImage?: string;
     className?: string;
     credentialSubject?: CredentialSubject;
