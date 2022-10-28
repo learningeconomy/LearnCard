@@ -1,61 +1,47 @@
 import { ModelAliases } from '@glazed/types';
 import { z } from 'zod';
 import { StreamID } from '@ceramicnetwork/streamid';
-import { VC, IDXCredential, IDXCredentialValidator } from '@learncard/types';
+import { Plugin } from 'types/wallet';
+import { VC, CredentialRecord, CredentialRecordValidator } from '@learncard/types';
 import { ResolutionExtension } from '../vc-resolution';
+import { CeramicClient } from '@ceramicnetwork/http-client';
 
 /** @group IDXPlugin */
-export type CeramicIDXArgs = {
+export type IDXArgs = {
     modelData: ModelAliases;
     credentialAlias: string;
-    ceramicEndpoint: string;
-    defaultContentFamily: string;
 };
 
 /** @group IDXPlugin */
-export type CeramicURI = `lc:ceramic:${string}`;
-
-/** @group IDXPlugin */
-export const CeramicURIValidator = z
-    .string()
-    .refine(
-        string => string.split(':').length === 3 && string.split(':')[0] === 'lc',
-        'URI must be of the form lc:${storage}:${url}'
-    )
-    .refine(
-        string => string.split(':')[1] === 'ceramic',
-        'URI must use storage type ceramic (i.e. must be lc:ceramic:${streamID})'
-    );
-
-/** @group IDXPlugin */
-export type IDXPluginMethods<URI extends string = ''> = {
+export type IDXPluginMethods = {
     getCredentialsListFromIdx: <Metadata extends Record<string, any> = Record<never, never>>(
         alias?: string
-    ) => Promise<CredentialsList<Metadata>>;
-    publishContentToCeramic: (cred: any) => Promise<CeramicURI>;
-    readContentFromCeramic: (streamId: string) => Promise<any>;
+    ) => Promise<CredentialRecord<Metadata>[]>;
     getVerifiableCredentialFromIdx: (id: string) => Promise<VC | undefined>;
     getVerifiableCredentialsFromIdx: () => Promise<VC[]>;
     addVerifiableCredentialInIdx: <Metadata extends Record<string, any> = Record<never, never>>(
-        cred: IDXCredential<Metadata>
-    ) => Promise<CeramicURI>;
+        cred: CredentialRecord<Metadata>
+    ) => Promise<string>;
     removeVerifiableCredentialInIdx: (title: string) => Promise<StreamID>;
-} & ResolutionExtension<URI | CeramicURI>;
+};
 
 /** @group IDXPlugin */
 export type IDXPluginDependentMethods<URI extends string = ''> = {
-    getKey: () => string;
+    getCeramicClient: () => CeramicClient;
 } & ResolutionExtension<URI>;
 
 /** @group IDXPlugin */
 export type CredentialsList<Metadata extends Record<string, any> = Record<never, never>> = {
-    credentials: Array<IDXCredential<Metadata>>;
+    credentials: Array<CredentialRecord<Metadata>>;
 };
 
 /** @group IDXPlugin */
 export const CredentialsListValidator: z.ZodType<CredentialsList> = z
-    .object({ credentials: IDXCredentialValidator.array() })
+    .object({ credentials: CredentialRecordValidator.array() })
     .strict();
+
+/** @group IDXPlugin */
+export type IDXPlugin = Plugin<'IDX', 'index', IDXPluginMethods, 'read', IDXPluginDependentMethods>;
 
 // Below types are temporary! They will be removed in the future when we are confident that everyone
 // has moved on to the new schema
@@ -74,12 +60,12 @@ export const BackwardsCompatIDXCredentialValidator: z.ZodType<BackwardsCompatIDX
 export type BackwardsCompatCredentialsList<
     Metadata extends Record<string, any> = Record<never, never>
     > = {
-        credentials: Array<IDXCredential<Metadata> | BackwardsCompatIDXCredential<Metadata>>;
+        credentials: Array<CredentialRecord<Metadata> | BackwardsCompatIDXCredential<Metadata>>;
     };
 
 /** @group IDXPlugin */
 export const BackwardsCompatCredentialsListValidator: z.ZodType<BackwardsCompatCredentialsList> = z
     .object({
-        credentials: IDXCredentialValidator.or(BackwardsCompatIDXCredentialValidator).array(),
+        credentials: CredentialRecordValidator.or(BackwardsCompatIDXCredentialValidator).array(),
     })
     .strict();

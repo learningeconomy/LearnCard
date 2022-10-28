@@ -1,4 +1,5 @@
 import { VP } from '@learncard/types';
+import { Plugin } from 'types/wallet';
 
 /** @group VPQR Plugin */
 export type VpqrPluginMethods = {
@@ -10,3 +11,5 @@ export type VpqrPluginMethods = {
 export type VpqrPluginDependentMethods = {
     contextLoader: (url: string) => Promise<Record<string, any>>;
 };
+
+export type VpqrPlugin = Plugin<'Vpqr', any, VpqrPluginMethods, any, VpqrPluginDependentMethods>;

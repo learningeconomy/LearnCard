@@ -1,5 +1,5 @@
 import { JWK, UnsignedVC, VC, UnsignedVP, VP, VerificationCheck } from '@learncard/types';
-import { Wallet } from 'types/wallet';
+import { Plugin, LearnCard } from 'types/wallet';
 import { ProofOptions } from '../didkit/types';
 
 /** @group VC Plugin */
@@ -40,7 +40,13 @@ export type VCPluginMethods = {
 };
 
 /** @group VC Plugin */
-export type VCImplicitWallet = Wallet<string, VCPluginMethods & VCPluginDependentMethods>;
+export type VCDependentLearnCard = LearnCard<any, 'id', VCPluginDependentMethods>;
+
+/** @group VC Plugin */
+export type VCImplicitLearnCard = LearnCard<any, 'id', VCPluginMethods & VCPluginDependentMethods>;
 
 /** @group VC Plugin */
 export type VerifyExtension = { verifyCredential: (credential: VC) => Promise<VerificationCheck> };
+
+/** @group VC Plugin */
+export type VCPlugin = Plugin<'VC', any, VCPluginMethods, 'id', VCPluginDependentMethods>;

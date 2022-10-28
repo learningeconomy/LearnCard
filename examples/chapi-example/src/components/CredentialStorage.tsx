@@ -30,7 +30,7 @@ const CredentialStorage: React.FC = () => {
         const fetchData = async () => {
             const wallet = await getWallet();
 
-            const _event = await wallet.receiveChapiEvent();
+            const _event = await wallet.invoke.receiveChapiEvent();
 
             if ('credential' in _event) setEvent(_event);
         };
@@ -44,9 +44,9 @@ const CredentialStorage: React.FC = () => {
     const accept = async () => {
         const wallet = await getWallet();
 
-        const uri = await wallet.publishCredential(credential);
+        const uri = await wallet.store.Ceramic.upload(credential);
 
-        await wallet.addCredential({ id: title, uri });
+        await wallet.index.IDX.add({ id: title, uri });
 
         event.respondWith(
             Promise.resolve({ dataType: 'VerifiablePresentation', data: presentation })

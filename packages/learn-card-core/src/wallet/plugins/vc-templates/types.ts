@@ -1,5 +1,6 @@
 import { UnsignedVC, VC, UnsignedVP } from '@learncard/types';
 import { DiscriminatedUnionize } from 'types/helpers';
+import { Plugin } from 'types/wallet';
 
 /** @group VC Templates Plugin */
 export type VcTemplates = {
@@ -26,3 +27,12 @@ export type VCTemplatePluginMethods = {
     newCredential: NewCredentialFunction;
     newPresentation: (credential: VC, args?: { did?: string }) => Promise<UnsignedVP>;
 };
+
+/** @group VC Templates Plugin */
+export type VCTemplatePlugin = Plugin<
+    'VC Templates',
+    any,
+    VCTemplatePluginMethods,
+    'id',
+    VCTemplatePluginDependentMethods
+>;

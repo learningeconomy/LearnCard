@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useStore } from '@nanostores/react';
-import type { IDXCredential, VC } from '@learncard/core';
+import type { CredentialRecord, VC } from '@learncard/core';
 
 import CredentialModal from '@components/CredentialModal';
 
 import { _wallet } from '@stores/walletStore';
 
 export type CredentialListItemProps = {
-    credential: IDXCredential;
+    credential: CredentialRecord;
 };
 
 const CredentialListItem: React.FC<CredentialListItemProps> = ({ credential: idxCredential }) => {
@@ -17,7 +17,7 @@ const CredentialListItem: React.FC<CredentialListItemProps> = ({ credential: idx
 
     useEffect(() => {
         if (wallet && active && !credential) {
-            wallet.resolveCredential(idxCredential.uri).then(setCredential);
+            wallet.read.get(idxCredential.uri).then(setCredential);
         }
     });
 
@@ -25,7 +25,7 @@ const CredentialListItem: React.FC<CredentialListItemProps> = ({ credential: idx
         if (!wallet) return;
 
         if (confirm('Are you sure you want to delete this credential?')) {
-            await wallet.removeCredential(idxCredential.id);
+            await wallet.index.IDX.remove(idxCredential.id);
             window.location.reload();
         }
     };

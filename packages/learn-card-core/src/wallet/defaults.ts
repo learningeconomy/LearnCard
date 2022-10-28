@@ -1,7 +1,8 @@
-import { CeramicIDXArgs } from '@wallet/plugins/idx/types';
+import { CeramicArgs } from '@wallet/plugins/ceramic/types';
+import { IDXArgs } from '@wallet/plugins/idx/types';
 import { EthereumConfig } from '@wallet/plugins/EthereumPlugin/types';
 
-export const defaultCeramicIDXArgs: CeramicIDXArgs = {
+export const defaultCeramicIDXArgs: CeramicArgs & IDXArgs = {
     modelData: {
         definitions: {
             MyVerifiableCredentials:
