@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.3.50
+
+### Patch Changes
+
+-   [#142](https://github.com/learningeconomy/LearnCard/pull/142) [`b9bab6e`](https://github.com/learningeconomy/LearnCard/commit/b9bab6ec68db49ffda5163811a61211811f0b0fe) Thanks [@goblincore](https://github.com/goblincore)! - chore: VC Display card update
+
 ## 2.3.49
 
 ### Patch Changes
