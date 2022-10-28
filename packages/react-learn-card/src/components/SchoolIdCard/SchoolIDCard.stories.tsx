@@ -17,7 +17,9 @@ const Template: Story<SchoolIDCardProps> = args => <SchoolIDCard {...args} />;
 
 export const SchoolIDCardTest = Template.bind({});
 SchoolIDCardTest.args = {
-    userImage: DefaultFace,
+    subjectInitials: 'JY',
+    subjectInitialsClass: 'bg-yellow-400',
+    userImage: '',
     userName: 'Janet Yoon',
     text: (
         <h3 className="text-xs font-bold uppercase text-[#006937]">

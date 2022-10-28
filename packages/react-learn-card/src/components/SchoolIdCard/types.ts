@@ -1,9 +1,11 @@
+import React from 'react';
+
 export type SchoolIDCardProps = {
     /**
      * student image
      * @type {string}
      */
-    userImage: string;
+    userImage?: string;
     /**
      * student name
      * @type {string}
@@ -34,4 +36,7 @@ export type SchoolIDCardProps = {
      * @type {string}
      */
     containerClassName?: string;
+    showBarcode?: boolean;
+    subjectInitials?: string;
+    subjectInitialsClass?: string;
 };
