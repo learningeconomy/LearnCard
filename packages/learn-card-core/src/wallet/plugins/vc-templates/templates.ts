@@ -28,7 +28,7 @@ export const VC_TEMPLATES: { [Key in keyof VcTemplates]: (args: VcTemplates[Key]
         } = {}): UnsignedAchievementCredential => ({
             '@context': [
                 'https://www.w3.org/2018/credentials/v1',
-                'https://imsglobal.github.io/openbadges-specification/context.json',
+                'https://purl.imsglobal.org/spec/ob/v3p0/context.json',
             ],
             id: 'http://example.com/credentials/3527',
             type: ['VerifiableCredential', 'OpenBadgeCredential'],
