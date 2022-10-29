@@ -31,16 +31,6 @@ export function verifyInvocation(a: number, b: number, c: number, d: number): nu
 export function contextLoader(a: number, b: number): number;
 export function didkit_error_message(): number;
 export function didkit_error_code(): number;
-export function SHA1DCUpdate(a: number, b: number, c: number): void;
-export function ubc_check(a: number, b: number): void;
-export function SHA1DCFinal(a: number, b: number): number;
-export function sha1_compression_states(a: number, b: number, c: number, d: number): void;
-export function SHA1DCInit(a: number): void;
-export function SHA1DCSetSafeHash(a: number, b: number): void;
-export function SHA1DCSetUseUBC(a: number, b: number): void;
-export function SHA1DCSetUseDetectColl(a: number, b: number): void;
-export function SHA1DCSetDetectReducedRoundCollision(a: number, b: number): void;
-export function SHA1DCSetCallback(a: number, b: number): void;
 export function __wbindgen_malloc(a: number): number;
 export function __wbindgen_realloc(a: number, b: number, c: number): number;
 export const __wbindgen_export_2: WebAssembly.Table;
