@@ -17,7 +17,8 @@ const VCDisplayFrontFace: React.FC<VCDisplayCardProps> = ({
     className = '',
     loading,
 }) => {
-    const credentialAchievementImage = credentialSubject?.achievement?.image;
+    const credentialAchievementImage =
+        credentialSubject?.achievement?.image || credentialSubject?.achievement?.image?.id;
     const issuerName = getNameFromProfile(issuer ?? '');
     const issueeName = getNameFromProfile(issuee ?? '');
     const issuerImage = getImageFromProfile(issuer ?? '');
