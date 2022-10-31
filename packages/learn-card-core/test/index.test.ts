@@ -458,6 +458,73 @@ describe('LearnCard SDK', () => {
         });
     });
 
+    describe('Ceramic Plugin', () => {
+        it('should be able to upload & get encrypted credential', async () => {
+            const learnCard = await getLearnCard();
+            const malicious = await getLearnCard('b'.repeat(64));
+
+            const uvc = learnCard.invoke.getTestVc();
+            const vc = await learnCard.invoke.issueCredential(uvc);
+            const uri = await learnCard.store.Ceramic.upload(vc);
+
+            // Should properly retrieve credential!  ✅
+            const credential = await learnCard.read.get(uri);
+            expect(credential).toEqual(vc);
+
+            // Should error -  Could not decrypt credential - DID not authorized. ❌
+            expect(await malicious.read.get(uri)).toBeUndefined();
+        }, 20000);
+
+        it('should be able to upload & get a shared encrypted credential', async () => {
+            const learnCard = await getLearnCard();
+            const malicious = await getLearnCard('b'.repeat(64));
+            const friend = await getLearnCard('c'.repeat(64));
+
+            const uvc = learnCard.invoke.getTestVc();
+            const vc = await learnCard.invoke.issueCredential(uvc);
+            const uri = await learnCard.invoke.publishContentToCeramic(vc, {
+                encrypt: true,
+                controllersCanDecrypt: true,
+                recipients: [friend.id.did()],
+            });
+
+            // Should properly retrieve credential!  ✅
+            const credential = await learnCard.read.get(uri);
+            expect(credential).toEqual(vc);
+
+            // Should properly retrieve credential!  ✅
+            const friendCredential = await friend.read.get(uri);
+            expect(friendCredential).toEqual(vc);
+
+            // Should error -  Could not decrypt credential - DID not authorized. ❌
+            expect(await malicious.read.get(uri)).toBeUndefined();
+        }, 20000);
+
+        it('should be able to upload & get a one-way encrypted credential', async () => {
+            const learnCard = await getLearnCard();
+            const malicious = await getLearnCard('b'.repeat(64));
+            const friend = await getLearnCard('c'.repeat(64));
+
+            const uvc = learnCard.invoke.getTestVc();
+            const vc = await learnCard.invoke.issueCredential(uvc);
+            const uri = await learnCard.invoke.publishContentToCeramic(vc, {
+                encrypt: true,
+                controllersCanDecrypt: false,
+                recipients: [friend.id.did()],
+            });
+
+            // Should properly retrieve credential!  ✅
+            const friendCredential = await friend.read.get(uri);
+            expect(friendCredential).toEqual(vc);
+
+            // Should error -  Could not decrypt credential - DID not authorized. ❌
+            expect(await learnCard.read.get(uri)).toBeUndefined();
+
+            // Should error -  Could not decrypt credential - DID not authorized. ❌
+            expect(await malicious.read.get(uri)).toBeUndefined();
+        }, 20000);
+    });
+
     describe('Ethereum Plugin', () => {
         it('should generate a valid Ethereum address', async () => {
             const learnCard = await getLearnCard();
