@@ -18,7 +18,7 @@ const VCDisplayFrontFace: React.FC<VCDisplayCardProps> = ({
     loading,
 }) => {
     const credentialAchievementImage =
-        credentialSubject?.achievement?.image || credentialSubject?.achievement?.image?.id;
+        credentialSubject?.achievement?.image?.id || credentialSubject?.achievement?.image;
     const issuerName = getNameFromProfile(issuer ?? '');
     const issueeName = getNameFromProfile(issuee ?? '');
     const issuerImage = getImageFromProfile(issuer ?? '');
@@ -42,7 +42,7 @@ const VCDisplayFrontFace: React.FC<VCDisplayCardProps> = ({
     } else if (!issueeImgExists && subjectImageComponent) {
         issueeImageEl = subjectImageComponent;
     }
-
+   
     let issuerImageEl: React.ReactNode | null = null;
 
     if (issuerImgExists) {
