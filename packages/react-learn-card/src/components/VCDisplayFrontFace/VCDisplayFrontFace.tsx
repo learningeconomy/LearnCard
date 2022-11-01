@@ -43,7 +43,7 @@ const VCDisplayFrontFace: React.FC<VCDisplayCardProps> = ({
     } else if (!issueeImgExists && subjectImageComponent) {
         issueeImageEl = subjectImageComponent;
     }
-
+   
     let issuerImageEl: React.ReactNode | null = null;
 
     if (issuerImgExists) {
