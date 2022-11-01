@@ -12,6 +12,7 @@ const VCDisplayFrontFace: React.FC<VCDisplayCardProps> = ({
     issuer,
     issuee,
     subjectImageComponent,
+    issuerImageComponent,
     hideProfileBubbles = false,
     credentialSubject,
     className = '',
@@ -55,6 +56,10 @@ const VCDisplayFrontFace: React.FC<VCDisplayCardProps> = ({
                 {issuerNameAbr}
             </div>
         );
+    }
+
+    if (issuerImageComponent) {
+        issuerImageEl = issuerImageComponent;
     }
 
     return (

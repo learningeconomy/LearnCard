@@ -10,11 +10,13 @@ import { CredentialInfo } from '../../types';
 export type VCDisplayCardPropsReal = {
     credential: VC | AchievementCredential;
     issueeOverride?: Profile;
+    issuerOverride?: Profile;
     className?: string;
     hideProfileBubbles?: boolean;
     loading?: boolean;
     verification?: VerificationItem[];
     subjectImageComponent?: React.ReactNode;
+    issuerImageComponent?: React.ReactNode;
 };
 
 const getInfoFromCredential = (credential: VC | AchievementCredential): CredentialInfo => {
@@ -34,20 +36,23 @@ const getInfoFromCredential = (credential: VC | AchievementCredential): Credenti
 export const VCDisplayCard: React.FC<VCDisplayCardPropsReal> = ({
     credential,
     issueeOverride,
+    issuerOverride,
     className = '',
     loading = false,
     verification = [],
     hideProfileBubbles = false,
     subjectImageComponent,
+    issuerImageComponent,
 }) => {
     const {
         title,
         createdAt,
-        issuer,
+        issuer: _issuer,
         issuee: _issuee,
         credentialSubject,
     } = getInfoFromCredential(credential);
     const issuee = issueeOverride || _issuee;
+    const issuer = issuerOverride || _issuer;
 
     return (
         <FlippyCard>
@@ -57,6 +62,7 @@ export const VCDisplayCard: React.FC<VCDisplayCardPropsReal> = ({
                 issuer={issuer}
                 issuee={issuee}
                 subjectImageComponent={subjectImageComponent}
+                issuerImageComponent={issuerImageComponent}
                 hideProfileBubbles={hideProfileBubbles}
                 createdAt={createdAt}
                 className={className}

@@ -1,4 +1,5 @@
 import { VerificationItem, VC, Profile, CredentialSubject } from '@learncard/types';
+import React from 'react';
 
 export enum Icons {
     coinsIcon,
@@ -43,6 +44,7 @@ export type VCDisplayCardProps = {
     issuer?: Profile;
     issuee?: Profile;
     subjectImageComponent?: React.ReactNode;
+    issuerImageComponent?: React.ReactNode;
     hideProfileBubbles?: boolean;
     userImage?: string;
     className?: string;
