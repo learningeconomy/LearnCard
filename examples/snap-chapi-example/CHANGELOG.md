@@ -1,5 +1,14 @@
 # @learncard/snap-chapi-example
 
+## 1.0.21
+
+### Patch Changes
+
+-   Updated dependencies [[`abec576`](https://github.com/learningeconomy/LearnCard/commit/abec576ab55bd9874d487e6ae13b5976a7d52c4e), [`1cafab4`](https://github.com/learningeconomy/LearnCard/commit/1cafab43a6c053914305e0a8b938748ed2a5fd31), [`2851dcd`](https://github.com/learningeconomy/LearnCard/commit/2851dcd70129a4e84b78c62bbd2de05d871edd76)]:
+    -   @learncard/react@2.3.51
+    -   @learncard/core@8.0.1
+    -   @learncard/meta-mask-snap@1.0.13
+
 ## 1.0.20
 
 ### Patch Changes
