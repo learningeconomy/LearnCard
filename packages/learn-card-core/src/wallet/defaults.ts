@@ -1,6 +1,7 @@
 import { CeramicArgs } from '@wallet/plugins/ceramic/types';
 import { IDXArgs } from '@wallet/plugins/idx/types';
 import { EthereumConfig } from '@wallet/plugins/EthereumPlugin/types';
+import { DWNConfig } from './plugins/dwn/types';
 
 export const defaultCeramicIDXArgs: CeramicArgs & IDXArgs = {
     modelData: {
@@ -24,4 +25,8 @@ export const defaultCeramicIDXArgs: CeramicArgs & IDXArgs = {
 export const defaultEthereumArgs: EthereumConfig = {
     infuraProjectId: '',
     network: 'mainnet',
+};
+
+export const defaultDWNArgs: DWNConfig = {
+    dwnAddressURL: new URL('http://localhost:8080'),
 };
