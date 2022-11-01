@@ -1,5 +1,13 @@
 # @welibraryos/react-learn-card
 
+## 2.3.52
+
+### Patch Changes
+
+-   [#151](https://github.com/learningeconomy/LearnCard/pull/151) [`88df9f8`](https://github.com/learningeconomy/LearnCard/commit/88df9f8c34f2d258845a62c3a214e9a382796f1e) Thanks [@goblincore](https://github.com/goblincore)! - chore: Add override props for VC display card
+
+*   [#151](https://github.com/learningeconomy/LearnCard/pull/151) [`88df9f8`](https://github.com/learningeconomy/LearnCard/commit/88df9f8c34f2d258845a62c3a214e9a382796f1e) Thanks [@goblincore](https://github.com/goblincore)! - chore: Add override props for VC display card
+
 ## 2.3.51
 
 ### Patch Changes
