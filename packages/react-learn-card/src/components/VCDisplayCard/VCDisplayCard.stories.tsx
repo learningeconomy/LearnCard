@@ -23,6 +23,11 @@ VCDisplayCardTest.args = {
             LC
         </div>
     ),
+    issuerImageComponent: (
+        <div className="flex flex-row items-center justify-center h-full w-full overflow-hidden bg-emerald-700 text-white font-medium text-3xl">
+            DC
+        </div>
+    ),
     credential: {
         '@context': [
             'https://www.w3.org/2018/credentials/v1',
@@ -55,6 +60,9 @@ VCDisplayCardTest.args = {
     },
     issueeOverride: {
         name: 'Test Person',
+    },
+    issuerOverride: {
+        name: 'Dilbert Charles',
     },
     loading: false,
     verification: [
