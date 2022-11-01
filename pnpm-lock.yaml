@@ -338,7 +338,12 @@ importers:
       jest: ^29.3.0
       jimp: ^0.16.1
       key-did-provider-ed25519: ^2.0.0
+<<<<<<< HEAD
       key-did-resolver: 2.3.0
+=======
+      key-did-resolver: 1.4.4
+      multiformats: ^10.0.2
+>>>>>>> b273f94 (WIP: start adding message write with jws)
       qrcode-reader: ^1.0.4
       shx: ^0.3.4
       ts-jest: ^29.0.3
@@ -365,11 +370,20 @@ importers:
       ethers: 5.7.2
       hex-lite: 1.5.0
       isomorphic-fetch: 3.0.0
+<<<<<<< HEAD
       isomorphic-webcrypto: 2.3.8_rzqpw7xeel42rqoidjm33iyv2e
       key-did-provider-ed25519: 2.0.1
       key-did-resolver: 2.3.0
       web-credential-handler: 2.0.1
       zod: 3.19.1
+=======
+      isomorphic-webcrypto: 2.3.8_fitgdew6mrk67wruzu5bc5dhea
+      key-did-provider-ed25519: 2.0.0
+      key-did-resolver: 1.4.4
+      multiformats: 10.0.2
+      web-credential-handler: 2.0.0
+      zod: 3.17.3
+>>>>>>> b273f94 (WIP: start adding message write with jws)
     devDependencies:
       '@glazed/types': 0.2.0
       '@learncard/types': link:../learn-card-types
@@ -13896,7 +13910,7 @@ packages:
     resolution: {integrity: sha512-I88TYZWc9XiYHRQ4/3c5rjjfgkjhLyW2luGIheGERbNQ6OY7yTybanSpDXZa8y7VUP9YmDcYa+eyq4ca7iLqWA==}
 
   /ee-first/1.1.1:
-    resolution: {integrity: sha1-WQxhFWsK4vTwJVcyoViyZrxWsh0=}
+    resolution: {integrity: sha512-WMwm9LhRUo+WUaRN+vRuETqG89IgZphVSNkdFgeb6sS/E4OrDIN7t48CAewSHXc6C8lefD8KKfr5vY61brQlow==}
 
   /electron-to-chromium/1.4.284:
     resolution: {integrity: sha512-M8WEXFuKXMYMVr45fo8mq0wUrrJHheiKZf6BArTKk9ZBYCKJEOU5H8cdWgDT+qCVZf7Na4lVUaZsA+h6uA9+PA==}
@@ -16337,7 +16351,7 @@ packages:
     optional: true
 
   /fresh/0.5.2:
-    resolution: {integrity: sha1-PYyt2Q2XZWn6g1qx+OSyOhBWBac=}
+    resolution: {integrity: sha512-zJ2mQYM18rEFOudeV4GShTGIQ7RbzA7ozbU9I/XBpm7kqgMywgmylMwXHxZJmkVoYkna9d2pVXVXPdYTP9ej8Q==}
     engines: {node: '>= 0.6'}
 
   /from2/2.3.0:
@@ -21182,7 +21196,7 @@ packages:
     resolution: {integrity: sha512-/sKlQJCBYVY9Ers9hqzKou4H6V5UWc/M59TH2dvkt+84itfnq7uFOMLpOiOS4ujvHP4etln18fmIxA5R5fll0g==}
 
   /media-typer/0.3.0:
-    resolution: {integrity: sha1-hxDXrwqmJvj/+hzgAWhUUmMlV0g=}
+    resolution: {integrity: sha512-dq+qelQ9akHpcOl/gUVRTxVIOkAJ1wR3QAvb4RsVjS8oVoFjDGTc679wJYmUmknUF5HwMLOgb5O+a3KxfWapPQ==}
     engines: {node: '>= 0.6'}
 
   /mem/8.1.1:
@@ -22199,8 +22213,18 @@ packages:
       thunky: 1.1.0
     dev: false
 
+<<<<<<< HEAD
   /multiformats/9.9.0:
     resolution: {integrity: sha512-HoMUjhH9T8DDBNT+6xzkrd9ga/XiBI4xLr58LJACwK6G3HTOPeMz4nB4KJs33L2BelrIJa7P0VuNaVF3hMYfjg==}
+=======
+  /multiformats/10.0.2:
+    resolution: {integrity: sha512-nJEHLFOYhO4L+aNApHhCnWqa31FyqAHv9Q77AhmwU3KsM2f1j7tuJpCk5ByZ33smzycNCpSG5klNIejIyfFx2A==}
+    engines: {node: '>=16.0.0', npm: '>=7.0.0'}
+    dev: false
+
+  /multiformats/9.7.0:
+    resolution: {integrity: sha512-uv/tcgwk0yN4DStopnBN4GTgvaAlYdy6KnZpuzEPFOYQd71DYFJjs0MN1ERElAflrZaYyGBWXyGxL5GgrxIx0Q==}
+>>>>>>> b273f94 (WIP: start adding message write with jws)
 
   /multihashes/4.0.3:
     resolution: {integrity: sha512-0AhMH7Iu95XjDLxIeuCOOE4t9+vQZsACyKZ9Fxw2pcsRmlX4iCn1mby0hS0bb+nQOVpdQYWPpnyusw4da5RPhA==}
@@ -29293,7 +29317,7 @@ packages:
     engines: {node: '>= 4'}
 
   /utils-merge/1.0.1:
-    resolution: {integrity: sha1-n5VxD1CiZ5R7LMwSR0HBAoQn5xM=}
+    resolution: {integrity: sha512-pMZTvIkT1d+TFGvDOqodOclx0QWkkgi6Tdoa8gC8ffGAAqz9pzPTZWAybbsHHoED/ztMtkv/VoYTYyShUn81hA==}
     engines: {node: '>= 0.4.0'}
 
   /uuid-browser/3.1.0:

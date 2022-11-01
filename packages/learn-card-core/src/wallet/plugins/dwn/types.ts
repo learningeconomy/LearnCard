@@ -8,4 +8,4 @@ export type DWNConfig = {
     dwnAddressURL?: URL;
 };
 
-export type DWNPlugin = Plugin<'DWNPlugin', any, DWNPluginMethods>;
+export type DWNPlugin = Plugin<'DWNPlugin', 'store', DWNPluginMethods>;
