@@ -14,7 +14,7 @@ import Layout from '../layouts/Layout.astro';
     const wallet = await initLearnCard();
 
     try {
-        await wallet.installChapiHandler();
+        await wallet.invoke.installChapiHandler();
     } catch (e) {
         console.error('Error in loadOnce:', e);
     }

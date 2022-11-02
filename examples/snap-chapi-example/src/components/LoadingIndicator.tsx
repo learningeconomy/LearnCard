@@ -30,7 +30,7 @@ const LoadingIndicator: React.FC = () => {
 
             const wallet = await initLearnCard();
 
-            await wallet.installChapiHandler();
+            await wallet.invoke.installChapiHandler();
 
             isSnapReady.set(true);
         } catch (error) {
