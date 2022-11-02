@@ -23,6 +23,7 @@ export type IDXPluginMethods = {
         cred: CredentialRecord<Metadata>
     ) => Promise<string>;
     removeVerifiableCredentialInIdx: (title: string) => Promise<StreamID>;
+    removeAllVerifiableCredentialsInIdx: () => Promise<StreamID>;
 };
 
 /** @group IDXPlugin */

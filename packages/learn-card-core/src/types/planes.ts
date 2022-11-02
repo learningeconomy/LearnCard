@@ -80,6 +80,7 @@ export type IndexPlane = {
     ) => Promise<boolean>;
     update: (id: string, updates: Record<string, any>, options?: PlaneOptions) => Promise<boolean>;
     remove: (id: string, options?: PlaneOptions) => Promise<boolean>;
+    removeAll?: (options?: PlaneOptions) => Promise<boolean>;
 };
 
 export type PluginIndexPlane = IndexPlane;

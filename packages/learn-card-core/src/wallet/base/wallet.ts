@@ -231,6 +231,17 @@ const addCachingToIndexPlane = <
 
         return plane.remove(_learnCard, id);
     },
+    ...(plane.removeAll
+        ? {
+              removeAll: async (_learnCard, { cache = 'cache-first' } = {}) => {
+                  if (cache !== 'skip-cache' && learnCardImplementsPlane(_learnCard, 'cache')) {
+                      await _learnCard.cache.flushIndex();
+                  }
+
+                  return plane.removeAll?.(_learnCard);
+              },
+          }
+        : {}),
 });
 
 const generateIndexPlane = <
@@ -498,7 +509,7 @@ export const generateLearnCard = async <
         id: {} as LearnCardIdPlane<Plugins>,
         plugins: plugins as Plugins,
         invoke: pluginMethods,
-        addPlugin: function (plugin) {
+        addPlugin: function(plugin) {
             return addPluginToLearnCard(this as any, plugin);
         },
         debug: _learnCard.debug,

@@ -76,6 +76,12 @@ export const getIDXPlugin = async <URI extends string = ''>(
         return dataStore.set(alias, existing);
     };
 
+    const removeAllCredentialsFromIdx = async (alias?: string) => {
+        if (!alias) alias = credentialAlias;
+
+        return dataStore.set(alias, { credentials: [] });
+    };
+
     const addCredentialInIdx = async <T extends Record<string, any>>(
         idxCredential: CredentialRecord<T>
     ) => {
@@ -145,6 +151,19 @@ export const getIDXPlugin = async <URI extends string = ''>(
                     return false;
                 }
             },
+            removeAll: async _learnCard => {
+                _learnCard.debug?.('learnCard.index.IDX.removeAll');
+
+                try {
+                    await removeAllCredentialsFromIdx();
+
+                    return true;
+                } catch (error) {
+                    console.error('Error removing credentials from IDX:', error);
+
+                    return false;
+                }
+            },
         },
         methods: {
             getCredentialsListFromIdx: async (_learnCard, alias = credentialAlias) =>
@@ -187,6 +206,9 @@ export const getIDXPlugin = async <URI extends string = ''>(
             },
             removeVerifiableCredentialInIdx: async (_learnCard, id) => {
                 return removeCredentialFromIdx(id);
+            },
+            removeAllVerifiableCredentialsInIdx: async () => {
+                return removeAllCredentialsFromIdx();
             },
         },
     };
