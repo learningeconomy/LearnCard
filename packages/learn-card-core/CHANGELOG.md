@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 8.0.2
+
+### Patch Changes
+
+-   [#153](https://github.com/learningeconomy/LearnCard/pull/153) [`7c6945c`](https://github.com/learningeconomy/LearnCard/commit/7c6945cfe4be8574c869c2515f7806123c372765) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add optional removeAll method to index plane
+
 ## 8.0.1
 
 ### Patch Changes
