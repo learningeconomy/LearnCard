@@ -5,7 +5,7 @@ import cache from './cache/index';
 import ready from './listeners/ready';
 import interactionCreate from './listeners/interactionCreate';
 import messageCreate from './listeners/messageCreate';
-import { UnlockedWallet } from '@learncard/core';
+import { LearnCardFromSeed } from '@learncard/core';
 import { Context } from './types/index';
 
 console.log('Bot is starting...');
