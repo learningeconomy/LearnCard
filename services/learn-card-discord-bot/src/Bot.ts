@@ -27,7 +27,7 @@ const client = new Client({
     intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages],
 });
 
-getWallet(seed).then((wallet: UnlockedWallet) => {
+getWallet(seed).then((wallet: LearnCardFromSeed) => {
     const context: Context = {
         wallet,
         client,
