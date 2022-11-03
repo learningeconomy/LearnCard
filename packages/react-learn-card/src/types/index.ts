@@ -1,4 +1,5 @@
 import { VerificationItem, VC, Profile, CredentialSubject } from '@learncard/types';
+import React from 'react';
 
 export enum Icons {
     coinsIcon,
@@ -20,6 +21,15 @@ export enum LCSubtypes {
     locked = 'locked',
 }
 
+export enum WalletCategoryTypes {
+    achievements = 'achievements',
+    ids = 'ids',
+    jobHistory = 'jobHistory',
+    currency = 'currency',
+    learningHistory = 'learningHistory',
+    skills = 'skills',
+}
+
 export type CredentialInfo = {
     title?: string;
     createdAt?: string;
@@ -34,6 +44,8 @@ export type VCDisplayCardProps = {
     issuer?: Profile;
     issuee?: Profile;
     subjectImageComponent?: React.ReactNode;
+    issuerImageComponent?: React.ReactNode;
+    hideProfileBubbles?: boolean;
     userImage?: string;
     className?: string;
     credentialSubject?: CredentialSubject;
@@ -81,6 +93,7 @@ export type CourseCardProps = {
     thumbSrc?: string;
     jobCount?: string | number;
     className?: string;
+    hideHeader?: boolean;
     check?: boolean;
     achievementCount: string | number;
     onClick?: () => void;
@@ -189,5 +202,26 @@ export type SkillTabCardProps = {
     showChecked?: boolean;
     className?: string;
     onCheckClicked?: () => void;
+    onClick?: () => void;
+};
+
+export type JobHistoryCardProps = {
+    title?: string;
+    company?: string;
+    description?: string;
+    dateRange?: string;
+    jobType?: string;
+    className?: string;
+    showArrow?: boolean;
+    onClick?: () => void;
+};
+
+export type GenericCardProps = {
+    title?: string;
+    className?: string;
+    type?: WalletCategoryTypes;
+    thumbImgSrc?: string;
+    customThumbClass?: string;
+    customHeaderClass?: string;
     onClick?: () => void;
 };

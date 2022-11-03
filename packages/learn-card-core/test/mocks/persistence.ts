@@ -1,7 +1,7 @@
-import { VC, IDXCredential } from '@learncard/types';
+import { VC, CredentialRecord } from '@learncard/types';
 
 export const persistenceMocks = () => {
-    let credentials: IDXCredential[] = [];
+    let credentials: CredentialRecord[] = [];
     const uriMap: Record<string, VC> = {};
 
     const publishCredential = async (credential: VC) => {
@@ -16,7 +16,7 @@ export const persistenceMocks = () => {
 
     const resolveCredential = async (uri: string) => uriMap[uri];
 
-    const addCredential = async (credential: IDXCredential) => {
+    const addCredential = async (credential: CredentialRecord) => {
         credentials.push(credential);
     };
 

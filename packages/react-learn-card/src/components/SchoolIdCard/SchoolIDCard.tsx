@@ -9,6 +9,9 @@ export const SchoolIDCard: React.FC<SchoolIDCardProps> = ({
     userName,
     text = null,
     extraText,
+    subjectInitials,
+    subjectInitialsClass,
+    showBarcode = true,
     backgroundImage,
     className,
     containerClassName,
@@ -20,6 +23,20 @@ export const SchoolIDCard: React.FC<SchoolIDCardProps> = ({
         textEl = text;
     }
 
+    let issueeImageEl: React.ReactNode | null = null;
+    const initialsClass = `subject-initials h-[70px] w-[70px] rounded-full mr-[10px] flex flex-row items-center justify-center h-full w-full overflow-hidden bg-emerald-700 text-white font-medium text-3xl ${subjectInitialsClass}`;
+
+    if (userImage && userImage?.trim() !== '') {
+        issueeImageEl = (
+            <div
+                className="h-[80px] w-[80px] rounded-full overflow-hidden bg-no-repeat bg-cover bg-center border-solid border-[2px] border-white mr-2"
+                style={{ backgroundImage: `url(${userImage})` }}
+            />
+        );
+    } else if (subjectInitials && (!userImage || userImage?.trim() === '')) {
+        issueeImageEl = <div className={initialsClass}>{subjectInitials}</div>;
+    }
+
     return (
         <div
             style={{ backgroundImage: `url(${backgroundImage})` }}
@@ -29,21 +46,25 @@ export const SchoolIDCard: React.FC<SchoolIDCardProps> = ({
                 className={`h-full w-full flex items-center justify-start relative ${containerClassName}`}
             >
                 <div className="w-full flex justify-start items-center pl-3 mt-10">
-                    <div
-                        className="h-[100px] w-[80px] rounded-full overflow-hidden bg-no-repeat bg-cover bg-center border-solid border-[2px] border-white mr-2"
-                        style={{ backgroundImage: `url(${userImage})` }}
-                    />
+                    {issueeImageEl}
                     <div className="h-full flex items-start justify-center flex-col mt-7">
                         {userName && <p className="text-sm text-black font-light">{userName}</p>}
                         {textEl && textEl}
                     </div>
                 </div>
 
-                <div className="barcode-container">
-                    <div className="barcode-wrap">
-                        <Barcode value="barcode-example" height="22px" width="1px" fontSize={0} />
+                {showBarcode && (
+                    <div className="barcode-container">
+                        <div className="barcode-wrap">
+                            <Barcode
+                                value="barcode-example"
+                                height="22px"
+                                width="1px"
+                                fontSize={0}
+                            />
+                        </div>
                     </div>
-                </div>
+                )}
 
                 {extraText && (
                     <div>

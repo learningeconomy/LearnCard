@@ -37,21 +37,21 @@ export const VCDisplayBackFace: React.FC<VCDisplayCardProps> = ({
                         <h6 className="line-clamp-1 text-grayscale-900 font-bold uppercase text-xs tracking-wider subpixel-antialiased">
                             Description
                         </h6>
-                        <p className="line-clamp-4 subpixel-antialiased text-grayscale-600 text-[14px] lc-line-clamp">
+                        <p className="line-clamp-3 subpixel-antialiased text-grayscale-600 text-[14px] lc-line-clamp">
                             {descriptionText}
                         </p>
                     </div>
 
-                    <div className="width-full mt-7">
+                    <div className="width-full mt-[10px]">
                         <h6 className="line-clamp-1 text-grayscale-900 font-bold uppercase text-xs tracking-wider  subpixel-antialiased">
                             Criteria
                         </h6>
-                        <p className="line-clamp-4 subpixel-antialiased text-grayscale-600 text-[14px] lc-line-clamp">
+                        <p className="line-clamp-3 subpixel-antialiased text-grayscale-600 text-[14px] lc-line-clamp">
                             {criteriaText}
                         </p>
                     </div>
 
-                    <div className="width-full mt-7 line-clamp-1 overflow-hidden vc-issuer-name-info">
+                    <div className="width-full mt-[10px] line-clamp-1 overflow-hidden vc-issuer-name-info">
                         <h6 className="line-clamp-1 text-grayscale-900 font-bold uppercase text-xs tracking-wider subpixel-antialiased">
                             Issuer
                         </h6>
@@ -69,7 +69,7 @@ export const VCDisplayBackFace: React.FC<VCDisplayCardProps> = ({
 
                 <div className="w-full mt-2"></div>
 
-                <button className="bg-white my-3 border-2 text-indigo-500 font-semibold py-2 px-4 border border-indigo-300 rounded-full">
+                <button className="bg-white my-3 border-2 text-indigo-500 font-semibold py-2 px-4 shadow-3xl rounded-full">
                     <span className="flex justify-center">
                         <img
                             className="h-8 w-8 my-0 mx-4 scale-x-[-1]"

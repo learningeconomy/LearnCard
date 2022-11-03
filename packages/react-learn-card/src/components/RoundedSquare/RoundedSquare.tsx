@@ -1,15 +1,14 @@
 import React from 'react';
-import { Icons } from '../../types';
+import { Icons, WalletCategoryTypes } from '../../types';
 import { ICONS_TO_SOURCE } from '../../constants/icons';
 import CircleIcon from '../CircleIcon/CircleIcon';
 import { CountCircle } from '../CircleIcon';
-import { TYPE_TO_IMG_SRC, TYPE_TO_WALLET_COLOR } from './constants';
-import { WALLET_SUBTYPES } from './constants';
+import { TYPE_TO_IMG_SRC, TYPE_TO_WALLET_COLOR } from '../../constants';
 
 export type RoundedSquareProps = {
     title?: string;
     description?: string;
-    type?: string;
+    type?: WalletCategoryTypes;
     iconSrc?: string;
     imgSrc?: string;
     count?: string | number;
@@ -22,7 +21,7 @@ export const RoundedSquare: React.FC<RoundedSquareProps> = ({
     description = 'Lorem ipsum sit dalor amet',
     iconSrc = ICONS_TO_SOURCE[Icons.trophyIcon],
     imgSrc,
-    type = WALLET_SUBTYPES.ACHIEVEMENTS,
+    type = WalletCategoryTypes.achievements,
     count = '28',
     onClick = () => {},
     bgColor,
@@ -37,12 +36,12 @@ export const RoundedSquare: React.FC<RoundedSquareProps> = ({
             className={`flex relative ${backgroundColor} py-[15px] px-[15px] w-[170px] h-[170px] rounded-[40px] rounded-square-card-container`}
         >
             <div className="w-full relative">
-                <section className="title-headline-container flex items-center justify-between">
+                <section className="title-headline-container flex items-center">
                     <CountCircle
                         count={count}
                         className="solo-counter-circle right-[0px] top-[0px] relative"
                     />
-                    <h3 className="line-clamp-2 font-bold text-[13px] text-grayscale-900 text-left">
+                    <h3 className="line-clamp-2 font-bold text-[13px] text-grayscale-900 ml-[5px]">
                         {title}
                     </h3>
                 </section>

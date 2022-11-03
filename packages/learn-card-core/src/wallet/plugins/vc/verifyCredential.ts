@@ -1,15 +1,14 @@
 import { VC } from '@learncard/types';
 
 import { ProofOptions } from '@wallet/plugins/didkit/types';
-import { VCImplicitWallet, VCPluginDependentMethods } from './types';
-import { Wallet } from 'types/wallet';
+import { VCDependentLearnCard, VCImplicitLearnCard } from './types';
 
-export const verifyCredential = (initWallet: Wallet<string, VCPluginDependentMethods>) => {
+export const verifyCredential = (initLearnCard: VCDependentLearnCard) => {
     return async (
-        _wallet: VCImplicitWallet,
+        _learnCard: VCImplicitLearnCard,
         credential: VC,
         options: Partial<ProofOptions> = {}
     ) => {
-        return initWallet.pluginMethods.verifyCredential(credential, options);
+        return initLearnCard.invoke.verifyCredential(credential, options);
     };
 };

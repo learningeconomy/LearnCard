@@ -1,4 +1,5 @@
 import { JWK, UnsignedVC, UnsignedVP, VC, VP, VerificationCheck } from '@learncard/types';
+import { Plugin } from 'types/wallet';
 
 /** @group DIDKit Plugin */
 export type DidMethod =
@@ -56,3 +57,6 @@ export type DidkitPluginMethods = {
     contextLoader: (url: string) => Promise<Record<string, any>>;
     resolveDid: (did: string, inputMetadata?: InputMetadata) => Promise<Record<string, any>>;
 };
+
+/** @group DIDKit Plugin */
+export type DIDKitPlugin = Plugin<'DIDKit', any, DidkitPluginMethods>;

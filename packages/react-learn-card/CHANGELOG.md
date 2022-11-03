@@ -1,5 +1,74 @@
 # @welibraryos/react-learn-card
 
+## 2.3.53
+
+### Patch Changes
+
+-   Updated dependencies [[`7c6945c`](https://github.com/learningeconomy/LearnCard/commit/7c6945cfe4be8574c869c2515f7806123c372765)]:
+    -   @learncard/core@8.0.2
+
+## 2.3.52
+
+### Patch Changes
+
+-   [#151](https://github.com/learningeconomy/LearnCard/pull/151) [`88df9f8`](https://github.com/learningeconomy/LearnCard/commit/88df9f8c34f2d258845a62c3a214e9a382796f1e) Thanks [@goblincore](https://github.com/goblincore)! - chore: Add override props for VC display card
+
+*   [#151](https://github.com/learningeconomy/LearnCard/pull/151) [`88df9f8`](https://github.com/learningeconomy/LearnCard/commit/88df9f8c34f2d258845a62c3a214e9a382796f1e) Thanks [@goblincore](https://github.com/goblincore)! - chore: Add override props for VC display card
+
+## 2.3.51
+
+### Patch Changes
+
+-   [#149](https://github.com/learningeconomy/LearnCard/pull/149) [`abec576`](https://github.com/learningeconomy/LearnCard/commit/abec576ab55bd9874d487e6ae13b5976a7d52c4e) Thanks [@Custard7](https://github.com/Custard7)! - Fix image for jff 2.0 badge
+
+*   [#150](https://github.com/learningeconomy/LearnCard/pull/150) [`2851dcd`](https://github.com/learningeconomy/LearnCard/commit/2851dcd70129a4e84b78c62bbd2de05d871edd76) Thanks [@goblincore](https://github.com/goblincore)! - Actually fix image for jff 2.0 badge
+
+*   Updated dependencies [[`1cafab4`](https://github.com/learningeconomy/LearnCard/commit/1cafab43a6c053914305e0a8b938748ed2a5fd31)]:
+    -   @learncard/core@8.0.1
+
+## 2.3.50
+
+### Patch Changes
+
+-   [#142](https://github.com/learningeconomy/LearnCard/pull/142) [`b9bab6e`](https://github.com/learningeconomy/LearnCard/commit/b9bab6ec68db49ffda5163811a61211811f0b0fe) Thanks [@goblincore](https://github.com/goblincore)! - chore: VC Display card update
+
+## 2.3.49
+
+### Patch Changes
+
+-   Updated dependencies [[`e7cfb63`](https://github.com/learningeconomy/LearnCard/commit/e7cfb636b21cfdd834e3b0cb028036819326a2f9), [`e7cfb63`](https://github.com/learningeconomy/LearnCard/commit/e7cfb636b21cfdd834e3b0cb028036819326a2f9)]:
+    -   @learncard/core@8.0.0
+
+## 2.3.48
+
+### Patch Changes
+
+-   [#137](https://github.com/learningeconomy/LearnCard/pull/137) [`b655513`](https://github.com/learningeconomy/LearnCard/commit/b6555139a5fcf653db514d8ee059bd9edd99fd54) Thanks [@goblincore](https://github.com/goblincore)! - chore: School ID card additional props and default image placeholder options
+
+## 2.3.47
+
+### Patch Changes
+
+-   [#135](https://github.com/learningeconomy/LearnCard/pull/135) [`235c773`](https://github.com/learningeconomy/LearnCard/commit/235c7731aded77985cf9083c09c6200ff8599766) Thanks [@goblincore](https://github.com/goblincore)! - chore: rounded square update - add back constant exports and left justify title
+
+## 2.3.46
+
+### Patch Changes
+
+-   [#133](https://github.com/learningeconomy/LearnCard/pull/133) [`f12e6b0`](https://github.com/learningeconomy/LearnCard/commit/f12e6b03b078ef5861a657de52f48fb28eb2660e) Thanks [@goblincore](https://github.com/goblincore)! - Generic Card Update
+
+## 2.3.45
+
+### Patch Changes
+
+-   [#131](https://github.com/learningeconomy/LearnCard/pull/131) [`dd4931f`](https://github.com/learningeconomy/LearnCard/commit/dd4931f9e439c4f80b16c6f438aff3e4eee6b8af) Thanks [@goblincore](https://github.com/goblincore)! - Hide VC image when no image for vc, course card additional hide header prop, css changes for generic display card
+
+## 2.3.44
+
+### Patch Changes
+
+-   [#128](https://github.com/learningeconomy/LearnCard/pull/128) [`e67119e`](https://github.com/learningeconomy/LearnCard/commit/e67119e978d4df324aa71235c3b202b3e8bdde7c) Thanks [@goblincore](https://github.com/goblincore)! - Small UI updates - add generic display card, job history card, update job listing card
+
 ## 2.3.43
 
 ### Patch Changes

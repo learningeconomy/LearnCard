@@ -13,13 +13,7 @@ import Layout from '@layouts/Layout.astro';
 
     const wallet = await initLearnCard();
 
-    try {
-        await wallet.installChapiHandler();
-    } catch (e) {
-        console.error('Error in loadOnce:', e);
-    }
-
-    wallet.activateChapiHandler({
+    wallet.invoke.activateChapiHandler({
         store: async () => {
             return { type: 'redirect', url: `${window.location.origin}/store` };
         },

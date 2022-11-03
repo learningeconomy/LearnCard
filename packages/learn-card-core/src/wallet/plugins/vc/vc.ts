@@ -3,23 +3,24 @@ import { verifyCredential } from './verifyCredential';
 import { issuePresentation } from './issuePresentation';
 import { verifyPresentation } from './verifyPresentation';
 
-import { VCPluginDependentMethods, VCPluginMethods } from './types';
-import { Plugin, Wallet } from 'types/wallet';
+import { VCDependentLearnCard, VCPlugin } from './types';
 
 /**
  * @group Plugins
  */
-export const getVCPlugin = (
-    wallet: Wallet<string, VCPluginDependentMethods>
-): Plugin<'VC', VCPluginMethods, VCPluginDependentMethods> => {
+export const getVCPlugin = (learnCard: VCDependentLearnCard): VCPlugin => {
     return {
-        pluginMethods: {
-            issueCredential: issueCredential(wallet),
-            verifyCredential: verifyCredential(wallet),
-            issuePresentation: issuePresentation(wallet),
-            verifyPresentation: verifyPresentation(wallet),
-            getTestVc: (_wallet, subject = 'did:example:d23dd687a7dc6787646f2eb98d0') => {
-                const did = _wallet.pluginMethods.getSubjectDid('key');
+        name: 'VC',
+        displayName: 'VC',
+        description:
+            'Handles the infrastructure needed to issue and verify credentials and presentations',
+        methods: {
+            issueCredential: issueCredential(learnCard),
+            verifyCredential: verifyCredential(learnCard),
+            issuePresentation: issuePresentation(learnCard),
+            verifyPresentation: verifyPresentation(learnCard),
+            getTestVc: (_learnCard, subject = 'did:example:d23dd687a7dc6787646f2eb98d0') => {
+                const did = _learnCard.invoke.getSubjectDid('key');
 
                 return {
                     '@context': ['https://www.w3.org/2018/credentials/v1'],
@@ -30,14 +31,12 @@ export const getVCPlugin = (
                     credentialSubject: { id: subject },
                 };
             },
-            getTestVp: async (_wallet, _credential) => {
+            getTestVp: async (_learnCard, _credential) => {
                 const credential =
                     _credential ||
-                    (await _wallet.pluginMethods.issueCredential(
-                        _wallet.pluginMethods.getTestVc()
-                    ));
+                    (await _learnCard.invoke.issueCredential(_learnCard.invoke.getTestVc()));
 
-                const did = _wallet.pluginMethods.getSubjectDid('key');
+                const did = _learnCard.invoke.getSubjectDid('key');
 
                 return {
                     '@context': ['https://www.w3.org/2018/credentials/v1'],

@@ -1,12 +1,20 @@
-import { emptyWallet } from './initializers/emptyWallet';
-import { walletFromKey } from './initializers/walletFromKey';
-import { walletFromApiUrl } from './initializers/apiWallet';
+import { customLearnCard } from './initializers/customLearnCard';
+import { emptyLearnCard } from './initializers/emptyLearnCard';
+import { learnCardFromSeed } from './initializers/learnCardFromSeed';
+import { learnCardFromApiUrl } from './initializers/apiLearnCard';
 
-import { InitLearnCard, EmptyWallet, WalletFromKey, WalletFromVcApi } from 'types/LearnCard';
+import {
+    InitLearnCard,
+    EmptyLearnCard,
+    LearnCardFromSeed,
+    LearnCardFromVcApi,
+    CustomLearnCard,
+} from 'types/LearnCard';
 
-export * from './initializers/emptyWallet';
-export * from './initializers/walletFromKey';
-export * from './initializers/apiWallet';
+export * from './initializers/customLearnCard';
+export * from './initializers/emptyLearnCard';
+export * from './initializers/learnCardFromSeed';
+export * from './initializers/apiLearnCard';
 
 // Overloads (Unfortunately necessary boilerplate 😢)
 
@@ -15,14 +23,18 @@ export * from './initializers/apiWallet';
  *
  * @group Init Functions
  */
-export function initLearnCard(config?: EmptyWallet['args']): Promise<EmptyWallet['returnValue']>;
+export function initLearnCard(
+    config?: EmptyLearnCard['args']
+): Promise<EmptyLearnCard['returnValue']>;
 
 /**
  * Generates a full wallet from a 32 byte seed
  *
  * @group Init Functions
  */
-export function initLearnCard(config: WalletFromKey['args']): Promise<WalletFromKey['returnValue']>;
+export function initLearnCard(
+    config: LearnCardFromSeed['args']
+): Promise<LearnCardFromSeed['returnValue']>;
 
 /**
  * Generates a wallet that can sign VCs/VPs from a VC API
@@ -30,8 +42,17 @@ export function initLearnCard(config: WalletFromKey['args']): Promise<WalletFrom
  * @group Init Functions
  */
 export function initLearnCard(
-    config: WalletFromVcApi['args']
-): Promise<WalletFromVcApi['returnValue']>;
+    config: LearnCardFromVcApi['args']
+): Promise<LearnCardFromVcApi['returnValue']>;
+
+/**
+ * Generates a custom wallet with no plugins added
+ *
+ * @group Init Functions
+ */
+export function initLearnCard(
+    config: CustomLearnCard['args']
+): Promise<CustomLearnCard['returnValue']>;
 
 // Implementation
 
@@ -43,21 +64,25 @@ export function initLearnCard(
 export async function initLearnCard(
     config: InitLearnCard['args'] = {}
 ): InitLearnCard['returnValue'] {
-    if ('vcApi' in config) {
-        const { vcApi, did, ...apiConfig } = config;
+    if ('custom' in config) {
+        return customLearnCard({ debug: config.debug });
+    }
 
-        return walletFromApiUrl(
-            typeof vcApi === 'string' ? vcApi : 'https://bridge.learncard.com',
-            vcApi === true ? 'did:key:z6MkjSz4mYqcn7dePGuktJ5PxecMkXQQHWRg8Lm6okATyFVh' : did,
-            apiConfig
-        );
+    if ('vcApi' in config) {
+        const { vcApi, did, debug } = config;
+
+        return learnCardFromApiUrl({
+            url: typeof vcApi === 'string' ? vcApi : 'https://bridge.learncard.com',
+            did: vcApi === true ? 'did:key:z6MkjSz4mYqcn7dePGuktJ5PxecMkXQQHWRg8Lm6okATyFVh' : did,
+            debug,
+        });
     }
 
     if ('seed' in config) {
         const { seed, ...keyConfig } = config;
 
-        return walletFromKey(seed, keyConfig);
+        return learnCardFromSeed(seed, keyConfig);
     }
 
-    return emptyWallet(config);
+    return emptyLearnCard(config);
 }

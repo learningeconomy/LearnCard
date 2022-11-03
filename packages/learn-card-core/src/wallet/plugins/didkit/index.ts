@@ -12,8 +12,7 @@ import init, {
     resolveDID,
 } from '@didkit/index';
 
-import { DidkitPluginMethods, DidMethod } from './types';
-import { Plugin } from 'types/wallet';
+import { DIDKitPlugin, DidMethod } from './types';
 
 export * from './types';
 
@@ -23,20 +22,24 @@ export * from './types';
  */
 export const getDidKitPlugin = async (
     input?: InitInput | Promise<InitInput>
-): Promise<Plugin<'DIDKit', DidkitPluginMethods>> => {
+): Promise<DIDKitPlugin> => {
     await init(input);
 
     const memoizedDids: Partial<Record<DidMethod, string>> = {};
 
     return {
-        pluginMethods: {
-            generateEd25519KeyFromBytes: (_wallet, bytes) =>
+        name: 'DIDKit',
+        displayName: 'DIDKit',
+        description:
+            'Provides an interface to DIDKit, which allows for the generation of key material, as well as signing and verifying credentials and presentations',
+        methods: {
+            generateEd25519KeyFromBytes: (_learnCard, bytes) =>
                 JSON.parse(generateEd25519KeyFromBytes(bytes)),
 
-            generateSecp256k1KeyFromBytes: (_wallet, bytes) =>
+            generateSecp256k1KeyFromBytes: (_learnCard, bytes) =>
                 JSON.parse(generateSecp256k1KeyFromBytes(bytes)),
 
-            keyToDid: (_wallet, type, keypair) => {
+            keyToDid: (_learnCard, type, keypair) => {
                 const memoizedDid = memoizedDids[type];
 
                 if (!memoizedDid) {
@@ -50,10 +53,10 @@ export const getDidKitPlugin = async (
                 return memoizedDid;
             },
 
-            keyToVerificationMethod: async (_wallet, type, keypair) =>
+            keyToVerificationMethod: async (_learnCard, type, keypair) =>
                 keyToVerificationMethod(type, JSON.stringify(keypair)),
 
-            issueCredential: async (_wallet, credential, options, keypair) =>
+            issueCredential: async (_learnCard, credential, options, keypair) =>
                 JSON.parse(
                     await issueCredential(
                         JSON.stringify(credential),
@@ -62,12 +65,12 @@ export const getDidKitPlugin = async (
                     )
                 ),
 
-            verifyCredential: async (_wallet, credential, options = {}) =>
+            verifyCredential: async (_learnCard, credential, options = {}) =>
                 JSON.parse(
                     await verifyCredential(JSON.stringify(credential), JSON.stringify(options))
                 ),
 
-            issuePresentation: async (_wallet, presentation, options, keypair) =>
+            issuePresentation: async (_learnCard, presentation, options, keypair) =>
                 JSON.parse(
                     await issuePresentation(
                         JSON.stringify(presentation),
@@ -76,14 +79,14 @@ export const getDidKitPlugin = async (
                     )
                 ),
 
-            verifyPresentation: async (_wallet, presentation, options = {}) =>
+            verifyPresentation: async (_learnCard, presentation, options = {}) =>
                 JSON.parse(
                     await verifyPresentation(JSON.stringify(presentation), JSON.stringify(options))
                 ),
 
-            contextLoader: async (_wallet, url) => JSON.parse(await contextLoader(url)),
+            contextLoader: async (_learnCard, url) => JSON.parse(await contextLoader(url)),
 
-            resolveDid: async (_wallet, did, inputMetadata = {}) =>
+            resolveDid: async (_learnCard, did, inputMetadata = {}) =>
                 JSON.parse(await resolveDID(did, JSON.stringify(inputMetadata))),
         },
     };

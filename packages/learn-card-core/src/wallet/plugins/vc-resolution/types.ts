@@ -1,4 +1,5 @@
 import { VC } from '@learncard/types';
+import { Plugin } from 'types/wallet';
 
 /** @group VC Resolution Plugin */
 export type LC_URI<URI extends string = ''> = string | URI;
@@ -12,3 +13,5 @@ export type VCResolutionPluginMethods = {
 export type ResolutionExtension<URI extends string> = {
     resolveCredential: (uri?: LC_URI<URI>) => Promise<VC | undefined>;
 };
+
+export type VCResolutionPluginType = Plugin<'VC Resolution', any, VCResolutionPluginMethods>;

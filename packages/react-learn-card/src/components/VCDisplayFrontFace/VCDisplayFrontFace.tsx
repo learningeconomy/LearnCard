@@ -12,19 +12,25 @@ const VCDisplayFrontFace: React.FC<VCDisplayCardProps> = ({
     issuer,
     issuee,
     subjectImageComponent,
+    issuerImageComponent,
+    hideProfileBubbles = false,
     credentialSubject,
     className = '',
     loading,
 }) => {
-    const credentialAchievementImage = credentialSubject?.achievement?.image;
+    const credentialAchievementImage =
+        credentialSubject?.achievement?.image?.id || credentialSubject?.achievement?.image;
     const issuerName = getNameFromProfile(issuer ?? '');
     const issueeName = getNameFromProfile(issuee ?? '');
     const issuerImage = getImageFromProfile(issuer ?? '');
     const issueeImage = getImageFromProfile(issuee ?? '');
 
-    let issueeImageEl: React.ReactNode | null = null;
+    const issuerNameAbr = issuerName?.slice(0, 1) ?? '';
 
-    if (issueeImage) {
+    let issueeImageEl: React.ReactNode | null = null;
+    const issuerImgExists = issuerImage && issuerImage !== '';
+    const issueeImgExists = issueeImage && issueeImage !== '';
+    if (issueeImgExists) {
         issueeImageEl = (
             <div className="flex flex-row items-center justify-center h-full w-full rounded-full border-solid border-4 border-white overflow-hidden bg-white">
                 <img
@@ -34,8 +40,26 @@ const VCDisplayFrontFace: React.FC<VCDisplayCardProps> = ({
                 />
             </div>
         );
-    } else if (!issueeImage && subjectImageComponent) {
+    } else if (!issueeImgExists && subjectImageComponent) {
         issueeImageEl = subjectImageComponent;
+    }
+   
+    let issuerImageEl: React.ReactNode | null = null;
+
+    if (issuerImgExists) {
+        issuerImageEl = (
+            <img className="w-4/6 h-4/6 object-cover" src={issuerImage} alt="Issuer image" />
+        );
+    } else {
+        issuerImageEl = (
+            <div className="flex flex-row items-center justify-center h-full w-full overflow-hidden bg-emerald-700 text-white font-medium text-3xl">
+                {issuerNameAbr}
+            </div>
+        );
+    }
+
+    if (issuerImageComponent) {
+        issuerImageEl = issuerImageComponent;
     }
 
     return (
@@ -45,17 +69,19 @@ const VCDisplayFrontFace: React.FC<VCDisplayCardProps> = ({
             <section className="bg-white rounded-bl-[50%] rounded-br-[50%] absolute top-0 w-[110%] h-[77%]"></section>
             <section className="flex flex-col items-center justify-center z-10 text-center credential-thumb-img">
                 <section className="max-w-[100px] max-h-[100px]">
-                    <img
-                        className="h-full w-full object-cover"
-                        src={credentialAchievementImage ?? ''}
-                        alt="Credential Achievement Image"
-                    />
+                    {credentialAchievementImage && (
+                        <img
+                            className="h-full w-full object-cover"
+                            src={credentialAchievementImage ?? ''}
+                            alt="Credential Achievement Image"
+                        />
+                    )}
                 </section>
 
-                <section className="flex flex-row items-start justify-between w-full line-clamp-2">
-                    <div className="flex flex-row items-start justify-start line-clamp-2 py-4 ">
+                <section className="flex flex-row  w-full line-clamp-2">
+                    <div className="flex flex-row w-full line-clamp-2 py-4 vc-flippy-card-title-front ">
                         <h3
-                            className="text-2xl line-clamp-2 tracking-wide leading-snug text-center vc-display-title text-gray-900 font-medium"
+                            className="vc-thumbnail-title w-full text-2xl line-clamp-2 tracking-wide leading-snug text-center vc-display-title text-gray-900 font-medium"
                             data-testid="vc-thumbnail-title"
                         >
                             {title ?? ''}
@@ -64,19 +90,21 @@ const VCDisplayFrontFace: React.FC<VCDisplayCardProps> = ({
                 </section>
 
                 <section className="flex flex-row items-center justify-center mt-2 w-full my-2 vc-card-issuer-thumbs">
-                    <div className="flex items-center justify-center h-16 w-16 shadow-3xl rounded-full overflow-hidden bg-white">
-                        <div className="flex flex-row items-center justify-center rounded-full overflow-hidden bg-white w-10/12 h-5/6">
+                    {!hideProfileBubbles && (
+                        <>
+                            <div className="flex items-center justify-center h-16 w-16 shadow-3xl rounded-full overflow-hidden bg-white">
+                                {issuerImageEl}
+                            </div>
                             <img
-                                className="w-4/6 h-4/6 object-cover"
-                                src={issuerImage}
-                                alt="Issuer image"
+                                className="h-8 w-8 my-0 mx-4"
+                                src={FatArrow ?? ''}
+                                alt="fat arrow icon"
                             />
-                        </div>
-                    </div>
-                    <img className="h-8 w-8 my-0 mx-4" src={FatArrow ?? ''} alt="fat arrow icon" />
-                    <div className="flex items-center justify-center h-16 w-16 shadow-3xl rounded-full overflow-hidden bg-white">
-                        {issueeImageEl}
-                    </div>
+                            <div className="flex items-center justify-center h-16 w-16 shadow-3xl rounded-full overflow-hidden bg-white">
+                                {issueeImageEl}
+                            </div>
+                        </>
+                    )}
                 </section>
 
                 <div className="w-full mt-2 vc-card-issued-to-info">
@@ -90,7 +118,7 @@ const VCDisplayFrontFace: React.FC<VCDisplayCardProps> = ({
                     </p>
                 </div>
 
-                <button className="cursor-alias bg-white my-3 border-2 text-indigo-500 font-semibold py-2 px-4 border border-indigo-300 rounded-full">
+                <button className="cursor-alias bg-white my-3 border-2 text-indigo-500 font-semibold py-2 px-4 shadow-3xl rounded-full">
                     <span className="flex justify-center">
                         <p className="flex items-center">Details</p>
                         <img

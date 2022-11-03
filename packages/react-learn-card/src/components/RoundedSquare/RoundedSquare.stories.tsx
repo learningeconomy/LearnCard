@@ -2,9 +2,9 @@ import React from 'react';
 import { Story, Meta } from '@storybook/react';
 
 import RoundedSquare from './RoundedSquare';
-import { RoundedSquareProps, Icons } from '../../types';
+import { RoundedSquareProps, Icons, WalletCategoryTypes } from '../../types';
 import { ICONS_TO_SOURCE } from '../../constants/icons';
-import { WALLET_SUBTYPES } from './constants';
+
 
 export default {
     title: 'RoundedSquare',
@@ -20,7 +20,7 @@ RoundedSquareTest.args = {
     description: 'Lorem ipsum sit dalor amet',
     iconSrc: ICONS_TO_SOURCE[Icons.trophyIcon] as string,
     count: '28',
-    type: WALLET_SUBTYPES.ACHIEVEMENTS,
+    type: WalletCategoryTypes.achievements,
     onClick: () => {
         console.log('//goodbye world');
     },
