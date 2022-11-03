@@ -9,8 +9,8 @@ export const IssueCredential: Command = {
     run: async (context: Context, interaction: BaseCommandInteraction) => {
         const { wallet } = context;
 
-        const unsignedVC = await wallet.getTestVc();
-        const vc = await wallet.issueCredential(unsignedVC);
+        const unsignedVC = await wallet.invoke.getTestVc();
+        const vc = await wallet.invoke.issueCredential(unsignedVC);
 
         const stringifiedVC = JSON.stringify(vc);
         const content = '**Test Credential Success** 🎉✅\n ```' + stringifiedVC + '```';

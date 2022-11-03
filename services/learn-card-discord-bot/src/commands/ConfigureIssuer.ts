@@ -70,7 +70,7 @@ export const ConfigureIssuerModal = {
 
         const seed = generateRandomSeed();
         const issuerWallet = await initLearnCard({ seed });
-        const issuerId = issuerWallet.did();
+        const issuerId = issuerWallet.id.did();
 
         await createIssuerConfig(
             {

@@ -81,16 +81,21 @@ export const sendCredentialToSubject = async (
 
 		await createPendingVc(data.pendingVc, context, subjectId);
 	} else {
-		const issuer = await initLearnCard({ seed: issuerConfig.seed });
+		const issuerLC = await initLearnCard({ seed: issuerConfig.seed });
 
-		const unsignedVc = constructCredentialForSubject(
-			issuer.did('key'),
-			credentialTemplate,
-			subjectDID
-		);
+		const issuerProfile = issuerConfig.issuer;
+		const issuer = {
+			type: 'Profile',
+			id: issuerLC.id.did('key'),
+			name: issuerProfile.name,
+			url: issuerProfile.url,
+			image: issuerProfile.image,
+		};
 
-		const vc = await issuer.issueCredential(unsignedVc);
-		const streamId = await issuer.publishCredential(vc);
+		const unsignedVc = constructCredentialForSubject(issuer, credentialTemplate, subjectDID);
+
+		const vc = await issuerLC.invoke.issueCredential(unsignedVc);
+		const streamId = await issuerLC.store.Ceramic.upload(vc);
 
 		data.claimCredentialLink = `https://learncard.app/claim-credential/${streamId}`;
 	}

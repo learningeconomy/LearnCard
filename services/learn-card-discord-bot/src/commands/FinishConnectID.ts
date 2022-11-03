@@ -65,7 +65,7 @@ export const FinishConnectIDModal = {
         let vp;
 
         try {
-            vp = await wallet.readFromCeramic(streamVerificationInput);
+            vp = await wallet.invoke.readContentFromCeramic(streamVerificationInput);
         } catch (e) {
             console.error(e);
             await interaction.reply({
@@ -85,7 +85,7 @@ export const FinishConnectIDModal = {
             return;
         }
 
-        const verification = await wallet.verifyPresentation(vp, {
+        const verification = await wallet.invoke.verifyPresentation(vp, {
             challenge,
             domain,
             proofPurpose: 'authentication',
