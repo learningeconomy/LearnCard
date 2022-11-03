@@ -14,28 +14,37 @@ export const FinishConnectID: Command = {
     name: 'finish-connect-id',
     description: 'Step 2: verify your DID to your Discord account connection.',
     type: ApplicationCommandOptionType.ChatInput,
+    dmPermission: true,
     run: async (context: Context, interaction: BaseCommandInteraction) => {
-        const modal = new ModalBuilder()
-            .setCustomId('finish-connect-id-modal')
-            .setTitle('Verify Your DID ID');
+        try {
+            const modal = new ModalBuilder()
+                .setCustomId('finish-connect-id-modal')
+                .setTitle('Verify Your DID ID');
 
-        const streamVerificationInput = new TextInputBuilder()
-            .setCustomId('streamVerification')
-            .setLabel('Verification Code')
-            .setStyle('Short');
+            const streamVerificationInput = new TextInputBuilder()
+                .setCustomId('streamVerification')
+                .setLabel('Verification Code')
+                .setStyle('Short');
 
-        // const vpInput = new TextInputBuilder()
-        //     .setCustomId('vp')
-        //     .setLabel('Raw Proof (advanced)')
-        //     .setStyle('Paragraph')
-        //     .setRequired(false);
+            // const vpInput = new TextInputBuilder()
+            //     .setCustomId('vp')
+            //     .setLabel('Raw Proof (advanced)')
+            //     .setStyle('Paragraph')
+            //     .setRequired(false);
 
-        const firstActionRow = new ActionRowBuilder().addComponents([streamVerificationInput]);
-        // const secondActionRow = new ActionRowBuilder().addComponents([vpInput]);
+            const firstActionRow = new ActionRowBuilder().addComponents([streamVerificationInput]);
+            // const secondActionRow = new ActionRowBuilder().addComponents([vpInput]);
 
-        modal.addComponents([firstActionRow]);
+            modal.addComponents([firstActionRow]);
 
-        await interaction.showModal(modal);
+            await interaction.showModal(modal);
+        } catch (e) {
+            console.error(e);
+            await interaction.reply({
+                content: 'Woops, an error occured. Try that again 🫠.`',
+                ephemeral: true,
+            });
+        }
     },
 };
 

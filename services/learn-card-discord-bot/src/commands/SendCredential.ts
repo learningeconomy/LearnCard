@@ -17,6 +17,7 @@ export const SendCredential: Command = {
     name: 'send-credential',
     description: 'Send a credential to another user.',
     type: ApplicationCommandOptionType.ChatInput,
+    dmPermission: false,
     options: [
         {
             type: ApplicationCommandOptionType.User,
@@ -26,50 +27,58 @@ export const SendCredential: Command = {
         },
     ],
     run: async (context: Context, interaction: BaseCommandInteraction) => {
-        const subject = interaction.options.getUser('subject');
+        try {
+            const subject = interaction.options.getUser('subject');
 
-        const user = await interaction.guild.members.fetch(interaction.user.id);
-        if (!user.permissions.has(PermissionsBitField.Flags.ManageGuild)) {
+            const user = await interaction.guild.members.fetch(interaction.user.id);
+            if (!user.permissions.has(PermissionsBitField.Flags.ManageGuild)) {
+                await interaction.reply({
+                    content:
+                        'You do not have permission to send a credential on this server.\n *You need permission:* `Manage Server`',
+                    ephemeral: true,
+                });
+                return;
+            }
+
+            const templates = await getCredentialTemplates(context, interaction.guildId);
+            const options = templates.map((t: CredentialTemplate) => {
+                return {
+                    label: t.name,
+                    description: t.description,
+                    value: t._id || t.name,
+                };
+            });
+
+            if (options?.length <= 0) {
+                console.error(
+                    'No credential templates exist yet. Please create one using /add-credential.'
+                );
+                await interaction.reply({
+                    content:
+                        'No credential templates exist yet. Please create one with /add-credential command.',
+                    ephemeral: true,
+                });
+                return;
+            }
+
+            const credentialTemplate = new SelectMenuBuilder()
+                .setCustomId('credential-template')
+                .setPlaceholder('Select Credential')
+                .addOptions(options);
+
+            const firstActionRow = new ActionRowBuilder().addComponents([credentialTemplate]);
+
             await interaction.reply({
-                content:
-                    'You do not have permission to send a credential on this server.\n *You need permission:* `Manage Server`',
+                content: `${subject.id}`,
+                components: [firstActionRow],
+            });
+        } catch (e) {
+            console.error(e);
+            await interaction.reply({
+                content: 'Woops, an error occured. Try that again 🫠.`',
                 ephemeral: true,
             });
-            return;
         }
-
-        const templates = await getCredentialTemplates(context, interaction.guildId);
-        const options = templates.map((t: CredentialTemplate) => {
-            return {
-                label: t.name,
-                description: t.description,
-                value: t._id || t.name,
-            };
-        });
-
-        if (options?.length <= 0) {
-            console.error(
-                'No credential templates exist yet. Please create one using /add-credential.'
-            );
-            await interaction.reply({
-                content:
-                    'No credential templates exist yet. Please create one with /add-credential command.',
-                ephemeral: true,
-            });
-            return;
-        }
-
-        const credentialTemplate = new SelectMenuBuilder()
-            .setCustomId('credential-template')
-            .setPlaceholder('Select Credential')
-            .addOptions(options);
-
-        const firstActionRow = new ActionRowBuilder().addComponents([credentialTemplate]);
-
-        await interaction.reply({
-            content: `${subject.id}`,
-            components: [firstActionRow],
-        });
     },
 };
 

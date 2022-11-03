@@ -7,16 +7,24 @@ export const IssueCredential: Command = {
     type: 1,
     deferReply: true,
     run: async (context: Context, interaction: BaseCommandInteraction) => {
-        const { wallet } = context;
+        try {
+            const { wallet } = context;
 
-        const unsignedVC = await wallet.invoke.getTestVc();
-        const vc = await wallet.invoke.issueCredential(unsignedVC);
+            const unsignedVC = await wallet.invoke.getTestVc();
+            const vc = await wallet.invoke.issueCredential(unsignedVC);
 
-        const stringifiedVC = JSON.stringify(vc);
-        const content = '**Test Credential Success** 🎉✅\n ```' + stringifiedVC + '```';
-        await interaction.followUp({
-            ephemeral: true,
-            content,
-        });
+            const stringifiedVC = JSON.stringify(vc);
+            const content = '**Test Credential Success** 🎉✅\n ```' + stringifiedVC + '```';
+            await interaction.followUp({
+                ephemeral: true,
+                content,
+            });
+        } catch (e) {
+            console.error(e);
+            await interaction.reply({
+                content: 'Woops, an error occured. Try that again 🫠.`',
+                ephemeral: true,
+            });
+        }
     },
 };
