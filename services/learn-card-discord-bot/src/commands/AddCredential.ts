@@ -6,7 +6,7 @@ import {
     TextInputBuilder,
     ActionRowBuilder,
     PermissionsBitField,
-    SelectMenuBuilder
+    SelectMenuBuilder,
 } from 'discord.js';
 import { VC } from '@learncard/types';
 
@@ -17,30 +17,39 @@ export const AddCredential: Command = {
     name: 'add-credential',
     description: 'Adds a credential template.',
     type: ApplicationCommandOptionType.ChatInput,
+    dmPermission: false,
     run: async (context: Context, interaction: BaseCommandInteraction) => {
-        const user = await interaction.guild.members.fetch(interaction.user.id);
-        if (!user.permissions.has(PermissionsBitField.Flags.ManageGuild)) {
+        try {
+            const user = await interaction.guild.members.fetch(interaction.user.id);
+            if (!user.permissions.has(PermissionsBitField.Flags.ManageGuild)) {
+                await interaction.reply({
+                    content:
+                        'You do not have permission to add a credential on this server.\n *You need permission:* `Manage Server`',
+                    ephemeral: true,
+                });
+                return;
+            }
+
+            const options = getCredentialTypeOptions();
+
+            const issuerSelectMenu = new SelectMenuBuilder()
+                .setCustomId('credential-type-selection')
+                .setPlaceholder('Select Credential Type')
+                .addOptions(options);
+
+            const firstActionRow = new ActionRowBuilder().addComponents([issuerSelectMenu]);
+
             await interaction.reply({
-                content:
-                    'You do not have permission to add a credential on this server.\n *You need permission:* `Manage Server`',
-                    ephemeral: true
+                content: `Great! Lets create a new credential template for your community ✏️`,
+                components: [firstActionRow],
             });
-            return;
+        } catch (e) {
+            console.error(e);
+            await interaction.reply({
+                content: 'Woops, an error occured. Try that again 🫠.`',
+                ephemeral: true,
+            });
         }
-
-        const options = getCredentialTypeOptions();
-
-        const issuerSelectMenu = new SelectMenuBuilder()
-            .setCustomId('credential-type-selection')
-            .setPlaceholder('Select Credential Type')
-            .addOptions(options);
-
-        const firstActionRow = new ActionRowBuilder().addComponents([issuerSelectMenu]);
-
-        await interaction.reply({
-            content: `Great! Lets create a new credential template for your community ✏️`,
-            components: [firstActionRow],
-        });
     },
 };
 

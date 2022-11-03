@@ -17,45 +17,56 @@ export const ConfigureIssuer: Command = {
     name: 'configure-issuer',
     description: "Sets up your community's issuing identity.",
     type: ApplicationCommandOptionType.ChatInput,
+    dmPermission: false,
     run: async (context: Context, interaction: BaseCommandInteraction) => {
-        const user = await interaction.guild.members.fetch(interaction.user.id);
-        if (!user.permissions.has(PermissionsBitField.Flags.ManageGuild)) {
+        try {
+            const user = await interaction.guild.members.fetch(interaction.user.id);
+            if (!user.permissions.has(PermissionsBitField.Flags.ManageGuild)) {
+                await interaction.reply({
+                    content:
+                        'You do not have permission to configure an issuer on this server.\n *You need permission:* `Manage Server`',
+                    ephemeral: true,
+                });
+                return;
+            }
+
+            const modal = new ModalBuilder()
+                .setCustomId('configure-issuer-modal')
+                .setTitle('Configure Issuer');
+
+            const credentialNameInput = new TextInputBuilder()
+                .setCustomId('issuerName')
+                .setLabel('Issuer Name')
+                .setStyle('Short');
+
+            const credentialDescriptionInput = new TextInputBuilder()
+                .setCustomId('issuerUrl')
+                .setLabel('Issuer URL')
+                .setRequired(false)
+                .setStyle('Short');
+
+            const credentialCriteriaInput = new TextInputBuilder()
+                .setCustomId('issuerImage')
+                .setLabel('Issuer Image')
+                .setRequired(false)
+                .setStyle('Short');
+
+            const firstActionRow = new ActionRowBuilder().addComponents([credentialNameInput]);
+            const secondActionRow = new ActionRowBuilder().addComponents([
+                credentialDescriptionInput,
+            ]);
+            const thirdActionRow = new ActionRowBuilder().addComponents([credentialCriteriaInput]);
+
+            modal.addComponents([firstActionRow, secondActionRow, thirdActionRow]);
+
+            await interaction.showModal(modal);
+        } catch (e) {
+            console.error(e);
             await interaction.reply({
-                content:
-                    'You do not have permission to configure an issuer on this server.\n *You need permission:* `Manage Server`',
+                content: 'Woops, an error occured. Try that again 🫠.`',
                 ephemeral: true,
             });
-            return;
         }
-
-        const modal = new ModalBuilder()
-            .setCustomId('configure-issuer-modal')
-            .setTitle('Configure Issuer');
-
-        const credentialNameInput = new TextInputBuilder()
-            .setCustomId('issuerName')
-            .setLabel('Issuer Name')
-            .setStyle('Short');
-
-        const credentialDescriptionInput = new TextInputBuilder()
-            .setCustomId('issuerUrl')
-            .setLabel('Issuer URL')
-            .setRequired(false)
-            .setStyle('Short');
-
-        const credentialCriteriaInput = new TextInputBuilder()
-            .setCustomId('issuerImage')
-            .setLabel('Issuer Image')
-            .setRequired(false)
-            .setStyle('Short');
-
-        const firstActionRow = new ActionRowBuilder().addComponents([credentialNameInput]);
-        const secondActionRow = new ActionRowBuilder().addComponents([credentialDescriptionInput]);
-        const thirdActionRow = new ActionRowBuilder().addComponents([credentialCriteriaInput]);
-
-        modal.addComponents([firstActionRow, secondActionRow, thirdActionRow]);
-
-        await interaction.showModal(modal);
     },
 };
 

@@ -8,6 +8,7 @@ export const RegisterDID: Command = {
     name: 'register-did',
     description: 'Manually associate a did with your discord account (admins only).',
     type: ApplicationCommandOptionType.ChatInput,
+    dmPermission: false,
     options: [
         {
             name: 'did',
@@ -22,59 +23,67 @@ export const RegisterDID: Command = {
         },
     ],
     run: async (context: Context, interaction: BaseCommandInteraction) => {
-        const targetedUser = interaction.options.getUser('holder');
-        const did = interaction.options.getString('did').replace('🔑', ':key:');
-        const { user: currentUser } = interaction;
+        try {
+            const targetedUser = interaction.options.getUser('holder');
+            const did = interaction.options.getString('did').replace('🔑', ':key:');
+            const { user: currentUser } = interaction;
 
-        const initiator = await interaction.guild?.members.fetch(interaction.user.id);
+            const initiator = await interaction.guild?.members.fetch(interaction.user.id);
 
-        if (!initiator?.permissions.has(PermissionsBitField.Flags.ManageGuild)) {
+            if (!initiator?.permissions.has(PermissionsBitField.Flags.ManageGuild)) {
+                await interaction.reply({
+                    content:
+                        'You do not have permission to manually register a DID on this server.\n *You need permission:* `Manage Server`',
+                    ephemeral: true,
+                });
+                return;
+            }
+
+            console.log(
+                `${currentUser.username} is registering DID for user`,
+                targetedUser,
+                did,
+                interaction
+            );
+
+            const user = targetedUser ?? currentUser;
+            await createDIDAssociation(
+                {
+                    type: DIDAssociationType.DiscordAccount,
+                    source: user.id,
+                    did,
+                },
+                context
+            );
+
             await interaction.reply({
                 content:
-                    'You do not have permission to manually register a DID on this server.\n *You need permission:* `Manage Server`',
+                    "**DID Registered Successfully.** 🚀 \n Now, I'll send you credentials pending for your user... one moment. 🕊",
                 ephemeral: true,
             });
-            return;
-        }
 
-        console.log(
-            `${currentUser.username} is registering DID for user`,
-            targetedUser,
-            did,
-            interaction
-        );
+            const pendingVCs = await sendPendingVCsToSubject(user.id, interaction, context);
 
-        const user = targetedUser ?? currentUser;
-        await createDIDAssociation(
-            {
-                type: DIDAssociationType.DiscordAccount,
-                source: user.id,
-                did,
-            },
-            context
-        );
+            if (pendingVCs?.length > 0) {
+                const successCount = pendingVCs.filter(p => !p.error).length;
+                await interaction.followUp({
+                    content: `**(${successCount}/${pendingVCs.length}) pending credentials successfully sent. ✅** \n You\'re all set!`,
+                    ephemeral: true,
+                });
+            } else {
+                await interaction.followUp({
+                    content: "**No pending credentials found.** \n You're all set!",
+                    ephemeral: true,
+                });
+            }
 
-        await interaction.reply({
-            content:
-                "**DID Registered Successfully.** 🚀 \n Now, I'll send you credentials pending for your user... one moment. 🕊",
-            ephemeral: true,
-        });
-
-        const pendingVCs = await sendPendingVCsToSubject(user.id, interaction, context);
-
-        if (pendingVCs?.length > 0) {
-            const successCount = pendingVCs.filter(p => !p.error).length;
-            await interaction.followUp({
-                content: `**(${successCount}/${pendingVCs.length}) pending credentials successfully sent. ✅** \n You\'re all set!`,
-                ephemeral: true,
-            });
-        } else {
-            await interaction.followUp({
-                content: "**No pending credentials found.** \n You're all set!",
+            await deletePendingVcs(context, user.id);
+        } catch (e) {
+            console.error(e);
+            await interaction.reply({
+                content: 'Woops, an error occured. Try that again 🫠.`',
                 ephemeral: true,
             });
         }
-
-        await deletePendingVcs(context, user.id);
     },
 };
