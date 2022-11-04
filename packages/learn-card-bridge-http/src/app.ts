@@ -267,7 +267,10 @@ app.post('/exchanges/:uri', async (req: TypedRequest<VP, { challenge?: string }>
 
         const credential = await learnCard.read.get(req.params.uri);
 
-        credential.issuer = learnCard.id.did();
+        credential.issuer = {
+            ...(typeof credential.issuer === 'string' ? {} : credential.issuer),
+            id: learnCard.id.did(),
+        };
         credential.issuanceDate = new Date().toISOString();
 
         if (!Array.isArray(credential.credentialSubject) && subject) {
