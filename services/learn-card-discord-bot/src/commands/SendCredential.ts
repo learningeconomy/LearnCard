@@ -43,8 +43,8 @@ export const SendCredential: Command = {
             const templates = await getCredentialTemplates(context, interaction.guildId);
             const options = templates.map((t: CredentialTemplate) => {
                 return {
-                    label: t.name,
-                    description: t.description,
+                    label: t.name?.slice(0,90),
+                    description: t.description?.slice(0,90),
                     value: t._id || t.name,
                 };
             });
