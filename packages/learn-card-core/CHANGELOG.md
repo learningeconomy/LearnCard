@@ -1,5 +1,14 @@
 # learn-card-core
 
+## 8.0.3
+
+### Patch Changes
+
+-   [#162](https://github.com/learningeconomy/LearnCard/pull/162) [`8ba3a12`](https://github.com/learningeconomy/LearnCard/commit/8ba3a128602a1dee4ce1d3a73652cb6f96efc2d3) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Eject from aqu and fix tests
+
+-   Updated dependencies [[`8ba3a12`](https://github.com/learningeconomy/LearnCard/commit/8ba3a128602a1dee4ce1d3a73652cb6f96efc2d3)]:
+    -   @learncard/helpers@1.0.1
+
 ## 8.0.2
 
 ### Patch Changes
