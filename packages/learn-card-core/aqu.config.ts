@@ -2,8 +2,8 @@ import { BuildOptions, Plugin } from 'esbuild';
 import { copy } from 'esbuild-plugin-copy';
 
 const buildOptions: BuildOptions = {
-    target: 'es6',
-    // target: 'es2020',
+    // target: 'es6',
+    target: 'es2020',
     plugins: [
         copy({ assets: [{ keepStructure: true, from: ['./src/didkit/pkg/*'], to: ['./didkit'] }] }),
     ],

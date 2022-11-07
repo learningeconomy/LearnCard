@@ -9,7 +9,6 @@
         "prebuild": "npx pnpm install -r --store=node_modules/.pnpm-store || echo skipping pnpm install",
         "test": "echo \"Error: no test specified\" && exit 1",
         "start": "rollup -c & pm2-runtime dist/index.js",
-        "prepare": "pnpm build",
         "build": "rollup -c"
     },
     "author": "Learning Economy Foundation (www.learningeconomy.io)",
