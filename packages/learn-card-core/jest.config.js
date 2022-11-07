@@ -177,7 +177,7 @@ module.exports = {
 
     // A map from regular expressions to paths to transformers
     transform: {
-        '^.+\\.[jt]sx?$': ['esbuild-jest', { sourcemap: true }],
+        '^.+\\.[jt]sx?$': ['esbuild-jest', { sourcemap: true, target: 'es2020' }],
     },
 
     // An array of regexp pattern strings that are matched against all source file paths, matched files will skip transformation
