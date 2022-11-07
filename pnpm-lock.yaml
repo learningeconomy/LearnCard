@@ -543,8 +543,8 @@ importers:
     specifiers:
       '@changesets/changelog-github': ^0.4.5
       '@changesets/cli': ^2.23.0
-      '@learncard/core': 8.0.1
-      '@learncard/types': 5.0.0
+      '@learncard/core': 8.0.3
+      '@learncard/types': 5.0.1
       '@rollup/plugin-json': ^4.1.0
       '@types/cors': ^2.8.12
       '@types/figlet': ^1.5.4
@@ -571,7 +571,7 @@ importers:
       tslib: ^2.4.0
       typescript: ^4.7.4
     dependencies:
-      '@learncard/core': 8.0.1_2sxhhvvydljt6obbbnjoltdoqu
+      '@learncard/core': link:../../packages/learn-card-core
       '@learncard/types': link:../../packages/learn-card-types
       '@rollup/plugin-json': 4.1.0_rollup@2.79.1
       discord.js: 14.6.0
@@ -2371,21 +2371,6 @@ packages:
       - encoding
     dev: false
 
-  /@ceramicnetwork/http-client/2.3.0:
-    resolution: {integrity: sha512-nc+m0m/aPRGEA3CesN0yV4zoQrHtxhXDw9S76PxC2k6yF3fiu6PWlhb0911CwOM5/kYLzUGwT15XQxx7+weTpw==}
-    dependencies:
-      '@ceramicnetwork/common': 2.10.0
-      '@ceramicnetwork/stream-caip10-link': 2.5.0
-      '@ceramicnetwork/stream-model': 0.3.0
-      '@ceramicnetwork/stream-model-instance': 0.3.2
-      '@ceramicnetwork/stream-tile': 2.6.0
-      '@ceramicnetwork/streamid': 2.4.0
-      query-string: 7.1.1
-      rxjs: 7.5.7
-    transitivePeerDependencies:
-      - encoding
-    dev: false
-
   /@ceramicnetwork/http-client/2.7.0:
     resolution: {integrity: sha512-++qn+xtSt81NEvRkyEP/eYJ50xhbUOITlEmJJmSEzJ6Pk+NWxlwfN5N3qHCX0FG9Fmd1PKtJgwGwmtKqWSUssQ==}
     dependencies:
@@ -2413,19 +2398,6 @@ packages:
       - encoding
     dev: false
 
-  /@ceramicnetwork/stream-model-instance/0.3.2:
-    resolution: {integrity: sha512-1Y/li/9bn4fArEA0iZx5LpgNAIOFgzwGSGsRFgPYBEQwZZG5Dcn0IF3F1ZfFxx913t9y9FPP+w0zYTcxCO7/NA==}
-    dependencies:
-      '@ceramicnetwork/common': 2.10.0
-      '@ceramicnetwork/streamid': 2.4.0
-      '@ipld/dag-cbor': 7.0.3
-      '@stablelib/random': 1.0.2
-      fast-json-patch: 3.1.1
-      uint8arrays: 3.1.1
-    transitivePeerDependencies:
-      - encoding
-    dev: false
-
   /@ceramicnetwork/stream-model-instance/0.6.0:
     resolution: {integrity: sha512-BlG0p3MogFTRZ33Ial9sicTSIZy/4wtsi2J1PdUCmAemZmZeENePV6w4bNb1Q60CBnQ7EOxcMdEyCgllsJ4yDg==}
     dependencies:
@@ -2434,21 +2406,6 @@ packages:
       '@ipld/dag-cbor': 7.0.3
       '@stablelib/random': 1.0.2
       fast-json-patch: 3.1.1
-      uint8arrays: 3.1.1
-    transitivePeerDependencies:
-      - encoding
-    dev: false
-
-  /@ceramicnetwork/stream-model/0.3.0:
-    resolution: {integrity: sha512-8lBLv7ds1fvmDPw2INZNTHvSs79m5jiqnM+e1jdJlz9DE36z7gEPnva5O93jg0/PlJmDXZlYdeAM0yVgnVBRZA==}
-    dependencies:
-      '@ceramicnetwork/common': 2.10.0
-      '@ceramicnetwork/streamid': 2.4.0
-      '@ipld/dag-cbor': 7.0.3
-      '@stablelib/random': 1.0.2
-      fast-json-patch: 3.1.1
-      json-schema-typed: 8.0.1
-      multihashes: 4.0.3
       uint8arrays: 3.1.1
     transitivePeerDependencies:
       - encoding
@@ -5578,44 +5535,6 @@ packages:
 
   /@kwsites/promise-deferred/1.1.1:
     resolution: {integrity: sha512-GaHYm+c0O9MjZRu0ongGBRbinu8gVAMd2UZjji6jVmqKtZluZnptXGWhz1E8j8D2HJ3f/yMxKAUC0b+57wncIw==}
-
-  /@learncard/core/8.0.1_2sxhhvvydljt6obbbnjoltdoqu:
-    resolution: {integrity: sha512-RaphJtFkxT9iI6ogVzaBvJRlsQZtleT08hWmFUQoGX97j0mhN36kG2/EkQ1b7dTIkgx7eOH13Jrzl2Wm8FDxaQ==}
-    dependencies:
-      '@ceramicnetwork/common': 2.10.0
-      '@ceramicnetwork/http-client': 2.3.0
-      '@ceramicnetwork/stream-tile': 2.6.0
-      '@ceramicnetwork/streamid': 2.4.0
-      '@digitalbazaar/vpqr': 3.0.0
-      '@glazed/did-datastore': 0.3.2
-      '@glazed/tile-loader': 0.2.1
-      '@learncard/helpers': 1.0.0
-      '@uniswap/default-token-list': 4.1.0
-      abort-controller: 3.0.0
-      core-js: 3.26.0
-      credential-handler-polyfill: 3.0.0
-      cross-fetch: 3.1.5
-      date-fns: 2.29.3
-      dids: 3.4.0
-      ethers: 5.7.2
-      hex-lite: 1.5.0
-      isomorphic-fetch: 3.0.0
-      isomorphic-webcrypto: 2.3.8_2sxhhvvydljt6obbbnjoltdoqu
-      key-did-provider-ed25519: 2.0.1
-      key-did-resolver: 1.4.4
-      web-credential-handler: 2.0.0
-      zod: 3.19.1
-    transitivePeerDependencies:
-      - bufferutil
-      - encoding
-      - expo
-      - react-native
-      - utf-8-validate
-    dev: false
-
-  /@learncard/helpers/1.0.0:
-    resolution: {integrity: sha512-ie5POICh4XgWy2kA4scPmlSL3Ka2yF4A2ITe9aJBy56p1M3CrOWQvVTVIRUtLWqY9wvFDU9OVnvQF+g1AHkIDA==}
-    dev: false
 
   /@leichtgewicht/ip-codec/2.0.4:
     resolution: {integrity: sha512-Hcv+nVC0kZnQ3tD9GVu5xSMR4VVYOteQIr/hwFPVEvPdlXqgGEuRjiheChHgdM+JyqdgNcmzZOX/tnl0JOiI7A==}
@@ -20434,15 +20353,6 @@ packages:
       fast-json-stable-stringify: 2.1.0
       rpc-utils: 0.6.2
       uint8arrays: 3.1.1
-    dev: false
-
-  /key-did-resolver/1.4.4:
-    resolution: {integrity: sha512-aRsFIjMkPeIcWH5jlhff6iG/Gjf+ZaBh02r/6gHbFJp2UqxkjQtaYxchkZ6ZAvrOAk37qE4x70YJj7Qls7WTSA==}
-    dependencies:
-      '@stablelib/ed25519': 1.0.3
-      multibase: 4.0.6
-      uint8arrays: 2.1.10
-      varint: 6.0.0
     dev: false
 
   /key-did-resolver/2.3.0:
