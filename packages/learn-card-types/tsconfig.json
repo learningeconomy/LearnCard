@@ -3,6 +3,8 @@
     "target": "es6",
     "module": "ES2015",
     "declaration": true,
+    "emitDeclarationOnly": true,
+    "outDir": "dist",
     "strict": true,
     "esModuleInterop": true,
     "lib": ["es5"],
