@@ -10,8 +10,8 @@ export type DWNConfig = {
 };
 
 export type DWNPluginDependantMethods = {
-    getSubjectDid: () => string;
-    getSubjectKeypair: () => JWK;
+    getSubjectDid: (type: string) => string;
+    getSubjectKeypair: (algorithm: string) => JWK;
 }
 
 export type DWNPlugin = Plugin<'DWNPlugin', 'store', DWNPluginMethods, any, DWNPluginDependantMethods >;
