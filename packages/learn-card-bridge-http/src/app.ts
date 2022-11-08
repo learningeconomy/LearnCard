@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import { VP, VPValidator } from '@learncard/types';
 
 import { TypedRequest } from './types.helpers';
 import {
@@ -12,7 +13,7 @@ import {
     VerifyPresentationEndpoint,
     VerifyPresentationEndpointValidator,
 } from './validators';
-import { getWallet } from './wallet';
+import { getLearnCard } from './learn-card';
 
 const router = express.Router();
 
@@ -27,9 +28,9 @@ app.get('/', async (_req: TypedRequest<{}>, res) => {
 
 // This is non-standard! But very helpful for the VC-API plugin
 app.get('/did', async (_req: TypedRequest<{}>, res) => {
-    const wallet = await getWallet();
+    const learnCard = await getLearnCard();
 
-    res.status(200).send(wallet.id.did());
+    res.status(200).send(learnCard.id.did());
 });
 
 app.get('/credentials', async (_req: TypedRequest<{}>, res) => {
@@ -66,10 +67,10 @@ app.post('/credentials/issue', async (req: TypedRequest<IssueEndpoint>, res) => 
         }
 
         const validatedBody = validationResult.data;
-        const wallet = await getWallet();
+        const learnCard = await getLearnCard();
         const { credentialStatus, ...options } = validatedBody.options ?? {};
 
-        const issuedCredential = await wallet.invoke.issueCredential(
+        const issuedCredential = await learnCard.invoke.issueCredential(
             validatedBody.credential,
             options
         );
@@ -101,9 +102,9 @@ app.post('/credentials/verify', async (req: TypedRequest<VerifyCredentialEndpoin
         }
 
         const validatedBody = validationResult.data;
-        const wallet = await getWallet();
+        const learnCard = await getLearnCard();
 
-        const verificationResult = await wallet.invoke.verifyCredential(
+        const verificationResult = await learnCard.invoke.verifyCredential(
             validatedBody.verifiableCredential,
             validatedBody.options
         );
@@ -151,9 +152,9 @@ app.post('/presentations/issue', async (req: TypedRequest<IssueEndpoint>, res) =
         }
 
         const validatedBody = validationResult.data;
-        const wallet = await getWallet();
+        const learnCard = await getLearnCard();
 
-        const issuedPresentation = await wallet.invoke.issuePresentation(
+        const issuedPresentation = await learnCard.invoke.issuePresentation(
             validatedBody.presentation,
             validatedBody.options
         );
@@ -181,11 +182,11 @@ app.post('/presentations/verify', async (req: TypedRequest<VerifyPresentationEnd
         }
 
         const validatedBody = validationResult.data;
-        const wallet = await getWallet();
+        const learnCard = await getLearnCard();
 
         if ('presentation' in validatedBody) return res.sendStatus(501);
 
-        const verificationResult = await wallet.invoke.verifyPresentation(
+        const verificationResult = await learnCard.invoke.verifyPresentation(
             validatedBody.verifiablePresentation,
             validatedBody.options
         );
@@ -223,8 +224,68 @@ app.delete('/presentations/:id', async (_req: TypedRequest<{}>, res) => {
     res.sendStatus(501);
 });
 
-app.post('/exchanges/:exchangeId', async (_req: TypedRequest<{}>, res) => {
-    res.sendStatus(501);
+app.post('/exchanges/:uri', async (req: TypedRequest<VP, { challenge?: string }>, res) => {
+    try {
+        const validationResult = await VPValidator.spa(req.body);
+
+        if (!validationResult.success) {
+            console.error(
+                '[/exchanges/:uri] Validation error: ',
+                validationResult.error.message,
+                '(received: ',
+                req.body,
+                ')'
+            );
+            return res.status(400).json(`Invalid input: ${validationResult.error.message}`);
+        }
+
+        const validatedBody = validationResult.data;
+        const learnCard = await getLearnCard();
+        const challenge = Array.isArray(validatedBody.proof)
+            ? validatedBody.proof[0]?.challenge
+            : validatedBody.proof.challenge;
+
+        const verification = await learnCard.invoke.verifyPresentation(validatedBody, {
+            challenge,
+            proofPurpose: 'authentication',
+        });
+
+        if (verification.warnings.length > 0 || verification.errors.length > 0) {
+            console.error(
+                '[/exchanges/:uri] Validation error: ',
+                verification,
+                '(received: ',
+                req.body,
+                ')'
+            );
+            return res
+                .status(400)
+                .json({ reason: 'Invalid DID Auth VP', verificationResult: verification });
+        }
+
+        const subject = validatedBody.holder;
+
+        const credential = await learnCard.read.get(req.params.uri);
+
+        credential.issuer = {
+            ...(typeof credential.issuer === 'string' ? {} : credential.issuer),
+            id: learnCard.id.did(),
+        };
+        credential.issuanceDate = new Date().toISOString();
+
+        if (!Array.isArray(credential.credentialSubject) && subject) {
+            credential.credentialSubject.id = subject;
+        }
+
+        delete credential.proof;
+
+        const newVc = await learnCard.invoke.issueCredential(credential);
+
+        return res.status(201).json(newVc);
+    } catch (error) {
+        console.error('[/exchanges/:uri] Caught error: ', error, '(received: ', req.body);
+        return res.status(400).json(`Invalid input: ${error}`);
+    }
 });
 
 app.post('/exchanges/:exchangeId/:transactionId', async (_req: TypedRequest<{}>, res) => {

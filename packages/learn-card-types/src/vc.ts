@@ -152,7 +152,7 @@ export const UnsignedVPValidator = z
         '@context': ContextValidator,
         id: z.string().optional(),
         type: z.string().array().nonempty(),
-        verifiableCredential: VCValidator.or(VCValidator.array()),
+        verifiableCredential: VCValidator.or(VCValidator.array()).optional(),
         holder: z.string().optional(),
     })
     .catchall(z.any());
