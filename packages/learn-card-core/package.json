@@ -1,6 +1,6 @@
 {
   "name": "@learncard/core",
-  "version": "8.0.2",
+  "version": "8.0.3",
   "description": "",
   "main": "./dist/index.js",
   "module": "./dist/core.esm.js",
@@ -8,7 +8,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "aqu build && tsc-alias",
+    "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.js && dts-bundle-generator src/index.ts -o dist/core.d.ts --no-check && tsc-alias",
     "start": "aqu watch",
     "lint": "aqu lint",
     "lint:fix": "aqu lint --fix",
@@ -32,7 +32,7 @@
     "@learncard/types": "workspace:*",
     "@types/jest": "^27.5.0",
     "@types/node": "^17.0.31",
-    "aqu": "0.3.2",
+    "aqu": "0.4.3",
     "esbuild": "^0.14.38",
     "esbuild-jest": "^0.5.0",
     "esbuild-plugin-copy": "^1.3.0",
@@ -46,7 +46,7 @@
   "types": "./dist/core.d.ts",
   "dependencies": {
     "@ceramicnetwork/common": "^2.2.1",
-    "@ceramicnetwork/http-client": "2.3.0",
+    "@ceramicnetwork/http-client": "2.7.0",
     "@ceramicnetwork/stream-tile": "^2.2.2",
     "@ceramicnetwork/streamid": "^2.1.0",
     "@digitalbazaar/vpqr": "^3.0.0",
@@ -65,7 +65,7 @@
     "isomorphic-fetch": "^3.0.0",
     "isomorphic-webcrypto": "^2.3.8",
     "key-did-provider-ed25519": "^2.0.0",
-    "key-did-resolver": "1.4.4",
+    "key-did-resolver": "2.3.0",
     "web-credential-handler": "^2.0.0",
     "zod": "^3.17.3"
   },

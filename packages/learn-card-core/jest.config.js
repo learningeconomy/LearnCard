@@ -90,10 +90,7 @@ module.exports = {
     // ],
 
     // A map from regular expressions to module names or to arrays of module names that allow to stub out resources with a single module
-    moduleNameMapper: {
-        ...pathsToModuleNameMapper(compilerOptions.paths),
-        dids: '<rootDir>/node_modules/dids/lib/index.js',
-    },
+    moduleNameMapper: pathsToModuleNameMapper(compilerOptions.paths),
     modulePaths: ['<rootDir>'],
 
     // An array of regexp pattern strings, matched against all module paths before considered 'visible' to the module loader
@@ -180,7 +177,7 @@ module.exports = {
 
     // A map from regular expressions to paths to transformers
     transform: {
-        '^.+\\.[jt]sx?$': ['esbuild-jest', { sourcemap: true }],
+        '^.+\\.[jt]sx?$': ['esbuild-jest', { sourcemap: true, target: 'es2020' }],
     },
 
     // An array of regexp pattern strings that are matched against all source file paths, matched files will skip transformation

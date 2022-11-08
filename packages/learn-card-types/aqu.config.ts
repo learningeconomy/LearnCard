@@ -1,3 +1,3 @@
-const options = { declaration: 'normal' };
+const options = { declaration: 'none' };
 
 export default options;
