@@ -74,7 +74,7 @@ import Credentials from '@components/Credentials';
     const testLcwStorage = async () => {
         const testWallet = await initLearnCard({ vcApi: true });
 
-        const vc = await testWallet.invoke.issueCredential(testWallet.invoke.getTestVc());
+        const vc = await testWallet.invoke.issueCredential(testWallet.invoke.newCredential({ type: 'jff2' }));
         const uri = await wallet.store.Ceramic.upload(vc); // Have to use "normal" wallet for now...
 
         const challenge = window.crypto.randomUUID();
