@@ -33,6 +33,13 @@ import Credentials from '@components/Credentials';
                 id="test-storage"
                 class="bg-green-100 rounded py-2 px-4 border opacity-0">Add Dummy Credential</button
             >
+
+            <button
+                disabled
+                type="button"
+                id="test-storage-lcw"
+                class="bg-green-100 rounded py-2 px-4 border opacity-0">Add Dummy Credential to LCW</button
+            >
         </section>
 
         <Credentials client:only="react" />
@@ -64,6 +71,17 @@ import Credentials from '@components/Credentials';
         }
     };
 
+    const testLcwStorage = async () => {
+        const testWallet = await initLearnCard({ vcApi: true });
+
+        const vc = await testWallet.invoke.issueCredential(testWallet.invoke.newCredential({ type: 'jff2' }));
+        const uri = await wallet.store.Ceramic.upload(vc); // Have to use "normal" wallet for now...
+
+        const challenge = window.crypto.randomUUID();
+
+        window.location.href = `org.dcconsortium://request?auth_type=bearer&issuer=jff&challenge=${challenge}&vc_request_url=https://bridge.learncard.com/exchanges/${uri}`
+    };
+
     const changeSeed = () => {
         _seed.set('');
         _wallet.set(null);
@@ -72,6 +90,7 @@ import Credentials from '@components/Credentials';
 
     const loadingWallet = document.getElementById('loading-wallet') as HTMLElement;
     const storageButton = document.getElementById('test-storage') as HTMLButtonElement;
+    const lcwStorageButton = document.getElementById('test-storage-lcw') as HTMLButtonElement;
     const seedDisplay = document.getElementById('seed-display') as HTMLElement;
     const changeSeedButton = document.getElementById('change-seed') as HTMLButtonElement;
 
@@ -80,6 +99,10 @@ import Credentials from '@components/Credentials';
     storageButton.classList.remove('opacity-0');
     storageButton.disabled = false;
     storageButton.addEventListener('click', testStorage);
+
+    lcwStorageButton.classList.remove('opacity-0');
+    lcwStorageButton.disabled = false;
+    lcwStorageButton.addEventListener('click', testLcwStorage);
 
     seedDisplay.innerHTML = `Your seed is: <span class="bg-white">${seed}</span>`;
     changeSeedButton.classList.remove('opacity-0');
