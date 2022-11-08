@@ -15,11 +15,14 @@ const Credentials: React.FC = () => {
 
     if (!wallet || !credentialsList) return <></>;
 
+    if(credentialsList.length === 0) {
+        return <></>;
+    }
     const credentials =
         credentialsList.length === 0 ? (
             <>
-                Looks like you don't have any credentials! Hit the "Add Dummy Credential" button
-                above to add one!
+                You have no credentials. Hit the "Issue Test Credential" button
+                above to add one.
             </>
         ) : (
             credentialsList.map(credential => (
@@ -31,7 +34,6 @@ const Credentials: React.FC = () => {
         <section className="max-w-5xl w-5/6 border rounded p-4 bg-gray-100">
             <header className="flex gap-2 justify-center items-center border-b pb-2 mb-2">
                 <h2>Credentials</h2>
-                <span className="text-gray-600 text-sm">(Click to view)</span>
             </header>
             <ul className="flex flex-col gap-2">{credentials}</ul>
         </section>
