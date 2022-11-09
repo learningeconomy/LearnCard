@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 8.0.4
+
+### Patch Changes
+
+-   [#166](https://github.com/learningeconomy/LearnCard/pull/166) [`86f3541`](https://github.com/learningeconomy/LearnCard/commit/86f35413e6006a17a596d71ea3f186f915e90f28) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Allow making a JFF 2 VC in VC-Templates plugin
+
 ## 8.0.3
 
 ### Patch Changes
