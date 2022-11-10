@@ -94,7 +94,7 @@ const uri = await wallet.store.Ceramic.upload(vc);
 To resolve a VC from a stream ID, simply call the `readFromCeramic` method:
 
 ```js
-const vcFromCeramic = await wallet.invoke.readContentFromCeramic(streamId);
+const vcFromCeramic = await wallet.read.get(uri);
 ```
 
 #### Adding a Credential to a Wallet
