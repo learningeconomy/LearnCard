@@ -1,0 +1,5 @@
+build:
+  docker:
+    worker: Dockerfile
+run:
+  worker: PORT=$PORT pm2-runtime services/learn-card-discord-bot/dist/index.js

@@ -12,12 +12,14 @@ const VCDisplayFrontFace: React.FC<VCDisplayCardProps> = ({
     issuer,
     issuee,
     subjectImageComponent,
+    issuerImageComponent,
     hideProfileBubbles = false,
     credentialSubject,
     className = '',
     loading,
 }) => {
-    const credentialAchievementImage = credentialSubject?.achievement?.image;
+    const credentialAchievementImage =
+        credentialSubject?.achievement?.image?.id || credentialSubject?.achievement?.image;
     const issuerName = getNameFromProfile(issuer ?? '');
     const issueeName = getNameFromProfile(issuee ?? '');
     const issuerImage = getImageFromProfile(issuer ?? '');
@@ -41,7 +43,7 @@ const VCDisplayFrontFace: React.FC<VCDisplayCardProps> = ({
     } else if (!issueeImgExists && subjectImageComponent) {
         issueeImageEl = subjectImageComponent;
     }
-
+   
     let issuerImageEl: React.ReactNode | null = null;
 
     if (issuerImgExists) {
@@ -54,6 +56,10 @@ const VCDisplayFrontFace: React.FC<VCDisplayCardProps> = ({
                 {issuerNameAbr}
             </div>
         );
+    }
+
+    if (issuerImageComponent) {
+        issuerImageEl = issuerImageComponent;
     }
 
     return (

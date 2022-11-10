@@ -1,5 +1,17 @@
 # learn-card-types
 
+## 5.1.0
+
+### Minor Changes
+
+-   [#160](https://github.com/learningeconomy/LearnCard/pull/160) [`982bd41`](https://github.com/learningeconomy/LearnCard/commit/982bd4151d485ec6977c0bf774fe1cf243b8db74) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Make credential optional in VP type
+
+## 5.0.1
+
+### Patch Changes
+
+-   [#162](https://github.com/learningeconomy/LearnCard/pull/162) [`8ba3a12`](https://github.com/learningeconomy/LearnCard/commit/8ba3a128602a1dee4ce1d3a73652cb6f96efc2d3) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Eject from aqu
+
 ## 5.0.0
 
 ### Major Changes

@@ -1,5 +1,37 @@
 # Changelog
 
+## 1.0.16
+
+### Patch Changes
+
+-   Updated dependencies [[`86f3541`](https://github.com/learningeconomy/LearnCard/commit/86f35413e6006a17a596d71ea3f186f915e90f28)]:
+    -   @learncard/core@8.0.4
+    -   @learncard/meta-mask-snap@1.0.16
+
+## 1.0.15
+
+### Patch Changes
+
+-   Updated dependencies [[`8ba3a12`](https://github.com/learningeconomy/LearnCard/commit/8ba3a128602a1dee4ce1d3a73652cb6f96efc2d3)]:
+    -   @learncard/core@8.0.3
+    -   @learncard/meta-mask-snap@1.0.15
+
+## 1.0.14
+
+### Patch Changes
+
+-   Updated dependencies [[`7c6945c`](https://github.com/learningeconomy/LearnCard/commit/7c6945cfe4be8574c869c2515f7806123c372765)]:
+    -   @learncard/core@8.0.2
+    -   @learncard/meta-mask-snap@1.0.14
+
+## 1.0.13
+
+### Patch Changes
+
+-   Updated dependencies [[`1cafab4`](https://github.com/learningeconomy/LearnCard/commit/1cafab43a6c053914305e0a8b938748ed2a5fd31)]:
+    -   @learncard/core@8.0.1
+    -   @learncard/meta-mask-snap@1.0.13
+
 ## 1.0.12
 
 ### Patch Changes

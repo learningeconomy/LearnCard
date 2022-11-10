@@ -1,5 +1,32 @@
 # learn-card-core
 
+## 8.0.4
+
+### Patch Changes
+
+-   [#166](https://github.com/learningeconomy/LearnCard/pull/166) [`86f3541`](https://github.com/learningeconomy/LearnCard/commit/86f35413e6006a17a596d71ea3f186f915e90f28) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Allow making a JFF 2 VC in VC-Templates plugin
+
+## 8.0.3
+
+### Patch Changes
+
+-   [#162](https://github.com/learningeconomy/LearnCard/pull/162) [`8ba3a12`](https://github.com/learningeconomy/LearnCard/commit/8ba3a128602a1dee4ce1d3a73652cb6f96efc2d3) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Eject from aqu and fix tests
+
+-   Updated dependencies [[`8ba3a12`](https://github.com/learningeconomy/LearnCard/commit/8ba3a128602a1dee4ce1d3a73652cb6f96efc2d3)]:
+    -   @learncard/helpers@1.0.1
+
+## 8.0.2
+
+### Patch Changes
+
+-   [#153](https://github.com/learningeconomy/LearnCard/pull/153) [`7c6945c`](https://github.com/learningeconomy/LearnCard/commit/7c6945cfe4be8574c869c2515f7806123c372765) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add optional removeAll method to index plane
+
+## 8.0.1
+
+### Patch Changes
+
+-   [`1cafab4`](https://github.com/learningeconomy/LearnCard/commit/1cafab43a6c053914305e0a8b938748ed2a5fd31) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Update Contexts
+
 ## 8.0.0
 
 ### Major Changes
@@ -16,36 +43,37 @@
     const bespokeLearnCard = await learnCard.addPlugin(plugin);
     ```
 
-    -   Universal Wallets now implement _Control Planes_ as well as just methods 
-    - These are top-level objects with standardized functions that allow plugins/consumers access to a unified interface for common operations. When it makes sense, a specific plugin implementing a plane can also be chosen, such as choosing where to store a credential when uploading. 
-    - There are currently five planes, with more planned for the future: 
-        - Read, which implements `get` 
-            - `get` simply resolves a URI to a VC 
-        - Store, which implements `upload` and (optionally) `uploadMany` 
-            - `upload` stores a VC and returns a URI that can be resolved 
-            - `uploadMany` stores an array of VCs, returning an array of URIs that can be resolved 
-        - Index, which implements `get`, `add`, `update`, and `remove` 
-            - `get` returns a list of the holder's credential objects (currently named `IDXCredential`s) 
-                - These objects contain (at a minimum) an `id` and a `uri` that can be resolved to a VC 
-            - `add` adds a credential to the holder's list 
-            - `update` updates an object in the holder's list 
-            - `remove` removes an object from the holder's list 
-        - Cache, which implements `getIndex`, `setIndex`, `flushIndex`, `getVc`, `setVc`, and `flushVc` 
-            - `getIndex` returns the hodler's credential list as it exists in the cache 
-            - `setIndex` sets the holder's credential list in the cache 
-            - `flushIndex` emptys the holder's credential list cache 
-            - `getVc` returns a VC for a URI if it exists in the cache 
-            - `setVc` sets a VC for a URI in the cache 
-            - `flushVc` emptys all VCs from the cache 
-        - Id, which implements `did` and `keypair` 
-            - `did` is identical to the previous `wallet.did` method, returning a did for a given method 
-            - `keypair` is identical to the previous `wallet.keypair` method, returning a JWK for a given cryptographic algorithm 
-    - Plugins implement planes via the second generic parameter to the `Plugin` type 
-        - For example, a plugin implementing the Read and Store planes would be typed like this: `Plugin<'Test', 'read' | 'store'>` 
-    - Plugins may continue to expose methods the same way they have, instead using the third generic parameter instead of the second: 
-        - For example, a plugin implementing the `getSubjectDid` method would be typed like this: `Plugin<'Test', any, { getSubjectDid: (did?: string) => string }>` 
-    - Plugins may depend on wallets that implement planes/methods in the same way 
-        - For example, a wallet implementing the id plane and the `getSubjectDid` method may be typed like this: `Wallet<any, 'id', { getSubjectDid: (did?: string) => string }>`
+    -   Universal Wallets now implement _Control Planes_ as well as just methods
+    -   These are top-level objects with standardized functions that allow plugins/consumers access to a unified interface for common operations. When it makes sense, a specific plugin implementing a plane can also be chosen, such as choosing where to store a credential when uploading.
+    -   There are currently five planes, with more planned for the future:
+        -   Read, which implements `get`
+            -   `get` simply resolves a URI to a VC
+        -   Store, which implements `upload` and (optionally) `uploadMany`
+            -   `upload` stores a VC and returns a URI that can be resolved
+            -   `uploadMany` stores an array of VCs, returning an array of URIs that can be resolved
+        -   Index, which implements `get`, `add`, `update`, and `remove`
+            -   `get` returns a list of the holder's credential objects (currently named `IDXCredential`s)
+                -   These objects contain (at a minimum) an `id` and a `uri` that can be resolved to a VC
+            -   `add` adds a credential to the holder's list
+            -   `update` updates an object in the holder's list
+            -   `remove` removes an object from the holder's list
+        -   Cache, which implements `getIndex`, `setIndex`, `flushIndex`, `getVc`, `setVc`, and `flushVc`
+            -   `getIndex` returns the hodler's credential list as it exists in the cache
+            -   `setIndex` sets the holder's credential list in the cache
+            -   `flushIndex` emptys the holder's credential list cache
+            -   `getVc` returns a VC for a URI if it exists in the cache
+            -   `setVc` sets a VC for a URI in the cache
+            -   `flushVc` emptys all VCs from the cache
+        -   Id, which implements `did` and `keypair`
+            -   `did` is identical to the previous `wallet.did` method, returning a did for a given method
+            -   `keypair` is identical to the previous `wallet.keypair` method, returning a JWK for a given cryptographic algorithm
+    -   Plugins implement planes via the second generic parameter to the `Plugin` type
+        -   For example, a plugin implementing the Read and Store planes would be typed like this: `Plugin<'Test', 'read' | 'store'>`
+    -   Plugins may continue to expose methods the same way they have, instead using the third generic parameter instead of the second:
+        -   For example, a plugin implementing the `getSubjectDid` method would be typed like this: `Plugin<'Test', any, { getSubjectDid: (did?: string) => string }>`
+    -   Plugins may depend on wallets that implement planes/methods in the same way
+
+        -   For example, a wallet implementing the id plane and the `getSubjectDid` method may be typed like this: `Wallet<any, 'id', { getSubjectDid: (did?: string) => string }>`
 
     -   The `pluginMethods` key has been renamed to `methods` when creating a plugin, and `invoke` when calling them from a wallet
     -   The old `LearnCard` type has been removed

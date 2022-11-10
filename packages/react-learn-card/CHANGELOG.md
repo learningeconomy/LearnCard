@@ -1,5 +1,45 @@
 # @welibraryos/react-learn-card
 
+## 2.3.55
+
+### Patch Changes
+
+-   Updated dependencies [[`86f3541`](https://github.com/learningeconomy/LearnCard/commit/86f35413e6006a17a596d71ea3f186f915e90f28)]:
+    -   @learncard/core@8.0.4
+
+## 2.3.54
+
+### Patch Changes
+
+-   Updated dependencies [[`8ba3a12`](https://github.com/learningeconomy/LearnCard/commit/8ba3a128602a1dee4ce1d3a73652cb6f96efc2d3)]:
+    -   @learncard/core@8.0.3
+
+## 2.3.53
+
+### Patch Changes
+
+-   Updated dependencies [[`7c6945c`](https://github.com/learningeconomy/LearnCard/commit/7c6945cfe4be8574c869c2515f7806123c372765)]:
+    -   @learncard/core@8.0.2
+
+## 2.3.52
+
+### Patch Changes
+
+-   [#151](https://github.com/learningeconomy/LearnCard/pull/151) [`88df9f8`](https://github.com/learningeconomy/LearnCard/commit/88df9f8c34f2d258845a62c3a214e9a382796f1e) Thanks [@goblincore](https://github.com/goblincore)! - chore: Add override props for VC display card
+
+*   [#151](https://github.com/learningeconomy/LearnCard/pull/151) [`88df9f8`](https://github.com/learningeconomy/LearnCard/commit/88df9f8c34f2d258845a62c3a214e9a382796f1e) Thanks [@goblincore](https://github.com/goblincore)! - chore: Add override props for VC display card
+
+## 2.3.51
+
+### Patch Changes
+
+-   [#149](https://github.com/learningeconomy/LearnCard/pull/149) [`abec576`](https://github.com/learningeconomy/LearnCard/commit/abec576ab55bd9874d487e6ae13b5976a7d52c4e) Thanks [@Custard7](https://github.com/Custard7)! - Fix image for jff 2.0 badge
+
+*   [#150](https://github.com/learningeconomy/LearnCard/pull/150) [`2851dcd`](https://github.com/learningeconomy/LearnCard/commit/2851dcd70129a4e84b78c62bbd2de05d871edd76) Thanks [@goblincore](https://github.com/goblincore)! - Actually fix image for jff 2.0 badge
+
+*   Updated dependencies [[`1cafab4`](https://github.com/learningeconomy/LearnCard/commit/1cafab43a6c053914305e0a8b938748ed2a5fd31)]:
+    -   @learncard/core@8.0.1
+
 ## 2.3.50
 
 ### Patch Changes
