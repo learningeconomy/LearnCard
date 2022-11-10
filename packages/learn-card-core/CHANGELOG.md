@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 8.0.5
+
+### Patch Changes
+
+-   [#164](https://github.com/learningeconomy/LearnCard/pull/164) [`a3aafb3`](https://github.com/learningeconomy/LearnCard/commit/a3aafb39db6fccae19e999fb4fc89a588bc14555) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Sync Didkit/SSI
+
 ## 8.0.4
 
 ### Patch Changes
