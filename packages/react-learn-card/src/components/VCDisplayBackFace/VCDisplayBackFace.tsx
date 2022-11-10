@@ -11,6 +11,7 @@ export const VCDisplayBackFace: React.FC<VCDisplayCardProps> = ({
     className = '',
     loading,
     verification = [],
+    handleClick,
 }) => {
     const descriptionText = credentialSubject?.achievement?.description;
     const criteriaText = credentialSubject?.achievement?.criteria?.narrative;
@@ -19,7 +20,7 @@ export const VCDisplayBackFace: React.FC<VCDisplayCardProps> = ({
 
     return (
         <div
-            className={`flex overflow-hidden flex-col items-center justify-between relative max-w-[400px] h-[100%] max-h-[1100px] min-h-[600px] p-7 rounded-3xl shadow-3xl bg-emerald-700 vc-display-card-full-container ${className}`}
+            className={`z-[9] flex overflow-hidden flex-col items-center justify-between relative max-w-[400px] h-[100%] max-h-[1100px] min-h-[600px] p-7 rounded-3xl shadow-3xl bg-emerald-700 vc-display-card-full-container ${className}`}
         >
             <section className="flex max-h-[150px] items-end bg-white rounded-bl-[50%] rounded-br-[50%] absolute top-0 w-[110%] h-[55%] min-h-[400px]"></section>
             <section className="flex flex-col items-center justify-center z-10 text-left credential-details-container max-w-[100%] relative">
@@ -69,7 +70,10 @@ export const VCDisplayBackFace: React.FC<VCDisplayCardProps> = ({
 
                 <div className="w-full mt-2"></div>
 
-                <button className="bg-white my-3 border-2 text-indigo-500 font-semibold py-2 px-4 shadow-3xl rounded-full">
+                <button
+                    onClick={handleClick}
+                    className="bg-white my-3 border-2 text-indigo-500 font-semibold py-2 px-4 shadow-3xl rounded-full"
+                >
                     <span className="flex justify-center">
                         <img
                             className="h-8 w-8 my-0 mx-4 scale-x-[-1]"

@@ -17,6 +17,7 @@ const VCDisplayFrontFace: React.FC<VCDisplayCardProps> = ({
     credentialSubject,
     className = '',
     loading,
+    handleClick,
 }) => {
     const credentialAchievementImage =
         credentialSubject?.achievement?.image?.id || credentialSubject?.achievement?.image;
@@ -43,7 +44,7 @@ const VCDisplayFrontFace: React.FC<VCDisplayCardProps> = ({
     } else if (!issueeImgExists && subjectImageComponent) {
         issueeImageEl = subjectImageComponent;
     }
-   
+
     let issuerImageEl: React.ReactNode | null = null;
 
     if (issuerImgExists) {
@@ -64,7 +65,7 @@ const VCDisplayFrontFace: React.FC<VCDisplayCardProps> = ({
 
     return (
         <div
-            className={`flex overflow-hidden flex-col items-center justify-between relative max-w-[400px] h-[100%] max-h-[600px] min-h-[600px] p-7 rounded-3xl shadow-3xl bg-emerald-700 vc-display-card-full-container ${className}`}
+            className={`z-[9] flex overflow-hidden flex-col items-center justify-between relative max-w-[400px] h-[100%] max-h-[600px] min-h-[600px] p-7 rounded-3xl shadow-3xl bg-emerald-700 vc-display-card-full-container ${className}`}
         >
             <section className="bg-white rounded-bl-[50%] rounded-br-[50%] absolute top-0 w-[110%] h-[77%]"></section>
             <section className="flex flex-col items-center justify-center z-10 text-center credential-thumb-img">
@@ -118,7 +119,10 @@ const VCDisplayFrontFace: React.FC<VCDisplayCardProps> = ({
                     </p>
                 </div>
 
-                <button className="cursor-alias bg-white my-3 border-2 text-indigo-500 font-semibold py-2 px-4 shadow-3xl rounded-full">
+                <button
+                    onClick={handleClick}
+                    className="cursor-alias bg-white my-3 border-2 text-indigo-500 font-semibold py-2 px-4 shadow-3xl rounded-full"
+                >
                     <span className="flex justify-center">
                         <p className="flex items-center">Details</p>
                         <img

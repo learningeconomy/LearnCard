@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { AchievementCredential, VC, Profile, VerificationItem } from '@learncard/types';
 import { format } from 'date-fns';
 
@@ -6,6 +6,9 @@ import FlippyCard from '../FlippyCard/FlippyCard';
 import VCDisplayFrontFace from '../VCDisplayFrontFace/VCDisplayFrontFace';
 import VCDisplayBackFace from '../VCDisplayBackFace/VCDisplayBackFace';
 import { CredentialInfo } from '../../types';
+
+const FRONT_FACE = 'front';
+const BACK_FACE = 'back';
 
 export type VCDisplayCardPropsReal = {
     credential: VC | AchievementCredential;
@@ -44,6 +47,9 @@ export const VCDisplayCard: React.FC<VCDisplayCardPropsReal> = ({
     subjectImageComponent,
     issuerImageComponent,
 }) => {
+    const [flipState, setFlipState] = useState(FRONT_FACE);
+    console.log('//VCDISPLAY CARD RENDER')
+
     const {
         title,
         createdAt,
@@ -54,8 +60,18 @@ export const VCDisplayCard: React.FC<VCDisplayCardPropsReal> = ({
     const issuee = issueeOverride || _issuee;
     const issuer = issuerOverride || _issuer;
 
+    const handleFlip = () => {
+        console.log('//HANDLE FLIPFLIPSTATE', flipState)
+        if (flipState === FRONT_FACE) {
+            setFlipState(BACK_FACE);
+        }
+        if (flipState === BACK_FACE) {
+            setFlipState(FRONT_FACE);
+        }
+    };
+
     return (
-        <FlippyCard>
+        <FlippyCard flipState={flipState}>
             <VCDisplayFrontFace
                 title={title}
                 credentialSubject={credentialSubject}
@@ -67,6 +83,7 @@ export const VCDisplayCard: React.FC<VCDisplayCardPropsReal> = ({
                 createdAt={createdAt}
                 className={className}
                 loading={loading}
+                handleClick={handleFlip}
             />
             <VCDisplayBackFace
                 title={title}
@@ -77,6 +94,7 @@ export const VCDisplayCard: React.FC<VCDisplayCardPropsReal> = ({
                 className={className}
                 loading={loading}
                 verification={verification}
+                handleClick={handleFlip}
             />
         </FlippyCard>
     );

@@ -1,34 +1,26 @@
-import React, { useState } from 'react';
+import React from 'react';
 
 export type FlippyCardProps = {
     children: React.ReactChild[];
+    flipState?: 'front' | 'back' | undefined | string;
 };
 
-const FRONT_FACE = 'front';
-const BACK_FACE = 'back';
-
-export const FlippyCard: React.FC<FlippyCardProps> = ({ children }) => {
-    const [flipState, setFlipState] = useState(FRONT_FACE);
-
+export const FlippyCard: React.FC<FlippyCardProps> = ({ children, flipState }) => {
+    console.log('//flipState', flipState)
     if (children?.length > 3) {
         console.warn('More than two children passed into Flippy Card! 😳😳😳 Picking first two...');
     }
 
     if (!children) return <></>;
 
-    const frontCard = children?.[0];
-    const backCard = children?.[1] || children?.[0];
+    const frontCard = children?.[0] as React.ReactNode;
+    const backCard = (children?.[1] as React.ReactNode) || (children?.[0] as React.ReactNode);
 
-    const handleClick = () => {
-        if (flipState === FRONT_FACE) setFlipState(BACK_FACE);
-        if (flipState === BACK_FACE) setFlipState(FRONT_FACE);
-    };
-
-    const flipCardCSSClass = flipState === FRONT_FACE ? 'flippy-card' : 'flippy-card is-flipped';
+    const flipCardCSSClass = flipState === 'front' ? 'flippy-card' : 'flippy-card is-flipped';
 
     return (
         <div data-testid="flippy-card-wrapper" className="flippy-wrapper-container">
-            <div data-testid="flippy-card" className={flipCardCSSClass} onClick={handleClick}>
+            <div data-testid="flippy-card" className={flipCardCSSClass}>
                 <section data-testid="flippy-card-front" className="card-face card-face--front">
                     {frontCard}
                 </section>
