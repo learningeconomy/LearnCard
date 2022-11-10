@@ -18,9 +18,6 @@ export const VCDisplayBackFace: React.FC<VCDisplayCardProps> = ({
     const criteriaText = credentialSubject?.achievement?.criteria?.narrative;
     const issuerUrl = typeof issuer === 'object' ? issuer.url : '';
     const issuerName = getNameFromProfile(issuer ?? '');
-
-    console.log('//overrideDetailsComponent', overrideDetailsComponent)
-
     const defaultDetails = (
         <>
             <div className="width-full">

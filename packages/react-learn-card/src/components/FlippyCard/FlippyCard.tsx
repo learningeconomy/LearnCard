@@ -6,7 +6,6 @@ export type FlippyCardProps = {
 };
 
 export const FlippyCard: React.FC<FlippyCardProps> = ({ children, flipState }) => {
-    console.log('//flipState', flipState)
     if (children?.length > 3) {
         console.warn('More than two children passed into Flippy Card! 😳😳😳 Picking first two...');
     }
