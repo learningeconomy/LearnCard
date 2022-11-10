@@ -16,6 +16,7 @@ SkillTabCardTest.args = {
     title: 'Skill Tab Card Test Title',
     description: 'Describe how to identify electrical hazards.',
     checked: true,
+    showStatus: false,
     showChecked: true,
     onCheckClicked: () => {
         console.log('///CHECKED');
