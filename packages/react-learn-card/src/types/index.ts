@@ -229,5 +229,7 @@ export type GenericCardProps = {
     thumbImgSrc?: string;
     customThumbClass?: string;
     customHeaderClass?: string;
+    showChecked?: boolean;
+    onCheck?: () => void;
     onClick?: () => void;
 };
