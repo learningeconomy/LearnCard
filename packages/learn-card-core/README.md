@@ -86,7 +86,7 @@ issued credential. This means both the issuer and recipient may store the _strea
 credential itself.
 
 ```js
-const streamId = await wallet.store.Ceramic.upload(vc);
+const uri = await wallet.store.Ceramic.upload(vc);
 ```
 
 #### Reading From Ceramic
