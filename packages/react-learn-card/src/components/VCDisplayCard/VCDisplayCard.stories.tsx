@@ -12,12 +12,54 @@ export default {
 
 const Template: Story<VCDisplayCardPropsReal> = args => <VCDisplayCard {...args} />;
 
+const DetailsOverrideTest = (
+    <>
+        <div className="width-full">
+            <h6 className="line-clamp-1 text-grayscale-900 font-bold uppercase text-xs tracking-wider subpixel-antialiased">
+                Description
+            </h6>
+            <p className="line-clamp-3 subpixel-antialiased text-grayscale-600 text-[14px] lc-line-clamp">
+                override test description
+            </p>
+        </div>
+
+        <div className="width-full mt-[10px]">
+            <h6 className="line-clamp-1 text-grayscale-900 font-bold uppercase text-xs tracking-wider  subpixel-antialiased">
+                Criteria
+            </h6>
+            <p className="line-clamp-3 subpixel-antialiased text-grayscale-600 text-[14px] lc-line-clamp">
+                override critera text
+            </p>
+        </div>
+
+        <div className="width-full mt-[10px] line-clamp-1 overflow-hidden vc-issuer-name-info">
+            <h6 className="line-clamp-1 text-grayscale-900 font-bold uppercase text-xs tracking-wider subpixel-antialiased">
+                Issuer
+            </h6>
+            <p className="max-w-[344px] line-clamp-1 subpixel-antialiased text-grayscale-600 text-[14px] block overflow-ellipsis break-all">
+                override details issuer override details issuer override details issuer override
+                details issuer override details issuer override details issuer
+            </p>
+        </div>
+
+        <div className="width-full mt-[10px] line-clamp-1 overflow-hidden vc-issuer-name-info">
+            <h6 className="line-clamp-1 text-grayscale-900 font-bold uppercase text-xs tracking-wider subpixel-antialiased">
+                other field
+            </h6>
+            <p className="max-w-[344px] line-clamp-1 subpixel-antialiased text-grayscale-600 text-[14px] block overflow-ellipsis break-all">
+                override details
+            </p>
+        </div>
+    </>
+);
+
 export const VCDisplayCardTest = Template.bind({});
 
 // See https://w3c-ccg.github.io/vc-ed/plugfest-1-2022/
 // For example data structure for plugfest
 
 VCDisplayCardTest.args = {
+    overrideDetailsComponent: DetailsOverrideTest,
     subjectImageComponent: (
         <div className="flex flex-row items-center justify-center h-full w-full overflow-hidden bg-emerald-700 text-white font-medium text-3xl">
             LC
@@ -65,6 +107,7 @@ VCDisplayCardTest.args = {
         name: 'Dilbert Charles',
     },
     loading: false,
+    // className: 'bg-indigo-700',
     verification: [
         {
             check: 'proof',
