@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 8.0.6
+
+### Patch Changes
+
+-   [#173](https://github.com/learningeconomy/LearnCard/pull/173) [`b3ae77e`](https://github.com/learningeconomy/LearnCard/commit/b3ae77ef20a10dee303a2c8318faa8bf28344215) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Update context
+
 ## 8.0.5
 
 ### Patch Changes
