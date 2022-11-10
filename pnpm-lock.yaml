@@ -543,7 +543,7 @@ importers:
     specifiers:
       '@changesets/changelog-github': ^0.4.5
       '@changesets/cli': ^2.23.0
-      '@learncard/core': 8.0.4
+      '@learncard/core': 8.0.5
       '@learncard/types': 5.1.0
       '@rollup/plugin-json': ^4.1.0
       '@types/cors': ^2.8.12
