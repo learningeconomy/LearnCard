@@ -1,5 +1,12 @@
 # @learncard/cli
 
+## 2.0.8
+
+### Patch Changes
+
+-   Updated dependencies [[`c388fd4`](https://github.com/learningeconomy/LearnCard/commit/c388fd49f2832cadcb201779de17d45d3fe7b660)]:
+    -   @learncard/core@8.0.7
+
 ## 2.0.7
 
 ### Patch Changes
