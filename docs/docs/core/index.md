@@ -111,7 +111,7 @@ After receiving a streamID, you can _persist_ that streamID by calling `addCrede
 the credential a bespoke title
 
 ```js
-await wallet.index.IDX.add({ id: streamId, title: 'Test VC' });
+await wallet.index.IDX.add({ uri, id: 'Test VC' });
 ```
 
 This will add the streamId, which can be used to resolve the verifiable credential to IDX using the
