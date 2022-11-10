@@ -29,7 +29,7 @@ export const CeramicURIValidator = z
  * Settings for toggling JWE Encryption before uploading to Ceramic.
  * @group CeramicPlugin
  * @param encrypt enable JWE encryption on upload.
- * @param controllersCanDecrypt adds controller DIDs to recipients who can decrypt the JWE credential.
+ * @param controllersCanDecrypt helper to add Ceramic controller DIDs to recipients who can decrypt the JWE credential.
  * @param recipients DIDs who can decrypt the JWE credential.
  * @param options additional CreateJWEOptions for encryption.
  */

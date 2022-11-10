@@ -107,7 +107,7 @@ export const getCeramicPlugin = async <URI extends string = ''>(
         return content;
     };
 
-    const uploadCredential = async (vc: VC, encryption: CeramicEncryptionParams | undefined) => {
+    const uploadCredential = async (vc: VC, encryption?: CeramicEncryptionParams | undefined) => {
         await VCValidator.parseAsync(vc);
 
         return streamIdToCeramicURI(await publishContentToCeramic(vc, {}, {}, encryption));
@@ -137,7 +137,15 @@ export const getCeramicPlugin = async <URI extends string = ''>(
         store: {
             upload: async (_learnCard, vc) => {
                 _learnCard.debug?.('learnCard.store.Ceramic.upload');
-                return uploadCredential(vc, { encrypt: true, controllersCanDecrypt: true });
+                return uploadCredential(vc);
+            },
+            uploadEncrypted: async (_learnCard, vc, params) => {
+                _learnCard.debug?.('learnCard.store.Ceramic.uploadEncrypted');
+                return uploadCredential(vc, {
+                    encrypt: true,
+                    controllersCanDecrypt: true,
+                    ...(params ? { recipients: params.recipients } : {}),
+                });
             },
         },
         read: {

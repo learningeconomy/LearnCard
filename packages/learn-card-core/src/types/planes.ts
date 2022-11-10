@@ -53,9 +53,14 @@ export type LearnCardReadPlane<Plugins extends Plugin[]> = ReadPlane & {
 
 // --- Store ---
 
+export type EncryptionParams = {
+    recipients: string[];
+};
+
 export type StorePlane = {
     upload: (vc: VC, options?: PlaneOptions) => Promise<string>;
     uploadMany?: (vcs: VC[], options?: PlaneOptions) => Promise<string[]>;
+    uploadEncrypted?: (vc: VC, params?: EncryptionParams, options?: PlaneOptions) => Promise<string>;
 };
 
 export type PluginStorePlane = StorePlane;

@@ -465,7 +465,7 @@ describe('LearnCard SDK', () => {
 
             const uvc = learnCard.invoke.getTestVc();
             const vc = await learnCard.invoke.issueCredential(uvc);
-            const uri = await learnCard.store.Ceramic.upload(vc);
+            const uri = await learnCard.store.Ceramic.uploadEncrypted(vc);
 
             // Should properly retrieve credential!  ✅
             const credential = await learnCard.read.get(uri);
@@ -482,9 +482,7 @@ describe('LearnCard SDK', () => {
 
             const uvc = learnCard.invoke.getTestVc();
             const vc = await learnCard.invoke.issueCredential(uvc);
-            const uri = await learnCard.invoke.publishContentToCeramic(vc, {
-                encrypt: true,
-                controllersCanDecrypt: true,
+            const uri = await learnCard.store.Ceramic.uploadEncrypted(vc, {
                 recipients: [friend.id.did()],
             });
 
