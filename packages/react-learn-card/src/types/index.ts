@@ -54,6 +54,8 @@ export type VCDisplayCardProps = {
     verification?: VerificationItem[];
     handleClick?: () => void;
     overrideDetailsComponent?: React.ReactNode;
+    overrideCardTitle?: string;
+    overrideCardImageComponent?: React.ReactNode;
 };
 
 export type RoundedSquareProps = {

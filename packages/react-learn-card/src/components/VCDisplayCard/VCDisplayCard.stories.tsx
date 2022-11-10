@@ -12,6 +12,16 @@ export default {
 
 const Template: Story<VCDisplayCardPropsReal> = args => <VCDisplayCard {...args} />;
 
+const cardImgOverride = (
+    <img
+        className="h-full w-full object-cover"
+        src={
+            'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a6/Lunar_eclipse_of_2022_November_8_-_cropped.jpg/440px-Lunar_eclipse_of_2022_November_8_-_cropped.jpg'
+        }
+        alt="Credential Achievement Image"
+    />
+);
+
 const DetailsOverrideTest = (
     <>
         <div className="width-full">
@@ -59,7 +69,9 @@ export const VCDisplayCardTest = Template.bind({});
 // For example data structure for plugfest
 
 VCDisplayCardTest.args = {
+    overrideCardImageComponent: cardImgOverride,
     overrideDetailsComponent: DetailsOverrideTest,
+    overrideCardTitle: 'Override Card Title test',
     subjectImageComponent: (
         <div className="flex flex-row items-center justify-center h-full w-full overflow-hidden bg-emerald-700 text-white font-medium text-3xl">
             LC
