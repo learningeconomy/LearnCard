@@ -14,6 +14,7 @@ export type VcTemplates = {
         criteriaNarrative?: string;
         issuanceDate?: string;
     };
+    jff2: { did?: string; subject?: string; issuanceDate?: string };
 };
 
 /** @group VC Templates Plugin */

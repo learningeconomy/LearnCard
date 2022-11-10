@@ -7,32 +7,47 @@ import Credentials from '@components/Credentials';
     <section id="modal-container"></section>
 
     <main class="w-full h-full flex flex-col justify-center items-center p-4">
-        <header class="flex gap-2">
+        <header class="flex ">
             <img
-                class="h-24"
-                src="https://user-images.githubusercontent.com/2185016/190510561-294db809-09fd-4771-9749-6c0e0f4144fd.png"
+                class="h-36"
+                src="https://cdn.filestackcontent.com/rotate=deg:exif/auto_image/7X2erX66T8Wq2IfvYIMt"
                 alt="LearnCard"
             />
-
-            <h1>LearnCard CHAPI Example</h1>
         </header>
+        <div class="gap-2 mb-10">
+            <img
+                    class="max-w-sm"
+                    src="https://cdn.filestackcontent.com/rotate=deg:exif/auto_image/PcSN5SODTgKForLpIdAa"
+                    alt="LearnCard"
+                />
+        </div>
+        <h3 id="loading-wallet">Loading...</h3>
 
-        <h3 id="loading-wallet">Loading wallet...</h3>
-
-        <section class="flex justify-center items-center gap-2">
+        <!--<section class="flex justify-center items-center gap-2">
             <p id="seed-display"></p>
             <button type="button" id="change-seed" class="bg-red-100 rounded px-4 border opacity-0"
                 >Change</button
             >
         </section>
-
+-->
         <section class="flex mb-4">
             <button
                 disabled
                 type="button"
                 id="test-storage"
-                class="bg-green-100 rounded py-2 px-4 border opacity-0">Add Dummy Credential</button
+                class="bg-emerald-500 text-slate-100 rounded-md m-3 py-5 px-4 border opacity-0"
             >
+                Issue via CHAPI
+            </button>
+
+            <button
+                disabled
+                type="button"
+                id="test-storage-lcw"
+                class="bg-emerald-500 text-slate-100 rounded-md m-3 py-5 px-4 border opacity-0"
+            >
+                Issue to LCW
+            </button>
         </section>
 
         <Credentials client:only="react" />
@@ -64,6 +79,17 @@ import Credentials from '@components/Credentials';
         }
     };
 
+    const testLcwStorage = async () => {
+        const testWallet = await initLearnCard({ vcApi: true });
+
+        const vc = await testWallet.invoke.issueCredential(testWallet.invoke.newCredential({ type: 'jff2' }));
+        const uri = await wallet.store.Ceramic.upload(vc); // Have to use "normal" wallet for now...
+
+        const challenge = window.crypto.randomUUID();
+
+        window.location.href = `org.dcconsortium://request?auth_type=bearer&issuer=jff&challenge=${challenge}&vc_request_url=https://bridge.learncard.com/exchanges/${uri}`
+    };
+
     const changeSeed = () => {
         _seed.set('');
         _wallet.set(null);
@@ -72,8 +98,9 @@ import Credentials from '@components/Credentials';
 
     const loadingWallet = document.getElementById('loading-wallet') as HTMLElement;
     const storageButton = document.getElementById('test-storage') as HTMLButtonElement;
+    const lcwStorageButton = document.getElementById('test-storage-lcw') as HTMLButtonElement;
     const seedDisplay = document.getElementById('seed-display') as HTMLElement;
-    const changeSeedButton = document.getElementById('change-seed') as HTMLButtonElement;
+    //const changeSeedButton = document.getElementById('change-seed') as HTMLButtonElement;
 
     loadingWallet.remove();
 
@@ -81,7 +108,11 @@ import Credentials from '@components/Credentials';
     storageButton.disabled = false;
     storageButton.addEventListener('click', testStorage);
 
-    seedDisplay.innerHTML = `Your seed is: <span class="bg-white">${seed}</span>`;
-    changeSeedButton.classList.remove('opacity-0');
-    changeSeedButton.addEventListener('click', changeSeed);
+    lcwStorageButton.classList.remove('opacity-0');
+    lcwStorageButton.disabled = false;
+    lcwStorageButton.addEventListener('click', testLcwStorage);
+
+    //seedDisplay.innerHTML = `Your seed is: <span class="bg-white">${seed}</span>`;
+    //changeSeedButton.classList.remove('opacity-0');
+    //changeSeedButton.addEventListener('click', changeSeed);
 </script>
