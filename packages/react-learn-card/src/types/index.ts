@@ -205,6 +205,7 @@ export type SkillTabCardProps = {
     description?: string;
     checked?: boolean;
     showChecked?: boolean;
+    showStatus?: boolean;
     className?: string;
     onCheckClicked?: () => void;
     onClick?: () => void;

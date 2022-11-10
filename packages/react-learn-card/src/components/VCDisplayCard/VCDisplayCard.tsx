@@ -56,8 +56,6 @@ export const VCDisplayCard: React.FC<VCDisplayCardPropsReal> = ({
     customHeaderComponent,
 }) => {
     const [flipState, setFlipState] = useState(FRONT_FACE);
-    console.log('//VCDISPLAY CARD RENDER')
-
     const {
         title,
         createdAt,
@@ -69,7 +67,6 @@ export const VCDisplayCard: React.FC<VCDisplayCardPropsReal> = ({
     const issuer = issuerOverride || _issuer;
 
     const handleFlip = () => {
-        console.log('//HANDLE FLIPFLIPSTATE', flipState)
         if (flipState === FRONT_FACE) {
             setFlipState(BACK_FACE);
         }
