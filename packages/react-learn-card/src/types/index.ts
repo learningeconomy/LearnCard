@@ -232,4 +232,5 @@ export type GenericCardProps = {
     showChecked?: boolean;
     checkStatus?: boolean;
     onClick?: () => void;
+    flipped?: boolean;
 };
