@@ -56,6 +56,7 @@ export type VCDisplayCardProps = {
     overrideDetailsComponent?: React.ReactNode;
     overrideCardTitle?: string;
     overrideCardImageComponent?: React.ReactNode;
+    customHeaderComponent?: React.ReactNode;
 };
 
 export type RoundedSquareProps = {

@@ -63,12 +63,22 @@ const DetailsOverrideTest = (
     </>
 );
 
+const customHeaderTest = () => (
+    <div
+        onClick={() => console.log('test')}
+        className="rounded-[40px] bg-emerald-700 max-w-[200px] p-[5px] m-auto"
+    >
+        CUSTOM CONTENT
+    </div>
+);
+
 export const VCDisplayCardTest = Template.bind({});
 
 // See https://w3c-ccg.github.io/vc-ed/plugfest-1-2022/
 // For example data structure for plugfest
 
 VCDisplayCardTest.args = {
+    customHeaderComponent: customHeaderTest(),
     overrideCardImageComponent: cardImgOverride,
     overrideDetailsComponent: DetailsOverrideTest,
     overrideCardTitle: 'Override Card Title test',

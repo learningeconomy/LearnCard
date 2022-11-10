@@ -23,6 +23,7 @@ export type VCDisplayCardPropsReal = {
     overrideDetailsComponent?: React.ReactNode;
     overrideCardTitle?: string;
     overrideCardImageComponent?: React.ReactNode;
+    customHeaderComponent?: React.ReactNode;
 };
 
 const getInfoFromCredential = (credential: VC | AchievementCredential): CredentialInfo => {
@@ -52,6 +53,7 @@ export const VCDisplayCard: React.FC<VCDisplayCardPropsReal> = ({
     overrideDetailsComponent,
     overrideCardTitle,
     overrideCardImageComponent,
+    customHeaderComponent,
 }) => {
     const [flipState, setFlipState] = useState(FRONT_FACE);
     console.log('//VCDISPLAY CARD RENDER')
@@ -81,6 +83,7 @@ export const VCDisplayCard: React.FC<VCDisplayCardPropsReal> = ({
             <VCDisplayFrontFace
                 title={title}
                 credentialSubject={credentialSubject}
+                customHeaderComponent={customHeaderComponent}
                 issuer={issuer}
                 issuee={issuee}
                 subjectImageComponent={subjectImageComponent}

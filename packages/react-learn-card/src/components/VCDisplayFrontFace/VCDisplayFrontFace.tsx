@@ -20,6 +20,7 @@ const VCDisplayFrontFace: React.FC<VCDisplayCardProps> = ({
     handleClick,
     overrideCardImageComponent,
     overrideCardTitle,
+    customHeaderComponent,
 }) => {
     const credentialAchievementImage =
         credentialSubject?.achievement?.image?.id || credentialSubject?.achievement?.image;
@@ -95,6 +96,8 @@ const VCDisplayFrontFace: React.FC<VCDisplayCardProps> = ({
                             {cardTitle ?? ''}
                         </h3>
                     </div>
+
+                    {customHeaderComponent && customHeaderComponent}
                 </section>
 
                 <section className="flex flex-row items-center justify-center mt-2 w-full my-2 vc-card-issuer-thumbs">
@@ -132,7 +135,6 @@ const VCDisplayFrontFace: React.FC<VCDisplayCardProps> = ({
                 >
                     <span className="flex justify-center">
                         <p className="flex items-center">View Details</p>
-                      
                     </span>
                 </button>
             </section>
