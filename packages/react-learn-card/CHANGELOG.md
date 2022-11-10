@@ -1,5 +1,16 @@
 # @welibraryos/react-learn-card
 
+## 2.3.58
+
+### Patch Changes
+
+-   [#177](https://github.com/learningeconomy/LearnCard/pull/177) [`bc746a0`](https://github.com/learningeconomy/LearnCard/commit/bc746a05fa6c4196e432fac20b5783221b59be65) Thanks [@goblincore](https://github.com/goblincore)! - chore: VC Card updates - add additional override props, generic card add check display and flipped display
+
+-   [#170](https://github.com/learningeconomy/LearnCard/pull/170) [`c388fd4`](https://github.com/learningeconomy/LearnCard/commit/c388fd49f2832cadcb201779de17d45d3fe7b660) Thanks [@Custard7](https://github.com/Custard7)! - Fix: Update READMEs to 8.0 syntax
+
+-   Updated dependencies [[`c388fd4`](https://github.com/learningeconomy/LearnCard/commit/c388fd49f2832cadcb201779de17d45d3fe7b660)]:
+    -   @learncard/core@8.0.7
+
 ## 2.3.57
 
 ### Patch Changes
