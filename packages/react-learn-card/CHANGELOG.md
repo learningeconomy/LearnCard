@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.3.60
+
+### Patch Changes
+
+-   [#184](https://github.com/learningeconomy/LearnCard/pull/184) [`31b67a5`](https://github.com/learningeconomy/LearnCard/commit/31b67a5d6010ce3886406677a0aa838b778d64f8) Thanks [@Custard7](https://github.com/Custard7)! - Patch: Add react ux docs
+
 ## 2.3.59
 
 ### Patch Changes
