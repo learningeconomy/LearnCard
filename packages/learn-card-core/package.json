@@ -8,7 +8,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.js && dts-bundle-generator src/index.ts -o dist/core.d.ts --no-check && tsc-alias",
+    "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.js && dts-bundle-generator src/index.ts -o dist/core.d.ts --no-check && tsc-alias && shx  sed -i \"s/import\\(\\\\\\\"\\.\\\\\\\"\\)\\.//g\" dist/core.d.ts",
     "start": "aqu watch",
     "lint": "aqu lint",
     "lint:fix": "aqu lint --fix",
