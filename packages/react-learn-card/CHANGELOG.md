@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.3.59
+
+### Patch Changes
+
+-   [#179](https://github.com/learningeconomy/LearnCard/pull/179) [`f545ed4`](https://github.com/learningeconomy/LearnCard/commit/f545ed434dd23179591e3b7c0bd82bd9c2ae2fb2) Thanks [@goblincore](https://github.com/goblincore)! - chore: Update course card
+
 ## 2.3.58
 
 ### Patch Changes
