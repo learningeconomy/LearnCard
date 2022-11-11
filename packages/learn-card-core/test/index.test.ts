@@ -458,7 +458,8 @@ describe('LearnCard SDK', () => {
         });
     });
 
-    describe('Ceramic Plugin', () => {
+    // We are skipping Ceramic persistence tests because they will slam our Ceramic node if we don't...
+    describe.skip('Ceramic Plugin', () => {
         it('should be able to upload & get encrypted credential', async () => {
             const learnCard = await getLearnCard();
             const malicious = await getLearnCard('b'.repeat(64));
