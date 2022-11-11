@@ -12,6 +12,8 @@
 All LearnCard documentation can be found at:
 https://docs.learncard.com
 
+Docs for LearnCard React can be found at:
+https://docs.learncard.com/learn-card-sdk/learncard-ux
 
 ## Install
 
