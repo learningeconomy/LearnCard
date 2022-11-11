@@ -1,5 +1,11 @@
 # @learncard/meta-mask-snap
 
+## 1.0.21
+
+### Patch Changes
+
+-   [#182](https://github.com/learningeconomy/LearnCard/pull/182) [`4e8357a`](https://github.com/learningeconomy/LearnCard/commit/4e8357ad8d6a65c7e0a2ce9e132aaf073159f73b) Thanks [@Custard7](https://github.com/Custard7)! - Fix: stop snap manifest action, update pnpm lock
+
 ## 1.0.20
 
 ### Patch Changes
