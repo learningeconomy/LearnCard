@@ -115,6 +115,7 @@ export type CourseCardVerticalProps = {
     date?: string;
     checked?: boolean;
     showChecked?: boolean;
+    showSubCount?: boolean;
     onCheckClick?: () => void;
     onClick?: () => void;
 };
