@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 8.1.1
+
+### Patch Changes
+
+-   [#187](https://github.com/learningeconomy/LearnCard/pull/187) [`42d02db`](https://github.com/learningeconomy/LearnCard/commit/42d02dba24129983664aceb7da5aaeb4039f8b04) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix Built Types
+
 ## 8.1.0
 
 ### Minor Changes
