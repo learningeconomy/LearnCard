@@ -2,12 +2,14 @@
 
 # @learncard/cli
 
-[![npm version](https://img.shields.io/npm/v/@learncard/http-bridge)](https://www.npmjs.com/package/@learncard/cli)
-[![npm downloads](https://img.shields.io/npm/dw/@learncard/http-bridge)](https://www.npmjs.com/package/@learncard/cli)
-[![vulnerabilities](https://img.shields.io/snyk/vulnerabilities/npm/@learncard/http-bridge)](https://www.npmjs.com/package/@learncard/cli)
+[![npm version](https://img.shields.io/npm/v/@learncard/cli)](https://www.npmjs.com/package/@learncard/cli)
+[![npm downloads](https://img.shields.io/npm/dw/@learncard/cli)](https://www.npmjs.com/package/@learncard/cli)
+[![vulnerabilities](https://img.shields.io/snyk/vulnerabilities/npm/@learncard/cli)](https://www.npmjs.com/package/@learncard/cli)
 
 **LearnCard CLI** is an easy to use node REPL that instantiates a Learn Card wallet for you and gives
 you all the tools you need to easily play around with the Learn Card SDK!
+
+![LearnCard CLI](https://user-images.githubusercontent.com/2185016/201382605-13eb7bb2-f6b6-4099-97a1-1a623bf58486.gif)
 
 ## Documentation
 All LearnCard documentation can be found at:

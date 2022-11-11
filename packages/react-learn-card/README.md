@@ -8,6 +8,8 @@
 
 **LearnCard React** is dedicated set of **open-source**, **flexible**, and **reusable Storybook UX React components for credential and currency** built for the future of education and work.
 
+![learn-card](https://user-images.githubusercontent.com/2185016/201373744-058bef30-dec8-46cf-9552-408b7bc43532.gif)
+
 ## Documentation
 All LearnCard documentation can be found at:
 https://docs.learncard.com
