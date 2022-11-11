@@ -17,6 +17,10 @@ const VCDisplayFrontFace: React.FC<VCDisplayCardProps> = ({
     credentialSubject,
     className = '',
     loading,
+    handleClick,
+    overrideCardImageComponent,
+    overrideCardTitle,
+    customHeaderComponent,
 }) => {
     const credentialAchievementImage =
         credentialSubject?.achievement?.image?.id || credentialSubject?.achievement?.image;
@@ -43,7 +47,7 @@ const VCDisplayFrontFace: React.FC<VCDisplayCardProps> = ({
     } else if (!issueeImgExists && subjectImageComponent) {
         issueeImageEl = subjectImageComponent;
     }
-   
+
     let issuerImageEl: React.ReactNode | null = null;
 
     if (issuerImgExists) {
@@ -62,21 +66,26 @@ const VCDisplayFrontFace: React.FC<VCDisplayCardProps> = ({
         issuerImageEl = issuerImageComponent;
     }
 
+    const credImg = credentialAchievementImage ? (
+        <img
+            className="h-full w-full object-cover"
+            src={credentialAchievementImage ?? ''}
+            alt="Credential Achievement Image"
+        />
+    ) : (
+        <></>
+    );
+
+    const renderCardImg = overrideCardImageComponent ? overrideCardImageComponent : credImg;
+    const cardTitle = overrideCardTitle ? overrideCardTitle : title;
+
     return (
         <div
-            className={`flex overflow-hidden flex-col items-center justify-between relative max-w-[400px] h-[100%] max-h-[600px] min-h-[600px] p-7 rounded-3xl shadow-3xl bg-emerald-700 vc-display-card-full-container ${className}`}
+            className={`z-[9] vc-display-main-card-front flex overflow-hidden flex-col items-center justify-between relative max-w-[400px] h-[100%] max-h-[600px] min-h-[600px] p-7 rounded-3xl shadow-3xl bg-emerald-700 vc-display-card-full-container ${className}`}
         >
             <section className="bg-white rounded-bl-[50%] rounded-br-[50%] absolute top-0 w-[110%] h-[77%]"></section>
             <section className="flex flex-col items-center justify-center z-10 text-center credential-thumb-img">
-                <section className="max-w-[100px] max-h-[100px]">
-                    {credentialAchievementImage && (
-                        <img
-                            className="h-full w-full object-cover"
-                            src={credentialAchievementImage ?? ''}
-                            alt="Credential Achievement Image"
-                        />
-                    )}
-                </section>
+                <section className="max-w-[100px] max-h-[100px]">{renderCardImg}</section>
 
                 <section className="flex flex-row  w-full line-clamp-2">
                     <div className="flex flex-row w-full line-clamp-2 py-4 vc-flippy-card-title-front ">
@@ -84,9 +93,11 @@ const VCDisplayFrontFace: React.FC<VCDisplayCardProps> = ({
                             className="vc-thumbnail-title w-full text-2xl line-clamp-2 tracking-wide leading-snug text-center vc-display-title text-gray-900 font-medium"
                             data-testid="vc-thumbnail-title"
                         >
-                            {title ?? ''}
+                            {cardTitle ?? ''}
                         </h3>
                     </div>
+
+                    {customHeaderComponent && customHeaderComponent}
                 </section>
 
                 <section className="flex flex-row items-center justify-center mt-2 w-full my-2 vc-card-issuer-thumbs">
@@ -118,14 +129,12 @@ const VCDisplayFrontFace: React.FC<VCDisplayCardProps> = ({
                     </p>
                 </div>
 
-                <button className="cursor-alias bg-white my-3 border-2 text-indigo-500 font-semibold py-2 px-4 shadow-3xl rounded-full">
+                <button
+                    onClick={handleClick}
+                    className="cursor-alias bg-white my-3 border-0 text-indigo-500 font-semibold py-2 px-4 sl"
+                >
                     <span className="flex justify-center">
-                        <p className="flex items-center">Details</p>
-                        <img
-                            className="h-8 w-8 my-0 mx-1"
-                            src={FlipArrowRight ?? ''}
-                            alt="Flip Card"
-                        />
+                        <p className="flex items-center">View Details</p>
                     </span>
                 </button>
             </section>

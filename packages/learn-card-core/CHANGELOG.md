@@ -1,5 +1,23 @@
 # learn-card-core
 
+## 8.0.7
+
+### Patch Changes
+
+-   [#170](https://github.com/learningeconomy/LearnCard/pull/170) [`c388fd4`](https://github.com/learningeconomy/LearnCard/commit/c388fd49f2832cadcb201779de17d45d3fe7b660) Thanks [@Custard7](https://github.com/Custard7)! - Fix: Update READMEs to 8.0 syntax
+
+## 8.0.6
+
+### Patch Changes
+
+-   [#173](https://github.com/learningeconomy/LearnCard/pull/173) [`b3ae77e`](https://github.com/learningeconomy/LearnCard/commit/b3ae77ef20a10dee303a2c8318faa8bf28344215) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Update context
+
+## 8.0.5
+
+### Patch Changes
+
+-   [#164](https://github.com/learningeconomy/LearnCard/pull/164) [`a3aafb3`](https://github.com/learningeconomy/LearnCard/commit/a3aafb39db6fccae19e999fb4fc89a588bc14555) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Sync Didkit/SSI
+
 ## 8.0.4
 
 ### Patch Changes

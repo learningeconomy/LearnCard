@@ -1,5 +1,42 @@
 # @welibraryos/react-learn-card
 
+## 2.3.60
+
+### Patch Changes
+
+-   [#184](https://github.com/learningeconomy/LearnCard/pull/184) [`31b67a5`](https://github.com/learningeconomy/LearnCard/commit/31b67a5d6010ce3886406677a0aa838b778d64f8) Thanks [@Custard7](https://github.com/Custard7)! - Patch: Add react ux docs
+
+## 2.3.59
+
+### Patch Changes
+
+-   [#179](https://github.com/learningeconomy/LearnCard/pull/179) [`f545ed4`](https://github.com/learningeconomy/LearnCard/commit/f545ed434dd23179591e3b7c0bd82bd9c2ae2fb2) Thanks [@goblincore](https://github.com/goblincore)! - chore: Update course card
+
+## 2.3.58
+
+### Patch Changes
+
+-   [#177](https://github.com/learningeconomy/LearnCard/pull/177) [`bc746a0`](https://github.com/learningeconomy/LearnCard/commit/bc746a05fa6c4196e432fac20b5783221b59be65) Thanks [@goblincore](https://github.com/goblincore)! - chore: VC Card updates - add additional override props, generic card add check display and flipped display
+
+-   [#170](https://github.com/learningeconomy/LearnCard/pull/170) [`c388fd4`](https://github.com/learningeconomy/LearnCard/commit/c388fd49f2832cadcb201779de17d45d3fe7b660) Thanks [@Custard7](https://github.com/Custard7)! - Fix: Update READMEs to 8.0 syntax
+
+-   Updated dependencies [[`c388fd4`](https://github.com/learningeconomy/LearnCard/commit/c388fd49f2832cadcb201779de17d45d3fe7b660)]:
+    -   @learncard/core@8.0.7
+
+## 2.3.57
+
+### Patch Changes
+
+-   Updated dependencies [[`b3ae77e`](https://github.com/learningeconomy/LearnCard/commit/b3ae77ef20a10dee303a2c8318faa8bf28344215)]:
+    -   @learncard/core@8.0.6
+
+## 2.3.56
+
+### Patch Changes
+
+-   Updated dependencies [[`a3aafb3`](https://github.com/learningeconomy/LearnCard/commit/a3aafb39db6fccae19e999fb4fc89a588bc14555)]:
+    -   @learncard/core@8.0.5
+
 ## 2.3.55
 
 ### Patch Changes

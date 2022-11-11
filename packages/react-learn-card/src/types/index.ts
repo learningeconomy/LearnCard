@@ -52,6 +52,11 @@ export type VCDisplayCardProps = {
     onClick?: () => void;
     loading?: boolean;
     verification?: VerificationItem[];
+    handleClick?: () => void;
+    overrideDetailsComponent?: React.ReactNode;
+    overrideCardTitle?: string;
+    overrideCardImageComponent?: React.ReactNode;
+    customHeaderComponent?: React.ReactNode;
 };
 
 export type RoundedSquareProps = {
@@ -110,6 +115,7 @@ export type CourseCardVerticalProps = {
     date?: string;
     checked?: boolean;
     showChecked?: boolean;
+    showSubCount?: boolean;
     onCheckClick?: () => void;
     onClick?: () => void;
 };
@@ -200,6 +206,7 @@ export type SkillTabCardProps = {
     description?: string;
     checked?: boolean;
     showChecked?: boolean;
+    showStatus?: boolean;
     className?: string;
     onCheckClicked?: () => void;
     onClick?: () => void;
@@ -223,5 +230,8 @@ export type GenericCardProps = {
     thumbImgSrc?: string;
     customThumbClass?: string;
     customHeaderClass?: string;
+    showChecked?: boolean;
+    checkStatus?: boolean;
     onClick?: () => void;
+    flipped?: boolean;
 };

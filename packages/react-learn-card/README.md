@@ -12,6 +12,8 @@
 All LearnCard documentation can be found at:
 https://docs.learncard.com
 
+Docs for LearnCard React can be found at:
+https://docs.learncard.com/learn-card-sdk/learncard-ux
 
 ## Install
 
@@ -35,8 +37,8 @@ const Test = () => {
     useEffect(() => {
         const getVc = async () => {
             const wallet = await initLearnCard({ seed: 'a' }); // Bad practice! You should be generating keys...
-            const uvc = wallet.getTestVc();
-            setVc(await wallet.issueCredential(uvc));
+            const uvc = wallet.invoke.getTestVc();
+            setVc(await wallet.invoke.issueCredential(uvc));
         };
         
         getVc();

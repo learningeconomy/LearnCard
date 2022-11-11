@@ -54,6 +54,7 @@ export const CourseVerticalCard: React.FC<CourseCardVerticalProps> = ({
     skillCount = 0,
     checked,
     showChecked,
+    showSubCount,
     onCheckClick,
     onClick,
 }) => {
@@ -85,18 +86,20 @@ export const CourseVerticalCard: React.FC<CourseCardVerticalProps> = ({
                 <p className="course-card-title text-sm text-center font-semibold line-clamp-2 mt-[4px]">
                     {title}
                 </p>
-                <div className="course-card-counts-container flex items-center justify-center my-[5px]">
-                    <CourseCardStatBubble
-                        type={'achievement'}
-                        count={achievementCount}
-                        className={'mr-[5px]'}
-                    />
-                    <CourseCardStatBubble
-                        type={'skill'}
-                        count={skillCount}
-                        className={'mr-[0px]'}
-                    />
-                </div>
+                {showSubCount && (
+                    <div className="course-card-counts-container flex items-center justify-center my-[5px]">
+                        <CourseCardStatBubble
+                            type={'achievement'}
+                            count={achievementCount}
+                            className={'mr-[5px]'}
+                        />
+                        <CourseCardStatBubble
+                            type={'skill'}
+                            count={skillCount}
+                            className={'mr-[0px]'}
+                        />
+                    </div>
+                )}
             </div>
             {showStatus && (
                 <div className="course-card-footer absolute bottom-[6px] left-[5px]">

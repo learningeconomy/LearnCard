@@ -1,5 +1,38 @@
 # @learncard/meta-mask-snap
 
+## 1.0.21
+
+### Patch Changes
+
+-   [#182](https://github.com/learningeconomy/LearnCard/pull/182) [`4e8357a`](https://github.com/learningeconomy/LearnCard/commit/4e8357ad8d6a65c7e0a2ce9e132aaf073159f73b) Thanks [@Custard7](https://github.com/Custard7)! - Fix: stop snap manifest action, update pnpm lock
+
+## 1.0.20
+
+### Patch Changes
+
+-   [#179](https://github.com/learningeconomy/LearnCard/pull/179) [`f545ed4`](https://github.com/learningeconomy/LearnCard/commit/f545ed434dd23179591e3b7c0bd82bd9c2ae2fb2) Thanks [@goblincore](https://github.com/goblincore)! - chore: Update course card
+
+## 1.0.19
+
+### Patch Changes
+
+-   Updated dependencies [[`c388fd4`](https://github.com/learningeconomy/LearnCard/commit/c388fd49f2832cadcb201779de17d45d3fe7b660)]:
+    -   @learncard/core@8.0.7
+
+## 1.0.18
+
+### Patch Changes
+
+-   Updated dependencies [[`b3ae77e`](https://github.com/learningeconomy/LearnCard/commit/b3ae77ef20a10dee303a2c8318faa8bf28344215)]:
+    -   @learncard/core@8.0.6
+
+## 1.0.17
+
+### Patch Changes
+
+-   Updated dependencies [[`a3aafb3`](https://github.com/learningeconomy/LearnCard/commit/a3aafb39db6fccae19e999fb4fc89a588bc14555)]:
+    -   @learncard/core@8.0.5
+
 ## 1.0.16
 
 ### Patch Changes

@@ -73,6 +73,7 @@
 
 .card-face--front {
     position: absolute;
+    z-index:9;
     transform: rotateY(180deg) scaleX(-1) translateZ(-1px);
 }
 

@@ -37,14 +37,14 @@ const wallet = await initLearnCard({ seed: 'a'.repeat(64) });
 #### Issue a credential
 ```js
 // Grab a test VC, or create your own!
-const unsignedVc = await wallet.getTestVc();
+const unsignedVc = await wallet.invoke.getTestVc();
 
-const vc = await wallet.issueCredential(unsignedVc);
+const vc = await wallet.invoke.issueCredential(unsignedVc);
 ```
 
 #### Verify a credential
 ```js
-const result = await wallet.verifyCredential(vc);
+const result = await wallet.invoke.verifyCredential(vc, {}, true);
 
 if (result.warnings.length > 0) console.error('Verification warnings:', result.warnings);
 
@@ -54,12 +54,12 @@ else console.log('This credential is valid!');
 
 #### Issue a presentation
 ```js
-const vp = await wallet.issuePresentation(vc);
+const vp = await wallet.invoke.issuePresentation(vc);
 ```
 
 #### Verify a presentation
 ```js
-const result = await wallet.verifyPresentation(vp);
+const result = await wallet.invoke.verifyPresentation(vp);
 
 if (result.warnings.length > 0) console.error('Verification warnings:', result.warnings);
 
@@ -86,7 +86,7 @@ issued credential. This means both the issuer and recipient may store the _strea
 credential itself.
 
 ```js
-const streamId = await wallet.publishCredential(vc);
+const uri = await wallet.store.Ceramic.upload(vc);
 ```
 
 #### Reading From Ceramic
@@ -94,7 +94,7 @@ const streamId = await wallet.publishCredential(vc);
 To resolve a VC from a stream ID, simply call the `readFromCeramic` method:
 
 ```js
-const vcFromCeramic = await wallet.readFromCeramic(streamId);
+const vcFromCeramic = await wallet.read.get(uri);
 ```
 
 #### Adding a Credential to a Wallet
@@ -103,7 +103,7 @@ After receiving a streamID, you can _persist_ that streamID by calling `addCrede
 the credential a bespoke title
 
 ```js
-await wallet.addCredential({ id: streamId, title: 'Test VC' });
+await wallet.index.IDX.add({ uri, id: 'Test VC' });
 ```
 
 This will add the streamId, which can be used to resolve the verifiable credential to IDX using the
@@ -114,13 +114,15 @@ wallet's secret key. You can think of this as acting like the wallet's personal 
 After calling `addCredential`, you can use the bespoke title to retrieve that credential at any time
 
 ```js
-const vcFromIdx = await wallet.getCredential('Test VC');
+const record = (await wallet.index.all.get()).find(record => record.id === 'Test VC');
+const vcFromIdx = await wallet.read.get(record.uri);
 ```
 
 Alternatively, you can get an array of _all_ credentials you have added using `getCredentials`
 
 ```js
-const vcs = await wallet.getCredentials();
+const uris = (await wallet.index.all.get()).map(record => record.uri);
+const vcs = await Promise.all(uris.map(async uri => wallet.read.get(uri)));
 ```
 
 ## Contributing
