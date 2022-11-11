@@ -50,7 +50,7 @@ export const getCeramicPlugin = async <URI extends string = ''>(
         content: any,
         metadata: TileMetadataArgs = {},
         options: CreateOpts = {},
-        encryption: CeramicEncryptionParams | undefined
+        encryption?: CeramicEncryptionParams
     ) => {
         if (!content) throw new Error('content is required');
 
