@@ -160,7 +160,7 @@ export const getCeramicPlugin = async <URI extends string = ''>(
 
                 const streamId = verificationResult.data.split(':')[2];
                 try {
-                    return VCValidator.parseAsync(await readContentFromCeramic(streamId));
+                    return await VCValidator.parseAsync(await readContentFromCeramic(streamId));
                 } catch (e) {
                     _learnCard.debug?.(e);
                     return undefined;
