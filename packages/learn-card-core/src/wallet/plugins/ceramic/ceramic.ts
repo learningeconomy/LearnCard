@@ -1,4 +1,6 @@
+import _ from 'lodash';
 import { DID } from 'dids';
+import type { JWE } from 'did-jwt';
 import { toUint8Array } from 'hex-lite';
 import KeyDidResolver from 'key-did-resolver';
 import { Ed25519Provider } from 'key-did-provider-ed25519';
@@ -9,6 +11,7 @@ import { TileDocument, TileMetadataArgs } from '@ceramicnetwork/stream-tile';
 import { VCValidator, VC } from '@learncard/types';
 
 import { streamIdToCeramicURI } from './helpers';
+import type { CeramicEncryptionParams } from './types';
 
 import {
     CeramicPlugin,
@@ -46,7 +49,8 @@ export const getCeramicPlugin = async <URI extends string = ''>(
     const publishContentToCeramic = async (
         content: any,
         metadata: TileMetadataArgs = {},
-        options: CreateOpts = {}
+        options: CreateOpts = {},
+        encryption?: CeramicEncryptionParams
     ) => {
         if (!content) throw new Error('content is required');
 
@@ -60,6 +64,26 @@ export const getCeramicPlugin = async <URI extends string = ''>(
         // TODO: expose
         if (!('pin' in options)) options.pin = true;
 
+        if (encryption?.encrypt) {
+            learnCard.debug?.(
+                'learnCard.store.Ceramic.upload.publishContentToCeramic - encrypt enabled',
+                encryption
+            );
+
+            let recipients = encryption?.recipients || [];
+            if (encryption?.controllersCanDecrypt) {
+                recipients = [...recipients, ...metadata.controllers];
+            }
+            content = await ceramic?.did?.createDagJWE(content, _.uniq(recipients));
+        }
+
+        learnCard.debug?.(
+            'learnCard.store.Ceramic.upload.publishContentToCeramic - content to upload',
+            content,
+            metadata,
+            options
+        );
+
         // assuming TileDocument for now
         const doc = await TileDocument.create(ceramic, content, metadata, options);
 
@@ -67,13 +91,26 @@ export const getCeramicPlugin = async <URI extends string = ''>(
     };
 
     const readContentFromCeramic = async (streamId: string): Promise<any> => {
-        return (await loader.load(streamId))?.content;
+        const content = (await loader.load(streamId))?.content;
+        learnCard.debug?.('learnCard.read.get.readContentFromCeramic', content);
+        if (content?.ciphertext) {
+            try {
+                return await did.decryptDagJWE(content as JWE);
+            } catch (e) {
+                learnCard.debug?.(
+                    'learnCard.read.get.readContentFromCeramic - Could not decrypt credential - DID not authorized.',
+                    e
+                );
+                throw new Error('Could not decrypt credential - DID not authorized.');
+            }
+        }
+        return content;
     };
 
-    const uploadCredential = async (vc: VC) => {
+    const uploadCredential = async (vc: VC, encryption?: CeramicEncryptionParams | undefined) => {
         await VCValidator.parseAsync(vc);
 
-        return streamIdToCeramicURI(await publishContentToCeramic(vc));
+        return streamIdToCeramicURI(await publishContentToCeramic(vc, {}, {}, encryption));
     };
 
     const resolveCredential = async (uri = '') => {
@@ -102,6 +139,14 @@ export const getCeramicPlugin = async <URI extends string = ''>(
                 _learnCard.debug?.('learnCard.store.Ceramic.upload');
                 return uploadCredential(vc);
             },
+            uploadEncrypted: async (_learnCard, vc, params) => {
+                _learnCard.debug?.('learnCard.store.Ceramic.uploadEncrypted');
+                return uploadCredential(vc, {
+                    encrypt: true,
+                    controllersCanDecrypt: true,
+                    ...(params ? { recipients: params.recipients } : {}),
+                });
+            },
         },
         read: {
             get: async (_learnCard, uri) => {
@@ -114,13 +159,20 @@ export const getCeramicPlugin = async <URI extends string = ''>(
                 if (!verificationResult.success) return undefined;
 
                 const streamId = verificationResult.data.split(':')[2];
-
-                return VCValidator.parseAsync(await readContentFromCeramic(streamId));
+                try {
+                    return await VCValidator.parseAsync(await readContentFromCeramic(streamId));
+                } catch (e) {
+                    _learnCard.debug?.(e);
+                    return undefined;
+                }
             },
         },
         methods: {
-            publishContentToCeramic: async (_learnCard, cred) =>
-                streamIdToCeramicURI(await publishContentToCeramic(cred)),
+            publishContentToCeramic: async (
+                _learnCard,
+                cred,
+                encryption: CeramicEncryptionParams | undefined
+            ) => streamIdToCeramicURI(await publishContentToCeramic(cred, {}, {}, encryption)),
             readContentFromCeramic: async (_learnCard, streamId: string) =>
                 readContentFromCeramic(streamId),
             resolveCredential: async (_learnCard, uri) => resolveCredential(uri),

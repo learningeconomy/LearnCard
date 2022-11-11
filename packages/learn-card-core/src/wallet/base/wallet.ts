@@ -139,6 +139,19 @@ const addCachingToStorePlane = <
     },
     // TODO: Add caching to uploadMany
     ...('uploadMany' in plane ? { uploadMany: plane.uploadMany } : {}),
+    ...('uploadEncrypted' in plane
+        ? {
+              uploadEncrypted: async (_learnCard, vc, params, { cache = 'cache-first' } = {}) => {
+                  const uri = await plane.uploadEncrypted?.(_learnCard, vc, params);
+
+                  if (cache !== 'skip-cache' && learnCardImplementsPlane(_learnCard, 'cache')) {
+                      await _learnCard.cache.setVc(uri, vc);
+                  }
+
+                  return uri;
+              },
+          }
+        : {}),
 });
 
 const generateStorePlane = <
@@ -509,7 +522,7 @@ export const generateLearnCard = async <
         id: {} as LearnCardIdPlane<Plugins>,
         plugins: plugins as Plugins,
         invoke: pluginMethods,
-        addPlugin: function(plugin) {
+        addPlugin: function (plugin) {
             return addPluginToLearnCard(this as any, plugin);
         },
         debug: _learnCard.debug,

@@ -1,5 +1,16 @@
 # learn-card-core
 
+## 8.1.0
+
+### Minor Changes
+
+-   [#148](https://github.com/learningeconomy/LearnCard/pull/148) [`36e938b`](https://github.com/learningeconomy/LearnCard/commit/36e938b1211b53b96962663e8b33b50f24b2ca51) Thanks [@Custard7](https://github.com/Custard7)! - - WE-2532 - Add JWE Encryption Options to Ceramic Upload.
+
+    -   Add `uploadEncrypted` as optional method for Store Control Plane
+    -   Implement `uploadEncrypted` Store Plane method for Ceramic Plugin
+
+-   [#148](https://github.com/learningeconomy/LearnCard/pull/148) [`36e938b`](https://github.com/learningeconomy/LearnCard/commit/36e938b1211b53b96962663e8b33b50f24b2ca51) Thanks [@Custard7](https://github.com/Custard7)! - WE-2532 - Add JWE Encryption Options to Ceramic Upload
+
 ## 8.0.7
 
 ### Patch Changes

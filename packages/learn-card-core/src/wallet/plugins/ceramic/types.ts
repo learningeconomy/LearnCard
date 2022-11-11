@@ -1,3 +1,4 @@
+import type { CreateJWEOptions } from 'dids';
 import { z } from 'zod';
 import { CeramicClient } from '@ceramicnetwork/http-client';
 import { Plugin } from 'types/wallet';
@@ -24,9 +25,27 @@ export const CeramicURIValidator = z
         'URI must use storage type ceramic (i.e. must be lc:ceramic:${streamID})'
     );
 
+/**
+ * Settings for toggling JWE Encryption before uploading to Ceramic.
+ * @group CeramicPlugin
+ * @param encrypt enable JWE encryption on upload.
+ * @param controllersCanDecrypt helper to add Ceramic controller DIDs to recipients who can decrypt the JWE credential.
+ * @param recipients DIDs who can decrypt the JWE credential.
+ * @param options additional CreateJWEOptions for encryption.
+ */
+export type CeramicEncryptionParams = {
+    encrypt: boolean;
+    controllersCanDecrypt?: boolean;
+    recipients?: string[] | undefined;
+    options?: CreateJWEOptions | undefined;
+};
+
 /** @group CeramicPlugin */
 export type CeramicPluginMethods<URI extends string = ''> = {
-    publishContentToCeramic: (cred: any) => Promise<CeramicURI>;
+    publishContentToCeramic: (
+        cred: any,
+        encryption: CeramicEncryptionParams | undefined
+    ) => Promise<CeramicURI>;
     readContentFromCeramic: (streamId: string) => Promise<any>;
     getCeramicClient: () => CeramicClient;
 } & ResolutionExtension<URI | CeramicURI>;
