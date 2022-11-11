@@ -1,5 +1,11 @@
 # @learncard/meta-mask-snap
 
+## 1.0.20
+
+### Patch Changes
+
+-   [#179](https://github.com/learningeconomy/LearnCard/pull/179) [`f545ed4`](https://github.com/learningeconomy/LearnCard/commit/f545ed434dd23179591e3b7c0bd82bd9c2ae2fb2) Thanks [@goblincore](https://github.com/goblincore)! - chore: Update course card
+
 ## 1.0.19
 
 ### Patch Changes
