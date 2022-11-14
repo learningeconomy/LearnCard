@@ -4,6 +4,7 @@ import { CID } from 'multiformats/cid';
 import { JWK, VC } from '@learncard/types';
 import { base64url } from 'multiformats/bases/base64';
 import { ES256KSigner, createJWS } from 'did-jwt';
+import { randomUUID } from 'crypto'
 
 type DataCID = { cid: CID, data: Uint8Array }
 
@@ -32,13 +33,13 @@ function featureDetectionMessageBody(targetDID: string): any {
     const bytes = new TextEncoder().encode(jsonString);
     const base64 = base64url.baseEncode(bytes);
     return base64
-  } 
+  }
 
   type GeneralJws = {
     payload: string
     signatures: Signature[]
   };
-  
+
   /**
    * Flattened JWS definition for verify function inputs, allows payload as
    * Uint8Array for detached signature validation.
@@ -51,7 +52,7 @@ function featureDetectionMessageBody(targetDID: string): any {
      * Header Parameter values are integrity protected.
      */
     protected: string
-  
+
     /**
      * The "signature" member MUST be present and contain the value
      * BASE64URL(JWS Signature).
@@ -86,38 +87,38 @@ function featureDetectionMessageBody(targetDID: string): any {
     };
 }
 
-  async function makeWriteVCMessageBody(vc: VC, keyPair: JWK, did: string): Promise<object> {
-    const dataCid = await makeDataCID(JSON.stringify(vc));
+async function makeWriteVCMessageBody(vc: VC, keyPair: JWK, did: string): Promise<object> {
+  const dataCid = await makeDataCID(JSON.stringify(vc));
 
-    const descriptor = {
-      "nonce": "9b9c7f1fcabfc471ee2682890b58a427ba2c8db59ddf3c2d5ad16ccc84bb3106", // TODO: get a real nonce
-      "method": "CollectionsWrite",
-      "schema": vc['@context'][0],
-      "recordId": "b6464162-84af-4aab-aff5-f1f8438dfc1e", // TODO: what is the record ID?
-      "dataCid": Buffer.from(dataCid.cid.bytes).toString('base64'),
-      "dateCreated": 123456789, // TODO: get a real date
-      "dataFormat": "application/json"
-    };
+  const descriptor = {
+    "nonce": randomUUID,
+    "method": "CollectionsWrite",
+    "schema": vc['@context'][0],
+    "recordId": makeBase64UrlStringFromObject(vc),  // TODO: what is the proper unique identifier for a VC?
+    "dataCid": Buffer.from(dataCid.cid.bytes).toString('base64'),
+    "dateCreated": vc['issuanceDate'],
+    "dataFormat": "application/json"
+  };
 
-    const jws = await makeJWS(descriptor, keyPair, did);
-    
-    const messageBody  = {
-      "target": did,
-      "messages": [
-        {
-          "data": Buffer.from(dataCid.data).toString('base64'),
-          "descriptor": descriptor,
-          "authorization": jws
-        }
-      ]
-    }
+  const jws = await makeJWS(descriptor, keyPair, did);
 
-    return messageBody;
+  const messageBody  = {
+    "target": did,
+    "messages": [
+      {
+        "data": Buffer.from(dataCid.data).toString('base64'),
+        "descriptor": descriptor,
+        "authorization": jws
+      }
+    ]
   }
+
+  return messageBody;
+}
 
 export const getDWNPlugin = (config: DWNConfig): DWNPlugin => {
   const  postOneRequest = async (request: any, request_name?: string): Promise<string> => {
-    const result = await fetch(config.dwnAddressURL!, { 
+    const result = await fetch(config.dwnAddressURL!, {
       method: 'POST',
       body: JSON.stringify(request),
       headers: {
