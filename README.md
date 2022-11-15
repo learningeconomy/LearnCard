@@ -12,10 +12,7 @@ The LearnCard SDK is an open-source digital wallet, ID, credentialing technology
 All LearnCard documentation can be found at:
 https://docs.learncard.com
 
-## About
-The SDK is built on the [W3C Universal Wallet (UW)](https://w3c-ccg.github.io/universal-wallet-interop-spec/), a packaging of draft standards and open source frameworks incubated by MIT DCC, Transmute, Learning Economy Foundation. The UW includes key management and key rotation capabilities, [Verifiable Credentials (VCs)](https://www.w3.org/TR/vc-data-model/), [Decentralized Identifiers (DIDs)](https://github.com/w3c-ccg/did-spec), [Decentralized Web Nodes (DWN)](https://identity.foundation/decentralized-web-node/spec/), and a trust triangle that operates modularly on [IPFS](https://ipfs.io/) with plug-ins for any layer 1 or layer 2 blockchain.  
 
-The LearnCard is a key primitive in the architecture for a [global network of learner wallets](https://github.com/Learning-Economy-Foundation/Protocol-Research/blob/main/IoE-Network.md), published by Learning Economy Foundation
 
 ## Packages
 - [LearnCard Core](./packages/learn-card-core) – a pluggable, wallet for issuing, receiving, storing, sharing, and spending currency and credentials.
