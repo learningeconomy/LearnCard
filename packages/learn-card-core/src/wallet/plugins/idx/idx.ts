@@ -83,9 +83,9 @@ export const getIDXPlugin = async <URI extends string = ''>(
     };
 
     const addCredentialInIdx = async <T extends Record<string, any>>(
-        idxCredential: CredentialRecord<T>
+        _record: CredentialRecord<T>
     ) => {
-        const record = CredentialRecordValidator.parse(idxCredential);
+        const record = await CredentialRecordValidator.parseAsync(_record);
 
         if (!record) throw new Error('record is required');
 
@@ -107,6 +107,31 @@ export const getIDXPlugin = async <URI extends string = ''>(
         return streamIdToCeramicURI(await dataStore.set(credentialAlias, existing));
     };
 
+    const addCredentialsInIdx = async <T extends Record<string, any>>(
+        _records: CredentialRecord<T>[]
+    ) => {
+        const records = CredentialRecordValidator.array().parse(_records);
+
+        const existing = await getCredentialsListFromIdx(credentialAlias);
+
+        await Promise.all(
+            records.map(async record => {
+                // Make sure URI can be resolved
+                await learnCard.read.get(record.uri);
+
+                const indexOfExistingCredential = existing.credentials.findIndex(credential => {
+                    return credential.id === record.id;
+                });
+
+                if (indexOfExistingCredential > -1) {
+                    existing.credentials[indexOfExistingCredential] = record;
+                } else existing.credentials.push(record);
+            })
+        );
+
+        return streamIdToCeramicURI(await dataStore.set(credentialAlias, existing));
+    };
+
     return {
         name: 'IDX',
         displayName: 'IDX',
@@ -124,6 +149,19 @@ export const getIDXPlugin = async <URI extends string = ''>(
 
                 try {
                     await addCredentialInIdx(record);
+
+                    return true;
+                } catch (error) {
+                    console.error('Error adding credential with IDX:', error);
+
+                    return false;
+                }
+            },
+            addMany: async (_learnCard, records) => {
+                _learnCard.debug?.('learnCard.index.IDX.add');
+
+                try {
+                    await addCredentialsInIdx(records);
 
                     return true;
                 } catch (error) {

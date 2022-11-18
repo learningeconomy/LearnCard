@@ -230,6 +230,17 @@ const addCachingToIndexPlane = <
 
         return plane.add(_learnCard, record);
     },
+    ...(plane.addMany
+        ? {
+              addMany: async (_learnCard, records, { cache = 'cache-first' } = {}) => {
+                  if (cache !== 'skip-cache' && learnCardImplementsPlane(_learnCard, 'cache')) {
+                      await _learnCard.cache.flushIndex();
+                  }
+
+                  return plane.addMany?.(_learnCard, records);
+              },
+          }
+        : {}),
     update: async (_learnCard, id, update, { cache = 'cache-first' } = {}) => {
         if (cache !== 'skip-cache' && learnCardImplementsPlane(_learnCard, 'cache')) {
             await _learnCard.cache.flushIndex();
