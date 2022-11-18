@@ -24,19 +24,19 @@ export type GetPlanesForPlugins<Plugins extends Plugin[]> = any[] extends Plugin
         }[ControlPlane];
     }[number];
 
-export type GetPlaneProviders<Plugins extends Plugin[], Plane extends ControlPlane> =
-    any[] extends Plugins
+export type GetPlaneProviders<
+    Plugins extends Plugin[],
+    Plane extends ControlPlane
+> = any[] extends Plugins
     ? any
     : {
         [Index in keyof Plugins]: undefined extends Plugins[Index][Plane]
         ? never
-        : OmitNevers<
-            {
-                [Name in Plugins[number]['name']]: Name extends Plugins[Index]['name']
-                ? { name: Name; displayName?: string; description?: string }
-                : never;
-            }
-        >;
+        : OmitNevers<{
+            [Name in Plugins[number]['name']]: Name extends Plugins[Index]['name']
+            ? { name: Name; displayName?: string; description?: string }
+            : never;
+        }>;
     }[number];
 
 // --- Read ---
@@ -60,7 +60,11 @@ export type EncryptionParams = {
 export type StorePlane = {
     upload: (vc: VC, options?: PlaneOptions) => Promise<string>;
     uploadMany?: (vcs: VC[], options?: PlaneOptions) => Promise<string[]>;
-    uploadEncrypted?: (vc: VC, params?: EncryptionParams, options?: PlaneOptions) => Promise<string>;
+    uploadEncrypted?: (
+        vc: VC,
+        params?: EncryptionParams,
+        options?: PlaneOptions
+    ) => Promise<string>;
 };
 
 export type PluginStorePlane = StorePlane;
@@ -80,7 +84,11 @@ export type IndexPlane = {
         options?: PlaneOptions
     ) => Promise<CredentialRecord<Metadata>[]>;
     add: <Metadata extends Record<string, any> = Record<never, never>>(
-        obj: CredentialRecord<Metadata>,
+        record: CredentialRecord<Metadata>,
+        options?: PlaneOptions
+    ) => Promise<boolean>;
+    addMany?: <Metadata extends Record<string, any> = Record<never, never>>(
+        records: CredentialRecord<Metadata>[],
         options?: PlaneOptions
     ) => Promise<boolean>;
     update: (id: string, updates: Record<string, any>, options?: PlaneOptions) => Promise<boolean>;
