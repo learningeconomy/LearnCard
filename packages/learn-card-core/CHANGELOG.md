@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 8.2.0
+
+### Minor Changes
+
+-   [#191](https://github.com/learningeconomy/LearnCard/pull/191) [`ace9b60`](https://github.com/learningeconomy/LearnCard/commit/ace9b60b02932e36090e7392a1b7b6a13a9593b8) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add addMany method to index plane
+
 ## 8.1.1
 
 ### Patch Changes
