@@ -25,7 +25,7 @@ const codecs: {[index: number]: any} = {
  * @throws {Error} encoding fails
  * @throws {Error} if hasher is not supported
  */
-export async function generateCid(payload: any, codecCode = cbor.code, multihashCode = sha256.code): Promise<CID> {
+export async function generateCid(payload: any, codecCode = cbor.code, multihashCode = sha256.code): Promise<CID> {  
   const codec = codecs[codecCode];
   if (!codec) {
     throw new Error(`codec [${codecCode}] not supported`);

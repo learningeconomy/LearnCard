@@ -60,13 +60,16 @@ function featureDetectionMessageBody(targetDID: string): any {
     signature: string
   };
 
+  function prettyPrintJson(key :string, o: object) {
+    console.log(key, JSON.stringify(o, null, 2));
+  }
+
   async function makeJWS(payload: object, keyPair: JWK, did: string): Promise<GeneralJws> {
     const cid = await generateCid(payload);
     const payloadBytes = makeBase64UrlStringFromObject({descriptorCid: cid.toV1().toString()});
     const protectedHeader = { alg: 'ES256K', kid: did };
 
-    console.log("keyPair", keyPair);
-    console.log("did", did);
+    prettyPrintJson("keyPair", keyPair);
 
     const privateKey = Buffer.from(keyPair.d, 'base64').toString('hex');
 
@@ -91,12 +94,12 @@ async function makeWriteVCMessageBody(vc: VC, keyPair: JWK, did: string): Promis
   const dataCid = await makeDataCID(JSON.stringify(vc));
 
   const descriptor = {
-    "nonce": randomUUID,
+    "nonce": randomUUID(),
     "method": "CollectionsWrite",
     "schema": vc['@context'][0],
-    "recordId": makeBase64UrlStringFromObject(vc),  // TODO: what is the proper unique identifier for a VC?
+    "recordId": randomUUID(),  // TODO: how to remember the recordId for this object?
     "dataCid": Buffer.from(dataCid.cid.bytes).toString('base64'),
-    "dateCreated": vc['issuanceDate'],
+    "dateCreated": new Date(vc['issuanceDate']).getTime(),
     "dataFormat": "application/json"
   };
 
@@ -132,7 +135,9 @@ export const getDWNPlugin = (config: DWNConfig): DWNPlugin => {
       upload: async (_learnCard, vc: VC) => {
         _learnCard.debug?.('learnCard.store.DWNPlugin.upload');
           // TODO: do we use an unsigned VC or a signed VC here? Both? Does it matter?
-          return await postOneRequest(await makeWriteVCMessageBody(vc, _learnCard.invoke.getSubjectKeypair('ed25519'), _learnCard.invoke.getSubjectDid('key')));
+          const vc_message = await makeWriteVCMessageBody(vc, _learnCard.invoke.getSubjectKeypair('ed25519'), _learnCard.invoke.getSubjectDid('key'));
+          prettyPrintJson('vc_message', vc_message);
+          return await postOneRequest(vc_message);
       },
   },
     methods: {
