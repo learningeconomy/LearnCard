@@ -3,7 +3,7 @@ import { generateCid } from "./cid";
 import { CID } from 'multiformats/cid';
 import { JWK, VC } from '@learncard/types';
 import { base64url } from 'multiformats/bases/base64';
-import { ES256KSigner, createJWS } from 'did-jwt';
+import { ES256KSigner, createJWS, EdDSASigner } from 'did-jwt';
 import { randomUUID } from 'crypto'
 
 type DataCID = { cid: CID, data: Uint8Array }
@@ -67,15 +67,17 @@ function featureDetectionMessageBody(targetDID: string): any {
   async function makeJWS(payload: object, keyPair: JWK, did: string): Promise<GeneralJws> {
     const cid = await generateCid(payload);
     const payloadBytes = makeBase64UrlStringFromObject({descriptorCid: cid.toV1().toString()});
-    const protectedHeader = { alg: 'ES256K', kid: did };
+    const protectedHeader = { alg: 'Ed25519', kid: did };
 
     prettyPrintJson("keyPair", keyPair);
 
-    const privateKey = Buffer.from(keyPair.d, 'base64').toString('hex');
+    const privateKey = Buffer.from(keyPair.x + keyPair.d, 'base64').toString('hex');
 
-    const signer = ES256KSigner(privateKey);
+    const signer = EdDSASigner(privateKey);
 
     const jws = await createJWS(payloadBytes, signer, protectedHeader);
+
+    console.log(jws);
 
     const [signingInput, signature] = jws.split('.');
 
