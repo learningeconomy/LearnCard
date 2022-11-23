@@ -3,7 +3,7 @@ import { generateCid } from "./cid";
 import { CID } from 'multiformats/cid';
 import { JWK, VC } from '@learncard/types';
 import { base64url } from 'multiformats/bases/base64';
-import { ES256KSigner, createJWS, EdDSASigner } from 'did-jwt';
+import { createJWS, EdDSASigner } from 'did-jwt';
 import { randomUUID } from 'crypto'
 
 type DataCID = { cid: CID, data: Uint8Array }
@@ -64,28 +64,32 @@ function featureDetectionMessageBody(targetDID: string): any {
     console.log(key, JSON.stringify(o, null, 2));
   }
 
-  async function makeJWS(payload: object, keyPair: JWK, did: string): Promise<GeneralJws> {
-    const cid = await generateCid(payload);
-    const payloadBytes = makeBase64UrlStringFromObject({descriptorCid: cid.toV1().toString()});
+  async function makeJWS(message: object, keyPair: JWK, did: string): Promise<GeneralJws> {
+    const cid = await generateCid(message);
+    const payloadBytes = {descriptorCid: cid.toV1().toString()};
     const protectedHeader = { alg: 'Ed25519', kid: did };
 
     prettyPrintJson("keyPair", keyPair);
 
-    const privateKey = Buffer.from(keyPair.x + keyPair.d, 'base64').toString('hex');
+    const privateKeyBytes = base64url.baseDecode(keyPair.d)
 
-    const signer = EdDSASigner(privateKey);
+    const signer = EdDSASigner(privateKeyBytes);
 
     const jws = await createJWS(payloadBytes, signer, protectedHeader);
 
     console.log(jws);
 
-    const [signingInput, signature] = jws.split('.');
+    const [headerResult, payloadResult, signature] = jws.split('.');
+
+    const signingInputBytes = new TextEncoder().encode(headerResult + '.' + payloadResult);
+
+    console.log("signingInputBytes.length: ", signingInputBytes.length);
 
     return {
-      payload: payloadBytes,
+      payload: payloadResult,
       signatures: [
         {
-          protected: signingInput,
+          protected: headerResult,
           signature: signature
         }
       ]
@@ -148,3 +152,4 @@ export const getDWNPlugin = (config: DWNConfig): DWNPlugin => {
         }
     },
 }};
+
