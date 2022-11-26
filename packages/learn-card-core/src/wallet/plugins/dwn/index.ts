@@ -3,8 +3,8 @@ import { generateCid } from "./cid";
 import { CID } from 'multiformats/cid';
 import { JWK, VC } from '@learncard/types';
 import { base64url } from 'multiformats/bases/base64';
-import { createJWS, EdDSASigner } from 'did-jwt';
 import { randomUUID } from 'crypto'
+import * as ed from '@noble/ed25519';
 
 type DataCID = { cid: CID, data: Uint8Array }
 
@@ -66,31 +66,25 @@ function featureDetectionMessageBody(targetDID: string): any {
 
   async function makeJWS(message: object, keyPair: JWK, did: string): Promise<GeneralJws> {
     const cid = await generateCid(message);
-    const payloadBytes = {descriptorCid: cid.toV1().toString()};
+    const payload = {descriptorCid: cid.toV1().toString()};
     const protectedHeader = { alg: 'Ed25519', kid: did };
 
-    prettyPrintJson("keyPair", keyPair);
+   const privateKeyBytes = Buffer.from(keyPair.d, 'base64');
 
-    const privateKeyBytes = base64url.baseDecode(keyPair.d)
-
-    const signer = EdDSASigner(privateKeyBytes);
-
-    const jws = await createJWS(payloadBytes, signer, protectedHeader);
-
-    console.log(jws);
-
-    const [headerResult, payloadResult, signature] = jws.split('.');
-
-    const signingInputBytes = new TextEncoder().encode(headerResult + '.' + payloadResult);
-
-    console.log("signingInputBytes.length: ", signingInputBytes.length);
+   const protectedHeaderBase64UrlString = makeBase64UrlStringFromObject(protectedHeader)
+   const payloadBase64UrlString = makeBase64UrlStringFromObject(payload)
+ 
+   const signingInputBase64urlString = `${protectedHeaderBase64UrlString}.${payloadBase64UrlString}`;
+   const signingInputBytes = new TextEncoder().encode(signingInputBase64urlString);
+ 
+   const signatureBytes = await ed.sign(signingInputBytes, privateKeyBytes);
 
     return {
-      payload: payloadResult,
+      payload: payloadBase64UrlString,
       signatures: [
         {
-          protected: headerResult,
-          signature: signature
+          protected: protectedHeaderBase64UrlString,
+          signature: base64url.baseEncode(signatureBytes)
         }
       ]
     };

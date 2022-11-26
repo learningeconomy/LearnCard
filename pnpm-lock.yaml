@@ -318,7 +318,12 @@ importers:
       '@glazed/types': ^0.2.0
       '@learncard/helpers': workspace:*
       '@learncard/types': workspace:*
+<<<<<<< HEAD
       '@types/jest': ^29.2.2
+=======
+      '@noble/ed25519': ^1.7.1
+      '@types/jest': ^27.5.0
+>>>>>>> 854f534 (Add @noble/ed25519 to create dwn compatible signature using DIDKit provided key)
       '@types/node': ^17.0.31
       '@uniswap/default-token-list': ^4.1.0
       abort-controller: ^3.0.0
@@ -360,6 +365,7 @@ importers:
       '@glazed/did-datastore': 0.3.2
       '@glazed/tile-loader': 0.2.1
       '@learncard/helpers': link:../learn-card-helpers
+      '@noble/ed25519': 1.7.1
       '@uniswap/default-token-list': 4.1.0
       abort-controller: 3.0.0
       core-js: 3.26.0
@@ -5842,6 +5848,10 @@ packages:
       nanostores: 0.5.13
       react: 18.2.0
       react-dom: 18.2.0_react@18.2.0
+    dev: false
+
+  /@noble/ed25519/1.7.1:
+    resolution: {integrity: sha512-Rk4SkJFaXZiznFyC/t77Q0NKS4FL7TLJJsVG2V2oiEq3kJVeTdxysEe/yRWSpnWMe808XRDJ+VFh5pt/FN5plw==}
     dev: false
 
   /@nodelib/fs.scandir/2.1.5:

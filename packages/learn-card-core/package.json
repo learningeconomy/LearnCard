@@ -54,6 +54,7 @@
     "@glazed/did-datastore": "^0.3.2",
     "@glazed/tile-loader": "^0.2.1",
     "@learncard/helpers": "workspace:*",
+    "@noble/ed25519": "^1.7.1",
     "@uniswap/default-token-list": "^4.1.0",
     "abort-controller": "^3.0.0",
     "core-js": "^3.25.5",
