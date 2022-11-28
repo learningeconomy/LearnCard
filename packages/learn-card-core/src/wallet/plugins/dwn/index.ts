@@ -65,11 +65,12 @@ function featureDetectionMessageBody(targetDID: string): any {
   }
 
   async function makeJWS(message: object, keyPair: JWK, did: string): Promise<GeneralJws> {
+
+    // TODO: check keyPair to see which algorithm to use
+
     const cid = await generateCid(message);
     const payload = {descriptorCid: cid.toV1().toString()};
     const protectedHeader = { alg: 'Ed25519', kid: did };
-
-   const privateKeyBytes = Buffer.from(keyPair.d, 'base64');
 
    const protectedHeaderBase64UrlString = makeBase64UrlStringFromObject(protectedHeader)
    const payloadBase64UrlString = makeBase64UrlStringFromObject(payload)
@@ -77,7 +78,7 @@ function featureDetectionMessageBody(targetDID: string): any {
    const signingInputBase64urlString = `${protectedHeaderBase64UrlString}.${payloadBase64UrlString}`;
    const signingInputBytes = new TextEncoder().encode(signingInputBase64urlString);
  
-   const signatureBytes = await ed.sign(signingInputBytes, privateKeyBytes);
+   const signatureBytes = await ed.sign(signingInputBytes, Buffer.from(keyPair.d, 'base64'));
 
     return {
       payload: payloadBase64UrlString,
@@ -90,7 +91,8 @@ function featureDetectionMessageBody(targetDID: string): any {
     };
 }
 
-async function makeWriteVCMessageBody(vc: VC, keyPair: JWK, did: string): Promise<object> {
+
+async function writeVCMessageBody(vc: VC, keyPair: JWK, did: string): Promise<object> {
   const dataCid = await makeDataCID(JSON.stringify(vc));
 
   const descriptor = {
@@ -119,8 +121,30 @@ async function makeWriteVCMessageBody(vc: VC, keyPair: JWK, did: string): Promis
   return messageBody;
 }
 
+async function makeCollectionQueryMessageBody(keyPair: JWK, did: string): Promise<object> {
+  const descriptor = {
+    "nonce": randomUUID(),
+    "method": "CollectionsQuery",
+    "filter": {"dataFormat": "application/json"}
+  };
+
+  const jws = await makeJWS(descriptor, keyPair, did);
+  
+  const messageBody  = {
+    "target": did,
+    "messages": [
+      {
+        "descriptor": descriptor,
+        "authorization": jws
+      }
+    ]
+  }
+
+  return messageBody;
+}
+
 export const getDWNPlugin = (config: DWNConfig): DWNPlugin => {
-  const  postOneRequest = async (request: any, request_name?: string): Promise<string> => {
+  const  postOneRequest = async (request: object, request_name?: string): Promise<string> => {
     const result = await fetch(config.dwnAddressURL!, {
       method: 'POST',
       body: JSON.stringify(request),
@@ -135,14 +159,23 @@ export const getDWNPlugin = (config: DWNConfig): DWNPlugin => {
       upload: async (_learnCard, vc: VC) => {
         _learnCard.debug?.('learnCard.store.DWNPlugin.upload');
           // TODO: do we use an unsigned VC or a signed VC here? Both? Does it matter?
-          const vc_message = await makeWriteVCMessageBody(vc, _learnCard.invoke.getSubjectKeypair('ed25519'), _learnCard.invoke.getSubjectDid('key'));
+          const vc_message = await writeVCMessageBody(vc, _learnCard.invoke.getSubjectKeypair('ed25519'), _learnCard.invoke.getSubjectDid('key'));
           prettyPrintJson('vc_message', vc_message);
           return await postOneRequest(vc_message);
       },
   },
     methods: {
-        featureDetectionRead: async (): Promise<string> => {
-            return await postOneRequest(featureDetectionMessageBody('did:web:pete'))
+        featureDetectionMessageBody: async (_learnCard, did?:string): Promise<string> => {
+          return featureDetectionMessageBody(did || _learnCard.invoke.getSubjectDid('key'))
+        },
+        postDWNRequest: async (_learnCard, request: object, request_name?: string): Promise<string> => {
+          return await postOneRequest(request, request_name);
+        },
+        featureDetectionRead: async (_learnCard): Promise<string> => {
+            return postOneRequest(featureDetectionMessageBody(_learnCard.invoke.getSubjectDid('key')))
+        },
+        collectionsQuery: async (_learnCard): Promise<string> => {
+          return postOneRequest(await makeCollectionQueryMessageBody(_learnCard.invoke.getSubjectKeypair('ed25519'), _learnCard.invoke.getSubjectDid('key')))
         }
     },
 }};
