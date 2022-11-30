@@ -358,7 +358,7 @@ const generateCachePlane = <
             learnCard.debug?.('learnCard.cache.getIndex');
 
             try {
-                const index = await Promise.any(
+                const results = await Promise.allSettled(
                     learnCard.plugins.map(async plugin => {
                         if (!pluginImplementsPlane(plugin, 'cache')) {
                             throw new Error('Plugin is not a Cache Plugin');
@@ -369,6 +369,8 @@ const generateCachePlane = <
                         >;
                     })
                 );
+
+                const index = results.find(isFulfilledAndNotEmpty)?.value;
 
                 return index;
             } catch (error) {
@@ -409,7 +411,7 @@ const generateCachePlane = <
             learnCard.debug?.('learnCard.cache.getVc');
 
             try {
-                const vc = await Promise.any(
+                const results = await Promise.allSettled(
                     learnCard.plugins.map(async plugin => {
                         if (!pluginImplementsPlane(plugin, 'cache')) {
                             throw new Error('Plugin is not a Cache Plugin');
@@ -418,6 +420,8 @@ const generateCachePlane = <
                         return plugin.cache.getVc(learnCard as any, uri);
                     })
                 );
+
+                const vc = results.find(isFulfilledAndNotEmpty)?.value;
 
                 return vc;
             } catch (error) {
