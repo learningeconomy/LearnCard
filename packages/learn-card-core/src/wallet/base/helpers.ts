@@ -60,3 +60,12 @@ export const mapObject = <T extends string, U, V>(
 export const isFulfilledAndNotEmpty = <T>(
     input: PromiseSettledResult<T>
 ): input is PromiseFulfilledResult<T> => input.status === 'fulfilled' && !!input.value;
+
+export const uniqBy = <Obj extends Record<string, any>>(
+    array: Obj[],
+    key: keyof Obj | ((obj: Obj) => any)
+) => {
+    return [
+        ...new Map(array.map(obj => [key instanceof Function ? key(obj) : obj[key], obj])).values(),
+    ];
+};

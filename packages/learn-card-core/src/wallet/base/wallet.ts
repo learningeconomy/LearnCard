@@ -20,6 +20,7 @@ import {
     learnCardImplementsPlane,
     mapObject,
     isFulfilledAndNotEmpty,
+    uniqBy,
 } from './helpers';
 
 const getPlaneProviders = <Plugins extends Plugin[], Plane extends ControlPlane>(
@@ -329,7 +330,7 @@ const generateIndexPlane = <
                 )
             ).flat();
 
-            const results = [...new Set(resultsWithDuplicates)];
+            const results = uniqBy(resultsWithDuplicates, 'id');
 
             if (results && learnCardImplementsPlane(learnCard, 'cache') && cache !== 'skip-cache') {
                 await learnCard.cache.setIndex('all', query ?? {}, results);
