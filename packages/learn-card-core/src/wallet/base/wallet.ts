@@ -19,6 +19,7 @@ import {
     pluginImplementsPlane,
     learnCardImplementsPlane,
     mapObject,
+    isFulfilledAndNotEmpty,
 } from './helpers';
 
 const getPlaneProviders = <Plugins extends Plugin[], Plane extends ControlPlane>(
@@ -88,7 +89,7 @@ const generateReadPlane = <
                 }
             }
 
-            const vc = await Promise.any(
+            const results = await Promise.allSettled(
                 learnCard.plugins.map(async plugin => {
                     if (!pluginImplementsPlane(plugin, 'read')) {
                         throw new Error('Plugin is not a Read Plugin');
@@ -97,6 +98,8 @@ const generateReadPlane = <
                     return plugin.read.get(learnCard as any, uri);
                 })
             );
+
+            const vc = results.find(isFulfilledAndNotEmpty)?.value;
 
             if (vc && learnCardImplementsPlane(learnCard, 'cache') && cache !== 'skip-cache') {
                 await learnCard.cache.setVc(uri, vc);
@@ -141,16 +144,16 @@ const addCachingToStorePlane = <
     ...('uploadMany' in plane ? { uploadMany: plane.uploadMany } : {}),
     ...('uploadEncrypted' in plane
         ? {
-              uploadEncrypted: async (_learnCard, vc, params, { cache = 'cache-first' } = {}) => {
-                  const uri = await plane.uploadEncrypted?.(_learnCard, vc, params);
+            uploadEncrypted: async (_learnCard, vc, params, { cache = 'cache-first' } = {}) => {
+                const uri = await plane.uploadEncrypted?.(_learnCard, vc, params);
 
-                  if (cache !== 'skip-cache' && learnCardImplementsPlane(_learnCard, 'cache')) {
-                      await _learnCard.cache.setVc(uri, vc);
-                  }
+                if (cache !== 'skip-cache' && learnCardImplementsPlane(_learnCard, 'cache')) {
+                    await _learnCard.cache.setVc(uri, vc);
+                }
 
-                  return uri;
-              },
-          }
+                return uri;
+            },
+        }
         : {}),
 });
 
@@ -232,14 +235,14 @@ const addCachingToIndexPlane = <
     },
     ...(plane.addMany
         ? {
-              addMany: async (_learnCard, records, { cache = 'cache-first' } = {}) => {
-                  if (cache !== 'skip-cache' && learnCardImplementsPlane(_learnCard, 'cache')) {
-                      await _learnCard.cache.flushIndex();
-                  }
+            addMany: async (_learnCard, records, { cache = 'cache-first' } = {}) => {
+                if (cache !== 'skip-cache' && learnCardImplementsPlane(_learnCard, 'cache')) {
+                    await _learnCard.cache.flushIndex();
+                }
 
-                  return plane.addMany?.(_learnCard, records);
-              },
-          }
+                return plane.addMany?.(_learnCard, records);
+            },
+        }
         : {}),
     update: async (_learnCard, id, update, { cache = 'cache-first' } = {}) => {
         if (cache !== 'skip-cache' && learnCardImplementsPlane(_learnCard, 'cache')) {
@@ -257,14 +260,14 @@ const addCachingToIndexPlane = <
     },
     ...(plane.removeAll
         ? {
-              removeAll: async (_learnCard, { cache = 'cache-first' } = {}) => {
-                  if (cache !== 'skip-cache' && learnCardImplementsPlane(_learnCard, 'cache')) {
-                      await _learnCard.cache.flushIndex();
-                  }
+            removeAll: async (_learnCard, { cache = 'cache-first' } = {}) => {
+                if (cache !== 'skip-cache' && learnCardImplementsPlane(_learnCard, 'cache')) {
+                    await _learnCard.cache.flushIndex();
+                }
 
-                  return plane.removeAll?.(_learnCard);
-              },
-          }
+                return plane.removeAll?.(_learnCard);
+            },
+        }
         : {}),
 });
 
@@ -533,7 +536,7 @@ export const generateLearnCard = async <
         id: {} as LearnCardIdPlane<Plugins>,
         plugins: plugins as Plugins,
         invoke: pluginMethods,
-        addPlugin: function (plugin) {
+        addPlugin: function(plugin) {
             return addPluginToLearnCard(this as any, plugin);
         },
         debug: _learnCard.debug,

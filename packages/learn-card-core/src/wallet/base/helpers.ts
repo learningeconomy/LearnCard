@@ -56,3 +56,7 @@ export const mapObject = <T extends string, U, V>(
         Object.entries<U>(obj).map(([key, value], index) => [key, callback(value, index)])
     ) as any;
 };
+
+export const isFulfilledAndNotEmpty = <T>(
+    input: PromiseSettledResult<T>
+): input is PromiseFulfilledResult<T> => input.status === 'fulfilled' && !!input.value;
