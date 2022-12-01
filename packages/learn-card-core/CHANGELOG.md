@@ -1,5 +1,15 @@
 # learn-card-core
 
+## 8.3.0
+
+### Minor Changes
+
+-   [#194](https://github.com/learningeconomy/LearnCard/pull/194) [`d817fde`](https://github.com/learningeconomy/LearnCard/commit/d817fdecfc98023b3907451750338561df9d577c) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix Multi-Plane issues:
+
+    -   Fix race condition in `get`
+    -   Dedupe `index.all` results by `id` rather than by object reference
+    -   Fix race condition in cache `get` methods
+
 ## 8.2.0
 
 ### Minor Changes
