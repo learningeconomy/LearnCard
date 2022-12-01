@@ -6,6 +6,7 @@ export * from './EthereumPlugin';
 export * from './expiration';
 export * from './idx';
 export * from './test-cache';
+export * from './test-storage';
 export * from './vc';
 export * from './vc-api';
 export * from './vc-resolution';
