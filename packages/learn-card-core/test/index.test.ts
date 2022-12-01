@@ -13,14 +13,14 @@ import {
 
 import { persistenceMocks } from './mocks/persistence';
 
-import { initLearnCard } from '../src';
-import { LearnCardFromKey } from '../src/types/LearnCard';
+import { getTestStorage, initLearnCard } from '../src';
+import { LearnCardFromSeed } from '../src/types/LearnCard';
 
 let learnCards: Record<
     string,
     {
-        learnCard: LearnCardFromKey['returnValue'];
-        persistenceMocks: Partial<LearnCardFromKey['returnValue']>;
+        learnCard: LearnCardFromSeed['returnValue'];
+        persistenceMocks: Partial<LearnCardFromSeed['returnValue']>;
     }
 > = {};
 
@@ -619,6 +619,24 @@ describe('LearnCard SDK', () => {
                 };
                 qrcode.decode(image.bitmap);
             });
+        });
+    });
+
+    describe('Control Planes', () => {
+        it('should be able to store/read with multiple planes', async () => {
+            const learnCard = await getLearnCard();
+
+            const multiPlaneLearnCard = await learnCard.addPlugin(getTestStorage());
+
+            const vc = await multiPlaneLearnCard.invoke.issueCredential(
+                multiPlaneLearnCard.invoke.getTestVc()
+            );
+
+            const uri = await multiPlaneLearnCard.store['Test Storage'].upload(vc);
+
+            const resolvedVc = await multiPlaneLearnCard.read.get(uri);
+
+            expect(resolvedVc).toEqual(vc);
         });
     });
 });
