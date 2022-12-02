@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const ContextValidator = z.string().array();
+export const ContextValidator = z.array(z.string().or(z.record(z.any())));
 export type Context = z.infer<typeof ContextValidator>;
 
 export const AchievementCriteriaValidator = z.object({
