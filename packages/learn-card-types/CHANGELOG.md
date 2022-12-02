@@ -1,5 +1,11 @@
 # learn-card-types
 
+## 5.1.1
+
+### Patch Changes
+
+-   [#196](https://github.com/learningeconomy/LearnCard/pull/196) [`9aeb9f1`](https://github.com/learningeconomy/LearnCard/commit/9aeb9f1c175fd5ab7f2b94addaa9132bcc9cb4cf) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Allow embedded contexts
+
 ## 5.1.0
 
 ### Minor Changes
