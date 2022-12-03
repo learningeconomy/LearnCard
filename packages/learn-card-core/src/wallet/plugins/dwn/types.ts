@@ -7,7 +7,8 @@ export type DWNPluginMethods = {
     featureDetectionRead: () => Promise<object>
     collectionsQuery: () => Promise<object>
     featureDetectionMessageBody: (did:string) => Promise<object>
-    writeVCMessageBody: (vc: VC, keyPair?: JWK, did?: string) => Promise<object>
+    writeVCMessageBody: (vc: VC, keyPair?: JWK, did?: string) => Promise<object>,
+    permissionsRequestMessageBody: (keyPair?: JWK, did?: string) => Promise<object>
 };
 
 export type DWNConfig = {

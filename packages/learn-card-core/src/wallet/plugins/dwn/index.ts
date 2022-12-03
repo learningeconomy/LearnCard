@@ -5,7 +5,7 @@ import { JWK, VC } from '@learncard/types';
 import { base64url } from 'multiformats/bases/base64';
 import { randomUUID } from 'crypto'
 import * as ed from '@noble/ed25519';
-import { MessageReply } from './dwn_types';
+import { DescriptorBase, MessageReply, MessageSchema } from './dwn_types';
 
 type DataCID = { cid: CID, data: Uint8Array }
 
@@ -106,21 +106,51 @@ async function writeVCMessageBody(vc: VC, keyPair: JWK, did: string): Promise<ob
     "dataFormat": "application/json"
   };
 
+  return makeRequestBody(descriptor, keyPair, did, Buffer.from(dataCid.data).toString('base64'));
+}
+
+async function makeRequestBody(descriptor: DescriptorBase, keyPair: JWK, did: string, data?: string): Promise<object> {
   const jws = await makeJWS(descriptor, keyPair, did);
 
-  const messageBody  = {
+  const messageBody: MessageSchema = {
+    "descriptor": descriptor,
+    "authorization": jws
+  }
+
+  if (data) {
+    messageBody['data'] = data;
+  }
+
+  // TODO: handle multiple messages
+  const requestBody  = {
     "target": did,
     "messages": [
-      {
-        "data": Buffer.from(dataCid.data).toString('base64'),
-        "descriptor": descriptor,
-        "authorization": jws
-      }
+      messageBody
     ]
   }
 
-  return messageBody;
+  return requestBody;
 }
+
+async function permissionsRequestMessageBody(keyPair: JWK, did: string): Promise<object> {
+  const descriptor = {
+    "nonce": randomUUID(),
+    "method": "PermissionsRequest",
+    "permissions": [
+      {
+        "type": "FeatureDetectionRead"
+      },
+      {
+        "type": "CollectionsWrite"
+      },
+      {
+        "type": "CollectionsQuery"
+      }
+    ]
+  };
+  return makeRequestBody(descriptor, keyPair, did);
+}
+
 
 async function makeCollectionQueryMessageBody(keyPair: JWK, did: string): Promise<object> {
   const descriptor = {
@@ -129,19 +159,7 @@ async function makeCollectionQueryMessageBody(keyPair: JWK, did: string): Promis
     "filter": {"dataFormat": "application/json"}
   };
 
-  const jws = await makeJWS(descriptor, keyPair, did);
-  
-  const messageBody  = {
-    "target": did,
-    "messages": [
-      {
-        "descriptor": descriptor,
-        "authorization": jws
-      }
-    ]
-  }
-
-  return messageBody;
+  return makeRequestBody(descriptor, keyPair, did);
 }
 
 export const getDWNPlugin = (config: DWNConfig): DWNPlugin => {
@@ -158,6 +176,15 @@ export const getDWNPlugin = (config: DWNConfig): DWNPlugin => {
 
   const makeResponseURI = (response: any): string => {
     return config.dwnAddressURL!.toString() + '/response/' + response.id
+  }
+
+  // TODO: what is the type of learnCard?
+  const optionalDid = (learnCard: any, did?: string): string => {
+    return did ? did : learnCard.invoke.getSubjectDid('key')
+  }
+
+  const optionalKeyPair = (learnCard: any, keyPair?: JWK): JWK => {
+    return keyPair ? keyPair : learnCard.invoke.getSubjectKeyPair('key')
   }
 
   return {
@@ -189,6 +216,9 @@ export const getDWNPlugin = (config: DWNConfig): DWNPlugin => {
         },
         collectionsQuery: async (_learnCard): Promise<object> => {
           return postOneRequest(await makeCollectionQueryMessageBody(_learnCard.invoke.getSubjectKeypair('ed25519'), _learnCard.invoke.getSubjectDid('key')))
+        },
+        permissionsRequestMessageBody: async (_learnCard, keyPair?: JWK, did?: string): Promise<object> => {
+          return permissionsRequestMessageBody(optionalKeyPair(_learnCard, keyPair), optionalDid(_learnCard, did))
         }
     },
 }};
