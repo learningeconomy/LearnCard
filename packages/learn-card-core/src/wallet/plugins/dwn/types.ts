@@ -1,11 +1,13 @@
 import { Plugin } from 'types/wallet';
 import { JWK } from '@learncard/types';
+import { VC } from '@learncard/types';
 
 export type DWNPluginMethods = {
-    postDWNRequest(request: object, request_name?: string): Promise<string>,
-    featureDetectionRead: () => Promise<string>;
-    collectionsQuery: () => Promise<string>;
-    featureDetectionMessageBody: (did:string) => Promise<string>;
+    postDWNRequest(request: object, request_name?: string): Promise<object>
+    featureDetectionRead: () => Promise<object>
+    collectionsQuery: () => Promise<object>
+    featureDetectionMessageBody: (did:string) => Promise<object>
+    writeVCMessageBody: (vc: VC, keyPair?: JWK, did?: string) => Promise<object>
 };
 
 export type DWNConfig = {

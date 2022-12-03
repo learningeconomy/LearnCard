@@ -5,6 +5,7 @@ import { JWK, VC } from '@learncard/types';
 import { base64url } from 'multiformats/bases/base64';
 import { randomUUID } from 'crypto'
 import * as ed from '@noble/ed25519';
+import { MessageReply } from './dwn_types';
 
 type DataCID = { cid: CID, data: Uint8Array }
 
@@ -14,7 +15,7 @@ export async function makeDataCID(json_data: string): Promise<DataCID> {
   return { cid: cid, data: dataBytes };
 }
 
-function featureDetectionMessageBody(targetDID: string): any {
+function featureDetectionMessageBody(targetDID: string): object {
     return {
       "target": targetDID,
       "messages": [
@@ -144,15 +145,21 @@ async function makeCollectionQueryMessageBody(keyPair: JWK, did: string): Promis
 }
 
 export const getDWNPlugin = (config: DWNConfig): DWNPlugin => {
-  const  postOneRequest = async (request: object, request_name?: string): Promise<string> => {
+
+  const  postOneRequest = async (request: object, request_name?: string): Promise<MessageReply> => {
     const result = await fetch(config.dwnAddressURL!, {
       method: 'POST',
       body: JSON.stringify(request),
       headers: {
         'Content-Type': 'application/json'
       } })
-    return result.text()
+    return result.json()
   }
+
+  const makeResponseURI = (response: any): string => {
+    return config.dwnAddressURL!.toString() + '/response/' + response.id
+  }
+
   return {
     name: "DWNPlugin",
     store: {
@@ -161,20 +168,26 @@ export const getDWNPlugin = (config: DWNConfig): DWNPlugin => {
           // TODO: do we use an unsigned VC or a signed VC here? Both? Does it matter?
           const vc_message = await writeVCMessageBody(vc, _learnCard.invoke.getSubjectKeypair('ed25519'), _learnCard.invoke.getSubjectDid('key'));
           prettyPrintJson('vc_message', vc_message);
-          return await postOneRequest(vc_message);
+          const response = await postOneRequest(vc_message);
+          prettyPrintJson('response', response);
+          // TODO: return URI from store/upload
+          return makeResponseURI(response)
       },
   },
     methods: {
-        featureDetectionMessageBody: async (_learnCard, did?:string): Promise<string> => {
+        writeVCMessageBody: async (_learnCard, vc: VC, keyPair?: JWK, did?: string): Promise<object> => {
+          return await writeVCMessageBody(vc, keyPair || _learnCard.invoke.getSubjectKeypair('ed25519'), did || _learnCard.invoke.getSubjectDid('key'));
+        },
+        featureDetectionMessageBody: async (_learnCard, did?:string): Promise<object> => {
           return featureDetectionMessageBody(did || _learnCard.invoke.getSubjectDid('key'))
         },
-        postDWNRequest: async (_learnCard, request: object, request_name?: string): Promise<string> => {
+        postDWNRequest: async (_learnCard, request: object, request_name?: string): Promise<object> => {
           return await postOneRequest(request, request_name);
         },
-        featureDetectionRead: async (_learnCard): Promise<string> => {
+        featureDetectionRead: async (_learnCard): Promise<object> => {
             return postOneRequest(featureDetectionMessageBody(_learnCard.invoke.getSubjectDid('key')))
         },
-        collectionsQuery: async (_learnCard): Promise<string> => {
+        collectionsQuery: async (_learnCard): Promise<object> => {
           return postOneRequest(await makeCollectionQueryMessageBody(_learnCard.invoke.getSubjectKeypair('ed25519'), _learnCard.invoke.getSubjectDid('key')))
         }
     },
