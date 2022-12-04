@@ -8,11 +8,13 @@ export type DWNPluginMethods = {
     collectionsQuery: () => Promise<object>
     featureDetectionMessageBody: (did:string) => Promise<object>
     writeVCMessageBody: (vc: VC, keyPair?: JWK, did?: string) => Promise<object>,
-    permissionsRequestMessageBody: (keyPair?: JWK, did?: string) => Promise<object>
+    permissionsRequestMessageBody: (method: string, schema: string, keyPair?: JWK, did?: string) => Promise<object>,
+    getSchemas: () => object | undefined
 };
 
 export type DWNConfig = {
     dwnAddressURL?: URL;
+    schemas?: object;
 };
 
 export type DWNPluginDependantMethods = {

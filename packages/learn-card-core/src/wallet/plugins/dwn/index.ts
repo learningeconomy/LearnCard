@@ -132,21 +132,18 @@ async function makeRequestBody(descriptor: DescriptorBase, keyPair: JWK, did: st
   return requestBody;
 }
 
-async function permissionsRequestMessageBody(keyPair: JWK, did: string): Promise<object> {
+async function permissionsRequestMessageBody(keyPair: JWK, did: string, method: string, schema: string): Promise<object> {
+
   const descriptor = {
     "nonce": randomUUID(),
     "method": "PermissionsRequest",
-    "permissions": [
-      {
-        "type": "FeatureDetectionRead"
-      },
-      {
-        "type": "CollectionsWrite"
-      },
-      {
-        "type": "CollectionsQuery"
-      }
-    ]
+    "permissionRequestId": randomUUID(),
+    "grantedBy": "did:example:alice", // TODO: get the owner of the DWN
+    "grantedTo": did,
+    "scope": {
+      "method": method,
+      "schema": schema
+    }
   };
   return makeRequestBody(descriptor, keyPair, did);
 }
@@ -175,6 +172,7 @@ export const getDWNPlugin = (config: DWNConfig): DWNPlugin => {
   }
 
   const makeResponseURI = (response: any): string => {
+    // TODO: what is the propery URI for a DWN object?
     return config.dwnAddressURL!.toString() + '/response/' + response.id
   }
 
@@ -184,7 +182,7 @@ export const getDWNPlugin = (config: DWNConfig): DWNPlugin => {
   }
 
   const optionalKeyPair = (learnCard: any, keyPair?: JWK): JWK => {
-    return keyPair ? keyPair : learnCard.invoke.getSubjectKeyPair('key')
+    return keyPair ? keyPair : learnCard.invoke.getSubjectKeypair('ed25519')
   }
 
   return {
@@ -192,12 +190,8 @@ export const getDWNPlugin = (config: DWNConfig): DWNPlugin => {
     store: {
       upload: async (_learnCard, vc: VC) => {
         _learnCard.debug?.('learnCard.store.DWNPlugin.upload');
-          // TODO: do we use an unsigned VC or a signed VC here? Both? Does it matter?
           const vc_message = await writeVCMessageBody(vc, _learnCard.invoke.getSubjectKeypair('ed25519'), _learnCard.invoke.getSubjectDid('key'));
-          prettyPrintJson('vc_message', vc_message);
           const response = await postOneRequest(vc_message);
-          prettyPrintJson('response', response);
-          // TODO: return URI from store/upload
           return makeResponseURI(response)
       },
   },
@@ -217,8 +211,11 @@ export const getDWNPlugin = (config: DWNConfig): DWNPlugin => {
         collectionsQuery: async (_learnCard): Promise<object> => {
           return postOneRequest(await makeCollectionQueryMessageBody(_learnCard.invoke.getSubjectKeypair('ed25519'), _learnCard.invoke.getSubjectDid('key')))
         },
-        permissionsRequestMessageBody: async (_learnCard, keyPair?: JWK, did?: string): Promise<object> => {
-          return permissionsRequestMessageBody(optionalKeyPair(_learnCard, keyPair), optionalDid(_learnCard, did))
+        permissionsRequestMessageBody: async (_learnCard, method: string, schema: string, keyPair?: JWK, did?: string): Promise<object> => {
+          return permissionsRequestMessageBody(optionalKeyPair(_learnCard, keyPair), optionalDid(_learnCard, did), method, schema);
+        },
+        getSchemas: (_learnCard): object | undefined => {
+          return config.schemas
         }
     },
 }};

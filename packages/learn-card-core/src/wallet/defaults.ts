@@ -29,4 +29,6 @@ export const defaultEthereumArgs: EthereumConfig = {
 
 export const defaultDWNArgs: DWNConfig = {
     dwnAddressURL: new URL('http://localhost:8080'),
+    // TODO: a lot more schemas available from https://1edtech.github.io/openbadges-specification/ob_v3p0.html
+    schemas: { AchievementVerifiableCredential: 'https://purl.imsglobal.org/spec/ob/v3p0/schema/json/ob_v3p0_achievementcredential_schema.json' }
 };
