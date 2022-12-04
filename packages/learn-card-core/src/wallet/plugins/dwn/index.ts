@@ -110,6 +110,7 @@ async function writeVCMessageBody(vc: VC, keyPair: JWK, did: string): Promise<ob
 }
 
 async function makeRequestBody(descriptor: DescriptorBase, keyPair: JWK, did: string, data?: string): Promise<object> {
+
   const jws = await makeJWS(descriptor, keyPair, did);
 
   const messageBody: MessageSchema = {
@@ -135,7 +136,6 @@ async function makeRequestBody(descriptor: DescriptorBase, keyPair: JWK, did: st
 async function permissionsRequestMessageBody(keyPair: JWK, did: string, method: string, schema: string): Promise<object> {
 
   const descriptor = {
-    "nonce": randomUUID(),
     "method": "PermissionsRequest",
     "permissionRequestId": randomUUID(),
     "grantedBy": "did:example:alice", // TODO: get the owner of the DWN
@@ -143,7 +143,8 @@ async function permissionsRequestMessageBody(keyPair: JWK, did: string, method: 
     "scope": {
       "method": method,
       "schema": schema
-    }
+    },
+    "dataFormat": "application/json"
   };
   return makeRequestBody(descriptor, keyPair, did);
 }
