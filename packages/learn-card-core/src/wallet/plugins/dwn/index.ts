@@ -6,6 +6,7 @@ import { base64url } from 'multiformats/bases/base64';
 import { randomUUID } from 'crypto'
 import * as ed from '@noble/ed25519';
 import { DescriptorBase, MessageReply, MessageSchema } from './dwn_types';
+import { GeneralJWS } from 'dids';
 
 type DataCID = { cid: CID, data: Uint8Array }
 
@@ -36,36 +37,13 @@ function featureDetectionMessageBody(targetDID: string): object {
     return base64
   }
 
-  type GeneralJws = {
-    payload: string
-    signatures: Signature[]
-  };
-
-  /**
-   * Flattened JWS definition for verify function inputs, allows payload as
-   * Uint8Array for detached signature validation.
-   */
-  type Signature = {
-    /**
-     * The "protected" member MUST be present and contain the value
-     * BASE64URL(UTF8(JWS Protected Header)) when the JWS Protected
-     * Header value is non-empty; otherwise, it MUST be absent.  These
-     * Header Parameter values are integrity protected.
-     */
-    protected: string
-
-    /**
-     * The "signature" member MUST be present and contain the value
-     * BASE64URL(JWS Signature).
-     */
-    signature: string
-  };
+  
 
   function prettyPrintJson(key :string, o: object) {
     console.log(key, JSON.stringify(o, null, 2));
   }
 
-  async function makeJWS(message: object, keyPair: JWK, did: string): Promise<GeneralJws> {
+  async function makeJWS(message: object, keyPair: JWK, did: string): Promise<GeneralJWS> {
 
     // TODO: check keyPair to see which algorithm to use
 
