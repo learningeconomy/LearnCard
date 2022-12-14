@@ -1,8 +1,6 @@
 /// <reference path="./types/global.d.ts" />
 
-import 'core-js/actual/promise';
-import 'isomorphic-fetch';
-import 'abort-controller/polyfill';
+import './polyfills';
 
 export * from '@wallet/init';
 export { LearnCard, Plugin } from 'types/wallet';
