@@ -27,7 +27,7 @@ declare module '@digitalbazaar/vpqr' {
     }): Promise<{ vp: VP }>;
 }
 
-declare module 'qrcode-reader' {}
+declare module 'qrcode-reader' { }
 
 declare module 'credential-handler-polyfill' {
     function loadOnce(options?: string | { mediatorOrigin?: string }): Promise<void>;
@@ -51,4 +51,9 @@ declare module 'web-credential-handler' {
         store?: (event: CredentialStoreEvent) => Promise<HandlerResponse>;
     }): void;
     function receiveCredentialEvent(): Promise<CredentialRequestEvent | CredentialStoreEvent>;
+}
+
+declare module 'abort-controller/dist/abort-controller.mjs' {
+    declare const AbortController: typeof window.AbortController;
+    declare const AbortSignal: typeof window.AbortSignal;
 }
