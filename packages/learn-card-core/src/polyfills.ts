@@ -1,6 +1,6 @@
 import 'core-js/actual/promise';
 import 'isomorphic-fetch';
-import * as ac from 'abort-controller/dist/abort-controller.mjs';
+import * as ac from 'abort-controller/dist/abort-controller.js';
 
 const g: any =
     typeof globalThis !== 'undefined'
