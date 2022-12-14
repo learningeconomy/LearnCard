@@ -1,17 +1,17 @@
 import 'core-js/actual/promise';
 import 'isomorphic-fetch';
-import * as ac from 'abort-controller/dist/abort-controller';
+import * as ac from 'abort-controller/dist/abort-controller.mjs';
 
 const g: any =
     typeof globalThis !== 'undefined'
         ? globalThis
         : typeof self !== 'undefined'
-        ? self
-        : typeof window !== 'undefined'
-        ? window
-        : typeof global !== 'undefined'
-        ? global
-        : /* otherwise */ undefined;
+            ? self
+            : typeof window !== 'undefined'
+                ? window
+                : typeof global !== 'undefined'
+                    ? global
+                    : /* otherwise */ undefined;
 
 if (g) {
     if (typeof g.AbortController === 'undefined') {
