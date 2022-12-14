@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 8.3.1
+
+### Patch Changes
+
+-   [#201](https://github.com/learningeconomy/LearnCard/pull/201) [`d6ebc5b`](https://github.com/learningeconomy/LearnCard/commit/d6ebc5baa52eab591398e81267adb40b3dce74f3) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix abort-controller issues with Webpack
+
 ## 8.3.0
 
 ### Minor Changes
