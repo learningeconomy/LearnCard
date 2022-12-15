@@ -1,5 +1,12 @@
 # @welibraryos/react-learn-card
 
+## 2.3.66
+
+### Patch Changes
+
+-   Updated dependencies [[`e78c77d`](https://github.com/learningeconomy/LearnCard/commit/e78c77dc8dfa6c69d7163ed49b551bd739de2f09)]:
+    -   @learncard/core@8.4.0
+
 ## 2.3.65
 
 ### Patch Changes
