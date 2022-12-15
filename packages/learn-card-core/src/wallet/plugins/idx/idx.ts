@@ -248,6 +248,8 @@ export const getIDXPlugin = async <URI extends string = ''>(
             removeAllVerifiableCredentialsInIdx: async () => {
                 return removeAllCredentialsFromIdx();
             },
+            getIDXIndex: async () => dataStore.get(credentialAlias),
+            setIDXIndex: async (_learnCard, index) => dataStore.set(credentialAlias, index),
         },
     };
 };
