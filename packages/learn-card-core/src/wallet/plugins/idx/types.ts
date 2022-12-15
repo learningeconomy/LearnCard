@@ -7,6 +7,14 @@ import { ResolutionExtension } from '../vc-resolution';
 import { CeramicClient } from '@ceramicnetwork/http-client';
 
 /** @group IDXPlugin */
+export type IDXIndexObject<
+    IDXMetadata extends Record<string, any>,
+    Metadata extends Record<string, any>
+> = {
+    credentials: CredentialRecord<Metadata>[];
+} & IDXMetadata;
+
+/** @group IDXPlugin */
 export type IDXArgs = {
     modelData: ModelAliases;
     credentialAlias: string;
@@ -24,6 +32,13 @@ export type IDXPluginMethods = {
     ) => Promise<string>;
     removeVerifiableCredentialInIdx: (title: string) => Promise<StreamID>;
     removeAllVerifiableCredentialsInIdx: () => Promise<StreamID>;
+    getIDXIndex: <
+        IDXMetadata extends Record<string, any>,
+        Metadata extends Record<string, any>
+    >() => Promise<IDXIndexObject<IDXMetadata, Metadata> | null>;
+    setIDXIndex: <IDXMetadata extends Record<string, any>, Metadata extends Record<string, any>>(
+        index: IDXIndexObject<IDXMetadata, Metadata>
+    ) => Promise<StreamID>;
 };
 
 /** @group IDXPlugin */
@@ -37,9 +52,9 @@ export type CredentialsList<Metadata extends Record<string, any> = Record<never,
 };
 
 /** @group IDXPlugin */
-export const CredentialsListValidator: z.ZodType<CredentialsList> = z
-    .object({ credentials: CredentialRecordValidator.array() })
-    .strict();
+export const CredentialsListValidator: z.ZodType<CredentialsList> = z.object({
+    credentials: CredentialRecordValidator.array(),
+});
 
 /** @group IDXPlugin */
 export type IDXPlugin = Plugin<'IDX', 'index', IDXPluginMethods, 'read', IDXPluginDependentMethods>;
@@ -50,7 +65,7 @@ export type IDXPlugin = Plugin<'IDX', 'index', IDXPluginMethods, 'read', IDXPlug
 /** @group IDXPlugin */
 export type BackwardsCompatIDXCredential<
     Metadata extends Record<string, any> = Record<never, never>
-    > = { [key: string]: any; id: string; title: string; storageType?: 'ceramic' } & Metadata;
+> = { [key: string]: any; id: string; title: string; storageType?: 'ceramic' } & Metadata;
 
 /** @group IDXPlugin */
 export const BackwardsCompatIDXCredentialValidator: z.ZodType<BackwardsCompatIDXCredential> = z
@@ -60,9 +75,9 @@ export const BackwardsCompatIDXCredentialValidator: z.ZodType<BackwardsCompatIDX
 /** @group IDXPlugin */
 export type BackwardsCompatCredentialsList<
     Metadata extends Record<string, any> = Record<never, never>
-    > = {
-        credentials: Array<CredentialRecord<Metadata> | BackwardsCompatIDXCredential<Metadata>>;
-    };
+> = {
+    credentials: Array<CredentialRecord<Metadata> | BackwardsCompatIDXCredential<Metadata>>;
+};
 
 /** @group IDXPlugin */
 export const BackwardsCompatCredentialsListValidator: z.ZodType<BackwardsCompatCredentialsList> = z
