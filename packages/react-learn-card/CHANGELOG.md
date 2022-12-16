@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.3.68
+
+### Patch Changes
+
+-   [#207](https://github.com/learningeconomy/LearnCard/pull/207) [`1cb2e88`](https://github.com/learningeconomy/LearnCard/commit/1cb2e883792eba09e2adfc0e6ab386f6d6a274b2) Thanks [@goblincore](https://github.com/goblincore)! - Add additional prop to job listing card to override with custom button component
+
 ## 2.3.67
 
 ### Patch Changes
