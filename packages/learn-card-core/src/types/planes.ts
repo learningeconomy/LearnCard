@@ -1,4 +1,4 @@
-import { CredentialRecord, VC, JWK } from '@learncard/types';
+import { CredentialRecord, VC, VP, JWK } from '@learncard/types';
 import { Plugin } from './wallet';
 import { OmitNevers } from './helpers';
 
@@ -42,7 +42,7 @@ export type GetPlaneProviders<
 // --- Read ---
 
 export type ReadPlane = {
-    get: (uri?: string, options?: PlaneOptions) => Promise<VC | undefined>;
+    get: (uri?: string, options?: PlaneOptions) => Promise<VC | VP | undefined>;
 };
 
 export type PluginReadPlane = ReadPlane;
@@ -58,10 +58,10 @@ export type EncryptionParams = {
 };
 
 export type StorePlane = {
-    upload: (vc: VC, options?: PlaneOptions) => Promise<string>;
-    uploadMany?: (vcs: VC[], options?: PlaneOptions) => Promise<string[]>;
+    upload: (vc: VC | VP, options?: PlaneOptions) => Promise<string>;
+    uploadMany?: (vcs: (VC | VP)[], options?: PlaneOptions) => Promise<string[]>;
     uploadEncrypted?: (
-        vc: VC,
+        vc: VC | VP,
         params?: EncryptionParams,
         options?: PlaneOptions
     ) => Promise<string>;
@@ -116,8 +116,8 @@ export type CachePlane = {
         value: CredentialRecord<Metadata>[]
     ) => Promise<boolean>;
     flushIndex: () => Promise<boolean>;
-    getVc: (uri: string) => Promise<VC | undefined>;
-    setVc: (uri: string, value: VC | undefined) => Promise<boolean>;
+    getVc: (uri: string) => Promise<VC | VP | undefined>;
+    setVc: (uri: string, value: VC | VP | undefined) => Promise<boolean>;
     flushVc: () => Promise<boolean>;
 };
 export type PluginCachePlane = CachePlane;

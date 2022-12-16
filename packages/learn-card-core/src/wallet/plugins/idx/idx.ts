@@ -1,5 +1,5 @@
 import { DIDDataStore } from '@glazed/did-datastore';
-import { CredentialRecordValidator, VC, CredentialRecord } from '@learncard/types';
+import { CredentialRecordValidator, VC, CredentialRecord, VCValidator } from '@learncard/types';
 
 import { streamIdToCeramicURI } from '../ceramic/helpers';
 
@@ -210,7 +210,11 @@ export const getIDXPlugin = async <URI extends string = ''>(
                 const credentialList = await getCredentialsListFromIdx();
                 const credential = credentialList?.credentials?.find(cred => cred?.id === id);
 
-                return credential?.uri ? _learnCard.read.get(credential.uri) : undefined;
+                const result = _learnCard.read.get(credential?.uri);
+
+                const validationResult = await VCValidator.safeParseAsync(result);
+
+                return validationResult.success ? validationResult.data : undefined;
             },
             getVerifiableCredentialsFromIdx: async _learnCard => {
                 const credentialList = await getCredentialsListFromIdx();
