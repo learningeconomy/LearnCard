@@ -25,6 +25,12 @@ const dummyQualificationDisplay = {
     },
 };
 
+const customButtonTest = (
+    <button type="button" onClick={() => console.log('custom button clicked')}>
+        BUTTON TEST{' '}
+    </button>
+);
+
 const Template: Story<JobListCardProps> = args => <JobListCard {...args} />;
 
 export const JobListCardTest = Template.bind({});
