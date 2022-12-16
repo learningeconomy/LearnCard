@@ -173,6 +173,7 @@ export type JobQualificationDisplay = {
 
 export type JobListCardProps = {
     title?: string;
+    customButtonComponent?: React.ReactNode;
     company?: string;
     compensation?: string;
     location?: string;

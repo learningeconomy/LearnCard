@@ -51,6 +51,7 @@ export const JobListCard: React.FC<JobListCardProps> = ({
     qualificationDisplay,
     percentQualifiedDisplay,
     postDateDisplay,
+    customButtonComponent,
     imgThumb,
     isBookmarked,
     onBookmark,
@@ -62,15 +63,18 @@ export const JobListCard: React.FC<JobListCardProps> = ({
 
     const courseCountDisplay =
         courseReqCount &&
-        `${qualificationDisplay?.courses?.fulfilledCount ?? 0}/${qualificationDisplay?.courses?.totalRequiredCount ?? 0
+        `${qualificationDisplay?.courses?.fulfilledCount ?? 0}/${
+            qualificationDisplay?.courses?.totalRequiredCount ?? 0
         }`;
     const achievementsCountDisplay =
         achievementsReqCount &&
-        `${qualificationDisplay?.achievements?.fulfilledCount ?? 0}/${qualificationDisplay?.achievements?.totalRequiredCount ?? 0
+        `${qualificationDisplay?.achievements?.fulfilledCount ?? 0}/${
+            qualificationDisplay?.achievements?.totalRequiredCount ?? 0
         }`;
     const skillsCountDisplay =
         skillsReqCount &&
-        `${qualificationDisplay?.skills?.fulfilledCount ?? 0}/${qualificationDisplay?.skills?.totalRequiredCount ?? 0
+        `${qualificationDisplay?.skills?.fulfilledCount ?? 0}/${
+            qualificationDisplay?.skills?.totalRequiredCount ?? 0
         }`;
 
     const qualifiedText = percentQualifiedDisplay
@@ -86,6 +90,18 @@ export const JobListCard: React.FC<JobListCardProps> = ({
     if (!location && locationRequirement) locationText = locationRequirement;
     if (!locationRequirement && location) locationText = location;
     if (locationRequirement && location) locationText = `${locationRequirement} • ${location}`;
+
+    const defaultButton = (
+        <button
+            type="button"
+            onClick={onClick}
+            className="mt-[10px] bg-cyan-700 py-[15px] px-[2px] rounded-[40px] text-grayscale-50 text-[17px] font-bold"
+        >
+            {qualifiedText}
+        </button>
+    );
+
+    const buttonComponent = customButtonComponent ? customButtonComponent : defaultButton;
 
     return (
         <div
@@ -138,13 +154,7 @@ export const JobListCard: React.FC<JobListCardProps> = ({
                 </div>
             </div>
 
-            <button
-                type="button"
-                onClick={onClick}
-                className="mt-[10px] bg-cyan-700 py-[15px] px-[2px] rounded-[40px] text-grayscale-50 text-[17px] font-bold"
-            >
-                {qualifiedText}
-            </button>
+            {buttonComponent}
         </div>
     );
 };
