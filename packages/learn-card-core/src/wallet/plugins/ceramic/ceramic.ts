@@ -8,7 +8,7 @@ import { TileLoader } from '@glazed/tile-loader';
 import { CeramicClient } from '@ceramicnetwork/http-client';
 import { CreateOpts } from '@ceramicnetwork/common';
 import { TileDocument, TileMetadataArgs } from '@ceramicnetwork/stream-tile';
-import { VCValidator, VC } from '@learncard/types';
+import { VCValidator, VC, VPValidator, VP } from '@learncard/types';
 
 import { streamIdToCeramicURI } from './helpers';
 import type { CeramicEncryptionParams } from './types';
@@ -107,8 +107,11 @@ export const getCeramicPlugin = async <URI extends string = ''>(
         return content;
     };
 
-    const uploadCredential = async (vc: VC, encryption?: CeramicEncryptionParams | undefined) => {
-        await VCValidator.parseAsync(vc);
+    const uploadCredential = async (
+        vc: VC | VP,
+        encryption?: CeramicEncryptionParams | undefined
+    ) => {
+        await VCValidator.or(VPValidator).parseAsync(vc);
 
         return streamIdToCeramicURI(await publishContentToCeramic(vc, {}, {}, encryption));
     };
@@ -160,7 +163,9 @@ export const getCeramicPlugin = async <URI extends string = ''>(
 
                 const streamId = verificationResult.data.split(':')[2];
                 try {
-                    return await VCValidator.parseAsync(await readContentFromCeramic(streamId));
+                    return await VCValidator.or(VPValidator).parseAsync(
+                        await readContentFromCeramic(streamId)
+                    );
                 } catch (e) {
                     _learnCard.debug?.(e);
                     return undefined;
