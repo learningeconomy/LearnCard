@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 8.4.1
+
+### Patch Changes
+
+-   [#205](https://github.com/learningeconomy/LearnCard/pull/205) [`d2e5817`](https://github.com/learningeconomy/LearnCard/commit/d2e581790d63a75d304c2ace8b02133ce122c7ce) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Widen read/store plane types to include VPs and VCs
+
 ## 8.4.0
 
 ### Minor Changes
