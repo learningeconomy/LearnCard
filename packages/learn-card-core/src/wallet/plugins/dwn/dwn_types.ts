@@ -11,6 +11,7 @@ export type DescriptorBase = {
 }
 
 export type BaseMessageSchema = {
+  recordId: string
   descriptor: DescriptorBase
 };
 

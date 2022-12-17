@@ -78,7 +78,6 @@ async function writeVCMessageBody(vc: VC, keyPair: JWK, did: string): Promise<ob
     "nonce": randomUUID(),
     "method": "CollectionsWrite",
     "schema": vc['@context'][0],
-    "recordId": randomUUID(),  // TODO: how to remember the recordId for this object?
     "dataCid": Buffer.from(dataCid.cid.bytes).toString('base64'),
     "dateCreated": new Date(vc['issuanceDate']).getTime(),
     "dataFormat": "application/json"
@@ -92,6 +91,7 @@ async function makeRequestBody(descriptor: DescriptorBase, keyPair: JWK, did: st
   const jws = await makeJWS(descriptor, keyPair, did);
 
   const messageBody: MessageSchema = {
+    "recordId": randomUUID(),  // TODO: must compute this recordId
     "descriptor": descriptor,
     "authorization": jws
   }
@@ -121,8 +121,7 @@ async function permissionsRequestMessageBody(keyPair: JWK, did: string, method: 
     "scope": {
       "method": method,
       "schema": schema
-    },
-    "dataFormat": "application/json"
+    }
   };
   return makeRequestBody(descriptor, keyPair, did);
 }
