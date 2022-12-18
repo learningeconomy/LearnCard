@@ -1,7 +1,7 @@
 import { DWNConfig, DWNPlugin, DWNPluginMethods } from './types';
 import { generateCid } from "./cid";
 import { CID } from 'multiformats/cid';
-import { JWK, VC } from '@learncard/types';
+import { JWK, VC, VP } from '@learncard/types';
 import { base64url } from 'multiformats/bases/base64';
 import { randomUUID } from 'crypto'
 import * as ed from '@noble/ed25519';
@@ -71,7 +71,7 @@ function featureDetectionMessageBody(targetDID: string): object {
 }
 
 
-async function writeVCMessageBody(vc: VC, keyPair: JWK, did: string): Promise<object> {
+async function writeVCMessageBody(vc: VC | VP, keyPair: JWK, did: string): Promise<object> {
   const dataCid = await makeDataCID(JSON.stringify(vc));
 
   const descriptor = {
@@ -166,7 +166,7 @@ export const getDWNPlugin = (config: DWNConfig): DWNPlugin => {
   return {
     name: "DWNPlugin",
     store: {
-      upload: async (_learnCard, vc: VC) => {
+      upload: async (_learnCard, vc) => {
         _learnCard.debug?.('learnCard.store.DWNPlugin.upload');
           const vc_message = await writeVCMessageBody(vc, _learnCard.invoke.getSubjectKeypair('ed25519'), _learnCard.invoke.getSubjectDid('key'));
           const response = await postOneRequest(vc_message);
