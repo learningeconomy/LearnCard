@@ -52,9 +52,11 @@ export type CredentialsList<Metadata extends Record<string, any> = Record<never,
 };
 
 /** @group IDXPlugin */
-export const CredentialsListValidator: z.ZodType<CredentialsList> = z.object({
-    credentials: CredentialRecordValidator.array(),
-});
+export const CredentialsListValidator: z.ZodType<CredentialsList> = z
+    .object({
+        credentials: CredentialRecordValidator.array(),
+    })
+    .catchall(z.any());
 
 /** @group IDXPlugin */
 export type IDXPlugin = Plugin<'IDX', 'index', IDXPluginMethods, 'read', IDXPluginDependentMethods>;
