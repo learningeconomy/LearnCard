@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 8.4.2
+
+### Patch Changes
+
+-   [#209](https://github.com/learningeconomy/LearnCard/pull/209) [`9652a2f`](https://github.com/learningeconomy/LearnCard/commit/9652a2f59bc305ed3ef4cd7d53731608f81a54c6) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix index methods wiping out everything else in IDX index
+
 ## 8.4.1
 
 ### Patch Changes
