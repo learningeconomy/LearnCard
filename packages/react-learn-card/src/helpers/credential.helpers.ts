@@ -1,4 +1,5 @@
-import { Image, Profile } from '@learncard/types';
+import { Image, Profile, VC, AchievementCredential, CredentialInfo } from '@learncard/types';
+import { format } from 'date-fns';
 
 export const getImageFromImage = (image: Image): string => {
     if (typeof image === 'string') return image;
@@ -16,4 +17,18 @@ export const getImageFromProfile = (profile: Profile): string => {
     if (typeof profile === 'string') return '';
 
     return getImageFromImage(profile.image ?? '');
+};
+
+export const getInfoFromCredential = (credential: VC | AchievementCredential): CredentialInfo => {
+    const { issuer, issuanceDate } = credential;
+
+    const credentialSubject = Array.isArray(credential.credentialSubject)
+        ? credential.credentialSubject[0]
+        : credential.credentialSubject;
+
+    const title = credentialSubject.achievement?.name;
+    const createdAt = format(new Date(issuanceDate), 'dd MMM yyyy').toUpperCase();
+    const issuee = credentialSubject.id;
+
+    return { title, createdAt, issuer, issuee, credentialSubject };
 };

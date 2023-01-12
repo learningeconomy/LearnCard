@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { AchievementCredential, VC, Profile, VerificationItem } from '@learncard/types';
-import { format } from 'date-fns';
 
 import FlippyCard from '../FlippyCard/FlippyCard';
 import VCDisplayFrontFace from '../VCDisplayFrontFace/VCDisplayFrontFace';
 import VCDisplayBackFace from '../VCDisplayBackFace/VCDisplayBackFace';
-import { CredentialInfo } from '../../types';
+
+import { getInfoFromCredential } from '../../helpers/credential.helpers';
 
 const FRONT_FACE = 'front';
 const BACK_FACE = 'back';
@@ -24,20 +24,6 @@ export type VCDisplayCardPropsReal = {
     overrideCardTitle?: string;
     overrideCardImageComponent?: React.ReactNode;
     customHeaderComponent?: React.ReactNode;
-};
-
-const getInfoFromCredential = (credential: VC | AchievementCredential): CredentialInfo => {
-    const { issuer, issuanceDate } = credential;
-
-    const credentialSubject = Array.isArray(credential.credentialSubject)
-        ? credential.credentialSubject[0]
-        : credential.credentialSubject;
-
-    const title = credentialSubject.achievement?.name;
-    const createdAt = format(new Date(issuanceDate), 'dd MMM yyyy').toUpperCase();
-    const issuee = credentialSubject.id;
-
-    return { title, createdAt, issuer, issuee, credentialSubject };
 };
 
 export const VCDisplayCard: React.FC<VCDisplayCardPropsReal> = ({

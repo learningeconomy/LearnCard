@@ -1,7 +1,10 @@
 import React, { useLayoutEffect, useState, useEffect, useRef } from 'react';
 import fitty, { FittyInstance, FittyOptions } from 'fitty';
 
-import { VC, VerificationItem } from '@learncard/types';
+import { VCVerificationCheckWithSpinner } from '../VCVerificationCheck/VCVerificationCheck';
+
+import { VC, VerificationItem, Profile } from '@learncard/types';
+import { getInfoFromCredential } from '../../helpers/credential.helpers';
 // import { initLearnCard } from '@learncard/core';
 
 type VerifiableCredentialInfo = {
@@ -17,17 +20,29 @@ type VerifiableCredentialInfo = {
 };
 
 export type VCDisplayCard2Props = {
-    credentialInfo?: VerifiableCredentialInfo;
-    credential?: VC;
+    // credentialInfo?: VerifiableCredentialInfo;
+    credential: VC;
     verification: VerificationItem[];
+    issueeOverride?: Profile;
+    issuerOverride?: Profile;
 };
 
 export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
-    credentialInfo,
+    // credentialInfo,
     credential,
     verification,
+    issueeOverride,
+    issuerOverride,
 }) => {
     const isPreview = !credential;
+
+    const {
+        title,
+        createdAt,
+        issuer: _issuer,
+        issuee: _issuee,
+        credentialSubject,
+    } = getInfoFromCredential(credential);
 
     const [isFront, setIsFront] = useState(true);
     const [statusText, setStatusText] = useState(isPreview ? 'Sample Preview' : '...');
@@ -66,7 +81,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     }
 
     return (
-        <section className="font-mouse flex flex-col items-center border-solid border-[5px] border-white h-full rounded-[30px] overflow-visible z-10 max-w-[400px] relative">
+        <section className="font-mouse flex flex-col items-center border-solid border-[5px] border-white h-[690px] rounded-[30px] overflow-visible z-10 max-w-[400px] relative">
             <RibbonEnd
                 side="left"
                 className="absolute left-[-30px] top-[50px] z-0"
@@ -80,7 +95,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
 
             <h1
                 ref={headerRef}
-                className="leading-[100%] px-[20px] py-[10px] overflow-visible mt-[40px] absolute text-center text-white bg-[#ffbd06] border-y-[5px] border-[#ffcf00] shadow-bottom text-shadow w-[calc(100%_+_16px)] rounded-t-[8px] text-[32px]"
+                className="leading-[100%] px-[20px] py-[10px] overflow-visible mt-[40px] absolute text-center text-[#18224E] bg-white border-y-[5px] border-[#EEF2FF] shadow-bottom text-shadow w-[calc(100%_+_16px)] rounded-t-[8px] text-[32px]"
                 style={{ wordBreak: 'break-word' }}
             >
                 {!isFront && (
@@ -100,14 +115,13 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                     </button>
                 )}
                 <FitText
-                    // text={credentialInfo.title}
-                    text={'Fitty title what whaaaaaaaaaaaaaaaat'}
+                    text={title ?? ''}
                     width={((headerWidth ?? 290) - 40).toString()}
                     options={{ maxSize: 32, minSize: 20, multiLine: true }}
                 />
             </h1>
             <div
-                className="flex flex-col items-center gap-[20px] bg-[#2f80ed] grow w-full rounded-t-[30px] rounded-b-[20px] pb-[30px] overflow-scroll"
+                className="flex flex-col items-center gap-[20px] bg-[#353E64] grow w-full rounded-t-[30px] rounded-b-[20px] pb-[30px] overflow-scroll scrollbar-hide"
                 style={{ paddingTop: headerHeight + 70 }}
             >
                 vc info content
@@ -121,7 +135,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 )}*/}
             </div>
             <footer className="w-full flex justify-between p-[5px] mt-[5px]">
-                {/* <img src={VcCheckmark} alt="checkmark" /> */}
+                <VCVerificationCheckWithSpinner spinnerSize="40px" size={'30px'} loading={false} />
                 <div className="font-montserrat flex flex-col items-center justify-center">
                     <span>Verified Credential</span>
                     <span className="vc-status-text" style={{ color: statusColor }}>
@@ -155,10 +169,10 @@ const RibbonEnd: React.FC<{ side: 'left' | 'right'; className?: string; height?:
             style={{ transform: `scaleX(${side === 'left' ? '1' : '-1'})` }}
         >
             <g filter="url(#filter0_d_4620_22659)">
-                <path d={`M0 0H30V${height}H0L6.36364 ${halfHeight}L0 0Z`} fill="#FFBD06" />
+                <path d={`M0 0H30V${height}H0L6.36364 ${halfHeight}L0 0Z`} fill="white" />
                 <path
                     d={`M3.08593 2.5H27.5V${height}H3.08593L8.80922 ${halfHeight}L8.91926 30L8.80922 29.4812L3.08593 2.5Z`}
-                    stroke="#FFCF00"
+                    stroke="#EEF2FF"
                     strokeWidth="5"
                 />
             </g>
