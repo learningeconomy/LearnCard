@@ -29,8 +29,8 @@ export const VCVerificationCheck: React.FC<VCVerificationCheckProps> = ({ size =
 export default VCVerificationCheck;
 
 export const VCVerificationCheckWithSpinner: React.FC<
-    VCVerificationCheckProps & { spinnerSize?: string }
-> = ({ size = '44px', spinnerSize = '60px', loading = true }) => {
+    VCVerificationCheckProps & { spinnerSize?: string; withBorder?: boolean }
+> = ({ size = '44px', spinnerSize = '60px', loading = true, withBorder = false }) => {
     const loadingState = loading ? CircleLoadingState.spin : CircleLoadingState.stop;
 
     const spinnerStyle: React.CSSProperties = {
@@ -47,7 +47,8 @@ export const VCVerificationCheckWithSpinner: React.FC<
     return (
         <div
             style={{ width: spinnerSize, height: spinnerSize, position: 'relative' }}
-            className={`flex items-center justify-center bg-white rounded-full ml-3 mr-3 overflow-hidden`}
+            className={`flex items-center justify-center bg-white rounded-full overflow-hidden ${withBorder ? ' ml-3 mr-3' : ''
+                }`}
         >
             <VCVerificationCheck size={size} loading={loading} />
             <div className="vc-verification-spinner-overlay" style={spinnerStyle}>
@@ -80,6 +81,7 @@ export const VCVerificationCheckWithText: React.FC<
                 size={size}
                 spinnerSize={spinnerSize}
                 loading={loading || defaultLoading}
+                withBorder
             />
             <span className="text-white font-bold tracking-wider">Credential</span>
         </div>

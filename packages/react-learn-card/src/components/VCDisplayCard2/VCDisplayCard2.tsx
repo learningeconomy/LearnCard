@@ -2,6 +2,7 @@ import React, { useLayoutEffect, useState, useEffect, useRef } from 'react';
 import fitty, { FittyInstance, FittyOptions } from 'fitty';
 
 import { VCVerificationCheckWithSpinner } from '../VCVerificationCheck/VCVerificationCheck';
+import AwardRibbon from '../svgs/AwardRibbon';
 
 import { VC, VerificationItem, Profile } from '@learncard/types';
 import { getInfoFromCredential } from '../../helpers/credential.helpers';
@@ -34,8 +35,6 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     issueeOverride,
     issuerOverride,
 }) => {
-    const isPreview = !credential;
-
     const {
         title,
         createdAt,
@@ -45,8 +44,6 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     } = getInfoFromCredential(credential);
 
     const [isFront, setIsFront] = useState(true);
-    const [statusText, setStatusText] = useState(isPreview ? 'Sample Preview' : '...');
-    const [verificationResults, setVerificationResults] = useState(isPreview ? undefined : []);
     const [headerHeight, setHeaderHeight] = useState(44); // 44 is the height if the header is one line
     const [headerWidth, setHeaderWidth] = useState(0);
 
@@ -61,8 +58,18 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
         }, 10);
     });
 
+    let verificationStatusText = verification.length === 0 ? '...' : 'Success';
+    verification.forEach(v => {
+        if (
+            (v.status === 'Error' && verificationStatusText === 'Success') ||
+            v.status === 'Failed'
+        ) {
+            verificationStatusText = v.status;
+        }
+    });
+
     let statusColor = '';
-    switch (statusText) {
+    switch (verificationStatusText) {
         case '...':
         case 'Sample Preview':
             statusColor = '#828282';
@@ -81,7 +88,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     }
 
     return (
-        <section className="font-mouse flex flex-col items-center border-solid border-[5px] border-white h-[690px] rounded-[30px] overflow-visible z-10 max-w-[400px] relative">
+        <section className="font-mouse flex flex-col items-center border-solid border-[5px] border-white h-[690px] rounded-[30px] overflow-visible z-10 max-w-[400px] relative bg-white">
             <RibbonEnd
                 side="left"
                 className="absolute left-[-30px] top-[50px] z-0"
@@ -102,7 +109,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                     <button
                         className="absolute left-[-22px]"
                         style={{ top: `${headerHeight / 2 - 18}px` }}
-                        role="button"
+                        type="button"
                         onClick={() => setIsFront(true)}
                     >
                         {/*
@@ -135,18 +142,20 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 )}*/}
             </div>
             <footer className="w-full flex justify-between p-[5px] mt-[5px]">
-                <VCVerificationCheckWithSpinner spinnerSize="40px" size={'30px'} loading={false} />
-                <div className="font-montserrat flex flex-col items-center justify-center">
-                    <span>Verified Credential</span>
+                <VCVerificationCheckWithSpinner spinnerSize="40px" size={'32px'} loading={false} />
+                <div className="font-montserrat flex flex-col items-center justify-center text-[12px] font-[700] leading-[15px]">
+                    <span className="text-[#4F4F4F]">Verified Credential</span>
                     <span className="vc-status-text" style={{ color: statusColor }}>
-                        {statusText}
+                        {verificationStatusText}
                     </span>
                 </div>
                 <button
-                    role="button"
-                    className={`footer-switch-button ${isFront ? 'info' : 'award'}`}
+                    type="button"
+                    className={`bg-[#6366F1] rounded-[20px] h-[40px] w-[40px] flex items-center justify-center`}
                     onClick={() => setIsFront(!isFront)}
-                />
+                >
+                    <AwardRibbon />
+                </button>
             </footer>
         </section>
     );
