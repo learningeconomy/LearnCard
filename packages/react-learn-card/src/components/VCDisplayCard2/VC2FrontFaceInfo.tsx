@@ -11,6 +11,7 @@ type VC2FrontFaceInfoProps = {
     subjectImageComponent?: React.ReactNode;
     issuerImageComponent?: React.ReactNode;
     createdAt: string;
+    showDetails: () => void;
 };
 
 const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
@@ -19,6 +20,7 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
     subjectImageComponent,
     issuerImageComponent,
     createdAt,
+    showDetails,
 }) => {
     const issuerName = getNameFromProfile(issuer ?? '');
     const issueeName = getNameFromProfile(issuee ?? '');
@@ -49,8 +51,8 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
     );
 
     return (
-        <section className="w-full px-[15px]">
-            <div className="bg-white flex flex-col items-center gap-[5px] rounded-[20px] shadow-bottom px-[15px] py-[20px]">
+        <section className="w-full px-[15px] flex flex-col items-center">
+            <div className="bg-white flex flex-col items-center gap-[5px] rounded-[20px] shadow-bottom px-[15px] py-[20px] w-full">
                 <h2 className="text-[27px] leading-[130%]">{issueeName}</h2>
                 <div className="relative">
                     <div className="h-[60px] w-[60px] rounded-full overflow-hidden">
@@ -67,6 +69,13 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
                     </span>
                 </div>
             </div>
+            <button
+                type="button"
+                className="text-white shadow-bottom bg-grayscale-900 px-[30px] py-[8px] rounded-[40px] text-[28px] tracking-[0.75px] uppercase leading-[28px] mt-[28px]"
+                onClick={showDetails}
+            >
+                Details
+            </button>
         </section>
     );
 };

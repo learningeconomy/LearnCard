@@ -145,6 +145,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                         subjectImageComponent={subjectImageComponent}
                         issuerImageComponent={issuerImageComponent}
                         createdAt={createdAt}
+                        showDetails={() => setIsFront(false)}
                     />
                 )}
                 {/*  
