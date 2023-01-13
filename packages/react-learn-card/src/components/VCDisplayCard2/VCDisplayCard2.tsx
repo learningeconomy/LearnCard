@@ -2,6 +2,7 @@ import React, { useLayoutEffect, useState, useEffect, useRef } from 'react';
 
 import { VCVerificationCheckWithSpinner } from '../VCVerificationCheck/VCVerificationCheck';
 import VC2FrontFaceInfo from './VC2FrontFaceInfo';
+import VC2BackFace from './VC2BackFace';
 import RibbonEnd from './RibbonEnd';
 import FitText from './FitText';
 import AwardRibbon from '../svgs/AwardRibbon';
@@ -135,7 +136,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 />
             </h1>
             <div
-                className="flex flex-col items-center gap-[20px] bg-[#353E64] grow w-full rounded-t-[30px] rounded-b-[20px] pb-[30px] overflow-scroll scrollbar-hide"
+                className="flex flex-col items-center bg-[#353E64] grow w-full rounded-t-[30px] rounded-b-[20px] pb-[30px] overflow-scroll scrollbar-hide"
                 style={{ paddingTop: headerHeight + 70 }}
             >
                 {isFront && (
@@ -148,13 +149,17 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                         showDetails={() => setIsFront(false)}
                     />
                 )}
-                {/*  
                 {!isFront && (
-                    <VerifiableCredentialBackDetails
-                        credentialInfo={credentialInfo}
-                        verificationResults={verificationResults}
-                    />
-                )}*/}
+                    <VC2BackFace credential={credential} verificationItems={verification} />
+                )}
+                <button
+                    type="button"
+                    className="text-white shadow-bottom bg-grayscale-900 px-[30px] py-[8px] rounded-[40px] text-[28px] tracking-[0.75px] uppercase leading-[28px] mt-[28px]"
+                    onClick={() => setIsFront(!isFront)}
+                >
+                    {isFront && 'Details'}
+                    {!isFront && 'Back'}
+                </button>
             </div>
             <footer className="w-full flex justify-between p-[5px] mt-[5px]">
                 <VCVerificationCheckWithSpinner spinnerSize="40px" size={'32px'} loading={false} />

@@ -86,6 +86,7 @@ module.exports = {
             fontFamily: {
                 mouse: ['Mouse Memoirs'],
                 montserrat: ['Montserrat', 'Helvetica', 'Serif'],
+                poppins: ['Poppins'],
             },
         },
     },

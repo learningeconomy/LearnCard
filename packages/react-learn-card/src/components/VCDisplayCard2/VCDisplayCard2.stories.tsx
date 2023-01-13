@@ -126,10 +126,11 @@ VCDisplayCardTest.args = {
         name: 'Test Person',
         image: 'https://cdn.filestackcontent.com/rotate=deg:exif/auto_image/A2tGEP67TWeC59SmR4vP',
     },
-    issuerOverride: {
-        name: 'Dilbert Charles',
-        image: 'https://cdn.filestackcontent.com/rotate=deg:exif/auto_image/pQgXEF77R0GJKdQBdClb',
-    },
+    // issuerOverride: {
+    //     name: 'Dilbert Charles',
+    //     image: 'https://cdn.filestackcontent.com/rotate=deg:exif/auto_image/pQgXEF77R0GJKdQBdClb',
+    // },
+
     // loading: false,
     // className: 'bg-indigo-700',
 
