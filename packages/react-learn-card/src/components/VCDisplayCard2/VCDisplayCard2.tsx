@@ -1,12 +1,13 @@
 import React, { useLayoutEffect, useState, useEffect, useRef } from 'react';
-import fitty, { FittyInstance, FittyOptions } from 'fitty';
 
 import { VCVerificationCheckWithSpinner } from '../VCVerificationCheck/VCVerificationCheck';
+import VC2FrontFaceInfo from './VC2FrontFaceInfo';
+import RibbonEnd from './RibbonEnd';
+import FitText from './FitText';
 import AwardRibbon from '../svgs/AwardRibbon';
 
 import { VC, VerificationItem, Profile } from '@learncard/types';
 import { getInfoFromCredential } from '../../helpers/credential.helpers';
-// import { initLearnCard } from '@learncard/core';
 
 type VerifiableCredentialInfo = {
     title: string;
@@ -26,6 +27,8 @@ export type VCDisplayCard2Props = {
     verification: VerificationItem[];
     issueeOverride?: Profile;
     issuerOverride?: Profile;
+    subjectImageComponent?: React.ReactNode;
+    issuerImageComponent?: React.ReactNode;
 };
 
 export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
@@ -34,6 +37,8 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     verification,
     issueeOverride,
     issuerOverride,
+    subjectImageComponent,
+    issuerImageComponent,
 }) => {
     const {
         title,
@@ -41,7 +46,9 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
         issuer: _issuer,
         issuee: _issuee,
         credentialSubject,
-    } = getInfoFromCredential(credential);
+    } = getInfoFromCredential(credential, 'MMM dd, yyyy');
+    const issuee = issueeOverride || _issuee;
+    const issuer = issuerOverride || _issuer;
 
     const [isFront, setIsFront] = useState(true);
     const [headerHeight, setHeaderHeight] = useState(44); // 44 is the height if the header is one line
@@ -131,9 +138,16 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 className="flex flex-col items-center gap-[20px] bg-[#353E64] grow w-full rounded-t-[30px] rounded-b-[20px] pb-[30px] overflow-scroll scrollbar-hide"
                 style={{ paddingTop: headerHeight + 70 }}
             >
-                vc info content
+                {isFront && (
+                    <VC2FrontFaceInfo
+                        issuee={issuee}
+                        issuer={issuer}
+                        subjectImageComponent={subjectImageComponent}
+                        issuerImageComponent={issuerImageComponent}
+                        createdAt={createdAt}
+                    />
+                )}
                 {/*  
-                {isFront && <VerifiableCredentialFrontDetails credential={credentialInfo} />}
                 {!isFront && (
                     <VerifiableCredentialBackDetails
                         credentialInfo={credentialInfo}
@@ -158,96 +172,6 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 </button>
             </footer>
         </section>
-    );
-};
-
-const RibbonEnd: React.FC<{ side: 'left' | 'right'; className?: string; height?: string }> = ({
-    side,
-    className = '',
-    height = '64',
-}) => {
-    const halfHeight = parseInt(height) / 2;
-    return (
-        <svg
-            className={className}
-            width="30"
-            height={height}
-            viewBox={`0 0 30 ${height}`}
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            style={{ transform: `scaleX(${side === 'left' ? '1' : '-1'})` }}
-        >
-            <g filter="url(#filter0_d_4620_22659)">
-                <path d={`M0 0H30V${height}H0L6.36364 ${halfHeight}L0 0Z`} fill="white" />
-                <path
-                    d={`M3.08593 2.5H27.5V${height}H3.08593L8.80922 ${halfHeight}L8.91926 30L8.80922 29.4812L3.08593 2.5Z`}
-                    stroke="#EEF2FF"
-                    strokeWidth="5"
-                />
-            </g>
-            <defs>
-                <filter
-                    id="filter0_d_4620_22659"
-                    x="0"
-                    y="0"
-                    width="30"
-                    height={height}
-                    filterUnits="userSpaceOnUse"
-                    colorInterpolationFilters="sRGB"
-                >
-                    <feFlood floodOpacity="0" result="BackgroundImageFix" />
-                    <feColorMatrix
-                        in="SourceAlpha"
-                        type="matrix"
-                        values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
-                        result="hardAlpha"
-                    />
-                    <feOffset dy="4" />
-                    <feComposite in2="hardAlpha" operator="out" />
-                    <feColorMatrix
-                        type="matrix"
-                        values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0"
-                    />
-                    <feBlend
-                        mode="normal"
-                        in2="BackgroundImageFix"
-                        result="effect1_dropShadow_4620_22659"
-                    />
-                    <feBlend
-                        mode="normal"
-                        in="SourceGraphic"
-                        in2="effect1_dropShadow_4620_22659"
-                        result="shape"
-                    />
-                </filter>
-            </defs>
-        </svg>
-    );
-};
-
-type FitTextProps = {
-    text: string;
-    width: string; // Must be set for this to work
-    options?: FittyOptions;
-    textClassName?: string;
-};
-
-const FitText: React.FC<FitTextProps> = ({ text, width, options, textClassName = '' }) => {
-    const textRef = useRef<HTMLSpanElement>(null);
-
-    useEffect(() => {
-        let fit: FittyInstance;
-        if (textRef.current) fit = fitty(textRef.current, options);
-
-        return () => fit?.unsubscribe();
-    }, [textRef.current]);
-
-    return (
-        <div style={{ width }} className="text-center">
-            <span ref={textRef} className={textClassName}>
-                {text}
-            </span>
-        </div>
     );
 };
 

@@ -19,7 +19,10 @@ export const getImageFromProfile = (profile: Profile): string => {
     return getImageFromImage(profile.image ?? '');
 };
 
-export const getInfoFromCredential = (credential: VC | AchievementCredential): CredentialInfo => {
+export const getInfoFromCredential = (
+    credential: VC | AchievementCredential,
+    dateFormat: string = 'dd MMM yyyy'
+): CredentialInfo => {
     const { issuer, issuanceDate } = credential;
 
     const credentialSubject = Array.isArray(credential.credentialSubject)
@@ -27,7 +30,7 @@ export const getInfoFromCredential = (credential: VC | AchievementCredential): C
         : credential.credentialSubject;
 
     const title = credentialSubject.achievement?.name;
-    const createdAt = format(new Date(issuanceDate), 'dd MMM yyyy').toUpperCase();
+    const createdAt = format(new Date(issuanceDate), dateFormat).toUpperCase();
     const issuee = credentialSubject.id;
 
     return { title, createdAt, issuer, issuee, credentialSubject };

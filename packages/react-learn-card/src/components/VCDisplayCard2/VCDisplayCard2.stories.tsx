@@ -100,7 +100,7 @@ VCDisplayCardTest.args = {
         type: ['VerifiableCredential', 'OpenBadgeCredential'],
         issuer: {
             type: 'Profile',
-            id: 'did:example:123',
+            id: 'did:example:issuer123',
             name: 'Jobs for the Future (JFF)',
             url: 'https://www.jff.org/',
             image: 'https://kayaelle.github.io/vc-ed/plugfest-1-2022/images/JFF_LogoLockup.png',
@@ -108,7 +108,7 @@ VCDisplayCardTest.args = {
         issuanceDate: '2022-07-27T19:57:31.512Z',
         credentialSubject: {
             type: 'AchievementSubject',
-            id: 'did:example:123',
+            id: 'did:example:subject123',
             achievement: {
                 type: 'Achievement',
                 name: 'Our Wallet Passed JFF Plugfest #1 2022',
@@ -122,14 +122,17 @@ VCDisplayCardTest.args = {
             },
         },
     },
-    // issueeOverride: {
-    //     name: 'Test Person',
-    // },
-    // issuerOverride: {
-    //     name: 'Dilbert Charles',
-    // },
+    issueeOverride: {
+        name: 'Test Person',
+        image: 'https://cdn.filestackcontent.com/rotate=deg:exif/auto_image/A2tGEP67TWeC59SmR4vP',
+    },
+    issuerOverride: {
+        name: 'Dilbert Charles',
+        image: 'https://cdn.filestackcontent.com/rotate=deg:exif/auto_image/pQgXEF77R0GJKdQBdClb',
+    },
     // loading: false,
     // className: 'bg-indigo-700',
+
     // TODO test with Failed and Error ones too
     verification: [
         {
