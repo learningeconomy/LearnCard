@@ -65,10 +65,10 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
         }, 10);
     });
 
-    let verificationStatusText = verification.length === 0 ? '...' : 'Success';
+    let verificationStatusText = verification.length === 0 ? '...' : 'Passed';
     verification.forEach(v => {
         if (
-            (v.status === 'Error' && verificationStatusText === 'Success') ||
+            (v.status === 'Error' && verificationStatusText === 'Passed') ||
             v.status === 'Failed'
         ) {
             verificationStatusText = v.status;
@@ -81,7 +81,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
         case 'Sample Preview':
             statusColor = '#828282';
             break;
-        case 'Success':
+        case 'Passed':
             statusColor = '#39B54A';
             break;
         case 'Failed':
@@ -160,7 +160,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 <VCVerificationCheckWithSpinner spinnerSize="40px" size={'32px'} loading={false} />
                 <div className="font-montserrat flex flex-col items-center justify-center text-[12px] font-[700] leading-[15px]">
                     <span className="text-[#4F4F4F]">Verified Credential</span>
-                    <span className="vc-status-text" style={{ color: statusColor }}>
+                    <span className="uppercase" style={{ color: statusColor }}>
                         {verificationStatusText}
                     </span>
                 </div>
