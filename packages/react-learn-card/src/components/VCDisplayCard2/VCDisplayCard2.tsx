@@ -1,4 +1,4 @@
-import React, { useLayoutEffect, useState, useEffect, useRef } from 'react';
+import React, { useLayoutEffect, useState, useRef } from 'react';
 
 import { VCVerificationCheckWithSpinner } from '../VCVerificationCheck/VCVerificationCheck';
 import VC2FrontFaceInfo from './VC2FrontFaceInfo';
@@ -6,9 +6,13 @@ import VC2BackFace from './VC2BackFace';
 import RibbonEnd from './RibbonEnd';
 import FitText from './FitText';
 import AwardRibbon from '../svgs/AwardRibbon';
+import LeftArrow from '../svgs/LeftArrow';
 
-import { VC, VerificationItem, Profile } from '@learncard/types';
-import { getInfoFromCredential } from '../../helpers/credential.helpers';
+import { VC, VerificationItem, VerificationStatusEnum, Profile } from '@learncard/types';
+import {
+    getColorForVerificationStatus,
+    getInfoFromCredential,
+} from '../../helpers/credential.helpers';
 
 type VerifiableCredentialInfo = {
     title: string;
@@ -25,7 +29,7 @@ type VerifiableCredentialInfo = {
 export type VCDisplayCard2Props = {
     // credentialInfo?: VerifiableCredentialInfo;
     credential: VC;
-    verification: VerificationItem[];
+    verificationItems: VerificationItem[];
     issueeOverride?: Profile;
     issuerOverride?: Profile;
     subjectImageComponent?: React.ReactNode;
@@ -35,7 +39,7 @@ export type VCDisplayCard2Props = {
 export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     // credentialInfo,
     credential,
-    verification,
+    verificationItems,
     issueeOverride,
     issuerOverride,
     subjectImageComponent,
@@ -66,34 +70,26 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
         }, 10);
     });
 
-    let verificationStatusText = verification.length === 0 ? '...' : 'Passed';
-    verification.forEach(v => {
-        if (
-            (v.status === 'Error' && verificationStatusText === 'Passed') ||
-            v.status === 'Failed'
-        ) {
-            verificationStatusText = v.status;
-        }
-    });
+    let worstVerificationStatus = verificationItems.reduce(
+        (
+            currentWorst: typeof VerificationStatusEnum[keyof typeof VerificationStatusEnum],
+            verification
+        ) => {
+            switch (currentWorst) {
+                case VerificationStatusEnum.Success:
+                    return verification.status;
+                case VerificationStatusEnum.Error:
+                    return verification.status === VerificationStatusEnum.Failed
+                        ? verification.status
+                        : currentWorst;
+                case VerificationStatusEnum.Failed:
+                    return currentWorst;
+            }
+        },
+        VerificationStatusEnum.Success
+    );
 
-    let statusColor = '';
-    switch (verificationStatusText) {
-        case '...':
-        case 'Sample Preview':
-            statusColor = '#828282';
-            break;
-        case 'Passed':
-            statusColor = '#39B54A';
-            break;
-        case 'Failed':
-            statusColor = '#D01012';
-            break;
-        case 'Error':
-            statusColor = '#FFBD06';
-            break;
-        default:
-            statusColor = '#000000';
-    }
+    const statusColor = getColorForVerificationStatus(worstVerificationStatus);
 
     return (
         <section className="font-mouse flex flex-col items-center border-solid border-[5px] border-white h-[690px] rounded-[30px] overflow-visible z-10 max-w-[400px] relative bg-white">
@@ -150,7 +146,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                     />
                 )}
                 {!isFront && (
-                    <VC2BackFace credential={credential} verificationItems={verification} />
+                    <VC2BackFace credential={credential} verificationItems={verificationItems} />
                 )}
                 <button
                     type="button"
@@ -158,7 +154,12 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                     onClick={() => setIsFront(!isFront)}
                 >
                     {isFront && 'Details'}
-                    {!isFront && 'Back'}
+                    {!isFront && (
+                        <span className="flex gap-[10px] items-center">
+                            <LeftArrow />
+                            Back
+                        </span>
+                    )}
                 </button>
             </div>
             <footer className="w-full flex justify-between p-[5px] mt-[5px]">
@@ -166,7 +167,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 <div className="font-montserrat flex flex-col items-center justify-center text-[12px] font-[700] leading-[15px]">
                     <span className="text-[#4F4F4F]">Verified Credential</span>
                     <span className="uppercase" style={{ color: statusColor }}>
-                        {verificationStatusText}
+                        {worstVerificationStatus}
                     </span>
                 </div>
                 <button
