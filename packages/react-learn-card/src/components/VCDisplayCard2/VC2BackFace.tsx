@@ -1,5 +1,8 @@
 import React from 'react';
 import { format } from 'date-fns';
+
+import VerificationRow from './VerificationRow';
+
 import { VC, VerificationItem, Profile } from '@learncard/types';
 
 type VC2BackFaceProps = {
@@ -40,7 +43,7 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({ credential, verificationItems
                 <h3 className="text-[20px] leading-[20px]">Credential Verifications</h3>
 
                 {verificationItems.map(verification => (
-                    <div>{verification.status}</div>
+                    <VerificationRow verification={verification} />
                 ))}
             </div>
         </section>

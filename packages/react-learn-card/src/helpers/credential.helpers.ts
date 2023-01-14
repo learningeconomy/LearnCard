@@ -1,4 +1,11 @@
-import { Image, Profile, VC, AchievementCredential, CredentialInfo } from '@learncard/types';
+import {
+    Image,
+    Profile,
+    VC,
+    AchievementCredential,
+    CredentialInfo,
+    VerificationStatusEnum,
+} from '@learncard/types';
 import { format } from 'date-fns';
 
 export const getImageFromImage = (image: Image): string => {
@@ -34,4 +41,19 @@ export const getInfoFromCredential = (
     const issuee = credentialSubject.id;
 
     return { title, createdAt, issuer, issuee, credentialSubject };
+};
+
+export const getColorForVerificationStatus = (
+    status: typeof VerificationStatusEnum[keyof typeof VerificationStatusEnum]
+) => {
+    switch (status) {
+        case VerificationStatusEnum.Success:
+            return '#39B54A';
+        case VerificationStatusEnum.Failed:
+            return '#D01012';
+        case VerificationStatusEnum.Error:
+            return '#FFBD06';
+        default:
+            return '#000000';
+    }
 };

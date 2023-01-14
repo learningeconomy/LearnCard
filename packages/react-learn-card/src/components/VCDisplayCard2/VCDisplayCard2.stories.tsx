@@ -139,7 +139,27 @@ VCDisplayCardTest.args = {
         {
             check: 'proof',
             status: VerificationStatusEnum.Success,
-            message: 'Valid • Does Not Expire',
+            message: 'Issued to Example Person',
         },
+        {
+            check: 'proof',
+            status: VerificationStatusEnum.Error,
+            message: 'Issued by Some Random Did',
+        },
+        {
+            check: 'proof',
+            status: VerificationStatusEnum.Failed,
+            message: 'Invalid • Expired on 17 Nov 2022',
+        },
+        {
+            check: 'proof',
+            status: VerificationStatusEnum.Success,
+            message: 'Status: Active',
+        },
+        // {
+        //     check: 'proof',
+        //     status: VerificationStatusEnum.Success,
+        //     message: 'Valid • Does Not Expire',
+        // },
     ],
 };
