@@ -135,7 +135,7 @@ VCDisplayCardTest.args = {
     // className: 'bg-indigo-700',
 
     // TODO test with Failed and Error ones too
-    verification: [
+    verificationItems: [
         {
             check: 'proof',
             status: VerificationStatusEnum.Success,
