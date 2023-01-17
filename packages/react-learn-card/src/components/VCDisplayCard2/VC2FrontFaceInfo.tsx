@@ -1,5 +1,6 @@
 import React from 'react';
 
+import AchievementWithTitle from '../svgs/AchievementWithTitle';
 import DefaultFace from '../../assets/images/default-face.jpeg';
 
 import { getImageFromProfile, getNameFromProfile } from '../../helpers/credential.helpers';
@@ -8,19 +9,19 @@ import { VC, VerificationItem, Profile } from '@learncard/types';
 type VC2FrontFaceInfoProps = {
     issuee: Profile;
     issuer: Profile;
+    title: string;
     subjectImageComponent?: React.ReactNode;
     issuerImageComponent?: React.ReactNode;
     createdAt: string;
-    showDetails: () => void;
 };
 
 const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
     issuee,
     issuer,
+    title,
     subjectImageComponent,
     issuerImageComponent,
     createdAt,
-    showDetails,
 }) => {
     const issuerName = getNameFromProfile(issuer ?? '');
     const issueeName = getNameFromProfile(issuee ?? '');
@@ -51,7 +52,8 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
     );
 
     return (
-        <section className="w-full px-[15px] flex flex-col items-center">
+        <section className="w-full px-[15px] flex flex-col items-center gap-[15px]">
+            <AchievementWithTitle text={title} />
             <div className="bg-white flex flex-col items-center gap-[5px] rounded-[20px] shadow-bottom px-[15px] py-[20px] w-full">
                 <h3 className="text-[27px] leading-[130%]">{issueeName}</h3>
                 <div className="relative">

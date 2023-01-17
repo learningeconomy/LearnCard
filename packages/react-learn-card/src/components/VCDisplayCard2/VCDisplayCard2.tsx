@@ -139,10 +139,10 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                     <VC2FrontFaceInfo
                         issuee={issuee}
                         issuer={issuer}
+                        title={title}
                         subjectImageComponent={subjectImageComponent}
                         issuerImageComponent={issuerImageComponent}
                         createdAt={createdAt}
-                        showDetails={() => setIsFront(false)}
                     />
                 )}
                 {!isFront && (
