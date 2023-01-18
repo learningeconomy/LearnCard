@@ -92,7 +92,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     const statusColor = getColorForVerificationStatus(worstVerificationStatus);
 
     return (
-        <section className="font-mouse flex flex-col items-center border-solid border-[5px] border-white h-[690px] rounded-[30px] overflow-visible z-10 max-w-[400px] relative bg-white">
+        <section className="font-mouse flex flex-col items-center border-solid border-[5px] border-white h-[700px] rounded-[30px] overflow-visible z-10 max-w-[400px] relative bg-white">
             <RibbonEnd
                 side="left"
                 className="absolute left-[-30px] top-[50px] z-0"
@@ -131,36 +131,45 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                     options={{ maxSize: 32, minSize: 20, multiLine: true }}
                 />
             </h1>
-            <div
-                className="flex flex-col items-center bg-[#353E64] grow w-full rounded-t-[30px] rounded-b-[20px] pb-[30px] overflow-scroll scrollbar-hide"
-                style={{ paddingTop: headerHeight + 70 }}
-            >
-                {isFront && (
-                    <VC2FrontFaceInfo
-                        issuee={issuee}
-                        issuer={issuer}
-                        title={title}
-                        subjectImageComponent={subjectImageComponent}
-                        issuerImageComponent={issuerImageComponent}
-                        createdAt={createdAt}
-                    />
-                )}
-                {!isFront && (
-                    <VC2BackFace credential={credential} verificationItems={verificationItems} />
-                )}
-                <button
-                    type="button"
-                    className="text-white shadow-bottom bg-grayscale-900 px-[30px] py-[8px] rounded-[40px] text-[28px] tracking-[0.75px] uppercase leading-[28px] mt-[28px]"
-                    onClick={() => setIsFront(!isFront)}
+            <div className="flex flex-col items-center grow w-full rounded-t-[30px] rounded-b-[20px] overflow-scroll scrollbar-hide">
+                {/* 
+                    div in a div here so that we can have an outer scroll container with an inner container
+                    that has a rounded bottom at the bottom of the scrollable content 
+                */}
+                <div
+                    className="w-full flex flex-col justify-center items-center rounded-b-[200px] bg-[#353E64] pb-[50px]"
+                    style={{ paddingTop: headerHeight + 70 }}
                 >
-                    {isFront && 'Details'}
-                    {!isFront && (
-                        <span className="flex gap-[10px] items-center">
-                            <LeftArrow />
-                            Back
-                        </span>
+                    {isFront && (
+                        <VC2FrontFaceInfo
+                            issuee={issuee}
+                            issuer={issuer}
+                            title={title}
+                            subjectImageComponent={subjectImageComponent}
+                            issuerImageComponent={issuerImageComponent}
+                            createdAt={createdAt}
+                        />
                     )}
-                </button>
+                    {!isFront && (
+                        <VC2BackFace
+                            credential={credential}
+                            verificationItems={verificationItems}
+                        />
+                    )}
+                    <button
+                        type="button"
+                        className="text-white shadow-bottom bg-grayscale-900 px-[30px] py-[8px] rounded-[40px] text-[28px] tracking-[0.75px] uppercase leading-[28px] mt-[40px] w-fit"
+                        onClick={() => setIsFront(!isFront)}
+                    >
+                        {isFront && 'Details'}
+                        {!isFront && (
+                            <span className="flex gap-[10px] items-center">
+                                <LeftArrow />
+                                Back
+                            </span>
+                        )}
+                    </button>
+                </div>
             </div>
             <footer className="w-full flex justify-between p-[5px] mt-[5px]">
                 <VCVerificationCheckWithSpinner spinnerSize="40px" size={'32px'} loading={false} />
