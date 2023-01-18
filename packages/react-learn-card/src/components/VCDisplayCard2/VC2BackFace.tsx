@@ -22,7 +22,7 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({ credential, verificationItems
 
                 {/* TODO truncate if too long */}
                 <p className="text-[12px] text-grayscale-700 leading-[18px] font-poppins font-[400]">
-                    {credential.credentialSubject.achievement.description}
+                    {credential.credentialSubject.achievement?.description}
                 </p>
 
                 {expiration && (
@@ -36,7 +36,7 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({ credential, verificationItems
 
                 {/* TODO truncate if too long */}
                 <p className="text-[12px] text-grayscale-700 leading-[18px] font-poppins font-[400]">
-                    {credential.credentialSubject.achievement.criteria.narrative}
+                    {credential.credentialSubject.achievement?.criteria?.narrative}
                 </p>
             </div>
             <div className="bg-white flex flex-col items-start gap-[10px] rounded-[20px] shadow-bottom px-[15px] py-[20px] w-full">
