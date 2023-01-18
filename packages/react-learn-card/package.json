@@ -72,13 +72,11 @@
     "date-fns": "^2.28.0",
     "fitty": "^2.3.6",
     "qrcode.react": "^3.0.2",
-    "react": "^18.2.0",
+    "react": "link:~/WeLibraryOS/wl-react/node_modules/react",
     "react-barcode": "^1.4.5",
-    "react-dom": "^18.2.0",
+    "react-dom": "link:~/WeLibraryOS/wl-react/node_modules/react-dom",
     "tailwind-scrollbar-hide": "^1.1.7"
   },
   "peerDependencies": {
-    "react": "^16.8.0 || ^17.0.0 || ^18.0.0",
-    "react-dom": "^16.8.0 || ^17.0.0 || ^18.0.0"
   }
 }
