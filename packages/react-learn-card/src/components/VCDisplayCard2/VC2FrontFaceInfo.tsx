@@ -24,8 +24,8 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
     issuerImageComponent,
     createdAt,
 }) => {
-    const issuerName = truncateWithEllipsis(getNameFromProfile(issuer ?? ''), 32);
-    const issueeName = truncateWithEllipsis(getNameFromProfile(issuee ?? ''), 30);
+    const issuerName = truncateWithEllipsis(getNameFromProfile(issuer ?? ''), 25);
+    const issueeName = truncateWithEllipsis(getNameFromProfile(issuee ?? ''), 25);
     const issuerImage = getImageFromProfile(issuer ?? '');
     const issueeImage = getImageFromProfile(issuee ?? '');
 

@@ -5,6 +5,7 @@ import { getColorForVerificationStatus } from '../../helpers/credential.helpers'
 import AcuteCheckmark from '../svgs/AcuteCheckmark';
 import ExclamationPoint from '../svgs/ExclamationPoint';
 import X from '../svgs/X';
+import { capitalize } from '../../helpers/string.helpers';
 
 type VerificationRowProps = {
     verification: VerificationItem;
@@ -24,8 +25,13 @@ const VerificationRow: React.FC<VerificationRowProps> = ({ verification }) => {
         }
     };
 
+    let primaryText = verification.message;
+    if (verification.status === VerificationStatusEnum.Success && verification.check === 'proof') {
+        primaryText = `${capitalize(verification.check)} • ${verification.message}`;
+    }
+
     return (
-        <div className="flex flex-col gap-[5px] font-poppins border-b-[1px] bord-grayscale-200 border-solid w-full py-[10px] last:border-0">
+        <div className="flex flex-col gap-[5px] font-poppins border-b-[1px] bord-grayscale-200 border-solid w-full py-[10px] last:border-0 last:pb-0">
             <span
                 className="font-[700] text-[11px] leading-[16px] uppercase flex items-center gap-[3px]"
                 style={{ color: statusColor }}
@@ -34,7 +40,7 @@ const VerificationRow: React.FC<VerificationRowProps> = ({ verification }) => {
                 {verification.status}
             </span>
             <span className="font-[400] text-[14px] leading-[21px] text-grayscale-900">
-                {verification.message}
+                {primaryText}
             </span>
         </div>
     );
