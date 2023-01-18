@@ -4,6 +4,7 @@ import AchievementWithTitle from '../svgs/AchievementWithTitle';
 import DefaultFace from '../../assets/images/default-face.jpeg';
 
 import { getImageFromProfile, getNameFromProfile } from '../../helpers/credential.helpers';
+import { truncateWithEllipsis } from '../../helpers/string.helpers';
 import { VC, VerificationItem, Profile } from '@learncard/types';
 
 type VC2FrontFaceInfoProps = {
@@ -23,8 +24,8 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
     issuerImageComponent,
     createdAt,
 }) => {
-    const issuerName = getNameFromProfile(issuer ?? '');
-    const issueeName = getNameFromProfile(issuee ?? '');
+    const issuerName = truncateWithEllipsis(getNameFromProfile(issuer ?? ''), 32);
+    const issueeName = truncateWithEllipsis(getNameFromProfile(issuee ?? ''), 30);
     const issuerImage = getImageFromProfile(issuer ?? '');
     const issueeImage = getImageFromProfile(issuee ?? '');
 
