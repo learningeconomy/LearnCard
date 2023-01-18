@@ -10,6 +10,7 @@ export type VCCardProps = {
     issueeOverride?: Profile;
     className?: string;
     version?: '1' | '2';
+    subjectImageComponent?: React.ReactNode;
 };
 
 export const VCCard: React.FC<VCCardProps> = ({
@@ -17,6 +18,7 @@ export const VCCard: React.FC<VCCardProps> = ({
     issueeOverride,
     className = '',
     version = '1',
+    subjectImageComponent,
 }) => {
     const [loading, setLoading] = useState(true);
     const [vcVerification, setVCVerification] = useState<VerificationItem[]>([]);
@@ -49,6 +51,7 @@ export const VCCard: React.FC<VCCardProps> = ({
             issueeOverride={issueeOverride}
             verificationInProgress={loading}
             verificationItems={vcVerification}
+            subjectImageComponent={subjectImageComponent}
         />
     );
 };
