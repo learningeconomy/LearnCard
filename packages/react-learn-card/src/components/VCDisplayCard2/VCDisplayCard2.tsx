@@ -34,6 +34,7 @@ export type VCDisplayCard2Props = {
     issuerOverride?: Profile;
     subjectImageComponent?: React.ReactNode;
     issuerImageComponent?: React.ReactNode;
+    verificationInProgress?: boolean;
 };
 
 export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
@@ -44,6 +45,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     issuerOverride,
     subjectImageComponent,
     issuerImageComponent,
+    verificationInProgress = false,
 }) => {
     const {
         title,
@@ -176,7 +178,11 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 </div>
             </div>
             <footer className="w-full flex justify-between p-[5px] mt-[5px]">
-                <VCVerificationCheckWithSpinner spinnerSize="40px" size={'32px'} loading={false} />
+                <VCVerificationCheckWithSpinner
+                    spinnerSize="40px"
+                    size={'32px'}
+                    loading={verificationInProgress}
+                />
                 <div className="font-montserrat flex flex-col items-center justify-center text-[12px] font-[700] leading-[15px]">
                     <span className="text-[#4F4F4F]">Verified Credential</span>
                     <span className="uppercase" style={{ color: statusColor }}>
