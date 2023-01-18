@@ -106,9 +106,12 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
 
             <h1
                 ref={headerRef}
-                className="leading-[100%] px-[20px] py-[10px] overflow-visible mt-[40px] absolute text-center text-[#18224E] bg-white border-y-[5px] border-[#EEF2FF] shadow-bottom text-shadow w-[calc(100%_+_16px)] rounded-t-[8px] text-[32px]"
+                className="px-[20px] pb-[10px] pt-[3px] overflow-visible mt-[40px] absolute text-center bg-white border-y-[5px] border-[#EEF2FF] shadow-bottom w-[calc(100%_+_16px)] rounded-t-[8px] z-50"
                 style={{ wordBreak: 'break-word' }}
             >
+                <span className="uppercase text-spice-500 font-poppins text-[12px] font-[600] leading-[12px]">
+                    Achievement
+                </span>
                 {!isFront && (
                     <button
                         className="absolute left-[-22px]"
@@ -129,6 +132,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                     text={title ?? ''}
                     width={((headerWidth ?? 290) - 40).toString()}
                     options={{ maxSize: 32, minSize: 20, multiLine: true }}
+                    className="text-[#18224E] leading-[100%] text-shadow text-[32px]"
                 />
             </h1>
             <div className="flex flex-col items-center grow w-full rounded-t-[30px] rounded-b-[20px] overflow-scroll scrollbar-hide">

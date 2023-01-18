@@ -5,10 +5,17 @@ type FitTextProps = {
     text: string;
     width: string; // Must be set for this to work
     options?: FittyOptions;
+    className?: string;
     textClassName?: string;
 };
 
-const FitText: React.FC<FitTextProps> = ({ text, width, options, textClassName = '' }) => {
+const FitText: React.FC<FitTextProps> = ({
+    text,
+    width,
+    options,
+    className = '',
+    textClassName = '',
+}) => {
     const textRef = useRef<HTMLSpanElement>(null);
 
     useEffect(() => {
@@ -19,7 +26,7 @@ const FitText: React.FC<FitTextProps> = ({ text, width, options, textClassName =
     }, [textRef.current]);
 
     return (
-        <div style={{ width }} className="text-center">
+        <div style={{ width }} className={`text-center ${className}`}>
             <span ref={textRef} className={textClassName}>
                 {text}
             </span>
