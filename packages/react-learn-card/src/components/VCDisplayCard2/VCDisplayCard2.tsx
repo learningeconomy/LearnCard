@@ -20,18 +20,6 @@ import {
     getInfoFromCredential,
 } from '../../helpers/credential.helpers';
 
-/* type VerifiableCredentialInfo = {
-    title: string;
-    description: string;
-    image?: string;
-    skills: { name: string; subskills?: string[] };
-    // skills: SkillType[];
-    // subskills: SubskillType[];
-    issuedToUserThumb: React.ReactNode;
-    issuedToUserName: string;
-    issuedByName: string;
-}; */
-
 export type VCDisplayCard2Props = {
     // credentialInfo?: VerifiableCredentialInfo;
     credential: VC | AchievementCredential;
