@@ -14,6 +14,7 @@ type VC2FrontFaceInfoProps = {
     subjectImageComponent?: React.ReactNode;
     issuerImageComponent?: React.ReactNode;
     createdAt: string;
+    imageUrl?: string;
 };
 
 const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
@@ -23,6 +24,7 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
     subjectImageComponent,
     issuerImageComponent,
     createdAt,
+    imageUrl,
 }) => {
     const issuerName = truncateWithEllipsis(getNameFromProfile(issuer ?? ''), 25);
     const issueeName = truncateWithEllipsis(getNameFromProfile(issuee ?? ''), 25);
@@ -54,7 +56,8 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
 
     return (
         <section className="w-full px-[15px] flex flex-col items-center gap-[15px]">
-            <AchievementWithTitle text={title} />
+            {/* <AchievementWithTitle text={title} /> */}
+            {imageUrl && <img className="h-[130px] w-[130px] rounded-[10px]" src={imageUrl} />}
             <div className="bg-white flex flex-col items-center gap-[5px] rounded-[20px] shadow-bottom px-[15px] py-[20px] w-full">
                 <h3 className="text-[27px] leading-[130%]">{issueeName}</h3>
                 <div className="relative">

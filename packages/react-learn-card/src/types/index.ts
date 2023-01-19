@@ -32,6 +32,7 @@ export enum WalletCategoryTypes {
 
 export type CredentialInfo = {
     title?: string;
+    imageUrl?: string;
     createdAt?: string;
     issuer?: Profile;
     issuee?: Profile;

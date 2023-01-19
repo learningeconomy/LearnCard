@@ -39,8 +39,9 @@ export const getInfoFromCredential = (
     const title = credentialSubject.achievement?.name;
     const createdAt = format(new Date(issuanceDate), dateFormat).toUpperCase();
     const issuee = credentialSubject.id;
+    const imageUrl = credentialSubject.achievement?.image;
 
-    return { title, createdAt, issuer, issuee, credentialSubject };
+    return { title, createdAt, issuer, issuee, credentialSubject, imageUrl };
 };
 
 export const getColorForVerificationStatus = (

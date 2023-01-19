@@ -55,6 +55,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
         issuer: _issuer,
         issuee: _issuee,
         credentialSubject,
+        imageUrl,
     } = getInfoFromCredential(credential, 'MMM dd, yyyy');
     const issuee = issueeOverride || _issuee;
     const issuer = issuerOverride || _issuer;
@@ -156,6 +157,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                             subjectImageComponent={subjectImageComponent}
                             issuerImageComponent={issuerImageComponent}
                             createdAt={createdAt}
+                            imageUrl={imageUrl}
                         />
                     )}
                     {!isFront && (
