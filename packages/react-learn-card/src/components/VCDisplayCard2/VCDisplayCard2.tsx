@@ -14,7 +14,7 @@ import {
     getInfoFromCredential,
 } from '../../helpers/credential.helpers';
 
-type VerifiableCredentialInfo = {
+/* type VerifiableCredentialInfo = {
     title: string;
     description: string;
     image?: string;
@@ -24,7 +24,7 @@ type VerifiableCredentialInfo = {
     issuedToUserThumb: React.ReactNode;
     issuedToUserName: string;
     issuedByName: string;
-};
+}; */
 
 export type VCDisplayCard2Props = {
     // credentialInfo?: VerifiableCredentialInfo;
@@ -35,6 +35,7 @@ export type VCDisplayCard2Props = {
     subjectImageComponent?: React.ReactNode;
     issuerImageComponent?: React.ReactNode;
     verificationInProgress?: boolean;
+    convertTagsToSkills?: (tags: string[]) => { [skill: string]: string[] };
 };
 
 export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
@@ -46,6 +47,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     subjectImageComponent,
     issuerImageComponent,
     verificationInProgress = false,
+    convertTagsToSkills,
 }) => {
     const {
         title,
@@ -160,6 +162,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                         <VC2BackFace
                             credential={credential}
                             verificationItems={verificationItems}
+                            convertTagsToSkills={convertTagsToSkills}
                         />
                     )}
                     <button

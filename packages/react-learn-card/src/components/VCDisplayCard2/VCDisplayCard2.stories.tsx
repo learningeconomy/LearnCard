@@ -98,9 +98,10 @@ VCDisplayCardTest.args = {
             'https://w3c-ccg.github.io/vc-ed/plugfest-1-2022/jff-vc-edu-plugfest-1-context.json',
         ],
         type: ['VerifiableCredential', 'OpenBadgeCredential'],
+        // issuer: 'did:key:z6MksNj6FwQ7t7ejgJVXCNyaX655uHJ8mPJ8xLtxrqQDV2Bo',
         issuer: {
             type: 'Profile',
-            id: 'did:example:issuer123',
+            id: 'did:key:z6MksNj6FwQ7t7ejgJVXCNyaX655uHJ8mPJ8xLtxrqQDV2Bo',
             name: 'Jobs for the Future (JFF)',
             url: 'https://www.jff.org/',
             image: 'https://kayaelle.github.io/vc-ed/plugfest-1-2022/images/JFF_LogoLockup.png',
@@ -108,7 +109,7 @@ VCDisplayCardTest.args = {
         issuanceDate: '2022-07-27T19:57:31.512Z',
         credentialSubject: {
             type: 'AchievementSubject',
-            id: 'did:example:subject123',
+            id: 'did:key:z6Mkqk4j3VnaRf4XHEoU6eT343VTfdfZG23CK6zaf5g5KKju',
             achievement: {
                 type: 'Achievement',
                 name: 'Our Wallet Passed JFF Plugfest #1 2022',
@@ -119,13 +120,32 @@ VCDisplayCardTest.args = {
                         'The first cohort of the JFF Plugfest 1 in May/June of 2021 collaborated to push interoperability of VCs in education forward.',
                 },
                 image: 'https://w3c-ccg.github.io/vc-ed/plugfest-1-2022/images/plugfest-1-badge-image.png',
+                tag: ['Skill A', 'Subskill A', 'Skill B'],
             },
         },
     },
-    issueeOverride: {
-        name: 'Test Person',
-        image: 'https://cdn.filestackcontent.com/rotate=deg:exif/auto_image/A2tGEP67TWeC59SmR4vP',
+    convertTagsToSkills: (tags: string[]) => {
+        let lastSkill: string;
+        const skillsObj: { [skill: string]: string[] } = {};
+
+        tags.forEach(tag => {
+            const isSubskill = tag.includes('Subskill');
+
+            if (!isSubskill) {
+                skillsObj[tag] = [];
+                lastSkill = tag;
+            } else {
+                skillsObj[lastSkill].push(tag);
+            }
+        });
+
+        return skillsObj;
     },
+
+    // issueeOverride: {
+    //     name: 'Test Person',
+    //     image: 'https://cdn.filestackcontent.com/rotate=deg:exif/auto_image/A2tGEP67TWeC59SmR4vP',
+    // },
     // issuerOverride: {
     //     name: 'Dilbert Charles',
     //     image: 'https://cdn.filestackcontent.com/rotate=deg:exif/auto_image/pQgXEF77R0GJKdQBdClb',

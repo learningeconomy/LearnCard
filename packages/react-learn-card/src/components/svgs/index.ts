@@ -9,6 +9,7 @@ export * from "./Briefcase";
 export * from "./Checkmark";
 export * from "./CircleWithText";
 export * from "./Coins";
+export * from "./DownRightArrow";
 export * from "./ExclamationPoint";
 export * from "./GenericArrow";
 export * from "./Graduation";
