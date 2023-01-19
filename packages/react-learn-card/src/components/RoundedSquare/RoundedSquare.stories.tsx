@@ -5,7 +5,6 @@ import RoundedSquare from './RoundedSquare';
 import { RoundedSquareProps, Icons, WalletCategoryTypes } from '../../types';
 import { ICONS_TO_SOURCE } from '../../constants/icons';
 
-
 export default {
     title: 'RoundedSquare',
     component: RoundedSquare,
@@ -16,14 +15,14 @@ const Template: Story<RoundedSquareProps> = args => <RoundedSquare {...args} />;
 
 export const RoundedSquareTest = Template.bind({});
 RoundedSquareTest.args = {
-    title: 'IDs',
+    title: 'Badges',
     description: 'Lorem ipsum sit dalor amet',
-    iconSrc: ICONS_TO_SOURCE[Icons.userIcon] as string,
+    iconSrc: ICONS_TO_SOURCE[Icons.award] as string,
     count: '1100',
-    type: WalletCategoryTypes.ids,
+    type: WalletCategoryTypes.socialBadge,
     onClick: () => {
         console.log('//goodbye world');
     },
-    bgColor: 'bg-yellow-300',
-    iconCircleClass: 'border-2 border-yellow-300',
+    bgColor: 'bg-cyan-300',
+    iconCircleClass: 'border-2 border-cyan-300',
 };
