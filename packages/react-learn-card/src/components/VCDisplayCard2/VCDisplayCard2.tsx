@@ -8,7 +8,13 @@ import FitText from './FitText';
 import AwardRibbon from '../svgs/AwardRibbon';
 import LeftArrow from '../svgs/LeftArrow';
 
-import { VC, VerificationItem, VerificationStatusEnum, Profile } from '@learncard/types';
+import {
+    VC,
+    AchievementCredential,
+    VerificationItem,
+    VerificationStatusEnum,
+    Profile,
+} from '@learncard/types';
 import {
     getColorForVerificationStatus,
     getInfoFromCredential,
@@ -28,7 +34,7 @@ import {
 
 export type VCDisplayCard2Props = {
     // credentialInfo?: VerifiableCredentialInfo;
-    credential: VC;
+    credential: VC | AchievementCredential;
     verificationItems: VerificationItem[];
     issueeOverride?: Profile;
     issuerOverride?: Profile;

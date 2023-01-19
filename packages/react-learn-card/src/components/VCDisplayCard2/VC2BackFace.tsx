@@ -4,7 +4,7 @@ import { format } from 'date-fns';
 import VerificationRow from './VerificationRow';
 import DownRightArrow from '../svgs/DownRightArrow';
 
-import { VC, VerificationItem, Profile } from '@learncard/types';
+import { VC, AchievementCredential, VerificationItem, Profile } from '@learncard/types';
 
 const defaultTagsToSkills = (tags: string[]) => {
     const skillsObj: { [skill: string]: string[] } = {};
@@ -14,7 +14,7 @@ const defaultTagsToSkills = (tags: string[]) => {
 };
 
 type VC2BackFaceProps = {
-    credential: VC;
+    credential: VC | AchievementCredential;
     verificationItems: VerificationItem[];
     convertTagsToSkills?: (tags: string[]) => { [skill: string]: string[] };
 };
