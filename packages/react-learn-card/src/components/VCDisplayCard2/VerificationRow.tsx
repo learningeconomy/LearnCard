@@ -25,10 +25,11 @@ const VerificationRow: React.FC<VerificationRowProps> = ({ verification }) => {
         }
     };
 
-    let primaryText = `${capitalize(verification.check)}: ${verification.message}`;
+    let primaryText = `${verification.check}: ${verification.message}`;
     if (verification.status === VerificationStatusEnum.Failed) {
         primaryText = verification.message ?? verification.details ?? '';
     }
+    primaryText = capitalize(primaryText);
 
     return (
         <div className="flex flex-col gap-[5px] font-poppins border-b-[1px] bord-grayscale-200 border-solid w-full py-[10px] last:border-0 last:pb-0">
