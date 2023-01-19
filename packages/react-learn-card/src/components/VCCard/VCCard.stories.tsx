@@ -6,6 +6,8 @@ import {
     JffCredential,
     simpleConvertTagsToSkills,
     issueeOverride,
+    SuperSkillsOprahCredential,
+    superSkillsConvertTags,
 } from '../../helpers/test.helpers';
 
 export default {
@@ -18,6 +20,7 @@ const Template: Story<VCCardProps> = args => <VCCard {...args} />;
 
 const baseArgs = {
     credential: JffCredential,
+    convertTagsToSkills: simpleConvertTagsToSkills,
     issueeOverride,
 };
 
@@ -27,6 +30,13 @@ VCCardVersion1Test.args = { version: '1', ...baseArgs };
 export const VCCardVersion2Test = Template.bind({});
 VCCardVersion2Test.args = {
     version: '2',
-    convertTagsToSkills: simpleConvertTagsToSkills,
     ...baseArgs,
+};
+
+export const SuperSkillsVersion2Test = Template.bind({});
+SuperSkillsVersion2Test.args = {
+    ...baseArgs,
+    version: '2',
+    credential: SuperSkillsOprahCredential,
+    convertTagsToSkills: superSkillsConvertTags,
 };
