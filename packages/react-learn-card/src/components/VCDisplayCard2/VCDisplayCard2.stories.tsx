@@ -4,10 +4,13 @@ import { Story, Meta } from '@storybook/react';
 import VCDisplayCard2, { VCDisplayCard2Props } from './VCDisplayCard2';
 import {
     JffCredential,
+    SuperSkillsOprahCredential,
     TestVerificationItems,
     simpleConvertTagsToSkills,
     issueeOverride,
     issuerOverride,
+    superSkillsConvertTags,
+    superSkillsIssueeOverride,
 } from '../../helpers/test.helpers';
 
 export default {
@@ -19,10 +22,6 @@ export default {
 const Template: Story<VCDisplayCard2Props> = args => <VCDisplayCard2 {...args} />;
 
 export const JFFCredentialTest = Template.bind({});
-
-// See https://w3c-ccg.github.io/vc-ed/plugfest-1-2022/
-// For example data structure for plugfest
-
 JFFCredentialTest.args = {
     credential: JffCredential,
     convertTagsToSkills: simpleConvertTagsToSkills,
@@ -30,6 +29,18 @@ JFFCredentialTest.args = {
     // issuerOverride,
     verificationItems: [
         TestVerificationItems.FAILED.APPLICABLE_PROOF,
+        TestVerificationItems.SUCCESS.NO_EXPIRATION,
+    ],
+};
+
+export const SuperSkillsVCTest = Template.bind({});
+SuperSkillsVCTest.args = {
+    credential: SuperSkillsOprahCredential,
+    convertTagsToSkills: superSkillsConvertTags,
+    issueeOverride: superSkillsIssueeOverride,
+    // issuerOverride,
+    verificationItems: [
+        TestVerificationItems.SUCCESS.PROOF,
         TestVerificationItems.SUCCESS.NO_EXPIRATION,
     ],
 };
