@@ -16,12 +16,14 @@ const Template: Story<RoundedSquareProps> = args => <RoundedSquare {...args} />;
 
 export const RoundedSquareTest = Template.bind({});
 RoundedSquareTest.args = {
-    title: 'Achievements',
+    title: 'IDs',
     description: 'Lorem ipsum sit dalor amet',
-    iconSrc: ICONS_TO_SOURCE[Icons.trophyIcon] as string,
-    count: '28',
-    type: WalletCategoryTypes.achievements,
+    iconSrc: ICONS_TO_SOURCE[Icons.userIcon] as string,
+    count: '1100',
+    type: WalletCategoryTypes.ids,
     onClick: () => {
         console.log('//goodbye world');
     },
+    bgColor: 'bg-yellow-300',
+    iconCircleClass: 'border-2 border-yellow-300',
 };
