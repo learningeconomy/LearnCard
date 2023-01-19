@@ -83,10 +83,29 @@ export const TestVerificationItems = {
         },
     },
     FAILED: {
+        // missing proof object or verificationMethod has bad data
         APPLICABLE_PROOF: {
             status: 'Failed',
             check: 'No applicable proof',
             details: 'No applicable proof',
+        },
+        // invalid proofValue or created
+        SIGNATURE: {
+            status: 'Failed',
+            check: 'signature',
+            details: 'signature error: Verification equation was not satisfied',
+        },
+        // invalid proof.type
+        PROOF_TYPE: {
+            status: 'Failed',
+            check: 'Linked Data Proof type not implemented',
+            details: 'Linked Data Proof type not implemented',
+        },
+        // invalid context url(s)
+        CONTEXT: {
+            status: 'Failed',
+            check: 'loading remote context failed',
+            details: 'loading remote context failed',
         },
     },
 
