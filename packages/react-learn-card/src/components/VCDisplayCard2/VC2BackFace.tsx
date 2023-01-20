@@ -18,12 +18,16 @@ type VC2BackFaceProps = {
     credential: VC | AchievementCredential;
     verificationItems: VerificationItem[];
     convertTagsToSkills?: (tags: string[]) => { [skill: string]: string[] };
+
+    // dunno where these live yet within a VC, so I'll just rewire it later
+    extraFields?: { notes?: string; mediaAttachments?: string[]; expiration: Date };
 };
 
 const VC2BackFace: React.FC<VC2BackFaceProps> = ({
     credential,
     verificationItems,
     convertTagsToSkills = defaultTagsToSkills,
+    extraFields,
 }) => {
     // TODO real expiration (if present)
     const expiration = format(new Date(), 'MMM dd, yyyy');
@@ -46,6 +50,7 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
                 )}
             </TruncateTextBox>
             {criteria && <TruncateTextBox headerText="Criteria" text={criteria} />}
+            {extraFields?.notes && <TruncateTextBox headerText="Notes" text={extraFields?.notes} />}
             {tags && tags.length > 0 && (
                 <div className="bg-white flex flex-col items-start gap-[10px] rounded-[20px] shadow-bottom px-[15px] py-[20px] w-full">
                     <h3 className="text-[20px] leading-[20px]">Skills</h3>

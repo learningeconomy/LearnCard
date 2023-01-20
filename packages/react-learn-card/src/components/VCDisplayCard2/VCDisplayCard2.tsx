@@ -30,6 +30,9 @@ export type VCDisplayCard2Props = {
     issuerImageComponent?: React.ReactNode;
     verificationInProgress?: boolean;
     convertTagsToSkills?: (tags: string[]) => { [skill: string]: string[] };
+
+    // dunno where these live yet within a VC, so I'll just rewire it later
+    extraFields?: { notes?: string; mediaAttachments?: string[]; expiration: Date };
 };
 
 export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
@@ -42,6 +45,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     issuerImageComponent,
     verificationInProgress = false,
     convertTagsToSkills,
+    extraFields,
 }) => {
     const {
         title,
@@ -159,6 +163,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                             credential={credential}
                             verificationItems={verificationItems}
                             convertTagsToSkills={convertTagsToSkills}
+                            extraFields={extraFields}
                         />
                     )}
                     <button
