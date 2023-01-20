@@ -1,8 +1,9 @@
 import React from 'react';
+
+import CircleIcon from '../CircleIcon/CircleIcon';
+
 import { Icons, WalletCategoryTypes } from '../../types';
 import { ICONS_TO_SOURCE } from '../../constants/icons';
-import CircleIcon from '../CircleIcon/CircleIcon';
-import { CountCircle } from '../CircleIcon';
 import { TYPE_TO_IMG_SRC, TYPE_TO_WALLET_COLOR } from '../../constants';
 
 export type RoundedSquareProps = {
@@ -14,6 +15,7 @@ export type RoundedSquareProps = {
     count?: string | number;
     onClick?: () => void;
     bgColor?: string;
+    iconCircleClass?: string;
 };
 
 export const RoundedSquare: React.FC<RoundedSquareProps> = ({
@@ -25,10 +27,11 @@ export const RoundedSquare: React.FC<RoundedSquareProps> = ({
     count = '28',
     onClick = () => {},
     bgColor,
+    iconCircleClass = '',
 }) => {
     const imgSource = imgSrc || TYPE_TO_IMG_SRC[type];
     const backgroundColor = bgColor ?? `bg-${TYPE_TO_WALLET_COLOR[type]}`;
-    const circleClass = `flex w-full justify-end icon-display absolute right-[15px] bottom-[10px] max-h-[40px] max-w-[40px]`;
+    const circleClass = `flex w-full justify-end icon-display absolute right-[15px] bottom-[10px] max-h-[40px] max-w-[40px] rounded-full`;
 
     return (
         <button
@@ -37,10 +40,6 @@ export const RoundedSquare: React.FC<RoundedSquareProps> = ({
         >
             <div className="w-full relative">
                 <section className="title-headline-container flex items-center">
-                    <CountCircle
-                        count={count}
-                        className="solo-counter-circle right-[0px] top-[0px] relative"
-                    />
                     <h3 className="line-clamp-2 font-bold text-[13px] text-grayscale-900 ml-[5px]">
                         {title}
                     </h3>
@@ -51,7 +50,7 @@ export const RoundedSquare: React.FC<RoundedSquareProps> = ({
                 </div>
             </div>
 
-            <div className={circleClass}>
+            <div className={`${circleClass} ${iconCircleClass}`}>
                 <CircleIcon iconSrc={iconSrc} count={count} size="40" />
             </div>
         </button>

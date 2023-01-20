@@ -1,4 +1,5 @@
 import React from 'react';
+import numeral from 'numeral';
 
 import { Icons } from '../../types';
 import { ICONS_TO_SOURCE } from '../../constants/icons';
@@ -10,7 +11,6 @@ export type CircleIconProps = {
     bgColor?: string;
     innerPadding?: string;
     size?: string;
-    hideCount?: boolean;
     borderColor?: string;
 };
 
@@ -31,6 +31,8 @@ export const CountCircle: React.FC<CountCircleProps> = ({
     onClick = () => {},
     bgColor = 'bg-grayscale-50',
 }) => {
+    const _count = count >= 1000 ? numeral(count).format('0.0a') : count;
+
     const style = {
         width: size,
         height: size,
@@ -40,12 +42,12 @@ export const CountCircle: React.FC<CountCircleProps> = ({
     return (
         <section
             onClick={onClick}
-            className={`${bgColor} rounded-full circle-icon-wrapper text-center absolute right-[-15px] top-[-15px] min-w-[25px] ${className}`}
+            className={`${bgColor} rounded-full circle-icon-wrapper text-center absolute right-[-18px] top-[-18px] min-w-[25px] ${className}`}
             style={style}
         >
             <div className={`h-full`}>
                 <p className="h-full line-clamp-1 font-semibold text-grayscale-900 text-[12px]">
-                    {count}
+                    {_count}
                 </p>
             </div>
         </section>
@@ -59,7 +61,6 @@ export const CircleIcon: React.FC<CircleIconProps> = ({
     innerPadding = '6px',
     onClick = () => {},
     bgColor = 'bg-grayscale-900',
-    hideCount = true,
 }) => {
     const style = {
         width: size,
@@ -74,7 +75,7 @@ export const CircleIcon: React.FC<CircleIconProps> = ({
             style={style}
         >
             <div className={`relative w-full h-full`}>
-                {!hideCount && <CountCircle count={count} />}
+                <CountCircle count={count} />
                 <img className="h-full w-full object-cover" src={iconSrc ?? ''} alt="Icon image" />
             </div>
         </section>
