@@ -11,6 +11,7 @@ import {
     issuerOverride,
     superSkillsConvertTags,
     superSkillsIssueeOverride,
+    AllFieldsCredential,
 } from '../../helpers/test.helpers';
 
 export default {
@@ -43,4 +44,23 @@ SuperSkillsVCTest.args = {
         TestVerificationItems.SUCCESS.PROOF,
         TestVerificationItems.SUCCESS.NO_EXPIRATION,
     ],
+};
+
+export const AllFieldsTest = Template.bind({});
+AllFieldsTest.args = {
+    credential: AllFieldsCredential,
+    convertTagsToSkills: simpleConvertTagsToSkills,
+    // issueeOverride: superSkillsIssueeOverride,
+    // issuerOverride,
+    verificationItems: [
+        TestVerificationItems.SUCCESS.PROOF,
+        TestVerificationItems.SUCCESS.NO_EXPIRATION,
+        TestVerificationItems.FAILED.CONTEXT,
+        TestVerificationItems.FAILED.SIGNATURE,
+        TestVerificationItems.FAILED.PROOF_TYPE,
+        TestVerificationItems.FAILED.APPLICABLE_PROOF,
+    ],
+    extraFields: {
+        notes: "This credential has some notes about it. Here's a note: this isn't fully wired up yet, so this note is just an extraField prop",
+    },
 };

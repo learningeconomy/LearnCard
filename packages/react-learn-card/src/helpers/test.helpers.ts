@@ -68,6 +68,55 @@ export const SuperSkillsOprahCredential = {
     name: 'The Oprah',
 };
 
+export const testTags = [
+    'Skill A',
+    'Subskill A 1',
+    'Subskill A 2',
+    'Skill B',
+    'Skill C',
+    'Subskill C',
+];
+
+export const AllFieldsCredential = {
+    '@context': [
+        'https://www.w3.org/2018/credentials/v1',
+        'https://purl.imsglobal.org/spec/ob/v3p0/context.json',
+    ],
+    id: 'http://example.com/credentials/3527',
+    type: ['VerifiableCredential', 'OpenBadgeCredential'],
+    issuer: 'did:key:z6MksNj6FwQ7t7ejgJVXCNyaX655uHJ8mPJ8xLtxrqQDV2Bo',
+    issuanceDate: '2022-12-15T01:40:50.794Z',
+    credentialSubject: {
+        id: 'did:key:z6Mkqk4j3VnaRf4XHEoU6eT343VTfdfZG23CK6zaf5g5KKju',
+        type: ['AchievementSubject'],
+        achievement: {
+            id: 'https://example.com/achievements/21st-century-skills/teamwork',
+            tag: testTags,
+            name: 'Verbose Credentialing',
+            type: ['Achievement'],
+            image: 'https://cdn.filestackcontent.com/04DxNAaQ66aphkQvbT9W',
+            description:
+                "You made a test credential with ALL the possible fields! Woah! That's great! There are so many fields on this credential! Let's make this even longer so that it gets truncated",
+            criteria: {
+                type: 'Criteria',
+                narrative:
+                    'You really know your crednetials! Pretty rad. Being able to find and handle all of these fields is incredible! This narrative is going to be pretty long so that we can see if you can handle long blocks of text too. This should probably be truncated off by now or something.',
+            },
+        },
+    },
+    proof: {
+        type: 'Ed25519Signature2020',
+        created: '2022-12-15T01:40:50.798Z',
+        proofPurpose: 'assertionMethod',
+        verificationMethod:
+            'did:key:z6MksNj6FwQ7t7ejgJVXCNyaX655uHJ8mPJ8xLtxrqQDV2Bo#z6MksNj6FwQ7t7ejgJVXCNyaX655uHJ8mPJ8xLtxrqQDV2Bo',
+        '@context': ['https://w3id.org/security/suites/ed25519-2020/v1'],
+        proofValue:
+            'z5R86gecRsBh1xmPJqdfqoNppxy4hbMZWtjZZNdaqGYtwBcPHNzXwAtHdqhTWQVprQn6B8xfQvqqvQo3ZjaTjt3tW',
+    },
+    name: 'Verbose Credential',
+};
+
 export const TestVerificationItems = {
     // Real verification items returned by validation
     SUCCESS: {
@@ -148,15 +197,6 @@ export const issuerOverride = {
     name: 'Dilbert Charles',
     image: 'https://cdn.filestackcontent.com/rotate=deg:exif/auto_image/pQgXEF77R0GJKdQBdClb',
 };
-
-export const testTags = [
-    'Skill A',
-    'Subskill A 1',
-    'Subskill A 2',
-    'Skill B',
-    'Skill C',
-    'Subskill C',
-];
 
 export const simpleConvertTagsToSkills = (tags: string[]) => {
     let lastSkill: string;
