@@ -3,7 +3,9 @@
  */
 
 export * from "./FitText";
+export * from "./MediaAttachmentsBox";
 export * from "./RibbonEnd";
+export * from "./TruncateTextBox";
 export * from "./VC2BackFace";
 export * from "./VC2FrontFaceInfo";
 export * from "./VCDisplayCard2";
