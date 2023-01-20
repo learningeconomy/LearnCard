@@ -20,10 +20,13 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({ attachments }
         <div className="bg-white flex flex-col items-start gap-[10px] rounded-[20px] shadow-bottom px-[15px] py-[20px] w-full">
             <h3 className="text-[20px] leading-[20px]">Media Attachments</h3>
             {images.length > 0 && (
-                <div className="flex gap-[5px] justify-between flex-wrap">
+                <div className="flex gap-[5px] justify-between flex-wrap w-full">
                     {images.map(image => (
-                        <div className="w-[49%] rounded-[15px] overflow-hidden relative">
-                            <img src={image.url} />
+                        <div className="w-[49%] pt-[49%] rounded-[15px] overflow-hidden relative">
+                            <img
+                                className="absolute top-0 left-0 right-0 bottom-0"
+                                src={image.url}
+                            />
                             <Camera className="absolute bottom-[10px] left-[10px] z-10" />
                         </div>
                     ))}
