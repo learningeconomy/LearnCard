@@ -77,5 +77,6 @@ AllFieldsTest.args = {
             { type: 'image', url: 'https://cdn.filestackcontent.com/PNb6lViSaqGoKyRyXyyp' },
             { type: 'image', url: 'https://images.unsplash.com/photo-1607419145932-ed1fc8c034d8' },
         ],
+        backgroundImage: 'https://images.unsplash.com/photo-1518199266791-5375a83190b7',
     },
 };

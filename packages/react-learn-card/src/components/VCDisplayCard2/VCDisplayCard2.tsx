@@ -33,7 +33,12 @@ export type VCDisplayCard2Props = {
     convertTagsToSkills?: (tags: string[]) => { [skill: string]: string[] };
 
     // dunno where these live yet within a VC, so I'll just rewire it later
-    extraFields?: { notes?: string; mediaAttachments?: MediaAttachment[]; expiration: Date };
+    extraFields?: {
+        notes?: string;
+        mediaAttachments?: MediaAttachment[];
+        expiration?: Date;
+        backgroundImage?: string;
+    };
 };
 
 export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
@@ -146,7 +151,11 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 */}
                 <div
                     className="w-full flex flex-col justify-center items-center rounded-b-[200px] bg-[#353E64] pb-[50px]"
-                    style={{ paddingTop: headerHeight + 70 }}
+                    style={{
+                        paddingTop: headerHeight + 70,
+                        background: `url(${extraFields?.backgroundImage})`,
+                        backgroundSize: 'contain',
+                    }}
                 >
                     {isFront && (
                         <VC2FrontFaceInfo
