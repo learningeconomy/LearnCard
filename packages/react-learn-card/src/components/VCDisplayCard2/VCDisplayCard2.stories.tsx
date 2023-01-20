@@ -62,5 +62,20 @@ AllFieldsTest.args = {
     ],
     extraFields: {
         notes: "This credential has some notes about it. Here's a note: this isn't fully wired up yet, so this note is just an extraField prop",
+        // mediaAttachments: [
+        //     'https://cdn.filestackcontent.com/BqqfmVEbQFmRaqwvqTMA', // txt
+        //     'https://cdn.filestackcontent.com/bBhttAa8QRW7eVABQsxw', // ppt
+        //     'https://cdn.filestackcontent.com/uplKVCcIQ26P43QBQIAy', // odt
+        //     'https://cdn.filestackcontent.com/S6gfhbZEQtGn9Oy8cVdq', // xls
+        //     'https://cdn.filestackcontent.com/4LN0x2LQXSjIH3c5bfBr', // pdf
+        //     'https://cdn.filestackcontent.com/XuMpArLAQ3qam5OdArih', // image
+        // ],
+        mediaAttachments: [
+            { type: 'pdf', url: 'https://cdn.filestackcontent.com/4LN0x2LQXSjIH3c5bfBr' },
+            { type: 'txt', url: 'https://cdn.filestackcontent.com/BqqfmVEbQFmRaqwvqTMA' },
+            { type: 'image', url: 'https://cdn.filestackcontent.com/XuMpArLAQ3qam5OdArih' },
+            { type: 'image', url: 'https://cdn.filestackcontent.com/PNb6lViSaqGoKyRyXyyp' },
+            { type: 'image', url: 'https://images.unsplash.com/photo-1607419145932-ed1fc8c034d8' },
+        ],
     },
 };

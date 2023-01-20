@@ -18,7 +18,7 @@ const TruncateTextBox: React.FC<TruncateTextBoxProps> = ({
     truncateThreshold = 132,
     children,
 }) => {
-    const needsTruncate = text.length > truncateThreshold;
+    const needsTruncate = text?.length > truncateThreshold;
     const [showFullText, setShowFullText] = useState(false);
     const truncated = needsTruncate && !showFullText;
 

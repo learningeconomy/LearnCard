@@ -8,6 +8,7 @@ import FitText from './FitText';
 import AwardRibbon from '../svgs/AwardRibbon';
 import LeftArrow from '../svgs/LeftArrow';
 
+import { MediaAttachment } from '../../helpers/test.helpers';
 import {
     VC,
     AchievementCredential,
@@ -32,7 +33,7 @@ export type VCDisplayCard2Props = {
     convertTagsToSkills?: (tags: string[]) => { [skill: string]: string[] };
 
     // dunno where these live yet within a VC, so I'll just rewire it later
-    extraFields?: { notes?: string; mediaAttachments?: string[]; expiration: Date };
+    extraFields?: { notes?: string; mediaAttachments?: MediaAttachment[]; expiration: Date };
 };
 
 export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({

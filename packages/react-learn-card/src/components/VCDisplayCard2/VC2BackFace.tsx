@@ -1,10 +1,12 @@
 import React from 'react';
 import { format } from 'date-fns';
 
+import MediaAttachmentsBox from './MediaAttachmentsBox';
 import TruncateTextBox from './TruncateTextBox';
 import VerificationRow from './VerificationRow';
 import DownRightArrow from '../svgs/DownRightArrow';
 
+import { MediaAttachment } from '../../helpers/test.helpers';
 import { VC, AchievementCredential, VerificationItem, Profile } from '@learncard/types';
 
 const defaultTagsToSkills = (tags: string[]) => {
@@ -20,7 +22,7 @@ type VC2BackFaceProps = {
     convertTagsToSkills?: (tags: string[]) => { [skill: string]: string[] };
 
     // dunno where these live yet within a VC, so I'll just rewire it later
-    extraFields?: { notes?: string; mediaAttachments?: string[]; expiration: Date };
+    extraFields?: { notes?: string; mediaAttachments?: MediaAttachment[]; expiration: Date };
 };
 
 const VC2BackFace: React.FC<VC2BackFaceProps> = ({
@@ -50,7 +52,6 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
                 )}
             </TruncateTextBox>
             {criteria && <TruncateTextBox headerText="Criteria" text={criteria} />}
-            {extraFields?.notes && <TruncateTextBox headerText="Notes" text={extraFields?.notes} />}
             {tags && tags.length > 0 && (
                 <div className="bg-white flex flex-col items-start gap-[10px] rounded-[20px] shadow-bottom px-[15px] py-[20px] w-full">
                     <h3 className="text-[20px] leading-[20px]">Skills</h3>
@@ -89,6 +90,10 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
                     })}
                 </div>
             )}
+            {extraFields?.mediaAttachments && extraFields.mediaAttachments.length > 0 && (
+                <MediaAttachmentsBox attachments={extraFields?.mediaAttachments} />
+            )}
+            {extraFields?.notes && <TruncateTextBox headerText="Notes" text={extraFields?.notes} />}
             <div className="bg-white flex flex-col items-start gap-[10px] rounded-[20px] shadow-bottom px-[15px] py-[20px] w-full">
                 <h3 className="text-[20px] leading-[20px]">Credential Verifications</h3>
 
