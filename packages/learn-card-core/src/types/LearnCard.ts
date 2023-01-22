@@ -14,6 +14,8 @@ import { CHAPIPlugin } from '@wallet/plugins/chapi';
 import { VCAPIPlugin } from '@wallet/plugins/vc-api/types';
 import { LearnCardPlugin } from '@wallet/plugins/learn-card';
 
+import { DWNConfig, DWNPlugin } from '@wallet/plugins/dwn/types';
+
 import { InitFunction, GenericInitFunction } from 'types/helpers';
 import { LearnCard } from 'types/wallet';
 
@@ -24,6 +26,7 @@ export type LearnCardConfig = {
     ceramicIdx: CeramicArgs & IDXArgs;
     didkit: InitInput | Promise<InitInput>;
     ethereumConfig: EthereumConfig;
+    dwnConfig: DWNConfig;
     debug?: typeof console.log;
 };
 
@@ -51,8 +54,8 @@ export type LearnCardFromSeed = InitFunction<
             EthereumPlugin,
             VpqrPlugin,
             CHAPIPlugin,
-            LearnCardPlugin
-        ]
+            DWNPlugin,
+            LearnCardPlugin]
     >
 >;
 

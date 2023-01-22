@@ -3,6 +3,7 @@ export * from './chapi';
 export * from './didkey';
 export * from './didkit';
 export * from './EthereumPlugin';
+export * from './dwn';
 export * from './expiration';
 export * from './idx';
 export * from './test-cache';

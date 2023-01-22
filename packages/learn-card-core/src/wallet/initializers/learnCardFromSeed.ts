@@ -12,8 +12,10 @@ import { getVpqrPlugin } from '@wallet/plugins/vpqr';
 import { getCHAPIPlugin } from '@wallet/plugins/chapi';
 import { getLearnCardPlugin } from '@wallet/plugins/learn-card';
 
+import { getDWNPlugin } from '@wallet/plugins/dwn';
+
 import { LearnCardConfig, LearnCardFromSeed } from 'types/LearnCard';
-import { defaultCeramicIDXArgs, defaultEthereumArgs } from '@wallet/defaults';
+import { defaultCeramicIDXArgs, defaultDWNArgs, defaultEthereumArgs } from '@wallet/defaults';
 
 /**
  * Generates a LearnCard Wallet from a 64 character seed string
@@ -26,6 +28,7 @@ export const learnCardFromSeed = async (
         ceramicIdx = defaultCeramicIDXArgs,
         didkit,
         ethereumConfig = defaultEthereumArgs,
+        dwnConfig = defaultDWNArgs,
         debug,
     }: Partial<LearnCardConfig> = {}
 ): Promise<LearnCardFromSeed['returnValue']> => {
@@ -56,5 +59,7 @@ export const learnCardFromSeed = async (
 
     const chapiLc = await vpqrLc.addPlugin(await getCHAPIPlugin());
 
-    return chapiLc.addPlugin(getLearnCardPlugin(chapiLc));
+    const dwnLc = await chapiLc.addPlugin(getDWNPlugin(dwnConfig));
+
+    return dwnLc.addPlugin(getLearnCardPlugin(dwnLc));
 };

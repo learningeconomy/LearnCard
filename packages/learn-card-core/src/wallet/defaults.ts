@@ -1,6 +1,7 @@
 import { CeramicArgs } from '@wallet/plugins/ceramic/types';
 import { IDXArgs } from '@wallet/plugins/idx/types';
 import { EthereumConfig } from '@wallet/plugins/EthereumPlugin/types';
+import { DWNConfig } from './plugins/dwn/types';
 
 export const defaultCeramicIDXArgs: CeramicArgs & IDXArgs = {
     modelData: {
@@ -24,4 +25,10 @@ export const defaultCeramicIDXArgs: CeramicArgs & IDXArgs = {
 export const defaultEthereumArgs: EthereumConfig = {
     infuraProjectId: '',
     network: 'mainnet',
+};
+
+export const defaultDWNArgs: DWNConfig = {
+    dwnAddressURL: new URL('http://localhost:8080'),
+    // TODO: a lot more schemas available from https://1edtech.github.io/openbadges-specification/ob_v3p0.html
+    schemas: { AchievementVerifiableCredential: 'https://purl.imsglobal.org/spec/ob/v3p0/schema/json/ob_v3p0_achievementcredential_schema.json' }
 };
