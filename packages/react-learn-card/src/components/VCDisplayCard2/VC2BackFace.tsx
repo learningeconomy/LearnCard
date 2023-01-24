@@ -7,7 +7,8 @@ import VerificationRow from './VerificationRow';
 import DownRightArrow from '../svgs/DownRightArrow';
 
 import { MediaAttachment } from '../../helpers/test.helpers';
-import { VC, AchievementCredential, VerificationItem, Profile } from '@learncard/types';
+import { VC, AchievementCredential, VerificationItem } from '@learncard/types';
+import InfoIcon from '../svgs/InfoIcon';
 
 const defaultTagsToSkills = (tags: string[]) => {
     const skillsObj: { [skill: string]: string[] } = {};
@@ -53,8 +54,9 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
             </TruncateTextBox>
             {criteria && <TruncateTextBox headerText="Criteria" text={criteria} />}
             {tags && tags.length > 0 && (
-                <div className="bg-white flex flex-col items-start gap-[10px] rounded-[20px] shadow-bottom px-[15px] py-[20px] w-full">
+                <div className="bg-white flex flex-col items-start gap-[10px] rounded-[20px] shadow-bottom px-[15px] py-[20px] w-full relative">
                     <h3 className="text-[20px] leading-[20px]">Skills</h3>
+                    <InfoIcon className="absolute top-[17px] right-[17px]" />
                     {Object.keys(skillsObject).map((skill, index) => {
                         const subskills = skillsObject[skill];
                         return (
