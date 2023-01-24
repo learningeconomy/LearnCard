@@ -8,6 +8,7 @@ import SkillsBox from './SkillsBox';
 
 import { MediaAttachment } from '../../helpers/test.helpers';
 import { VC, AchievementCredential, VerificationItem } from '@learncard/types';
+import VerificationsBox from './VerificationsBox';
 
 const defaultTagsToSkills = (tags: string[]) => {
     const skillsObj: { [skill: string]: string[] } = {};
@@ -57,13 +58,8 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
                 <MediaAttachmentsBox attachments={extraFields?.mediaAttachments} />
             )}
             {extraFields?.notes && <TruncateTextBox headerText="Notes" text={extraFields?.notes} />}
-            <div className="bg-white flex flex-col items-start gap-[10px] rounded-[20px] shadow-bottom px-[15px] py-[20px] w-full">
-                <h3 className="text-[20px] leading-[20px]">Credential Verifications</h3>
 
-                {verificationItems.map((verification, index) => (
-                    <VerificationRow key={index} verification={verification} />
-                ))}
-            </div>
+            <VerificationsBox verificationItems={verificationItems} />
         </section>
     );
 };
