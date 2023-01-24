@@ -12,6 +12,7 @@ export type VCCardProps = {
     version?: '1' | '2';
     subjectImageComponent?: React.ReactNode;
     convertTagsToSkills?: (tags: string[]) => { [skill: string]: string[] };
+    handleXClick?: () => void;
 };
 
 export const VCCard: React.FC<VCCardProps> = ({
@@ -21,6 +22,7 @@ export const VCCard: React.FC<VCCardProps> = ({
     version = '1',
     subjectImageComponent,
     convertTagsToSkills,
+    handleXClick,
 }) => {
     const [loading, setLoading] = useState(true);
     const [vcVerification, setVCVerification] = useState<VerificationItem[]>([]);
@@ -55,6 +57,7 @@ export const VCCard: React.FC<VCCardProps> = ({
             verificationItems={vcVerification}
             subjectImageComponent={subjectImageComponent}
             convertTagsToSkills={convertTagsToSkills}
+            handleXClick={handleXClick}
         />
     );
 };
