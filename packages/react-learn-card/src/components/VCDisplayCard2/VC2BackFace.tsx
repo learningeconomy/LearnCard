@@ -4,11 +4,10 @@ import { format } from 'date-fns';
 import MediaAttachmentsBox from './MediaAttachmentsBox';
 import TruncateTextBox from './TruncateTextBox';
 import VerificationRow from './VerificationRow';
-import DownRightArrow from '../svgs/DownRightArrow';
+import SkillsBox from './SkillsBox';
 
 import { MediaAttachment } from '../../helpers/test.helpers';
 import { VC, AchievementCredential, VerificationItem } from '@learncard/types';
-import InfoIcon from '../svgs/InfoIcon';
 
 const defaultTagsToSkills = (tags: string[]) => {
     const skillsObj: { [skill: string]: string[] } = {};
@@ -53,45 +52,7 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
                 )}
             </TruncateTextBox>
             {criteria && <TruncateTextBox headerText="Criteria" text={criteria} />}
-            {tags && tags.length > 0 && (
-                <div className="bg-white flex flex-col items-start gap-[10px] rounded-[20px] shadow-bottom px-[15px] py-[20px] w-full relative">
-                    <h3 className="text-[20px] leading-[20px]">Skills</h3>
-                    <InfoIcon className="absolute top-[17px] right-[17px]" />
-                    {Object.keys(skillsObject).map((skill, index) => {
-                        const subskills = skillsObject[skill];
-                        return (
-                            <div
-                                key={index}
-                                className="p-[10px] bg-[#9B51E0]/[.15] w-full rounded-[15px] text-grayscale-900 flex flex-col gap-[5px]"
-                            >
-                                <div className="flex items-center py-[5px]">
-                                    <span className="text-[20px] leading-[18px] tracking-[0.75px]">
-                                        {skill}
-                                    </span>
-                                    <span className="bg-white rounded-full ml-auto h-[20px] w-[20px] flex items-center justify-center">
-                                        +1
-                                    </span>
-                                </div>
-                                {subskills.length > 0 &&
-                                    subskills.map((subskill: string, index: number) => (
-                                        <div
-                                            key={`subskill-${index}`}
-                                            className="flex items-center py-[5px]"
-                                        >
-                                            <DownRightArrow className="bg-white rounded-full h-[20px] w-[20px] px-[2.5px] py-[4px] overflow-visible mr-[10px]" />
-                                            <span className="text-[17px] leading-[18px] tracking-[0.75px]">
-                                                {subskill}
-                                            </span>
-                                            <span className="bg-white rounded-full ml-auto h-[20px] w-[20px] flex items-center justify-center">
-                                                +1
-                                            </span>
-                                        </div>
-                                    ))}
-                            </div>
-                        );
-                    })}
-                </div>
-            )}
+            {skillsObject && <SkillsBox skillsObject={skillsObject} />}
             {extraFields?.mediaAttachments && extraFields.mediaAttachments.length > 0 && (
                 <MediaAttachmentsBox attachments={extraFields?.mediaAttachments} />
             )}
