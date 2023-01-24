@@ -1,13 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 import DownRightArrow from '../svgs/DownRightArrow';
 import InfoIcon from '../svgs/InfoIcon';
+import InfoBox from './InfoBox';
 
 type SkillsBoxProps = {
     skillsObject: { [skill: string]: string[] };
 };
 
 const SkillsBox: React.FC<SkillsBoxProps> = ({ skillsObject }) => {
+    const [showInfo, setShowInfo] = useState(false);
+
     const plusOne = (
         <span className="bg-white rounded-full ml-auto h-[20px] w-[20px] flex items-center justify-center">
             +1
@@ -17,7 +20,15 @@ const SkillsBox: React.FC<SkillsBoxProps> = ({ skillsObject }) => {
     return (
         <div className="bg-white flex flex-col items-start gap-[10px] rounded-[20px] shadow-bottom px-[15px] py-[20px] w-full relative">
             <h3 className="text-[20px] leading-[20px]">Skills</h3>
-            <InfoIcon className="absolute top-[17px] right-[17px]" />
+            <button
+                className="absolute top-[17px] right-[17px]"
+                onClick={() => setShowInfo(!showInfo)}
+            >
+                <InfoIcon />
+            </button>
+            {showInfo && (
+                <InfoBox text="This is what skills are." handleClose={() => setShowInfo(false)} />
+            )}
             {Object.keys(skillsObject).map((skill, index) => {
                 const subskills = skillsObject[skill];
                 return (
