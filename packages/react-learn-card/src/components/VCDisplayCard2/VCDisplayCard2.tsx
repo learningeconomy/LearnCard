@@ -7,6 +7,7 @@ import RibbonEnd from './RibbonEnd';
 import FitText from './FitText';
 import AwardRibbon from '../svgs/AwardRibbon';
 import LeftArrow from '../svgs/LeftArrow';
+import RoundedX from '../svgs/RoundedX';
 
 import { MediaAttachment } from '../../helpers/test.helpers';
 import {
@@ -31,6 +32,7 @@ export type VCDisplayCard2Props = {
     issuerImageComponent?: React.ReactNode;
     verificationInProgress?: boolean;
     convertTagsToSkills?: (tags: string[]) => { [skill: string]: string[] };
+    handleXClick?: () => void;
 
     // dunno where these live yet within a VC, so I'll just rewire it later
     extraFields?: {
@@ -52,6 +54,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     verificationInProgress = false,
     convertTagsToSkills,
     extraFields,
+    handleXClick,
 }) => {
     const {
         title,
@@ -144,6 +147,25 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                     className="text-[#18224E] leading-[100%] text-shadow text-[32px]"
                 />
             </h1>
+
+            {isFront && handleXClick && (
+                <button
+                    className="absolute top-[-25px] bg-white rounded-full h-[50px] w-[50px] flex items-center justify-center"
+                    onClick={handleXClick}
+                >
+                    <RoundedX />
+                </button>
+            )}
+
+            {!isFront && (
+                <button
+                    className="absolute top-[-25px] bg-white rounded-full h-[50px] w-[50px] flex items-center justify-center"
+                    onClick={() => setIsFront(true)}
+                >
+                    <LeftArrow color="#18224E" size="25" />
+                </button>
+            )}
+
             <div className="flex flex-col items-center grow w-full rounded-t-[30px] rounded-b-[20px] overflow-scroll scrollbar-hide">
                 {/* 
                     div in a div here so that we can have an outer scroll container with an inner container

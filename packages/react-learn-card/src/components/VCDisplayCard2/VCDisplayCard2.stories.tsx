@@ -50,6 +50,7 @@ export const AllFieldsTest = Template.bind({});
 AllFieldsTest.args = {
     credential: AllFieldsCredential,
     convertTagsToSkills: simpleConvertTagsToSkills,
+    handleXClick: () => console.log('X clicked!'),
     // issueeOverride: superSkillsIssueeOverride,
     // issuerOverride,
     verificationItems: [
