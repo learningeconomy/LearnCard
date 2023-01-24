@@ -150,7 +150,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
 
             {isFront && handleXClick && (
                 <button
-                    className="absolute top-[-25px] bg-white rounded-full h-[50px] w-[50px] flex items-center justify-center"
+                    className="absolute top-[-25px] bg-white rounded-full h-[50px] w-[50px] flex items-center justify-center z-50"
                     onClick={handleXClick}
                 >
                     <RoundedX />
@@ -159,7 +159,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
 
             {!isFront && (
                 <button
-                    className="absolute top-[-25px] bg-white rounded-full h-[50px] w-[50px] flex items-center justify-center"
+                    className="absolute top-[-25px] bg-white rounded-full h-[50px] w-[50px] flex items-center justify-center z-50"
                     onClick={() => setIsFront(true)}
                 >
                     <LeftArrow color="#18224E" size="25" />
