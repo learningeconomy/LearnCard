@@ -24,7 +24,7 @@ const SkillsBox: React.FC<SkillsBoxProps> = ({ skillsObject }) => {
                 className="absolute top-[17px] right-[17px]"
                 onClick={() => setShowInfo(!showInfo)}
             >
-                <InfoIcon />
+                <InfoIcon color={showInfo ? '#6366F1' : undefined} />
             </button>
             {showInfo && (
                 <InfoBox text="This is what skills are." handleClose={() => setShowInfo(false)} />
