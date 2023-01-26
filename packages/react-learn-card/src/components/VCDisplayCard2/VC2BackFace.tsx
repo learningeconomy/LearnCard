@@ -3,7 +3,6 @@ import { format } from 'date-fns';
 
 import MediaAttachmentsBox from './MediaAttachmentsBox';
 import TruncateTextBox from './TruncateTextBox';
-import VerificationRow from './VerificationRow';
 import SkillsBox from './SkillsBox';
 
 import { MediaAttachment } from '../../helpers/test.helpers';
@@ -36,7 +35,7 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
     const expiration = format(new Date(), 'MMM dd, yyyy');
     const criteria = credential.credentialSubject.achievement?.criteria?.narrative;
 
-    const tags = credential.credentialSubject.achievement.tag;
+    const tags = credential.credentialSubject.achievement?.tag;
     const skillsObject = tags && tags.length > 0 ? convertTagsToSkills(tags) : undefined;
 
     return (
@@ -44,7 +43,7 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
             <h2 className="text-white text-[30px] pl-[10px]">Details</h2>
             <TruncateTextBox
                 headerText="Description"
-                text={credential.credentialSubject.achievement.description}
+                text={credential.credentialSubject.achievement?.description}
             >
                 {expiration && (
                     <p className="text-grayscale-800 font-poppins font-[600] text-[12px] leading-[18px] mb-0">

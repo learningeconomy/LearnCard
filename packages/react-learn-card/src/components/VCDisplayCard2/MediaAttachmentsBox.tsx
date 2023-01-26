@@ -18,7 +18,7 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({ attachments }
 
     return (
         <div className="bg-white flex flex-col items-start gap-[10px] rounded-[20px] shadow-bottom px-[15px] py-[20px] w-full">
-            <h3 className="text-[20px] leading-[20px]">Media Attachments</h3>
+            <h3 className="text-[20px] leading-[20px] text-grayscale-900">Media Attachments</h3>
             {images.length > 0 && (
                 <div className="flex gap-[5px] justify-between flex-wrap w-full">
                     {images.map(image => (

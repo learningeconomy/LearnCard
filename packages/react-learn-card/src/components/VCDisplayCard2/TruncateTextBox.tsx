@@ -26,7 +26,7 @@ const TruncateTextBox: React.FC<TruncateTextBoxProps> = ({
 
     return (
         <div className="bg-white flex flex-col items-start gap-[10px] rounded-[20px] shadow-bottom px-[15px] py-[20px] w-full">
-            <h3 className="text-[20px] leading-[20px]">{headerText}</h3>
+            <h3 className="text-[20px] leading-[20px] text-grayscale-900">{headerText}</h3>
 
             <p className="text-[12px] text-grayscale-700 leading-[18px] font-poppins font-[400] mb-0">
                 {displayText}

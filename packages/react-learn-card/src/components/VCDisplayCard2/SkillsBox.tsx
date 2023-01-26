@@ -19,7 +19,7 @@ const SkillsBox: React.FC<SkillsBoxProps> = ({ skillsObject }) => {
 
     return (
         <div className="bg-white flex flex-col items-start gap-[10px] rounded-[20px] shadow-bottom px-[15px] py-[20px] w-full relative">
-            <h3 className="text-[20px] leading-[20px]">Skills</h3>
+            <h3 className="text-[20px] leading-[20px] text-grayscale-900">Skills</h3>
             <button
                 className="absolute top-[17px] right-[17px]"
                 onClick={() => setShowInfo(!showInfo)}

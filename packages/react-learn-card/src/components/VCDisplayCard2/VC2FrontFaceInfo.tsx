@@ -1,11 +1,10 @@
 import React from 'react';
 
-import AchievementWithTitle from '../svgs/AchievementWithTitle';
 import DefaultFace from '../../assets/images/default-face.jpeg';
 
 import { getImageFromProfile, getNameFromProfile } from '../../helpers/credential.helpers';
 import { truncateWithEllipsis } from '../../helpers/string.helpers';
-import { VC, VerificationItem, Profile } from '@learncard/types';
+import { Profile } from '@learncard/types';
 
 type VC2FrontFaceInfoProps = {
     issuee: Profile;
@@ -20,7 +19,6 @@ type VC2FrontFaceInfoProps = {
 const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
     issuee,
     issuer,
-    title,
     subjectImageComponent,
     issuerImageComponent,
     createdAt,
@@ -59,7 +57,7 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
             {/* <AchievementWithTitle text={title} /> */}
             {imageUrl && <img className="h-[130px] w-[130px] rounded-[10px]" src={imageUrl} />}
             <div className="bg-white flex flex-col items-center gap-[5px] rounded-[20px] shadow-bottom px-[15px] py-[20px] w-full">
-                <h3 className="text-[27px] leading-[130%]">{issueeName}</h3>
+                <h3 className="text-[27px] leading-[130%] text-grayscale-900">{issueeName}</h3>
                 <div className="relative">
                     <div className="h-[60px] w-[60px] rounded-full overflow-hidden">
                         {issueeImageEl}
