@@ -42,10 +42,6 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
     const images = attachments.filter(a => a.type === 'image');
     const files = attachments.filter(a => a.type === 'txt' || a.type === 'pdf');
 
-    const getIconForFile = (fileType: string) => {
-        return <GenericDocumentIcon />;
-    };
-
     useEffect(() => {
         const getMetadata = async (urls: string[]): Promise<any> => {
             const metadata: { [fileUrl: string]: MediaMetadata } = {};
@@ -91,7 +87,7 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                                 className="bg-grayscale-100 rounded-[15px] p-[10px] w-full font-poppins text-[12px] leading-[18px] tracking-[-0.33px]"
                             >
                                 <div className="flex gap-[5px] items-center">
-                                    {getIconForFile(f.type)}
+                                    <GenericDocumentIcon className="shrink-0" />
                                     <span className="text-grayscale-900 font-[400]">
                                         {f.name ?? 'No title'}
                                     </span>
