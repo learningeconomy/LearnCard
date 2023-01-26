@@ -71,12 +71,11 @@
     "@learncard/core": "workspace:*",
     "date-fns": "^2.28.0",
     "fitty": "^2.3.6",
+    "pretty-bytes": "^6.0.0",
     "qrcode.react": "^3.0.2",
     "react": "link:~/WeLibraryOS/wl-react/node_modules/react",
     "react-barcode": "^1.4.5",
     "react-dom": "link:~/WeLibraryOS/wl-react/node_modules/react-dom",
     "tailwind-scrollbar-hide": "^1.1.7"
-  },
-  "peerDependencies": {
   }
 }

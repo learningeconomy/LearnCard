@@ -1,7 +1,7 @@
 import React from 'react';
 import { format } from 'date-fns';
 
-import MediaAttachmentsBox from './MediaAttachmentsBox';
+import MediaAttachmentsBox, { MediaMetadata } from './MediaAttachmentsBox';
 import TruncateTextBox from './TruncateTextBox';
 import SkillsBox from './SkillsBox';
 
@@ -20,6 +20,7 @@ type VC2BackFaceProps = {
     credential: VC | AchievementCredential;
     verificationItems: VerificationItem[];
     convertTagsToSkills?: (tags: string[]) => { [skill: string]: string[] };
+    getFileMetadata?: (url: string) => MediaMetadata;
 
     // dunno where these live yet within a VC, so I'll just rewire it later
     extraFields?: { notes?: string; mediaAttachments?: MediaAttachment[]; expiration: Date };
@@ -29,6 +30,7 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
     credential,
     verificationItems,
     convertTagsToSkills = defaultTagsToSkills,
+    getFileMetadata,
     extraFields,
 }) => {
     // TODO real expiration (if present)
@@ -53,7 +55,10 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
             {criteria && <TruncateTextBox headerText="Criteria" text={criteria} />}
             {skillsObject && <SkillsBox skillsObject={skillsObject} />}
             {extraFields?.mediaAttachments && extraFields.mediaAttachments.length > 0 && (
-                <MediaAttachmentsBox attachments={extraFields?.mediaAttachments} />
+                <MediaAttachmentsBox
+                    attachments={extraFields?.mediaAttachments}
+                    getFileMetadata={getFileMetadata}
+                />
             )}
             {extraFields?.notes && <TruncateTextBox headerText="Notes" text={extraFields?.notes} />}
 

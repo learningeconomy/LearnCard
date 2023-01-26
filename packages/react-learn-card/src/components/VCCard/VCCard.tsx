@@ -3,16 +3,19 @@ import { initLearnCard } from '@learncard/core';
 import { VC, Profile, VerificationItem } from '@learncard/types';
 
 import { VCDisplayCard } from '../VCDisplayCard';
-import { VCDisplayCard2 } from '../VCDisplayCard2';
+import { VCDisplayCard2, MediaMetadata } from '../VCDisplayCard2';
 
 export type VCCardProps = {
     credential: VC;
     issueeOverride?: Profile;
     className?: string;
     version?: '1' | '2';
+
+    /* Only used for version 2 */
     subjectImageComponent?: React.ReactNode;
     convertTagsToSkills?: (tags: string[]) => { [skill: string]: string[] };
     handleXClick?: () => void;
+    getFileMetadata?: (url: string) => MediaMetadata;
 };
 
 export const VCCard: React.FC<VCCardProps> = ({
@@ -23,6 +26,7 @@ export const VCCard: React.FC<VCCardProps> = ({
     subjectImageComponent,
     convertTagsToSkills,
     handleXClick,
+    getFileMetadata,
 }) => {
     const [loading, setLoading] = useState(true);
     const [vcVerification, setVCVerification] = useState<VerificationItem[]>([]);
@@ -58,6 +62,7 @@ export const VCCard: React.FC<VCCardProps> = ({
             subjectImageComponent={subjectImageComponent}
             convertTagsToSkills={convertTagsToSkills}
             handleXClick={handleXClick}
+            getFileMetadata={getFileMetadata}
         />
     );
 };

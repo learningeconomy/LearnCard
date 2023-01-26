@@ -5,6 +5,7 @@ import VC2FrontFaceInfo from './VC2FrontFaceInfo';
 import VC2BackFace from './VC2BackFace';
 import RibbonEnd from './RibbonEnd';
 import FitText from './FitText';
+import { MediaMetadata } from './MediaAttachmentsBox';
 import AwardRibbon from '../svgs/AwardRibbon';
 import LeftArrow from '../svgs/LeftArrow';
 import RoundedX from '../svgs/RoundedX';
@@ -33,6 +34,7 @@ export type VCDisplayCard2Props = {
     verificationInProgress?: boolean;
     convertTagsToSkills?: (tags: string[]) => { [skill: string]: string[] };
     handleXClick?: () => void;
+    getFileMetadata?: (url: string) => MediaMetadata;
 
     // dunno where these live yet within a VC, so I'll just rewire it later
     extraFields?: {
@@ -55,6 +57,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     convertTagsToSkills,
     extraFields,
     handleXClick,
+    getFileMetadata,
 }) => {
     const {
         title,
@@ -184,6 +187,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                             verificationItems={verificationItems}
                             convertTagsToSkills={convertTagsToSkills}
                             extraFields={extraFields}
+                            getFileMetadata={getFileMetadata}
                         />
                     )}
                     <button
