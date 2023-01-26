@@ -37,7 +37,7 @@ const VerificationRow: React.FC<VerificationRowProps> = ({ verification }) => {
     const infoText = 'Placeholder verification text.';
 
     return (
-        <div className="flex flex-col gap-[5px] font-poppins border-b-[1px] bord-grayscale-200 border-solid w-full py-[10px] last:border-0 last:pb-0">
+        <div className="flex flex-col gap-[5px] font-poppins border-b-[1px] border-grayscale-200 border-solid w-full py-[10px] last:border-0 last:pb-0">
             <span
                 className="font-[700] text-[11px] leading-[16px] uppercase flex items-center gap-[3px]"
                 style={{ color: statusColor }}
@@ -51,7 +51,11 @@ const VerificationRow: React.FC<VerificationRowProps> = ({ verification }) => {
                 )}
             </span>
             {showInfo && infoText && (
-                <InfoBox text={infoText} handleClose={() => setShowInfo(false)} />
+                <InfoBox
+                    text={infoText}
+                    handleClose={() => setShowInfo(false)}
+                    backgroundColor={statusColor}
+                />
             )}
             <span className="font-[400] text-[14px] leading-[21px] text-grayscale-900">
                 {primaryText}
