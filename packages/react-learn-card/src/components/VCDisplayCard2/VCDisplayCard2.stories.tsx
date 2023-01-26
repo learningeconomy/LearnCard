@@ -81,3 +81,29 @@ AllFieldsTest.args = {
         backgroundImage: 'https://images.unsplash.com/photo-1518199266791-5375a83190b7',
     },
 };
+
+export const BackgroundColorTest = Template.bind({});
+BackgroundColorTest.args = {
+    credential: AllFieldsCredential,
+    convertTagsToSkills: simpleConvertTagsToSkills,
+    handleXClick: () => console.log('X clicked!'),
+    verificationItems: [
+        TestVerificationItems.SUCCESS.PROOF,
+        TestVerificationItems.SUCCESS.NO_EXPIRATION,
+        TestVerificationItems.FAILED.CONTEXT,
+        TestVerificationItems.FAILED.SIGNATURE,
+        TestVerificationItems.FAILED.PROOF_TYPE,
+        TestVerificationItems.FAILED.APPLICABLE_PROOF,
+    ],
+    extraFields: {
+        notes: "This credential has some notes about it. Here's a note: this isn't fully wired up yet, so this note is just an extraField prop",
+        mediaAttachments: [
+            { type: 'pdf', url: 'https://cdn.filestackcontent.com/4LN0x2LQXSjIH3c5bfBr' },
+            { type: 'txt', url: 'https://cdn.filestackcontent.com/BqqfmVEbQFmRaqwvqTMA' },
+            { type: 'image', url: 'https://cdn.filestackcontent.com/XuMpArLAQ3qam5OdArih' },
+            { type: 'image', url: 'https://cdn.filestackcontent.com/PNb6lViSaqGoKyRyXyyp' },
+            { type: 'image', url: 'https://images.unsplash.com/photo-1607419145932-ed1fc8c034d8' },
+        ],
+        backgroundColor: 'lightblue',
+    },
+};

@@ -40,11 +40,11 @@ export type VCDisplayCard2Props = {
         mediaAttachments?: MediaAttachment[];
         expiration?: Date;
         backgroundImage?: string;
+        backgroundColor?: string;
     };
 };
 
 export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
-    // credentialInfo,
     credential,
     verificationItems,
     issueeOverride,
@@ -160,7 +160,8 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                     className="w-full flex flex-col justify-center items-center rounded-b-[200px] bg-[#353E64] pb-[50px]"
                     style={{
                         paddingTop: headerHeight + 70,
-                        background: extraFields?.backgroundImage
+                        backgroundColor: extraFields?.backgroundColor,
+                        backgroundImage: extraFields?.backgroundImage
                             ? `url(${extraFields?.backgroundImage})`
                             : undefined,
                         backgroundSize: 'contain',
