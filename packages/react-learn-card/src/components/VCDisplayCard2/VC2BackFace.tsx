@@ -40,7 +40,6 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
 
     return (
         <section className="flex flex-col gap-[20px] w-full px-[15px]">
-            <h2 className="text-white text-[30px] pl-[10px]">Details</h2>
             <TruncateTextBox
                 headerText="Description"
                 text={credential.credentialSubject.achievement?.description}

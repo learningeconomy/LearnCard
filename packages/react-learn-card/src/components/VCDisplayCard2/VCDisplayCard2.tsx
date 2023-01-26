@@ -124,22 +124,6 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 <span className="uppercase text-spice-500 font-poppins text-[12px] font-[600] leading-[12px]">
                     Achievement
                 </span>
-                {!isFront && (
-                    <button
-                        className="absolute left-[-22px]"
-                        style={{ top: `${headerHeight / 2 - 18}px` }}
-                        type="button"
-                        onClick={() => setIsFront(true)}
-                    >
-                        {/*
-                        <img
-                            src={LeftArrow}
-                            alt="Back"
-                            className="h-[36px] w-[36px] bg-[#2F80ED] rounded-[40px] px-[4px] border-white border-[3px] border-solid"
-                        />
-                        */}
-                    </button>
-                )}
                 <FitText
                     text={title ?? ''}
                     width={((headerWidth ?? 290) - 40).toString()}
@@ -159,10 +143,11 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
 
             {!isFront && (
                 <button
-                    className="absolute top-[-25px] bg-white rounded-full h-[50px] w-[50px] flex items-center justify-center z-50"
+                    className="absolute top-[-25px] bg-white rounded-full h-[50px] px-[15px] flex items-center justify-center gap-[5px] z-50 text-[30px] text-grayscale-900"
                     onClick={() => setIsFront(true)}
                 >
                     <LeftArrow color="#18224E" size="25" />
+                    Details
                 </button>
             )}
 
