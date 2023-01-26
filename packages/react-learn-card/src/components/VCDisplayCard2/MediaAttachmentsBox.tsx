@@ -2,7 +2,7 @@ import React from 'react';
 import { MediaAttachment } from '../../helpers/test.helpers';
 
 import Camera from '../svgs/Camera';
-import PdfIcon from '../svgs/PdfIcon';
+import GenericDocumentIcon from '../svgs/GenericDocumentIcon';
 
 type MediaAttachmentsBoxProps = {
     attachments: MediaAttachment[];
@@ -13,7 +13,7 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({ attachments }
     const files = attachments.filter(a => a.type === 'txt' || a.type === 'pdf');
 
     const getIconForFile = (fileType: string) => {
-        return <PdfIcon />;
+        return <GenericDocumentIcon />;
     };
 
     return (
