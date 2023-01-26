@@ -16,6 +16,7 @@ export type VCCardProps = {
     convertTagsToSkills?: (tags: string[]) => { [skill: string]: string[] };
     handleXClick?: () => void;
     getFileMetadata?: (url: string) => MediaMetadata;
+    onMediaAttachmentClick?: (url: string) => void;
 };
 
 export const VCCard: React.FC<VCCardProps> = ({
@@ -27,6 +28,7 @@ export const VCCard: React.FC<VCCardProps> = ({
     convertTagsToSkills,
     handleXClick,
     getFileMetadata,
+    onMediaAttachmentClick,
 }) => {
     const [loading, setLoading] = useState(true);
     const [vcVerification, setVCVerification] = useState<VerificationItem[]>([]);
@@ -63,6 +65,7 @@ export const VCCard: React.FC<VCCardProps> = ({
             convertTagsToSkills={convertTagsToSkills}
             handleXClick={handleXClick}
             getFileMetadata={getFileMetadata}
+            onMediaAttachmentClick={onMediaAttachmentClick}
         />
     );
 };

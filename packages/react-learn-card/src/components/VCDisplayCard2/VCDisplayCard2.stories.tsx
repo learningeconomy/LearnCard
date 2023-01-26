@@ -58,6 +58,8 @@ AllFieldsTest.args = {
         TestVerificationItems.FAILED.PROOF_TYPE,
         TestVerificationItems.FAILED.APPLICABLE_PROOF,
     ],
+    onMediaAttachmentClick: (url: string) =>
+        console.log(`You clicked on an attachment with the url "${url}"`),
     extraFields: {
         notes: "This credential has some notes about it. Here's a note: this isn't fully wired up yet, so this note is just an extraField prop",
         mediaAttachments: [
@@ -84,6 +86,7 @@ BackgroundColorTest.args = {
     credential: AllFieldsCredential,
     convertTagsToSkills: simpleConvertTagsToSkills,
     handleXClick: () => console.log('X clicked!'),
+    onMediaAttachmentClick: undefined,
     verificationItems: [
         TestVerificationItems.SUCCESS.PROOF,
         TestVerificationItems.SUCCESS.NO_EXPIRATION,

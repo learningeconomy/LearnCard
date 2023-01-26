@@ -14,6 +14,7 @@ export type MediaMetadata = {
 type MediaAttachmentsBoxProps = {
     attachments: MediaAttachment[];
     getFileMetadata?: (url: string) => MediaMetadata;
+    onMediaAttachmentClick?: (url: string) => void;
 };
 
 const defaultGetFileMetadata = async (url: string) => {
@@ -42,6 +43,7 @@ const defaultGetFileMetadata = async (url: string) => {
 const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
     attachments,
     getFileMetadata = defaultGetFileMetadata,
+    onMediaAttachmentClick,
 }) => {
     const [fileMetadata, setFileMetadata] = useState<{ [fileUrl: string]: MediaMetadata }>({});
 
@@ -68,18 +70,37 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
             <h3 className="text-[20px] leading-[20px] text-grayscale-900">Media Attachments</h3>
             {images.length > 0 && (
                 <div className="flex gap-[5px] justify-between flex-wrap w-full">
-                    {images.map((image, index) => (
-                        <div
-                            key={index}
-                            className="w-[49%] pt-[49%] rounded-[15px] overflow-hidden relative"
-                        >
-                            <img
-                                className="absolute top-0 left-0 right-0 bottom-0"
-                                src={image.url}
-                            />
-                            <Camera className="absolute bottom-[10px] left-[10px] z-10" />
-                        </div>
-                    ))}
+                    {images.map((image, index) => {
+                        const innerContent = (
+                            <>
+                                <img
+                                    className="absolute top-0 left-0 right-0 bottom-0"
+                                    src={image.url}
+                                />
+                                <Camera className="absolute bottom-[10px] left-[10px] z-10" />
+                            </>
+                        );
+                        const className =
+                            'w-[49%] pt-[49%] rounded-[15px] overflow-hidden relative';
+
+                        if (onMediaAttachmentClick) {
+                            return (
+                                <button
+                                    key={index}
+                                    className={className}
+                                    onClick={() => onMediaAttachmentClick(image.url)}
+                                >
+                                    {innerContent}
+                                </button>
+                            );
+                        }
+
+                        return (
+                            <div key={index} className={className}>
+                                {innerContent}
+                            </div>
+                        );
+                    })}
                 </div>
             )}
             {files.length > 0 && (
@@ -87,11 +108,9 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                     {files.map((f, index) => {
                         const metadata = fileMetadata[f.url];
                         const { fileExtension, sizeInBytes, numberOfPages } = metadata ?? {};
-                        return (
-                            <div
-                                key={index}
-                                className="bg-grayscale-100 rounded-[15px] p-[10px] w-full font-poppins text-[12px] leading-[18px] tracking-[-0.33px]"
-                            >
+
+                        const innerContent = (
+                            <>
                                 <div className="flex gap-[5px] items-center">
                                     <GenericDocumentIcon className="shrink-0" />
                                     <span className="text-grayscale-900 font-[400]">
@@ -113,6 +132,27 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                                         {sizeInBytes && <span>{prettyBytes(sizeInBytes)}</span>}
                                     </div>
                                 )}
+                            </>
+                        );
+
+                        const className =
+                            'bg-grayscale-100 rounded-[15px] p-[10px] w-full font-poppins text-[12px] leading-[18px] tracking-[-0.33px] text-left';
+
+                        if (onMediaAttachmentClick) {
+                            return (
+                                <button
+                                    key={index}
+                                    className={className}
+                                    onClick={() => onMediaAttachmentClick(f.url)}
+                                >
+                                    {innerContent}
+                                </button>
+                            );
+                        }
+
+                        return (
+                            <div key={index} className={className}>
+                                {innerContent}
                             </div>
                         );
                     })}

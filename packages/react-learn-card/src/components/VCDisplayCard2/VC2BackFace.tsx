@@ -21,6 +21,7 @@ type VC2BackFaceProps = {
     verificationItems: VerificationItem[];
     convertTagsToSkills?: (tags: string[]) => { [skill: string]: string[] };
     getFileMetadata?: (url: string) => MediaMetadata;
+    onMediaAttachmentClick?: (url: string) => void;
 
     // dunno where these live yet within a VC, so I'll just rewire it later
     extraFields?: { notes?: string; mediaAttachments?: MediaAttachment[]; expiration: Date };
@@ -31,6 +32,7 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
     verificationItems,
     convertTagsToSkills = defaultTagsToSkills,
     getFileMetadata,
+    onMediaAttachmentClick,
     extraFields,
 }) => {
     // TODO real expiration (if present)
@@ -58,6 +60,7 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
                 <MediaAttachmentsBox
                     attachments={extraFields?.mediaAttachments}
                     getFileMetadata={getFileMetadata}
+                    onMediaAttachmentClick={onMediaAttachmentClick}
                 />
             )}
             {extraFields?.notes && <TruncateTextBox headerText="Notes" text={extraFields?.notes} />}
