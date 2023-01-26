@@ -227,13 +227,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                         {worstVerificationStatus}
                     </span>
                 </div>
-                <button
-                    type="button"
-                    className={`bg-[#6366F1] rounded-[20px] h-[40px] w-[40px] flex items-center justify-center`}
-                    onClick={() => setIsFront(!isFront)}
-                >
-                    <AwardRibbon />
-                </button>
+                <AwardRibbon className="bg-[#6366F1] rounded-[20px] h-[40px] w-[40px] flex items-center justify-center p-[5px]" />
             </footer>
         </section>
     );
