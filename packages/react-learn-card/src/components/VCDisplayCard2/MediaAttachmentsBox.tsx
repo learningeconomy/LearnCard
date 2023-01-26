@@ -39,8 +39,7 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({ attachments }
                             <div className="flex gap-[5px] items-center">
                                 {getIconForFile(f.type)}
                                 <span className="text-grayscale-900 font-[400]">
-                                    Document title goes here and it looks like this if it's two
-                                    lines
+                                    {f.name ?? 'No title'}
                                 </span>
                             </div>
                             <div className="text-grayscale-600 font-[600] px-[5px]">

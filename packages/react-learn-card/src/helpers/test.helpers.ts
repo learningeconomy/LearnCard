@@ -252,4 +252,4 @@ export const superSkillsConvertTags = (tags: string[]) => {
     return skillsToSubskills;
 };
 
-export type MediaAttachment = { type: 'txt' | 'pdf' | 'image'; url: string };
+export type MediaAttachment = { type: 'txt' | 'pdf' | 'image'; name?: string; url: string };
