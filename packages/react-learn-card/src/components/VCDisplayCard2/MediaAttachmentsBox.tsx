@@ -17,12 +17,16 @@ type MediaAttachmentsBoxProps = {
 };
 
 const defaultGetFileMetadata = async (url: string) => {
-    const urlParams = url.split('.com/')[1].split('/');
+    const urlParams = url.split('.com/')[1]?.split('/');
+    if (!urlParams) return;
     const handle = urlParams[urlParams.length - 1];
 
-    const data = await fetch(`https://cdn.filestackcontent.com/${handle}/metadata`).then(res =>
-        res.json()
-    );
+    let fetchFailed = false;
+    const data = await fetch(`https://cdn.filestackcontent.com/${handle}/metadata`)
+        .then(res => res.json())
+        .catch(() => (fetchFailed = true));
+
+    if (fetchFailed) return;
 
     const fileExtension = data.filename.split('.')[1];
 

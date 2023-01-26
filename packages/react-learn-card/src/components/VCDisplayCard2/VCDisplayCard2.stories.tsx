@@ -26,8 +26,6 @@ export const JFFCredentialTest = Template.bind({});
 JFFCredentialTest.args = {
     credential: JffCredential,
     convertTagsToSkills: simpleConvertTagsToSkills,
-    // issueeOverride,
-    // issuerOverride,
     verificationItems: [
         TestVerificationItems.FAILED.APPLICABLE_PROOF,
         TestVerificationItems.SUCCESS.NO_EXPIRATION,
@@ -39,7 +37,6 @@ SuperSkillsVCTest.args = {
     credential: SuperSkillsOprahCredential,
     convertTagsToSkills: superSkillsConvertTags,
     issueeOverride: superSkillsIssueeOverride,
-    // issuerOverride,
     verificationItems: [
         TestVerificationItems.SUCCESS.PROOF,
         TestVerificationItems.SUCCESS.NO_EXPIRATION,
@@ -49,10 +46,10 @@ SuperSkillsVCTest.args = {
 export const AllFieldsTest = Template.bind({});
 AllFieldsTest.args = {
     credential: AllFieldsCredential,
+    issueeOverride,
+    issuerOverride,
     convertTagsToSkills: simpleConvertTagsToSkills,
     handleXClick: () => console.log('X clicked!'),
-    // issueeOverride: superSkillsIssueeOverride,
-    // issuerOverride,
     verificationItems: [
         TestVerificationItems.SUCCESS.PROOF,
         TestVerificationItems.SUCCESS.NO_EXPIRATION,
@@ -63,14 +60,6 @@ AllFieldsTest.args = {
     ],
     extraFields: {
         notes: "This credential has some notes about it. Here's a note: this isn't fully wired up yet, so this note is just an extraField prop",
-        // mediaAttachments: [
-        //     'https://cdn.filestackcontent.com/BqqfmVEbQFmRaqwvqTMA', // txt
-        //     'https://cdn.filestackcontent.com/bBhttAa8QRW7eVABQsxw', // ppt
-        //     'https://cdn.filestackcontent.com/uplKVCcIQ26P43QBQIAy', // odt
-        //     'https://cdn.filestackcontent.com/S6gfhbZEQtGn9Oy8cVdq', // xls
-        //     'https://cdn.filestackcontent.com/4LN0x2LQXSjIH3c5bfBr', // pdf
-        //     'https://cdn.filestackcontent.com/XuMpArLAQ3qam5OdArih', // image
-        // ],
         mediaAttachments: [
             {
                 type: 'pdf',
