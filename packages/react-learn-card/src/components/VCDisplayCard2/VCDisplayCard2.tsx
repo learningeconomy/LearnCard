@@ -35,6 +35,7 @@ export type VCDisplayCard2Props = {
     convertTagsToSkills?: (tags: string[]) => { [skill: string]: string[] };
     handleXClick?: () => void;
     getFileMetadata?: (url: string) => MediaMetadata;
+    onMediaAttachmentClick?: (url: string) => void;
 
     // dunno where these live yet within a VC, so I'll just rewire it later
     extraFields?: {
@@ -58,6 +59,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     extraFields,
     handleXClick,
     getFileMetadata,
+    onMediaAttachmentClick,
 }) => {
     const {
         title,
@@ -188,6 +190,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                             convertTagsToSkills={convertTagsToSkills}
                             extraFields={extraFields}
                             getFileMetadata={getFileMetadata}
+                            onMediaAttachmentClick={onMediaAttachmentClick}
                         />
                     )}
                     <button
