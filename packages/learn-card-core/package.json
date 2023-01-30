@@ -56,6 +56,7 @@
     "@learncard/helpers": "workspace:*",
     "@uniswap/default-token-list": "^4.1.0",
     "abort-controller": "^3.0.0",
+    "buffer": "^6.0.3",
     "core-js": "^3.25.5",
     "credential-handler-polyfill": "^3.0.0",
     "cross-fetch": "^3.1.5",

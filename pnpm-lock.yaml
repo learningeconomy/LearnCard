@@ -323,6 +323,7 @@ importers:
       '@uniswap/default-token-list': ^4.1.0
       abort-controller: ^3.0.0
       aqu: 0.4.3
+      buffer: ^6.0.3
       core-js: ^3.25.5
       credential-handler-polyfill: ^3.0.0
       cross-fetch: ^3.1.5
@@ -357,6 +358,7 @@ importers:
       '@learncard/helpers': link:../learn-card-helpers
       '@uniswap/default-token-list': 4.1.0
       abort-controller: 3.0.0
+      buffer: 6.0.3
       core-js: 3.26.0
       credential-handler-polyfill: 3.0.1
       cross-fetch: 3.1.5
