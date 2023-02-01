@@ -1,4 +1,4 @@
-import Profile from '@models/Profile';
+import { Profile } from '@models';
 
 export const checkIfProfileExists = async ({
     did,

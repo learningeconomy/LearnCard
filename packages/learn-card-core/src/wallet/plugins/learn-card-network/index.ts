@@ -82,10 +82,10 @@ export const getLearnCardNetworkPlugin = async (
 
                 return false;
             },
-            getProfile: async (_learnCard, id) => {
-                if (!id) return client.getProfile.query();
+            getProfile: async (_learnCard, handle) => {
+                if (!handle) return client.getProfile.query();
 
-                return client.getOtherProfile.query({ handle: id });
+                return client.getOtherProfile.query({ handle });
             },
             connectWith: async (_learnCard, handle) => {
                 if (!userData) throw new Error('Please make an account first!');
@@ -112,15 +112,15 @@ export const getLearnCardNetworkPlugin = async (
 
                 return client.connectionRequests.query();
             },
-            sendCredential: async (_learnCard, id, vc) => {
+            sendCredential: async (_learnCard, handle, vc) => {
                 if (!userData) throw new Error('Please make an account first!');
 
-                return client.sendCredential.mutate({ handle: id, vc });
+                return client.sendCredential.mutate({ handle, vc });
             },
-            acceptCredential: async (_learnCard, id, uri) => {
+            acceptCredential: async (_learnCard, handle, uri) => {
                 if (!userData) throw new Error('Please make an account first!');
 
-                return client.acceptCredential.mutate({ handle: id, uri });
+                return client.acceptCredential.mutate({ handle, uri });
             },
             registerSigningAuthority: async (_learnCard, signingAuthority) => {
                 if (!userData) throw new Error('Please make an account first!');

@@ -21,8 +21,8 @@ export type LearnCardNetworkPluginMethods = {
     getConnections: () => Promise<LCNProfile[]>;
     getPendingConnections: () => Promise<LCNProfile[]>;
     getConnectionRequests: () => Promise<LCNProfile[]>;
-    sendCredential: (id: string, vc: UnsignedVC | VC) => Promise<string>;
-    acceptCredential: (id: string, uri: string) => Promise<boolean>;
+    sendCredential: (handle: string, vc: UnsignedVC | VC) => Promise<string>;
+    acceptCredential: (handle: string, uri: string) => Promise<boolean>;
     registerSigningAuthority: (uri: string) => Promise<boolean>;
 };
 

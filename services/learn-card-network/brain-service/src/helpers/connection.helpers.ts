@@ -1,5 +1,5 @@
 import { TRPCError } from '@trpc/server';
-import Profile, { ProfileInstance } from '@models/Profile';
+import { Profile, ProfileInstance } from '@models';
 
 export const getConnections = async (profile: ProfileInstance): Promise<ProfileInstance[]> => {
     const [connectedTo, connectedBy] = await Promise.all([

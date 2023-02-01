@@ -5,7 +5,7 @@ import { z } from 'zod';
 import jwtDecode from 'jwt-decode';
 import { LCNProfileValidator, UnsignedVCValidator, VCValidator } from '@learncard/types';
 
-import Profile from '@models/Profile';
+import { Profile } from '@models';
 
 import { getChallenges } from '@helpers/challenges.helpers';
 import {
@@ -15,9 +15,9 @@ import {
     getPendingConnections,
     requestConnection,
 } from '@helpers/connection.helpers';
-import { acceptCredential } from '@helpers/credential.helpers';
+import { acceptCredential, sendCredential } from '@helpers/credential.helpers';
 import { getDidWeb } from '@helpers/did.helpers';
-import { getEmptyLearnCard, getLearnCard } from '@helpers/learnCard.helpers';
+import { getEmptyLearnCard } from '@helpers/learnCard.helpers';
 import { getCache } from '@helpers/redis.helpers';
 
 import { checkIfProfileExists } from '@accesslayer/read';
@@ -52,8 +52,8 @@ export const createContext = async ({
 
     const domain =
         domainName && domainName !== 'offlineContext_domainName' // When running locally, domainName is set to 'offlineContext_domainName'
-            ? `${domainName}/users`
-            : 'localhost%3A3000/users';
+            ? `${domainName}`
+            : 'localhost%3A3000';
 
     if (authHeader && authHeader.split(' ').length === 2) {
         const [scheme, jwt] = authHeader.split(' ');
@@ -525,17 +525,7 @@ export const appRouter = t.router({
                 });
             }
 
-            const learnCard = await getLearnCard();
-
-            const uri = await learnCard.store.Ceramic.upload(vc);
-
-            await profile.relateTo({
-                alias: 'pendingCredential',
-                where: { handle },
-                properties: { vc: uri },
-            });
-
-            return uri;
+            return sendCredential(profile, targetProfile, vc, ctx.domain);
         }),
 
     acceptCredential: didAndChallengeRoute

@@ -641,6 +641,7 @@ importers:
       '@types/cors': ^2.8.13
       '@types/express': ^4.17.15
       '@types/node': ^18.0.0
+      '@types/uuid': ^9.0.0
       cors: ^2.8.5
       dotenv: ^16.0.3
       dts-bundle-generator: ^6.10.0
@@ -658,6 +659,7 @@ importers:
       shx: ^0.3.4
       testcontainers: ^9.1.1
       trpc-openapi: ^1.1.1
+      uuid: ^9.0.0
       zod: ^3.20.2
     dependencies:
       '@learncard/core': link:../../../packages/learn-card-core
@@ -674,12 +676,14 @@ importers:
       neogma: 1.11.1
       serverless-offline: 12.0.4_serverless@3.26.0
       trpc-openapi: 1.1.1_v7aw5md42ua3rf277jyeogdfny
+      uuid: 9.0.0
       zod: 3.20.2
     devDependencies:
       '@trendyol/jest-testcontainers': 2.1.1_ocec2fadts6dsgunr77m7tegem
       '@types/cors': 2.8.13
       '@types/express': 4.17.15
       '@types/node': 18.11.18
+      '@types/uuid': 9.0.0
       dts-bundle-generator: 6.13.0
       esbuild: 0.16.17
       openapi-types: 12.1.0
@@ -10532,6 +10536,10 @@ packages:
 
   /@types/unist/2.0.6:
     resolution: {integrity: sha512-PBjIUxZHOuj0R15/xuwJYjFi+KZdNFrehocChv4g5hu6aFroHue8m0lBP0POdK2nKzbw0cgV1mws8+V/JAcEkQ==}
+
+  /@types/uuid/9.0.0:
+    resolution: {integrity: sha512-kr90f+ERiQtKWMz5rP32ltJ/BtULDI5RVO0uavn1HQUOwjx0R1h0rnDYNL0CepF1zL5bSY6FISAfd9tOdDhU5Q==}
+    dev: true
 
   /@types/webpack-env/1.18.0:
     resolution: {integrity: sha512-56/MAlX5WMsPVbOg7tAxnYvNYMMWr/QJiIp6BxVSW3JJXUVzzOn64qW8TzQyMSqSUFM2+PVI4aUHcHOzIz/1tg==}

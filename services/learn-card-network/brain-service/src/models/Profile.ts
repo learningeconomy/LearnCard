@@ -3,20 +3,16 @@ import { LCNProfile } from '@learncard/types';
 
 import { neogma } from '@instance';
 
+import { Credential, CredentialInstance } from './Credential';
+
 export type ProfileRelationships = {
     connectionRequested: ModelRelatedNodesI<typeof Profile, ProfileInstance>;
     connectedWith: ModelRelatedNodesI<typeof Profile, ProfileInstance>;
     credentialSent: ModelRelatedNodesI<
-        { createOne: (typeof Profile)['createOne'] },
-        ProfileInstance,
-        { vc: string },
-        { vc: string }
-    >;
-    pendingCredential: ModelRelatedNodesI<
-        { createOne: (typeof Profile)['createOne'] },
-        ProfileInstance,
-        { vc: string },
-        { vc: string }
+        typeof Credential,
+        CredentialInstance,
+        { to: string; date: string },
+        { to: string; date: string }
     >;
 };
 
@@ -35,16 +31,13 @@ export const Profile = ModelFactory<LCNProfile, ProfileRelationships>(
             connectionRequested: { model: 'self', direction: 'out', name: 'CONNECTION_REQUESTED' },
             connectedWith: { model: 'self', direction: 'out', name: 'CONNECTED_WITH' },
             credentialSent: {
-                model: 'self',
+                model: Credential,
                 direction: 'out',
                 name: 'CREDENTIAL_SENT',
-                properties: { vc: { property: 'vc', schema: { type: 'string' } } },
-            },
-            pendingCredential: {
-                model: 'self',
-                direction: 'out',
-                name: 'PENDING_CREDENTIAL',
-                properties: { vc: { property: 'vc', schema: { type: 'string' } } },
+                properties: {
+                    to: { property: 'to', schema: { type: 'string' } },
+                    date: { property: 'date', schema: { type: 'string' } },
+                },
             },
         },
         primaryKeyField: 'did',

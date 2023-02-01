@@ -1,7 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 
-import Profile from '@models/Profile';
+import { Profile } from '@models';
+
 import { getEmptyLearnCard } from '@helpers/learnCard.helpers';
 import { getDidWeb } from '@helpers/did.helpers';
 import { TypedRequest } from '@helpers/types.helpers';
@@ -22,8 +23,8 @@ app.get('/:handle/did.json', async (req: TypedRequest<{}, {}, { handle: string }
     const domainName: string = (req as any).requestContext.domainName;
     const domain =
         domainName && domainName !== 'offlineContext_domainName' // When running locally, domainName is set to 'offlineContext_domainName'
-            ? `${domainName}/users`
-            : 'localhost%3A3000/users';
+            ? `${domainName}`
+            : 'localhost%3A3000';
 
     return res.json(
         JSON.parse(

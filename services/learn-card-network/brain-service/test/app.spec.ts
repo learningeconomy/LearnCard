@@ -1,5 +1,5 @@
 import { getClient, getUser } from './helpers/getClient';
-import Profile from '@models/Profile';
+import { Profile } from '@models';
 
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;
@@ -106,7 +106,7 @@ describe('LearnCard Network Profile Service', () => {
 
         it('should return the newly created did:web address', async () => {
             expect(await userA.clients.fullAuth.createProfile({ handle: 'userA' })).toEqual(
-                'did:web:localhost%3A3000:userA'
+                'did:web:localhost%3A3000:users:userA'
             );
         });
     });
