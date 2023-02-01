@@ -14,7 +14,10 @@ export type VCPluginDependentMethods = {
         options: ProofOptions,
         keypair: JWK
     ) => Promise<VP>;
-    verifyPresentation: (presentation: VP, options?: ProofOptions) => Promise<VerificationCheck>;
+    verifyPresentation: (
+        presentation: VP | string,
+        options?: ProofOptions
+    ) => Promise<VerificationCheck>;
 };
 
 /** @group VC Plugin */
@@ -32,11 +35,12 @@ export type VCPluginMethods = {
         signingOptions?: Partial<ProofOptions>
     ) => Promise<VP>;
     verifyPresentation: (
-        presentation: VP,
+        presentation: VP | string,
         options?: Partial<ProofOptions>
     ) => Promise<VerificationCheck>;
     getTestVc: (subject?: string) => UnsignedVC;
     getTestVp: (credential?: VC) => Promise<UnsignedVP>;
+    getDidAuthVp: (options?: ProofOptions) => Promise<VP | string>;
 };
 
 /** @group VC Plugin */

@@ -15,8 +15,8 @@ export const issuePresentation = (initLearnCard: VCDependentLearnCard) => {
 
         const options = {
             verificationMethod: await initLearnCard.invoke.keyToVerificationMethod('key', kp),
-            proofPurpose: 'assertionMethod',
-            type: 'Ed25519Signature2020',
+            ...(signingOptions.proofFormat === 'jwt' ? {} : { proofPurpose: 'assertionMethod' }),
+            ...(signingOptions.proofFormat === 'jwt' ? {} : { type: 'Ed25519Signature2020' }),
             ...signingOptions,
         };
 

@@ -6,7 +6,7 @@ import { VCDependentLearnCard, VCImplicitLearnCard } from './types';
 export const verifyPresentation = (initLearnCard: VCDependentLearnCard) => {
     return async (
         _learnCard: VCImplicitLearnCard,
-        presentation: VP,
+        presentation: VP | string,
         options: Partial<ProofOptions> = {}
     ) => {
         return initLearnCard.invoke.verifyPresentation(presentation, options);

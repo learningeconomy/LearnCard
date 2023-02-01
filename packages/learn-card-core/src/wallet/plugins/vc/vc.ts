@@ -4,6 +4,7 @@ import { issuePresentation } from './issuePresentation';
 import { verifyPresentation } from './verifyPresentation';
 
 import { VCDependentLearnCard, VCPlugin } from './types';
+import { UnsignedVP } from '@learncard/types';
 
 /**
  * @group Plugins
@@ -44,6 +45,19 @@ export const getVCPlugin = (learnCard: VCDependentLearnCard): VCPlugin => {
                     holder: did,
                     verifiableCredential: credential,
                 };
+            },
+            getDidAuthVp: async (_learnCard, options = {}) => {
+                const did = _learnCard.invoke.getSubjectDid('key');
+                const unsignedVP: UnsignedVP = {
+                    '@context': ['https://www.w3.org/2018/credentials/v1'],
+                    type: ['VerifiablePresentation'],
+                    holder: did,
+                };
+
+                return _learnCard.invoke.issuePresentation(unsignedVP, {
+                    proofPurpose: 'authentication',
+                    ...options,
+                });
             },
         },
     };

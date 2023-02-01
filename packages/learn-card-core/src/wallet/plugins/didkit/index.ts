@@ -70,19 +70,28 @@ export const getDidKitPlugin = async (
                     await verifyCredential(JSON.stringify(credential), JSON.stringify(options))
                 ),
 
-            issuePresentation: async (_learnCard, presentation, options, keypair) =>
-                JSON.parse(
-                    await issuePresentation(
-                        JSON.stringify(presentation),
-                        JSON.stringify(options),
-                        JSON.stringify(keypair)
-                    )
-                ),
+            issuePresentation: async (_learnCard, presentation, options, keypair) => {
+                const isJwt = options.proofFormat === 'jwt';
 
-            verifyPresentation: async (_learnCard, presentation, options = {}) =>
-                JSON.parse(
-                    await verifyPresentation(JSON.stringify(presentation), JSON.stringify(options))
-                ),
+                const result = await issuePresentation(
+                    JSON.stringify(presentation),
+                    JSON.stringify(options),
+                    JSON.stringify(keypair)
+                );
+
+                return isJwt ? result : JSON.parse(result);
+            },
+
+            verifyPresentation: async (_learnCard, presentation, options = {}) => {
+                const isJwt = typeof presentation === 'string';
+
+                return JSON.parse(
+                    await verifyPresentation(
+                        isJwt ? presentation : JSON.stringify(presentation),
+                        JSON.stringify(options)
+                    )
+                );
+            },
 
             contextLoader: async (_learnCard, url) => JSON.parse(await contextLoader(url)),
 
