@@ -2,4 +2,6 @@ packages:
   - 'docs'
   - 'examples/*'
   - 'packages/*'
+  - 'packages/learn-card-network/*'
   - 'services/*'
+  - 'services/learn-card-network/*'

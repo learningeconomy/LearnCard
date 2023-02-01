@@ -1,0 +1,49 @@
+{
+  "name": "@learncard/network-brain-service",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "types": "dist/types.d.ts",
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "build": "shx cp ../../../packages/learn-card-core/src/didkit/pkg/didkit_wasm_bg.wasm src/didkit_wasm_bg.wasm && node esbuild.mjs && dts-bundle-generator src/index.ts -o dist/types.d.ts --no-check",
+    "prepare": "pnpm build",
+    "start": "shx cp ../../../packages/learn-card-core/src/didkit/pkg/didkit_wasm_bg.wasm src/didkit_wasm_bg.wasm && serverless offline",
+    "dev": "shx cp ../../../packages/learn-card-core/src/didkit/pkg/didkit_wasm_bg.wasm src/didkit_wasm_bg.wasm && serverless offline",
+    "serverless-deploy": "shx cp ../../../packages/learn-card-core/src/didkit/pkg/didkit_wasm_bg.wasm src/didkit_wasm_bg.wasm && serverless deploy"
+  },
+  "keywords": [],
+  "author": "Learning Economy Foundation (www.learningeconomy.io)",
+  "license": "MIT",
+  "devDependencies": {
+    "@trendyol/jest-testcontainers": "^2.1.1",
+    "@types/cors": "^2.8.13",
+    "@types/express": "^4.17.15",
+    "@types/node": "^18.0.0",
+    "dts-bundle-generator": "^6.10.0",
+    "esbuild": "^0.16.16",
+    "openapi-types": "^12.1.0",
+    "serverless": "^3.26.0",
+    "serverless-http": "^3.1.1",
+    "shx": "^0.3.4",
+    "testcontainers": "^9.1.1"
+  },
+  "dependencies": {
+    "@learncard/core": "workspace:*",
+    "@learncard/types": "workspace:*",
+    "@trpc/client": "^10.9.0",
+    "@trpc/server": "^10.9.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "ioredis": "^5.2.2",
+    "ioredis-mock": "^8.2.2",
+    "jwt-decode": "^3.1.2",
+    "neo4j-driver": "^5.4.0",
+    "neogma": "^1.11.1",
+    "serverless-offline": "^12.0.4",
+    "trpc-openapi": "^1.1.1",
+    "zod": "^3.20.2"
+  }
+}

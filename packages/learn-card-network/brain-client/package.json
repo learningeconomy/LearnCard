@@ -1,0 +1,23 @@
+{
+  "name": "@learncard/network-brain-client",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "types": "dist/types.d.ts",
+  "scripts": {
+    "build": "node esbuild.mjs && dts-bundle-generator src/index.ts -o dist/types.d.ts --no-check",
+    "prepare": "pnpm build"
+  },
+  "keywords": [],
+  "author": "Learning Economy Foundation (www.learningeconomy.io)",
+  "license": "MIT",
+  "devDependencies": {
+    "dts-bundle-generator": "^6.10.0",
+    "esbuild": "^0.16.16"
+  },
+  "dependencies": {
+    "@learncard/network-brain-service": "workspace:*",
+    "@trpc/client": "^10.9.0",
+    "@trpc/server": "^10.9.0"
+  }
+}
