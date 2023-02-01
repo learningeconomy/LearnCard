@@ -109,7 +109,9 @@ module.exports = {
     // projects: undefined,
 
     // Use this configuration option to add custom reporters to Jest
-    // reporters: undefined,
+    reporters: process.env.CI
+        ? [['jest-silent-reporter', { useDots: true }], 'summary', 'github-actions']
+        : [['jest-silent-reporter', { useDots: true }], 'summary'],
 
     // Automatically reset mock state before every test
     // resetMocks: false,
