@@ -40,6 +40,6 @@
     "@metamask/detect-provider": "^1.2.0",
     "@nanostores/react": "^0.2.0",
     "nanostores": "^0.5.13",
-    "zod": "^3.17.3"
+    "zod": "^3.20.2"
   }
 }
