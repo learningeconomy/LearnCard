@@ -473,7 +473,7 @@ const generateIdPlane = <
         did: method => {
             learnCard.debug?.('learnCard.id.did', method);
 
-            const result = findFirstResult(learnCard.plugins, plugin => {
+            const result = findFirstResult([...learnCard.plugins].reverse(), plugin => {
                 try {
                     if (!pluginImplementsPlane(plugin, 'id')) return undefined;
 
