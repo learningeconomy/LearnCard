@@ -27,3 +27,6 @@ yarn-error.log*
 
 # Optional eslint cache
 .eslintcache
+
+/.serverless
+/.esbuild
