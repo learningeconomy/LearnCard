@@ -1,5 +1,5 @@
 import { TRPCError } from '@trpc/server';
-import { UnsignedVC, VC } from '@learncard/types';
+import { UnsignedVC, VC, VP } from '@learncard/types';
 import { v4 as uuid } from 'uuid';
 
 import { ProfileInstance, Credential, CredentialInstance } from '@models';
@@ -30,7 +30,9 @@ export const getIdFromCredentialUri = (uri: string): string => {
 };
 
 /** Stores a Credential */
-export const storeCredential = async (credential: VC | UnsignedVC): Promise<CredentialInstance> => {
+export const storeCredential = async (
+    credential: UnsignedVC | VC | VP
+): Promise<CredentialInstance> => {
     const id = uuid();
 
     return Credential.createOne({ id, credential: JSON.stringify(credential) });

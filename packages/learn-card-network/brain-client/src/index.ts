@@ -1,7 +1,15 @@
 import { createTRPCProxyClient, httpBatchLink } from '@trpc/client';
+import type { inferRouterInputs } from '@trpc/server';
+import type { UnsignedVC, VC, VP } from '@learncard/types';
 import type { AppRouter } from '@learncard/network-brain-service';
 
 import { callbackLink } from './callbackLink';
+
+type Inputs = inferRouterInputs<AppRouter>;
+
+type Overrides = {
+    getCredential: { query: (args: Inputs['getCredential']) => Promise<VC | UnsignedVC | VP> };
+};
 
 export const getClient = async (
     url: string,
@@ -14,6 +22,10 @@ export const getClient = async (
             httpBatchLink({ url, headers: { Authorization: `Bearer ${await didAuthFunction()}` } }),
         ],
     });
+
+    let test = {} as VC;
+
+    await challengeRequester.storeCredential.mutate({ credential: test });
 
     const getChallenges = async (
         amount = 95 + Math.round((Math.random() - 0.5) * 5)
@@ -37,7 +49,7 @@ export const getClient = async (
                 },
             }),
         ],
-    });
+    }) as Overrides & typeof challengeRequester;
 
     return trpc;
 };

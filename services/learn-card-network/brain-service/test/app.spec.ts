@@ -544,10 +544,10 @@ describe('LearnCard Network Profile Service', () => {
             const vc = await userA.learnCard.invoke.issueCredential(unsignedVc);
 
             await expect(
-                noAuthClient.sendCredential({ handle: 'userB', vc })
+                noAuthClient.sendCredential({ handle: 'userB', credential: vc })
             ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
             await expect(
-                userA.clients.partialAuth.sendCredential({ handle: 'userB', vc })
+                userA.clients.partialAuth.sendCredential({ handle: 'userB', credential: vc })
             ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
         });
 
@@ -556,7 +556,7 @@ describe('LearnCard Network Profile Service', () => {
             const vc = await userA.learnCard.invoke.issueCredential(unsignedVc);
 
             await expect(
-                userA.clients.fullAuth.sendCredential({ handle: 'userB', vc })
+                userA.clients.fullAuth.sendCredential({ handle: 'userB', credential: vc })
             ).resolves.not.toThrow();
         });
     });
@@ -577,7 +577,10 @@ describe('LearnCard Network Profile Service', () => {
             const unsignedVc = userA.learnCard.invoke.getTestVc(userB.learnCard.id.did());
             const vc = await userA.learnCard.invoke.issueCredential(unsignedVc);
 
-            const uri = await userA.clients.fullAuth.sendCredential({ handle: 'userB', vc });
+            const uri = await userA.clients.fullAuth.sendCredential({
+                handle: 'userB',
+                credential: vc,
+            });
 
             await expect(
                 noAuthClient.acceptCredential({ handle: 'userA', uri })
@@ -591,7 +594,10 @@ describe('LearnCard Network Profile Service', () => {
             const unsignedVc = userA.learnCard.invoke.getTestVc(userB.learnCard.id.did());
             const vc = await userA.learnCard.invoke.issueCredential(unsignedVc);
 
-            const uri = await userA.clients.fullAuth.sendCredential({ handle: 'userB', vc });
+            const uri = await userA.clients.fullAuth.sendCredential({
+                handle: 'userB',
+                credential: vc,
+            });
 
             await expect(
                 userB.clients.fullAuth.acceptCredential({ handle: 'userA', uri })

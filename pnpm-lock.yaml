@@ -430,6 +430,7 @@ importers:
   packages/learn-card-network/brain-client:
     specifiers:
       '@learncard/network-brain-service': workspace:*
+      '@learncard/types': workspace:*
       '@trpc/client': ^10.9.0
       '@trpc/server': ^10.9.0
       dts-bundle-generator: ^6.10.0
@@ -439,6 +440,7 @@ importers:
       '@trpc/client': 10.9.0_@trpc+server@10.9.0
       '@trpc/server': 10.9.0
     devDependencies:
+      '@learncard/types': link:../../learn-card-types
       dts-bundle-generator: 6.13.0
       esbuild: 0.16.17
 

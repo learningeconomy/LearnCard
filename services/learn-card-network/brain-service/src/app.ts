@@ -502,11 +502,11 @@ export const appRouter = t.router({
                 description: 'This endpoint sends a credential to a user based on their handle',
             },
         })
-        .input(z.object({ handle: z.string(), vc: UnsignedVCValidator.or(VCValidator) }))
+        .input(z.object({ handle: z.string(), credential: UnsignedVCValidator.or(VCValidator) }))
         .output(z.string())
         .mutation(async ({ ctx, input }) => {
             const did = ctx.user.did;
-            const { handle, vc } = input;
+            const { handle, credential } = input;
 
             const profile = await Profile.findOne({ where: { did } });
             const targetProfile = await Profile.findOne({ where: { handle } });
@@ -525,7 +525,7 @@ export const appRouter = t.router({
                 });
             }
 
-            return sendCredential(profile, targetProfile, vc, ctx.domain);
+            return sendCredential(profile, targetProfile, credential, ctx.domain);
         }),
 
     acceptCredential: didAndChallengeRoute
