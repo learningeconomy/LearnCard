@@ -1,6 +1,7 @@
 import { UnsignedVC } from '@learncard/types';
 
 import { ProofOptions } from '@wallet/plugins/didkit/types';
+import { getIssuerDidDocFromVc } from './helpers';
 import { VCDependentLearnCard, VCImplicitLearnCard } from './types';
 
 export const issueCredential = (initLearnCard: VCDependentLearnCard) => {
@@ -13,8 +14,14 @@ export const issueCredential = (initLearnCard: VCDependentLearnCard) => {
 
         if (!kp) throw new Error('Cannot issue credential: Could not get subject keypair');
 
+        const issuerDidDoc = await getIssuerDidDocFromVc(learnCard, credential);
+
+        const verificationMethod = issuerDidDoc.assertionMethod[0];
+
         const options = {
-            verificationMethod: await initLearnCard.invoke.keyToVerificationMethod('key', kp),
+            verificationMethod:
+                verificationMethod ||
+                (await initLearnCard.invoke.keyToVerificationMethod('key', kp)),
             proofPurpose: 'assertionMethod',
             type: 'Ed25519Signature2020',
             ...signingOptions,

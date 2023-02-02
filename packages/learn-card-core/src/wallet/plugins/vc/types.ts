@@ -1,6 +1,6 @@
 import { JWK, UnsignedVC, VC, UnsignedVP, VP, VerificationCheck } from '@learncard/types';
 import { Plugin, LearnCard } from 'types/wallet';
-import { ProofOptions } from '../didkit/types';
+import { ProofOptions, InputMetadata } from '../didkit/types';
 
 /** @group VC Plugin */
 export type VCPluginDependentMethods = {
@@ -18,6 +18,7 @@ export type VCPluginDependentMethods = {
         presentation: VP | string,
         options?: ProofOptions
     ) => Promise<VerificationCheck>;
+    resolveDid: (did: string, inputMetadata?: InputMetadata) => Promise<Record<string, any>>;
 };
 
 /** @group VC Plugin */
