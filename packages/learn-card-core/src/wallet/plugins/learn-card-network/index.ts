@@ -45,6 +45,40 @@ export const getLearnCardNetworkPlugin = async (
             },
             keypair: (_learnCard, algorithm) => learnCard.id.keypair(algorithm),
         },
+        read: {
+            get: async (_learnCard, vcUri) => {
+                _learnCard.debug?.("learnCard.read['LearnCard Network'].get");
+
+                if (!vcUri) return undefined;
+
+                const parts = vcUri.split(':');
+
+                if (parts.length !== 4) return undefined;
+
+                const [lc, method] = parts as [string, string, string, string];
+
+                if (lc !== 'lc' || method !== 'network') return undefined;
+
+                try {
+                    return await client.getCredential.query({ uri: vcUri });
+                } catch (error) {
+                    _learnCard.debug?.(error);
+                    return undefined;
+                }
+            },
+        },
+        store: {
+            upload: async (_learnCard, credential) => {
+                _learnCard.debug?.("learnCard.store['LearnCard Network'].upload");
+
+                return client.storeCredential.mutate({ credential });
+            },
+            /* uploadEncrypted: async (_learnCard, credential, params) => {
+                _learnCard.debug?.("learnCard.store['LearnCard Network'].upload");
+
+                return client.storeCredential.mutate({ credential });
+            }, */
+        },
         methods: {
             createProfile: async (_learnCard, profile) => {
                 if (userData) throw new Error('Account already exists!');

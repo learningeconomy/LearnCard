@@ -8,7 +8,7 @@ let learnCards: Record<string, LearnCardFromSeed['returnValue']> = {};
 const getLearnCard = async (seed = 'a'.repeat(64)): Promise<LearnCardFromSeed['returnValue']> => {
     if (!learnCards[seed]) {
         const didkit = await readFile(
-            require.resolve('@learncard/core/src/didkit/pkg/didkit_wasm_bg.wasm')
+            require.resolve('@learncard/core/dist/didkit/didkit_wasm_bg.wasm')
         );
 
         const learnCard = await initLearnCard({ seed, didkit });

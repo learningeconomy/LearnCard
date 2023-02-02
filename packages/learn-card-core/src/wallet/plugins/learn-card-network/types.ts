@@ -29,7 +29,7 @@ export type LearnCardNetworkPluginMethods = {
 /** @group LearnCardNetwork Plugin */
 export type LearnCardNetworkPlugin = Plugin<
     'LearnCard Network',
-    'id',
+    'id' | 'read' | 'store',
     LearnCardNetworkPluginMethods,
     'id',
     LearnCardNetworkPluginDependentMethods

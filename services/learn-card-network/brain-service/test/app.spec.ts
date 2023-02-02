@@ -1,5 +1,5 @@
 import { getClient, getUser } from './helpers/getClient';
-import { Profile } from '@models';
+import { Profile, Credential } from '@models';
 
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;
@@ -531,12 +531,14 @@ describe('LearnCard Network Profile Service', () => {
     describe('sendCredential', () => {
         beforeEach(async () => {
             await Profile.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
             await userA.clients.fullAuth.createProfile({ handle: 'userA' });
             await userB.clients.fullAuth.createProfile({ handle: 'userB' });
         });
 
         afterAll(async () => {
             await Profile.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
         });
 
         it('should require full auth to send a credential', async () => {
@@ -564,6 +566,7 @@ describe('LearnCard Network Profile Service', () => {
     describe('acceptCredential', () => {
         beforeEach(async () => {
             await Profile.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
 
             await userA.clients.fullAuth.createProfile({ handle: 'userA' });
             await userB.clients.fullAuth.createProfile({ handle: 'userB' });
@@ -571,6 +574,7 @@ describe('LearnCard Network Profile Service', () => {
 
         afterAll(async () => {
             await Profile.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
         });
 
         it('should require full auth to accept a credential', async () => {
@@ -602,6 +606,92 @@ describe('LearnCard Network Profile Service', () => {
             await expect(
                 userB.clients.fullAuth.acceptCredential({ handle: 'userA', uri })
             ).resolves.not.toThrow();
+        });
+    });
+
+    describe('storeCredential', () => {
+        beforeAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+
+            await userA.clients.fullAuth.createProfile({ handle: 'userA' });
+            await userB.clients.fullAuth.createProfile({ handle: 'userB' });
+        });
+
+        beforeEach(async () => {
+            await Credential.delete({ detach: true, where: {} });
+        });
+
+        afterAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+        });
+
+        it('should require full auth to store a credential', async () => {
+            const unsignedVc = userA.learnCard.invoke.getTestVc(userB.learnCard.id.did());
+            const vc = await userA.learnCard.invoke.issueCredential(unsignedVc);
+
+            await expect(noAuthClient.storeCredential({ credential: vc })).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+            await expect(
+                userB.clients.partialAuth.storeCredential({ credential: vc })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        });
+
+        it('should allow storing a credential', async () => {
+            const unsignedVc = userA.learnCard.invoke.getTestVc(userB.learnCard.id.did());
+            const vc = await userA.learnCard.invoke.issueCredential(unsignedVc);
+
+            await expect(
+                userA.clients.fullAuth.storeCredential({ credential: vc })
+            ).resolves.not.toThrow();
+        });
+    });
+
+    describe('getCredential', () => {
+        beforeAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+
+            await userA.clients.fullAuth.createProfile({ handle: 'userA' });
+            await userB.clients.fullAuth.createProfile({ handle: 'userB' });
+        });
+
+        beforeEach(async () => {
+            await Credential.delete({ detach: true, where: {} });
+        });
+
+        afterAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+        });
+
+        it('should require full auth to get a credential', async () => {
+            const unsignedVc = userA.learnCard.invoke.getTestVc(userB.learnCard.id.did());
+            const vc = await userA.learnCard.invoke.issueCredential(unsignedVc);
+
+            const uri = await userA.clients.fullAuth.storeCredential({ credential: vc });
+
+            await expect(noAuthClient.getCredential({ uri })).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+            await expect(userB.clients.partialAuth.getCredential({ uri })).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+        });
+
+        it('should allow storing a credential', async () => {
+            const unsignedVc = userA.learnCard.invoke.getTestVc(userB.learnCard.id.did());
+            const vc = await userA.learnCard.invoke.issueCredential(unsignedVc);
+
+            const uri = await userA.clients.fullAuth.storeCredential({ credential: vc });
+
+            const promise = userA.clients.fullAuth.getCredential({ uri });
+
+            await expect(promise).resolves.not.toThrow();
+
+            const resolvedCredential = await promise;
+
+            expect(resolvedCredential).toEqual(vc);
         });
     });
 });
