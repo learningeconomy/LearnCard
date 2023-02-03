@@ -54,7 +54,6 @@
     "@glazed/did-datastore": "^0.3.2",
     "@glazed/tile-loader": "^0.2.1",
     "@learncard/helpers": "workspace:*",
-    "@learncard/network-brain-client": "workspace:*",
     "@uniswap/default-token-list": "^4.1.0",
     "abort-controller": "^3.0.0",
     "core-js": "^3.25.5",

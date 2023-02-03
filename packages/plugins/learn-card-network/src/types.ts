@@ -1,8 +1,7 @@
 import { LCNProfile, UnsignedVC, VC, VP } from '@learncard/types';
+import { Plugin, ProofOptions } from '@learncard/core';
 
-import { ProofOptions } from '../didkit/types';
 import { CeramicClient } from '@ceramicnetwork/http-client';
-import { Plugin } from 'types/wallet';
 
 /** @group LearnCardNetwork Plugin */
 export type LearnCardNetworkPluginDependentMethods = {

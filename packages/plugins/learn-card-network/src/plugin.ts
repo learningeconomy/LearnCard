@@ -1,7 +1,7 @@
 import { getClient } from '@learncard/network-brain-client';
 import { LCNProfile } from '@learncard/types';
+import { LearnCard } from '@learncard/core';
 
-import { LearnCard } from 'types/wallet';
 import { LearnCardNetworkPluginDependentMethods, LearnCardNetworkPlugin } from './types';
 
 export * from './types';
@@ -60,7 +60,9 @@ export const getLearnCardNetworkPlugin = async (
                 if (lc !== 'lc' || method !== 'network') return undefined;
 
                 try {
-                    return await client.getCredential.query({ uri: vcUri });
+                    const vc = await client.getCredential.query({ uri: vcUri });
+
+                    return vc;
                 } catch (error) {
                     _learnCard.debug?.(error);
                     return undefined;
