@@ -8,7 +8,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.js && dts-bundle-generator src/index.ts -o dist/core.d.ts --no-check && tsc-alias && shx  sed -i \"s/import\\(\\\\\\\"\\.\\\\\\\"\\)\\.//g\" dist/core.d.ts",
+    "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.js && tsc --p tsconfig.json && tsc-alias",
     "start": "aqu watch",
     "lint": "aqu lint",
     "lint:fix": "aqu lint --fix",
@@ -44,7 +44,7 @@
     "tsc-alias": "^1.6.9",
     "typescript": "^4.6.4"
   },
-  "types": "./dist/core.d.ts",
+  "types": "./dist/index.d.ts",
   "dependencies": {
     "@ceramicnetwork/common": "^2.2.1",
     "@ceramicnetwork/http-client": "2.7.0",
