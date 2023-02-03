@@ -49,7 +49,7 @@ export const getClient = async (
                 },
             }),
         ],
-    }) as Overrides & typeof challengeRequester;
+    }) as Omit<typeof challengeRequester, keyof Overrides> & Overrides;
 
     return trpc;
 };

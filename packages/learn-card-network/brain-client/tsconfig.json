@@ -21,7 +21,9 @@
 
     "target": "es2022",
     "outDir": "dist",
+    "rootDir": "src",
     "declaration": true,
+    "emitDeclarationOnly": true,
     "sourceMap": true,
 
     "esModuleInterop": true,

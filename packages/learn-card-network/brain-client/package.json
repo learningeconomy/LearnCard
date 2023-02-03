@@ -3,9 +3,10 @@
   "version": "1.0.0",
   "description": "",
   "main": "dist/index.js",
-  "types": "dist/types.d.ts",
+  "module": "./dist/brain-client.esm.js",
+  "types": "dist/index.d.ts",
   "scripts": {
-    "build": "node esbuild.mjs && dts-bundle-generator src/index.ts -o dist/types.d.ts --no-check",
+    "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.js && tsc --p tsconfig.json",
     "prepare": "pnpm build"
   },
   "keywords": [],
