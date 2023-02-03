@@ -1,5 +1,5 @@
 import { getClient } from '@learncard/network-brain-client';
-import { LCNProfile } from '@learncard/types';
+import { LCNProfile, VCValidator, VPValidator } from '@learncard/types';
 import { LearnCard } from '@learncard/core';
 
 import { LearnCardNetworkPluginDependentMethods, LearnCardNetworkPlugin } from './types';
@@ -62,7 +62,7 @@ export const getLearnCardNetworkPlugin = async (
                 try {
                     const vc = await client.getCredential.query({ uri: vcUri });
 
-                    return vc;
+                    return await VCValidator.or(VPValidator).parseAsync(vc);
                 } catch (error) {
                     _learnCard.debug?.(error);
                     return undefined;
