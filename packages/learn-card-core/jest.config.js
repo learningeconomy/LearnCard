@@ -120,7 +120,7 @@ module.exports = {
     // resetModules: false,
 
     // A path to a custom resolver
-    // resolver: undefined,
+    resolver: 'jest-resolver-enhanced',
 
     // Automatically restore mock state and implementation before every test
     // restoreMocks: false,
