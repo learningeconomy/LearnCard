@@ -47,7 +47,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: .nx-cache
-          key: ${{ runner.os }}-nx-store-${{ hashFiles('.nx-cache') }}
+          key: ${{ runner.os }}-nx-store-${{ hashFiles('.nx-cache/**') }}
           restore-keys: |
             ${{ runner.os }}-nx-store-
 
