@@ -7,7 +7,7 @@ const buildOptions = {
     // target: 'es6',
     target: 'es2020',
     sourcemap: true,
-    external: [],
+    external: ['isomorphic-fetch', 'isomorphic-webcrypto'],
 };
 
 const configurations = [
@@ -21,7 +21,7 @@ const configurations = [
         entryPoints: ['src/index.ts'],
         format: 'cjs',
         outfile: 'dist/lcn-plugin.cjs.development.js',
-        ...buildOptions
+        ...buildOptions,
     },
     {
         keepNames: true,
@@ -34,7 +34,7 @@ const configurations = [
         minify: true,
         format: 'cjs',
         outfile: 'dist/lcn-plugin.cjs.production.min.js',
-        ...buildOptions
+        ...buildOptions,
     },
     {
         keepNames: true,
@@ -46,13 +46,13 @@ const configurations = [
         entryPoints: ['src/index.ts'],
         format: 'esm',
         outfile: 'dist/lcn-plugin.esm.js',
-        ...buildOptions
+        ...buildOptions,
     },
 ];
 
 function asyncRimraf(path) {
     return new Promise((resolve, reject) => {
-        rimraf(path, (err) => {
+        rimraf(path, err => {
             if (err) {
                 reject(err);
             } else {
@@ -64,19 +64,19 @@ function asyncRimraf(path) {
 
 function main() {
     Promise.all(
-        configurations.map((config) => {
+        configurations.map(config => {
             var dir = config.outdir || path.dirname(config.outfile);
             asyncRimraf(dir).catch(() => {
                 console.log('Unable to delete directory', dir);
             });
-        }),
+        })
     ).then(() => {
-        Promise.all(configurations.map((config) => esbuild.build(config)))
+        Promise.all(configurations.map(config => esbuild.build(config)))
             .then(async () => {
                 console.log('✔ Build successful');
                 process.exit(0);
             })
-            .catch((err) => {
+            .catch(err => {
                 console.error('❌ Build failed');
                 process.exit(1);
             });
