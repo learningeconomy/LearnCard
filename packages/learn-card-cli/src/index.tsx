@@ -1,6 +1,7 @@
 import fs from 'fs/promises';
-import repl from 'pretty-repl';
+import dns from 'node:dns';
 
+import repl from 'pretty-repl';
 import { initNetworkLearnCard, getLearnCardNetworkPlugin } from '@learncard/network-plugin';
 import { initLearnCard, emptyLearnCard, learnCardFromSeed, getTestCache } from '@learncard/core';
 import types from '@learncard/types';
@@ -11,6 +12,8 @@ import { program } from 'commander';
 import { generateRandomSeed } from './random';
 
 import packageJson from '../package.json';
+
+dns.setDefaultResultOrder('ipv4first');
 
 const g = {
     learnCard: gradient(['cyan', 'green'])('learnCard'),
