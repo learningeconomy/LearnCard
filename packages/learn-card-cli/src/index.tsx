@@ -1,7 +1,8 @@
 import fs from 'fs/promises';
 import repl from 'pretty-repl';
 
-import { initLearnCard, emptyLearnCard, learnCardFromKey, getTestCache } from '@learncard/core';
+import { initNetworkLearnCard, getLearnCardNetworkPlugin } from '@learncard/network-plugin';
+import { initLearnCard, emptyLearnCard, learnCardFromSeed, getTestCache } from '@learncard/core';
 import types from '@learncard/types';
 import gradient from 'gradient-string';
 import figlet from 'figlet';
@@ -39,8 +40,10 @@ program
         globalThis.seed = seed;
         globalThis.generateRandomSeed = generateRandomSeed;
         globalThis.emptyLearnCard = emptyLearnCard;
-        globalThis.learnCardFromKey = learnCardFromKey;
+        globalThis.learnCardFromSeed = learnCardFromSeed;
         globalThis.initLearnCard = initLearnCard;
+        globalThis.initNetworkLearnCard = initNetworkLearnCard;
+        globalThis.getLearnCardNetworkPlugin = getLearnCardNetworkPlugin;
         globalThis.learnCard = await initLearnCard({
             seed,
             didkit: fs.readFile(require.resolve('@learncard/core/dist/didkit/didkit_wasm_bg.wasm')),
@@ -49,8 +52,8 @@ program
         globalThis.getTestCache = getTestCache;
 
         // delete 'Creating wallet...' message
-        process.stdout.moveCursor(0, -1);
-        process.stdout.clearLine(1);
+        process.stdout.moveCursor?.(0, -1);
+        process.stdout.clearLine?.(1);
 
         console.log('Wallet created!\n');
 
