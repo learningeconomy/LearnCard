@@ -19,7 +19,6 @@
     "pre:build": "shx cp ../../packages/learn-card-core/src/didkit/pkg/didkit_wasm_bg.wasm src/didkit_wasm_bg.wasm",
     "build": "pnpm pre:build && rollup -c && pnpm post:build",
     "post:build": "./fixBundle.sh",
-    "prepare": "pnpm build",
     "manifest": "mm-snap manifest --fix",
     "eval": "mm-snap eval -b dist/snap.js",
     "serve": "serve -Cl 3002",

@@ -8,7 +8,6 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "build": "shx cp ../../../packages/learn-card-core/src/didkit/pkg/didkit_wasm_bg.wasm src/didkit_wasm_bg.wasm && node esbuild.mjs && dts-bundle-generator src/index.ts -o dist/types.d.ts --no-check",
-    "prepare": "pnpm build",
     "start": "shx cp ../../../packages/learn-card-core/src/didkit/pkg/didkit_wasm_bg.wasm src/didkit_wasm_bg.wasm && serverless offline",
     "dev": "shx cp ../../../packages/learn-card-core/src/didkit/pkg/didkit_wasm_bg.wasm src/didkit_wasm_bg.wasm && serverless offline",
     "serverless-deploy": "shx cp ../../../packages/learn-card-core/src/didkit/pkg/didkit_wasm_bg.wasm src/didkit_wasm_bg.wasm && serverless deploy"

@@ -6,8 +6,7 @@
   "bin": "dist/index.js",
   "scripts": {
     "start": "rollup -c && node --enable-source-maps dist/index.js",
-    "build": "rollup -c",
-    "prepare": "pnpm build"
+    "build": "rollup -c"
   },
   "author": "Learning Economy Foundation (www.learningeconomy.io)",
   "license": "MIT",

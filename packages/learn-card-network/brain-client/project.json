@@ -1,0 +1,25 @@
+{
+    "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+    "name": "network-brain-client",
+    "sourceRoot": "packages/learn-card-network/brain-client/src",
+    "projectType": "library",
+    "root": "packages/learn-card-network/brain-client",
+    "tags": [],
+    "implicitDependencies": ["types", "network-brain-service"],
+    "namedInputs": {
+        "source": ["{projectRoot}/src/**/*"],
+        "scripts": ["{projectRoot}/scripts/**/*"],
+        "dist": ["{projectRoot}/dist/**/*"]
+    },
+    "targets": {
+        "build": {
+            "executor": "nx:run-script",
+            "inputs": ["source", "scripts"],
+            "outputs": ["dist"],
+            "options": {
+                "script": "build"
+            }
+        }
+    }
+}
+

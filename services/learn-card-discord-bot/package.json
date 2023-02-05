@@ -7,7 +7,6 @@
     "scripts": {
         "preinstall": "npx only-allow pnpm",
         "prebuild": "npx pnpm install -r --store=node_modules/.pnpm-store || echo skipping pnpm install",
-        "test": "echo \"Error: no test specified\" && exit 1",
         "start": "rollup -c & pm2-runtime dist/index.js",
         "build": "rollup -c"
     },

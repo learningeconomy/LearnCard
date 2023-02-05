@@ -1,0 +1,20 @@
+{
+  "name": "@learncard/nx-run-command",
+  "version": "1.0.0",
+  "description": "",
+  "private": true,
+  "main": "index.js",
+  "scripts": {
+    "build": "node esbuild.mjs"
+  },
+  "keywords": [],
+  "author": "Taylor Beeston",
+  "license": "ISC",
+  "dependencies": {
+    "execa": "^5"
+  },
+  "devDependencies": {
+    "@nrwl/devkit": "^15.6.3",
+    "esbuild": "^0.17.5"
+  }
+}

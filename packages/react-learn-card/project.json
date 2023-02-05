@@ -1,0 +1,47 @@
+{
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
+    "name": "react",
+    "sourceRoot": "packages/react-learn-card/src",
+    "projectType": "library",
+    "root": "packages/react-learn-card",
+    "tags": [],
+    "implicitDependencies": ["types", "core", "nx-run-command"],
+    "namedInputs": {
+        "source": ["{projectRoot}/src/**/*"],
+        "rollup-config": ["{projectRoot}/rollup.config.js"],
+        "dist": ["{projectRoot}/dist/**/*"]
+    },
+    "targets": {
+        "build": {
+            "executor": "nx:run-script",
+            "inputs": ["source", "rollup-config"],
+            "outputs": ["dist"],
+            "options": {
+                "script": "build"
+            }
+        },
+        "build-storybook": {
+            "executor": "nx:run-script",
+            "inputs": ["source", "rollup-config"],
+            "outputs": ["storybook-static"],
+            "options": {
+                "script": "build-storybook"
+            }
+        },
+        "test": {
+            "executor": "nx:run-script",
+            "inputs": ["source"],
+            "options": {
+                "script": "test"
+            }
+        },
+        "test:watch": {
+            "executor": "./tools/executors/workspace:run-command",
+            "options": {
+                "command": "pnpm test:watch",
+                "cwd": "{root}/packages/react-learn-card"
+            }
+        }
+    }
+}
+

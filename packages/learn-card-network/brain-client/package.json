@@ -6,8 +6,7 @@
   "module": "./dist/brain-client.esm.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.js && tsc --p tsconfig.json",
-    "prepare": "pnpm build"
+    "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.js && tsc --p tsconfig.json"
   },
   "keywords": [],
   "author": "Learning Economy Foundation (www.learningeconomy.io)",

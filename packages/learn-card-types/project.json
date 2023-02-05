@@ -1,0 +1,24 @@
+{
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
+    "name": "types",
+    "sourceRoot": "packages/learn-card-types/src",
+    "projectType": "library",
+    "root": "packages/learn-card-types",
+    "tags": [],
+    "namedInputs": {
+        "source": ["{projectRoot}/src/**/*"],
+        "scripts": ["{projectRoot}/scripts/**/*"],
+        "dist": ["{projectRoot}/dist/**/*"]
+    },
+    "targets": {
+        "build": {
+            "executor": "nx:run-script",
+            "inputs": ["source", "scripts"],
+            "outputs": ["dist"],
+            "options": {
+                "script": "build"
+            }
+        }
+    }
+}
+

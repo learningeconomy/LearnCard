@@ -1,0 +1,24 @@
+{
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
+    "name": "chapi-example",
+    "sourceRoot": "examples/chapi-example/src",
+    "projectType": "application",
+    "root": "examples/chapi-example",
+    "tags": [],
+    "implicitDependencies": ["core", "helpers", "react"],
+    "namedInputs": {
+        "source": ["{projectRoot}/src/**/*"],
+        "dist": ["{projectRoot}/dist/**/*"]
+    },
+    "targets": {
+        "build": {
+            "executor": "nx:run-script",
+            "inputs": ["source"],
+            "outputs": ["dist"],
+            "options": {
+                "script": "build"
+            }
+        }
+    }
+}
+

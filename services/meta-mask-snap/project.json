@@ -1,0 +1,24 @@
+{
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
+    "name": "meta-mask-snap",
+    "sourceRoot": "services/meta-mask-snap/src",
+    "projectType": "library",
+    "root": "services/meta-mask-snap",
+    "tags": [],
+    "implicitDependencies": ["core", "helpers", "meta-mask-snap", "react"],
+    "namedInputs": {
+        "source": ["{projectRoot}/src/**/*"],
+        "dist": ["{projectRoot}/dist/**/*"]
+    },
+    "targets": {
+        "build": {
+            "executor": "nx:run-script",
+            "inputs": ["source"],
+            "outputs": ["dist"],
+            "options": {
+                "script": "build"
+            }
+        }
+    }
+}
+

@@ -8,11 +8,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.js && tsc --p tsconfig.json",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --silent --ci --coverage --coverageReporters=\"text\" --coverageReporters=\"text-summary\"",
-    "prepare": "pnpm build"
+    "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.js && tsc --p tsconfig.json"
   },
   "author": "Learning Economy Foundation (www.learningeconomy.io)",
   "license": "MIT",
