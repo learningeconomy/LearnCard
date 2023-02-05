@@ -15,7 +15,6 @@
         "build": {
             "executor": "nx:run-script",
             "inputs": ["source", "rollup-config"],
-            "outputs": ["dist"],
             "options": {
                 "script": "build"
             }

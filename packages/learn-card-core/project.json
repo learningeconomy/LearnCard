@@ -16,7 +16,6 @@
         "build": {
             "executor": "nx:run-script",
             "inputs": ["source", "scripts"],
-            "outputs": ["dist"],
             "options": {
                 "script": "build"
             }
