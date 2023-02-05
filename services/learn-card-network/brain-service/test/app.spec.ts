@@ -104,6 +104,17 @@ describe('LearnCard Network Profile Service', () => {
             ).rejects.toThrow();
         });
 
+        it('should not allow creating a profile with an email that has already been taken', async () => {
+            await expect(
+                // userA.clients.fullAuth.createProfile({ handle: 'userA', email: 'userA@test.com' })
+
+                userA.clients.fullAuth.createProfile({ handle: 'userA', email: 'userA@test.com' })
+            ).resolves.not.toThrow();
+            await expect(
+                userB.clients.fullAuth.createProfile({ handle: 'userB', email: 'userA@test.com' })
+            ).rejects.toThrow();
+        });
+
         it('should return the newly created did:web address', async () => {
             expect(await userA.clients.fullAuth.createProfile({ handle: 'userA' })).toEqual(
                 'did:web:localhost%3A3000:users:userA'

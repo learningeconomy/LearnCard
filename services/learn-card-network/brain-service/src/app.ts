@@ -171,6 +171,7 @@ export const appRouter = t.router({
             const profileExists = await checkIfProfileExists({
                 did: ctx.user.did,
                 handle: input.handle,
+                email: input.email,
             });
 
             if (profileExists) {
