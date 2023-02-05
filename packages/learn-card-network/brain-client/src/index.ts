@@ -23,10 +23,6 @@ export const getClient = async (
         ],
     });
 
-    let test = {} as VC;
-
-    await challengeRequester.storeCredential.mutate({ credential: test });
-
     const getChallenges = async (
         amount = 95 + Math.round((Math.random() - 0.5) * 5)
     ): Promise<string[]> => {
