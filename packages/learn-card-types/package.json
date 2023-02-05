@@ -19,14 +19,7 @@
   ],
   "scripts": {
     "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.js && tsc --p tsconfig.json",
-    "start": "aqu watch",
-    "lint": "aqu lint",
-    "lint:fix": "aqu lint --fix",
-    "test": "aqu test --passWithNoTests",
-    "test:watch": "aqu test --passWithNoTests --watch",
-    "test:coverage": "aqu test --silent --ci --coverage --coverageReporters=\"text\" --coverageReporters=\"text-summary\"",
-    "size": "size-limit",
-    "size:why": "size-limit --why"
+    "start": "aqu watch"
   },
   "husky": {
     "hooks": {
