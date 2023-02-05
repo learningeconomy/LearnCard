@@ -17,7 +17,14 @@ jobs:
     # Job steps
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v1
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - name: Fetch main for NX comparison
+        run: |
+          git fetch --no-tags --prune --depth=5 origin main
 
       - name: Setup Node.js 16.x
         uses: actions/setup-node@v3
@@ -33,8 +40,7 @@ jobs:
 
       - name: Get pnpm store directory
         id: pnpm-cache
-        run: |
-          echo "::set-output name=pnpm_cache_dir::$(pnpm store path)"
+        run: echo "pnpm_cache_dir=$(pnpm store path)" >> $GITHUB_OUTPUT
 
       - name: Setup pnpm cache
         uses: actions/cache@v3
@@ -44,8 +50,24 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
 
+      - name: Setup nx cache
+        uses: actions/cache@v3
+        with:
+          path: .nx-cache
+          key: ${{ runner.os }}-nx-store-${{ hashFiles('.nx-cache') }}
+          restore-keys: |
+            ${{ runner.os }}-nx-store-
+
       - name: Install dependencies
         run: pnpm i
+
+      - name: Get Affected List
+        id: affected
+        run: echo "AFFECTED=$(pnpm exec nx print-affected --base=origin/main --head=HEAD --select=projects)" >> $GITHUB_ENV
+
+      - name: Build @learncard/react
+        if: contains(env.AFFECTED, 'react')
+        run: pnpm exec nx build react
 
       - name: Publish to Chromatic
         uses: chromaui/action@v1
