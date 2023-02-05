@@ -47,7 +47,7 @@ jobs:
         uses: actions/cache/restore@v3
         with:
           path: .nx-cache
-          key: ${{ runner.os }}-nx-store-
+          restore-keys: ${{ runner.os }}-nx-store-
 
       - name: Install dependencies
         run: pnpm i
