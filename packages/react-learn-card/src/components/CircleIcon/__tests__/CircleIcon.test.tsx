@@ -7,7 +7,7 @@ import CircleIcon from '../CircleIcon';
 
 describe('Running Tests for CircleIcon', () => {
     it('Renders important props', () => {
-        render(<CircleIcon iconSrc="iconSrcProp" count="count text" />);
+        render(<CircleIcon hideCount={false} iconSrc="iconSrcProp" count="count text" />);
 
         const img = screen.getByAltText('Icon image');
         expect(img).toHaveAttribute('src', 'iconSrcProp');

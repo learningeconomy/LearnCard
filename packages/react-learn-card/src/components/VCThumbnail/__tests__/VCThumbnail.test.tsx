@@ -42,7 +42,9 @@ describe('Running Tests for VCThumbnail Full View', () => {
     test('Checks VCThumbnail renders without props', () => {
         const handleOnClick = jest.fn();
 
-        const { getByTestId, getByAltText, queryByTestId } = render(<VCThumbnail />);
+        const { getByTestId, getByAltText, queryByTestId, queryByAltText } = render(
+            <VCThumbnail />
+        );
 
         fireEvent.click(getByTestId('vc-thumbnail'));
         expect(handleOnClick).not.toHaveBeenCalledTimes(1);
@@ -56,8 +58,8 @@ describe('Running Tests for VCThumbnail Full View', () => {
         const issuerImage = getByAltText('issuer image');
         expect(issuerImage).not.toHaveAttribute('src');
 
-        const userImage = getByAltText('user image');
-        expect(userImage).not.toHaveAttribute('src');
+        const userImage = queryByAltText('user image');
+        expect(userImage).not.toBeInTheDocument();
 
         const imageElement = queryByTestId('vc-thumbnail-badge');
         expect(imageElement).not.toBeInTheDocument();
