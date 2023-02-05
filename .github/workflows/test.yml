@@ -43,16 +43,21 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
 
-      - name: Setup nx cache
-        uses: actions/cache@v3
+      - name: Restore nx cache
+        uses: actions/cache/restore@v3
         with:
           path: .nx-cache
           key: ${{ runner.os }}-nx-store-${{ hashFiles('.nx-cache/**') }}
-          restore-keys: |
-            ${{ runner.os }}-nx-store-
+          key: ${{ runner.os }}-nx-store-
 
       - name: Install dependencies
         run: pnpm i
 
       - name: Run tests
         run: pnpm exec nx affected --target=test --base=origin/main --head=HEAD
+
+      - name: Save nx cache
+        uses: actions/cache/save@v3
+        with:
+          path: .nx-cache
+          key: ${{ runner.os }}-nx-store-${{ hashFiles('.nx-cache/**') }}
