@@ -57,7 +57,7 @@ jobs:
         uses: actions/cache/restore@v3
         with:
           path: .nx-cache
-          key: ${{ runner.os }}-nx-cache
+          key: ${{ runner.os }}-nx-cache-${{ github.workflow }}
 
       - name: Install dependencies
         run: pnpm i
