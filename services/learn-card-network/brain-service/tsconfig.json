@@ -28,7 +28,8 @@
         "@accesslayer/*": ["src/accesslayer/*"],
         "@helpers/*": ["src/helpers/*"],
         "@instance": ["src/instance.ts"],
-        "@models": ["src/models/index.ts"]
+        "@models": ["src/models/index.ts"],
+        "types/*": ["src/types/*"]
     },
 
     "esModuleInterop": true,

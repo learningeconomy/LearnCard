@@ -31,8 +31,8 @@ export const getClient = (options?: { did?: string; isChallengeValid?: boolean }
     });
 };
 
-export const getUser = async (did?: string) => {
-    const learnCard = await getLearnCard(did);
+export const getUser = async (seed?: string) => {
+    const learnCard = await getLearnCard(seed);
     const partialAuth = getClient({ did: learnCard.id.did() });
     const fullAuth = getClient({ did: learnCard.id.did(), isChallengeValid: true });
 

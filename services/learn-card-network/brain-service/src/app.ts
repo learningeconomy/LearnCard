@@ -28,11 +28,11 @@ import {
     getCredentialById,
     getIdFromCredentialUri,
 } from '@helpers/credential.helpers';
-import { getDidWeb } from '@helpers/did.helpers';
+import { getDidWeb, updateDidForProfile } from '@helpers/did.helpers';
 import { getEmptyLearnCard } from '@helpers/learnCard.helpers';
 import { getCache } from '@helpers/redis.helpers';
 
-import { checkIfProfileExists } from '@accesslayer/read';
+import { checkIfProfileExists, searchProfiles } from '@accesslayer/profile/read';
 
 const cache = getCache();
 
@@ -237,6 +237,26 @@ export const appRouter = t.router({
             return profile
                 ? { ...profile.dataValues, did: getDidWeb(ctx.domain, profile.handle) }
                 : undefined;
+        }),
+
+    searchProfiles: openRoute
+        .meta({
+            openapi: {
+                method: 'GET',
+                path: '/search/profiles/{input}',
+                tags: ['Profiles'],
+                summary: 'Search profiles',
+                description: 'This route searches for profiles based on their handle',
+            },
+        })
+        .input(
+            z.object({ input: z.string(), limit: z.number().int().positive().lt(100).optional() })
+        )
+        .output(LCNProfileValidator.array())
+        .query(async ({ ctx, input }) => {
+            const profiles = await searchProfiles(input.input, input.limit);
+
+            return profiles.map(profile => updateDidForProfile(ctx.domain, profile));
         }),
 
     updateProfile: didAndChallengeRoute

@@ -195,6 +195,111 @@ describe('LearnCard Network Profile Service', () => {
         });
     });
 
+    describe('searchProfiles', () => {
+        beforeAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await userA.clients.fullAuth.createProfile({
+                handle: 'userA',
+                email: 'userA@test.com',
+            });
+            await userB.clients.fullAuth.createProfile({
+                handle: 'userB',
+                email: 'userB@test.com',
+            });
+            await Promise.all(
+                Array(30)
+                    .fill(0)
+                    .map(async (_zero, index) => {
+                        const user = await getUser((index + 1).toString().padStart(64, '0'));
+                        await user.clients.fullAuth.createProfile({
+                            handle: `generated${index + 1}`,
+                        });
+                    })
+            );
+        }, 10000);
+
+        afterAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+        });
+
+        it('should allow you to search profiles with/without full auth', async () => {
+            await expect(noAuthClient.searchProfiles({ input: 'user' })).resolves.not.toThrow();
+            await expect(
+                userA.clients.partialAuth.searchProfiles({ input: 'user' })
+            ).resolves.not.toThrow();
+            await expect(
+                userA.clients.fullAuth.searchProfiles({ input: 'user' })
+            ).resolves.not.toThrow();
+        });
+
+        it('should show multiple results', async () => {
+            const results = await noAuthClient.searchProfiles({ input: 'user' });
+
+            expect(results).toHaveLength(2);
+        });
+
+        it('should take query into account', async () => {
+            const none = await noAuthClient.searchProfiles({ input: 'nobody!' });
+            const both = await noAuthClient.searchProfiles({ input: 'user' });
+            const justA = await noAuthClient.searchProfiles({ input: 'userA' });
+            const justB = await noAuthClient.searchProfiles({ input: 'userB' });
+
+            expect(none).toHaveLength(0);
+            expect(both).toHaveLength(2);
+            expect(justA).toHaveLength(1);
+            expect(justB).toHaveLength(1);
+        });
+
+        it('should be case insensitive', async () => {
+            const results = await noAuthClient.searchProfiles({ input: 'uSeR' });
+
+            expect(results).toHaveLength(2);
+        });
+
+        it('limit results to 25 by default', async () => {
+            const results = await noAuthClient.searchProfiles({ input: 'generated' });
+
+            expect(results).toHaveLength(25);
+        });
+
+        it('allows raising limit', async () => {
+            const results = await noAuthClient.searchProfiles({ input: 'generated', limit: 30 });
+
+            expect(results).toHaveLength(30);
+        });
+
+        it('allows lowering limit to 1', async () => {
+            const results = await noAuthClient.searchProfiles({ input: 'user', limit: 1 });
+
+            expect(results).toHaveLength(1);
+        });
+
+        it('allows empty searches', async () => {
+            await expect(noAuthClient.searchProfiles({ input: '' })).resolves.not.toThrow();
+        });
+
+        it('does not allow lowering limit to 0 or -1', async () => {
+            await expect(
+                noAuthClient.searchProfiles({ input: 'user', limit: 0 })
+            ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+            await expect(
+                noAuthClient.searchProfiles({ input: 'user', limit: -1 })
+            ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+        });
+
+        it('does not allow raising limit past 100', async () => {
+            await expect(
+                noAuthClient.searchProfiles({ input: 'user', limit: 101 })
+            ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+        });
+
+        it('does not allow non-integer limits', async () => {
+            await expect(
+                noAuthClient.searchProfiles({ input: 'user', limit: -1 })
+            ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+        });
+    });
+
     describe('updateProfile', () => {
         beforeEach(async () => {
             await Profile.delete({ detach: true, where: {} });
