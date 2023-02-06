@@ -215,7 +215,7 @@ export const appRouter = t.router({
                 });
             }
 
-            return { ...profile.dataValues, did: getDidWeb(ctx.domain, profile.handle) };
+            return updateDidForProfile(ctx.domain, profile);
         }),
 
     getOtherProfile: openRoute
@@ -234,9 +234,7 @@ export const appRouter = t.router({
         .query(async ({ ctx, input }) => {
             const profile = await Profile.findOne({ where: { handle: input.handle } });
 
-            return profile
-                ? { ...profile.dataValues, did: getDidWeb(ctx.domain, profile.handle) }
-                : undefined;
+            return profile ? updateDidForProfile(ctx.domain, profile) : undefined;
         }),
 
     searchProfiles: openRoute
@@ -447,7 +445,9 @@ export const appRouter = t.router({
                 });
             }
 
-            return getConnections(profile);
+            const connections = await getConnections(profile);
+
+            return connections.map(connection => updateDidForProfile(ctx.domain, connection));
         }),
 
     pendingConnections: didAndChallengeRoute
@@ -475,7 +475,9 @@ export const appRouter = t.router({
                 });
             }
 
-            return getPendingConnections(profile);
+            const connections = await getPendingConnections(profile);
+
+            return connections.map(connection => updateDidForProfile(ctx.domain, connection));
         }),
 
     connectionRequests: didAndChallengeRoute
@@ -503,7 +505,9 @@ export const appRouter = t.router({
                 });
             }
 
-            return getConnectionRequests(profile);
+            const connections = await getConnectionRequests(profile);
+
+            return connections.map(connection => updateDidForProfile(ctx.domain, connection));
         }),
 
     registerSigningAuthority: didAndChallengeRoute
