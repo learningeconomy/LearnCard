@@ -20,7 +20,10 @@ export const checkIfProfileExists = async ({
     return false;
 };
 
-export const searchProfiles = async (searchInput: string, limit = 25): Promise<ProfileType[]> => {
+export const searchProfiles = async (
+    searchInput: string,
+    limit: number
+): Promise<ProfileType[]> => {
     const result = await new QueryBuilder(new BindParam({ input: `(?i).*${searchInput}.*` }))
         .match({ identifier: 'profile', model: Profile })
         .where('profile.handle =~ $input OR profile.email =~ $input')

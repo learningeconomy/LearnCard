@@ -248,7 +248,7 @@ export const appRouter = t.router({
             },
         })
         .input(
-            z.object({ input: z.string(), limit: z.number().int().positive().lt(100).optional() })
+            z.object({ input: z.string(), limit: z.number().int().positive().lt(100).default(25) })
         )
         .output(LCNProfileValidator.array())
         .query(async ({ ctx, input }) => {
