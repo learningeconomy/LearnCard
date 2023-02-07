@@ -11,7 +11,7 @@ export type LearnCardNetworkPluginDependentMethods = {
 
 /** @group LearnCardNetwork Plugin */
 export type LearnCardNetworkPluginMethods = {
-    createProfile: (profile: LCNProfile) => Promise<string>;
+    createProfile: (profile: Omit<LCNProfile, 'did'>) => Promise<string>;
     updateProfile: (profile: Partial<Omit<LCNProfile, 'did'>>) => Promise<boolean>;
     deleteProfile: () => Promise<boolean>;
     getProfile: (handle?: string) => Promise<LCNProfile | undefined>;
