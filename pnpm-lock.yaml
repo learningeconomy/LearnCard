@@ -693,7 +693,7 @@ importers:
       ioredis: ^5.2.2
       ioredis-mock: ^8.2.2
       jwt-decode: ^3.1.2
-      neo4j-driver: ^5.4.0
+      neo4j-driver: ^4.3.0
       neogma: ^1.11.1
       openapi-types: ^12.1.0
       serverless: ^3.26.0
@@ -715,7 +715,7 @@ importers:
       ioredis: 5.2.4
       ioredis-mock: 8.2.2_ioredis@5.2.4
       jwt-decode: 3.1.2
-      neo4j-driver: 5.4.0
+      neo4j-driver: 4.4.10
       neogma: 1.11.1
       serverless-offline: 12.0.4_serverless@3.26.0
       trpc-openapi: 1.1.1_v7aw5md42ua3rf277jyeogdfny
@@ -12401,7 +12401,7 @@ packages:
   /axios/0.25.0:
     resolution: {integrity: sha512-cD8FOb0tRH3uuEe6+evtAbgJtfxr7ly3fQjYcMcuPlgkwVS9xboaVIpcDV+cYQe+yGykgwZCs1pzjntcGa6l5g==}
     dependencies:
-      follow-redirects: 1.15.2
+      follow-redirects: 1.15.2_debug@4.3.4
     transitivePeerDependencies:
       - debug
     dev: false
@@ -18212,7 +18212,6 @@ packages:
         optional: true
     dependencies:
       debug: 4.3.4
-    dev: true
 
   /fontfaceobserver/2.3.0:
     resolution: {integrity: sha512-6FPvD/IVyT4ZlNe7Wcn5Fb/4ChigpucKYSvD6a+0iMoLn2inpo711eyIcKjmDtE5XNcgAkSH9uN/nfAeZzHEfg==}
@@ -19602,7 +19601,7 @@ packages:
     engines: {node: '>=8.0.0'}
     dependencies:
       eventemitter3: 4.0.7
-      follow-redirects: 1.15.2
+      follow-redirects: 1.15.2_debug@4.3.4
       requires-port: 1.0.0
     transitivePeerDependencies:
       - debug
@@ -25028,20 +25027,8 @@ packages:
       string_decoder: 1.3.0
     dev: false
 
-  /neo4j-driver-bolt-connection/5.4.0:
-    resolution: {integrity: sha512-Eq/hds2F0TdfrvmfCNvxuzJNGyFQoXRImjb87FO4+QtEbkEmLaVUvcGWr7lkmbDTjT2p+5dwwaeWDEUHXqqY9Q==}
-    dependencies:
-      buffer: 6.0.3
-      neo4j-driver-core: 5.4.0
-      string_decoder: 1.3.0
-    dev: false
-
   /neo4j-driver-core/4.4.10:
     resolution: {integrity: sha512-MBHxQSfqnvctgbHIhvY9CitHoFgSVR4rpx6rLX9VP/daGU5U7YZ2BrKHxuWpIxteHafUqmBFmk0frbx8tYGELA==}
-    dev: false
-
-  /neo4j-driver-core/5.4.0:
-    resolution: {integrity: sha512-3IWuhiQG2EU8SidgNwaBPeiH9EzS7frNODUCEM3VLhogoX3cO57T+hxA4qEDJrVIAzUfY+600K7zZFYEunhCag==}
     dev: false
 
   /neo4j-driver/4.4.10:
@@ -25051,14 +25038,6 @@ packages:
       neo4j-driver-bolt-connection: 4.4.10
       neo4j-driver-core: 4.4.10
       rxjs: 6.6.7
-    dev: false
-
-  /neo4j-driver/5.4.0:
-    resolution: {integrity: sha512-VzD9F1BxK0khFLuzFJbK6PH52imrdXah0iFY4O3R+Tj1ws2XHnoSm5zVUIdfC5MVpKvatM/1q72l48wmW/u9jQ==}
-    dependencies:
-      neo4j-driver-bolt-connection: 5.4.0
-      neo4j-driver-core: 5.4.0
-      rxjs: 7.8.0
     dev: false
 
   /neogma/1.11.1:
