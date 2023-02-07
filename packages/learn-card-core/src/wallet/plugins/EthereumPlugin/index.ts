@@ -3,12 +3,13 @@ import { Buffer } from 'buffer';
 import { LearnCard } from 'types/wallet';
 import { ethers } from 'ethers';
 
-import { EthereumConfig, EthereumPlugin, TokenList } from './types';
+import { EthereumConfig, EthereumPlugin, SimpleHistory, TokenList } from './types';
 import {
     formatUnits,
     parseUnits,
     getTokenFromSymbolOrAddress,
     getChainIdFromProvider,
+    isAddress,
 } from './helpers';
 import hardcodedTokens from './hardcodedTokens';
 
@@ -67,6 +68,8 @@ export const getEthereumPlugin = (
     const defaultTokenList: TokenList = getDefaultTokenList();
 
     const getTokenAddress = async (tokenSymbolOrAddress: string) => {
+        if (isAddress(tokenSymbolOrAddress)) return tokenSymbolOrAddress;
+
         return (
             await getTokenFromSymbolOrAddress(
                 tokenSymbolOrAddress,
@@ -91,6 +94,32 @@ export const getEthereumPlugin = (
         );
 
         return formattedBalance;
+    };
+
+    const getTransferHistory = async (tokenSymbolOrAddress: string) => {
+        if (tokenSymbolOrAddress === 'ETH') {
+            // This might return more than we want (i.e. contract deployments/interactions)
+            return await etherscanProvider.getHistory(publicKey);
+        }
+
+        const tokenContractAddress = await getTokenAddress(tokenSymbolOrAddress);
+        if (!tokenContractAddress) {
+            throw new Error(
+                `Could't find token address for the given symbol (${tokenSymbolOrAddress})`
+            );
+        }
+
+        const contract = new ethers.Contract(tokenContractAddress, ERC20ABI, provider);
+
+        const sentFilter = contract.filters.Transfer(publicKey);
+        const receivedFilter = contract.filters.Transfer(null, publicKey);
+
+        const [sent, received] = await Promise.all([
+            contract.queryFilter(sentFilter),
+            contract.queryFilter(receivedFilter),
+        ]);
+
+        return [...sent, ...received];
     };
 
     // Core Methods
@@ -160,15 +189,91 @@ export const getEthereumPlugin = (
                 ).hash;
             },
 
-            getTransactionHistory: async () => {
-                console.log('🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆');
-                return await etherscanProvider.getHistory(publicKey);
+            getTransactionHistory: async (): Promise<ethers.providers.TransactionResponse[]> => {
+                console.log('🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆 blah3');
+                return await getTransferHistory('ETH');
+                // return await etherscanProvider.getHistory(publicKey);
+
                 /* etherscanProvider.getHistory(publicKey).then(history => {
                     history.forEach(tx => {
                         console.log(tx);
                     });
                 });
                 console.log('------------------------------------'); */
+            },
+            getTransactionHistoryForToken: async (_learnCard, tokenSymbolOrAddress: string) => {
+                return await getTransferHistory(tokenSymbolOrAddress);
+            },
+            getSimpleTransactionHistoryForTokens: async (
+                _learnCard,
+                tokenSymbolOrAddresses: string[]
+            ) => {
+                console.log('🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆 simpleTranHistory');
+                const chainId = await getChainIdFromProvider(provider);
+
+                let simpleHistories: SimpleHistory[][] = await Promise.all(
+                    tokenSymbolOrAddresses.map(async symbolOrAddress => {
+                        // special handling for ETH since it's not an ERC20
+                        if (symbolOrAddress === 'ETH') {
+                            const history = await getTransferHistory(symbolOrAddress);
+
+                            const simpleHistory: SimpleHistory[] = [];
+                            history.forEach(transaction => {
+                                const { from, to, timestamp, value } = transaction;
+                                simpleHistory.push({
+                                    token: {
+                                        chainId,
+                                        name: 'Ethereum',
+                                        address: '',
+                                        symbol: 'ETH',
+                                        decimals: 18,
+                                        logoURI: '',
+                                    },
+                                    from,
+                                    to,
+                                    timestamp,
+                                    amount: ethers.utils.formatEther(value),
+                                });
+                            });
+
+                            return simpleHistory;
+                        }
+
+                        const token = await getTokenFromSymbolOrAddress(
+                            symbolOrAddress,
+                            defaultTokenList,
+                            chainId
+                        );
+                        if (!token) throw new Error(`Couldn't find token for ${symbolOrAddress}`);
+
+                        const transferEvents = await getTransferHistory(token?.address);
+                        const simpleHistory: SimpleHistory[] = [];
+                        await Promise.all(
+                            transferEvents.map(async transferEvent => {
+                                const { from, to, value } = transferEvent.args;
+                                const block = await transferEvent.getBlock();
+
+                                simpleHistory.push({
+                                    token,
+                                    from,
+                                    to,
+                                    amount: await formatUnits(
+                                        value,
+                                        token.address,
+                                        defaultTokenList,
+                                        chainId
+                                    ),
+                                    timestamp: block.timestamp,
+                                });
+                            })
+                        );
+
+                        return simpleHistory;
+                    })
+                );
+
+                // combine SimpleHistory arrays and sort (most recent first)
+                return simpleHistories.flat(1).sort((a, b) => b.timestamp - a.timestamp);
             },
 
             getGasPrice: async () => {

@@ -11,7 +11,13 @@ export type EthereumPluginMethods = {
         amount: number,
         toAddress: string
     ) => Promise<string>;
-    getTransactionHistory: () => Promise<providers.TransactionResponse[]>;
+    // getTransactionHistory: () => Promise<providers.TransactionResponse[]>;
+    getTransactionHistory: () => Promise<any>;
+    getTransactionHistoryForToken: (
+        tokenSymbolOrAddress: string
+        // ) => Promise<providers.TransactionResponse[]>;
+    ) => Promise<any>;
+    getSimpleTransactionHistoryForTokens: (tokenSymbolOrAddresses: string[]) => Promise<any>;
     getGasPrice: () => Promise<string>;
     getCurrentNetwork: () => providers.Networkish;
     changeNetwork: (network: providers.Networkish) => void;
@@ -37,6 +43,15 @@ export type Token = {
     decimals: number;
     logoURI: string;
     extensions: any;
+};
+
+/** @group Ethereum Plugin */
+export type SimpleHistory = {
+    token: Token;
+    from: string;
+    to: string;
+    amount: string;
+    timestamp: number;
 };
 
 /** @group Ethereum Plugin */
