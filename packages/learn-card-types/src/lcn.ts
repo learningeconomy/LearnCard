@@ -7,3 +7,12 @@ export const LCNProfileValidator = z.object({
     image: z.string().optional(),
 });
 export type LCNProfile = z.infer<typeof LCNProfileValidator>;
+
+export const SentCredentialInfoValidator = z.object({
+    uri: z.string(),
+    to: z.string(),
+    from: z.string(),
+    sent: z.string().datetime(),
+    received: z.string().datetime().optional(),
+});
+export type SentCredentialInfo = z.infer<typeof SentCredentialInfoValidator>;

@@ -6,11 +6,7 @@ export const checkIfProfileExists = async ({
     did,
     handle,
     email,
-}: {
-    did?: string;
-    handle?: string;
-    email?: string;
-}): Promise<boolean> => {
+}: Partial<ProfileType>): Promise<boolean> => {
     if (!did && !handle && !email) return false;
 
     if (did && (await Profile.findOne({ where: { did } }))) return true;

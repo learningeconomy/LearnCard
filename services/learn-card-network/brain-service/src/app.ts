@@ -8,6 +8,7 @@ import {
     UnsignedVCValidator,
     VCValidator,
     VPValidator,
+    SentCredentialInfoValidator,
 } from '@learncard/types';
 
 import { Profile } from '@models';
@@ -33,6 +34,11 @@ import { getEmptyLearnCard } from '@helpers/learnCard.helpers';
 import { getCache } from '@helpers/redis.helpers';
 
 import { checkIfProfileExists, searchProfiles } from '@accesslayer/profile/read';
+import {
+    getIncomingCredentialsForProfile,
+    getReceivedCredentialsForProfile,
+    getSentCredentialsForProfile,
+} from '@accesslayer/credential/read';
 
 const cache = getCache();
 
@@ -168,11 +174,7 @@ export const appRouter = t.router({
         .input(LCNProfileValidator.omit({ did: true }))
         .output(z.string())
         .mutation(async ({ input, ctx }) => {
-            const profileExists = await checkIfProfileExists({
-                did: ctx.user.did,
-                handle: input.handle,
-                email: input.email,
-            });
+            const profileExists = await checkIfProfileExists({ ...input, did: ctx.user.did });
 
             if (profileExists) {
                 throw new TRPCError({
@@ -600,6 +602,87 @@ export const appRouter = t.router({
             }
 
             return acceptCredential(profile, targetProfile, uri);
+        }),
+
+    receivedCredentials: didAndChallengeRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/credentials/received',
+                tags: ['Credentials'],
+                summary: 'Store a Credential',
+                description:
+                    'This endpoint stores a credential, returning a uri that can be used to resolve it',
+            },
+        })
+        .input(z.object({ limit: z.number().int().positive().lt(100).default(25) }).default({}))
+        .output(SentCredentialInfoValidator.array())
+        .query(async ({ input: { limit }, ctx }) => {
+            const profile = await Profile.findOne({ where: { did: ctx.user.did } });
+
+            if (!profile) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Profile not found. Please make a profile!',
+                });
+            }
+
+            return getReceivedCredentialsForProfile(ctx.domain, profile, limit);
+        }),
+
+    sentCredentials: didAndChallengeRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/credentials/sent',
+                tags: ['Credentials'],
+                summary: 'Store a Credential',
+                description:
+                    'This endpoint stores a credential, returning a uri that can be used to resolve it',
+            },
+        })
+        .input(z.object({ limit: z.number().int().positive().lt(100).default(25) }).default({}))
+        .output(SentCredentialInfoValidator.array())
+        .query(async ({ input: { limit }, ctx }) => {
+            const profile = await Profile.findOne({ where: { did: ctx.user.did } });
+
+            if (!profile) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Profile not found. Please make a profile!',
+                });
+            }
+
+            return getSentCredentialsForProfile(ctx.domain, profile, limit);
+        }),
+
+    incomingCredentials: didAndChallengeRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/credentials/incoming',
+                tags: ['Credentials'],
+                summary: 'Store a Credential',
+                description:
+                    'This endpoint stores a credential, returning a uri that can be used to resolve it',
+            },
+        })
+        .input(z.object({ limit: z.number().int().positive().lt(100).default(25) }).default({}))
+        .output(SentCredentialInfoValidator.array())
+        .query(async ({ input: { limit }, ctx }) => {
+            const profile = await Profile.findOne({ where: { did: ctx.user.did } });
+
+            if (!profile) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Profile not found. Please make a profile!',
+                });
+            }
+
+            return getIncomingCredentialsForProfile(ctx.domain, profile, limit);
         }),
 
     storeCredential: didAndChallengeRoute

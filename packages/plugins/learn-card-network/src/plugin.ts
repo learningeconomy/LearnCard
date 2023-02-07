@@ -161,6 +161,21 @@ export const getLearnCardNetworkPlugin = async (
 
                 return client.acceptCredential.mutate({ handle, uri });
             },
+            getReceivedCredentials: async () => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.receivedCredentials.query();
+            },
+            getSentCredentials: async () => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.sentCredentials.query();
+            },
+            getIncomingCredentials: async () => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.incomingCredentials.query();
+            },
             registerSigningAuthority: async (_learnCard, signingAuthority) => {
                 if (!userData) throw new Error('Please make an account first!');
 

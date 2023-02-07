@@ -1,4 +1,4 @@
-import { LCNProfile, UnsignedVC, VC, VP } from '@learncard/types';
+import { LCNProfile, UnsignedVC, VC, VP, SentCredentialInfo } from '@learncard/types';
 import { Plugin, ProofOptions } from '@learncard/core';
 
 import { CeramicClient } from '@ceramicnetwork/http-client';
@@ -23,6 +23,9 @@ export type LearnCardNetworkPluginMethods = {
     getConnectionRequests: () => Promise<LCNProfile[]>;
     sendCredential: (handle: string, vc: UnsignedVC | VC) => Promise<string>;
     acceptCredential: (handle: string, uri: string) => Promise<boolean>;
+    getReceivedCredentials: () => Promise<SentCredentialInfo[]>;
+    getSentCredentials: () => Promise<SentCredentialInfo[]>;
+    getIncomingCredentials: () => Promise<SentCredentialInfo[]>;
     registerSigningAuthority: (uri: string) => Promise<boolean>;
 };
 
