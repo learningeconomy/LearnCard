@@ -1,4 +1,4 @@
-import { providers } from 'ethers';
+import { ethers, providers } from 'ethers';
 import { Plugin } from 'types/wallet';
 
 /** @group Ethereum Plugin */
@@ -11,13 +11,11 @@ export type EthereumPluginMethods = {
         amount: number,
         toAddress: string
     ) => Promise<string>;
-    // getTransactionHistory: () => Promise<providers.TransactionResponse[]>;
-    getTransactionHistory: () => Promise<any>;
-    getTransactionHistoryForToken: (
-        tokenSymbolOrAddress: string
-        // ) => Promise<providers.TransactionResponse[]>;
-    ) => Promise<any>;
-    getSimpleTransactionHistoryForTokens: (tokenSymbolOrAddresses: string[]) => Promise<any>;
+    getTransactionHistory: () => Promise<providers.TransactionResponse[]>;
+    getTransactionHistoryForToken: (tokenSymbolOrAddress: string) => Promise<ethers.Event[]>;
+    getSimpleTransactionHistoryForTokens: (
+        tokenSymbolOrAddresses: string[]
+    ) => Promise<SimpleHistory[]>;
     getGasPrice: () => Promise<string>;
     getCurrentNetwork: () => providers.Networkish;
     changeNetwork: (network: providers.Networkish) => void;
@@ -42,7 +40,7 @@ export type Token = {
     symbol: string;
     decimals: number;
     logoURI: string;
-    extensions: any;
+    extensions?: any;
 };
 
 /** @group Ethereum Plugin */

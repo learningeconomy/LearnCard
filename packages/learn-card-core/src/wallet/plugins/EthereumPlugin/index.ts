@@ -97,11 +97,6 @@ export const getEthereumPlugin = (
     };
 
     const getTransferHistory = async (tokenSymbolOrAddress: string) => {
-        if (tokenSymbolOrAddress === 'ETH') {
-            // This might return more than we want (i.e. contract deployments/interactions)
-            return await etherscanProvider.getHistory(publicKey);
-        }
-
         const tokenContractAddress = await getTokenAddress(tokenSymbolOrAddress);
         if (!tokenContractAddress) {
             throw new Error(
@@ -190,16 +185,7 @@ export const getEthereumPlugin = (
             },
 
             getTransactionHistory: async (): Promise<ethers.providers.TransactionResponse[]> => {
-                console.log('🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆 blah3');
-                return await getTransferHistory('ETH');
-                // return await etherscanProvider.getHistory(publicKey);
-
-                /* etherscanProvider.getHistory(publicKey).then(history => {
-                    history.forEach(tx => {
-                        console.log(tx);
-                    });
-                });
-                console.log('------------------------------------'); */
+                return await etherscanProvider.getHistory(publicKey);
             },
             getTransactionHistoryForToken: async (_learnCard, tokenSymbolOrAddress: string) => {
                 return await getTransferHistory(tokenSymbolOrAddress);
@@ -215,7 +201,7 @@ export const getEthereumPlugin = (
                     tokenSymbolOrAddresses.map(async symbolOrAddress => {
                         // special handling for ETH since it's not an ERC20
                         if (symbolOrAddress === 'ETH') {
-                            const history = await getTransferHistory(symbolOrAddress);
+                            const history = await etherscanProvider.getHistory(publicKey);
 
                             const simpleHistory: SimpleHistory[] = [];
                             history.forEach(transaction => {
@@ -230,8 +216,8 @@ export const getEthereumPlugin = (
                                         logoURI: '',
                                     },
                                     from,
-                                    to,
-                                    timestamp,
+                                    to: to ?? '',
+                                    timestamp: timestamp ?? 0,
                                     amount: ethers.utils.formatEther(value),
                                 });
                             });
@@ -250,6 +236,7 @@ export const getEthereumPlugin = (
                         const simpleHistory: SimpleHistory[] = [];
                         await Promise.all(
                             transferEvents.map(async transferEvent => {
+                                if (!transferEvent?.args) return;
                                 const { from, to, value } = transferEvent.args;
                                 const block = await transferEvent.getBlock();
 
