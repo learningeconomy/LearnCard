@@ -1,6 +1,6 @@
 # serverless.yml
 
-service: lcn-profile-service
+service: lcn-brain-service
 
 frameworkVersion: '3'
 
@@ -25,7 +25,7 @@ provider:
   stage: ${opt:stage, "dev"}
   region: ${opt:region, "us-east-1"}
   environment:
-    LAMBDA_STAGE: ${opt:stage, "production"}
+    LAMBDA_STAGE: ${opt:stage, "dev"}
     NEO4J_URI: ${env:NEO4J_URI}
     NEO4J_USERNAME: ${env:NEO4J_USERNAME}
     NEO4J_PASSWORD: ${env:NEO4J_PASSWORD}
