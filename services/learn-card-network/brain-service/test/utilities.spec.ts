@@ -43,7 +43,7 @@ describe('Utilities', () => {
         });
 
         it('should default to 100 challenges', async () => {
-            const challenges = await user.clients.partialAuth.utilities.getChallenges({});
+            const challenges = await user.clients.partialAuth.utilities.getChallenges();
             expect(challenges).toHaveLength(100);
         });
 
@@ -68,14 +68,14 @@ describe('Utilities', () => {
 
         it('should not allow requesting negative or non-integer challenges', async () => {
             await expect(
-                noAuthClient.utilities.getChallenges({ amount: -1 })
+                user.clients.partialAuth.utilities.getChallenges({ amount: -1 })
             ).rejects.toMatchObject({
-                code: 'UNAUTHORIZED',
+                code: 'BAD_REQUEST',
             });
             await expect(
-                noAuthClient.utilities.getChallenges({ amount: 10.5 })
+                user.clients.partialAuth.utilities.getChallenges({ amount: 10.5 })
             ).rejects.toMatchObject({
-                code: 'UNAUTHORIZED',
+                code: 'BAD_REQUEST',
             });
         });
     });
