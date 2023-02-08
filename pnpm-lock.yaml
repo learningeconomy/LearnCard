@@ -697,6 +697,8 @@ importers:
       neogma: ^1.11.1
       openapi-types: ^12.1.0
       serverless: ^3.26.0
+      serverless-certificate-creator: ^1.6.0
+      serverless-domain-manager: ^6.3.1
       serverless-http: ^3.1.1
       serverless-offline: ^12.0.4
       shx: ^0.3.4
@@ -731,6 +733,8 @@ importers:
       esbuild: 0.16.17
       openapi-types: 12.1.0
       serverless: 3.26.0
+      serverless-certificate-creator: 1.6.0
+      serverless-domain-manager: 6.3.1
       serverless-http: 3.1.1
       shx: 0.3.4
       testcontainers: 9.1.1
@@ -12383,6 +12387,22 @@ packages:
       uuid: 8.0.0
       xml2js: 0.4.19
 
+  /aws-sdk/2.1311.0:
+    resolution: {integrity: sha512-X3cFNsfs3HUfz6LKiLqvDTO4EsqO5DnNssh9SOoxhwmoMyJ2et3dEmigO6TaA44BjVNdLW98+sXJVPTGvINY1Q==}
+    engines: {node: '>= 10.0.0'}
+    dependencies:
+      buffer: 4.9.2
+      events: 1.1.1
+      ieee754: 1.1.13
+      jmespath: 0.16.0
+      querystring: 0.2.0
+      sax: 1.2.1
+      url: 0.10.3
+      util: 0.12.5
+      uuid: 8.0.0
+      xml2js: 0.4.19
+    dev: true
+
   /axios/0.21.4:
     resolution: {integrity: sha512-ut5vewkiu8jjGBdqpM44XxjuCjq9LAKeHVmoVfHVzy8eHgxxq8SbAVQNovDA8mVi05kP0Ea/n/UzcSHcTJQfNg==}
     dependencies:
@@ -15379,6 +15399,11 @@ packages:
       p-map: 4.0.0
       rimraf: 3.0.2
       slash: 3.0.0
+
+  /delay/4.4.1:
+    resolution: {integrity: sha512-aL3AhqtfhOlT/3ai6sWXeqwnw63ATNpnUiN4HL7x9q+My5QtHlO3OIkasmug9LKzpheLdmUKGRKnYXYAS7FQkQ==}
+    engines: {node: '>=6'}
+    dev: true
 
   /delayed-stream/1.0.0:
     resolution: {integrity: sha512-ZySD7Nf91aLB0RxL4KGrKHBXl7Eds1DAmEdcoVawXnLD7SDhpNgtuII2aAkg7a7QS41jxPSZ17p4VdGnMHk3MQ==}
@@ -29383,6 +29408,24 @@ packages:
       update-check: 1.5.4
     transitivePeerDependencies:
       - supports-color
+    dev: true
+
+  /serverless-certificate-creator/1.6.0:
+    resolution: {integrity: sha512-OPryqkkSG39nOIsgmxbcj89o9l+mcB50XraMRB28wyYBAaxHog4Cyq7Vydn5TCvfHwPJjVRvl/sLeFHzRXN4+w==}
+    dependencies:
+      aws-sdk: 2.1298.0
+      chalk: 2.4.2
+      delay: 4.4.1
+      mkdirp: 1.0.4
+      semver: 7.3.8
+      yamljs: 0.3.0
+    dev: true
+
+  /serverless-domain-manager/6.3.1:
+    resolution: {integrity: sha512-Cn90C/QBGSfcf7oAnDOdh2DuCj7RxmqwPjZFnL/gzOdyDtahBNuaha6wXXiLm85ejzAJQj1gDvAX4N0ye2dxXA==}
+    engines: {node: '>=14'}
+    dependencies:
+      aws-sdk: 2.1311.0
     dev: true
 
   /serverless-esbuild/1.33.1_esbuild@0.15.13:
