@@ -21,8 +21,10 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
-        with:
-          fetch-depth: 2
+
+      - name: Fetch main for NX comparison
+        run: |
+          git fetch --no-tags --prune --depth=5 origin main
 
       - name: Setup Node.js 16.x
         uses: actions/setup-node@v3
@@ -59,7 +61,7 @@ jobs:
         run: pnpm i
 
       - name: Run tests
-        run: pnpm exec nx affected --target=test --base=HEAD~1 --head=HEAD
+        run: pnpm exec nx affected --target=test --base=origin/main --head=HEAD
 
       - name: Get Affected List
         id: affected
