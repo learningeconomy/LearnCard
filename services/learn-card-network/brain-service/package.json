@@ -5,8 +5,8 @@
   "main": "dist/index.js",
   "types": "dist/types.d.ts",
   "scripts": {
-    "test": "jest",
-    "test:watch": "jest --watch",
+    "test": "jest -i",
+    "test:watch": "jest -i --watch",
     "build": "shx cp ../../../packages/learn-card-core/src/didkit/pkg/didkit_wasm_bg.wasm src/didkit_wasm_bg.wasm && node esbuild.mjs && dts-bundle-generator src/index.ts -o dist/types.d.ts --no-check",
     "start": "shx cp ../../../packages/learn-card-core/src/didkit/pkg/didkit_wasm_bg.wasm src/didkit_wasm_bg.wasm && serverless offline",
     "dev": "shx cp ../../../packages/learn-card-core/src/didkit/pkg/didkit_wasm_bg.wasm src/didkit_wasm_bg.wasm && serverless offline",

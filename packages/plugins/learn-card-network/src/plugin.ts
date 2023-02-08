@@ -26,7 +26,7 @@ export const getLearnCardNetworkPlugin = async (
     let userData: LCNProfile | undefined;
 
     try {
-        userData = await client.getProfile.query();
+        userData = await client.profile.getProfile.query();
     } catch (error) {
         learnCard.debug?.('No profile!', error);
     }
@@ -60,7 +60,7 @@ export const getLearnCardNetworkPlugin = async (
                 if (lc !== 'lc' || method !== 'network') return undefined;
 
                 try {
-                    const vc = await client.getCredential.query({ uri: vcUri });
+                    const vc = await client.credential.getCredential.query({ uri: vcUri });
 
                     return await VCValidator.or(VPValidator).parseAsync(vc);
                 } catch (error) {
@@ -73,7 +73,7 @@ export const getLearnCardNetworkPlugin = async (
             upload: async (_learnCard, credential) => {
                 _learnCard.debug?.("learnCard.store['LearnCard Network'].upload");
 
-                return client.storeCredential.mutate({ credential });
+                return client.credential.storeCredential.mutate({ credential });
             },
             /* uploadEncrypted: async (_learnCard, credential, params) => {
                 _learnCard.debug?.("learnCard.store['LearnCard Network'].upload");
@@ -85,9 +85,9 @@ export const getLearnCardNetworkPlugin = async (
             createProfile: async (_learnCard, profile) => {
                 if (userData) throw new Error('Account already exists!');
 
-                const newDid = await client.createProfile.mutate(profile);
+                const newDid = await client.profile.createProfile.mutate(profile);
 
-                userData = await client.getProfile.query();
+                userData = await client.profile.getProfile.query();
                 did = newDid;
 
                 return newDid;
@@ -95,10 +95,10 @@ export const getLearnCardNetworkPlugin = async (
             updateProfile: async (_learnCard, profile) => {
                 if (!userData) throw new Error('Please make an account first!');
 
-                const result = await client.updateProfile.mutate(profile);
+                const result = await client.profile.updateProfile.mutate(profile);
 
                 if (result) {
-                    userData = await client.getProfile.query();
+                    userData = await client.profile.getProfile.query();
 
                     return true;
                 }
@@ -108,7 +108,7 @@ export const getLearnCardNetworkPlugin = async (
             deleteProfile: async () => {
                 if (!userData) throw new Error('Account does not exist!');
 
-                const result = await client.deleteProfile.mutate();
+                const result = await client.profile.deleteProfile.mutate();
 
                 if (result) {
                     userData = undefined;
@@ -119,67 +119,67 @@ export const getLearnCardNetworkPlugin = async (
                 return false;
             },
             getProfile: async (_learnCard, handle) => {
-                if (!handle) return client.getProfile.query();
+                if (!handle) return client.profile.getProfile.query();
 
-                return client.getOtherProfile.query({ handle });
+                return client.profile.getOtherProfile.query({ handle });
             },
             searchProfiles: async (_learnCard, input = '', limit = 25) => {
-                return client.searchProfiles.query({ input, limit });
+                return client.profile.searchProfiles.query({ input, limit });
             },
             connectWith: async (_learnCard, handle) => {
                 if (!userData) throw new Error('Please make an account first!');
 
-                return client.connectWith.mutate({ handle });
+                return client.profile.connectWith.mutate({ handle });
             },
             acceptConnectionRequest: async (_learnCard, handle) => {
                 if (!userData) throw new Error('Please make an account first!');
 
-                return client.acceptConnectionRequest.mutate({ handle });
+                return client.profile.acceptConnectionRequest.mutate({ handle });
             },
             getConnections: async () => {
                 if (!userData) throw new Error('Please make an account first!');
 
-                return client.connections.query();
+                return client.profile.connections.query();
             },
             getPendingConnections: async () => {
                 if (!userData) throw new Error('Please make an account first!');
 
-                return client.pendingConnections.query();
+                return client.profile.pendingConnections.query();
             },
             getConnectionRequests: async () => {
                 if (!userData) throw new Error('Please make an account first!');
 
-                return client.connectionRequests.query();
+                return client.profile.connectionRequests.query();
             },
             sendCredential: async (_learnCard, handle, vc) => {
                 if (!userData) throw new Error('Please make an account first!');
 
-                return client.sendCredential.mutate({ handle, credential: vc });
+                return client.credential.sendCredential.mutate({ handle, credential: vc });
             },
             acceptCredential: async (_learnCard, handle, uri) => {
                 if (!userData) throw new Error('Please make an account first!');
 
-                return client.acceptCredential.mutate({ handle, uri });
+                return client.credential.acceptCredential.mutate({ handle, uri });
             },
             getReceivedCredentials: async () => {
                 if (!userData) throw new Error('Please make an account first!');
 
-                return client.receivedCredentials.query();
+                return client.credential.receivedCredentials.query();
             },
             getSentCredentials: async () => {
                 if (!userData) throw new Error('Please make an account first!');
 
-                return client.sentCredentials.query();
+                return client.credential.sentCredentials.query();
             },
             getIncomingCredentials: async () => {
                 if (!userData) throw new Error('Please make an account first!');
 
-                return client.incomingCredentials.query();
+                return client.credential.incomingCredentials.query();
             },
             registerSigningAuthority: async (_learnCard, signingAuthority) => {
                 if (!userData) throw new Error('Please make an account first!');
 
-                return client.registerSigningAuthority.mutate({ signingAuthority });
+                return client.profile.registerSigningAuthority.mutate({ signingAuthority });
             },
         },
     };

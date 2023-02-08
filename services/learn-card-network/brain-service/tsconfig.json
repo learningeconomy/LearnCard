@@ -29,6 +29,8 @@
         "@helpers/*": ["src/helpers/*"],
         "@instance": ["src/instance.ts"],
         "@models": ["src/models/index.ts"],
+        "@routes": ["src/routes/index.ts"],
+        "@routes/*": ["src/routes/*"],
         "types/*": ["src/types/*"]
     },
 
