@@ -22,7 +22,7 @@ export const searchProfiles = async (
 ): Promise<ProfileType[]> => {
     const result = await new QueryBuilder(new BindParam({ input: `(?i).*${searchInput}.*` }))
         .match({ identifier: 'profile', model: Profile })
-        .where('profile.handle =~ $input OR profile.email =~ $input')
+        .where('profile.handle =~ $input OR profile.displayName =~ $input')
         .return('profile')
         .limit(limit)
         .run();

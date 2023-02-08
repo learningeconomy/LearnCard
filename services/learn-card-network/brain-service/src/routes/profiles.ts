@@ -134,7 +134,7 @@ export const profilesRouter = t.router({
             const did = ctx.user.did;
             const profile = await Profile.findOne({ where: { did } });
 
-            const { handle, image, email } = input;
+            const { handle, displayName, image, email } = input;
 
             if (!profile) {
                 throw new TRPCError({
@@ -169,6 +169,7 @@ export const profilesRouter = t.router({
             }
 
             if (image) profile.image = image;
+            if (displayName) profile.displayName = displayName;
 
             await profile.save();
 

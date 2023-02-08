@@ -68,6 +68,29 @@ describe('Profiles', () => {
                 'did:web:localhost%3A3000:users:userA'
             );
         });
+
+        it('should allow setting your display name', async () => {
+            await userA.clients.fullAuth.profile.createProfile({
+                handle: 'userA',
+                displayName: 'A',
+            });
+            await expect(
+                userB.clients.fullAuth.profile.createProfile({ handle: 'userB', displayName: 'A' })
+            ).resolves.not.toThrow();
+        });
+
+        it('should allow non-unique display names', async () => {
+            await userA.clients.fullAuth.profile.createProfile({
+                handle: 'userA',
+                displayName: 'A',
+            });
+
+            const userAResult = await userB.clients.fullAuth.profile.getOtherProfile({
+                handle: 'userA',
+            });
+
+            expect(userAResult?.displayName).toEqual('A');
+        });
     });
 
     describe('getProfile', () => {
@@ -75,10 +98,12 @@ describe('Profiles', () => {
             await Profile.delete({ detach: true, where: {} });
             await userA.clients.fullAuth.profile.createProfile({
                 handle: 'userA',
+                displayName: 'A',
                 email: 'userA@test.com',
             });
             await userB.clients.fullAuth.profile.createProfile({
                 handle: 'userB',
+                displayName: 'B',
                 email: 'userB@test.com',
             });
         });
@@ -103,8 +128,10 @@ describe('Profiles', () => {
             const userBProfile = await userB.clients.fullAuth.profile.getProfile();
 
             expect(userAProfile?.handle).toEqual('userA');
+            expect(userAProfile?.displayName).toEqual('A');
             expect(userAProfile?.email).toEqual('userA@test.com');
             expect(userBProfile?.handle).toEqual('userB');
+            expect(userBProfile?.displayName).toEqual('B');
             expect(userBProfile?.email).toEqual('userB@test.com');
         });
     });
@@ -114,10 +141,12 @@ describe('Profiles', () => {
             await Profile.delete({ detach: true, where: {} });
             await userA.clients.fullAuth.profile.createProfile({
                 handle: 'userA',
+                displayName: 'A',
                 email: 'userA@test.com',
             });
             await userB.clients.fullAuth.profile.createProfile({
                 handle: 'userB',
+                displayName: 'B',
                 email: 'userB@test.com',
             });
         });
@@ -147,8 +176,10 @@ describe('Profiles', () => {
             });
 
             expect(userAProfile?.handle).toEqual('userA');
+            expect(userAProfile?.displayName).toEqual('A');
             expect(userAProfile?.email).toEqual('userA@test.com');
             expect(userBProfile?.handle).toEqual('userB');
+            expect(userBProfile?.displayName).toEqual('B');
             expect(userBProfile?.email).toEqual('userB@test.com');
         });
     });
@@ -158,10 +189,12 @@ describe('Profiles', () => {
             await Profile.delete({ detach: true, where: {} });
             await userA.clients.fullAuth.profile.createProfile({
                 handle: 'userA',
+                displayName: 'AName',
                 email: 'userA@test.com',
             });
             await userB.clients.fullAuth.profile.createProfile({
                 handle: 'userB',
+                displayName: 'BName',
                 email: 'userB@test.com',
             });
             await Promise.all(
@@ -281,6 +314,14 @@ describe('Profiles', () => {
                 noAuthClient.profile.searchProfiles({ input: 'user', limit: -1 })
             ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
         });
+
+        it('should search based on both handles and displaynames', async () => {
+            const displayNameResults = await noAuthClient.profile.searchProfiles({ input: 'name' });
+            const handleResults = await noAuthClient.profile.searchProfiles({ input: 'user' });
+
+            expect(displayNameResults).toHaveLength(2);
+            expect(handleResults).toHaveLength(2);
+        });
     });
 
     describe('updateProfile', () => {
@@ -326,6 +367,19 @@ describe('Profiles', () => {
             await expect(
                 userB.clients.fullAuth.profile.updateProfile({ email: 'nice@test.com' })
             ).rejects.toMatchObject({ code: 'CONFLICT' });
+        });
+
+        it('should allow you to update your display name', async () => {
+            await expect(
+                userA.clients.fullAuth.profile.updateProfile({ displayName: 'nice' })
+            ).resolves.not.toThrow();
+        });
+
+        it('should allow you to update your display name to one already in use', async () => {
+            await userA.clients.fullAuth.profile.updateProfile({ displayName: 'nice' });
+            await expect(
+                userB.clients.fullAuth.profile.updateProfile({ displayName: 'nice' })
+            ).resolves.not.toThrow();
         });
 
         it('should allow you to update your profile image', async () => {
