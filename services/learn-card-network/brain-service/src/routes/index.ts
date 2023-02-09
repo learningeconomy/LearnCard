@@ -35,9 +35,9 @@ export const createContext = async ({
     const domainName = event.requestContext.domainName;
 
     const domain =
-        domainName && domainName !== 'offlineContext_domainName' // When running locally, domainName is set to 'offlineContext_domainName'
-            ? `${domainName}`
-            : 'localhost%3A3000';
+        !domainName || process.env.IS_OFFLINE
+            ? `localhost%3A${process.env.PORT || 3000}`
+            : domainName;
 
     if (authHeader && authHeader.split(' ').length === 2) {
         const [scheme, jwt] = authHeader.split(' ');

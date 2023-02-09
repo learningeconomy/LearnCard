@@ -21,9 +21,9 @@ app.get('/:handle/did.json', async (req: TypedRequest<{}, {}, { handle: string }
 
     const domainName: string = (req as any).requestContext.domainName;
     const domain =
-        domainName && domainName !== 'offlineContext_domainName' // When running locally, domainName is set to 'offlineContext_domainName'
-            ? `${domainName}`
-            : 'localhost%3A3000';
+        !domainName || process.env.IS_OFFLINE
+            ? `localhost%3A${process.env.PORT || 3000}`
+            : domainName;
 
     return res.json(
         JSON.parse(
