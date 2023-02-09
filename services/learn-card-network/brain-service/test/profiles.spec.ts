@@ -22,74 +22,84 @@ describe('Profiles', () => {
 
         it('should not allow you to create a profile without full auth', async () => {
             await expect(
-                noAuthClient.profile.createProfile({ handle: 'userA' })
+                noAuthClient.profile.createProfile({ handle: 'usera' })
             ).rejects.toMatchObject({
                 code: 'UNAUTHORIZED',
             });
             await expect(
-                userA.clients.partialAuth.profile.createProfile({ handle: 'userA' })
+                userA.clients.partialAuth.profile.createProfile({ handle: 'usera' })
             ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
         });
 
         it('should allow you to create a profile', async () => {
             await expect(
-                userA.clients.fullAuth.profile.createProfile({ handle: 'userA' })
+                userA.clients.fullAuth.profile.createProfile({ handle: 'usera' })
             ).resolves.not.toThrow();
         });
 
         it('should not allow creating a profile with a handle that has already been taken', async () => {
             await expect(
-                userA.clients.fullAuth.profile.createProfile({ handle: 'userA' })
+                userA.clients.fullAuth.profile.createProfile({ handle: 'usera' })
             ).resolves.not.toThrow();
             await expect(
-                userB.clients.fullAuth.profile.createProfile({ handle: 'userA' })
+                userB.clients.fullAuth.profile.createProfile({ handle: 'usera' })
             ).rejects.toThrow();
         });
 
         it('should not allow creating a profile with an email that has already been taken', async () => {
             await expect(
-                // userA.clients.fullAuth.createProfile({ handle: 'userA', email: 'userA@test.com' })
+                // userA.clients.fullAuth.createProfile({ handle: 'usera', email: 'userA@test.com' })
 
                 userA.clients.fullAuth.profile.createProfile({
-                    handle: 'userA',
+                    handle: 'usera',
                     email: 'userA@test.com',
                 })
             ).resolves.not.toThrow();
             await expect(
                 userB.clients.fullAuth.profile.createProfile({
-                    handle: 'userB',
+                    handle: 'userb',
                     email: 'userA@test.com',
                 })
             ).rejects.toThrow();
         });
 
         it('should return the newly created did:web address', async () => {
-            expect(await userA.clients.fullAuth.profile.createProfile({ handle: 'userA' })).toEqual(
-                'did:web:localhost%3A3000:users:userA'
+            expect(await userA.clients.fullAuth.profile.createProfile({ handle: 'usera' })).toEqual(
+                'did:web:localhost%3A3000:users:usera'
             );
         });
 
         it('should allow setting your display name', async () => {
             await userA.clients.fullAuth.profile.createProfile({
-                handle: 'userA',
+                handle: 'usera',
                 displayName: 'A',
             });
             await expect(
-                userB.clients.fullAuth.profile.createProfile({ handle: 'userB', displayName: 'A' })
+                userB.clients.fullAuth.profile.createProfile({ handle: 'userb', displayName: 'A' })
             ).resolves.not.toThrow();
         });
 
         it('should allow non-unique display names', async () => {
             await userA.clients.fullAuth.profile.createProfile({
-                handle: 'userA',
+                handle: 'usera',
                 displayName: 'A',
             });
 
             const userAResult = await userB.clients.fullAuth.profile.getOtherProfile({
-                handle: 'userA',
+                handle: 'usera',
             });
 
             expect(userAResult?.displayName).toEqual('A');
+        });
+
+        it('should force handles to be lowercase', async () => {
+            await userA.clients.fullAuth.profile.createProfile({
+                handle: 'userA',
+            });
+
+            const userAResult = await userA.clients.fullAuth.profile.getProfile();
+
+            expect(userAResult?.handle).toEqual('usera');
         });
     });
 
@@ -97,12 +107,12 @@ describe('Profiles', () => {
         beforeAll(async () => {
             await Profile.delete({ detach: true, where: {} });
             await userA.clients.fullAuth.profile.createProfile({
-                handle: 'userA',
+                handle: 'usera',
                 displayName: 'A',
                 email: 'userA@test.com',
             });
             await userB.clients.fullAuth.profile.createProfile({
-                handle: 'userB',
+                handle: 'userb',
                 displayName: 'B',
                 email: 'userB@test.com',
             });
@@ -127,10 +137,10 @@ describe('Profiles', () => {
             const userAProfile = await userA.clients.fullAuth.profile.getProfile();
             const userBProfile = await userB.clients.fullAuth.profile.getProfile();
 
-            expect(userAProfile?.handle).toEqual('userA');
+            expect(userAProfile?.handle).toEqual('usera');
             expect(userAProfile?.displayName).toEqual('A');
             expect(userAProfile?.email).toEqual('userA@test.com');
-            expect(userBProfile?.handle).toEqual('userB');
+            expect(userBProfile?.handle).toEqual('userb');
             expect(userBProfile?.displayName).toEqual('B');
             expect(userBProfile?.email).toEqual('userB@test.com');
         });
@@ -140,12 +150,12 @@ describe('Profiles', () => {
         beforeAll(async () => {
             await Profile.delete({ detach: true, where: {} });
             await userA.clients.fullAuth.profile.createProfile({
-                handle: 'userA',
+                handle: 'usera',
                 displayName: 'A',
                 email: 'userA@test.com',
             });
             await userB.clients.fullAuth.profile.createProfile({
-                handle: 'userB',
+                handle: 'userb',
                 displayName: 'B',
                 email: 'userB@test.com',
             });
@@ -157,28 +167,28 @@ describe('Profiles', () => {
 
         it('should allow you to view profiles with/without full auth', async () => {
             await expect(
-                noAuthClient.profile.getOtherProfile({ handle: 'userA' })
+                noAuthClient.profile.getOtherProfile({ handle: 'usera' })
             ).resolves.not.toThrow();
             await expect(
-                userA.clients.partialAuth.profile.getOtherProfile({ handle: 'userB' })
+                userA.clients.partialAuth.profile.getOtherProfile({ handle: 'userb' })
             ).resolves.not.toThrow();
             await expect(
-                userA.clients.fullAuth.profile.getOtherProfile({ handle: 'userB' })
+                userA.clients.fullAuth.profile.getOtherProfile({ handle: 'userb' })
             ).resolves.not.toThrow();
         });
 
         it('should get the correct profile', async () => {
             const userAProfile = await userB.clients.fullAuth.profile.getOtherProfile({
-                handle: 'userA',
+                handle: 'usera',
             });
             const userBProfile = await userA.clients.fullAuth.profile.getOtherProfile({
-                handle: 'userB',
+                handle: 'userb',
             });
 
-            expect(userAProfile?.handle).toEqual('userA');
+            expect(userAProfile?.handle).toEqual('usera');
             expect(userAProfile?.displayName).toEqual('A');
             expect(userAProfile?.email).toEqual('userA@test.com');
-            expect(userBProfile?.handle).toEqual('userB');
+            expect(userBProfile?.handle).toEqual('userb');
             expect(userBProfile?.displayName).toEqual('B');
             expect(userBProfile?.email).toEqual('userB@test.com');
         });
@@ -188,12 +198,12 @@ describe('Profiles', () => {
         beforeAll(async () => {
             await Profile.delete({ detach: true, where: {} });
             await userA.clients.fullAuth.profile.createProfile({
-                handle: 'userA',
+                handle: 'usera',
                 displayName: 'AName',
                 email: 'userA@test.com',
             });
             await userB.clients.fullAuth.profile.createProfile({
-                handle: 'userB',
+                handle: 'userb',
                 displayName: 'BName',
                 email: 'userB@test.com',
             });
@@ -327,8 +337,8 @@ describe('Profiles', () => {
     describe('updateProfile', () => {
         beforeEach(async () => {
             await Profile.delete({ detach: true, where: {} });
-            await userA.clients.fullAuth.profile.createProfile({ handle: 'userA' });
-            await userB.clients.fullAuth.profile.createProfile({ handle: 'userB' });
+            await userA.clients.fullAuth.profile.createProfile({ handle: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ handle: 'userb' });
         });
 
         afterAll(async () => {
@@ -346,13 +356,13 @@ describe('Profiles', () => {
 
         it('should allow you to update your handle', async () => {
             await expect(
-                userA.clients.fullAuth.profile.updateProfile({ handle: 'somethingElse' })
+                userA.clients.fullAuth.profile.updateProfile({ handle: 'somethingelse' })
             ).resolves.not.toThrow();
         });
 
         it('should not allow you to update your handle to one already in use', async () => {
             await expect(
-                userA.clients.fullAuth.profile.updateProfile({ handle: 'userB' })
+                userA.clients.fullAuth.profile.updateProfile({ handle: 'usera' })
             ).rejects.toMatchObject({ code: 'CONFLICT' });
         });
 
@@ -400,13 +410,23 @@ describe('Profiles', () => {
                 })
             ).resolves.not.toThrow();
         });
+
+        it('should force handles to be lowercase', async () => {
+            await userA.clients.fullAuth.profile.updateProfile({
+                handle: 'userC',
+            });
+
+            const userAResult = await userA.clients.fullAuth.profile.getProfile();
+
+            expect(userAResult?.handle).toEqual('userc');
+        });
     });
 
     describe('deleteProfile', () => {
         beforeEach(async () => {
             await Profile.delete({ detach: true, where: {} });
-            await userA.clients.fullAuth.profile.createProfile({ handle: 'userA' });
-            await userB.clients.fullAuth.profile.createProfile({ handle: 'userB' });
+            await userA.clients.fullAuth.profile.createProfile({ handle: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ handle: 'userb' });
         });
 
         afterAll(async () => {
@@ -431,15 +451,15 @@ describe('Profiles', () => {
 
         it('should not show deleted profiles to other users', async () => {
             const beforeDeletion = await userB.clients.fullAuth.profile.getOtherProfile({
-                handle: 'userA',
+                handle: 'usera',
             });
 
-            expect(beforeDeletion?.handle).toEqual('userA');
+            expect(beforeDeletion?.handle).toEqual('usera');
 
             await userA.clients.fullAuth.profile.deleteProfile();
 
             const afterDeletion = await userB.clients.fullAuth.profile.getOtherProfile({
-                handle: 'userA',
+                handle: 'usera',
             });
 
             expect(afterDeletion).toBeUndefined();
@@ -449,8 +469,8 @@ describe('Profiles', () => {
     describe('connectWith', () => {
         beforeEach(async () => {
             await Profile.delete({ detach: true, where: {} });
-            await userA.clients.fullAuth.profile.createProfile({ handle: 'userA' });
-            await userB.clients.fullAuth.profile.createProfile({ handle: 'userB' });
+            await userA.clients.fullAuth.profile.createProfile({ handle: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ handle: 'userb' });
         });
 
         afterAll(async () => {
@@ -459,18 +479,18 @@ describe('Profiles', () => {
 
         it('should require full auth to connect with another user', async () => {
             await expect(
-                noAuthClient.profile.connectWith({ handle: 'userB' })
+                noAuthClient.profile.connectWith({ handle: 'userb' })
             ).rejects.toMatchObject({
                 code: 'UNAUTHORIZED',
             });
             await expect(
-                userA.clients.partialAuth.profile.connectWith({ handle: 'userB' })
+                userA.clients.partialAuth.profile.connectWith({ handle: 'userb' })
             ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
         });
 
         it('allows users to send a connection request', async () => {
             await expect(
-                userA.clients.fullAuth.profile.connectWith({ handle: 'userB' })
+                userA.clients.fullAuth.profile.connectWith({ handle: 'userb' })
             ).resolves.not.toThrow();
 
             expect(await userA.clients.fullAuth.profile.pendingConnections()).toHaveLength(1);
@@ -478,17 +498,17 @@ describe('Profiles', () => {
         });
 
         it('does not allow users to resend a connection request', async () => {
-            await userA.clients.fullAuth.profile.connectWith({ handle: 'userB' });
+            await userA.clients.fullAuth.profile.connectWith({ handle: 'userb' });
             await expect(
-                userA.clients.fullAuth.profile.connectWith({ handle: 'userB' })
+                userA.clients.fullAuth.profile.connectWith({ handle: 'userb' })
             ).rejects.toMatchObject({ code: 'CONFLICT' });
         });
 
         it('errors when trying to connect with a user you are already connected with', async () => {
-            await userA.clients.fullAuth.profile.connectWith({ handle: 'userB' });
-            await userB.clients.fullAuth.profile.acceptConnectionRequest({ handle: 'userA' });
+            await userA.clients.fullAuth.profile.connectWith({ handle: 'userb' });
+            await userB.clients.fullAuth.profile.acceptConnectionRequest({ handle: 'usera' });
             await expect(
-                userA.clients.fullAuth.profile.connectWith({ handle: 'userB' })
+                userA.clients.fullAuth.profile.connectWith({ handle: 'userb' })
             ).rejects.toMatchObject({ code: 'CONFLICT' });
         });
     });
@@ -496,10 +516,10 @@ describe('Profiles', () => {
     describe('acceptConnectionRequest', () => {
         beforeEach(async () => {
             await Profile.delete({ detach: true, where: {} });
-            await userA.clients.fullAuth.profile.createProfile({ handle: 'userA' });
-            await userB.clients.fullAuth.profile.createProfile({ handle: 'userB' });
+            await userA.clients.fullAuth.profile.createProfile({ handle: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ handle: 'userb' });
 
-            await userB.clients.fullAuth.profile.connectWith({ handle: 'userA' });
+            await userB.clients.fullAuth.profile.connectWith({ handle: 'usera' });
         });
 
         afterAll(async () => {
@@ -508,22 +528,22 @@ describe('Profiles', () => {
 
         it('should require full auth to accept connection requests', async () => {
             await expect(
-                noAuthClient.profile.acceptConnectionRequest({ handle: 'userB' })
+                noAuthClient.profile.acceptConnectionRequest({ handle: 'userb' })
             ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
             await expect(
-                userA.clients.partialAuth.profile.acceptConnectionRequest({ handle: 'userB' })
+                userA.clients.partialAuth.profile.acceptConnectionRequest({ handle: 'userb' })
             ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
         });
 
         it('allows users to accept connection requests', async () => {
             await expect(
-                userA.clients.fullAuth.profile.acceptConnectionRequest({ handle: 'userB' })
+                userA.clients.fullAuth.profile.acceptConnectionRequest({ handle: 'userb' })
             ).resolves.not.toThrow();
         });
 
         it('errors when accepting a request that does not exist', async () => {
             await expect(
-                userB.clients.fullAuth.profile.acceptConnectionRequest({ handle: 'userA' })
+                userB.clients.fullAuth.profile.acceptConnectionRequest({ handle: 'usera' })
             ).rejects.toMatchObject({ code: 'NOT_FOUND' });
         });
 
@@ -534,7 +554,7 @@ describe('Profiles', () => {
             expect(pendingFromUserA).toHaveLength(1);
             expect(pendingFromUserB).toHaveLength(1);
 
-            await userA.clients.fullAuth.profile.acceptConnectionRequest({ handle: 'userB' });
+            await userA.clients.fullAuth.profile.acceptConnectionRequest({ handle: 'userb' });
 
             const newPendingFromUserA = await userA.clients.fullAuth.profile.connectionRequests();
             const newPendingFromUserB = await userB.clients.fullAuth.profile.pendingConnections();
@@ -547,8 +567,8 @@ describe('Profiles', () => {
     describe('connections', () => {
         beforeEach(async () => {
             await Profile.delete({ detach: true, where: {} });
-            await userA.clients.fullAuth.profile.createProfile({ handle: 'userA' });
-            await userB.clients.fullAuth.profile.createProfile({ handle: 'userB' });
+            await userA.clients.fullAuth.profile.createProfile({ handle: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ handle: 'userb' });
         });
 
         afterAll(async () => {
@@ -571,21 +591,21 @@ describe('Profiles', () => {
 
             expect(noConnections).toHaveLength(0);
 
-            await userA.clients.fullAuth.profile.connectWith({ handle: 'userB' });
-            await userB.clients.fullAuth.profile.acceptConnectionRequest({ handle: 'userA' });
+            await userA.clients.fullAuth.profile.connectWith({ handle: 'userb' });
+            await userB.clients.fullAuth.profile.acceptConnectionRequest({ handle: 'usera' });
 
             const oneConnection = await userA.clients.fullAuth.profile.connections();
 
             expect(oneConnection).toHaveLength(1);
-            expect(oneConnection[0]!.handle).toEqual('userB');
+            expect(oneConnection[0]!.handle).toEqual('userb');
         });
     });
 
     describe('pendingConnections', () => {
         beforeEach(async () => {
             await Profile.delete({ detach: true, where: {} });
-            await userA.clients.fullAuth.profile.createProfile({ handle: 'userA' });
-            await userB.clients.fullAuth.profile.createProfile({ handle: 'userB' });
+            await userA.clients.fullAuth.profile.createProfile({ handle: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ handle: 'userb' });
         });
 
         afterAll(async () => {
@@ -612,20 +632,20 @@ describe('Profiles', () => {
 
             expect(noPendingConnections).toHaveLength(0);
 
-            await userA.clients.fullAuth.profile.connectWith({ handle: 'userB' });
+            await userA.clients.fullAuth.profile.connectWith({ handle: 'userb' });
 
             const onePendingConnection = await userA.clients.fullAuth.profile.pendingConnections();
 
             expect(onePendingConnection).toHaveLength(1);
-            expect(onePendingConnection[0]!.handle).toEqual('userB');
+            expect(onePendingConnection[0]!.handle).toEqual('userb');
         });
     });
 
     describe('connectionRequests', () => {
         beforeEach(async () => {
             await Profile.delete({ detach: true, where: {} });
-            await userA.clients.fullAuth.profile.createProfile({ handle: 'userA' });
-            await userB.clients.fullAuth.profile.createProfile({ handle: 'userB' });
+            await userA.clients.fullAuth.profile.createProfile({ handle: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ handle: 'userb' });
         });
 
         afterAll(async () => {
@@ -652,19 +672,19 @@ describe('Profiles', () => {
 
             expect(noConnectionRequests).toHaveLength(0);
 
-            await userB.clients.fullAuth.profile.connectWith({ handle: 'userA' });
+            await userB.clients.fullAuth.profile.connectWith({ handle: 'usera' });
 
             const oneConnectionRequest = await userA.clients.fullAuth.profile.connectionRequests();
 
             expect(oneConnectionRequest).toHaveLength(1);
-            expect(oneConnectionRequest[0]!.handle).toEqual('userB');
+            expect(oneConnectionRequest[0]!.handle).toEqual('userb');
         });
     });
 
     describe('registerSigningAuthority', () => {
         beforeEach(async () => {
             await Profile.delete({ detach: true, where: {} });
-            await userA.clients.fullAuth.profile.createProfile({ handle: 'userA' });
+            await userA.clients.fullAuth.profile.createProfile({ handle: 'usera' });
         });
 
         afterAll(async () => {

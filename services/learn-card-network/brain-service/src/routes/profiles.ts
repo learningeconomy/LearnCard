@@ -13,7 +13,13 @@ import {
 } from '@helpers/connection.helpers';
 import { getDidWeb, updateDidForProfile } from '@helpers/did.helpers';
 
-import { checkIfProfileExists, searchProfiles } from '@accesslayer/profile/read';
+import {
+    checkIfProfileExists,
+    getProfileByDid,
+    getProfileByEmail,
+    getProfileByHandle,
+    searchProfiles,
+} from '@accesslayer/profile/read';
 
 import { t, openRoute, didRoute, didAndChallengeRoute } from '@routes';
 
@@ -66,7 +72,7 @@ export const profilesRouter = t.router({
         .input(z.void())
         .output(LCNProfileValidator)
         .query(async ({ ctx }) => {
-            const profile = await Profile.findOne({ where: { did: ctx.user.did } });
+            const profile = await getProfileByDid(ctx.user.did);
 
             if (!profile) {
                 throw new TRPCError({
@@ -92,7 +98,7 @@ export const profilesRouter = t.router({
         .input(z.object({ handle: z.string() }))
         .output(LCNProfileValidator.optional())
         .query(async ({ ctx, input }) => {
-            const profile = await Profile.findOne({ where: { handle: input.handle } });
+            const profile = await getProfileByHandle(input.handle);
 
             return profile ? updateDidForProfile(ctx.domain, profile) : undefined;
         }),
@@ -132,7 +138,7 @@ export const profilesRouter = t.router({
         .output(z.boolean())
         .mutation(async ({ input, ctx }) => {
             const did = ctx.user.did;
-            const profile = await Profile.findOne({ where: { did } });
+            const profile = await getProfileByDid(did);
 
             const { handle, displayName, image, email } = input;
 
@@ -144,7 +150,7 @@ export const profilesRouter = t.router({
             }
 
             if (handle) {
-                const profileExists = await checkIfProfileExists({ handle });
+                const profileExists = await getProfileByHandle(handle);
 
                 if (profileExists) {
                     throw new TRPCError({
@@ -152,11 +158,11 @@ export const profilesRouter = t.router({
                         message: 'Handle already in use!',
                     });
                 }
-                profile.handle = handle;
+                profile.handle = handle.toLowerCase();
             }
 
             if (email) {
-                const profileExists = await Profile.findOne({ where: { email } });
+                const profileExists = await getProfileByEmail(email);
 
                 if (profileExists) {
                     throw new TRPCError({
@@ -191,7 +197,7 @@ export const profilesRouter = t.router({
         .output(z.boolean())
         .mutation(async ({ ctx }) => {
             const did = ctx.user.did;
-            const profile = await Profile.findOne({ where: { did } });
+            const profile = await getProfileByDid(did);
 
             if (!profile) {
                 throw new TRPCError({
@@ -223,8 +229,8 @@ export const profilesRouter = t.router({
             const did = ctx.user.did;
             const { handle } = input;
 
-            const profile = await Profile.findOne({ where: { did } });
-            const targetProfile = await Profile.findOne({ where: { handle } });
+            const profile = await getProfileByDid(did);
+            const targetProfile = await getProfileByHandle(handle);
 
             if (!profile) {
                 throw new TRPCError({
@@ -261,8 +267,8 @@ export const profilesRouter = t.router({
             const did = ctx.user.did;
             const { handle } = input;
 
-            const profile = await Profile.findOne({ where: { did } });
-            const targetProfile = await Profile.findOne({ where: { handle } });
+            const profile = await getProfileByDid(did);
+            const targetProfile = await getProfileByHandle(handle);
 
             if (!profile) {
                 throw new TRPCError({
@@ -297,7 +303,7 @@ export const profilesRouter = t.router({
         .query(async ({ ctx }) => {
             const did = ctx.user.did;
 
-            const profile = await Profile.findOne({ where: { did } });
+            const profile = await getProfileByDid(did);
 
             if (!profile) {
                 throw new TRPCError({
@@ -327,7 +333,7 @@ export const profilesRouter = t.router({
         .query(async ({ ctx }) => {
             const did = ctx.user.did;
 
-            const profile = await Profile.findOne({ where: { did } });
+            const profile = await getProfileByDid(did);
 
             if (!profile) {
                 throw new TRPCError({
@@ -357,7 +363,7 @@ export const profilesRouter = t.router({
         .query(async ({ ctx }) => {
             const did = ctx.user.did;
 
-            const profile = await Profile.findOne({ where: { did } });
+            const profile = await getProfileByDid(did);
 
             if (!profile) {
                 throw new TRPCError({

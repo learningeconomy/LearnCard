@@ -7,8 +7,6 @@ import {
     SentCredentialInfoValidator,
 } from '@learncard/types';
 
-import { Profile } from '@models';
-
 import {
     acceptCredential,
     sendCredential,
@@ -25,6 +23,7 @@ import {
 } from '@accesslayer/credential/read';
 
 import { t, didAndChallengeRoute } from '@routes';
+import { getProfileByDid, getProfileByHandle } from '@accesslayer/profile/read';
 
 export const credentialsRouter = t.router({
     sendCredential: didAndChallengeRoute
@@ -44,8 +43,8 @@ export const credentialsRouter = t.router({
             const did = ctx.user.did;
             const { handle, credential } = input;
 
-            const profile = await Profile.findOne({ where: { did } });
-            const targetProfile = await Profile.findOne({ where: { handle } });
+            const profile = await getProfileByDid(did);
+            const targetProfile = await getProfileByHandle(handle);
 
             if (!profile) {
                 throw new TRPCError({
@@ -81,8 +80,8 @@ export const credentialsRouter = t.router({
             const did = ctx.user.did;
             const { handle, uri } = input;
 
-            const profile = await Profile.findOne({ where: { did } });
-            const targetProfile = await Profile.findOne({ where: { handle } });
+            const profile = await getProfileByDid(did);
+            const targetProfile = await getProfileByHandle(handle);
 
             if (!profile) {
                 throw new TRPCError({
@@ -116,7 +115,7 @@ export const credentialsRouter = t.router({
         .input(z.object({ limit: z.number().int().positive().lt(100).default(25) }).default({}))
         .output(SentCredentialInfoValidator.array())
         .query(async ({ input: { limit }, ctx }) => {
-            const profile = await Profile.findOne({ where: { did: ctx.user.did } });
+            const profile = await getProfileByDid(ctx.user.did);
 
             if (!profile) {
                 throw new TRPCError({
@@ -143,7 +142,7 @@ export const credentialsRouter = t.router({
         .input(z.object({ limit: z.number().int().positive().lt(100).default(25) }).default({}))
         .output(SentCredentialInfoValidator.array())
         .query(async ({ input: { limit }, ctx }) => {
-            const profile = await Profile.findOne({ where: { did: ctx.user.did } });
+            const profile = await getProfileByDid(ctx.user.did);
 
             if (!profile) {
                 throw new TRPCError({
@@ -170,7 +169,7 @@ export const credentialsRouter = t.router({
         .input(z.object({ limit: z.number().int().positive().lt(100).default(25) }).default({}))
         .output(SentCredentialInfoValidator.array())
         .query(async ({ input: { limit }, ctx }) => {
-            const profile = await Profile.findOne({ where: { did: ctx.user.did } });
+            const profile = await getProfileByDid(ctx.user.did);
 
             if (!profile) {
                 throw new TRPCError({

@@ -1,6 +1,30 @@
 import { QueryBuilder, BindParam, QueryRunner } from 'neogma';
-import { Profile } from '@models';
+import { Profile, ProfileInstance } from '@models';
 import { ProfileType } from 'types/profile';
+
+export const getProfileByHandle = async (handle: string): Promise<ProfileInstance | null> => {
+    return Profile.findOne({ where: { handle: handle.toLowerCase() } });
+};
+
+export const getProfilesByHandle = async (handle: string): Promise<ProfileInstance[]> => {
+    return Profile.findMany({ where: { handle: handle.toLowerCase() } });
+};
+
+export const getProfileByDid = async (did: string): Promise<ProfileInstance | null> => {
+    return Profile.findOne({ where: { did } });
+};
+
+export const getProfilesByDid = async (did: string): Promise<ProfileInstance[]> => {
+    return Profile.findMany({ where: { did } });
+};
+
+export const getProfileByEmail = async (email: string): Promise<ProfileInstance | null> => {
+    return Profile.findOne({ where: { email } });
+};
+
+export const getProfilesByEmail = async (email: string): Promise<ProfileInstance[]> => {
+    return Profile.findMany({ where: { email } });
+};
 
 export const checkIfProfileExists = async ({
     did,
@@ -9,9 +33,9 @@ export const checkIfProfileExists = async ({
 }: Partial<ProfileType>): Promise<boolean> => {
     if (!did && !handle && !email) return false;
 
-    if (did && (await Profile.findOne({ where: { did } }))) return true;
-    if (handle && (await Profile.findOne({ where: { handle } }))) return true;
-    if (email && (await Profile.findOne({ where: { email } }))) return true;
+    if (did && (await getProfileByDid(did))) return true;
+    if (handle && (await getProfileByHandle(handle))) return true;
+    if (email && (await getProfileByEmail(email))) return true;
 
     return false;
 };
@@ -20,9 +44,11 @@ export const searchProfiles = async (
     searchInput: string,
     limit: number
 ): Promise<ProfileType[]> => {
-    const result = await new QueryBuilder(new BindParam({ input: `(?i).*${searchInput}.*` }))
+    const result = await new QueryBuilder(
+        new BindParam({ input: searchInput.toLowerCase(), inputRegex: `(?i).*${searchInput}.*` })
+    )
         .match({ identifier: 'profile', model: Profile })
-        .where('profile.handle =~ $input OR profile.displayName =~ $input')
+        .where('profile.handle CONTAINS $input OR profile.displayName =~ $inputRegex')
         .return('profile')
         .limit(limit)
         .run();

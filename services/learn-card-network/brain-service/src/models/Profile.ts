@@ -46,4 +46,8 @@ export const Profile = ModelFactory<LCNProfile, ProfileRelationships>(
     neogma
 );
 
+Profile.beforeCreate = profile => {
+    profile.handle = profile.handle.toLowerCase();
+};
+
 export default Profile;
