@@ -28,9 +28,9 @@ custom:
       certificateName: network.learncard.com
 
     # References to 'dev' stage  
-    # dev:
-    #   domainName: testnet-network.learncard.com
-    #   certificateName: testnet-network.learncard.com
+    dev:
+      domainName: testnet-network.learncard.com
+      certificateName: testnet-network.learncard.com
 
   # Amazon Certificate Manager
   customCertificate:
