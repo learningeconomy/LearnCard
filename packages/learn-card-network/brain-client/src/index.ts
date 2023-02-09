@@ -25,11 +25,7 @@ export const getClient = async (
 
     const challengeRequester = createTRPCProxyClient<AppRouter>({
         links: [
-            httpBatchLink({
-                url,
-                headers: { Authorization: `Bearer ${await didAuthFunction()}` },
-                fetch: (url, options) => fetch(url, { ...options, credentials: 'include' }),
-            }),
+            httpBatchLink({ url, headers: { Authorization: `Bearer ${await didAuthFunction()}` } }),
         ],
     }) as OverriddenClient;
 
@@ -53,7 +49,6 @@ export const getClient = async (
 
                     return { Authorization: `Bearer ${await didAuthFunction(challenges.pop())}` };
                 },
-                fetch: (url, options) => fetch(url, { ...options, credentials: 'include' }),
             }),
         ],
     }) as OverriddenClient;
