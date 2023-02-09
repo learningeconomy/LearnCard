@@ -59,6 +59,10 @@ custom:
     # Enable plugin to autorun create_domain/delete_domain as part of sls deploy/remove
     autoDomain: true
 
+    basePath: ''
+    endpointType: regional
+    apiType: http
+
 provider:
   name: aws
   runtime: nodejs16.x
