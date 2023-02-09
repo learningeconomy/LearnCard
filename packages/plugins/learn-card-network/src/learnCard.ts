@@ -3,9 +3,9 @@ import { getLearnCardNetworkPlugin } from './plugin';
 import { LearnCardNetworkPlugin } from './types';
 
 export const initNetworkLearnCard = async (
-    _config: LearnCardFromSeed['args'] & { network: string }
+    _config: LearnCardFromSeed['args'] & { network?: string }
 ): Promise<AddPlugin<LearnCardFromSeed['returnValue'], LearnCardNetworkPlugin>> => {
-    const { network, seed, ...config } = _config;
+    const { network = 'https://network.learncard.com/trpc', seed, ...config } = _config;
 
     const baseLearnCard = await initLearnCard({ seed, ...config });
 
