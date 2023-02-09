@@ -14,4 +14,16 @@ export const openApiHandler = createOpenApiAwsLambdaHandler({
     createContext,
 });
 
-export const trpcHandler = awsLambdaRequestHandler({ router: appRouter, createContext });
+export const trpcHandler = awsLambdaRequestHandler({
+    router: appRouter,
+    createContext,
+    responseMeta: () => {
+        return {
+            headers: {
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': '*',
+                'Access-Control-Allow-Headers': 'authorization',
+            },
+        };
+    },
+});
