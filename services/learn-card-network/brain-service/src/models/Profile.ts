@@ -27,6 +27,7 @@ export const Profile = ModelFactory<LCNProfile, ProfileRelationships>(
             did: { type: 'string', required: true, uniqueItems: true },
             email: { type: 'string', required: false, uniqueItems: true },
             image: { type: 'string', required: false },
+            isServiceProfile: { type: 'boolean', required: false },
         },
         relationships: {
             connectionRequested: { model: 'self', direction: 'out', name: 'CONNECTION_REQUESTED' },

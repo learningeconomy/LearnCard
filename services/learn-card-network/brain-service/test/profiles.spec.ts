@@ -48,8 +48,6 @@ describe('Profiles', () => {
 
         it('should not allow creating a profile with an email that has already been taken', async () => {
             await expect(
-                // userA.clients.fullAuth.createProfile({ handle: 'usera', email: 'userA@test.com' })
-
                 userA.clients.fullAuth.profile.createProfile({
                     handle: 'usera',
                     email: 'userA@test.com',
@@ -100,6 +98,119 @@ describe('Profiles', () => {
             const userAResult = await userA.clients.fullAuth.profile.getProfile();
 
             expect(userAResult?.handle).toEqual('usera');
+        });
+
+        it('should not create a service profile', async () => {
+            await userA.clients.fullAuth.profile.createProfile({
+                handle: 'usera',
+            });
+
+            const userAResult = await userA.clients.fullAuth.profile.getProfile();
+
+            expect(userAResult?.isServiceProfile).toBeFalsy();
+        });
+    });
+
+    describe('createServiceProfile', () => {
+        beforeEach(async () => {
+            await Profile.delete({ detach: true, where: {} });
+        });
+
+        afterAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+        });
+
+        it('should not allow you to create a profile without full auth', async () => {
+            await expect(
+                noAuthClient.profile.createServiceProfile({ handle: 'usera' })
+            ).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+            await expect(
+                userA.clients.partialAuth.profile.createServiceProfile({ handle: 'usera' })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        });
+
+        it('should allow you to create a profile', async () => {
+            await expect(
+                userA.clients.fullAuth.profile.createServiceProfile({ handle: 'usera' })
+            ).resolves.not.toThrow();
+        });
+
+        it('should not allow creating a profile with a handle that has already been taken', async () => {
+            await expect(
+                userA.clients.fullAuth.profile.createServiceProfile({ handle: 'usera' })
+            ).resolves.not.toThrow();
+            await expect(
+                userB.clients.fullAuth.profile.createServiceProfile({ handle: 'usera' })
+            ).rejects.toThrow();
+        });
+
+        it('should not allow creating a profile with an email that has already been taken', async () => {
+            await expect(
+                userA.clients.fullAuth.profile.createServiceProfile({
+                    handle: 'usera',
+                    email: 'userA@test.com',
+                })
+            ).resolves.not.toThrow();
+            await expect(
+                userB.clients.fullAuth.profile.createServiceProfile({
+                    handle: 'userb',
+                    email: 'userA@test.com',
+                })
+            ).rejects.toThrow();
+        });
+
+        it('should return the newly created did:web address', async () => {
+            expect(
+                await userA.clients.fullAuth.profile.createServiceProfile({ handle: 'usera' })
+            ).toEqual('did:web:localhost%3A3000:users:usera');
+        });
+
+        it('should allow setting your display name', async () => {
+            await userA.clients.fullAuth.profile.createServiceProfile({
+                handle: 'usera',
+                displayName: 'A',
+            });
+            await expect(
+                userB.clients.fullAuth.profile.createServiceProfile({
+                    handle: 'userb',
+                    displayName: 'A',
+                })
+            ).resolves.not.toThrow();
+        });
+
+        it('should allow non-unique display names', async () => {
+            await userA.clients.fullAuth.profile.createServiceProfile({
+                handle: 'usera',
+                displayName: 'A',
+            });
+
+            const userAResult = await userB.clients.fullAuth.profile.getOtherProfile({
+                handle: 'usera',
+            });
+
+            expect(userAResult?.displayName).toEqual('A');
+        });
+
+        it('should force handles to be lowercase', async () => {
+            await userA.clients.fullAuth.profile.createServiceProfile({
+                handle: 'userA',
+            });
+
+            const userAResult = await userA.clients.fullAuth.profile.getProfile();
+
+            expect(userAResult?.handle).toEqual('usera');
+        });
+
+        it('should create a service profile', async () => {
+            await userA.clients.fullAuth.profile.createServiceProfile({
+                handle: 'usera',
+            });
+
+            const userAResult = await userA.clients.fullAuth.profile.getProfile();
+
+            expect(userAResult?.isServiceProfile).toBeTruthy();
         });
     });
 

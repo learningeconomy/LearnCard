@@ -11,8 +11,13 @@ export type LearnCardNetworkPluginDependentMethods = {
 
 /** @group LearnCardNetwork Plugin */
 export type LearnCardNetworkPluginMethods = {
-    createProfile: (profile: Omit<LCNProfile, 'did'>) => Promise<string>;
-    updateProfile: (profile: Partial<Omit<LCNProfile, 'did'>>) => Promise<boolean>;
+    createProfile: (profile: Omit<LCNProfile, 'did' | 'isServiceProfile'>) => Promise<string>;
+    createServiceProfile: (
+        profile: Omit<LCNProfile, 'did' | 'isServiceProfile'>
+    ) => Promise<string>;
+    updateProfile: (
+        profile: Partial<Omit<LCNProfile, 'did' | 'isServiceProfile'>>
+    ) => Promise<boolean>;
     deleteProfile: () => Promise<boolean>;
     getProfile: (handle?: string) => Promise<LCNProfile | undefined>;
     searchProfiles: (handle?: string, limit?: number) => Promise<LCNProfile[]>;

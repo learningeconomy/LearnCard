@@ -35,7 +35,44 @@ export const profilesRouter = t.router({
                 description: 'Creates a profile for a user',
             },
         })
-        .input(LCNProfileValidator.omit({ did: true }))
+        .input(LCNProfileValidator.omit({ did: true, isServiceProfile: true }))
+        .output(z.string())
+        .mutation(async ({ input, ctx }) => {
+            const profileExists = await checkIfProfileExists({
+                ...input,
+                isServiceProfile: false,
+                did: ctx.user.did,
+            });
+
+            if (profileExists) {
+                throw new TRPCError({
+                    code: 'CONFLICT',
+                    message: 'Profile already exists!',
+                });
+            }
+
+            const profile = await Profile.createOne({ ...input, did: ctx.user.did });
+
+            if (profile) return getDidWeb(ctx.domain, profile.handle);
+
+            throw new TRPCError({
+                code: 'INTERNAL_SERVER_ERROR',
+                message: 'An unexpected error occured, please try again later.',
+            });
+        }),
+
+    createServiceProfile: didAndChallengeRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/profile/create-service',
+                tags: ['Profiles'],
+                summary: 'Create a service profile',
+                description: 'Creates a service profile',
+            },
+        })
+        .input(LCNProfileValidator.omit({ did: true, isServiceProfile: true }))
         .output(z.string())
         .mutation(async ({ input, ctx }) => {
             const profileExists = await checkIfProfileExists({ ...input, did: ctx.user.did });
@@ -47,7 +84,11 @@ export const profilesRouter = t.router({
                 });
             }
 
-            const profile = await Profile.createOne({ ...input, did: ctx.user.did });
+            const profile = await Profile.createOne({
+                ...input,
+                isServiceProfile: true,
+                did: ctx.user.did,
+            });
 
             if (profile) return getDidWeb(ctx.domain, profile.handle);
 
@@ -134,7 +175,7 @@ export const profilesRouter = t.router({
                 description: 'This route updates the profile of the current user',
             },
         })
-        .input(LCNProfileValidator.omit({ did: true }).partial())
+        .input(LCNProfileValidator.omit({ did: true, isServiceProfile: true }).partial())
         .output(z.boolean())
         .mutation(async ({ input, ctx }) => {
             const did = ctx.user.did;

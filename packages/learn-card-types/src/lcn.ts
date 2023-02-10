@@ -6,6 +6,7 @@ export const LCNProfileValidator = z.object({
     did: z.string(),
     email: z.string().optional(),
     image: z.string().optional(),
+    isServiceProfile: z.boolean().default(false).optional(),
 });
 export type LCNProfile = z.infer<typeof LCNProfileValidator>;
 

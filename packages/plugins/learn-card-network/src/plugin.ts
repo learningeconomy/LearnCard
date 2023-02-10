@@ -92,6 +92,16 @@ export const getLearnCardNetworkPlugin = async (
 
                 return newDid;
             },
+            createServiceProfile: async (_learnCard, profile) => {
+                if (userData) throw new Error('Account already exists!');
+
+                const newDid = await client.profile.createServiceProfile.mutate(profile);
+
+                userData = await client.profile.getProfile.query();
+                did = newDid;
+
+                return newDid;
+            },
             updateProfile: async (_learnCard, profile) => {
                 if (!userData) throw new Error('Please make an account first!');
 
