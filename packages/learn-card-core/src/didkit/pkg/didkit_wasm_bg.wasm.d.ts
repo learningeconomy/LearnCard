@@ -9,6 +9,7 @@ export function generateSecp256k1Key(a: number): void;
 export function generateSecp256k1KeyFromBytes(a: number, b: number, c: number): void;
 export function keyToDID(a: number, b: number, c: number, d: number, e: number): void;
 export function keyToVerificationMethod(a: number, b: number, c: number, d: number): number;
+export function didToVerificationMethod(a: number, b: number): number;
 export function issueCredential(a: number, b: number, c: number, d: number, e: number, f: number): number;
 export function prepareIssueCredential(a: number, b: number, c: number, d: number, e: number, f: number): number;
 export function completeIssueCredential(a: number, b: number, c: number, d: number, e: number, f: number): number;

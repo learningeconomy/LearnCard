@@ -41,6 +41,11 @@ export function keyToDID(method_pattern: string, jwk: string): string;
 */
 export function keyToVerificationMethod(method_pattern: string, jwk: string): Promise<any>;
 /**
+* @param {string} did
+* @returns {Promise<any>}
+*/
+export function didToVerificationMethod(did: string): Promise<any>;
+/**
 * @param {string} credential
 * @param {string} proof_options
 * @param {string} key
@@ -186,6 +191,7 @@ export interface InitOutput {
   readonly generateSecp256k1KeyFromBytes: (a: number, b: number, c: number) => void;
   readonly keyToDID: (a: number, b: number, c: number, d: number, e: number) => void;
   readonly keyToVerificationMethod: (a: number, b: number, c: number, d: number) => number;
+  readonly didToVerificationMethod: (a: number, b: number) => number;
   readonly issueCredential: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
   readonly prepareIssueCredential: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
   readonly completeIssueCredential: (a: number, b: number, c: number, d: number, e: number, f: number) => number;

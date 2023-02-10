@@ -391,6 +391,17 @@ export function keyToVerificationMethod(method_pattern, jwk) {
 }
 
 /**
+* @param {string} did
+* @returns {Promise<any>}
+*/
+export function didToVerificationMethod(did) {
+    const ptr0 = passStringToWasm0(did, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ret = wasm.didToVerificationMethod(ptr0, len0);
+    return takeObject(ret);
+}
+
+/**
 * @param {string} credential
 * @param {string} proof_options
 * @param {string} key
@@ -720,7 +731,7 @@ function handleError(f, args) {
 function getArrayU8FromWasm0(ptr, len) {
     return getUint8Memory0().subarray(ptr / 1, ptr / 1 + len);
 }
-function __wbg_adapter_131(arg0, arg1, arg2, arg3) {
+function __wbg_adapter_132(arg0, arg1, arg2, arg3) {
     wasm.wasm_bindgen__convert__closures__invoke2_mut__h63ffd509f6690aab(arg0, arg1, addHeapObject(arg2), addHeapObject(arg3));
 }
 
@@ -980,7 +991,7 @@ function getImports() {
                 const a = state0.a;
                 state0.a = 0;
                 try {
-                    return __wbg_adapter_131(a, state0.b, arg0, arg1);
+                    return __wbg_adapter_132(a, state0.b, arg0, arg1);
                 } finally {
                     state0.a = a;
                 }
@@ -1056,8 +1067,8 @@ function getImports() {
         const ret = wasm.memory;
         return addHeapObject(ret);
     };
-    imports.wbg.__wbindgen_closure_wrapper10779 = function(arg0, arg1, arg2) {
-        const ret = makeMutClosure(arg0, arg1, 3156, __wbg_adapter_26);
+    imports.wbg.__wbindgen_closure_wrapper10798 = function(arg0, arg1, arg2) {
+        const ret = makeMutClosure(arg0, arg1, 3163, __wbg_adapter_26);
         return addHeapObject(ret);
     };
 
