@@ -7,6 +7,7 @@ export type VCPluginDependentMethods = {
     getSubjectDid: (type: 'key') => string;
     getSubjectKeypair: () => JWK;
     keyToVerificationMethod: (type: string, keypair: JWK) => Promise<string>;
+    didToVerificationMethod: (did: string) => Promise<string>;
     issueCredential: (credential: UnsignedVC, options: ProofOptions, keypair: JWK) => Promise<VC>;
     verifyCredential: (credential: VC, options?: ProofOptions) => Promise<VerificationCheck>;
     issuePresentation: (

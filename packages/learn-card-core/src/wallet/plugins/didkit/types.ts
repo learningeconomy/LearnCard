@@ -46,6 +46,7 @@ export type DidkitPluginMethods = {
     generateSecp256k1KeyFromBytes: (bytes: Uint8Array) => JWK;
     keyToDid: (type: DidMethod, keypair: JWK) => string;
     keyToVerificationMethod: (type: string, keypair: JWK) => Promise<string>;
+    didToVerificationMethod: (did: string) => Promise<string>;
     issueCredential: (credential: UnsignedVC, options: ProofOptions, keypair: JWK) => Promise<VC>;
     verifyCredential: (credential: VC, options?: ProofOptions) => Promise<VerificationCheck>;
     issuePresentation: (

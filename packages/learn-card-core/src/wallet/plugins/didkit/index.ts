@@ -4,6 +4,7 @@ import init, {
     generateSecp256k1KeyFromBytes,
     keyToDID,
     keyToVerificationMethod,
+    didToVerificationMethod,
     issueCredential,
     verifyCredential,
     issuePresentation,
@@ -55,6 +56,8 @@ export const getDidKitPlugin = async (
 
             keyToVerificationMethod: async (_learnCard, type, keypair) =>
                 keyToVerificationMethod(type, JSON.stringify(keypair)),
+
+            didToVerificationMethod: async (_learnCard, did) => didToVerificationMethod(did),
 
             issueCredential: async (_learnCard, credential, options, keypair) =>
                 JSON.parse(
