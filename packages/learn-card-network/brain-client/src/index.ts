@@ -10,9 +10,9 @@ type Inputs = inferRouterInputs<AppRouter>;
 type Client = CreateTRPCProxyClient<AppRouter>;
 
 type OverriddenClient = Client & {
-    credential: Client['credential'] & {
-        getCredential: {
-            query: (args: Inputs['credential']['getCredential']) => Promise<VC | UnsignedVC | VP>;
+    storage: Client['storage'] & {
+        resolve: {
+            query: (args: Inputs['storage']['resolve']) => Promise<VC | UnsignedVC | VP>;
         };
     };
 };

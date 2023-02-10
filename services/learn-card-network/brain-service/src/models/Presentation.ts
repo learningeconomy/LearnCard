@@ -4,8 +4,8 @@ import { neogma } from '@instance';
 
 import { Profile, ProfileInstance } from './Profile';
 
-export type CredentialRelationships = {
-    credentialReceived: ModelRelatedNodesI<
+export type PresentationRelationships = {
+    presentationReceived: ModelRelatedNodesI<
         { createOne: typeof Profile['createOne'] },
         ProfileInstance,
         { from: string; date: string },
@@ -13,21 +13,25 @@ export type CredentialRelationships = {
     >;
 };
 
-export type CredentialInstance = NeogmaInstance<
-    { id: string; credential: string },
-    CredentialRelationships
+export type PresentationInstance = NeogmaInstance<
+    { id: string; presentation: string },
+    PresentationRelationships
 >;
 
-export const Credential = ModelFactory<{ id: string; credential: string }, CredentialRelationships>(
+export const Presentation = ModelFactory<
+    { id: string; presentation: string },
+    PresentationRelationships
+>(
     {
-        label: 'Credential',
+        label: 'Presentation',
         schema: {
             id: { type: 'string', required: true, uniqueItems: true },
-            credential: { type: 'string', required: true },
+            presentation: { type: 'string', required: true },
         },
+        relationships: {},
         primaryKeyField: 'id',
     },
     neogma
 );
 
-export default Credential;
+export default Presentation;

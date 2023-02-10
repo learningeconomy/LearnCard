@@ -1,20 +1,8 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
-import {
-    UnsignedVCValidator,
-    VCValidator,
-    VPValidator,
-    SentCredentialInfoValidator,
-} from '@learncard/types';
+import { UnsignedVCValidator, VCValidator, SentCredentialInfoValidator } from '@learncard/types';
 
-import {
-    acceptCredential,
-    sendCredential,
-    storeCredential,
-    getCredentialUri,
-    getCredentialById,
-    getIdFromCredentialUri,
-} from '@helpers/credential.helpers';
+import { acceptCredential, sendCredential } from '@helpers/credential.helpers';
 
 import {
     getIncomingCredentialsForProfile,
@@ -179,59 +167,6 @@ export const credentialsRouter = t.router({
             }
 
             return getIncomingCredentialsForProfile(ctx.domain, profile, limit);
-        }),
-
-    storeCredential: didAndChallengeRoute
-        .meta({
-            openapi: {
-                protect: true,
-                method: 'POST',
-                path: '/credential/store',
-                tags: ['Credentials'],
-                summary: 'Store a Credential',
-                description:
-                    'This endpoint stores a credential, returning a uri that can be used to resolve it',
-            },
-        })
-        .input(z.object({ credential: UnsignedVCValidator.or(VCValidator).or(VPValidator) }))
-        .output(z.string())
-        .mutation(async ({ ctx, input }) => {
-            const { credential } = input;
-
-            const credentialInstance = await storeCredential(credential);
-
-            return getCredentialUri(credentialInstance.id, ctx.domain);
-        }),
-
-    getCredential: didAndChallengeRoute
-        .meta({
-            openapi: {
-                protect: true,
-                method: 'GET',
-                path: '/credential/{uri}',
-                tags: ['Credentials'],
-                summary: 'Store a Credential',
-                description:
-                    'This endpoint stores a credential, returning a uri that can be used to resolve it',
-            },
-        })
-        .input(z.object({ uri: z.string() }))
-        .output(UnsignedVCValidator.or(VCValidator).or(VPValidator))
-        .query(async ({ input }) => {
-            const { uri } = input;
-
-            const id = getIdFromCredentialUri(uri);
-
-            const credentialInstance = await getCredentialById(id);
-
-            if (!credentialInstance) {
-                throw new TRPCError({
-                    code: 'NOT_FOUND',
-                    message: 'Credential does not exist',
-                });
-            }
-
-            return JSON.parse(credentialInstance.credential);
         }),
 });
 export type CredentialsRouter = typeof credentialsRouter;

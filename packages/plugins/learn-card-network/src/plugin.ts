@@ -60,7 +60,7 @@ export const getLearnCardNetworkPlugin = async (
                 if (lc !== 'lc' || method !== 'network') return undefined;
 
                 try {
-                    const vc = await client.credential.getCredential.query({ uri: vcUri });
+                    const vc = await client.storage.resolve.query({ uri: vcUri });
 
                     return await VCValidator.or(VPValidator).parseAsync(vc);
                 } catch (error) {
@@ -73,7 +73,7 @@ export const getLearnCardNetworkPlugin = async (
             upload: async (_learnCard, credential) => {
                 _learnCard.debug?.("learnCard.store['LearnCard Network'].upload");
 
-                return client.credential.storeCredential.mutate({ credential });
+                return client.storage.store.mutate({ item: credential });
             },
             /* uploadEncrypted: async (_learnCard, credential, params) => {
                 _learnCard.debug?.("learnCard.store['LearnCard Network'].upload");
