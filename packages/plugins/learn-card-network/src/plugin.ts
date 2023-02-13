@@ -141,6 +141,11 @@ export const getLearnCardNetworkPlugin = async (
 
                 return client.profile.connectWith.mutate({ handle });
             },
+            connectWithInvite: async (_learnCard, handle, challenge) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.profile.connectWithInvite.mutate({ handle, challenge });
+            },
             acceptConnectionRequest: async (_learnCard, handle) => {
                 if (!userData) throw new Error('Please make an account first!');
 
@@ -160,6 +165,11 @@ export const getLearnCardNetworkPlugin = async (
                 if (!userData) throw new Error('Please make an account first!');
 
                 return client.profile.connectionRequests.query();
+            },
+            generateInvite: async (_learnCard, challenge) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.profile.generateInvite.mutate({ challenge });
             },
             sendCredential: async (_learnCard, handle, vc) => {
                 if (!userData) throw new Error('Please make an account first!');
