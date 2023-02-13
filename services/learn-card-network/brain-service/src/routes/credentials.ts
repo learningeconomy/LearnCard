@@ -10,8 +10,8 @@ import {
     getSentCredentialsForProfile,
 } from '@accesslayer/credential/read';
 
-import { t, didAndChallengeRoute, profileRoute } from '@routes';
-import { getProfileByDid, getProfileByHandle } from '@accesslayer/profile/read';
+import { t, profileRoute } from '@routes';
+import { getProfileByHandle } from '@accesslayer/profile/read';
 
 export const credentialsRouter = t.router({
     sendCredential: profileRoute
