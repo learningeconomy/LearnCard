@@ -3,8 +3,6 @@ import { z } from 'zod';
 import { LCNProfileValidator } from '@learncard/types';
 import { v4 as uuid } from 'uuid';
 
-import { Profile } from '@models';
-
 import {
     connectProfiles,
     getConnectionRequests,
@@ -14,6 +12,8 @@ import {
 } from '@helpers/connection.helpers';
 import { getDidWeb, updateDidForProfile } from '@helpers/did.helpers';
 
+import { createProfile } from '@accesslayer/profile/create';
+import { deleteProfile } from '@accesslayer/profile/delete';
 import {
     checkIfProfileExists,
     getProfileByEmail,
@@ -53,7 +53,7 @@ export const profilesRouter = t.router({
                 });
             }
 
-            const profile = await Profile.createOne({ ...input, did: ctx.user.did });
+            const profile = await createProfile({ ...input, did: ctx.user.did });
 
             if (profile) return getDidWeb(ctx.domain, profile.handle);
 
@@ -86,7 +86,7 @@ export const profilesRouter = t.router({
                 });
             }
 
-            const profile = await Profile.createOne({
+            const profile = await createProfile({
                 ...input,
                 isServiceProfile: true,
                 did: ctx.user.did,
@@ -222,7 +222,7 @@ export const profilesRouter = t.router({
         .input(z.void())
         .output(z.boolean())
         .mutation(async ({ ctx }) => {
-            await ctx.user.profile.delete();
+            await deleteProfile(ctx.user.profile);
 
             return true;
         }),

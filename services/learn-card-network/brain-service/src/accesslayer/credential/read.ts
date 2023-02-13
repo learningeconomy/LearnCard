@@ -1,6 +1,7 @@
 import { QueryBuilder } from 'neogma';
 import {
     Credential,
+    CredentialInstance,
     CredentialRelationships,
     Profile,
     ProfileInstance,
@@ -13,6 +14,10 @@ import { getCredentialUri } from '@helpers/credential.helpers';
 import { CredentialType } from 'types/credential';
 import { ProfileType } from 'types/profile';
 import { convertQueryResultToPropertiesObjectArray } from '@helpers/neo4j.helpers';
+
+export const getCredentialById = async (id: string): Promise<CredentialInstance | null> => {
+    return Credential.findOne({ where: { id } });
+};
 
 export const getReceivedCredentialsForProfile = async (
     domain: string,

@@ -1,8 +1,14 @@
 import { TRPCError } from '@trpc/server';
 import { UnsignedVC, VC } from '@learncard/types';
-import { v4 as uuid } from 'uuid';
 
-import { ProfileInstance, Credential, CredentialInstance } from '@models';
+import { ProfileInstance } from '@models';
+
+import { storeCredential } from '@accesslayer/credential/create';
+import {
+    createReceivedCredentialRelationship,
+    createSentCredentialRelationship,
+} from '@accesslayer/credential/relationships/create';
+import { getCredentialSentToProfile } from '@accesslayer/credential/relationships/read';
 
 export const getCredentialUri = (id: string, domain: string): string =>
     `lc:network:${domain}/trpc:${id}`;
@@ -29,33 +35,17 @@ export const getIdFromCredentialUri = (uri: string): string => {
     return id;
 };
 
-/** Stores a Credential */
-export const storeCredential = async (credential: UnsignedVC | VC): Promise<CredentialInstance> => {
-    const id = uuid();
-
-    return Credential.createOne({ id, credential: JSON.stringify(credential) });
-};
-
-/** Gets a Credential */
-export const getCredentialById = async (id: string): Promise<CredentialInstance | null> => {
-    return Credential.findOne({ where: { id } });
-};
-
 export const sendCredential = async (
-    source: ProfileInstance,
-    target: ProfileInstance,
+    from: ProfileInstance,
+    to: ProfileInstance,
     credential: VC | UnsignedVC,
     domain: string
 ): Promise<string> => {
-    const instance = await storeCredential(credential);
+    const credentialInstance = await storeCredential(credential);
 
-    await source.relateTo({
-        alias: 'credentialSent',
-        where: { id: instance.id },
-        properties: { to: target.handle, date: new Date().toISOString() },
-    });
+    await createSentCredentialRelationship(from, to, credentialInstance);
 
-    return getCredentialUri(instance.id, domain);
+    return getCredentialUri(credentialInstance.id, domain);
 };
 
 /**
@@ -68,15 +58,7 @@ export const acceptCredential = async (
 ): Promise<boolean> => {
     const id = getIdFromCredentialUri(uri);
 
-    const pendingVc = (
-        await from.findRelationships({
-            alias: 'credentialSent',
-            where: {
-                relationship: { to: to.handle },
-                target: { id },
-            },
-        })
-    )[0]?.target;
+    const pendingVc = await getCredentialSentToProfile(id, from, to);
 
     if (!pendingVc) {
         throw new TRPCError({
@@ -85,11 +67,7 @@ export const acceptCredential = async (
         });
     }
 
-    await pendingVc.relateTo({
-        alias: 'credentialReceived',
-        where: { handle: to.handle },
-        properties: { from: from.handle, date: new Date().toISOString() },
-    });
+    await createReceivedCredentialRelationship(to, from, pendingVc);
 
     return true;
 };

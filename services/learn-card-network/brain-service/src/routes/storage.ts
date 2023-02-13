@@ -9,15 +9,12 @@ import {
     VPValidator,
 } from '@learncard/types';
 
-import {
-    storeCredential,
-    getCredentialUri,
-    getCredentialById,
-    getIdFromCredentialUri,
-} from '@helpers/credential.helpers';
+import { getCredentialUri, getIdFromCredentialUri } from '@helpers/credential.helpers';
 import { storePresentation } from '@helpers/presentation.helpers';
 
 import { t, didAndChallengeRoute } from '@routes';
+import { storeCredential } from '@accesslayer/credential/create';
+import { getCredentialById } from '@accesslayer/credential/read';
 import { getPresentationById } from '@accesslayer/presentation/read';
 
 export const storageRouter = t.router({
