@@ -15,13 +15,12 @@ import { getDidWeb, updateDidForProfile } from '@helpers/did.helpers';
 
 import {
     checkIfProfileExists,
-    getProfileByDid,
     getProfileByEmail,
     getProfileByHandle,
     searchProfiles,
 } from '@accesslayer/profile/read';
 
-import { t, openRoute, didRoute, didAndChallengeRoute } from '@routes';
+import { t, openRoute, didAndChallengeRoute, openProfileRoute, profileRoute } from '@routes';
 
 export const profilesRouter = t.router({
     createProfile: didAndChallengeRoute
@@ -98,7 +97,7 @@ export const profilesRouter = t.router({
             });
         }),
 
-    getProfile: didRoute
+    getProfile: openProfileRoute
         .meta({
             openapi: {
                 protect: true,
@@ -113,16 +112,7 @@ export const profilesRouter = t.router({
         .input(z.void())
         .output(LCNProfileValidator)
         .query(async ({ ctx }) => {
-            const profile = await getProfileByDid(ctx.user.did);
-
-            if (!profile) {
-                throw new TRPCError({
-                    code: 'NOT_FOUND',
-                    message: 'Profile not found. Please make a profile!',
-                });
-            }
-
-            return updateDidForProfile(ctx.domain, profile);
+            return updateDidForProfile(ctx.domain, ctx.user.profile);
         }),
 
     getOtherProfile: openRoute
@@ -164,7 +154,7 @@ export const profilesRouter = t.router({
             return profiles.map(profile => updateDidForProfile(ctx.domain, profile));
         }),
 
-    updateProfile: didAndChallengeRoute
+    updateProfile: profileRoute
         .meta({
             openapi: {
                 protect: true,
@@ -178,17 +168,9 @@ export const profilesRouter = t.router({
         .input(LCNProfileValidator.omit({ did: true, isServiceProfile: true }).partial())
         .output(z.boolean())
         .mutation(async ({ input, ctx }) => {
-            const did = ctx.user.did;
-            const profile = await getProfileByDid(did);
+            const { profile } = ctx.user;
 
             const { handle, displayName, image, email } = input;
-
-            if (!profile) {
-                throw new TRPCError({
-                    code: 'NOT_FOUND',
-                    message: 'Profile not found. Please make a profile!',
-                });
-            }
 
             if (handle) {
                 const profileExists = await getProfileByHandle(handle);
@@ -223,7 +205,7 @@ export const profilesRouter = t.router({
             return true;
         }),
 
-    deleteProfile: didAndChallengeRoute
+    deleteProfile: profileRoute
         .meta({
             openapi: {
                 protect: true,
@@ -237,22 +219,12 @@ export const profilesRouter = t.router({
         .input(z.void())
         .output(z.boolean())
         .mutation(async ({ ctx }) => {
-            const did = ctx.user.did;
-            const profile = await getProfileByDid(did);
-
-            if (!profile) {
-                throw new TRPCError({
-                    code: 'NOT_FOUND',
-                    message: 'Profile not found. Please make a profile!',
-                });
-            }
-
-            await profile.delete();
+            await ctx.user.profile.delete();
 
             return true;
         }),
 
-    connectWith: didAndChallengeRoute
+    connectWith: profileRoute
         .meta({
             openapi: {
                 protect: true,
@@ -267,18 +239,10 @@ export const profilesRouter = t.router({
         .input(z.object({ handle: z.string() }))
         .output(z.boolean())
         .mutation(async ({ ctx, input }) => {
-            const did = ctx.user.did;
+            const { profile } = ctx.user;
             const { handle } = input;
 
-            const profile = await getProfileByDid(did);
             const targetProfile = await getProfileByHandle(handle);
-
-            if (!profile) {
-                throw new TRPCError({
-                    code: 'NOT_FOUND',
-                    message: 'Profile not found. Please make a profile!',
-                });
-            }
 
             if (!targetProfile) {
                 throw new TRPCError({
@@ -290,7 +254,7 @@ export const profilesRouter = t.router({
             return requestConnection(profile, targetProfile);
         }),
 
-    acceptConnectionRequest: didAndChallengeRoute
+    acceptConnectionRequest: profileRoute
         .meta({
             openapi: {
                 protect: true,
@@ -305,18 +269,10 @@ export const profilesRouter = t.router({
         .input(z.object({ handle: z.string() }))
         .output(z.boolean())
         .mutation(async ({ ctx, input }) => {
-            const did = ctx.user.did;
+            const { profile } = ctx.user;
             const { handle } = input;
 
-            const profile = await getProfileByDid(did);
             const targetProfile = await getProfileByHandle(handle);
-
-            if (!profile) {
-                throw new TRPCError({
-                    code: 'NOT_FOUND',
-                    message: 'Profile not found. Please make a profile!',
-                });
-            }
 
             if (!targetProfile) {
                 throw new TRPCError({
@@ -328,7 +284,7 @@ export const profilesRouter = t.router({
             return connectProfiles(profile, targetProfile);
         }),
 
-    connections: didAndChallengeRoute
+    connections: profileRoute
         .meta({
             openapi: {
                 protect: true,
@@ -342,23 +298,12 @@ export const profilesRouter = t.router({
         .input(z.void())
         .output(LCNProfileValidator.array())
         .query(async ({ ctx }) => {
-            const did = ctx.user.did;
-
-            const profile = await getProfileByDid(did);
-
-            if (!profile) {
-                throw new TRPCError({
-                    code: 'NOT_FOUND',
-                    message: 'Profile not found. Please make a profile!',
-                });
-            }
-
-            const connections = await getConnections(profile);
+            const connections = await getConnections(ctx.user.profile);
 
             return connections.map(connection => updateDidForProfile(ctx.domain, connection));
         }),
 
-    pendingConnections: didAndChallengeRoute
+    pendingConnections: profileRoute
         .meta({
             openapi: {
                 protect: true,
@@ -372,23 +317,12 @@ export const profilesRouter = t.router({
         .input(z.void())
         .output(LCNProfileValidator.array())
         .query(async ({ ctx }) => {
-            const did = ctx.user.did;
-
-            const profile = await getProfileByDid(did);
-
-            if (!profile) {
-                throw new TRPCError({
-                    code: 'NOT_FOUND',
-                    message: 'Profile not found. Please make a profile!',
-                });
-            }
-
-            const connections = await getPendingConnections(profile);
+            const connections = await getPendingConnections(ctx.user.profile);
 
             return connections.map(connection => updateDidForProfile(ctx.domain, connection));
         }),
 
-    connectionRequests: didAndChallengeRoute
+    connectionRequests: profileRoute
         .meta({
             openapi: {
                 protect: true,
@@ -402,23 +336,12 @@ export const profilesRouter = t.router({
         .input(z.void())
         .output(LCNProfileValidator.array())
         .query(async ({ ctx }) => {
-            const did = ctx.user.did;
-
-            const profile = await getProfileByDid(did);
-
-            if (!profile) {
-                throw new TRPCError({
-                    code: 'NOT_FOUND',
-                    message: 'Profile not found. Please make a profile!',
-                });
-            }
-
-            const connections = await getConnectionRequests(profile);
+            const connections = await getConnectionRequests(ctx.user.profile);
 
             return connections.map(connection => updateDidForProfile(ctx.domain, connection));
         }),
 
-    registerSigningAuthority: didAndChallengeRoute
+    registerSigningAuthority: profileRoute
         .meta({
             openapi: {
                 protect: true,

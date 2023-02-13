@@ -3,6 +3,7 @@ import { APIGatewayEvent, CreateAWSLambdaContextOptions } from '@trpc/server/ada
 import { OpenApiMeta } from 'trpc-openapi';
 import jwtDecode from 'jwt-decode';
 
+import { getProfileByDid } from '@accesslayer/profile/read';
 import { getEmptyLearnCard } from '@helpers/learnCard.helpers';
 import { getCache } from '@helpers/redis.helpers';
 
@@ -82,4 +83,30 @@ export const didAndChallengeRoute = didRoute.use(({ ctx, next }) => {
     if (!ctx.user?.isChallengeValid) throw new TRPCError({ code: 'UNAUTHORIZED' });
 
     return next({ ctx: { ...ctx, user: ctx.user } });
+});
+
+export const openProfileRoute = didRoute.use(async ({ ctx, next }) => {
+    const profile = await getProfileByDid(ctx.user.did);
+
+    if (!profile) {
+        throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Profile not found. Please make a profile!',
+        });
+    }
+
+    return next({ ctx: { ...ctx, user: { ...ctx.user, profile } } });
+});
+
+export const profileRoute = didAndChallengeRoute.use(async ({ ctx, next }) => {
+    const profile = await getProfileByDid(ctx.user.did);
+
+    if (!profile) {
+        throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Profile not found. Please make a profile!',
+        });
+    }
+
+    return next({ ctx: { ...ctx, user: { ...ctx.user, profile } } });
 });

@@ -10,11 +10,11 @@ import {
     getSentCredentialsForProfile,
 } from '@accesslayer/credential/read';
 
-import { t, didAndChallengeRoute } from '@routes';
+import { t, didAndChallengeRoute, profileRoute } from '@routes';
 import { getProfileByDid, getProfileByHandle } from '@accesslayer/profile/read';
 
 export const credentialsRouter = t.router({
-    sendCredential: didAndChallengeRoute
+    sendCredential: profileRoute
         .meta({
             openapi: {
                 protect: true,
@@ -28,18 +28,10 @@ export const credentialsRouter = t.router({
         .input(z.object({ handle: z.string(), credential: UnsignedVCValidator.or(VCValidator) }))
         .output(z.string())
         .mutation(async ({ ctx, input }) => {
-            const did = ctx.user.did;
+            const { profile } = ctx.user;
             const { handle, credential } = input;
 
-            const profile = await getProfileByDid(did);
             const targetProfile = await getProfileByHandle(handle);
-
-            if (!profile) {
-                throw new TRPCError({
-                    code: 'NOT_FOUND',
-                    message: 'Profile not found. Please make a profile!',
-                });
-            }
 
             if (!targetProfile) {
                 throw new TRPCError({
@@ -51,7 +43,7 @@ export const credentialsRouter = t.router({
             return sendCredential(profile, targetProfile, credential, ctx.domain);
         }),
 
-    acceptCredential: didAndChallengeRoute
+    acceptCredential: profileRoute
         .meta({
             openapi: {
                 protect: true,
@@ -65,18 +57,10 @@ export const credentialsRouter = t.router({
         .input(z.object({ handle: z.string(), uri: z.string() }))
         .output(z.boolean())
         .mutation(async ({ ctx, input }) => {
-            const did = ctx.user.did;
+            const { profile } = ctx.user;
             const { handle, uri } = input;
 
-            const profile = await getProfileByDid(did);
             const targetProfile = await getProfileByHandle(handle);
-
-            if (!profile) {
-                throw new TRPCError({
-                    code: 'NOT_FOUND',
-                    message: 'Profile not found. Please make a profile!',
-                });
-            }
 
             if (!targetProfile) {
                 throw new TRPCError({
@@ -88,7 +72,7 @@ export const credentialsRouter = t.router({
             return acceptCredential(profile, targetProfile, uri);
         }),
 
-    receivedCredentials: didAndChallengeRoute
+    receivedCredentials: profileRoute
         .meta({
             openapi: {
                 protect: true,
@@ -103,19 +87,10 @@ export const credentialsRouter = t.router({
         .input(z.object({ limit: z.number().int().positive().lt(100).default(25) }).default({}))
         .output(SentCredentialInfoValidator.array())
         .query(async ({ input: { limit }, ctx }) => {
-            const profile = await getProfileByDid(ctx.user.did);
-
-            if (!profile) {
-                throw new TRPCError({
-                    code: 'NOT_FOUND',
-                    message: 'Profile not found. Please make a profile!',
-                });
-            }
-
-            return getReceivedCredentialsForProfile(ctx.domain, profile, limit);
+            return getReceivedCredentialsForProfile(ctx.domain, ctx.user.profile, limit);
         }),
 
-    sentCredentials: didAndChallengeRoute
+    sentCredentials: profileRoute
         .meta({
             openapi: {
                 protect: true,
@@ -130,19 +105,10 @@ export const credentialsRouter = t.router({
         .input(z.object({ limit: z.number().int().positive().lt(100).default(25) }).default({}))
         .output(SentCredentialInfoValidator.array())
         .query(async ({ input: { limit }, ctx }) => {
-            const profile = await getProfileByDid(ctx.user.did);
-
-            if (!profile) {
-                throw new TRPCError({
-                    code: 'NOT_FOUND',
-                    message: 'Profile not found. Please make a profile!',
-                });
-            }
-
-            return getSentCredentialsForProfile(ctx.domain, profile, limit);
+            return getSentCredentialsForProfile(ctx.domain, ctx.user.profile, limit);
         }),
 
-    incomingCredentials: didAndChallengeRoute
+    incomingCredentials: profileRoute
         .meta({
             openapi: {
                 protect: true,
@@ -157,16 +123,7 @@ export const credentialsRouter = t.router({
         .input(z.object({ limit: z.number().int().positive().lt(100).default(25) }).default({}))
         .output(SentCredentialInfoValidator.array())
         .query(async ({ input: { limit }, ctx }) => {
-            const profile = await getProfileByDid(ctx.user.did);
-
-            if (!profile) {
-                throw new TRPCError({
-                    code: 'NOT_FOUND',
-                    message: 'Profile not found. Please make a profile!',
-                });
-            }
-
-            return getIncomingCredentialsForProfile(ctx.domain, profile, limit);
+            return getIncomingCredentialsForProfile(ctx.domain, ctx.user.profile, limit);
         }),
 });
 export type CredentialsRouter = typeof credentialsRouter;
