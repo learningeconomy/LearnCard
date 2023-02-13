@@ -8,7 +8,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.js && tsc --p tsconfig.json && tsc-alias",
+    "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.js && tsc --p tsconfig.build.json && tsc-alias",
     "start": "aqu watch",
     "lint": "aqu lint",
     "lint:fix": "aqu lint --fix",
