@@ -4,6 +4,7 @@ import { LCNProfile } from '@learncard/types';
 import { neogma } from '@instance';
 
 import { Credential, CredentialInstance } from './Credential';
+import { Presentation, PresentationInstance } from './Presentation';
 
 export type ProfileRelationships = {
     connectionRequested: ModelRelatedNodesI<typeof Profile, ProfileInstance>;
@@ -11,6 +12,12 @@ export type ProfileRelationships = {
     credentialSent: ModelRelatedNodesI<
         typeof Credential,
         CredentialInstance,
+        { to: string; date: string },
+        { to: string; date: string }
+    >;
+    presentationSent: ModelRelatedNodesI<
+        typeof Presentation,
+        PresentationInstance,
         { to: string; date: string },
         { to: string; date: string }
     >;
@@ -36,6 +43,15 @@ export const Profile = ModelFactory<LCNProfile, ProfileRelationships>(
                 model: Credential,
                 direction: 'out',
                 name: 'CREDENTIAL_SENT',
+                properties: {
+                    to: { property: 'to', schema: { type: 'string' } },
+                    date: { property: 'date', schema: { type: 'string' } },
+                },
+            },
+            presentationSent: {
+                model: Presentation,
+                direction: 'out',
+                name: 'PRESENTATION_SENT',
                 properties: {
                     to: { property: 'to', schema: { type: 'string' } },
                     date: { property: 'date', schema: { type: 'string' } },

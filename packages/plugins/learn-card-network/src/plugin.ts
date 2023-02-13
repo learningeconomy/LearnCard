@@ -196,6 +196,31 @@ export const getLearnCardNetworkPlugin = async (
 
                 return client.credential.incomingCredentials.query();
             },
+            sendPresentation: async (_learnCard, handle, vp) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.presentation.sendPresentation.mutate({ handle, presentation: vp });
+            },
+            acceptPresentation: async (_learnCard, handle, uri) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.presentation.acceptPresentation.mutate({ handle, uri });
+            },
+            getReceivedPresentations: async () => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.presentation.receivedPresentations.query();
+            },
+            getSentPresentations: async () => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.presentation.sentPresentations.query();
+            },
+            getIncomingPresentations: async () => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.presentation.incomingPresentations.query();
+            },
             registerSigningAuthority: async (_learnCard, signingAuthority) => {
                 if (!userData) throw new Error('Please make an account first!');
 

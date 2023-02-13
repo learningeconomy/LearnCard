@@ -28,7 +28,6 @@ export const Presentation = ModelFactory<
             id: { type: 'string', required: true, uniqueItems: true },
             presentation: { type: 'string', required: true },
         },
-        relationships: {},
         primaryKeyField: 'id',
     },
     neogma

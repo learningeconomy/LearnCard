@@ -33,6 +33,11 @@ export type LearnCardNetworkPluginMethods = {
     getReceivedCredentials: () => Promise<SentCredentialInfo[]>;
     getSentCredentials: () => Promise<SentCredentialInfo[]>;
     getIncomingCredentials: () => Promise<SentCredentialInfo[]>;
+    sendPresentation: (handle: string, vp: VP) => Promise<string>;
+    acceptPresentation: (handle: string, uri: string) => Promise<boolean>;
+    getReceivedPresentations: () => Promise<SentCredentialInfo[]>;
+    getSentPresentations: () => Promise<SentCredentialInfo[]>;
+    getIncomingPresentations: () => Promise<SentCredentialInfo[]>;
     registerSigningAuthority: (uri: string) => Promise<boolean>;
 };
 

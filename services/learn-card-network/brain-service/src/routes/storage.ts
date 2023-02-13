@@ -10,9 +10,9 @@ import {
 } from '@learncard/types';
 
 import { getCredentialUri, getIdFromCredentialUri } from '@helpers/credential.helpers';
-import { storePresentation } from '@helpers/presentation.helpers';
 
 import { t, didAndChallengeRoute } from '@routes';
+import { storePresentation } from '@accesslayer/presentation/create';
 import { storeCredential } from '@accesslayer/credential/create';
 import { getCredentialById } from '@accesslayer/credential/read';
 import { getPresentationById } from '@accesslayer/presentation/read';

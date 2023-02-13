@@ -13,6 +13,7 @@ Credential.addRelationships({
         },
     },
 });
+
 Presentation.addRelationships({
     presentationReceived: {
         model: Profile,
