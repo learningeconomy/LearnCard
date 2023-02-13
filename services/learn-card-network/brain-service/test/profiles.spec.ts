@@ -1,5 +1,6 @@
 import { getClient, getUser } from './helpers/getClient';
 import { Profile } from '@models';
+import cache from '@helpers/redis.helpers';
 
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;
@@ -624,6 +625,69 @@ describe('Profiles', () => {
         });
     });
 
+    describe('connectWithInvite', () => {
+        beforeEach(async () => {
+            await cache.node.flushall();
+            await Profile.delete({ detach: true, where: {} });
+            await userA.clients.fullAuth.profile.createProfile({ handle: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ handle: 'userb' });
+        });
+
+        afterAll(async () => {
+            await cache.node.flushall();
+            await Profile.delete({ detach: true, where: {} });
+        });
+
+        it('should require full auth to connect with another user via invite challenge', async () => {
+            const { challenge } = await userB.clients.fullAuth.profile.generateInvite();
+
+            await expect(
+                noAuthClient.profile.connectWithInvite({ handle: 'userb', challenge })
+            ).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+            await expect(
+                userA.clients.partialAuth.profile.connectWithInvite({ handle: 'userb', challenge })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        });
+
+        it('allows users to connect via invite challenge', async () => {
+            const { challenge } = await userB.clients.fullAuth.profile.generateInvite();
+
+            await expect(
+                userA.clients.fullAuth.profile.connectWithInvite({ handle: 'userb', challenge })
+            ).resolves.not.toThrow();
+
+            const oneConnection = await userA.clients.fullAuth.profile.connections();
+
+            expect(oneConnection).toHaveLength(1);
+            expect(oneConnection[0]!.handle).toEqual('userb');
+        });
+
+        it('does not allow users to connect with an invalid challenge', async () => {
+            await expect(
+                userA.clients.fullAuth.profile.connectWithInvite({
+                    handle: 'userb',
+                    challenge: 'nice',
+                })
+            ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+        });
+
+        it("does not allow users to connect with someone else's challenge", async () => {
+            const userC = await getUser('c'.repeat(64));
+            await userC.clients.fullAuth.profile.createProfile({ handle: 'userc' });
+
+            const { challenge } = await userC.clients.fullAuth.profile.generateInvite();
+
+            await expect(
+                userA.clients.fullAuth.profile.connectWithInvite({
+                    handle: 'userb',
+                    challenge,
+                })
+            ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+        });
+    });
+
     describe('acceptConnectionRequest', () => {
         beforeEach(async () => {
             await Profile.delete({ detach: true, where: {} });
@@ -789,6 +853,83 @@ describe('Profiles', () => {
 
             expect(oneConnectionRequest).toHaveLength(1);
             expect(oneConnectionRequest[0]!.handle).toEqual('userb');
+        });
+    });
+
+    describe('generateInvite', () => {
+        beforeEach(async () => {
+            await cache.node.flushall();
+            await Profile.delete({ detach: true, where: {} });
+            await userA.clients.fullAuth.profile.createProfile({ handle: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ handle: 'userb' });
+        });
+
+        afterAll(async () => {
+            await cache.node.flushall();
+            await Profile.delete({ detach: true, where: {} });
+        });
+
+        it('should require full auth to generate an invite', async () => {
+            await expect(noAuthClient.profile.generateInvite()).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+            await expect(userA.clients.partialAuth.profile.generateInvite()).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+        });
+
+        it('allows users to generate an invitation challenge', async () => {
+            await expect(userA.clients.fullAuth.profile.generateInvite()).resolves.not.toThrow();
+        });
+
+        it('creates a new challenge if none is supplied', async () => {
+            const { challenge } = await userA.clients.fullAuth.profile.generateInvite();
+
+            expect(challenge).toBeTruthy();
+        });
+
+        it('uses a supplied challenge if none is supplied', async () => {
+            const { challenge } = await userA.clients.fullAuth.profile.generateInvite({
+                challenge: 'nice',
+            });
+
+            expect(challenge).toEqual('nice');
+        });
+
+        it('does allow using multiple challenges', async () => {
+            await userA.clients.fullAuth.profile.generateInvite({ challenge: 'c1' });
+            await expect(
+                userA.clients.fullAuth.profile.generateInvite({ challenge: 'c2' })
+            ).resolves.not.toThrow();
+            await expect(userA.clients.fullAuth.profile.generateInvite()).resolves.not.toThrow();
+        });
+
+        it('does not allow using the same challenge more than once', async () => {
+            await userA.clients.fullAuth.profile.generateInvite({ challenge: 'nice' });
+            await expect(
+                userA.clients.fullAuth.profile.generateInvite({ challenge: 'nice' })
+            ).rejects.toMatchObject({ code: 'CONFLICT' });
+        });
+
+        it('expires challenges after a while, allowing them to be used again', async () => {
+            jest.useFakeTimers().setSystemTime(new Date('02-06-2023'));
+
+            await userA.clients.fullAuth.profile.generateInvite({ challenge: 'nice' });
+
+            jest.setSystemTime(new Date('02-06-2024'));
+
+            await expect(
+                userB.clients.fullAuth.profile.connectWithInvite({
+                    challenge: 'nice',
+                    handle: 'usera',
+                })
+            ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+
+            await expect(
+                userA.clients.fullAuth.profile.generateInvite({ challenge: 'nice' })
+            ).resolves.not.toThrow();
+
+            jest.useRealTimers();
         });
     });
 

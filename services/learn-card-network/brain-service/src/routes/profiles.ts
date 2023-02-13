@@ -1,6 +1,7 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { LCNProfileValidator } from '@learncard/types';
+import { v4 as uuid } from 'uuid';
 
 import { Profile } from '@models';
 
@@ -21,6 +22,8 @@ import {
 } from '@accesslayer/profile/read';
 
 import { t, openRoute, didAndChallengeRoute, openProfileRoute, profileRoute } from '@routes';
+
+import cache from '@helpers/redis.helpers';
 
 export const profilesRouter = t.router({
     createProfile: didAndChallengeRoute
@@ -254,6 +257,44 @@ export const profilesRouter = t.router({
             return requestConnection(profile, targetProfile);
         }),
 
+    connectWithInvite: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/profile/{handle}/connect/{challenge}',
+                tags: ['Profiles'],
+                summary: 'Connect using an invitation',
+                description: 'Connects with another profile using an invitation challenge',
+            },
+        })
+        .input(z.object({ handle: z.string(), challenge: z.string() }))
+        .output(z.boolean())
+        .mutation(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { handle, challenge } = input;
+
+            const cacheKey = `inviteChallenge:${handle}:${challenge}`;
+
+            if ((await cache.get(cacheKey)) !== 'valid') {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: `Challenge not found for ${handle}`,
+                });
+            }
+
+            const targetProfile = await getProfileByHandle(handle);
+
+            if (!targetProfile) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Profile not found. Are you sure this person exists?',
+                });
+            }
+
+            return connectProfiles(profile, targetProfile, false);
+        }),
+
     acceptConnectionRequest: profileRoute
         .meta({
             openapi: {
@@ -339,6 +380,38 @@ export const profilesRouter = t.router({
             const connections = await getConnectionRequests(ctx.user.profile);
 
             return connections.map(connection => updateDidForProfile(ctx.domain, connection));
+        }),
+
+    generateInvite: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/profile/generate-invite',
+                tags: ['Profiles'],
+                summary: 'Generate a connection invitation',
+                description:
+                    'This route creates a one-time challenge that an unknown profile can use to connect with this account',
+            },
+        })
+        .input(z.object({ challenge: z.string().optional() }).optional())
+        .output(z.object({ handle: z.string(), challenge: z.string() }))
+        .mutation(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { challenge = uuid() } = input ?? {};
+
+            const cacheKey = `inviteChallenge:${profile.handle}:${challenge}`;
+
+            if (await cache.get(cacheKey)) {
+                throw new TRPCError({
+                    code: 'CONFLICT',
+                    message: 'Challenge already in use!',
+                });
+            }
+
+            await cache.set(`inviteChallenge:${profile.handle}:${challenge}`, 'valid');
+
+            return { handle: profile.handle, challenge };
         }),
 
     registerSigningAuthority: profileRoute

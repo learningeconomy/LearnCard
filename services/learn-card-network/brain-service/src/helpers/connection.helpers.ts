@@ -67,28 +67,32 @@ export const areProfilesConnected = async (
 /** Connects two profiles */
 export const connectProfiles = async (
     source: ProfileInstance,
-    target: ProfileInstance
+    target: ProfileInstance,
+    validate = true
 ): Promise<boolean> => {
-    if (await areProfilesConnected(source, target)) {
-        throw new TRPCError({
-            code: 'CONFLICT',
-            message: 'Profiles are already connected!',
-        });
-    }
+    if (validate) {
+        if (await areProfilesConnected(source, target)) {
+            throw new TRPCError({
+                code: 'CONFLICT',
+                message: 'Profiles are already connected!',
+            });
+        }
 
-    const pendingRequestFromTarget =
-        (
-            await target.findRelationships({
-                alias: 'connectionRequested',
-                where: { relationship: {}, target: { handle: source.handle } },
-            })
-        ).length > 0;
+        const pendingRequestFromTarget =
+            (
+                await target.findRelationships({
+                    alias: 'connectionRequested',
+                    where: { relationship: {}, target: { handle: source.handle } },
+                })
+            ).length > 0;
 
-    if (!pendingRequestFromTarget) {
-        throw new TRPCError({
-            code: 'NOT_FOUND',
-            message: 'No connection request found. Please try sending them a connection request!',
-        });
+        if (!pendingRequestFromTarget) {
+            throw new TRPCError({
+                code: 'NOT_FOUND',
+                message:
+                    'No connection request found. Please try sending them a connection request!',
+            });
+        }
     }
 
     await Promise.all([
