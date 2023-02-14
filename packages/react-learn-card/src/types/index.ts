@@ -243,8 +243,10 @@ export type GenericCardProps = {
     flipped?: boolean;
 };
 
+export type Attachment = { title: string; url: string; type: string };
+
 export type BoostAchievementCredential = AchievementCredential & {
     display?: { backgroundImage?: string; backgroundColor?: string };
     image: string;
-    attachments: { title: string; url: string; type: string }[];
+    attachments: Attachment[];
 };

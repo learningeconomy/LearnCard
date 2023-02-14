@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { MediaAttachment } from '../../helpers/test.helpers';
 import prettyBytes from 'pretty-bytes';
 
 import Camera from '../svgs/Camera';
 import GenericDocumentIcon from '../svgs/GenericDocumentIcon';
+
+import { Attachment } from '../../types';
 
 export type MediaMetadata = {
     fileExtension?: string;
@@ -12,7 +13,7 @@ export type MediaMetadata = {
 };
 
 type MediaAttachmentsBoxProps = {
-    attachments: MediaAttachment[];
+    attachments: Attachment[];
     getFileMetadata?: (url: string) => MediaMetadata;
     onMediaAttachmentClick?: (url: string) => void;
 };
@@ -47,8 +48,8 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
 }) => {
     const [fileMetadata, setFileMetadata] = useState<{ [fileUrl: string]: MediaMetadata }>({});
 
-    const images = attachments.filter(a => a.type === 'image');
-    const files = attachments.filter(a => a.type === 'txt' || a.type === 'pdf');
+    const images = attachments.filter(a => a.type === 'IMAGE');
+    const files = attachments.filter(a => a.type === 'DOCUMENT');
 
     useEffect(() => {
         const getMetadata = async (urls: string[]): Promise<any> => {

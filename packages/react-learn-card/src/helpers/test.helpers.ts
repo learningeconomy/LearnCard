@@ -116,6 +116,22 @@ export const AllFieldsCredential = {
             'z5R86gecRsBh1xmPJqdfqoNppxy4hbMZWtjZZNdaqGYtwBcPHNzXwAtHdqhTWQVprQn6B8xfQvqqvQo3ZjaTjt3tW',
     },
     display: { backgroundImage: 'https://images.unsplash.com/photo-1518199266791-5375a83190b7' },
+    attachments: [
+        {
+            type: 'DOCUMENT',
+            name: 'Custom PDF title',
+            url: 'https://cdn.filestackcontent.com/4LN0x2LQXSjIH3c5bfBr',
+        },
+        {
+            type: 'DOCUMENT',
+            name: 'This is a text file with a super long name that goes to two lines',
+            url: 'https://cdn.filestackcontent.com/BqqfmVEbQFmRaqwvqTMA',
+        },
+        { type: 'IMAGE', url: 'https://cdn.filestackcontent.com/XuMpArLAQ3qam5OdArih' },
+        { type: 'IMAGE', url: 'https://cdn.filestackcontent.com/PNb6lViSaqGoKyRyXyyp' },
+        { type: 'IMAGE', url: 'https://images.unsplash.com/photo-1607419145932-ed1fc8c034d8' },
+        // TODO need LINK and VIDEO?
+    ],
 };
 
 export const AllFieldsBackgroundColorCredential = {
@@ -257,5 +273,3 @@ export const superSkillsConvertTags = (tags: string[]) => {
 
     return skillsToSubskills;
 };
-
-export type MediaAttachment = { type: 'txt' | 'pdf' | 'image'; name?: string; url: string };

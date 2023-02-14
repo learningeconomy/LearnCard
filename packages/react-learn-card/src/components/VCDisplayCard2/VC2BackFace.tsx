@@ -5,7 +5,6 @@ import MediaAttachmentsBox, { MediaMetadata } from './MediaAttachmentsBox';
 import TruncateTextBox from './TruncateTextBox';
 import SkillsBox from './SkillsBox';
 
-import { MediaAttachment } from '../../helpers/test.helpers';
 import { VC, AchievementCredential, VerificationItem } from '@learncard/types';
 import VerificationsBox from './VerificationsBox';
 
@@ -22,9 +21,6 @@ type VC2BackFaceProps = {
     convertTagsToSkills?: (tags: string[]) => { [skill: string]: string[] };
     getFileMetadata?: (url: string) => MediaMetadata;
     onMediaAttachmentClick?: (url: string) => void;
-
-    // dunno where these live yet within a VC, so I'll just rewire it later
-    extraFields?: { notes?: string; mediaAttachments?: MediaAttachment[]; expiration: Date };
 };
 
 const VC2BackFace: React.FC<VC2BackFaceProps> = ({
@@ -33,7 +29,6 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
     convertTagsToSkills = defaultTagsToSkills,
     getFileMetadata,
     onMediaAttachmentClick,
-    extraFields,
 }) => {
     // TODO real expiration (if present)
     const expiration = format(new Date(), 'MMM dd, yyyy');
@@ -56,14 +51,14 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
             </TruncateTextBox>
             {criteria && <TruncateTextBox headerText="Criteria" text={criteria} />}
             {skillsObject && <SkillsBox skillsObject={skillsObject} />}
-            {extraFields?.mediaAttachments && extraFields.mediaAttachments.length > 0 && (
+            {credential.attachments && credential.attachments.length > 0 && (
                 <MediaAttachmentsBox
-                    attachments={extraFields?.mediaAttachments}
+                    attachments={credential.attachments}
                     getFileMetadata={getFileMetadata}
                     onMediaAttachmentClick={onMediaAttachmentClick}
                 />
             )}
-            {extraFields?.notes && <TruncateTextBox headerText="Notes" text={extraFields?.notes} />}
+            {credential.notes && <TruncateTextBox headerText="Notes" text={credential.notes} />}
 
             <VerificationsBox verificationItems={verificationItems} />
         </section>

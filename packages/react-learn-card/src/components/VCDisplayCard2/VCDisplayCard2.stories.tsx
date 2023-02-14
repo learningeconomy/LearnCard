@@ -63,21 +63,6 @@ AllFieldsTest.args = {
         console.log(`You clicked on an attachment with the url "${url}"`),
     extraFields: {
         notes: "This credential has some notes about it. Here's a note: this isn't fully wired up yet, so this note is just an extraField prop",
-        mediaAttachments: [
-            {
-                type: 'pdf',
-                name: 'Custom PDF title',
-                url: 'https://cdn.filestackcontent.com/4LN0x2LQXSjIH3c5bfBr',
-            },
-            {
-                type: 'txt',
-                name: 'This is a text file with a super long name that goes to two lines',
-                url: 'https://cdn.filestackcontent.com/BqqfmVEbQFmRaqwvqTMA',
-            },
-            { type: 'image', url: 'https://cdn.filestackcontent.com/XuMpArLAQ3qam5OdArih' },
-            { type: 'image', url: 'https://cdn.filestackcontent.com/PNb6lViSaqGoKyRyXyyp' },
-            { type: 'image', url: 'https://images.unsplash.com/photo-1607419145932-ed1fc8c034d8' },
-        ],
     },
 };
 
@@ -97,20 +82,5 @@ BackgroundColorTest.args = {
     ],
     extraFields: {
         notes: "This credential has some notes about it. Here's a note: this isn't fully wired up yet, so this note is just an extraField prop",
-        mediaAttachments: [
-            {
-                type: 'pdf',
-                name: 'Custom PDF title',
-                url: 'https://cdn.filestackcontent.com/4LN0x2LQXSjIH3c5bfBr',
-            },
-            {
-                type: 'txt',
-                name: 'This is a text file with a super long name that goes to two lines',
-                url: 'https://cdn.filestackcontent.com/BqqfmVEbQFmRaqwvqTMA',
-            },
-            { type: 'image', url: 'https://cdn.filestackcontent.com/XuMpArLAQ3qam5OdArih' },
-            { type: 'image', url: 'https://cdn.filestackcontent.com/PNb6lViSaqGoKyRyXyyp' },
-            { type: 'image', url: 'https://images.unsplash.com/photo-1607419145932-ed1fc8c034d8' },
-        ],
     },
 };
