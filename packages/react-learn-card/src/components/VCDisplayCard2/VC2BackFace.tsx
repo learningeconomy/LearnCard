@@ -30,8 +30,9 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
     getFileMetadata,
     onMediaAttachmentClick,
 }) => {
-    // TODO real expiration (if present)
-    const expiration = format(new Date(), 'MMM dd, yyyy');
+    const expiration = credential.expirationDate
+        ? format(new Date(credential.expirationDate), 'MMM dd, yyyy')
+        : undefined;
     const criteria = credential.credentialSubject.achievement?.criteria?.narrative;
 
     const tags = credential.credentialSubject.achievement?.tag;
