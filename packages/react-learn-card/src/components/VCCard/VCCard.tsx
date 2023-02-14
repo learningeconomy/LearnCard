@@ -13,7 +13,7 @@ export type VCCardProps = {
 
     /* Only used for version 2 */
     subjectImageComponent?: React.ReactNode;
-    convertTagsToSkills?: (tags: string[]) => { [skill: string]: string[] };
+    // convertTagsToSkills?: (tags: string[]) => { [skill: string]: string[] };
     handleXClick?: () => void;
     getFileMetadata?: (url: string) => MediaMetadata;
     onMediaAttachmentClick?: (url: string) => void;
@@ -25,7 +25,7 @@ export const VCCard: React.FC<VCCardProps> = ({
     className = '',
     version = '1',
     subjectImageComponent,
-    convertTagsToSkills,
+    // convertTagsToSkills,
     handleXClick,
     getFileMetadata,
     onMediaAttachmentClick,
@@ -62,7 +62,7 @@ export const VCCard: React.FC<VCCardProps> = ({
             verificationInProgress={loading}
             verificationItems={vcVerification}
             subjectImageComponent={subjectImageComponent}
-            convertTagsToSkills={convertTagsToSkills}
+            // convertTagsToSkills={convertTagsToSkills}
             handleXClick={handleXClick}
             getFileMetadata={getFileMetadata}
             onMediaAttachmentClick={onMediaAttachmentClick}

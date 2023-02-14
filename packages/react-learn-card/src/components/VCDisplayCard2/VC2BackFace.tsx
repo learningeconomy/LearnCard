@@ -3,22 +3,24 @@ import { format } from 'date-fns';
 
 import MediaAttachmentsBox, { MediaMetadata } from './MediaAttachmentsBox';
 import TruncateTextBox from './TruncateTextBox';
-import SkillsBox from './SkillsBox';
+// import SkillsBox from './SkillsBox';
 
 import { VC, AchievementCredential, VerificationItem } from '@learncard/types';
 import VerificationsBox from './VerificationsBox';
 
+/*
 const defaultTagsToSkills = (tags: string[]) => {
     const skillsObj: { [skill: string]: string[] } = {};
     tags.forEach(tag => {
         skillsObj[tag] = [];
     });
 };
+*/
 
 type VC2BackFaceProps = {
     credential: VC | AchievementCredential;
     verificationItems: VerificationItem[];
-    convertTagsToSkills?: (tags: string[]) => { [skill: string]: string[] };
+    // convertTagsToSkills?: (tags: string[]) => { [skill: string]: string[] };
     getFileMetadata?: (url: string) => MediaMetadata;
     onMediaAttachmentClick?: (url: string) => void;
 };
@@ -26,7 +28,7 @@ type VC2BackFaceProps = {
 const VC2BackFace: React.FC<VC2BackFaceProps> = ({
     credential,
     verificationItems,
-    convertTagsToSkills = defaultTagsToSkills,
+    // convertTagsToSkills = defaultTagsToSkills,
     getFileMetadata,
     onMediaAttachmentClick,
 }) => {
@@ -35,8 +37,10 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
         : undefined;
     const criteria = credential.credentialSubject.achievement?.criteria?.narrative;
 
+    /* 
     const tags = credential.credentialSubject.achievement?.tag;
     const skillsObject = tags && tags.length > 0 ? convertTagsToSkills(tags) : undefined;
+    */
 
     return (
         <section className="flex flex-col gap-[20px] w-full px-[15px]">
@@ -51,7 +55,7 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
                 )}
             </TruncateTextBox>
             {criteria && <TruncateTextBox headerText="Criteria" text={criteria} />}
-            {skillsObject && <SkillsBox skillsObject={skillsObject} />}
+            {/* {skillsObject && <SkillsBox skillsObject={skillsObject} />} */}
             {credential.attachments && credential.attachments.length > 0 && (
                 <MediaAttachmentsBox
                     attachments={credential.attachments}
@@ -59,7 +63,7 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
                     onMediaAttachmentClick={onMediaAttachmentClick}
                 />
             )}
-            {credential.notes && <TruncateTextBox headerText="Notes" text={credential.notes} />}
+            {/* {credential.notes && <TruncateTextBox headerText="Notes" text={credential.notes} />} */}
 
             <VerificationsBox verificationItems={verificationItems} />
         </section>

@@ -4,10 +4,10 @@ import { Story, Meta } from '@storybook/react';
 import VCCard, { VCCardProps } from './VCCard';
 import {
     JffCredential,
-    simpleConvertTagsToSkills,
+    // simpleConvertTagsToSkills,
     issueeOverride,
     SuperSkillsOprahCredential,
-    superSkillsConvertTags,
+    // superSkillsConvertTags,
     BoostCredential,
 } from '../../helpers/test.helpers';
 
@@ -21,7 +21,7 @@ const Template: Story<VCCardProps> = args => <VCCard {...args} />;
 
 const baseArgs = {
     credential: JffCredential,
-    convertTagsToSkills: simpleConvertTagsToSkills,
+    // convertTagsToSkills: simpleConvertTagsToSkills,
     issueeOverride,
 };
 
@@ -39,7 +39,7 @@ SuperSkillsVersion2Test.args = {
     ...baseArgs,
     version: '2',
     credential: SuperSkillsOprahCredential,
-    convertTagsToSkills: superSkillsConvertTags,
+    // convertTagsToSkills: superSkillsConvertTags,
 };
 
 export const BoostCredentialVersion2Test = Template.bind({});

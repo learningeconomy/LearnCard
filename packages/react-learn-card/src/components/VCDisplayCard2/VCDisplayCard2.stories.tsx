@@ -6,10 +6,10 @@ import {
     JffCredential,
     SuperSkillsOprahCredential,
     TestVerificationItems,
-    simpleConvertTagsToSkills,
+    // simpleConvertTagsToSkills,
     issueeOverride,
     issuerOverride,
-    superSkillsConvertTags,
+    // superSkillsConvertTags,
     superSkillsIssueeOverride,
     AllFieldsCredential,
     AllFieldsBackgroundColorCredential,
@@ -36,7 +36,7 @@ BoostCredentialTest.args = {
 export const JFFCredentialTest = Template.bind({});
 JFFCredentialTest.args = {
     credential: JffCredential,
-    convertTagsToSkills: simpleConvertTagsToSkills,
+    // convertTagsToSkills: simpleConvertTagsToSkills,
     verificationItems: [
         TestVerificationItems.FAILED.APPLICABLE_PROOF,
         TestVerificationItems.SUCCESS.NO_EXPIRATION,
@@ -46,7 +46,7 @@ JFFCredentialTest.args = {
 export const SuperSkillsVCTest = Template.bind({});
 SuperSkillsVCTest.args = {
     credential: SuperSkillsOprahCredential,
-    convertTagsToSkills: superSkillsConvertTags,
+    // convertTagsToSkills: superSkillsConvertTags,
     issueeOverride: superSkillsIssueeOverride,
     verificationItems: [
         TestVerificationItems.SUCCESS.PROOF,
@@ -59,7 +59,7 @@ AllFieldsTest.args = {
     credential: AllFieldsCredential,
     issueeOverride,
     issuerOverride,
-    convertTagsToSkills: simpleConvertTagsToSkills,
+    // convertTagsToSkills: simpleConvertTagsToSkills,
     handleXClick: () => console.log('X clicked!'),
     verificationItems: [
         TestVerificationItems.SUCCESS.PROOF,
@@ -73,15 +73,12 @@ AllFieldsTest.args = {
     ],
     onMediaAttachmentClick: (url: string) =>
         console.log(`You clicked on an attachment with the url "${url}"`),
-    extraFields: {
-        notes: "This credential has some notes about it. Here's a note: this isn't fully wired up yet, so this note is just an extraField prop",
-    },
 };
 
 export const BackgroundColorTest = Template.bind({});
 BackgroundColorTest.args = {
     credential: AllFieldsBackgroundColorCredential,
-    convertTagsToSkills: simpleConvertTagsToSkills,
+    // convertTagsToSkills: simpleConvertTagsToSkills,
     handleXClick: () => console.log('X clicked!'),
     onMediaAttachmentClick: undefined,
     verificationItems: [
@@ -92,7 +89,4 @@ BackgroundColorTest.args = {
         TestVerificationItems.FAILED.PROOF_TYPE,
         TestVerificationItems.FAILED.APPLICABLE_PROOF,
     ],
-    extraFields: {
-        notes: "This credential has some notes about it. Here's a note: this isn't fully wired up yet, so this note is just an extraField prop",
-    },
 };

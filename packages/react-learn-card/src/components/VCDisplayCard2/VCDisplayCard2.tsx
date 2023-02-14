@@ -14,10 +14,9 @@ import {
     getColorForVerificationStatus,
     getInfoFromCredential,
 } from '../../helpers/credential.helpers';
-import { BoostAchievementCredential } from '../../types'; // TODO should be a way to get this from @learncard/types
+import { BoostAchievementCredential } from '../../types'; // TODO should be a way to get this from @learncard/types (probs will work after fixing type errors)
 
 export type VCDisplayCard2Props = {
-    // credentialInfo?: VerifiableCredentialInfo;
     credential: VC | BoostAchievementCredential;
     verificationItems: VerificationItem[];
     issueeOverride?: Profile;
@@ -25,7 +24,7 @@ export type VCDisplayCard2Props = {
     subjectImageComponent?: React.ReactNode;
     issuerImageComponent?: React.ReactNode;
     verificationInProgress?: boolean;
-    convertTagsToSkills?: (tags: string[]) => { [skill: string]: string[] };
+    // convertTagsToSkills?: (tags: string[]) => { [skill: string]: string[] };
     handleXClick?: () => void;
     getFileMetadata?: (url: string) => MediaMetadata;
     onMediaAttachmentClick?: (url: string) => void;
@@ -39,8 +38,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     subjectImageComponent,
     issuerImageComponent,
     verificationInProgress = false,
-    convertTagsToSkills,
-    // extraFields,
+    // convertTagsToSkills,
     handleXClick,
     getFileMetadata,
     onMediaAttachmentClick,
@@ -171,7 +169,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                         <VC2BackFace
                             credential={credential}
                             verificationItems={verificationItems}
-                            convertTagsToSkills={convertTagsToSkills}
+                            // convertTagsToSkills={convertTagsToSkills}
                             getFileMetadata={getFileMetadata}
                             onMediaAttachmentClick={onMediaAttachmentClick}
                         />
