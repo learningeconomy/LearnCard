@@ -28,6 +28,8 @@ export const BoostCredentialTest = Template.bind({});
 BoostCredentialTest.args = {
     credential: BoostCredential,
     verificationItems: [
+        TestVerificationItems.SUCCESS.PROOF,
+        TestVerificationItems.SUCCESS.NOT_EXPIRED,
     ],
 };
 
@@ -62,6 +64,8 @@ AllFieldsTest.args = {
     verificationItems: [
         TestVerificationItems.SUCCESS.PROOF,
         TestVerificationItems.SUCCESS.NO_EXPIRATION,
+        TestVerificationItems.SUCCESS.NOT_EXPIRED,
+        TestVerificationItems.FAILED.EXPIRED,
         TestVerificationItems.FAILED.CONTEXT,
         TestVerificationItems.FAILED.SIGNATURE,
         TestVerificationItems.FAILED.PROOF_TYPE,

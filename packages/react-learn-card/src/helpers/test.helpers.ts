@@ -237,8 +237,19 @@ export const TestVerificationItems = {
             check: 'proof',
             message: 'Valid',
         },
+        NOT_EXPIRED: {
+            status: 'Success',
+            check: 'expiration',
+            message: 'Valid • Expires 28 FEB 2023',
+        },
     },
     FAILED: {
+        // expirationDate in the past
+        EXPIRED: {
+            status: 'Failed',
+            check: 'expiration',
+            details: 'Invalid • Expired 28 JAN 2023',
+        },
         // missing proof object or verificationMethod has bad data
         APPLICABLE_PROOF: {
             status: 'Failed',
