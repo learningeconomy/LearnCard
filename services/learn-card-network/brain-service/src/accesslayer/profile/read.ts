@@ -42,13 +42,26 @@ export const checkIfProfileExists = async ({
 
 export const searchProfiles = async (
     searchInput: string,
-    limit: number
+    {
+        limit = 25,
+        blacklist = [],
+    }: {
+        limit?: number;
+        blacklist?: string[];
+    } = {}
 ): Promise<ProfileType[]> => {
     const result = await new QueryBuilder(
-        new BindParam({ input: searchInput.toLowerCase(), inputRegex: `(?i).*${searchInput}.*` })
+        new BindParam({
+            input: searchInput.toLowerCase(),
+            inputRegex: `(?i).*${searchInput}.*`,
+            blacklist,
+        })
     )
         .match({ identifier: 'profile', model: Profile })
-        .where('profile.handle CONTAINS $input OR profile.displayName =~ $inputRegex')
+        .where(
+            `(profile.handle CONTAINS $input OR profile.displayName =~ $inputRegex)${blacklist.length > 0 ? ' AND NOT profile.handle IN $blacklist' : ''
+            }`
+        )
         .return('profile')
         .limit(limit)
         .run();

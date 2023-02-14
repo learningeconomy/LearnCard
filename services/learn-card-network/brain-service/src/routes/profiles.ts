@@ -16,6 +16,7 @@ import { createProfile } from '@accesslayer/profile/create';
 import { deleteProfile } from '@accesslayer/profile/delete';
 import {
     checkIfProfileExists,
+    getProfileByDid,
     getProfileByEmail,
     getProfileByHandle,
     searchProfiles,
@@ -148,11 +149,22 @@ export const profilesRouter = t.router({
             },
         })
         .input(
-            z.object({ input: z.string(), limit: z.number().int().positive().lt(100).default(25) })
+            z.object({
+                input: z.string(),
+                limit: z.number().int().positive().lt(100).default(25),
+                includeSelf: z.boolean().default(false),
+            })
         )
         .output(LCNProfileValidator.array())
         .query(async ({ ctx, input }) => {
-            const profiles = await searchProfiles(input.input, input.limit);
+            const { input: searchInput, limit, includeSelf } = input;
+
+            const profile = ctx.user && !includeSelf && (await getProfileByDid(ctx.user.did));
+
+            const profiles = await searchProfiles(searchInput, {
+                limit,
+                blacklist: profile ? [profile.handle] : [],
+            });
 
             return profiles.map(profile => updateDidForProfile(ctx.domain, profile));
         }),

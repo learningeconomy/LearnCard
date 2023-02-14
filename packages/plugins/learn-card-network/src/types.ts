@@ -20,7 +20,10 @@ export type LearnCardNetworkPluginMethods = {
     ) => Promise<boolean>;
     deleteProfile: () => Promise<boolean>;
     getProfile: (handle?: string) => Promise<LCNProfile | undefined>;
-    searchProfiles: (handle?: string, limit?: number) => Promise<LCNProfile[]>;
+    searchProfiles: (
+        handle?: string,
+        options?: { limit?: number; includeSelf?: boolean }
+    ) => Promise<LCNProfile[]>;
     connectWith: (handle: string) => Promise<boolean>;
     connectWithInvite: (handle: string, challenge: string) => Promise<boolean>;
     acceptConnectionRequest: (id: string) => Promise<boolean>;

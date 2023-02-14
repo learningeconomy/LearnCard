@@ -444,6 +444,16 @@ describe('Profiles', () => {
             expect(displayNameResults).toHaveLength(2);
             expect(handleResults).toHaveLength(2);
         });
+
+        it('should allow you to not include yourself', async () => {
+            const results = await userA.clients.fullAuth.profile.searchProfiles({
+                input: 'user',
+                includeSelf: false,
+            });
+
+            expect(results).toHaveLength(1);
+            expect(results.find(result => result.handle === 'usera')).toBeFalsy();
+        });
     });
 
     describe('updateProfile', () => {

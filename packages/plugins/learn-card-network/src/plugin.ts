@@ -133,8 +133,12 @@ export const getLearnCardNetworkPlugin = async (
 
                 return client.profile.getOtherProfile.query({ handle });
             },
-            searchProfiles: async (_learnCard, input = '', limit = 25) => {
-                return client.profile.searchProfiles.query({ input, limit });
+            searchProfiles: async (
+                _learnCard,
+                input = '',
+                { limit = 25, includeSelf = false } = {}
+            ) => {
+                return client.profile.searchProfiles.query({ input, limit, includeSelf });
             },
             connectWith: async (_learnCard, handle) => {
                 if (!userData) throw new Error('Please make an account first!');
