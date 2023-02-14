@@ -111,6 +111,33 @@ export const connectProfiles = async (
     return true;
 };
 
+/** Disconnects two profiles */
+export const disconnectProfiles = async (
+    source: ProfileInstance,
+    target: ProfileInstance,
+    validate = true
+): Promise<boolean> => {
+    if (validate && !(await areProfilesConnected(source, target))) {
+        throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Profiles are not connected!',
+        });
+    }
+
+    await Promise.all([
+        Profile.deleteRelationships({
+            alias: 'connectedWith',
+            where: { source: { handle: source.handle }, target: { handle: target.handle } },
+        }),
+        Profile.deleteRelationships({
+            alias: 'connectedWith',
+            where: { source: { handle: target.handle }, target: { handle: source.handle } },
+        }),
+    ]);
+
+    return true;
+};
+
 /**
  * Sends a connection request from one profile to another
  *

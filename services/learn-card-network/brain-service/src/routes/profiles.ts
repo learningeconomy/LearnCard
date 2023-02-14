@@ -5,6 +5,7 @@ import { v4 as uuid } from 'uuid';
 
 import {
     connectProfiles,
+    disconnectProfiles,
     getConnectionRequests,
     getConnections,
     getPendingConnections,
@@ -159,11 +160,11 @@ export const profilesRouter = t.router({
         .query(async ({ ctx, input }) => {
             const { input: searchInput, limit, includeSelf } = input;
 
-            const profile = ctx.user && !includeSelf && (await getProfileByDid(ctx.user.did));
+            const selfProfile = ctx.user && !includeSelf && (await getProfileByDid(ctx.user.did));
 
             const profiles = await searchProfiles(searchInput, {
                 limit,
-                blacklist: profile ? [profile.handle] : [],
+                blacklist: selfProfile ? [selfProfile.handle] : [],
             });
 
             return profiles.map(profile => updateDidForProfile(ctx.domain, profile));
@@ -305,6 +306,36 @@ export const profilesRouter = t.router({
             }
 
             return connectProfiles(profile, targetProfile, false);
+        }),
+
+    disconnectWith: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/profile/{handle}/disconnect',
+                tags: ['Profiles'],
+                summary: 'Disconnect with another profile',
+                description:
+                    'This route uses the request header to disconnect with another user based on their handle',
+            },
+        })
+        .input(z.object({ handle: z.string() }))
+        .output(z.boolean())
+        .mutation(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { handle } = input;
+
+            const targetProfile = await getProfileByHandle(handle);
+
+            if (!targetProfile) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Profile not found. Are you sure this person exists?',
+                });
+            }
+
+            return disconnectProfiles(profile, targetProfile);
         }),
 
     acceptConnectionRequest: profileRoute

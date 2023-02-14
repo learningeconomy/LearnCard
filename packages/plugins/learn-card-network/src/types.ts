@@ -26,6 +26,7 @@ export type LearnCardNetworkPluginMethods = {
     ) => Promise<LCNProfile[]>;
     connectWith: (handle: string) => Promise<boolean>;
     connectWithInvite: (handle: string, challenge: string) => Promise<boolean>;
+    disconnectWith: (handle: string) => Promise<boolean>;
     acceptConnectionRequest: (id: string) => Promise<boolean>;
     getConnections: () => Promise<LCNProfile[]>;
     getPendingConnections: () => Promise<LCNProfile[]>;

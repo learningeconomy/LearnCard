@@ -698,6 +698,44 @@ describe('Profiles', () => {
         });
     });
 
+    describe('disconnectWith', () => {
+        beforeEach(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await userA.clients.fullAuth.profile.createProfile({ handle: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ handle: 'userb' });
+
+            await userA.clients.fullAuth.profile.connectWith({ handle: 'userb' });
+            await userB.clients.fullAuth.profile.acceptConnectionRequest({ handle: 'usera' });
+        });
+
+        afterAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+        });
+
+        it('should require full auth to disconnect with another user', async () => {
+            await expect(
+                userA.clients.partialAuth.profile.disconnectWith({ handle: 'userb' })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        });
+
+        it('allows users to disconnect', async () => {
+            await expect(
+                userA.clients.fullAuth.profile.disconnectWith({ handle: 'userb' })
+            ).resolves.not.toThrow();
+
+            expect(await userA.clients.fullAuth.profile.connections()).toHaveLength(0);
+            expect(await userB.clients.fullAuth.profile.connections()).toHaveLength(0);
+        });
+
+        it('errors when users are not connected', async () => {
+            await userA.clients.fullAuth.profile.disconnectWith({ handle: 'userb' });
+
+            await expect(
+                userA.clients.fullAuth.profile.disconnectWith({ handle: 'userb' })
+            ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+        });
+    });
+
     describe('acceptConnectionRequest', () => {
         beforeEach(async () => {
             await Profile.delete({ detach: true, where: {} });
