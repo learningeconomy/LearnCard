@@ -118,18 +118,18 @@ export const AllFieldsCredential = {
     display: { backgroundImage: 'https://images.unsplash.com/photo-1518199266791-5375a83190b7' },
     attachments: [
         {
-            type: 'DOCUMENT',
+            type: 'document',
             name: 'Custom PDF title',
             url: 'https://cdn.filestackcontent.com/4LN0x2LQXSjIH3c5bfBr',
         },
         {
-            type: 'DOCUMENT',
+            type: 'document',
             name: 'This is a text file with a super long name that goes to two lines',
             url: 'https://cdn.filestackcontent.com/BqqfmVEbQFmRaqwvqTMA',
         },
-        { type: 'IMAGE', url: 'https://cdn.filestackcontent.com/XuMpArLAQ3qam5OdArih' },
-        { type: 'IMAGE', url: 'https://cdn.filestackcontent.com/PNb6lViSaqGoKyRyXyyp' },
-        { type: 'IMAGE', url: 'https://images.unsplash.com/photo-1607419145932-ed1fc8c034d8' },
+        { type: 'photo', url: 'https://cdn.filestackcontent.com/XuMpArLAQ3qam5OdArih' },
+        { type: 'photo', url: 'https://cdn.filestackcontent.com/PNb6lViSaqGoKyRyXyyp' },
+        { type: 'photo', url: 'https://images.unsplash.com/photo-1607419145932-ed1fc8c034d8' },
         // TODO need LINK and VIDEO?
     ],
 };

@@ -48,8 +48,8 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
 }) => {
     const [fileMetadata, setFileMetadata] = useState<{ [fileUrl: string]: MediaMetadata }>({});
 
-    const images = attachments.filter(a => a.type === 'IMAGE');
-    const files = attachments.filter(a => a.type === 'DOCUMENT');
+    const images = attachments.filter(a => a.type === 'photo');
+    const files = attachments.filter(a => a.type === 'document');
 
     useEffect(() => {
         const getMetadata = async (urls: string[]): Promise<any> => {

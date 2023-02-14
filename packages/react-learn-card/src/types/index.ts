@@ -245,7 +245,11 @@ export type GenericCardProps = {
     flipped?: boolean;
 };
 
-export type Attachment = { title: string; url: string; type: string };
+export type Attachment = {
+    title: string;
+    url: string;
+    type: 'photo' | 'document' | 'video' | 'link';
+};
 
 export type BoostAchievementCredential = AchievementCredential & {
     display?: { backgroundImage?: string; backgroundColor?: string };
