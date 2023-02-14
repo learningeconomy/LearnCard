@@ -1,7 +1,7 @@
 import React from 'react';
 import { format } from 'date-fns';
 
-import MediaAttachmentsBox, { MediaMetadata } from './MediaAttachmentsBox';
+import MediaAttachmentsBox, { MediaMetadata, VideoMetadata } from './MediaAttachmentsBox';
 import TruncateTextBox from './TruncateTextBox';
 // import SkillsBox from './SkillsBox';
 
@@ -22,6 +22,7 @@ type VC2BackFaceProps = {
     verificationItems: VerificationItem[];
     // convertTagsToSkills?: (tags: string[]) => { [skill: string]: string[] };
     getFileMetadata?: (url: string) => MediaMetadata;
+    getVideoMetadata?: (url: string) => VideoMetadata;
     onMediaAttachmentClick?: (url: string) => void;
 };
 
@@ -30,6 +31,7 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
     verificationItems,
     // convertTagsToSkills = defaultTagsToSkills,
     getFileMetadata,
+    getVideoMetadata,
     onMediaAttachmentClick,
 }) => {
     const expiration = credential.expirationDate
@@ -60,6 +62,7 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
                 <MediaAttachmentsBox
                     attachments={credential.attachments}
                     getFileMetadata={getFileMetadata}
+                    getVideoMetadata={getVideoMetadata}
                     onMediaAttachmentClick={onMediaAttachmentClick}
                 />
             )}

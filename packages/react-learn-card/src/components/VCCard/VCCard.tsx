@@ -3,7 +3,7 @@ import { initLearnCard } from '@learncard/core';
 import { VC, Profile, VerificationItem } from '@learncard/types';
 
 import { VCDisplayCard } from '../VCDisplayCard';
-import { VCDisplayCard2, MediaMetadata } from '../VCDisplayCard2';
+import { VCDisplayCard2, MediaMetadata, VideoMetadata } from '../VCDisplayCard2';
 
 export type VCCardProps = {
     credential: VC;
@@ -16,6 +16,7 @@ export type VCCardProps = {
     // convertTagsToSkills?: (tags: string[]) => { [skill: string]: string[] };
     handleXClick?: () => void;
     getFileMetadata?: (url: string) => MediaMetadata;
+    getVideoMetadata?: (url: string) => VideoMetadata;
     onMediaAttachmentClick?: (url: string) => void;
 };
 
@@ -28,6 +29,7 @@ export const VCCard: React.FC<VCCardProps> = ({
     // convertTagsToSkills,
     handleXClick,
     getFileMetadata,
+    getVideoMetadata,
     onMediaAttachmentClick,
 }) => {
     const [loading, setLoading] = useState(true);
@@ -65,6 +67,7 @@ export const VCCard: React.FC<VCCardProps> = ({
             // convertTagsToSkills={convertTagsToSkills}
             handleXClick={handleXClick}
             getFileMetadata={getFileMetadata}
+            getVideoMetadata={getVideoMetadata}
             onMediaAttachmentClick={onMediaAttachmentClick}
         />
     );

@@ -15,6 +15,7 @@ import {
     getInfoFromCredential,
 } from '../../helpers/credential.helpers';
 import { BoostAchievementCredential } from '../../types'; // TODO should be a way to get this from @learncard/types (probs will work after fixing type errors)
+import { MediaMetadata, VideoMetadata } from './MediaAttachmentsBox';
 
 export type VCDisplayCard2Props = {
     credential: VC | BoostAchievementCredential;
@@ -27,6 +28,7 @@ export type VCDisplayCard2Props = {
     // convertTagsToSkills?: (tags: string[]) => { [skill: string]: string[] };
     handleXClick?: () => void;
     getFileMetadata?: (url: string) => MediaMetadata;
+    getVideoMetadata?: (url: string) => VideoMetadata;
     onMediaAttachmentClick?: (url: string) => void;
 };
 
@@ -41,6 +43,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     // convertTagsToSkills,
     handleXClick,
     getFileMetadata,
+    getVideoMetadata,
     onMediaAttachmentClick,
 }) => {
     const {
@@ -171,6 +174,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                             verificationItems={verificationItems}
                             // convertTagsToSkills={convertTagsToSkills}
                             getFileMetadata={getFileMetadata}
+                            getVideoMetadata={getVideoMetadata}
                             onMediaAttachmentClick={onMediaAttachmentClick}
                         />
                     )}

@@ -12,14 +12,23 @@ export type MediaMetadata = {
     numberOfPages?: number;
 };
 
+export type VideoMetadata = {
+    title?: string;
+    length?: string;
+    source?: string; // e.g. "youtube.com"
+    imageUrl?: string;
+};
+
 type MediaAttachmentsBoxProps = {
     attachments: Attachment[];
     getFileMetadata?: (url: string) => MediaMetadata;
+    getVideoMetadata?: (url: string) => VideoMetadata;
     onMediaAttachmentClick?: (url: string) => void;
 };
 
 const defaultGetFileMetadata = async (url: string) => {
-    if (!url.includes('filestack')) return;
+    const isFilestack = url.includes('filestack');
+    if (!isFilestack) return;
 
     const urlParams = url.split('.com/')[1]?.split('/');
     if (!urlParams) return;
@@ -41,44 +50,85 @@ const defaultGetFileMetadata = async (url: string) => {
     };
 };
 
+const defaultGetVideoMetadata = async (url: string) => {
+    const isYoutube = url.includes('youtube');
+    if (!isYoutube) return;
+
+    const metadataUrl = `http://youtube.com/oembed?url=${url}&format=json`;
+
+    let fetchFailed = false;
+    const metadata = await fetch(metadataUrl)
+        .then(res => res.json())
+        .catch(() => (fetchFailed = true));
+
+    if (fetchFailed) return;
+
+    return {
+        title: metadata.title,
+        imageUrl: metadata.thumbnail_url,
+        length: '',
+        source: 'youtube.com',
+    };
+};
+
+// const youtubeMetadataGetter = require('youtube-metadata-from-url');
 const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
     attachments,
     getFileMetadata = defaultGetFileMetadata,
+    getVideoMetadata = defaultGetVideoMetadata,
     onMediaAttachmentClick,
 }) => {
     const [fileMetadata, setFileMetadata] = useState<{
-        [fileUrl: string]: MediaMetadata | undefined;
+        [fileUrl: string]: MediaMetadata | VideoMetadata | undefined;
+    }>({});
+    const [videoMetadata, setVideoMetadata] = useState<{
+        [fileUrl: string]: VideoMetadata | undefined;
     }>({});
 
-    const images = attachments.filter(a => a.type === 'photo');
+    const mediaAttachments = attachments.filter(a => a.type === 'photo' || a.type === 'video');
     const files = attachments.filter(a => a.type === 'document');
 
     useEffect(() => {
-        const getMetadata = async (urls: string[]): Promise<any> => {
-            const metadata: { [fileUrl: string]: MediaMetadata | undefined } = {};
+        const getMetadata = async (attachments: Attachment[]): Promise<any> => {
+            const fileMetadata: { [fileUrl: string]: MediaMetadata | undefined } = {};
+            const videoMetadata: { [videoUrl: string]: VideoMetadata | undefined } = {};
             await Promise.all(
-                urls.map(async url => {
-                    metadata[url] = await getFileMetadata(url);
+                attachments.map(async attachment => {
+                    if (attachment.type === 'document') {
+                        fileMetadata[attachment.url] = await getFileMetadata(attachment.url);
+                    } else if (attachment.type === 'video') {
+                        videoMetadata[attachment.url] = await getVideoMetadata(attachment.url);
+                    }
                 })
             );
 
-            setFileMetadata(metadata);
+            setVideoMetadata(videoMetadata);
+            setFileMetadata(fileMetadata);
         };
 
-        getMetadata(files.map(f => f.url));
+        const videos = attachments.filter(a => a.type === 'video');
+        getMetadata([...files, ...videos]);
     }, []);
 
     return (
         <div className="bg-white flex flex-col items-start gap-[10px] rounded-[20px] shadow-bottom px-[15px] py-[20px] w-full">
             <h3 className="text-[20px] leading-[20px] text-grayscale-900">Media Attachments</h3>
-            {images.length > 0 && (
+            {mediaAttachments.length > 0 && (
                 <div className="flex gap-[5px] justify-between flex-wrap w-full">
-                    {images.map((image, index) => {
+                    {mediaAttachments.map((media, index) => {
+                        let imageUrl;
+
+                        if (media.type === 'video') {
+                            imageUrl = videoMetadata[media.url]?.imageUrl;
+                        } else {
+                            imageUrl = media.url;
+                        }
+
                         const innerContent = (
                             <>
                                 <img
                                     className="absolute top-0 left-0 right-0 bottom-0"
-                                    src={image.url}
+                                    src={imageUrl}
                                 />
                                 <Camera className="absolute bottom-[10px] left-[10px] z-10" />
                             </>
@@ -91,7 +141,7 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                                 <button
                                     key={index}
                                     className={className}
-                                    onClick={() => onMediaAttachmentClick(image.url)}
+                                    onClick={() => onMediaAttachmentClick(media.url)}
                                 >
                                     {innerContent}
                                 </button>

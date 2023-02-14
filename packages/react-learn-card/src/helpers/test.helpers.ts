@@ -128,6 +128,7 @@ export const AllFieldsCredential = {
             url: 'https://cdn.filestackcontent.com/BqqfmVEbQFmRaqwvqTMA',
         },
         { type: 'photo', url: 'https://cdn.filestackcontent.com/XuMpArLAQ3qam5OdArih' },
+        { type: 'video', url: 'https://www.youtube.com/watch?v=fV7mWuCdkpY' },
         { type: 'photo', url: 'https://cdn.filestackcontent.com/PNb6lViSaqGoKyRyXyyp' },
         { type: 'photo', url: 'https://images.unsplash.com/photo-1607419145932-ed1fc8c034d8' },
         // TODO need LINK and VIDEO?
