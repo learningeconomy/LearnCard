@@ -119,12 +119,12 @@ export const AllFieldsCredential = {
     attachments: [
         {
             type: 'document',
-            name: 'Custom PDF title',
+            title: 'Custom PDF title',
             url: 'https://cdn.filestackcontent.com/4LN0x2LQXSjIH3c5bfBr',
         },
         {
             type: 'document',
-            name: 'This is a text file with a super long name that goes to two lines',
+            title: 'This is a text file with a super long name that goes to two lines',
             url: 'https://cdn.filestackcontent.com/BqqfmVEbQFmRaqwvqTMA',
         },
         { type: 'photo', url: 'https://cdn.filestackcontent.com/XuMpArLAQ3qam5OdArih' },

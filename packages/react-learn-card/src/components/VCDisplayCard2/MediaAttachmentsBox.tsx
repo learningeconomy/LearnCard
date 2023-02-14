@@ -46,14 +46,16 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
     getFileMetadata = defaultGetFileMetadata,
     onMediaAttachmentClick,
 }) => {
-    const [fileMetadata, setFileMetadata] = useState<{ [fileUrl: string]: MediaMetadata }>({});
+    const [fileMetadata, setFileMetadata] = useState<{
+        [fileUrl: string]: MediaMetadata | undefined;
+    }>({});
 
     const images = attachments.filter(a => a.type === 'photo');
     const files = attachments.filter(a => a.type === 'document');
 
     useEffect(() => {
         const getMetadata = async (urls: string[]): Promise<any> => {
-            const metadata: { [fileUrl: string]: MediaMetadata } = {};
+            const metadata: { [fileUrl: string]: MediaMetadata | undefined } = {};
             await Promise.all(
                 urls.map(async url => {
                     metadata[url] = await getFileMetadata(url);
@@ -115,7 +117,7 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                                 <div className="flex gap-[5px] items-center">
                                     <GenericDocumentIcon className="shrink-0" />
                                     <span className="text-grayscale-900 font-[400]">
-                                        {f.name ?? 'No title'}
+                                        {f.title ?? 'No title'}
                                     </span>
                                 </div>
                                 {metadata && (
