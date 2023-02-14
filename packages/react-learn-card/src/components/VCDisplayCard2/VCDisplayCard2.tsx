@@ -22,10 +22,11 @@ import {
     getColorForVerificationStatus,
     getInfoFromCredential,
 } from '../../helpers/credential.helpers';
+import { BoostAchievementCredential } from '../../types';
 
 export type VCDisplayCard2Props = {
     // credentialInfo?: VerifiableCredentialInfo;
-    credential: VC | AchievementCredential;
+    credential: VC | BoostAchievementCredential;
     verificationItems: VerificationItem[];
     issueeOverride?: Profile;
     issuerOverride?: Profile;
@@ -38,13 +39,13 @@ export type VCDisplayCard2Props = {
     onMediaAttachmentClick?: (url: string) => void;
 
     // dunno where these live yet within a VC, so I'll just rewire it later
-    extraFields?: {
-        notes?: string;
-        mediaAttachments?: MediaAttachment[];
-        expiration?: Date;
-        backgroundImage?: string;
-        backgroundColor?: string;
-    };
+    // extraFields?: {
+    //     notes?: string;
+    //     mediaAttachments?: MediaAttachment[];
+    //     expiration?: Date;
+    //     backgroundImage?: string;
+    //     backgroundColor?: string;
+    // };
 };
 
 export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
@@ -56,7 +57,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     issuerImageComponent,
     verificationInProgress = false,
     convertTagsToSkills,
-    extraFields,
+    // extraFields,
     handleXClick,
     getFileMetadata,
     onMediaAttachmentClick,
@@ -165,9 +166,9 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                     className="w-full flex flex-col justify-center items-center rounded-b-[200px] bg-[#353E64] pb-[50px]"
                     style={{
                         paddingTop: headerHeight + 70,
-                        backgroundColor: extraFields?.backgroundColor,
-                        backgroundImage: extraFields?.backgroundImage
-                            ? `url(${extraFields?.backgroundImage})`
+                        backgroundColor: credential.display?.backgroundColor,
+                        backgroundImage: credential.display?.backgroundImage
+                            ? `url(${credential.display?.backgroundImage})`
                             : undefined,
                         backgroundSize: 'contain',
                     }}

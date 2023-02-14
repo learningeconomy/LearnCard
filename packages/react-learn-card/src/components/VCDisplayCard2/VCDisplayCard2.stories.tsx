@@ -12,6 +12,7 @@ import {
     superSkillsConvertTags,
     superSkillsIssueeOverride,
     AllFieldsCredential,
+    AllFieldsBackgroundColorCredential,
 } from '../../helpers/test.helpers';
 
 export default {
@@ -77,13 +78,12 @@ AllFieldsTest.args = {
             { type: 'image', url: 'https://cdn.filestackcontent.com/PNb6lViSaqGoKyRyXyyp' },
             { type: 'image', url: 'https://images.unsplash.com/photo-1607419145932-ed1fc8c034d8' },
         ],
-        backgroundImage: 'https://images.unsplash.com/photo-1518199266791-5375a83190b7',
     },
 };
 
 export const BackgroundColorTest = Template.bind({});
 BackgroundColorTest.args = {
-    credential: AllFieldsCredential,
+    credential: AllFieldsBackgroundColorCredential,
     convertTagsToSkills: simpleConvertTagsToSkills,
     handleXClick: () => console.log('X clicked!'),
     onMediaAttachmentClick: undefined,
@@ -112,6 +112,5 @@ BackgroundColorTest.args = {
             { type: 'image', url: 'https://cdn.filestackcontent.com/PNb6lViSaqGoKyRyXyyp' },
             { type: 'image', url: 'https://images.unsplash.com/photo-1607419145932-ed1fc8c034d8' },
         ],
-        backgroundColor: 'lightblue',
     },
 };

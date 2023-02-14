@@ -1,4 +1,9 @@
-import { VerificationItem, VC, Profile, CredentialSubject } from '@learncard/types';
+import {
+    VerificationItem,
+    AchievementCredential,
+    Profile,
+    CredentialSubject,
+} from '@learncard/types';
 import React from 'react';
 
 export enum Icons {
@@ -236,4 +241,10 @@ export type GenericCardProps = {
     checkStatus?: boolean;
     onClick?: () => void;
     flipped?: boolean;
+};
+
+export type BoostAchievementCredential = AchievementCredential & {
+    display?: { backgroundImage?: string; backgroundColor?: string };
+    image: string;
+    attachments: { title: string; url: string; type: string }[];
 };

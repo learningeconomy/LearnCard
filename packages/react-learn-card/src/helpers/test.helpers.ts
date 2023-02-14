@@ -78,6 +78,7 @@ export const testTags = [
 ];
 
 export const AllFieldsCredential = {
+    name: 'Verbose Credential',
     '@context': [
         'https://www.w3.org/2018/credentials/v1',
         'https://purl.imsglobal.org/spec/ob/v3p0/context.json',
@@ -114,7 +115,12 @@ export const AllFieldsCredential = {
         proofValue:
             'z5R86gecRsBh1xmPJqdfqoNppxy4hbMZWtjZZNdaqGYtwBcPHNzXwAtHdqhTWQVprQn6B8xfQvqqvQo3ZjaTjt3tW',
     },
-    name: 'Verbose Credential',
+    display: { backgroundImage: 'https://images.unsplash.com/photo-1518199266791-5375a83190b7' },
+};
+
+export const AllFieldsBackgroundColorCredential = {
+    ...AllFieldsCredential,
+    display: { backgroundColor: 'lightblue' },
 };
 
 export const TestVerificationItems = {
