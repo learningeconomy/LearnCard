@@ -3,10 +3,13 @@
  */
 
 export * from "./FitText";
+export * from "./InfoBox";
 export * from "./MediaAttachmentsBox";
 export * from "./RibbonEnd";
+export * from "./SkillsBox";
 export * from "./TruncateTextBox";
 export * from "./VC2BackFace";
 export * from "./VC2FrontFaceInfo";
 export * from "./VCDisplayCard2";
 export * from "./VerificationRow";
+export * from "./VerificationsBox";
