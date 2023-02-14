@@ -8,6 +8,7 @@ import {
     issueeOverride,
     SuperSkillsOprahCredential,
     superSkillsConvertTags,
+    BoostCredential,
 } from '../../helpers/test.helpers';
 
 export default {
@@ -39,4 +40,11 @@ SuperSkillsVersion2Test.args = {
     version: '2',
     credential: SuperSkillsOprahCredential,
     convertTagsToSkills: superSkillsConvertTags,
+};
+
+export const BoostCredentialVersion2Test = Template.bind({});
+BoostCredentialVersion2Test.args = {
+    ...baseArgs,
+    version: '2',
+    credential: BoostCredential,
 };

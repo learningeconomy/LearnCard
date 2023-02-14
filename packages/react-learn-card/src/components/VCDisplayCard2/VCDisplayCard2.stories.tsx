@@ -13,6 +13,7 @@ import {
     superSkillsIssueeOverride,
     AllFieldsCredential,
     AllFieldsBackgroundColorCredential,
+    BoostCredential,
 } from '../../helpers/test.helpers';
 
 export default {
@@ -22,6 +23,13 @@ export default {
 } as Meta<typeof VCDisplayCard2>;
 
 const Template: Story<VCDisplayCard2Props> = args => <VCDisplayCard2 {...args} />;
+
+export const BoostCredentialTest = Template.bind({});
+BoostCredentialTest.args = {
+    credential: BoostCredential,
+    verificationItems: [
+    ],
+};
 
 export const JFFCredentialTest = Template.bind({});
 JFFCredentialTest.args = {

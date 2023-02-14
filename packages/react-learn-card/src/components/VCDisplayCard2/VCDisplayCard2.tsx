@@ -9,18 +9,12 @@ import AwardRibbon from '../svgs/AwardRibbon';
 import LeftArrow from '../svgs/LeftArrow';
 import RoundedX from '../svgs/RoundedX';
 
-import {
-    VC,
-    AchievementCredential,
-    VerificationItem,
-    VerificationStatusEnum,
-    Profile,
-} from '@learncard/types';
+import { VC, VerificationItem, VerificationStatusEnum, Profile } from '@learncard/types';
 import {
     getColorForVerificationStatus,
     getInfoFromCredential,
 } from '../../helpers/credential.helpers';
-import { BoostAchievementCredential } from '../../types';
+import { BoostAchievementCredential } from '../../types'; // TODO should be a way to get this from @learncard/types
 
 export type VCDisplayCard2Props = {
     // credentialInfo?: VerifiableCredentialInfo;
@@ -35,15 +29,6 @@ export type VCDisplayCard2Props = {
     handleXClick?: () => void;
     getFileMetadata?: (url: string) => MediaMetadata;
     onMediaAttachmentClick?: (url: string) => void;
-
-    // dunno where these live yet within a VC, so I'll just rewire it later
-    // extraFields?: {
-    //     notes?: string;
-    //     mediaAttachments?: MediaAttachment[];
-    //     expiration?: Date;
-    //     backgroundImage?: string;
-    //     backgroundColor?: string;
-    // };
 };
 
 export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({

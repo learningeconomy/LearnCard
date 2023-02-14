@@ -139,6 +139,91 @@ export const AllFieldsBackgroundColorCredential = {
     display: { backgroundColor: 'lightblue' },
 };
 
+export const BoostCredential = {
+    '@context': [
+        'https://www.w3.org/2018/credentials/v1',
+        'https://purl.imsglobal.org/spec/ob/v3p0/context.json',
+        {
+            type: '@type',
+            xsd: 'https://www.w3.org/2001/XMLSchema#',
+            BoostCredential: {
+                '@context': {
+                    attachments: {
+                        '@container': '@set',
+                        '@context': {
+                            title: {
+                                '@id': 'https://www.example.org/attachmentTitle',
+                                '@type': 'xsd:string',
+                            },
+                            type: {
+                                '@id': 'https://www.example.org/attachmentType',
+                                '@type': 'xsd:string',
+                            },
+                            url: {
+                                '@id': 'https://www.example.org/attachmentUrl',
+                                '@type': 'xsd:string',
+                            },
+                        },
+                        '@id': 'https://www.example.org/boost-attachments',
+                    },
+                    display: {
+                        '@context': {
+                            backgroundColor: {
+                                '@id': 'https://www.example.org/backgroundColor',
+                                '@type': 'xsd:string',
+                            },
+                            backgroundImage: {
+                                '@id': 'https://www.example.org/backgroundImage',
+                                '@type': 'xsd:string',
+                            },
+                        },
+                        '@id': 'https://www.example.org/boost-display',
+                    },
+                    image: {
+                        '@id': 'https://www.example.org/boost-image',
+                        '@type': 'xsd:string',
+                    },
+                },
+                '@id': 'https://www.example.org/boost-credential',
+            },
+        },
+    ],
+    type: ['VerifiableCredential', 'OpenBadgeCredential', 'BoostCredential'],
+    credentialSubject: {
+        id: 'did:web:network.learncard.com:users:donny',
+        type: ['AchievementSubject'],
+        achievement: {
+            achievementType: 'Achievement',
+            criteria: {
+                narrative: 'test criteria',
+            },
+            description: 'test description',
+            id: 'https://example.com/achievements/21st-century-skills/teamwork',
+            image: 'https://cdn.filestackcontent.com/WfRYzfG3S4SAhAkRRv8a',
+            name: 'test achievement vc',
+            type: ['Achievement'],
+        },
+    },
+    issuer: 'did:web:network.learncard.com:users:donny',
+    issuanceDate: '2023-02-14T19:29:49.790Z',
+    proof: {
+        '@context': ['https://w3id.org/security/suites/ed25519-2020/v1'],
+        type: 'Ed25519Signature2020',
+        proofPurpose: 'assertionMethod',
+        proofValue:
+            'z4A7jdUKhfHzA8LwRVR6XGbMxiRMLo5fBAcGiC7LZe1DcnVVMVL3dmhrWmDrrfsquycqcXmfTephheEpw33UTEqnL',
+        verificationMethod: 'did:web:network.learncard.com:users:donny#owner',
+        created: '2023-02-14T19:29:50.805Z',
+    },
+    expirationDate: '2023-02-28T19:24:00Z',
+    image: 'https://cdn.filestackcontent.com/WfRYzfG3S4SAhAkRRv8a',
+    display: {
+        backgroundColor: '#4e4e',
+        backgroundImage: 'https://cdn.filestackcontent.com/wYXbETSCSOSThnZOFJLQ',
+    },
+    name: 'test achievement vc',
+};
+
 export const TestVerificationItems = {
     // Real verification items returned by validation
     SUCCESS: {
