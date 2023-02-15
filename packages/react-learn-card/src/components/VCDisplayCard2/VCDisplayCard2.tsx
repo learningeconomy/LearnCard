@@ -100,6 +100,16 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
 
     const statusColor = getColorForVerificationStatus(worstVerificationStatus);
 
+    const backgroundStyle = {
+        backgroundColor: credential.display?.backgroundColor,
+        backgroundImage: credential.display?.backgroundImage
+            ? `url(${credential.display?.backgroundImage})`
+            : undefined,
+        backgroundSize: 'contain',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed',
+    };
+
     return (
         <section className="font-mouse flex flex-col items-center border-solid border-[5px] border-white h-[700px] rounded-[30px] overflow-visible z-10 max-w-[400px] relative bg-white">
             <RibbonEnd
@@ -148,6 +158,12 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 </button>
             )}
 
+            {/* Hide content so that it doesn't appear above the header when it scrolls */}
+            <div
+                className="absolute h-[40px] w-full z-20 flex grow rounded-t-[30px] "
+                style={backgroundStyle}
+            />
+
             <div className="flex flex-col items-center grow w-full rounded-t-[30px] rounded-b-[20px] overflow-scroll scrollbar-hide">
                 {/* 
                     div in a div here so that we can have an outer scroll container with an inner container
@@ -155,14 +171,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 */}
                 <div
                     className="w-full flex flex-col justify-center items-center rounded-b-[200px] bg-[#353E64] pb-[50px]"
-                    style={{
-                        paddingTop: headerHeight + 70,
-                        backgroundColor: credential.display?.backgroundColor,
-                        backgroundImage: credential.display?.backgroundImage
-                            ? `url(${credential.display?.backgroundImage})`
-                            : undefined,
-                        backgroundSize: 'contain',
-                    }}
+                    style={{ paddingTop: headerHeight + 70, ...backgroundStyle }}
                 >
                     {isFront && (
                         <VC2FrontFaceInfo
