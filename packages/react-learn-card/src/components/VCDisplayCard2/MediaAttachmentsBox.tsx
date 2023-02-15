@@ -133,10 +133,12 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                 <div className="flex gap-[5px] justify-between flex-wrap w-full">
                     {mediaAttachments.map((media, index) => {
                         let innerContent: React.ReactNode;
+                        let title = media.title;
 
                         if (media.type === 'video') {
                             const metadata = videoMetadata[media.url];
-                            const iconTop = metadata?.title || metadata?.source;
+                            title = (title || metadata?.title) ?? '';
+                            const iconTop = title || metadata?.source;
 
                             innerContent = (
                                 <div
@@ -160,9 +162,7 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                                     {metadata?.source && (
                                         <span className="font-[600]">{metadata?.source}</span>
                                     )}
-                                    {metadata?.title && (
-                                        <span className="line-clamp-2">{metadata?.title}</span>
-                                    )}
+                                    {title && <span className="line-clamp-2">{title}</span>}
                                 </div>
                             );
                         } else {
