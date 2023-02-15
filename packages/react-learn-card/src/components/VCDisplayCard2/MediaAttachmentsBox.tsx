@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import prettyBytes from 'pretty-bytes';
 
 import Camera from '../svgs/Camera';
+import VideoIcon from '../svgs/VideoIcon';
 import GenericDocumentIcon from '../svgs/GenericDocumentIcon';
 
 import { Attachment } from '../../types';
@@ -14,7 +15,7 @@ export type MediaMetadata = {
 
 export type VideoMetadata = {
     title?: string;
-    length?: string;
+    videoLength?: string;
     source?: string; // e.g. "youtube.com"
     imageUrl?: string;
 };
@@ -66,7 +67,7 @@ const defaultGetVideoMetadata = async (url: string) => {
     return {
         title: metadata.title,
         imageUrl: metadata.thumbnail_url,
-        length: '',
+        videoLength: '', // TODO figure out how to get this
         source: 'youtube.com',
     };
 };
@@ -116,23 +117,48 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
             {mediaAttachments.length > 0 && (
                 <div className="flex gap-[5px] justify-between flex-wrap w-full">
                     {mediaAttachments.map((media, index) => {
-                        let imageUrl;
+                        let innerContent: React.ReactNode;
 
                         if (media.type === 'video') {
-                            imageUrl = videoMetadata[media.url]?.imageUrl;
+                            const metadata = videoMetadata[media.url];
+                            const iconTop = metadata?.title || metadata?.source;
+
+                            innerContent = (
+                                <div
+                                    className="absolute top-0 left-0 right-0 bottom-0 bg-cover bg-no-repeat font-poppins text-white text-[12px] font-[400] leading-[17px] flex flex-col justify-end items-start p-[10px] text-left"
+                                    style={{ backgroundImage: `url(${metadata?.imageUrl ?? ''})` }}
+                                >
+                                    <div
+                                        className={`absolute ${iconTop ? 'top-[10px]' : 'bottom-[10px]'
+                                            } left-[10px] z-10 flex items-center gap-[5px]`}
+                                    >
+                                        <VideoIcon />
+                                        {metadata?.videoLength && (
+                                            <span className="leading-[23px]">
+                                                {metadata.videoLength}
+                                            </span>
+                                        )}
+                                    </div>
+                                    {metadata?.source && (
+                                        <span className="font-[600]">{metadata?.source}</span>
+                                    )}
+                                    {metadata?.title && (
+                                        <span className="line-clamp-2">{metadata?.title}</span>
+                                    )}
+                                </div>
+                            );
                         } else {
-                            imageUrl = media.url;
+                            innerContent = (
+                                <>
+                                    <img
+                                        className="absolute top-0 left-0 right-0 bottom-0"
+                                        src={media.url}
+                                    />
+                                    <Camera className="absolute bottom-[10px] left-[10px] z-10" />
+                                </>
+                            );
                         }
 
-                        const innerContent = (
-                            <>
-                                <img
-                                    className="absolute top-0 left-0 right-0 bottom-0"
-                                    src={imageUrl}
-                                />
-                                <Camera className="absolute bottom-[10px] left-[10px] z-10" />
-                            </>
-                        );
                         const className =
                             'w-[49%] pt-[49%] rounded-[15px] overflow-hidden relative';
 
