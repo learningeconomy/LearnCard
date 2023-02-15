@@ -146,6 +146,11 @@ export const AllFieldsCredential = {
             title: 'Herbie Highlights 2022',
             url: 'https://www.youtube.com/watch?v=8Mt4YAileOo',
         },
+        {
+            type: 'video',
+            title: 'Be Here Now',
+            url: 'https://vimeo.com/406283337',
+        },
     ],
 };
 

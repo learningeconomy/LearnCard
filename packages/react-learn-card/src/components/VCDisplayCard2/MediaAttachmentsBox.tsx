@@ -7,6 +7,7 @@ import VideoIcon from '../svgs/VideoIcon';
 import GenericDocumentIcon from '../svgs/GenericDocumentIcon';
 
 import { Attachment } from '../../types';
+import { getBaseUrl } from '../../helpers/url.helpers';
 
 export type MediaMetadata = {
     fileExtension?: string;
@@ -17,7 +18,6 @@ export type MediaMetadata = {
 export type VideoMetadata = {
     title?: string;
     videoLength?: string;
-    source?: string; // e.g. "youtube.com"
     imageUrl?: string;
 };
 
@@ -69,7 +69,6 @@ const defaultGetVideoMetadata = async (url: string) => {
         title: metadata.title,
         imageUrl: metadata.thumbnail_url,
         videoLength: '', // TODO figure out how to get this
-        source: 'youtube.com',
     };
 };
 
@@ -138,30 +137,34 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                         if (media.type === 'video') {
                             const metadata = videoMetadata[media.url];
                             title = (title || metadata?.title) ?? '';
-                            const iconTop = title || metadata?.source;
+                            const baseUrl = getBaseUrl(media.url);
+                            const iconTop = title || baseUrl;
 
                             innerContent = (
                                 <div
-                                    className="absolute top-0 left-0 right-0 bottom-0 bg-cover bg-no-repeat font-poppins text-white text-[12px] font-[400] leading-[17px] flex flex-col justify-end items-start p-[10px] text-left"
+                                    className="absolute top-0 left-0 right-0 bottom-0 bg-cover bg-no-repeat font-poppins text-white text-[12px] font-[400] leading-[17px] flex flex-col justify-end items-start p-[10px] text-left bg-rose-600"
                                     style={{
-                                        backgroundImage: `linear-gradient(180deg, rgba(0, 0, 0, 0) 44.20%, rgba(0, 0, 0, 0.6) 69%), url(${metadata?.imageUrl ?? ''
-                                            }) `,
+                                        backgroundImage: metadata?.imageUrl
+                                            ? `linear-gradient(180deg, rgba(0, 0, 0, 0) 44.20%, rgba(0, 0, 0, 0.6) 69%), url(${metadata?.imageUrl ?? ''
+                                            })`
+                                            : undefined,
                                     }}
                                 >
+                                    {!metadata?.imageUrl && (
+                                        <VideoIcon size="60" className="m-auto" />
+                                    )}
                                     <div
                                         className={`absolute ${iconTop ? 'top-[10px]' : 'bottom-[10px]'
                                             } left-[10px] z-10 flex items-center gap-[5px]`}
                                     >
-                                        <VideoIcon />
+                                        {metadata?.imageUrl && <VideoIcon />}
                                         {metadata?.videoLength && (
                                             <span className="leading-[23px]">
                                                 {metadata.videoLength}
                                             </span>
                                         )}
                                     </div>
-                                    {metadata?.source && (
-                                        <span className="font-[600]">{metadata?.source}</span>
-                                    )}
+                                    {baseUrl && <span className="font-[600]">{baseUrl}</span>}
                                     {title && <span className="line-clamp-2">{title}</span>}
                                 </div>
                             );
@@ -211,9 +214,7 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
 
                         let baseUrl = '';
                         if (docOrLink.type === 'link') {
-                            baseUrl = docOrLink.url
-                                .replace(/(https?:\/\/(www\.)?)/, '')
-                                .split('/')[0];
+                            baseUrl = getBaseUrl(docOrLink.url);
                         }
 
                         const innerContent = (
