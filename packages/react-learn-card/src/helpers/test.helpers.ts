@@ -148,7 +148,7 @@ export const AllFieldsCredential = {
         },
         {
             type: 'video',
-            title: 'Be Here Now',
+            title: 'Ram Dass - Be Here Now',
             url: 'https://vimeo.com/406283337',
         },
     ],
