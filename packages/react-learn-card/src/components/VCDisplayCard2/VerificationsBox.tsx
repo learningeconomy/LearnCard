@@ -26,7 +26,7 @@ const VerificationsBox: React.FC<VerificationsBoxProps> = ({ verificationItems }
             </button>
             {showInfo && (
                 <InfoBox
-                    text="This is what verified credentials are, lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor."
+                    text="Credential verifications check the cryptographic proof of digital credentials to ensure their authenticity and accuracy."
                     handleClose={() => setShowInfo(false)}
                 />
             )}
