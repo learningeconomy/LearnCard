@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import prettyBytes from 'pretty-bytes';
 
 import Camera from '../svgs/Camera';
+import LinkIcon from '../svgs/LinkIcon';
 import VideoIcon from '../svgs/VideoIcon';
 import GenericDocumentIcon from '../svgs/GenericDocumentIcon';
 
@@ -79,24 +80,38 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
     getVideoMetadata = defaultGetVideoMetadata,
     onMediaAttachmentClick,
 }) => {
-    const [fileMetadata, setFileMetadata] = useState<{
-        [fileUrl: string]: MediaMetadata | VideoMetadata | undefined;
+    const [documentMetadata, setDocumentMetadata] = useState<{
+        [documentUrl: string]: MediaMetadata | undefined;
     }>({});
     const [videoMetadata, setVideoMetadata] = useState<{
-        [fileUrl: string]: VideoMetadata | undefined;
+        [videoUrl: string]: VideoMetadata | undefined;
     }>({});
 
-    const mediaAttachments = attachments.filter(a => a.type === 'photo' || a.type === 'video');
-    const files = attachments.filter(a => a.type === 'document');
+    const mediaAttachments: Attachment[] = [];
+    const documentsAndLinks: Attachment[] = [];
+    attachments.forEach(a => {
+        switch (a.type) {
+            case 'document':
+            case 'link':
+                documentsAndLinks.push(a);
+                break;
+            case 'photo':
+            case 'video':
+                mediaAttachments.push(a);
+                break;
+            default:
+                break;
+        }
+    });
 
     useEffect(() => {
         const getMetadata = async (attachments: Attachment[]): Promise<any> => {
-            const fileMetadata: { [fileUrl: string]: MediaMetadata | undefined } = {};
+            const docMetadata: { [docUrl: string]: MediaMetadata | undefined } = {};
             const videoMetadata: { [videoUrl: string]: VideoMetadata | undefined } = {};
             await Promise.all(
                 attachments.map(async attachment => {
                     if (attachment.type === 'document') {
-                        fileMetadata[attachment.url] = await getFileMetadata(attachment.url);
+                        docMetadata[attachment.url] = await getFileMetadata(attachment.url);
                     } else if (attachment.type === 'video') {
                         videoMetadata[attachment.url] = await getVideoMetadata(attachment.url);
                     }
@@ -104,11 +119,11 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
             );
 
             setVideoMetadata(videoMetadata);
-            setFileMetadata(fileMetadata);
+            setDocumentMetadata(docMetadata);
         };
 
         const videos = attachments.filter(a => a.type === 'video');
-        getMetadata([...files, ...videos]);
+        getMetadata([...documentsAndLinks, ...videos]);
     }, []);
 
     return (
@@ -182,21 +197,34 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                     })}
                 </div>
             )}
-            {files.length > 0 && (
+            {documentsAndLinks.length > 0 && (
                 <div className="w-full flex flex-col gap-[5px]">
-                    {files.map((f, index) => {
-                        const metadata = fileMetadata[f.url];
+                    {documentsAndLinks.map((docOrLink, index) => {
+                        const metadata =
+                            docOrLink.type === 'document'
+                                ? documentMetadata[docOrLink.url]
+                                : undefined;
                         const { fileExtension, sizeInBytes, numberOfPages } = metadata ?? {};
 
+                        let baseUrl = '';
+                        if (docOrLink.type === 'link') {
+                            baseUrl = docOrLink.url
+                                .replace(/(https?:\/\/(www\.)?)/, '')
+                                .split('/')[0];
+                        }
+
                         const innerContent = (
-                            <>
+                            <div className="flex flex-col gap-[5px]">
                                 <div className="flex gap-[5px] items-center">
-                                    <GenericDocumentIcon className="shrink-0" />
+                                    {docOrLink.type === 'document' && (
+                                        <GenericDocumentIcon className="shrink-0" />
+                                    )}
+                                    {docOrLink.type === 'link' && <LinkIcon className="shrink-0" />}
                                     <span className="text-grayscale-900 font-[400]">
-                                        {f.title ?? 'No title'}
+                                        {docOrLink.title ?? 'No title'}
                                     </span>
                                 </div>
-                                {metadata && (
+                                {docOrLink.type === 'document' && metadata && (
                                     <div className="text-grayscale-600 font-[600] px-[5px]">
                                         {fileExtension && (
                                             <span className="uppercase">{fileExtension}</span>
@@ -211,7 +239,12 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                                         {sizeInBytes && <span>{prettyBytes(sizeInBytes)}</span>}
                                     </div>
                                 )}
-                            </>
+                                {docOrLink.type === 'link' && (
+                                    <div className="text-indigo-500 font-[600] px-[5px]">
+                                        {baseUrl}
+                                    </div>
+                                )}
+                            </div>
                         );
 
                         const className =
@@ -222,7 +255,7 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                                 <button
                                     key={index}
                                     className={className}
-                                    onClick={() => onMediaAttachmentClick(f.url)}
+                                    onClick={() => onMediaAttachmentClick(docOrLink.url)}
                                 >
                                     {innerContent}
                                 </button>

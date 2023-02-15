@@ -123,6 +123,11 @@ export const AllFieldsCredential = {
             url: 'https://cdn.filestackcontent.com/4LN0x2LQXSjIH3c5bfBr',
         },
         {
+            type: 'link',
+            title: 'Mooji',
+            url: 'https://www.moojisanghavibe.org',
+        },
+        {
             type: 'document',
             title: 'This is a text file with a super long name that goes to two lines',
             url: 'https://cdn.filestackcontent.com/BqqfmVEbQFmRaqwvqTMA',
@@ -131,7 +136,11 @@ export const AllFieldsCredential = {
         { type: 'video', url: 'https://www.youtube.com/watch?v=fV7mWuCdkpY' },
         { type: 'photo', url: 'https://cdn.filestackcontent.com/PNb6lViSaqGoKyRyXyyp' },
         { type: 'photo', url: 'https://images.unsplash.com/photo-1607419145932-ed1fc8c034d8' },
-        // TODO need LINK and VIDEO?
+        {
+            type: 'link',
+            title: 'Metta Meditation',
+            url: 'https://unveilingtiamat.com/wp-content/uploads/2022/02/Radiant-Threefold-Path-Lovingkindness-Meditation-1.pdf?vgo_ee=KR53S3mb9fY4az4OUTbOR0zkASpiHornD%2Fz2wZTd1jg%3D&fbclid=IwAR1yXamIvuEs-PEJeXvbZp20NvlyvC2SQ-5QLATCepopuqIypO6Pfeb_6iM',
+        },
     ],
 };
 
