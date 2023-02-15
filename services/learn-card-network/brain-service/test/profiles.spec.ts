@@ -571,6 +571,16 @@ describe('Profiles', () => {
             });
         });
 
+        it('should allow you to delete your profile with connections', async () => {
+            await userA.clients.fullAuth.profile.connectWith({ handle: 'userb' });
+            await userB.clients.fullAuth.profile.acceptConnectionRequest({ handle: 'usera' });
+
+            await expect(userA.clients.fullAuth.profile.deleteProfile()).resolves.not.toThrow();
+            await expect(userA.clients.fullAuth.profile.getProfile()).rejects.toMatchObject({
+                code: 'NOT_FOUND',
+            });
+        });
+
         it('should not show deleted profiles to other users', async () => {
             const beforeDeletion = await userB.clients.fullAuth.profile.getOtherProfile({
                 handle: 'usera',
