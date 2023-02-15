@@ -145,6 +145,11 @@ export const getLearnCardNetworkPlugin = async (
 
                 return client.profile.connectWith.mutate({ handle });
             },
+            cancelConnectionRequest: async (_learnCard, handle) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.profile.cancelConnectionRequest.mutate({ handle });
+            },
             connectWithInvite: async (_learnCard, handle, challenge) => {
                 if (!userData) throw new Error('Please make an account first!');
 

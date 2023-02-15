@@ -186,3 +186,38 @@ export const requestConnection = async (
 
     return true;
 };
+
+/**
+ * Cancels a connection request from one profile to another
+ *
+ * If one the target profile has already sent a connection request, connects the two profiles
+ *
+ * Errors if a request has already been sent to the target, or if the two profiles are already
+ * connected
+ */
+export const cancelConnectionRequest = async (
+    source: ProfileInstance,
+    target: ProfileInstance
+): Promise<boolean> => {
+    const pendingRequestToTarget =
+        (
+            await source.findRelationships({
+                alias: 'connectionRequested',
+                where: { relationship: {}, target: { handle: target.handle } },
+            })
+        ).length > 0;
+
+    if (!pendingRequestToTarget) {
+        throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'No connection request to cancel',
+        });
+    }
+
+    await Profile.deleteRelationships({
+        alias: 'connectionRequested',
+        where: { source: { handle: source.handle }, target: { handle: target.handle } },
+    });
+
+    return true;
+};

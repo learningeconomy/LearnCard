@@ -4,6 +4,7 @@ import { LCNProfileValidator } from '@learncard/types';
 import { v4 as uuid } from 'uuid';
 
 import {
+    cancelConnectionRequest,
     connectProfiles,
     disconnectProfiles,
     getConnectionRequests,
@@ -268,6 +269,35 @@ export const profilesRouter = t.router({
             }
 
             return requestConnection(profile, targetProfile);
+        }),
+
+    cancelConnectionRequest: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/profile/{handle}/cancel-connection-request',
+                tags: ['Profiles'],
+                summary: 'Cancel Connection Request',
+                description: 'Cancels connection request with another profile',
+            },
+        })
+        .input(z.object({ handle: z.string() }))
+        .output(z.boolean())
+        .mutation(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { handle } = input;
+
+            const targetProfile = await getProfileByHandle(handle);
+
+            if (!targetProfile) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Profile not found. Are you sure this person exists?',
+                });
+            }
+
+            return cancelConnectionRequest(profile, targetProfile);
         }),
 
     connectWithInvite: profileRoute

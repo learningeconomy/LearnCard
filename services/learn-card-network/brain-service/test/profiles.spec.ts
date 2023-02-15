@@ -645,6 +645,49 @@ describe('Profiles', () => {
         });
     });
 
+    describe('cancelConnectionRequest', () => {
+        beforeEach(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await userA.clients.fullAuth.profile.createProfile({ handle: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ handle: 'userb' });
+        });
+
+        afterAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+        });
+
+        it('should require full auth to cancel connection request with another user', async () => {
+            await expect(
+                noAuthClient.profile.cancelConnectionRequest({ handle: 'userb' })
+            ).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+            await expect(
+                userA.clients.partialAuth.profile.cancelConnectionRequest({ handle: 'userb' })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        });
+
+        it('allows users to cancel a connection request', async () => {
+            await userA.clients.fullAuth.profile.connectWith({ handle: 'userb' });
+
+            expect(await userA.clients.fullAuth.profile.pendingConnections()).toHaveLength(1);
+            expect(await userB.clients.fullAuth.profile.connectionRequests()).toHaveLength(1);
+
+            await expect(
+                userA.clients.fullAuth.profile.cancelConnectionRequest({ handle: 'userb' })
+            ).resolves.not.toThrow();
+
+            expect(await userA.clients.fullAuth.profile.pendingConnections()).toHaveLength(0);
+            expect(await userB.clients.fullAuth.profile.connectionRequests()).toHaveLength(0);
+        });
+
+        it("does not allow users to cancel a connection request that doesn't exist", async () => {
+            await expect(
+                userA.clients.fullAuth.profile.cancelConnectionRequest({ handle: 'userb' })
+            ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+        });
+    });
+
     describe('connectWithInvite', () => {
         beforeEach(async () => {
             await cache.node.flushall();
