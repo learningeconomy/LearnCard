@@ -17,6 +17,11 @@ import {
 import { BoostAchievementCredential } from '../../types'; // TODO should be a way to get this from @learncard/types (probs will work after fixing type errors)
 import { MediaMetadata, VideoMetadata } from './MediaAttachmentsBox';
 
+export type CredentialIconType = {
+    image?: React.ReactNode;
+    color?: string;
+};
+
 export type VCDisplayCard2Props = {
     credential: VC | BoostAchievementCredential;
     verificationItems: VerificationItem[];
@@ -30,6 +35,7 @@ export type VCDisplayCard2Props = {
     getFileMetadata?: (url: string) => MediaMetadata;
     getVideoMetadata?: (url: string) => VideoMetadata;
     onMediaAttachmentClick?: (url: string) => void;
+    bottomRightIcon?: CredentialIconType;
 };
 
 export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
@@ -45,6 +51,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     getFileMetadata,
     getVideoMetadata,
     onMediaAttachmentClick,
+    bottomRightIcon,
 }) => {
     const {
         title,
@@ -205,7 +212,12 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                         {worstVerificationStatus}
                     </span>
                 </div>
-                <AwardRibbon className="bg-[#6366F1] rounded-[20px] h-[40px] w-[40px] flex items-center justify-center p-[5px]" />
+                <div
+                    className="rounded-[20px] h-[40px] w-[40px] flex items-center justify-center overflow-hidden"
+                    style={{ backgroundColor: bottomRightIcon?.color ?? '#6366F1' }}
+                >
+                    {bottomRightIcon?.image ?? <AwardRibbon />}
+                </div>
             </footer>
         </section>
     );

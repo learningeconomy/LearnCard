@@ -31,6 +31,20 @@ VCCardVersion1Test.args = { version: '1', ...baseArgs };
 export const VCCardVersion2Test = Template.bind({});
 VCCardVersion2Test.args = {
     version: '2',
+    bottomRightIcon: {
+        image: (
+            // courtesy of ChatGPT
+            <svg width="30" height="30" viewBox="0 0 100 100">
+                <polygon
+                    points="50,0 63.7,36.7 100,40 75,70.7 86.6,106.7 50,85.3 13.4,106.7 25,70.7 0,40 36.3,36.7"
+                    fill="yellow"
+                    stroke="orange"
+                    strokeWidth={3}
+                />
+            </svg>
+        ),
+        color: '#000',
+    },
     ...baseArgs,
 };
 

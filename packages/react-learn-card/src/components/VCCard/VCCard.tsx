@@ -3,7 +3,12 @@ import { initLearnCard } from '@learncard/core';
 import { VC, Profile, VerificationItem } from '@learncard/types';
 
 import { VCDisplayCard } from '../VCDisplayCard';
-import { VCDisplayCard2, MediaMetadata, VideoMetadata } from '../VCDisplayCard2';
+import {
+    VCDisplayCard2,
+    MediaMetadata,
+    VideoMetadata,
+    CredentialIconType,
+} from '../VCDisplayCard2';
 
 export type VCCardProps = {
     credential: VC;
@@ -18,6 +23,7 @@ export type VCCardProps = {
     getFileMetadata?: (url: string) => MediaMetadata;
     getVideoMetadata?: (url: string) => VideoMetadata;
     onMediaAttachmentClick?: (url: string) => void;
+    bottomRightIcon?: CredentialIconType;
 };
 
 export const VCCard: React.FC<VCCardProps> = ({
@@ -31,6 +37,7 @@ export const VCCard: React.FC<VCCardProps> = ({
     getFileMetadata,
     getVideoMetadata,
     onMediaAttachmentClick,
+    bottomRightIcon,
 }) => {
     const [loading, setLoading] = useState(true);
     const [vcVerification, setVCVerification] = useState<VerificationItem[]>([]);
@@ -69,6 +76,7 @@ export const VCCard: React.FC<VCCardProps> = ({
             getFileMetadata={getFileMetadata}
             getVideoMetadata={getVideoMetadata}
             onMediaAttachmentClick={onMediaAttachmentClick}
+            bottomRightIcon={bottomRightIcon}
         />
     );
 };
