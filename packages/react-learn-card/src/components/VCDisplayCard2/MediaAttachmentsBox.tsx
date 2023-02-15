@@ -141,7 +141,10 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                             innerContent = (
                                 <div
                                     className="absolute top-0 left-0 right-0 bottom-0 bg-cover bg-no-repeat font-poppins text-white text-[12px] font-[400] leading-[17px] flex flex-col justify-end items-start p-[10px] text-left"
-                                    style={{ backgroundImage: `url(${metadata?.imageUrl ?? ''})` }}
+                                    style={{
+                                        backgroundImage: `linear-gradient(180deg, rgba(0, 0, 0, 0) 44.20%, rgba(0, 0, 0, 0.6) 69%), url(${metadata?.imageUrl ?? ''
+                                            }) `,
+                                    }}
                                 >
                                     <div
                                         className={`absolute ${iconTop ? 'top-[10px]' : 'bottom-[10px]'
