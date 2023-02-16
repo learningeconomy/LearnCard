@@ -14,7 +14,7 @@ import {
     getColorForVerificationStatus,
     getInfoFromCredential,
 } from '../../helpers/credential.helpers';
-import { BoostAchievementCredential } from '../../types'; // TODO should be a way to get this from @learncard/types (probs will work after fixing type errors)
+import { BoostAchievementCredential } from '../../types';
 import { MediaMetadata, VideoMetadata } from './MediaAttachmentsBox';
 
 export type CredentialIconType = {
@@ -110,7 +110,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     };
 
     return (
-        <section className="font-mouse flex flex-col items-center border-solid border-[5px] border-white h-[700px] rounded-[30px] overflow-visible z-10 max-w-[400px] relative bg-white">
+        <section className="vc-display-card font-mouse flex flex-col items-center border-solid border-[5px] border-white h-[700px] rounded-[30px] overflow-visible z-10 max-w-[400px] relative bg-white">
             <RibbonEnd
                 side="left"
                 className="absolute left-[-30px] top-[50px] z-0"
@@ -124,7 +124,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
 
             <h1
                 ref={headerRef}
-                className="px-[20px] pb-[10px] pt-[3px] overflow-visible mt-[40px] absolute text-center bg-white border-y-[5px] border-[#EEF2FF] shadow-bottom w-[calc(100%_+_16px)] rounded-t-[8px] z-50"
+                className="vc-card-header px-[20px] pb-[10px] pt-[3px] overflow-visible mt-[40px] absolute text-center bg-white border-y-[5px] border-[#EEF2FF] shadow-bottom w-[calc(100%_+_16px)] rounded-t-[8px] z-50"
                 style={{ wordBreak: 'break-word' }}
             >
                 <span className="uppercase text-spice-500 font-poppins text-[12px] font-[600] leading-[12px]">
@@ -140,7 +140,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
 
             {isFront && handleXClick && (
                 <button
-                    className="absolute top-[-25px] bg-white rounded-full h-[50px] w-[50px] flex items-center justify-center z-50"
+                    className="vc-card-x-button absolute top-[-25px] bg-white rounded-full h-[50px] w-[50px] flex items-center justify-center z-50"
                     onClick={handleXClick}
                 >
                     <RoundedX />
@@ -149,7 +149,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
 
             {!isFront && (
                 <button
-                    className="absolute top-[-25px] bg-white rounded-full h-[50px] px-[15px] flex items-center justify-center gap-[5px] z-50 text-[30px] text-grayscale-900"
+                    className="vc-card-back-button absolute top-[-25px] bg-white rounded-full h-[50px] px-[15px] flex items-center justify-center gap-[5px] z-50 text-[30px] text-grayscale-900"
                     onClick={() => setIsFront(true)}
                 >
                     <LeftArrow color="#18224E" size="25" />
@@ -159,17 +159,17 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
 
             {/* Hide content so that it doesn't appear above the header when it scrolls */}
             <div
-                className="absolute h-[40px] w-full z-20 flex grow rounded-t-[30px] "
+                className="vc-card-background-hider absolute h-[40px] w-full z-20 flex grow rounded-t-[30px] "
                 style={backgroundStyle}
             />
 
-            <div className="flex flex-col items-center grow w-full rounded-t-[30px] rounded-b-[20px] overflow-scroll scrollbar-hide">
+            <div className="vc-card-content-container flex flex-col items-center grow w-full rounded-t-[30px] rounded-b-[20px] overflow-scroll scrollbar-hide">
                 {/* 
                     div in a div here so that we can have an outer scroll container with an inner container
                     that has a rounded bottom at the bottom of the scrollable content 
                 */}
                 <div
-                    className="w-full flex flex-col justify-center items-center rounded-b-[200px] bg-[#353E64] pb-[50px]"
+                    className="vc-card-content-scroll-container w-full flex flex-col justify-center items-center rounded-b-[200px] bg-[#353E64] pb-[50px]"
                     style={{ paddingTop: headerHeight + 70, ...backgroundStyle }}
                 >
                     {isFront && (
@@ -195,7 +195,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                     )}
                     <button
                         type="button"
-                        className="text-white shadow-bottom bg-[#00000099] px-[30px] py-[8px] rounded-[40px] text-[28px] tracking-[0.75px] uppercase leading-[28px] mt-[40px] w-fit"
+                        className="vc-toggle-side-button text-white shadow-bottom bg-[#00000099] px-[30px] py-[8px] rounded-[40px] text-[28px] tracking-[0.75px] uppercase leading-[28px] mt-[40px] w-fit"
                         onClick={() => setIsFront(!isFront)}
                     >
                         {isFront && 'Details'}
@@ -208,20 +208,20 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                     </button>
                 </div>
             </div>
-            <footer className="w-full flex justify-between p-[5px] mt-[5px]">
+            <footer className="vc-card-footer w-full flex justify-between p-[5px] mt-[5px]">
                 <VCVerificationCheckWithSpinner
                     spinnerSize="40px"
                     size={'32px'}
                     loading={verificationInProgress}
                 />
-                <div className="font-montserrat flex flex-col items-center justify-center text-[12px] font-[700] leading-[15px]">
+                <div className="vc-footer-text font-montserrat flex flex-col items-center justify-center text-[12px] font-[700] leading-[15px]">
                     <span className="text-[#4F4F4F]">Verified Credential</span>
-                    <span className="uppercase" style={{ color: statusColor }}>
+                    <span className="vc-footer-status uppercase" style={{ color: statusColor }}>
                         {worstVerificationStatus}
                     </span>
                 </div>
                 <div
-                    className="rounded-[20px] h-[40px] w-[40px] flex items-center justify-center overflow-hidden"
+                    className="vc-footer-icon rounded-[20px] h-[40px] w-[40px] flex items-center justify-center overflow-hidden"
                     style={{ backgroundColor: bottomRightIcon?.color ?? '#6366F1' }}
                 >
                     {bottomRightIcon?.image ?? <AwardRibbon />}

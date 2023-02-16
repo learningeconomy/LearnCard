@@ -72,7 +72,6 @@ const defaultGetVideoMetadata = async (url: string) => {
     };
 };
 
-// const youtubeMetadataGetter = require('youtube-metadata-from-url');
 const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
     attachments,
     getFileMetadata = defaultGetFileMetadata,
@@ -126,7 +125,7 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
     }, []);
 
     return (
-        <div className="bg-white flex flex-col items-start gap-[10px] rounded-[20px] shadow-bottom px-[15px] py-[20px] w-full">
+        <div className="media-attachments-box bg-white flex flex-col items-start gap-[10px] rounded-[20px] shadow-bottom px-[15px] py-[20px] w-full">
             <h3 className="text-[20px] leading-[20px] text-grayscale-900">Media Attachments</h3>
             {mediaAttachments.length > 0 && (
                 <div className="flex gap-[5px] justify-between flex-wrap w-full">
@@ -180,8 +179,7 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                             );
                         }
 
-                        const className =
-                            'w-[49%] pt-[49%] rounded-[15px] overflow-hidden relative';
+                        const className = `media-attachment ${media.type} w-[49%] pt-[49%] rounded-[15px] overflow-hidden relative`;
 
                         if (onMediaAttachmentClick) {
                             return (
@@ -251,8 +249,7 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                             </div>
                         );
 
-                        const className =
-                            'bg-grayscale-100 rounded-[15px] p-[10px] w-full font-poppins text-[12px] leading-[18px] tracking-[-0.33px] text-left';
+                        const className = `row-attachment ${docOrLink.type} bg-grayscale-100 rounded-[15px] p-[10px] w-full font-poppins text-[12px] leading-[18px] tracking-[-0.33px] text-left`;
 
                         if (onMediaAttachmentClick) {
                             return (

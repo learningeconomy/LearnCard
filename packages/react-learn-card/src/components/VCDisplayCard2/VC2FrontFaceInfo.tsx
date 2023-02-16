@@ -53,22 +53,23 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
     );
 
     return (
-        <section className="w-full px-[15px] flex flex-col items-center gap-[15px]">
-            {/* <AchievementWithTitle text={title} /> */}
-            {imageUrl && <img className="h-[130px] w-[130px] rounded-[10px]" src={imageUrl} />}
-            <div className="bg-white flex flex-col items-center gap-[5px] rounded-[20px] shadow-bottom px-[15px] py-[20px] w-full">
+        <section className="vc-front-face w-full px-[15px] flex flex-col items-center gap-[15px]">
+            {imageUrl && (
+                <img className="vc-front-image h-[130px] w-[130px] rounded-[10px]" src={imageUrl} />
+            )}
+            <div className="vc-issue-info-box bg-white flex flex-col items-center gap-[5px] rounded-[20px] shadow-bottom px-[15px] py-[20px] w-full">
                 <h3 className="text-[27px] leading-[130%] text-grayscale-900">{issueeName}</h3>
                 <div className="relative">
-                    <div className="h-[60px] w-[60px] rounded-full overflow-hidden">
+                    <div className="vc-issuee-image h-[60px] w-[60px] rounded-full overflow-hidden">
                         {issueeImageEl}
                     </div>
-                    <div className="h-[30px] w-[30px] rounded-full overflow-hidden absolute bottom-[-12px] right-[-12px]">
+                    <div className="vc-issuer-image h-[30px] w-[30px] rounded-full overflow-hidden absolute bottom-[-12px] right-[-12px]">
                         {issuerImageEl}
                     </div>
                 </div>
-                <div className="mt-[10px] flex flex-col items-center font-montserrat text-[14px] leading-[20px]">
-                    <span className="text-grayscale-700">{createdAt}</span>
-                    <span className="text-grayscale-900 font-[500]">
+                <div className="vc-issue-details mt-[10px] flex flex-col items-center font-montserrat text-[14px] leading-[20px]">
+                    <span className="created-at text-grayscale-700">{createdAt}</span>
+                    <span className="issued-by text-grayscale-900 font-[500]">
                         by <strong className="font-[700]">{issuerName}</strong>
                     </span>
                 </div>

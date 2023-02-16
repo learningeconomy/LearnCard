@@ -37,7 +37,7 @@ const VerificationRow: React.FC<VerificationRowProps> = ({ verification }) => {
     const infoText = ''; // if we want certain verifications to have extra explanation, we can set this variable
 
     return (
-        <div className="flex flex-col gap-[5px] font-poppins border-b-[1px] border-grayscale-200 border-solid w-full py-[10px] last:border-0 last:pb-0">
+        <div className="verification-row flex flex-col gap-[5px] font-poppins border-b-[1px] border-grayscale-200 border-solid w-full py-[10px] last:border-0 last:pb-0">
             <span
                 className="font-[700] text-[11px] leading-[16px] uppercase flex items-center gap-[3px]"
                 style={{ color: statusColor }}

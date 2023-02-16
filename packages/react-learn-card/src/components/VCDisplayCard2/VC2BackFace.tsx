@@ -51,15 +51,21 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
     */
 
     return (
-        <section className="flex flex-col gap-[20px] w-full px-[15px]">
-            <TruncateTextBox headerText="Description" text={achievement?.description}>
+        <section className="vc-back-face flex flex-col gap-[20px] w-full px-[15px]">
+            <TruncateTextBox
+                headerText="Description"
+                text={achievement?.description}
+                className="description-box"
+            >
                 {expiration && (
                     <p className="text-grayscale-800 font-poppins font-[600] text-[12px] leading-[18px] mb-0">
                         Expires on {expiration}
                     </p>
                 )}
             </TruncateTextBox>
-            {criteria && <TruncateTextBox headerText="Criteria" text={criteria} />}
+            {criteria && (
+                <TruncateTextBox headerText="Criteria" text={criteria} className="criteria-box" />
+            )}
             {/* {skillsObject && <SkillsBox skillsObject={skillsObject} />} */}
             {credential.attachments && credential.attachments.length > 0 && (
                 <MediaAttachmentsBox

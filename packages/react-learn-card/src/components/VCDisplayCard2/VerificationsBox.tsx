@@ -14,7 +14,7 @@ const VerificationsBox: React.FC<VerificationsBoxProps> = ({ verificationItems }
     const [showInfo, setShowInfo] = useState(false);
 
     return (
-        <div className="bg-white flex flex-col items-start gap-[10px] rounded-[20px] shadow-bottom px-[15px] py-[20px] w-full relative">
+        <div className="verifications-box bg-white flex flex-col items-start gap-[10px] rounded-[20px] shadow-bottom px-[15px] py-[20px] w-full relative">
             <h3 className="text-[20px] leading-[20px] text-grayscale-900">
                 Credential Verifications
             </h3>

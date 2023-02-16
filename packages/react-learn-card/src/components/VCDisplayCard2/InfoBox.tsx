@@ -10,7 +10,7 @@ const InfoBox: React.FC<InfoBoxProps> = ({ text, handleClose, backgroundColor = 
     const bgColorWithOpacity = `${backgroundColor}1F`; // 12% opacity
     return (
         <div
-            className="p-[10px] rounded-[10px] w-full font-poppins text-[12px] leading[18px]"
+            className="info-box p-[10px] rounded-[10px] w-full font-poppins text-[12px] leading[18px]"
             style={{ backgroundColor: bgColorWithOpacity }}
         >
             {text}{' '}
