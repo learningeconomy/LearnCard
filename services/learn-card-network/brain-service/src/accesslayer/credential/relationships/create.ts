@@ -8,7 +8,7 @@ export const createSentCredentialRelationship = async (
     await from.relateTo({
         alias: 'credentialSent',
         where: { id: credential.id },
-        properties: { to: to.handle, date: new Date().toISOString() },
+        properties: { to: to.profileId, date: new Date().toISOString() },
     });
 };
 
@@ -19,7 +19,7 @@ export const createReceivedCredentialRelationship = async (
 ): Promise<void> => {
     await credential.relateTo({
         alias: 'credentialReceived',
-        where: { handle: to.handle },
-        properties: { from: from.handle, date: new Date().toISOString() },
+        where: { profileId: to.profileId },
+        properties: { from: from.profileId, date: new Date().toISOString() },
     });
 };

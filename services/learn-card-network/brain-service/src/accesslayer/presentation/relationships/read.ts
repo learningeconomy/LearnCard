@@ -9,7 +9,7 @@ export const getPresentationSentToProfile = async (
         await from.findRelationships({
             alias: 'presentationSent',
             where: {
-                relationship: { to: to.handle },
+                relationship: { to: to.profileId },
                 target: { id },
             },
         })

@@ -15,8 +15,8 @@ describe('Storage', () => {
         beforeAll(async () => {
             await Profile.delete({ detach: true, where: {} });
 
-            await userA.clients.fullAuth.profile.createProfile({ handle: 'userA' });
-            await userB.clients.fullAuth.profile.createProfile({ handle: 'userB' });
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'userA' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userB' });
         });
 
         beforeEach(async () => {
@@ -57,8 +57,8 @@ describe('Storage', () => {
         beforeAll(async () => {
             await Profile.delete({ detach: true, where: {} });
 
-            await userA.clients.fullAuth.profile.createProfile({ handle: 'userA' });
-            await userB.clients.fullAuth.profile.createProfile({ handle: 'userB' });
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'userA' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userB' });
         });
 
         beforeEach(async () => {

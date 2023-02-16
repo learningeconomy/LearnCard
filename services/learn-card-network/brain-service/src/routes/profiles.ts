@@ -20,7 +20,7 @@ import {
     checkIfProfileExists,
     getProfileByDid,
     getProfileByEmail,
-    getProfileByHandle,
+    getProfileByProfileId,
     searchProfiles,
 } from '@accesslayer/profile/read';
 
@@ -58,7 +58,7 @@ export const profilesRouter = t.router({
 
             const profile = await createProfile({ ...input, did: ctx.user.did });
 
-            if (profile) return getDidWeb(ctx.domain, profile.handle);
+            if (profile) return getDidWeb(ctx.domain, profile.profileId);
 
             throw new TRPCError({
                 code: 'INTERNAL_SERVER_ERROR',
@@ -95,7 +95,7 @@ export const profilesRouter = t.router({
                 did: ctx.user.did,
             });
 
-            if (profile) return getDidWeb(ctx.domain, profile.handle);
+            if (profile) return getDidWeb(ctx.domain, profile.profileId);
 
             throw new TRPCError({
                 code: 'INTERNAL_SERVER_ERROR',
@@ -125,17 +125,17 @@ export const profilesRouter = t.router({
         .meta({
             openapi: {
                 method: 'GET',
-                path: '/profile/{handle}',
+                path: '/profile/{profileId}',
                 tags: ['Profiles'],
                 summary: 'Get profile information',
                 description:
-                    'This route grabs the profile information of any user, using their handle',
+                    'This route grabs the profile information of any user, using their profileId',
             },
         })
-        .input(z.object({ handle: z.string() }))
+        .input(z.object({ profileId: z.string() }))
         .output(LCNProfileValidator.optional())
         .query(async ({ ctx, input }) => {
-            const profile = await getProfileByHandle(input.handle);
+            const profile = await getProfileByProfileId(input.profileId);
 
             return profile ? updateDidForProfile(ctx.domain, profile) : undefined;
         }),
@@ -147,7 +147,7 @@ export const profilesRouter = t.router({
                 path: '/search/profiles/{input}',
                 tags: ['Profiles'],
                 summary: 'Search profiles',
-                description: 'This route searches for profiles based on their handle',
+                description: 'This route searches for profiles based on their profileId',
             },
         })
         .input(
@@ -165,7 +165,7 @@ export const profilesRouter = t.router({
 
             const profiles = await searchProfiles(searchInput, {
                 limit,
-                blacklist: selfProfile ? [selfProfile.handle] : [],
+                blacklist: selfProfile ? [selfProfile.profileId] : [],
             });
 
             return profiles.map(profile => updateDidForProfile(ctx.domain, profile));
@@ -187,18 +187,18 @@ export const profilesRouter = t.router({
         .mutation(async ({ input, ctx }) => {
             const { profile } = ctx.user;
 
-            const { handle, displayName, image, email } = input;
+            const { profileId, displayName, image, email } = input;
 
-            if (handle) {
-                const profileExists = await getProfileByHandle(handle);
+            if (profileId) {
+                const profileExists = await getProfileByProfileId(profileId);
 
                 if (profileExists) {
                     throw new TRPCError({
                         code: 'CONFLICT',
-                        message: 'Handle already in use!',
+                        message: 'profileId already in use!',
                     });
                 }
-                profile.handle = handle.toLowerCase();
+                profile.profileId = profileId.toLowerCase();
             }
 
             if (email) {
@@ -246,20 +246,20 @@ export const profilesRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/profile/{handle}/connect',
+                path: '/profile/{profileId}/connect',
                 tags: ['Profiles'],
                 summary: 'Connect with another profile',
                 description:
-                    'This route uses the request header to send a connection request to another user based on their handle',
+                    'This route uses the request header to send a connection request to another user based on their profileId',
             },
         })
-        .input(z.object({ handle: z.string() }))
+        .input(z.object({ profileId: z.string() }))
         .output(z.boolean())
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const { handle } = input;
+            const { profileId } = input;
 
-            const targetProfile = await getProfileByHandle(handle);
+            const targetProfile = await getProfileByProfileId(profileId);
 
             if (!targetProfile) {
                 throw new TRPCError({
@@ -276,19 +276,19 @@ export const profilesRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/profile/{handle}/cancel-connection-request',
+                path: '/profile/{profileId}/cancel-connection-request',
                 tags: ['Profiles'],
                 summary: 'Cancel Connection Request',
                 description: 'Cancels connection request with another profile',
             },
         })
-        .input(z.object({ handle: z.string() }))
+        .input(z.object({ profileId: z.string() }))
         .output(z.boolean())
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const { handle } = input;
+            const { profileId } = input;
 
-            const targetProfile = await getProfileByHandle(handle);
+            const targetProfile = await getProfileByProfileId(profileId);
 
             if (!targetProfile) {
                 throw new TRPCError({
@@ -305,28 +305,28 @@ export const profilesRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/profile/{handle}/connect/{challenge}',
+                path: '/profile/{profileId}/connect/{challenge}',
                 tags: ['Profiles'],
                 summary: 'Connect using an invitation',
                 description: 'Connects with another profile using an invitation challenge',
             },
         })
-        .input(z.object({ handle: z.string(), challenge: z.string() }))
+        .input(z.object({ profileId: z.string(), challenge: z.string() }))
         .output(z.boolean())
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const { handle, challenge } = input;
+            const { profileId, challenge } = input;
 
-            const cacheKey = `inviteChallenge:${handle}:${challenge}`;
+            const cacheKey = `inviteChallenge:${profileId}:${challenge}`;
 
             if ((await cache.get(cacheKey)) !== 'valid') {
                 throw new TRPCError({
                     code: 'NOT_FOUND',
-                    message: `Challenge not found for ${handle}`,
+                    message: `Challenge not found for ${profileId}`,
                 });
             }
 
-            const targetProfile = await getProfileByHandle(handle);
+            const targetProfile = await getProfileByProfileId(profileId);
 
             if (!targetProfile) {
                 throw new TRPCError({
@@ -343,20 +343,20 @@ export const profilesRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/profile/{handle}/disconnect',
+                path: '/profile/{profileId}/disconnect',
                 tags: ['Profiles'],
                 summary: 'Disconnect with another profile',
                 description:
-                    'This route uses the request header to disconnect with another user based on their handle',
+                    'This route uses the request header to disconnect with another user based on their profileId',
             },
         })
-        .input(z.object({ handle: z.string() }))
+        .input(z.object({ profileId: z.string() }))
         .output(z.boolean())
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const { handle } = input;
+            const { profileId } = input;
 
-            const targetProfile = await getProfileByHandle(handle);
+            const targetProfile = await getProfileByProfileId(profileId);
 
             if (!targetProfile) {
                 throw new TRPCError({
@@ -373,20 +373,20 @@ export const profilesRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/profile/{handle}/accept-connection',
+                path: '/profile/{profileId}/accept-connection',
                 tags: ['Profiles'],
                 summary: 'Accept Connection Request',
                 description:
-                    'This route uses the request header to accept a connection request from another user based on their handle',
+                    'This route uses the request header to accept a connection request from another user based on their profileId',
             },
         })
-        .input(z.object({ handle: z.string() }))
+        .input(z.object({ profileId: z.string() }))
         .output(z.boolean())
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const { handle } = input;
+            const { profileId } = input;
 
-            const targetProfile = await getProfileByHandle(handle);
+            const targetProfile = await getProfileByProfileId(profileId);
 
             if (!targetProfile) {
                 throw new TRPCError({
@@ -468,12 +468,12 @@ export const profilesRouter = t.router({
             },
         })
         .input(z.object({ challenge: z.string().optional() }).optional())
-        .output(z.object({ handle: z.string(), challenge: z.string() }))
+        .output(z.object({ profileId: z.string(), challenge: z.string() }))
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
             const { challenge = uuid() } = input ?? {};
 
-            const cacheKey = `inviteChallenge:${profile.handle}:${challenge}`;
+            const cacheKey = `inviteChallenge:${profile.profileId}:${challenge}`;
 
             if (await cache.get(cacheKey)) {
                 throw new TRPCError({
@@ -482,9 +482,9 @@ export const profilesRouter = t.router({
                 });
             }
 
-            await cache.set(`inviteChallenge:${profile.handle}:${challenge}`, 'valid');
+            await cache.set(`inviteChallenge:${profile.profileId}:${challenge}`, 'valid');
 
-            return { handle: profile.handle, challenge };
+            return { profileId: profile.profileId, challenge };
         }),
 
     registerSigningAuthority: profileRoute

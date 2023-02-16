@@ -39,7 +39,11 @@ export const getReceivedPresentationsForProfile = async (
                         ...Presentation.getRelationshipByAlias('presentationReceived'),
                         identifier: 'received',
                     },
-                    { identifier: 'target', model: Profile, where: { handle: profile.handle } },
+                    {
+                        identifier: 'target',
+                        model: Profile,
+                        where: { profileId: profile.profileId },
+                    },
                 ],
             })
             .return('sent, presentation, received')
@@ -70,7 +74,11 @@ export const getSentPresentationsForProfile = async (
         await new QueryBuilder()
             .match({
                 related: [
-                    { identifier: 'source', model: Profile, where: { handle: profile.handle } },
+                    {
+                        identifier: 'source',
+                        model: Profile,
+                        where: { profileId: profile.profileId },
+                    },
                     { ...Profile.getRelationshipByAlias('presentationSent'), identifier: 'sent' },
                     { identifier: 'presentation', model: Presentation },
                 ],
@@ -94,7 +102,7 @@ export const getSentPresentationsForProfile = async (
     return results.map(({ source, sent, presentation, received }) => ({
         uri: getPresentationUri(presentation.id, domain),
         to: sent.to,
-        from: source.handle,
+        from: source.profileId,
         sent: sent.date,
         received: received?.date,
     }));
@@ -117,7 +125,7 @@ export const getIncomingPresentationsForProfile = async (
                     {
                         ...Profile.getRelationshipByAlias('presentationSent'),
                         identifier: 'relationship',
-                        where: { to: profile.handle },
+                        where: { to: profile.profileId },
                     },
                     { identifier: 'presentation', model: Presentation },
                 ],
@@ -132,7 +140,7 @@ export const getIncomingPresentationsForProfile = async (
     return results.map(({ source, relationship, presentation }) => ({
         uri: getPresentationUri(presentation.id, domain),
         to: relationship.to,
-        from: source.handle,
+        from: source.profileId,
         sent: relationship.date,
     }));
 };

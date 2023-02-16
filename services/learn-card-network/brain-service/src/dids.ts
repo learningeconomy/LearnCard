@@ -4,15 +4,15 @@ import cors from 'cors';
 import { getEmptyLearnCard } from '@helpers/learnCard.helpers';
 import { getDidWeb } from '@helpers/did.helpers';
 import { TypedRequest } from '@helpers/types.helpers';
-import { getProfileByHandle } from '@accesslayer/profile/read';
+import { getProfileByProfileId } from '@accesslayer/profile/read';
 
 export const app = express();
 
 app.use('/', cors());
-app.get('/:handle/did.json', async (req: TypedRequest<{}, {}, { handle: string }>, res) => {
+app.get('/:profileId/did.json', async (req: TypedRequest<{}, {}, { profileId: string }>, res) => {
     const learnCard = await getEmptyLearnCard();
 
-    const profile = await getProfileByHandle(req.params.handle);
+    const profile = await getProfileByProfileId(req.params.profileId);
 
     if (!profile) return res.sendStatus(404);
 
@@ -28,7 +28,7 @@ app.get('/:handle/did.json', async (req: TypedRequest<{}, {}, { handle: string }
     return res.json(
         JSON.parse(
             JSON.stringify(didDoc)
-                .replaceAll(profile.did, getDidWeb(domain, profile.handle))
+                .replaceAll(profile.did, getDidWeb(domain, profile.profileId))
                 .replaceAll(`#${key}`, '#owner')
         )
     );

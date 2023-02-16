@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { SentCredentialInfoValidator, VPValidator } from '@learncard/types';
 
 import { t, profileRoute } from '@routes';
-import { getProfileByHandle } from '@accesslayer/profile/read';
+import { getProfileByProfileId } from '@accesslayer/profile/read';
 import { acceptPresentation, sendPresentation } from '@helpers/presentation.helpers';
 import {
     getReceivedPresentationsForProfile,
@@ -17,19 +17,20 @@ export const presentationsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/presentation/send/{handle}',
+                path: '/presentation/send/{profileId}',
                 tags: ['Presentations'],
                 summary: 'Send a Presentation',
-                description: 'This endpoint sends a presentation to a user based on their handle',
+                description:
+                    'This endpoint sends a presentation to a user based on their profileId',
             },
         })
-        .input(z.object({ handle: z.string(), presentation: VPValidator }))
+        .input(z.object({ profileId: z.string(), presentation: VPValidator }))
         .output(z.string())
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const { handle, presentation } = input;
+            const { profileId, presentation } = input;
 
-            const targetProfile = await getProfileByHandle(handle);
+            const targetProfile = await getProfileByProfileId(profileId);
 
             if (!targetProfile) {
                 throw new TRPCError({
@@ -46,20 +47,20 @@ export const presentationsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/presentation/accept/{handle}',
+                path: '/presentation/accept/{profileId}',
                 tags: ['Presentations'],
                 summary: 'Accept a Presentation',
                 description:
-                    'This endpoint accepts a presentation from a user based on their handle',
+                    'This endpoint accepts a presentation from a user based on their profileId',
             },
         })
-        .input(z.object({ handle: z.string(), uri: z.string() }))
+        .input(z.object({ profileId: z.string(), uri: z.string() }))
         .output(z.boolean())
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const { handle, uri } = input;
+            const { profileId, uri } = input;
 
-            const targetProfile = await getProfileByHandle(handle);
+            const targetProfile = await getProfileByProfileId(profileId);
 
             if (!targetProfile) {
                 throw new TRPCError({

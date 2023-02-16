@@ -19,27 +19,27 @@ export type LearnCardNetworkPluginMethods = {
         profile: Partial<Omit<LCNProfile, 'did' | 'isServiceProfile'>>
     ) => Promise<boolean>;
     deleteProfile: () => Promise<boolean>;
-    getProfile: (handle?: string) => Promise<LCNProfile | undefined>;
+    getProfile: (profileId?: string) => Promise<LCNProfile | undefined>;
     searchProfiles: (
-        handle?: string,
+        profileId?: string,
         options?: { limit?: number; includeSelf?: boolean }
     ) => Promise<LCNProfile[]>;
-    connectWith: (handle: string) => Promise<boolean>;
-    connectWithInvite: (handle: string, challenge: string) => Promise<boolean>;
-    cancelConnectionRequest: (handle: string) => Promise<boolean>;
-    disconnectWith: (handle: string) => Promise<boolean>;
+    connectWith: (profileId: string) => Promise<boolean>;
+    connectWithInvite: (profileId: string, challenge: string) => Promise<boolean>;
+    cancelConnectionRequest: (profileId: string) => Promise<boolean>;
+    disconnectWith: (profileId: string) => Promise<boolean>;
     acceptConnectionRequest: (id: string) => Promise<boolean>;
     getConnections: () => Promise<LCNProfile[]>;
     getPendingConnections: () => Promise<LCNProfile[]>;
     getConnectionRequests: () => Promise<LCNProfile[]>;
-    generateInvite: (challenge?: string) => Promise<{ handle: string; challenge: string }>;
-    sendCredential: (handle: string, vc: UnsignedVC | VC) => Promise<string>;
-    acceptCredential: (handle: string, uri: string) => Promise<boolean>;
+    generateInvite: (challenge?: string) => Promise<{ profileId: string; challenge: string }>;
+    sendCredential: (profileId: string, vc: UnsignedVC | VC) => Promise<string>;
+    acceptCredential: (profileId: string, uri: string) => Promise<boolean>;
     getReceivedCredentials: () => Promise<SentCredentialInfo[]>;
     getSentCredentials: () => Promise<SentCredentialInfo[]>;
     getIncomingCredentials: () => Promise<SentCredentialInfo[]>;
-    sendPresentation: (handle: string, vp: VP) => Promise<string>;
-    acceptPresentation: (handle: string, uri: string) => Promise<boolean>;
+    sendPresentation: (profileId: string, vp: VP) => Promise<string>;
+    acceptPresentation: (profileId: string, uri: string) => Promise<boolean>;
     getReceivedPresentations: () => Promise<SentCredentialInfo[]>;
     getSentPresentations: () => Promise<SentCredentialInfo[]>;
     getIncomingPresentations: () => Promise<SentCredentialInfo[]>;

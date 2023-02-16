@@ -39,7 +39,11 @@ export const getReceivedCredentialsForProfile = async (
                         ...Credential.getRelationshipByAlias('credentialReceived'),
                         identifier: 'received',
                     },
-                    { identifier: 'target', model: Profile, where: { handle: profile.handle } },
+                    {
+                        identifier: 'target',
+                        model: Profile,
+                        where: { profileId: profile.profileId },
+                    },
                 ],
             })
             .return('sent, credential, received')
@@ -70,7 +74,11 @@ export const getSentCredentialsForProfile = async (
         await new QueryBuilder()
             .match({
                 related: [
-                    { identifier: 'source', model: Profile, where: { handle: profile.handle } },
+                    {
+                        identifier: 'source',
+                        model: Profile,
+                        where: { profileId: profile.profileId },
+                    },
                     { ...Profile.getRelationshipByAlias('credentialSent'), identifier: 'sent' },
                     { identifier: 'credential', model: Credential },
                 ],
@@ -94,7 +102,7 @@ export const getSentCredentialsForProfile = async (
     return results.map(({ source, sent, credential, received }) => ({
         uri: getCredentialUri(credential.id, domain),
         to: sent.to,
-        from: source.handle,
+        from: source.profileId,
         sent: sent.date,
         received: received?.date,
     }));
@@ -117,7 +125,7 @@ export const getIncomingCredentialsForProfile = async (
                     {
                         ...Profile.getRelationshipByAlias('credentialSent'),
                         identifier: 'relationship',
-                        where: { to: profile.handle },
+                        where: { to: profile.profileId },
                     },
                     { identifier: 'credential', model: Credential },
                 ],
@@ -132,7 +140,7 @@ export const getIncomingCredentialsForProfile = async (
     return results.map(({ source, relationship, credential }) => ({
         uri: getCredentialUri(credential.id, domain),
         to: relationship.to,
-        from: source.handle,
+        from: source.profileId,
         sent: relationship.date,
     }));
 };

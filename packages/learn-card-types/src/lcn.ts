@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const LCNProfileValidator = z.object({
-    handle: z.string(),
+    profileId: z.string(),
     displayName: z.string().default(''),
     did: z.string(),
     email: z.string().optional(),

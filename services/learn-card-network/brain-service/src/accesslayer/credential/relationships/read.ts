@@ -9,7 +9,7 @@ export const getCredentialSentToProfile = async (
         await from.findRelationships({
             alias: 'credentialSent',
             where: {
-                relationship: { to: to.handle },
+                relationship: { to: to.profileId },
                 target: { id },
             },
         })

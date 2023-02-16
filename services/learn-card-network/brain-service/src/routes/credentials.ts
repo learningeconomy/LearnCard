@@ -11,7 +11,7 @@ import {
 } from '@accesslayer/credential/read';
 
 import { t, profileRoute } from '@routes';
-import { getProfileByHandle } from '@accesslayer/profile/read';
+import { getProfileByProfileId } from '@accesslayer/profile/read';
 
 export const credentialsRouter = t.router({
     sendCredential: profileRoute
@@ -19,19 +19,19 @@ export const credentialsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/credential/send/{handle}',
+                path: '/credential/send/{profileId}',
                 tags: ['Credentials'],
                 summary: 'Send a Credential',
-                description: 'This endpoint sends a credential to a user based on their handle',
+                description: 'This endpoint sends a credential to a user based on their profileId',
             },
         })
-        .input(z.object({ handle: z.string(), credential: UnsignedVCValidator.or(VCValidator) }))
+        .input(z.object({ profileId: z.string(), credential: UnsignedVCValidator.or(VCValidator) }))
         .output(z.string())
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const { handle, credential } = input;
+            const { profileId, credential } = input;
 
-            const targetProfile = await getProfileByHandle(handle);
+            const targetProfile = await getProfileByProfileId(profileId);
 
             if (!targetProfile) {
                 throw new TRPCError({
@@ -48,19 +48,20 @@ export const credentialsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/credential/accept/{handle}',
+                path: '/credential/accept/{profileId}',
                 tags: ['Credentials'],
                 summary: 'Accept a Credential',
-                description: 'This endpoint accepts a credential from a user based on their handle',
+                description:
+                    'This endpoint accepts a credential from a user based on their profileId',
             },
         })
-        .input(z.object({ handle: z.string(), uri: z.string() }))
+        .input(z.object({ profileId: z.string(), uri: z.string() }))
         .output(z.boolean())
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const { handle, uri } = input;
+            const { profileId, uri } = input;
 
-            const targetProfile = await getProfileByHandle(handle);
+            const targetProfile = await getProfileByProfileId(profileId);
 
             if (!targetProfile) {
                 throw new TRPCError({

@@ -6,7 +6,7 @@ export const getConnections = async (profile: ProfileInstance): Promise<ProfileI
         profile.findRelationships({ alias: 'connectedWith' }),
         Profile.findRelationships({
             alias: 'connectedWith',
-            where: { target: { handle: profile.handle } },
+            where: { target: { profileId: profile.profileId } },
         }),
     ]);
 
@@ -16,7 +16,9 @@ export const getConnections = async (profile: ProfileInstance): Promise<ProfileI
     return [...connectedTos, ...connectedBys].reduce<ProfileInstance[]>(
         (profiles, currentProfile) => {
             if (
-                !profiles.find(existingProfile => existingProfile.handle === currentProfile.handle)
+                !profiles.find(
+                    existingProfile => existingProfile.profileId === currentProfile.profileId
+                )
             ) {
                 profiles.push(currentProfile);
             }
@@ -40,7 +42,7 @@ export const getConnectionRequests = async (
     return (
         await Profile.findRelationships({
             alias: 'connectionRequested',
-            where: { target: { handle: profile.handle } },
+            where: { target: { profileId: profile.profileId } },
         })
     ).map(result => result.source);
 };
@@ -53,11 +55,11 @@ export const areProfilesConnected = async (
     const [sourceConnectedToTarget, targetConnectedToSource] = await Promise.all([
         source.findRelationships({
             alias: 'connectedWith',
-            where: { relationship: {}, target: { handle: target.handle } },
+            where: { relationship: {}, target: { profileId: target.profileId } },
         }),
         target.findRelationships({
             alias: 'connectedWith',
-            where: { relationship: {}, target: { handle: source.handle } },
+            where: { relationship: {}, target: { profileId: source.profileId } },
         }),
     ]);
 
@@ -82,7 +84,7 @@ export const connectProfiles = async (
             (
                 await target.findRelationships({
                     alias: 'connectionRequested',
-                    where: { relationship: {}, target: { handle: source.handle } },
+                    where: { relationship: {}, target: { profileId: source.profileId } },
                 })
             ).length > 0;
 
@@ -98,14 +100,20 @@ export const connectProfiles = async (
     await Promise.all([
         Profile.deleteRelationships({
             alias: 'connectionRequested',
-            where: { source: { handle: source.handle }, target: { handle: target.handle } },
+            where: {
+                source: { profileId: source.profileId },
+                target: { profileId: target.profileId },
+            },
         }),
         Profile.deleteRelationships({
             alias: 'connectionRequested',
-            where: { source: { handle: target.handle }, target: { handle: source.handle } },
+            where: {
+                source: { profileId: target.profileId },
+                target: { profileId: source.profileId },
+            },
         }),
-        source.relateTo({ alias: 'connectedWith', where: { handle: target.handle } }),
-        target.relateTo({ alias: 'connectedWith', where: { handle: source.handle } }),
+        source.relateTo({ alias: 'connectedWith', where: { profileId: target.profileId } }),
+        target.relateTo({ alias: 'connectedWith', where: { profileId: source.profileId } }),
     ]);
 
     return true;
@@ -127,11 +135,17 @@ export const disconnectProfiles = async (
     await Promise.all([
         Profile.deleteRelationships({
             alias: 'connectedWith',
-            where: { source: { handle: source.handle }, target: { handle: target.handle } },
+            where: {
+                source: { profileId: source.profileId },
+                target: { profileId: target.profileId },
+            },
         }),
         Profile.deleteRelationships({
             alias: 'connectedWith',
-            where: { source: { handle: target.handle }, target: { handle: source.handle } },
+            where: {
+                source: { profileId: target.profileId },
+                target: { profileId: source.profileId },
+            },
         }),
     ]);
 
@@ -154,7 +168,7 @@ export const requestConnection = async (
         (
             await target.findRelationships({
                 alias: 'connectionRequested',
-                where: { relationship: {}, target: { handle: source.handle } },
+                where: { relationship: {}, target: { profileId: source.profileId } },
             })
         ).length > 0;
 
@@ -164,7 +178,7 @@ export const requestConnection = async (
         (
             await source.findRelationships({
                 alias: 'connectionRequested',
-                where: { relationship: {}, target: { handle: target.handle } },
+                where: { relationship: {}, target: { profileId: target.profileId } },
             })
         ).length > 0;
 
@@ -182,7 +196,7 @@ export const requestConnection = async (
         });
     }
 
-    await source.relateTo({ alias: 'connectionRequested', where: { handle: target.handle } });
+    await source.relateTo({ alias: 'connectionRequested', where: { profileId: target.profileId } });
 
     return true;
 };
@@ -203,7 +217,7 @@ export const cancelConnectionRequest = async (
         (
             await source.findRelationships({
                 alias: 'connectionRequested',
-                where: { relationship: {}, target: { handle: target.handle } },
+                where: { relationship: {}, target: { profileId: target.profileId } },
             })
         ).length > 0;
 
@@ -216,7 +230,7 @@ export const cancelConnectionRequest = async (
 
     await Profile.deleteRelationships({
         alias: 'connectionRequested',
-        where: { source: { handle: source.handle }, target: { handle: target.handle } },
+        where: { source: { profileId: source.profileId }, target: { profileId: target.profileId } },
     });
 
     return true;

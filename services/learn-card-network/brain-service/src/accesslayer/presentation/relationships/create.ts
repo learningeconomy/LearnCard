@@ -8,7 +8,7 @@ export const createSentPresentationRelationship = async (
     await from.relateTo({
         alias: 'presentationSent',
         where: { id: presentation.id },
-        properties: { to: to.handle, date: new Date().toISOString() },
+        properties: { to: to.profileId, date: new Date().toISOString() },
     });
 };
 
@@ -19,7 +19,7 @@ export const createReceivedPresentationRelationship = async (
 ): Promise<void> => {
     await presentation.relateTo({
         alias: 'presentationReceived',
-        where: { handle: to.handle },
-        properties: { from: from.handle, date: new Date().toISOString() },
+        where: { profileId: to.profileId },
+        properties: { from: from.profileId, date: new Date().toISOString() },
     });
 };

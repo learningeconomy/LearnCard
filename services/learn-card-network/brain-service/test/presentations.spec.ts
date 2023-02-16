@@ -16,8 +16,8 @@ describe('Presentations', () => {
             await Profile.delete({ detach: true, where: {} });
             await Credential.delete({ detach: true, where: {} });
             await Presentation.delete({ detach: true, where: {} });
-            await userA.clients.fullAuth.profile.createProfile({ handle: 'userA' });
-            await userB.clients.fullAuth.profile.createProfile({ handle: 'userB' });
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'userA' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userB' });
         });
 
         afterAll(async () => {
@@ -31,11 +31,11 @@ describe('Presentations', () => {
             const vp = await userA.learnCard.invoke.issuePresentation(unsignedVp);
 
             await expect(
-                noAuthClient.presentation.sendPresentation({ handle: 'userB', presentation: vp })
+                noAuthClient.presentation.sendPresentation({ profileId: 'userB', presentation: vp })
             ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
             await expect(
                 userA.clients.partialAuth.presentation.sendPresentation({
-                    handle: 'userB',
+                    profileId: 'userB',
                     presentation: vp,
                 })
             ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
@@ -47,7 +47,7 @@ describe('Presentations', () => {
 
             await expect(
                 userA.clients.fullAuth.presentation.sendPresentation({
-                    handle: 'userB',
+                    profileId: 'userB',
                     presentation: vp,
                 })
             ).resolves.not.toThrow();
@@ -59,8 +59,8 @@ describe('Presentations', () => {
             await Profile.delete({ detach: true, where: {} });
             await Presentation.delete({ detach: true, where: {} });
 
-            await userA.clients.fullAuth.profile.createProfile({ handle: 'userA' });
-            await userB.clients.fullAuth.profile.createProfile({ handle: 'userB' });
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'userA' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userB' });
         });
 
         afterAll(async () => {
@@ -73,15 +73,18 @@ describe('Presentations', () => {
             const vp = await userA.learnCard.invoke.issuePresentation(unsignedVp);
 
             const uri = await userA.clients.fullAuth.presentation.sendPresentation({
-                handle: 'userB',
+                profileId: 'userB',
                 presentation: vp,
             });
 
             await expect(
-                noAuthClient.presentation.acceptPresentation({ handle: 'userA', uri })
+                noAuthClient.presentation.acceptPresentation({ profileId: 'userA', uri })
             ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
             await expect(
-                userB.clients.partialAuth.presentation.acceptPresentation({ handle: 'userA', uri })
+                userB.clients.partialAuth.presentation.acceptPresentation({
+                    profileId: 'userA',
+                    uri,
+                })
             ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
         });
 
@@ -90,12 +93,12 @@ describe('Presentations', () => {
             const vp = await userA.learnCard.invoke.issuePresentation(unsignedVp);
 
             const uri = await userA.clients.fullAuth.presentation.sendPresentation({
-                handle: 'userB',
+                profileId: 'userB',
                 presentation: vp,
             });
 
             await expect(
-                userB.clients.fullAuth.presentation.acceptPresentation({ handle: 'userA', uri })
+                userB.clients.fullAuth.presentation.acceptPresentation({ profileId: 'userA', uri })
             ).resolves.not.toThrow();
         });
     });
@@ -104,8 +107,8 @@ describe('Presentations', () => {
         beforeEach(async () => {
             await Profile.delete({ detach: true, where: {} });
 
-            await userA.clients.fullAuth.profile.createProfile({ handle: 'userA' });
-            await userB.clients.fullAuth.profile.createProfile({ handle: 'userB' });
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'userA' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userB' });
         });
 
         beforeEach(async () => {
@@ -117,11 +120,14 @@ describe('Presentations', () => {
             const vp = await userA.learnCard.invoke.issuePresentation(unsignedVp);
 
             const uri = await userA.clients.fullAuth.presentation.sendPresentation({
-                handle: 'userB',
+                profileId: 'userB',
                 presentation: vp,
             });
 
-            await userB.clients.fullAuth.presentation.acceptPresentation({ handle: 'userA', uri });
+            await userB.clients.fullAuth.presentation.acceptPresentation({
+                profileId: 'userA',
+                uri,
+            });
 
             await expect(
                 userB.clients.partialAuth.presentation.receivedPresentations()
@@ -135,11 +141,14 @@ describe('Presentations', () => {
             const vp = await userA.learnCard.invoke.issuePresentation(unsignedVp);
 
             const uri = await userA.clients.fullAuth.presentation.sendPresentation({
-                handle: 'userB',
+                profileId: 'userB',
                 presentation: vp,
             });
 
-            await userB.clients.fullAuth.presentation.acceptPresentation({ handle: 'userA', uri });
+            await userB.clients.fullAuth.presentation.acceptPresentation({
+                profileId: 'userA',
+                uri,
+            });
 
             const userAPresentations =
                 await userA.clients.fullAuth.presentation.receivedPresentations();
@@ -155,7 +164,7 @@ describe('Presentations', () => {
             const vp = await userA.learnCard.invoke.issuePresentation(unsignedVp);
 
             await userA.clients.fullAuth.presentation.sendPresentation({
-                handle: 'userB',
+                profileId: 'userB',
                 presentation: vp,
             });
 
@@ -172,14 +181,17 @@ describe('Presentations', () => {
             const sent = new Date().toISOString();
 
             const uri = await userA.clients.fullAuth.presentation.sendPresentation({
-                handle: 'userB',
+                profileId: 'userB',
                 presentation: vp,
             });
 
             jest.setSystemTime(new Date('02-07-2023'));
             const received = new Date().toISOString();
 
-            await userB.clients.fullAuth.presentation.acceptPresentation({ uri, handle: 'userA' });
+            await userB.clients.fullAuth.presentation.acceptPresentation({
+                uri,
+                profileId: 'userA',
+            });
 
             const presentations = await userB.clients.fullAuth.presentation.receivedPresentations();
 
@@ -194,8 +206,8 @@ describe('Presentations', () => {
         beforeEach(async () => {
             await Profile.delete({ detach: true, where: {} });
 
-            await userA.clients.fullAuth.profile.createProfile({ handle: 'userA' });
-            await userB.clients.fullAuth.profile.createProfile({ handle: 'userB' });
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'userA' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userB' });
         });
 
         beforeEach(async () => {
@@ -207,11 +219,14 @@ describe('Presentations', () => {
             const vp = await userA.learnCard.invoke.issuePresentation(unsignedVp);
 
             const uri = await userA.clients.fullAuth.presentation.sendPresentation({
-                handle: 'userB',
+                profileId: 'userB',
                 presentation: vp,
             });
 
-            await userB.clients.fullAuth.presentation.acceptPresentation({ handle: 'userA', uri });
+            await userB.clients.fullAuth.presentation.acceptPresentation({
+                profileId: 'userA',
+                uri,
+            });
 
             await expect(
                 userA.clients.partialAuth.presentation.sentPresentations()
@@ -225,11 +240,14 @@ describe('Presentations', () => {
             const vp = await userA.learnCard.invoke.issuePresentation(unsignedVp);
 
             const uri = await userA.clients.fullAuth.presentation.sendPresentation({
-                handle: 'userB',
+                profileId: 'userB',
                 presentation: vp,
             });
 
-            await userB.clients.fullAuth.presentation.acceptPresentation({ handle: 'userA', uri });
+            await userB.clients.fullAuth.presentation.acceptPresentation({
+                profileId: 'userA',
+                uri,
+            });
 
             const userAPresentations =
                 await userA.clients.fullAuth.presentation.sentPresentations();
@@ -245,7 +263,7 @@ describe('Presentations', () => {
             const vp = await userA.learnCard.invoke.issuePresentation(unsignedVp);
 
             await userA.clients.fullAuth.presentation.sendPresentation({
-                handle: 'userB',
+                profileId: 'userB',
                 presentation: vp,
             });
 
@@ -262,14 +280,17 @@ describe('Presentations', () => {
             const sent = new Date().toISOString();
 
             const uri = await userA.clients.fullAuth.presentation.sendPresentation({
-                handle: 'userB',
+                profileId: 'userB',
                 presentation: vp,
             });
 
             jest.setSystemTime(new Date('02-07-2023'));
             const received = new Date().toISOString();
 
-            await userB.clients.fullAuth.presentation.acceptPresentation({ uri, handle: 'userA' });
+            await userB.clients.fullAuth.presentation.acceptPresentation({
+                uri,
+                profileId: 'userA',
+            });
 
             const presentations = await userA.clients.fullAuth.presentation.sentPresentations();
 
@@ -284,8 +305,8 @@ describe('Presentations', () => {
         beforeEach(async () => {
             await Profile.delete({ detach: true, where: {} });
 
-            await userA.clients.fullAuth.profile.createProfile({ handle: 'userA' });
-            await userB.clients.fullAuth.profile.createProfile({ handle: 'userB' });
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'userA' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userB' });
         });
 
         beforeEach(async () => {
@@ -297,7 +318,7 @@ describe('Presentations', () => {
             const vp = await userA.learnCard.invoke.issuePresentation(unsignedVp);
 
             await userA.clients.fullAuth.presentation.sendPresentation({
-                handle: 'userB',
+                profileId: 'userB',
                 presentation: vp,
             });
 
@@ -313,7 +334,7 @@ describe('Presentations', () => {
             const vp = await userA.learnCard.invoke.issuePresentation(unsignedVp);
 
             await userA.clients.fullAuth.presentation.sendPresentation({
-                handle: 'userB',
+                profileId: 'userB',
                 presentation: vp,
             });
 
@@ -331,7 +352,7 @@ describe('Presentations', () => {
             const vp = await userA.learnCard.invoke.issuePresentation(unsignedVp);
 
             const uri = await userA.clients.fullAuth.presentation.sendPresentation({
-                handle: 'userB',
+                profileId: 'userB',
                 presentation: vp,
             });
 
@@ -340,7 +361,10 @@ describe('Presentations', () => {
 
             expect(beforeAcceptance).toHaveLength(1);
 
-            await userB.clients.fullAuth.presentation.acceptPresentation({ handle: 'userA', uri });
+            await userB.clients.fullAuth.presentation.acceptPresentation({
+                profileId: 'userA',
+                uri,
+            });
 
             const afterAcceptance =
                 await userB.clients.fullAuth.presentation.incomingPresentations();
@@ -356,7 +380,7 @@ describe('Presentations', () => {
             const sent = new Date().toISOString();
 
             await userA.clients.fullAuth.presentation.sendPresentation({
-                handle: 'userB',
+                profileId: 'userB',
                 presentation: vp,
             });
 

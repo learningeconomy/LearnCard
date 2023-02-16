@@ -29,7 +29,7 @@ export const Profile = ModelFactory<LCNProfile, ProfileRelationships>(
     {
         label: 'Profile',
         schema: {
-            handle: { type: 'string', required: true, uniqueItems: true },
+            profileId: { type: 'string', required: true, uniqueItems: true },
             displayName: { type: 'string', required: false },
             did: { type: 'string', required: true, uniqueItems: true },
             email: { type: 'string', required: false, uniqueItems: true },
@@ -64,7 +64,7 @@ export const Profile = ModelFactory<LCNProfile, ProfileRelationships>(
 );
 
 Profile.beforeCreate = profile => {
-    profile.handle = profile.handle.toLowerCase();
+    profile.profileId = profile.profileId.toLowerCase();
 };
 
 export default Profile;

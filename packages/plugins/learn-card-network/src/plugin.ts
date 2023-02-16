@@ -128,10 +128,10 @@ export const getLearnCardNetworkPlugin = async (
 
                 return false;
             },
-            getProfile: async (_learnCard, handle) => {
-                if (!handle) return client.profile.getProfile.query();
+            getProfile: async (_learnCard, profileId) => {
+                if (!profileId) return client.profile.getProfile.query();
 
-                return client.profile.getOtherProfile.query({ handle });
+                return client.profile.getOtherProfile.query({ profileId });
             },
             searchProfiles: async (
                 _learnCard,
@@ -140,30 +140,30 @@ export const getLearnCardNetworkPlugin = async (
             ) => {
                 return client.profile.searchProfiles.query({ input, limit, includeSelf });
             },
-            connectWith: async (_learnCard, handle) => {
+            connectWith: async (_learnCard, profileId) => {
                 if (!userData) throw new Error('Please make an account first!');
 
-                return client.profile.connectWith.mutate({ handle });
+                return client.profile.connectWith.mutate({ profileId });
             },
-            cancelConnectionRequest: async (_learnCard, handle) => {
+            cancelConnectionRequest: async (_learnCard, profileId) => {
                 if (!userData) throw new Error('Please make an account first!');
 
-                return client.profile.cancelConnectionRequest.mutate({ handle });
+                return client.profile.cancelConnectionRequest.mutate({ profileId });
             },
-            connectWithInvite: async (_learnCard, handle, challenge) => {
+            connectWithInvite: async (_learnCard, profileId, challenge) => {
                 if (!userData) throw new Error('Please make an account first!');
 
-                return client.profile.connectWithInvite.mutate({ handle, challenge });
+                return client.profile.connectWithInvite.mutate({ profileId, challenge });
             },
-            disconnectWith: async (_learnCard, handle) => {
+            disconnectWith: async (_learnCard, profileId) => {
                 if (!userData) throw new Error('Please make an account first!');
 
-                return client.profile.disconnectWith.mutate({ handle });
+                return client.profile.disconnectWith.mutate({ profileId });
             },
-            acceptConnectionRequest: async (_learnCard, handle) => {
+            acceptConnectionRequest: async (_learnCard, profileId) => {
                 if (!userData) throw new Error('Please make an account first!');
 
-                return client.profile.acceptConnectionRequest.mutate({ handle });
+                return client.profile.acceptConnectionRequest.mutate({ profileId });
             },
             getConnections: async () => {
                 if (!userData) throw new Error('Please make an account first!');
@@ -185,15 +185,15 @@ export const getLearnCardNetworkPlugin = async (
 
                 return client.profile.generateInvite.mutate({ challenge });
             },
-            sendCredential: async (_learnCard, handle, vc) => {
+            sendCredential: async (_learnCard, profileId, vc) => {
                 if (!userData) throw new Error('Please make an account first!');
 
-                return client.credential.sendCredential.mutate({ handle, credential: vc });
+                return client.credential.sendCredential.mutate({ profileId, credential: vc });
             },
-            acceptCredential: async (_learnCard, handle, uri) => {
+            acceptCredential: async (_learnCard, profileId, uri) => {
                 if (!userData) throw new Error('Please make an account first!');
 
-                return client.credential.acceptCredential.mutate({ handle, uri });
+                return client.credential.acceptCredential.mutate({ profileId, uri });
             },
             getReceivedCredentials: async () => {
                 if (!userData) throw new Error('Please make an account first!');
@@ -210,15 +210,15 @@ export const getLearnCardNetworkPlugin = async (
 
                 return client.credential.incomingCredentials.query();
             },
-            sendPresentation: async (_learnCard, handle, vp) => {
+            sendPresentation: async (_learnCard, profileId, vp) => {
                 if (!userData) throw new Error('Please make an account first!');
 
-                return client.presentation.sendPresentation.mutate({ handle, presentation: vp });
+                return client.presentation.sendPresentation.mutate({ profileId, presentation: vp });
             },
-            acceptPresentation: async (_learnCard, handle, uri) => {
+            acceptPresentation: async (_learnCard, profileId, uri) => {
                 if (!userData) throw new Error('Please make an account first!');
 
-                return client.presentation.acceptPresentation.mutate({ handle, uri });
+                return client.presentation.acceptPresentation.mutate({ profileId, uri });
             },
             getReceivedPresentations: async () => {
                 if (!userData) throw new Error('Please make an account first!');

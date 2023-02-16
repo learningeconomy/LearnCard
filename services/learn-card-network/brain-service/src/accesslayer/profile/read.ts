@@ -2,12 +2,12 @@ import { QueryBuilder, BindParam, QueryRunner } from 'neogma';
 import { Profile, ProfileInstance } from '@models';
 import { ProfileType } from 'types/profile';
 
-export const getProfileByHandle = async (handle: string): Promise<ProfileInstance | null> => {
-    return Profile.findOne({ where: { handle: handle.toLowerCase() } });
+export const getProfileByProfileId = async (profileId: string): Promise<ProfileInstance | null> => {
+    return Profile.findOne({ where: { profileId: profileId.toLowerCase() } });
 };
 
-export const getProfilesByHandle = async (handle: string): Promise<ProfileInstance[]> => {
-    return Profile.findMany({ where: { handle: handle.toLowerCase() } });
+export const getProfilesByProfileId = async (profileId: string): Promise<ProfileInstance[]> => {
+    return Profile.findMany({ where: { profileId: profileId.toLowerCase() } });
 };
 
 export const getProfileByDid = async (did: string): Promise<ProfileInstance | null> => {
@@ -28,13 +28,13 @@ export const getProfilesByEmail = async (email: string): Promise<ProfileInstance
 
 export const checkIfProfileExists = async ({
     did,
-    handle,
+    profileId,
     email,
 }: Partial<ProfileType>): Promise<boolean> => {
-    if (!did && !handle && !email) return false;
+    if (!did && !profileId && !email) return false;
 
     if (did && (await getProfileByDid(did))) return true;
-    if (handle && (await getProfileByHandle(handle))) return true;
+    if (profileId && (await getProfileByProfileId(profileId))) return true;
     if (email && (await getProfileByEmail(email))) return true;
 
     return false;
@@ -59,7 +59,7 @@ export const searchProfiles = async (
     )
         .match({ identifier: 'profile', model: Profile })
         .where(
-            `(profile.handle CONTAINS $input OR profile.displayName =~ $inputRegex)${blacklist.length > 0 ? ' AND NOT profile.handle IN $blacklist' : ''
+            `(profile.profileId CONTAINS $input OR profile.displayName =~ $inputRegex)${blacklist.length > 0 ? ' AND NOT profile.profileId IN $blacklist' : ''
             }`
         )
         .return('profile')
