@@ -1,4 +1,4 @@
-import { QueryBuilder } from 'neogma';
+import { Op, QueryBuilder, Where } from 'neogma';
 import {
     Credential,
     CredentialInstance,
@@ -22,34 +22,43 @@ export const getCredentialById = async (id: string): Promise<CredentialInstance 
 export const getReceivedCredentialsForProfile = async (
     domain: string,
     profile: ProfileInstance,
-    limit: number
+    {
+        limit,
+        from,
+    }: {
+        limit: number;
+        from?: string[];
+    }
 ): Promise<SentCredentialInfo[]> => {
+    const matchQuery = new QueryBuilder().match({
+        related: [
+            { identifier: 'source', model: Profile },
+            { ...Profile.getRelationshipByAlias('credentialSent'), identifier: 'sent' },
+            { identifier: 'credential', model: Credential },
+            {
+                ...Credential.getRelationshipByAlias('credentialReceived'),
+                identifier: 'received',
+            },
+            {
+                identifier: 'target',
+                model: Profile,
+                where: { profileId: profile.profileId },
+            },
+        ],
+    });
+
+    const query =
+        from && from.length > 0
+            ? matchQuery.where(
+                new Where({ source: { profileId: { [Op.in]: from } } }, matchQuery.getBindParam())
+            )
+            : matchQuery;
+
     const results = convertQueryResultToPropertiesObjectArray<{
         sent: ProfileRelationships['credentialSent']['RelationshipProperties'];
         credential: CredentialType;
         received: CredentialRelationships['credentialReceived']['RelationshipProperties'];
-    }>(
-        await new QueryBuilder()
-            .match({
-                related: [
-                    { identifier: 'source', model: Profile },
-                    { ...Profile.getRelationshipByAlias('credentialSent'), identifier: 'sent' },
-                    { identifier: 'credential', model: Credential },
-                    {
-                        ...Credential.getRelationshipByAlias('credentialReceived'),
-                        identifier: 'received',
-                    },
-                    {
-                        identifier: 'target',
-                        model: Profile,
-                        where: { profileId: profile.profileId },
-                    },
-                ],
-            })
-            .return('sent, credential, received')
-            .limit(limit)
-            .run()
-    );
+    }>(await query.return('sent, credential, received').limit(limit).run());
 
     return results.map(({ sent, credential, received }) => ({
         uri: getCredentialUri(credential.id, domain),
@@ -63,41 +72,51 @@ export const getReceivedCredentialsForProfile = async (
 export const getSentCredentialsForProfile = async (
     domain: string,
     profile: ProfileInstance,
-    limit: number
+    {
+        limit,
+        to,
+    }: {
+        limit: number;
+        to?: string[];
+    }
 ): Promise<SentCredentialInfo[]> => {
+    const matchQuery = new QueryBuilder().match({
+        related: [
+            {
+                identifier: 'source',
+                model: Profile,
+                where: { profileId: profile.profileId },
+            },
+            { ...Profile.getRelationshipByAlias('credentialSent'), identifier: 'sent' },
+            { identifier: 'credential', model: Credential },
+        ],
+    });
+
+    const whereQuery =
+        to && to.length > 0
+            ? matchQuery.where(
+                new Where({ sent: { to: { [Op.in]: to } } }, matchQuery.getBindParam())
+            )
+            : matchQuery;
+
+    const query = whereQuery.match({
+        optional: true,
+        related: [
+            { identifier: 'credential', model: Credential },
+            {
+                ...Credential.getRelationshipByAlias('credentialReceived'),
+                identifier: 'received',
+            },
+            { identifier: 'target', model: Profile },
+        ],
+    });
+
     const results = convertQueryResultToPropertiesObjectArray<{
         source: ProfileType;
         sent: ProfileRelationships['credentialSent']['RelationshipProperties'];
         credential: CredentialType;
         received?: CredentialRelationships['credentialReceived']['RelationshipProperties'];
-    }>(
-        await new QueryBuilder()
-            .match({
-                related: [
-                    {
-                        identifier: 'source',
-                        model: Profile,
-                        where: { profileId: profile.profileId },
-                    },
-                    { ...Profile.getRelationshipByAlias('credentialSent'), identifier: 'sent' },
-                    { identifier: 'credential', model: Credential },
-                ],
-            })
-            .match({
-                optional: true,
-                related: [
-                    { identifier: 'credential', model: Credential },
-                    {
-                        ...Credential.getRelationshipByAlias('credentialReceived'),
-                        identifier: 'received',
-                    },
-                    { identifier: 'target', model: Profile },
-                ],
-            })
-            .return('source, sent, credential, received')
-            .limit(limit)
-            .run()
-    );
+    }>(await query.return('source, sent, credential, received').limit(limit).run());
 
     return results.map(({ source, sent, credential, received }) => ({
         uri: getCredentialUri(credential.id, domain),
@@ -111,14 +130,25 @@ export const getSentCredentialsForProfile = async (
 export const getIncomingCredentialsForProfile = async (
     domain: string,
     profile: ProfileInstance,
-    limit: number
+    {
+        limit,
+        from,
+    }: {
+        limit: number;
+        from?: string[];
+    }
 ): Promise<SentCredentialInfo[]> => {
+    const whereFrom =
+        from && from.length > 0
+            ? new Where({ source: { profileId: { [Op.in]: from } } })
+            : undefined;
+
     const results = convertQueryResultToPropertiesObjectArray<{
         source: ProfileType;
         relationship: ProfileRelationships['credentialSent']['RelationshipProperties'];
         credential: CredentialType;
     }>(
-        await new QueryBuilder()
+        await new QueryBuilder(whereFrom?.getBindParam())
             .match({
                 related: [
                     { identifier: 'source', model: Profile },
@@ -131,7 +161,10 @@ export const getIncomingCredentialsForProfile = async (
                 ],
             })
             // Don't return credentials that have been accepted
-            .where('NOT (credential)-[:CREDENTIAL_RECEIVED]->()')
+            .where(
+                `NOT (credential)-[:CREDENTIAL_RECEIVED]->()${whereFrom ? `AND ${whereFrom.getStatement('text')}` : ''
+                }`
+            )
             .return('source, relationship, credential')
             .limit(limit)
             .run()

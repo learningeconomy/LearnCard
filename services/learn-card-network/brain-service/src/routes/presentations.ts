@@ -84,10 +84,20 @@ export const presentationsRouter = t.router({
                     'This endpoint stores a credential, returning a uri that can be used to resolve it',
             },
         })
-        .input(z.object({ limit: z.number().int().positive().lt(100).default(25) }).default({}))
+        .input(
+            z
+                .object({
+                    limit: z.number().int().positive().lt(100).default(25),
+                    from: z.string().optional(),
+                })
+                .default({})
+        )
         .output(SentCredentialInfoValidator.array())
-        .query(async ({ input: { limit }, ctx }) => {
-            return getReceivedPresentationsForProfile(ctx.domain, ctx.user.profile, limit);
+        .query(async ({ input: { limit, from }, ctx }) => {
+            return getReceivedPresentationsForProfile(ctx.domain, ctx.user.profile, {
+                limit,
+                from: typeof from === 'string' ? [from] : from,
+            });
         }),
 
     sentPresentations: profileRoute
@@ -102,10 +112,20 @@ export const presentationsRouter = t.router({
                     'This endpoint stores a credential, returning a uri that can be used to resolve it',
             },
         })
-        .input(z.object({ limit: z.number().int().positive().lt(100).default(25) }).default({}))
+        .input(
+            z
+                .object({
+                    limit: z.number().int().positive().lt(100).default(25),
+                    to: z.string().optional(),
+                })
+                .default({})
+        )
         .output(SentCredentialInfoValidator.array())
-        .query(async ({ input: { limit }, ctx }) => {
-            return getSentPresentationsForProfile(ctx.domain, ctx.user.profile, limit);
+        .query(async ({ input: { limit, to }, ctx }) => {
+            return getSentPresentationsForProfile(ctx.domain, ctx.user.profile, {
+                limit,
+                to: typeof to === 'string' ? [to] : to,
+            });
         }),
 
     incomingPresentations: profileRoute
@@ -120,10 +140,20 @@ export const presentationsRouter = t.router({
                     'This endpoint stores a credential, returning a uri that can be used to resolve it',
             },
         })
-        .input(z.object({ limit: z.number().int().positive().lt(100).default(25) }).default({}))
+        .input(
+            z
+                .object({
+                    limit: z.number().int().positive().lt(100).default(25),
+                    from: z.string().optional(),
+                })
+                .default({})
+        )
         .output(SentCredentialInfoValidator.array())
-        .query(async ({ input: { limit }, ctx }) => {
-            return getIncomingPresentationsForProfile(ctx.domain, ctx.user.profile, limit);
+        .query(async ({ input: { limit, from }, ctx }) => {
+            return getIncomingPresentationsForProfile(ctx.domain, ctx.user.profile, {
+                limit,
+                from: typeof from === 'string' ? [from] : from,
+            });
         }),
 });
 export type PresentationsRouter = typeof presentationsRouter;

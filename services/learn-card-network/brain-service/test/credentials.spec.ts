@@ -1,22 +1,25 @@
 import { getClient, getUser } from './helpers/getClient';
+import { testVc, sendCredential } from './helpers/send';
 import { Profile, Credential } from '@models';
 
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;
 let userB: Awaited<ReturnType<typeof getUser>>;
+let userC: Awaited<ReturnType<typeof getUser>>;
 
 describe('Credentials', () => {
     beforeAll(async () => {
         userA = await getUser();
         userB = await getUser('b'.repeat(64));
+        userC = await getUser('c'.repeat(64));
     });
 
     describe('sendCredential', () => {
         beforeEach(async () => {
             await Profile.delete({ detach: true, where: {} });
             await Credential.delete({ detach: true, where: {} });
-            await userA.clients.fullAuth.profile.createProfile({ profileId: 'userA' });
-            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userB' });
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
         });
 
         afterAll(async () => {
@@ -25,28 +28,22 @@ describe('Credentials', () => {
         });
 
         it('should require full auth to send a credential', async () => {
-            const unsignedVc = userA.learnCard.invoke.getTestVc(userB.learnCard.id.did());
-            const vc = await userA.learnCard.invoke.issueCredential(unsignedVc);
-
             await expect(
-                noAuthClient.credential.sendCredential({ profileId: 'userB', credential: vc })
+                noAuthClient.credential.sendCredential({ profileId: 'userb', credential: testVc })
             ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
             await expect(
                 userA.clients.partialAuth.credential.sendCredential({
-                    profileId: 'userB',
-                    credential: vc,
+                    profileId: 'userb',
+                    credential: testVc,
                 })
             ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
         });
 
         it('should allow sending a credential', async () => {
-            const unsignedVc = userA.learnCard.invoke.getTestVc(userB.learnCard.id.did());
-            const vc = await userA.learnCard.invoke.issueCredential(unsignedVc);
-
             await expect(
                 userA.clients.fullAuth.credential.sendCredential({
-                    profileId: 'userB',
-                    credential: vc,
+                    profileId: 'userb',
+                    credential: testVc,
                 })
             ).resolves.not.toThrow();
         });
@@ -57,8 +54,8 @@ describe('Credentials', () => {
             await Profile.delete({ detach: true, where: {} });
             await Credential.delete({ detach: true, where: {} });
 
-            await userA.clients.fullAuth.profile.createProfile({ profileId: 'userA' });
-            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userB' });
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
         });
 
         afterAll(async () => {
@@ -67,29 +64,23 @@ describe('Credentials', () => {
         });
 
         it('should require full auth to accept a credential', async () => {
-            const unsignedVc = userA.learnCard.invoke.getTestVc(userB.learnCard.id.did());
-            const vc = await userA.learnCard.invoke.issueCredential(unsignedVc);
-
             const uri = await userA.clients.fullAuth.credential.sendCredential({
-                profileId: 'userB',
-                credential: vc,
+                profileId: 'userb',
+                credential: testVc,
             });
 
             await expect(
-                noAuthClient.credential.acceptCredential({ profileId: 'userA', uri })
+                noAuthClient.credential.acceptCredential({ profileId: 'usera', uri })
             ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
             await expect(
-                userB.clients.partialAuth.credential.acceptCredential({ profileId: 'userA', uri })
+                userB.clients.partialAuth.credential.acceptCredential({ profileId: 'usera', uri })
             ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
         });
 
         it('should allow sending a credential', async () => {
-            const unsignedVc = userA.learnCard.invoke.getTestVc(userB.learnCard.id.did());
-            const vc = await userA.learnCard.invoke.issueCredential(unsignedVc);
-
             const uri = await userA.clients.fullAuth.credential.sendCredential({
-                profileId: 'userB',
-                credential: vc,
+                profileId: 'userb',
+                credential: testVc,
             });
 
             await expect(
@@ -102,8 +93,8 @@ describe('Credentials', () => {
         beforeEach(async () => {
             await Profile.delete({ detach: true, where: {} });
 
-            await userA.clients.fullAuth.profile.createProfile({ profileId: 'userA' });
-            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userB' });
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
         });
 
         beforeEach(async () => {
@@ -111,15 +102,10 @@ describe('Credentials', () => {
         });
 
         it('should require full auth to get received credentials', async () => {
-            const unsignedVc = userA.learnCard.invoke.getTestVc(userB.learnCard.id.did());
-            const vc = await userA.learnCard.invoke.issueCredential(unsignedVc);
-
-            const uri = await userA.clients.fullAuth.credential.sendCredential({
-                profileId: 'userB',
-                credential: vc,
-            });
-
-            await userB.clients.fullAuth.credential.acceptCredential({ profileId: 'userA', uri });
+            await sendCredential(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB }
+            );
 
             await expect(
                 userB.clients.partialAuth.credential.receivedCredentials()
@@ -129,15 +115,10 @@ describe('Credentials', () => {
         });
 
         it('should show received credentials', async () => {
-            const unsignedVc = userA.learnCard.invoke.getTestVc(userB.learnCard.id.did());
-            const vc = await userA.learnCard.invoke.issueCredential(unsignedVc);
-
-            const uri = await userA.clients.fullAuth.credential.sendCredential({
-                profileId: 'userB',
-                credential: vc,
-            });
-
-            await userB.clients.fullAuth.credential.acceptCredential({ profileId: 'userA', uri });
+            await sendCredential(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB }
+            );
 
             const userACredentials = await userA.clients.fullAuth.credential.receivedCredentials();
             const userBCredentials = await userB.clients.fullAuth.credential.receivedCredentials();
@@ -147,12 +128,9 @@ describe('Credentials', () => {
         });
 
         it('should only show accepted credentials', async () => {
-            const unsignedVc = userA.learnCard.invoke.getTestVc(userB.learnCard.id.did());
-            const vc = await userA.learnCard.invoke.issueCredential(unsignedVc);
-
             await userA.clients.fullAuth.credential.sendCredential({
-                profileId: 'userB',
-                credential: vc,
+                profileId: 'userb',
+                credential: testVc,
             });
 
             const credentials = await userB.clients.fullAuth.credential.receivedCredentials();
@@ -161,21 +139,18 @@ describe('Credentials', () => {
         });
 
         it('should show when the credential was sent/received', async () => {
-            const unsignedVc = userA.learnCard.invoke.getTestVc(userB.learnCard.id.did());
-            const vc = await userA.learnCard.invoke.issueCredential(unsignedVc);
-
             jest.useFakeTimers().setSystemTime(new Date('02-06-2023'));
             const sent = new Date().toISOString();
 
             const uri = await userA.clients.fullAuth.credential.sendCredential({
-                profileId: 'userB',
-                credential: vc,
+                profileId: 'userb',
+                credential: testVc,
             });
 
             jest.setSystemTime(new Date('02-07-2023'));
             const received = new Date().toISOString();
 
-            await userB.clients.fullAuth.credential.acceptCredential({ uri, profileId: 'userA' });
+            await userB.clients.fullAuth.credential.acceptCredential({ uri, profileId: 'usera' });
 
             const credentials = await userB.clients.fullAuth.credential.receivedCredentials();
 
@@ -184,14 +159,38 @@ describe('Credentials', () => {
 
             jest.useRealTimers();
         });
+
+        it('should allow filtering received credentials by who sent them', async () => {
+            await userC.clients.fullAuth.profile.createProfile({ profileId: 'userc' });
+
+            await sendCredential(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB }
+            );
+            await sendCredential(
+                { profileId: 'userc', user: userC },
+                { profileId: 'userb', user: userB }
+            );
+
+            const allCredentials = await userB.clients.fullAuth.credential.receivedCredentials();
+            const filteredCredentials = await userB.clients.fullAuth.credential.receivedCredentials(
+                {
+                    from: 'usera',
+                }
+            );
+
+            expect(allCredentials).toHaveLength(2);
+            expect(filteredCredentials).toHaveLength(1);
+            expect(filteredCredentials[0]?.from).toEqual('usera');
+        });
     });
 
     describe('sentCredentials', () => {
         beforeEach(async () => {
             await Profile.delete({ detach: true, where: {} });
 
-            await userA.clients.fullAuth.profile.createProfile({ profileId: 'userA' });
-            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userB' });
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
         });
 
         beforeEach(async () => {
@@ -199,15 +198,10 @@ describe('Credentials', () => {
         });
 
         it('should require full auth to get sent credentials', async () => {
-            const unsignedVc = userA.learnCard.invoke.getTestVc(userB.learnCard.id.did());
-            const vc = await userA.learnCard.invoke.issueCredential(unsignedVc);
-
-            const uri = await userA.clients.fullAuth.credential.sendCredential({
-                profileId: 'userB',
-                credential: vc,
-            });
-
-            await userB.clients.fullAuth.credential.acceptCredential({ profileId: 'userA', uri });
+            await sendCredential(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB }
+            );
 
             await expect(
                 userA.clients.partialAuth.credential.sentCredentials()
@@ -217,15 +211,10 @@ describe('Credentials', () => {
         });
 
         it('should show sent credentials', async () => {
-            const unsignedVc = userA.learnCard.invoke.getTestVc(userB.learnCard.id.did());
-            const vc = await userA.learnCard.invoke.issueCredential(unsignedVc);
-
-            const uri = await userA.clients.fullAuth.credential.sendCredential({
-                profileId: 'userB',
-                credential: vc,
-            });
-
-            await userB.clients.fullAuth.credential.acceptCredential({ profileId: 'userA', uri });
+            await sendCredential(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB }
+            );
 
             const userACredentials = await userA.clients.fullAuth.credential.sentCredentials();
             const userBCredentials = await userB.clients.fullAuth.credential.sentCredentials();
@@ -235,12 +224,9 @@ describe('Credentials', () => {
         });
 
         it('should show all sent credentials, accepted or not', async () => {
-            const unsignedVc = userA.learnCard.invoke.getTestVc(userB.learnCard.id.did());
-            const vc = await userA.learnCard.invoke.issueCredential(unsignedVc);
-
             await userA.clients.fullAuth.credential.sendCredential({
-                profileId: 'userB',
-                credential: vc,
+                profileId: 'userb',
+                credential: testVc,
             });
 
             const credentials = await userA.clients.fullAuth.credential.sentCredentials();
@@ -249,21 +235,18 @@ describe('Credentials', () => {
         });
 
         it('should show when the credential was sent/received', async () => {
-            const unsignedVc = userA.learnCard.invoke.getTestVc(userB.learnCard.id.did());
-            const vc = await userA.learnCard.invoke.issueCredential(unsignedVc);
-
             jest.useFakeTimers().setSystemTime(new Date('02-06-2023'));
             const sent = new Date().toISOString();
 
             const uri = await userA.clients.fullAuth.credential.sendCredential({
-                profileId: 'userB',
-                credential: vc,
+                profileId: 'userb',
+                credential: testVc,
             });
 
             jest.setSystemTime(new Date('02-07-2023'));
             const received = new Date().toISOString();
 
-            await userB.clients.fullAuth.credential.acceptCredential({ uri, profileId: 'userA' });
+            await userB.clients.fullAuth.credential.acceptCredential({ uri, profileId: 'usera' });
 
             const credentials = await userA.clients.fullAuth.credential.sentCredentials();
 
@@ -272,14 +255,36 @@ describe('Credentials', () => {
 
             jest.useRealTimers();
         });
+
+        it('should allow filtering sent credentials by who they were sent to', async () => {
+            await userC.clients.fullAuth.profile.createProfile({ profileId: 'userc' });
+
+            await sendCredential(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB }
+            );
+            await sendCredential(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userc', user: userC }
+            );
+
+            const allCredentials = await userA.clients.fullAuth.credential.sentCredentials();
+            const filteredCredentials = await userA.clients.fullAuth.credential.sentCredentials({
+                to: 'userb',
+            });
+
+            expect(allCredentials).toHaveLength(2);
+            expect(filteredCredentials).toHaveLength(1);
+            expect(filteredCredentials[0]?.to).toEqual('userb');
+        });
     });
 
     describe('incomingCredentials', () => {
         beforeEach(async () => {
             await Profile.delete({ detach: true, where: {} });
 
-            await userA.clients.fullAuth.profile.createProfile({ profileId: 'userA' });
-            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userB' });
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
         });
 
         beforeEach(async () => {
@@ -287,12 +292,9 @@ describe('Credentials', () => {
         });
 
         it('should require full auth to get incoming credentials', async () => {
-            const unsignedVc = userA.learnCard.invoke.getTestVc(userB.learnCard.id.did());
-            const vc = await userA.learnCard.invoke.issueCredential(unsignedVc);
-
             await userA.clients.fullAuth.credential.sendCredential({
-                profileId: 'userB',
-                credential: vc,
+                profileId: 'userb',
+                credential: testVc,
             });
 
             await expect(
@@ -303,12 +305,9 @@ describe('Credentials', () => {
         });
 
         it('should show incoming credentials', async () => {
-            const unsignedVc = userA.learnCard.invoke.getTestVc(userB.learnCard.id.did());
-            const vc = await userA.learnCard.invoke.issueCredential(unsignedVc);
-
             await userA.clients.fullAuth.credential.sendCredential({
-                profileId: 'userB',
-                credential: vc,
+                profileId: 'userb',
+                credential: testVc,
             });
 
             const userACredentials = await userA.clients.fullAuth.credential.incomingCredentials();
@@ -319,12 +318,9 @@ describe('Credentials', () => {
         });
 
         it('should not show accepted credentials', async () => {
-            const unsignedVc = userA.learnCard.invoke.getTestVc(userB.learnCard.id.did());
-            const vc = await userA.learnCard.invoke.issueCredential(unsignedVc);
-
             const uri = await userA.clients.fullAuth.credential.sendCredential({
-                profileId: 'userB',
-                credential: vc,
+                profileId: 'userb',
+                credential: testVc,
             });
 
             const beforeAcceptance = await userB.clients.fullAuth.credential.incomingCredentials();
@@ -339,15 +335,12 @@ describe('Credentials', () => {
         });
 
         it('should show when the credential was sent', async () => {
-            const unsignedVc = userA.learnCard.invoke.getTestVc(userB.learnCard.id.did());
-            const vc = await userA.learnCard.invoke.issueCredential(unsignedVc);
-
             jest.useFakeTimers().setSystemTime(new Date('02-06-2023'));
             const sent = new Date().toISOString();
 
             await userA.clients.fullAuth.credential.sendCredential({
-                profileId: 'userB',
-                credential: vc,
+                profileId: 'userb',
+                credential: testVc,
             });
 
             const credentials = await userB.clients.fullAuth.credential.incomingCredentials();
@@ -355,6 +348,30 @@ describe('Credentials', () => {
             expect(credentials[0]?.sent).toEqual(sent);
 
             jest.useRealTimers();
+        });
+
+        it('should allow filtering incoming credentials by who sent them', async () => {
+            await userC.clients.fullAuth.profile.createProfile({ profileId: 'userc' });
+
+            await userA.clients.fullAuth.credential.sendCredential({
+                profileId: 'userb',
+                credential: testVc,
+            });
+            await userC.clients.fullAuth.credential.sendCredential({
+                profileId: 'userb',
+                credential: testVc,
+            });
+
+            const allCredentials = await userB.clients.fullAuth.credential.incomingCredentials();
+            const filteredCredentials = await userB.clients.fullAuth.credential.incomingCredentials(
+                {
+                    from: 'usera',
+                }
+            );
+
+            expect(allCredentials).toHaveLength(2);
+            expect(filteredCredentials).toHaveLength(1);
+            expect(filteredCredentials[0]?.from).toEqual('usera');
         });
     });
 });

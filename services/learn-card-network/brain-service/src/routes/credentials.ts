@@ -85,10 +85,20 @@ export const credentialsRouter = t.router({
                     'This endpoint stores a credential, returning a uri that can be used to resolve it',
             },
         })
-        .input(z.object({ limit: z.number().int().positive().lt(100).default(25) }).default({}))
+        .input(
+            z
+                .object({
+                    limit: z.number().int().positive().lt(100).default(25),
+                    from: z.string().optional(),
+                })
+                .default({})
+        )
         .output(SentCredentialInfoValidator.array())
-        .query(async ({ input: { limit }, ctx }) => {
-            return getReceivedCredentialsForProfile(ctx.domain, ctx.user.profile, limit);
+        .query(async ({ input: { limit, from }, ctx }) => {
+            return getReceivedCredentialsForProfile(ctx.domain, ctx.user.profile, {
+                limit,
+                from: typeof from === 'string' ? [from] : from,
+            });
         }),
 
     sentCredentials: profileRoute
@@ -103,10 +113,20 @@ export const credentialsRouter = t.router({
                     'This endpoint stores a credential, returning a uri that can be used to resolve it',
             },
         })
-        .input(z.object({ limit: z.number().int().positive().lt(100).default(25) }).default({}))
+        .input(
+            z
+                .object({
+                    limit: z.number().int().positive().lt(100).default(25),
+                    to: z.string().optional(),
+                })
+                .default({})
+        )
         .output(SentCredentialInfoValidator.array())
-        .query(async ({ input: { limit }, ctx }) => {
-            return getSentCredentialsForProfile(ctx.domain, ctx.user.profile, limit);
+        .query(async ({ input: { limit, to }, ctx }) => {
+            return getSentCredentialsForProfile(ctx.domain, ctx.user.profile, {
+                limit,
+                to: typeof to === 'string' ? [to] : to,
+            });
         }),
 
     incomingCredentials: profileRoute
@@ -121,10 +141,20 @@ export const credentialsRouter = t.router({
                     'This endpoint stores a credential, returning a uri that can be used to resolve it',
             },
         })
-        .input(z.object({ limit: z.number().int().positive().lt(100).default(25) }).default({}))
+        .input(
+            z
+                .object({
+                    limit: z.number().int().positive().lt(100).default(25),
+                    from: z.string().optional(),
+                })
+                .default({})
+        )
         .output(SentCredentialInfoValidator.array())
-        .query(async ({ input: { limit }, ctx }) => {
-            return getIncomingCredentialsForProfile(ctx.domain, ctx.user.profile, limit);
+        .query(async ({ input: { limit, from }, ctx }) => {
+            return getIncomingCredentialsForProfile(ctx.domain, ctx.user.profile, {
+                limit,
+                from: typeof from === 'string' ? [from] : from,
+            });
         }),
 });
 export type CredentialsRouter = typeof credentialsRouter;

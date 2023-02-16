@@ -35,14 +35,14 @@ export type LearnCardNetworkPluginMethods = {
     generateInvite: (challenge?: string) => Promise<{ profileId: string; challenge: string }>;
     sendCredential: (profileId: string, vc: UnsignedVC | VC) => Promise<string>;
     acceptCredential: (profileId: string, uri: string) => Promise<boolean>;
-    getReceivedCredentials: () => Promise<SentCredentialInfo[]>;
-    getSentCredentials: () => Promise<SentCredentialInfo[]>;
-    getIncomingCredentials: () => Promise<SentCredentialInfo[]>;
+    getReceivedCredentials: (from?: string) => Promise<SentCredentialInfo[]>;
+    getSentCredentials: (to?: string) => Promise<SentCredentialInfo[]>;
+    getIncomingCredentials: (from?: string) => Promise<SentCredentialInfo[]>;
     sendPresentation: (profileId: string, vp: VP) => Promise<string>;
     acceptPresentation: (profileId: string, uri: string) => Promise<boolean>;
-    getReceivedPresentations: () => Promise<SentCredentialInfo[]>;
-    getSentPresentations: () => Promise<SentCredentialInfo[]>;
-    getIncomingPresentations: () => Promise<SentCredentialInfo[]>;
+    getReceivedPresentations: (from?: string) => Promise<SentCredentialInfo[]>;
+    getSentPresentations: (to?: string) => Promise<SentCredentialInfo[]>;
+    getIncomingPresentations: (from?: string) => Promise<SentCredentialInfo[]>;
     registerSigningAuthority: (uri: string) => Promise<boolean>;
 };
 
