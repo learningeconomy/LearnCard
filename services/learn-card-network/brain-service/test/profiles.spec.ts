@@ -342,11 +342,14 @@ describe('Profiles', () => {
                 email: 'userB@test.com',
             });
             await Promise.all(
-                Array(15)
+                Array(30)
                     .fill(0)
                     .map(async (_zero, index) => {
-                        const user = await getUser((index + 1).toString().padStart(64, '0'));
-                        await user.clients.fullAuth.profile.createProfile({
+                        const client = getClient({
+                            did: `did:test:${index + 1}`,
+                            isChallengeValid: true,
+                        });
+                        await client.profile.createProfile({
                             profileId: `generated${index + 1}`,
                         });
                     })
@@ -394,32 +397,12 @@ describe('Profiles', () => {
         });
 
         it('limit results to 25 by default', async () => {
-            await Promise.all(
-                Array(15)
-                    .fill(0)
-                    .map(async (_zero, index) => {
-                        const user = await getUser((index + 100).toString().padStart(64, '0'));
-                        await user.clients.fullAuth.profile.createProfile({
-                            profileId: `generated${index + 100}`,
-                        });
-                    })
-            );
             const results = await noAuthClient.profile.searchProfiles({ input: 'generated' });
 
             expect(results).toHaveLength(25);
         });
 
         it('allows raising limit', async () => {
-            await Promise.all(
-                Array(15)
-                    .fill(0)
-                    .map(async (_zero, index) => {
-                        const user = await getUser((index + 200).toString().padStart(64, '0'));
-                        await user.clients.fullAuth.profile.createProfile({
-                            profileId: `generated${index + 200}`,
-                        });
-                    })
-            );
             const results = await noAuthClient.profile.searchProfiles({
                 input: 'generated',
                 limit: 30,
