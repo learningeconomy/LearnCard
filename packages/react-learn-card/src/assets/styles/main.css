@@ -356,6 +356,14 @@
     max-width: 85px;
 }
 
+.vc-display-card {
+    font-family: 'Mouse Memoirs';
+}
+
+.vc-toggle-side-button {
+    background-color: #00000099;
+}
+
 /* Mouse Memoirs */
 /* latin */
 @font-face {
