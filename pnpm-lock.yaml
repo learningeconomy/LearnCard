@@ -480,9 +480,9 @@ importers:
       postcss-loader: ^6.2.1
       pretty-bytes: ^6.0.0
       qrcode.react: ^3.0.2
-      react: ^18.0.2
+      react: ^18.2.0
       react-barcode: ^1.4.5
-      react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0
+      react-dom: ^18.2.0
       rollup: ^2.71.1
       rollup-plugin-delete: ^2.0.0
       rollup-plugin-dts: ^4.2.2

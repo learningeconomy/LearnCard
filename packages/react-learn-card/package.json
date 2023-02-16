@@ -8,8 +8,8 @@
   "files": [
     "dist"
   ],
-    "sideEffects": false,
-    "scripts": {
+  "sideEffects": false,
+  "scripts": {
     "generate-barrels": "barrelsby -D -e \".*\\.(stories)|(test)|(\\.d\\.).*\" -d ./src/components -l all",
     "build": "pnpm generate-barrels && rollup -c",
     "prepare": "pnpm build",
@@ -22,7 +22,7 @@
   "keywords": [],
   "author": "Learning Economy Foundation (www.learningeconomy.io)",
   "license": "MIT",
-    "devDependencies": {
+  "devDependencies": {
     "@learncard/types": "workspace:*",
     "@rollup/plugin-commonjs": "^22.0.0",
     "@rollup/plugin-json": "^4.1.0",
@@ -75,7 +75,7 @@
     "numeral": "^2.0.6",
     "pretty-bytes": "^6.0.0",
     "qrcode.react": "^3.0.2",
-    "react": "^18.0.2",
+    "react": "^18.2.0",
     "react-barcode": "^1.4.5",
     "react-dom": "^18.2.0",
     "tailwind-scrollbar-hide": "^1.1.7"
