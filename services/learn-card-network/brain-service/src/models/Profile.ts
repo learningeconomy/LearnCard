@@ -5,6 +5,7 @@ import { neogma } from '@instance';
 
 import { Credential, CredentialInstance } from './Credential';
 import { Presentation, PresentationInstance } from './Presentation';
+import { transformProfileId } from '@helpers/profile.helpers';
 
 export type ProfileRelationships = {
     connectionRequested: ModelRelatedNodesI<typeof Profile, ProfileInstance>;
@@ -64,7 +65,7 @@ export const Profile = ModelFactory<LCNProfile, ProfileRelationships>(
 );
 
 Profile.beforeCreate = profile => {
-    profile.profileId = profile.profileId.toLowerCase();
+    profile.profileId = transformProfileId(profile.profileId);
 };
 
 export default Profile;

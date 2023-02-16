@@ -1,13 +1,14 @@
 import { QueryBuilder, BindParam, QueryRunner } from 'neogma';
 import { Profile, ProfileInstance } from '@models';
 import { ProfileType } from 'types/profile';
+import { transformProfileId } from '@helpers/profile.helpers';
 
 export const getProfileByProfileId = async (profileId: string): Promise<ProfileInstance | null> => {
-    return Profile.findOne({ where: { profileId: profileId.toLowerCase() } });
+    return Profile.findOne({ where: { profileId: transformProfileId(profileId) } });
 };
 
 export const getProfilesByProfileId = async (profileId: string): Promise<ProfileInstance[]> => {
-    return Profile.findMany({ where: { profileId: profileId.toLowerCase() } });
+    return Profile.findMany({ where: { profileId: transformProfileId(profileId) } });
 };
 
 export const getProfileByDid = async (did: string): Promise<ProfileInstance | null> => {

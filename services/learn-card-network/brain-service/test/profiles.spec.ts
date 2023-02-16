@@ -104,6 +104,25 @@ describe('Profiles', () => {
             expect(userAResult?.profileId).toEqual('usera');
         });
 
+        it('should not allow profileIds that are too short or too long', async () => {
+            await expect(
+                userA.clients.fullAuth.profile.createProfile({ profileId: 'a' })
+            ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+            await expect(
+                userA.clients.fullAuth.profile.createProfile({ profileId: 'a'.repeat(500) })
+            ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+        });
+
+        it('should URL encode colons', async () => {
+            await userA.clients.fullAuth.profile.createProfile({
+                profileId: 'user:a',
+            });
+
+            const userAResult = await userA.clients.fullAuth.profile.getProfile();
+
+            expect(userAResult?.profileId).toEqual('user%3Aa');
+        });
+
         it('should not create a service profile', async () => {
             await userA.clients.fullAuth.profile.createProfile({
                 profileId: 'usera',

@@ -27,6 +27,7 @@ import {
 import { t, openRoute, didAndChallengeRoute, openProfileRoute, profileRoute } from '@routes';
 
 import cache from '@helpers/redis.helpers';
+import { transformProfileId } from '@helpers/profile.helpers';
 
 export const profilesRouter = t.router({
     createProfile: didAndChallengeRoute
@@ -198,7 +199,7 @@ export const profilesRouter = t.router({
                         message: 'profileId already in use!',
                     });
                 }
-                profile.profileId = profileId.toLowerCase();
+                profile.profileId = transformProfileId(profileId);
             }
 
             if (email) {
