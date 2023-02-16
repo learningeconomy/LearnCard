@@ -54,18 +54,17 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     bottomRightIcon,
 }) => {
     const {
-        title,
+        title = '',
         createdAt,
-        issuer: _issuer,
-        issuee: _issuee,
-        credentialSubject,
+        issuer: _issuer = '',
+        issuee: _issuee = '',
         imageUrl,
     } = getInfoFromCredential(credential, 'MMM dd, yyyy');
     const issuee = issueeOverride || _issuee;
     const issuer = issuerOverride || _issuer;
 
     const [isFront, setIsFront] = useState(true);
-    const [headerHeight, setHeaderHeight] = useState(44); // 44 is the height if the header is one line
+    const [headerHeight, setHeaderHeight] = useState(79); // 79 is the height if the header is one line
     const [headerWidth, setHeaderWidth] = useState(0);
 
     const headerRef = useRef<HTMLHeadingElement>(null);
@@ -180,7 +179,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                             title={title}
                             subjectImageComponent={subjectImageComponent}
                             issuerImageComponent={issuerImageComponent}
-                            createdAt={createdAt}
+                            createdAt={createdAt ?? ''}
                             imageUrl={imageUrl}
                         />
                     )}

@@ -5,8 +5,9 @@ import MediaAttachmentsBox, { MediaMetadata, VideoMetadata } from './MediaAttach
 import TruncateTextBox from './TruncateTextBox';
 // import SkillsBox from './SkillsBox';
 
-import { VC, AchievementCredential, VerificationItem } from '@learncard/types';
+import { VC, VerificationItem } from '@learncard/types';
 import VerificationsBox from './VerificationsBox';
+import { BoostAchievementCredential } from '../../types';
 
 /*
 const defaultTagsToSkills = (tags: string[]) => {
@@ -18,7 +19,7 @@ const defaultTagsToSkills = (tags: string[]) => {
 */
 
 type VC2BackFaceProps = {
-    credential: VC | AchievementCredential;
+    credential: VC | BoostAchievementCredential;
     verificationItems: VerificationItem[];
     // convertTagsToSkills?: (tags: string[]) => { [skill: string]: string[] };
     getFileMetadata?: (url: string) => MediaMetadata;
@@ -37,7 +38,12 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
     const expiration = credential.expirationDate
         ? format(new Date(credential.expirationDate), 'MMM dd, yyyy')
         : undefined;
-    const criteria = credential.credentialSubject.achievement?.criteria?.narrative;
+
+    const achievement =
+        'achievement' in credential.credentialSubject
+            ? credential.credentialSubject.achievement
+            : undefined;
+    const criteria = achievement?.criteria?.narrative;
 
     /* 
     const tags = credential.credentialSubject.achievement?.tag;
@@ -46,10 +52,7 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
 
     return (
         <section className="flex flex-col gap-[20px] w-full px-[15px]">
-            <TruncateTextBox
-                headerText="Description"
-                text={credential.credentialSubject.achievement?.description}
-            >
+            <TruncateTextBox headerText="Description" text={achievement?.description}>
                 {expiration && (
                     <p className="text-grayscale-800 font-poppins font-[600] text-[12px] leading-[18px] mb-0">
                         Expires on {expiration}

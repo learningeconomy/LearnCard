@@ -3,9 +3,10 @@ import {
     Profile,
     VC,
     AchievementCredential,
-    CredentialInfo,
+    // CredentialInfo,
     VerificationStatusEnum,
 } from '@learncard/types';
+import { CredentialInfo } from '../types';
 import { format } from 'date-fns';
 
 export const getImageFromImage = (image: Image): string => {

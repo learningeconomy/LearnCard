@@ -7,8 +7,8 @@ import { truncateWithEllipsis } from '../../helpers/string.helpers';
 import { Profile } from '@learncard/types';
 
 type VC2FrontFaceInfoProps = {
-    issuee: Profile;
-    issuer: Profile;
+    issuee: Profile | string;
+    issuer: Profile | string;
     title: string;
     subjectImageComponent?: React.ReactNode;
     issuerImageComponent?: React.ReactNode;
