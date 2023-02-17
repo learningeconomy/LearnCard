@@ -60,9 +60,13 @@ export const getLearnCardNetworkPlugin = async (
                 if (lc !== 'lc' || method !== 'network') return undefined;
 
                 try {
-                    const vc = await client.storage.resolve.query({ uri: vcUri });
+                    let result = await client.storage.resolve.query({ uri: vcUri });
 
-                    return await VCValidator.or(VPValidator).parseAsync(vc);
+                    if ('ciphertext' in result) {
+                        result = await _learnCard.invoke.getDIDObject().decryptDagJWE(result);
+                    }
+
+                    return await VCValidator.or(VPValidator).parseAsync(result);
                 } catch (error) {
                     _learnCard.debug?.(error);
                     return undefined;
@@ -75,11 +79,19 @@ export const getLearnCardNetworkPlugin = async (
 
                 return client.storage.store.mutate({ item: credential });
             },
-            /* uploadEncrypted: async (_learnCard, credential, params) => {
+            uploadEncrypted: async (
+                _learnCard,
+                credential,
+                { recipients = [] } = { recipients: [] }
+            ) => {
                 _learnCard.debug?.("learnCard.store['LearnCard Network'].upload");
 
-                return client.storeCredential.mutate({ credential });
-            }, */
+                const jwe = await _learnCard.invoke
+                    .getDIDObject()
+                    .createDagJWE(credential, [_learnCard.id.did(), ...recipients]);
+
+                return client.storage.store.mutate({ item: jwe });
+            },
         },
         methods: {
             createProfile: async (_learnCard, profile) => {

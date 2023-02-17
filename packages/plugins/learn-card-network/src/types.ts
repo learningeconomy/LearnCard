@@ -1,11 +1,10 @@
+import type { DID } from 'dids';
 import { LCNProfile, UnsignedVC, VC, VP, SentCredentialInfo } from '@learncard/types';
 import { Plugin, ProofOptions } from '@learncard/core';
 
-import { CeramicClient } from '@ceramicnetwork/http-client';
-
 /** @group LearnCardNetwork Plugin */
 export type LearnCardNetworkPluginDependentMethods = {
-    getCeramicClient: () => CeramicClient;
+    getDIDObject: () => DID;
     getDidAuthVp: (options?: ProofOptions) => Promise<VP | string>;
 };
 
@@ -33,12 +32,12 @@ export type LearnCardNetworkPluginMethods = {
     getPendingConnections: () => Promise<LCNProfile[]>;
     getConnectionRequests: () => Promise<LCNProfile[]>;
     generateInvite: (challenge?: string) => Promise<{ profileId: string; challenge: string }>;
-    sendCredential: (profileId: string, vc: UnsignedVC | VC) => Promise<string>;
+    sendCredential: (profileId: string, vc: UnsignedVC | VC, encrypt?: boolean) => Promise<string>;
     acceptCredential: (profileId: string, uri: string) => Promise<boolean>;
     getReceivedCredentials: (from?: string) => Promise<SentCredentialInfo[]>;
     getSentCredentials: (to?: string) => Promise<SentCredentialInfo[]>;
     getIncomingCredentials: (from?: string) => Promise<SentCredentialInfo[]>;
-    sendPresentation: (profileId: string, vp: VP) => Promise<string>;
+    sendPresentation: (profileId: string, vp: VP, encrypt?: boolean) => Promise<string>;
     acceptPresentation: (profileId: string, uri: string) => Promise<boolean>;
     getReceivedPresentations: (from?: string) => Promise<SentCredentialInfo[]>;
     getSentPresentations: (to?: string) => Promise<SentCredentialInfo[]>;
