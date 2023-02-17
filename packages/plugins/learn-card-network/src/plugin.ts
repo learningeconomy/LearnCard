@@ -197,10 +197,22 @@ export const getLearnCardNetworkPlugin = async (
 
                 return client.profile.generateInvite.mutate({ challenge });
             },
-            sendCredential: async (_learnCard, profileId, vc) => {
+            sendCredential: async (_learnCard, profileId, vc, encrypt = true) => {
                 if (!userData) throw new Error('Please make an account first!');
 
-                return client.credential.sendCredential.mutate({ profileId, credential: vc });
+                if (!encrypt) {
+                    return client.credential.sendCredential.mutate({ profileId, credential: vc });
+                }
+
+                const target = await _learnCard.invoke.getProfile(profileId);
+
+                if (!target) throw new Error('Could not find target account');
+
+                const credential = await _learnCard.invoke
+                    .getDIDObject()
+                    .createDagJWE(vc, [userData.did, target.did]);
+
+                return client.credential.sendCredential.mutate({ profileId, credential });
             },
             acceptCredential: async (_learnCard, profileId, uri) => {
                 if (!userData) throw new Error('Please make an account first!');
@@ -222,10 +234,25 @@ export const getLearnCardNetworkPlugin = async (
 
                 return client.credential.incomingCredentials.query({ from });
             },
-            sendPresentation: async (_learnCard, profileId, vp) => {
+            sendPresentation: async (_learnCard, profileId, vp, encrypt = true) => {
                 if (!userData) throw new Error('Please make an account first!');
 
-                return client.presentation.sendPresentation.mutate({ profileId, presentation: vp });
+                if (!encrypt) {
+                    return client.presentation.sendPresentation.mutate({
+                        profileId,
+                        presentation: vp,
+                    });
+                }
+
+                const target = await _learnCard.invoke.getProfile(profileId);
+
+                if (!target) throw new Error('Could not find target account');
+
+                const presentation = await _learnCard.invoke
+                    .getDIDObject()
+                    .createDagJWE(vp, [userData.did, target.did]);
+
+                return client.presentation.sendPresentation.mutate({ profileId, presentation });
             },
             acceptPresentation: async (_learnCard, profileId, uri) => {
                 if (!userData) throw new Error('Please make an account first!');
