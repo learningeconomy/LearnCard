@@ -192,6 +192,7 @@ export const getCeramicPlugin = async <URI extends string = ''>(
                 readContentFromCeramic(streamId),
             resolveCredential: async (_learnCard, uri) => resolveCredential(uri),
             getCeramicClient: () => ceramic,
+            getDIDObject: () => ceramic.did!,
         },
     };
 };

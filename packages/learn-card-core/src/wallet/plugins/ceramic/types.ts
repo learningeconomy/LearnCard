@@ -1,4 +1,4 @@
-import type { CreateJWEOptions, DIDResolutionResult } from 'dids';
+import type { DID, CreateJWEOptions, DIDResolutionResult } from 'dids';
 import { z } from 'zod';
 import { CeramicClient } from '@ceramicnetwork/http-client';
 import { Plugin } from 'types/wallet';
@@ -49,6 +49,7 @@ export type CeramicPluginMethods<URI extends string = ''> = {
     ) => Promise<CeramicURI>;
     readContentFromCeramic: (streamId: string) => Promise<any>;
     getCeramicClient: () => CeramicClient;
+    getDIDObject: () => DID;
 } & ResolutionExtension<URI | CeramicURI>;
 
 /** @group CeramicPlugin */
