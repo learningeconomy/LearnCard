@@ -9,6 +9,12 @@ export function getVersion(): string;
 * @param {string} input_metadata
 * @returns {Promise<any>}
 */
+export function didResolver(did: string, input_metadata: string): Promise<any>;
+/**
+* @param {string} did
+* @param {string} input_metadata
+* @returns {Promise<any>}
+*/
 export function resolveDID(did: string, input_metadata: string): Promise<any>;
 /**
 * @returns {string}
@@ -184,6 +190,7 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 export interface InitOutput {
   readonly memory: WebAssembly.Memory;
   readonly getVersion: (a: number) => void;
+  readonly didResolver: (a: number, b: number, c: number, d: number) => number;
   readonly resolveDID: (a: number, b: number, c: number, d: number) => number;
   readonly generateEd25519Key: (a: number) => void;
   readonly generateEd25519KeyFromBytes: (a: number, b: number, c: number) => void;
