@@ -10,6 +10,7 @@ type TruncateTextBoxProps = {
 
     // extra things to put at the bottom of the box
     children?: React.ReactNode;
+    className?: string;
 };
 
 const TruncateTextBox: React.FC<TruncateTextBoxProps> = ({
@@ -17,6 +18,7 @@ const TruncateTextBox: React.FC<TruncateTextBoxProps> = ({
     text,
     truncateThreshold = 132,
     children,
+    className = 'truncate-text-box',
 }) => {
     const needsTruncate = text?.length > truncateThreshold;
     const [showFullText, setShowFullText] = useState(false);
@@ -25,7 +27,9 @@ const TruncateTextBox: React.FC<TruncateTextBoxProps> = ({
     const displayText = truncated ? text.substring(0, truncateThreshold) : text;
 
     return (
-        <div className="bg-white flex flex-col items-start gap-[10px] rounded-[20px] shadow-bottom px-[15px] py-[20px] w-full">
+        <div
+            className={`${className} bg-white flex flex-col items-start gap-[10px] rounded-[20px] shadow-bottom px-[15px] py-[20px] w-full"`}
+        >
             <h3 className="text-[20px] leading-[20px] text-grayscale-900">{headerText}</h3>
 
             <p className="text-[12px] text-grayscale-700 leading-[18px] font-poppins font-[400] mb-0">
