@@ -1,8 +1,9 @@
-import type { CreateJWEOptions } from 'dids';
+import type { CreateJWEOptions, DIDResolutionResult } from 'dids';
 import { z } from 'zod';
 import { CeramicClient } from '@ceramicnetwork/http-client';
 import { Plugin } from 'types/wallet';
 import { ResolutionExtension } from '../vc-resolution';
+import { InputMetadata } from '../didkit';
 
 /** @group CeramicPlugin */
 export type CeramicArgs = {
@@ -53,6 +54,7 @@ export type CeramicPluginMethods<URI extends string = ''> = {
 /** @group CeramicPlugin */
 export type CeramicPluginDependentMethods<URI extends string = ''> = {
     getKey: () => string;
+    didResolver: (did: string, inputMetadata?: InputMetadata) => Promise<DIDResolutionResult>;
 } & ResolutionExtension<URI>;
 
 /** @group CeramicPlugin */
