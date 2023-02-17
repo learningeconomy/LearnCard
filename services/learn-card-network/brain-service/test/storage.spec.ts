@@ -1,3 +1,4 @@
+import { JWE } from '@learncard/types';
 import { getClient, getUser } from './helpers/getClient';
 import { Profile, Credential, Presentation } from '@models';
 
@@ -30,7 +31,7 @@ describe('Storage', () => {
             await Presentation.delete({ detach: true, where: {} });
         });
 
-        it('should require full auth to store a credentia/presentationl', async () => {
+        it('should require full auth to store a credential/presentationl', async () => {
             const unsignedVc = userA.learnCard.invoke.getTestVc(userB.learnCard.id.did());
             const vc = await userA.learnCard.invoke.issueCredential(unsignedVc);
 
@@ -50,6 +51,27 @@ describe('Storage', () => {
 
             await expect(userA.clients.fullAuth.storage.store({ item: vc })).resolves.not.toThrow();
             await expect(userA.clients.fullAuth.storage.store({ item: vp })).resolves.not.toThrow();
+        });
+
+        it('should allow storing an encrypted credential/presentation', async () => {
+            const unsignedVc = userA.learnCard.invoke.getTestVc(userB.learnCard.id.did());
+            const vc = await userA.learnCard.invoke.issueCredential(unsignedVc);
+            const unsignedVp = await userA.learnCard.invoke.newPresentation(vc);
+            const vp = await userA.learnCard.invoke.issuePresentation(unsignedVp);
+
+            const encryptedVc = await userA.learnCard.invoke
+                .getDIDObject()
+                .createDagJWE(vc, [userA.learnCard.id.did(), userB.learnCard.id.did()]);
+            const encryptedVp = await userA.learnCard.invoke
+                .getDIDObject()
+                .createDagJWE(vp, [userA.learnCard.id.did(), userB.learnCard.id.did()]);
+
+            await expect(
+                userA.clients.fullAuth.storage.store({ item: encryptedVc })
+            ).resolves.not.toThrow();
+            await expect(
+                userA.clients.fullAuth.storage.store({ item: encryptedVp, type: 'presentation' })
+            ).resolves.not.toThrow();
         });
     });
 
@@ -106,6 +128,47 @@ describe('Storage', () => {
 
             expect(resolvedCredential).toEqual(vc);
             expect(resolvedPresentation).toEqual(vp);
+        });
+
+        it('should allow resolving an encrypted credential/presentation', async () => {
+            const unsignedVc = userA.learnCard.invoke.getTestVc(userB.learnCard.id.did());
+            const vc = await userA.learnCard.invoke.issueCredential(unsignedVc);
+            const unsignedVp = await userA.learnCard.invoke.newPresentation(vc);
+            const vp = await userA.learnCard.invoke.issuePresentation(unsignedVp);
+
+            const encryptedVc = await userA.learnCard.invoke
+                .getDIDObject()
+                .createDagJWE(vc, [userA.learnCard.id.did(), userB.learnCard.id.did()]);
+            const encryptedVp = await userA.learnCard.invoke
+                .getDIDObject()
+                .createDagJWE(vp, [userA.learnCard.id.did(), userB.learnCard.id.did()]);
+
+            const vcUri = await userA.clients.fullAuth.storage.store({ item: encryptedVc });
+            const vpUri = await userA.clients.fullAuth.storage.store({
+                item: encryptedVp,
+                type: 'presentation',
+            });
+
+            const vcPromise = userA.clients.fullAuth.storage.resolve({ uri: vcUri });
+            const vpPromise = userA.clients.fullAuth.storage.resolve({ uri: vpUri });
+
+            await expect(vcPromise).resolves.not.toThrow();
+            await expect(vpPromise).resolves.not.toThrow();
+
+            const resolvedCredential = await vcPromise;
+            const resolvedPresentation = await vpPromise;
+
+            expect(resolvedCredential).toEqual(encryptedVc);
+            expect(resolvedPresentation).toEqual(encryptedVp);
+
+            expect(
+                await userB.learnCard.invoke.getDIDObject().decryptDagJWE(resolvedCredential as JWE)
+            ).toEqual(vc);
+            expect(
+                await userB.learnCard.invoke
+                    .getDIDObject()
+                    .decryptDagJWE(resolvedPresentation as JWE)
+            ).toEqual(vp);
         });
     });
 });

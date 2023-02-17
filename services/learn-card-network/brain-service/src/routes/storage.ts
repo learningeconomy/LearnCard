@@ -4,9 +4,11 @@ import {
     UnsignedVC,
     VC,
     VP,
+    JWE,
     UnsignedVCValidator,
     VCValidator,
     VPValidator,
+    JWEValidator,
 } from '@learncard/types';
 
 import { getCredentialUri, getIdFromCredentialUri } from '@helpers/credential.helpers';
@@ -24,24 +26,30 @@ export const storageRouter = t.router({
                 protect: true,
                 method: 'POST',
                 path: '/storage/store',
-                tags: ['Credentials'],
+                tags: ['Storage'],
                 summary: 'Store a Credential/Presentation',
                 description:
-                    'This endpoint stores a credential, returning a uri that can be used to resolve it',
+                    'This endpoint stores a credential/presentation, returning a uri that can be used to resolve it',
             },
         })
-        .input(z.object({ item: UnsignedVCValidator.or(VCValidator).or(VPValidator) }))
+        .input(
+            z.object({
+                item: UnsignedVCValidator.or(VCValidator).or(VPValidator).or(JWEValidator),
+                type: z.enum(['credential', 'presentation']).optional(),
+            })
+        )
         .output(z.string())
         .mutation(async ({ ctx, input }) => {
-            const { item } = input;
+            const { item, type } = input;
 
-            const isVP = (await VPValidator.spa(item)).success;
+            const isVP = type === 'presentation' || (await VPValidator.spa(item)).success;
 
-            const credentialInstance = isVP
-                ? await storePresentation(item as VP)
-                : await storeCredential(item as UnsignedVC | VC);
+            const instance =
+                isVP && type !== 'credential'
+                    ? await storePresentation(item as VP | JWE)
+                    : await storeCredential(item as UnsignedVC | VC | JWE);
 
-            return getCredentialUri(credentialInstance.id, ctx.domain);
+            return getCredentialUri(instance.id, ctx.domain);
         }),
 
     resolve: didAndChallengeRoute
@@ -50,14 +58,14 @@ export const storageRouter = t.router({
                 protect: true,
                 method: 'GET',
                 path: '/storage/resolve/{uri}',
-                tags: ['Credentials'],
+                tags: ['Storage'],
                 summary: 'Resolves a URI to a Credential/Presentation',
                 description:
-                    'This endpoint stores a credential, returning a uri that can be used to resolve it',
+                    'This endpoint stores a credential/presentation, returning a uri that can be used to resolve it',
             },
         })
         .input(z.object({ uri: z.string() }))
-        .output(UnsignedVCValidator.or(VCValidator).or(VPValidator))
+        .output(UnsignedVCValidator.or(VCValidator).or(VPValidator).or(JWEValidator))
         .query(async ({ input }) => {
             const { uri } = input;
 

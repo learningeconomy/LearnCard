@@ -52,6 +52,19 @@ describe('Presentations', () => {
                 })
             ).resolves.not.toThrow();
         });
+
+        it('should allow sending an encrypted preesentation', async () => {
+            const encryptedVp = await userA.learnCard.invoke
+                .getDIDObject()
+                .createDagJWE(testVp, [userA.learnCard.id.did(), userB.learnCard.id.did()]);
+
+            await expect(
+                userA.clients.fullAuth.presentation.sendPresentation({
+                    profileId: 'userb',
+                    presentation: encryptedVp,
+                })
+            ).resolves.not.toThrow();
+        });
     });
 
     describe('acceptPresentation', () => {

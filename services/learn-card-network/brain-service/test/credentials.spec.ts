@@ -47,6 +47,19 @@ describe('Credentials', () => {
                 })
             ).resolves.not.toThrow();
         });
+
+        it('should allow sending an encrypted credential', async () => {
+            const encryptedVc = await userA.learnCard.invoke
+                .getDIDObject()
+                .createDagJWE(testVc, [userA.learnCard.id.did(), userB.learnCard.id.did()]);
+
+            await expect(
+                userA.clients.fullAuth.credential.sendCredential({
+                    profileId: 'userb',
+                    credential: encryptedVc,
+                })
+            ).resolves.not.toThrow();
+        });
     });
 
     describe('acceptCredential', () => {

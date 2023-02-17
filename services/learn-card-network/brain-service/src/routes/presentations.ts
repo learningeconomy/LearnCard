@@ -1,6 +1,6 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
-import { SentCredentialInfoValidator, VPValidator } from '@learncard/types';
+import { SentCredentialInfoValidator, VPValidator, JWEValidator } from '@learncard/types';
 
 import { t, profileRoute } from '@routes';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
@@ -24,7 +24,7 @@ export const presentationsRouter = t.router({
                     'This endpoint sends a presentation to a user based on their profileId',
             },
         })
-        .input(z.object({ profileId: z.string(), presentation: VPValidator }))
+        .input(z.object({ profileId: z.string(), presentation: VPValidator.or(JWEValidator) }))
         .output(z.string())
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;

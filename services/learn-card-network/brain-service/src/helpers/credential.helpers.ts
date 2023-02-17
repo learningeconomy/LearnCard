@@ -1,5 +1,5 @@
 import { TRPCError } from '@trpc/server';
-import { UnsignedVC, VC } from '@learncard/types';
+import { UnsignedVC, VC, JWE } from '@learncard/types';
 
 import { ProfileInstance } from '@models';
 
@@ -38,7 +38,7 @@ export const getIdFromCredentialUri = (uri: string): string => {
 export const sendCredential = async (
     from: ProfileInstance,
     to: ProfileInstance,
-    credential: VC | UnsignedVC,
+    credential: VC | UnsignedVC | JWE,
     domain: string
 ): Promise<string> => {
     const credentialInstance = await storeCredential(credential);

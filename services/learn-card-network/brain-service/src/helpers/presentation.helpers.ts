@@ -1,5 +1,5 @@
 import { TRPCError } from '@trpc/server';
-import { VP } from '@learncard/types';
+import { VP, JWE } from '@learncard/types';
 
 import { ProfileInstance } from '@models';
 
@@ -38,7 +38,7 @@ export const getIdFromPresentationUri = (uri: string): string => {
 export const sendPresentation = async (
     from: ProfileInstance,
     to: ProfileInstance,
-    presentation: VP,
+    presentation: VP | JWE,
     domain: string
 ): Promise<string> => {
     const presentationInstance = await storePresentation(presentation);

@@ -1,6 +1,11 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
-import { UnsignedVCValidator, VCValidator, SentCredentialInfoValidator } from '@learncard/types';
+import {
+    UnsignedVCValidator,
+    VCValidator,
+    SentCredentialInfoValidator,
+    JWEValidator,
+} from '@learncard/types';
 
 import { acceptCredential, sendCredential } from '@helpers/credential.helpers';
 
@@ -25,7 +30,12 @@ export const credentialsRouter = t.router({
                 description: 'This endpoint sends a credential to a user based on their profileId',
             },
         })
-        .input(z.object({ profileId: z.string(), credential: UnsignedVCValidator.or(VCValidator) }))
+        .input(
+            z.object({
+                profileId: z.string(),
+                credential: UnsignedVCValidator.or(VCValidator).or(JWEValidator),
+            })
+        )
         .output(z.string())
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
