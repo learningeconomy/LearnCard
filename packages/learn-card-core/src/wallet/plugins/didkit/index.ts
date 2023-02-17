@@ -11,6 +11,7 @@ import init, {
     verifyPresentation,
     contextLoader,
     resolveDID,
+    didResolver,
 } from '@didkit/index';
 
 import { DIDKitPlugin, DidMethod } from './types';
@@ -100,6 +101,9 @@ export const getDidKitPlugin = async (
 
             resolveDid: async (_learnCard, did, inputMetadata = {}) =>
                 JSON.parse(await resolveDID(did, JSON.stringify(inputMetadata))),
+
+            didResolver: async (_learnCard, did, inputMetadata = {}) =>
+                JSON.parse(await didResolver(did, JSON.stringify(inputMetadata))),
         },
     };
 };
