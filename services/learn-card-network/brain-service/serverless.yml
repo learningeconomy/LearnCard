@@ -19,7 +19,7 @@ custom:
     packager: pnpm
     plugins: esbuildWasmPlugin.cjs
     watch:
-      pattern: ['src/**/*.ts']
+      pattern: ['src/**/*.ts', 'dids.ts']
 
   domains:
     # References to 'prod' stage
