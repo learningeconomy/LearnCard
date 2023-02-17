@@ -26,8 +26,9 @@ import {
 
 import { t, openRoute, didAndChallengeRoute, openProfileRoute, profileRoute } from '@routes';
 
-import cache from '@helpers/redis.helpers';
+import cache from '@cache';
 import { transformProfileId } from '@helpers/profile.helpers';
+import { deleteDidDocForProfile } from '@cache/did-docs';
 
 export const profilesRouter = t.router({
     createProfile: didAndChallengeRoute
@@ -199,6 +200,9 @@ export const profilesRouter = t.router({
                         message: 'profileId already in use!',
                     });
                 }
+
+                await deleteDidDocForProfile(profileId);
+
                 profile.profileId = transformProfileId(profileId);
             }
 
@@ -237,7 +241,8 @@ export const profilesRouter = t.router({
         .input(z.void())
         .output(z.boolean())
         .mutation(async ({ ctx }) => {
-            await deleteProfile(ctx.user.profile);
+            const { profile } = ctx.user;
+            await Promise.all([deleteProfile(profile), deleteDidDocForProfile(profile.profileId)]);
 
             return true;
         }),

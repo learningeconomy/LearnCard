@@ -28,6 +28,8 @@
     "baseUrl": ".",
     "paths": {
         "@accesslayer/*": ["src/accesslayer/*"],
+        "@cache": ["src/cache/index.ts"],
+        "@cache/*": ["src/cache/*"],
         "@helpers/*": ["src/helpers/*"],
         "@instance": ["src/instance.ts"],
         "@models": ["src/models/index.ts"],

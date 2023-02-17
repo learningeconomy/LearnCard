@@ -5,7 +5,7 @@ import jwtDecode from 'jwt-decode';
 
 import { getProfileByDid } from '@accesslayer/profile/read';
 import { getEmptyLearnCard } from '@helpers/learnCard.helpers';
-import { getCache } from '@helpers/redis.helpers';
+import { getCache } from '@cache';
 
 const cache = getCache();
 

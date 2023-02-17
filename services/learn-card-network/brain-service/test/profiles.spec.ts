@@ -1,6 +1,6 @@
 import { getClient, getUser } from './helpers/getClient';
 import { Profile } from '@models';
-import cache from '@helpers/redis.helpers';
+import cache from '@cache';
 
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;

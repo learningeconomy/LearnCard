@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { getChallenges } from '@helpers/challenges.helpers';
-import { getCache } from '@helpers/redis.helpers';
+import { getCache } from '@cache';
 
 import { t, openRoute, didRoute } from '@routes';
 
