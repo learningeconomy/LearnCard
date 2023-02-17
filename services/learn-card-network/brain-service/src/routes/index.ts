@@ -5,9 +5,7 @@ import jwtDecode from 'jwt-decode';
 
 import { getProfileByDid } from '@accesslayer/profile/read';
 import { getEmptyLearnCard } from '@helpers/learnCard.helpers';
-import { getCache } from '@cache';
-
-const cache = getCache();
+import { invalidateChallengeForDid, isChallengeValidForDid } from '@cache/challenges';
 
 export type DidAuthVP = {
     iss: string;
@@ -60,8 +58,8 @@ export const createContext = async ({
 
                 if (!challenge) return { user: { did, isChallengeValid: false }, domain };
 
-                const cacheResponse = await cache.get(`${did}|${challenge}`);
-                await cache.delete([`${did}|${challenge}`]);
+                const cacheResponse = await isChallengeValidForDid(did, challenge);
+                await invalidateChallengeForDid(did, challenge);
 
                 return { user: { did, isChallengeValid: Boolean(cacheResponse) }, domain };
             }

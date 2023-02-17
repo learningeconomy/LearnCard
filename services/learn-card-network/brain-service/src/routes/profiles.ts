@@ -26,9 +26,13 @@ import {
 
 import { t, openRoute, didAndChallengeRoute, openProfileRoute, profileRoute } from '@routes';
 
-import cache from '@cache';
 import { transformProfileId } from '@helpers/profile.helpers';
 import { deleteDidDocForProfile } from '@cache/did-docs';
+import {
+    isInviteAlreadySetForProfile,
+    isInviteValidForProfile,
+    setValidInviteForProfile,
+} from '@cache/invites';
 
 export const profilesRouter = t.router({
     createProfile: didAndChallengeRoute
@@ -323,9 +327,7 @@ export const profilesRouter = t.router({
             const { profile } = ctx.user;
             const { profileId, challenge } = input;
 
-            const cacheKey = `inviteChallenge:${profileId}:${challenge}`;
-
-            if ((await cache.get(cacheKey)) !== 'valid') {
+            if (!(await isInviteValidForProfile(profileId, challenge))) {
                 throw new TRPCError({
                     code: 'NOT_FOUND',
                     message: `Challenge not found for ${profileId}`,
@@ -479,16 +481,14 @@ export const profilesRouter = t.router({
             const { profile } = ctx.user;
             const { challenge = uuid() } = input ?? {};
 
-            const cacheKey = `inviteChallenge:${profile.profileId}:${challenge}`;
-
-            if (await cache.get(cacheKey)) {
+            if (await isInviteAlreadySetForProfile(profile.profileId, challenge)) {
                 throw new TRPCError({
                     code: 'CONFLICT',
                     message: 'Challenge already in use!',
                 });
             }
 
-            await cache.set(`inviteChallenge:${profile.profileId}:${challenge}`, 'valid');
+            await setValidInviteForProfile(profile.profileId, challenge);
 
             return { profileId: profile.profileId, challenge };
         }),

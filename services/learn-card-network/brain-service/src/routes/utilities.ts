@@ -1,11 +1,9 @@
 import { z } from 'zod';
 
 import { getChallenges } from '@helpers/challenges.helpers';
-import { getCache } from '@cache';
 
 import { t, openRoute, didRoute } from '@routes';
-
-const cache = getCache();
+import { setValidChallengeForDid } from '@cache/challenges';
 
 export const utilitiesRouter = t.router({
     healthCheck: openRoute
@@ -43,7 +41,7 @@ export const utilitiesRouter = t.router({
             const did = ctx.user.did;
 
             await Promise.all(
-                challenges.map(async challenge => cache.set(`${did}|${challenge}`, 'valid'))
+                challenges.map(async challenge => setValidChallengeForDid(did, challenge))
             );
 
             return challenges;
