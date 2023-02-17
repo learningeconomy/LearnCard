@@ -30,6 +30,7 @@ export * from "./SmallAchievementCard/index";
 export * from "./VCCard/index";
 export * from "./VCDisplayBackFace/index";
 export * from "./VCDisplayCard/index";
+export * from "./VCDisplayCard2/index";
 export * from "./VCDisplayFrontFace/index";
 export * from "./VCThumbnail/index";
 export * from "./VCVerificationCheck/index";
