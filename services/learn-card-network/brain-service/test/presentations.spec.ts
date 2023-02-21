@@ -413,4 +413,88 @@ describe('Presentations', () => {
             expect(filteredPresentations[0]?.from).toEqual('usera');
         });
     });
+
+    describe('deletePresentation', () => {
+        beforeEach(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await Presentation.delete({ detach: true, where: {} });
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+        });
+
+        afterAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+        });
+
+        it('should require full auth to delete a presentation', async () => {
+            const uri = await sendPresentation(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB }
+            );
+
+            await expect(
+                noAuthClient.presentation.deletePresentation({ uri })
+            ).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+            await expect(
+                userA.clients.partialAuth.presentation.deletePresentation({ uri })
+            ).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+        });
+
+        it('should allow you to delete a presentation', async () => {
+            const uri = await sendPresentation(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB }
+            );
+
+            await expect(userA.clients.fullAuth.storage.resolve({ uri })).resolves.not.toThrow();
+
+            await expect(
+                userA.clients.fullAuth.presentation.deletePresentation({ uri })
+            ).resolves.not.toThrow();
+
+            await expect(userA.clients.fullAuth.storage.resolve({ uri })).rejects.toMatchObject({
+                code: 'NOT_FOUND',
+            });
+        });
+
+        it('should remove deleted presentations from sent/received lists', async () => {
+            const uri = await sendPresentation(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB }
+            );
+
+            let userASent = await userA.clients.fullAuth.presentation.sentPresentations();
+            let userBReceived = await userB.clients.fullAuth.presentation.receivedPresentations();
+
+            expect(userASent).toHaveLength(1);
+            expect(userBReceived).toHaveLength(1);
+
+            await userA.clients.fullAuth.presentation.deletePresentation({ uri });
+
+            userASent = await userA.clients.fullAuth.presentation.sentPresentations();
+            userBReceived = await userB.clients.fullAuth.presentation.receivedPresentations();
+
+            expect(userASent).toHaveLength(0);
+            expect(userBReceived).toHaveLength(0);
+        });
+
+        it("should not allow profiles to delete presentations they don't own", async () => {
+            const uri = await userA.clients.fullAuth.presentation.sendPresentation({
+                profileId: 'userb',
+                presentation: testVp,
+            });
+
+            await expect(userA.clients.fullAuth.storage.resolve({ uri })).resolves.not.toThrow();
+
+            await expect(
+                userB.clients.fullAuth.presentation.deletePresentation({ uri })
+            ).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+        });
+    });
 });

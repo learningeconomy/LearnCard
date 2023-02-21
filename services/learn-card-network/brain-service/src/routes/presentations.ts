@@ -9,7 +9,10 @@ import {
     getReceivedPresentationsForProfile,
     getSentPresentationsForProfile,
     getIncomingPresentationsForProfile,
+    getPresentationByUri,
 } from '@accesslayer/presentation/read';
+import { getPresentationOwner } from '@accesslayer/presentation/relationships/read';
+import { deletePresentation } from '@accesslayer/presentation/delete';
 
 export const presentationsRouter = t.router({
     sendPresentation: profileRoute
@@ -154,6 +157,40 @@ export const presentationsRouter = t.router({
                 limit,
                 from: typeof from === 'string' ? [from] : from,
             });
+        }),
+
+    deletePresentation: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'DELETE',
+                path: '/presentation/{uri}',
+                tags: ['Presentations'],
+                summary: 'Delete a presentation',
+                description: 'This endpoint deletes a presentation',
+            },
+        })
+        .input(z.object({ uri: z.string() }))
+        .output(z.boolean())
+        .mutation(async ({ input: { uri }, ctx }) => {
+            const presentation = await getPresentationByUri(uri);
+
+            if (!presentation) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Presentation not found' });
+            }
+
+            const owner = await getPresentationOwner(presentation);
+
+            if (owner?.profileId !== ctx.user.profile.profileId) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile does not own presentation',
+                });
+            }
+
+            await deletePresentation(presentation);
+
+            return true;
         }),
 });
 export type PresentationsRouter = typeof presentationsRouter;

@@ -42,6 +42,7 @@ export type LearnCardNetworkPluginMethods = {
     getReceivedPresentations: (from?: string) => Promise<SentCredentialInfo[]>;
     getSentPresentations: (to?: string) => Promise<SentCredentialInfo[]>;
     getIncomingPresentations: (from?: string) => Promise<SentCredentialInfo[]>;
+    deletePresentation: (uri: string) => Promise<boolean>;
     registerSigningAuthority: (uri: string) => Promise<boolean>;
 };
 

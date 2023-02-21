@@ -11,11 +11,11 @@ export * from './types';
  */
 export const getLearnCardNetworkPlugin = async (
     learnCard: LearnCard<any, 'id', LearnCardNetworkPluginDependentMethods>,
-    uri: string
+    url: string
 ): Promise<LearnCardNetworkPlugin> => {
     const existingDid = learnCard.id.did();
 
-    const client = await getClient(uri, async challenge => {
+    const client = await getClient(url, async challenge => {
         const jwt = await learnCard.invoke.getDidAuthVp({ proofFormat: 'jwt', challenge });
 
         if (typeof jwt !== 'string') throw new Error('Error getting DID-Auth-JWT!');
@@ -273,6 +273,11 @@ export const getLearnCardNetworkPlugin = async (
                 if (!userData) throw new Error('Please make an account first!');
 
                 return client.presentation.incomingPresentations.query({ from });
+            },
+            deletePresentation: async (_learnCard, uri) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.presentation.deletePresentation.mutate({ uri });
             },
             registerSigningAuthority: async (_learnCard, signingAuthority) => {
                 if (!userData) throw new Error('Please make an account first!');

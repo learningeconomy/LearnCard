@@ -14,8 +14,15 @@ import { getPresentationUri } from '@helpers/presentation.helpers';
 import { PresentationType } from 'types/presentation';
 import { ProfileType } from 'types/profile';
 import { convertQueryResultToPropertiesObjectArray } from '@helpers/neo4j.helpers';
+import { getIdFromUri } from '@helpers/uri.helpers';
 
 export const getPresentationById = async (id: string): Promise<PresentationInstance | null> => {
+    return Presentation.findOne({ where: { id } });
+};
+
+export const getPresentationByUri = async (uri: string): Promise<PresentationInstance | null> => {
+    const id = getIdFromUri(uri);
+
     return Presentation.findOne({ where: { id } });
 };
 

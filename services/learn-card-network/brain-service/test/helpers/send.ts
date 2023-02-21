@@ -85,4 +85,6 @@ export const sendPresentation = async (
         profileId: from.profileId,
         uri,
     });
+
+    return uri;
 };
