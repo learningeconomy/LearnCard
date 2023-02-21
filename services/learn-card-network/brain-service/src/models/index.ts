@@ -1,3 +1,4 @@
+import { Boost } from './Boost';
 import { Profile } from './Profile';
 import { Credential } from './Credential';
 import { Presentation } from './Presentation';
@@ -11,6 +12,11 @@ Credential.addRelationships({
             from: { property: 'from', schema: { type: 'string' } },
             date: { property: 'date', schema: { type: 'string' } },
         },
+    },
+    instanceOf: {
+        model: Boost,
+        direction: 'out',
+        name: 'INSTANCE_OF',
     },
 });
 
@@ -26,6 +32,7 @@ Presentation.addRelationships({
     },
 });
 
+export * from './Boost';
 export * from './Profile';
 export * from './Credential';
 export * from './Presentation';

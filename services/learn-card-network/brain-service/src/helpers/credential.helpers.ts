@@ -9,6 +9,9 @@ import {
     createSentCredentialRelationship,
 } from '@accesslayer/credential/relationships/create';
 import { getCredentialSentToProfile } from '@accesslayer/credential/relationships/read';
+import { isEncrypted } from './types.helpers';
+import { createBoost } from '@accesslayer/boost/create';
+import { createBoostInstanceOfRelationship } from '@accesslayer/boost/relationships/create';
 
 export const getCredentialUri = (id: string, domain: string): string =>
     `lc:network:${domain}/trpc:${id}`;
@@ -42,6 +45,11 @@ export const sendCredential = async (
     domain: string
 ): Promise<string> => {
     const credentialInstance = await storeCredential(credential);
+
+    if (!isEncrypted(credential)) {
+        const boost = await createBoost(credential, from);
+        await createBoostInstanceOfRelationship(credentialInstance, boost);
+    }
 
     await createSentCredentialRelationship(from, to, credentialInstance);
 

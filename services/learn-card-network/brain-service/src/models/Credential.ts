@@ -3,6 +3,7 @@ import { ModelFactory, ModelRelatedNodesI, NeogmaInstance } from 'neogma';
 import { neogma } from '@instance';
 
 import { Profile, ProfileInstance } from './Profile';
+import { Boost, BoostInstance } from './Boost';
 
 export type CredentialRelationships = {
     credentialReceived: ModelRelatedNodesI<
@@ -11,6 +12,7 @@ export type CredentialRelationships = {
         { from: string; date: string },
         { from: string; date: string }
     >;
+    instanceOf: ModelRelatedNodesI<typeof Boost, BoostInstance>;
 };
 
 export type CredentialInstance = NeogmaInstance<
