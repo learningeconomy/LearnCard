@@ -11,13 +11,16 @@ import {
     JWEValidator,
 } from '@learncard/types';
 
-import { getCredentialUri, getIdFromCredentialUri } from '@helpers/credential.helpers';
+import { getCredentialUri } from '@helpers/credential.helpers';
 
 import { t, didAndChallengeRoute } from '@routes';
 import { storePresentation } from '@accesslayer/presentation/create';
 import { storeCredential } from '@accesslayer/credential/create';
 import { getCredentialById } from '@accesslayer/credential/read';
 import { getPresentationById } from '@accesslayer/presentation/read';
+import { getUriParts } from '@helpers/uri.helpers';
+import { getPresentationUri } from '@helpers/presentation.helpers';
+import { getBoostById } from '@accesslayer/boost/read';
 
 export const storageRouter = t.router({
     store: didAndChallengeRoute
@@ -44,10 +47,13 @@ export const storageRouter = t.router({
 
             const isVP = type === 'presentation' || (await VPValidator.spa(item)).success;
 
-            const instance =
-                isVP && type !== 'credential'
-                    ? await storePresentation(item as VP | JWE)
-                    : await storeCredential(item as UnsignedVC | VC | JWE);
+            if (isVP && type !== 'credential') {
+                const instance = await storePresentation(item as VP | JWE);
+
+                return getPresentationUri(instance.id, ctx.domain);
+            }
+
+            const instance = await storeCredential(item as UnsignedVC | VC | JWE);
 
             return getCredentialUri(instance.id, ctx.domain);
         }),
@@ -69,23 +75,42 @@ export const storageRouter = t.router({
         .query(async ({ input }) => {
             const { uri } = input;
 
-            const id = getIdFromCredentialUri(uri);
+            const { id, type } = getUriParts(uri);
 
-            const [credentialInstance, presentationInstance] = await Promise.all([
-                getCredentialById(id),
-                getPresentationById(id),
-            ]);
+            if (type === 'credential') {
+                const instance = await getCredentialById(id);
 
-            if (!credentialInstance && !presentationInstance) {
-                throw new TRPCError({
-                    code: 'NOT_FOUND',
-                    message: 'URI did not resolve to anything',
-                });
+                if (!instance) {
+                    throw new TRPCError({ code: 'NOT_FOUND', message: 'Credential not found' });
+                }
+
+                return JSON.parse(instance.credential);
             }
 
-            return JSON.parse(
-                (credentialInstance?.credential || presentationInstance?.presentation) ?? ''
-            );
+            if (type === 'presentation') {
+                const instance = await getPresentationById(id);
+
+                if (!instance) {
+                    throw new TRPCError({ code: 'NOT_FOUND', message: 'Presentation not found' });
+                }
+
+                return JSON.parse(instance.presentation);
+            }
+
+            if (type === 'boost') {
+                const instance = await getBoostById(id);
+
+                if (!instance) {
+                    throw new TRPCError({ code: 'NOT_FOUND', message: 'Boost not found' });
+                }
+
+                return JSON.parse(instance.boost);
+            }
+
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: 'Unknown URI type',
+            });
         }),
 });
 export type StorageRouter = typeof storageRouter;

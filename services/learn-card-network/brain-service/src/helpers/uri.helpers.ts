@@ -1,23 +1,43 @@
 import { TRPCError } from '@trpc/server';
 
-export const getIdFromUri = (uri: string): string => {
+export type URIType = 'credential' | 'presentation' | 'boost';
+
+export type URIParts = {
+    domain: string;
+    type: URIType;
+    id: string;
+};
+
+export const isURIType = (type: string): type is URIType =>
+    ['credential', 'presentation', 'boost'].includes(type);
+
+export const getUriParts = (uri: string): URIParts => {
     const parts = uri.split(':');
 
-    if (parts.length !== 4) {
+    if (parts.length !== 5) {
         throw new TRPCError({
             code: 'BAD_REQUEST',
             message: 'Invalid URI',
         });
     }
 
-    const [lc, method, _domain, id] = parts as [string, string, string, string];
+    const [lc, method, domain, type, id] = parts as [string, string, string, string, string];
 
     if (lc !== 'lc' || method !== 'network') {
         throw new TRPCError({
             code: 'BAD_REQUEST',
-            message: 'Cannot get ID from URI',
+            message: 'URI is not an lc:network URI',
         });
     }
 
-    return id;
+    if (!isURIType(type)) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: `Unknown URI type ${type}` });
+    }
+
+    return { domain, type, id };
 };
+
+export const getIdFromUri = (uri: string): string => getUriParts(uri).id;
+
+export const constructUri = (type: URIType, id: string, domain: string): string =>
+    `lc:network:${domain}/trpc:${type}:${id}`;

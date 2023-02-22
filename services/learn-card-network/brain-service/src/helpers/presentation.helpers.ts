@@ -9,31 +9,10 @@ import {
     createSentPresentationRelationship,
 } from '@accesslayer/presentation/relationships/create';
 import { getPresentationSentToProfile } from '@accesslayer/presentation/relationships/read';
+import { constructUri, getUriParts } from './uri.helpers';
 
 export const getPresentationUri = (id: string, domain: string): string =>
-    `lc:network:${domain}/trpc:${id}`;
-
-export const getIdFromPresentationUri = (uri: string): string => {
-    const parts = uri.split(':');
-
-    if (parts.length !== 4) {
-        throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'Invalid Presentation URI',
-        });
-    }
-
-    const [lc, method, _domain, id] = parts as [string, string, string, string];
-
-    if (lc !== 'lc' || method !== 'network') {
-        throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'Cannot get ID from Presentation URI',
-        });
-    }
-
-    return id;
-};
+    constructUri('presentation', id, domain);
 
 export const sendPresentation = async (
     from: ProfileInstance,
@@ -56,7 +35,11 @@ export const acceptPresentation = async (
     from: ProfileInstance,
     uri: string
 ): Promise<boolean> => {
-    const id = getIdFromPresentationUri(uri);
+    const { id, type } = getUriParts(uri);
+
+    if (type !== 'presentation') {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Not a presentation URI' });
+    }
 
     const pendingVp = await getPresentationSentToProfile(id, from, to);
 

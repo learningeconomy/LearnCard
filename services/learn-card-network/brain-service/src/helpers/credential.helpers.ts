@@ -12,31 +12,10 @@ import { getCredentialSentToProfile } from '@accesslayer/credential/relationship
 import { isEncrypted } from './types.helpers';
 import { createBoost } from '@accesslayer/boost/create';
 import { createBoostInstanceOfRelationship } from '@accesslayer/boost/relationships/create';
+import { constructUri, getUriParts } from './uri.helpers';
 
 export const getCredentialUri = (id: string, domain: string): string =>
-    `lc:network:${domain}/trpc:${id}`;
-
-export const getIdFromCredentialUri = (uri: string): string => {
-    const parts = uri.split(':');
-
-    if (parts.length !== 4) {
-        throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'Invalid Credential URI',
-        });
-    }
-
-    const [lc, method, _domain, id] = parts as [string, string, string, string];
-
-    if (lc !== 'lc' || method !== 'network') {
-        throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'Cannot get ID from Credential URI',
-        });
-    }
-
-    return id;
-};
+    constructUri('credential', id, domain);
 
 export const sendCredential = async (
     from: ProfileInstance,
@@ -64,7 +43,11 @@ export const acceptCredential = async (
     from: ProfileInstance,
     uri: string
 ): Promise<boolean> => {
-    const id = getIdFromCredentialUri(uri);
+    const { id, type } = getUriParts(uri);
+
+    if (type !== 'credential') {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Not a credential URI' });
+    }
 
     const pendingVc = await getCredentialSentToProfile(id, from, to);
 
