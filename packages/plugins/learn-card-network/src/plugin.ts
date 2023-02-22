@@ -329,6 +329,11 @@ export const getLearnCardNetworkPlugin = async (
 
                 return client.boost.getBoosts.query();
             },
+            updateBoost: async (_learnCard, uri, updates) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.boost.updateBoost.mutate({ uri, updates });
+            },
             registerSigningAuthority: async (_learnCard, signingAuthority) => {
                 if (!userData) throw new Error('Please make an account first!');
 

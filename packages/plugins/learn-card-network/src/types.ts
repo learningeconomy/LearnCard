@@ -57,6 +57,7 @@ export type LearnCardNetworkPluginMethods = {
     deletePresentation: (uri: string) => Promise<boolean>;
 
     getBoosts: () => Promise<{ name?: string; uri: string }[]>;
+    updateBoost: (uri: string, updates: { name: string }) => Promise<boolean>;
 
     registerSigningAuthority: (uri: string) => Promise<boolean>;
 

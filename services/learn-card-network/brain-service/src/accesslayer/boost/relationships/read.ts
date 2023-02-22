@@ -1,17 +1,5 @@
-import { CredentialInstance, ProfileInstance } from '@models';
+import { BoostInstance, ProfileInstance } from '@models';
 
-export const getCredentialSentToProfile = async (
-    id: string,
-    from: ProfileInstance,
-    to: ProfileInstance
-): Promise<CredentialInstance | undefined> => {
-    return (
-        await from.findRelationships({
-            alias: 'credentialSent',
-            where: {
-                relationship: { to: to.profileId },
-                target: { id },
-            },
-        })
-    )[0]?.target;
+export const getBoostOwner = async (boost: BoostInstance): Promise<ProfileInstance | undefined> => {
+    return (await boost.findRelationships({ alias: 'createdBy' }))[0]?.target;
 };
