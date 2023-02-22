@@ -35,6 +35,8 @@ export const sendCredential = async (
         profileId: from.profileId,
         uri,
     });
+
+    return uri;
 };
 
 export const testVp: VP = {

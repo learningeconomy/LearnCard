@@ -14,8 +14,15 @@ import { getCredentialUri } from '@helpers/credential.helpers';
 import { CredentialType } from 'types/credential';
 import { ProfileType } from 'types/profile';
 import { convertQueryResultToPropertiesObjectArray } from '@helpers/neo4j.helpers';
+import { getIdFromUri } from '@helpers/uri.helpers';
 
 export const getCredentialById = async (id: string): Promise<CredentialInstance | null> => {
+    return Credential.findOne({ where: { id } });
+};
+
+export const getCredentialByUri = async (uri: string): Promise<CredentialInstance | null> => {
+    const id = getIdFromUri(uri);
+
     return Credential.findOne({ where: { id } });
 };
 

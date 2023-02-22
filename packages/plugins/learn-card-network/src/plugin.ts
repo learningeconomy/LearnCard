@@ -234,6 +234,11 @@ export const getLearnCardNetworkPlugin = async (
 
                 return client.credential.incomingCredentials.query({ from });
             },
+            deleteCredential: async (_learnCard, uri) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.credential.deleteCredential.mutate({ uri });
+            },
             sendPresentation: async (_learnCard, profileId, vp, encrypt = true) => {
                 if (!userData) throw new Error('Please make an account first!');
 

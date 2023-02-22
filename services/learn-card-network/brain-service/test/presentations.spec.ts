@@ -424,6 +424,7 @@ describe('Presentations', () => {
 
         afterAll(async () => {
             await Profile.delete({ detach: true, where: {} });
+            await Presentation.delete({ detach: true, where: {} });
         });
 
         it('should require full auth to delete a presentation', async () => {

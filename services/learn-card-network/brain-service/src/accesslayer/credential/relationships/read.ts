@@ -1,4 +1,4 @@
-import { CredentialInstance, ProfileInstance } from '@models';
+import { CredentialInstance, Profile, ProfileInstance } from '@models';
 
 export const getCredentialSentToProfile = async (
     id: string,
@@ -14,4 +14,19 @@ export const getCredentialSentToProfile = async (
             },
         })
     )[0]?.target;
+};
+
+export const getCredentialOwner = async (
+    credential: CredentialInstance
+): Promise<ProfileInstance | undefined> => {
+    const id = credential.id;
+
+    return (
+        await Profile.findRelationships({
+            alias: 'credentialSent',
+            where: {
+                target: { id },
+            },
+        })
+    )[0]?.source;
 };

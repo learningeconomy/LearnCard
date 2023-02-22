@@ -387,4 +387,87 @@ describe('Credentials', () => {
             expect(filteredCredentials[0]?.from).toEqual('usera');
         });
     });
+
+    describe('deleteCredential', () => {
+        beforeEach(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+        });
+
+        afterAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+        });
+
+        it('should require full auth to delete a credential', async () => {
+            const uri = await sendCredential(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB }
+            );
+
+            await expect(noAuthClient.credential.deleteCredential({ uri })).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+            await expect(
+                userA.clients.partialAuth.credential.deleteCredential({ uri })
+            ).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+        });
+
+        it('should allow you to delete a credential', async () => {
+            const uri = await sendCredential(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB }
+            );
+
+            await expect(userA.clients.fullAuth.storage.resolve({ uri })).resolves.not.toThrow();
+
+            await expect(
+                userA.clients.fullAuth.credential.deleteCredential({ uri })
+            ).resolves.not.toThrow();
+
+            await expect(userA.clients.fullAuth.storage.resolve({ uri })).rejects.toMatchObject({
+                code: 'NOT_FOUND',
+            });
+        });
+
+        it('should remove deleted credentials from sent/received lists', async () => {
+            const uri = await sendCredential(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB }
+            );
+
+            let userASent = await userA.clients.fullAuth.credential.sentCredentials();
+            let userBReceived = await userB.clients.fullAuth.credential.receivedCredentials();
+
+            expect(userASent).toHaveLength(1);
+            expect(userBReceived).toHaveLength(1);
+
+            await userA.clients.fullAuth.credential.deleteCredential({ uri });
+
+            userASent = await userA.clients.fullAuth.credential.sentCredentials();
+            userBReceived = await userB.clients.fullAuth.credential.receivedCredentials();
+
+            expect(userASent).toHaveLength(0);
+            expect(userBReceived).toHaveLength(0);
+        });
+
+        it("should not allow profiles to delete credentials they don't own", async () => {
+            const uri = await userA.clients.fullAuth.credential.sendCredential({
+                profileId: 'userb',
+                credential: testVc,
+            });
+
+            await expect(userA.clients.fullAuth.storage.resolve({ uri })).resolves.not.toThrow();
+
+            await expect(
+                userB.clients.fullAuth.credential.deleteCredential({ uri })
+            ).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+        });
+    });
 });
