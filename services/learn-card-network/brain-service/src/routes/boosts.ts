@@ -9,8 +9,36 @@ import { getBoostUri } from '@helpers/boost.helpers';
 import { BoostValidator } from 'types/boost';
 import { getBoostOwner } from '@accesslayer/boost/relationships/read';
 import { deleteBoost } from '@accesslayer/boost/delete';
+import { UnsignedVCValidator, VCValidator } from '@learncard/types';
+import { createBoost } from '@accesslayer/boost/create';
 
 export const boostsRouter = t.router({
+    createBoost: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/boost/create',
+                tags: ['Boosts'],
+                summary: 'Creates a boost',
+                description: 'This route creates a boost',
+            },
+        })
+        .input(
+            BoostValidator.partial()
+                .omit({ id: true, boost: true })
+                .extend({ credential: VCValidator.or(UnsignedVCValidator) })
+        )
+        .output(z.string())
+        .mutation(async ({ input, ctx }) => {
+            const { profile } = ctx.user;
+            const { credential, ...metadata } = input;
+
+            const boost = await createBoost(credential, profile, metadata);
+
+            return getBoostUri(boost.id, ctx.domain);
+        }),
+
     getBoosts: profileRoute
         .meta({
             openapi: {

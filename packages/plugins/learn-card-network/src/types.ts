@@ -56,6 +56,10 @@ export type LearnCardNetworkPluginMethods = {
     getIncomingPresentations: (from?: string) => Promise<SentCredentialInfo[]>;
     deletePresentation: (uri: string) => Promise<boolean>;
 
+    createBoost: (
+        credential: VC | UnsignedVC,
+        metadata?: Partial<Omit<Boost, 'uri'>>
+    ) => Promise<string>;
     getBoosts: () => Promise<{ name?: string; uri: string }[]>;
     updateBoost: (uri: string, updates: Partial<Omit<Boost, 'uri'>>) => Promise<boolean>;
     deleteBoost: (uri: string) => Promise<boolean>;
