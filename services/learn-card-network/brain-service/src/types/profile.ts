@@ -1,3 +1,4 @@
-import { LCNProfile } from '@learncard/types';
+import { LCNProfile, LCNProfileValidator } from '@learncard/types';
 
+export const ProfileValidator = LCNProfileValidator;
 export type ProfileType = LCNProfile;

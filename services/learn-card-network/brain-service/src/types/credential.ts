@@ -1,1 +1,4 @@
-export type CredentialType = { id: string; credential: string };
+import { z } from 'zod';
+
+export const CredentialValidator = z.object({ id: z.string(), credential: z.string() });
+export type CredentialType = z.infer<typeof CredentialValidator>;
