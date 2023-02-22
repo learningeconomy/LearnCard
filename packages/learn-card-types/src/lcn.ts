@@ -18,3 +18,9 @@ export const SentCredentialInfoValidator = z.object({
     received: z.string().datetime().optional(),
 });
 export type SentCredentialInfo = z.infer<typeof SentCredentialInfoValidator>;
+
+export const BoostValidator = z.object({
+    uri: z.string(),
+    name: z.string(),
+});
+export type Boost = z.infer<typeof BoostValidator>;

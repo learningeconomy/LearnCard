@@ -1,5 +1,11 @@
 import { getClient } from '@learncard/network-brain-client';
-import { LCNProfile, VCValidator, VPValidator } from '@learncard/types';
+import {
+    JWEValidator,
+    LCNProfile,
+    UnsignedVCValidator,
+    VCValidator,
+    VPValidator,
+} from '@learncard/types';
 import { LearnCard } from '@learncard/core';
 
 import { LearnCardNetworkPluginDependentMethods, LearnCardNetworkPlugin } from './types';
@@ -53,9 +59,9 @@ export const getLearnCardNetworkPlugin = async (
 
                 const parts = vcUri.split(':');
 
-                if (parts.length !== 4) return undefined;
+                if (parts.length !== 5) return undefined;
 
-                const [lc, method] = parts as [string, string, string, string];
+                const [lc, method] = parts as [string, string, string, string, string];
 
                 if (lc !== 'lc' || method !== 'network') return undefined;
 
@@ -284,10 +290,23 @@ export const getLearnCardNetworkPlugin = async (
 
                 return client.presentation.deletePresentation.mutate({ uri });
             },
+            getBoosts: async () => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.boost.getBoosts.query();
+            },
             registerSigningAuthority: async (_learnCard, signingAuthority) => {
                 if (!userData) throw new Error('Please make an account first!');
 
                 return client.profile.registerSigningAuthority.mutate({ signingAuthority });
+            },
+            resolveFromLCN: async (_learnCard, uri) => {
+                const result = await client.storage.resolve.query({ uri });
+
+                return UnsignedVCValidator.or(VCValidator)
+                    .or(VPValidator)
+                    .or(JWEValidator)
+                    .parseAsync(result);
             },
         },
     };

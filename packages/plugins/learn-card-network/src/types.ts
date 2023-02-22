@@ -1,5 +1,5 @@
 import type { DID } from 'dids';
-import { LCNProfile, UnsignedVC, VC, VP, SentCredentialInfo } from '@learncard/types';
+import { LCNProfile, UnsignedVC, VC, VP, SentCredentialInfo, JWE } from '@learncard/types';
 import { Plugin, ProofOptions } from '@learncard/core';
 
 /** @group LearnCardNetwork Plugin */
@@ -32,19 +32,26 @@ export type LearnCardNetworkPluginMethods = {
     getPendingConnections: () => Promise<LCNProfile[]>;
     getConnectionRequests: () => Promise<LCNProfile[]>;
     generateInvite: (challenge?: string) => Promise<{ profileId: string; challenge: string }>;
+
     sendCredential: (profileId: string, vc: UnsignedVC | VC, encrypt?: boolean) => Promise<string>;
     acceptCredential: (profileId: string, uri: string) => Promise<boolean>;
     getReceivedCredentials: (from?: string) => Promise<SentCredentialInfo[]>;
     getSentCredentials: (to?: string) => Promise<SentCredentialInfo[]>;
     getIncomingCredentials: (from?: string) => Promise<SentCredentialInfo[]>;
     deleteCredential: (uri: string) => Promise<boolean>;
+
     sendPresentation: (profileId: string, vp: VP, encrypt?: boolean) => Promise<string>;
     acceptPresentation: (profileId: string, uri: string) => Promise<boolean>;
     getReceivedPresentations: (from?: string) => Promise<SentCredentialInfo[]>;
     getSentPresentations: (to?: string) => Promise<SentCredentialInfo[]>;
     getIncomingPresentations: (from?: string) => Promise<SentCredentialInfo[]>;
     deletePresentation: (uri: string) => Promise<boolean>;
+
+    getBoosts: () => Promise<{ name?: string; uri: string }[]>;
+
     registerSigningAuthority: (uri: string) => Promise<boolean>;
+
+    resolveFromLCN: (uri: string) => Promise<VC | UnsignedVC | VP | JWE>;
 };
 
 /** @group LearnCardNetwork Plugin */
