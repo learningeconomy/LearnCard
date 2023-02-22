@@ -12,4 +12,4 @@ export interface TypedRequest<
 }
 
 export const isEncrypted = (item: UnsignedVC | VC | UnsignedVP | VP | JWE): item is JWE =>
-    'cipherText' in item;
+    'ciphertext' in item;
