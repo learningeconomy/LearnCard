@@ -1,3 +1,1 @@
-import { PresentationInstance } from '@models';
-
-export type PresentationType = PresentationInstance['dataValues'];
+export type PresentationType = { id: string; presentation: string };

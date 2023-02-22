@@ -3,6 +3,7 @@ import { ModelFactory, ModelRelatedNodesI, NeogmaInstance } from 'neogma';
 import { neogma } from '@instance';
 
 import { Profile, ProfileInstance } from './Profile';
+import { PresentationType } from 'types/presentation';
 
 export type PresentationRelationships = {
     presentationReceived: ModelRelatedNodesI<
@@ -13,15 +14,9 @@ export type PresentationRelationships = {
     >;
 };
 
-export type PresentationInstance = NeogmaInstance<
-    { id: string; presentation: string },
-    PresentationRelationships
->;
+export type PresentationInstance = NeogmaInstance<PresentationType, PresentationRelationships>;
 
-export const Presentation = ModelFactory<
-    { id: string; presentation: string },
-    PresentationRelationships
->(
+export const Presentation = ModelFactory<PresentationType, PresentationRelationships>(
     {
         label: 'Presentation',
         schema: {

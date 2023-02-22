@@ -4,6 +4,7 @@ import { neogma } from '@instance';
 
 import { Profile, ProfileInstance } from './Profile';
 import { Boost, BoostInstance } from './Boost';
+import { CredentialType } from 'types/credential';
 
 export type CredentialRelationships = {
     credentialReceived: ModelRelatedNodesI<
@@ -15,12 +16,9 @@ export type CredentialRelationships = {
     instanceOf: ModelRelatedNodesI<typeof Boost, BoostInstance>;
 };
 
-export type CredentialInstance = NeogmaInstance<
-    { id: string; credential: string },
-    CredentialRelationships
->;
+export type CredentialInstance = NeogmaInstance<CredentialType, CredentialRelationships>;
 
-export const Credential = ModelFactory<{ id: string; credential: string }, CredentialRelationships>(
+export const Credential = ModelFactory<CredentialType, CredentialRelationships>(
     {
         label: 'Credential',
         schema: {

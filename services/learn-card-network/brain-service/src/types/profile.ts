@@ -1,3 +1,3 @@
-import { ProfileInstance } from '@models';
+import { LCNProfile } from '@learncard/types';
 
-export type ProfileType = ProfileInstance['dataValues'];
+export type ProfileType = LCNProfile;

@@ -1,11 +1,11 @@
 import { ModelFactory, ModelRelatedNodesI, NeogmaInstance } from 'neogma';
-import { LCNProfile } from '@learncard/types';
 
 import { neogma } from '@instance';
 
 import { Credential, CredentialInstance } from './Credential';
 import { Presentation, PresentationInstance } from './Presentation';
 import { transformProfileId } from '@helpers/profile.helpers';
+import { ProfileType } from 'types/profile';
 
 export type ProfileRelationships = {
     connectionRequested: ModelRelatedNodesI<typeof Profile, ProfileInstance>;
@@ -24,9 +24,9 @@ export type ProfileRelationships = {
     >;
 };
 
-export type ProfileInstance = NeogmaInstance<LCNProfile, ProfileRelationships>;
+export type ProfileInstance = NeogmaInstance<ProfileType, ProfileRelationships>;
 
-export const Profile = ModelFactory<LCNProfile, ProfileRelationships>(
+export const Profile = ModelFactory<ProfileType, ProfileRelationships>(
     {
         label: 'Profile',
         schema: {

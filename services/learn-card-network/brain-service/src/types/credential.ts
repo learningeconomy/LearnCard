@@ -1,3 +1,1 @@
-import { CredentialInstance } from '@models';
-
-export type CredentialType = CredentialInstance['dataValues'];
+export type CredentialType = { id: string; credential: string };
