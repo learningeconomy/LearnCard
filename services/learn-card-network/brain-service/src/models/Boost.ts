@@ -22,6 +22,8 @@ export const Boost = ModelFactory<BoostType, BoostRelationships>(
         schema: {
             id: { type: 'string', required: true, uniqueItems: true },
             name: { type: 'string' },
+            type: { type: 'string' },
+            category: { type: 'string' },
             boost: { type: 'string', required: true },
         },
         primaryKeyField: 'id',

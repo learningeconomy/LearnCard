@@ -104,6 +104,39 @@ describe('Boosts', () => {
 
             expect(newBoost.name).toEqual('nice');
         });
+
+        it('should allow you to update boost category', async () => {
+            const boosts = await userA.clients.fullAuth.boost.getBoosts();
+            const boost = boosts[0]!;
+            const uri = boost.uri;
+
+            expect(boost.category).toBeUndefined();
+
+            await expect(
+                userA.clients.fullAuth.boost.updateBoost({ uri, updates: { category: 'nice' } })
+            ).resolves.not.toThrow();
+
+            const newBoosts = await userA.clients.fullAuth.boost.getBoosts();
+            const newBoost = newBoosts[0]!;
+
+            expect(newBoost.category).toEqual('nice');
+        });
+        it('should allow you to update boost type', async () => {
+            const boosts = await userA.clients.fullAuth.boost.getBoosts();
+            const boost = boosts[0]!;
+            const uri = boost.uri;
+
+            expect(boost.type).toBeUndefined();
+
+            await expect(
+                userA.clients.fullAuth.boost.updateBoost({ uri, updates: { type: 'nice' } })
+            ).resolves.not.toThrow();
+
+            const newBoosts = await userA.clients.fullAuth.boost.getBoosts();
+            const newBoost = newBoosts[0]!;
+
+            expect(newBoost.type).toEqual('nice');
+        });
     });
 
     describe('deleteBoost', () => {

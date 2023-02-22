@@ -23,16 +23,19 @@ export const boostsRouter = t.router({
             },
         })
         .input(z.void())
-        .output(z.object({ uri: z.string(), name: z.string().optional() }).array())
+        .output(BoostValidator.omit({ id: true, boost: true }).extend({ uri: z.string() }).array())
         .query(async ({ ctx }) => {
             const { profile } = ctx.user;
 
             const boosts = await getBoostsForProfile(profile);
 
-            return boosts.map(boost => ({
-                name: boost.name,
-                uri: getBoostUri(boost.id, ctx.domain),
-            }));
+            return boosts.map(boost => {
+                const { id, boost: _boost, ...remaining } = boost.dataValues;
+                return {
+                    ...remaining,
+                    uri: getBoostUri(id, ctx.domain),
+                };
+            });
         }),
 
     updateBoost: profileRoute
@@ -57,7 +60,7 @@ export const boostsRouter = t.router({
             const { profile } = ctx.user;
 
             const { uri, updates } = input;
-            const { name } = updates;
+            const { name, type, category } = updates;
 
             const boost = await getBoostByUri(uri);
 
@@ -78,6 +81,8 @@ export const boostsRouter = t.router({
             }
 
             if (name) boost.name = name;
+            if (category) boost.category = category;
+            if (type) boost.type = type;
 
             await boost.save();
 

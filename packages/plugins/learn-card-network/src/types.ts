@@ -1,5 +1,5 @@
 import type { DID } from 'dids';
-import { LCNProfile, UnsignedVC, VC, VP, SentCredentialInfo, JWE } from '@learncard/types';
+import { LCNProfile, UnsignedVC, VC, VP, SentCredentialInfo, JWE, Boost } from '@learncard/types';
 import { Plugin, ProofOptions } from '@learncard/core';
 
 /** @group LearnCardNetwork Plugin */
@@ -57,7 +57,7 @@ export type LearnCardNetworkPluginMethods = {
     deletePresentation: (uri: string) => Promise<boolean>;
 
     getBoosts: () => Promise<{ name?: string; uri: string }[]>;
-    updateBoost: (uri: string, updates: { name: string }) => Promise<boolean>;
+    updateBoost: (uri: string, updates: Partial<Omit<Boost, 'uri'>>) => Promise<boolean>;
     deleteBoost: (uri: string) => Promise<boolean>;
 
     registerSigningAuthority: (uri: string) => Promise<boolean>;

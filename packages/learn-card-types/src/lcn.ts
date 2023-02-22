@@ -21,6 +21,8 @@ export type SentCredentialInfo = z.infer<typeof SentCredentialInfoValidator>;
 
 export const BoostValidator = z.object({
     uri: z.string(),
-    name: z.string(),
+    name: z.string().optional(),
+    type: z.string().optional(),
+    category: z.string().optional(),
 });
 export type Boost = z.infer<typeof BoostValidator>;
