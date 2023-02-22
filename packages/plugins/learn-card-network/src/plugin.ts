@@ -220,6 +220,40 @@ export const getLearnCardNetworkPlugin = async (
 
                 return client.credential.sendCredential.mutate({ profileId, credential });
             },
+            sendCredentialFromBoost: async (_learnCard, profileId, boostUri, encrypt = true) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                const result = await client.storage.resolve.query({ uri: boostUri });
+                const data = await UnsignedVCValidator.spa(result);
+
+                if (!data.success) throw new Error('Did not get a valid boost from URI');
+
+                const targetProfile = await _learnCard.invoke.getProfile(profileId);
+
+                if (!targetProfile) throw new Error('Target profile not found');
+
+                const boost = data.data;
+
+                boost.issuer = _learnCard.id.did();
+
+                if (Array.isArray(boost.credentialSubject)) {
+                    boost.credentialSubject[0].id = targetProfile.did;
+                } else {
+                    boost.credentialSubject.id = targetProfile.did;
+                }
+
+                const vc = await _learnCard.invoke.issueCredential(boost);
+
+                if (!encrypt) {
+                    return client.credential.sendCredential.mutate({ profileId, credential: vc });
+                }
+
+                const credential = await _learnCard.invoke
+                    .getDIDObject()
+                    .createDagJWE(vc, [userData.did, targetProfile.did]);
+
+                return client.credential.sendCredential.mutate({ profileId, credential });
+            },
             acceptCredential: async (_learnCard, profileId, uri) => {
                 if (!userData) throw new Error('Please make an account first!');
 

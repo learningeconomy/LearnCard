@@ -6,6 +6,10 @@ import { Plugin, ProofOptions } from '@learncard/core';
 export type LearnCardNetworkPluginDependentMethods = {
     getDIDObject: () => DID;
     getDidAuthVp: (options?: ProofOptions) => Promise<VP | string>;
+    issueCredential: (
+        credential: UnsignedVC,
+        signingOptions?: Partial<ProofOptions>
+    ) => Promise<VC>;
 };
 
 /** @group LearnCardNetwork Plugin */
@@ -34,6 +38,11 @@ export type LearnCardNetworkPluginMethods = {
     generateInvite: (challenge?: string) => Promise<{ profileId: string; challenge: string }>;
 
     sendCredential: (profileId: string, vc: UnsignedVC | VC, encrypt?: boolean) => Promise<string>;
+    sendCredentialFromBoost: (
+        profileId: string,
+        boostUri: string,
+        encrypt?: boolean
+    ) => Promise<string>;
     acceptCredential: (profileId: string, uri: string) => Promise<boolean>;
     getReceivedCredentials: (from?: string) => Promise<SentCredentialInfo[]>;
     getSentCredentials: (to?: string) => Promise<SentCredentialInfo[]>;
