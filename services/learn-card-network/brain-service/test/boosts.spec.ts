@@ -105,4 +105,52 @@ describe('Boosts', () => {
             expect(newBoost.name).toEqual('nice');
         });
     });
+
+    describe('deleteBoost', () => {
+        beforeEach(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+
+            await sendCredential(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB }
+            );
+        });
+
+        afterAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await Profile.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+        });
+
+        it('should require full auth to delete a boost', async () => {
+            const boosts = await userA.clients.fullAuth.boost.getBoosts();
+            const uri = boosts[0]!.uri;
+
+            await expect(noAuthClient.boost.deleteBoost({ uri })).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+            await expect(
+                userA.clients.partialAuth.boost.deleteBoost({ uri })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        });
+
+        it('should allow you to delete a boost', async () => {
+            const boosts = await userA.clients.fullAuth.boost.getBoosts();
+            const boost = boosts[0]!;
+            const uri = boost.uri;
+
+            expect(boost.name).toBeUndefined();
+
+            await expect(userA.clients.fullAuth.boost.deleteBoost({ uri })).resolves.not.toThrow();
+
+            const newBoosts = await userA.clients.fullAuth.boost.getBoosts();
+
+            expect(newBoosts).toHaveLength(0);
+        });
+    });
 });
