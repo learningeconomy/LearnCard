@@ -61,10 +61,7 @@ describe('Boosts', () => {
         });
 
         it('should require full auth to get boosts', async () => {
-            await sendCredential(
-                { profileId: 'usera', user: userA },
-                { profileId: 'userb', user: userB }
-            );
+            await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
 
             await expect(noAuthClient.boost.getBoosts()).rejects.toMatchObject({
                 code: 'UNAUTHORIZED',
@@ -75,10 +72,7 @@ describe('Boosts', () => {
         });
 
         it('should allow getting boosts', async () => {
-            await sendCredential(
-                { profileId: 'usera', user: userA },
-                { profileId: 'userb', user: userB }
-            );
+            await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
 
             await expect(userA.clients.fullAuth.boost.getBoosts()).resolves.not.toThrow();
 
@@ -96,11 +90,6 @@ describe('Boosts', () => {
 
             await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
             await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
-
-            await sendCredential(
-                { profileId: 'usera', user: userA },
-                { profileId: 'userb', user: userB }
-            );
         });
 
         afterAll(async () => {
@@ -110,8 +99,7 @@ describe('Boosts', () => {
         });
 
         it('should require full auth to update a boost', async () => {
-            const boosts = await userA.clients.fullAuth.boost.getBoosts();
-            const uri = boosts[0]!.uri;
+            const uri = await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
 
             await expect(
                 noAuthClient.boost.updateBoost({ uri, updates: { name: 'nice' } })
@@ -122,6 +110,7 @@ describe('Boosts', () => {
         });
 
         it('should allow you to update boost name', async () => {
+            await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
             const boosts = await userA.clients.fullAuth.boost.getBoosts();
             const boost = boosts[0]!;
             const uri = boost.uri;
@@ -139,6 +128,7 @@ describe('Boosts', () => {
         });
 
         it('should allow you to update boost category', async () => {
+            await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
             const boosts = await userA.clients.fullAuth.boost.getBoosts();
             const boost = boosts[0]!;
             const uri = boost.uri;
@@ -155,6 +145,7 @@ describe('Boosts', () => {
             expect(newBoost.category).toEqual('nice');
         });
         it('should allow you to update boost type', async () => {
+            await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
             const boosts = await userA.clients.fullAuth.boost.getBoosts();
             const boost = boosts[0]!;
             const uri = boost.uri;
@@ -181,10 +172,7 @@ describe('Boosts', () => {
             await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
             await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
 
-            await sendCredential(
-                { profileId: 'usera', user: userA },
-                { profileId: 'userb', user: userB }
-            );
+            await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
         });
 
         afterAll(async () => {
@@ -209,8 +197,6 @@ describe('Boosts', () => {
             const boosts = await userA.clients.fullAuth.boost.getBoosts();
             const boost = boosts[0]!;
             const uri = boost.uri;
-
-            expect(boost.name).toBeUndefined();
 
             await expect(userA.clients.fullAuth.boost.deleteBoost({ uri })).resolves.not.toThrow();
 
