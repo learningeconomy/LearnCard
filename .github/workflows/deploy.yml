@@ -12,6 +12,7 @@ env:
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
   AWS_DEFAULT_REGION: us-east-1
+  SEED: ${{ secrets.SEED }}
   NEO4J_URI: ${{ secrets.NEO4J_URI }}
   NEO4J_USERNAME: ${{ secrets.NEO4J_USERNAME }}
   NEO4J_PASSWORD: ${{ secrets.NEO4J_PASSWORD }}

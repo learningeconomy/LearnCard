@@ -8,7 +8,7 @@ import didWebApp from './src/dids';
 import { appRouter, createContext } from './src/app';
 
 export const swaggerUiHandler = serverlessHttp(app, { basePath: '/docs' });
-export const didWebHandler = serverlessHttp(didWebApp, { basePath: '/users' });
+export const didWebHandler = serverlessHttp(didWebApp);
 
 export const _openApiHandler = createOpenApiAwsLambdaHandler({
     router: appRouter,

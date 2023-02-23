@@ -1,5 +1,5 @@
 import { getClient, getUser } from './helpers/getClient';
-import { sendCredential, testVc } from './helpers/send';
+import { testVc } from './helpers/send';
 import { Profile, Credential, Boost } from '@models';
 
 const noAuthClient = getClient();
