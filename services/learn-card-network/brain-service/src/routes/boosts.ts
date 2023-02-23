@@ -1,18 +1,64 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
+import { UnsignedVCValidator, VCValidator, JWEValidator } from '@learncard/types';
 
 import { t, profileRoute } from '@routes';
 
 import { getBoostByUri, getBoostsForProfile } from '@accesslayer/boost/read';
 
-import { getBoostUri } from '@helpers/boost.helpers';
+import { getBoostUri, isProfileBoostOwner, sendBoost } from '@helpers/boost.helpers';
 import { BoostValidator } from 'types/boost';
-import { getBoostOwner } from '@accesslayer/boost/relationships/read';
 import { deleteBoost } from '@accesslayer/boost/delete';
-import { UnsignedVCValidator, VCValidator } from '@learncard/types';
 import { createBoost } from '@accesslayer/boost/create';
+import { getProfileByProfileId } from '@accesslayer/profile/read';
 
 export const boostsRouter = t.router({
+    sendBoost: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/boost/send/{profileId}',
+                tags: ['Boosts'],
+                summary: 'Send a Boost',
+                description: 'This endpoint sends a boost to a profile',
+            },
+        })
+        .input(
+            z.object({
+                profileId: z.string(),
+                uri: z.string(),
+                credential: VCValidator.or(JWEValidator),
+            })
+        )
+        .output(z.string())
+        .mutation(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { profileId, credential, uri } = input;
+
+            const targetProfile = await getProfileByProfileId(profileId);
+
+            if (!targetProfile) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Profile not found. Are you sure this person exists?',
+                });
+            }
+
+            const boost = await getBoostByUri(uri);
+
+            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            if (!(await isProfileBoostOwner(profile, boost))) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile does not own boost',
+                });
+            }
+
+            return sendBoost(profile, targetProfile, boost, credential, ctx.domain);
+        }),
+
     createBoost: profileRoute
         .meta({
             openapi: {
@@ -92,16 +138,9 @@ export const boostsRouter = t.router({
 
             const boost = await getBoostByUri(uri);
 
-            if (!boost) {
-                throw new TRPCError({
-                    code: 'NOT_FOUND',
-                    message: 'Could not find boost',
-                });
-            }
+            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
-            const owner = await getBoostOwner(boost);
-
-            if (owner?.profileId !== profile.profileId) {
+            if (!(await isProfileBoostOwner(profile, boost))) {
                 throw new TRPCError({
                     code: 'UNAUTHORIZED',
                     message: 'Profile does not own boost',
@@ -137,16 +176,9 @@ export const boostsRouter = t.router({
 
             const boost = await getBoostByUri(uri);
 
-            if (!boost) {
-                throw new TRPCError({
-                    code: 'NOT_FOUND',
-                    message: 'Could not find boost',
-                });
-            }
+            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
-            const owner = await getBoostOwner(boost);
-
-            if (owner?.profileId !== profile.profileId) {
+            if (!(await isProfileBoostOwner(profile, boost))) {
                 throw new TRPCError({
                     code: 'UNAUTHORIZED',
                     message: 'Profile does not own boost',

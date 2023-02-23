@@ -38,11 +38,6 @@ export type LearnCardNetworkPluginMethods = {
     generateInvite: (challenge?: string) => Promise<{ profileId: string; challenge: string }>;
 
     sendCredential: (profileId: string, vc: UnsignedVC | VC, encrypt?: boolean) => Promise<string>;
-    sendCredentialFromBoost: (
-        profileId: string,
-        boostUri: string,
-        encrypt?: boolean
-    ) => Promise<string>;
     acceptCredential: (profileId: string, uri: string) => Promise<boolean>;
     getReceivedCredentials: (from?: string) => Promise<SentCredentialInfo[]>;
     getSentCredentials: (to?: string) => Promise<SentCredentialInfo[]>;
@@ -63,6 +58,7 @@ export type LearnCardNetworkPluginMethods = {
     getBoosts: () => Promise<{ name?: string; uri: string }[]>;
     updateBoost: (uri: string, updates: Partial<Omit<Boost, 'uri'>>) => Promise<boolean>;
     deleteBoost: (uri: string) => Promise<boolean>;
+    sendBoost: (profileId: string, boostUri: string, encrypt?: boolean) => Promise<string>;
 
     registerSigningAuthority: (uri: string) => Promise<boolean>;
 
