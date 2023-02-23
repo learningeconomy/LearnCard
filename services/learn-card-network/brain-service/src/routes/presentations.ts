@@ -50,29 +50,19 @@ export const presentationsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/presentation/accept/{profileId}',
+                path: '/presentation/accept/{uri}',
                 tags: ['Presentations'],
                 summary: 'Accept a Presentation',
-                description:
-                    'This endpoint accepts a presentation from a user based on their profileId',
+                description: 'This endpoint accepts a presentation',
             },
         })
-        .input(z.object({ profileId: z.string(), uri: z.string() }))
+        .input(z.object({ uri: z.string() }))
         .output(z.boolean())
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const { profileId, uri } = input;
+            const { uri } = input;
 
-            const targetProfile = await getProfileByProfileId(profileId);
-
-            if (!targetProfile) {
-                throw new TRPCError({
-                    code: 'NOT_FOUND',
-                    message: 'Profile not found. Are you sure this person exists?',
-                });
-            }
-
-            return acceptPresentation(profile, targetProfile, uri);
+            return acceptPresentation(profile, uri);
         }),
 
     receivedPresentations: profileRoute

@@ -88,13 +88,10 @@ describe('Presentations', () => {
             });
 
             await expect(
-                noAuthClient.presentation.acceptPresentation({ profileId: 'usera', uri })
+                noAuthClient.presentation.acceptPresentation({ uri })
             ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
             await expect(
-                userB.clients.partialAuth.presentation.acceptPresentation({
-                    profileId: 'usera',
-                    uri,
-                })
+                userB.clients.partialAuth.presentation.acceptPresentation({ uri })
             ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
         });
 
@@ -105,7 +102,7 @@ describe('Presentations', () => {
             });
 
             await expect(
-                userB.clients.fullAuth.presentation.acceptPresentation({ profileId: 'usera', uri })
+                userB.clients.fullAuth.presentation.acceptPresentation({ uri })
             ).resolves.not.toThrow();
         });
     });
@@ -173,10 +170,7 @@ describe('Presentations', () => {
             jest.setSystemTime(new Date('02-07-2023'));
             const received = new Date().toISOString();
 
-            await userB.clients.fullAuth.presentation.acceptPresentation({
-                uri,
-                profileId: 'usera',
-            });
+            await userB.clients.fullAuth.presentation.acceptPresentation({ uri });
 
             const presentations = await userB.clients.fullAuth.presentation.receivedPresentations();
 
@@ -274,10 +268,7 @@ describe('Presentations', () => {
             jest.setSystemTime(new Date('02-07-2023'));
             const received = new Date().toISOString();
 
-            await userB.clients.fullAuth.presentation.acceptPresentation({
-                uri,
-                profileId: 'usera',
-            });
+            await userB.clients.fullAuth.presentation.acceptPresentation({ uri });
 
             const presentations = await userA.clients.fullAuth.presentation.sentPresentations();
 
@@ -362,10 +353,7 @@ describe('Presentations', () => {
 
             expect(beforeAcceptance).toHaveLength(1);
 
-            await userB.clients.fullAuth.presentation.acceptPresentation({
-                profileId: 'usera',
-                uri,
-            });
+            await userB.clients.fullAuth.presentation.acceptPresentation({ uri });
 
             const afterAcceptance =
                 await userB.clients.fullAuth.presentation.incomingPresentations();

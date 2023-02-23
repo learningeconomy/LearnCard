@@ -38,14 +38,14 @@ export const sendCredential = async (
 /**
  * Accepts a VC
  */
-export const acceptCredential = async (to: ProfileInstance, uri: string): Promise<boolean> => {
+export const acceptCredential = async (profile: ProfileInstance, uri: string): Promise<boolean> => {
     const { id, type } = getUriParts(uri);
 
     if (type !== 'credential') {
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'Not a credential URI' });
     }
 
-    const pendingVc = await getCredentialSentToProfile(id, to);
+    const pendingVc = await getCredentialSentToProfile(id, profile);
 
     if (!pendingVc) {
         throw new TRPCError({
@@ -54,7 +54,7 @@ export const acceptCredential = async (to: ProfileInstance, uri: string): Promis
         });
     }
 
-    await createReceivedCredentialRelationship(to, pendingVc.source, pendingVc.target);
+    await createReceivedCredentialRelationship(profile, pendingVc.source, pendingVc.target);
 
     return true;
 };

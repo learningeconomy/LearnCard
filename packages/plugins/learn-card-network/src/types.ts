@@ -45,7 +45,7 @@ export type LearnCardNetworkPluginMethods = {
     deleteCredential: (uri: string) => Promise<boolean>;
 
     sendPresentation: (profileId: string, vp: VP, encrypt?: boolean) => Promise<string>;
-    acceptPresentation: (profileId: string, uri: string) => Promise<boolean>;
+    acceptPresentation: (uri: string) => Promise<boolean>;
     getReceivedPresentations: (from?: string) => Promise<SentCredentialInfo[]>;
     getSentPresentations: (to?: string) => Promise<SentCredentialInfo[]>;
     getIncomingPresentations: (from?: string) => Promise<SentCredentialInfo[]>;

@@ -14,10 +14,7 @@ export const getCredentialSentToProfile = async (
     return (
         await Profile.findRelationships({
             alias: 'credentialSent',
-            where: {
-                relationship: { to: to.profileId },
-                target: { id },
-            },
+            where: { relationship: { to: to.profileId }, target: { id } },
         })
     )[0];
 };

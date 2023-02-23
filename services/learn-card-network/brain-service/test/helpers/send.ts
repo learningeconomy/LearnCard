@@ -20,10 +20,7 @@ export const testVc: VC = {
 };
 
 export const sendCredential = async (
-    from: {
-        profileId: string;
-        user: Awaited<ReturnType<typeof getUser>>;
-    },
+    from: { profileId: string; user: Awaited<ReturnType<typeof getUser>> },
     to: { profileId: string; user: Awaited<ReturnType<typeof getUser>> }
 ) => {
     const uri = await from.user.clients.fullAuth.credential.sendCredential({
@@ -69,10 +66,7 @@ export const testVp: VP = {
 };
 
 export const sendPresentation = async (
-    from: {
-        profileId: string;
-        user: Awaited<ReturnType<typeof getUser>>;
-    },
+    from: { profileId: string; user: Awaited<ReturnType<typeof getUser>> },
     to: { profileId: string; user: Awaited<ReturnType<typeof getUser>> }
 ) => {
     const uri = await from.user.clients.fullAuth.presentation.sendPresentation({
@@ -80,10 +74,7 @@ export const sendPresentation = async (
         presentation: testVp,
     });
 
-    await to.user.clients.fullAuth.presentation.acceptPresentation({
-        profileId: from.profileId,
-        uri,
-    });
+    await to.user.clients.fullAuth.presentation.acceptPresentation({ uri });
 
     return uri;
 };

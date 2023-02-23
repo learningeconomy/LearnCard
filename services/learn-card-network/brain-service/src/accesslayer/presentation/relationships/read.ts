@@ -1,19 +1,22 @@
-import { PresentationInstance, Profile, ProfileInstance } from '@models';
+import { PresentationInstance, Profile, ProfileRelationships, ProfileInstance } from '@models';
 
 export const getPresentationSentToProfile = async (
     id: string,
-    from: ProfileInstance,
     to: ProfileInstance
-): Promise<PresentationInstance | undefined> => {
+): Promise<
+    | {
+        source: ProfileInstance;
+        relationship: ProfileRelationships['presentationSent']['RelationshipProperties'];
+        target: PresentationInstance;
+    }
+    | undefined
+> => {
     return (
-        await from.findRelationships({
+        await Profile.findRelationships({
             alias: 'presentationSent',
-            where: {
-                relationship: { to: to.profileId },
-                target: { id },
-            },
+            where: { relationship: { to: to.profileId }, target: { id } },
         })
-    )[0]?.target;
+    )[0];
 };
 
 export const getPresentationOwner = async (

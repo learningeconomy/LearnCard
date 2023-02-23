@@ -31,8 +31,7 @@ export const sendPresentation = async (
  * Accepts a VP
  */
 export const acceptPresentation = async (
-    to: ProfileInstance,
-    from: ProfileInstance,
+    profile: ProfileInstance,
     uri: string
 ): Promise<boolean> => {
     const { id, type } = getUriParts(uri);
@@ -41,7 +40,7 @@ export const acceptPresentation = async (
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'Not a presentation URI' });
     }
 
-    const pendingVp = await getPresentationSentToProfile(id, from, to);
+    const pendingVp = await getPresentationSentToProfile(id, profile);
 
     if (!pendingVp) {
         throw new TRPCError({
@@ -50,7 +49,7 @@ export const acceptPresentation = async (
         });
     }
 
-    await createReceivedPresentationRelationship(to, from, pendingVp);
+    await createReceivedPresentationRelationship(profile, pendingVp.source, pendingVp.target);
 
     return true;
 };
