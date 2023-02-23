@@ -82,11 +82,11 @@ describe('Credentials', () => {
                 credential: testVc,
             });
 
+            await expect(noAuthClient.credential.acceptCredential({ uri })).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
             await expect(
-                noAuthClient.credential.acceptCredential({ profileId: 'usera', uri })
-            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
-            await expect(
-                userB.clients.partialAuth.credential.acceptCredential({ profileId: 'usera', uri })
+                userB.clients.partialAuth.credential.acceptCredential({ uri })
             ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
         });
 
@@ -97,7 +97,7 @@ describe('Credentials', () => {
             });
 
             await expect(
-                userB.clients.fullAuth.credential.acceptCredential({ profileId: 'userA', uri })
+                userB.clients.fullAuth.credential.acceptCredential({ uri })
             ).resolves.not.toThrow();
         });
     });
@@ -163,7 +163,7 @@ describe('Credentials', () => {
             jest.setSystemTime(new Date('02-07-2023'));
             const received = new Date().toISOString();
 
-            await userB.clients.fullAuth.credential.acceptCredential({ uri, profileId: 'usera' });
+            await userB.clients.fullAuth.credential.acceptCredential({ uri });
 
             const credentials = await userB.clients.fullAuth.credential.receivedCredentials();
 
@@ -259,7 +259,7 @@ describe('Credentials', () => {
             jest.setSystemTime(new Date('02-07-2023'));
             const received = new Date().toISOString();
 
-            await userB.clients.fullAuth.credential.acceptCredential({ uri, profileId: 'usera' });
+            await userB.clients.fullAuth.credential.acceptCredential({ uri });
 
             const credentials = await userA.clients.fullAuth.credential.sentCredentials();
 
@@ -340,7 +340,7 @@ describe('Credentials', () => {
 
             expect(beforeAcceptance).toHaveLength(1);
 
-            await userB.clients.fullAuth.credential.acceptCredential({ profileId: 'userA', uri });
+            await userB.clients.fullAuth.credential.acceptCredential({ uri });
 
             const afterAcceptance = await userB.clients.fullAuth.credential.incomingCredentials();
 

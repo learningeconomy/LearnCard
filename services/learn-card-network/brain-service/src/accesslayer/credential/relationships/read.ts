@@ -1,19 +1,25 @@
-import { CredentialInstance, Profile, ProfileInstance } from '@models';
+import { CredentialInstance, Profile, ProfileRelationships, ProfileInstance } from '@models';
 
 export const getCredentialSentToProfile = async (
     id: string,
-    from: ProfileInstance,
     to: ProfileInstance
-): Promise<CredentialInstance | undefined> => {
+): Promise<
+    | {
+        source: ProfileInstance;
+        relationship: ProfileRelationships['credentialSent']['RelationshipProperties'];
+        target: CredentialInstance;
+    }
+    | undefined
+> => {
     return (
-        await from.findRelationships({
+        await Profile.findRelationships({
             alias: 'credentialSent',
             where: {
                 relationship: { to: to.profileId },
                 target: { id },
             },
         })
-    )[0]?.target;
+    )[0];
 };
 
 export const getCredentialOwner = async (

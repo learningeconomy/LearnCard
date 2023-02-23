@@ -61,29 +61,19 @@ export const credentialsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/credential/accept/{profileId}',
+                path: '/credential/accept/{uri}',
                 tags: ['Credentials'],
                 summary: 'Accept a Credential',
-                description:
-                    'This endpoint accepts a credential from a user based on their profileId',
+                description: 'This endpoint accepts a credential',
             },
         })
-        .input(z.object({ profileId: z.string(), uri: z.string() }))
+        .input(z.object({ uri: z.string() }))
         .output(z.boolean())
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const { profileId, uri } = input;
+            const { uri } = input;
 
-            const targetProfile = await getProfileByProfileId(profileId);
-
-            if (!targetProfile) {
-                throw new TRPCError({
-                    code: 'NOT_FOUND',
-                    message: 'Profile not found. Are you sure this person exists?',
-                });
-            }
-
-            return acceptCredential(profile, targetProfile, uri);
+            return acceptCredential(profile, uri);
         }),
 
     receivedCredentials: profileRoute

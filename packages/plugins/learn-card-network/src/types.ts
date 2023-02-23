@@ -38,7 +38,7 @@ export type LearnCardNetworkPluginMethods = {
     generateInvite: (challenge?: string) => Promise<{ profileId: string; challenge: string }>;
 
     sendCredential: (profileId: string, vc: UnsignedVC | VC, encrypt?: boolean) => Promise<string>;
-    acceptCredential: (profileId: string, uri: string) => Promise<boolean>;
+    acceptCredential: (uri: string) => Promise<boolean>;
     getReceivedCredentials: (from?: string) => Promise<SentCredentialInfo[]>;
     getSentCredentials: (to?: string) => Promise<SentCredentialInfo[]>;
     getIncomingCredentials: (from?: string) => Promise<SentCredentialInfo[]>;

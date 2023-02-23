@@ -221,10 +221,10 @@ export const getLearnCardNetworkPlugin = async (
 
                 return client.credential.sendCredential.mutate({ profileId, credential });
             },
-            acceptCredential: async (_learnCard, profileId, uri) => {
+            acceptCredential: async (_learnCard, uri) => {
                 if (!userData) throw new Error('Please make an account first!');
 
-                return client.credential.acceptCredential.mutate({ profileId, uri });
+                return client.credential.acceptCredential.mutate({ uri });
             },
             getReceivedCredentials: async (_learnCard, from) => {
                 if (!userData) throw new Error('Please make an account first!');

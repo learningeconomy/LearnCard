@@ -31,10 +31,7 @@ export const sendCredential = async (
         credential: testVc,
     });
 
-    await to.user.clients.fullAuth.credential.acceptCredential({
-        profileId: from.profileId,
-        uri,
-    });
+    await to.user.clients.fullAuth.credential.acceptCredential({ uri });
 
     return uri;
 };
