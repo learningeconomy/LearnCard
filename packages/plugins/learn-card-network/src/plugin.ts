@@ -348,9 +348,11 @@ export const getLearnCardNetworkPlugin = async (
                     });
                 }
 
+                const lcnDid = await client.utilities.getDid.query();
+
                 const credential = await _learnCard.invoke
                     .getDIDObject()
-                    .createDagJWE(vc, [userData.did, targetProfile.did]);
+                    .createDagJWE(vc, [userData.did, targetProfile.did, lcnDid]);
 
                 return client.boost.sendBoost.mutate({ profileId, uri: boostUri, credential });
             },

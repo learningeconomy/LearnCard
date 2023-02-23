@@ -8,6 +8,7 @@ import { createBoostInstanceOfRelationship } from '@accesslayer/boost/relationsh
 import { isEncrypted } from './types.helpers';
 import { createSentCredentialRelationship } from '@accesslayer/credential/relationships/create';
 import { getCredentialUri } from './credential.helpers';
+import { getLearnCard } from './learnCard.helpers';
 
 export const getBoostUri = (id: string, domain: string): string =>
     constructUri('boost', id, domain);
@@ -31,7 +32,18 @@ export const sendBoost = async (
     const credentialInstance = await storeCredential(credential);
 
     if (!isEncrypted(credential)) {
+        // TODO: Verify that credential is related to boost
         await createBoostInstanceOfRelationship(credentialInstance, boost);
+    } else {
+        const learnCard = await getLearnCard();
+        try {
+            const decrypted = await learnCard.invoke.getDIDObject().decryptDagJWE(credential);
+
+            // TODO: Verify that credential is related to boost
+            if (decrypted) await createBoostInstanceOfRelationship(credentialInstance, boost);
+        } catch (error) {
+            console.warn('Could not decrypt Boost Credential!');
+        }
     }
 
     await createSentCredentialRelationship(from, to, credentialInstance);

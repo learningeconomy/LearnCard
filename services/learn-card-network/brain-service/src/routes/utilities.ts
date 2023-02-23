@@ -46,5 +46,19 @@ export const utilitiesRouter = t.router({
 
             return challenges;
         }),
+
+    getDid: didRoute
+        .meta({
+            openapi: {
+                method: 'GET',
+                path: '/did',
+                tags: ['Utilities'],
+                summary: 'Get LCN Did',
+                description: 'Gets the did:web for the LCN itself',
+            },
+        })
+        .input(z.void())
+        .output(z.string())
+        .query(async ({ ctx }) => `did:web:${ctx.domain}`),
 });
 export type UtilitiesRouter = typeof utilitiesRouter;
