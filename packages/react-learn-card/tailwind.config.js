@@ -1,11 +1,16 @@
 const colors = require('tailwindcss/colors');
+const plugin = require('tailwindcss/plugin');
 
 module.exports = {
     content: ['./src/**/*.{js,jsx,ts,tsx}'],
     theme: {
         extend: {
             boxShadow: {
+                bottom: '0px 4px 0px rgba(0, 0, 0, 0.25)',
                 '3xl': '0px 0px 8px rgba(0, 0, 0, 0.25)',
+            },
+            textShadow: {
+                DEFAULT: '1px 2px 0px rgb(0 0 0 / 35%)',
             },
             spacing: {
                 '25pct': '25%',
@@ -78,7 +83,25 @@ module.exports = {
                     900: '#312E81',
                 },
             },
+            fontFamily: {
+                mouse: ['Mouse Memoirs'],
+                montserrat: ['Montserrat', 'Helvetica', 'Serif'],
+                poppins: ['Poppins'],
+            },
         },
     },
-    plugins: [require('@tailwindcss/line-clamp')],
+    plugins: [
+        require('@tailwindcss/line-clamp'),
+        plugin(function({ matchUtilities, theme }) {
+            matchUtilities(
+                {
+                    'text-shadow': value => ({
+                        textShadow: value,
+                    }),
+                },
+                { values: theme('textShadow') }
+            );
+        }),
+        require('tailwind-scrollbar-hide'),
+    ],
 };

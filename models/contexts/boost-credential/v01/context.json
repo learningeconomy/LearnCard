@@ -1,0 +1,25 @@
+{
+	"@context": {
+		"id": "@id",
+		"type": "@type",
+
+		"xsd": "https://www.w3.org/2001/XMLSchema#",
+
+		"BoostCredential": {
+			"@id": "https://github.com/learningeconomy/LearnCard/tree/main/models/#BoostCredential"
+		},
+		"display": {
+			"@id": "https://models.learncard.com/boost-display",
+			"@context": {
+				"backgroundImage": {
+					"@id": "https://schema.org/image",
+					"@type": "xsd:string"
+				},
+				"backgroundColor": {
+					"@id": "https://schema.org/color",
+					"@type": "xsd:string"
+				}
+			}
+		}
+	}
+}
