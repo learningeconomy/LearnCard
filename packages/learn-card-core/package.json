@@ -43,18 +43,17 @@
     "shx": "^0.3.4",
     "ts-jest": "^29.0.3",
     "tsc-alias": "^1.6.9",
-    "typescript": "^4.6.4",
-    "uint8arrays": "^4.0.3"
+    "typescript": "^4.6.4"
   },
   "types": "./dist/index.d.ts",
   "dependencies": {
-    "@ceramicnetwork/common": "^2.2.1",
+    "@ceramicnetwork/common": "2.13.0",
     "@ceramicnetwork/http-client": "2.7.0",
-    "@ceramicnetwork/stream-tile": "^2.2.2",
-    "@ceramicnetwork/streamid": "^2.1.0",
+    "@ceramicnetwork/stream-tile": "2.9.0",
+    "@ceramicnetwork/streamid": "2.7.0",
     "@digitalbazaar/vpqr": "^3.0.0",
-    "@glazed/did-datastore": "^0.3.2",
-    "@glazed/tile-loader": "^0.2.1",
+    "@glazed/did-datastore": "0.3.2",
+    "@glazed/tile-loader": "0.2.1",
     "@learncard/helpers": "workspace:*",
     "@uniswap/default-token-list": "^4.1.0",
     "abort-controller": "^3.0.0",
@@ -75,7 +74,8 @@
   "pnpm": {
     "overrides": {
       "pvutils": "1.0.17",
-      "did-jwt": "5.9.0"
+      "did-jwt": "5.9.0",
+      "uint8arrays": "^3.0.0"
     }
   }
 }
