@@ -1,5 +1,16 @@
 # @welibraryos/react-learn-card
 
+## 2.5.0
+
+### Minor Changes
+
+-   [#217](https://github.com/learningeconomy/LearnCard/pull/217) [`df2aa4e`](https://github.com/learningeconomy/LearnCard/commit/df2aa4ef50ed45c627d2d36b73aefab47da2bcc5) Thanks [@Custard7](https://github.com/Custard7)! - Updated React Components to have new VC display.
+
+### Patch Changes
+
+-   Updated dependencies [[`2508bba`](https://github.com/learningeconomy/LearnCard/commit/2508bba1950faed5ebe4c92f6a5e3bf82114b9fe), [`2508bba`](https://github.com/learningeconomy/LearnCard/commit/2508bba1950faed5ebe4c92f6a5e3bf82114b9fe), [`2508bba`](https://github.com/learningeconomy/LearnCard/commit/2508bba1950faed5ebe4c92f6a5e3bf82114b9fe), [`2508bba`](https://github.com/learningeconomy/LearnCard/commit/2508bba1950faed5ebe4c92f6a5e3bf82114b9fe), [`2508bba`](https://github.com/learningeconomy/LearnCard/commit/2508bba1950faed5ebe4c92f6a5e3bf82114b9fe), [`2508bba`](https://github.com/learningeconomy/LearnCard/commit/2508bba1950faed5ebe4c92f6a5e3bf82114b9fe)]:
+    -   @learncard/core@8.5.0
+
 ## 2.4.0
 
 ### Minor Changes

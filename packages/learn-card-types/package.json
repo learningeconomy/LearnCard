@@ -1,6 +1,6 @@
 {
   "name": "@learncard/types",
-  "version": "5.1.1",
+  "version": "5.2.0",
   "description": "Shared types for learn card",
   "main": "./dist/index.js",
   "module": "./dist/types.esm.js",
