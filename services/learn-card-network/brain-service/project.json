@@ -1,0 +1,38 @@
+{
+    "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+    "name": "network-brain-service",
+    "sourceRoot": "services/learn-card-network/brain-service/src",
+    "projectType": "application",
+    "root": "services/learn-card-network/brain-service",
+    "tags": [],
+    "implicitDependencies": ["core", "types", "nx-run-command"],
+    "namedInputs": {
+        "source": ["{projectRoot}/src/**/*"],
+        "tests": ["{projectRoot}/test/**/*"],
+        "dist": ["{projectRoot}/dist/**/*"]
+    },
+    "targets": {
+        "build": {
+            "executor": "nx:run-script",
+            "inputs": ["source"],
+            "options": {
+                "script": "build"
+            }
+        },
+        "test": {
+            "executor": "nx:run-script",
+            "inputs": ["source", "tests"],
+            "options": {
+                "script": "test"
+            }
+        },
+        "test:watch": {
+            "executor": "./tools/executors/workspace:run-command",
+            "options": {
+                "command": "pnpm test:watch",
+                "cwd": "{root}/services/learn-card-network/brain-service"
+            }
+        }
+    }
+}
+

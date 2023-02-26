@@ -12,7 +12,7 @@ export const getVCTemplatesPlugin = (): VCTemplatePlugin => {
         description: 'Allows for the easy creation of VCs and VPs based on predefined templates',
         methods: {
             newCredential: (_learnCard, args = { type: 'basic' }) => {
-                const did = args.did || _learnCard.id.did?.('key');
+                const did = args.did || _learnCard.id.did();
 
                 if (!did) throw new Error('Could not get issuer did!');
 
@@ -29,7 +29,7 @@ export const getVCTemplatesPlugin = (): VCTemplatePlugin => {
                 return VC_TEMPLATES[type]({ ...defaults, ...functionArgs });
             },
             newPresentation: async (_learnCard, credential, args = {}) => {
-                const did = args?.did || _learnCard.id.did?.('key');
+                const did = args?.did || _learnCard.id.did();
 
                 if (!did) throw new Error('Could not get issuer did!');
 

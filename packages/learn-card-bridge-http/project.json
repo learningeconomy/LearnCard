@@ -1,0 +1,23 @@
+{
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
+    "name": "create-http-bridge",
+    "sourceRoot": "packages/learn-card-bridge-http/src",
+    "projectType": "library",
+    "root": "packages/learn-card-bridge-http",
+    "tags": [],
+    "implicitDependencies": ["types", "core"],
+    "namedInputs": {
+        "source": ["{projectRoot}/src/**/*"],
+        "dist": ["{projectRoot}/dist/**/*"]
+    },
+    "targets": {
+        "build": {
+            "executor": "nx:run-script",
+            "inputs": ["source"],
+            "options": {
+                "script": "build"
+            }
+        }
+    }
+}
+

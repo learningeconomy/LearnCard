@@ -4,6 +4,7 @@ import { issuePresentation } from './issuePresentation';
 import { verifyPresentation } from './verifyPresentation';
 
 import { VCDependentLearnCard, VCPlugin } from './types';
+import { UnsignedVP } from '@learncard/types';
 
 /**
  * @group Plugins
@@ -20,7 +21,7 @@ export const getVCPlugin = (learnCard: VCDependentLearnCard): VCPlugin => {
             issuePresentation: issuePresentation(learnCard),
             verifyPresentation: verifyPresentation(learnCard),
             getTestVc: (_learnCard, subject = 'did:example:d23dd687a7dc6787646f2eb98d0') => {
-                const did = _learnCard.invoke.getSubjectDid('key');
+                const did = _learnCard.id.did();
 
                 return {
                     '@context': ['https://www.w3.org/2018/credentials/v1'],
@@ -36,7 +37,7 @@ export const getVCPlugin = (learnCard: VCDependentLearnCard): VCPlugin => {
                     _credential ||
                     (await _learnCard.invoke.issueCredential(_learnCard.invoke.getTestVc()));
 
-                const did = _learnCard.invoke.getSubjectDid('key');
+                const did = _learnCard.id.did();
 
                 return {
                     '@context': ['https://www.w3.org/2018/credentials/v1'],
@@ -44,6 +45,19 @@ export const getVCPlugin = (learnCard: VCDependentLearnCard): VCPlugin => {
                     holder: did,
                     verifiableCredential: credential,
                 };
+            },
+            getDidAuthVp: async (_learnCard, options = {}) => {
+                const did = _learnCard.invoke.getSubjectDid('key');
+                const unsignedVP: UnsignedVP = {
+                    '@context': ['https://www.w3.org/2018/credentials/v1'],
+                    type: ['VerifiablePresentation'],
+                    holder: did,
+                };
+
+                return _learnCard.invoke.issuePresentation(unsignedVP, {
+                    proofPurpose: 'authentication',
+                    ...options,
+                });
             },
         },
     };

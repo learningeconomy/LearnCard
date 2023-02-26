@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 import { NotificationProps, NotificationTypeStyles } from './types';
 import { NotificationTypeEnum } from '../../constants/notifications';
@@ -11,11 +11,21 @@ export const Notification: React.FC<NotificationProps> = ({
     issueDate,
     className,
     notificationType = NotificationTypeEnum.Achievement,
-    onClick = () => {},
+    handleViewOnClick = () => {},
+    claimStatus = false,
+    handleClaimOnClick = () => {},
+    loadingState = false,
 }) => {
-    const [isClaimed, setIsClaimed] = useState<boolean>(false);
+    const [isClaimed, setIsClaimed] = useState<boolean>(claimStatus || false);
+    const [isLoading, setIsLoading] = useState<boolean>(loadingState || false);
 
-    const handleClaim = () => setIsClaimed(!isClaimed);
+    useEffect(() => {
+        setIsClaimed(claimStatus);
+    }, [claimStatus]);
+
+    useEffect(() => {
+        setIsLoading(loadingState);
+    }, [loadingState]);
 
     const {
         IconComponent,
@@ -27,6 +37,14 @@ export const Notification: React.FC<NotificationProps> = ({
     } = NotificationTypeStyles[notificationType];
 
     const claimButtonStyles = isClaimed ? claimedButtonStyles : unclaimedButtonStyles;
+
+    let buttonText: string = '';
+
+    if (isClaimed) {
+        buttonText = 'Claimed';
+    } else if (!isClaimed) {
+        buttonText = 'Claim';
+    }
 
     return (
         <div
@@ -69,7 +87,7 @@ export const Notification: React.FC<NotificationProps> = ({
                 </div>
                 <div className="flex items-center justify-between w-full mt-3">
                     <button
-                        onClick={onClick}
+                        onClick={handleViewOnClick}
                         className={`flex-1 rounded-[24px] border-solid border-2 bg-white font-semibold mr-2 py-2 px-3 tracking-wide ${viewButtonStyles}`}
                         role="button"
                         name="notification-view-button"
@@ -78,12 +96,12 @@ export const Notification: React.FC<NotificationProps> = ({
                     </button>
                     <button
                         className={`flex items-center justify-center flex-1 rounded-[24px] border-2 border-solid font-semibold py-2 px-3 tracking-wide ${claimButtonStyles}`}
-                        onClick={handleClaim}
+                        onClick={handleClaimOnClick}
                         role="button"
                         name="notification-claim-button"
                     >
                         {isClaimed && <Checkmark className="h-[24px] p-0 m-0" />}{' '}
-                        {isClaimed ? 'Claimed' : 'Claim'}
+                        {isLoading ? 'Loading...' : buttonText}
                     </button>
                 </div>
             </div>

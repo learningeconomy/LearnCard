@@ -1,0 +1,9 @@
+{
+    "executors": {
+        "run-command": {
+            "implementation": "./run-command/dist/impl.js",
+            "schema": "./run-command/schema.json",
+            "description": "Runs a command"
+        }
+    }
+}

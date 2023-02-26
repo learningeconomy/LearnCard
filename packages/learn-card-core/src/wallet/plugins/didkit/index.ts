@@ -4,12 +4,14 @@ import init, {
     generateSecp256k1KeyFromBytes,
     keyToDID,
     keyToVerificationMethod,
+    didToVerificationMethod,
     issueCredential,
     verifyCredential,
     issuePresentation,
     verifyPresentation,
     contextLoader,
     resolveDID,
+    didResolver,
 } from '@didkit/index';
 
 import { DIDKitPlugin, DidMethod } from './types';
@@ -56,6 +58,8 @@ export const getDidKitPlugin = async (
             keyToVerificationMethod: async (_learnCard, type, keypair) =>
                 keyToVerificationMethod(type, JSON.stringify(keypair)),
 
+            didToVerificationMethod: async (_learnCard, did) => didToVerificationMethod(did),
+
             issueCredential: async (_learnCard, credential, options, keypair) =>
                 JSON.parse(
                     await issueCredential(
@@ -70,24 +74,36 @@ export const getDidKitPlugin = async (
                     await verifyCredential(JSON.stringify(credential), JSON.stringify(options))
                 ),
 
-            issuePresentation: async (_learnCard, presentation, options, keypair) =>
-                JSON.parse(
-                    await issuePresentation(
-                        JSON.stringify(presentation),
-                        JSON.stringify(options),
-                        JSON.stringify(keypair)
-                    )
-                ),
+            issuePresentation: async (_learnCard, presentation, options, keypair) => {
+                const isJwt = options.proofFormat === 'jwt';
 
-            verifyPresentation: async (_learnCard, presentation, options = {}) =>
-                JSON.parse(
-                    await verifyPresentation(JSON.stringify(presentation), JSON.stringify(options))
-                ),
+                const result = await issuePresentation(
+                    JSON.stringify(presentation),
+                    JSON.stringify(options),
+                    JSON.stringify(keypair)
+                );
+
+                return isJwt ? result : JSON.parse(result);
+            },
+
+            verifyPresentation: async (_learnCard, presentation, options = {}) => {
+                const isJwt = typeof presentation === 'string';
+
+                return JSON.parse(
+                    await verifyPresentation(
+                        isJwt ? presentation : JSON.stringify(presentation),
+                        JSON.stringify(options)
+                    )
+                );
+            },
 
             contextLoader: async (_learnCard, url) => JSON.parse(await contextLoader(url)),
 
             resolveDid: async (_learnCard, did, inputMetadata = {}) =>
                 JSON.parse(await resolveDID(did, JSON.stringify(inputMetadata))),
+
+            didResolver: async (_learnCard, did, inputMetadata = {}) =>
+                JSON.parse(await didResolver(did, JSON.stringify(inputMetadata))),
         },
     };
 };

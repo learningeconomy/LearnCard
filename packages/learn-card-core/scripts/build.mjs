@@ -8,7 +8,7 @@ import rimraf from 'rimraf';
 
 const nodeResolveExternal = NodeResolvePlugin({
     extensions: ['.ts', '.js', '.tsx', '.jsx', '.cjs', '.mjs'],
-    onResolved: (resolved) => {
+    onResolved: resolved => {
         if (resolved.includes('node_modules')) {
             return {
                 external: true,
@@ -33,6 +33,7 @@ const buildOptions = {
         'isomorphic-webcrypto',
         'cross-fetch',
         'ethers',
+        'cipher-base',
     ],
 };
 
@@ -47,7 +48,7 @@ const configurations = [
         entryPoints: ['src/index.ts'],
         format: 'cjs',
         outfile: 'dist/core.cjs.development.js',
-        ...buildOptions
+        ...buildOptions,
     },
     {
         keepNames: true,
@@ -60,7 +61,7 @@ const configurations = [
         minify: true,
         format: 'cjs',
         outfile: 'dist/core.cjs.production.min.js',
-        ...buildOptions
+        ...buildOptions,
     },
     {
         keepNames: true,
@@ -69,18 +70,20 @@ const configurations = [
         incremental: true,
         tsconfig: 'tsconfig.json',
         plugins: [
-            copy({ assets: [{ keepStructure: true, from: ['./src/didkit/pkg/*'], to: ['./didkit'] }] }),
+            copy({
+                assets: [{ keepStructure: true, from: ['./src/didkit/pkg/*'], to: ['./didkit'] }],
+            }),
         ],
         entryPoints: ['src/index.ts'],
         format: 'esm',
         outfile: 'dist/core.esm.js',
-        ...buildOptions
+        ...buildOptions,
     },
 ];
 
 function asyncRimraf(path) {
     return new Promise((resolve, reject) => {
-        rimraf(path, (err) => {
+        rimraf(path, err => {
             if (err) {
                 reject(err);
             } else {
@@ -92,19 +95,19 @@ function asyncRimraf(path) {
 
 function main() {
     Promise.all(
-        configurations.map((config) => {
+        configurations.map(config => {
             var dir = config.outdir || path.dirname(config.outfile);
             asyncRimraf(dir).catch(() => {
                 console.log('Unable to delete directory', dir);
             });
-        }),
+        })
     ).then(() => {
-        Promise.all(configurations.map((config) => esbuild.build(config)))
+        Promise.all(configurations.map(config => esbuild.build(config)))
             .then(async () => {
                 console.log('✔ Build successful');
                 process.exit(0);
             })
-            .catch((err) => {
+            .catch(err => {
                 console.error('❌ Build failed');
                 process.exit(1);
             });

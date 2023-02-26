@@ -2,4 +2,8 @@ packages:
   - 'docs'
   - 'examples/*'
   - 'packages/*'
+  - 'packages/learn-card-network/*'
+  - 'packages/plugins/*'
   - 'services/*'
+  - 'services/learn-card-network/*'
+  - 'tools/executors/workspace/*'

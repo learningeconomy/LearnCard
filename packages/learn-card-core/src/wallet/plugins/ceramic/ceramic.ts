@@ -1,5 +1,5 @@
 import _ from 'lodash';
-import { DID } from 'dids';
+import { DID, DIDResolutionResult } from 'dids';
 import type { JWE } from 'did-jwt';
 import { toUint8Array } from 'hex-lite';
 import KeyDidResolver from 'key-did-resolver';
@@ -20,6 +20,7 @@ import {
     CeramicURIValidator,
 } from './types';
 import { LearnCard } from 'types/wallet';
+import { InputMetadata } from '../didkit';
 
 /**
  * @group Plugins
@@ -29,9 +30,18 @@ export const getCeramicPlugin = async <URI extends string = ''>(
     { ceramicEndpoint, defaultContentFamily }: CeramicArgs
 ): Promise<CeramicPlugin> => {
     const ceramic = new CeramicClient(ceramicEndpoint);
-    // only supporting did-key atm. this should be stripped into a config param
-    const resolver = { ...KeyDidResolver.getResolver() };
+
+    const learnCardResolver = async (
+        did: string,
+        _parsedDid: any,
+        _resolver: any,
+        options: InputMetadata
+    ): Promise<DIDResolutionResult> => learnCard.invoke.didResolver(did, options);
+
+    const resolver = { ...KeyDidResolver.getResolver(), web: learnCardResolver };
+
     const did = new DID({ resolver });
+
     ceramic.did = did;
 
     // use wallet secret key
@@ -182,6 +192,7 @@ export const getCeramicPlugin = async <URI extends string = ''>(
                 readContentFromCeramic(streamId),
             resolveCredential: async (_learnCard, uri) => resolveCredential(uri),
             getCeramicClient: () => ceramic,
+            getDIDObject: () => ceramic.did!,
         },
     };
 };

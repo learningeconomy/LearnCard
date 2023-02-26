@@ -6,7 +6,7 @@ import rimraf from 'rimraf';
 
 const nodeResolveExternal = NodeResolvePlugin({
     extensions: ['.ts', '.js', '.tsx', '.jsx', '.cjs', '.mjs'],
-    onResolved: (resolved) => {
+    onResolved: resolved => {
         if (resolved.includes('node_modules')) {
             return {
                 external: true,
@@ -21,7 +21,6 @@ const configurations = [
         keepNames: true,
         bundle: true,
         sourcemap: 'external',
-        incremental: true,
         tsconfig: 'tsconfig.json',
         plugins: [nodeResolveExternal],
         entryPoints: ['src/index.ts'],
@@ -32,7 +31,6 @@ const configurations = [
         keepNames: true,
         bundle: true,
         sourcemap: 'external',
-        incremental: true,
         tsconfig: 'tsconfig.json',
         plugins: [nodeResolveExternal],
         entryPoints: ['src/index.ts'],
@@ -44,7 +42,6 @@ const configurations = [
         keepNames: true,
         bundle: true,
         sourcemap: 'external',
-        incremental: true,
         tsconfig: 'tsconfig.json',
         plugins: [nodeResolveExternal],
         entryPoints: ['src/index.ts'],
@@ -55,7 +52,7 @@ const configurations = [
 
 function asyncRimraf(path) {
     return new Promise((resolve, reject) => {
-        rimraf(path, (err) => {
+        rimraf(path, err => {
             if (err) {
                 reject(err);
             } else {
@@ -67,19 +64,19 @@ function asyncRimraf(path) {
 
 function main() {
     Promise.all(
-        configurations.map((config) => {
+        configurations.map(config => {
             var dir = config.outdir || path.dirname(config.outfile);
             asyncRimraf(dir).catch(() => {
                 console.log('Unable to delete directory', dir);
             });
-        }),
+        })
     ).then(() => {
-        Promise.all(configurations.map((config) => esbuild.build(config)))
+        Promise.all(configurations.map(config => esbuild.build(config)))
             .then(() => {
                 console.log('✔ Build successful');
                 process.exit(0);
             })
-            .catch((err) => {
+            .catch(err => {
                 console.error('❌ Build failed');
                 process.exit(1);
             });

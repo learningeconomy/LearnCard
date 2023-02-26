@@ -15,7 +15,7 @@ import { VCAPIPlugin } from '@wallet/plugins/vc-api/types';
 import { LearnCardPlugin } from '@wallet/plugins/learn-card';
 
 import { InitFunction, GenericInitFunction } from 'types/helpers';
-import { LearnCard } from 'types/wallet';
+import { LearnCard, Plugin } from 'types/wallet';
 
 // export * from '@learncard/types';
 
@@ -69,4 +69,10 @@ export type CustomLearnCard = InitFunction<{ custom: true }, 'debug', LearnCard<
 /** @group Init Functions */
 export type InitLearnCard = GenericInitFunction<
     [EmptyLearnCard, LearnCardFromSeed, LearnCardFromVcApi, CustomLearnCard]
+>;
+
+export type GetPlugins<LC extends LearnCard<any, any, any>> = LC['plugins'];
+
+export type AddPlugin<LC extends LearnCard<any, any, any>, P extends Plugin> = LearnCard<
+    [...GetPlugins<LC>, P]
 >;

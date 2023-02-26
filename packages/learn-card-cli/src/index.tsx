@@ -1,7 +1,9 @@
 import fs from 'fs/promises';
-import repl from 'pretty-repl';
+import dns from 'node:dns';
 
-import { initLearnCard, emptyLearnCard, learnCardFromKey, getTestCache } from '@learncard/core';
+import repl from 'pretty-repl';
+import { initNetworkLearnCard, getLearnCardNetworkPlugin } from '@learncard/network-plugin';
+import { initLearnCard, emptyLearnCard, learnCardFromSeed, getTestCache } from '@learncard/core';
 import types from '@learncard/types';
 import gradient from 'gradient-string';
 import figlet from 'figlet';
@@ -10,6 +12,8 @@ import { program } from 'commander';
 import { generateRandomSeed } from './random';
 
 import packageJson from '../package.json';
+
+dns.setDefaultResultOrder('ipv4first');
 
 const g = {
     learnCard: gradient(['cyan', 'green'])('learnCard'),
@@ -39,8 +43,10 @@ program
         globalThis.seed = seed;
         globalThis.generateRandomSeed = generateRandomSeed;
         globalThis.emptyLearnCard = emptyLearnCard;
-        globalThis.learnCardFromKey = learnCardFromKey;
+        globalThis.learnCardFromSeed = learnCardFromSeed;
         globalThis.initLearnCard = initLearnCard;
+        globalThis.initNetworkLearnCard = initNetworkLearnCard;
+        globalThis.getLearnCardNetworkPlugin = getLearnCardNetworkPlugin;
         globalThis.learnCard = await initLearnCard({
             seed,
             didkit: fs.readFile(require.resolve('@learncard/core/dist/didkit/didkit_wasm_bg.wasm')),
@@ -49,8 +55,8 @@ program
         globalThis.getTestCache = getTestCache;
 
         // delete 'Creating wallet...' message
-        process.stdout.moveCursor(0, -1);
-        process.stdout.clearLine(1);
+        process.stdout.moveCursor?.(0, -1);
+        process.stdout.clearLine?.(1);
 
         console.log('Wallet created!\n');
 

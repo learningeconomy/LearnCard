@@ -19,12 +19,10 @@
     "pre:build": "shx cp ../../packages/learn-card-core/src/didkit/pkg/didkit_wasm_bg.wasm src/didkit_wasm_bg.wasm",
     "build": "pnpm pre:build && rollup -c && pnpm post:build",
     "post:build": "./fixBundle.sh",
-    "prepare": "pnpm build",
     "manifest": "mm-snap manifest --fix",
     "eval": "mm-snap eval -b dist/snap.js",
     "serve": "serve -Cl 3002",
-    "dev": "pnpm build && pnpm manifest && pnpm eval && pnpm serve",
-    "test": "echo 'TODO'"
+    "dev": "pnpm build && pnpm manifest && pnpm eval && pnpm serve"
   },
   "devDependencies": {
     "@learncard/types": "workspace:*",
@@ -50,6 +48,6 @@
   },
   "dependencies": {
     "@learncard/core": "workspace:*",
-    "zod": "^3.17.3"
+    "zod": "^3.20.2"
   }
 }

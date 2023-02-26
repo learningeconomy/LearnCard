@@ -9,6 +9,12 @@ export function getVersion(): string;
 * @param {string} input_metadata
 * @returns {Promise<any>}
 */
+export function didResolver(did: string, input_metadata: string): Promise<any>;
+/**
+* @param {string} did
+* @param {string} input_metadata
+* @returns {Promise<any>}
+*/
 export function resolveDID(did: string, input_metadata: string): Promise<any>;
 /**
 * @returns {string}
@@ -40,6 +46,11 @@ export function keyToDID(method_pattern: string, jwk: string): string;
 * @returns {Promise<any>}
 */
 export function keyToVerificationMethod(method_pattern: string, jwk: string): Promise<any>;
+/**
+* @param {string} did
+* @returns {Promise<any>}
+*/
+export function didToVerificationMethod(did: string): Promise<any>;
 /**
 * @param {string} credential
 * @param {string} proof_options
@@ -179,6 +190,7 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 export interface InitOutput {
   readonly memory: WebAssembly.Memory;
   readonly getVersion: (a: number) => void;
+  readonly didResolver: (a: number, b: number, c: number, d: number) => number;
   readonly resolveDID: (a: number, b: number, c: number, d: number) => number;
   readonly generateEd25519Key: (a: number) => void;
   readonly generateEd25519KeyFromBytes: (a: number, b: number, c: number) => void;
@@ -186,6 +198,7 @@ export interface InitOutput {
   readonly generateSecp256k1KeyFromBytes: (a: number, b: number, c: number) => void;
   readonly keyToDID: (a: number, b: number, c: number, d: number, e: number) => void;
   readonly keyToVerificationMethod: (a: number, b: number, c: number, d: number) => number;
+  readonly didToVerificationMethod: (a: number, b: number) => number;
   readonly issueCredential: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
   readonly prepareIssueCredential: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
   readonly completeIssueCredential: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
@@ -211,11 +224,11 @@ export interface InitOutput {
   readonly __wbindgen_malloc: (a: number) => number;
   readonly __wbindgen_realloc: (a: number, b: number, c: number) => number;
   readonly __wbindgen_export_2: WebAssembly.Table;
-  readonly _dyn_core__ops__function__FnMut__A____Output___R_as_wasm_bindgen__closure__WasmClosure___describe__invoke__h93b9577b462bda3f: (a: number, b: number, c: number) => void;
+  readonly _dyn_core__ops__function__FnMut__A____Output___R_as_wasm_bindgen__closure__WasmClosure___describe__invoke__hf6251ee6687a20b8: (a: number, b: number, c: number) => void;
   readonly __wbindgen_add_to_stack_pointer: (a: number) => number;
   readonly __wbindgen_free: (a: number, b: number) => void;
   readonly __wbindgen_exn_store: (a: number) => void;
-  readonly wasm_bindgen__convert__closures__invoke2_mut__h5199611bd19f62fe: (a: number, b: number, c: number, d: number) => void;
+  readonly wasm_bindgen__convert__closures__invoke2_mut__h63ffd509f6690aab: (a: number, b: number, c: number, d: number) => void;
 }
 
 /**

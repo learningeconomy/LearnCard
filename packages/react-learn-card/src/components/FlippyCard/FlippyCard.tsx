@@ -2,10 +2,10 @@ import React from 'react';
 
 export type FlippyCardProps = {
     children: React.ReactChild[];
-    flipState?: 'front' | 'back' | undefined | string;
+    flipState?: 'front' | 'back' | string;
 };
 
-export const FlippyCard: React.FC<FlippyCardProps> = ({ children, flipState }) => {
+export const FlippyCard: React.FC<FlippyCardProps> = ({ children, flipState = 'front' }) => {
     if (children?.length > 3) {
         console.warn('More than two children passed into Flippy Card! 😳😳😳 Picking first two...');
     }

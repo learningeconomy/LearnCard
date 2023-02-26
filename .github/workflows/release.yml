@@ -16,7 +16,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 2
 
       - name: Setup Node.js 16.x
         uses: actions/setup-node@v3
@@ -32,8 +34,7 @@ jobs:
 
       - name: Get pnpm store directory
         id: pnpm-cache
-        run: |
-          echo "::set-output name=pnpm_cache_dir::$(pnpm store path)"
+        run: echo "pnpm_cache_dir=$(pnpm store path)" >> $GITHUB_OUTPUT
 
       - name: Setup pnpm cache
         uses: actions/cache@v3
@@ -43,8 +44,21 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
 
+      - name: Restore nx cache
+        id: restore-nx-cache
+        uses: actions/cache/restore@v3
+        with:
+          path: .nx-cache
+          key: ${{ runner.os }}-nx-cache-${{ github.workflow }}
+
       - name: Install dependencies
-        run: pnpm i --no-frozen-lockfile
+        run: pnpm i
+
+      - name: Run tests
+        run: pnpm exec nx affected --target=test --base=HEAD~1 --head=HEAD
+
+      - name: Build libs
+        run: pnpm exec nx affected --target=build --base=HEAD~1 --head=HEAD
 
       - name: Create Release Pull Request or Publish to npm
         id: changesets
@@ -54,3 +68,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Save nx cache
+        uses: actions/cache/save@v3
+        with:
+          path: .nx-cache
+          key: ${{ steps.restore-nx-cache.outputs.cache-primary-key }}

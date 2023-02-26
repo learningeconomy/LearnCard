@@ -1,12 +1,13 @@
 import { JWK, UnsignedVC, VC, UnsignedVP, VP, VerificationCheck } from '@learncard/types';
 import { Plugin, LearnCard } from 'types/wallet';
-import { ProofOptions } from '../didkit/types';
+import { ProofOptions, InputMetadata } from '../didkit/types';
 
 /** @group VC Plugin */
 export type VCPluginDependentMethods = {
     getSubjectDid: (type: 'key') => string;
     getSubjectKeypair: () => JWK;
     keyToVerificationMethod: (type: string, keypair: JWK) => Promise<string>;
+    didToVerificationMethod: (did: string) => Promise<string>;
     issueCredential: (credential: UnsignedVC, options: ProofOptions, keypair: JWK) => Promise<VC>;
     verifyCredential: (credential: VC, options?: ProofOptions) => Promise<VerificationCheck>;
     issuePresentation: (
@@ -14,7 +15,11 @@ export type VCPluginDependentMethods = {
         options: ProofOptions,
         keypair: JWK
     ) => Promise<VP>;
-    verifyPresentation: (presentation: VP, options?: ProofOptions) => Promise<VerificationCheck>;
+    verifyPresentation: (
+        presentation: VP | string,
+        options?: ProofOptions
+    ) => Promise<VerificationCheck>;
+    resolveDid: (did: string, inputMetadata?: InputMetadata) => Promise<Record<string, any>>;
 };
 
 /** @group VC Plugin */
@@ -32,11 +37,12 @@ export type VCPluginMethods = {
         signingOptions?: Partial<ProofOptions>
     ) => Promise<VP>;
     verifyPresentation: (
-        presentation: VP,
+        presentation: VP | string,
         options?: Partial<ProofOptions>
     ) => Promise<VerificationCheck>;
     getTestVc: (subject?: string) => UnsignedVC;
     getTestVp: (credential?: VC) => Promise<UnsignedVP>;
+    getDidAuthVp: (options?: ProofOptions) => Promise<VP | string>;
 };
 
 /** @group VC Plugin */

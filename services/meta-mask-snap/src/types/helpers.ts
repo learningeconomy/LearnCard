@@ -45,7 +45,7 @@ export type RPCMethod<
 export type GetAPIEndpointUnion<
     RPCMethods extends Record<string, RPCMethod>,
     Type extends keyof RPCMethod['arguments']
-> = z.ZodDiscriminatedUnion<'method', z.Primitive, RPCMethods[keyof RPCMethods]['arguments'][Type]>;
+> = z.ZodDiscriminatedUnion<'method', Array<RPCMethods[keyof RPCMethods]['arguments'][Type]>>;
 
 /** A standardized APIEndpoint object containing a series of RPCMethods */
 export type APIEndpoint<RPCMethods extends Record<string, RPCMethod> = any> = {

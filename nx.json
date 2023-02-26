@@ -1,0 +1,45 @@
+{
+  "npmScope": "learncard",
+  "tasksRunnerOptions": {
+    "default": {
+      "runner": "nx/tasks-runners/default",
+      "options": {
+        "cacheDirectory": ".nx-cache",
+        "cacheableOperations": [
+          "build",
+          "test"
+        ]
+      }
+    }
+  },
+  "targetDefaults": {
+    "start": {
+      "dependsOn": [
+        "^build"
+      ]
+    },
+    "dev": {
+      "dependsOn": [
+        "^build"
+      ]
+    },
+    "build": {
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        "{projectRoot}/dist"
+      ]
+    },
+    "test": {
+      "dependsOn": [
+        "^build",
+        "^test"
+      ],
+      "outputs": [
+        "{projectRoot}/coverage"
+      ]
+    }
+  },
+  "defaultBase": "main"
+}

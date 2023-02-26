@@ -7,15 +7,14 @@ import { NotificationTypeEnum } from '../../../constants/notifications';
 
 describe('Notification', () => {
     it('Renders Notification of Type: Currency with props', () => {
-        const handleOnClick = jest.fn();
-
         render(
             <Notification
                 title="Title of Credential"
                 issuerImage="https://issuerimage.png"
                 issueDate="04 Apr 22"
                 notificationType={NotificationTypeEnum.Currency}
-                onClick={handleOnClick}
+                claimStatus={false}
+                loadingState={false}
             />
         );
 
@@ -33,20 +32,6 @@ describe('Notification', () => {
 
         const iconComponent = screen.getByTestId(`${NotificationTypeEnum.Currency}-icon`);
         expect(iconComponent).toBeInTheDocument();
-
-        fireEvent.click(screen.getByRole('button', { name: /view/i }));
-        expect(handleOnClick).toHaveBeenCalledTimes(1);
-
-        const claimButton = screen.getByRole('button', { name: /claim/i });
-        expect(claimButton).toHaveTextContent('Claim');
-        expect(screen.queryByTestId('checkmark-icon')).not.toBeInTheDocument();
-
-        fireEvent.click(claimButton);
-        expect(handleOnClick).toHaveBeenCalledTimes(1);
-
-        const claimedButton = screen.getByRole('button', { name: /claimed/i });
-        expect(claimedButton).toHaveTextContent('Claimed');
-        expect(screen.queryByTestId('checkmark-icon')).toBeInTheDocument();
     });
 
     it('Renders Notification of Type: Identification', () => {

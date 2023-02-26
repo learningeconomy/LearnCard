@@ -13,8 +13,12 @@ export const issueCredential = (initLearnCard: VCDependentLearnCard) => {
 
         if (!kp) throw new Error('Cannot issue credential: Could not get subject keypair');
 
+        const verificationMethod = await learnCard.invoke.didToVerificationMethod(
+            typeof credential.issuer === 'string' ? credential.issuer : credential.issuer.id!
+        );
+
         const options = {
-            verificationMethod: await initLearnCard.invoke.keyToVerificationMethod('key', kp),
+            verificationMethod,
             proofPurpose: 'assertionMethod',
             type: 'Ed25519Signature2020',
             ...signingOptions,

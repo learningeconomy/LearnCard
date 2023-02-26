@@ -1,0 +1,23 @@
+{
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
+    "name": "snap-example-dapp",
+    "sourceRoot": "examples/snap-example-dapp/src",
+    "projectType": "application",
+    "root": "examples/snap-example-dapp",
+    "tags": [],
+    "implicitDependencies": ["core", "types", "meta-mask-snap"],
+    "namedInputs": {
+        "source": ["{projectRoot}/src/**/*"],
+        "dist": ["{projectRoot}/dist/**/*"]
+    },
+    "targets": {
+        "build": {
+            "executor": "nx:run-script",
+            "inputs": ["source"],
+            "options": {
+                "script": "build"
+            }
+        }
+    }
+}
+

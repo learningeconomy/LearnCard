@@ -13,9 +13,14 @@ export * from './types/rpc';
  * deserialization
  */
 export const sendRequest = async <
-    Method extends LearnCardRPCAPITypes[keyof LearnCardRPCAPITypes]['method']
+    Method extends LearnCardRPCAPITypes[keyof Omit<
+        LearnCardRPCAPITypes,
+        'validator' | 'serializer' | 'deserializer'
+    >]['method']
 >(
-    params: { method: Method } & LearnCardRPCAPITypes['validator'],
+    params: {
+        method: Method;
+    } & LearnCardRPCAPITypes[Method]['arguments']['validator'],
     snapId = 'npm:@learncard/meta-mask-snap'
 ): Promise<LearnCardRPCAPITypes[Method]['returnValue']['validator'] | undefined> => {
     const serializedParams = await LearnCardRPCAPI[params.method].arguments.serializer.spa(params);

@@ -13,7 +13,10 @@ export type NotificationProps = {
     issuerImage?: string;
     issueDate: string;
     className?: string;
-    onClick: () => void;
+    handleViewOnClick: () => void;
+    claimStatus: boolean;
+    handleClaimOnClick: () => void;
+    loadingState: boolean;
 };
 
 export const NotificationTypeStyles = {

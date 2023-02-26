@@ -64,9 +64,7 @@ export function initLearnCard(
 export async function initLearnCard(
     config: InitLearnCard['args'] = {}
 ): InitLearnCard['returnValue'] {
-    if ('custom' in config) {
-        return customLearnCard({ debug: config.debug });
-    }
+    if ('custom' in config) return customLearnCard({ debug: config.debug });
 
     if ('vcApi' in config) {
         const { vcApi, did, debug } = config;
