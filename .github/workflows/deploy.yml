@@ -3,7 +3,7 @@ name: Deploy
 on:
   push:
     branches:
-      - WE-2612-Add-LCN
+      - main
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
