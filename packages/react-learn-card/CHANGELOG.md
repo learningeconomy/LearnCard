@@ -1,5 +1,15 @@
 # @welibraryos/react-learn-card
 
+## 2.4.0
+
+### Minor Changes
+
+-   [#212](https://github.com/learningeconomy/LearnCard/pull/212) [`74b7264`](https://github.com/learningeconomy/LearnCard/commit/74b72643c85d715b1f93610e8bef16c282efd3ce) Thanks [@smurflo2](https://github.com/smurflo2)! - Add new VC Display!
+
+### Patch Changes
+
+-   [#211](https://github.com/learningeconomy/LearnCard/pull/211) [`406b9dc`](https://github.com/learningeconomy/LearnCard/commit/406b9dcb88a56395125e865672474283a15f1d03) Thanks [@gerardopar](https://github.com/gerardopar)! - WE-2604 - wallet page iterations (rounded square)
+
 ## 2.3.69
 
 ### Patch Changes
