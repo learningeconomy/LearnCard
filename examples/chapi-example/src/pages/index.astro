@@ -7,7 +7,7 @@ import Credentials from '@components/Credentials';
     <section id="modal-container"></section>
 
     <main class="w-full h-full flex flex-col justify-center items-center p-4">
-        <header class="flex ">
+        <header class="flex">
             <img
                 class="h-36"
                 src="https://cdn.filestackcontent.com/rotate=deg:exif/auto_image/7X2erX66T8Wq2IfvYIMt"
@@ -16,10 +16,10 @@ import Credentials from '@components/Credentials';
         </header>
         <div class="gap-2 mb-10">
             <img
-                    class="max-w-sm"
-                    src="https://cdn.filestackcontent.com/rotate=deg:exif/auto_image/PcSN5SODTgKForLpIdAa"
-                    alt="LearnCard"
-                />
+                class="max-w-sm"
+                src="https://cdn.filestackcontent.com/rotate=deg:exif/auto_image/PcSN5SODTgKForLpIdAa"
+                alt="LearnCard"
+            />
         </div>
         <h3 id="loading-wallet">Loading...</h3>
 
@@ -38,6 +38,15 @@ import Credentials from '@components/Credentials';
                 class="bg-emerald-500 text-slate-100 rounded-md m-3 py-5 px-4 border opacity-0"
             >
                 Issue via CHAPI
+            </button>
+
+            <button
+                disabled
+                type="button"
+                id="test-get"
+                class="bg-emerald-500 text-slate-100 rounded-md m-3 py-5 px-4 border opacity-0"
+            >
+                Get via CHAPI
             </button>
 
             <button
@@ -79,6 +88,37 @@ import Credentials from '@components/Credentials';
         }
     };
 
+    const testGet = async () => {
+        const result = await window.navigator.credentials.get({
+          web: {
+          VerifiablePresentation: {
+            query: [{
+            type: 'QueryByExample',
+            credentialQuery: {
+              required: false,
+              reason: 'Select credentials to be transferred to the CHAPI Example App.',
+              example: {
+              '@context': ['https://www.w3.org/2018/credentials/v1']
+              }
+            }
+            }],
+            domain: window.location.origin.replace('https://', ''),
+          },
+          }
+        });
+        console.log("Result! 🚀", result);
+        if(!result) {
+            alert("The request was cancelled or rejected by the wallet.");
+        } else {
+            const vcs = result?.data?.verifiableCredential;
+            if(vcs) {
+                alert(`Got ${vcs?.length} verifiable credentials! Check your console.`);
+            } else {
+                alert(`No VCs were shared in the CHAPI interaction.`);
+            }
+        }
+    }
+
     const testLcwStorage = async () => {
         const testWallet = await initLearnCard({ vcApi: true });
 
@@ -97,6 +137,7 @@ import Credentials from '@components/Credentials';
     };
 
     const loadingWallet = document.getElementById('loading-wallet') as HTMLElement;
+    const getButton = document.getElementById('test-get') as HTMLButtonElement;
     const storageButton = document.getElementById('test-storage') as HTMLButtonElement;
     const lcwStorageButton = document.getElementById('test-storage-lcw') as HTMLButtonElement;
     const seedDisplay = document.getElementById('seed-display') as HTMLElement;
@@ -107,6 +148,10 @@ import Credentials from '@components/Credentials';
     storageButton.classList.remove('opacity-0');
     storageButton.disabled = false;
     storageButton.addEventListener('click', testStorage);
+
+    getButton.classList.remove('opacity-0');
+    getButton.disabled = false;
+    getButton.addEventListener('click', testGet);
 
     lcwStorageButton.classList.remove('opacity-0');
     lcwStorageButton.disabled = false;
