@@ -14,6 +14,7 @@ export const GenericCard: React.FC<GenericCardProps> = ({
     showChecked,
     checkStatus,
     flipped,
+    subHeaderComponent,
 }) => {
     const thumbClass = `bg-${TYPE_TO_WALLET_DARK_COLOR[type]}` ?? 'bg-grayscale-50';
     const defaultThumbClass = `flex h-[110px] m-auto ${thumbClass} w-[140px] overflow-hidden flex-col justify-center items-center w-full rounded-[20px] ${customThumbClass}`;

@@ -240,6 +240,7 @@ export type GenericCardProps = {
     customThumbClass?: string;
     customHeaderClass?: string;
     showChecked?: boolean;
+    subHeaderComponent?: React.ReactNode;
     checkStatus?: boolean;
     onClick?: () => void;
     flipped?: boolean;
