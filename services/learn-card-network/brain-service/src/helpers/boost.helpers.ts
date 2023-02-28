@@ -1,4 +1,5 @@
 import isEqual from 'lodash/isEqual';
+import { v4 as uuidv4 } from 'uuid';
 import { VC, JWE, UnsignedVC } from '@learncard/types';
 
 import { getBoostOwner } from '@accesslayer/boost/relationships/read';
@@ -25,7 +26,8 @@ export const isProfileBoostOwner = async (
 
 export const verifyCredentialIsDerivedFromBoost = async (
     boost: BoostInstance,
-    credential: VC
+    credential: VC,
+    domain: string
 ): Promise<boolean> => {
     console.log('Compare boost & credential!');
 
@@ -36,6 +38,7 @@ export const verifyCredentialIsDerivedFromBoost = async (
 
     const boostCredential = JSON.parse(boost?.dataValues?.boost);
     const boostId = boost?.dataValues?.id;
+    const boostURI = getBoostUri(boostId, domain);
 
     if (!boostCredential) {
         console.error('No credential template attached to boost');
@@ -48,14 +51,14 @@ export const verifyCredentialIsDerivedFromBoost = async (
     console.log(credential);
     console.log('🚀🚀🚀🚀 ----');
     // TODO: Should we validate the boost id vs credential id??
-    // if(!isEqual(credential.boostId, boostId)) {
-    //     console.error("Credential boostId !== boost id", credential.boostId, boostId);
-    //     return false;
-    // }
+    if (!isEqual(credential.boostId, boostURI)) {
+        console.error('Credential boostId !== boost id', credential.boostId, boostURI);
+        return false;
+    }
 
     /// Simplify Comparison
     // if (
-    //     !isEqual(credential.boostId, boostId) || 
+    //     !isEqual(credential.boostId, boostId) ||
     //     !isEqual(credential.type, boostCredential.type) ||
     //     !isEqual(
     //         credential.credentialSubject?.achievement,
@@ -125,14 +128,18 @@ export const verifyCredentialIsDerivedFromBoost = async (
 
 export const issueCertifiedBoost = async (
     boost: BoostInstance,
-    credential: VC | JWE
+    credential: VC | JWE,
+    domain: string
 ): Promise<VC | JWE | false> => {
     const learnCard = await getLearnCard();
+    const lcnDID = `did:web:${domain}`;
     try {
-        if (await verifyCredentialIsDerivedFromBoost(boost, credential)) {
+        if (await verifyCredentialIsDerivedFromBoost(boost, credential, domain)) {
             const unsignedCertifiedBoost = await constructCertifiedBoostCredential(
-                learnCard?.id?.did(),
-                credential
+                boost,
+                credential,
+                domain,
+                lcnDID
             );
 
             return learnCard.invoke.issueCredential(unsignedCertifiedBoost);
@@ -168,7 +175,7 @@ export const sendBoost = async (
 ): Promise<string> => {
     const decryptedCredential = await decryptCredential(credential);
 
-    const certifiedBoost = await issueCertifiedBoost(boost, decryptedCredential);
+    const certifiedBoost = await issueCertifiedBoost(boost, decryptedCredential, domain);
     if (certifiedBoost) {
         const credentialInstance = await storeCredential(certifiedBoost);
         await createBoostInstanceOfRelationship(credentialInstance, boost);
@@ -181,10 +188,15 @@ export const sendBoost = async (
 };
 
 export const constructCertifiedBoostCredential = async (
-    issuerDid: string,
-    credential: VC | JWE
+    boost: BoostInstance,
+    credential: VC | JWE,
+    domain: string,
+    issuerDid: string
 ): Promise<UnsignedVC> => {
     const currentDate = new Date()?.toISOString();
+
+    const boostId = boost?.dataValues?.id;
+    const boostURI = getBoostUri(boostId, domain);
 
     return {
         '@context': [
@@ -198,6 +210,10 @@ export const constructCertifiedBoostCredential = async (
                     '@id': 'lcn:certifiedBoostCredential',
                     '@context': {
                         '@version': 1.1,
+                        boostId: {
+                            '@id': 'lcn:boostId',
+                            '@type': 'xsd:string',
+                        },
                         boostCredential: {
                             '@id': 'cred:VerifiableCredential',
                             '@type': '@id',
@@ -207,11 +223,12 @@ export const constructCertifiedBoostCredential = async (
                 },
             },
         ],
-        id: 'https://network.learncard.com/credentials/123',
+        id: `urn:uuid:${uuidv4()}`,
         type: ['VerifiableCredential', 'CertifiedBoostCredential'],
         issuer: issuerDid,
         issuanceDate: currentDate,
         credentialSubject: { id: issuerDid },
+        boostId: boostURI,
         boostCredential: credential,
     };
 };
