@@ -1,5 +1,11 @@
 # learn-card-types
 
+## 5.2.0
+
+### Minor Changes
+
+-   [#213](https://github.com/learningeconomy/LearnCard/pull/213) [`2508bba`](https://github.com/learningeconomy/LearnCard/commit/2508bba1950faed5ebe4c92f6a5e3bf82114b9fe) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add LCN Types
+
 ## 5.1.1
 
 ### Patch Changes

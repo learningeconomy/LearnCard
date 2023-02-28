@@ -1,6 +1,6 @@
 {
   "name": "@learncard/network-plugin",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "",
   "main": "./dist/index.js",
   "module": "./dist/lcn-plugin.esm.js",
@@ -41,7 +41,8 @@
   "pnpm": {
     "overrides": {
       "pvutils": "1.0.17",
-      "did-jwt": "5.9.0"
+      "did-jwt": "5.9.0",
+      "@ceramicnetwork/streamid": "2.7.0"
     }
   }
 }
