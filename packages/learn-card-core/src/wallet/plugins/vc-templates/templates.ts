@@ -90,4 +90,99 @@ export const VC_TEMPLATES: { [Key in keyof VcTemplates]: (args: VcTemplates[Key]
                 },
             },
         }),
+        boost: ({
+            did = 'did:example:d23dd687a7dc6787646f2eb98d0',
+            subject = 'did:example:d23dd687a7dc6787646f2eb98d0',
+            issuanceDate = '2020-08-19T21:41:50Z',
+            expirationDate,
+            boostName = 'Example Boost',
+            boostId = 'urn:uuid:boost:example:555',
+            boostImage,
+            achievementId = 'urn:uuid:123',
+            achievementType = 'Influencer',
+            achievementName = 'Awesome Badge',
+            achievementDescription = 'Awesome People Earn Awesome Badge',
+            achievementNarrative = 'Earned by being awesome.',
+            achievementImage = '',
+            attachments,
+            display,
+        } = {}) => ({
+            '@context': [
+                'https://www.w3.org/2018/credentials/v1',
+                'https://purl.imsglobal.org/spec/ob/v3p0/context.json',
+                {
+                    // id: '@id',
+                    type: '@type',
+                    xsd: 'https://www.w3.org/2001/XMLSchema#',
+                    lcn: 'https://docs.learncard.com/definitions#',
+                    BoostCredential: {
+                        '@id': 'lcn:boostCredential',
+                        '@context': {
+                            boostId: {
+                                '@id': 'lcn:boostId',
+                                '@type': 'xsd:string',
+                            },
+                            display: {
+                                '@id': 'lcn:boostDisplay',
+                                '@context': {
+                                    backgroundImage: {
+                                        '@id': 'lcn:boostBackgroundImage',
+                                        '@type': 'xsd:string',
+                                    },
+                                    backgroundColor: {
+                                        '@id': 'lcn:boostBackgroundColor',
+                                        '@type': 'xsd:string',
+                                    },
+                                },
+                            },
+                            image: {
+                                '@id': 'lcn:boostImage',
+                                '@type': 'xsd:string',
+                            },
+                            attachments: {
+                                '@id': 'lcn:boostAttachments',
+                                '@container': '@set',
+                                '@context': {
+                                    type: {
+                                        '@id': 'lcn:boostAttachmentType',
+                                        '@type': 'xsd:string',
+                                    },
+                                    title: {
+                                        '@id': 'lcn:boostAttachmentTitle',
+                                        '@type': 'xsd:string',
+                                    },
+                                    url: {
+                                        '@id': 'lcn:boostAttachmentUrl',
+                                        '@type': 'xsd:string',
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            ],
+            type: ['VerifiableCredential', 'OpenBadgeCredential', 'BoostCredential'],
+            issuer: did,
+            issuanceDate,
+            name: boostName,
+            expirationDate,
+            credentialSubject: {
+                id: subject,
+                type: ['AchievementSubject'],
+                achievement: {
+                    id: achievementId,
+                    type: ['Achievement'],
+                    achievementType: achievementType,
+                    name: achievementName,
+                    description: achievementDescription,
+                    image: achievementImage,
+                    criteria: {
+                        narrative: achievementNarrative,
+                    },
+                },
+            },
+            display,
+            image: boostImage,
+            attachments,
+        }),
     };
