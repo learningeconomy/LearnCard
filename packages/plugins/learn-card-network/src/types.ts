@@ -1,6 +1,6 @@
 import type { DID } from 'dids';
 import { LCNProfile, UnsignedVC, VC, VP, SentCredentialInfo, JWE, Boost } from '@learncard/types';
-import { Plugin, ProofOptions } from '@learncard/core';
+import { Plugin, ProofOptions, VerifyExtension } from '@learncard/core';
 
 /** @group LearnCardNetwork Plugin */
 export type LearnCardNetworkPluginDependentMethods = {
@@ -73,3 +73,7 @@ export type LearnCardNetworkPlugin = Plugin<
     'id',
     LearnCardNetworkPluginDependentMethods
 >;
+
+/** @group VerifyBoostPlugin Plugin */
+export type VerifyBoostPlugin = Plugin<'VerifyBoost', any, VerifyExtension>;
+

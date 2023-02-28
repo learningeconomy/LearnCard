@@ -6,10 +6,13 @@ import {
     VCValidator,
     VPValidator,
 } from '@learncard/types';
-import { LearnCard } from '@learncard/core';
+import { LearnCard, VerifyExtension } from '@learncard/core';
 
-import { LearnCardNetworkPluginDependentMethods, LearnCardNetworkPlugin } from './types';
-
+import {
+    LearnCardNetworkPluginDependentMethods,
+    LearnCardNetworkPlugin,
+    VerifyBoostPlugin,
+} from './types';
 export * from './types';
 
 /**
@@ -338,6 +341,11 @@ export const getLearnCardNetworkPlugin = async (
                     boost.credentialSubject.id = targetProfile.did;
                 }
 
+                // Embed the boostURI into the boost credential for verification purposes.
+                if (boost?.type?.includes('BoostCredential')) {
+                    boost.boostId = boostUri;
+                }
+
                 const vc = await _learnCard.invoke.issueCredential(boost);
 
                 if (!encrypt) {
@@ -374,3 +382,47 @@ export const getLearnCardNetworkPlugin = async (
         },
     };
 };
+
+/**
+ * @group Plugins
+ */
+export const getVerifyBoostPlugin = (
+    learnCard: LearnCard<any, any, VerifyExtension>
+): VerifyBoostPlugin => ({
+    name: 'VerifyBoost',
+    displayName: 'Verify Boost Extension',
+    description: 'Adds a check for validating Boost Credentials.',
+    methods: {
+        verifyCredential: async (_learnCard, credential) => {
+            const verificationCheck = await learnCard.invoke.verifyCredential(credential);
+            const boostCredential = credential?.boostCredential;
+            try {
+                if (boostCredential) {
+                    const verifyBoostCredential = await learnCard.invoke.verifyCredential(
+                        boostCredential
+                    );
+                    if (!boostCredential?.boostId && !credential?.boostId) {
+                        verificationCheck.warnings.push(
+                            'boost warning: no boostIds in credential.'
+                        );
+                    }
+                    if (verifyBoostCredential.errors?.length > 0) {
+                        verificationCheck.errors = [
+                            ...(verifyBoostCredential.errors || []),
+                            ...(verificationCheck.errors || []),
+                        ];
+                    } else if (boostCredential?.boostId !== credential?.boostId) {
+                        verificationCheck.errors.push(
+                            'boost error: credential boostId does not match boost wrapper certificate.'
+                        );
+                    } else {
+                        verificationCheck.checks.push('boost');
+                    }
+                }
+            } catch (e) {
+                verificationCheck.errors.push('boost error: could not validate boost');
+            }
+            return verificationCheck;
+        },
+    },
+});
