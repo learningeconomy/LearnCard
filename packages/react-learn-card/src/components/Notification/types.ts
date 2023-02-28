@@ -38,7 +38,7 @@ export const NotificationTypeStyles: {
         textStyles: 'text-cyan-600 capitalize',
         iconCircleStyles: 'bg-cyan-600',
         IconComponent: Coins,
-        typeText: 'Curreny',
+        typeText: 'Currency',
     },
     [NotificationTypeEnum.SocialBadges]: {
         viewButtonStyles: 'border-cyan-600 text-cyan-600',
