@@ -6,6 +6,7 @@ import User from '../svgs/User';
 import Briefcase from '../svgs/Briefcase';
 import Lightbulb from '../svgs/Lightbulb';
 import Graduation from '../svgs/Graduation';
+import AwardRibbon from '../svgs/AwardRibbon';
 
 export type NotificationProps = {
     notificationType: NotificationTypeEnum;
@@ -27,6 +28,14 @@ export const NotificationTypeStyles = {
         textStyles: 'text-cyan-600 capitalize',
         iconCircleStyles: 'bg-cyan-600',
         IconComponent: Coins,
+    },
+    [NotificationTypeEnum.SocialBadges]: {
+        viewButtonStyles: 'border-cyan-600 text-cyan-600',
+        unclaimedButtonStyles: 'text-white bg-cyan-600 border-cyan-600',
+        claimedButtonStyles: 'text-cyan-600 bg-cyan-50 border-cyan-50',
+        textStyles: 'text-cyan-600 capitalize',
+        iconCircleStyles: 'bg-cyan-600',
+        IconComponent: AwardRibbon,
     },
     [NotificationTypeEnum.ID]: {
         viewButtonStyles: 'border-yellow-400 text-yellow-400',
