@@ -134,7 +134,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                     text={title ?? ''}
                     width={((headerWidth ?? 290) - 40).toString()}
                     options={{ maxSize: 32, minSize: 20, multiLine: true }}
-                    className="text-[#18224E] leading-[100%] text-shadow text-[32px]"
+                    className="vc-card-header-main-title text-[#18224E] leading-[100%] text-shadow text-[32px]"
                 />
             </h1>
 
