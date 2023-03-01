@@ -254,8 +254,10 @@ export type BoostSmallCardProps = {
     customHeaderClass?: string;
     showChecked?: boolean;
     checkStatus?: boolean;
+    customButtonComponent?: React.ReactNode;
+    arrowOnClick?: () => void;
+    buttonOnClick?: () => void;
     onClick?: () => void;
-    flipped?: boolean;
 };
 
 

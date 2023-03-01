@@ -13,8 +13,9 @@ export const BoostSmallCard: React.FC<BoostSmallCardProps> = ({
     onClick = () => {},
     showChecked,
     checkStatus,
-    flipped,
-    subHeaderComponent,
+    arrowOnClick,
+    buttonOnClick,
+    customButtonComponent,
 }) => {
     const thumbClass = `bg-${TYPE_TO_WALLET_DARK_COLOR[type]}` ?? 'bg-grayscale-50';
     const defaultThumbClass = `flex h-[110px] my-[10px] mx-auto ${thumbClass} w-[110px] overflow-hidden flex-col justify-center items-center w-full rounded-full ${customThumbClass}`;
@@ -23,14 +24,11 @@ export const BoostSmallCard: React.FC<BoostSmallCardProps> = ({
     const checkBtnClass = checkStatus ? 'generic-vc-card checked' : 'generic-vc-card unchecked';
     const defaultHeaderClass = `flex generic-card-title w-full justify-center ${customHeaderClass}`;
 
-
     return (
         <div
             onClick={onClick}
-            className={`flex generic-display-card-simple bg-white flex-col shadow-[0_0_8px_0px_rgba(0,0,0,0.2)] relative $ py-[0px] px-[0px] w-[160px] h-[215px] rounded-[20px] overflow-hidden ${className}`}
+            className={`flex generic-display-card-simple bg-white flex-col shadow-[0_0_8px_0px_rgba(0,0,0,0.2)] relative $ py-[0px] px-[0px] w-[160px] h-[280px] rounded-[20px] overflow-hidden ${className}`}
         >
-          
-
             <section className={defaultThumbClass}>
                 {thumbImgSrc && thumbImgSrc?.trim() !== '' && (
                     <img
@@ -53,8 +51,17 @@ export const BoostSmallCard: React.FC<BoostSmallCardProps> = ({
                 </p>
             </section>
 
-            <section className="small-boost-card-footer flex justify-center items-center">
-                <div className="boost-btn-click">Boost</div>
+            <section className="small-boost-card-footer flex justify-center items-center absolute bottom-[15px] w-full">
+                {customButtonComponent && customButtonComponent}
+
+                {!customButtonComponent && (
+                    <div
+                        onClick={buttonOnClick}
+                        className="boost-btn-click bg-indigo-500 rounded-[40px] w-[140px] h-[48px] text-white flex justify-center items-center"
+                    >
+                        Boost
+                    </div>
+                )}
             </section>
             {showChecked && (
                 <div className="check-btn-overlay absolute top-[5px] left-[5px]">
