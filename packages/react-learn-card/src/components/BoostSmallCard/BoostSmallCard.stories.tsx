@@ -17,7 +17,4 @@ BoostSmallCardTest.args = {
     type: WalletCategoryTypes.skills,
     thumbImgSrc: '',
     arrowOnClick: () => console.log('arrowOnClick'),
-    onClick: () => {
-        console.log('//goodbye world');
-    },
 };

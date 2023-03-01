@@ -4,7 +4,7 @@ import {
     Profile,
     CredentialSubject,
 } from '@learncard/types';
-import React from 'react';
+import React, { ReactNode } from 'react';
 
 export enum Icons {
     coinsIcon,
@@ -252,12 +252,14 @@ export type BoostSmallCardProps = {
     thumbImgSrc?: string;
     customThumbClass?: string;
     customHeaderClass?: string;
+    customBodyClass?: string;
     showChecked?: boolean;
     checkStatus?: boolean;
     customButtonComponent?: React.ReactNode;
+    customBodyComponent?: React.ReactNode;
     arrowOnClick?: () => void;
     buttonOnClick?: () => void;
-    onClick?: () => void;
+    onCheckClick?: () => void;
 };
 
 

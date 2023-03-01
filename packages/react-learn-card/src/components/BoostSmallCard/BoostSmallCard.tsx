@@ -11,7 +11,7 @@ export const BoostSmallCard: React.FC<BoostSmallCardProps> = ({
     customHeaderClass = '',
     type = WalletCategoryTypes.achievements,
     className,
-    onClick = () => {},
+    onCheckClick,
     showChecked,
     checkStatus,
     arrowOnClick,
@@ -31,7 +31,6 @@ export const BoostSmallCard: React.FC<BoostSmallCardProps> = ({
 
     return (
         <div
-            onClick={onClick}
             className={`flex generic-display-card-simple bg-white flex-col shadow-[0_0_8px_0px_rgba(0,0,0,0.2)] relative $ py-[0px] px-[0px] w-[160px] h-[280px] rounded-[20px] overflow-hidden ${className}`}
         >
             <section className={defaultThumbClass}>
@@ -73,14 +72,15 @@ export const BoostSmallCard: React.FC<BoostSmallCardProps> = ({
                 <div className="check-btn-overlay absolute top-[5px] left-[5px]">
                     <CircleCheckButton
                         checked={checkStatus}
-                        onClick={onClick}
+                        onClick={onCheckClick}
                         className={checkBtnClass}
                     />
                 </div>
             )}
 
             {arrowOnClick && (
-                <div
+                <button
+                    type="button"
                     onClick={arrowOnClick}
                     className="arrow-btn-overlay absolute top-[52px] right-[2px]"
                 >
@@ -89,7 +89,7 @@ export const BoostSmallCard: React.FC<BoostSmallCardProps> = ({
                         src={CaretRightFilled ?? ''}
                         alt="Right Caret"
                     />
-                </div>
+                </button>
             )}
         </div>
     );
