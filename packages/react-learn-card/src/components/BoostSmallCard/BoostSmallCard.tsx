@@ -1,9 +1,9 @@
 import React from 'react';
-import { GenericCardProps, WalletCategoryTypes } from '../../types';
+import { BoostSmallCardProps, WalletCategoryTypes } from '../../types';
 import { TYPE_TO_IMG_SRC, TYPE_TO_WALLET_DARK_COLOR } from '../../constants';
 import { CircleCheckButton } from '../CircleCheckButton';
 
-export const GenericCard: React.FC<GenericCardProps> = ({
+export const BoostSmallCard: React.FC<BoostSmallCardProps> = ({
     title = 'Title Lorem Ipsum',
     thumbImgSrc,
     customThumbClass = '',
@@ -14,6 +14,7 @@ export const GenericCard: React.FC<GenericCardProps> = ({
     showChecked,
     checkStatus,
     flipped,
+    subHeaderComponent,
 }) => {
     const thumbClass = `bg-${TYPE_TO_WALLET_DARK_COLOR[type]}` ?? 'bg-grayscale-50';
     const defaultThumbClass = `flex h-[110px] m-auto ${thumbClass} w-[140px] overflow-hidden flex-col justify-center items-center w-full rounded-[20px] ${customThumbClass}`;
@@ -64,4 +65,4 @@ export const GenericCard: React.FC<GenericCardProps> = ({
     );
 };
 
-export default GenericCard;
+export default BoostSmallCard;

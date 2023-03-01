@@ -240,11 +240,24 @@ export type GenericCardProps = {
     customThumbClass?: string;
     customHeaderClass?: string;
     showChecked?: boolean;
-    subHeaderComponent?: React.ReactNode;
     checkStatus?: boolean;
     onClick?: () => void;
     flipped?: boolean;
 };
+
+export type BoostSmallCardProps = {
+    title?: string;
+    className?: string;
+    type?: WalletCategoryTypes;
+    thumbImgSrc?: string;
+    customThumbClass?: string;
+    customHeaderClass?: string;
+    showChecked?: boolean;
+    checkStatus?: boolean;
+    onClick?: () => void;
+    flipped?: boolean;
+};
+
 
 export type Attachment = {
     title: string;
