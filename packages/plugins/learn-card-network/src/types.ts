@@ -1,5 +1,14 @@
 import type { DID } from 'dids';
-import { LCNProfile, UnsignedVC, VC, VP, SentCredentialInfo, JWE, Boost } from '@learncard/types';
+import {
+    LCNProfile,
+    UnsignedVC,
+    VC,
+    VP,
+    SentCredentialInfo,
+    JWE,
+    Boost,
+    BoostRecipientInfo,
+} from '@learncard/types';
 import { Plugin, ProofOptions, VerifyExtension } from '@learncard/core';
 
 /** @group LearnCardNetwork Plugin */
@@ -56,6 +65,11 @@ export type LearnCardNetworkPluginMethods = {
         metadata?: Partial<Omit<Boost, 'uri'>>
     ) => Promise<string>;
     getBoosts: () => Promise<{ name?: string; uri: string }[]>;
+    getBoostRecipients: (
+        uri: string,
+        limit?: number,
+        skip?: number
+    ) => Promise<BoostRecipientInfo[]>;
     updateBoost: (uri: string, updates: Partial<Omit<Boost, 'uri'>>) => Promise<boolean>;
     deleteBoost: (uri: string) => Promise<boolean>;
     sendBoost: (profileId: string, boostUri: string, encrypt?: boolean) => Promise<string>;
@@ -76,4 +90,3 @@ export type LearnCardNetworkPlugin = Plugin<
 
 /** @group VerifyBoostPlugin Plugin */
 export type VerifyBoostPlugin = Plugin<'VerifyBoost', any, VerifyExtension>;
-
