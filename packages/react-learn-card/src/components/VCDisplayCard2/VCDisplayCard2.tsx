@@ -36,6 +36,7 @@ export type VCDisplayCard2Props = {
     getVideoMetadata?: (url: string) => VideoMetadata;
     onMediaAttachmentClick?: (url: string) => void;
     bottomRightIcon?: CredentialIconType;
+    customFooterComponent?: React.ReactNode;
 };
 
 export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
@@ -52,6 +53,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     getVideoMetadata,
     onMediaAttachmentClick,
     bottomRightIcon,
+    customFooterComponent,
 }) => {
     const {
         title = '',
@@ -208,23 +210,31 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 </div>
             </div>
             <footer className="vc-card-footer w-full flex justify-between p-[5px] mt-[5px]">
-                <VCVerificationCheckWithSpinner
-                    spinnerSize="40px"
-                    size={'32px'}
-                    loading={verificationInProgress}
-                />
-                <div className="vc-footer-text font-montserrat flex flex-col items-center justify-center text-[12px] font-[700] leading-[15px]">
-                    <span className="text-[#4F4F4F]">Verified Credential</span>
-                    <span className="vc-footer-status uppercase" style={{ color: statusColor }}>
-                        {worstVerificationStatus}
-                    </span>
-                </div>
-                <div
-                    className="vc-footer-icon rounded-[20px] h-[40px] w-[40px] flex items-center justify-center overflow-hidden"
-                    style={{ backgroundColor: bottomRightIcon?.color ?? '#6366F1' }}
-                >
-                    {bottomRightIcon?.image ?? <AwardRibbon />}
-                </div>
+                {customFooterComponent && customFooterComponent}
+                {!customFooterComponent && (
+                    <>
+                        <VCVerificationCheckWithSpinner
+                            spinnerSize="40px"
+                            size={'32px'}
+                            loading={verificationInProgress}
+                        />
+                        <div className="vc-footer-text font-montserrat flex flex-col items-center justify-center text-[12px] font-[700] leading-[15px]">
+                            <span className="text-[#4F4F4F]">Verified Credential</span>
+                            <span
+                                className="vc-footer-status uppercase"
+                                style={{ color: statusColor }}
+                            >
+                                {worstVerificationStatus}
+                            </span>
+                        </div>
+                        <div
+                            className="vc-footer-icon rounded-[20px] h-[40px] w-[40px] flex items-center justify-center overflow-hidden"
+                            style={{ backgroundColor: bottomRightIcon?.color ?? '#6366F1' }}
+                        >
+                            {bottomRightIcon?.image ?? <AwardRibbon />}
+                        </div>
+                    </>
+                )}
             </footer>
         </section>
     );
