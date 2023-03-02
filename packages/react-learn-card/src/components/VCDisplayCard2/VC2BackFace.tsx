@@ -84,7 +84,9 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
             )}
             {/* {credential.notes && <TruncateTextBox headerText="Notes" text={credential.notes} />} */}
 
-            <VerificationsBox verificationItems={verificationItems} />
+            {verificationItems && verificationItems.length > 0 && (
+                <VerificationsBox verificationItems={verificationItems} />
+            )}
         </section>
     );
 };
