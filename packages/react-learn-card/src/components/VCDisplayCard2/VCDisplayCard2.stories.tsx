@@ -24,10 +24,32 @@ export default {
 
 const Template: Story<VCDisplayCard2Props> = args => <VCDisplayCard2 {...args} />;
 
+const issueHistoryDummyData = [
+    {
+        id: '1',
+        name: 'John Doe',
+        thumb: 'https://picsum.photos/200',
+        date: '2020-01-01',
+    },
+    {
+        id: '2',
+        name: 'Jane Doe',
+        thumb: 'https://picsum.photos/200',
+        date: '2020-01-01',
+    },
+    {
+        id: '3',
+        name: 'John Doe',
+        thumb: 'https://picsum.photos/200',
+        date: '2020-01-01',
+    },
+];
+
 export const BoostCredentialTest = Template.bind({});
 BoostCredentialTest.args = {
     credential: BoostCredential,
     handleXClick: () => console.log('X clicked!'),
+    issueHistory: issueHistoryDummyData,
     // customFooterComponent: <div>Custom Footer</div>,
     // customBodyCardComponent: <div>Custom Body</div>,
     verificationItems: [

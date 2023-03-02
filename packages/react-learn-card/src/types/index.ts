@@ -246,6 +246,7 @@ export type GenericCardProps = {
 };
 
 export type IssueHistory = {
+    id?: string | number;
     name?: string;
     thumb?: string;
     date?: string;
