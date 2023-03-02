@@ -28,6 +28,7 @@ export const BoostCredentialTest = Template.bind({});
 BoostCredentialTest.args = {
     credential: BoostCredential,
     // customFooterComponent: <div>Custom Footer</div>,
+    // customBodyCardComponent: <div>Custom Body</div>,
     verificationItems: [
         TestVerificationItems.SUCCESS.PROOF,
         TestVerificationItems.SUCCESS.NOT_EXPIRED,

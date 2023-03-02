@@ -37,6 +37,7 @@ export type VCDisplayCard2Props = {
     onMediaAttachmentClick?: (url: string) => void;
     bottomRightIcon?: CredentialIconType;
     customFooterComponent?: React.ReactNode;
+    customBodyCardComponent?: React.ReactNode;
 };
 
 export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
@@ -54,6 +55,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     onMediaAttachmentClick,
     bottomRightIcon,
     customFooterComponent,
+    customBodyCardComponent,
 }) => {
     const {
         title = '',
@@ -181,6 +183,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                             title={title}
                             subjectImageComponent={subjectImageComponent}
                             issuerImageComponent={issuerImageComponent}
+                            customBodyCardComponent={customBodyCardComponent}
                             createdAt={createdAt ?? ''}
                             imageUrl={imageUrl}
                         />
