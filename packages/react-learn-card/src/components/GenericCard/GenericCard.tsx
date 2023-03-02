@@ -24,7 +24,7 @@ export const GenericCard: React.FC<GenericCardProps> = ({
     const flippedClass = flipped ? 'flex-col-reverse' : 'flex-col';
 
     return (
-        <button
+        <div
             onClick={onClick}
             className={`flex generic-display-card-simple bg-white ${flippedClass} shadow-[0_0_8px_0px_rgba(0,0,0,0.2)] relative $ py-[0px] px-[0px] w-[160px] h-[215px] rounded-[20px] overflow-hidden ${className}`}
         >
@@ -33,6 +33,7 @@ export const GenericCard: React.FC<GenericCardProps> = ({
                     {title}
                 </p>
             </section>
+
             <section className={defaultThumbClass}>
                 {thumbImgSrc && thumbImgSrc?.trim() !== '' && (
                     <img
@@ -59,7 +60,7 @@ export const GenericCard: React.FC<GenericCardProps> = ({
                     />
                 </div>
             )}
-        </button>
+        </div>
     );
 };
 
