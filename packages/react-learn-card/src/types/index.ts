@@ -268,6 +268,7 @@ export type BoostSmallCardProps = {
     arrowOnClick?: () => void;
     buttonOnClick?: () => void;
     onCheckClick?: () => void;
+    issueHistory: IssueHistory[];
 };
 
 export type Attachment = {
