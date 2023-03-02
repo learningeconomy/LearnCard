@@ -256,6 +256,7 @@ export type BoostSmallCardProps = {
     showChecked?: boolean;
     checkStatus?: boolean;
     customButtonComponent?: React.ReactNode;
+    customThumbComponent?: React.ReactNode;
     customBodyComponent?: React.ReactNode;
     arrowOnClick?: () => void;
     buttonOnClick?: () => void;
