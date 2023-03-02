@@ -4,6 +4,7 @@ import { TYPE_TO_IMG_SRC, TYPE_TO_WALLET_DARK_COLOR } from '../../constants';
 import { CircleCheckButton } from '../CircleCheckButton';
 import CaretRightFilled from '../../assets/images/CaretRightFilled.svg';
 import DefaultFace from '../../assets/images/default-face.jpeg';
+import AddAwardLight from '../../assets/images/addawardlight.svg';
 
 export const BoostSmallCard: React.FC<BoostSmallCardProps> = ({
     title = 'Title Lorem Ipsum',
@@ -30,7 +31,7 @@ export const BoostSmallCard: React.FC<BoostSmallCardProps> = ({
     const checkBtnClass = checkStatus ? 'generic-vc-card checked' : 'generic-vc-card unchecked';
     const defaultHeaderClass = `flex generic-card-title w-full justify-center ${customHeaderClass}`;
     const defaultBodyClass = ` boost-small-card-body flex justify-center items-center text-center text-[14px] overflow-hidden text-grayscale-500 p-[10px] ${customBodyClass}`;
-    const defaultButtonClass = `shadow-bottom boost-btn-click rounded-[40px] w-[140px] h-[48px] text-white flex justify-center items-center ${headerBgColor}`;
+    const defaultButtonClass = `small-boost-boost-btn flex shadow-bottom boost-btn-click rounded-[40px] w-[140px] h-[48px] text-white flex justify-center items-center ${headerBgColor}`;
 
     const issueHistoryDisplay = issueHistory?.length > 3 ? issueHistory?.slice(0, 3) : issueHistory;
     const renderIssueHistory = issueHistoryDisplay?.map(issueItem => {
@@ -93,7 +94,8 @@ export const BoostSmallCard: React.FC<BoostSmallCardProps> = ({
 
                 {!customButtonComponent && (
                     <div onClick={buttonOnClick} className={defaultButtonClass}>
-                        Boost
+                        <img className="h-[25px] mr-[7px] text-" src={AddAwardLight} />
+                        <span className="font-mouse text-[25px] tracking-wider">BOOST!</span>
                     </div>
                 )}
             </section>
