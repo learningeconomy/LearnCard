@@ -245,6 +245,12 @@ export type GenericCardProps = {
     flipped?: boolean;
 };
 
+export type IssueHistory = {
+    name?: string;
+    thumb?: string;
+    date?: string;
+};
+
 export type BoostSmallCardProps = {
     title?: string;
     className?: string;
@@ -262,7 +268,6 @@ export type BoostSmallCardProps = {
     buttonOnClick?: () => void;
     onCheckClick?: () => void;
 };
-
 
 export type Attachment = {
     title: string;

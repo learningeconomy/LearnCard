@@ -14,7 +14,7 @@ import {
     getColorForVerificationStatus,
     getInfoFromCredential,
 } from '../../helpers/credential.helpers';
-import { BoostAchievementCredential } from '../../types';
+import { BoostAchievementCredential, IssueHistory } from '../../types';
 import { MediaMetadata, VideoMetadata } from './MediaAttachmentsBox';
 
 export type CredentialIconType = {
@@ -38,6 +38,7 @@ export type VCDisplayCard2Props = {
     bottomRightIcon?: CredentialIconType;
     customFooterComponent?: React.ReactNode;
     customBodyCardComponent?: React.ReactNode;
+    issueHistory?: IssueHistory[];
 };
 
 export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
@@ -56,6 +57,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     bottomRightIcon,
     customFooterComponent,
     customBodyCardComponent,
+    issueHistory,
 }) => {
     const {
         title = '',
@@ -193,6 +195,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                             credential={credential}
                             verificationItems={verificationItems}
                             // convertTagsToSkills={convertTagsToSkills}
+                            issueHistory={issueHistory}
                             getFileMetadata={getFileMetadata}
                             getVideoMetadata={getVideoMetadata}
                             onMediaAttachmentClick={onMediaAttachmentClick}

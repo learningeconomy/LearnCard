@@ -27,6 +27,7 @@ const Template: Story<VCDisplayCard2Props> = args => <VCDisplayCard2 {...args} /
 export const BoostCredentialTest = Template.bind({});
 BoostCredentialTest.args = {
     credential: BoostCredential,
+    handleXClick: () => console.log('X clicked!'),
     // customFooterComponent: <div>Custom Footer</div>,
     // customBodyCardComponent: <div>Custom Body</div>,
     verificationItems: [
