@@ -34,6 +34,7 @@ export const Notification: React.FC<NotificationProps> = ({
         viewButtonStyles,
         claimedButtonStyles,
         unclaimedButtonStyles,
+        typeText,
     } = NotificationTypeStyles[notificationType];
 
     const claimButtonStyles = isClaimed ? claimedButtonStyles : unclaimedButtonStyles;
@@ -75,7 +76,7 @@ export const Notification: React.FC<NotificationProps> = ({
                             className={`font-semibold p-0 m-0 leading-none tracking-wide line-clamp-1 ${textStyles}`}
                             data-testid="notification-type"
                         >
-                            {notificationType}{' '}
+                            {typeText}{' '}
                             <span
                                 className="text-grayscale-600 normal-case font-normal text-sm"
                                 data-testid="notification-cred-issue-date"
