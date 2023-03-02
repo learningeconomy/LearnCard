@@ -4,6 +4,7 @@ import jobhistoryGraphic from '../../assets/images/walletjobhistory.webp';
 import learningHistoryGraphic from '../../assets/images/walletlearninghistory.webp';
 import skillsGraphic from '../../assets/images/walletskills.webp';
 import achievementsGraphic from '../../assets/images/walletTrophy.webp';
+import badgeGraphic from '../../assets/images/badge.png';
 
 import MiniTrophyIcon from '../../assets/images/minitrophycolored.svg';
 import MiniGradIcon from '../../assets/images/minigradcapcolored.svg';
@@ -23,6 +24,7 @@ export const WALLET_SUBTYPES = {
     CURRENCIES: 'currency',
     LEARNING_HISTORY: 'learningHistory',
     SKILLS: 'skills',
+    SOCIAL_BADGES: 'socialBadges',
 };
 
 export const TYPE_TO_IMG_SRC = {
@@ -32,6 +34,7 @@ export const TYPE_TO_IMG_SRC = {
     [WALLET_SUBTYPES.LEARNING_HISTORY]: learningHistoryGraphic,
     [WALLET_SUBTYPES.CURRENCIES]: coinsGraphic,
     [WALLET_SUBTYPES.SKILLS]: skillsGraphic,
+    [WALLET_SUBTYPES.SOCIAL_BADGES]: badgeGraphic,
 };
 
 export const TYPE_TO_WALLET_COLOR = {
@@ -41,4 +44,5 @@ export const TYPE_TO_WALLET_COLOR = {
     [WALLET_SUBTYPES.LEARNING_HISTORY]: 'emerald-300',
     [WALLET_SUBTYPES.CURRENCIES]: 'cyan-200',
     [WALLET_SUBTYPES.SKILLS]: 'indigo-300',
+    [WALLET_SUBTYPES.SOCIAL_BADGES]: 'cyan-200',
 };

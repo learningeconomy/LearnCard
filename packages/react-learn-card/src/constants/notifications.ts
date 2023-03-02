@@ -5,4 +5,5 @@ export enum NotificationTypeEnum {
     Skill = 'skill',
     Job = 'job',
     Learning = 'learning',
+    SocialBadges = 'socialBadge',
 }

@@ -21,5 +21,5 @@ NotificationTest.args = {
     issuerName: "Jack Daniel's",
     issueDate: '04 Apr 2022',
     className: '',
-    notificationType: NotificationTypeEnum.Achievement,
+    notificationType: NotificationTypeEnum.SocialBadges,
 };

@@ -245,6 +245,13 @@ export type GenericCardProps = {
     flipped?: boolean;
 };
 
+export type IssueHistory = {
+    id?: string | number;
+    name?: string;
+    thumb?: string;
+    date?: string;
+};
+
 export type BoostSmallCardProps = {
     title?: string;
     className?: string;
@@ -256,12 +263,13 @@ export type BoostSmallCardProps = {
     showChecked?: boolean;
     checkStatus?: boolean;
     customButtonComponent?: React.ReactNode;
+    customThumbComponent?: React.ReactNode;
     customBodyComponent?: React.ReactNode;
     arrowOnClick?: () => void;
     buttonOnClick?: () => void;
     onCheckClick?: () => void;
+    issueHistory: IssueHistory[];
 };
-
 
 export type Attachment = {
     title: string;

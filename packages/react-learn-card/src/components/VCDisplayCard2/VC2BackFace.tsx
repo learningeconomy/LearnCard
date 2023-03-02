@@ -4,10 +4,10 @@ import { format } from 'date-fns';
 import MediaAttachmentsBox, { MediaMetadata, VideoMetadata } from './MediaAttachmentsBox';
 import TruncateTextBox from './TruncateTextBox';
 // import SkillsBox from './SkillsBox';
-
+import IssueHistoryBox from './IssueHistoryBox';
 import { VC, VerificationItem } from '@learncard/types';
 import VerificationsBox from './VerificationsBox';
-import { BoostAchievementCredential } from '../../types';
+import { BoostAchievementCredential, IssueHistory } from '../../types';
 
 /*
 const defaultTagsToSkills = (tags: string[]) => {
@@ -25,6 +25,7 @@ type VC2BackFaceProps = {
     getFileMetadata?: (url: string) => MediaMetadata;
     getVideoMetadata?: (url: string) => VideoMetadata;
     onMediaAttachmentClick?: (url: string) => void;
+    issueHistory?: IssueHistory[];
 };
 
 const VC2BackFace: React.FC<VC2BackFaceProps> = ({
@@ -34,6 +35,7 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
     getFileMetadata,
     getVideoMetadata,
     onMediaAttachmentClick,
+    issueHistory,
 }) => {
     const expiration = credential.expirationDate
         ? format(new Date(credential.expirationDate), 'MMM dd, yyyy')
@@ -53,7 +55,7 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
     return (
         <section className="vc-back-face flex flex-col gap-[20px] w-full px-[15px]">
             <TruncateTextBox
-                headerText="Description"
+                headerText="About"
                 text={achievement?.description}
                 className="description-box"
             >
@@ -67,6 +69,11 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
                 <TruncateTextBox headerText="Criteria" text={criteria} className="criteria-box" />
             )}
             {/* {skillsObject && <SkillsBox skillsObject={skillsObject} />} */}
+
+            {issueHistory && issueHistory?.length > 0 && (
+                <IssueHistoryBox issueHistory={issueHistory} />
+            )}
+
             {credential.attachments && credential.attachments.length > 0 && (
                 <MediaAttachmentsBox
                     attachments={credential.attachments}
@@ -77,7 +84,9 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
             )}
             {/* {credential.notes && <TruncateTextBox headerText="Notes" text={credential.notes} />} */}
 
-            <VerificationsBox verificationItems={verificationItems} />
+            {verificationItems && verificationItems.length > 0 && (
+                <VerificationsBox verificationItems={verificationItems} />
+            )}
         </section>
     );
 };

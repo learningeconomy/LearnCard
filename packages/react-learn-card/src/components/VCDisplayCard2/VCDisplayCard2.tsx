@@ -14,7 +14,7 @@ import {
     getColorForVerificationStatus,
     getInfoFromCredential,
 } from '../../helpers/credential.helpers';
-import { BoostAchievementCredential } from '../../types';
+import { BoostAchievementCredential, IssueHistory } from '../../types';
 import { MediaMetadata, VideoMetadata } from './MediaAttachmentsBox';
 
 export type CredentialIconType = {
@@ -37,6 +37,8 @@ export type VCDisplayCard2Props = {
     onMediaAttachmentClick?: (url: string) => void;
     bottomRightIcon?: CredentialIconType;
     customFooterComponent?: React.ReactNode;
+    customBodyCardComponent?: React.ReactNode;
+    issueHistory?: IssueHistory[];
 };
 
 export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
@@ -54,6 +56,8 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     onMediaAttachmentClick,
     bottomRightIcon,
     customFooterComponent,
+    customBodyCardComponent,
+    issueHistory,
 }) => {
     const {
         title = '',
@@ -112,7 +116,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     };
 
     return (
-        <section className="vc-display-card font-mouse flex flex-col items-center border-solid border-[5px] border-white h-[700px] rounded-[30px] overflow-visible z-10 max-w-[400px] relative bg-white">
+        <section className="vc-display-card font-mouse flex flex-col items-center border-solid border-[5px] border-white rounded-[30px] overflow-visible z-10 max-w-[400px] relative bg-white">
             <RibbonEnd
                 side="left"
                 className="absolute left-[-30px] top-[50px] z-0"
@@ -181,6 +185,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                             title={title}
                             subjectImageComponent={subjectImageComponent}
                             issuerImageComponent={issuerImageComponent}
+                            customBodyCardComponent={customBodyCardComponent}
                             createdAt={createdAt ?? ''}
                             imageUrl={imageUrl}
                         />
@@ -190,6 +195,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                             credential={credential}
                             verificationItems={verificationItems}
                             // convertTagsToSkills={convertTagsToSkills}
+                            issueHistory={issueHistory}
                             getFileMetadata={getFileMetadata}
                             getVideoMetadata={getVideoMetadata}
                             onMediaAttachmentClick={onMediaAttachmentClick}
