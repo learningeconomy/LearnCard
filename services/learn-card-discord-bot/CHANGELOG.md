@@ -1,5 +1,11 @@
 # learn-card-discord-bot
 
+## 1.1.16
+
+### Patch Changes
+
+-   [`a367c2b`](https://github.com/learningeconomy/LearnCard/commit/a367c2b73ac45fcd1df02a358cfcc68884342c02) Thanks [@Custard7](https://github.com/Custard7)! - Bump to latest learncard
+
 ## 1.1.15
 
 ### Patch Changes

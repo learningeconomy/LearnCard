@@ -1,5 +1,13 @@
 # @learncard/meta-mask-snap
 
+## 1.0.31
+
+### Patch Changes
+
+-   [#223](https://github.com/learningeconomy/LearnCard/pull/223) [`2707350`](https://github.com/learningeconomy/LearnCard/commit/27073505a7e0c4f4ec8fef191fbff16d97c5d74a) Thanks [@goblincore](https://github.com/goblincore)! - Add Small Boost Card and update VCDisplayCard2 with additional props for overriding parts of the card display (body, thumb, footer) and adds support for displaying an issue history
+
+-   [#221](https://github.com/learningeconomy/LearnCard/pull/221) [`c997138`](https://github.com/learningeconomy/LearnCard/commit/c9971386188169859bbe9e8ef7da6572432ed3f0) Thanks [@gerardopar](https://github.com/gerardopar)! - Update notification types - ( add social badge )
+
 ## 1.0.30
 
 ### Patch Changes
