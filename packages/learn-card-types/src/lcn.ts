@@ -26,3 +26,11 @@ export const BoostValidator = z.object({
     category: z.string().optional(),
 });
 export type Boost = z.infer<typeof BoostValidator>;
+
+export const BoostRecipientValidator = z.object({
+    to: LCNProfileValidator,
+    from: z.string(),
+    received: z.string(),
+});
+
+export type BoostRecipientInfo = z.infer<typeof BoostRecipientValidator>;
