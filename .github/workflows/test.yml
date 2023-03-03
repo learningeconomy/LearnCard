@@ -55,6 +55,8 @@ jobs:
 
       - name: Run tests
         run: pnpm exec nx affected --target=test --base=origin/main --head=HEAD
+        env:
+          SEED: ${{ secrets.SEED }}
 
       - name: Save nx cache
         uses: actions/cache/save@v3
