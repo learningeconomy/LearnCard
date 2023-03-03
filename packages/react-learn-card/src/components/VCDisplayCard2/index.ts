@@ -4,6 +4,7 @@
 
 export * from "./FitText";
 export * from "./InfoBox";
+export * from "./IssueHistoryBox";
 export * from "./MediaAttachmentsBox";
 export * from "./RibbonEnd";
 export * from "./SkillsBox";
