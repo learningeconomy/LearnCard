@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.5.2
+
+### Patch Changes
+
+-   [#226](https://github.com/learningeconomy/LearnCard/pull/226) [`ad7f281`](https://github.com/learningeconomy/LearnCard/commit/ad7f281d6ed1fe1c33601defe71f2714f8675f45) Thanks [@goblincore](https://github.com/goblincore)! - Add additional optional prop to VCDisplayCard2 and fix VC type display
+
 ## 2.5.1
 
 ### Patch Changes
