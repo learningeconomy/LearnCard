@@ -117,7 +117,6 @@ export const BoostSmallCard: React.FC<BoostSmallCardProps> = ({
                     </div>
                 )}
             </div>
-
             {arrowOnClick && (
                 <button
                     type="button"
