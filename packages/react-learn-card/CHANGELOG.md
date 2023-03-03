@@ -1,5 +1,17 @@
 # @welibraryos/react-learn-card
 
+## 2.5.1
+
+### Patch Changes
+
+-   [#225](https://github.com/learningeconomy/LearnCard/pull/225) [`d29a2d5`](https://github.com/learningeconomy/LearnCard/commit/d29a2d5dd0d4ac1c7f178dc0d00956561012a1fb) Thanks [@gerardopar](https://github.com/gerardopar)! - fix notification tests
+
+-   [#223](https://github.com/learningeconomy/LearnCard/pull/223) [`2707350`](https://github.com/learningeconomy/LearnCard/commit/27073505a7e0c4f4ec8fef191fbff16d97c5d74a) Thanks [@goblincore](https://github.com/goblincore)! - Add Small Boost Card and update VCDisplayCard2 with additional props for overriding parts of the card display (body, thumb, footer) and adds support for displaying an issue history
+
+-   [#221](https://github.com/learningeconomy/LearnCard/pull/221) [`c997138`](https://github.com/learningeconomy/LearnCard/commit/c9971386188169859bbe9e8ef7da6572432ed3f0) Thanks [@gerardopar](https://github.com/gerardopar)! - Update notification types - ( add social badge )
+
+-   [#224](https://github.com/learningeconomy/LearnCard/pull/224) [`8fbee11`](https://github.com/learningeconomy/LearnCard/commit/8fbee11a07df86ba7d3fdee7430a7288b6ba321f) Thanks [@goblincore](https://github.com/goblincore)! - Update BoostSmallCard with additional click handler prop
+
 ## 2.5.0
 
 ### Minor Changes

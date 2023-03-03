@@ -4,7 +4,7 @@ import {
     Profile,
     CredentialSubject,
 } from '@learncard/types';
-import React from 'react';
+import React, { ReactNode } from 'react';
 
 export enum Icons {
     coinsIcon,
@@ -243,6 +243,33 @@ export type GenericCardProps = {
     checkStatus?: boolean;
     onClick?: () => void;
     flipped?: boolean;
+};
+
+export type IssueHistory = {
+    id?: string | number;
+    name?: string;
+    thumb?: string;
+    date?: string;
+};
+
+export type BoostSmallCardProps = {
+    title?: string;
+    className?: string;
+    type?: WalletCategoryTypes;
+    thumbImgSrc?: string;
+    customThumbClass?: string;
+    customHeaderClass?: string;
+    customBodyClass?: string;
+    showChecked?: boolean;
+    checkStatus?: boolean;
+    customButtonComponent?: React.ReactNode;
+    customThumbComponent?: React.ReactNode;
+    customBodyComponent?: React.ReactNode;
+    arrowOnClick?: () => void;
+    buttonOnClick?: () => void;
+    onCheckClick?: () => void;
+    innerOnClick?: () => void;
+    issueHistory: IssueHistory[];
 };
 
 export type Attachment = {
