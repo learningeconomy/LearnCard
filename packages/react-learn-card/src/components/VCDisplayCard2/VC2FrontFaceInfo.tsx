@@ -15,6 +15,7 @@ type VC2FrontFaceInfoProps = {
     createdAt: string;
     imageUrl?: string;
     customBodyCardComponent?: React.ReactNode;
+    customThumbComponent?: React.ReactNode;
 };
 
 const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
@@ -25,6 +26,7 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
     customBodyCardComponent,
     createdAt,
     imageUrl,
+    customThumbComponent,
 }) => {
     const issuerName = truncateWithEllipsis(getNameFromProfile(issuer ?? ''), 25);
     const issueeName = truncateWithEllipsis(getNameFromProfile(issuee ?? ''), 25);
@@ -56,9 +58,11 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
 
     return (
         <section className="vc-front-face w-full px-[15px] flex flex-col items-center gap-[15px]">
-            {imageUrl && (
+            {imageUrl && !customThumbComponent && (
                 <img className="vc-front-image h-[130px] w-[130px] rounded-[10px]" src={imageUrl} />
             )}
+
+            {customThumbComponent && customThumbComponent}
             <div className="vc-issue-info-box bg-white flex flex-col items-center gap-[5px] rounded-[20px] shadow-bottom px-[15px] py-[20px] w-full">
                 {customBodyCardComponent && customBodyCardComponent}
 

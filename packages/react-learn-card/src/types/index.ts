@@ -19,6 +19,18 @@ export enum Icons {
     award,
 }
 
+export enum LCCategoryEnum {
+    socialBadge = 'Social Badge',
+    achievement = 'Achievement',
+    course = 'Course',
+    job = 'Job',
+    id = 'ID',
+    workHistory = 'Work History',
+    currency = 'Currency',
+    learningHistory = 'Learning History',
+    skill = 'Skill',
+}
+
 export enum LCSubtypes {
     job = 'job',
     achievement = 'achievement',
