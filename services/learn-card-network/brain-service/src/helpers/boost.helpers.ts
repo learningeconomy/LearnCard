@@ -29,8 +29,6 @@ export const verifyCredentialIsDerivedFromBoost = async (
     credential: VC,
     domain: string
 ): Promise<boolean> => {
-    console.log('Compare boost & credential!');
-
     if (!boost || !credential) {
         console.error('Either boost or credential do not exist.', credential, credential);
         return false;
@@ -45,12 +43,6 @@ export const verifyCredentialIsDerivedFromBoost = async (
         return false;
     }
 
-    console.log('🚀🚀🚀🚀 ----');
-    console.log(boostCredential);
-    console.log('👀👀👀');
-    console.log(credential);
-    console.log('🚀🚀🚀🚀 ----');
-    // TODO: Should we validate the boost id vs credential id??
     if (!isEqual(credential.boostId, boostURI)) {
         console.error('Credential boostId !== boost id', credential.boostId, boostURI);
         return false;
@@ -132,7 +124,20 @@ export const issueCertifiedBoost = async (
     domain: string
 ): Promise<VC | JWE | false> => {
     const learnCard = await getLearnCard();
-    const lcnDID = `did:web:${domain}`;
+    let lcnDID = `did:web:${domain}`;
+    try {
+        const didDoc = await learnCard.invoke.resolveDid(lcnDID);
+        if (!didDoc) {
+            lcnDID = learnCard.id.did();
+        }
+    } catch (e) {
+        console.warn(
+            'LCN DID Document is unable to resolve while issuing Certified Boost. Reverting to did:key. Is this a test environment?',
+            lcnDID
+        );
+        lcnDID = learnCard.id.did();
+    }
+
     try {
         if (await verifyCredentialIsDerivedFromBoost(boost, credential, domain)) {
             const unsignedCertifiedBoost = await constructCertifiedBoostCredential(
@@ -141,7 +146,6 @@ export const issueCertifiedBoost = async (
                 domain,
                 lcnDID
             );
-
             return learnCard.invoke.issueCredential(unsignedCertifiedBoost);
         } else {
             console.warn('Credential is not derived from boost', boost, credential);
