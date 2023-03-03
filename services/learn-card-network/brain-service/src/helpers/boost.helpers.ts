@@ -72,18 +72,20 @@ export const verifyCredentialIsDerivedFromBoost = async (
         return false;
     }
 
-    if (
-        !isEqual(
-            credential.credentialSubject?.achievement,
-            boostCredential.credentialSubject?.achievement
-        )
-    ) {
-        console.error(
-            'Credential achievement !== boost credential achievement',
-            credential.credentialSubject?.achievement,
-            boostCredential.credentialSubject?.achievement
-        );
-        return false;
+    if(credential.credentialSubject && ('achievement' in credential.credentialSubject && typeof credential.credentialSubject.achievement === 'object')) {
+        if (
+            !isEqual(
+                credential.credentialSubject?.achievement,
+                boostCredential.credentialSubject?.achievement
+            )
+        ) {
+            console.error(
+                'Credential achievement !== boost credential achievement',
+                credential.credentialSubject?.achievement,
+                boostCredential.credentialSubject?.achievement
+            );
+            return false;
+        }
     }
 
     if (!isEqual(credential.display, boostCredential.display)) {
@@ -120,7 +122,7 @@ export const verifyCredentialIsDerivedFromBoost = async (
 
 export const issueCertifiedBoost = async (
     boost: BoostInstance,
-    credential: VC | JWE,
+    credential: VC,
     domain: string
 ): Promise<VC | JWE | false> => {
     const learnCard = await getLearnCard();
@@ -162,7 +164,7 @@ export const decryptCredential = async (credential: VC | JWE): Promise<VC | fals
     }
     const learnCard = await getLearnCard();
     try {
-        const decrypted = await learnCard.invoke.getDIDObject().decryptDagJWE(credential);
+        const decrypted = await learnCard.invoke.getDIDObject().decryptDagJWE(credential) as VC;
         return decrypted || false;
     } catch (error) {
         console.warn('Could not decrypt Boost Credential!');
@@ -178,16 +180,24 @@ export const sendBoost = async (
     domain: string
 ): Promise<string> => {
     const decryptedCredential = await decryptCredential(credential);
+    if(decryptedCredential) {
+        const certifiedBoost = await issueCertifiedBoost(boost, decryptedCredential, domain);
+        if (certifiedBoost) {
+            const credentialInstance = await storeCredential(certifiedBoost);
+            await createBoostInstanceOfRelationship(credentialInstance, boost);
+            await createSentCredentialRelationship(from, to, credentialInstance);
 
-    const certifiedBoost = await issueCertifiedBoost(boost, decryptedCredential, domain);
-    if (certifiedBoost) {
-        const credentialInstance = await storeCredential(certifiedBoost);
+            return getCredentialUri(credentialInstance.id, domain);
+        } else {
+            throw new Error('Credential does not match boost template.');
+        }
+    } else {
+        // TODO: Should we warn them if they send a credential that can't be decrypted?
+        const credentialInstance = await storeCredential(credential);
         await createBoostInstanceOfRelationship(credentialInstance, boost);
         await createSentCredentialRelationship(from, to, credentialInstance);
 
         return getCredentialUri(credentialInstance.id, domain);
-    } else {
-        throw new Error('Credential does not match boost template.');
     }
 };
 
