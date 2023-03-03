@@ -22,6 +22,7 @@ export const BoostSmallCard: React.FC<BoostSmallCardProps> = ({
     customBodyClass,
     customBodyComponent,
     customThumbComponent,
+    innerOnClick,
     issueHistory,
 }) => {
     const thumbClass = `bg-${TYPE_TO_WALLET_DARK_COLOR[type]}` ?? 'bg-grayscale-50';
@@ -49,65 +50,73 @@ export const BoostSmallCard: React.FC<BoostSmallCardProps> = ({
         );
     });
 
+    const handleInnerClick = () => {
+        innerOnClick?.();
+    };
+
     return (
         <div
             className={`flex generic-display-card-simple bg-white flex-col shadow-[0_0_8px_0px_rgba(0,0,0,0.2)] relative $ py-[0px] px-[0px] w-[160px] h-[280px] rounded-[20px] overflow-hidden ${className}`}
         >
-            {customThumbComponent && customThumbComponent}
-            {!customThumbComponent && (
-                <section className={defaultThumbClass}>
-                    {thumbImgSrc && thumbImgSrc?.trim() !== '' && (
-                        <img
-                            className="generic-display-card-img h-full w-full  w-[110px] h-[110px] rounded-full object-cover overflow-hidden"
-                            src={thumbImgSrc ?? ''}
-                            alt="Credential Achievement Image"
-                        />
-                    )}
-                    {(!thumbImgSrc || thumbImgSrc?.trim() === '') && (
-                        <img
-                            className="max-w-[110px] w-full h-full p-[0px] object-cover rounded-full"
-                            src={imgSrc}
-                        />
+            <div className="boost-small-card inner-click-container" onClick={handleInnerClick}>
+                {customThumbComponent && customThumbComponent}
+                {!customThumbComponent && (
+                    <section className={defaultThumbClass}>
+                        {thumbImgSrc && thumbImgSrc?.trim() !== '' && (
+                            <img
+                                className="generic-display-card-img h-full w-full  w-[110px] h-[110px] rounded-full object-cover overflow-hidden"
+                                src={thumbImgSrc ?? ''}
+                                alt="Credential Achievement Image"
+                            />
+                        )}
+                        {(!thumbImgSrc || thumbImgSrc?.trim() === '') && (
+                            <img
+                                className="max-w-[110px] w-full h-full p-[0px] object-cover rounded-full"
+                                src={imgSrc}
+                            />
+                        )}
+                    </section>
+                )}
+
+                <section className={defaultHeaderClass}>
+                    <p className="relative z-[100] small-boost-title text-[14px] p-[0px] font-bold text-center line-clamp-2">
+                        {title}
+                    </p>
+                </section>
+
+                <section className={defaultBodyClass}>
+                    {customBodyComponent && customBodyComponent}
+                    {!customBodyComponent &&
+                        issueHistory &&
+                        issueHistory?.length > 0 &&
+                        renderIssueHistory}
+                    {!customBodyComponent && issueHistory?.length > 3 && (
+                        <span className="small-boost-issue-count ml-[10px] font-semibold">
+                            +{issueHistory?.length - 3}
+                        </span>
                     )}
                 </section>
-            )}
 
-            <section className={defaultHeaderClass}>
-                <p className="relative z-[100] small-boost-title text-[14px] p-[0px] font-bold text-center line-clamp-2">
-                    {title}
-                </p>
-            </section>
+                <section className="small-boost-card-footer flex justify-center items-center absolute bottom-[15px] w-full">
+                    {customButtonComponent && customButtonComponent}
 
-            <section className={defaultBodyClass}>
-                {customBodyComponent && customBodyComponent}
-                {!customBodyComponent &&
-                    issueHistory &&
-                    issueHistory?.length > 0 &&
-                    renderIssueHistory}
-                {!customBodyComponent && issueHistory?.length > 3 && (
-                    <span className="small-boost-issue-count ml-[10px] font-semibold">+{issueHistory?.length - 3}</span>
-                )}
-            </section>
-
-            <section className="small-boost-card-footer flex justify-center items-center absolute bottom-[15px] w-full">
-                {customButtonComponent && customButtonComponent}
-
-                {!customButtonComponent && (
-                    <div onClick={buttonOnClick} className={defaultButtonClass}>
-                        <img className="h-[25px] mr-[7px] text-" src={AddAwardLight} />
-                        <span className="font-mouse text-[25px] tracking-wider">BOOST!</span>
+                    {!customButtonComponent && (
+                        <div onClick={buttonOnClick} className={defaultButtonClass}>
+                            <img className="h-[25px] mr-[7px] text-" src={AddAwardLight} />
+                            <span className="font-mouse text-[25px] tracking-wider">BOOST!</span>
+                        </div>
+                    )}
+                </section>
+                {showChecked && (
+                    <div className="check-btn-overlay absolute top-[5px] left-[5px]">
+                        <CircleCheckButton
+                            checked={checkStatus}
+                            onClick={onCheckClick}
+                            className={checkBtnClass}
+                        />
                     </div>
                 )}
-            </section>
-            {showChecked && (
-                <div className="check-btn-overlay absolute top-[5px] left-[5px]">
-                    <CircleCheckButton
-                        checked={checkStatus}
-                        onClick={onCheckClick}
-                        className={checkBtnClass}
-                    />
-                </div>
-            )}
+            </div>
 
             {arrowOnClick && (
                 <button

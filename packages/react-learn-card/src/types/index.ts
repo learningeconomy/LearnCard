@@ -268,6 +268,7 @@ export type BoostSmallCardProps = {
     arrowOnClick?: () => void;
     buttonOnClick?: () => void;
     onCheckClick?: () => void;
+    innerOnClick?: () => void;
     issueHistory: IssueHistory[];
 };
 
