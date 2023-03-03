@@ -12,5 +12,6 @@ export * from "./TruncateTextBox";
 export * from "./VC2BackFace";
 export * from "./VC2FrontFaceInfo";
 export * from "./VCDisplayCard2";
+export * from "./VCDisplayCardCategoryType";
 export * from "./VerificationRow";
 export * from "./VerificationsBox";
