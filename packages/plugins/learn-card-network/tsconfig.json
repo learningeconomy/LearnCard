@@ -11,9 +11,10 @@
     "noLib": false,
     "rootDir": "src",
     "skipLibCheck": true,
+    "paths": {},
     "allowSyntheticDefaultImports": true,
     "moduleResolution": "node"
   },
-  "include": ["src", "test"],
+  "include": ["src", "src/test"],
   "exclude": ["node_modules", "example"]
 }
