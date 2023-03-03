@@ -28,7 +28,8 @@ const getLearnCard = async (seed = 'a'.repeat(64)) => {
     };
 };
 
-describe('LearnCard Network Plugin', () => {
+// Skipping until LCN has the updated function and vc-templates can be updated with resolveable VCs.
+describe.skip('LearnCard Network Plugin', () => {
     describe('NetworkLearnCard', () => {
         it('should work', async () => {
             await expect(getLearnCard()).resolves.toBeDefined();
