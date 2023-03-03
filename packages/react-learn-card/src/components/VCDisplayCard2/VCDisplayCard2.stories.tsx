@@ -50,6 +50,7 @@ BoostCredentialTest.args = {
     credential: BoostCredential,
     handleXClick: () => console.log('X clicked!'),
     issueHistory: issueHistoryDummyData,
+    //customThumbComponent: <div>Custom thumb component</div>,
     // customFooterComponent: <div>Custom Footer</div>,
     // customBodyCardComponent: <div>Custom Body</div>,
     verificationItems: [

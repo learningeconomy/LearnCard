@@ -38,6 +38,7 @@ export type VCDisplayCard2Props = {
     bottomRightIcon?: CredentialIconType;
     customFooterComponent?: React.ReactNode;
     customBodyCardComponent?: React.ReactNode;
+    customThumbComponent?: React.ReactNode;
     issueHistory?: IssueHistory[];
 };
 
@@ -57,6 +58,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     bottomRightIcon,
     customFooterComponent,
     customBodyCardComponent,
+    customThumbComponent,
     issueHistory,
 }) => {
     const {
@@ -186,6 +188,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                             subjectImageComponent={subjectImageComponent}
                             issuerImageComponent={issuerImageComponent}
                             customBodyCardComponent={customBodyCardComponent}
+                            customThumbComponent={customThumbComponent}
                             createdAt={createdAt ?? ''}
                             imageUrl={imageUrl}
                         />
