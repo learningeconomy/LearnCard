@@ -14,8 +14,9 @@ import {
     getColorForVerificationStatus,
     getInfoFromCredential,
 } from '../../helpers/credential.helpers';
-import { BoostAchievementCredential, IssueHistory } from '../../types';
+import { BoostAchievementCredential, IssueHistory, LCCategoryEnum } from '../../types';
 import { MediaMetadata, VideoMetadata } from './MediaAttachmentsBox';
+import VCDisplayCardCategoryType from './VCDisplayCardCategoryType';
 
 export type CredentialIconType = {
     image?: React.ReactNode;
@@ -23,6 +24,7 @@ export type CredentialIconType = {
 };
 
 export type VCDisplayCard2Props = {
+    categoryType?: LCCategoryEnum;
     credential: VC | BoostAchievementCredential;
     verificationItems: VerificationItem[];
     issueeOverride?: Profile;
@@ -38,10 +40,12 @@ export type VCDisplayCard2Props = {
     bottomRightIcon?: CredentialIconType;
     customFooterComponent?: React.ReactNode;
     customBodyCardComponent?: React.ReactNode;
+    customThumbComponent?: React.ReactNode;
     issueHistory?: IssueHistory[];
 };
 
 export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
+    categoryType,
     credential,
     verificationItems,
     issueeOverride,
@@ -57,6 +61,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     bottomRightIcon,
     customFooterComponent,
     customBodyCardComponent,
+    customThumbComponent,
     issueHistory,
 }) => {
     const {
@@ -86,7 +91,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
 
     let worstVerificationStatus = verificationItems.reduce(
         (
-            currentWorst: typeof VerificationStatusEnum[keyof typeof VerificationStatusEnum],
+            currentWorst: (typeof VerificationStatusEnum)[keyof typeof VerificationStatusEnum],
             verification
         ) => {
             switch (currentWorst) {
@@ -133,9 +138,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 className="vc-card-header px-[20px] pb-[10px] pt-[3px] overflow-visible mt-[40px] absolute text-center bg-white border-y-[5px] border-[#EEF2FF] shadow-bottom w-[calc(100%_+_16px)] rounded-t-[8px] z-50"
                 style={{ wordBreak: 'break-word' }}
             >
-                <span className="uppercase text-spice-500 font-poppins text-[12px] font-[600] leading-[12px]">
-                    Achievement
-                </span>
+                <VCDisplayCardCategoryType categoryType={categoryType} />
                 <FitText
                     text={title ?? ''}
                     width={((headerWidth ?? 290) - 40).toString()}
@@ -186,6 +189,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                             subjectImageComponent={subjectImageComponent}
                             issuerImageComponent={issuerImageComponent}
                             customBodyCardComponent={customBodyCardComponent}
+                            customThumbComponent={customThumbComponent}
                             createdAt={createdAt ?? ''}
                             imageUrl={imageUrl}
                         />
