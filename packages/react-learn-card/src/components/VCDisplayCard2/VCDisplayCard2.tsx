@@ -138,9 +138,6 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 className="vc-card-header px-[20px] pb-[10px] pt-[3px] overflow-visible mt-[40px] absolute text-center bg-white border-y-[5px] border-[#EEF2FF] shadow-bottom w-[calc(100%_+_16px)] rounded-t-[8px] z-50"
                 style={{ wordBreak: 'break-word' }}
             >
-                {/* <span className="uppercase text-spice-500 font-poppins text-[12px] font-[600] leading-[12px]">
-                    Achievement
-                </span> */}
                 <VCDisplayCardCategoryType categoryType={categoryType} />
                 <FitText
                     text={title ?? ''}
