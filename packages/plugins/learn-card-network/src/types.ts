@@ -90,3 +90,10 @@ export type LearnCardNetworkPlugin = Plugin<
 
 /** @group VerifyBoostPlugin Plugin */
 export type VerifyBoostPlugin = Plugin<'VerifyBoost', any, VerifyExtension>;
+
+/** @group VerifyBoostPlugin Plugin */
+export type TrustedBoostRegistryEntry = {
+    id: string;
+    url: string;
+    did: string;
+}

@@ -9,14 +9,17 @@ export type BoostVerificationLearnCard = AddPlugin<
 export type NetworkLearnCard = AddPlugin<BoostVerificationLearnCard, LearnCardNetworkPlugin>;
 
 export const initNetworkLearnCard = async (
-    _config: LearnCardFromSeed['args'] & { network?: string }
+    _config: LearnCardFromSeed['args'] & { network?: string, trustedBoostRegistry?: string }
 ): Promise<NetworkLearnCard> => {
-    const { network = 'https://network.learncard.com/trpc', seed, ...config } = _config;
+    const { network = 'https://network.learncard.com/trpc', seed, trustedBoostRegistry, ...config } = _config;
 
     const baseLearnCard = await initLearnCard({ seed, ...config });
 
     const boostVerificationLearnCard = await baseLearnCard.addPlugin(
-        await getVerifyBoostPlugin(baseLearnCard)
+        await getVerifyBoostPlugin(
+            baseLearnCard,
+            trustedBoostRegistry
+        )
     );
 
     return boostVerificationLearnCard.addPlugin(
