@@ -179,7 +179,7 @@ export const profilesRouter = t.router({
                 limit,
                 blacklist: selfProfile ? [selfProfile.profileId] : [],
             });
-
+            // TODO: Allow filtering out service profiles
             if (selfProfile && includeConnectionStatus) {
                 const profilesWithConnectionStatus = await Promise.all(
                     profiles.map(async profile => {

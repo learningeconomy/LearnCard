@@ -67,13 +67,13 @@ jobs:
         run: pnpm i
 
       - name: Run tests
-        run: pnpm exec nx affected --target=test --base=origin/main --head=HEAD
+        run: pnpm exec nx affected --target=test --base=HEAD~1 --head=HEAD
         env:
           SEED: ${{ secrets.SEED }}
 
       - name: Get Affected List
         id: affected
-        run: echo "AFFECTED=$(pnpm exec nx print-affected --base=origin/main --head=HEAD --select=projects)" >> $GITHUB_ENV
+        run: echo "AFFECTED=$(pnpm exec nx print-affected --base=HEAD~1 --head=HEAD --select=projects)" >> $GITHUB_ENV
 
       - name: Deploy Brain Service Lambda
         if: contains(env.AFFECTED, 'network-brain-service')
