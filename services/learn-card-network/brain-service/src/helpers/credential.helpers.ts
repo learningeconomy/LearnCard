@@ -10,6 +10,7 @@ import {
 } from '@accesslayer/credential/relationships/create';
 import { getCredentialSentToProfile } from '@accesslayer/credential/relationships/read';
 import { constructUri, getUriParts } from './uri.helpers';
+import { SendPushNotification } from './notifications.helpers';
 
 export const getCredentialUri = (id: string, domain: string): string =>
     constructUri('credential', id, domain);
@@ -23,6 +24,12 @@ export const sendCredential = async (
     const credentialInstance = await storeCredential(credential);
 
     await createSentCredentialRelationship(from, to, credentialInstance);
+
+    await SendPushNotification({
+        to: to.profileId,
+        message: `${from.displayName} has sent you a credential`,
+        title: 'Credential Received',
+    });
 
     return getCredentialUri(credentialInstance.id, domain);
 };

@@ -63,6 +63,9 @@ export type LearnCardNetworkPluginMethods = {
     registerSigningAuthority: (uri: string) => Promise<boolean>;
 
     resolveFromLCN: (uri: string) => Promise<VC | UnsignedVC | VP | JWE>;
+
+    registerDeviceToUser: (profileId: string, deviceToken: string) => Promise<boolean>;
+    unregisterDeviceToUser: (profileId: string, deviceToken: string) => Promise<boolean>;
 };
 
 /** @group LearnCardNetwork Plugin */

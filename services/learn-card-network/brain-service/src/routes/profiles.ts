@@ -33,6 +33,10 @@ import {
     isInviteValidForProfile,
     setValidInviteForProfile,
 } from '@cache/invites';
+import {
+    RegisterDeviceForPushNotifications,
+    UnregisterDeviceForPushNotifications,
+} from '@helpers/notifications.helpers';
 
 export const profilesRouter = t.router({
     createProfile: didAndChallengeRoute
@@ -510,5 +514,71 @@ export const profilesRouter = t.router({
         .mutation(async () => {
             return false;
         }),
+
+    registerDeviceForPush: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/profile/device/register/{deviceToken}',
+                tags: ['Profiles'],
+                summary: 'Register device for push notifications',
+                description:
+                    'This route takes in a device token and a profileId to register a device for external push notifications.',
+            },
+        })
+        .input(z.object({ deviceToken: z.string() }))
+        .output(z.boolean())
+        .mutation(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { deviceToken } = input;
+
+            const result = await RegisterDeviceForPushNotifications({
+                deviceToken: deviceToken,
+                profileId: profile.profileId,
+            });
+
+            if (result == null) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Could not register device for push notifications correctly.',
+                });
+            }
+
+            return result;
+        }),
+    unregisterDeviceForPush: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/profile/device/unregister/{deviceToken}',
+                tags: ['Profiles'],
+                summary: 'Register device for push notifications',
+                description:
+                    'This route takes in a device token and a profileId to deregister/unregister a device from external push notifications.',
+            },
+        })
+        .input(z.object({ deviceToken: z.string() }))
+        .output(z.boolean())
+        .mutation(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { deviceToken } = input;
+
+            const result = await UnregisterDeviceForPushNotifications({
+                deviceToken: deviceToken,
+                profileId: profile.profileId,
+            });
+
+            if (result == null) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Could not unregister device from push notifications.',
+                });
+            }
+
+            return result;
+        }),
 });
+
 export type ProfilesRouter = typeof profilesRouter;

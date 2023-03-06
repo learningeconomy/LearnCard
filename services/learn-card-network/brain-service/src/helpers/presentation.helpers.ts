@@ -10,6 +10,7 @@ import {
 } from '@accesslayer/presentation/relationships/create';
 import { getPresentationSentToProfile } from '@accesslayer/presentation/relationships/read';
 import { constructUri, getUriParts } from './uri.helpers';
+import { SendPushNotification } from './notifications.helpers';
 
 export const getPresentationUri = (id: string, domain: string): string =>
     constructUri('presentation', id, domain);
@@ -23,6 +24,12 @@ export const sendPresentation = async (
     const presentationInstance = await storePresentation(presentation);
 
     await createSentPresentationRelationship(from, to, presentationInstance);
+
+    await SendPushNotification({
+        to: to.profileId,
+        message: `${from.displayName} has boosted you!`,
+        title: 'Boost Received',
+    });
 
     return getPresentationUri(presentationInstance.id, domain);
 };
