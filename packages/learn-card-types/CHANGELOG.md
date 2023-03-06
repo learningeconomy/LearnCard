@@ -1,5 +1,11 @@
 # learn-card-types
 
+## 5.2.2
+
+### Patch Changes
+
+-   [#231](https://github.com/learningeconomy/LearnCard/pull/231) [`e69af5a`](https://github.com/learningeconomy/LearnCard/commit/e69af5ab09b88d111ddf207f413552aa0bac991a) Thanks [@Custard7](https://github.com/Custard7)! - Feat: Add includeConnectionStatus option to searchProfiles, in brain-service and LCN Plugin
+
 ## 5.2.1
 
 ### Patch Changes
