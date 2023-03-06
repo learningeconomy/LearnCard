@@ -184,13 +184,16 @@ export const profilesRouter = t.router({
                 const profilesWithConnectionStatus = await Promise.all(
                     profiles.map(async profile => {
                         const targetProfileFull = await getProfileByProfileId(profile.profileId);
-                        return {
-                            ...profile,
-                            connectionStatus: await getConnectionStatus(
-                                selfProfile,
-                                targetProfileFull
-                            ),
-                        };
+                        if (targetProfileFull) {
+                            return {
+                                ...profile,
+                                connectionStatus: await getConnectionStatus(
+                                    selfProfile,
+                                    targetProfileFull
+                                ),
+                            };
+                        }
+                        return profile;
                     })
                 );
                 return profilesWithConnectionStatus.map(profile =>

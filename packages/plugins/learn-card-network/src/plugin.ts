@@ -159,9 +159,14 @@ export const getLearnCardNetworkPlugin = async (
             searchProfiles: async (
                 _learnCard,
                 input = '',
-                { limit = 25, includeSelf = false } = {}
+                { limit = 25, includeSelf = false, includeConnectionStatus = false } = {}
             ) => {
-                return client.profile.searchProfiles.query({ input, limit, includeSelf });
+                return client.profile.searchProfiles.query({
+                    input,
+                    limit,
+                    includeSelf,
+                    includeConnectionStatus,
+                });
             },
             connectWith: async (_learnCard, profileId) => {
                 if (!userData) throw new Error('Please make an account first!');
@@ -402,7 +407,7 @@ export const getVerifyBoostPlugin = async (
             id: 'LearnCard Network',
             url: 'https://network.learncard.com',
             did: 'did:web:network.learncard.com',
-        }
+        },
     ];
 
     let boostRegistry: TrustedBoostRegistryEntry[];
