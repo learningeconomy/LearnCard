@@ -24,6 +24,7 @@ export const BoostSmallCard: React.FC<BoostSmallCardProps> = ({
     customThumbComponent,
     innerOnClick,
     issueHistory,
+    bgImgSrc,
 }) => {
     const thumbClass = `bg-${TYPE_TO_WALLET_DARK_COLOR[type]}` ?? 'bg-grayscale-50';
     const defaultThumbClass = `small-boost-card-thumb flex h-[110px] w-[110px] my-[10px] mx-auto ${thumbClass} overflow-hidden flex-col justify-center items-center rounded-full ${customThumbClass}`;
@@ -58,7 +59,12 @@ export const BoostSmallCard: React.FC<BoostSmallCardProps> = ({
         <div
             className={`flex generic-display-card-simple bg-white flex-col shadow-[0_0_8px_0px_rgba(0,0,0,0.2)] relative $ py-[0px] px-[0px] w-[160px] h-[280px] rounded-[20px] overflow-hidden ${className}`}
         >
-            <div className="boost-small-card inner-click-container" onClick={handleInnerClick}>
+            {bgImgSrc && (
+                <section className="absolute top-[-50px] left-[0px] rounded-b-full overflow-hidden z-0">
+                    <img className="h-full w-full object-cover overflow-hidden" src={bgImgSrc} />
+                </section>
+            )}
+            <div className="boost-small-card inner-click-containe z-10" onClick={handleInnerClick}>
                 {customThumbComponent && customThumbComponent}
                 {!customThumbComponent && (
                     <section className={defaultThumbClass}>
