@@ -34,7 +34,7 @@ export type LearnCardNetworkPluginMethods = {
     getProfile: (profileId?: string) => Promise<LCNProfile | undefined>;
     searchProfiles: (
         profileId?: string,
-        options?: { limit?: number; includeSelf?: boolean }
+        options?: { limit?: number; includeSelf?: boolean; includeConnectionStatus?: boolean }
     ) => Promise<LCNProfile[]>;
     connectWith: (profileId: string) => Promise<boolean>;
     connectWithInvite: (profileId: string, challenge: string) => Promise<boolean>;
@@ -96,4 +96,4 @@ export type TrustedBoostRegistryEntry = {
     id: string;
     url: string;
     did: string;
-}
+};

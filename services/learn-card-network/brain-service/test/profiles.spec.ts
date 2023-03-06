@@ -1,3 +1,4 @@
+import { LCNProfileConnectionStatusEnum } from '@learncard/types';
 import { getClient, getUser } from './helpers/getClient';
 import { Profile } from '@models';
 import cache from '@cache';
@@ -458,6 +459,73 @@ describe('Profiles', () => {
 
             expect(results).toHaveLength(1);
             expect(results.find(result => result.profileId === 'usera')).toBeFalsy();
+        });
+
+        it('should omit the connection status if includeConnectionStatus is false', async () => {
+            const resultsNotConnected = await userA.clients.fullAuth.profile.searchProfiles({
+                input: 'user',
+                includeSelf: false,
+                includeConnectionStatus: false,
+            });
+            expect(
+                resultsNotConnected.find(result => result.profileId === 'userb').connectionStatus
+            ).toBeUndefined();
+        });
+
+        it('should allow you to include connection status', async () => {
+            const resultsNotConnected = await userA.clients.fullAuth.profile.searchProfiles({
+                input: 'user',
+                includeSelf: false,
+                includeConnectionStatus: true,
+            });
+            expect(
+                resultsNotConnected.find(result => result.profileId === 'userb').connectionStatus
+            ).toBe(LCNProfileConnectionStatusEnum.enum.NOT_CONNECTED);
+
+            await userA.clients.fullAuth.profile.connectWith({ profileId: 'userb' });
+            const resultsRequestSent = await userA.clients.fullAuth.profile.searchProfiles({
+                input: 'user',
+                includeSelf: false,
+                includeConnectionStatus: true,
+            });
+            expect(
+                resultsRequestSent.find(result => result.profileId === 'userb').connectionStatus
+            ).toBe(LCNProfileConnectionStatusEnum.enum.PENDING_REQUEST_SENT);
+
+            await userB.clients.fullAuth.profile.acceptConnectionRequest({ profileId: 'usera' });
+            const resultsConnected = await userA.clients.fullAuth.profile.searchProfiles({
+                input: 'user',
+                includeSelf: false,
+                includeConnectionStatus: true,
+            });
+            expect(
+                resultsConnected.find(result => result.profileId === 'userb').connectionStatus
+            ).toBe(LCNProfileConnectionStatusEnum.enum.CONNECTED);
+
+            await userB.clients.fullAuth.profile.disconnectWith({ profileId: 'usera' });
+            const notConnectedAfterDisconnect = await userA.clients.fullAuth.profile.searchProfiles(
+                {
+                    input: 'user',
+                    includeSelf: false,
+                    includeConnectionStatus: true,
+                }
+            );
+            expect(
+                notConnectedAfterDisconnect.find(result => result.profileId === 'userb')
+                    .connectionStatus
+            ).toBe(LCNProfileConnectionStatusEnum.enum.NOT_CONNECTED);
+
+            await userB.clients.fullAuth.profile.connectWith({ profileId: 'usera' });
+            const resultsPendingRequestReceived =
+                await userA.clients.fullAuth.profile.searchProfiles({
+                    input: 'user',
+                    includeSelf: false,
+                    includeConnectionStatus: true,
+                });
+            expect(
+                resultsPendingRequestReceived.find(result => result.profileId === 'userb')
+                    .connectionStatus
+            ).toBe(LCNProfileConnectionStatusEnum.enum.PENDING_REQUEST_RECEIVED);
         });
     });
 
