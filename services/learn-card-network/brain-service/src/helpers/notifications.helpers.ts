@@ -31,7 +31,7 @@ export async function SendPushNotification(args: IPushNotificationRequest) {
     }
 }
 
-export async function UnregisterDeviceForPushNotifications(args: IPushRegistrationRequest) {
+export async function RegisterDeviceForPushNotifications(args: IPushRegistrationRequest) {
     try {
         if (process.env.WEBHOOK_URL) {
             const response = await fetch(process.env.WEBHOOK_URL, {
@@ -57,11 +57,11 @@ export async function UnregisterDeviceForPushNotifications(args: IPushRegistrati
     }
 }
 
-export async function RegisterDeviceForPushNotifications(args: IPushRegistrationRequest) {
+export async function UnregisterDeviceForPushNotifications(args: IPushRegistrationRequest) {
     try {
         if (process.env.WEBHOOK_URL) {
             const response = await fetch(process.env.WEBHOOK_URL, {
-                method: 'PUT',
+                method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
                 },

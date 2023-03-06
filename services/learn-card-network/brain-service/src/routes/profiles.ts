@@ -551,8 +551,8 @@ export const profilesRouter = t.router({
         .meta({
             openapi: {
                 protect: true,
-                method: 'POST',
-                path: '/profile/device/unregister/{deviceToken}',
+                method: 'DELETE',
+                path: '/profile/device/register/{deviceToken}',
                 tags: ['Profiles'],
                 summary: 'Register device for push notifications',
                 description:
