@@ -1,5 +1,17 @@
 # learn-card-core
 
+## 1.2.0
+
+### Minor Changes
+
+-   [#231](https://github.com/learningeconomy/LearnCard/pull/231) [`e69af5a`](https://github.com/learningeconomy/LearnCard/commit/e69af5ab09b88d111ddf207f413552aa0bac991a) Thanks [@Custard7](https://github.com/Custard7)! - Feat: Add includeConnectionStatus option to searchProfiles, in brain-service and LCN Plugin
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@8.5.1
+    -   @learncard/network-brain-client@1.0.2
+
 ## 1.1.0
 
 ### Minor Changes
