@@ -237,6 +237,12 @@ export const cancelConnectionRequest = async (
     return true;
 };
 
+/**
+ * Returns the connection status between two users, from the source user's perspective
+ * @param source the ProfileInstance of the user querying connection status
+ * @param target the ProfileInstance of the user we are testing connection status with
+ * @returns a value from the enum, LCNProfileConnectionStatusEnum
+ */
 export const getConnectionStatus = async (
     source: ProfileInstance,
     target: ProfileInstance
