@@ -1,3 +1,4 @@
+import { LCNProfileConnectionStatusEnum } from '@learncard/types';
 import { TRPCError } from '@trpc/server';
 import { Profile, ProfileInstance } from '@models';
 
@@ -234,4 +235,43 @@ export const cancelConnectionRequest = async (
     });
 
     return true;
+};
+
+export const getConnectionStatus = async (
+    source: ProfileInstance,
+    target: ProfileInstance
+): Promise<LCNProfileConnectionStatusEnum> => {
+    const [
+        sourceConnectedToTarget,
+        targetConnectedToSource,
+        sourceRequestedTarget,
+        targetRequestedSource,
+    ] = await Promise.all([
+        source.findRelationships({
+            alias: 'connectedWith',
+            where: { relationship: {}, target: { profileId: target.profileId } },
+        }),
+        target.findRelationships({
+            alias: 'connectedWith',
+            where: { relationship: {}, target: { profileId: source.profileId } },
+        }),
+
+        source.findRelationships({
+            alias: 'connectionRequested',
+            where: { relationship: {}, target: { profileId: target.profileId } },
+        }),
+        target.findRelationships({
+            alias: 'connectionRequested',
+            where: { relationship: {}, target: { profileId: source.profileId } },
+        }),
+    ]);
+
+    if (sourceConnectedToTarget.length > 0 || targetConnectedToSource.length > 0) {
+        return LCNProfileConnectionStatusEnum.enum.CONNECTED;
+    } else if (sourceRequestedTarget.length > 0) {
+        return LCNProfileConnectionStatusEnum.enum.PENDING_REQUEST_SENT;
+    } else if (targetRequestedSource.length > 0) {
+        return LCNProfileConnectionStatusEnum.enum.PENDING_REQUEST_RECEIVED;
+    }
+    return LCNProfileConnectionStatusEnum.enum.NOT_CONNECTED;
 };

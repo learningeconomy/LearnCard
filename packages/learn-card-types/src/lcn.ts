@@ -10,6 +10,14 @@ export const LCNProfileValidator = z.object({
 });
 export type LCNProfile = z.infer<typeof LCNProfileValidator>;
 
+export const LCNProfileConnectionStatusEnum = z.enum([
+    'CONNECTED',
+    'PENDING_REQUEST_SENT',
+    'PENDING_REQUEST_RECEIVED',
+    'NOT_CONNECTED',
+]);
+export type LCNProfileConnectionStatusEnum = z.infer<typeof LCNProfileConnectionStatusEnum>;
+
 export const SentCredentialInfoValidator = z.object({
     uri: z.string(),
     to: z.string(),
