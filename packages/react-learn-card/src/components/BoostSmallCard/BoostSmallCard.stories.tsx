@@ -50,5 +50,6 @@ BoostSmallCardTest.args = {
     issueHistory: issueHistoryDummyData,
     type: WalletCategoryTypes.skills,
     thumbImgSrc: '',
+    bgImgSrc: 'https://picsum.photos/200',
     innerOnClick: () => console.log('innerOnClick'),
 };
