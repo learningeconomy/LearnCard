@@ -7,7 +7,7 @@ import DefaultFace from '../../assets/images/default-face.jpeg';
 import AddAwardLight from '../../assets/images/addawardlight.svg';
 
 export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
-    title = 'Title Lorem Ipsum',
+    title,
     thumbImgSrc,
     customThumbClass = '',
     customHeaderClass = '',
@@ -16,9 +16,6 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
     onCheckClick,
     showChecked,
     checkStatus,
-    customButtonComponent,
-    customBodyClass,
-    customBodyComponent,
     customThumbComponent,
     innerOnClick,
     bgImgSrc,
@@ -31,8 +28,6 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
     const headerBgColor = `bg-${TYPE_TO_WALLET_DARK_COLOR[type]}` ?? 'bg-grayscale-900';
     const checkBtnClass = checkStatus ? 'generic-vc-card checked' : 'generic-vc-card unchecked';
     const defaultHeaderClass = `flex generic-card-title w-full justify-center ${customHeaderClass}`;
-    const defaultBodyClass = ` boost-small-card-body flex justify-center items-center text-center text-[14px] overflow-hidden text-grayscale-500 p-[10px] ${customBodyClass}`;
-    const defaultButtonClass = `small-boost-boost-btn flex shadow-bottom boost-btn-click rounded-[40px] w-[140px] h-[48px] text-white flex justify-center items-center ${headerBgColor}`;
 
 
     const handleInnerClick = () => {
