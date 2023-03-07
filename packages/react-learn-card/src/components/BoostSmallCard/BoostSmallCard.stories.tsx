@@ -52,4 +52,5 @@ BoostSmallCardTest.args = {
     thumbImgSrc: '',
     bgImgSrc: 'https://picsum.photos/200',
     innerOnClick: () => console.log('innerOnClick'),
+    buttonOnClick: () => console.log('buttonOnClick'),
 };
