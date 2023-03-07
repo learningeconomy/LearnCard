@@ -267,7 +267,7 @@ export type IssueHistory = {
 export type BoostSmallCardProps = {
     title?: string;
     className?: string;
-    type?: WalletCategoryTypes | string;
+    type?: WalletCategoryTypes;
     thumbImgSrc?: string;
     customThumbClass?: string;
     customHeaderClass?: string;
@@ -288,7 +288,7 @@ export type BoostSmallCardProps = {
 export type BoostGenericCardProps = {
     title?: string;
     className?: string;
-    type?: WalletCategoryTypes | string;
+    type?: WalletCategoryTypes;
     thumbImgSrc?: string;
     customThumbClass?: string;
     customHeaderClass?: string;
