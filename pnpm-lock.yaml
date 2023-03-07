@@ -383,7 +383,7 @@ importers:
       ethers: 5.7.2
       hex-lite: 1.5.0
       isomorphic-fetch: 3.0.0
-      isomorphic-webcrypto: 2.3.8_ohhcdes6rurmzao2fvaa5im4pe
+      isomorphic-webcrypto: 2.3.8_xebgo2q7qfqk6fxknkr5wnw6ma
       key-did-provider-ed25519: 2.0.1
       key-did-resolver: 2.3.0
       web-credential-handler: 2.0.2
@@ -589,7 +589,7 @@ importers:
       '@tailwindcss/line-clamp': 0.4.2_tailwindcss@3.2.7
       '@testing-library/jest-dom': 5.16.5
       '@testing-library/react': 13.4.0
-      '@testing-library/user-event': 14.4.3_@testing-library+dom@9.0.0
+      '@testing-library/user-event': 14.4.3_yxlyej73nftwmh2fiao7paxmlm
       '@types/jest': 27.5.2
       '@types/numeral': 2.0.2
       '@types/react': 17.0.53
@@ -5659,7 +5659,7 @@ packages:
       '@expo/metro-config': 0.7.1
       '@expo/osascript': 2.0.33
       '@expo/spawn-async': 1.5.0
-      body-parser: 1.20.2
+      body-parser: 1.20.1
       chalk: 4.1.2
       connect: 3.7.0
       fs-extra: 9.0.0
@@ -6301,11 +6301,11 @@ packages:
       - ts-node
     dev: true
 
-  /@jest/create-cache-key-function/29.4.3:
-    resolution: {integrity: sha512-AJVFQTTy6jnZAQiAZrdOaTAPzJUrvAE/4IMe+Foav6WPhypFszqg7a4lOTyuzYQEEiT5RSrGYg9IY+/ivxiyXw==}
+  /@jest/create-cache-key-function/29.5.0:
+    resolution: {integrity: sha512-LIDZyZgnZss7uikvBKBB/USWwG+GO8+GnwRWT+YkCGDGsqLQlhm9BC3z6+7+eMs1kUlvXQIWEzBR8Q2Pnvx6lg==}
     engines: {node: ^14.15.0 || ^16.10.0 || >=18.0.0}
     dependencies:
-      '@jest/types': 29.4.3
+      '@jest/types': 29.5.0
     dev: false
     optional: true
 
@@ -6665,6 +6665,19 @@ packages:
       '@types/node': 18.14.1
       '@types/yargs': 17.0.22
       chalk: 4.1.2
+
+  /@jest/types/29.5.0:
+    resolution: {integrity: sha512-qbu7kN6czmVRc3xWFQcAN03RAUamgppVUdXrvl1Wr3jlNF93o9mJbGcDWrwGB6ht44u7efB1qCFgVQmca24Uog==}
+    engines: {node: ^14.15.0 || ^16.10.0 || >=18.0.0}
+    dependencies:
+      '@jest/schemas': 29.4.3
+      '@types/istanbul-lib-coverage': 2.0.4
+      '@types/istanbul-reports': 3.0.1
+      '@types/node': 18.14.1
+      '@types/yargs': 17.0.22
+      chalk: 4.1.2
+    dev: false
+    optional: true
 
   /@jimp/bmp/0.16.13_@jimp+custom@0.16.13:
     resolution: {integrity: sha512-9edAxu7N2FX7vzkdl5Jo1BbACfycUtBQX+XBMcHA2bk62P8R0otgkHg798frgAk/WxQIzwxqOH6wMiCwrlAzdQ==}
@@ -7896,7 +7909,7 @@ packages:
       '@react-native-community/cli-tools': 10.1.1
       chalk: 4.1.2
       execa: 1.0.0
-      fast-xml-parser: 4.1.3
+      fast-xml-parser: 4.1.2
       glob: 7.2.3
       ora: 5.4.1
     transitivePeerDependencies:
@@ -10046,20 +10059,6 @@ packages:
       pretty-format: 27.5.1
     dev: true
 
-  /@testing-library/dom/9.0.0:
-    resolution: {integrity: sha512-+/TLgKNFsYUshOY/zXsQOk+PlFQK+eyJ9T13IDVNJEi+M+Un7xlJK+FZKkbGSnf0+7E1G6PlDhkSYQ/GFiruBQ==}
-    engines: {node: '>=14'}
-    dependencies:
-      '@babel/code-frame': 7.18.6
-      '@babel/runtime': 7.21.0
-      '@types/aria-query': 5.0.1
-      aria-query: 5.1.3
-      chalk: 4.1.2
-      dom-accessibility-api: 0.5.16
-      lz-string: 1.4.4
-      pretty-format: 27.5.1
-    dev: true
-
   /@testing-library/jest-dom/5.16.5:
     resolution: {integrity: sha512-N5ixQ2qKpi5OLYfwQmUb/5mSV9LneAcaUfp32pn4yCnpb8r/Yz0pXFPck21dIicKmi+ta5WRAknkZCfA8refMA==}
     engines: {node: '>=8', npm: '>=6', yarn: '>=1'}
@@ -10097,13 +10096,13 @@ packages:
       '@testing-library/dom': 8.20.0
     dev: true
 
-  /@testing-library/user-event/14.4.3_@testing-library+dom@9.0.0:
+  /@testing-library/user-event/14.4.3_yxlyej73nftwmh2fiao7paxmlm:
     resolution: {integrity: sha512-kCUc5MEwaEMakkO5x7aoD+DLi02ehmEM2QCGWvNqAS1dV/fAvORWEjnjsEIvml59M7Y5kCkWN6fCCyPOe8OL6Q==}
     engines: {node: '>=12', npm: '>=6'}
     peerDependencies:
       '@testing-library/dom': '>=7.21.4'
     dependencies:
-      '@testing-library/dom': 9.0.0
+      '@testing-library/dom': 8.20.0
     dev: true
 
   /@tokenizer/token/0.3.0:
@@ -13096,27 +13095,6 @@ packages:
       unpipe: 1.0.0
     transitivePeerDependencies:
       - supports-color
-
-  /body-parser/1.20.2:
-    resolution: {integrity: sha512-ml9pReCu3M61kGlqoTm2umSXTlRTuGTx0bfYj+uIUKKYycG5NtSbeetV3faSU6R7ajOPw0g/J1PvK4qNy7s5bA==}
-    engines: {node: '>= 0.8', npm: 1.2.8000 || >= 1.4.16}
-    dependencies:
-      bytes: 3.1.2
-      content-type: 1.0.5
-      debug: 2.6.9
-      depd: 2.0.0
-      destroy: 1.2.0
-      http-errors: 2.0.0
-      iconv-lite: 0.4.24
-      on-finished: 2.4.1
-      qs: 6.11.0
-      raw-body: 2.5.2
-      type-is: 1.6.18
-      unpipe: 1.0.0
-    transitivePeerDependencies:
-      - supports-color
-    dev: false
-    optional: true
 
   /bonjour-service/1.1.0:
     resolution: {integrity: sha512-LVRinRB3k1/K0XzZ2p58COnWvkQknIY6sf0zF2rpErvcJXpMBttEPQSxK+HEXSS9VmpZlDoDnQWv8ftJT20B0Q==}
@@ -17518,21 +17496,21 @@ packages:
       jest-util: 29.4.3
     dev: true
 
-  /expo-application/5.1.1_expo@48.0.4:
+  /expo-application/5.1.1_expo@48.0.5:
     resolution: {integrity: sha512-aDatTcTTCdTbHw8h4/Tq2ilc6InM5ntF9xWCJdOcnUEcglxxGphVI/lzJKBaBF6mJECA8mEOjpVg2EGxOctTwg==}
     peerDependencies:
       expo: '*'
     dependencies:
-      expo: 48.0.4_@babel+core@7.21.0
+      expo: 48.0.5_@babel+core@7.21.0
     dev: false
     optional: true
 
-  /expo-asset/8.9.0_expo@48.0.4:
+  /expo-asset/8.9.0_expo@48.0.5:
     resolution: {integrity: sha512-zenkZrYcsJAcTVl478mCarVmaOE9r2GbTlVvKZaXL8UJIL4rnspk63xUSJLAGMArZIdHzsGFQMXlQG3pgEfzrg==}
     dependencies:
       blueimp-md5: 2.19.0
-      expo-constants: 14.2.1_expo@48.0.4
-      expo-file-system: 15.2.2_expo@48.0.4
+      expo-constants: 14.2.1_expo@48.0.5
+      expo-file-system: 15.2.2_expo@48.0.5
       invariant: 2.2.4
       md5-file: 3.2.3
       path-browserify: 1.0.1
@@ -17543,45 +17521,45 @@ packages:
     dev: false
     optional: true
 
-  /expo-constants/14.2.1_expo@48.0.4:
+  /expo-constants/14.2.1_expo@48.0.5:
     resolution: {integrity: sha512-DD5u4QmBds2U7uYo409apV7nX+XjudARcgqe7S9aRFJ/6kyftmuxvk1DpaU4X42Av8z/tfKwEpuxl+vl7HHx/Q==}
     peerDependencies:
       expo: '*'
     dependencies:
       '@expo/config': 8.0.2
-      expo: 48.0.4_@babel+core@7.21.0
+      expo: 48.0.5_@babel+core@7.21.0
       uuid: 3.4.0
     transitivePeerDependencies:
       - supports-color
     dev: false
     optional: true
 
-  /expo-file-system/15.2.2_expo@48.0.4:
+  /expo-file-system/15.2.2_expo@48.0.5:
     resolution: {integrity: sha512-LFkOLcWwlmnjkURxZ3/0ukS35OswX8iuQknLHRHeyk8mUA8fpRPPelD/a1lS+yclqfqavMJmTXVKM1Nsq5XVMA==}
     peerDependencies:
       expo: '*'
     dependencies:
-      expo: 48.0.4_@babel+core@7.21.0
+      expo: 48.0.5_@babel+core@7.21.0
       uuid: 3.4.0
     dev: false
     optional: true
 
-  /expo-font/11.1.1_expo@48.0.4:
+  /expo-font/11.1.1_expo@48.0.5:
     resolution: {integrity: sha512-X+aICqYY69hiiDDtcNrjq8KutHrH2TrHuMqk0Rfq0P7hF6hMd+YefwLBNkvIrqrgmTAuqiLjMUwj2rHLqmgluw==}
     peerDependencies:
       expo: '*'
     dependencies:
-      expo: 48.0.4_@babel+core@7.21.0
+      expo: 48.0.5_@babel+core@7.21.0
       fontfaceobserver: 2.3.0
     dev: false
     optional: true
 
-  /expo-keep-awake/12.0.1_expo@48.0.4:
+  /expo-keep-awake/12.0.1_expo@48.0.5:
     resolution: {integrity: sha512-hqeCnb4033TyuZaXs93zTK7rjVJ3bywXATyMmKmKkLEsH2PKBAl/VmjlCOPQL/2Ncqz6aj7Wo//tjeJTARBD4g==}
     peerDependencies:
       expo: '*'
     dependencies:
-      expo: 48.0.4_@babel+core@7.21.0
+      expo: 48.0.5_@babel+core@7.21.0
     dev: false
     optional: true
 
@@ -17609,27 +17587,27 @@ packages:
     dev: false
     optional: true
 
-  /expo-modules-core/1.2.3:
-    resolution: {integrity: sha512-bYWxL60NPzDTuvlBrNLlwu7K6H7GqlRKJJpF1c3lqHsMw9vusu3StHZhAXB2noMPD+Ww/pGa/A9tfTtieqvbcg==}
+  /expo-modules-core/1.2.4:
+    resolution: {integrity: sha512-AV0NCTy9O8xQqpKgX6gvsDzV1ogpCzYpGxqM85Vw1xHsOF51s7Avu7NdNjBPUZOVuDderUXAvd97dWrtefSKcA==}
     dependencies:
       compare-versions: 3.6.0
       invariant: 2.2.4
     dev: false
     optional: true
 
-  /expo-random/13.1.1_expo@48.0.4:
+  /expo-random/13.1.1_expo@48.0.5:
     resolution: {integrity: sha512-+KkhGp7xW45GvMRzlcSOzvDwzTgyXo6C84GaG4GI43rOdECBQ2lGUJ12st39OtfZm1lORNskpi66DjnuJ73g9w==}
     requiresBuild: true
     peerDependencies:
       expo: '*'
     dependencies:
       base64-js: 1.5.1
-      expo: 48.0.4_@babel+core@7.21.0
+      expo: 48.0.5_@babel+core@7.21.0
     dev: false
     optional: true
 
-  /expo/48.0.4_@babel+core@7.21.0:
-    resolution: {integrity: sha512-FGxaxqI8u0r3CvFQAEx/kpqZP4cA7q9ymMoIrrjtOsWvKsuk5Dt3gLEJpymGp6aicPuDXn3xBxo2dsRZF5NkUw==}
+  /expo/48.0.5_@babel+core@7.21.0:
+    resolution: {integrity: sha512-4sd0y8DX2GXbVWBS+UTKqcm60KeZxh7+EvGUi9jbJJAJkbCyt3smu4L0WGCaq/8+ki44H9G/pjM0B7VcZZjAiQ==}
     hasBin: true
     dependencies:
       '@babel/runtime': 7.21.0
@@ -17639,14 +17617,14 @@ packages:
       '@expo/vector-icons': 13.0.0
       babel-preset-expo: 9.3.0_@babel+core@7.21.0
       cross-spawn: 6.0.5
-      expo-application: 5.1.1_expo@48.0.4
-      expo-asset: 8.9.0_expo@48.0.4
-      expo-constants: 14.2.1_expo@48.0.4
-      expo-file-system: 15.2.2_expo@48.0.4
-      expo-font: 11.1.1_expo@48.0.4
-      expo-keep-awake: 12.0.1_expo@48.0.4
+      expo-application: 5.1.1_expo@48.0.5
+      expo-asset: 8.9.0_expo@48.0.5
+      expo-constants: 14.2.1_expo@48.0.5
+      expo-file-system: 15.2.2_expo@48.0.5
+      expo-font: 11.1.1_expo@48.0.5
+      expo-keep-awake: 12.0.1_expo@48.0.5
       expo-modules-autolinking: 1.1.2
-      expo-modules-core: 1.2.3
+      expo-modules-core: 1.2.4
       fbemitter: 3.0.0
       getenv: 1.0.0
       invariant: 2.2.4
@@ -17878,14 +17856,6 @@ packages:
     dependencies:
       strnum: 1.0.5
     dev: false
-
-  /fast-xml-parser/4.1.3:
-    resolution: {integrity: sha512-LsNDahCiCcJPe8NO7HijcnukHB24tKbfDDA5IILx9dmW3Frb52lhbeX6MPNUSvyGNfav2VTYpJ/OqkRoVLrh2Q==}
-    hasBin: true
-    dependencies:
-      strnum: 1.0.5
-    dev: false
-    optional: true
 
   /fastest-levenshtein/1.0.16:
     resolution: {integrity: sha512-eRnCtTTtGZFpQCwhJiUOuxPQWRXVKYDn0b2PeHfXL6/Zi53SLAzAHfVhVWK2AryC/WH05kGfxhFIPvTF0SXQzg==}
@@ -20873,7 +20843,7 @@ packages:
       - encoding
     dev: true
 
-  /isomorphic-webcrypto/2.3.8_ohhcdes6rurmzao2fvaa5im4pe:
+  /isomorphic-webcrypto/2.3.8_xebgo2q7qfqk6fxknkr5wnw6ma:
     resolution: {integrity: sha512-XddQSI0WYlSCjxtm1AI8kWQOulf7hAN3k3DclF1sxDJZqOe0pcsOt675zvWW91cZH9hYs3nlA3Ev8QK5i80SxQ==}
     dependencies:
       '@peculiar/webcrypto': 1.4.1
@@ -20886,7 +20856,7 @@ packages:
     optionalDependencies:
       '@unimodules/core': 7.1.2
       '@unimodules/react-native-adapter': 6.3.9
-      expo-random: 13.1.1_expo@48.0.4
+      expo-random: 13.1.1_expo@48.0.5
       react-native-securerandom: 0.1.1_react-native@0.71.3
     transitivePeerDependencies:
       - expo
@@ -22096,7 +22066,7 @@ packages:
     dependencies:
       ansi-escapes: 6.0.0
       chalk: 5.2.0
-      jest: 29.4.3_@types+node@17.0.45
+      jest: 29.4.3_@types+node@18.14.1
       jest-regex-util: 29.4.3
       jest-watcher: 29.4.3
       slash: 5.0.0
@@ -27807,8 +27777,8 @@ packages:
     dev: false
     optional: true
 
-  /react-native-gradle-plugin/0.71.15:
-    resolution: {integrity: sha512-7S3pAuPaQJlhax6EZ4JMsDNpj05TfuzX9gPgWLrFfAIWIFLuJ6aDQYAZy2TEI9QJALPoWrj8LWaqP/DGYh14pw==}
+  /react-native-gradle-plugin/0.71.16:
+    resolution: {integrity: sha512-H2BjG2zk7B7Wii9sXvd9qhCVRQYDAHSWdMw9tscmZBqSP62DkIWEQSk4/B2GhQ4aK9ydVXgtqR6tBeg3yy8TSA==}
     dev: false
     optional: true
 
@@ -27830,7 +27800,7 @@ packages:
     peerDependencies:
       react: 18.2.0
     dependencies:
-      '@jest/create-cache-key-function': 29.4.3
+      '@jest/create-cache-key-function': 29.5.0
       '@react-native-community/cli': 10.1.3
       '@react-native-community/cli-platform-android': 10.1.3
       '@react-native-community/cli-platform-ios': 10.1.1
@@ -27856,7 +27826,7 @@ packages:
       react: 18.2.0
       react-devtools-core: 4.27.2
       react-native-codegen: 0.71.5_@babel+preset-env@7.20.2
-      react-native-gradle-plugin: 0.71.15
+      react-native-gradle-plugin: 0.71.16
       react-refresh: 0.4.3
       react-shallow-renderer: 16.15.0_react@18.2.0
       regenerator-runtime: 0.13.11
@@ -31391,7 +31361,7 @@ packages:
       bs-logger: 0.2.6
       esbuild: 0.15.18
       fast-json-stable-stringify: 2.1.0
-      jest: 29.4.3_@types+node@17.0.45
+      jest: 29.4.3_@types+node@18.14.1
       jest-util: 29.4.3
       json5: 2.2.3
       lodash.memoize: 4.1.2
