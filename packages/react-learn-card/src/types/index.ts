@@ -267,7 +267,7 @@ export type IssueHistory = {
 export type BoostSmallCardProps = {
     title?: string;
     className?: string;
-    type?: WalletCategoryTypes;
+    type?: WalletCategoryTypes | string;
     thumbImgSrc?: string;
     customThumbClass?: string;
     customHeaderClass?: string;
@@ -284,6 +284,24 @@ export type BoostSmallCardProps = {
     issueHistory?: IssueHistory[];
     bgImgSrc?: string;
 };
+
+export type BoostGenericCardProps = {
+    title?: string;
+    className?: string;
+    type?: WalletCategoryTypes | string;
+    thumbImgSrc?: string;
+    customThumbClass?: string;
+    customHeaderClass?: string;
+    showChecked?: boolean;
+    checkStatus?: boolean;
+    onCheckClick?: () => void;
+    customThumbComponent?: React.ReactNode;
+    innerOnClick?: () => void;
+    bgImgSrc?: string;
+    issuerName?: string;
+    dateDisplay?: string;
+};
+
 
 export type Attachment = {
     title: string;
