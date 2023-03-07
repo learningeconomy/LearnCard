@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.5.5
+
+### Patch Changes
+
+-   [#239](https://github.com/learningeconomy/LearnCard/pull/239) [`4153ea0`](https://github.com/learningeconomy/LearnCard/commit/4153ea0dd3b3c562876308ba27a6060ef76ebac9) Thanks [@goblincore](https://github.com/goblincore)! - chore: small boost card update - fix inner click handler container wrapping button, add tailwind css cursor class to clickable region
+
 ## 2.5.4
 
 ### Patch Changes
