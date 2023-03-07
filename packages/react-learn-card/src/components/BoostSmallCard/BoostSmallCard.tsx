@@ -96,7 +96,7 @@ export const BoostSmallCard: React.FC<BoostSmallCardProps> = ({
                         issueHistory &&
                         issueHistory?.length > 0 &&
                         renderIssueHistory}
-                    {!customBodyComponent && issueHistory?.length > 3 && (
+                    {!customBodyComponent && issueHistory && issueHistory?.length > 3 && (
                         <span className="small-boost-issue-count ml-[10px] font-semibold">
                             +{issueHistory?.length - 3}
                         </span>

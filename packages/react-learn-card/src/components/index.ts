@@ -3,6 +3,7 @@
  */
 
 export * from "./AchievementCard/index";
+export * from "./BoostGenericCard/index";
 export * from "./BoostSmallCard/index";
 export * from "./Button/index";
 export * from "./CircleCheckButton/index";
