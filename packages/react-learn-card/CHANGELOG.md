@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.5.4
+
+### Patch Changes
+
+-   [#235](https://github.com/learningeconomy/LearnCard/pull/235) [`f7404ea`](https://github.com/learningeconomy/LearnCard/commit/f7404ea710a09aa0b6a5f701ff3bb27bd105f5e7) Thanks [@goblincore](https://github.com/goblincore)! - Small Boost card updates, add BoostGenericCard
+
 ## 2.5.3
 
 ### Patch Changes

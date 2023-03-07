@@ -52,7 +52,7 @@ jobs:
           key: ${{ runner.os }}-nx-cache-${{ github.workflow }}
 
       - name: Install dependencies
-        run: pnpm i
+        run: pnpm install --no-frozen-lockfile
 
       - name: Run tests
         run: pnpm exec nx affected --target=test --base=HEAD~1 --head=HEAD
