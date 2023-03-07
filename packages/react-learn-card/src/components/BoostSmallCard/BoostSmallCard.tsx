@@ -35,7 +35,7 @@ export const BoostSmallCard: React.FC<BoostSmallCardProps> = ({
     const defaultBodyClass = ` boost-small-card-body flex justify-center items-center text-center text-[14px] overflow-hidden text-grayscale-500 p-[10px] ${customBodyClass}`;
     const defaultButtonClass = `small-boost-boost-btn flex shadow-bottom boost-btn-click rounded-[40px] w-[140px] h-[48px] text-white flex justify-center items-center ${headerBgColor}`;
 
-    const issueHistoryDisplay = issueHistory?.length > 3 ? issueHistory?.slice(0, 3) : issueHistory;
+    const issueHistoryDisplay = issueHistory && issueHistory?.length > 3 ? issueHistory?.slice(0, 3) : issueHistory;
     const renderIssueHistory = issueHistoryDisplay?.map(issueItem => {
         return (
             <div
