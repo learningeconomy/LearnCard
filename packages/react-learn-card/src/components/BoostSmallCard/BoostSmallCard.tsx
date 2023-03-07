@@ -33,9 +33,11 @@ export const BoostSmallCard: React.FC<BoostSmallCardProps> = ({
     const checkBtnClass = checkStatus ? 'generic-vc-card checked' : 'generic-vc-card unchecked';
     const defaultHeaderClass = `flex generic-card-title w-full justify-center ${customHeaderClass}`;
     const defaultBodyClass = ` boost-small-card-body flex justify-center items-center text-center text-[14px] overflow-hidden text-grayscale-500 p-[10px] ${customBodyClass}`;
-    const defaultButtonClass = `small-boost-boost-btn flex shadow-bottom boost-btn-click rounded-[40px] w-[140px] h-[48px] text-white flex justify-center items-center ${headerBgColor}`;
+    const defaultButtonClass = `cursor-pointer small-boost-boost-btn flex shadow-bottom boost-btn-click rounded-[40px] w-[140px] h-[48px] text-white flex justify-center items-center ${headerBgColor}`;
+    const innerClickContainerClass = `cursor-pointer boost-small-card inner-click-container z-10`;
 
-    const issueHistoryDisplay = issueHistory && issueHistory?.length > 3 ? issueHistory?.slice(0, 3) : issueHistory;
+    const issueHistoryDisplay =
+        issueHistory && issueHistory?.length > 3 ? issueHistory?.slice(0, 3) : issueHistory;
     const renderIssueHistory = issueHistoryDisplay?.map(issueItem => {
         return (
             <div
@@ -64,7 +66,7 @@ export const BoostSmallCard: React.FC<BoostSmallCardProps> = ({
                     <img className="h-full w-full object-cover overflow-hidden" src={bgImgSrc} />
                 </section>
             )}
-            <div className="boost-small-card inner-click-containe z-10" onClick={handleInnerClick}>
+            <div className={innerClickContainerClass} onClick={handleInnerClick}>
                 {customThumbComponent && customThumbComponent}
                 {!customThumbComponent && (
                     <section className={defaultThumbClass}>
@@ -102,27 +104,28 @@ export const BoostSmallCard: React.FC<BoostSmallCardProps> = ({
                         </span>
                     )}
                 </section>
+            </div>
 
-                <section className="small-boost-card-footer flex justify-center items-center absolute bottom-[15px] w-full">
-                    {customButtonComponent && customButtonComponent}
+            <section className="small-boost-card-footer flex justify-center items-center absolute bottom-[15px] w-full">
+                {customButtonComponent && customButtonComponent}
 
-                    {!customButtonComponent && (
-                        <div onClick={buttonOnClick} className={defaultButtonClass}>
-                            <img className="h-[25px] mr-[7px] text-" src={AddAwardLight} />
-                            <span className="font-mouse text-[25px] tracking-wider">BOOST!</span>
-                        </div>
-                    )}
-                </section>
-                {showChecked && (
-                    <div className="check-btn-overlay absolute top-[5px] left-[5px]">
-                        <CircleCheckButton
-                            checked={checkStatus}
-                            onClick={onCheckClick}
-                            className={checkBtnClass}
-                        />
+                {!customButtonComponent && (
+                    <div onClick={buttonOnClick} className={defaultButtonClass}>
+                        <img className="h-[25px] mr-[7px] text-" src={AddAwardLight} />
+                        <span className="font-mouse text-[25px] tracking-wider">BOOST!</span>
                     </div>
                 )}
-            </div>
+            </section>
+            {showChecked && (
+                <div className="check-btn-overlay absolute top-[5px] left-[5px]">
+                    <CircleCheckButton
+                        checked={checkStatus}
+                        onClick={onCheckClick}
+                        className={checkBtnClass}
+                    />
+                </div>
+            )}
+
             {arrowOnClick && (
                 <button
                     type="button"
