@@ -114,7 +114,9 @@ functions:
         - Ref: PrivateSubnetA
     events:
       - httpApi: GET /users/{params+}
+        cors: true
       - httpApi: GET /.well-known/did.json
+        cors: true
 
   swagger:
     handler: lambda.swaggerUiHandler
