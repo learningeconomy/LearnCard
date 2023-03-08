@@ -81,6 +81,7 @@ app.get(
         return res.json(finalDoc);
     }
 );
+
 app.get('/.well-known/did.json', cors(corsOptions), async (req: TypedRequest<{}, {}, {}>, res) => {
     const cachedResult = await getDidDocForProfile('::root::');
 
