@@ -23,6 +23,7 @@ export const app = express();
 app.use('/', cors());
 app.get(
     '/users/:profileId/did.json',
+    cors(),
     async (req: TypedRequest<{}, {}, { profileId: string }>, res) => {
         const { profileId } = req.params;
 
@@ -75,7 +76,7 @@ app.get(
         return res.json(finalDoc);
     }
 );
-app.get('/.well-known/did.json', async (req: TypedRequest<{}, {}, {}>, res) => {
+app.get('/.well-known/did.json', cors(), async (req: TypedRequest<{}, {}, {}>, res) => {
     const cachedResult = await getDidDocForProfile('::root::');
 
     if (cachedResult) return res.json(cachedResult);
