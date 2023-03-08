@@ -16,6 +16,11 @@ env:
   NEO4J_URI: ${{ secrets.NEO4J_URI }}
   NEO4J_USERNAME: ${{ secrets.NEO4J_USERNAME }}
   NEO4J_PASSWORD: ${{ secrets.NEO4J_PASSWORD }}
+  DD_API_KEY: ${{ secrets.DD_API_KEY }}
+  DD_ENV: ${{ secrets.DD_ENV }}
+  DD_SERVICE: ${{ secrets.DD_SERVICE }}
+  DD_SITE: ${{ secrets.DD_SITE }}
+  DD_VERSION: ${{ secrets.DD_VERSION }}
 
 jobs:
   deploy:
