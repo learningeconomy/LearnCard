@@ -20,10 +20,15 @@ const encodeKey = (key: Uint8Array) => {
 
 export const app = express();
 
+const corsOptions = {
+    origin: '*',
+    methods: ['GET', 'PUT', 'POST', 'DELETE', 'HEAD']
+}
+
 app.use('/', cors());
 app.get(
     '/users/:profileId/did.json',
-    cors(),
+    cors(corsOptions),
     async (req: TypedRequest<{}, {}, { profileId: string }>, res) => {
         const { profileId } = req.params;
 
@@ -76,7 +81,7 @@ app.get(
         return res.json(finalDoc);
     }
 );
-app.get('/.well-known/did.json', cors(), async (req: TypedRequest<{}, {}, {}>, res) => {
+app.get('/.well-known/did.json', cors(corsOptions), async (req: TypedRequest<{}, {}, {}>, res) => {
     const cachedResult = await getDidDocForProfile('::root::');
 
     if (cachedResult) return res.json(cachedResult);
