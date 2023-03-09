@@ -1,5 +1,15 @@
 # learn-card-core
 
+## 1.2.1
+
+### Patch Changes
+
+-   [#243](https://github.com/learningeconomy/LearnCard/pull/243) [`f1a8679`](https://github.com/learningeconomy/LearnCard/commit/f1a86796817fa20a0667a6b717b56d22038028c1) Thanks [@Custard7](https://github.com/Custard7)! - Fix: Verify Prettify
+
+-   Updated dependencies [[`f1a8679`](https://github.com/learningeconomy/LearnCard/commit/f1a86796817fa20a0667a6b717b56d22038028c1)]:
+    -   @learncard/core@8.5.2
+    -   @learncard/network-brain-client@1.0.3
+
 ## 1.2.0
 
 ### Minor Changes
