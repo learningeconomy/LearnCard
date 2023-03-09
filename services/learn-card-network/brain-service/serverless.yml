@@ -115,6 +115,8 @@ functions:
     events:
       - httpApi: GET /users/{params+}
       - httpApi: GET /.well-known/did.json
+    url:
+      cors: true
 
   swagger:
     handler: lambda.swaggerUiHandler
