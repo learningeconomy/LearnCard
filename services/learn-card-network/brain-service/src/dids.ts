@@ -25,14 +25,16 @@ const corsOptions = {
     methods: ['GET', 'PUT', 'POST', 'DELETE', 'HEAD']
 }
 
+app.use(async (req, res, next) => {
+    await next();
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', '*');
+});
+
 app.use('/', cors());
 app.get(
     '/users/:profileId/did.json',
     async (req: TypedRequest<{}, {}, { profileId: string }>, res) => {
-        res.header("Access-Control-Allow-Origin", "*");
-        res.header("Access-Control-Allow-Methods", "GET");
-        res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-
         const { profileId } = req.params;
 
         const cachedResult = await getDidDocForProfile(profileId);
