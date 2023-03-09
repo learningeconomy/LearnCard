@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 8.5.2
+
+### Patch Changes
+
+-   [#243](https://github.com/learningeconomy/LearnCard/pull/243) [`f1a8679`](https://github.com/learningeconomy/LearnCard/commit/f1a86796817fa20a0667a6b717b56d22038028c1) Thanks [@Custard7](https://github.com/Custard7)! - Fix: Verify Prettify
+
 ## 8.5.1
 
 ### Patch Changes
