@@ -25,7 +25,7 @@ const corsOptions = {
     methods: ['GET', 'PUT', 'POST', 'DELETE', 'HEAD']
 }
 
-app.use(async (req, res, next) => {
+app.use(async (_, res, next) => {
     await next();
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', '*');
