@@ -4,7 +4,7 @@ import Trophy from '../svgs/Trophy';
 import Coins from '../svgs/Coins';
 import User from '../svgs/User';
 import Briefcase from '../svgs/Briefcase';
-import Lightbulb from '../svgs/Lightbulb';
+import PuzzlePiece from '../svgs/PuzzlePiece';
 import Graduation from '../svgs/Graduation';
 import AwardRibbon from '../svgs/AwardRibbon';
 
@@ -32,20 +32,20 @@ export const NotificationTypeStyles: {
     };
 } = {
     [NotificationTypeEnum.Currency]: {
-        viewButtonStyles: 'border-cyan-600 text-cyan-600',
-        unclaimedButtonStyles: 'text-white bg-cyan-600 border-cyan-600',
-        claimedButtonStyles: 'text-cyan-600 bg-cyan-50 border-cyan-50',
-        textStyles: 'text-cyan-600 capitalize',
-        iconCircleStyles: 'bg-cyan-600',
+        viewButtonStyles: 'border-cyan-400 text-cyan-400',
+        unclaimedButtonStyles: 'text-white bg-cyan-400 border-cyan-400',
+        claimedButtonStyles: 'text-cyan-400 bg-cyan-50 border-cyan-50',
+        textStyles: 'text-cyan-400 capitalize',
+        iconCircleStyles: 'bg-cyan-400',
         IconComponent: Coins,
         typeText: 'Currency',
     },
     [NotificationTypeEnum.SocialBadges]: {
-        viewButtonStyles: 'border-cyan-600 text-cyan-600',
-        unclaimedButtonStyles: 'text-white bg-cyan-600 border-cyan-600',
-        claimedButtonStyles: 'text-cyan-600 bg-cyan-50 border-cyan-50',
-        textStyles: 'text-cyan-600 capitalize',
-        iconCircleStyles: 'bg-cyan-600',
+        viewButtonStyles: 'border-cyan-400 text-cyan-400',
+        unclaimedButtonStyles: 'text-white bg-cyan-400 border-cyan-400',
+        claimedButtonStyles: 'text-cyan-400 bg-cyan-50 border-cyan-50',
+        textStyles: 'text-cyan-400 capitalize',
+        iconCircleStyles: 'bg-cyan-400',
         IconComponent: AwardRibbon,
         typeText: 'Social Badge',
     },
@@ -59,7 +59,7 @@ export const NotificationTypeStyles: {
         typeText: 'ID',
     },
     [NotificationTypeEnum.Achievement]: {
-        viewButtonStyles: 'border-spice-400 text-spice-400',
+        viewButtonStyles: 'border-spice-600 text-spice-400',
         unclaimedButtonStyles: 'text-white bg-spice-400 border-spice-400',
         claimedButtonStyles: 'text-spice-400 bg-spice-50 border-spice-50',
         textStyles: 'text-spice-400 capitalize',
@@ -73,24 +73,24 @@ export const NotificationTypeStyles: {
         claimedButtonStyles: 'text-indigo-400 bg-indigo-50 border-indigo-50',
         textStyles: 'text-indigo-400 capitalize',
         iconCircleStyles: 'bg-indigo-400',
-        IconComponent: Lightbulb,
+        IconComponent: PuzzlePiece,
         typeText: 'Skill',
     },
     [NotificationTypeEnum.Job]: {
-        viewButtonStyles: 'border-emerald-400 text-emerald-400',
-        unclaimedButtonStyles: 'text-white bg-emerald-400 border-emerald-400',
-        claimedButtonStyles: 'text-emerald-400 bg-emerald-50 border-emerald-50',
-        textStyles: 'text-emerald-400 capitalize',
-        iconCircleStyles: 'bg-emerald-400',
-        IconComponent: Briefcase,
-        typeText: 'Job',
-    },
-    [NotificationTypeEnum.Learning]: {
         viewButtonStyles: 'border-rose-400 text-rose-400',
         unclaimedButtonStyles: 'text-white bg-rose-400 border-rose-400',
         claimedButtonStyles: 'text-rose-400 bg-rose-50 border-rose-50',
         textStyles: 'text-rose-400 capitalize',
         iconCircleStyles: 'bg-rose-400',
+        IconComponent: Briefcase,
+        typeText: 'Job',
+    },
+    [NotificationTypeEnum.Learning]: {
+        viewButtonStyles: 'border-emerald-500 text-emerald-500',
+        unclaimedButtonStyles: 'text-white bg-emerald-500 border-emerald-500',
+        claimedButtonStyles: 'text-emerald-500 bg-emerald-50 border-emerald-50',
+        textStyles: 'text-emerald-500 capitalize',
+        iconCircleStyles: 'bg-emerald-500',
         IconComponent: Graduation,
         typeText: 'Learning',
     },
