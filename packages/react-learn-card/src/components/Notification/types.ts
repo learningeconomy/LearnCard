@@ -83,7 +83,7 @@ export const NotificationTypeStyles: {
         textStyles: 'text-rose-400 capitalize',
         iconCircleStyles: 'bg-rose-400',
         IconComponent: Briefcase,
-        typeText: 'Job',
+        typeText: 'Work History',
     },
     [NotificationTypeEnum.Learning]: {
         viewButtonStyles: 'border-emerald-500 text-emerald-500',
@@ -92,6 +92,6 @@ export const NotificationTypeStyles: {
         textStyles: 'text-emerald-500 capitalize',
         iconCircleStyles: 'bg-emerald-500',
         IconComponent: Graduation,
-        typeText: 'Learning',
+        typeText: 'Learning History',
     },
 };
