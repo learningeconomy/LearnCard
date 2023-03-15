@@ -42,6 +42,7 @@ export type VCDisplayCard2Props = {
     customBodyCardComponent?: React.ReactNode;
     customThumbComponent?: React.ReactNode;
     issueHistory?: IssueHistory[];
+    titleOverride?: string;
 };
 
 export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
@@ -63,6 +64,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     customBodyCardComponent,
     customThumbComponent,
     issueHistory,
+    titleOverride,
 }) => {
     const {
         title = '',
@@ -120,6 +122,8 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
         backgroundAttachment: 'fixed',
     };
 
+    const _title = titleOverride || title;
+
     return (
         <section className="vc-display-card font-mouse flex flex-col items-center border-solid border-[5px] border-white rounded-[30px] overflow-visible z-10 max-w-[400px] relative bg-white">
             <RibbonEnd
@@ -140,7 +144,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
             >
                 <VCDisplayCardCategoryType categoryType={categoryType} />
                 <FitText
-                    text={title ?? ''}
+                    text={_title ?? ''}
                     width={((headerWidth ?? 290) - 40).toString()}
                     options={{ maxSize: 32, minSize: 20, multiLine: true }}
                     className="vc-card-header-main-title text-[#18224E] leading-[100%] text-shadow text-[32px]"
