@@ -43,6 +43,7 @@ export type VCDisplayCard2Props = {
     customThumbComponent?: React.ReactNode;
     issueHistory?: IssueHistory[];
     titleOverride?: string;
+    showBackButton?: boolean;
 };
 
 export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
@@ -65,6 +66,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     customThumbComponent,
     issueHistory,
     titleOverride,
+    showBackButton,
 }) => {
     const {
         title = '',
@@ -160,7 +162,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 </button>
             )}
 
-            {!isFront && (
+            {!isFront && showBackButton && (
                 <button
                     className="vc-card-back-button absolute top-[-25px] bg-white rounded-full h-[50px] px-[15px] flex items-center justify-center gap-[5px] z-50 text-[30px] text-grayscale-900"
                     onClick={() => setIsFront(true)}
