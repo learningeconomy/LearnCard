@@ -1,18 +1,18 @@
 ---
-'@learncard/react': minor
-'@learncard/chapi-example': minor
-'@learncard/snap-chapi-example': minor
-'@learncard/snap-example-dapp': minor
-'@learncard/create-http-bridge': minor
-'@learncard/cli': minor
-'@learncard/core': minor
-'@learncard/helpers': minor
-'@learncard/network-brain-client': minor
-'@learncard/types': minor
-'@learncard/network-plugin': minor
-'learn-card-discord-bot': minor
-'@learncard/network-brain-service': minor
-'@learncard/meta-mask-snap': minor
+'@learncard/react': patch
+'@learncard/chapi-example': patch
+'@learncard/snap-chapi-example': patch
+'@learncard/snap-example-dapp': patch
+'@learncard/create-http-bridge': patch
+'@learncard/cli': patch
+'@learncard/core': patch
+'@learncard/helpers': patch
+'@learncard/network-brain-client': patch
+'@learncard/types': patch
+'@learncard/network-plugin': patch
+'learn-card-discord-bot': patch
+'@learncard/network-brain-service': patch
+'@learncard/meta-mask-snap': patch
 '@learncard/nx-run-command': patch
 ---
 
