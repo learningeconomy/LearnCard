@@ -5,59 +5,59 @@ import { ProfileInstance } from '@models';
 
 import { storeCredential } from '@accesslayer/credential/create';
 import {
-  createReceivedCredentialRelationship,
-  createSentCredentialRelationship,
+    createReceivedCredentialRelationship,
+    createSentCredentialRelationship,
 } from '@accesslayer/credential/relationships/create';
 import { getCredentialSentToProfile } from '@accesslayer/credential/relationships/read';
 import { constructUri, getUriParts } from './uri.helpers';
 import { SendPushNotification } from './notifications.helpers';
 
 export const getCredentialUri = (id: string, domain: string): string =>
-  constructUri('credential', id, domain);
+    constructUri('credential', id, domain);
 
 export const sendCredential = async (
-  from: ProfileInstance,
-  to: ProfileInstance,
-  credential: VC | UnsignedVC | JWE,
-  domain: string
+    from: ProfileInstance,
+    to: ProfileInstance,
+    credential: VC | UnsignedVC | JWE,
+    domain: string
 ): Promise<string> => {
-  const credentialInstance = await storeCredential(credential);
+    const credentialInstance = await storeCredential(credential);
 
-  await createSentCredentialRelationship(from, to, credentialInstance);
+    await createSentCredentialRelationship(from, to, credentialInstance);
 
-  let uri = getCredentialUri(credentialInstance.id, domain);
+    let uri = getCredentialUri(credentialInstance.id, domain);
 
-  await SendPushNotification({
-    to: to.profileId,
-    message: `${from.displayName} has sent you a credential`,
-    title: 'Credential Received',
-    url: `/notifications?uri=${uri}&claim=true`,
-    actionType: 'redirect',
-  });
+    await SendPushNotification({
+        to: to.profileId,
+        message: `${from.displayName} has sent you a credential`,
+        title: 'Credential Received',
+        url: `/notifications?uri=${uri}&claim=true`,
+        actionType: 'redirect',
+    });
 
-  return uri;
+    return uri;
 };
 
 /**
  * Accepts a VC
  */
 export const acceptCredential = async (profile: ProfileInstance, uri: string): Promise<boolean> => {
-  const { id, type } = getUriParts(uri);
+    const { id, type } = getUriParts(uri);
 
-  if (type !== 'credential') {
-    throw new TRPCError({ code: 'BAD_REQUEST', message: 'Not a credential URI' });
-  }
+    if (type !== 'credential') {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Not a credential URI' });
+    }
 
-  const pendingVc = await getCredentialSentToProfile(id, profile);
+    const pendingVc = await getCredentialSentToProfile(id, profile);
 
-  if (!pendingVc) {
-    throw new TRPCError({
-      code: 'NOT_FOUND',
-      message: 'Pending Credential not found',
-    });
-  }
+    if (!pendingVc) {
+        throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Pending Credential not found',
+        });
+    }
 
-  await createReceivedCredentialRelationship(profile, pendingVc.source, pendingVc.target);
+    await createReceivedCredentialRelationship(profile, pendingVc.source, pendingVc.target);
 
-  return true;
+    return true;
 };
