@@ -64,8 +64,8 @@ export type LearnCardNetworkPluginMethods = {
 
     resolveFromLCN: (uri: string) => Promise<VC | UnsignedVC | VP | JWE>;
 
-    registerDeviceToUser: (profileId: string, deviceToken: string) => Promise<boolean>;
-    unregisterDeviceToUser: (profileId: string, deviceToken: string) => Promise<boolean>;
+    registerDeviceForPush: (profileId: string, deviceToken: string) => Promise<boolean>;
+    unregisterDeviceForPush: (profileId: string, deviceToken: string) => Promise<boolean>;
 };
 
 /** @group LearnCardNetwork Plugin */

@@ -121,6 +121,8 @@ export const connectProfiles = async (
         to: source.profileId,
         message: `${target.displayName} has accepted your connection request!`,
         title: 'Connection Accepted',
+        actionType: 'redirect',
+        url: '/connect',
     });
 
     return true;
@@ -209,6 +211,8 @@ export const requestConnection = async (
         to: target.profileId,
         message: `${source.displayName} has sent you a connection request!`,
         title: 'New Connection Request',
+        url: `/connect/request?profileId=${source.displayName}&connect=true`,
+        actionType: 'redirect',
     });
 
     return true;

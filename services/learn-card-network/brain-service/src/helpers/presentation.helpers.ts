@@ -29,6 +29,8 @@ export const sendPresentation = async (
         to: to.profileId,
         message: `${from.displayName} has boosted you!`,
         title: 'Boost Received',
+        url: `/notifications?claim=true`,
+        actionType: 'redirect',
     });
 
     return getPresentationUri(presentationInstance.id, domain);

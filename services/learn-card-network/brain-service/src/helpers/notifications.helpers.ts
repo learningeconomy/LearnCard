@@ -2,6 +2,8 @@ interface IPushNotificationRequest {
     to: string;
     title: string;
     message?: string;
+    url?: string;
+    actionType: string;
 }
 
 interface IPushRegistrationRequest {
@@ -17,7 +19,15 @@ export async function SendPushNotification(args: IPushNotificationRequest) {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(args),
+                body: JSON.stringify({
+                    actionType: args.actionType,
+                    profileId: args.to,
+                    data: {
+                        title: args.title,
+                        message: args.message,
+                        url: args.url,
+                    },
+                }),
             });
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -33,11 +43,12 @@ export async function SendPushNotification(args: IPushNotificationRequest) {
 
 export async function RegisterDeviceForPushNotifications(args: IPushRegistrationRequest) {
     try {
-        if (process.env.WEBHOOK_URL) {
+        if (process.env.WEBHOOK_URL && process.env.APIKEY) {
             const response = await fetch(process.env.WEBHOOK_URL, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
+                    apikey: process.env.APIKEY,
                 },
                 body: JSON.stringify(args),
             });
@@ -59,11 +70,12 @@ export async function RegisterDeviceForPushNotifications(args: IPushRegistration
 
 export async function UnregisterDeviceForPushNotifications(args: IPushRegistrationRequest) {
     try {
-        if (process.env.WEBHOOK_URL) {
+        if (process.env.WEBHOOK_URL && process.env.APIKEY) {
             const response = await fetch(process.env.WEBHOOK_URL, {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
+                    apikey: process.env.APIKEY,
                 },
                 body: JSON.stringify(args),
             });

@@ -29,6 +29,8 @@ export const sendCredential = async (
         to: to.profileId,
         message: `${from.displayName} has sent you a credential`,
         title: 'Credential Received',
+        url: `/notifications?claim=true`,
+        actionType: 'redirect',
     });
 
     return getCredentialUri(credentialInstance.id, domain);
