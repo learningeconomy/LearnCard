@@ -18,7 +18,7 @@ export async function SendPushNotification(args: IPushNotificationRequest) {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    apikey: process.env.APIKEY,
+                    'apikey': `${process.env.APIKEY}`,
                 },
                 body: JSON.stringify({
                     actionType: args.actionType,
@@ -49,7 +49,7 @@ export async function RegisterDeviceForPushNotifications(args: IPushRegistration
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
-                    apikey: process.env.APIKEY,
+                    'apikey': `${process.env.APIKEY}`,
                 },
                 body: JSON.stringify(args),
             });
@@ -76,7 +76,7 @@ export async function UnregisterDeviceForPushNotifications(args: IPushRegistrati
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
-                    apikey: process.env.APIKEY,
+                    'apikey': `${process.env.APIKEY}`,
                 },
                 body: JSON.stringify(args),
             });
