@@ -1,5 +1,38 @@
 # @learncard/create-http-bridge
 
+## 1.1.31
+
+### Patch Changes
+
+-   [#249](https://github.com/learningeconomy/LearnCard/pull/249) [`6a1a143`](https://github.com/learningeconomy/LearnCard/commit/6a1a1431a3bfdec261e1c9386a774cadbca6a5a1) Thanks [@goblincore](https://github.com/goblincore)! - Republish
+
+-   Updated dependencies [[`6a1a143`](https://github.com/learningeconomy/LearnCard/commit/6a1a1431a3bfdec261e1c9386a774cadbca6a5a1)]:
+    -   @learncard/core@8.5.3
+    -   @learncard/types@5.2.3
+
+## 1.1.30
+
+### Patch Changes
+
+-   Updated dependencies [[`f1a8679`](https://github.com/learningeconomy/LearnCard/commit/f1a86796817fa20a0667a6b717b56d22038028c1)]:
+    -   @learncard/core@8.5.2
+
+## 1.1.29
+
+### Patch Changes
+
+-   Updated dependencies [[`e69af5a`](https://github.com/learningeconomy/LearnCard/commit/e69af5ab09b88d111ddf207f413552aa0bac991a)]:
+    -   @learncard/types@5.2.2
+    -   @learncard/core@8.5.1
+
+## 1.1.28
+
+### Patch Changes
+
+-   Updated dependencies [[`13d0393`](https://github.com/learningeconomy/LearnCard/commit/13d0393725d9d5e17b02de7a8088f46bda688d92), [`ed3c460`](https://github.com/learningeconomy/LearnCard/commit/ed3c460fadae88702c1244795ab3b7483d97bab7)]:
+    -   @learncard/core@8.5.1
+    -   @learncard/types@5.2.1
+
 ## 1.1.27
 
 ### Patch Changes

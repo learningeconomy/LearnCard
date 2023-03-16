@@ -20,6 +20,7 @@ export * from "./LeftArrow";
 export * from "./Lightbulb";
 export * from "./LinkIcon";
 export * from "./PdfIcon";
+export * from "./PuzzlePiece";
 export * from "./RoundedX";
 export * from "./Trophy";
 export * from "./User";

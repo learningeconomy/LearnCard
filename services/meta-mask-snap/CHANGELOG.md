@@ -1,5 +1,75 @@
 # @learncard/meta-mask-snap
 
+## 1.0.37
+
+### Patch Changes
+
+-   [#249](https://github.com/learningeconomy/LearnCard/pull/249) [`6a1a143`](https://github.com/learningeconomy/LearnCard/commit/6a1a1431a3bfdec261e1c9386a774cadbca6a5a1) Thanks [@goblincore](https://github.com/goblincore)! - Republish
+
+-   Updated dependencies [[`6a1a143`](https://github.com/learningeconomy/LearnCard/commit/6a1a1431a3bfdec261e1c9386a774cadbca6a5a1)]:
+    -   @learncard/core@8.5.3
+
+## 1.0.36
+
+### Patch Changes
+
+-   [#245](https://github.com/learningeconomy/LearnCard/pull/245) [`790bae6`](https://github.com/learningeconomy/LearnCard/commit/790bae6b844263318ec0660fa269c2a43b9d4716) Thanks [@gerardopar](https://github.com/gerardopar)! - notification style updates
+
+## 1.0.35
+
+### Patch Changes
+
+-   Updated dependencies [[`f1a8679`](https://github.com/learningeconomy/LearnCard/commit/f1a86796817fa20a0667a6b717b56d22038028c1)]:
+    -   @learncard/core@8.5.2
+
+## 1.0.34
+
+### Patch Changes
+
+-   [#231](https://github.com/learningeconomy/LearnCard/pull/231) [`e69af5a`](https://github.com/learningeconomy/LearnCard/commit/e69af5ab09b88d111ddf207f413552aa0bac991a) Thanks [@Custard7](https://github.com/Custard7)! - Feat: Add includeConnectionStatus option to searchProfiles, in brain-service and LCN Plugin
+
+-   Updated dependencies []:
+    -   @learncard/core@8.5.1
+
+## 1.0.33
+
+### Patch Changes
+
+-   [#216](https://github.com/learningeconomy/LearnCard/pull/216) [`13d0393`](https://github.com/learningeconomy/LearnCard/commit/13d0393725d9d5e17b02de7a8088f46bda688d92) Thanks [@Custard7](https://github.com/Custard7)! - - Updates LCN Brain to wrap VCs in a `CertifiedBoost` VC when using `sendBoost`, and verifying that the VCs use the boostId, and verify that the sender is authorized to issue the boost + that the credential matches the boost credential.
+
+    -   Updates LCN Plugin to append boostId to a boost VC when calling `sendBoost()`
+    -   Adds `getBoostRecipients` function to LCN Brain + LCN Plugin so you can retrieve a list of boost recipients
+    -   Adds new `boost` type to `learnCard.invoke.newCredential({ type: 'boost' })` to VC Templates Plugin
+    -   Adds new VC Verification plugin, extending `learnCard.invoke.verifyCredential()` so it will verify a CertifiedBoost VC with a registry of trusted CertifiedBoost verifiers
+    -   Add tests for LCN Plugin + VerifyBoost Plugin
+    -   Add tests for `sendBoost` for LCN Brain
+    -   Add tests for `getBoostRecipients` for LCN Brain
+
+-   [#229](https://github.com/learningeconomy/LearnCard/pull/229) [`ed3c460`](https://github.com/learningeconomy/LearnCard/commit/ed3c460fadae88702c1244795ab3b7483d97bab7) Thanks [@Custard7](https://github.com/Custard7)! - - Updates LCN Brain to wrap VCs in a `CertifiedBoost` VC when using `sendBoost`, and verifying that the VCs use the boostId, and verify that the sender is authorized to issue the boost + that the credential matches the boost credential.
+    -   Updates LCN Plugin to append boostId to a boost VC when calling `sendBoost()`
+    -   Adds `getBoostRecipients` function to LCN Brain + LCN Plugin so you can retrieve a list of boost recipients
+    -   Adds new `boost` type to `learnCard.invoke.newCredential({ type: 'boost' })` to VC Templates Plugin
+    -   Adds new VC Verification plugin, extending `learnCard.invoke.verifyCredential()` so it will verify a CertifiedBoost VC with a registry of trusted CertifiedBoost verifiers
+    -   Add tests for LCN Plugin + VerifyBoost Plugin
+    -   Add tests for `sendBoost` for LCN Brain
+    -   Add tests for `getBoostRecipients` for LCN Brain
+-   Updated dependencies [[`13d0393`](https://github.com/learningeconomy/LearnCard/commit/13d0393725d9d5e17b02de7a8088f46bda688d92), [`ed3c460`](https://github.com/learningeconomy/LearnCard/commit/ed3c460fadae88702c1244795ab3b7483d97bab7)]:
+    -   @learncard/core@8.5.1
+
+## 1.0.32
+
+### Patch Changes
+
+-   [#226](https://github.com/learningeconomy/LearnCard/pull/226) [`ad7f281`](https://github.com/learningeconomy/LearnCard/commit/ad7f281d6ed1fe1c33601defe71f2714f8675f45) Thanks [@goblincore](https://github.com/goblincore)! - Add additional optional prop to VCDisplayCard2 and fix VC type display
+
+## 1.0.31
+
+### Patch Changes
+
+-   [#223](https://github.com/learningeconomy/LearnCard/pull/223) [`2707350`](https://github.com/learningeconomy/LearnCard/commit/27073505a7e0c4f4ec8fef191fbff16d97c5d74a) Thanks [@goblincore](https://github.com/goblincore)! - Add Small Boost Card and update VCDisplayCard2 with additional props for overriding parts of the card display (body, thumb, footer) and adds support for displaying an issue history
+
+-   [#221](https://github.com/learningeconomy/LearnCard/pull/221) [`c997138`](https://github.com/learningeconomy/LearnCard/commit/c9971386188169859bbe9e8ef7da6572432ed3f0) Thanks [@gerardopar](https://github.com/gerardopar)! - Update notification types - ( add social badge )
+
 ## 1.0.30
 
 ### Patch Changes

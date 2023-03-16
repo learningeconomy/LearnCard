@@ -60,7 +60,7 @@ jobs:
           key: ${{ runner.os }}-nx-cache-${{ github.workflow }}
 
       - name: Install dependencies
-        run: pnpm i
+        run: pnpm install --no-frozen-lockfile
 
       - name: Build MM Snap
         run: pnpm exec nx build meta-mask-snap

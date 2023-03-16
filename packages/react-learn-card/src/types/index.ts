@@ -4,7 +4,7 @@ import {
     Profile,
     CredentialSubject,
 } from '@learncard/types';
-import React from 'react';
+import React, { ReactNode } from 'react';
 
 export enum Icons {
     coinsIcon,
@@ -17,6 +17,18 @@ export enum Icons {
     trophylight,
     puzzlelight,
     award,
+}
+
+export enum LCCategoryEnum {
+    socialBadge = 'Social Badge',
+    achievement = 'Achievement',
+    course = 'Course',
+    job = 'Job',
+    id = 'ID',
+    workHistory = 'Work History',
+    currency = 'Currency',
+    learningHistory = 'Learning History',
+    skill = 'Skill',
 }
 
 export enum LCSubtypes {
@@ -244,6 +256,52 @@ export type GenericCardProps = {
     onClick?: () => void;
     flipped?: boolean;
 };
+
+export type IssueHistory = {
+    id?: string | number;
+    name?: string;
+    thumb?: string;
+    date?: string;
+};
+
+export type BoostSmallCardProps = {
+    title?: string;
+    className?: string;
+    type?: WalletCategoryTypes;
+    thumbImgSrc?: string;
+    customThumbClass?: string;
+    customHeaderClass?: string;
+    customBodyClass?: string;
+    showChecked?: boolean;
+    checkStatus?: boolean;
+    customButtonComponent?: React.ReactNode;
+    customThumbComponent?: React.ReactNode;
+    customBodyComponent?: React.ReactNode;
+    arrowOnClick?: () => void;
+    buttonOnClick?: () => void;
+    onCheckClick?: () => void;
+    innerOnClick?: () => void;
+    issueHistory?: IssueHistory[];
+    bgImgSrc?: string;
+};
+
+export type BoostGenericCardProps = {
+    title?: string;
+    className?: string;
+    type?: WalletCategoryTypes;
+    thumbImgSrc?: string;
+    customThumbClass?: string;
+    customHeaderClass?: string;
+    showChecked?: boolean;
+    checkStatus?: boolean;
+    onCheckClick?: () => void;
+    customThumbComponent?: React.ReactNode;
+    innerOnClick?: () => void;
+    bgImgSrc?: string;
+    issuerName?: string;
+    dateDisplay?: string;
+};
+
 
 export type Attachment = {
     title: string;

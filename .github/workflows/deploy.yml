@@ -16,6 +16,11 @@ env:
   NEO4J_URI: ${{ secrets.NEO4J_URI }}
   NEO4J_USERNAME: ${{ secrets.NEO4J_USERNAME }}
   NEO4J_PASSWORD: ${{ secrets.NEO4J_PASSWORD }}
+  DD_API_KEY: ${{ secrets.DD_API_KEY }}
+  DD_ENV: ${{ secrets.DD_ENV }}
+  DD_SERVICE: ${{ secrets.DD_SERVICE }}
+  DD_SITE: ${{ secrets.DD_SITE }}
+  DD_VERSION: ${{ secrets.DD_VERSION }}
 
 jobs:
   deploy:
@@ -64,14 +69,16 @@ jobs:
           key: ${{ runner.os }}-nx-cache-${{ github.workflow }}
 
       - name: Install dependencies
-        run: pnpm i
+        run: pnpm install --no-frozen-lockfile
 
       - name: Run tests
-        run: pnpm exec nx affected --target=test --base=origin/main --head=HEAD
+        run: pnpm exec nx affected --target=test --base=HEAD~1 --head=HEAD
+        env:
+          SEED: ${{ secrets.SEED }}
 
       - name: Get Affected List
         id: affected
-        run: echo "AFFECTED=$(pnpm exec nx print-affected --base=origin/main --head=HEAD --select=projects)" >> $GITHUB_ENV
+        run: echo "AFFECTED=$(pnpm exec nx print-affected --base=HEAD~1 --head=HEAD --select=projects)" >> $GITHUB_ENV
 
       - name: Deploy Brain Service Lambda
         if: contains(env.AFFECTED, 'network-brain-service')

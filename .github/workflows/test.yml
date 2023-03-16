@@ -51,10 +51,12 @@ jobs:
           key: ${{ runner.os }}-nx-cache-${{ github.workflow }}
 
       - name: Install dependencies
-        run: pnpm i
+        run: pnpm install --no-frozen-lockfile
 
       - name: Run tests
         run: pnpm exec nx affected --target=test --base=origin/main --head=HEAD
+        env:
+          SEED: ${{ secrets.SEED }}
 
       - name: Save nx cache
         uses: actions/cache/save@v3

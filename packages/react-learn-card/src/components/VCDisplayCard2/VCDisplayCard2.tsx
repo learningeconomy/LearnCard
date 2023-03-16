@@ -14,8 +14,9 @@ import {
     getColorForVerificationStatus,
     getInfoFromCredential,
 } from '../../helpers/credential.helpers';
-import { BoostAchievementCredential } from '../../types';
+import { BoostAchievementCredential, IssueHistory, LCCategoryEnum } from '../../types';
 import { MediaMetadata, VideoMetadata } from './MediaAttachmentsBox';
+import VCDisplayCardCategoryType from './VCDisplayCardCategoryType';
 
 export type CredentialIconType = {
     image?: React.ReactNode;
@@ -23,6 +24,7 @@ export type CredentialIconType = {
 };
 
 export type VCDisplayCard2Props = {
+    categoryType?: LCCategoryEnum;
     credential: VC | BoostAchievementCredential;
     verificationItems: VerificationItem[];
     issueeOverride?: Profile;
@@ -36,9 +38,16 @@ export type VCDisplayCard2Props = {
     getVideoMetadata?: (url: string) => VideoMetadata;
     onMediaAttachmentClick?: (url: string) => void;
     bottomRightIcon?: CredentialIconType;
+    customFooterComponent?: React.ReactNode;
+    customBodyCardComponent?: React.ReactNode;
+    customThumbComponent?: React.ReactNode;
+    issueHistory?: IssueHistory[];
+    titleOverride?: string;
+    showBackButton?: boolean;
 };
 
 export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
+    categoryType,
     credential,
     verificationItems,
     issueeOverride,
@@ -52,6 +61,12 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     getVideoMetadata,
     onMediaAttachmentClick,
     bottomRightIcon,
+    customFooterComponent,
+    customBodyCardComponent,
+    customThumbComponent,
+    issueHistory,
+    titleOverride,
+    showBackButton,
 }) => {
     const {
         title = '',
@@ -80,7 +95,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
 
     let worstVerificationStatus = verificationItems.reduce(
         (
-            currentWorst: typeof VerificationStatusEnum[keyof typeof VerificationStatusEnum],
+            currentWorst: (typeof VerificationStatusEnum)[keyof typeof VerificationStatusEnum],
             verification
         ) => {
             switch (currentWorst) {
@@ -109,8 +124,10 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
         backgroundAttachment: 'fixed',
     };
 
+    const _title = titleOverride || title;
+
     return (
-        <section className="vc-display-card font-mouse flex flex-col items-center border-solid border-[5px] border-white h-[700px] rounded-[30px] overflow-visible z-10 max-w-[400px] relative bg-white">
+        <section className="vc-display-card font-mouse flex flex-col items-center border-solid border-[5px] border-white rounded-[30px] overflow-visible z-10 max-w-[400px] relative bg-white">
             <RibbonEnd
                 side="left"
                 className="absolute left-[-30px] top-[50px] z-0"
@@ -127,14 +144,12 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 className="vc-card-header px-[20px] pb-[10px] pt-[3px] overflow-visible mt-[40px] absolute text-center bg-white border-y-[5px] border-[#EEF2FF] shadow-bottom w-[calc(100%_+_16px)] rounded-t-[8px] z-50"
                 style={{ wordBreak: 'break-word' }}
             >
-                <span className="uppercase text-spice-500 font-poppins text-[12px] font-[600] leading-[12px]">
-                    Achievement
-                </span>
+                <VCDisplayCardCategoryType categoryType={categoryType} />
                 <FitText
-                    text={title ?? ''}
+                    text={_title ?? ''}
                     width={((headerWidth ?? 290) - 40).toString()}
                     options={{ maxSize: 32, minSize: 20, multiLine: true }}
-                    className="text-[#18224E] leading-[100%] text-shadow text-[32px]"
+                    className="vc-card-header-main-title text-[#18224E] leading-[100%] text-shadow text-[32px]"
                 />
             </h1>
 
@@ -147,7 +162,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 </button>
             )}
 
-            {!isFront && (
+            {!isFront && showBackButton && (
                 <button
                     className="vc-card-back-button absolute top-[-25px] bg-white rounded-full h-[50px] px-[15px] flex items-center justify-center gap-[5px] z-50 text-[30px] text-grayscale-900"
                     onClick={() => setIsFront(true)}
@@ -179,6 +194,8 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                             title={title}
                             subjectImageComponent={subjectImageComponent}
                             issuerImageComponent={issuerImageComponent}
+                            customBodyCardComponent={customBodyCardComponent}
+                            customThumbComponent={customThumbComponent}
                             createdAt={createdAt ?? ''}
                             imageUrl={imageUrl}
                         />
@@ -188,13 +205,13 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                             credential={credential}
                             verificationItems={verificationItems}
                             // convertTagsToSkills={convertTagsToSkills}
+                            issueHistory={issueHistory}
                             getFileMetadata={getFileMetadata}
                             getVideoMetadata={getVideoMetadata}
                             onMediaAttachmentClick={onMediaAttachmentClick}
                         />
                     )}
-                    <button
-                        type="button"
+                    <div
                         className="vc-toggle-side-button text-white shadow-bottom bg-[#00000099] px-[30px] py-[8px] rounded-[40px] text-[28px] tracking-[0.75px] uppercase leading-[28px] mt-[40px] w-fit"
                         onClick={() => setIsFront(!isFront)}
                     >
@@ -205,27 +222,35 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                                 Back
                             </span>
                         )}
-                    </button>
+                    </div>
                 </div>
             </div>
             <footer className="vc-card-footer w-full flex justify-between p-[5px] mt-[5px]">
-                <VCVerificationCheckWithSpinner
-                    spinnerSize="40px"
-                    size={'32px'}
-                    loading={verificationInProgress}
-                />
-                <div className="vc-footer-text font-montserrat flex flex-col items-center justify-center text-[12px] font-[700] leading-[15px]">
-                    <span className="text-[#4F4F4F]">Verified Credential</span>
-                    <span className="vc-footer-status uppercase" style={{ color: statusColor }}>
-                        {worstVerificationStatus}
-                    </span>
-                </div>
-                <div
-                    className="vc-footer-icon rounded-[20px] h-[40px] w-[40px] flex items-center justify-center overflow-hidden"
-                    style={{ backgroundColor: bottomRightIcon?.color ?? '#6366F1' }}
-                >
-                    {bottomRightIcon?.image ?? <AwardRibbon />}
-                </div>
+                {customFooterComponent && customFooterComponent}
+                {!customFooterComponent && (
+                    <>
+                        <VCVerificationCheckWithSpinner
+                            spinnerSize="40px"
+                            size={'32px'}
+                            loading={verificationInProgress}
+                        />
+                        <div className="vc-footer-text font-montserrat flex flex-col items-center justify-center text-[12px] font-[700] leading-[15px]">
+                            <span className="text-[#4F4F4F]">Verified Credential</span>
+                            <span
+                                className="vc-footer-status uppercase"
+                                style={{ color: statusColor }}
+                            >
+                                {worstVerificationStatus}
+                            </span>
+                        </div>
+                        <div
+                            className="vc-footer-icon rounded-[20px] h-[40px] w-[40px] flex items-center justify-center overflow-hidden"
+                            style={{ backgroundColor: bottomRightIcon?.color ?? '#6366F1' }}
+                        >
+                            {bottomRightIcon?.image ?? <AwardRibbon />}
+                        </div>
+                    </>
+                )}
             </footer>
         </section>
     );

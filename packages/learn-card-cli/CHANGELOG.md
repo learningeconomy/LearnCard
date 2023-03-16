@@ -1,5 +1,42 @@
 # @learncard/cli
 
+## 3.0.4
+
+### Patch Changes
+
+-   [#249](https://github.com/learningeconomy/LearnCard/pull/249) [`6a1a143`](https://github.com/learningeconomy/LearnCard/commit/6a1a1431a3bfdec261e1c9386a774cadbca6a5a1) Thanks [@goblincore](https://github.com/goblincore)! - Republish
+
+-   Updated dependencies [[`6a1a143`](https://github.com/learningeconomy/LearnCard/commit/6a1a1431a3bfdec261e1c9386a774cadbca6a5a1)]:
+    -   @learncard/core@8.5.3
+    -   @learncard/types@5.2.3
+    -   @learncard/network-plugin@1.2.2
+
+## 3.0.3
+
+### Patch Changes
+
+-   Updated dependencies [[`f1a8679`](https://github.com/learningeconomy/LearnCard/commit/f1a86796817fa20a0667a6b717b56d22038028c1)]:
+    -   @learncard/core@8.5.2
+    -   @learncard/network-plugin@1.2.1
+
+## 3.0.2
+
+### Patch Changes
+
+-   Updated dependencies [[`e69af5a`](https://github.com/learningeconomy/LearnCard/commit/e69af5ab09b88d111ddf207f413552aa0bac991a)]:
+    -   @learncard/types@5.2.2
+    -   @learncard/network-plugin@1.2.0
+    -   @learncard/core@8.5.1
+
+## 3.0.1
+
+### Patch Changes
+
+-   Updated dependencies [[`13d0393`](https://github.com/learningeconomy/LearnCard/commit/13d0393725d9d5e17b02de7a8088f46bda688d92), [`ed3c460`](https://github.com/learningeconomy/LearnCard/commit/ed3c460fadae88702c1244795ab3b7483d97bab7)]:
+    -   @learncard/core@8.5.1
+    -   @learncard/types@5.2.1
+    -   @learncard/network-plugin@1.1.0
+
 ## 3.0.0
 
 ### Major Changes

@@ -1,5 +1,60 @@
 # Changelog
 
+## 1.0.37
+
+### Patch Changes
+
+-   [#249](https://github.com/learningeconomy/LearnCard/pull/249) [`6a1a143`](https://github.com/learningeconomy/LearnCard/commit/6a1a1431a3bfdec261e1c9386a774cadbca6a5a1) Thanks [@goblincore](https://github.com/goblincore)! - Republish
+
+-   Updated dependencies [[`6a1a143`](https://github.com/learningeconomy/LearnCard/commit/6a1a1431a3bfdec261e1c9386a774cadbca6a5a1)]:
+    -   @learncard/core@8.5.3
+    -   @learncard/meta-mask-snap@1.0.37
+
+## 1.0.36
+
+### Patch Changes
+
+-   Updated dependencies [[`790bae6`](https://github.com/learningeconomy/LearnCard/commit/790bae6b844263318ec0660fa269c2a43b9d4716)]:
+    -   @learncard/meta-mask-snap@1.0.36
+
+## 1.0.35
+
+### Patch Changes
+
+-   Updated dependencies [[`f1a8679`](https://github.com/learningeconomy/LearnCard/commit/f1a86796817fa20a0667a6b717b56d22038028c1)]:
+    -   @learncard/core@8.5.2
+    -   @learncard/meta-mask-snap@1.0.35
+
+## 1.0.34
+
+### Patch Changes
+
+-   Updated dependencies [[`e69af5a`](https://github.com/learningeconomy/LearnCard/commit/e69af5ab09b88d111ddf207f413552aa0bac991a)]:
+    -   @learncard/meta-mask-snap@1.0.34
+    -   @learncard/core@8.5.1
+
+## 1.0.33
+
+### Patch Changes
+
+-   Updated dependencies [[`13d0393`](https://github.com/learningeconomy/LearnCard/commit/13d0393725d9d5e17b02de7a8088f46bda688d92), [`ed3c460`](https://github.com/learningeconomy/LearnCard/commit/ed3c460fadae88702c1244795ab3b7483d97bab7)]:
+    -   @learncard/core@8.5.1
+    -   @learncard/meta-mask-snap@1.0.33
+
+## 1.0.32
+
+### Patch Changes
+
+-   Updated dependencies [[`ad7f281`](https://github.com/learningeconomy/LearnCard/commit/ad7f281d6ed1fe1c33601defe71f2714f8675f45)]:
+    -   @learncard/meta-mask-snap@1.0.32
+
+## 1.0.31
+
+### Patch Changes
+
+-   Updated dependencies [[`2707350`](https://github.com/learningeconomy/LearnCard/commit/27073505a7e0c4f4ec8fef191fbff16d97c5d74a), [`c997138`](https://github.com/learningeconomy/LearnCard/commit/c9971386188169859bbe9e8ef7da6572432ed3f0)]:
+    -   @learncard/meta-mask-snap@1.0.31
+
 ## 1.0.30
 
 ### Patch Changes

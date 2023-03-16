@@ -1,5 +1,5 @@
 import { getClient, getUser } from './helpers/getClient';
-import { testVc } from './helpers/send';
+import { testVc, sendBoost, testUnsignedBoost } from './helpers/send';
 import { Profile, Credential, Boost } from '@models';
 
 const noAuthClient = getClient();
@@ -79,6 +79,178 @@ describe('Boosts', () => {
             const boosts = await userA.clients.fullAuth.boost.getBoosts();
 
             expect(boosts).toHaveLength(1);
+        });
+    });
+
+    describe('sendBoost', () => {
+        beforeEach(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+        });
+
+        afterAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+        });
+
+        it('should require full auth to send boost', async () => {
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+            const userBProfile = await userB.clients.fullAuth.profile.getProfile();
+
+            const credential = await userA.learnCard.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: userA.learnCard.id.did(),
+                credentialSubject: {
+                    ...testUnsignedBoost.credentialSubject,
+                    id: userA.learnCard.id.did(),
+                },
+                boostId: uri,
+            });
+
+            await userA.clients.fullAuth.boost.sendBoost({
+                profileId: userBProfile.profileId,
+                uri,
+                credential,
+            });
+
+            await expect(
+                noAuthClient.boost.sendBoost({
+                    profileId: userBProfile.profileId,
+                    uri,
+                    credential,
+                })
+            ).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+
+            await expect(
+                userA.clients.partialAuth.boost.sendBoost({
+                    profileId: userBProfile.profileId,
+                    uri,
+                    credential,
+                })
+            ).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+        });
+
+        it('should allow sending a boost', async () => {
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+            const userBProfile = await userB.clients.fullAuth.profile.getProfile();
+
+            const credential = await userA.learnCard.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: userA.learnCard.id.did(),
+                credentialSubject: {
+                    ...testUnsignedBoost.credentialSubject,
+                    id: userA.learnCard.id.did(),
+                },
+                boostId: uri,
+            });
+
+            const credentialUri = await userA.clients.fullAuth.boost.sendBoost({
+                profileId: userBProfile.profileId,
+                uri,
+                credential,
+            });
+            expect(credentialUri).toBeDefined();
+        });
+
+        it('should allow the recipient to claim a sent boost', async () => {
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+            const userAProfile = await userA.clients.fullAuth.profile.getProfile();
+            const userBProfile = await userB.clients.fullAuth.profile.getProfile();
+
+            const credential = await userA.learnCard.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: userA.learnCard.id.did(),
+                credentialSubject: {
+                    ...testUnsignedBoost.credentialSubject,
+                    id: userA.learnCard.id.did(),
+                },
+                boostId: uri,
+            });
+
+            const credentialUri = await userA.clients.fullAuth.boost.sendBoost({
+                profileId: userBProfile.profileId,
+                uri,
+                credential,
+            });
+
+            expect(
+                await userB.clients.fullAuth.credential.receivedCredentials({
+                    from: userAProfile.profileId,
+                })
+            ).toHaveLength(0);
+            expect(
+                await userB.clients.fullAuth.credential.acceptCredential({ uri: credentialUri })
+            ).toBe(true);
+            expect(
+                await userB.clients.fullAuth.credential.receivedCredentials({
+                    from: userAProfile.profileId,
+                })
+            ).toHaveLength(1);
+        });
+    });
+
+    describe('getBoostRecipients', () => {
+        beforeEach(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+        });
+
+        afterAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+        });
+
+        it('should require full auth to get boost recipients', async () => {
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+            await userA.clients.fullAuth.boost.getBoostRecipients({ uri });
+
+            await expect(noAuthClient.boost.getBoostRecipients({ uri })).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+            await expect(
+                userA.clients.partialAuth.boost.getBoostRecipients({ uri })
+            ).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+        });
+
+        it('should allow getting boost recipients', async () => {
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+            await expect(
+                userA.clients.fullAuth.boost.getBoostRecipients({ uri })
+            ).resolves.not.toThrow();
+
+            expect(await userA.clients.fullAuth.boost.getBoostRecipients({ uri })).toHaveLength(0);
+
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB },
+                uri
+            );
+
+            expect(await userA.clients.fullAuth.boost.getBoostRecipients({ uri })).toHaveLength(1);
         });
     });
 

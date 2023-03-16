@@ -1,6 +1,6 @@
 {
     "name": "learn-card-discord-bot",
-    "version": "1.1.15",
+    "version": "1.1.20",
     "description": "",
     "main": "dist/index.js",
     "bin": "dist/index.js",
@@ -13,8 +13,8 @@
     "author": "Learning Economy Foundation (www.learningeconomy.io)",
     "license": "MIT",
     "dependencies": {
-        "@learncard/core": "8.5.0",
-        "@learncard/types": "5.2.0",
+        "@learncard/core": "8.5.3",
+        "@learncard/types": "5.2.3",
         "@rollup/plugin-json": "^4.1.0",
         "discord.js": "^14.6.0",
         "dotenv": "^16.0.1",

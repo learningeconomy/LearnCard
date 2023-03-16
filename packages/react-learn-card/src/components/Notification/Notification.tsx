@@ -58,7 +58,9 @@ export const Notification: React.FC<NotificationProps> = ({
             </div>
             <div className="flex flex-col justify-center items-center relative w-11/12">
                 <div className="flex flex-row items-center justify-start w-full">
-                    <div className="h-12 w-12 max-h-12 max-w-[48px] min-h-[48px] min-w-[48px] overflow-hidden rounded-full">
+                    <div
+                        className={`h-12 w-12 max-h-12 max-w-[48px] min-h-[48px] min-w-[48px] overflow-hidden rounded-full ${iconCircleStyles}`}
+                    >
                         <img
                             src={issuerImage}
                             alt="issuer image"

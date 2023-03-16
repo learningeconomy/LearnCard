@@ -5,6 +5,7 @@ export * from './didkit';
 export * from './EthereumPlugin';
 export * from './expiration';
 export * from './idx';
+export * from './learn-card';
 export * from './test-cache';
 export * from './test-storage';
 export * from './vc';

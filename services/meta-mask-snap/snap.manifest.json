@@ -1,5 +1,5 @@
 {
-  "version": "1.0.30",
+  "version": "1.0.36",
   "description": "A MetaMask Snap template.",
   "proposedName": "MetaMask Template Snap",
   "repository": {
@@ -7,7 +7,7 @@
     "url": "https://github.com/WeLibraryOS/LearnCard.git"
   },
   "source": {
-    "shasum": "nETZviCSnynudh0eU4ATtf2uNwCGJyfDHzAR+C1VyWs=",
+    "shasum": "krXprpGQ/YcOhaPdwwrQlE7jWkKeJq/aambS5mKZNh8=",
     "location": {
       "npm": {
         "filePath": "dist/snap.js",

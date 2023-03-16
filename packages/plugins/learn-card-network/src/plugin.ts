@@ -5,11 +5,16 @@ import {
     UnsignedVCValidator,
     VCValidator,
     VPValidator,
+    Profile,
 } from '@learncard/types';
-import { LearnCard } from '@learncard/core';
+import { LearnCard, VerifyExtension } from '@learncard/core';
 
-import { LearnCardNetworkPluginDependentMethods, LearnCardNetworkPlugin } from './types';
-
+import {
+    LearnCardNetworkPluginDependentMethods,
+    LearnCardNetworkPlugin,
+    VerifyBoostPlugin,
+    TrustedBoostRegistryEntry,
+} from './types';
 export * from './types';
 
 /**
@@ -154,9 +159,14 @@ export const getLearnCardNetworkPlugin = async (
             searchProfiles: async (
                 _learnCard,
                 input = '',
-                { limit = 25, includeSelf = false } = {}
+                { limit = 25, includeSelf = false, includeConnectionStatus = false } = {}
             ) => {
-                return client.profile.searchProfiles.query({ input, limit, includeSelf });
+                return client.profile.searchProfiles.query({
+                    input,
+                    limit,
+                    includeSelf,
+                    includeConnectionStatus,
+                });
             },
             connectWith: async (_learnCard, profileId) => {
                 if (!userData) throw new Error('Please make an account first!');
@@ -303,6 +313,11 @@ export const getLearnCardNetworkPlugin = async (
 
                 return client.boost.getBoosts.query();
             },
+            getBoostRecipients: async (_learnCard, uri, limit = 25, skip) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.boost.getBoostRecipients.query({ uri, limit, skip });
+            },
             updateBoost: async (_learnCard, uri, updates) => {
                 if (!userData) throw new Error('Please make an account first!');
 
@@ -336,6 +351,11 @@ export const getLearnCardNetworkPlugin = async (
                     }));
                 } else {
                     boost.credentialSubject.id = targetProfile.did;
+                }
+
+                // Embed the boostURI into the boost credential for verification purposes.
+                if (boost?.type?.includes('BoostCredential')) {
+                    boost.boostId = boostUri;
                 }
 
                 const vc = await _learnCard.invoke.issueCredential(boost);
@@ -376,6 +396,105 @@ export const getLearnCardNetworkPlugin = async (
             },
             unregisterDeviceForPush: async (_learnCard, deviceToken) => {
                 return client.profile.unregisterDeviceForPush.mutate({ deviceToken });
+            },
+        },
+    };
+};
+
+/**
+ * @group Plugins
+ */
+export const getVerifyBoostPlugin = async (
+    learnCard: LearnCard<any, any, VerifyExtension>,
+    trustedBoostRegistryUrl?: string
+): Promise<VerifyBoostPlugin> => {
+    const DEFAULT_TRUSTED_BOOST_REGISTRY: TrustedBoostRegistryEntry[] = [
+        {
+            id: 'LearnCard Network',
+            url: 'https://network.learncard.com',
+            did: 'did:web:network.learncard.com',
+        },
+    ];
+
+    let boostRegistry: TrustedBoostRegistryEntry[];
+
+    if (trustedBoostRegistryUrl) {
+        const res = await fetch(trustedBoostRegistryUrl);
+        if (res.status === 200) {
+            boostRegistry = JSON.parse(await res.text());
+        } else {
+            boostRegistry = DEFAULT_TRUSTED_BOOST_REGISTRY;
+        }
+    } else {
+        boostRegistry = DEFAULT_TRUSTED_BOOST_REGISTRY;
+    }
+
+    const getIssuerDID = (issuer: string | Profile | undefined): string | undefined => {
+        if (!issuer) return;
+        if (typeof issuer === 'string') {
+            return issuer;
+        } else if ('id' in issuer && typeof issuer.id === 'string') {
+            return issuer.id;
+        } else {
+            return;
+        }
+    };
+    const getTrustedBoostVerifier = (
+        issuer: string | Profile | undefined
+    ): TrustedBoostRegistryEntry | undefined => {
+        const issuerDID = getIssuerDID(issuer);
+        if (!issuerDID) return;
+        return boostRegistry.find(o => o.did === issuerDID);
+    };
+
+    return {
+        name: 'VerifyBoost',
+        displayName: 'Verify Boost Extension',
+        description: 'Adds a check for validating Boost Credentials.',
+        methods: {
+            verifyCredential: async (_learnCard, credential) => {
+                const verificationCheck = await learnCard.invoke.verifyCredential(credential);
+                const boostCredential = credential?.boostCredential;
+                try {
+                    if (boostCredential) {
+                        const verifyBoostCredential = await learnCard.invoke.verifyCredential(
+                            boostCredential
+                        );
+                        if (!boostCredential?.boostId && !credential?.boostId) {
+                            verificationCheck.warnings.push(
+                                'Boost Authenticity could not be verified: Boost ID metadata is missing.'
+                            );
+                        }
+
+                        if (verifyBoostCredential.errors?.length > 0) {
+                            verificationCheck.errors = [
+                                ...(verifyBoostCredential.errors || []),
+                                ...(verificationCheck.errors || []),
+                                'Boost Credential could not be verified.',
+                            ];
+                        } else if (boostCredential?.boostId !== credential?.boostId) {
+                            verificationCheck.errors.push(
+                                'Boost Authenticity could not be verified: Boost ID metadata is mismatched.'
+                            );
+                        } else {
+                            const trustedBoostIssuer = getTrustedBoostVerifier(credential?.issuer);
+                            if (trustedBoostIssuer) {
+                                verificationCheck.checks.push(
+                                    `Boost is Authentic. Verified by ${trustedBoostIssuer.id}.`
+                                );
+                            } else {
+                                verificationCheck.warnings.push(
+                                    `Boost Authenticity could not be verified. Issuer is outside of trust network: ${getIssuerDID(
+                                        credential?.issuer
+                                    )}`
+                                );
+                            }
+                        }
+                    }
+                } catch (e) {
+                    verificationCheck.errors.push('Boost authenticity could not be verified.');
+                }
+                return verificationCheck;
             },
         },
     };

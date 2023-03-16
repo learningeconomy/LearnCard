@@ -625,8 +625,8 @@ importers:
     specifiers:
       '@changesets/changelog-github': ^0.4.5
       '@changesets/cli': ^2.23.0
-      '@learncard/core': 8.5.0
-      '@learncard/types': 5.2.0
+      '@learncard/core': 8.5.2
+      '@learncard/types': 5.2.2
       '@rollup/plugin-json': ^4.1.0
       '@types/cors': ^2.8.12
       '@types/figlet': ^1.5.4
@@ -695,6 +695,7 @@ importers:
       '@types/cors': ^2.8.13
       '@types/express': ^4.17.15
       '@types/libsodium-wrappers': ^0.7.10
+      '@types/lodash': ^4.14.191
       '@types/node': ^18.0.0
       '@types/uuid': ^9.0.0
       cors: ^2.8.5
@@ -706,6 +707,7 @@ importers:
       ioredis-mock: ^8.2.2
       jwt-decode: ^3.1.2
       libsodium-wrappers: ^0.7.11
+      lodash: ^4.17.21
       multiformats: ^11.0.1
       neo4j-driver: ^4.3.0
       neogma: ^1.11.1
@@ -725,6 +727,7 @@ importers:
       '@learncard/types': link:../../../packages/learn-card-types
       '@trpc/client': 10.12.0_@trpc+server@10.12.0
       '@trpc/server': 10.12.0
+      '@types/lodash': 4.14.191
       cors: 2.8.5
       dotenv: 16.0.3
       express: 4.18.2
@@ -732,6 +735,7 @@ importers:
       ioredis-mock: 8.2.6_6jydlboc7eyi5xrsjrlqeddf74
       jwt-decode: 3.1.2
       libsodium-wrappers: 0.7.11
+      lodash: 4.17.21
       multiformats: 11.0.1
       neo4j-driver: 4.4.10
       neogma: 1.11.1
@@ -14590,6 +14594,7 @@ packages:
 
   /bindings/1.5.0:
     resolution: {integrity: sha512-p2q/t/mhvuOj/UeLlV6566GD/guowlr0hHxClI0W9m7MWYkL1F0hLo+0Aexs9HSPCtR1SXQ0TD3MMKrXZajbiQ==}
+    requiresBuild: true
     dependencies:
       file-uri-to-path: 1.0.0
     dev: true
@@ -19810,6 +19815,7 @@ packages:
 
   /file-uri-to-path/1.0.0:
     resolution: {integrity: sha512-0Zt+s3L7Vf1biwWZ29aARiVYLx7iMGnEUl9x33fbB/j3jR81u/O2LbqK+Bm1CDSNDKVtJ/YjwY7TUd5SkeLQLw==}
+    requiresBuild: true
     dev: true
     optional: true
 

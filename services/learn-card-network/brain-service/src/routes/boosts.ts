@@ -1,10 +1,16 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
-import { UnsignedVCValidator, VCValidator, JWEValidator } from '@learncard/types';
+import {
+    UnsignedVCValidator,
+    VCValidator,
+    JWEValidator,
+    BoostRecipientValidator,
+} from '@learncard/types';
 
 import { t, profileRoute } from '@routes';
 
 import { getBoostByUri, getBoostsForProfile } from '@accesslayer/boost/read';
+import { getBoostRecipients } from '@accesslayer/boost/relationships/read';
 
 import { getBoostUri, isProfileBoostOwner, sendBoost } from '@helpers/boost.helpers';
 import { BoostValidator } from 'types/boost';
@@ -111,7 +117,35 @@ export const boostsRouter = t.router({
                 };
             });
         }),
+    getBoostRecipients: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/boost/recipients/{uri}',
+                tags: ['Boosts'],
+                summary: 'Get boost recipients',
+                description: 'This endpoint gets the recipients of a particular boost',
+            },
+        })
+        .input(
+            z.object({
+                uri: z.string(),
+                limit: z.number().optional().default(25),
+                skip: z.number().optional(),
+            })
+        )
+        .output(BoostRecipientValidator.array())
+        .query(async ({ input }) => {
+            const { uri, limit, skip } = input;
 
+            const boost = await getBoostByUri(uri);
+
+            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            //TODO: Should we restrict who can see the recipients of a boost? Maybe to Boost owner / people who have the boost?
+            return await getBoostRecipients(boost, { limit, skip });
+        }),
     updateBoost: profileRoute
         .meta({
             openapi: {

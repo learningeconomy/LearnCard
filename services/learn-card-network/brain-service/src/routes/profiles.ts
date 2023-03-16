@@ -1,6 +1,6 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
-import { LCNProfileValidator } from '@learncard/types';
+import { LCNProfileValidator, LCNProfileConnectionStatusEnum } from '@learncard/types';
 import { v4 as uuid } from 'uuid';
 
 import {
@@ -11,6 +11,7 @@ import {
     getConnections,
     getPendingConnections,
     requestConnection,
+    getConnectionStatus,
 } from '@helpers/connection.helpers';
 import { getDidWeb, updateDidForProfile } from '@helpers/did.helpers';
 
@@ -165,11 +166,16 @@ export const profilesRouter = t.router({
                 input: z.string(),
                 limit: z.number().int().positive().lt(100).default(25),
                 includeSelf: z.boolean().default(false),
+                includeConnectionStatus: z.boolean().default(false),
             })
         )
-        .output(LCNProfileValidator.array())
+        .output(
+            LCNProfileValidator.extend({
+                connectionStatus: LCNProfileConnectionStatusEnum.optional(),
+            }).array()
+        )
         .query(async ({ ctx, input }) => {
-            const { input: searchInput, limit, includeSelf } = input;
+            const { input: searchInput, limit, includeSelf, includeConnectionStatus } = input;
 
             const selfProfile = ctx.user && !includeSelf && (await getProfileByDid(ctx.user.did));
 
@@ -177,8 +183,29 @@ export const profilesRouter = t.router({
                 limit,
                 blacklist: selfProfile ? [selfProfile.profileId] : [],
             });
-
-            return profiles.map(profile => updateDidForProfile(ctx.domain, profile));
+            // TODO: Allow filtering out service profiles
+            if (selfProfile && includeConnectionStatus) {
+                const profilesWithConnectionStatus = await Promise.all(
+                    profiles.map(async profile => {
+                        const targetProfileFull = await getProfileByProfileId(profile.profileId);
+                        if (targetProfileFull) {
+                            return {
+                                ...profile,
+                                connectionStatus: await getConnectionStatus(
+                                    selfProfile,
+                                    targetProfileFull
+                                ),
+                            };
+                        }
+                        return profile;
+                    })
+                );
+                return profilesWithConnectionStatus.map(profile =>
+                    updateDidForProfile(ctx.domain, profile)
+                );
+            } else {
+                return profiles.map(profile => updateDidForProfile(ctx.domain, profile));
+            }
         }),
 
     updateProfile: profileRoute
@@ -580,5 +607,4 @@ export const profilesRouter = t.router({
             return result;
         }),
 });
-
 export type ProfilesRouter = typeof profilesRouter;
