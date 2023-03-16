@@ -87,7 +87,7 @@ export async function UnregisterDeviceForPushNotifications(args: IPushRegistrati
       });
       if (!response.ok) {
         // throw new Error(`HTTP error! status: ${response.status}`);
-        console.error('Notifications Helpers - Send Push Notification:', error);
+        console.error('Notifications Helpers - Send Push Notification');
         return null;
       }
 
