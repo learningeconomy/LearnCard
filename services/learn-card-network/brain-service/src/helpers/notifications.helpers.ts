@@ -18,6 +18,7 @@ export async function SendPushNotification(args: IPushNotificationRequest) {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    apikey: process.env.APIKEY,
                 },
                 body: JSON.stringify({
                     actionType: args.actionType,
