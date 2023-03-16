@@ -1,24 +1,24 @@
 {
-    "name": "@learncard/network-brain-client",
-    "version": "1.0.0",
-    "description": "",
-    "main": "dist/index.js",
-    "module": "./dist/brain-client.esm.js",
-    "types": "dist/index.d.ts",
-    "scripts": {
-        "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.js && tsc --p tsconfig.json"
-    },
-    "keywords": [],
-    "author": "Learning Economy Foundation (www.learningeconomy.io)",
-    "license": "MIT",
-    "devDependencies": {
-        "@learncard/types": "workspace:*",
-        "dts-bundle-generator": "^6.10.0",
-        "esbuild": "^0.16.16"
-    },
-    "dependencies": {
-        "@learncard/network-brain-service": "workspace:*",
-        "@trpc/client": "^10.9.0",
-        "@trpc/server": "^10.9.0"
-    }
+  "name": "@learncard/network-brain-client",
+  "version": "1.0.4",
+  "description": "",
+  "main": "dist/index.js",
+  "module": "./dist/brain-client.esm.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.js && tsc --p tsconfig.json"
+  },
+  "keywords": [],
+  "author": "Learning Economy Foundation (www.learningeconomy.io)",
+  "license": "MIT",
+  "devDependencies": {
+    "@learncard/types": "workspace:*",
+    "dts-bundle-generator": "^6.10.0",
+    "esbuild": "^0.16.16"
+  },
+  "dependencies": {
+    "@learncard/network-brain-service": "workspace:*",
+    "@trpc/client": "^10.9.0",
+    "@trpc/server": "^10.9.0"
+  }
 }
