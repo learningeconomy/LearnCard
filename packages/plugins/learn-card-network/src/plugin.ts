@@ -391,6 +391,12 @@ export const getLearnCardNetworkPlugin = async (
                     .or(JWEValidator)
                     .parseAsync(result);
             },
+            registerDeviceForPush: async (_learnCard, deviceToken) => {
+                return client.profile.registerDeviceForPush.mutate({ deviceToken });
+            },
+            unregisterDeviceForPush: async (_learnCard, deviceToken) => {
+                return client.profile.unregisterDeviceForPush.mutate({ deviceToken });
+            },
         },
     };
 };

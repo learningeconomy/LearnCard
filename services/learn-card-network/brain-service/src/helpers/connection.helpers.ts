@@ -1,6 +1,7 @@
 import { LCNProfileConnectionStatusEnum } from '@learncard/types';
 import { TRPCError } from '@trpc/server';
 import { Profile, ProfileInstance } from '@models';
+import { SendPushNotification } from './notifications.helpers';
 
 export const getConnections = async (profile: ProfileInstance): Promise<ProfileInstance[]> => {
     const [connectedTo, connectedBy] = await Promise.all([
@@ -117,6 +118,14 @@ export const connectProfiles = async (
         target.relateTo({ alias: 'connectedWith', where: { profileId: source.profileId } }),
     ]);
 
+    await SendPushNotification({
+        to: source.profileId,
+        message: `${target.displayName} has accepted your connection request!`,
+        title: 'Connection Accepted',
+        actionType: 'redirect',
+        url: '/contacts',
+    });
+
     return true;
 };
 
@@ -198,6 +207,14 @@ export const requestConnection = async (
     }
 
     await source.relateTo({ alias: 'connectionRequested', where: { profileId: target.profileId } });
+
+    await SendPushNotification({
+        to: target.profileId,
+        message: `${source.displayName} has sent you a connection request!`,
+        title: 'New Connection Request',
+        url: `/contacts/requests?profileId=${source.displayName}&connect=true`,
+        actionType: 'redirect',
+    });
 
     return true;
 };

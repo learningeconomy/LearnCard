@@ -5,6 +5,7 @@
   "semi": true,
   "singleQuote": true,
   "arrowParens": "avoid",
+  "quoteProps": "preserve",
   "overrides": [
     {
       "files": ".prettierrc",
