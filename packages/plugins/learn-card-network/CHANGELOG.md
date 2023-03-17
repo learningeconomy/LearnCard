@@ -1,5 +1,28 @@
 # learn-card-core
 
+## 1.3.0
+
+### Minor Changes
+
+-   [#232](https://github.com/learningeconomy/LearnCard/pull/232) [`3606fec`](https://github.com/learningeconomy/LearnCard/commit/3606fec4c226828e51a3df6eb780e420935ebc94) Thanks [@wthomasmiii](https://github.com/wthomasmiii)! - Addition of push notification configs for hitting an http webhook
+
+    ## What is being done
+
+    On the backend learn-card-network we have done the following
+
+    1. Added 2 new endpoints to the lambda service, one for registering, and one for unregistering
+    2. Added both functions to the learncard Network plugin, hitting the tRPC client
+    3. Triggerable push notifications are included with functions now, initalizing a class, then using its subfunctionality.
+
+    ## Why this was done
+
+    Was made to include hitting webhooks, that process notification sending.
+
+### Patch Changes
+
+-   Updated dependencies [[`3606fec`](https://github.com/learningeconomy/LearnCard/commit/3606fec4c226828e51a3df6eb780e420935ebc94)]:
+    -   @learncard/network-brain-client@1.1.0
+
 ## 1.2.2
 
 ### Patch Changes
