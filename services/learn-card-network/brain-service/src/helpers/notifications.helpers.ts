@@ -1,102 +1,47 @@
-interface IPushNotificationRequest {
-  to: string;
-  title: string;
-  message?: string;
-  url?: string;
-  actionType: string;
-}
+import { getLearnCard } from '@helpers/learnCard.helpers';
+import { LCNNotification } from '@learncard/types';
 
-interface IPushRegistrationRequest {
-  profileId: string;
-  deviceToken: string;
-}
+export async function SendNotification(notification: LCNNotification) {
+    try {
+        if (process.env.NOTIFICATIONS_SERVICE_WEBHOOK_URL) {
+            const learnCard = await getLearnCard();
 
-export async function SendPushNotification(args: IPushNotificationRequest) {
-  try {
-    if (process.env.NOTIFICATIONS_SERVICE_WEBHOOK_URL) {
-      const response = await fetch(process.env.NOTIFICATIONS_SERVICE_WEBHOOK_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': `${process.env.NOTIFICATIONS_SERVICE_API_KEY}`,
-        },
-        body: JSON.stringify({
-          actionType: args.actionType,
-          profileId: args.to,
-          data: {
-            title: args.title,
-            message: args.message,
-            url: args.url,
-          },
-        }),
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const data = await response.json();
-      return data;
+            // TODO: use did:web instead of did:key
+            // const domainName = 'network.learncard.com';
+            // const domain =
+            //     !domainName || process.env.IS_OFFLINE
+            //         ? `localhost%3A${process.env.PORT || 3000}`
+            //         : domainName;
+            // const did = `did:web:${domain}`;
+            // const unsignedVP: UnsignedVP = {
+            //     '@context': ['https://www.w3.org/2018/credentials/v1'],
+            //     type: ['VerifiablePresentation'],
+            //     holder: did,
+            // };
+
+            // const didJwt = learnCard.invoke.issuePresentation(unsignedVP, {
+            //     proofPurpose: 'authentication',
+            //     proofFormat: 'jwt'
+            // });
+
+            const didJwt = await learnCard.invoke.getDidAuthVp({ proofFormat: 'jwt' });
+
+            const response = await fetch(process.env.NOTIFICATIONS_SERVICE_WEBHOOK_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${didJwt}`,
+                },
+                body: JSON.stringify(notification),
+            });
+            const res = await response.json();
+
+            if (!res) {
+                throw new Error(res);
+            }
+            return res;
+        }
+    } catch (error) {
+        console.error('Notifications Helpers - Error While Sending:', error);
     }
-  } catch (error) {
-    console.error('Notifications Helpers - Error While Sending:', error);
-  }
-}
-
-export async function RegisterDeviceForPushNotifications(args: IPushRegistrationRequest) {
-  try {
-    if (
-      process.env.NOTIFICATIONS_SERVICE_WEBHOOK_URL &&
-      process.env.NOTIFICATIONS_SERVICE_API_KEY
-    ) {
-      const response = await fetch(process.env.NOTIFICATIONS_SERVICE_WEBHOOK_URL, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': `${process.env.NOTIFICATIONS_SERVICE_API_KEY}`,
-        },
-        body: JSON.stringify(args),
-      });
-      if (!response.ok) {
-        // throw new Error(`HTTP error! status: ${response.status}`);
-        console.log('http error', response.status);
-        return null;
-      }
-
-      const data = await response.json();
-      return data;
-    }
-    return null;
-  } catch (error) {
-    console.error('Error fetching data:', error);
-    return null;
-  }
-}
-
-export async function UnregisterDeviceForPushNotifications(args: IPushRegistrationRequest) {
-  try {
-    if (
-      process.env.NOTIFICATIONS_SERVICE_WEBHOOK_URL &&
-      process.env.NOTIFICATIONS_SERVICE_API_KEY
-    ) {
-      const response = await fetch(process.env.NOTIFICATIONS_SERVICE_WEBHOOK_URL, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': `${process.env.NOTIFICATIONS_SERVICE_API_KEY}`,
-        },
-        body: JSON.stringify(args),
-      });
-      if (!response.ok) {
-        // throw new Error(`HTTP error! status: ${response.status}`);
-        console.error('Notifications Helpers - Send Push Notification');
-        return null;
-      }
-
-      const data = await response.json();
-      return data;
-    }
-    return null;
-  } catch (error) {
-    console.error('Error fetching data:', error);
-    return null;
-  }
 }

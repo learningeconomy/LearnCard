@@ -21,9 +21,11 @@ const encodeKey = (key: Uint8Array) => {
 export const app = express();
 
 app.use(cors());
-app.options('*', cors());
+app.options('/*', cors());
 
-app.get('/users/:profileId/did.json', async (req: TypedRequest<{}, {}, { profileId: string }>, res) => {
+app.get(
+    '/users/:profileId/did.json',
+    async (req: TypedRequest<{}, {}, { profileId: string }>, res) => {
         const { profileId } = req.params;
 
         const cachedResult = await getDidDocForProfile(profileId);

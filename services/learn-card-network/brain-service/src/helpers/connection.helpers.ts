@@ -1,7 +1,7 @@
-import { LCNProfileConnectionStatusEnum } from '@learncard/types';
+import { LCNProfileConnectionStatusEnum, LCNNotificationTypeEnumValidator } from '@learncard/types';
 import { TRPCError } from '@trpc/server';
 import { Profile, ProfileInstance } from '@models';
-import { SendPushNotification } from './notifications.helpers';
+import { SendNotification } from './notifications.helpers';
 
 export const getConnections = async (profile: ProfileInstance): Promise<ProfileInstance[]> => {
     const [connectedTo, connectedBy] = await Promise.all([
@@ -118,12 +118,14 @@ export const connectProfiles = async (
         target.relateTo({ alias: 'connectedWith', where: { profileId: source.profileId } }),
     ]);
 
-    await SendPushNotification({
-        to: source.profileId,
-        message: `${target.displayName} has accepted your connection request!`,
-        title: 'Connection Accepted',
-        actionType: 'redirect',
-        url: '/contacts',
+    await SendNotification({
+        type: LCNNotificationTypeEnumValidator.enum.CONNECTION_ACCEPTED,
+        to: target.dataValues,
+        from: source.dataValues,
+        message: {
+            title: 'Connection Accepted',
+            body: `${target.displayName} has accepted your connection request!`,
+        },
     });
 
     return true;
@@ -208,12 +210,14 @@ export const requestConnection = async (
 
     await source.relateTo({ alias: 'connectionRequested', where: { profileId: target.profileId } });
 
-    await SendPushNotification({
-        to: target.profileId,
-        message: `${source.displayName} has sent you a connection request!`,
-        title: 'New Connection Request',
-        url: `/contacts/requests?profileId=${source.displayName}&connect=true`,
-        actionType: 'redirect',
+    await SendNotification({
+        type: LCNNotificationTypeEnumValidator.enum.CONNECTION_REQUEST,
+        to: target.dataValues,
+        from: source.dataValues,
+        message: {
+            title: 'New Connection Request',
+            body: `${source.displayName} has sent you a connection request!`,
+        },
     });
 
     return true;

@@ -1,5 +1,5 @@
 import { TRPCError } from '@trpc/server';
-import { UnsignedVC, VC, JWE } from '@learncard/types';
+import { UnsignedVC, VC, JWE, LCNNotificationTypeEnumValidator } from '@learncard/types';
 
 import { ProfileInstance } from '@models';
 
@@ -10,7 +10,7 @@ import {
 } from '@accesslayer/credential/relationships/create';
 import { getCredentialSentToProfile } from '@accesslayer/credential/relationships/read';
 import { constructUri, getUriParts } from './uri.helpers';
-import { SendPushNotification } from './notifications.helpers';
+import { SendNotification } from './notifications.helpers';
 
 export const getCredentialUri = (id: string, domain: string): string =>
     constructUri('credential', id, domain);
@@ -27,12 +27,17 @@ export const sendCredential = async (
 
     let uri = getCredentialUri(credentialInstance.id, domain);
 
-    await SendPushNotification({
-        to: to.profileId,
-        message: `${from.displayName} has sent you a credential`,
-        title: 'Credential Received',
-        url: `/notifications?uri=${uri}&claim=true`,
-        actionType: 'redirect',
+    await SendNotification({
+        type: LCNNotificationTypeEnumValidator.enum.CREDENTIAL_RECEIVED,
+        to: to.dataValues,
+        from: from.dataValues,
+        message: {
+            title: 'Credential Received',
+            body: `${from.displayName} has sent you a credential`,
+        },
+        data: {
+            vcUris: [uri],
+        },
     });
 
     return uri;

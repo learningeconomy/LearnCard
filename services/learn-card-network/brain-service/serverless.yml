@@ -114,7 +114,9 @@ functions:
         - Ref: PrivateSubnetA
     events:
       - httpApi: GET /users/{params+}
+      - httpApi: OPTIONS /users/{params+}
       - httpApi: GET /.well-known/did.json
+      - httpApi: OPTIONS /.well-known/did.json
     url:
       cors: true
 
