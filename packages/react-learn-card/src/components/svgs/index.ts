@@ -22,6 +22,7 @@ export * from "./LinkIcon";
 export * from "./PdfIcon";
 export * from "./PuzzlePiece";
 export * from "./RoundedX";
+export * from "./ShieldChevron";
 export * from "./Trophy";
 export * from "./User";
 export * from "./VideoIcon";

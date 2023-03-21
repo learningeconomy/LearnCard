@@ -96,4 +96,16 @@ describe('Notification', () => {
         const iconComponent = screen.getByTestId(`${NotificationTypeEnum.Learning}-icon`);
         expect(iconComponent).toBeInTheDocument();
     });
+
+    it('Renders Notification of Type: Social Badge', () => {
+        render(<Notification notificationType={NotificationTypeEnum.SocialBadges} />);
+
+        const typeText = NotificationTypeStyles?.[NotificationTypeEnum.SocialBadges]?.typeText;
+
+        const notificationType = screen.getByTestId('notification-type');
+        expect(notificationType).toHaveTextContent(typeText);
+
+        const iconComponent = screen.getByTestId(`${NotificationTypeEnum.SocialBadges}-icon`);
+        expect(iconComponent).toBeInTheDocument();
+    });
 });
