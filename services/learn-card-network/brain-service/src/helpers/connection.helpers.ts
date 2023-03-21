@@ -1,7 +1,7 @@
 import { LCNProfileConnectionStatusEnum, LCNNotificationTypeEnumValidator } from '@learncard/types';
 import { TRPCError } from '@trpc/server';
 import { Profile, ProfileInstance } from '@models';
-import { SendNotification } from './notifications.helpers';
+import { sendNotification } from './notifications.helpers';
 
 export const getConnections = async (profile: ProfileInstance): Promise<ProfileInstance[]> => {
     const [connectedTo, connectedBy] = await Promise.all([
@@ -118,7 +118,7 @@ export const connectProfiles = async (
         target.relateTo({ alias: 'connectedWith', where: { profileId: source.profileId } }),
     ]);
 
-    await SendNotification({
+    sendNotification({
         type: LCNNotificationTypeEnumValidator.enum.CONNECTION_ACCEPTED,
         to: target.dataValues,
         from: source.dataValues,
@@ -210,7 +210,7 @@ export const requestConnection = async (
 
     await source.relateTo({ alias: 'connectionRequested', where: { profileId: target.profileId } });
 
-    await SendNotification({
+    sendNotification({
         type: LCNNotificationTypeEnumValidator.enum.CONNECTION_REQUEST,
         to: target.dataValues,
         from: source.dataValues,

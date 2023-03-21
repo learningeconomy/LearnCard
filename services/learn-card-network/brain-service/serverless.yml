@@ -71,6 +71,7 @@ provider:
   environment:
     LAMBDA_STAGE: ${opt:stage, "dev"}
     SEED: ${env:SEED}
+    NOTIFICATIONS_SERVICE_WEBHOOK_URL: ${env:NOTIFICATIONS_SERVICE_WEBHOOK_URL}
     NEO4J_URI: ${env:NEO4J_URI}
     NEO4J_USERNAME: ${env:NEO4J_USERNAME}
     NEO4J_PASSWORD: ${env:NEO4J_PASSWORD}

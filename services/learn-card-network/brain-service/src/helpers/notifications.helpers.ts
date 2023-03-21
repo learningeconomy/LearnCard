@@ -1,7 +1,7 @@
 import { getLearnCard } from '@helpers/learnCard.helpers';
 import { LCNNotification } from '@learncard/types';
 
-export async function SendNotification(notification: LCNNotification) {
+export async function sendNotification(notification: LCNNotification) {
     try {
         if (process.env.NOTIFICATIONS_SERVICE_WEBHOOK_URL) {
             const learnCard = await getLearnCard();

@@ -10,7 +10,7 @@ import {
 } from '@accesslayer/presentation/relationships/create';
 import { getPresentationSentToProfile } from '@accesslayer/presentation/relationships/read';
 import { constructUri, getUriParts } from './uri.helpers';
-import { SendNotification } from './notifications.helpers';
+import { sendNotification } from './notifications.helpers';
 
 export const getPresentationUri = (id: string, domain: string): string =>
     constructUri('presentation', id, domain);
@@ -27,7 +27,7 @@ export const sendPresentation = async (
 
     let uri = getPresentationUri(presentationInstance.id, domain);
 
-    await SendNotification({
+    await sendNotification({
         type: LCNNotificationTypeEnumValidator.enum.BOOST_RECEIVED,
         to: to.dataValues,
         from: from.dataValues,
