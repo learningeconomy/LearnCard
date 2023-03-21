@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.5.9
+
+### Patch Changes
+
+-   [#253](https://github.com/learningeconomy/LearnCard/pull/253) [`c769bc1`](https://github.com/learningeconomy/LearnCard/commit/c769bc19d0eb7b16f11af0a70f4342f9f45ed79d) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: update social badge icon
+
 ## 2.5.8
 
 ### Patch Changes
