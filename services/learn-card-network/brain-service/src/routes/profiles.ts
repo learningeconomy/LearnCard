@@ -220,7 +220,7 @@ export const profilesRouter = t.router({
         .mutation(async ({ input, ctx }) => {
             const { profile } = ctx.user;
 
-            const { profileId, displayName, image, email } = input;
+            const { profileId, displayName, image, email, notificationsWebhook } = input;
 
             if (profileId) {
                 const profileExists = await getProfileByProfileId(profileId);
@@ -252,6 +252,7 @@ export const profilesRouter = t.router({
 
             if (image) profile.image = image;
             if (displayName) profile.displayName = displayName;
+            if (notificationsWebhook) profile.notificationsWebhook = notificationsWebhook;
 
             await profile.save();
 

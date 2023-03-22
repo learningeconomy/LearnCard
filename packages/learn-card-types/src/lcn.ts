@@ -7,6 +7,7 @@ export const LCNProfileValidator = z.object({
     email: z.string().optional(),
     image: z.string().optional(),
     isServiceProfile: z.boolean().default(false).optional(),
+    notificationsWebhook: z.string().url().startsWith('https://').optional(),
 });
 export type LCNProfile = z.infer<typeof LCNProfileValidator>;
 

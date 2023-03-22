@@ -3,12 +3,19 @@ import { LCNNotification } from '@learncard/types';
 
 export async function sendNotification(notification: LCNNotification) {
     try {
-        if (process.env.NOTIFICATIONS_SERVICE_WEBHOOK_URL) {
+        let notificationsWebhook = process.env.NOTIFICATIONS_SERVICE_WEBHOOK_URL;
+        if (
+            typeof notification.to !== 'string' &&
+            typeof notification.to.notificationsWebhook === 'string'
+        ) {
+            notificationsWebhook = notification.to.notificationsWebhook;
+        }
+        if (typeof notificationsWebhook === 'string' && notificationsWebhook?.startsWith('http')) {
             const learnCard = await getDidWebLearnCard();
 
             const didJwt = await learnCard.invoke.getDidAuthVp({ proofFormat: 'jwt' });
 
-            const response = await fetch(process.env.NOTIFICATIONS_SERVICE_WEBHOOK_URL, {
+            const response = await fetch(notificationsWebhook, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -22,6 +29,12 @@ export async function sendNotification(notification: LCNNotification) {
                 throw new Error(res);
             }
             return res;
+        } else {
+            console.log(
+                '🐶 NO NOTIFICATIONS ENDPOINT FOUND',
+                notificationsWebhook,
+                notification.to
+            );
         }
     } catch (error) {
         console.error('Notifications Helpers - Error While Sending:', error);
