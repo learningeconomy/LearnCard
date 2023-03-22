@@ -27,7 +27,7 @@ export const sendCredential = async (
 
     let uri = getCredentialUri(credentialInstance.id, domain);
 
-    await sendNotification({
+    sendNotification({
         type: LCNNotificationTypeEnumValidator.enum.CREDENTIAL_RECEIVED,
         to: to.dataValues,
         from: from.dataValues,
