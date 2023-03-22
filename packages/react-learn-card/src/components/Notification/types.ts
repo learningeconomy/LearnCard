@@ -6,7 +6,7 @@ import User from '../svgs/User';
 import Briefcase from '../svgs/Briefcase';
 import PuzzlePiece from '../svgs/PuzzlePiece';
 import Graduation from '../svgs/Graduation';
-import AwardRibbon from '../svgs/AwardRibbon';
+import ShieldChevron from '../svgs/ShieldChevron';
 
 export type NotificationProps = {
     notificationType: NotificationTypeEnum;
@@ -46,7 +46,7 @@ export const NotificationTypeStyles: {
         claimedButtonStyles: 'text-cyan-400 bg-cyan-50 border-cyan-50',
         textStyles: 'text-cyan-400 capitalize',
         iconCircleStyles: 'bg-cyan-400',
-        IconComponent: AwardRibbon,
+        IconComponent: ShieldChevron,
         typeText: 'Social Badge',
     },
     [NotificationTypeEnum.ID]: {
