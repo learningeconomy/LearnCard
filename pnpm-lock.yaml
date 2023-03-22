@@ -654,8 +654,8 @@ importers:
     specifiers:
       '@changesets/changelog-github': ^0.4.5
       '@changesets/cli': ^2.23.0
-      '@learncard/core': 8.5.3
-      '@learncard/types': 5.2.3
+      '@learncard/core': 8.5.4
+      '@learncard/types': 5.2.4
       '@rollup/plugin-json': ^4.1.0
       '@types/cors': ^2.8.12
       '@types/figlet': ^1.5.4
