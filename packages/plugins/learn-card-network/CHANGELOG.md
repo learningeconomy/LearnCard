@@ -1,5 +1,20 @@
 # learn-card-core
 
+## 1.3.1
+
+### Patch Changes
+
+-   [#252](https://github.com/learningeconomy/LearnCard/pull/252) [`f6abbd4`](https://github.com/learningeconomy/LearnCard/commit/f6abbd490e02f65d56465ec5853aa31cfd2ae40c) Thanks [@Custard7](https://github.com/Custard7)! - Update to prepare for LCA Notifications Webhook
+
+    Adds LCNNotification types for notification webhook payload
+    Updates learn card core getDidAuthVp() to use learnCard.id.did() instead of 'key' did method.
+    Removes previous notification microservice functions.
+    Adds SendNotification for sending notifications to external webhook service
+
+-   Updated dependencies [[`f6abbd4`](https://github.com/learningeconomy/LearnCard/commit/f6abbd490e02f65d56465ec5853aa31cfd2ae40c)]:
+    -   @learncard/core@8.5.4
+    -   @learncard/network-brain-client@1.1.1
+
 ## 1.3.0
 
 ### Minor Changes

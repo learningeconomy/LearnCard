@@ -1,5 +1,16 @@
 # learn-card-types
 
+## 5.2.4
+
+### Patch Changes
+
+-   [#252](https://github.com/learningeconomy/LearnCard/pull/252) [`f6abbd4`](https://github.com/learningeconomy/LearnCard/commit/f6abbd490e02f65d56465ec5853aa31cfd2ae40c) Thanks [@Custard7](https://github.com/Custard7)! - Update to prepare for LCA Notifications Webhook
+
+    Adds LCNNotification types for notification webhook payload
+    Updates learn card core getDidAuthVp() to use learnCard.id.did() instead of 'key' did method.
+    Removes previous notification microservice functions.
+    Adds SendNotification for sending notifications to external webhook service
+
 ## 5.2.3
 
 ### Patch Changes
