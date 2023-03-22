@@ -1,5 +1,5 @@
 import { TRPCError } from '@trpc/server';
-import { VP, JWE } from '@learncard/types';
+import { VP, JWE, LCNNotificationTypeEnumValidator } from '@learncard/types';
 
 import { ProfileInstance } from '@models';
 
@@ -10,7 +10,7 @@ import {
 } from '@accesslayer/presentation/relationships/create';
 import { getPresentationSentToProfile } from '@accesslayer/presentation/relationships/read';
 import { constructUri, getUriParts } from './uri.helpers';
-import { SendPushNotification } from './notifications.helpers';
+import { sendNotification } from './notifications.helpers';
 
 export const getPresentationUri = (id: string, domain: string): string =>
     constructUri('presentation', id, domain);
@@ -27,12 +27,17 @@ export const sendPresentation = async (
 
     let uri = getPresentationUri(presentationInstance.id, domain);
 
-    await SendPushNotification({
-        to: to.profileId,
-        message: `${from.displayName} has boosted you!`,
-        title: 'Boost Received',
-        url: `/notifications?uri=${uri}&claim=true`,
-        actionType: 'redirect',
+    sendNotification({
+        type: LCNNotificationTypeEnumValidator.enum.BOOST_RECEIVED,
+        to: to.dataValues,
+        from: from.dataValues,
+        message: {
+            title: 'Boost Received',
+            body: `${from.displayName} has boosted you!`,
+        },
+        data: {
+            vcUris: [uri],
+        },
     });
 
     return uri;

@@ -47,7 +47,7 @@ export const getVCPlugin = (learnCard: VCDependentLearnCard): VCPlugin => {
                 };
             },
             getDidAuthVp: async (_learnCard, options = {}) => {
-                const did = _learnCard.invoke.getSubjectDid('key');
+                const did = _learnCard.id.did();
                 const unsignedVP: UnsignedVP = {
                     '@context': ['https://www.w3.org/2018/credentials/v1'],
                     type: ['VerifiablePresentation'],

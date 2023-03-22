@@ -1,0 +1,24 @@
+{
+    "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+    "name": "did-web-plugin",
+    "sourceRoot": "packages/plugins/did-web-plugin/src",
+    "projectType": "library",
+    "root": "packages/plugins/did-web-plugin",
+    "tags": [],
+    "implicitDependencies": ["types", "core"],
+    "namedInputs": {
+        "scripts": ["{projectRoot}/scripts/**/*"],
+        "source": ["{projectRoot}/src/**/*"],
+        "dist": ["{projectRoot}/dist/**/*"]
+    },
+    "targets": {
+        "build": {
+            "executor": "nx:run-script",
+            "inputs": ["source", "scripts"],
+            "options": {
+                "script": "build"
+            }
+        }
+    }
+}
+

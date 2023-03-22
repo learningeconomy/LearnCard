@@ -7,6 +7,7 @@ export const LCNProfileValidator = z.object({
     email: z.string().optional(),
     image: z.string().optional(),
     isServiceProfile: z.boolean().default(false).optional(),
+    notificationsWebhook: z.string().url().startsWith('https://').optional(),
 });
 export type LCNProfile = z.infer<typeof LCNProfileValidator>;
 
@@ -42,3 +43,41 @@ export const BoostRecipientValidator = z.object({
 });
 
 export type BoostRecipientInfo = z.infer<typeof BoostRecipientValidator>;
+
+export const LCNNotificationTypeEnumValidator = z.enum([
+    'CONNECTION_REQUEST',
+    'CONNECTION_ACCEPTED',
+    'CREDENTIAL_RECEIVED',
+    'CREDENTIAL_ACCEPTED',
+    'BOOST_RECEIVED',
+    'BOOST_ACCEPTED',
+    'PRESENTATION_REQUEST',
+    'PRESENTATION_RECEIVED',
+]);
+
+export type LCNNotificationTypeEnum = z.infer<typeof LCNNotificationTypeEnumValidator>;
+
+export const LCNNotificationMessageValidator = z.object({
+    title: z.string().optional(),
+    body: z.string().optional(),
+});
+
+export type LCNNotificationMessage = z.infer<typeof LCNNotificationMessageValidator>;
+
+export const LCNNotificationDataValidator = z.object({
+    vcUris: z.array(z.string()).optional(),
+    vpUris: z.array(z.string()).optional(),
+});
+
+export type LCNNotificationData = z.infer<typeof LCNNotificationDataValidator>;
+
+export const LCNNotificationValidator = z.object({
+    type: LCNNotificationTypeEnumValidator,
+    to: z.string().or(LCNProfileValidator),
+    from: z.string().or(LCNProfileValidator),
+    message: LCNNotificationMessageValidator.optional(),
+    data: LCNNotificationDataValidator.optional(),
+    sent: z.string().datetime().optional(),
+});
+
+export type LCNNotification = z.infer<typeof LCNNotificationValidator>;

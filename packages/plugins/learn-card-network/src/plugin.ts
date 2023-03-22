@@ -26,6 +26,7 @@ export const getLearnCardNetworkPlugin = async (
 ): Promise<LearnCardNetworkPlugin> => {
     const existingDid = learnCard.id.did();
 
+    learnCard?.debug?.('Adding LearnCardNetwork Plugin');
     const client = await getClient(url, async challenge => {
         const jwt = await learnCard.invoke.getDidAuthVp({ proofFormat: 'jwt', challenge });
 
@@ -390,12 +391,6 @@ export const getLearnCardNetworkPlugin = async (
                     .or(VPValidator)
                     .or(JWEValidator)
                     .parseAsync(result);
-            },
-            registerDeviceForPush: async (_learnCard, deviceToken) => {
-                return client.profile.registerDeviceForPush.mutate({ deviceToken });
-            },
-            unregisterDeviceForPush: async (_learnCard, deviceToken) => {
-                return client.profile.unregisterDeviceForPush.mutate({ deviceToken });
             },
         },
     };
