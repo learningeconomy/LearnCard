@@ -1,5 +1,6 @@
 import { getDidWebLearnCard } from '@helpers/learnCard.helpers';
 import { LCNNotification } from '@learncard/types';
+import { getDidWeb } from '@helpers/did.helpers';
 
 export async function sendNotification(notification: LCNNotification) {
     try {
@@ -8,7 +9,17 @@ export async function sendNotification(notification: LCNNotification) {
             typeof notification.to !== 'string' &&
             typeof notification.to.notificationsWebhook === 'string'
         ) {
-            notificationsWebhook = notification.to.notificationsWebhook;
+            //notificationsWebhook = notification.to.notificationsWebhook;
+            notification.to.did = getDidWeb(
+                process.env.DOMAIN_NAME ?? 'network.learncard.com',
+                notification.to.profileId
+            );
+        }
+        if (typeof notification.from !== 'string') {
+            notification.from.did = getDidWeb(
+                process.env.DOMAIN_NAME ?? 'network.learncard.com',
+                notification.from.profileId
+            );
         }
         if (typeof notificationsWebhook === 'string' && notificationsWebhook?.startsWith('http')) {
             const learnCard = await getDidWebLearnCard();
@@ -29,12 +40,6 @@ export async function sendNotification(notification: LCNNotification) {
                 throw new Error(res);
             }
             return res;
-        } else {
-            console.log(
-                '🐶 NO NOTIFICATIONS ENDPOINT FOUND',
-                notificationsWebhook,
-                notification.to
-            );
         }
     } catch (error) {
         console.error('Notifications Helpers - Error While Sending:', error);
