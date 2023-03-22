@@ -1,12 +1,3 @@
-import { getClient } from '@learncard/network-brain-client';
-import {
-    JWEValidator,
-    LCNProfile,
-    UnsignedVCValidator,
-    VCValidator,
-    VPValidator,
-    Profile,
-} from '@learncard/types';
 import { LearnCard } from '@learncard/core';
 
 import { DidWebPluginDependentMethods, DidWebPluginMethods, DidWebPlugin } from './types';
