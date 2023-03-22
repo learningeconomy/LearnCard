@@ -133,6 +133,21 @@ describe('Profiles', () => {
 
             expect(userAResult?.isServiceProfile).toBeFalsy();
         });
+
+        it('should allow setting your notifications webhook', async () => {
+            await expect(
+                userA.clients.fullAuth.profile.createProfile({
+                    profileId: 'usera',
+                    notificationsWebhook: 'https://api.learncard.app/send/notifications',
+                })
+            ).resolves.not.toThrow();
+
+            const userAResult = await userA.clients.fullAuth.profile.getProfile();
+
+            expect(userAResult?.notificationsWebhook).toEqual(
+                'https://api.learncard.app/send/notifications'
+            );
+        });
     });
 
     describe('createServiceProfile', () => {
@@ -614,6 +629,20 @@ describe('Profiles', () => {
             const userAResult = await userA.clients.fullAuth.profile.getProfile();
 
             expect(userAResult?.profileId).toEqual('userc');
+        });
+
+        it('should allow updating your notifications webhook', async () => {
+            await expect(
+                userA.clients.fullAuth.profile.updateProfile({
+                    notificationsWebhook: 'https://api.learncard.app/send/notifications/updated',
+                })
+            ).resolves.not.toThrow();
+
+            const userAResult = await userA.clients.fullAuth.profile.getProfile();
+
+            expect(userAResult?.notificationsWebhook).toEqual(
+                'https://api.learncard.app/send/notifications/updated'
+            );
         });
     });
 
