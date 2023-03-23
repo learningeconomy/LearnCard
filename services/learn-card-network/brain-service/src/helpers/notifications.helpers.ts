@@ -9,7 +9,7 @@ export async function sendNotification(notification: LCNNotification) {
             typeof notification.to !== 'string' &&
             typeof notification.to.notificationsWebhook === 'string'
         ) {
-            //notificationsWebhook = notification.to.notificationsWebhook;
+            notificationsWebhook = notification.to.notificationsWebhook;
             notification.to.did = getDidWeb(
                 process.env.DOMAIN_NAME ?? 'network.learncard.com',
                 notification.to.profileId
@@ -22,6 +22,11 @@ export async function sendNotification(notification: LCNNotification) {
             );
         }
         if (typeof notificationsWebhook === 'string' && notificationsWebhook?.startsWith('http')) {
+            console.log(
+                'Sending notification!',
+                notificationsWebhook,
+                JSON.stringify(notification)
+            );
             const learnCard = await getDidWebLearnCard();
 
             const didJwt = await learnCard.invoke.getDidAuthVp({ proofFormat: 'jwt' });

@@ -21,7 +21,16 @@ const encodeKey = (key: Uint8Array) => {
 export const app = express();
 
 app.use(cors());
-app.options('/*', cors());
+
+app.options(
+    '/users/:profileId/did.json',
+    async (_: TypedRequest<{}, {}, { profileId: string }>, res) => {
+        res.sendStatus(200);
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', '*');
+    }
+);
 
 app.get(
     '/users/:profileId/did.json',
@@ -75,6 +84,16 @@ app.get(
         setDidDocForProfile(profileId, finalDoc);
 
         return res.json(finalDoc);
+    }
+);
+
+app.options(
+    '/.well-known/did.json',
+    async (_: TypedRequest<{}, {}, { profileId: string }>, res) => {
+        res.sendStatus(200);
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', '*');
     }
 );
 
