@@ -84,7 +84,11 @@ provider:
     apiGateway: true
     lambda: true
   httpApi:
-    cors: true
+    cors:
+      allowedOrigins: '*'
+      allowedHeaders: '*'
+      allowedMethods: '*'
+      allowCredentials: true
 
 functions:
   trpc:
