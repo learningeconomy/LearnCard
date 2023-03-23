@@ -1,5 +1,11 @@
 # @learncard/network-brain-service
 
+## 1.3.2
+
+### Patch Changes
+
+-   [#257](https://github.com/learningeconomy/LearnCard/pull/257) [`d0d4a33`](https://github.com/learningeconomy/LearnCard/commit/d0d4a333c7a53a5fa2d14dafbb1c14c8d54c1cda) Thanks [@Custard7](https://github.com/Custard7)! - Fix: CORS for did routes
+
 ## 1.3.1
 
 ### Patch Changes
