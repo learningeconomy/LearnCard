@@ -1,6 +1,6 @@
 import isEqual from 'lodash/isEqual';
 import { v4 as uuidv4 } from 'uuid';
-import { VC, JWE, UnsignedVC } from '@learncard/types';
+import { VC, JWE, UnsignedVC, LCNNotificationTypeEnumValidator } from '@learncard/types';
 
 import { getBoostOwner } from '@accesslayer/boost/relationships/read';
 import { BoostInstance, ProfileInstance } from '@models';
@@ -11,6 +11,7 @@ import { isEncrypted } from './types.helpers';
 import { createSentCredentialRelationship } from '@accesslayer/credential/relationships/create';
 import { getCredentialUri } from './credential.helpers';
 import { getLearnCard } from './learnCard.helpers';
+import { sendNotification } from './notifications.helpers';
 
 export const getBoostUri = (id: string, domain: string): string =>
     constructUri('boost', id, domain);
@@ -72,7 +73,11 @@ export const verifyCredentialIsDerivedFromBoost = async (
         return false;
     }
 
-    if(credential.credentialSubject && ('achievement' in credential.credentialSubject && typeof credential.credentialSubject.achievement === 'object')) {
+    if (
+        credential.credentialSubject &&
+        'achievement' in credential.credentialSubject &&
+        typeof credential.credentialSubject.achievement === 'object'
+    ) {
         if (
             !isEqual(
                 credential.credentialSubject?.achievement,
@@ -164,7 +169,7 @@ export const decryptCredential = async (credential: VC | JWE): Promise<VC | fals
     }
     const learnCard = await getLearnCard();
     try {
-        const decrypted = await learnCard.invoke.getDIDObject().decryptDagJWE(credential) as VC;
+        const decrypted = (await learnCard.invoke.getDIDObject().decryptDagJWE(credential)) as VC;
         return decrypted || false;
     } catch (error) {
         console.warn('Could not decrypt Boost Credential!');
@@ -180,14 +185,15 @@ export const sendBoost = async (
     domain: string
 ): Promise<string> => {
     const decryptedCredential = await decryptCredential(credential);
-    if(decryptedCredential) {
+    let boostUri: string | undefined;
+    if (decryptedCredential) {
         const certifiedBoost = await issueCertifiedBoost(boost, decryptedCredential, domain);
         if (certifiedBoost) {
             const credentialInstance = await storeCredential(certifiedBoost);
             await createBoostInstanceOfRelationship(credentialInstance, boost);
             await createSentCredentialRelationship(from, to, credentialInstance);
 
-            return getCredentialUri(credentialInstance.id, domain);
+            boostUri = getCredentialUri(credentialInstance.id, domain);
         } else {
             throw new Error('Credential does not match boost template.');
         }
@@ -197,7 +203,26 @@ export const sendBoost = async (
         await createBoostInstanceOfRelationship(credentialInstance, boost);
         await createSentCredentialRelationship(from, to, credentialInstance);
 
-        return getCredentialUri(credentialInstance.id, domain);
+        boostUri = getCredentialUri(credentialInstance.id, domain);
+    }
+
+    if (typeof boostUri === 'string') {
+        sendNotification({
+            type: LCNNotificationTypeEnumValidator.enum.BOOST_RECEIVED,
+            to: to.dataValues,
+            from: from.dataValues,
+            message: {
+                title: 'Boost Received',
+                body: `${from.displayName} has boosted you!`,
+            },
+            data: {
+                vcUris: [boostUri],
+            },
+        });
+
+        return boostUri;
+    } else {
+        throw new Error('Error sending boost.');
     }
 };
 

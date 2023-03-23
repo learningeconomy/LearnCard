@@ -28,15 +28,15 @@ export const sendPresentation = async (
     let uri = getPresentationUri(presentationInstance.id, domain);
 
     sendNotification({
-        type: LCNNotificationTypeEnumValidator.enum.BOOST_RECEIVED,
+        type: LCNNotificationTypeEnumValidator.enum.PRESENTATION_RECEIVED,
         to: to.dataValues,
         from: from.dataValues,
         message: {
-            title: 'Boost Received',
-            body: `${from.displayName} has boosted you!`,
+            title: 'Presentation Received',
+            body: `${from.displayName} has sent you a presentation!`,
         },
         data: {
-            vcUris: [uri],
+            vpUris: [uri],
         },
     });
 
