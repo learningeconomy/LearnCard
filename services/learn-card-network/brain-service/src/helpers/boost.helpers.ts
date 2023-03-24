@@ -187,6 +187,7 @@ export const sendBoost = async (
     const decryptedCredential = await decryptCredential(credential);
     let boostUri: string | undefined;
     if (decryptedCredential) {
+        console.log('🚀 sendBoost:VC Decrypted');
         const certifiedBoost = await issueCertifiedBoost(boost, decryptedCredential, domain);
         if (certifiedBoost) {
             const credentialInstance = await storeCredential(certifiedBoost);
@@ -194,6 +195,7 @@ export const sendBoost = async (
             await createSentCredentialRelationship(from, to, credentialInstance);
 
             boostUri = getCredentialUri(credentialInstance.id, domain);
+            console.log('🚀 sendBoost:boost certified', boostUri);
         } else {
             throw new Error('Credential does not match boost template.');
         }
@@ -204,10 +206,11 @@ export const sendBoost = async (
         await createSentCredentialRelationship(from, to, credentialInstance);
 
         boostUri = getCredentialUri(credentialInstance.id, domain);
+        console.log('🚀 sendBoost:boost sent uncertified', boostUri);
     }
 
     if (typeof boostUri === 'string') {
-        sendNotification({
+        await sendNotification({
             type: LCNNotificationTypeEnumValidator.enum.BOOST_RECEIVED,
             to: to.dataValues,
             from: from.dataValues,
@@ -219,7 +222,7 @@ export const sendBoost = async (
                 vcUris: [boostUri],
             },
         });
-
+        console.log('🚀 sendBoost:notification sent! ✅');
         return boostUri;
     } else {
         throw new Error('Error sending boost.');

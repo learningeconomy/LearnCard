@@ -41,6 +41,7 @@ export const boostsRouter = t.router({
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
             const { profileId, credential, uri } = input;
+            console.log('🚀 BEGIN - Send Boost', JSON.stringify(input));
 
             const targetProfile = await getProfileByProfileId(profileId);
 

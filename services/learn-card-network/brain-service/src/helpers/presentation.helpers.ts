@@ -27,7 +27,7 @@ export const sendPresentation = async (
 
     let uri = getPresentationUri(presentationInstance.id, domain);
 
-    sendNotification({
+    await sendNotification({
         type: LCNNotificationTypeEnumValidator.enum.PRESENTATION_RECEIVED,
         to: to.dataValues,
         from: from.dataValues,

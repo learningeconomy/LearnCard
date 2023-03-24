@@ -118,7 +118,7 @@ export const connectProfiles = async (
         target.relateTo({ alias: 'connectedWith', where: { profileId: source.profileId } }),
     ]);
 
-    sendNotification({
+    await sendNotification({
         type: LCNNotificationTypeEnumValidator.enum.CONNECTION_ACCEPTED,
         to: target.dataValues,
         from: source.dataValues,
@@ -210,7 +210,7 @@ export const requestConnection = async (
 
     await source.relateTo({ alias: 'connectionRequested', where: { profileId: target.profileId } });
 
-    sendNotification({
+    await sendNotification({
         type: LCNNotificationTypeEnumValidator.enum.CONNECTION_REQUEST,
         to: target.dataValues,
         from: source.dataValues,
