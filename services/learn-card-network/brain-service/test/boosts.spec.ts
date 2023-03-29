@@ -1,6 +1,6 @@
 import { getClient, getUser } from './helpers/getClient';
 import { testVc, sendBoost, testUnsignedBoost } from './helpers/send';
-import { Profile, Credential, Boost } from '@models';
+import { Profile, Credential, Boost, SigningAuthority } from '@models';
 
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;
@@ -375,6 +375,101 @@ describe('Boosts', () => {
             const newBoosts = await userA.clients.fullAuth.boost.getBoosts();
 
             expect(newBoosts).toHaveLength(0);
+        });
+    });
+
+    describe.only('claimBoost', () => {
+        beforeEach(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+            await SigningAuthority.delete({ detach: true, where: {} })
+
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+
+            await userA.clients.fullAuth.boost.createBoost({ credential: testUnsignedBoost });
+
+            await userA.clients.fullAuth.profile.registerSigningAuthority({
+                endpoint: 'http://localhost:5000/api',
+                name: 'mysa',
+                did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw'
+            });
+        });
+
+        afterAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await Profile.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+            await SigningAuthority.delete({ detach: true, where: {} })
+        });
+
+        it('should require full auth to generate a claim boost', async () => {
+            const boosts = await userA.clients.fullAuth.boost.getBoosts();
+            const uri = boosts[0]!.uri;
+
+            const sa = await userA.clients.fullAuth.profile.signingAuthority({ endpoint: 'http://localhost:5000/api', name: 'mysa' })
+            if(sa) {
+                const claimLinkSA = {
+                    endpoint: sa.signingAuthority.endpoint,
+                    name:  sa.relationship.name
+                }
+                
+                await expect(noAuthClient.boost.generateClaimLink({ boostUri: uri, claimLinkSA })).rejects.toMatchObject({
+                    code: 'UNAUTHORIZED',
+                });
+                await expect(userA.clients.partialAuth.boost.generateClaimLink({ boostUri: uri, claimLinkSA })).rejects.toMatchObject({
+                    code: 'UNAUTHORIZED',
+                });
+            } else {
+                expect(sa).toBeDefined();
+            }
+        });
+
+        it('should generate a valid claim challenge', async () => {
+            const boosts = await userA.clients.fullAuth.boost.getBoosts();
+            const uri = boosts[0]!.uri;
+
+            const sa = await userA.clients.fullAuth.profile.signingAuthority({ endpoint: 'http://localhost:5000/api', name: 'mysa' })
+            if(sa) {
+                const claimLinkSA = {
+                    endpoint: sa.signingAuthority.endpoint,
+                    name:  sa.relationship.name
+                }
+                const challenge = 'mychallenge';
+                
+                await expect(userA.clients.fullAuth.boost.generateClaimLink({ boostUri: uri, challenge, claimLinkSA })).resolves.toMatchObject({
+                    boostUri: uri,
+                    challenge
+                });
+            } else {
+                expect(sa).toBeDefined();
+            }
+        });
+
+        // Skip until we have an always active signing authority endpoint to test this against
+        it('should allow claiming a claimable boost', async () => {
+            const boosts = await userA.clients.fullAuth.boost.getBoosts();
+            const uri = boosts[0]!.uri;
+
+            const sa = await userA.clients.fullAuth.profile.signingAuthority({ endpoint: 'http://localhost:5000/api', name: 'mysa' })
+            if(sa) {
+                const claimLinkSA = {
+                    endpoint: sa.signingAuthority.endpoint,
+                    name:  sa.relationship.name
+                }
+                const challenge = 'mychallenge';
+                
+                await expect(userA.clients.fullAuth.boost.generateClaimLink({ boostUri: uri, challenge, claimLinkSA })).resolves.toMatchObject({
+                    boostUri: uri,
+                    challenge
+                });
+
+                await expect(userB.clients.fullAuth.boost.claimBoostWithLink({ boostUri: uri, challenge })).resolves.not.toThrow();
+            } else {
+                expect(sa).toBeDefined();
+            }
         });
     });
 });

@@ -25,6 +25,11 @@ import {
     searchProfiles,
 } from '@accesslayer/profile/read';
 
+import { upsertSigningAuthority } from '@accesslayer/signing-authority/create';
+import { createUseSigningAuthorityRelationship } from '@accesslayer/signing-authority/relationships/create';
+import { getSigningAuthoritiesForUser, getSigningAuthorityForUserByName } from '@accesslayer/signing-authority/relationships/read';
+import { SigningAuthorityForUserValidator } from 'types/profile';
+
 import { t, openRoute, didAndChallengeRoute, openProfileRoute, profileRoute } from '@routes';
 
 import { transformProfileId } from '@helpers/profile.helpers';
@@ -533,10 +538,48 @@ export const profilesRouter = t.router({
                     "This route is used to register a signing authority that can sign credentials on the current user's behalf",
             },
         })
-        .input(z.object({ signingAuthority: z.string() }))
+        .input(z.object({ endpoint: z.string(), name: z.string(), did: z.string() }))
         .output(z.boolean())
-        .mutation(async () => {
-            return false;
+        .mutation(async ({ input, ctx }) => {
+            const { endpoint, name, did } = input;
+            const sa = await upsertSigningAuthority(endpoint);
+            await createUseSigningAuthorityRelationship(ctx.user.profile, sa, name, did);
+            return true;
+        }),
+    
+    signingAuthorities: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/profile/signing-authority/get',
+                tags: ['Profiles'],
+                summary: 'Get Signing Authorities for user',
+                description:
+                    "This route is used to get registered signing authorities that can sign credentials on the current user's behalf",
+            },
+        })
+        .output(SigningAuthorityForUserValidator.array())
+        .query(async ({ ctx }) => {
+            return getSigningAuthoritiesForUser(ctx.user.profile)
+        }),
+    
+    signingAuthority: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/profile/signing-authority/get/{endpoint}/{name}',
+                tags: ['Profiles'],
+                summary: 'Get Signing Authority for user',
+                description:
+                    "This route is used to get a named signing authority that can sign credentials on the current user's behalf",
+            },
+        })
+        .input(z.object({ endpoint: z.string(), name: z.string() }))
+        .output(SigningAuthorityForUserValidator.or(z.undefined()))
+        .query(async ({ ctx, input }) => {
+            return getSigningAuthorityForUserByName(ctx.user.profile, input.endpoint, input.name)
         }),
 });
 export type ProfilesRouter = typeof profilesRouter;
