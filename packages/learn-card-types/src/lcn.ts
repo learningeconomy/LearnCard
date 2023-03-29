@@ -81,3 +81,24 @@ export const LCNNotificationValidator = z.object({
 });
 
 export type LCNNotification = z.infer<typeof LCNNotificationValidator>;
+
+export const LCNBoostClaimLinkSigningAuthorityValidator = z.object({
+    endpoint: z.string(),
+    name: z.string(),
+    did: z.string().optional()
+})
+export type LCNBoostClaimLinkSigningAuthorityType = z.infer<typeof LCNBoostClaimLinkSigningAuthorityValidator>;
+
+export const LCNSigningAuthorityValidator = z.object({
+    endpoint: z.string(),
+})
+export type LCNSigningAuthorityType = z.infer<typeof LCNSigningAuthorityValidator>;
+
+export const LCNSigningAuthorityForUserValidator = z.object({
+    signingAuthority: LCNSigningAuthorityValidator,
+    relationship: z.object({
+        name: z.string(),
+        did: z.string()
+    })
+})
+export type LCNSigningAuthorityForUserType = z.infer<typeof LCNSigningAuthorityForUserValidator>;

@@ -12,15 +12,17 @@ export async function issueCredentialWithSigningAuthority(owner: ProfileInstance
                 signingAuthorityForUser
             })
         );
-        //const learnCard = await getDidWebLearnCard();
+        const learnCard = await getDidWebLearnCard();
 
-        //const didJwt = await learnCard.invoke.getDidAuthVp({ proofFormat: 'jwt' });
+        const didJwt = await learnCard.invoke.getDidAuthVp({ proofFormat: 'jwt' });
 
-        const response = await fetch(`${signingAuthorityForUser.signingAuthority.endpoint}/credentials/issue`, {
+        const issuerEndpoint = `${signingAuthorityForUser.signingAuthority.endpoint}/credentials/issue`;
+        console.log("Issuer Endpoint: ", issuerEndpoint);
+        const response = await fetch(issuerEndpoint, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                //'Authorization': `Bearer ${didJwt}`,
+                'Authorization': `Bearer ${didJwt}`,
             },
             body: JSON.stringify({
                 credential,
@@ -32,8 +34,9 @@ export async function issueCredentialWithSigningAuthority(owner: ProfileInstance
             }),
         });
         const res = await response.json();
+        console.log("RESPONSE: ", res);
 
-        if (!res) {
+        if (!res || res?.code === 'INTERNAL_SERVER_ERROR') {
             throw new Error(res);
         }
         return res;

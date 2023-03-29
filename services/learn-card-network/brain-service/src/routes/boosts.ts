@@ -283,7 +283,7 @@ export const boostsRouter = t.router({
             },
         })
         .input(z.object({ boostUri: z.string(), challenge: z.string() }))
-        .output(z.object({ uri: z.string() }))
+        .output(z.string())
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
             const { boostUri, challenge } = input;
@@ -307,10 +307,7 @@ export const boostsRouter = t.router({
             if (!signingAuthority) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find signing authority for boost' });
             console.log("claimBoostWithLink", boost, ctx.domain, boostOwner, profile, signingAuthority)
             try {
-                const uri = await issueClaimLinkBoost(boost, ctx.domain, boostOwner, profile, signingAuthority);
-                return {
-                    uri
-                }
+                return issueClaimLinkBoost(boost, ctx.domain, boostOwner, profile, signingAuthority);
             } catch(e) {
                 console.error("Unable to issueClaimLinkBoost", )
                 throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Could not issue boost with claim link.' });

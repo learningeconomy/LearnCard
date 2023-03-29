@@ -378,10 +378,31 @@ export const getLearnCardNetworkPlugin = async (
                 return client.boost.sendBoost.mutate({ profileId, uri: boostUri, credential });
             },
 
-            registerSigningAuthority: async (_learnCard, signingAuthority) => {
+            registerSigningAuthority: async (_learnCard, endpoint, name, did) => {
                 if (!userData) throw new Error('Please make an account first!');
 
-                return client.profile.registerSigningAuthority.mutate({ signingAuthority });
+                return client.profile.registerSigningAuthority.mutate({ endpoint, name, did });
+            },
+            getRegisteredSigningAuthorities: async (_learnCard, endpoint, name, did) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.profile.signingAuthorities.query();
+            },
+            getRegisteredSigningAuthority: async (_learnCard, endpoint, name) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.profile.signingAuthority.query({ endpoint, name });
+            },
+        
+            generateClaimLink: async (_learnCard, boostUri, claimLinkSA, challenge) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.boost.generateClaimLink.mutate({ boostUri, claimLinkSA, challenge });
+            },
+            claimBoostWithLink: async (_learnCard, boostUri, challenge) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.boost.claimBoostWithLink.mutate({ boostUri, challenge });
             },
 
             resolveFromLCN: async (_learnCard, uri) => {

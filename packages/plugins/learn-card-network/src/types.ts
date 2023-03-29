@@ -8,6 +8,8 @@ import {
     JWE,
     Boost,
     BoostRecipientInfo,
+    LCNSigningAuthorityForUserType,
+    LCNBoostClaimLinkSigningAuthorityType
 } from '@learncard/types';
 import { Plugin, ProofOptions, VerifyExtension } from '@learncard/core';
 
@@ -74,8 +76,13 @@ export type LearnCardNetworkPluginMethods = {
     deleteBoost: (uri: string) => Promise<boolean>;
     sendBoost: (profileId: string, boostUri: string, encrypt?: boolean) => Promise<string>;
 
-    registerSigningAuthority: (uri: string) => Promise<boolean>;
+    registerSigningAuthority: (endpoint: string, name: string, did: string) => Promise<boolean>;
+    getRegisteredSigningAuthorities: (endpoint: string, name: string, did: string) => Promise<LCNSigningAuthorityForUserType[]>;
+    getRegisteredSigningAuthority: (endpoint: string, name: string) => Promise<LCNSigningAuthorityForUserType>;
 
+    generateClaimLink: (boostUri: string, claimLinkSA: LCNBoostClaimLinkSigningAuthorityType, challenge?: string) => Promise<{ boostUri: string, challenge: string}>;
+    claimBoostWithLink: (boostUri: string, challenge: string) => Promise<string>;
+    
     resolveFromLCN: (uri: string) => Promise<VC | UnsignedVC | VP | JWE>;
 };
 

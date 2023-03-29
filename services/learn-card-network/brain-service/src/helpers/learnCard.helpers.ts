@@ -1,4 +1,4 @@
-import { initLearnCard, EmptyLearnCard, LearnCardFromSeed, LearnCardFromVcApi } from '@learncard/core';
+import { initLearnCard, EmptyLearnCard, LearnCardFromSeed } from '@learncard/core';
 import { initDidWebLearnCard, DidWebLearnCard } from '@learncard/did-web-plugin';
 
 import didkit from '../didkit_wasm_bg.wasm';

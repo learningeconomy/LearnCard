@@ -378,7 +378,7 @@ describe('Boosts', () => {
         });
     });
 
-    describe.only('claimBoost', () => {
+    describe('claimBoost', () => {
         beforeEach(async () => {
             await Profile.delete({ detach: true, where: {} });
             await Credential.delete({ detach: true, where: {} });
@@ -449,7 +449,7 @@ describe('Boosts', () => {
         });
 
         // Skip until we have an always active signing authority endpoint to test this against
-        it('should allow claiming a claimable boost', async () => {
+        it.skip('should allow claiming a claimable boost', async () => {
             const boosts = await userA.clients.fullAuth.boost.getBoosts();
             const uri = boosts[0]!.uri;
 

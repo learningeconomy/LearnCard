@@ -157,7 +157,7 @@ export const issueCertifiedBoost = async (
             );
             return learnCard.invoke.issueCredential(unsignedCertifiedBoost);
         } else {
-            console.warn('Credential is not derived from boost', boost, credential);
+            console.warn('Credential is not derived from boost', boost.dataValues.boost, credential);
         }
     } catch (error) {
         console.warn('Could not issue certified boost', error);

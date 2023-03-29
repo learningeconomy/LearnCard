@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { BoostValidator as _BoostValidator } from '@learncard/types';
+import { BoostValidator as _BoostValidator, LCNBoostClaimLinkSigningAuthorityValidator, LCNBoostClaimLinkSigningAuthorityType } from '@learncard/types';
 
 export const BoostValidator = _BoostValidator.omit({ uri: true }).extend({
     id: z.string(),
@@ -7,10 +7,5 @@ export const BoostValidator = _BoostValidator.omit({ uri: true }).extend({
 });
 export type BoostType = z.infer<typeof BoostValidator>;
 
-
-export const BoostClaimLinkSigningAuthorityValidator = z.object({
-    endpoint: z.string(),
-    name: z.string(),
-    did: z.string().optional()
-})
-export type BoostClaimLinkSigningAuthorityType = z.infer<typeof BoostClaimLinkSigningAuthorityValidator>;
+export const BoostClaimLinkSigningAuthorityValidator = LCNBoostClaimLinkSigningAuthorityValidator;
+export type BoostClaimLinkSigningAuthorityType = LCNBoostClaimLinkSigningAuthorityType;
