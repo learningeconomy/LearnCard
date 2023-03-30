@@ -2,6 +2,7 @@ import { getDidWebLearnCard } from '@helpers/learnCard.helpers';
 import { UnsignedVC } from '@learncard/types';
 import { SigningAuthorityForUserType } from 'types/profile';
 import { ProfileInstance } from '@models';
+import { getDidWeb } from '@helpers/did.helpers';
 
 export async function issueCredentialWithSigningAuthority(owner: ProfileInstance, credential: UnsignedVC, signingAuthorityForUser: SigningAuthorityForUserType) {
     try {
@@ -18,6 +19,12 @@ export async function issueCredentialWithSigningAuthority(owner: ProfileInstance
 
         const issuerEndpoint = `${signingAuthorityForUser.signingAuthority.endpoint}/credentials/issue`;
         console.log("Issuer Endpoint: ", issuerEndpoint);
+
+        const ownerDid =  getDidWeb(
+            process.env.DOMAIN_NAME ?? 'network.learncard.com',
+            owner.profileId
+        );
+
         const response = await fetch(issuerEndpoint, {
             method: 'POST',
             headers: {
@@ -27,7 +34,7 @@ export async function issueCredentialWithSigningAuthority(owner: ProfileInstance
             body: JSON.stringify({
                 credential,
                 signingAuthority: {
-                    ownerDid: owner.did,
+                    ownerDid,
                     name: signingAuthorityForUser.relationship.name,
                     did: signingAuthorityForUser.relationship.did
                 }

@@ -72,7 +72,9 @@ app.get(
 
         let saDocs: Record<string, any>[] = [];
         try {
-            const signingAuthorities = await getSigningAuthoritiesForUser(profile);
+            console.log("SIgning authorities get");
+            const signingAuthorities = (await getSigningAuthoritiesForUser(profile)).filter(sa => !sa.relationship.did.includes('did:web'))
+            console.log("SIgning authorities", signingAuthorities);
             if(signingAuthorities) {
                 saDocs = await Promise.all(signingAuthorities.map(async (sa): Promise<Record<string, any>> => {
 

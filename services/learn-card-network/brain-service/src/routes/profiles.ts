@@ -559,6 +559,7 @@ export const profilesRouter = t.router({
                     "This route is used to get registered signing authorities that can sign credentials on the current user's behalf",
             },
         })
+        .input(z.void())
         .output(SigningAuthorityForUserValidator.array())
         .query(async ({ ctx }) => {
             return getSigningAuthoritiesForUser(ctx.user.profile)

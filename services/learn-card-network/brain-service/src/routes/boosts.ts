@@ -276,7 +276,7 @@ export const boostsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/boost/{uri}/claim/{challenge}',
+                path: '/boost/{boostUri}/claim/{challenge}',
                 tags: ['Boosts'],
                 summary: 'Claim a boost using a claim link',
                 description: 'Claims a boost using a claim link, including a challenge',
