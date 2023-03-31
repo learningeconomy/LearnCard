@@ -89,6 +89,12 @@ export const LCNBoostClaimLinkSigningAuthorityValidator = z.object({
 })
 export type LCNBoostClaimLinkSigningAuthorityType = z.infer<typeof LCNBoostClaimLinkSigningAuthorityValidator>;
 
+export const LCNBoostClaimLinkOptionsValidator = z.object({
+    ttlSeconds: z.number().optional(),
+    totalUses: z.number().optional()
+})
+export type LCNBoostClaimLinkOptionsType = z.infer<typeof LCNBoostClaimLinkOptionsValidator>;
+
 export const LCNSigningAuthorityValidator = z.object({
     endpoint: z.string(),
 })
