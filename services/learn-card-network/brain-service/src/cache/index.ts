@@ -45,7 +45,7 @@ export type Cache = {
      * Sets a key to a given value in the cache.
      * Optionally give it a time to live before being evicted (defaults to 1 hour)
      */
-    set: (key: RedisKey, value: RedisValue, ttl?: number) => Promise<'OK' | undefined>;
+    set: (key: RedisKey, value: RedisValue, ttl?: number, keepTtl?: boolean) => Promise<'OK' | undefined>;
 
     /** Gets a key from the cache, optionally reseting it's time to live */
     get: (key: RedisKey, resetTTL?: boolean, ttl?: number) => Promise<string | null | undefined>;
@@ -55,6 +55,9 @@ export type Cache = {
 
     /** Forcibly evicts a key or keys from the cache */
     delete: (keys: RedisKey[]) => Promise<number | undefined>;
+
+    /** Gets TTL of a key **/
+    ttl: (key: RedisKey) => Promise<number | undefined>;
 };
 
 /** Evict all keys after one hour by default */
@@ -63,10 +66,15 @@ const DEFAULT_TTL_SECS = 60 * 60;
 export const getCache = (): Cache => {
     const cache: Cache = {
         node: new MemoryRedis(),
-        set: async (key, value, ttl = DEFAULT_TTL_SECS) => {
+        set: async (key, value, ttl = DEFAULT_TTL_SECS, keepTtl) => {
             try {
-                if (cache?.redis) return await cache.redis.setex(key, ttl, value);
-                if (cache?.node) return await cache.node.setex(key, ttl, value);
+                if(keepTtl) {
+                    if (cache?.redis) return await cache.redis.set(key, value, 'KEEPTTL');
+                    if (cache?.node) return await cache.node.set(key, value, 'KEEPTTL');
+                } else  {
+                    if (cache?.redis) return await cache.redis.setex(key, ttl, value);
+                    if (cache?.node) return await cache.node.setex(key, ttl, value);
+                }
             } catch (e) {
                 console.error('Cache set error', e);
             }
@@ -110,6 +118,16 @@ export const getCache = (): Cache => {
 
             return undefined;
         },
+        ttl: async key => {
+            try {
+                if (cache?.redis) return await cache.redis.ttl(key);
+                if (cache?.node) return await cache.node.ttl(key);
+            } catch (e) {
+                // logger.error('Cache get error', e);
+            }
+
+            return undefined;
+        }
     };
 
     try {

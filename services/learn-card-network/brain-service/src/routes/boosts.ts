@@ -15,14 +15,14 @@ import { getBoostByUri, getBoostsForProfile } from '@accesslayer/boost/read';
 import { getBoostRecipients } from '@accesslayer/boost/relationships/read';
 
 import { getBoostUri, isProfileBoostOwner, sendBoost, issueClaimLinkBoost } from '@helpers/boost.helpers';
-import { BoostValidator, BoostClaimLinkSigningAuthorityValidator } from 'types/boost';
+import { BoostValidator, BoostGenerateClaimLinkInput } from 'types/boost';
 import { deleteBoost } from '@accesslayer/boost/delete';
 import { createBoost } from '@accesslayer/boost/create';
 import { getBoostOwner } from '@accesslayer/boost/relationships/read';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
 import { getSigningAuthorityForUserByName } from '@accesslayer/signing-authority/relationships/read';
 
-import { isClaimLinkAlreadySetForBoost, setValidClaimLinkForBoost, getClaimLinkSAInfoForBoost } from '@cache/claim-links';
+import { isClaimLinkAlreadySetForBoost, setValidClaimLinkForBoost, getClaimLinkSAInfoForBoost, useClaimLinkForBoost } from '@cache/claim-links';
 
 export const boostsRouter = t.router({
     sendBoost: profileRoute
@@ -243,11 +243,11 @@ export const boostsRouter = t.router({
                     'This route creates a challenge that an unknown profile can use to claim a boost.',
             },
         })
-        .input(z.object({ boostUri: z.string(), challenge: z.string().optional(), claimLinkSA: BoostClaimLinkSigningAuthorityValidator }))
+        .input(BoostGenerateClaimLinkInput)
         .output(z.object({ boostUri: z.string(), challenge: z.string() }))
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const { boostUri, challenge = uuid(), claimLinkSA } = input ?? {};
+            const { boostUri, challenge = uuid(), claimLinkSA, options = { ttlSeconds: 86_400 }} = input ?? {};
 
             const boost = await getBoostByUri(boostUri);
 
@@ -267,7 +267,7 @@ export const boostsRouter = t.router({
                 });
             }
 
-            await setValidClaimLinkForBoost(boostUri, challenge, claimLinkSA);
+            await setValidClaimLinkForBoost(boostUri, challenge, claimLinkSA, options);
 
             return { boostUri: boostUri, challenge };
         }),
@@ -307,7 +307,13 @@ export const boostsRouter = t.router({
             if (!signingAuthority) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find signing authority for boost' });
             console.log("claimBoostWithLink", boost, ctx.domain, boostOwner, profile, signingAuthority)
             try {
-                return issueClaimLinkBoost(boost, ctx.domain, boostOwner, profile, signingAuthority);
+                const sentBoostUri = await issueClaimLinkBoost(boost, ctx.domain, boostOwner, profile, signingAuthority);
+                try {
+                    await useClaimLinkForBoost(boostUri, challenge);
+                } catch (e) {
+                    console.error("Problem using useClaimLinkForBoost", e);
+                }
+                return sentBoostUri;
             } catch(e) {
                 console.error("Unable to issueClaimLinkBoost", )
                 throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Could not issue boost with claim link.' });
