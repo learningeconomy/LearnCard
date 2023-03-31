@@ -1,5 +1,20 @@
 # learn-card-types
 
+## 5.2.5
+
+### Patch Changes
+
+-   [#262](https://github.com/learningeconomy/LearnCard/pull/262) [`37133bf`](https://github.com/learningeconomy/LearnCard/commit/37133bf375a883c8086ba837c2155a609dea1912) Thanks [@Custard7](https://github.com/Custard7)! - Add Signing Authorities and Claim Links
+
+    Adds the following plugin Methods to the LearnCard Network:
+
+    -   registerSigningAuthority: (endpoint: string, name: string, did: string) => Promise<boolean>;
+    -   getRegisteredSigningAuthorities: (endpoint: string, name: string, did: string) => Promise<LCNSigningAuthorityForUserType[]>;
+    -   getRegisteredSigningAuthority: (endpoint: string, name: string) => Promise<LCNSigningAuthorityForUserType>;
+
+    -   generateClaimLink: (boostUri: string, claimLinkSA: LCNBoostClaimLinkSigningAuthorityType, challenge?: string) => Promise<{ boostUri: string, challenge: string}>;
+    -   claimBoostWithLink: (boostUri: string, challenge: string) => Promise<string>;
+
 ## 5.2.4
 
 ### Patch Changes
