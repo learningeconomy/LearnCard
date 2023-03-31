@@ -1,6 +1,7 @@
 import isEqual from 'lodash/isEqual';
 import { v4 as uuidv4 } from 'uuid';
 import { VC, JWE, UnsignedVC, LCNNotificationTypeEnumValidator } from '@learncard/types';
+import { SigningAuthorityForUserType } from 'types/profile';
 
 import { getBoostOwner } from '@accesslayer/boost/relationships/read';
 import { BoostInstance, ProfileInstance } from '@models';
@@ -11,6 +12,7 @@ import { isEncrypted } from './types.helpers';
 import { createSentCredentialRelationship } from '@accesslayer/credential/relationships/create';
 import { getCredentialUri } from './credential.helpers';
 import { getLearnCard } from './learnCard.helpers';
+import { issueCredentialWithSigningAuthority } from './signingAuthority.helpers';
 import { sendNotification } from './notifications.helpers';
 
 export const getBoostUri = (id: string, domain: string): string =>
@@ -153,9 +155,10 @@ export const issueCertifiedBoost = async (
                 domain,
                 lcnDID
             );
+            // TODO: Encrypt Boost Credential
             return learnCard.invoke.issueCredential(unsignedCertifiedBoost);
         } else {
-            console.warn('Credential is not derived from boost', boost, credential);
+            console.warn('Credential is not derived from boost', boost.dataValues.boost, credential);
         }
     } catch (error) {
         console.warn('Could not issue certified boost', error);
@@ -182,7 +185,8 @@ export const sendBoost = async (
     to: ProfileInstance,
     boost: BoostInstance,
     credential: VC | JWE,
-    domain: string
+    domain: string,
+    skipNotification: boolean = false
 ): Promise<string> => {
     const decryptedCredential = await decryptCredential(credential);
     let boostUri: string | undefined;
@@ -210,19 +214,21 @@ export const sendBoost = async (
     }
 
     if (typeof boostUri === 'string') {
-        await sendNotification({
-            type: LCNNotificationTypeEnumValidator.enum.BOOST_RECEIVED,
-            to: to.dataValues,
-            from: from.dataValues,
-            message: {
-                title: 'Boost Received',
-                body: `${from.displayName} has boosted you!`,
-            },
-            data: {
-                vcUris: [boostUri],
-            },
-        });
-        console.log('🚀 sendBoost:notification sent! ✅');
+        if(!skipNotification) {
+            await sendNotification({
+                type: LCNNotificationTypeEnumValidator.enum.BOOST_RECEIVED,
+                to: to.dataValues,
+                from: from.dataValues,
+                message: {
+                    title: 'Boost Received',
+                    body: `${from.displayName} has boosted you!`,
+                },
+                data: {
+                    vcUris: [boostUri],
+                },
+            });
+            console.log('🚀 sendBoost:notification sent! ✅');
+        }
         return boostUri;
     } else {
         throw new Error('Error sending boost.');
@@ -274,3 +280,38 @@ export const constructCertifiedBoostCredential = async (
         boostCredential: credential,
     };
 };
+
+export const issueClaimLinkBoost = async ( boost: BoostInstance, domain: string, from: ProfileInstance, to: ProfileInstance, signingAuthorityForUser: SigningAuthorityForUserType ): Promise<string> => {
+    console.log("issueClaimLinkBoost")
+    const boostCredential = JSON.parse(boost.dataValues?.boost) as (UnsignedVC | VC);
+    const boostId = boost?.dataValues?.id;
+    const boostURI = getBoostUri(boostId, domain);
+
+    boostCredential.issuer = signingAuthorityForUser.relationship.did;
+
+    if (Array.isArray(boostCredential.credentialSubject)) {
+        boostCredential.credentialSubject = boostCredential.credentialSubject.map(subject => ({
+            ...subject,
+            id: subject.did,
+        }));
+    } else {
+        boostCredential.credentialSubject.id = to.did;
+    }
+
+    // Embed the boostURI into the boost credential for verification purposes.
+    if (boostCredential?.type?.includes('BoostCredential')) {
+        boostCredential.boostId = boostURI;
+    }
+
+    console.log("issueCredentialWithSigningAuthority")
+    const vc = await issueCredentialWithSigningAuthority(from, boostCredential, signingAuthorityForUser, false);
+    // TODO: encrypt vc?
+
+    // const lcnDid = await client.utilities.getDid.query();
+
+    // const credential = await _learnCard.invoke
+    //     .getDIDObject()
+    //     .createDagJWE(vc, [userData.did, targetProfile.did, lcnDid]);
+
+    return sendBoost(from, to, boost, vc, domain, true);
+}

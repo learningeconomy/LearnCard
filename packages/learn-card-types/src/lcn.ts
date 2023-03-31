@@ -81,3 +81,32 @@ export const LCNNotificationValidator = z.object({
 });
 
 export type LCNNotification = z.infer<typeof LCNNotificationValidator>;
+
+export const LCNBoostClaimLinkSigningAuthorityValidator = z.object({
+    endpoint: z.string(),
+    name: z.string(),
+    did: z.string().optional()
+})
+export type LCNBoostClaimLinkSigningAuthorityType = z.infer<typeof LCNBoostClaimLinkSigningAuthorityValidator>;
+
+export const LCNBoostClaimLinkOptionsValidator = z.object({
+    ttlSeconds: z.number().optional(),
+    totalUses: z.number().optional()
+})
+export type LCNBoostClaimLinkOptionsType = z.infer<typeof LCNBoostClaimLinkOptionsValidator>;
+
+export const LCNSigningAuthorityValidator = z.object({
+    endpoint: z.string(),
+})
+export type LCNSigningAuthorityType = z.infer<typeof LCNSigningAuthorityValidator>;
+
+export const LCNSigningAuthorityForUserValidator = z.object({
+    signingAuthority: LCNSigningAuthorityValidator,
+    relationship: z.object({
+        name: z.string().max(15).regex(/^[a-z0-9-]+$/, {
+            message: 'The input string must contain only lowercase letters, numbers, and hyphens.',
+        }),
+        did: z.string()
+    })
+})
+export type LCNSigningAuthorityForUserType = z.infer<typeof LCNSigningAuthorityForUserValidator>;

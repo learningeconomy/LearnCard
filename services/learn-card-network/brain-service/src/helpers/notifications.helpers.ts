@@ -1,6 +1,10 @@
+import { z } from 'zod';
 import { getDidWebLearnCard } from '@helpers/learnCard.helpers';
 import { LCNNotification } from '@learncard/types';
 import { getDidWeb } from '@helpers/did.helpers';
+
+// Timeout value in milliseconds for aborting the request
+const TIMEOUT = 4000;
 
 export async function sendNotification(notification: LCNNotification) {
     try {
@@ -31,6 +35,14 @@ export async function sendNotification(notification: LCNNotification) {
 
             const didJwt = await learnCard.invoke.getDidAuthVp({ proofFormat: 'jwt' });
 
+
+            // Create an AbortController instance and get the signal
+            const controller = new AbortController();
+            const { signal } = controller;
+
+            // Set a timeout to abort the fetch request
+            const timeoutId = setTimeout(() => controller.abort(), TIMEOUT);
+
             const response = await fetch(notificationsWebhook, {
                 method: 'POST',
                 headers: {
@@ -38,15 +50,23 @@ export async function sendNotification(notification: LCNNotification) {
                     'Authorization': `Bearer ${didJwt}`,
                 },
                 body: JSON.stringify(notification),
+                signal
             });
+
+            clearTimeout(timeoutId); 
+
             const res = await response.json();
 
             if (!res) {
                 throw new Error(res);
             }
-            return res;
+
+            const validationResult = await z.boolean().spa(res);
+            if(!validationResult.success) throw new Error("Notifications Endpoint returned a malformed result");
+            return validationResult.data;
         }
     } catch (error) {
         console.error('Notifications Helpers - Error While Sending:', error);
     }
+    return false;
 }

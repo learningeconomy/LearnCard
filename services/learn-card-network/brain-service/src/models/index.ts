@@ -36,3 +36,4 @@ export * from './Boost';
 export * from './Profile';
 export * from './Credential';
 export * from './Presentation';
+export * from './SigningAuthority';

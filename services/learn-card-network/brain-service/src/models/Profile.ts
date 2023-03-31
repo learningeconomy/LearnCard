@@ -4,8 +4,10 @@ import { neogma } from '@instance';
 
 import { Credential, CredentialInstance } from './Credential';
 import { Presentation, PresentationInstance } from './Presentation';
+import { SigningAuthority  } from './SigningAuthority';
 import { transformProfileId } from '@helpers/profile.helpers';
 import { ProfileType } from 'types/profile';
+import { SigningAuthorityInstance } from './SigningAuthority';
 
 export type ProfileRelationships = {
     connectionRequested: ModelRelatedNodesI<typeof Profile, ProfileInstance>;
@@ -21,6 +23,12 @@ export type ProfileRelationships = {
         PresentationInstance,
         { to: string; date: string },
         { to: string; date: string }
+    >;
+    usesSigningAuthority: ModelRelatedNodesI<
+        typeof SigningAuthority, 
+        SigningAuthorityInstance, 
+        { name: string, did: string },
+        { name: string, did: string }
     >;
 };
 
@@ -63,6 +71,15 @@ export const Profile = ModelFactory<ProfileType, ProfileRelationships>(
                     date: { property: 'date', schema: { type: 'string' } },
                 },
             },
+            usesSigningAuthority: {
+                model: SigningAuthority,
+                direction: 'out',
+                name: 'USES_SIGNING_AUTHORITY',
+                properties: {
+                    name: { property: 'name', schema: { type: 'string' } },
+                    did: { property: 'did', schema: { type: 'string' } },
+                }
+            }
         },
         primaryKeyField: 'did',
     },

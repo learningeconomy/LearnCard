@@ -1,5 +1,7 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
+import { v4 as uuid } from 'uuid';
+
 import {
     UnsignedVCValidator,
     VCValidator,
@@ -12,11 +14,15 @@ import { t, profileRoute } from '@routes';
 import { getBoostByUri, getBoostsForProfile } from '@accesslayer/boost/read';
 import { getBoostRecipients } from '@accesslayer/boost/relationships/read';
 
-import { getBoostUri, isProfileBoostOwner, sendBoost } from '@helpers/boost.helpers';
-import { BoostValidator } from 'types/boost';
+import { getBoostUri, isProfileBoostOwner, sendBoost, issueClaimLinkBoost } from '@helpers/boost.helpers';
+import { BoostValidator, BoostGenerateClaimLinkInput } from 'types/boost';
 import { deleteBoost } from '@accesslayer/boost/delete';
 import { createBoost } from '@accesslayer/boost/create';
+import { getBoostOwner } from '@accesslayer/boost/relationships/read';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
+import { getSigningAuthorityForUserByName } from '@accesslayer/signing-authority/relationships/read';
+
+import { isClaimLinkAlreadySetForBoost, setValidClaimLinkForBoost, getClaimLinkSAInfoForBoost, useClaimLinkForBoost } from '@cache/claim-links';
 
 export const boostsRouter = t.router({
     sendBoost: profileRoute
@@ -223,6 +229,95 @@ export const boostsRouter = t.router({
             await deleteBoost(boost);
 
             return true;
+        }),
+    
+    generateClaimLink: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/boost/generate-claim-link',
+                tags: ['Boosts'],
+                summary: 'Generate a claim link for a boost',
+                description:
+                    'This route creates a challenge that an unknown profile can use to claim a boost.',
+            },
+        })
+        .input(BoostGenerateClaimLinkInput)
+        .output(z.object({ boostUri: z.string(), challenge: z.string() }))
+        .mutation(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { boostUri, challenge = uuid(), claimLinkSA, options = { ttlSeconds: 86_400 }} = input ?? {};
+
+            const boost = await getBoostByUri(boostUri);
+
+            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            if (!(await isProfileBoostOwner(profile, boost))) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile does not own boost',
+                });
+            }
+
+            if (await isClaimLinkAlreadySetForBoost(boostUri, challenge)) {
+                throw new TRPCError({
+                    code: 'CONFLICT',
+                    message: 'Challenge already in use!',
+                });
+            }
+
+            await setValidClaimLinkForBoost(boostUri, challenge, claimLinkSA, options);
+
+            return { boostUri: boostUri, challenge };
+        }),
+    claimBoostWithLink: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/boost/{boostUri}/claim/{challenge}',
+                tags: ['Boosts'],
+                summary: 'Claim a boost using a claim link',
+                description: 'Claims a boost using a claim link, including a challenge',
+            },
+        })
+        .input(z.object({ boostUri: z.string(), challenge: z.string() }))
+        .output(z.string())
+        .mutation(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { boostUri, challenge } = input;
+
+            const claimLinkSA = await getClaimLinkSAInfoForBoost(boostUri, challenge);
+
+            if (!claimLinkSA) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: `Challenge not found for ${boostUri}`,
+                });
+            }
+
+            const boost = await getBoostByUri(boostUri);
+            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            const boostOwner = await getBoostOwner(boost);
+            if (!boostOwner) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost owner' });
+
+            const signingAuthority = await getSigningAuthorityForUserByName(boostOwner, claimLinkSA.endpoint, claimLinkSA.name);
+            if (!signingAuthority) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find signing authority for boost' });
+            console.log("claimBoostWithLink", boost, ctx.domain, boostOwner, profile, signingAuthority)
+            try {
+                const sentBoostUri = await issueClaimLinkBoost(boost, ctx.domain, boostOwner, profile, signingAuthority);
+                try {
+                    await useClaimLinkForBoost(boostUri, challenge);
+                } catch (e) {
+                    console.error("Problem using useClaimLinkForBoost", e);
+                }
+                return sentBoostUri;
+            } catch(e) {
+                console.error("Unable to issueClaimLinkBoost", )
+                throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Could not issue boost with claim link.' });
+            }
         }),
 });
 export type BoostsRouter = typeof boostsRouter;

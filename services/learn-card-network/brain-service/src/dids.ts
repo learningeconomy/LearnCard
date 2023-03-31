@@ -8,6 +8,7 @@ import { getEmptyLearnCard, getLearnCard } from '@helpers/learnCard.helpers';
 import { getDidWeb } from '@helpers/did.helpers';
 import { TypedRequest } from '@helpers/types.helpers';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
+import { getSigningAuthoritiesForUser } from '@accesslayer/signing-authority/relationships/read';
 import { getDidDocForProfile, setDidDocForProfile } from '@cache/did-docs';
 
 const encodeKey = (key: Uint8Array) => {
@@ -69,7 +70,71 @@ app.get(
         const decodedJwk = base64url.decode(`u${jwk.x}`);
         const x25519PublicKeyBytes = sodium.crypto_sign_ed25519_pk_to_curve25519(decodedJwk);
 
-        const finalDoc = {
+        let saDocs: Record<string, any>[] = [];
+        try {
+            console.log("SIgning authorities get");
+            const signingAuthorities = (await getSigningAuthoritiesForUser(profile)).filter(sa => !sa.relationship.did.includes('did:web'))
+            console.log("SIgning authorities", signingAuthorities);
+            if(signingAuthorities) {
+                saDocs = await Promise.all(signingAuthorities.map(async (sa): Promise<Record<string, any>> => {
+                    const _didDoc = await learnCard.invoke.resolveDid(sa.relationship.did);
+                    const _key = sa.relationship.did.split(':')[2];
+            
+                    const _replacedDoc = JSON.parse(
+                        JSON.stringify(_didDoc).replaceAll(sa.relationship.did, did).replaceAll(`#${_key}`, `#${sa.relationship.name}`)
+                    );
+
+                    const _jwk = _replacedDoc.verificationMethod[0].publicKeyJwk;
+
+                    const _decodedJwk = base64url.decode(`u${_jwk.x}`);
+                    const _x25519PublicKeyBytes = sodium.crypto_sign_ed25519_pk_to_curve25519(_decodedJwk);
+            
+                    _replacedDoc.verificationMethod[0].controller += `#${sa.relationship.name}`;
+
+                    return {
+                            ..._replacedDoc,
+                            keyAgreement: [
+                                {
+                                    id: `${did}#${encodeKey(_x25519PublicKeyBytes)}`,
+                                    type: 'X25519KeyAgreementKey2019',
+                                    controller: _replacedDoc.verificationMethod[0].controller,
+                                    publicKeyBase58: base58btc.encode(_x25519PublicKeyBytes).slice(1),
+                                },
+                            ],
+                        };
+        
+                    //return _replacedDoc;
+                    // TODO: Add keyagreement
+                    // const _didDoc = await learnCard.invoke.resolveDid(sa.relationship.did);
+                    // const _key = sa.relationship.did.split(':')[2];
+            
+                    // const _replacedDoc = JSON.parse(
+                    //     JSON.stringify(_didDoc).replaceAll(sa.relationship.did, did).replaceAll(`#${_key}`, `#${sa.relationship.name}`)
+                    // );
+            
+                    // const _jwk = _replacedDoc.verificationMethod[0].publicKeyJwk;
+            
+                    // const _decodedJwk = base64url.decode(`u${_jwk.x}`);
+                    // const _x25519PublicKeyBytes = sodium.crypto_sign_ed25519_pk_to_curve25519(_decodedJwk);
+
+                    // return {
+                    //     ..._replacedDoc,
+                    //     keyAgreement: [
+                    //         {
+                    //             id: `${did}#${encodeKey(_x25519PublicKeyBytes)}`,
+                    //             type: 'X25519KeyAgreementKey2019',
+                    //             controller: sa.relationship.did,
+                    //             publicKeyBase58: base58btc.encode(_x25519PublicKeyBytes).slice(1),
+                    //         },
+                    //     ],
+                    // };
+                }));
+            }
+        } catch (e) {
+            console.error(e);
+        }
+
+        let finalDoc = {
             ...replacedDoc,
             keyAgreement: [
                 {
@@ -80,6 +145,15 @@ app.get(
                 },
             ],
         };
+        
+        if(saDocs) {
+            saDocs.map(sa => {
+                finalDoc.verificationMethod = [...(finalDoc.verificationMethod || []), ...sa.verificationMethod],
+                finalDoc.authentication = [...(finalDoc.authentication || []), ...sa.authentication],
+                finalDoc.assertionMethod = [...(finalDoc.assertionMethod || []), ...sa.assertionMethod],
+                finalDoc.keyAgreement = [...(finalDoc.keyAgreement || []), ...(sa.keyAgreement || [])]
+            });
+        }
 
         setDidDocForProfile(profileId, finalDoc);
 
