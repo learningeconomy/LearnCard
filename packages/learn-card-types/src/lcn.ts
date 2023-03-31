@@ -103,7 +103,9 @@ export type LCNSigningAuthorityType = z.infer<typeof LCNSigningAuthorityValidato
 export const LCNSigningAuthorityForUserValidator = z.object({
     signingAuthority: LCNSigningAuthorityValidator,
     relationship: z.object({
-        name: z.string(),
+        name: z.string().max(15).regex(/^[a-z0-9-]+$/, {
+            message: 'The input string must contain only lowercase letters, numbers, and hyphens.',
+        }),
         did: z.string()
     })
 })
