@@ -1207,7 +1207,7 @@ describe('Profiles', () => {
                 })
             ).resolves.not.toThrow();
 
-            expect(userA.clients.fullAuth.profile.signingAuthorities()).resolves.toHaveLength(2);
+            await expect(userA.clients.fullAuth.profile.signingAuthorities()).resolves.toHaveLength(2);
         });
 
         it('allows retrieving a specific, named signing authority', async () => {
