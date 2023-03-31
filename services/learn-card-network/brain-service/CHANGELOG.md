@@ -1,5 +1,29 @@
 # @learncard/network-brain-service
 
+## 1.3.3
+
+### Patch Changes
+
+-   [#259](https://github.com/learningeconomy/LearnCard/pull/259) [`8366a2c`](https://github.com/learningeconomy/LearnCard/commit/8366a2caeeda82febe373d4028f47970d94134f0) Thanks [@Custard7](https://github.com/Custard7)! - Fix: Boost Notification / Receive Presentation Notification
+
+-   [#261](https://github.com/learningeconomy/LearnCard/pull/261) [`de46ebb`](https://github.com/learningeconomy/LearnCard/commit/de46ebb3d5f41677dacdce2bc50ea2fdd1450602) Thanks [@Custard7](https://github.com/Custard7)! - Fix: Increase memory size & timeouts and adds logs for LCN sendBoost()
+
+-   [#262](https://github.com/learningeconomy/LearnCard/pull/262) [`37133bf`](https://github.com/learningeconomy/LearnCard/commit/37133bf375a883c8086ba837c2155a609dea1912) Thanks [@Custard7](https://github.com/Custard7)! - Add Signing Authorities and Claim Links
+
+    Adds the following plugin Methods to the LearnCard Network:
+
+    -   registerSigningAuthority: (endpoint: string, name: string, did: string) => Promise<boolean>;
+    -   getRegisteredSigningAuthorities: (endpoint: string, name: string, did: string) => Promise<LCNSigningAuthorityForUserType[]>;
+    -   getRegisteredSigningAuthority: (endpoint: string, name: string) => Promise<LCNSigningAuthorityForUserType>;
+
+    -   generateClaimLink: (boostUri: string, claimLinkSA: LCNBoostClaimLinkSigningAuthorityType, challenge?: string) => Promise<{ boostUri: string, challenge: string}>;
+    -   claimBoostWithLink: (boostUri: string, challenge: string) => Promise<string>;
+
+-   Updated dependencies [[`37133bf`](https://github.com/learningeconomy/LearnCard/commit/37133bf375a883c8086ba837c2155a609dea1912)]:
+    -   @learncard/types@5.2.5
+    -   @learncard/core@8.5.4
+    -   @learncard/did-web-plugin@1.0.1
+
 ## 1.3.2
 
 ### Patch Changes

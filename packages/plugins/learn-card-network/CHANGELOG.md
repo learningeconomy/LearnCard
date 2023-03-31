@@ -1,5 +1,24 @@
 # learn-card-core
 
+## 1.3.3
+
+### Patch Changes
+
+-   [#262](https://github.com/learningeconomy/LearnCard/pull/262) [`37133bf`](https://github.com/learningeconomy/LearnCard/commit/37133bf375a883c8086ba837c2155a609dea1912) Thanks [@Custard7](https://github.com/Custard7)! - Add Signing Authorities and Claim Links
+
+    Adds the following plugin Methods to the LearnCard Network:
+
+    -   registerSigningAuthority: (endpoint: string, name: string, did: string) => Promise<boolean>;
+    -   getRegisteredSigningAuthorities: (endpoint: string, name: string, did: string) => Promise<LCNSigningAuthorityForUserType[]>;
+    -   getRegisteredSigningAuthority: (endpoint: string, name: string) => Promise<LCNSigningAuthorityForUserType>;
+
+    -   generateClaimLink: (boostUri: string, claimLinkSA: LCNBoostClaimLinkSigningAuthorityType, challenge?: string) => Promise<{ boostUri: string, challenge: string}>;
+    -   claimBoostWithLink: (boostUri: string, challenge: string) => Promise<string>;
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@1.1.3
+    -   @learncard/core@8.5.4
+
 ## 1.3.2
 
 ### Patch Changes
