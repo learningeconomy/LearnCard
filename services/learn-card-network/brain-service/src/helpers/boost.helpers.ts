@@ -155,6 +155,7 @@ export const issueCertifiedBoost = async (
                 domain,
                 lcnDID
             );
+            // TODO: Encrypt Boost Credential
             return learnCard.invoke.issueCredential(unsignedCertifiedBoost);
         } else {
             console.warn('Credential is not derived from boost', boost.dataValues.boost, credential);
@@ -303,7 +304,7 @@ export const issueClaimLinkBoost = async ( boost: BoostInstance, domain: string,
     }
 
     console.log("issueCredentialWithSigningAuthority")
-    const vc = await issueCredentialWithSigningAuthority(from, boostCredential, signingAuthorityForUser);
+    const vc = await issueCredentialWithSigningAuthority(from, boostCredential, signingAuthorityForUser, false);
     // TODO: encrypt vc?
 
     // const lcnDid = await client.utilities.getDid.query();

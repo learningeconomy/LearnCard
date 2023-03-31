@@ -83,10 +83,27 @@ app.get(
                     const _replacedDoc = JSON.parse(
                         JSON.stringify(_didDoc).replaceAll(sa.relationship.did, did).replaceAll(`#${_key}`, `#${sa.relationship.name}`)
                     );
+
+                    const _jwk = _replacedDoc.verificationMethod[0].publicKeyJwk;
+
+                    const _decodedJwk = base64url.decode(`u${_jwk.x}`);
+                    const _x25519PublicKeyBytes = sodium.crypto_sign_ed25519_pk_to_curve25519(_decodedJwk);
             
                     _replacedDoc.verificationMethod[0].controller += `#${sa.relationship.name}`;
+
+                    return {
+                            ..._replacedDoc,
+                            keyAgreement: [
+                                {
+                                    id: `${did}#${encodeKey(_x25519PublicKeyBytes)}`,
+                                    type: 'X25519KeyAgreementKey2019',
+                                    controller: _replacedDoc.verificationMethod[0].controller,
+                                    publicKeyBase58: base58btc.encode(_x25519PublicKeyBytes).slice(1),
+                                },
+                            ],
+                        };
         
-                    return _replacedDoc;
+                    //return _replacedDoc;
                     // TODO: Add keyagreement
                     // const _didDoc = await learnCard.invoke.resolveDid(sa.relationship.did);
                     // const _key = sa.relationship.did.split(':')[2];

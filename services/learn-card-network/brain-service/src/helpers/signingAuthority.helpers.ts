@@ -1,10 +1,10 @@
 import { getDidWebLearnCard } from '@helpers/learnCard.helpers';
-import { UnsignedVC } from '@learncard/types';
+import { UnsignedVC, VCValidator, JWEValidator, VC, JWE } from '@learncard/types';
 import { SigningAuthorityForUserType } from 'types/profile';
 import { ProfileInstance } from '@models';
 import { getDidWeb } from '@helpers/did.helpers';
 
-export async function issueCredentialWithSigningAuthority(owner: ProfileInstance, credential: UnsignedVC, signingAuthorityForUser: SigningAuthorityForUserType) {
+export async function issueCredentialWithSigningAuthority(owner: ProfileInstance, credential: UnsignedVC, signingAuthorityForUser: SigningAuthorityForUserType, encrypt: boolean = true): Promise<VC | JWE> {
     try {
         console.log(
             'Issuing Credential with SA',
@@ -25,6 +25,10 @@ export async function issueCredentialWithSigningAuthority(owner: ProfileInstance
             owner.profileId
         );
 
+        const encryption = encrypt ? {
+            recipients: [learnCard.id.did()]
+        } : undefined;
+        
         const response = await fetch(issuerEndpoint, {
             method: 'POST',
             headers: {
@@ -37,7 +41,8 @@ export async function issueCredentialWithSigningAuthority(owner: ProfileInstance
                     ownerDid,
                     name: signingAuthorityForUser.relationship.name,
                     did: signingAuthorityForUser.relationship.did
-                }
+                },
+                encryption
             }),
         });
         const res = await response.json();
@@ -46,7 +51,16 @@ export async function issueCredentialWithSigningAuthority(owner: ProfileInstance
         if (!res || res?.code === 'INTERNAL_SERVER_ERROR') {
             throw new Error(res);
         }
-        return res;
+
+        if(encryption) {
+            const validationResult = await JWEValidator.spa(res);
+            if(!validationResult.success) throw new Error("Signing Authority returned malformed JWE");
+            return validationResult.data;
+        } else {
+            const validationResult = await VCValidator.spa(res);
+            if(!validationResult.success) throw new Error("Signing Authority returned malformed VC", validationResult);
+            return validationResult.data;
+        }
     } catch (error) {
         console.error('SA Helpers - Error While Sending:', error);
     }

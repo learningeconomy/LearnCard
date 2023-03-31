@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { getDidWebLearnCard } from '@helpers/learnCard.helpers';
 import { LCNNotification } from '@learncard/types';
 import { getDidWeb } from '@helpers/did.helpers';
@@ -44,9 +45,13 @@ export async function sendNotification(notification: LCNNotification) {
             if (!res) {
                 throw new Error(res);
             }
-            return res;
+
+            const validationResult = await z.boolean().spa(res);
+            if(!validationResult.success) throw new Error("Notifications Endpoint returned a malformed result");
+            return validationResult.data;
         }
     } catch (error) {
         console.error('Notifications Helpers - Error While Sending:', error);
     }
+    return false;
 }
