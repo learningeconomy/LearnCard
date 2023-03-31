@@ -89,10 +89,11 @@ export async function issueCredentialWithSigningAuthority(owner: ProfileInstance
             return validationResult.data;
         } else {
             const validationResult = await VCValidator.spa(res);
-            if(!validationResult.success) throw new Error("Signing Authority returned malformed VC", validationResult);
+            if(!validationResult.success) throw new Error("Signing Authority returned malformed VC");
             return validationResult.data;
         }
     } catch (error) {
         console.error('SA Helpers - Error While Sending:', error);
+        throw new Error('SA Helpers - Error While Sending');
     }
 }

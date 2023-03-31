@@ -58,7 +58,7 @@ export const getClaimLinkSAInfoForBoost = async (
 export const getClaimLinkOptionsInfoForBoost = async (
     boostUri: string,
     challenge: string
-): Promise<BoostClaimLinkSigningAuthorityType | undefined> => {
+): Promise<BoostClaimLinkOptionsType | undefined> => {
     const result = await cache.get(getClaimLinkCacheKey(boostUri, challenge));
     if(!result) return;
     const validated = await BoostClaimLinkCacheValueValidator.spa(JSON.parse(result));
