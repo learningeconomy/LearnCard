@@ -10,6 +10,9 @@ dotenv.config();
 const IS_TEST_ENVIRONMENT = process.env.NODE_ENV === 'test';
 
 
+// Timeout value in milliseconds for aborting the request
+const TIMEOUT = 4000;
+
 const _mockIssueCredentialWithSigningAuthority = async(credential: UnsignedVC) => {
     const learnCard = await getLearnCard();
     return learnCard.invoke.issueCredential({ ...credential, issuer: learnCard.id.did() });
@@ -46,6 +49,14 @@ export async function issueCredentialWithSigningAuthority(owner: ProfileInstance
             recipients: [learnCard.id.did()]
         } : undefined;
 
+
+        // Create an AbortController instance and get the signal
+        const controller = new AbortController();
+        const { signal } = controller;
+
+        // Set a timeout to abort the fetch request
+        const timeoutId = setTimeout(() => controller.abort(), TIMEOUT);
+
         const response = await fetch(issuerEndpoint, {
             method: 'POST',
             headers: {
@@ -61,7 +72,10 @@ export async function issueCredentialWithSigningAuthority(owner: ProfileInstance
                 },
                 encryption
             }),
-        });
+            signal
+        },);
+
+        clearTimeout(timeoutId); 
         const res = await response.json();
         console.log("RESPONSE: ", res);
 

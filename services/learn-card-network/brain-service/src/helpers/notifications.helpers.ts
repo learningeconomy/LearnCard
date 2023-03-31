@@ -3,6 +3,9 @@ import { getDidWebLearnCard } from '@helpers/learnCard.helpers';
 import { LCNNotification } from '@learncard/types';
 import { getDidWeb } from '@helpers/did.helpers';
 
+// Timeout value in milliseconds for aborting the request
+const TIMEOUT = 4000;
+
 export async function sendNotification(notification: LCNNotification) {
     try {
         let notificationsWebhook = process.env.NOTIFICATIONS_SERVICE_WEBHOOK_URL;
@@ -32,6 +35,14 @@ export async function sendNotification(notification: LCNNotification) {
 
             const didJwt = await learnCard.invoke.getDidAuthVp({ proofFormat: 'jwt' });
 
+
+            // Create an AbortController instance and get the signal
+            const controller = new AbortController();
+            const { signal } = controller;
+
+            // Set a timeout to abort the fetch request
+            const timeoutId = setTimeout(() => controller.abort(), TIMEOUT);
+
             const response = await fetch(notificationsWebhook, {
                 method: 'POST',
                 headers: {
@@ -39,7 +50,11 @@ export async function sendNotification(notification: LCNNotification) {
                     'Authorization': `Bearer ${didJwt}`,
                 },
                 body: JSON.stringify(notification),
+                signal
             });
+
+            clearTimeout(timeoutId); 
+
             const res = await response.json();
 
             if (!res) {
