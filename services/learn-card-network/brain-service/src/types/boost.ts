@@ -1,5 +1,8 @@
 import { z } from 'zod';
-import { BoostValidator as _BoostValidator, LCNBoostClaimLinkSigningAuthorityValidator, LCNBoostClaimLinkSigningAuthorityType, LCNBoostClaimLinkOptionsValidator, LCNBoostClaimLinkOptionsType } from '@learncard/types';
+import { BoostValidator as _BoostValidator, LCNBoostClaimLinkSigningAuthorityValidator, LCNBoostClaimLinkSigningAuthorityType, LCNBoostClaimLinkOptionsValidator, LCNBoostClaimLinkOptionsType, LCNBoostStatus, LCNBoostStatusEnum } from '@learncard/types';
+
+export const BoostStatus = LCNBoostStatus;
+export type BoostStatusEnum = LCNBoostStatusEnum;
 
 export const BoostValidator = _BoostValidator.omit({ uri: true }).extend({
     id: z.string(),

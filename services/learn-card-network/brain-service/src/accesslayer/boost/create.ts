@@ -2,7 +2,8 @@ import { UnsignedVC, VC } from '@learncard/types';
 import { v4 as uuid } from 'uuid';
 
 import { Boost, BoostInstance, ProfileInstance } from '@models';
-import { BoostType } from 'types/boost';
+import { BoostStatus, BoostType } from 'types/boost';
+import { convertCredentialToBoostTemplateJSON } from '@helpers/boost.helpers';
 
 export const createBoost = async (
     credential: UnsignedVC | VC,
@@ -11,24 +12,12 @@ export const createBoost = async (
 ): Promise<BoostInstance> => {
     const id = uuid();
 
-    const template = { ...credential };
-
-    delete template.proof;
-    template.issuer = 'did:example:123';
-
-    if (Array.isArray(template.credentialSubject)) {
-        template.credentialSubject = template.credentialSubject.map(subject => {
-            subject.id = 'did:example:123';
-
-            return subject;
-        });
-    } else {
-        template.credentialSubject.id = 'did:example:123';
-    }
+    const { status = BoostStatus.enum.LIVE } = metadata;
 
     return Boost.createOne({
         id,
-        boost: JSON.stringify(template),
+        boost: convertCredentialToBoostTemplateJSON(credential),
+        status,
         ...metadata,
         createdBy: {
             where: {

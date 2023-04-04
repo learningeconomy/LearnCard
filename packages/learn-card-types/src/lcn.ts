@@ -28,11 +28,19 @@ export const SentCredentialInfoValidator = z.object({
 });
 export type SentCredentialInfo = z.infer<typeof SentCredentialInfoValidator>;
 
+export const LCNBoostStatus = z.enum([
+    'DRAFT',
+    'LIVE',
+]);
+export type LCNBoostStatusEnum = z.infer<typeof LCNBoostStatus>;
+
+
 export const BoostValidator = z.object({
     uri: z.string(),
     name: z.string().optional(),
     type: z.string().optional(),
     category: z.string().optional(),
+    status: LCNBoostStatus.optional()
 });
 export type Boost = z.infer<typeof BoostValidator>;
 
