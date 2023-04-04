@@ -3,7 +3,7 @@ import { ModelFactory, ModelRelatedNodesI, NeogmaInstance } from 'neogma';
 import { neogma } from '@instance';
 
 import { Profile, ProfileInstance } from './Profile';
-import { BoostType } from 'types/boost';
+import { BoostType, BoostStatus } from 'types/boost';
 
 export type BoostRelationships = {
     createdBy: ModelRelatedNodesI<
@@ -25,6 +25,7 @@ export const Boost = ModelFactory<BoostType, BoostRelationships>(
             type: { type: 'string' },
             category: { type: 'string' },
             boost: { type: 'string', required: true },
+            status: { type: 'string', enum: BoostStatus.options }
         },
         primaryKeyField: 'id',
         relationships: {

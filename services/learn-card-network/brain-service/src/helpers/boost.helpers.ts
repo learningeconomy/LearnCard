@@ -14,6 +14,7 @@ import { getCredentialUri } from './credential.helpers';
 import { getLearnCard } from './learnCard.helpers';
 import { issueCredentialWithSigningAuthority } from './signingAuthority.helpers';
 import { sendNotification } from './notifications.helpers';
+import { BoostStatus } from 'types/boost';
 
 export const getBoostUri = (id: string, domain: string): string =>
     constructUri('boost', id, domain);
@@ -26,6 +27,28 @@ export const isProfileBoostOwner = async (
 
     return owner?.profileId === profile.profileId;
 };
+
+export const isDraftBoost = (boost: BoostInstance): boolean => {
+    return boost.status === BoostStatus.enum.DRAFT; 
+}
+
+export const convertCredentialToBoostTemplateJSON = (credential: VC | UnsignedVC): string => {
+    const template = { ...credential };
+
+    delete template.proof;
+    template.issuer = 'did:example:123';
+
+    if (Array.isArray(template.credentialSubject)) {
+        template.credentialSubject = template.credentialSubject.map(subject => {
+            subject.id = 'did:example:123';
+
+            return subject;
+        });
+    } else {
+        template.credentialSubject.id = 'did:example:123';
+    }
+    return JSON.stringify(template);
+}
 
 export const verifyCredentialIsDerivedFromBoost = async (
     boost: BoostInstance,

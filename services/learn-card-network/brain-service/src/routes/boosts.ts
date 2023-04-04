@@ -14,7 +14,7 @@ import { t, profileRoute } from '@routes';
 import { getBoostByUri, getBoostsForProfile } from '@accesslayer/boost/read';
 import { getBoostRecipients } from '@accesslayer/boost/relationships/read';
 
-import { getBoostUri, isProfileBoostOwner, sendBoost, issueClaimLinkBoost } from '@helpers/boost.helpers';
+import { getBoostUri, isProfileBoostOwner, sendBoost, issueClaimLinkBoost, isDraftBoost, convertCredentialToBoostTemplateJSON } from '@helpers/boost.helpers';
 import { BoostValidator, BoostGenerateClaimLinkInput } from 'types/boost';
 import { deleteBoost } from '@accesslayer/boost/delete';
 import { createBoost } from '@accesslayer/boost/create';
@@ -66,6 +66,13 @@ export const boostsRouter = t.router({
                 throw new TRPCError({
                     code: 'UNAUTHORIZED',
                     message: 'Profile does not own boost',
+                });
+            }
+
+            if(isDraftBoost(boost)) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'Draft Boosts can not be sent. Only Published Boosts can be sent.',
                 });
             }
 
@@ -167,7 +174,9 @@ export const boostsRouter = t.router({
         .input(
             z.object({
                 uri: z.string(),
-                updates: BoostValidator.partial().omit({ id: true, boost: true }),
+                updates: BoostValidator.partial()
+                    .omit({ id: true, boost: true })
+                    .extend({ credential: VCValidator.or(UnsignedVCValidator).optional() }),
             })
         )
         .output(z.boolean())
@@ -175,7 +184,7 @@ export const boostsRouter = t.router({
             const { profile } = ctx.user;
 
             const { uri, updates } = input;
-            const { name, type, category } = updates;
+            const { name, type, category, status, credential } = updates;
 
             const boost = await getBoostByUri(uri);
 
@@ -188,9 +197,18 @@ export const boostsRouter = t.router({
                 });
             }
 
+            if(!isDraftBoost(boost)) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'Published Boosts can not be updated. Only Draft Boosts can be updated.',
+                });
+            }
+
             if (name) boost.name = name;
             if (category) boost.category = category;
             if (type) boost.type = type;
+            if (status) boost.status = status;
+            if (credential) boost.boost = convertCredentialToBoostTemplateJSON(credential);
 
             await boost.save();
 
@@ -226,6 +244,13 @@ export const boostsRouter = t.router({
                 });
             }
 
+            if(!isDraftBoost(boost)) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'Published Boosts can not be deleted. Only Draft Boosts can be deleted.',
+                });
+            }
+
             await deleteBoost(boost);
 
             return true;
@@ -257,6 +282,13 @@ export const boostsRouter = t.router({
                 throw new TRPCError({
                     code: 'UNAUTHORIZED',
                     message: 'Profile does not own boost',
+                });
+            }
+
+            if(isDraftBoost(boost)) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'Can not generate claim links for Draft Boosts. Claim links can only be generated for Published Boosts.',
                 });
             }
 
@@ -305,7 +337,7 @@ export const boostsRouter = t.router({
 
             const signingAuthority = await getSigningAuthorityForUserByName(boostOwner, claimLinkSA.endpoint, claimLinkSA.name);
             if (!signingAuthority) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find signing authority for boost' });
-            console.log("claimBoostWithLink", boost, ctx.domain, boostOwner, profile, signingAuthority)
+
             try {
                 const sentBoostUri = await issueClaimLinkBoost(boost, ctx.domain, boostOwner, profile, signingAuthority);
                 try {

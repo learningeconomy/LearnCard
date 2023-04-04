@@ -72,7 +72,7 @@ export type LearnCardNetworkPluginMethods = {
         limit?: number,
         skip?: number
     ) => Promise<BoostRecipientInfo[]>;
-    updateBoost: (uri: string, updates: Partial<Omit<Boost, 'uri'>>) => Promise<boolean>;
+    updateBoost: (uri: string, updates: Partial<Omit<Boost, 'uri'>>, credential: UnsignedVC | VC) => Promise<boolean>;
     deleteBoost: (uri: string) => Promise<boolean>;
     sendBoost: (profileId: string, boostUri: string, encrypt?: boolean) => Promise<string>;
 

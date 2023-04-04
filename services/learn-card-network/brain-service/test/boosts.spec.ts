@@ -2,6 +2,7 @@ import { getClient, getUser } from './helpers/getClient';
 import { testVc, sendBoost, testUnsignedBoost } from './helpers/send';
 import { Profile, Credential, Boost, SigningAuthority } from '@models';
 import { getClaimLinkOptionsInfoForBoost, getTTLForClaimLink } from '@cache/claim-links';
+import { BoostStatus } from 'types/boost';
 
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;
@@ -278,7 +279,7 @@ describe('Boosts', () => {
         });
 
         it('should require full auth to update a boost', async () => {
-            const uri = await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
+            const uri = await userA.clients.fullAuth.boost.createBoost({ credential: testVc, status: BoostStatus.enum.DRAFT  });
 
             await expect(
                 noAuthClient.boost.updateBoost({ uri, updates: { name: 'nice' } })
@@ -288,12 +289,31 @@ describe('Boosts', () => {
             ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
         });
 
-        it('should allow you to update boost name', async () => {
+        it('should prevent you from updating a published boosts name', async () => {
             await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
             const boosts = await userA.clients.fullAuth.boost.getBoosts();
             const boost = boosts[0]!;
             const uri = boost.uri;
 
+            expect(boost.name).toBeUndefined();
+
+            await expect(
+                userA.clients.fullAuth.boost.updateBoost({ uri, updates: { name: 'nice' } })
+            ).rejects.toThrow();
+
+            const newBoosts = await userA.clients.fullAuth.boost.getBoosts();
+            const newBoost = newBoosts[0]!;
+
+            expect(newBoost.name).not.toEqual('nice');
+        });
+
+        it('should allow you to update a draft boosts name', async () => {
+            await userA.clients.fullAuth.boost.createBoost({ credential: testVc, status: BoostStatus.enum.DRAFT });
+            const boosts = await userA.clients.fullAuth.boost.getBoosts();
+            const boost = boosts[0]!;
+            const uri = boost.uri;
+
+            expect(boost.status).toBe(BoostStatus.enum.DRAFT)
             expect(boost.name).toBeUndefined();
 
             await expect(
@@ -306,8 +326,26 @@ describe('Boosts', () => {
             expect(newBoost.name).toEqual('nice');
         });
 
-        it('should allow you to update boost category', async () => {
+        it('should prevent you from updating a published boosts category', async () => {
             await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
+            const boosts = await userA.clients.fullAuth.boost.getBoosts();
+            const boost = boosts[0]!;
+            const uri = boost.uri;
+
+            expect(boost.category).toBeUndefined();
+
+            await expect(
+                userA.clients.fullAuth.boost.updateBoost({ uri, updates: { category: 'nice' } })
+            ).rejects.toThrow();
+
+            const newBoosts = await userA.clients.fullAuth.boost.getBoosts();
+            const newBoost = newBoosts[0]!;
+
+            expect(newBoost.category).not.toEqual('nice');
+        });
+
+        it('should allow you to update a draft boosts category', async () => {
+            await userA.clients.fullAuth.boost.createBoost({ credential: testVc, status: BoostStatus.enum.DRAFT });
             const boosts = await userA.clients.fullAuth.boost.getBoosts();
             const boost = boosts[0]!;
             const uri = boost.uri;
@@ -323,8 +361,27 @@ describe('Boosts', () => {
 
             expect(newBoost.category).toEqual('nice');
         });
-        it('should allow you to update boost type', async () => {
+
+        it('should prevent you from updating a published boosts type', async () => {
             await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
+            const boosts = await userA.clients.fullAuth.boost.getBoosts();
+            const boost = boosts[0]!;
+            const uri = boost.uri;
+
+            expect(boost.type).toBeUndefined();
+
+            await expect(
+                userA.clients.fullAuth.boost.updateBoost({ uri, updates: { type: 'nice' } })
+            ).rejects.toThrow();
+
+            const newBoosts = await userA.clients.fullAuth.boost.getBoosts();
+            const newBoost = newBoosts[0]!;
+
+            expect(newBoost.type).not.toEqual('nice');
+        });
+
+        it('should allow you to update boost type', async () => {
+            await userA.clients.fullAuth.boost.createBoost({ credential: testVc, status: BoostStatus.enum.DRAFT });
             const boosts = await userA.clients.fullAuth.boost.getBoosts();
             const boost = boosts[0]!;
             const uri = boost.uri;
@@ -339,6 +396,41 @@ describe('Boosts', () => {
             const newBoost = newBoosts[0]!;
 
             expect(newBoost.type).toEqual('nice');
+        });
+
+        it('should prevent you from updating a published boosts credential', async () => {
+            await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
+            const boosts = await userA.clients.fullAuth.boost.getBoosts();
+            const boost = boosts[0]!;
+            const uri = boost.uri;
+
+            const beforeUpdateBoostCredential = await userA.clients.fullAuth.storage.resolve({ uri });
+            await expect(
+                userA.clients.fullAuth.boost.updateBoost({ uri, updates: { credential: testUnsignedBoost } })
+            ).rejects.toThrow();
+
+            const newBoosts = await userA.clients.fullAuth.boost.getBoosts();
+            const newBoost = newBoosts[0]!;
+
+            expect(await userA.clients.fullAuth.storage.resolve({ uri: newBoost.uri })).toMatchObject(beforeUpdateBoostCredential);
+        });
+
+        it('should allow you to update boost credential', async () => {
+            await userA.clients.fullAuth.boost.createBoost({ credential: testVc, status: BoostStatus.enum.DRAFT });
+            const boosts = await userA.clients.fullAuth.boost.getBoosts();
+            const boost = boosts[0]!;
+            const uri = boost.uri;
+
+
+            const beforeUpdateBoostCredential = await userA.clients.fullAuth.storage.resolve({ uri });
+            await expect(
+                userA.clients.fullAuth.boost.updateBoost({ uri, updates: { credential: testUnsignedBoost } })
+            ).resolves.not.toThrow();
+
+            const newBoosts = await userA.clients.fullAuth.boost.getBoosts();
+            const newBoost = newBoosts[0]!;
+
+            expect(await userA.clients.fullAuth.storage.resolve({ uri: newBoost.uri })).not.toMatchObject(beforeUpdateBoostCredential);
         });
     });
 
@@ -372,16 +464,23 @@ describe('Boosts', () => {
             ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
         });
 
-        it('should allow you to delete a boost', async () => {
+        it('should allow you to delete a draft boost', async () => {
+            const draftBoostUri = await userA.clients.fullAuth.boost.createBoost({ credential: testVc, status: BoostStatus.enum.DRAFT });
+
+            const beforeDeleteLength = (await userA.clients.fullAuth.boost.getBoosts()).length;
+            await expect(userA.clients.fullAuth.boost.deleteBoost({ uri: draftBoostUri })).resolves.not.toThrow();
+
+            expect(await userA.clients.fullAuth.boost.getBoosts()).toHaveLength(beforeDeleteLength - 1);
+        });
+
+        it('should prevent you from deleting a published boost', async () => {
             const boosts = await userA.clients.fullAuth.boost.getBoosts();
             const boost = boosts[0]!;
             const uri = boost.uri;
 
-            await expect(userA.clients.fullAuth.boost.deleteBoost({ uri })).resolves.not.toThrow();
-
-            const newBoosts = await userA.clients.fullAuth.boost.getBoosts();
-
-            expect(newBoosts).toHaveLength(0);
+            const beforeDeleteLength = (await userA.clients.fullAuth.boost.getBoosts()).length;
+            await expect(userA.clients.fullAuth.boost.deleteBoost({ uri })).rejects.toThrow();
+            expect(await userA.clients.fullAuth.boost.getBoosts()).toHaveLength(beforeDeleteLength);
         });
     });
 
@@ -429,6 +528,24 @@ describe('Boosts', () => {
                 });
                 await expect(userA.clients.partialAuth.boost.generateClaimLink({ boostUri: uri, claimLinkSA })).rejects.toMatchObject({
                     code: 'UNAUTHORIZED',
+                });
+            } else {
+                expect(sa).toBeDefined();
+            }
+        });
+
+        it('should prevent generating a claim boost link for a draft boost', async () => {
+            const uri = await userA.clients.fullAuth.boost.createBoost({ credential: testUnsignedBoost, status: BoostStatus.enum.DRAFT });
+
+            const sa = await userA.clients.fullAuth.profile.signingAuthority({ endpoint: 'http://localhost:5000/api', name: 'mysa' })
+            if(sa) {
+                const claimLinkSA = {
+                    endpoint: sa.signingAuthority.endpoint,
+                    name:  sa.relationship.name
+                }
+                
+                await expect(userA.clients.fullAuth.boost.generateClaimLink({ boostUri: uri, claimLinkSA })).rejects.toMatchObject({
+                    code: 'FORBIDDEN',
                 });
             } else {
                 expect(sa).toBeDefined();
