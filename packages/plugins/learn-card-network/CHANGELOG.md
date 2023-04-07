@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 1.4.1
+
+### Patch Changes
+
+-   [#266](https://github.com/learningeconomy/LearnCard/pull/266) [`e2b92c8`](https://github.com/learningeconomy/LearnCard/commit/e2b92c881a61ce50f582e65f80165386ef98701a) Thanks [@Custard7](https://github.com/Custard7)! - Fix: Add Options to generateClaimLink
+
 ## 1.4.0
 
 ### Minor Changes
