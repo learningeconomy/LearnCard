@@ -22,4 +22,4 @@ export type NotificationBoostCardProps = {
     showIssuerInfo?: boolean;
     title?: string;
     isArchived?: boolean;
-}
+};
