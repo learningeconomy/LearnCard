@@ -12,6 +12,7 @@ import { SigningAuthorityInstance } from './SigningAuthority';
 export type ProfileRelationships = {
     connectionRequested: ModelRelatedNodesI<typeof Profile, ProfileInstance>;
     connectedWith: ModelRelatedNodesI<typeof Profile, ProfileInstance>;
+    blocked: ModelRelatedNodesI<typeof Profile, ProfileInstance>;
     credentialSent: ModelRelatedNodesI<
         typeof Credential,
         CredentialInstance,
@@ -53,6 +54,7 @@ export const Profile = ModelFactory<ProfileType, ProfileRelationships>(
         relationships: {
             connectionRequested: { model: 'self', direction: 'out', name: 'CONNECTION_REQUESTED' },
             connectedWith: { model: 'self', direction: 'out', name: 'CONNECTED_WITH' },
+            blocked: { model: 'self', direction: 'out', name: 'BLOCKED' },
             credentialSent: {
                 model: Credential,
                 direction: 'out',

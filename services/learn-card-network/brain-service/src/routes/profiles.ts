@@ -15,6 +15,7 @@ import {
     blockProfile,
     getBlockedProfiles,
     unblockProfile,
+    getBlockedAndBlockedByIds,
 } from '@helpers/connection.helpers';
 import { getDidWeb, updateDidForProfile } from '@helpers/did.helpers';
 
@@ -181,11 +182,13 @@ export const profilesRouter = t.router({
         .query(async ({ ctx, input }) => {
             const { input: searchInput, limit, includeSelf, includeConnectionStatus } = input;
 
-            const selfProfile = ctx.user && !includeSelf && (await getProfileByDid(ctx.user.did));
+            const _selfProfile = ctx.user && ctx.user.did && (await getProfileByDid(ctx.user.did));
+            const selfProfile = !includeSelf && _selfProfile;
 
+            const blacklist = _selfProfile && (await getBlockedAndBlockedByIds(_selfProfile)) || [];
             const profiles = await searchProfiles(searchInput, {
                 limit,
-                blacklist: selfProfile ? [selfProfile.profileId] : [],
+                blacklist: selfProfile ? [selfProfile.profileId, ...blacklist] : blacklist,
             });
             // TODO: Allow filtering out service profiles
             if (selfProfile && includeConnectionStatus) {
