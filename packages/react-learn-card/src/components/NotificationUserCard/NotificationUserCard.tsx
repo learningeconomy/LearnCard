@@ -12,7 +12,6 @@ const NotificationUserCard: React.FC<NotificationUserCardProps> = ({
     customThumbComponent,
     className,
     thumbImage,
-    notificationType = UserNotificationTypeEnum.ConnectionRequest,
     issueDate,
     acceptStatus = false,
     loadingState = false,
@@ -32,7 +31,7 @@ const NotificationUserCard: React.FC<NotificationUserCardProps> = ({
     }, [loadingState]);
 
     const { textStyles, viewButtonStyles, claimedButtonStyles, unclaimedButtonStyles, typeText } =
-        UserNotificationTypeStyles[notificationType];
+        UserNotificationTypeStyles[UserNotificationTypeEnum.ConnectionRequest];
 
     const claimButtonStyles = isAccepted ? claimedButtonStyles : unclaimedButtonStyles;
 
