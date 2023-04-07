@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.5.11
+
+### Patch Changes
+
+-   [#268](https://github.com/learningeconomy/LearnCard/pull/268) [`fdbce48`](https://github.com/learningeconomy/LearnCard/commit/fdbce48c2c0a467c1ae480f6dcc4ae377de51aab) Thanks [@goblincore](https://github.com/goblincore)! - Add updated LCA notification card components
+
 ## 2.5.10
 
 ### Patch Changes
