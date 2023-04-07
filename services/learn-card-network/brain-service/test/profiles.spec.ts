@@ -1188,6 +1188,15 @@ describe('Profiles', () => {
             const searchAfterBlock = await userB.clients.fullAuth.profile.searchProfiles({ input: 'usera' });
             expect(searchAfterBlock).toHaveLength(0);
         });
+
+        it('blocking a user should hide user from retrieving their profile', async () => {
+            const profile = await userB.clients.fullAuth.profile.getOtherProfile({ profileId: 'usera' });
+            expect(profile).toBeDefined();
+
+            await userA.clients.fullAuth.profile.blockProfile({ profileId: 'userb' });
+
+            await expect(userB.clients.fullAuth.profile.getOtherProfile({ profileId: 'usera' })).rejects.toThrow();
+        });
     });
 
     describe('generateInvite', () => {
