@@ -394,10 +394,10 @@ export const getLearnCardNetworkPlugin = async (
                 return client.profile.signingAuthority.query({ endpoint, name });
             },
         
-            generateClaimLink: async (_learnCard, boostUri, claimLinkSA, challenge) => {
+            generateClaimLink: async (_learnCard, boostUri, claimLinkSA, options, challenge) => {
                 if (!userData) throw new Error('Please make an account first!');
 
-                return client.boost.generateClaimLink.mutate({ boostUri, claimLinkSA, challenge });
+                return client.boost.generateClaimLink.mutate({ boostUri, claimLinkSA, options, challenge });
             },
             claimBoostWithLink: async (_learnCard, boostUri, challenge) => {
                 if (!userData) throw new Error('Please make an account first!');

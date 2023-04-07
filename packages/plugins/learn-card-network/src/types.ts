@@ -9,7 +9,8 @@ import {
     Boost,
     BoostRecipientInfo,
     LCNSigningAuthorityForUserType,
-    LCNBoostClaimLinkSigningAuthorityType
+    LCNBoostClaimLinkSigningAuthorityType,
+    LCNBoostClaimLinkOptionsType
 } from '@learncard/types';
 import { Plugin, ProofOptions, VerifyExtension } from '@learncard/core';
 
@@ -80,7 +81,7 @@ export type LearnCardNetworkPluginMethods = {
     getRegisteredSigningAuthorities: (endpoint: string, name: string, did: string) => Promise<LCNSigningAuthorityForUserType[]>;
     getRegisteredSigningAuthority: (endpoint: string, name: string) => Promise<LCNSigningAuthorityForUserType>;
 
-    generateClaimLink: (boostUri: string, claimLinkSA: LCNBoostClaimLinkSigningAuthorityType, challenge?: string) => Promise<{ boostUri: string, challenge: string}>;
+    generateClaimLink: (boostUri: string, claimLinkSA: LCNBoostClaimLinkSigningAuthorityType, options?: LCNBoostClaimLinkOptionsType ,challenge?: string) => Promise<{ boostUri: string, challenge: string}>;
     claimBoostWithLink: (boostUri: string, challenge: string) => Promise<string>;
     
     resolveFromLCN: (uri: string) => Promise<VC | UnsignedVC | VP | JWE>;
