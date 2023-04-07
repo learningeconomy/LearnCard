@@ -4,14 +4,13 @@ export type NotificationUserCardProps = {
     className?: string;
     thumbImage?: string;
     customThumbComponent?: React.ReactNode;
-    notificationType?: UserNotificationTypeEnum;
+    notificationType?: UserNotificationTypeEnum.ConnectionRequest;
     issueDate?: string;
     handleButtonClick?: () => void;
     handleCancelClick?: () => void;
     handleCardClick?: () => void;
     acceptStatus: boolean;
     loadingState?: boolean;
-    showIssuerInfo?: boolean;
     title?: string;
     isArchived?: boolean;
 };
