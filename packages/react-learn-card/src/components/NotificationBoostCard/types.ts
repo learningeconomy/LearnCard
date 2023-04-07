@@ -12,7 +12,7 @@ export type NotificationBoostCardProps = {
     thumbImage?: string;
     customThumbComponent?: React.ReactNode;
     notificationType: NotificationTypeEnum;
-    issuerInfo: NotificationIssuerMeta;
+    issuerInfo?: NotificationIssuerMeta;
     issueDate?: string;
     handleButtonClick?: ()=> void;
     handleCancelClick?: ()=> void;
