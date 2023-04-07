@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import X from '../../assets/images/X.svg';
-import { NotificationBoostCardProps, NotificationTypeStyles } from './types';
+import { NotificationBoostCardProps } from './types';
+import { NotificationTypeStyles } from '../Notification/types';
 import { NotificationTypeEnum } from '../../constants/notifications';
 import DefaultFace from '../../assets/images/default-face.jpeg';
 import Checkmark from '../svgs/Checkmark';
