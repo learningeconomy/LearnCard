@@ -302,3 +302,102 @@ export const getConnectionStatus = async (
     }
     return LCNProfileConnectionStatusEnum.enum.NOT_CONNECTED;
 };
+
+/** Checks whether two profiles are already connected */
+export const isProfileBlocked = async (
+    source: ProfileInstance,
+    target: ProfileInstance
+): Promise<boolean> => {
+    return (await source.findRelationships({
+        alias: 'blocked',
+        where: { relationship: {}, target: { profileId: target.profileId } },
+    })).length > 0;
+};
+
+/** Checks whether two profiles are already connected */
+export const isRelationshipBlocked = async (
+    source: ProfileInstance,
+    target: ProfileInstance
+): Promise<boolean> => {
+
+    const [sourceBlockedTarget, targetBlockedSource] = await Promise.all([
+        source.findRelationships({
+            alias: 'blocked',
+            where: { relationship: {}, target: { profileId: target.profileId } },
+        }),
+        target.findRelationships({
+            alias: 'blocked',
+            where: { relationship: {}, target: { profileId: source.profileId } },
+        }),
+    ]);
+
+    return sourceBlockedTarget.length > 0 || targetBlockedSource.length > 0;
+};
+
+/** Blocks a profile */
+export const blockProfile = async (
+    source: ProfileInstance,
+    target: ProfileInstance,
+): Promise<boolean> => {
+
+    await Promise.all([
+        Profile.deleteRelationships({
+            alias: 'connectedWith',
+            where: {
+                source: { profileId: source.profileId },
+                target: { profileId: target.profileId },
+            },
+        }),
+        Profile.deleteRelationships({
+            alias: 'connectedWith',
+            where: {
+                source: { profileId: target.profileId },
+                target: { profileId: source.profileId },
+            },
+        }),
+        source.relateTo({ alias: 'blocked', where: { profileId: target.profileId } })
+    ]);
+
+    return true;
+};
+
+/** Unblocks a profile */
+export const unblockProfile = async (
+    source: ProfileInstance,
+    target: ProfileInstance,
+    validate = true
+): Promise<boolean> => {
+    if (validate && !(await areProfilesConnected(source, target))) {
+        throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Profiles are not connected!',
+        });
+    }
+
+    await Promise.all([
+        Profile.deleteRelationships({
+            alias: 'connectedWith',
+            where: {
+                source: { profileId: source.profileId },
+                target: { profileId: target.profileId },
+            },
+        }),
+        Profile.deleteRelationships({
+            alias: 'connectedWith',
+            where: {
+                source: { profileId: target.profileId },
+                target: { profileId: source.profileId },
+            },
+        }),
+    ]);
+
+    return true;
+};
+
+export const getBlockedProfiles = async (
+    profile: ProfileInstance
+): Promise<ProfileInstance[]> => {
+    return (await profile.findRelationships({ alias: 'blocked' })).map(
+        result => result.target
+    );
+};

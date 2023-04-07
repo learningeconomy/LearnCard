@@ -12,6 +12,9 @@ import {
     getPendingConnections,
     requestConnection,
     getConnectionStatus,
+    blockProfile,
+    getBlockedProfiles,
+    unblockProfile,
 } from '@helpers/connection.helpers';
 import { getDidWeb, updateDidForProfile } from '@helpers/did.helpers';
 
@@ -524,6 +527,85 @@ export const profilesRouter = t.router({
             await setValidInviteForProfile(profile.profileId, challenge);
 
             return { profileId: profile.profileId, challenge };
+        }),
+
+    blockProfile: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/profile/{profileId}/block',
+                tags: ['Profiles'],
+                summary: 'Block another profile',
+                description:
+                    'Block another user based on their profileId',
+            },
+        })
+        .input(z.object({ profileId: z.string() }))
+        .output(z.boolean())
+        .mutation(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { profileId } = input;
+
+            const targetProfile = await getProfileByProfileId(profileId);
+
+            if (!targetProfile) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Profile not found. Are you sure this person exists?',
+                });
+            }
+
+            return blockProfile(profile, targetProfile);
+        }),
+
+    unblockProfile: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/profile/{profileId}/unblock',
+                tags: ['Profiles'],
+                summary: 'Unblock another profile',
+                description:
+                    'Unblock another user based on their profileId',
+            },
+        })
+        .input(z.object({ profileId: z.string() }))
+        .output(z.boolean())
+        .mutation(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { profileId } = input;
+
+            const targetProfile = await getProfileByProfileId(profileId);
+
+            if (!targetProfile) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Profile not found. Are you sure this person exists?',
+                });
+            }
+
+            return unblockProfile(profile, targetProfile);
+        }),
+
+    blocked: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/profile/blocked',
+                tags: ['Profiles'],
+                summary: 'View blocked profiles',
+                description: "This route shows the current user's blocked profiles",
+            },
+        })
+        .input(z.void())
+        .output(LCNProfileValidator.array())
+        .query(async ({ ctx }) => {
+            const blocked = await getBlockedProfiles(ctx.user.profile);
+
+            return blocked.map(blockedProfile => updateDidForProfile(ctx.domain, blockedProfile));
         }),
 
     registerSigningAuthority: profileRoute

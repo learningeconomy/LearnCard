@@ -1,7 +1,8 @@
 import { LCNProfileConnectionStatusEnum } from '@learncard/types';
 import { getClient, getUser } from './helpers/getClient';
-import { Profile, SigningAuthority } from '@models';
+import { Profile, SigningAuthority, Credential, Boost } from '@models';
 import cache from '@cache';
+import { testVc, sendBoost, testVp, testUnsignedBoost } from './helpers/send';
 
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;
@@ -1059,6 +1060,133 @@ describe('Profiles', () => {
 
             expect(oneConnectionRequest).toHaveLength(1);
             expect(oneConnectionRequest[0]!.profileId).toEqual('userb');
+        });
+    });
+
+    describe('Blocking Users', () => {
+        beforeEach(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+        });
+
+        afterAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+        });
+
+        it('should require full auth to view blocked profiles', async () => {
+            await expect(noAuthClient.profile.blocked()).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+            await expect(
+                userA.clients.partialAuth.profile.blocked()
+            ).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+        });
+
+        it('allows users to view blocked profiles', async () => {
+            await expect(
+                userA.clients.fullAuth.profile.blocked()
+            ).resolves.not.toThrow();
+
+            const blockedProfiles = await userA.clients.fullAuth.profile.blocked();
+
+            expect(blockedProfiles).toHaveLength(0);
+
+            await userA.clients.fullAuth.profile.blockProfile({ profileId: 'userb' });
+
+            const blockedProfilesAfterBlock = await userA.clients.fullAuth.profile.blocked();
+
+            expect(blockedProfilesAfterBlock).toHaveLength(1);
+            expect(blockedProfilesAfterBlock[0]!.profileId).toEqual('userb');
+        });
+
+        it('remove connection relationship after blocking a user', async () => {
+            await userB.clients.fullAuth.profile.connectWith({ profileId: 'usera' });
+            await userA.clients.fullAuth.profile.connectWith({ profileId: 'userb' });
+
+            const connections = await userA.clients.fullAuth.profile.connections();
+
+            expect(connections).toHaveLength(1);
+            expect(connections[0]!.profileId).toEqual('userb');
+
+            await userA.clients.fullAuth.profile.blockProfile({ profileId: 'userb' });
+
+            const connectionsAfterBlock = await userA.clients.fullAuth.profile.connections();
+
+            expect(connectionsAfterBlock).toHaveLength(0);
+        });
+
+        it('remove connection requests after blocking a user', async () => {
+            await userB.clients.fullAuth.profile.connectWith({ profileId: 'usera' });
+
+            const connectionRequests = await userA.clients.fullAuth.profile.connectionRequests();
+
+            expect(connectionRequests).toHaveLength(1);
+            expect(connectionRequests[0]!.profileId).toEqual('userb');
+
+            await userA.clients.fullAuth.profile.blockProfile({ profileId: 'userb' });
+
+            const connectionRequestsAfterBlock = await userA.clients.fullAuth.profile.connectionRequests();
+            expect(connectionRequestsAfterBlock).toHaveLength(0);
+        });
+
+
+        it('allows users to unblock a profile', async () => {
+            await expect(
+                userA.clients.fullAuth.profile.blocked()
+            ).resolves.not.toThrow();
+
+            const blockedProfiles = await userA.clients.fullAuth.profile.blocked();
+            expect(blockedProfiles).toHaveLength(0);
+
+            await userA.clients.fullAuth.profile.blockProfile({ profileId: 'userb' });
+
+            const blockedProfilesAfterBlock = await userA.clients.fullAuth.profile.blocked();
+
+            expect(blockedProfilesAfterBlock).toHaveLength(1);
+            expect(blockedProfilesAfterBlock[0]!.profileId).toEqual('userb');
+
+            await userA.clients.fullAuth.profile.unblockProfile({ profileId: 'userb' });
+
+            const blockedProfilesAfterUnblock = await userA.clients.fullAuth.profile.blocked();
+
+            expect(blockedProfilesAfterUnblock).toHaveLength(0);
+
+        });
+
+
+        it('blocking a user should prevent receiving connection requests, VCs, VPs, and Boosts', async () => {
+            await userA.clients.fullAuth.profile.blockProfile({ profileId: 'userb' });
+
+            await expect(userB.clients.fullAuth.profile.connectWith({ profileId: 'usera' })).resolves.toBeFalsy();
+            await expect(userB.clients.fullAuth.credential.sendCredential({ profileId: 'usera', credential: testVc, })).rejects.toThrow();
+            await expect(userB.clients.fullAuth.presentation.sendPresentation({ profileId: 'usera', presentation: testVp, })).rejects.toThrow();
+            await expect(userB.clients.fullAuth.profile.connectWith({ profileId: 'usera' })).resolves.toBeFalsy();
+
+            const uri = await userB.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            await expect(sendBoost(
+                { profileId: 'userb', user: userB },
+                { profileId: 'usera', user: userA },
+                uri
+            )).rejects.toThrow();
+
+        });
+
+        it('blocking a user should hide user from search', async () => {
+            const search = await userB.clients.fullAuth.profile.searchProfiles({ input: 'usera' });
+            expect(search).toHaveLength(1);
+
+            await userA.clients.fullAuth.profile.blockProfile({ profileId: 'userb' });
+
+            const searchAfterBlock = await userB.clients.fullAuth.profile.searchProfiles({ input: 'usera' });
+            expect(searchAfterBlock).toHaveLength(0);
         });
     });
 
