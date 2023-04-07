@@ -14,7 +14,6 @@ const NotificationUserCard: React.FC<NotificationUserCardProps> = ({
     thumbImage,
     notificationType = UserNotificationTypeEnum.ConnectionRequest,
     issueDate,
-    issuerInfo,
     acceptStatus = false,
     loadingState = false,
     handleButtonClick,

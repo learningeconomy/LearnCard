@@ -1,12 +1,5 @@
 import { UserNotificationTypeEnum } from '../../constants/notifications';
 
-export interface NotificationIssuerMeta {
-    image?: string;
-    fullName?: string;
-    profileId?: string;
-    displayName?: string;
-}
-
 export type NotificationUserCardProps = {
     className?: string;
     thumbImage?: string;
