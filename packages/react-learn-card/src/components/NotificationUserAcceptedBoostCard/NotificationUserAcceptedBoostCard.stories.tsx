@@ -2,7 +2,7 @@ import React from 'react';
 import { Story, Meta } from '@storybook/react';
 
 import NotificationUserAcceptedBoostCard from './NotificationUserAcceptedBoostCard';
-import { NotificationUserCardProps } from './types';
+import { NotificationUserAcceptedBoostCardProps } from './types';
 import { UserNotificationTypeEnum } from '../../constants/notifications';
 
 export default {
@@ -11,7 +11,7 @@ export default {
     argTypes: {},
 } as Meta<typeof NotificationUserAcceptedBoostCard>;
 
-const Template: Story<NotificationUserCardProps> = args => (
+const Template: Story<NotificationUserAcceptedBoostCardProps> = args => (
     <NotificationUserAcceptedBoostCard {...args} />
 );
 

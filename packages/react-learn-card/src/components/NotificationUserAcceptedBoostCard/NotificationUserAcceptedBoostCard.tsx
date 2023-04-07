@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import X from '../../assets/images/X.svg';
-import { NotificationUserCardProps, UserNotificationTypeStyles } from './types';
+import { NotificationUserAcceptedBoostCardProps } from './types';
+import { UserNotificationTypeStyles } from '../NotificationUserCard/types';
 
 import { UserNotificationTypeEnum } from '../../constants/notifications';
 import ArrowArcLeft from '../../assets/images/ArrowArcLeft.svg';
 
-const NotificationUserAcceptedBoostCard: React.FC<NotificationUserCardProps> = ({
+const NotificationUserAcceptedBoostCard: React.FC<NotificationUserAcceptedBoostCardProps> = ({
     title,
     customThumbComponent,
     className,
     thumbImage,
-    notificationType = UserNotificationTypeEnum.ConnectionRequest,
+    notificationType = UserNotificationTypeEnum.AcceptedBoost,
     issueDate,
     loadingState = false,
     handleCancelClick,

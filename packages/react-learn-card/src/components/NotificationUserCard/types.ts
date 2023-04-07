@@ -40,5 +40,6 @@ export const UserNotificationTypeStyles: {
         claimedButtonStyles: 'text-indigo-600 bg-indigo-50 border-indigo-50',
         textStyles: 'text-indigo-600 capitalize',
         iconCircleStyles: 'bg-indigo-600',
+        typeText: 'Boost',
     },
 };
