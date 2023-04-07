@@ -18,11 +18,6 @@ export const NotificationUserCardTest = Template.bind({});
 NotificationUserCardTest.args = {
     title: 'Bobby Brown sent you a connection request',
     thumbImage: 'https://picsum.photos/300',
-    issuerInfo: {
-        image: 'https://picsum.photos/200',
-        fullName: 'Bobby Baggins',
-        displayName: 'BBaggins',
-    },
     className: 'notification-boost-card-user-test',
     issueDate: 'Apr 04 2022',
     acceptStatus: false,
