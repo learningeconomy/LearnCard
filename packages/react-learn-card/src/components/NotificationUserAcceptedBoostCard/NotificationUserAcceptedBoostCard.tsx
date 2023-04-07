@@ -6,7 +6,9 @@ import { UserNotificationTypeStyles } from '../NotificationUserCard/types';
 import { UserNotificationTypeEnum } from '../../constants/notifications';
 import ArrowArcLeft from '../../assets/images/ArrowArcLeft.svg';
 
-const NotificationUserAcceptedBoostCard: React.FC<NotificationUserAcceptedBoostCardProps> = ({
+export const NotificationUserAcceptedBoostCard: React.FC<
+    NotificationUserAcceptedBoostCardProps
+> = ({
     title,
     customThumbComponent,
     className,

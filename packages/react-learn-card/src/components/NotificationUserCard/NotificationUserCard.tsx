@@ -7,7 +7,7 @@ import DefaultFace from '../../assets/images/default-face.jpeg';
 import Checkmark from '../svgs/Checkmark';
 import ArrowArcLeft from '../../assets/images/ArrowArcLeft.svg';
 
-const NotificationUserCard: React.FC<NotificationUserCardProps> = ({
+export const NotificationUserCard: React.FC<NotificationUserCardProps> = ({
     title,
     customThumbComponent,
     className,
