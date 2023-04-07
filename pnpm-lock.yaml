@@ -15752,7 +15752,7 @@ packages:
       es-get-iterator: 1.1.3
       get-intrinsic: 1.2.0
       is-arguments: 1.1.1
-      is-array-buffer: 3.0.1
+      is-array-buffer: 3.0.2
       is-date-object: 1.0.5
       is-regex: 1.1.4
       is-shared-array-buffer: 1.0.2
@@ -20858,14 +20858,6 @@ packages:
     dependencies:
       call-bind: 1.0.2
       has-tostringtag: 1.0.0
-
-  /is-array-buffer/3.0.1:
-    resolution: {integrity: sha512-ASfLknmY8Xa2XtB4wmbz13Wu202baeA18cJBCeCy0wXUHZF0IPyVEXqKEcd+t2fNSLLL1vC6k7lxZEojNbISXQ==}
-    dependencies:
-      call-bind: 1.0.2
-      get-intrinsic: 1.2.0
-      is-typed-array: 1.1.10
-    dev: true
 
   /is-array-buffer/3.0.2:
     resolution: {integrity: sha512-y+FyyR/w8vfIRq4eQcM1EYgSTnmHXPqaF+IgzgraytCFq5Xh8lllDVmAZolPJiZttZLeFSINPYMaEJ7/vWUa1w==}
