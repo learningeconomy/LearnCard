@@ -72,8 +72,8 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
                 )}
                 {customThumbComponent && { customThumbComponent }}
             </div>
-            <div className="flex flex-col justify-center items-center relative width-full">
-                <div className="text-left ml-3 flex flex-col items-start justify-start">
+            <div className="flex flex-col justify-center items-start relative w-full">
+                <div className="text-left ml-3 flex flex-col items-start justify-start w-full">
                     <h4
                         onClick={handleCardClick}
                         className="cursor-pointer font-bold tracking-wide line-clamp-2 text-black text-[14px] pr-[20px] notification-card-title"
@@ -113,7 +113,7 @@ const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
                         </div>
                     )}
 
-                    <div className="flex items-center justify-between  mt-3">
+                    <div className="flex items-center justify-between mt-3 w-full">
                         <button
                             className={`notification-claim-btn flex items-center mr-[15px] w-[143px] justify-center flex-1 rounded-[24px] border-2 border-solid font-semibold py-2 px-3 tracking-wide ${claimButtonStyles}`}
                             onClick={handleButtonClick}

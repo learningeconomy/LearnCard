@@ -21,6 +21,7 @@ export * from "./Loading/index";
 export * from "./MiniVCThumbnail/index";
 export * from "./Notification/index";
 export * from "./NotificationBoostCard/index";
+export * from "./NotificationUserAcceptedBoostCard/index";
 export * from "./NotificationUserCard/index";
 export * from "./QRCodeCard/index";
 export * from "./RoundedPill/index";

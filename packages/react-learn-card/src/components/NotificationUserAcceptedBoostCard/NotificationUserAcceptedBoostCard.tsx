@@ -3,46 +3,26 @@ import X from '../../assets/images/X.svg';
 import { NotificationUserCardProps, UserNotificationTypeStyles } from './types';
 
 import { UserNotificationTypeEnum } from '../../constants/notifications';
-import DefaultFace from '../../assets/images/default-face.jpeg';
-import Checkmark from '../svgs/Checkmark';
 import ArrowArcLeft from '../../assets/images/ArrowArcLeft.svg';
 
-const NotificationUserCard: React.FC<NotificationUserCardProps> = ({
+const NotificationUserAcceptedBoostCard: React.FC<NotificationUserCardProps> = ({
     title,
     customThumbComponent,
     className,
     thumbImage,
     notificationType = UserNotificationTypeEnum.ConnectionRequest,
     issueDate,
-    acceptStatus = false,
     loadingState = false,
-    handleButtonClick,
     handleCancelClick,
     isArchived,
 }) => {
-    const [isAccepted, setisAccepted] = useState<boolean>(acceptStatus || false);
     const [isLoading, setIsLoading] = useState<boolean>(loadingState || false);
-
-    useEffect(() => {
-        setisAccepted(acceptStatus);
-    }, [acceptStatus]);
 
     useEffect(() => {
         setIsLoading(loadingState);
     }, [loadingState]);
 
-    const { textStyles, viewButtonStyles, claimedButtonStyles, unclaimedButtonStyles, typeText } =
-        UserNotificationTypeStyles[notificationType];
-
-    const claimButtonStyles = isAccepted ? claimedButtonStyles : unclaimedButtonStyles;
-
-    let buttonText: string = '';
-
-    if (isAccepted) {
-        buttonText = 'Accepted';
-    } else if (!isAccepted) {
-        buttonText = 'Accept';
-    }
+    const { textStyles, viewButtonStyles, typeText } = UserNotificationTypeStyles[notificationType];
 
     return (
         <div
@@ -51,12 +31,12 @@ const NotificationUserCard: React.FC<NotificationUserCardProps> = ({
             <div className="notification-card-left-side px-[0px] flex">
                 {!customThumbComponent && (
                     <div
-                        className={`overflow-hidden cursor-pointer w-[68px] h-[68px] rounded-full flex items-start notification-card-thumbnail`}
+                        className={`overflow-hidden w-[50px] h-[50px] rounded-full flex items-start notification-card-thumbnail`}
                     >
                         <img
                             src={thumbImage}
                             alt="Notification Thumb"
-                            className="w-full h-full w-[68px] h-[68px] object-cover"
+                            className="w-full h-full w-[50px] h-[50px] object-cover"
                         />
                     </div>
                 )}
@@ -65,7 +45,7 @@ const NotificationUserCard: React.FC<NotificationUserCardProps> = ({
             <div className="flex flex-col justify-center items-start relative w-full">
                 <div className="text-left ml-3 flex flex-col items-start justify-start w-full">
                     <h4
-                        className="cursor-pointer font-bold tracking-wide line-clamp-2 text-black text-[14px] pr-[20px] notification-card-title"
+                        className="font-bold tracking-wide line-clamp-2 text-black text-[14px] pr-[20px] notification-card-title"
                         data-testid="notification-title"
                     >
                         {title}
@@ -80,22 +60,12 @@ const NotificationUserCard: React.FC<NotificationUserCardProps> = ({
                                 className="text-grayscale-600 normal-case font-normal text-[12px] notification-card-type-issue-date"
                                 data-testid="notification-cred-issue-date"
                             >
-                                • {issueDate}
+                                {typeText && '•'} {issueDate}
                             </span>
                         )}
                     </p>
 
-                    <div className="flex items-center justify-between mt-3 w-full">
-                        <button
-                            className={`notification-claim-btn flex items-center mr-[15px] w-[143px] justify-center flex-1 rounded-[24px] border-2 border-solid font-semibold py-2 px-3 tracking-wide ${claimButtonStyles}`}
-                            onClick={handleButtonClick}
-                            role="button"
-                            name="notification-claim-button"
-                        >
-                            {isAccepted && <Checkmark className="h-[24px] p-0 m-0" />}{' '}
-                            {isLoading ? 'Loading...' : buttonText}
-                        </button>
-
+                    <div className="flex items-center justify-end w-full mt-3">
                         <button
                             onClick={handleCancelClick}
                             className={`rounded-[24px] flex items-center justify-center  h-[42px] w-[42px] shadow-bottom bg-white font-semibold mr-2 p-[0px] tracking-wide ${viewButtonStyles}`}
@@ -120,4 +90,4 @@ const NotificationUserCard: React.FC<NotificationUserCardProps> = ({
     );
 };
 
-export default NotificationUserCard;
+export default NotificationUserAcceptedBoostCard;
