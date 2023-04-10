@@ -27,7 +27,10 @@ import {
 
 import { upsertSigningAuthority } from '@accesslayer/signing-authority/create';
 import { createUseSigningAuthorityRelationship } from '@accesslayer/signing-authority/relationships/create';
-import { getSigningAuthoritiesForUser, getSigningAuthorityForUserByName } from '@accesslayer/signing-authority/relationships/read';
+import {
+    getSigningAuthoritiesForUser,
+    getSigningAuthorityForUserByName,
+} from '@accesslayer/signing-authority/relationships/read';
 import { SigningAuthorityForUserValidator } from 'types/profile';
 
 import { t, openRoute, didAndChallengeRoute, openProfileRoute, profileRoute } from '@routes';
@@ -544,9 +547,10 @@ export const profilesRouter = t.router({
             const { endpoint, name, did } = input;
             const sa = await upsertSigningAuthority(endpoint);
             await createUseSigningAuthorityRelationship(ctx.user.profile, sa, name, did);
+            await deleteDidDocForProfile(ctx.user.profile.profileId);
             return true;
         }),
-    
+
     signingAuthorities: profileRoute
         .meta({
             openapi: {
@@ -562,9 +566,9 @@ export const profilesRouter = t.router({
         .input(z.void())
         .output(SigningAuthorityForUserValidator.array())
         .query(async ({ ctx }) => {
-            return getSigningAuthoritiesForUser(ctx.user.profile)
+            return getSigningAuthoritiesForUser(ctx.user.profile);
         }),
-    
+
     signingAuthority: profileRoute
         .meta({
             openapi: {
@@ -580,7 +584,7 @@ export const profilesRouter = t.router({
         .input(z.object({ endpoint: z.string(), name: z.string() }))
         .output(SigningAuthorityForUserValidator.or(z.undefined()))
         .query(async ({ ctx, input }) => {
-            return getSigningAuthorityForUserByName(ctx.user.profile, input.endpoint, input.name)
+            return getSigningAuthorityForUserByName(ctx.user.profile, input.endpoint, input.name);
         }),
 });
 export type ProfilesRouter = typeof profilesRouter;
