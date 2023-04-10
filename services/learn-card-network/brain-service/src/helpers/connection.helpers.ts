@@ -320,8 +320,8 @@ export const isProfileBlocked = async (
 
 /** Checks whether two profiles are already connected */
 export const isRelationshipBlocked = async (
-    source?: ProfileInstance,
-    target?: ProfileInstance
+    source?: ProfileInstance | null,
+    target?: ProfileInstance | null
 ): Promise<boolean> => {
     if (!target || !source) return false;
     const [sourceBlockedTarget, targetBlockedSource] = await Promise.all([
@@ -416,10 +416,9 @@ export const getBlockedAndBlockedByRelationships = async (
             where: { target: { profileId: profile.profileId } },
         }),
     ]);
-    if (blocked.length > 0 || blockedBy.length > 0) console.log('BLOCKED!!', blocked, blockedBy);
-    return [...blocked, ...blockedBy].reduce((prev, relationship) => {
+    return [...blocked, ...blockedBy].reduce((prev, relationship): ProfileInstance[] => {
         return [...prev, relationship.target, relationship.source];
-    }, []);
+    }, [] as ProfileInstance[]);
 };
 
 export const getBlockedAndBlockedByIds = async (profile: ProfileInstance): Promise<string[]> => {
