@@ -124,7 +124,7 @@ export const connectProfiles = async (
         from: source.dataValues,
         message: {
             title: 'Connection Accepted',
-            body: `${target.displayName} has accepted your connection request!`,
+            body: `${source.displayName} has accepted your connection request!`,
         },
     });
 

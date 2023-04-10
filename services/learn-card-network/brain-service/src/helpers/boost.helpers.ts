@@ -29,14 +29,17 @@ export const isProfileBoostOwner = async (
 };
 
 export const isDraftBoost = (boost: BoostInstance): boolean => {
-    return boost.status === BoostStatus.enum.DRAFT; 
-}
+    return boost.status === BoostStatus.enum.DRAFT;
+};
 
-export const convertCredentialToBoostTemplateJSON = (credential: VC | UnsignedVC): string => {
+export const convertCredentialToBoostTemplateJSON = (
+    credential: VC | UnsignedVC,
+    defaultIssuerDid?: string
+): string => {
     const template = { ...credential };
 
     delete template.proof;
-    template.issuer = 'did:example:123';
+    template.issuer = defaultIssuerDid ?? 'did:example:123';
 
     if (Array.isArray(template.credentialSubject)) {
         template.credentialSubject = template.credentialSubject.map(subject => {
@@ -48,7 +51,7 @@ export const convertCredentialToBoostTemplateJSON = (credential: VC | UnsignedVC
         template.credentialSubject.id = 'did:example:123';
     }
     return JSON.stringify(template);
-}
+};
 
 export const verifyCredentialIsDerivedFromBoost = async (
     boost: BoostInstance,
@@ -181,7 +184,11 @@ export const issueCertifiedBoost = async (
             // TODO: Encrypt Boost Credential
             return learnCard.invoke.issueCredential(unsignedCertifiedBoost);
         } else {
-            console.warn('Credential is not derived from boost', boost.dataValues.boost, credential);
+            console.warn(
+                'Credential is not derived from boost',
+                boost.dataValues.boost,
+                credential
+            );
         }
     } catch (error) {
         console.warn('Could not issue certified boost', error);
@@ -237,7 +244,7 @@ export const sendBoost = async (
     }
 
     if (typeof boostUri === 'string') {
-        if(!skipNotification) {
+        if (!skipNotification) {
             await sendNotification({
                 type: LCNNotificationTypeEnumValidator.enum.BOOST_RECEIVED,
                 to: to.dataValues,
@@ -304,9 +311,15 @@ export const constructCertifiedBoostCredential = async (
     };
 };
 
-export const issueClaimLinkBoost = async ( boost: BoostInstance, domain: string, from: ProfileInstance, to: ProfileInstance, signingAuthorityForUser: SigningAuthorityForUserType ): Promise<string> => {
-    console.log("issueClaimLinkBoost")
-    const boostCredential = JSON.parse(boost.dataValues?.boost) as (UnsignedVC | VC);
+export const issueClaimLinkBoost = async (
+    boost: BoostInstance,
+    domain: string,
+    from: ProfileInstance,
+    to: ProfileInstance,
+    signingAuthorityForUser: SigningAuthorityForUserType
+): Promise<string> => {
+    console.log('issueClaimLinkBoost');
+    const boostCredential = JSON.parse(boost.dataValues?.boost) as UnsignedVC | VC;
     const boostId = boost?.dataValues?.id;
     const boostURI = getBoostUri(boostId, domain);
 
@@ -326,8 +339,13 @@ export const issueClaimLinkBoost = async ( boost: BoostInstance, domain: string,
         boostCredential.boostId = boostURI;
     }
 
-    console.log("issueCredentialWithSigningAuthority")
-    const vc = await issueCredentialWithSigningAuthority(from, boostCredential, signingAuthorityForUser, false);
+    console.log('issueCredentialWithSigningAuthority');
+    const vc = await issueCredentialWithSigningAuthority(
+        from,
+        boostCredential,
+        signingAuthorityForUser,
+        false
+    );
     // TODO: encrypt vc?
 
     // const lcnDid = await client.utilities.getDid.query();
@@ -337,4 +355,4 @@ export const issueClaimLinkBoost = async ( boost: BoostInstance, domain: string,
     //     .createDagJWE(vc, [userData.did, targetProfile.did, lcnDid]);
 
     return sendBoost(from, to, boost, vc, domain, true);
-}
+};

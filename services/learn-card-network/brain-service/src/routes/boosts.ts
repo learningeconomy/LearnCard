@@ -36,6 +36,7 @@ import {
     useClaimLinkForBoost,
 } from '@cache/claim-links';
 import { isRelationshipBlocked } from '@helpers/connection.helpers';
+import { getDidWeb } from '@helpers/did.helpers';
 
 export const boostsRouter = t.router({
     sendBoost: profileRoute
@@ -113,7 +114,7 @@ export const boostsRouter = t.router({
             const { profile } = ctx.user;
             const { credential, ...metadata } = input;
 
-            const boost = await createBoost(credential, profile, metadata);
+            const boost = await createBoost(credential, profile, metadata, ctx.domain);
 
             return getBoostUri(boost.id, ctx.domain);
         }),
@@ -222,7 +223,12 @@ export const boostsRouter = t.router({
             if (category) boost.category = category;
             if (type) boost.type = type;
             if (status) boost.status = status;
-            if (credential) boost.boost = convertCredentialToBoostTemplateJSON(credential);
+            if (credential) {
+                boost.boost = convertCredentialToBoostTemplateJSON(
+                    credential,
+                    getDidWeb(ctx.domain, profile.profileId)
+                );
+            }
 
             await boost.save();
 

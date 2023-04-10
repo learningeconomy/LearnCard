@@ -638,6 +638,7 @@ export const profilesRouter = t.router({
             const { endpoint, name, did } = input;
             const sa = await upsertSigningAuthority(endpoint);
             await createUseSigningAuthorityRelationship(ctx.user.profile, sa, name, did);
+            await deleteDidDocForProfile(ctx.user.profile.profileId);
             return true;
         }),
 
