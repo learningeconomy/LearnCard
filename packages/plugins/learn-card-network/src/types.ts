@@ -9,7 +9,7 @@ import {
     Boost,
     BoostRecipientInfo,
     LCNSigningAuthorityForUserType,
-    LCNBoostClaimLinkSigningAuthorityType
+    LCNBoostClaimLinkSigningAuthorityType,
 } from '@learncard/types';
 import { Plugin, ProofOptions, VerifyExtension } from '@learncard/core';
 
@@ -48,6 +48,10 @@ export type LearnCardNetworkPluginMethods = {
     getConnectionRequests: () => Promise<LCNProfile[]>;
     generateInvite: (challenge?: string) => Promise<{ profileId: string; challenge: string }>;
 
+    blockProfile: (profileId: string) => Promise<boolean>;
+    unblockProfile: (profileId: string) => Promise<boolean>;
+    getBlockedProfiles: () => Promise<LCNProfile[]>;
+
     sendCredential: (profileId: string, vc: UnsignedVC | VC, encrypt?: boolean) => Promise<string>;
     acceptCredential: (uri: string) => Promise<boolean>;
     getReceivedCredentials: (from?: string) => Promise<SentCredentialInfo[]>;
@@ -72,17 +76,32 @@ export type LearnCardNetworkPluginMethods = {
         limit?: number,
         skip?: number
     ) => Promise<BoostRecipientInfo[]>;
-    updateBoost: (uri: string, updates: Partial<Omit<Boost, 'uri'>>, credential: UnsignedVC | VC) => Promise<boolean>;
+    updateBoost: (
+        uri: string,
+        updates: Partial<Omit<Boost, 'uri'>>,
+        credential: UnsignedVC | VC
+    ) => Promise<boolean>;
     deleteBoost: (uri: string) => Promise<boolean>;
     sendBoost: (profileId: string, boostUri: string, encrypt?: boolean) => Promise<string>;
 
     registerSigningAuthority: (endpoint: string, name: string, did: string) => Promise<boolean>;
-    getRegisteredSigningAuthorities: (endpoint: string, name: string, did: string) => Promise<LCNSigningAuthorityForUserType[]>;
-    getRegisteredSigningAuthority: (endpoint: string, name: string) => Promise<LCNSigningAuthorityForUserType>;
+    getRegisteredSigningAuthorities: (
+        endpoint: string,
+        name: string,
+        did: string
+    ) => Promise<LCNSigningAuthorityForUserType[]>;
+    getRegisteredSigningAuthority: (
+        endpoint: string,
+        name: string
+    ) => Promise<LCNSigningAuthorityForUserType>;
 
-    generateClaimLink: (boostUri: string, claimLinkSA: LCNBoostClaimLinkSigningAuthorityType, challenge?: string) => Promise<{ boostUri: string, challenge: string}>;
+    generateClaimLink: (
+        boostUri: string,
+        claimLinkSA: LCNBoostClaimLinkSigningAuthorityType,
+        challenge?: string
+    ) => Promise<{ boostUri: string; challenge: string }>;
     claimBoostWithLink: (boostUri: string, challenge: string) => Promise<string>;
-    
+
     resolveFromLCN: (uri: string) => Promise<VC | UnsignedVC | VP | JWE>;
 };
 
