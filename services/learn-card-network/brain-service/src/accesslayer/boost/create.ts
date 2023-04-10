@@ -4,11 +4,13 @@ import { v4 as uuid } from 'uuid';
 import { Boost, BoostInstance, ProfileInstance } from '@models';
 import { BoostStatus, BoostType } from 'types/boost';
 import { convertCredentialToBoostTemplateJSON } from '@helpers/boost.helpers';
+import { getDidWeb } from '@helpers/did.helpers';
 
 export const createBoost = async (
     credential: UnsignedVC | VC,
     creator: ProfileInstance,
-    metadata: Omit<BoostType, 'id' | 'boost'> = {}
+    metadata: Omit<BoostType, 'id' | 'boost'> = {},
+    domain: string
 ): Promise<BoostInstance> => {
     const id = uuid();
 
@@ -16,7 +18,10 @@ export const createBoost = async (
 
     return Boost.createOne({
         id,
-        boost: convertCredentialToBoostTemplateJSON(credential),
+        boost: convertCredentialToBoostTemplateJSON(
+            credential,
+            getDidWeb(domain, creator.profileId)
+        ),
         status,
         ...metadata,
         createdBy: {

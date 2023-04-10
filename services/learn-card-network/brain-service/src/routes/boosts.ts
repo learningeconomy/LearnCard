@@ -14,7 +14,14 @@ import { t, profileRoute } from '@routes';
 import { getBoostByUri, getBoostsForProfile } from '@accesslayer/boost/read';
 import { getBoostRecipients } from '@accesslayer/boost/relationships/read';
 
-import { getBoostUri, isProfileBoostOwner, sendBoost, issueClaimLinkBoost, isDraftBoost, convertCredentialToBoostTemplateJSON } from '@helpers/boost.helpers';
+import {
+    getBoostUri,
+    isProfileBoostOwner,
+    sendBoost,
+    issueClaimLinkBoost,
+    isDraftBoost,
+    convertCredentialToBoostTemplateJSON,
+} from '@helpers/boost.helpers';
 import { BoostValidator, BoostGenerateClaimLinkInput } from 'types/boost';
 import { deleteBoost } from '@accesslayer/boost/delete';
 import { createBoost } from '@accesslayer/boost/create';
@@ -22,7 +29,13 @@ import { getBoostOwner } from '@accesslayer/boost/relationships/read';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
 import { getSigningAuthorityForUserByName } from '@accesslayer/signing-authority/relationships/read';
 
-import { isClaimLinkAlreadySetForBoost, setValidClaimLinkForBoost, getClaimLinkSAInfoForBoost, useClaimLinkForBoost } from '@cache/claim-links';
+import {
+    isClaimLinkAlreadySetForBoost,
+    setValidClaimLinkForBoost,
+    getClaimLinkSAInfoForBoost,
+    useClaimLinkForBoost,
+} from '@cache/claim-links';
+import { getDidWeb } from '@helpers/did.helpers';
 
 export const boostsRouter = t.router({
     sendBoost: profileRoute
@@ -69,7 +82,7 @@ export const boostsRouter = t.router({
                 });
             }
 
-            if(isDraftBoost(boost)) {
+            if (isDraftBoost(boost)) {
                 throw new TRPCError({
                     code: 'FORBIDDEN',
                     message: 'Draft Boosts can not be sent. Only Published Boosts can be sent.',
@@ -100,7 +113,7 @@ export const boostsRouter = t.router({
             const { profile } = ctx.user;
             const { credential, ...metadata } = input;
 
-            const boost = await createBoost(credential, profile, metadata);
+            const boost = await createBoost(credential, profile, metadata, ctx.domain);
 
             return getBoostUri(boost.id, ctx.domain);
         }),
@@ -197,10 +210,11 @@ export const boostsRouter = t.router({
                 });
             }
 
-            if(!isDraftBoost(boost)) {
+            if (!isDraftBoost(boost)) {
                 throw new TRPCError({
                     code: 'FORBIDDEN',
-                    message: 'Published Boosts can not be updated. Only Draft Boosts can be updated.',
+                    message:
+                        'Published Boosts can not be updated. Only Draft Boosts can be updated.',
                 });
             }
 
@@ -208,7 +222,12 @@ export const boostsRouter = t.router({
             if (category) boost.category = category;
             if (type) boost.type = type;
             if (status) boost.status = status;
-            if (credential) boost.boost = convertCredentialToBoostTemplateJSON(credential);
+            if (credential) {
+                boost.boost = convertCredentialToBoostTemplateJSON(
+                    credential,
+                    getDidWeb(ctx.domain, profile.profileId)
+                );
+            }
 
             await boost.save();
 
@@ -244,10 +263,11 @@ export const boostsRouter = t.router({
                 });
             }
 
-            if(!isDraftBoost(boost)) {
+            if (!isDraftBoost(boost)) {
                 throw new TRPCError({
                     code: 'FORBIDDEN',
-                    message: 'Published Boosts can not be deleted. Only Draft Boosts can be deleted.',
+                    message:
+                        'Published Boosts can not be deleted. Only Draft Boosts can be deleted.',
                 });
             }
 
@@ -255,7 +275,7 @@ export const boostsRouter = t.router({
 
             return true;
         }),
-    
+
     generateClaimLink: profileRoute
         .meta({
             openapi: {
@@ -272,7 +292,12 @@ export const boostsRouter = t.router({
         .output(z.object({ boostUri: z.string(), challenge: z.string() }))
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const { boostUri, challenge = uuid(), claimLinkSA, options = { ttlSeconds: 86_400 }} = input ?? {};
+            const {
+                boostUri,
+                challenge = uuid(),
+                claimLinkSA,
+                options = { ttlSeconds: 86_400 },
+            } = input ?? {};
 
             const boost = await getBoostByUri(boostUri);
 
@@ -285,10 +310,11 @@ export const boostsRouter = t.router({
                 });
             }
 
-            if(isDraftBoost(boost)) {
+            if (isDraftBoost(boost)) {
                 throw new TRPCError({
                     code: 'FORBIDDEN',
-                    message: 'Can not generate claim links for Draft Boosts. Claim links can only be generated for Published Boosts.',
+                    message:
+                        'Can not generate claim links for Draft Boosts. Claim links can only be generated for Published Boosts.',
                 });
             }
 
@@ -333,22 +359,40 @@ export const boostsRouter = t.router({
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
             const boostOwner = await getBoostOwner(boost);
-            if (!boostOwner) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost owner' });
+            if (!boostOwner)
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost owner' });
 
-            const signingAuthority = await getSigningAuthorityForUserByName(boostOwner, claimLinkSA.endpoint, claimLinkSA.name);
-            if (!signingAuthority) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find signing authority for boost' });
+            const signingAuthority = await getSigningAuthorityForUserByName(
+                boostOwner,
+                claimLinkSA.endpoint,
+                claimLinkSA.name
+            );
+            if (!signingAuthority)
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Could not find signing authority for boost',
+                });
 
             try {
-                const sentBoostUri = await issueClaimLinkBoost(boost, ctx.domain, boostOwner, profile, signingAuthority);
+                const sentBoostUri = await issueClaimLinkBoost(
+                    boost,
+                    ctx.domain,
+                    boostOwner,
+                    profile,
+                    signingAuthority
+                );
                 try {
                     await useClaimLinkForBoost(boostUri, challenge);
                 } catch (e) {
-                    console.error("Problem using useClaimLinkForBoost", e);
+                    console.error('Problem using useClaimLinkForBoost', e);
                 }
                 return sentBoostUri;
-            } catch(e) {
-                console.error("Unable to issueClaimLinkBoost", )
-                throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Could not issue boost with claim link.' });
+            } catch (e) {
+                console.error('Unable to issueClaimLinkBoost');
+                throw new TRPCError({
+                    code: 'INTERNAL_SERVER_ERROR',
+                    message: 'Could not issue boost with claim link.',
+                });
             }
         }),
 });
