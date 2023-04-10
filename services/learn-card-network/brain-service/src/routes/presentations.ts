@@ -13,6 +13,7 @@ import {
 } from '@accesslayer/presentation/read';
 import { getPresentationOwner } from '@accesslayer/presentation/relationships/read';
 import { deletePresentation } from '@accesslayer/presentation/delete';
+import { isRelationshipBlocked } from '@helpers/connection.helpers';
 
 export const presentationsRouter = t.router({
     sendPresentation: profileRoute
@@ -35,7 +36,8 @@ export const presentationsRouter = t.router({
 
             const targetProfile = await getProfileByProfileId(profileId);
 
-            if (!targetProfile) {
+            const isBlocked = await isRelationshipBlocked(profile, targetProfile);
+            if (!targetProfile || isBlocked) {
                 throw new TRPCError({
                     code: 'NOT_FOUND',
                     message: 'Profile not found. Are you sure this person exists?',

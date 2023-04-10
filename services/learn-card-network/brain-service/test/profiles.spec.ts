@@ -1080,17 +1080,13 @@ describe('Profiles', () => {
             await expect(noAuthClient.profile.blocked()).rejects.toMatchObject({
                 code: 'UNAUTHORIZED',
             });
-            await expect(
-                userA.clients.partialAuth.profile.blocked()
-            ).rejects.toMatchObject({
+            await expect(userA.clients.partialAuth.profile.blocked()).rejects.toMatchObject({
                 code: 'UNAUTHORIZED',
             });
         });
 
         it('allows users to view blocked profiles', async () => {
-            await expect(
-                userA.clients.fullAuth.profile.blocked()
-            ).resolves.not.toThrow();
+            await expect(userA.clients.fullAuth.profile.blocked()).resolves.not.toThrow();
 
             const blockedProfiles = await userA.clients.fullAuth.profile.blocked();
 
@@ -1130,15 +1126,13 @@ describe('Profiles', () => {
 
             await userA.clients.fullAuth.profile.blockProfile({ profileId: 'userb' });
 
-            const connectionRequestsAfterBlock = await userA.clients.fullAuth.profile.connectionRequests();
+            const connectionRequestsAfterBlock =
+                await userA.clients.fullAuth.profile.connectionRequests();
             expect(connectionRequestsAfterBlock).toHaveLength(0);
         });
 
-
         it('allows users to unblock a profile', async () => {
-            await expect(
-                userA.clients.fullAuth.profile.blocked()
-            ).resolves.not.toThrow();
+            await expect(userA.clients.fullAuth.profile.blocked()).resolves.not.toThrow();
 
             const blockedProfiles = await userA.clients.fullAuth.profile.blocked();
             expect(blockedProfiles).toHaveLength(0);
@@ -1155,28 +1149,41 @@ describe('Profiles', () => {
             const blockedProfilesAfterUnblock = await userA.clients.fullAuth.profile.blocked();
 
             expect(blockedProfilesAfterUnblock).toHaveLength(0);
-
         });
-
 
         it('blocking a user should prevent receiving connection requests, VCs, VPs, and Boosts', async () => {
             await userA.clients.fullAuth.profile.blockProfile({ profileId: 'userb' });
 
-            await expect(userB.clients.fullAuth.profile.connectWith({ profileId: 'usera' })).resolves.toBeFalsy();
-            await expect(userB.clients.fullAuth.credential.sendCredential({ profileId: 'usera', credential: testVc, })).rejects.toThrow();
-            await expect(userB.clients.fullAuth.presentation.sendPresentation({ profileId: 'usera', presentation: testVp, })).rejects.toThrow();
-            await expect(userB.clients.fullAuth.profile.connectWith({ profileId: 'usera' })).resolves.toBeFalsy();
+            await expect(
+                userB.clients.fullAuth.profile.connectWith({ profileId: 'usera' })
+            ).rejects.toThrow();
+            await expect(
+                userB.clients.fullAuth.credential.sendCredential({
+                    profileId: 'usera',
+                    credential: testVc,
+                })
+            ).rejects.toThrow();
+            await expect(
+                userB.clients.fullAuth.presentation.sendPresentation({
+                    profileId: 'usera',
+                    presentation: testVp,
+                })
+            ).rejects.toThrow();
+            await expect(
+                userA.clients.fullAuth.profile.connectWith({ profileId: 'userb' })
+            ).rejects.toThrow();
 
             const uri = await userB.clients.fullAuth.boost.createBoost({
                 credential: testUnsignedBoost,
             });
 
-            await expect(sendBoost(
-                { profileId: 'userb', user: userB },
-                { profileId: 'usera', user: userA },
-                uri
-            )).rejects.toThrow();
-
+            await expect(
+                sendBoost(
+                    { profileId: 'userb', user: userB },
+                    { profileId: 'usera', user: userA },
+                    uri
+                )
+            ).rejects.toThrow();
         });
 
         it('blocking a user should hide user from search', async () => {
@@ -1185,17 +1192,23 @@ describe('Profiles', () => {
 
             await userA.clients.fullAuth.profile.blockProfile({ profileId: 'userb' });
 
-            const searchAfterBlock = await userB.clients.fullAuth.profile.searchProfiles({ input: 'usera' });
+            const searchAfterBlock = await userB.clients.fullAuth.profile.searchProfiles({
+                input: 'usera',
+            });
             expect(searchAfterBlock).toHaveLength(0);
         });
 
         it('blocking a user should hide user from retrieving their profile', async () => {
-            const profile = await userB.clients.fullAuth.profile.getOtherProfile({ profileId: 'usera' });
+            const profile = await userB.clients.fullAuth.profile.getOtherProfile({
+                profileId: 'usera',
+            });
             expect(profile).toBeDefined();
 
             await userA.clients.fullAuth.profile.blockProfile({ profileId: 'userb' });
 
-            await expect(userB.clients.fullAuth.profile.getOtherProfile({ profileId: 'usera' })).rejects.toThrow();
+            await expect(
+                userB.clients.fullAuth.profile.getOtherProfile({ profileId: 'usera' })
+            ).resolves.toBeUndefined();
         });
     });
 
@@ -1279,13 +1292,13 @@ describe('Profiles', () => {
     describe('registerSigningAuthority', () => {
         beforeEach(async () => {
             await Profile.delete({ detach: true, where: {} });
-            await SigningAuthority.delete({ detach: true, where: {} })
+            await SigningAuthority.delete({ detach: true, where: {} });
             await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
         });
 
         afterAll(async () => {
             await Profile.delete({ detach: true, where: {} });
-            await SigningAuthority.delete({ detach: true, where: {} })
+            await SigningAuthority.delete({ detach: true, where: {} });
         });
 
         it('should require full auth to register a signing authority', async () => {
@@ -1293,14 +1306,14 @@ describe('Profiles', () => {
                 noAuthClient.profile.registerSigningAuthority({
                     endpoint: 'http://localhost:4000',
                     name: 'mysa',
-                    did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw'
+                    did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
                 })
             ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
             await expect(
                 userA.clients.partialAuth.profile.registerSigningAuthority({
                     endpoint: 'http://localhost:4000',
                     name: 'mysa',
-                    did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw'
+                    did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
                 })
             ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
         });
@@ -1310,41 +1323,45 @@ describe('Profiles', () => {
                 userA.clients.fullAuth.profile.registerSigningAuthority({
                     endpoint: 'http://localhost:4000',
                     name: 'mysa',
-                    did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw'
+                    did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
                 })
             ).resolves.not.toThrow();
         });
 
         it('allows retrieving a list of signing authorities', async () => {
-            await expect(userA.clients.fullAuth.profile.signingAuthorities()).resolves.toHaveLength(0);
+            await expect(userA.clients.fullAuth.profile.signingAuthorities()).resolves.toHaveLength(
+                0
+            );
             await expect(
                 userA.clients.fullAuth.profile.registerSigningAuthority({
                     endpoint: 'http://localhost:4000',
                     name: 'mysa',
-                    did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw'
+                    did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
                 })
             ).resolves.not.toThrow();
 
-            const result = await userA.clients.fullAuth.profile.signingAuthorities()
+            const result = await userA.clients.fullAuth.profile.signingAuthorities();
             expect(result[0]).toMatchObject({
                 signingAuthority: {
                     endpoint: 'http://localhost:4000',
                 },
                 relationship: {
                     name: 'mysa',
-                    did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw'
-                }
+                    did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
+                },
             });
 
             await expect(
                 userA.clients.fullAuth.profile.registerSigningAuthority({
                     endpoint: 'http://localhost:5000',
                     name: 'mysa2',
-                    did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw'
+                    did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
                 })
             ).resolves.not.toThrow();
 
-            await expect(userA.clients.fullAuth.profile.signingAuthorities()).resolves.toHaveLength(2);
+            await expect(userA.clients.fullAuth.profile.signingAuthorities()).resolves.toHaveLength(
+                2
+            );
         });
 
         it('allows retrieving a specific, named signing authority', async () => {
@@ -1352,7 +1369,7 @@ describe('Profiles', () => {
                 userA.clients.fullAuth.profile.registerSigningAuthority({
                     endpoint: 'http://localhost:4000',
                     name: 'mysa',
-                    did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw'
+                    did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
                 })
             ).resolves.not.toThrow();
 
@@ -1360,19 +1377,24 @@ describe('Profiles', () => {
                 userA.clients.fullAuth.profile.registerSigningAuthority({
                     endpoint: 'http://localhost:5000',
                     name: 'mysa2',
-                    did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw'
+                    did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
                 })
             ).resolves.not.toThrow();
 
-            await expect(userA.clients.fullAuth.profile.signingAuthority({ endpoint: 'http://localhost:5000', name: 'mysa2' })).resolves.toMatchObject({
+            await expect(
+                userA.clients.fullAuth.profile.signingAuthority({
+                    endpoint: 'http://localhost:5000',
+                    name: 'mysa2',
+                })
+            ).resolves.toMatchObject({
                 signingAuthority: {
                     endpoint: 'http://localhost:5000',
                 },
                 relationship: {
                     name: 'mysa2',
-                    did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw'
-                }
-            })           
+                    did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
+                },
+            });
         });
     });
 });

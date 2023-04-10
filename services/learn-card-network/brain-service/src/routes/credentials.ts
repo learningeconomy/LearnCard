@@ -20,6 +20,7 @@ import { t, profileRoute } from '@routes';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
 import { getCredentialOwner } from '@accesslayer/credential/relationships/read';
 import { deleteCredential } from '@accesslayer/credential/delete';
+import { isRelationshipBlocked } from '@helpers/connection.helpers';
 
 export const credentialsRouter = t.router({
     sendCredential: profileRoute
@@ -46,7 +47,8 @@ export const credentialsRouter = t.router({
 
             const targetProfile = await getProfileByProfileId(profileId);
 
-            if (!targetProfile) {
+            const isBlocked = await isRelationshipBlocked(profile, targetProfile);
+            if (!targetProfile || isBlocked) {
                 throw new TRPCError({
                     code: 'NOT_FOUND',
                     message: 'Profile not found. Are you sure this person exists?',

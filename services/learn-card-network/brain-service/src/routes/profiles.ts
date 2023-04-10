@@ -16,6 +16,7 @@ import {
     getBlockedProfiles,
     unblockProfile,
     getBlockedAndBlockedByIds,
+    isRelationshipBlocked,
 } from '@helpers/connection.helpers';
 import { getDidWeb, updateDidForProfile } from '@helpers/did.helpers';
 
@@ -31,7 +32,10 @@ import {
 
 import { upsertSigningAuthority } from '@accesslayer/signing-authority/create';
 import { createUseSigningAuthorityRelationship } from '@accesslayer/signing-authority/relationships/create';
-import { getSigningAuthoritiesForUser, getSigningAuthorityForUserByName } from '@accesslayer/signing-authority/relationships/read';
+import {
+    getSigningAuthoritiesForUser,
+    getSigningAuthorityForUserByName,
+} from '@accesslayer/signing-authority/relationships/read';
 import { SigningAuthorityForUserValidator } from 'types/profile';
 
 import { t, openRoute, didAndChallengeRoute, openProfileRoute, profileRoute } from '@routes';
@@ -151,9 +155,13 @@ export const profilesRouter = t.router({
         .input(z.object({ profileId: z.string() }))
         .output(LCNProfileValidator.optional())
         .query(async ({ ctx, input }) => {
-            const profile = await getProfileByProfileId(input.profileId);
-
-            return profile ? updateDidForProfile(ctx.domain, profile) : undefined;
+            const { profileId } = input;
+            const selfProfile = ctx.user && ctx.user.did && (await getProfileByDid(ctx.user.did));
+            const otherProfile = await getProfileByProfileId(profileId);
+            if (selfProfile && (await isRelationshipBlocked(selfProfile, otherProfile))) {
+                return undefined;
+            }
+            return otherProfile ? updateDidForProfile(ctx.domain, otherProfile) : undefined;
         }),
 
     searchProfiles: openRoute
@@ -185,7 +193,9 @@ export const profilesRouter = t.router({
             const _selfProfile = ctx.user && ctx.user.did && (await getProfileByDid(ctx.user.did));
             const selfProfile = !includeSelf && _selfProfile;
 
-            const blacklist = _selfProfile && (await getBlockedAndBlockedByIds(_selfProfile)) || [];
+            const blacklist =
+                (_selfProfile && (await getBlockedAndBlockedByIds(_selfProfile))) || [];
+
             const profiles = await searchProfiles(searchInput, {
                 limit,
                 blacklist: selfProfile ? [selfProfile.profileId, ...blacklist] : blacklist,
@@ -310,7 +320,8 @@ export const profilesRouter = t.router({
 
             const targetProfile = await getProfileByProfileId(profileId);
 
-            if (!targetProfile) {
+            const isBlocked = await isRelationshipBlocked(profile, targetProfile);
+            if (!targetProfile || isBlocked) {
                 throw new TRPCError({
                     code: 'NOT_FOUND',
                     message: 'Profile not found. Are you sure this person exists?',
@@ -540,8 +551,7 @@ export const profilesRouter = t.router({
                 path: '/profile/{profileId}/block',
                 tags: ['Profiles'],
                 summary: 'Block another profile',
-                description:
-                    'Block another user based on their profileId',
+                description: 'Block another user based on their profileId',
             },
         })
         .input(z.object({ profileId: z.string() }))
@@ -570,8 +580,7 @@ export const profilesRouter = t.router({
                 path: '/profile/{profileId}/unblock',
                 tags: ['Profiles'],
                 summary: 'Unblock another profile',
-                description:
-                    'Unblock another user based on their profileId',
+                description: 'Unblock another user based on their profileId',
             },
         })
         .input(z.object({ profileId: z.string() }))
@@ -631,7 +640,7 @@ export const profilesRouter = t.router({
             await createUseSigningAuthorityRelationship(ctx.user.profile, sa, name, did);
             return true;
         }),
-    
+
     signingAuthorities: profileRoute
         .meta({
             openapi: {
@@ -647,9 +656,9 @@ export const profilesRouter = t.router({
         .input(z.void())
         .output(SigningAuthorityForUserValidator.array())
         .query(async ({ ctx }) => {
-            return getSigningAuthoritiesForUser(ctx.user.profile)
+            return getSigningAuthoritiesForUser(ctx.user.profile);
         }),
-    
+
     signingAuthority: profileRoute
         .meta({
             openapi: {
@@ -665,7 +674,7 @@ export const profilesRouter = t.router({
         .input(z.object({ endpoint: z.string(), name: z.string() }))
         .output(SigningAuthorityForUserValidator.or(z.undefined()))
         .query(async ({ ctx, input }) => {
-            return getSigningAuthorityForUserByName(ctx.user.profile, input.endpoint, input.name)
+            return getSigningAuthorityForUserByName(ctx.user.profile, input.endpoint, input.name);
         }),
 });
 export type ProfilesRouter = typeof profilesRouter;
