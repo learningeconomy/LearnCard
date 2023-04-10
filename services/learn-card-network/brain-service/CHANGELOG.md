@@ -1,5 +1,11 @@
 # @learncard/network-brain-service
 
+## 1.4.1
+
+### Patch Changes
+
+-   [#272](https://github.com/learningeconomy/LearnCard/pull/272) [`cd55df3`](https://github.com/learningeconomy/LearnCard/commit/cd55df354d7786014727b3e8782e109a3fbc8b17) Thanks [@Custard7](https://github.com/Custard7)! - Fix: Delete DID doc after registering SA
+
 ## 1.4.0
 
 ### Minor Changes
