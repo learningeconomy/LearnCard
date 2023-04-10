@@ -223,12 +223,12 @@ export const getLearnCardNetworkPlugin = async (
             unblockProfile: async (_learnCard, profileId) => {
                 if (!userData) throw new Error('Please make an account first!');
 
-                return client.profile.blockProfile.unblockProfile({ profileId });
+                return client.profile.unblockProfile.mutate({ profileId });
             },
             getBlockedProfiles: async _learnCard => {
                 if (!userData) throw new Error('Please make an account first!');
 
-                return client.profile.blockProfile.blocked();
+                return client.profile.blocked.query();
             },
 
             sendCredential: async (_learnCard, profileId, vc, encrypt = true) => {
