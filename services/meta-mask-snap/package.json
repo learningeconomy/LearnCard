@@ -17,7 +17,7 @@
     ],
     "scripts": {
         "pre:build": "shx cp ../../packages/learn-card-core/src/didkit/pkg/didkit_wasm_bg.wasm src/didkit_wasm_bg.wasm",
-        "build": "pnpm pre:build && rollup -c && pnpm post:build",
+        "build": "echo \"Skipping MM Snap build for now...\" # pnpm pre:build && rollup -c && pnpm post:build",
         "post:build": "./fixBundle.sh",
         "manifest": "mm-snap manifest --fix",
         "eval": "mm-snap eval -b dist/snap.js",
