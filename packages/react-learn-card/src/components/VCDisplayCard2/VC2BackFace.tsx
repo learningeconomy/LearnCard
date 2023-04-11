@@ -8,6 +8,7 @@ import IssueHistoryBox from './IssueHistoryBox';
 import { VC, VerificationItem } from '@learncard/types';
 import VerificationsBox from './VerificationsBox';
 import { BoostAchievementCredential, IssueHistory } from '../../types';
+import LeftArrow from '../svgs/LeftArrow';
 
 /*
 const defaultTagsToSkills = (tags: string[]) => {
@@ -26,6 +27,7 @@ type VC2BackFaceProps = {
     getVideoMetadata?: (url: string) => VideoMetadata;
     onMediaAttachmentClick?: (url: string) => void;
     issueHistory?: IssueHistory[];
+    showBackButton?: boolean;
 };
 
 const VC2BackFace: React.FC<VC2BackFaceProps> = ({
@@ -36,6 +38,7 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
     getVideoMetadata,
     onMediaAttachmentClick,
     issueHistory,
+    showBackButton,
 }) => {
     const expiration = credential.expirationDate
         ? format(new Date(credential.expirationDate), 'MMM dd, yyyy')
@@ -54,6 +57,18 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
 
     return (
         <section className="vc-back-face flex flex-col gap-[20px] w-full px-[15px]">
+            {showBackButton && (
+                <div className="w-full">
+                    <button
+                        className="vc-card-back-button rounded-full h-[50px] px-[15px] flex items-center justify-center gap-[5px] z-50 text-[30px] text-white"
+                        onClick={() => {}}
+                    >
+                        <LeftArrow className="text-white" size="25" />
+                        Details
+                    </button>
+                </div>
+            )}
+
             <TruncateTextBox
                 headerText="About"
                 text={achievement?.description}
