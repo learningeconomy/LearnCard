@@ -69,6 +69,7 @@ jobs:
         run: pnpm exec nx build react
 
       - name: Publish to Chromatic
+        if: contains(env.AFFECTED, 'react')
         uses: chromaui/action@v1
         with:
           projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
