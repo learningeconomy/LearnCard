@@ -12,4 +12,3 @@ export const createUseSigningAuthorityRelationship = async (
         properties: { name, did },
     });
 };
-

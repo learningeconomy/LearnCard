@@ -7,7 +7,6 @@ export const createSigningAuthority = async (
     return SigningAuthority.createOne({ endpoint });
 };
 
-
 export const upsertSigningAuthority = async (
     endpoint: string
 ): Promise<SigningAuthorityInstance> => {

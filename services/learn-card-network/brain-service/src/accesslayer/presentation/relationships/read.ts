@@ -5,10 +5,10 @@ export const getPresentationSentToProfile = async (
     to: ProfileInstance
 ): Promise<
     | {
-        source: ProfileInstance;
-        relationship: ProfileRelationships['presentationSent']['RelationshipProperties'];
-        target: PresentationInstance;
-    }
+          source: ProfileInstance;
+          relationship: ProfileRelationships['presentationSent']['RelationshipProperties'];
+          target: PresentationInstance;
+      }
     | undefined
 > => {
     return (

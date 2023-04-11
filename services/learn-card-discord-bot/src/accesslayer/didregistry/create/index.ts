@@ -13,5 +13,9 @@ export const createDIDAssociation = async (didAssociation: DIDAssocation, contex
 // Expires after 10 minutes.
 export const createDIDChallenge = async (didChallenge: DIDChallenge, context: Context) => {
     if (!didChallenge._id) didChallenge._id = randomUUID();
-    return context.cache.set(`${CHALLENGE_PREFIX}${didChallenge.source}`, JSON.stringify(didChallenge), 600_000);
+    return context.cache.set(
+        `${CHALLENGE_PREFIX}${didChallenge.source}`,
+        JSON.stringify(didChallenge),
+        600_000
+    );
 };

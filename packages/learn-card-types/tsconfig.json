@@ -1,19 +1,19 @@
 {
-  "compilerOptions": {
-    "target": "es6",
-    "module": "ES2015",
-    "declaration": true,
-    "emitDeclarationOnly": true,
-    "outDir": "dist",
-    "strict": true,
-    "esModuleInterop": true,
-    "lib": ["es5"],
-    "noLib": false,
-    "rootDir": "src",
-    "skipLibCheck": true,
-    "allowSyntheticDefaultImports": true,
-    "moduleResolution": "node"
-  },
-  "include": ["src"],
-  "exclude": ["node_modules", "test", "example"]
+    "compilerOptions": {
+        "target": "es6",
+        "module": "ES2015",
+        "declaration": true,
+        "emitDeclarationOnly": true,
+        "outDir": "dist",
+        "strict": true,
+        "esModuleInterop": true,
+        "lib": ["es5"],
+        "noLib": false,
+        "rootDir": "src",
+        "skipLibCheck": true,
+        "allowSyntheticDefaultImports": true,
+        "moduleResolution": "node"
+    },
+    "include": ["src"],
+    "exclude": ["node_modules", "test", "example"]
 }

@@ -7,7 +7,7 @@ import { PresentationType } from 'types/presentation';
 
 export type PresentationRelationships = {
     presentationReceived: ModelRelatedNodesI<
-        { createOne: typeof Profile['createOne'] },
+        { createOne: (typeof Profile)['createOne'] },
         ProfileInstance,
         { from: string; date: string },
         { from: string; date: string }

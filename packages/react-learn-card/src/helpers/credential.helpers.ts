@@ -46,7 +46,7 @@ export const getInfoFromCredential = (
 };
 
 export const getColorForVerificationStatus = (
-    status: typeof VerificationStatusEnum[keyof typeof VerificationStatusEnum]
+    status: (typeof VerificationStatusEnum)[keyof typeof VerificationStatusEnum]
 ) => {
     switch (status) {
         case VerificationStatusEnum.Success:

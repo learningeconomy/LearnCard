@@ -7,17 +7,18 @@ export type DidMethod =
     | 'key'
     | 'tz'
     | 'ethr'
-    | `pkh:${| 'tz'
-    | 'tezos'
-    | 'sol'
-    | 'solana'
-    | 'eth'
-    | 'celo'
-    | 'poly'
-    | 'btc'
-    | 'doge'
-    | 'eip155'
-    | 'bip122'}`
+    | `pkh:${
+          | 'tz'
+          | 'tezos'
+          | 'sol'
+          | 'solana'
+          | 'eth'
+          | 'celo'
+          | 'poly'
+          | 'btc'
+          | 'doge'
+          | 'eip155'
+          | 'bip122'}`
     | `pkh:eip155:${string}`
     | `pkh:bip122:${string}`;
 

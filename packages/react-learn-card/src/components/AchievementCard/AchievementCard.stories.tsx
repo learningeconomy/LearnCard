@@ -28,5 +28,4 @@ AchievementCardTest.args = {
     onClick: () => {
         console.log('//goodbye world');
     },
-
 };

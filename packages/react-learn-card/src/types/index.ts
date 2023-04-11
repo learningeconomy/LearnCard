@@ -302,7 +302,6 @@ export type BoostGenericCardProps = {
     dateDisplay?: string;
 };
 
-
 export type Attachment = {
     title: string;
     url: string;

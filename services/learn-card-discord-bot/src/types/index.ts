@@ -64,7 +64,7 @@ export interface SendCredentialResponse {
 }
 
 export interface SendCredentialData {
-    credentialTemplate?: CredentialTemplate
+    credentialTemplate?: CredentialTemplate;
     claimCredentialLink?: string;
     subjectUserName?: string;
     subjectDID?: string;

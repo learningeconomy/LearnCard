@@ -1,4 +1,4 @@
-export type  MiniVCThumbnailProps = {
+export type MiniVCThumbnailProps = {
     /**
      * thumbnail title
      * @type {string}

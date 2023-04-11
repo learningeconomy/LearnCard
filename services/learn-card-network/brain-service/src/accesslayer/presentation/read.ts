@@ -57,8 +57,8 @@ export const getReceivedPresentationsForProfile = async (
     const query =
         from && from.length > 0
             ? matchQuery.where(
-                new Where({ source: { profileId: { [Op.in]: from } } }, matchQuery.getBindParam())
-            )
+                  new Where({ source: { profileId: { [Op.in]: from } } }, matchQuery.getBindParam())
+              )
             : matchQuery;
 
     const results = convertQueryResultToPropertiesObjectArray<{
@@ -102,8 +102,8 @@ export const getSentPresentationsForProfile = async (
     const whereQuery =
         to && to.length > 0
             ? matchQuery.where(
-                new Where({ sent: { to: { [Op.in]: to } } }, matchQuery.getBindParam())
-            )
+                  new Where({ sent: { to: { [Op.in]: to } } }, matchQuery.getBindParam())
+              )
             : matchQuery;
 
     const query = whereQuery.match({
@@ -169,7 +169,8 @@ export const getIncomingPresentationsForProfile = async (
             })
             // Don't return presentations that have been accepted
             .where(
-                `NOT (presentation)-[:PRESENTATION_RECEIVED]->()${whereFrom ? `AND ${whereFrom.getStatement('text')}` : ''
+                `NOT (presentation)-[:PRESENTATION_RECEIVED]->()${
+                    whereFrom ? `AND ${whereFrom.getStatement('text')}` : ''
                 }`
             )
             .return('source, relationship, presentation')

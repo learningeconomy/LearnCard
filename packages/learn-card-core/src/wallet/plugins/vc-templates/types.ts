@@ -7,13 +7,13 @@ export type BoostAttachment = {
     type?: string;
     title?: string;
     url?: string;
-}
+};
 
 /** @group VC Templates Plugin */
 export type BoostDisplay = {
     backgroundImage?: string;
     backgroundColor?: string;
-}
+};
 
 /** @group VC Templates Plugin */
 export type VcTemplates = {
@@ -28,13 +28,13 @@ export type VcTemplates = {
         issuanceDate?: string;
     };
     jff2: { did?: string; subject?: string; issuanceDate?: string };
-    boost: { 
-        did?: string; 
-        subject?: string; 
-        issuanceDate?: string; 
-        expirationDate?: string; 
+    boost: {
+        did?: string;
+        subject?: string;
+        issuanceDate?: string;
+        expirationDate?: string;
         boostId?: string;
-        boostName?: string; 
+        boostName?: string;
         boostImage?: string;
         achievementId?: string;
         achievementType?: string;

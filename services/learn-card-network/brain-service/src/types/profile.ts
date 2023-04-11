@@ -1,4 +1,11 @@
-import { LCNProfile, LCNProfileValidator, LCNSigningAuthorityValidator, LCNSigningAuthorityType, LCNSigningAuthorityForUserValidator, LCNSigningAuthorityForUserType } from '@learncard/types';
+import {
+    LCNProfile,
+    LCNProfileValidator,
+    LCNSigningAuthorityValidator,
+    LCNSigningAuthorityType,
+    LCNSigningAuthorityForUserValidator,
+    LCNSigningAuthorityForUserType,
+} from '@learncard/types';
 
 export const ProfileValidator = LCNProfileValidator;
 export type ProfileType = LCNProfile;

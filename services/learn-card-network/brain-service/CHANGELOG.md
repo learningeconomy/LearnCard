@@ -1,5 +1,11 @@
 # @learncard/network-brain-service
 
+## 1.4.2
+
+### Patch Changes
+
+-   [#274](https://github.com/learningeconomy/LearnCard/pull/274) [`106977b`](https://github.com/learningeconomy/LearnCard/commit/106977b379487286b40023e467c2cb720ca195aa) Thanks [@Custard7](https://github.com/Custard7)! - Fix: Increase Timeouts
+
 ## 1.4.1
 
 ### Patch Changes

@@ -14,8 +14,8 @@ export type NotificationBoostCardProps = {
     notificationType: NotificationTypeEnum;
     issuerInfo?: NotificationIssuerMeta;
     issueDate?: string;
-    handleButtonClick?: ()=> void;
-    handleCancelClick?: ()=> void;
+    handleButtonClick?: () => void;
+    handleCancelClick?: () => void;
     handleCardClick?: () => void;
     claimStatus: boolean;
     loadingState?: boolean;

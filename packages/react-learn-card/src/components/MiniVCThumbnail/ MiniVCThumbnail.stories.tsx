@@ -17,8 +17,7 @@ MiniVCThumbnailTest.args = {
     title: 'Our Wallet Passed JFF Plugfest #1 2022',
     createdAt: '01 May, 2022',
     issuerImage: 'https://kayaelle.github.io/vc-ed/plugfest-1-2022/images/JFF_LogoLockup.png',
-    badgeImage:
-        'https://w3c-ccg.github.io/vc-ed/plugfest-1-2022/images/plugfest-1-badge-image.png',
+    badgeImage: 'https://w3c-ccg.github.io/vc-ed/plugfest-1-2022/images/plugfest-1-badge-image.png',
     onClick: () => {
         console.log('Hello World');
     },

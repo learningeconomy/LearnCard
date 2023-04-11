@@ -66,7 +66,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     customThumbComponent,
     issueHistory,
     titleOverride,
-    showBackButton,
+    showBackButton = true,
 }) => {
     const {
         title = '',
@@ -117,7 +117,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     const backgroundStyle = {
         backgroundColor: credential.display?.backgroundColor,
         backgroundImage: credential.display?.backgroundImage
-            ? `url(${credential.display?.backgroundImage})`
+            ? `linear-gradient(to bottom, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.25)), url(${credential.display?.backgroundImage})`
             : undefined,
         backgroundSize: 'contain',
         backgroundPosition: 'center',
@@ -127,7 +127,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     const _title = titleOverride || title;
 
     return (
-        <section className="vc-display-card font-mouse flex flex-col items-center border-solid border-[5px] border-white rounded-[30px] overflow-visible z-10 max-w-[400px] relative bg-white">
+        <section className="vc-display-card font-mouse flex flex-col items-center border-solid border-[5px] border-white rounded-[30px] overflow-visible z-10 max-w-[400px] relative bg-white shadow-3xl">
             <RibbonEnd
                 side="left"
                 className="absolute left-[-30px] top-[50px] z-0"
@@ -159,16 +159,6 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                     onClick={handleXClick}
                 >
                     <RoundedX />
-                </button>
-            )}
-
-            {!isFront && showBackButton && (
-                <button
-                    className="vc-card-back-button absolute top-[-25px] bg-white rounded-full h-[50px] px-[15px] flex items-center justify-center gap-[5px] z-50 text-[30px] text-grayscale-900"
-                    onClick={() => setIsFront(true)}
-                >
-                    <LeftArrow color="#18224E" size="25" />
-                    Details
                 </button>
             )}
 
@@ -209,6 +199,8 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                             getFileMetadata={getFileMetadata}
                             getVideoMetadata={getVideoMetadata}
                             onMediaAttachmentClick={onMediaAttachmentClick}
+                            showBackButton={showBackButton}
+                            showFrontFace={() => setIsFront(true)}
                         />
                     )}
                     <div

@@ -279,7 +279,10 @@ describe('Boosts', () => {
         });
 
         it('should require full auth to update a boost', async () => {
-            const uri = await userA.clients.fullAuth.boost.createBoost({ credential: testVc, status: BoostStatus.enum.DRAFT  });
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+                status: BoostStatus.enum.DRAFT,
+            });
 
             await expect(
                 noAuthClient.boost.updateBoost({ uri, updates: { name: 'nice' } })
@@ -308,12 +311,15 @@ describe('Boosts', () => {
         });
 
         it('should allow you to update a draft boosts name', async () => {
-            await userA.clients.fullAuth.boost.createBoost({ credential: testVc, status: BoostStatus.enum.DRAFT });
+            await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+                status: BoostStatus.enum.DRAFT,
+            });
             const boosts = await userA.clients.fullAuth.boost.getBoosts();
             const boost = boosts[0]!;
             const uri = boost.uri;
 
-            expect(boost.status).toBe(BoostStatus.enum.DRAFT)
+            expect(boost.status).toBe(BoostStatus.enum.DRAFT);
             expect(boost.name).toBeUndefined();
 
             await expect(
@@ -345,7 +351,10 @@ describe('Boosts', () => {
         });
 
         it('should allow you to update a draft boosts category', async () => {
-            await userA.clients.fullAuth.boost.createBoost({ credential: testVc, status: BoostStatus.enum.DRAFT });
+            await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+                status: BoostStatus.enum.DRAFT,
+            });
             const boosts = await userA.clients.fullAuth.boost.getBoosts();
             const boost = boosts[0]!;
             const uri = boost.uri;
@@ -381,7 +390,10 @@ describe('Boosts', () => {
         });
 
         it('should allow you to update boost type', async () => {
-            await userA.clients.fullAuth.boost.createBoost({ credential: testVc, status: BoostStatus.enum.DRAFT });
+            await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+                status: BoostStatus.enum.DRAFT,
+            });
             const boosts = await userA.clients.fullAuth.boost.getBoosts();
             const boost = boosts[0]!;
             const uri = boost.uri;
@@ -404,33 +416,49 @@ describe('Boosts', () => {
             const boost = boosts[0]!;
             const uri = boost.uri;
 
-            const beforeUpdateBoostCredential = await userA.clients.fullAuth.storage.resolve({ uri });
+            const beforeUpdateBoostCredential = await userA.clients.fullAuth.storage.resolve({
+                uri,
+            });
             await expect(
-                userA.clients.fullAuth.boost.updateBoost({ uri, updates: { credential: testUnsignedBoost } })
+                userA.clients.fullAuth.boost.updateBoost({
+                    uri,
+                    updates: { credential: testUnsignedBoost },
+                })
             ).rejects.toThrow();
 
             const newBoosts = await userA.clients.fullAuth.boost.getBoosts();
             const newBoost = newBoosts[0]!;
 
-            expect(await userA.clients.fullAuth.storage.resolve({ uri: newBoost.uri })).toMatchObject(beforeUpdateBoostCredential);
+            expect(
+                await userA.clients.fullAuth.storage.resolve({ uri: newBoost.uri })
+            ).toMatchObject(beforeUpdateBoostCredential);
         });
 
         it('should allow you to update boost credential', async () => {
-            await userA.clients.fullAuth.boost.createBoost({ credential: testVc, status: BoostStatus.enum.DRAFT });
+            await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+                status: BoostStatus.enum.DRAFT,
+            });
             const boosts = await userA.clients.fullAuth.boost.getBoosts();
             const boost = boosts[0]!;
             const uri = boost.uri;
 
-
-            const beforeUpdateBoostCredential = await userA.clients.fullAuth.storage.resolve({ uri });
+            const beforeUpdateBoostCredential = await userA.clients.fullAuth.storage.resolve({
+                uri,
+            });
             await expect(
-                userA.clients.fullAuth.boost.updateBoost({ uri, updates: { credential: testUnsignedBoost } })
+                userA.clients.fullAuth.boost.updateBoost({
+                    uri,
+                    updates: { credential: testUnsignedBoost },
+                })
             ).resolves.not.toThrow();
 
             const newBoosts = await userA.clients.fullAuth.boost.getBoosts();
             const newBoost = newBoosts[0]!;
 
-            expect(await userA.clients.fullAuth.storage.resolve({ uri: newBoost.uri })).not.toMatchObject(beforeUpdateBoostCredential);
+            expect(
+                await userA.clients.fullAuth.storage.resolve({ uri: newBoost.uri })
+            ).not.toMatchObject(beforeUpdateBoostCredential);
         });
     });
 
@@ -465,12 +493,19 @@ describe('Boosts', () => {
         });
 
         it('should allow you to delete a draft boost', async () => {
-            const draftBoostUri = await userA.clients.fullAuth.boost.createBoost({ credential: testVc, status: BoostStatus.enum.DRAFT });
+            const draftBoostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+                status: BoostStatus.enum.DRAFT,
+            });
 
             const beforeDeleteLength = (await userA.clients.fullAuth.boost.getBoosts()).length;
-            await expect(userA.clients.fullAuth.boost.deleteBoost({ uri: draftBoostUri })).resolves.not.toThrow();
+            await expect(
+                userA.clients.fullAuth.boost.deleteBoost({ uri: draftBoostUri })
+            ).resolves.not.toThrow();
 
-            expect(await userA.clients.fullAuth.boost.getBoosts()).toHaveLength(beforeDeleteLength - 1);
+            expect(await userA.clients.fullAuth.boost.getBoosts()).toHaveLength(
+                beforeDeleteLength - 1
+            );
         });
 
         it('should prevent you from deleting a published boost', async () => {
@@ -489,7 +524,7 @@ describe('Boosts', () => {
             await Profile.delete({ detach: true, where: {} });
             await Credential.delete({ detach: true, where: {} });
             await Boost.delete({ detach: true, where: {} });
-            await SigningAuthority.delete({ detach: true, where: {} })
+            await SigningAuthority.delete({ detach: true, where: {} });
 
             await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
             await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
@@ -500,7 +535,7 @@ describe('Boosts', () => {
             await userA.clients.fullAuth.profile.registerSigningAuthority({
                 endpoint: 'http://localhost:5000/api',
                 name: 'mysa',
-                did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw'
+                did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
             });
         });
 
@@ -509,24 +544,34 @@ describe('Boosts', () => {
             await Profile.delete({ detach: true, where: {} });
             await Credential.delete({ detach: true, where: {} });
             await Boost.delete({ detach: true, where: {} });
-            await SigningAuthority.delete({ detach: true, where: {} })
+            await SigningAuthority.delete({ detach: true, where: {} });
         });
 
         it('should require full auth to generate a claim boost', async () => {
             const boosts = await userA.clients.fullAuth.boost.getBoosts();
             const uri = boosts[0]!.uri;
 
-            const sa = await userA.clients.fullAuth.profile.signingAuthority({ endpoint: 'http://localhost:5000/api', name: 'mysa' })
-            if(sa) {
+            const sa = await userA.clients.fullAuth.profile.signingAuthority({
+                endpoint: 'http://localhost:5000/api',
+                name: 'mysa',
+            });
+            if (sa) {
                 const claimLinkSA = {
                     endpoint: sa.signingAuthority.endpoint,
-                    name:  sa.relationship.name
-                }
-                
-                await expect(noAuthClient.boost.generateClaimLink({ boostUri: uri, claimLinkSA })).rejects.toMatchObject({
+                    name: sa.relationship.name,
+                };
+
+                await expect(
+                    noAuthClient.boost.generateClaimLink({ boostUri: uri, claimLinkSA })
+                ).rejects.toMatchObject({
                     code: 'UNAUTHORIZED',
                 });
-                await expect(userA.clients.partialAuth.boost.generateClaimLink({ boostUri: uri, claimLinkSA })).rejects.toMatchObject({
+                await expect(
+                    userA.clients.partialAuth.boost.generateClaimLink({
+                        boostUri: uri,
+                        claimLinkSA,
+                    })
+                ).rejects.toMatchObject({
                     code: 'UNAUTHORIZED',
                 });
             } else {
@@ -535,16 +580,24 @@ describe('Boosts', () => {
         });
 
         it('should prevent generating a claim boost link for a draft boost', async () => {
-            const uri = await userA.clients.fullAuth.boost.createBoost({ credential: testUnsignedBoost, status: BoostStatus.enum.DRAFT });
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                status: BoostStatus.enum.DRAFT,
+            });
 
-            const sa = await userA.clients.fullAuth.profile.signingAuthority({ endpoint: 'http://localhost:5000/api', name: 'mysa' })
-            if(sa) {
+            const sa = await userA.clients.fullAuth.profile.signingAuthority({
+                endpoint: 'http://localhost:5000/api',
+                name: 'mysa',
+            });
+            if (sa) {
                 const claimLinkSA = {
                     endpoint: sa.signingAuthority.endpoint,
-                    name:  sa.relationship.name
-                }
-                
-                await expect(userA.clients.fullAuth.boost.generateClaimLink({ boostUri: uri, claimLinkSA })).rejects.toMatchObject({
+                    name: sa.relationship.name,
+                };
+
+                await expect(
+                    userA.clients.fullAuth.boost.generateClaimLink({ boostUri: uri, claimLinkSA })
+                ).rejects.toMatchObject({
                     code: 'FORBIDDEN',
                 });
             } else {
@@ -556,17 +609,26 @@ describe('Boosts', () => {
             const boosts = await userA.clients.fullAuth.boost.getBoosts();
             const uri = boosts[0]!.uri;
 
-            const sa = await userA.clients.fullAuth.profile.signingAuthority({ endpoint: 'http://localhost:5000/api', name: 'mysa' })
-            if(sa) {
+            const sa = await userA.clients.fullAuth.profile.signingAuthority({
+                endpoint: 'http://localhost:5000/api',
+                name: 'mysa',
+            });
+            if (sa) {
                 const claimLinkSA = {
                     endpoint: sa.signingAuthority.endpoint,
-                    name:  sa.relationship.name
-                }
+                    name: sa.relationship.name,
+                };
                 const challenge = 'mychallenge';
-                
-                await expect(userA.clients.fullAuth.boost.generateClaimLink({ boostUri: uri, challenge, claimLinkSA })).resolves.toMatchObject({
+
+                await expect(
+                    userA.clients.fullAuth.boost.generateClaimLink({
+                        boostUri: uri,
+                        challenge,
+                        claimLinkSA,
+                    })
+                ).resolves.toMatchObject({
                     boostUri: uri,
-                    challenge
+                    challenge,
                 });
             } else {
                 expect(sa).toBeDefined();
@@ -577,22 +639,35 @@ describe('Boosts', () => {
             const boosts = await userA.clients.fullAuth.boost.getBoosts();
             const uri = boosts[0]!.uri;
 
-            const sa = await userA.clients.fullAuth.profile.signingAuthority({ endpoint: 'http://localhost:5000/api', name: 'mysa' })
-            if(sa) {
+            const sa = await userA.clients.fullAuth.profile.signingAuthority({
+                endpoint: 'http://localhost:5000/api',
+                name: 'mysa',
+            });
+            if (sa) {
                 const claimLinkSA = {
                     endpoint: sa.signingAuthority.endpoint,
-                    name:  sa.relationship.name
-                }
+                    name: sa.relationship.name,
+                };
                 const challenge = 'mychallenge';
-                
-                await expect(userA.clients.fullAuth.boost.generateClaimLink({ boostUri: uri, challenge, claimLinkSA })).resolves.toMatchObject({
+
+                await expect(
+                    userA.clients.fullAuth.boost.generateClaimLink({
+                        boostUri: uri,
+                        challenge,
+                        claimLinkSA,
+                    })
+                ).resolves.toMatchObject({
                     boostUri: uri,
-                    challenge
+                    challenge,
                 });
 
                 // Verify at least 2 folks can claim the boost!
-                await expect(userB.clients.fullAuth.boost.claimBoostWithLink({ boostUri: uri, challenge })).resolves.not.toThrow();
-                await expect(userC.clients.fullAuth.boost.claimBoostWithLink({ boostUri: uri, challenge })).resolves.not.toThrow();
+                await expect(
+                    userB.clients.fullAuth.boost.claimBoostWithLink({ boostUri: uri, challenge })
+                ).resolves.not.toThrow();
+                await expect(
+                    userC.clients.fullAuth.boost.claimBoostWithLink({ boostUri: uri, challenge })
+                ).resolves.not.toThrow();
             } else {
                 expect(sa).toBeDefined();
             }
@@ -602,20 +677,32 @@ describe('Boosts', () => {
             const boosts = await userA.clients.fullAuth.boost.getBoosts();
             const uri = boosts[0]!.uri;
 
-            const sa = await userA.clients.fullAuth.profile.signingAuthority({ endpoint: 'http://localhost:5000/api', name: 'mysa' })
-            if(sa) {
+            const sa = await userA.clients.fullAuth.profile.signingAuthority({
+                endpoint: 'http://localhost:5000/api',
+                name: 'mysa',
+            });
+            if (sa) {
                 const claimLinkSA = {
                     endpoint: sa.signingAuthority.endpoint,
-                    name:  sa.relationship.name
-                }
+                    name: sa.relationship.name,
+                };
                 const challenge = 'mychallenge';
-                
-                await expect(userA.clients.fullAuth.boost.generateClaimLink({ boostUri: uri, challenge, claimLinkSA, options: { ttlSeconds: 50_000 } })).resolves.toMatchObject({
+
+                await expect(
+                    userA.clients.fullAuth.boost.generateClaimLink({
+                        boostUri: uri,
+                        challenge,
+                        claimLinkSA,
+                        options: { ttlSeconds: 50_000 },
+                    })
+                ).resolves.toMatchObject({
                     boostUri: uri,
-                    challenge
+                    challenge,
                 });
 
-                await expect(getClaimLinkOptionsInfoForBoost(uri, challenge)).resolves.toMatchObject({ ttlSeconds: 50_000 })
+                await expect(
+                    getClaimLinkOptionsInfoForBoost(uri, challenge)
+                ).resolves.toMatchObject({ ttlSeconds: 50_000 });
                 await expect(getTTLForClaimLink(uri, challenge)).resolves.toBeGreaterThan(45_000);
             } else {
                 expect(sa).toBeDefined();
@@ -629,33 +716,51 @@ describe('Boosts', () => {
             const boosts = await userA.clients.fullAuth.boost.getBoosts();
             const uri = boosts[0]!.uri;
 
-            const sa = await userA.clients.fullAuth.profile.signingAuthority({ endpoint: 'http://localhost:5000/api', name: 'mysa' })
-            if(sa) {
+            const sa = await userA.clients.fullAuth.profile.signingAuthority({
+                endpoint: 'http://localhost:5000/api',
+                name: 'mysa',
+            });
+            if (sa) {
                 const claimLinkSA = {
                     endpoint: sa.signingAuthority.endpoint,
-                    name:  sa.relationship.name
-                }
+                    name: sa.relationship.name,
+                };
                 const challenge = 'mychallenge';
-                
-                await expect(userA.clients.fullAuth.boost.generateClaimLink({ boostUri: uri, challenge, claimLinkSA, options: { totalUses: 3 } })).resolves.toMatchObject({
+
+                await expect(
+                    userA.clients.fullAuth.boost.generateClaimLink({
+                        boostUri: uri,
+                        challenge,
+                        claimLinkSA,
+                        options: { totalUses: 3 },
+                    })
+                ).resolves.toMatchObject({
                     boostUri: uri,
-                    challenge
+                    challenge,
                 });
 
                 const ttlBeforeClaims = await getTTLForClaimLink(uri, challenge);
                 expect(ttlBeforeClaims).toBeDefined();
 
-                await expect(userB.clients.fullAuth.boost.claimBoostWithLink({ boostUri: uri, challenge })).resolves.not.toThrow();
-                await expect(userC.clients.fullAuth.boost.claimBoostWithLink({ boostUri: uri, challenge })).resolves.not.toThrow();
+                await expect(
+                    userB.clients.fullAuth.boost.claimBoostWithLink({ boostUri: uri, challenge })
+                ).resolves.not.toThrow();
+                await expect(
+                    userC.clients.fullAuth.boost.claimBoostWithLink({ boostUri: uri, challenge })
+                ).resolves.not.toThrow();
 
                 // Ensure that the TTL of the claim link is NOT being reset after users claim it.
                 const ttlAfterClaims = await getTTLForClaimLink(uri, challenge);
-                if(ttlBeforeClaims) expect(ttlAfterClaims).toBeLessThan(ttlBeforeClaims);
+                if (ttlBeforeClaims) expect(ttlAfterClaims).toBeLessThan(ttlBeforeClaims);
 
-                await expect(userD.clients.fullAuth.boost.claimBoostWithLink({ boostUri: uri, challenge })).resolves.not.toThrow();
+                await expect(
+                    userD.clients.fullAuth.boost.claimBoostWithLink({ boostUri: uri, challenge })
+                ).resolves.not.toThrow();
 
                 // After 3 boosts have been claimed, this should reject the next user who tries to claim it
-                await expect(userE.clients.fullAuth.boost.claimBoostWithLink({ boostUri: uri, challenge })).rejects.toThrow();
+                await expect(
+                    userE.clients.fullAuth.boost.claimBoostWithLink({ boostUri: uri, challenge })
+                ).rejects.toThrow();
             } else {
                 expect(sa).toBeDefined();
             }

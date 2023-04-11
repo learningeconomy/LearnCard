@@ -45,7 +45,12 @@ export type Cache = {
      * Sets a key to a given value in the cache.
      * Optionally give it a time to live before being evicted (defaults to 1 hour)
      */
-    set: (key: RedisKey, value: RedisValue, ttl?: number, keepTtl?: boolean) => Promise<'OK' | undefined>;
+    set: (
+        key: RedisKey,
+        value: RedisValue,
+        ttl?: number,
+        keepTtl?: boolean
+    ) => Promise<'OK' | undefined>;
 
     /** Gets a key from the cache, optionally reseting it's time to live */
     get: (key: RedisKey, resetTTL?: boolean, ttl?: number) => Promise<string | null | undefined>;
@@ -68,10 +73,10 @@ export const getCache = (): Cache => {
         node: new MemoryRedis(),
         set: async (key, value, ttl = DEFAULT_TTL_SECS, keepTtl) => {
             try {
-                if(keepTtl) {
+                if (keepTtl) {
                     if (cache?.redis) return await cache.redis.set(key, value, 'KEEPTTL');
                     if (cache?.node) return await cache.node.set(key, value, 'KEEPTTL');
-                } else  {
+                } else {
                     if (cache?.redis) return await cache.redis.setex(key, ttl, value);
                     if (cache?.node) return await cache.node.setex(key, ttl, value);
                 }
@@ -127,7 +132,7 @@ export const getCache = (): Cache => {
             }
 
             return undefined;
-        }
+        },
     };
 
     try {

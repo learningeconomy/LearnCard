@@ -8,7 +8,7 @@ import { CredentialType } from 'types/credential';
 
 export type CredentialRelationships = {
     credentialReceived: ModelRelatedNodesI<
-        { createOne: typeof Profile['createOne'] },
+        { createOne: (typeof Profile)['createOne'] },
         ProfileInstance,
         { from: string; date: string },
         { from: string; date: string }

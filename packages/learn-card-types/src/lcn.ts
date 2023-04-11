@@ -28,19 +28,15 @@ export const SentCredentialInfoValidator = z.object({
 });
 export type SentCredentialInfo = z.infer<typeof SentCredentialInfoValidator>;
 
-export const LCNBoostStatus = z.enum([
-    'DRAFT',
-    'LIVE',
-]);
+export const LCNBoostStatus = z.enum(['DRAFT', 'LIVE']);
 export type LCNBoostStatusEnum = z.infer<typeof LCNBoostStatus>;
-
 
 export const BoostValidator = z.object({
     uri: z.string(),
     name: z.string().optional(),
     type: z.string().optional(),
     category: z.string().optional(),
-    status: LCNBoostStatus.optional()
+    status: LCNBoostStatus.optional(),
 });
 export type Boost = z.infer<typeof BoostValidator>;
 
@@ -93,28 +89,34 @@ export type LCNNotification = z.infer<typeof LCNNotificationValidator>;
 export const LCNBoostClaimLinkSigningAuthorityValidator = z.object({
     endpoint: z.string(),
     name: z.string(),
-    did: z.string().optional()
-})
-export type LCNBoostClaimLinkSigningAuthorityType = z.infer<typeof LCNBoostClaimLinkSigningAuthorityValidator>;
+    did: z.string().optional(),
+});
+export type LCNBoostClaimLinkSigningAuthorityType = z.infer<
+    typeof LCNBoostClaimLinkSigningAuthorityValidator
+>;
 
 export const LCNBoostClaimLinkOptionsValidator = z.object({
     ttlSeconds: z.number().optional(),
-    totalUses: z.number().optional()
-})
+    totalUses: z.number().optional(),
+});
 export type LCNBoostClaimLinkOptionsType = z.infer<typeof LCNBoostClaimLinkOptionsValidator>;
 
 export const LCNSigningAuthorityValidator = z.object({
     endpoint: z.string(),
-})
+});
 export type LCNSigningAuthorityType = z.infer<typeof LCNSigningAuthorityValidator>;
 
 export const LCNSigningAuthorityForUserValidator = z.object({
     signingAuthority: LCNSigningAuthorityValidator,
     relationship: z.object({
-        name: z.string().max(15).regex(/^[a-z0-9-]+$/, {
-            message: 'The input string must contain only lowercase letters, numbers, and hyphens.',
-        }),
-        did: z.string()
-    })
-})
+        name: z
+            .string()
+            .max(15)
+            .regex(/^[a-z0-9-]+$/, {
+                message:
+                    'The input string must contain only lowercase letters, numbers, and hyphens.',
+            }),
+        did: z.string(),
+    }),
+});
 export type LCNSigningAuthorityForUserType = z.infer<typeof LCNSigningAuthorityForUserValidator>;

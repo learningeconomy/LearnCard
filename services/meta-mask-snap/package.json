@@ -1,53 +1,53 @@
 {
-  "name": "@learncard/meta-mask-snap",
-  "version": "1.0.38",
-  "description": "The official LearnCard MetaMask Snap",
-  "private": true,
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/WeLibraryOS/LearnCard.git"
-  },
-  "license": "MIT",
-  "main": "dist/cjs/index.js",
-  "module": "dist/esm/index.js",
-  "types": "dist/index.d.ts",
-  "files": [
-    "dist",
-    "snap.manifest.json"
-  ],
-  "scripts": {
-    "pre:build": "shx cp ../../packages/learn-card-core/src/didkit/pkg/didkit_wasm_bg.wasm src/didkit_wasm_bg.wasm",
-    "build": "pnpm pre:build && rollup -c && pnpm post:build",
-    "post:build": "./fixBundle.sh",
-    "manifest": "mm-snap manifest --fix",
-    "eval": "mm-snap eval -b dist/snap.js",
-    "serve": "serve -Cl 3002",
-    "dev": "pnpm build && pnpm manifest && pnpm eval && pnpm serve"
-  },
-  "devDependencies": {
-    "@learncard/types": "workspace:*",
-    "@metamask/auto-changelog": "^2.5.0",
-    "@metamask/eslint-config": "^10.0.0",
-    "@metamask/eslint-config-jest": "^10.0.0",
-    "@metamask/eslint-config-nodejs": "^8.0.0",
-    "@metamask/providers": "^9.1.0",
-    "@metamask/rollup-plugin-snaps": "^0.21.0",
-    "@metamask/snap-types": "^0.21.0",
-    "@metamask/snaps-cli": "^0.21.0",
-    "@rollup/plugin-node-resolve": "^13.3.0",
-    "rollup": "^2.71.1",
-    "rollup-plugin-base64": "^1.0.1",
-    "rollup-plugin-commonjs": "^10.1.0",
-    "rollup-plugin-delete": "^2.0.0",
-    "rollup-plugin-esbuild": "^4.9.1",
-    "serve": "^14.0.1",
-    "shx": "^0.3.4"
-  },
-  "engines": {
-    "node": ">=16.0.0"
-  },
-  "dependencies": {
-    "@learncard/core": "workspace:*",
-    "zod": "^3.20.2"
-  }
+    "name": "@learncard/meta-mask-snap",
+    "version": "1.0.38",
+    "description": "The official LearnCard MetaMask Snap",
+    "private": true,
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/WeLibraryOS/LearnCard.git"
+    },
+    "license": "MIT",
+    "main": "dist/cjs/index.js",
+    "module": "dist/esm/index.js",
+    "types": "dist/index.d.ts",
+    "files": [
+        "dist",
+        "snap.manifest.json"
+    ],
+    "scripts": {
+        "pre:build": "shx cp ../../packages/learn-card-core/src/didkit/pkg/didkit_wasm_bg.wasm src/didkit_wasm_bg.wasm",
+        "build": "echo \"Skipping MM Snap build for now...\" # pnpm pre:build && rollup -c && pnpm post:build",
+        "post:build": "./fixBundle.sh",
+        "manifest": "mm-snap manifest --fix",
+        "eval": "mm-snap eval -b dist/snap.js",
+        "serve": "serve -Cl 3002",
+        "dev": "pnpm build && pnpm manifest && pnpm eval && pnpm serve"
+    },
+    "devDependencies": {
+        "@learncard/types": "workspace:*",
+        "@metamask/auto-changelog": "^2.5.0",
+        "@metamask/eslint-config": "^10.0.0",
+        "@metamask/eslint-config-jest": "^10.0.0",
+        "@metamask/eslint-config-nodejs": "^8.0.0",
+        "@metamask/providers": "^9.1.0",
+        "@metamask/rollup-plugin-snaps": "^0.21.0",
+        "@metamask/snap-types": "^0.21.0",
+        "@metamask/snaps-cli": "^0.21.0",
+        "@rollup/plugin-node-resolve": "^13.3.0",
+        "rollup": "^2.71.1",
+        "rollup-plugin-base64": "^1.0.1",
+        "rollup-plugin-commonjs": "^10.1.0",
+        "rollup-plugin-delete": "^2.0.0",
+        "rollup-plugin-esbuild": "^4.9.1",
+        "serve": "^14.0.1",
+        "shx": "^0.3.4"
+    },
+    "engines": {
+        "node": ">=16.0.0"
+    },
+    "dependencies": {
+        "@learncard/core": "workspace:*",
+        "zod": "^3.20.2"
+    }
 }

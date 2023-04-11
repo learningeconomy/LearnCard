@@ -1,5 +1,12 @@
 # @learncard/cli
 
+## 3.0.12
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-plugin@1.4.3
+
 ## 3.0.11
 
 ### Patch Changes

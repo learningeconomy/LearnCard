@@ -12,17 +12,17 @@ export type ControlPlane = 'read' | 'store' | 'index' | 'cache' | 'id';
 
 export type FilterForPlane<Plugins extends Plugin[], Plane extends ControlPlane> = {
     [Index in keyof Plugins]: undefined extends Plugins[Index][Plane]
-    ? never
-    : Plugins[Index]['name'];
+        ? never
+        : Plugins[Index]['name'];
 }[number];
 
 export type GetPlanesForPlugins<Plugins extends Plugin[]> = any[] extends Plugins
     ? never
     : {
-        [Index in keyof Plugins]: {
-            [Key in ControlPlane]: undefined extends Plugins[Index][Key] ? never : Key;
-        }[ControlPlane];
-    }[number];
+          [Index in keyof Plugins]: {
+              [Key in ControlPlane]: undefined extends Plugins[Index][Key] ? never : Key;
+          }[ControlPlane];
+      }[number];
 
 export type GetPlaneProviders<
     Plugins extends Plugin[],
@@ -30,14 +30,14 @@ export type GetPlaneProviders<
 > = any[] extends Plugins
     ? any
     : {
-        [Index in keyof Plugins]: undefined extends Plugins[Index][Plane]
-        ? never
-        : OmitNevers<{
-            [Name in Plugins[number]['name']]: Name extends Plugins[Index]['name']
-            ? { name: Name; displayName?: string; description?: string }
-            : never;
-        }>;
-    }[number];
+          [Index in keyof Plugins]: undefined extends Plugins[Index][Plane]
+              ? never
+              : OmitNevers<{
+                    [Name in Plugins[number]['name']]: Name extends Plugins[Index]['name']
+                        ? { name: Name; displayName?: string; description?: string }
+                        : never;
+                }>;
+      }[number];
 
 // --- Read ---
 
