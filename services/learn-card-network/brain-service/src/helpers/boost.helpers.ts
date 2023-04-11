@@ -15,6 +15,7 @@ import { getLearnCard } from './learnCard.helpers';
 import { issueCredentialWithSigningAuthority } from './signingAuthority.helpers';
 import { sendNotification } from './notifications.helpers';
 import { BoostStatus } from 'types/boost';
+import { getDidWeb } from './did.helpers';
 
 export const getBoostUri = (id: string, domain: string): string =>
     constructUri('boost', id, domain);
@@ -331,7 +332,7 @@ export const issueClaimLinkBoost = async (
             id: subject.did,
         }));
     } else {
-        boostCredential.credentialSubject.id = to.did;
+        boostCredential.credentialSubject.id = getDidWeb(domain, to.did);
     }
 
     // Embed the boostURI into the boost credential for verification purposes.
