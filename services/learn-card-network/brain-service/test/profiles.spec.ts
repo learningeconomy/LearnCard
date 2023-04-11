@@ -1142,13 +1142,13 @@ describe('Profiles', () => {
     describe('registerSigningAuthority', () => {
         beforeEach(async () => {
             await Profile.delete({ detach: true, where: {} });
-            await SigningAuthority.delete({ detach: true, where: {} })
+            await SigningAuthority.delete({ detach: true, where: {} });
             await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
         });
 
         afterAll(async () => {
             await Profile.delete({ detach: true, where: {} });
-            await SigningAuthority.delete({ detach: true, where: {} })
+            await SigningAuthority.delete({ detach: true, where: {} });
         });
 
         it('should require full auth to register a signing authority', async () => {
@@ -1156,14 +1156,14 @@ describe('Profiles', () => {
                 noAuthClient.profile.registerSigningAuthority({
                     endpoint: 'http://localhost:4000',
                     name: 'mysa',
-                    did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw'
+                    did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
                 })
             ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
             await expect(
                 userA.clients.partialAuth.profile.registerSigningAuthority({
                     endpoint: 'http://localhost:4000',
                     name: 'mysa',
-                    did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw'
+                    did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
                 })
             ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
         });
@@ -1173,41 +1173,45 @@ describe('Profiles', () => {
                 userA.clients.fullAuth.profile.registerSigningAuthority({
                     endpoint: 'http://localhost:4000',
                     name: 'mysa',
-                    did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw'
+                    did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
                 })
             ).resolves.not.toThrow();
         });
 
         it('allows retrieving a list of signing authorities', async () => {
-            await expect(userA.clients.fullAuth.profile.signingAuthorities()).resolves.toHaveLength(0);
+            await expect(userA.clients.fullAuth.profile.signingAuthorities()).resolves.toHaveLength(
+                0
+            );
             await expect(
                 userA.clients.fullAuth.profile.registerSigningAuthority({
                     endpoint: 'http://localhost:4000',
                     name: 'mysa',
-                    did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw'
+                    did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
                 })
             ).resolves.not.toThrow();
 
-            const result = await userA.clients.fullAuth.profile.signingAuthorities()
+            const result = await userA.clients.fullAuth.profile.signingAuthorities();
             expect(result[0]).toMatchObject({
                 signingAuthority: {
                     endpoint: 'http://localhost:4000',
                 },
                 relationship: {
                     name: 'mysa',
-                    did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw'
-                }
+                    did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
+                },
             });
 
             await expect(
                 userA.clients.fullAuth.profile.registerSigningAuthority({
                     endpoint: 'http://localhost:5000',
                     name: 'mysa2',
-                    did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw'
+                    did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
                 })
             ).resolves.not.toThrow();
 
-            await expect(userA.clients.fullAuth.profile.signingAuthorities()).resolves.toHaveLength(2);
+            await expect(userA.clients.fullAuth.profile.signingAuthorities()).resolves.toHaveLength(
+                2
+            );
         });
 
         it('allows retrieving a specific, named signing authority', async () => {
@@ -1215,7 +1219,7 @@ describe('Profiles', () => {
                 userA.clients.fullAuth.profile.registerSigningAuthority({
                     endpoint: 'http://localhost:4000',
                     name: 'mysa',
-                    did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw'
+                    did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
                 })
             ).resolves.not.toThrow();
 
@@ -1223,19 +1227,24 @@ describe('Profiles', () => {
                 userA.clients.fullAuth.profile.registerSigningAuthority({
                     endpoint: 'http://localhost:5000',
                     name: 'mysa2',
-                    did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw'
+                    did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
                 })
             ).resolves.not.toThrow();
 
-            await expect(userA.clients.fullAuth.profile.signingAuthority({ endpoint: 'http://localhost:5000', name: 'mysa2' })).resolves.toMatchObject({
+            await expect(
+                userA.clients.fullAuth.profile.signingAuthority({
+                    endpoint: 'http://localhost:5000',
+                    name: 'mysa2',
+                })
+            ).resolves.toMatchObject({
                 signingAuthority: {
                     endpoint: 'http://localhost:5000',
                 },
                 relationship: {
                     name: 'mysa2',
-                    did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw'
-                }
-            })           
+                    did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
+                },
+            });
         });
     });
 });

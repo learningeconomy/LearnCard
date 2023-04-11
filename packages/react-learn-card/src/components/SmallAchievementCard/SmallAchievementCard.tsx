@@ -42,8 +42,7 @@ export const SmallAchievementCard: React.FC<SmallAchievementCardProps> = ({
             <p className="achievement-card-date mt-[5px] text-grayscale-500 text-[12px] w-full text-center">
                 {date}
             </p>
-            <section className="achievement-card-footer">
-            </section>
+            <section className="achievement-card-footer"></section>
         </button>
     );
 };

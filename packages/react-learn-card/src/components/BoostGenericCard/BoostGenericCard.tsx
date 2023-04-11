@@ -1,5 +1,5 @@
 import React from 'react';
-import {BoostGenericCardProps, WalletCategoryTypes } from '../../types';
+import { BoostGenericCardProps, WalletCategoryTypes } from '../../types';
 import { TYPE_TO_IMG_SRC, TYPE_TO_WALLET_DARK_COLOR } from '../../constants';
 import { CircleCheckButton } from '../CircleCheckButton';
 import CaretRightFilled from '../../assets/images/CaretRightFilled.svg';
@@ -28,7 +28,6 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
     const headerBgColor = `bg-${TYPE_TO_WALLET_DARK_COLOR[type]}` ?? 'bg-grayscale-900';
     const checkBtnClass = checkStatus ? 'generic-vc-card checked' : 'generic-vc-card unchecked';
     const defaultHeaderClass = `flex generic-card-title w-full justify-center ${customHeaderClass}`;
-
 
     const handleInnerClick = () => {
         innerOnClick?.();
@@ -69,13 +68,13 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
                     </p>
                 </section>
 
-             
-
                 <section className="small-generic-boost-card-footer flex flex-col justify-center items-center absolute bottom-[15px] w-full">
-               
-                        <span className="flex items-center justify-center small-generic-boost-issuer-name line-clamp-1 text-[12px] text-grayscale-700 font-bold px-[6px]">by {issuerName}</span>
-                        <p className="small-generic-boost-date-display line-clamp-1 text-[12px] text-grayscale-700  px-[7px]">{dateDisplay}</p>
-                      
+                    <span className="flex items-center justify-center small-generic-boost-issuer-name line-clamp-1 text-[12px] text-grayscale-700 font-bold px-[6px]">
+                        by {issuerName}
+                    </span>
+                    <p className="small-generic-boost-date-display line-clamp-1 text-[12px] text-grayscale-700  px-[7px]">
+                        {dateDisplay}
+                    </p>
                 </section>
                 {showChecked && (
                     <div className="check-btn-overlay absolute top-[5px] left-[5px]">
@@ -87,7 +86,6 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
                     </div>
                 )}
             </div>
-          
         </div>
     );
 };

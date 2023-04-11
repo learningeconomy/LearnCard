@@ -322,7 +322,10 @@ export const getLearnCardNetworkPlugin = async (
             updateBoost: async (_learnCard, uri, updates, credential) => {
                 if (!userData) throw new Error('Please make an account first!');
 
-                return client.boost.updateBoost.mutate({ uri, updates: { credential, ...updates } });
+                return client.boost.updateBoost.mutate({
+                    uri,
+                    updates: { credential, ...updates },
+                });
             },
             deleteBoost: async (_learnCard, uri) => {
                 if (!userData) throw new Error('Please make an account first!');
@@ -393,11 +396,16 @@ export const getLearnCardNetworkPlugin = async (
 
                 return client.profile.signingAuthority.query({ endpoint, name });
             },
-        
+
             generateClaimLink: async (_learnCard, boostUri, claimLinkSA, options, challenge) => {
                 if (!userData) throw new Error('Please make an account first!');
 
-                return client.boost.generateClaimLink.mutate({ boostUri, claimLinkSA, options, challenge });
+                return client.boost.generateClaimLink.mutate({
+                    boostUri,
+                    claimLinkSA,
+                    options,
+                    challenge,
+                });
             },
             claimBoostWithLink: async (_learnCard, boostUri, challenge) => {
                 if (!userData) throw new Error('Please make an account first!');

@@ -20,5 +20,4 @@ SmallVCCardTest.args = {
     onClick: () => {
         console.log('//goodbye world');
     },
-
 };

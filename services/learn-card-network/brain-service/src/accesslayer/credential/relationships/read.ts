@@ -5,10 +5,10 @@ export const getCredentialSentToProfile = async (
     to: ProfileInstance
 ): Promise<
     | {
-        source: ProfileInstance;
-        relationship: ProfileRelationships['credentialSent']['RelationshipProperties'];
-        target: CredentialInstance;
-    }
+          source: ProfileInstance;
+          relationship: ProfileRelationships['credentialSent']['RelationshipProperties'];
+          target: CredentialInstance;
+      }
     | undefined
 > => {
     return (

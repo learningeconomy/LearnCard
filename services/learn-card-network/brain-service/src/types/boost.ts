@@ -1,5 +1,13 @@
 import { z } from 'zod';
-import { BoostValidator as _BoostValidator, LCNBoostClaimLinkSigningAuthorityValidator, LCNBoostClaimLinkSigningAuthorityType, LCNBoostClaimLinkOptionsValidator, LCNBoostClaimLinkOptionsType, LCNBoostStatus, LCNBoostStatusEnum } from '@learncard/types';
+import {
+    BoostValidator as _BoostValidator,
+    LCNBoostClaimLinkSigningAuthorityValidator,
+    LCNBoostClaimLinkSigningAuthorityType,
+    LCNBoostClaimLinkOptionsValidator,
+    LCNBoostClaimLinkOptionsType,
+    LCNBoostStatus,
+    LCNBoostStatusEnum,
+} from '@learncard/types';
 
 export const BoostStatus = LCNBoostStatus;
 export type BoostStatusEnum = LCNBoostStatusEnum;
@@ -17,15 +25,15 @@ export const BoostClaimLinkOptionsValidator = LCNBoostClaimLinkOptionsValidator;
 export type BoostClaimLinkOptionsType = LCNBoostClaimLinkOptionsType;
 
 export const BoostGenerateClaimLinkInput = z.object({
-    boostUri: z.string(), 
-    challenge: z.string().optional(), 
-    claimLinkSA: BoostClaimLinkSigningAuthorityValidator, 
-    options: BoostClaimLinkOptionsValidator.optional()
+    boostUri: z.string(),
+    challenge: z.string().optional(),
+    claimLinkSA: BoostClaimLinkSigningAuthorityValidator,
+    options: BoostClaimLinkOptionsValidator.optional(),
 });
 export type BoostGenerateClaimLinkType = z.infer<typeof BoostGenerateClaimLinkInput>;
 
 export const BoostClaimLinkCacheValueValidator = z.object({
-    claimLinkSA: BoostClaimLinkSigningAuthorityValidator, 
-    options: BoostClaimLinkOptionsValidator
+    claimLinkSA: BoostClaimLinkSigningAuthorityValidator,
+    options: BoostClaimLinkOptionsValidator,
 });
 export type BoostClaimLinkCacheValueType = z.infer<typeof BoostClaimLinkCacheValueValidator>;

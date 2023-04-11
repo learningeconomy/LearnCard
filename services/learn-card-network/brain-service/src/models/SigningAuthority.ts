@@ -6,13 +6,16 @@ import { SigningAuthorityType } from 'types/profile';
 
 export type SigningAuthorityRelationships = {};
 
-export type SigningAuthorityInstance = NeogmaInstance<SigningAuthorityType, SigningAuthorityRelationships>;
+export type SigningAuthorityInstance = NeogmaInstance<
+    SigningAuthorityType,
+    SigningAuthorityRelationships
+>;
 
 export const SigningAuthority = ModelFactory<SigningAuthorityType, SigningAuthorityRelationships>(
     {
         label: 'SigningAuthority',
         schema: {
-            endpoint: { type: 'string', required: true, uniqueItems: true}
+            endpoint: { type: 'string', required: true, uniqueItems: true },
         },
         primaryKeyField: 'endpoint',
     },

@@ -27,7 +27,7 @@ declare module '@digitalbazaar/vpqr' {
     }): Promise<{ vp: VP }>;
 }
 
-declare module 'qrcode-reader' { }
+declare module 'qrcode-reader' {}
 
 declare module 'credential-handler-polyfill' {
     function loadOnce(options?: string | { mediatorOrigin?: string }): Promise<void>;

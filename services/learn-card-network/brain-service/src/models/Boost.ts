@@ -25,7 +25,7 @@ export const Boost = ModelFactory<BoostType, BoostRelationships>(
             type: { type: 'string' },
             category: { type: 'string' },
             boost: { type: 'string', required: true },
-            status: { type: 'string', enum: BoostStatus.options }
+            status: { type: 'string', enum: BoostStatus.options },
         },
         primaryKeyField: 'id',
         relationships: {

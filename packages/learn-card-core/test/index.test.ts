@@ -622,14 +622,14 @@ describe('LearnCard SDK', () => {
             });
         });
     });
-    
+
     describe('VC Templates', () => {
         it('should create a boost credential', async () => {
             const learnCard = await getLearnCard();
             const boostCredential = await learnCard.invoke.newCredential({ type: 'boost' });
             expect(boostCredential.type).toEqual(expect.arrayContaining(['BoostCredential']));
-        })
-    })
+        });
+    });
 
     describe('Control Planes', () => {
         it('should be able to store/read with multiple planes', async () => {

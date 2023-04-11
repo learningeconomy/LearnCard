@@ -1,10 +1,7 @@
 import { PREFIX } from '../create/index';
 import { Context, PendingVc } from 'src/types/index';
 
-export const getPendingVcs = async (
-    context: Context,
-    scope?: string
-): Promise<PendingVc[]> => {
+export const getPendingVcs = async (context: Context, scope?: string): Promise<PendingVc[]> => {
     const pendingVcKeys = await context.cache.keys(`${PREFIX}${scope ? scope + ':' : ''}*`);
     if (!pendingVcKeys) return [];
     const issuers = await Promise.all(
