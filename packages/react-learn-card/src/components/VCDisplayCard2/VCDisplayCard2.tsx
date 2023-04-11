@@ -127,7 +127,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     const _title = titleOverride || title;
 
     return (
-        <section className="vc-display-card font-mouse flex flex-col items-center border-solid border-[5px] border-white rounded-[30px] overflow-visible z-10 max-w-[400px] relative bg-white">
+        <section className="vc-display-card font-mouse flex flex-col items-center border-solid border-[5px] border-white rounded-[30px] overflow-visible z-10 max-w-[400px] relative bg-white shadow-3xl">
             <RibbonEnd
                 side="left"
                 className="absolute left-[-30px] top-[50px] z-0"
