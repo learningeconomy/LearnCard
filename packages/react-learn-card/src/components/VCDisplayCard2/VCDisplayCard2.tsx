@@ -200,6 +200,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                             getVideoMetadata={getVideoMetadata}
                             onMediaAttachmentClick={onMediaAttachmentClick}
                             showBackButton={showBackButton}
+                            showFrontFace={() => setIsFront(true)}
                         />
                     )}
                     <div

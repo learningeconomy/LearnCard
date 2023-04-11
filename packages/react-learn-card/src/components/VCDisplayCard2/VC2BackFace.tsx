@@ -28,6 +28,7 @@ type VC2BackFaceProps = {
     onMediaAttachmentClick?: (url: string) => void;
     issueHistory?: IssueHistory[];
     showBackButton?: boolean;
+    showFrontFace: () => void;
 };
 
 const VC2BackFace: React.FC<VC2BackFaceProps> = ({
@@ -39,6 +40,7 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
     onMediaAttachmentClick,
     issueHistory,
     showBackButton,
+    showFrontFace,
 }) => {
     const expiration = credential.expirationDate
         ? format(new Date(credential.expirationDate), 'MMM dd, yyyy')
@@ -61,7 +63,7 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
                 <div className="w-full">
                     <button
                         className="vc-card-back-button rounded-full h-[50px] px-[15px] flex items-center justify-center gap-[5px] z-50 text-[30px] text-white"
-                        onClick={() => {}}
+                        onClick={showFrontFace}
                     >
                         <LeftArrow className="text-white" size="25" />
                         Details
