@@ -362,6 +362,7 @@ export const getLearnCardNetworkPlugin = async (
 
                 const boost = data.data;
 
+                boost.issuanceDate = new Date().toISOString();
                 boost.issuer = _learnCard.id.did();
 
                 if (Array.isArray(boost.credentialSubject)) {
