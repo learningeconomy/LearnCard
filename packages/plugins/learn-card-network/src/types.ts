@@ -49,6 +49,10 @@ export type LearnCardNetworkPluginMethods = {
     getConnectionRequests: () => Promise<LCNProfile[]>;
     generateInvite: (challenge?: string) => Promise<{ profileId: string; challenge: string }>;
 
+    blockProfile: (profileId: string) => Promise<boolean>;
+    unblockProfile: (profileId: string) => Promise<boolean>;
+    getBlockedProfiles: () => Promise<LCNProfile[]>;
+
     sendCredential: (profileId: string, vc: UnsignedVC | VC, encrypt?: boolean) => Promise<string>;
     acceptCredential: (uri: string) => Promise<boolean>;
     getReceivedCredentials: (from?: string) => Promise<SentCredentialInfo[]>;

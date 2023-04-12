@@ -302,3 +302,130 @@ export const getConnectionStatus = async (
     }
     return LCNProfileConnectionStatusEnum.enum.NOT_CONNECTED;
 };
+
+/** Checks if target is blocked by source */
+export const isProfileBlocked = async (
+    source: ProfileInstance,
+    target: ProfileInstance
+): Promise<boolean> => {
+    return (
+        (
+            await source.findRelationships({
+                alias: 'blocked',
+                where: { relationship: {}, target: { profileId: target.profileId } },
+            })
+        ).length > 0
+    );
+};
+
+/** Checks if source or target are blocking each other */
+export const isRelationshipBlocked = async (
+    source?: ProfileInstance | null,
+    target?: ProfileInstance | null
+): Promise<boolean> => {
+    if (!target || !source) return false;
+    const [sourceBlockedTarget, targetBlockedSource] = await Promise.all([
+        source.findRelationships({
+            alias: 'blocked',
+            where: { relationship: {}, target: { profileId: target.profileId } },
+        }),
+        target.findRelationships({
+            alias: 'blocked',
+            where: { relationship: {}, target: { profileId: source.profileId } },
+        }),
+    ]);
+
+    return sourceBlockedTarget.length > 0 || targetBlockedSource.length > 0;
+};
+
+/** Blocks a profile */
+export const blockProfile = async (
+    source: ProfileInstance,
+    target: ProfileInstance
+): Promise<boolean> => {
+    await Promise.all([
+        Profile.deleteRelationships({
+            alias: 'connectedWith',
+            where: {
+                source: { profileId: source.profileId },
+                target: { profileId: target.profileId },
+            },
+        }),
+        Profile.deleteRelationships({
+            alias: 'connectedWith',
+            where: {
+                source: { profileId: target.profileId },
+                target: { profileId: source.profileId },
+            },
+        }),
+        Profile.deleteRelationships({
+            alias: 'connectionRequested',
+            where: {
+                source: { profileId: source.profileId },
+                target: { profileId: target.profileId },
+            },
+        }),
+        Profile.deleteRelationships({
+            alias: 'connectionRequested',
+            where: {
+                source: { profileId: target.profileId },
+                target: { profileId: source.profileId },
+            },
+        }),
+        source.relateTo({ alias: 'blocked', where: { profileId: target.profileId } }),
+    ]);
+
+    return true;
+};
+
+/** Unblocks a profile */
+export const unblockProfile = async (
+    source: ProfileInstance,
+    target: ProfileInstance,
+    validate = true
+): Promise<boolean> => {
+    if (validate && !(await isProfileBlocked(source, target))) {
+        throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Profile is not blocked!',
+        });
+    }
+
+    await Profile.deleteRelationships({
+        alias: 'blocked',
+        where: {
+            source: { profileId: source.profileId },
+            target: { profileId: target.profileId },
+        },
+    });
+
+    return true;
+};
+
+export const getBlockedProfiles = async (profile: ProfileInstance): Promise<ProfileInstance[]> => {
+    return (await profile.findRelationships({ alias: 'blocked' })).map(result => result.target);
+};
+
+export const getBlockedAndBlockedByRelationships = async (
+    profile: ProfileInstance
+): Promise<ProfileInstance[]> => {
+    const [blocked, blockedBy] = await Promise.all([
+        profile.findRelationships({ alias: 'blocked' }),
+        Profile.findRelationships({
+            alias: 'blocked',
+            where: { target: { profileId: profile.profileId } },
+        }),
+    ]);
+
+    return [...blocked, ...blockedBy].reduce<ProfileInstance[]>((profiles, relationship) => {
+        profiles.push(relationship.target, relationship.source);
+
+        return profiles;
+    }, []);
+};
+
+export const getBlockedAndBlockedByIds = async (profile: ProfileInstance): Promise<string[]> => {
+    return (await getBlockedAndBlockedByRelationships(profile))
+        .map(p => p.dataValues.profileId)
+        .filter(profileId => profileId !== profile.profileId);
+};

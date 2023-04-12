@@ -215,6 +215,22 @@ export const getLearnCardNetworkPlugin = async (
                 return client.profile.generateInvite.mutate({ challenge });
             },
 
+            blockProfile: async (_learnCard, profileId) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.profile.blockProfile.mutate({ profileId });
+            },
+            unblockProfile: async (_learnCard, profileId) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.profile.unblockProfile.mutate({ profileId });
+            },
+            getBlockedProfiles: async _learnCard => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.profile.blocked.query();
+            },
+
             sendCredential: async (_learnCard, profileId, vc, encrypt = true) => {
                 if (!userData) throw new Error('Please make an account first!');
 
