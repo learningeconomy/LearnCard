@@ -150,7 +150,6 @@ export const boostsRouter = t.router({
 
             const { id, ...remaining } = boost.dataValues;
 
-            console.log({ boost });
 
             return { ...remaining, uri: getBoostUri(id, ctx.domain) };
         }),
