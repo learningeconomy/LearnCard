@@ -347,16 +347,16 @@ export const boostsRouter = t.router({
             const { profile } = ctx.user;
             const { boostUri, challenge } = input;
 
-            const claimLinkSA = await getClaimLinkSAInfoForBoost(boostUri, challenge);
-
+            const [claimLinkSA, boost] = await Promise.all([
+                getClaimLinkSAInfoForBoost(boostUri, challenge),
+                getBoostByUri(boostUri),
+            ]);
             if (!claimLinkSA) {
                 throw new TRPCError({
                     code: 'NOT_FOUND',
                     message: `Challenge not found for ${boostUri}`,
                 });
             }
-
-            const boost = await getBoostByUri(boostUri);
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
             const boostOwner = await getBoostOwner(boost);

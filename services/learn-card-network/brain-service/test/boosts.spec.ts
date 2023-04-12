@@ -673,6 +673,49 @@ describe('Boosts', () => {
             }
         });
 
+        it("should auto-accept a boost you've claimed", async () => {
+            const boosts = await userA.clients.fullAuth.boost.getBoosts();
+            const uri = boosts[0]!.uri;
+
+            const sa = await userA.clients.fullAuth.profile.signingAuthority({
+                endpoint: 'http://localhost:5000/api',
+                name: 'mysa',
+            });
+            if (sa) {
+                const claimLinkSA = {
+                    endpoint: sa.signingAuthority.endpoint,
+                    name: sa.relationship.name,
+                };
+                const challenge = 'mychallenge';
+
+                await expect(
+                    userA.clients.fullAuth.boost.generateClaimLink({
+                        boostUri: uri,
+                        challenge,
+                        claimLinkSA,
+                    })
+                ).resolves.toMatchObject({
+                    boostUri: uri,
+                    challenge,
+                });
+
+                // Verify user B doesn't have to accept the credential (it's implicitly accepted by claiming it)
+                await expect(
+                    userB.clients.fullAuth.boost.claimBoostWithLink({ boostUri: uri, challenge })
+                ).resolves.not.toThrow();
+
+                // Because it's accepted implicitly, it shouldn't show up in incoming credentials
+                const incoming = await userB.clients.fullAuth.credential.incomingCredentials();
+                expect(incoming[0]).toBeUndefined();
+
+                // And it should show up in received credentials.
+                const credentials = await userB.clients.fullAuth.credential.receivedCredentials();
+                expect(credentials[0]).toBeDefined();
+            } else {
+                expect(sa).toBeDefined();
+            }
+        });
+
         it('should allow setting a custom time to live in seconds for a claimable boost', async () => {
             const boosts = await userA.clients.fullAuth.boost.getBoosts();
             const uri = boosts[0]!.uri;
