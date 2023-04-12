@@ -1,6 +1,6 @@
 import { createTRPCProxyClient, CreateTRPCProxyClient, httpBatchLink } from '@trpc/client';
 import type { inferRouterInputs } from '@trpc/server';
-import type { UnsignedVC, VC, VP, JWE } from '@learncard/types';
+import type { UnsignedVC, VC, VP, JWE, Boost } from '@learncard/types';
 import type { AppRouter } from '@learncard/network-brain-service';
 
 import { callbackLink } from './callbackLink';
@@ -9,10 +9,15 @@ type Inputs = inferRouterInputs<AppRouter>;
 
 type Client = CreateTRPCProxyClient<AppRouter>;
 
-type OverriddenClient = Client & {
+type OverriddenClient = Omit<Client, 'storage' | 'boost'> & {
     storage: Client['storage'] & {
         resolve: {
             query: (args: Inputs['storage']['resolve']) => Promise<VC | UnsignedVC | VP | JWE>;
+        };
+    };
+    boost: Omit<Client['boost'], 'getBoost'> & {
+        getBoost: {
+            query: (args: Inputs['boost']['getBoost']) => Promise<Boost & { boost: UnsignedVC }>;
         };
     };
 };

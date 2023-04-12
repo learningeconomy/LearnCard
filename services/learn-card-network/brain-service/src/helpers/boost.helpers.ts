@@ -348,7 +348,7 @@ export const issueClaimLinkBoost = async (
             id: subject.did,
         }));
     } else {
-        boostCredential.credentialSubject.id = getDidWeb(domain, to.did);
+        boostCredential.credentialSubject.id = getDidWeb(domain, to.profileId);
     }
 
     // Embed the boostURI into the boost credential for verification purposes.

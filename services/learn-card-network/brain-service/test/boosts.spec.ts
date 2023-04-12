@@ -53,6 +53,53 @@ describe('Boosts', () => {
         });
     });
 
+    describe('getBoost', () => {
+        beforeEach(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+        });
+
+        afterAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+        });
+
+        it('should require full auth to get boost', async () => {
+            const uri = await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
+
+            await expect(noAuthClient.boost.getBoost({ uri })).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+            await expect(userA.clients.partialAuth.boost.getBoost({ uri })).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+        });
+
+        it('should allow getting boosts', async () => {
+            const uri = await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
+
+            await expect(userA.clients.fullAuth.boost.getBoost({ uri })).resolves.not.toThrow();
+
+            const boost = await userA.clients.fullAuth.boost.getBoost({ uri });
+
+            expect(boost).toBeDefined();
+        });
+
+        it("should not allow getting someone else's boosts", async () => {
+            const uri = await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
+
+            await expect(userA.clients.fullAuth.boost.getBoost({ uri })).resolves.not.toThrow();
+
+            await expect(userB.clients.partialAuth.boost.getBoost({ uri })).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+        });
+    });
+
     describe('getBoosts', () => {
         beforeEach(async () => {
             await Profile.delete({ detach: true, where: {} });
