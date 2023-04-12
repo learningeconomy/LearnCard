@@ -1,5 +1,12 @@
 # @learncard/cli
 
+## 3.0.16
+
+### Patch Changes
+
+-   Updated dependencies [[`daf6eaf`](https://github.com/learningeconomy/LearnCard/commit/daf6eafd167689c995378c792a0e459632293092)]:
+    -   @learncard/network-plugin@1.4.7
+
 ## 3.0.15
 
 ### Patch Changes

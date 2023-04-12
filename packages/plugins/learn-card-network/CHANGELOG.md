@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 1.4.7
+
+### Patch Changes
+
+-   [#283](https://github.com/learningeconomy/LearnCard/pull/283) [`daf6eaf`](https://github.com/learningeconomy/LearnCard/commit/daf6eafd167689c995378c792a0e459632293092) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix bug with wrong issuanceDate when sending boosts
+
 ## 1.4.6
 
 ### Patch Changes
