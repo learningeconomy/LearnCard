@@ -118,6 +118,42 @@ export const boostsRouter = t.router({
             return getBoostUri(boost.id, ctx.domain);
         }),
 
+    getBoost: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/boost/{uri}',
+                tags: ['Boosts'],
+                summary: 'Get boost',
+                description: 'This endpoint gets metadata about a boost',
+            },
+        })
+        .input(z.object({ uri: z.string() }))
+        .output(BoostValidator.omit({ id: true }).extend({ uri: z.string() }))
+        .query(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+
+            const { uri } = input;
+
+            const boost = await getBoostByUri(uri);
+
+            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            if (!(await isProfileBoostOwner(profile, boost))) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile does not own boost',
+                });
+            }
+
+            const { id, ...remaining } = boost.dataValues;
+
+            console.log({ boost });
+
+            return { ...remaining, uri: getBoostUri(id, ctx.domain) };
+        }),
+
     getBoosts: profileRoute
         .meta({
             openapi: {
@@ -171,7 +207,7 @@ export const boostsRouter = t.router({
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
             //TODO: Should we restrict who can see the recipients of a boost? Maybe to Boost owner / people who have the boost?
-            return await getBoostRecipients(boost, { limit, skip });
+            return getBoostRecipients(boost, { limit, skip });
         }),
     updateBoost: profileRoute
         .meta({

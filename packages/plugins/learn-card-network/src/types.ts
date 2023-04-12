@@ -67,6 +67,7 @@ export type LearnCardNetworkPluginMethods = {
         credential: VC | UnsignedVC,
         metadata?: Partial<Omit<Boost, 'uri'>>
     ) => Promise<string>;
+    getBoost: (uri: string) => Promise<Boost>;
     getBoosts: () => Promise<{ name?: string; uri: string }[]>;
     getBoostRecipients: (
         uri: string,
