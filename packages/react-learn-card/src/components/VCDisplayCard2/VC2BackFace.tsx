@@ -62,7 +62,7 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
             {showBackButton && (
                 <div className="w-full">
                     <button
-                        className="vc-card-back-button rounded-full h-[50px] px-[15px] flex items-center justify-center gap-[5px] z-50 text-[30px] text-white"
+                        className="vc-card-back-button rounded-full h-[50px] px-[15px] flex items-center justify-center gap-[5px] z-50 text-[30px] text-white select-none"
                         onClick={showFrontFace}
                     >
                         <LeftArrow className="text-white" size="25" />

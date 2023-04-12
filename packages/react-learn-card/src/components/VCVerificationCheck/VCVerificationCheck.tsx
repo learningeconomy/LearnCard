@@ -47,9 +47,8 @@ export const VCVerificationCheckWithSpinner: React.FC<
     return (
         <div
             style={{ width: spinnerSize, height: spinnerSize, position: 'relative' }}
-            className={`flex items-center justify-center bg-white rounded-full overflow-hidden ${
-                withBorder ? ' ml-3 mr-3' : ''
-            }`}
+            className={`flex items-center justify-center bg-white rounded-full overflow-hidden select-none ${withBorder ? ' ml-3 mr-3' : ''
+                }`}
         >
             <VCVerificationCheck size={size} loading={loading} />
             <div className="vc-verification-spinner-overlay" style={spinnerStyle}>
