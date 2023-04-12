@@ -1,5 +1,14 @@
 # learn-card-core
 
+## 1.4.8
+
+### Patch Changes
+
+-   [#280](https://github.com/learningeconomy/LearnCard/pull/280) [`d6b7861`](https://github.com/learningeconomy/LearnCard/commit/d6b786120b803c7c940e560570438d5f688a2d0f) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add getBoost route
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@1.1.10
+
 ## 1.4.7
 
 ### Patch Changes
