@@ -303,7 +303,7 @@ export const getConnectionStatus = async (
     return LCNProfileConnectionStatusEnum.enum.NOT_CONNECTED;
 };
 
-/** Checks whether two profiles are already connected */
+/** Checks if target is blocked by source */
 export const isProfileBlocked = async (
     source: ProfileInstance,
     target: ProfileInstance
