@@ -1,5 +1,14 @@
 # @welibraryos/react-learn-card
 
+## 2.5.14
+
+### Patch Changes
+
+-   No change, just forcible version bump
+
+-   Updated dependencies []:
+    -   @learncard/core@8.5.5
+
 ## 2.5.13
 
 ### Patch Changes

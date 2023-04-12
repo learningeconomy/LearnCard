@@ -1,5 +1,16 @@
 # @learncard/network-brain-service
 
+## 1.4.4
+
+### Patch Changes
+
+-   No change, just forcible version bump
+
+-   Updated dependencies []:
+    -   @learncard/core@8.5.5
+    -   @learncard/types@5.2.7
+    -   @learncard/did-web-plugin@1.0.2
+
 ## 1.4.3
 
 ### Patch Changes

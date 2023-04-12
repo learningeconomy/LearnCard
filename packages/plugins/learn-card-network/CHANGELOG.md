@@ -1,5 +1,15 @@
 # learn-card-core
 
+## 1.4.5
+
+### Patch Changes
+
+-   No change, just forcible version bump
+
+-   Updated dependencies []:
+    -   @learncard/core@8.5.5
+    -   @learncard/network-brain-client@1.1.8
+
 ## 1.4.4
 
 ### Patch Changes
