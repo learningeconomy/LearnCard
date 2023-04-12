@@ -1,5 +1,15 @@
 # learn-card-discord-bot
 
+## 1.1.24
+
+### Patch Changes
+
+-   No change, just forcible version bump
+
+-   Updated dependencies []:
+    -   @learncard/core@8.5.5
+    -   @learncard/types@5.2.7
+
 ## 1.1.23
 
 ### Patch Changes

@@ -1,5 +1,23 @@
 # @learncard/cli
 
+## 3.0.14
+
+### Patch Changes
+
+-   No change, just forcible version bump
+
+-   Updated dependencies []:
+    -   @learncard/core@8.5.5
+    -   @learncard/types@5.2.7
+    -   @learncard/network-plugin@1.4.5
+
+## 3.0.13
+
+### Patch Changes
+
+-   Updated dependencies [[`b471409`](https://github.com/learningeconomy/LearnCard/commit/b471409ccd9a4a7c169971d3d4906b6a85355066)]:
+    -   @learncard/network-plugin@1.4.4
+
 ## 3.0.12
 
 ### Patch Changes

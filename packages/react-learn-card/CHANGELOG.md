@@ -1,5 +1,20 @@
 # @welibraryos/react-learn-card
 
+## 2.5.14
+
+### Patch Changes
+
+-   No change, just forcible version bump
+
+-   Updated dependencies []:
+    -   @learncard/core@8.5.5
+
+## 2.5.13
+
+### Patch Changes
+
+-   [#275](https://github.com/learningeconomy/LearnCard/pull/275) [`798a22c`](https://github.com/learningeconomy/LearnCard/commit/798a22cbd296495eb365e85c7c8d1bd293ba2b34) Thanks [@gerardopar](https://github.com/gerardopar)! - Vc display card updates
+
 ## 2.5.12
 
 ### Patch Changes

@@ -1,5 +1,46 @@
 # learn-card-core
 
+## 1.4.5
+
+### Patch Changes
+
+-   No change, just forcible version bump
+
+-   Updated dependencies []:
+    -   @learncard/core@8.5.5
+    -   @learncard/network-brain-client@1.1.8
+
+## 1.4.4
+
+### Patch Changes
+
+-   [#265](https://github.com/learningeconomy/LearnCard/pull/265) [`b471409`](https://github.com/learningeconomy/LearnCard/commit/b471409ccd9a4a7c169971d3d4906b6a85355066) Thanks [@Custard7](https://github.com/Custard7)! - Feat: Add Block User
+
+    ### New LCN Plugin Invocations
+
+    -   `blockProfile: (profileId: string) => Promise<boolean>;`
+    -   `unblockProfile: (profileId: string) => Promise<boolean>;`
+    -   `getBlockedProfiles: () => Promise<LCNProfile[]>;`
+
+    ### Blocking Users
+
+    ✓ allows users to view blocked profiles
+    ✓ remove connection relationship after blocking a user
+    ✓ remove connection requests after blocking a user
+    ✓ allows users to unblock a profile
+    ✓ blocking a user should prevent receiving connection requests, VCs, VPs, and Boosts
+    ✓ blocking a user should hide user from search
+    ✓ blocking a user should hide user from retrieving their profile
+
+    ### New LearnCard Network API endpoints:
+
+    -   `POST` blockProfile (`/profile/{profileId}/block`) - allows blocking another profile
+    -   `POST` unblockProfile (`/profile/{profileId}/block`)- allows unblocking another profile
+    -   `GET` blocked (`/profile/blocked`) - retrieves profiles a user has blocked
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@1.1.7
+
 ## 1.4.3
 
 ### Patch Changes

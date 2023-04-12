@@ -1,5 +1,23 @@
 # @learncard/chapi-example
 
+## 1.0.55
+
+### Patch Changes
+
+-   No change, just forcible version bump
+
+-   Updated dependencies []:
+    -   @learncard/core@8.5.5
+    -   @learncard/helpers@1.0.3
+    -   @learncard/react@2.5.14
+
+## 1.0.54
+
+### Patch Changes
+
+-   Updated dependencies [[`798a22c`](https://github.com/learningeconomy/LearnCard/commit/798a22cbd296495eb365e85c7c8d1bd293ba2b34)]:
+    -   @learncard/react@2.5.13
+
 ## 1.0.53
 
 ### Patch Changes

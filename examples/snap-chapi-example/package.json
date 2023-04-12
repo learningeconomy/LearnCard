@@ -1,12 +1,12 @@
 {
   "name": "@learncard/snap-chapi-example",
   "type": "module",
-  "version": "1.0.55",
+  "version": "1.0.57",
   "private": true,
   "scripts": {
     "dev": "astro dev",
     "start": "astro dev",
-    "build": "astro build",
+    "build": "echo \"Skipping MM Snap Builds for now...\" # astro build",
     "preview": "astro preview",
     "astro": "astro"
   },

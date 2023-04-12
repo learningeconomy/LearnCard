@@ -1,5 +1,15 @@
 # @learncard/create-http-bridge
 
+## 1.1.35
+
+### Patch Changes
+
+-   No change, just forcible version bump
+
+-   Updated dependencies []:
+    -   @learncard/core@8.5.5
+    -   @learncard/types@5.2.7
+
 ## 1.1.34
 
 ### Patch Changes

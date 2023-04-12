@@ -1,5 +1,11 @@
 # @learncard/nx-run-command
 
+## 1.0.2
+
+### Patch Changes
+
+-   No change, just forcible version bump
+
 ## 1.0.1
 
 ### Patch Changes

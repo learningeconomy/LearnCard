@@ -1,5 +1,11 @@
 # docs
 
+## 0.1.1
+
+### Patch Changes
+
+-   No change, just forcible version bump
+
 ## 0.1.0
 
 ### Minor Changes
