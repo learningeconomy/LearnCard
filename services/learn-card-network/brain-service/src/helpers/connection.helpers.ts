@@ -416,9 +416,12 @@ export const getBlockedAndBlockedByRelationships = async (
             where: { target: { profileId: profile.profileId } },
         }),
     ]);
-    return [...blocked, ...blockedBy].reduce((prev, relationship): ProfileInstance[] => {
-        return [...prev, relationship.target, relationship.source];
-    }, [] as ProfileInstance[]);
+
+    return [...blocked, ...blockedBy].reduce<ProfileInstance[]>((profiles, relationship) => {
+        profiles.push(relationship.target, relationship.source);
+
+        return profiles;
+    }, []);
 };
 
 export const getBlockedAndBlockedByIds = async (profile: ProfileInstance): Promise<string[]> => {
