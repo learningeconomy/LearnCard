@@ -203,7 +203,8 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                             showFrontFace={() => setIsFront(true)}
                         />
                     )}
-                    <div
+                    <button
+                        type="button"
                         className="vc-toggle-side-button text-white shadow-bottom bg-[#00000099] px-[30px] py-[8px] rounded-[40px] text-[28px] tracking-[0.75px] uppercase leading-[28px] mt-[40px] w-fit"
                         onClick={() => setIsFront(!isFront)}
                     >
@@ -214,7 +215,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                                 Back
                             </span>
                         )}
-                    </div>
+                    </button>
                 </div>
             </div>
             <footer className="vc-card-footer w-full flex justify-between p-[5px] mt-[5px]">
