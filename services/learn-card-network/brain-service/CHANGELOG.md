@@ -1,5 +1,11 @@
 # @learncard/network-brain-service
 
+## 1.4.5
+
+### Patch Changes
+
+-   [#282](https://github.com/learningeconomy/LearnCard/pull/282) [`4703488`](https://github.com/learningeconomy/LearnCard/commit/470348841414ecd4c91b0eed4a25b530e3fe4fa8) Thanks [@Custard7](https://github.com/Custard7)! - Fix: auto-accept credential when claiming boost
+
 ## 1.4.4
 
 ### Patch Changes
