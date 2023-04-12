@@ -131,7 +131,12 @@ export const boostsRouter = t.router({
             },
         })
         .input(z.object({ uri: z.string() }))
-        .output(BoostValidator.omit({ id: true, boost: true }).extend({ uri: z.string() }))
+        .output(
+            BoostValidator.omit({ id: true, boost: true }).extend({
+                uri: z.string(),
+                boost: UnsignedVCValidator,
+            })
+        )
         .query(async ({ ctx, input }) => {
             const { profile } = ctx.user;
 
@@ -150,7 +155,7 @@ export const boostsRouter = t.router({
 
             const { id, boost: _boost, ...remaining } = boost.dataValues;
 
-            return { ...remaining, uri: getBoostUri(id, ctx.domain) };
+            return { ...remaining, boost: JSON.parse(_boost), uri: getBoostUri(id, ctx.domain) };
         }),
 
     getBoosts: profileRoute
