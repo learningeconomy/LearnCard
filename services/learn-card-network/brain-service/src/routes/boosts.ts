@@ -35,6 +35,7 @@ import {
     getClaimLinkSAInfoForBoost,
     useClaimLinkForBoost,
 } from '@cache/claim-links';
+import { isRelationshipBlocked } from '@helpers/connection.helpers';
 import { getDidWeb } from '@helpers/did.helpers';
 
 export const boostsRouter = t.router({
@@ -63,8 +64,8 @@ export const boostsRouter = t.router({
             console.log('🚀 BEGIN - Send Boost', JSON.stringify(input));
 
             const targetProfile = await getProfileByProfileId(profileId);
-
-            if (!targetProfile) {
+            const isBlocked = await isRelationshipBlocked(profile, targetProfile);
+            if (!targetProfile || isBlocked) {
                 throw new TRPCError({
                     code: 'NOT_FOUND',
                     message: 'Profile not found. Are you sure this person exists?',
