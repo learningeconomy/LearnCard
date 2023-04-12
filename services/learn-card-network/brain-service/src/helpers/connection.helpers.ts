@@ -318,7 +318,7 @@ export const isProfileBlocked = async (
     );
 };
 
-/** Checks whether two profiles are already connected */
+/** Checks if source or target are blocking each other */
 export const isRelationshipBlocked = async (
     source?: ProfileInstance | null,
     target?: ProfileInstance | null
