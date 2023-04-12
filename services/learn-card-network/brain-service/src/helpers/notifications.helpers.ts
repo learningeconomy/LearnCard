@@ -25,6 +25,9 @@ export async function sendNotification(notification: LCNNotification) {
                 notification.from.profileId
             );
         }
+        if (!notification.sent) {
+            notification.sent = new Date().toISOString();
+        }
         if (typeof notificationsWebhook === 'string' && notificationsWebhook?.startsWith('http')) {
             console.log(
                 'Sending notification!',
