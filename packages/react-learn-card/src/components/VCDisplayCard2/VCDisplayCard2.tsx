@@ -203,8 +203,9 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                             showFrontFace={() => setIsFront(true)}
                         />
                     )}
-                    <div
-                        className="vc-toggle-side-button text-white shadow-bottom bg-[#00000099] px-[30px] py-[8px] rounded-[40px] text-[28px] tracking-[0.75px] uppercase leading-[28px] mt-[40px] w-fit"
+                    <button
+                        type="button"
+                        className="vc-toggle-side-button text-white shadow-bottom bg-[#00000099] px-[30px] py-[8px] rounded-[40px] text-[28px] tracking-[0.75px] uppercase leading-[28px] mt-[40px] w-fit select-none"
                         onClick={() => setIsFront(!isFront)}
                     >
                         {isFront && 'Details'}
@@ -214,7 +215,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                                 Back
                             </span>
                         )}
-                    </div>
+                    </button>
                 </div>
             </div>
             <footer className="vc-card-footer w-full flex justify-between p-[5px] mt-[5px]">
@@ -226,7 +227,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                             size={'32px'}
                             loading={verificationInProgress}
                         />
-                        <div className="vc-footer-text font-montserrat flex flex-col items-center justify-center text-[12px] font-[700] leading-[15px]">
+                        <div className="vc-footer-text font-montserrat flex flex-col items-center justify-center text-[12px] font-[700] leading-[15px] select-none">
                             <span className="text-[#4F4F4F]">Verified Credential</span>
                             <span
                                 className="vc-footer-status uppercase"

@@ -39,7 +39,7 @@ const VerificationRow: React.FC<VerificationRowProps> = ({ verification }) => {
     return (
         <div className="verification-row flex flex-col gap-[5px] font-poppins border-b-[1px] border-grayscale-200 border-solid w-full py-[10px] last:border-0 last:pb-0">
             <span
-                className="font-[700] text-[11px] leading-[16px] uppercase flex items-center gap-[3px]"
+                className="font-[700] text-[11px] leading-[16px] uppercase flex items-center gap-[3px] select-none"
                 style={{ color: statusColor }}
             >
                 {getIcon()}

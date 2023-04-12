@@ -24,7 +24,7 @@ const VCDisplayCardCategoryType: React.FC<{ categoryType?: LCCategoryEnum }> = (
 
     return (
         <span
-            className={`uppercase ${categoryColor} font-poppins text-[12px] font-[600] leading-[12px]`}
+            className={`uppercase ${categoryColor} font-poppins text-[12px] font-[600] leading-[12px] select-none`}
         >
             {categoryType}
         </span>

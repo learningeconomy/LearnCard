@@ -16,7 +16,7 @@ const IssueHistoryBox: React.FC<SkillsBoxProps> = ({ issueHistory }) => {
             >
                 <div className="profile-thumb-img vc-issuee-image h-[35px] w-[35px] rounded-full overflow-hidden">
                     <img
-                        className="h-full w-full object-cover"
+                        className="h-full w-full object-cover select-none"
                         src={issueItem?.thumb || DefaultFace}
                         alt="profile"
                     />
