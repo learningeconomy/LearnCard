@@ -29,6 +29,7 @@ type VC2BackFaceProps = {
     issueHistory?: IssueHistory[];
     showBackButton?: boolean;
     showFrontFace: () => void;
+    customIssueHistoryComponent?: React.ReactNode;
 };
 
 const VC2BackFace: React.FC<VC2BackFaceProps> = ({
@@ -41,6 +42,7 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
     issueHistory,
     showBackButton,
     showFrontFace,
+    customIssueHistoryComponent,
 }) => {
     const expiration = credential.expirationDate
         ? format(new Date(credential.expirationDate), 'MMM dd, yyyy')
@@ -91,7 +93,10 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
             {/* {skillsObject && <SkillsBox skillsObject={skillsObject} />} */}
 
             {issueHistory && issueHistory?.length > 0 && (
-                <IssueHistoryBox issueHistory={issueHistory} />
+                <IssueHistoryBox
+                    issueHistory={issueHistory}
+                    customIssueHistoryComponent={customIssueHistoryComponent}
+                />
             )}
 
             {credential.attachments && credential.attachments.length > 0 && (

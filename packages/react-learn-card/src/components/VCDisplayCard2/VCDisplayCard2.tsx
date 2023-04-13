@@ -41,6 +41,7 @@ export type VCDisplayCard2Props = {
     customFooterComponent?: React.ReactNode;
     customBodyCardComponent?: React.ReactNode;
     customThumbComponent?: React.ReactNode;
+    customIssueHistoryComponent?: React.ReactNode;
     issueHistory?: IssueHistory[];
     titleOverride?: string;
     showBackButton?: boolean;
@@ -64,6 +65,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     customFooterComponent,
     customBodyCardComponent,
     customThumbComponent,
+    customIssueHistoryComponent,
     issueHistory,
     titleOverride,
     showBackButton = true,
@@ -201,6 +203,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                             onMediaAttachmentClick={onMediaAttachmentClick}
                             showBackButton={showBackButton}
                             showFrontFace={() => setIsFront(true)}
+                            customIssueHistoryComponent={customIssueHistoryComponent}
                         />
                     )}
                     <button

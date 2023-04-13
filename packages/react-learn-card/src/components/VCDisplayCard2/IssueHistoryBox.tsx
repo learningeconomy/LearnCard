@@ -5,10 +5,14 @@ import { IssueHistory } from '../../types';
 
 type SkillsBoxProps = {
     issueHistory: IssueHistory[];
+    customIssueHistoryComponent?: React.ReactNode;
 };
 
-const IssueHistoryBox: React.FC<SkillsBoxProps> = ({ issueHistory }) => {
-    const renderIssueHistory = issueHistory?.map(issueItem => {
+const IssueHistoryBox: React.FC<SkillsBoxProps> = ({
+    issueHistory,
+    customIssueHistoryComponent,
+}) => {
+    let renderIssueHistory = issueHistory?.map(issueItem => {
         return (
             <div
                 className="flex items-center issue-log-item border-b-[1px] py-[5px] border-grayscale-200 border-solid w-full"
@@ -32,6 +36,10 @@ const IssueHistoryBox: React.FC<SkillsBoxProps> = ({ issueHistory }) => {
             </div>
         );
     });
+
+    if (customIssueHistoryComponent) {
+        renderIssueHistory = customIssueHistoryComponent;
+    }
 
     return (
         <div className="bg-white flex flex-col items-start gap-[10px] rounded-[20px] shadow-bottom px-[15px] py-[20px] w-full relative">
