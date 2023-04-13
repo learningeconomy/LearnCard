@@ -53,6 +53,7 @@ BoostCredentialTest.args = {
     //customThumbComponent: <div>Custom thumb component</div>,
     // customFooterComponent: <div>Custom Footer</div>,
     // customBodyCardComponent: <div>Custom Body</div>,
+    // customIssueHistoryComponent: <div>Custom Issuer History</div>,
     verificationItems: [
         TestVerificationItems.SUCCESS.PROOF,
         TestVerificationItems.SUCCESS.NOT_EXPIRED,
