@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 
 type TruncateTextBoxProps = {
     headerText: string;
+    headerClassName?: string;
 
     // the text to be truncated if it's too long
     text: string;
@@ -15,6 +16,7 @@ type TruncateTextBoxProps = {
 
 const TruncateTextBox: React.FC<TruncateTextBoxProps> = ({
     headerText,
+    headerClassName = '',
     text,
     truncateThreshold = 132,
     children,
@@ -30,7 +32,9 @@ const TruncateTextBox: React.FC<TruncateTextBoxProps> = ({
         <div
             className={`${className} bg-white flex flex-col items-start gap-[10px] rounded-[20px] shadow-bottom px-[15px] py-[20px] w-full"`}
         >
-            <h3 className="text-[20px] leading-[20px] text-grayscale-900">{headerText}</h3>
+            <h3 className={`${headerClassName} text-[20px] leading-[20px] text-grayscale-900`}>
+                {headerText}
+            </h3>
 
             <p className="text-[12px] text-grayscale-700 leading-[18px] font-poppins font-[400] mb-0">
                 {displayText}

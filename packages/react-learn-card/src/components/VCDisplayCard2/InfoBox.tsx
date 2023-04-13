@@ -14,7 +14,7 @@ const InfoBox: React.FC<InfoBoxProps> = ({ text, handleClose, backgroundColor = 
             style={{ backgroundColor: bgColorWithOpacity }}
         >
             {text}{' '}
-            <button onClick={handleClose} className="text-indigo-500 font-[700]">
+            <button onClick={handleClose} className="text-indigo-500 font-[700] select-none">
                 Close
             </button>
         </div>

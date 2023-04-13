@@ -1,5 +1,11 @@
 # @learncard/helpers
 
+## 1.0.3
+
+### Patch Changes
+
+-   No change, just forcible version bump
+
 ## 1.0.2
 
 ### Patch Changes

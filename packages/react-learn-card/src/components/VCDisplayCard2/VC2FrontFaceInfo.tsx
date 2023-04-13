@@ -41,7 +41,11 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
         if (overrideComponent) return overrideComponent;
 
         return (
-            <img className="h-full w-full object-cover" src={imageUrl || DefaultFace} alt={alt} />
+            <img
+                className="h-full w-full object-cover select-none"
+                src={imageUrl || DefaultFace}
+                alt={alt}
+            />
         );
     };
 

@@ -1,5 +1,14 @@
 # learn-card-core
 
+## 8.5.5
+
+### Patch Changes
+
+-   No change, just forcible version bump
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.0.3
+
 ## 8.5.4
 
 ### Patch Changes

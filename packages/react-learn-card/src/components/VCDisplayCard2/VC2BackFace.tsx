@@ -48,11 +48,16 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
         ? format(new Date(credential.expirationDate), 'MMM dd, yyyy')
         : undefined;
 
+    const isExpired =
+        credential.expirationDate &&
+        Number(new Date(credential.expirationDate)) < Number(new Date());
+
     const achievement =
         'achievement' in credential.credentialSubject
             ? credential.credentialSubject.achievement
             : undefined;
     const criteria = achievement?.criteria?.narrative;
+    const description = achievement?.description;
 
     /* 
     const tags = credential.credentialSubject.achievement?.tag;
@@ -64,7 +69,7 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
             {showBackButton && (
                 <div className="w-full">
                     <button
-                        className="vc-card-back-button rounded-full h-[50px] px-[15px] flex items-center justify-center gap-[5px] z-50 text-[30px] text-white"
+                        className="vc-card-back-button rounded-full h-[50px] px-[15px] flex items-center justify-center gap-[5px] z-50 text-[30px] text-white select-none"
                         onClick={showFrontFace}
                     >
                         <LeftArrow className="text-white" size="25" />
@@ -73,17 +78,15 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
                 </div>
             )}
 
-            <TruncateTextBox
-                headerText="About"
-                text={achievement?.description}
-                className="description-box"
-            >
-                {expiration && (
-                    <p className="text-grayscale-800 font-poppins font-[600] text-[12px] leading-[18px] mb-0">
-                        Expires on {expiration}
-                    </p>
-                )}
-            </TruncateTextBox>
+            {(description || expiration) && (
+                <TruncateTextBox headerText="About" text={description} className="description-box">
+                    {expiration && (
+                        <p className="text-grayscale-800 font-poppins font-[600] text-[12px] leading-[18px] mb-0">
+                            Expire{isExpired ? 'd' : 's'} on {expiration}
+                        </p>
+                    )}
+                </TruncateTextBox>
+            )}
             {criteria && (
                 <TruncateTextBox headerText="Criteria" text={criteria} className="criteria-box" />
             )}

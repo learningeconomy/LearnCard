@@ -225,7 +225,7 @@ export const getLearnCardNetworkPlugin = async (
 
                 return client.profile.unblockProfile.mutate({ profileId });
             },
-            getBlockedProfiles: async _learnCard => {
+            getBlockedProfiles: async () => {
                 if (!userData) throw new Error('Please make an account first!');
 
                 return client.profile.blocked.query();
@@ -325,12 +325,17 @@ export const getLearnCardNetworkPlugin = async (
 
                 return client.boost.createBoost.mutate({ credential, ...metadata });
             },
+            getBoost: async (_learnCard, uri) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.boost.getBoost.query({ uri });
+            },
             getBoosts: async () => {
                 if (!userData) throw new Error('Please make an account first!');
 
                 return client.boost.getBoosts.query();
             },
-            getBoostRecipients: async (_learnCard, uri, limit = 25, skip) => {
+            getBoostRecipients: async (_learnCard, uri, limit = 25, skip = undefined) => {
                 if (!userData) throw new Error('Please make an account first!');
 
                 return client.boost.getBoostRecipients.query({ uri, limit, skip });
@@ -362,6 +367,7 @@ export const getLearnCardNetworkPlugin = async (
 
                 const boost = data.data;
 
+                boost.issuanceDate = new Date().toISOString();
                 boost.issuer = _learnCard.id.did();
 
                 if (Array.isArray(boost.credentialSubject)) {
@@ -397,12 +403,16 @@ export const getLearnCardNetworkPlugin = async (
                 return client.boost.sendBoost.mutate({ profileId, uri: boostUri, credential });
             },
 
-            registerSigningAuthority: async (_learnCard, endpoint, name, did) => {
+            registerSigningAuthority: async (_learnCard, endpoint, name, _did) => {
                 if (!userData) throw new Error('Please make an account first!');
 
-                return client.profile.registerSigningAuthority.mutate({ endpoint, name, did });
+                return client.profile.registerSigningAuthority.mutate({
+                    endpoint,
+                    name,
+                    did: _did,
+                });
             },
-            getRegisteredSigningAuthorities: async (_learnCard, endpoint, name, did) => {
+            getRegisteredSigningAuthorities: async (_learnCard, _endpoint, _name, _did) => {
                 if (!userData) throw new Error('Please make an account first!');
 
                 return client.profile.signingAuthorities.query();

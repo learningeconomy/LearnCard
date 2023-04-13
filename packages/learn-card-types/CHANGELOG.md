@@ -1,5 +1,11 @@
 # learn-card-types
 
+## 5.2.7
+
+### Patch Changes
+
+-   No change, just forcible version bump
+
 ## 5.2.6
 
 ### Patch Changes

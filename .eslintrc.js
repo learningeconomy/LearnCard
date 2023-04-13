@@ -61,5 +61,6 @@ module.exports = {
         '@typescript-eslint/naming-convention': 'off',
         'react/require-default-props': 'off',
         'import/no-extraneous-dependencies': 'off',
+        '@typescript-eslint/no-unused-vars': 'off',
     },
 };

@@ -53,6 +53,53 @@ describe('Boosts', () => {
         });
     });
 
+    describe('getBoost', () => {
+        beforeEach(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+        });
+
+        afterAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+        });
+
+        it('should require full auth to get boost', async () => {
+            const uri = await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
+
+            await expect(noAuthClient.boost.getBoost({ uri })).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+            await expect(userA.clients.partialAuth.boost.getBoost({ uri })).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+        });
+
+        it('should allow getting boosts', async () => {
+            const uri = await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
+
+            await expect(userA.clients.fullAuth.boost.getBoost({ uri })).resolves.not.toThrow();
+
+            const boost = await userA.clients.fullAuth.boost.getBoost({ uri });
+
+            expect(boost).toBeDefined();
+        });
+
+        it("should not allow getting someone else's boosts", async () => {
+            const uri = await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
+
+            await expect(userA.clients.fullAuth.boost.getBoost({ uri })).resolves.not.toThrow();
+
+            await expect(userB.clients.partialAuth.boost.getBoost({ uri })).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+        });
+    });
+
     describe('getBoosts', () => {
         beforeEach(async () => {
             await Profile.delete({ detach: true, where: {} });
@@ -668,6 +715,49 @@ describe('Boosts', () => {
                 await expect(
                     userC.clients.fullAuth.boost.claimBoostWithLink({ boostUri: uri, challenge })
                 ).resolves.not.toThrow();
+            } else {
+                expect(sa).toBeDefined();
+            }
+        });
+
+        it("should auto-accept a boost you've claimed", async () => {
+            const boosts = await userA.clients.fullAuth.boost.getBoosts();
+            const uri = boosts[0]!.uri;
+
+            const sa = await userA.clients.fullAuth.profile.signingAuthority({
+                endpoint: 'http://localhost:5000/api',
+                name: 'mysa',
+            });
+            if (sa) {
+                const claimLinkSA = {
+                    endpoint: sa.signingAuthority.endpoint,
+                    name: sa.relationship.name,
+                };
+                const challenge = 'mychallenge';
+
+                await expect(
+                    userA.clients.fullAuth.boost.generateClaimLink({
+                        boostUri: uri,
+                        challenge,
+                        claimLinkSA,
+                    })
+                ).resolves.toMatchObject({
+                    boostUri: uri,
+                    challenge,
+                });
+
+                // Verify user B doesn't have to accept the credential (it's implicitly accepted by claiming it)
+                await expect(
+                    userB.clients.fullAuth.boost.claimBoostWithLink({ boostUri: uri, challenge })
+                ).resolves.not.toThrow();
+
+                // Because it's accepted implicitly, it shouldn't show up in incoming credentials
+                const incoming = await userB.clients.fullAuth.credential.incomingCredentials();
+                expect(incoming[0]).toBeUndefined();
+
+                // And it should show up in received credentials.
+                const credentials = await userB.clients.fullAuth.credential.receivedCredentials();
+                expect(credentials[0]).toBeDefined();
             } else {
                 expect(sa).toBeDefined();
             }

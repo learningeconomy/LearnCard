@@ -119,6 +119,45 @@ export const boostsRouter = t.router({
             return getBoostUri(boost.id, ctx.domain);
         }),
 
+    getBoost: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/boost/{uri}',
+                tags: ['Boosts'],
+                summary: 'Get boost',
+                description: 'This endpoint gets metadata about a boost',
+            },
+        })
+        .input(z.object({ uri: z.string() }))
+        .output(
+            BoostValidator.omit({ id: true, boost: true }).extend({
+                uri: z.string(),
+                boost: UnsignedVCValidator,
+            })
+        )
+        .query(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+
+            const { uri } = input;
+
+            const boost = await getBoostByUri(uri);
+
+            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            if (!(await isProfileBoostOwner(profile, boost))) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile does not own boost',
+                });
+            }
+
+            const { id, boost: _boost, ...remaining } = boost.dataValues;
+
+            return { ...remaining, boost: JSON.parse(_boost), uri: getBoostUri(id, ctx.domain) };
+        }),
+
     getBoosts: profileRoute
         .meta({
             openapi: {
@@ -172,7 +211,7 @@ export const boostsRouter = t.router({
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
             //TODO: Should we restrict who can see the recipients of a boost? Maybe to Boost owner / people who have the boost?
-            return await getBoostRecipients(boost, { limit, skip });
+            return getBoostRecipients(boost, { limit, skip });
         }),
     updateBoost: profileRoute
         .meta({
@@ -347,16 +386,16 @@ export const boostsRouter = t.router({
             const { profile } = ctx.user;
             const { boostUri, challenge } = input;
 
-            const claimLinkSA = await getClaimLinkSAInfoForBoost(boostUri, challenge);
-
+            const [claimLinkSA, boost] = await Promise.all([
+                getClaimLinkSAInfoForBoost(boostUri, challenge),
+                getBoostByUri(boostUri),
+            ]);
             if (!claimLinkSA) {
                 throw new TRPCError({
                     code: 'NOT_FOUND',
                     message: `Challenge not found for ${boostUri}`,
                 });
             }
-
-            const boost = await getBoostByUri(boostUri);
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
             const boostOwner = await getBoostOwner(boost);

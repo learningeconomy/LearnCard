@@ -9,7 +9,10 @@ import { constructUri } from './uri.helpers';
 import { storeCredential } from '@accesslayer/credential/create';
 import { createBoostInstanceOfRelationship } from '@accesslayer/boost/relationships/create';
 import { isEncrypted } from './types.helpers';
-import { createSentCredentialRelationship } from '@accesslayer/credential/relationships/create';
+import {
+    createSentCredentialRelationship,
+    createReceivedCredentialRelationship,
+} from '@accesslayer/credential/relationships/create';
 import { getCredentialUri } from './credential.helpers';
 import { getLearnCard } from './learnCard.helpers';
 import { issueCredentialWithSigningAuthority } from './signingAuthority.helpers';
@@ -217,7 +220,8 @@ export const sendBoost = async (
     boost: BoostInstance,
     credential: VC | JWE,
     domain: string,
-    skipNotification: boolean = false
+    skipNotification: boolean = false,
+    autoAcceptCredential: boolean = false
 ): Promise<string> => {
     const decryptedCredential = await decryptCredential(credential);
     let boostUri: string | undefined;
@@ -226,8 +230,14 @@ export const sendBoost = async (
         const certifiedBoost = await issueCertifiedBoost(boost, decryptedCredential, domain);
         if (certifiedBoost) {
             const credentialInstance = await storeCredential(certifiedBoost);
-            await createBoostInstanceOfRelationship(credentialInstance, boost);
-            await createSentCredentialRelationship(from, to, credentialInstance);
+
+            await Promise.all([
+                createBoostInstanceOfRelationship(credentialInstance, boost),
+                createSentCredentialRelationship(from, to, credentialInstance),
+                ...(autoAcceptCredential
+                    ? [createReceivedCredentialRelationship(to, from, credentialInstance)]
+                    : []),
+            ]);
 
             boostUri = getCredentialUri(credentialInstance.id, domain);
             console.log('🚀 sendBoost:boost certified', boostUri);
@@ -237,8 +247,14 @@ export const sendBoost = async (
     } else {
         // TODO: Should we warn them if they send a credential that can't be decrypted?
         const credentialInstance = await storeCredential(credential);
-        await createBoostInstanceOfRelationship(credentialInstance, boost);
-        await createSentCredentialRelationship(from, to, credentialInstance);
+
+        await Promise.all([
+            createBoostInstanceOfRelationship(credentialInstance, boost),
+            createSentCredentialRelationship(from, to, credentialInstance),
+            ...(autoAcceptCredential
+                ? [createReceivedCredentialRelationship(to, from, credentialInstance)]
+                : []),
+        ]);
 
         boostUri = getCredentialUri(credentialInstance.id, domain);
         console.log('🚀 sendBoost:boost sent uncertified', boostUri);
@@ -332,7 +348,7 @@ export const issueClaimLinkBoost = async (
             id: subject.did,
         }));
     } else {
-        boostCredential.credentialSubject.id = getDidWeb(domain, to.did);
+        boostCredential.credentialSubject.id = getDidWeb(domain, to.profileId);
     }
 
     // Embed the boostURI into the boost credential for verification purposes.
@@ -355,5 +371,5 @@ export const issueClaimLinkBoost = async (
     //     .getDIDObject()
     //     .createDagJWE(vc, [userData.did, targetProfile.did, lcnDid]);
 
-    return sendBoost(from, to, boost, vc, domain, true);
+    return sendBoost(from, to, boost, vc, domain, true, true);
 };
