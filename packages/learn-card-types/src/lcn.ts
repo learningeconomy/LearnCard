@@ -77,8 +77,8 @@ export type LCNNotificationData = z.infer<typeof LCNNotificationDataValidator>;
 
 export const LCNNotificationValidator = z.object({
     type: LCNNotificationTypeEnumValidator,
-    to: z.string().or(LCNProfileValidator),
-    from: z.string().or(LCNProfileValidator),
+    to: LCNProfileValidator.partial().and(z.object({ did: z.string() })),
+    from: LCNProfileValidator.partial().and(z.object({ did: z.string() })),
     message: LCNNotificationMessageValidator.optional(),
     data: LCNNotificationDataValidator.optional(),
     sent: z.string().datetime().optional(),

@@ -16,13 +16,13 @@ export async function sendNotification(notification: LCNNotification) {
             notificationsWebhook = notification.to.notificationsWebhook;
             notification.to.did = getDidWeb(
                 process.env.DOMAIN_NAME ?? 'network.learncard.com',
-                notification.to.profileId
+                notification.to.profileId ?? ''
             );
         }
         if (typeof notification.from !== 'string') {
             notification.from.did = getDidWeb(
                 process.env.DOMAIN_NAME ?? 'network.learncard.com',
-                notification.from.profileId
+                notification.from.profileId ?? ''
             );
         }
         if (!notification.sent) {
@@ -59,13 +59,14 @@ export async function sendNotification(notification: LCNNotification) {
 
             const res = await response.json();
 
-            if (!res) {
-                throw new Error(res);
-            }
+            if (!res) throw new Error(res);
 
             const validationResult = await z.boolean().spa(res);
-            if (!validationResult.success)
+
+            if (!validationResult.success) {
                 throw new Error('Notifications Endpoint returned a malformed result');
+            }
+
             return validationResult.data;
         }
     } catch (error) {
