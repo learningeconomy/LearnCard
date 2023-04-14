@@ -1,5 +1,14 @@
 # @learncard/cli
 
+## 3.0.19
+
+### Patch Changes
+
+-   Updated dependencies [[`74e459d`](https://github.com/learningeconomy/LearnCard/commit/74e459d0089497cbf031d18305f33fa539f2a96f)]:
+    -   @learncard/types@5.2.9
+    -   @learncard/network-plugin@1.4.10
+    -   @learncard/core@8.5.5
+
 ## 3.0.18
 
 ### Patch Changes
