@@ -1,5 +1,11 @@
 # learn-card-types
 
+## 5.2.8
+
+### Patch Changes
+
+-   [#289](https://github.com/learningeconomy/LearnCard/pull/289) [`4787227`](https://github.com/learningeconomy/LearnCard/commit/4787227c2e8a2b4ffa4c8b177920f80feed8a64b) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Update notification type to not possibly be a string
+
 ## 5.2.7
 
 ### Patch Changes

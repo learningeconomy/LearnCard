@@ -1,5 +1,16 @@
 # @learncard/network-brain-service
 
+## 1.4.7
+
+### Patch Changes
+
+-   [#289](https://github.com/learningeconomy/LearnCard/pull/289) [`4787227`](https://github.com/learningeconomy/LearnCard/commit/4787227c2e8a2b4ffa4c8b177920f80feed8a64b) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Don't send a notification when self-boosting
+
+-   Updated dependencies [[`4787227`](https://github.com/learningeconomy/LearnCard/commit/4787227c2e8a2b4ffa4c8b177920f80feed8a64b)]:
+    -   @learncard/types@5.2.8
+    -   @learncard/core@8.5.5
+    -   @learncard/did-web-plugin@1.0.2
+
 ## 1.4.6
 
 ### Patch Changes
