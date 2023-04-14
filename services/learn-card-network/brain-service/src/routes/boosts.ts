@@ -90,7 +90,14 @@ export const boostsRouter = t.router({
                 });
             }
 
-            return sendBoost(profile, targetProfile, boost, credential, ctx.domain);
+            return sendBoost(
+                profile,
+                targetProfile,
+                boost,
+                credential,
+                ctx.domain,
+                profile.profileId === targetProfile.profileId
+            );
         }),
 
     createBoost: profileRoute
