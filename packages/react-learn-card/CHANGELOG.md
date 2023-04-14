@@ -1,5 +1,14 @@
 # @welibraryos/react-learn-card
 
+## 2.5.17
+
+### Patch Changes
+
+-   [#289](https://github.com/learningeconomy/LearnCard/pull/289) [`4787227`](https://github.com/learningeconomy/LearnCard/commit/4787227c2e8a2b4ffa4c8b177920f80feed8a64b) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Don't show check if it's not needed in VCDisplayCard2
+
+-   Updated dependencies []:
+    -   @learncard/core@8.5.5
+
 ## 2.5.16
 
 ### Patch Changes
