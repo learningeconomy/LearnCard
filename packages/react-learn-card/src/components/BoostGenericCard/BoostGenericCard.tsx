@@ -42,7 +42,11 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
                     <img className="h-full w-full object-cover overflow-hidden" src={bgImgSrc} />
                 </section>
             )}
-            <div className="boost-small-card inner-click-containe z-10" onClick={handleInnerClick}>
+            <button
+                type="button"
+                className="boost-small-card inner-click-containe z-10"
+                onClick={handleInnerClick}
+            >
                 {customThumbComponent && customThumbComponent}
                 {!customThumbComponent && (
                     <section className={defaultThumbClass}>
@@ -85,7 +89,7 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
                         />
                     </div>
                 )}
-            </div>
+            </button>
         </div>
     );
 };

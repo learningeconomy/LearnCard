@@ -225,11 +225,15 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 {customFooterComponent && customFooterComponent}
                 {!customFooterComponent && (
                     <>
-                        <VCVerificationCheckWithSpinner
-                            spinnerSize="40px"
-                            size={'32px'}
-                            loading={verificationInProgress}
-                        />
+                        {worstVerificationStatus === VerificationStatusEnum.Failed ? (
+                            <div className="w-[40px]" role="presentation" />
+                        ) : (
+                            <VCVerificationCheckWithSpinner
+                                spinnerSize="40px"
+                                size={'32px'}
+                                loading={verificationInProgress}
+                            />
+                        )}
                         <div className="vc-footer-text font-montserrat flex flex-col items-center justify-center text-[12px] font-[700] leading-[15px] select-none">
                             <span className="text-[#4F4F4F]">Verified Credential</span>
                             <span
