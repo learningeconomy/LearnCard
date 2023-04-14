@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.5.16
+
+### Patch Changes
+
+-   [#287](https://github.com/learningeconomy/LearnCard/pull/287) [`337e061`](https://github.com/learningeconomy/LearnCard/commit/337e061c0eef5ade2d5f7cc36f5e84e5dd4d5f12) Thanks [@gerardopar](https://github.com/gerardopar)! - Support custom issue history component
+
 ## 2.5.15
 
 ### Patch Changes
