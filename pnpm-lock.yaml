@@ -929,7 +929,7 @@ importers:
         specifier: 8.5.5
         version: link:../../packages/learn-card-core
       '@learncard/types':
-        specifier: 5.2.8
+        specifier: 5.2.9
         version: link:../../packages/learn-card-types
       '@rollup/plugin-json':
         specifier: ^4.1.0
