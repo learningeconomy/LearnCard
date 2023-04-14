@@ -62,6 +62,9 @@ jobs:
       - name: Build libs
         run: pnpm exec nx affected --target=build --base=HEAD~1 --head=HEAD
 
+      - name: "[DEBUG] Check git status"
+        run: git status
+
       - name: Create Release Pull Request or Publish to npm
         id: changesets
         uses: changesets/action@v1
