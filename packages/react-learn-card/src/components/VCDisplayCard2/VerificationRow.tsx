@@ -28,7 +28,9 @@ const VerificationRow: React.FC<VerificationRowProps> = ({ verification }) => {
         }
     };
 
-    let primaryText = `${verification.check}: ${verification.message}`;
+    let primaryText = verification.check
+        ? `${verification.check}: ${verification.message}`
+        : verification.message;
     if (verification.status === VerificationStatusEnum.Failed) {
         primaryText = verification.message ?? verification.details ?? '';
     }
