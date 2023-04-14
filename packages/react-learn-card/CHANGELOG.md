@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.5.19
+
+### Patch Changes
+
+-   [#292](https://github.com/learningeconomy/LearnCard/pull/292) [`e081c19`](https://github.com/learningeconomy/LearnCard/commit/e081c19cb9c3d1a4ae45a7a47b120ec16287d9df) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Small style fixes for VC Cards
+
 ## 2.5.18
 
 ### Patch Changes
