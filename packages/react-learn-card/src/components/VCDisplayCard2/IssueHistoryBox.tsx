@@ -37,14 +37,10 @@ const IssueHistoryBox: React.FC<SkillsBoxProps> = ({
         );
     });
 
-    if (customIssueHistoryComponent) {
-        renderIssueHistory = customIssueHistoryComponent;
-    }
-
     return (
         <div className="bg-white flex flex-col items-start gap-[10px] rounded-[20px] shadow-bottom px-[15px] py-[20px] w-full relative">
             <h3 className="text-[20px] leading-[20px] text-grayscale-900">Issue Log</h3>
-            {renderIssueHistory}
+            {!customIssueHistoryComponent ? renderIssueHistory : customIssueHistoryComponent}
         </div>
     );
 };
