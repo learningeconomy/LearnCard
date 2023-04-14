@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const LCNProfileValidator = z.object({
-    profileId: z.string().min(3).max(40),
+    profileId: z.string().min(3).max(40).optional(),
     displayName: z.string().default(''),
     did: z.string(),
     email: z.string().optional(),
@@ -77,8 +77,8 @@ export type LCNNotificationData = z.infer<typeof LCNNotificationDataValidator>;
 
 export const LCNNotificationValidator = z.object({
     type: LCNNotificationTypeEnumValidator,
-    to: z.string().or(LCNProfileValidator),
-    from: z.string().or(LCNProfileValidator),
+    to: LCNProfileValidator,
+    from: LCNProfileValidator,
     message: LCNNotificationMessageValidator.optional(),
     data: LCNNotificationDataValidator.optional(),
     sent: z.string().datetime().optional(),
