@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 1.4.11
+
+### Patch Changes
+
+-   Empty version bump
+
 ## 1.4.10
 
 ### Patch Changes
