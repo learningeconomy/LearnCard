@@ -64,5 +64,18 @@ export const acceptCredential = async (profile: ProfileInstance, uri: string): P
 
     await createReceivedCredentialRelationship(profile, pendingVc.source, pendingVc.target);
 
+    await sendNotification({
+        type: LCNNotificationTypeEnumValidator.enum.BOOST_ACCEPTED,
+        to: pendingVc.source,
+        from: profile,
+        message: {
+            title: 'Boost Accepted',
+            body: `${profile.displayName} has accepted your boost!`,
+        },
+        data: {
+            vcUris: [uri],
+        },
+    });
+
     return true;
 };
