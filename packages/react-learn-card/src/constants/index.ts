@@ -54,5 +54,5 @@ export const TYPE_TO_WALLET_DARK_COLOR = {
     [WalletCategoryTypes.learningHistory]: 'emerald-500',
     [WalletCategoryTypes.currency]: 'cyan-200',
     [WalletCategoryTypes.skills]: 'indigo-400',
-    [WalletCategoryTypes.socialBadge]: 'cyan-200',
+    [WalletCategoryTypes.socialBadge]: 'cyan-700',
 };
