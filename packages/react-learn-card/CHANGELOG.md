@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.5.20
+
+### Patch Changes
+
+-   [#295](https://github.com/learningeconomy/LearnCard/pull/295) [`2008848`](https://github.com/learningeconomy/LearnCard/commit/2008848ddfc34af0c1a92261b45ff0d7e15a0f59) Thanks [@goblincore](https://github.com/goblincore)! - Add additional options button on Boost display cards
+
 ## 2.5.19
 
 ### Patch Changes
