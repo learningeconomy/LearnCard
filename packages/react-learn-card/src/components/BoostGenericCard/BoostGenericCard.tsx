@@ -21,6 +21,7 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
     bgImgSrc,
     issuerName,
     dateDisplay,
+    optionsTriggerOnClick,
 }) => {
     const thumbClass = `bg-${TYPE_TO_WALLET_DARK_COLOR[type]}` ?? 'bg-grayscale-50';
     const defaultThumbClass = `small-boost-card-thumb flex h-[110px] w-[110px] my-[10px] mx-auto ${thumbClass} overflow-hidden flex-col justify-center items-center rounded-full ${customThumbClass}`;
@@ -32,6 +33,10 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
     const handleInnerClick = () => {
         innerOnClick?.();
     };
+
+    const handleOptionsClick = () => {
+        optionsTriggerOnClick?.();
+    }
 
     return (
         <div
@@ -67,7 +72,7 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
                 )}
 
                 <section className={defaultHeaderClass}>
-                    <p className="relative z-[100] small-boost-title text-[16px] leading-[130%] p-[0px] font-semibold text-center  text-grayscale-900 line-clamp-2">
+                    <p className="relative z-[100] small-boost-title text-[16px] leading-[130%] p-[0px] font-medium text-center  text-grayscale-900 line-clamp-2">
                         {title}
                     </p>
                 </section>
