@@ -65,11 +65,11 @@ export const BoostSmallCard: React.FC<BoostSmallCardProps> = ({
 
     return (
         <div
-            className={`flex generic-display-card-simple bg-white flex-col shadow-[0_0_8px_0px_rgba(0,0,0,0.2)] relative $ py-[0px] px-[0px] w-[160px] h-[280px] rounded-[20px] overflow-hidden ${className}`}
+            className={`flex generic-display-card-simple bg-white flex-col shadow-bottom relative $ py-[0px] px-[0px] w-[160px] h-[280px] rounded-[20px] overflow-hidden ${className}`}
         >
             {optionsTriggerOnClick && (
                 <section
-                    className="absolute cursor-pointer h-[30px] w-[30px] top-[5px] right-[5px] rounded-full overflow-hidden z-20 bg-white flex items-center justify-center"
+                    className="absolute shadow-bottom cursor-pointer h-[30px] w-[30px] top-[5px] right-[5px] rounded-full overflow-hidden z-20 bg-white flex items-center justify-center"
                     onClick={handleOptionsClick}
                 >
                     <img
