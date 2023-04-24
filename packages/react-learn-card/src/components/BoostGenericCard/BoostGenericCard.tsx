@@ -67,7 +67,7 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
                 )}
 
                 <section className={defaultHeaderClass}>
-                    <p className="relative z-[100] small-boost-title text-[17px] p-[0px] font-semibold text-center  text-grayscale-900 line-clamp-2">
+                    <p className="relative z-[100] small-boost-title text-[16px] leading-[130%] p-[0px] font-semibold text-center  text-grayscale-900 line-clamp-2">
                         {title}
                     </p>
                 </section>

@@ -32,7 +32,7 @@ export const BoostSmallCard: React.FC<BoostSmallCardProps> = ({
     const headerBgColor = `bg-${TYPE_TO_WALLET_DARK_COLOR[type]}` ?? 'bg-grayscale-900';
     const checkBtnClass = checkStatus ? 'generic-vc-card checked' : 'generic-vc-card unchecked';
     const defaultHeaderClass = `flex generic-card-title w-full justify-center ${customHeaderClass}`;
-    const defaultBodyClass = ` boost-small-card-body flex justify-center items-center text-center text-[14px] overflow-hidden text-grayscale-500 p-[10px] ${customBodyClass}`;
+    const defaultBodyClass = ` boost-small-card-body flex justify-center items-center text-center text-[14px] overflow-hidden text-grayscale-500 py-[5px] px-[10px] ${customBodyClass}`;
     const defaultButtonClass = `cursor-pointer small-boost-boost-btn flex shadow-bottom boost-btn-click rounded-[40px] w-[140px] h-[48px] text-white flex justify-center items-center ${headerBgColor}`;
     const innerClickContainerClass = `cursor-pointer boost-small-card inner-click-container z-10`;
 
@@ -87,7 +87,7 @@ export const BoostSmallCard: React.FC<BoostSmallCardProps> = ({
                 )}
 
                 <section className={defaultHeaderClass}>
-                    <p className="relative z-[100] small-boost-title text-[17px] p-[0px] font-semibold text-center line-clamp-2">
+                    <p className="relative z-[100] small-boost-title text-[16px] leading-[130%] p-[0px] font-semibold text-center line-clamp-2">
                         {title}
                     </p>
                 </section>
