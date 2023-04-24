@@ -87,7 +87,7 @@ export const BoostSmallCard: React.FC<BoostSmallCardProps> = ({
                 )}
 
                 <section className={defaultHeaderClass}>
-                    <p className="relative z-[100] small-boost-title text-[14px] p-[0px] font-bold text-center line-clamp-2">
+                    <p className="relative z-[100] small-boost-title text-[17px] p-[0px] font-semibold text-center line-clamp-2">
                         {title}
                     </p>
                 </section>
