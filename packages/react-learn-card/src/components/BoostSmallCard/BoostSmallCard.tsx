@@ -67,6 +67,18 @@ export const BoostSmallCard: React.FC<BoostSmallCardProps> = ({
         <div
             className={`flex generic-display-card-simple bg-white flex-col shadow-[0_0_8px_0px_rgba(0,0,0,0.2)] relative $ py-[0px] px-[0px] w-[160px] h-[280px] rounded-[20px] overflow-hidden ${className}`}
         >
+            {optionsTriggerOnClick && (
+                <section
+                    className="absolute cursor-pointer h-[30px] w-[30px] top-[5px] right-[5px] rounded-full overflow-hidden z-20 bg-white flex items-center justify-center"
+                    onClick={handleOptionsClick}
+                >
+                    <img
+                        className="h-[20px] w-[20px] object-cover overflow-hidden"
+                        src={ThreeDots}
+                    />
+                </section>
+            )}
+
             {bgImgSrc && (
                 <section className="absolute top-[-50px] left-[0px] rounded-b-full overflow-hidden z-0">
                     <img className="h-full w-full object-cover overflow-hidden" src={bgImgSrc} />
@@ -112,17 +124,6 @@ export const BoostSmallCard: React.FC<BoostSmallCardProps> = ({
                     )}
                 </section>
             </div>
-            {handleOptionsClick && (
-                <section
-                    className="absolute cursor-pointer h-[30px] w-[30px] top-[5px] right-[5px] rounded-full overflow-hidden z-20 bg-white flex items-center justify-center"
-                    onClick={handleOptionsClick}
-                >
-                    <img
-                        className="h-[20px] w-[20px] object-cover overflow-hidden"
-                        src={ThreeDots}
-                    />
-                </section>
-            )}
 
             <section className="small-boost-card-footer flex justify-center items-center absolute bottom-[15px] w-full">
                 {customButtonComponent && customButtonComponent}

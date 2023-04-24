@@ -20,4 +20,5 @@ BoostGenericCardTest.args = {
     dateDisplay: 'May 21, 2022',
     issuerName: 'Beau Bobby Bruce',
     innerOnClick: () => console.log('innerOnClick'),
+    optionsTriggerOnClick: () => console.log('//options trigger click'),
 };
