@@ -1,5 +1,6 @@
 import { InitInput } from '@didkit/index';
 
+import { CryptoPluginType } from '@wallet/plugins/crypto/types';
 import { DIDKitPlugin, DidMethod } from '@wallet/plugins/didkit/types';
 import { DidKeyPlugin } from '@wallet/plugins/didkey/types';
 import { VCPlugin } from '@wallet/plugins/vc/types';
@@ -31,7 +32,16 @@ export type LearnCardConfig = {
 export type EmptyLearnCard = InitFunction<
     {},
     'didkit' | 'debug',
-    LearnCard<[DIDKitPlugin, ExpirationPlugin, VCTemplatePlugin, CHAPIPlugin, LearnCardPlugin]>
+    LearnCard<
+        [
+            CryptoPluginType,
+            DIDKitPlugin,
+            ExpirationPlugin,
+            VCTemplatePlugin,
+            CHAPIPlugin,
+            LearnCardPlugin
+        ]
+    >
 >;
 
 /** @group Init Functions */
@@ -40,6 +50,7 @@ export type LearnCardFromSeed = InitFunction<
     keyof LearnCardConfig,
     LearnCard<
         [
+            CryptoPluginType,
             DIDKitPlugin,
             DidKeyPlugin<DidMethod>,
             VCPlugin,
@@ -60,7 +71,16 @@ export type LearnCardFromSeed = InitFunction<
 export type LearnCardFromVcApi = InitFunction<
     { vcApi: true | string; did?: string },
     'debug',
-    LearnCard<[VCAPIPlugin, ExpirationPlugin, VCTemplatePlugin, CHAPIPlugin, LearnCardPlugin]>
+    LearnCard<
+        [
+            CryptoPluginType,
+            VCAPIPlugin,
+            ExpirationPlugin,
+            VCTemplatePlugin,
+            CHAPIPlugin,
+            LearnCardPlugin
+        ]
+    >
 >;
 
 /** @group Init Functions */

@@ -1,4 +1,5 @@
 import { generateLearnCard } from '@wallet/base';
+import { CryptoPlugin } from '@wallet/plugins';
 import { getDidKitPlugin } from '@wallet/plugins/didkit';
 import { expirationPlugin } from '@wallet/plugins/expiration';
 import { getVCTemplatesPlugin } from '@wallet/plugins/vc-templates';
@@ -15,9 +16,9 @@ import { EmptyLearnCard } from 'types/LearnCard';
 export const emptyLearnCard = async ({ didkit, debug }: EmptyLearnCard['args'] = {}): Promise<
     EmptyLearnCard['returnValue']
 > => {
-    const didkitLc = await (
-        await generateLearnCard({ debug })
-    ).addPlugin(await getDidKitPlugin(didkit));
+    const cryptoLc = await (await generateLearnCard({ debug })).addPlugin(CryptoPlugin);
+
+    const didkitLc = await cryptoLc.addPlugin(await getDidKitPlugin(didkit));
 
     const expirationLc = await didkitLc.addPlugin(expirationPlugin(didkitLc));
 

@@ -1,5 +1,6 @@
 export * from './ceramic';
 export * from './chapi';
+export * from './crypto';
 export * from './didkey';
 export * from './didkit';
 export * from './EthereumPlugin';

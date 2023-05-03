@@ -1,4 +1,5 @@
 import { generateLearnCard } from '@wallet/base';
+import { CryptoPlugin } from '@wallet/plugins';
 import { DidMethod, getDidKitPlugin } from '@wallet/plugins/didkit';
 import { getDidKeyPlugin } from '@wallet/plugins/didkey';
 import { getVCPlugin } from '@wallet/plugins/vc';
@@ -29,9 +30,9 @@ export const learnCardFromSeed = async (
         debug,
     }: Partial<LearnCardConfig> = {}
 ): Promise<LearnCardFromSeed['returnValue']> => {
-    const didkitLc = await (
-        await generateLearnCard({ debug })
-    ).addPlugin(await getDidKitPlugin(didkit));
+    const cryptoLc = await (await generateLearnCard({ debug })).addPlugin(CryptoPlugin);
+
+    const didkitLc = await cryptoLc.addPlugin(await getDidKitPlugin(didkit));
 
     const didkeyLc = await didkitLc.addPlugin(
         await getDidKeyPlugin<DidMethod>(didkitLc, seed, 'key')

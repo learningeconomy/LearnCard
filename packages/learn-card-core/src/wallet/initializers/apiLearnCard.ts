@@ -1,4 +1,5 @@
 import { generateLearnCard } from '@wallet/base';
+import { CryptoPlugin } from '@wallet/plugins';
 import { getVCAPIPlugin } from '@wallet/plugins/vc-api';
 import { expirationPlugin } from '@wallet/plugins/expiration';
 import { getVCTemplatesPlugin } from '@wallet/plugins/vc-templates';
@@ -21,9 +22,9 @@ export const learnCardFromApiUrl = async ({
     did?: string;
     debug?: typeof console.log;
 }): Promise<LearnCardFromVcApi['returnValue']> => {
-    const apiLc = await (
-        await generateLearnCard({ debug })
-    ).addPlugin(await getVCAPIPlugin({ url, did }));
+    const cryptoLc = await (await generateLearnCard({ debug })).addPlugin(CryptoPlugin);
+
+    const apiLc = await cryptoLc.addPlugin(await getVCAPIPlugin({ url, did }));
 
     const expirationLc = await apiLc.addPlugin(expirationPlugin(apiLc));
 
