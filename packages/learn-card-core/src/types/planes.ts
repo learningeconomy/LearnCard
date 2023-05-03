@@ -1,6 +1,8 @@
 import { CredentialRecord, VC, VP, JWK } from '@learncard/types';
+import { Query } from 'sift';
 import { Plugin } from './wallet';
 import { OmitNevers } from './helpers';
+import { DeepPartial } from './utilities';
 
 export type CacheStrategy = 'cache-only' | 'cache-first' | 'skip-cache';
 
@@ -10,19 +12,23 @@ export type PlaneOptions = {
 
 export type ControlPlane = 'read' | 'store' | 'index' | 'cache' | 'id';
 
-export type FilterForPlane<Plugins extends Plugin[], Plane extends ControlPlane> = {
-    [Index in keyof Plugins]: undefined extends Plugins[Index][Plane]
+export type FilterForPlane<Plugins extends Plugin[], Plane extends ControlPlane> = [
+    Plugins
+] extends [1 & Plugins]
+    ? any
+    : {
+        [Index in keyof Plugins]: undefined extends Plugins[Index][Plane]
         ? never
         : Plugins[Index]['name'];
-}[number];
+    }[number];
 
 export type GetPlanesForPlugins<Plugins extends Plugin[]> = any[] extends Plugins
     ? never
     : {
-          [Index in keyof Plugins]: {
-              [Key in ControlPlane]: undefined extends Plugins[Index][Key] ? never : Key;
-          }[ControlPlane];
-      }[number];
+        [Index in keyof Plugins]: {
+            [Key in ControlPlane]: undefined extends Plugins[Index][Key] ? never : Key;
+        }[ControlPlane];
+    }[number];
 
 export type GetPlaneProviders<
     Plugins extends Plugin[],
@@ -30,16 +36,16 @@ export type GetPlaneProviders<
 > = any[] extends Plugins
     ? any
     : {
-          [Index in keyof Plugins]: undefined extends Plugins[Index][Plane]
-              ? never
-              : OmitNevers<{
-                    [Name in Plugins[number]['name']]: Name extends Plugins[Index]['name']
-                        ? { name: Name; displayName?: string; description?: string }
-                        : never;
-                }>;
-      }[number];
+        [Index in keyof Plugins]: undefined extends Plugins[Index][Plane]
+        ? never
+        : OmitNevers<{
+            [Name in Plugins[number]['name']]: Name extends Plugins[Index]['name']
+            ? { name: Name; displayName?: string; description?: string }
+            : never;
+        }>;
+    }[number];
 
-// --- Read ---
+// --- Read --- \\
 
 export type ReadPlane = {
     get: (uri?: string, options?: PlaneOptions) => Promise<VC | VP | undefined>;
@@ -51,7 +57,7 @@ export type LearnCardReadPlane<Plugins extends Plugin[]> = ReadPlane & {
     providers: GetPlaneProviders<Plugins, 'read'>;
 };
 
-// --- Store ---
+// --- Store --- \\
 
 export type EncryptionParams = {
     recipients: string[];
@@ -76,11 +82,11 @@ export type LearnCardStorePlane<Plugins extends Plugin[]> = Record<
     providers: GetPlaneProviders<Plugins, 'store'>;
 };
 
-// --- Index ---
+// --- Index --- \\
 
 export type IndexPlane = {
     get: <Metadata extends Record<string, any> = Record<never, never>>(
-        query?: Record<string, any>,
+        query?: Query<CredentialRecord<Metadata>>,
         options?: PlaneOptions
     ) => Promise<CredentialRecord<Metadata>[]>;
     add: <Metadata extends Record<string, any> = Record<never, never>>(
@@ -91,7 +97,11 @@ export type IndexPlane = {
         records: CredentialRecord<Metadata>[],
         options?: PlaneOptions
     ) => Promise<boolean>;
-    update: (id: string, updates: Record<string, any>, options?: PlaneOptions) => Promise<boolean>;
+    update: <Metadata extends Record<string, any> = Record<never, never>>(
+        id: string,
+        updates: DeepPartial<CredentialRecord<Metadata>>,
+        options?: PlaneOptions
+    ) => Promise<boolean>;
     remove: (id: string, options?: PlaneOptions) => Promise<boolean>;
     removeAll?: (options?: PlaneOptions) => Promise<boolean>;
 };
@@ -103,7 +113,7 @@ export type LearnCardIndexPlane<Plugins extends Plugin[]> = {
     providers: GetPlaneProviders<Plugins, 'index'>;
 } & Record<FilterForPlane<Plugins, 'index'>, IndexPlane>;
 
-// --- Cache ---
+// --- Cache --- \\
 
 export type CachePlane = {
     getIndex: <Metadata extends Record<string, any> = Record<never, never>>(
@@ -126,7 +136,7 @@ export type LearnCardCachePlane<Plugins extends Plugin[]> = CachePlane & {
     providers: GetPlaneProviders<Plugins, 'cache'>;
 };
 
-// --- Identity ---
+// --- Identity --- \\
 
 export type IdPlane = {
     did: (method?: string, options?: PlaneOptions) => string;
