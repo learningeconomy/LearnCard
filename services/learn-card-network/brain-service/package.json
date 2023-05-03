@@ -36,8 +36,9 @@
     },
     "dependencies": {
         "@learncard/core": "workspace:*",
-        "@learncard/types": "workspace:*",
         "@learncard/did-web-plugin": "workspace:*",
+        "@learncard/helpers": "workspace:*",
+        "@learncard/types": "workspace:*",
         "@trpc/client": "^10.17.0",
         "@trpc/server": "^10.17.0",
         "@types/lodash": "^4.14.191",

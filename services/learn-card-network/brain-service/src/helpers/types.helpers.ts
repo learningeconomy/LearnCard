@@ -1,5 +1,4 @@
 import Express from 'express';
-import { UnsignedVC, VC, UnsignedVP, VP, JWE } from '@learncard/types';
 
 export interface TypedRequest<
     Body extends Record<string, any> = {},
@@ -10,6 +9,3 @@ export interface TypedRequest<
     query: Query;
     params: Params;
 }
-
-export const isEncrypted = (item: UnsignedVC | VC | UnsignedVP | VP | JWE): item is JWE =>
-    'ciphertext' in item;

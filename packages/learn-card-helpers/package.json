@@ -40,5 +40,8 @@
     "ts-jest": "^28.0.5",
     "typescript": "^4.8.3"
   },
-  "types": "./dist/helpers.d.ts"
+  "types": "./dist/helpers.d.ts",
+  "dependencies": {
+    "@learncard/types": "workspace:*"
+  }
 }
