@@ -5,6 +5,7 @@ import { CircleCheckButton } from '../CircleCheckButton';
 import CaretRightFilled from '../../assets/images/CaretRightFilled.svg';
 import DefaultFace from '../../assets/images/default-face.jpeg';
 import AddAwardLight from '../../assets/images/addawardlight.svg';
+import ThreeDots from '../../assets/images/DotsThreeOutline.svg';
 
 export const BoostSmallCard: React.FC<BoostSmallCardProps> = ({
     title = 'Title Lorem Ipsum',
@@ -25,6 +26,7 @@ export const BoostSmallCard: React.FC<BoostSmallCardProps> = ({
     innerOnClick,
     issueHistory,
     bgImgSrc,
+    optionsTriggerOnClick,
 }) => {
     const thumbClass = `bg-${TYPE_TO_WALLET_DARK_COLOR[type]}` ?? 'bg-grayscale-50';
     const defaultThumbClass = `small-boost-card-thumb flex h-[110px] w-[110px] my-[10px] mx-auto ${thumbClass} overflow-hidden flex-col justify-center items-center rounded-full ${customThumbClass}`;
@@ -32,9 +34,9 @@ export const BoostSmallCard: React.FC<BoostSmallCardProps> = ({
     const headerBgColor = `bg-${TYPE_TO_WALLET_DARK_COLOR[type]}` ?? 'bg-grayscale-900';
     const checkBtnClass = checkStatus ? 'generic-vc-card checked' : 'generic-vc-card unchecked';
     const defaultHeaderClass = `flex generic-card-title w-full justify-center ${customHeaderClass}`;
-    const defaultBodyClass = ` boost-small-card-body flex justify-center items-center text-center text-[14px] overflow-hidden text-grayscale-500 p-[10px] ${customBodyClass}`;
+    const defaultBodyClass = ` boost-small-card-body flex justify-center items-center text-center text-[14px] overflow-hidden text-grayscale-500 py-[5px] px-[10px] ${customBodyClass}`;
     const defaultButtonClass = `cursor-pointer small-boost-boost-btn flex shadow-bottom boost-btn-click rounded-[40px] w-[140px] h-[48px] text-white flex justify-center items-center ${headerBgColor}`;
-    const innerClickContainerClass = `cursor-pointer boost-small-card inner-click-container z-10`;
+    const innerClickContainerClass = `relative cursor-pointer boost-small-card inner-click-container z-10`;
 
     const issueHistoryDisplay =
         issueHistory && issueHistory?.length > 3 ? issueHistory?.slice(0, 3) : issueHistory;
@@ -57,15 +59,32 @@ export const BoostSmallCard: React.FC<BoostSmallCardProps> = ({
         innerOnClick?.();
     };
 
+    const handleOptionsClick = () => {
+        optionsTriggerOnClick?.();
+    };
+
     return (
         <div
-            className={`flex generic-display-card-simple bg-white flex-col shadow-[0_0_8px_0px_rgba(0,0,0,0.2)] relative $ py-[0px] px-[0px] w-[160px] h-[280px] rounded-[20px] overflow-hidden ${className}`}
+            className={`flex generic-display-card-simple bg-white flex-col shadow-bottom relative $ py-[0px] px-[0px] w-[160px] h-[280px] rounded-[20px] overflow-hidden ${className}`}
         >
+            {optionsTriggerOnClick && (
+                <section
+                    className="absolute shadow-bottom cursor-pointer h-[30px] w-[30px] top-[5px] right-[5px] rounded-full overflow-hidden z-20 bg-white flex items-center justify-center"
+                    onClick={handleOptionsClick}
+                >
+                    <img
+                        className="h-[20px] w-[20px] object-cover overflow-hidden"
+                        src={ThreeDots}
+                    />
+                </section>
+            )}
+
             {bgImgSrc && (
                 <section className="absolute top-[-50px] left-[0px] rounded-b-full overflow-hidden z-0">
                     <img className="h-full w-full object-cover overflow-hidden" src={bgImgSrc} />
                 </section>
             )}
+
             <div className={innerClickContainerClass} onClick={handleInnerClick}>
                 {customThumbComponent && customThumbComponent}
                 {!customThumbComponent && (
@@ -87,7 +106,7 @@ export const BoostSmallCard: React.FC<BoostSmallCardProps> = ({
                 )}
 
                 <section className={defaultHeaderClass}>
-                    <p className="relative z-[100] small-boost-title text-[14px] p-[0px] font-bold text-center line-clamp-2">
+                    <p className="relative z-[100] small-boost-title text-[16px] leading-[130%] p-[0px] font-medium text-center line-clamp-2">
                         {title}
                     </p>
                 </section>

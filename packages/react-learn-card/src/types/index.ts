@@ -281,6 +281,7 @@ export type BoostSmallCardProps = {
     buttonOnClick?: () => void;
     onCheckClick?: () => void;
     innerOnClick?: () => void;
+    optionsTriggerOnClick?: () => void;
     issueHistory?: IssueHistory[];
     bgImgSrc?: string;
 };
@@ -299,6 +300,7 @@ export type BoostGenericCardProps = {
     innerOnClick?: () => void;
     bgImgSrc?: string;
     issuerName?: string;
+    optionsTriggerOnClick?: () => void;
     dateDisplay?: string;
 };
 
