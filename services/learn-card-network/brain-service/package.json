@@ -7,7 +7,7 @@
     "scripts": {
         "test": "jest -i",
         "test:watch": "jest -i --watch",
-        "build": "shx cp ../../../packages/learn-card-core/src/didkit/pkg/didkit_wasm_bg.wasm src/didkit_wasm_bg.wasm && node esbuild.mjs && tsc --p tsconfig.build.json",
+        "build": "shx rm -rf dist && shx cp ../../../packages/learn-card-core/src/didkit/pkg/didkit_wasm_bg.wasm src/didkit_wasm_bg.wasm && node esbuild.mjs && tsc --p tsconfig.build.json",
         "start": "PORT=3000 shx cp ../../../packages/learn-card-core/src/didkit/pkg/didkit_wasm_bg.wasm src/didkit_wasm_bg.wasm && serverless offline --httpPort 3000 --websocketPort 3001 --lambdaPort 3002 --albPort 3003",
         "start-p-4000": "PORT=4000 shx cp ../../../packages/learn-card-core/src/didkit/pkg/didkit_wasm_bg.wasm src/didkit_wasm_bg.wasm && serverless offline --httpPort 4000 --websocketPort 4001 --lambdaPort 4002 --albPort 4003",
         "dev": "pnpm start",
