@@ -3,6 +3,7 @@ import dns from 'node:dns';
 
 import repl from 'pretty-repl';
 import { initNetworkLearnCard, getLearnCardNetworkPlugin } from '@learncard/network-plugin';
+import { initLearnCloudLearnCard, getLearnCloudPlugin } from '@learncard/learn-cloud-plugin';
 import { initLearnCard, emptyLearnCard, learnCardFromSeed, getTestCache } from '@learncard/core';
 import types from '@learncard/types';
 import gradient from 'gradient-string';
@@ -47,6 +48,8 @@ program
         globalThis.initLearnCard = initLearnCard;
         globalThis.initNetworkLearnCard = initNetworkLearnCard;
         globalThis.getLearnCardNetworkPlugin = getLearnCardNetworkPlugin;
+        globalThis.initLearnCloudLearnCard = initLearnCloudLearnCard;
+        globalThis.getLearnCloudPlugin = getLearnCloudPlugin;
         globalThis.learnCard = await initLearnCard({
             seed,
             didkit: fs.readFile(require.resolve('@learncard/core/dist/didkit/didkit_wasm_bg.wasm')),
