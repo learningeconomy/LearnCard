@@ -89,6 +89,11 @@ export type IndexPlane = {
         query?: Query<CredentialRecord<Metadata>>,
         options?: PlaneOptions
     ) => Promise<CredentialRecord<Metadata>[]>;
+    getPage?: <Metadata extends Record<string, any> = Record<never, never>>(
+        query?: Query<CredentialRecord<Metadata>>,
+        paginationOptions?: { limit?: number; cursor?: string },
+        options?: PlaneOptions
+    ) => Promise<{ records: CredentialRecord<Metadata>[]; hasMore: boolean; cursor?: string }>;
     add: <Metadata extends Record<string, any> = Record<never, never>>(
         record: CredentialRecord<Metadata>,
         options?: PlaneOptions
