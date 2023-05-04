@@ -3,6 +3,7 @@ import {
     JWEValidator,
     EncryptedCredentialRecordValidator,
     EncryptedCredentialRecord,
+    PaginatedEncryptedCredentialRecordsValidator,
 } from '@learncard/types';
 
 import { t, didAndChallengeRoute } from '@routes';
@@ -20,6 +21,7 @@ import {
     deleteCredentialRecordsForDid,
 } from '@accesslayer/credential-record/delete';
 import { encryptObject } from '@helpers/encryption.helpers';
+import { PaginationOptionsValidator } from 'types/mongo';
 
 export const indexRouter = t.router({
     get: didAndChallengeRoute
@@ -34,17 +36,16 @@ export const indexRouter = t.router({
             },
         })
         .input(
-            z
-                .object({
-                    query: z.record(z.any()).or(JWEValidator).optional(),
-                    encrypt: z.boolean().default(true),
-                })
-                .default({})
+            PaginationOptionsValidator.extend({
+                limit: PaginationOptionsValidator.shape.limit.default(25),
+                query: z.record(z.any()).or(JWEValidator).optional(),
+                encrypt: z.boolean().default(true),
+            }).default({})
         )
-        .output(EncryptedCredentialRecordValidator.array().or(JWEValidator))
+        .output(PaginatedEncryptedCredentialRecordsValidator.or(JWEValidator))
         .query(async ({ ctx, input }) => {
             const learnCard = await getLearnCard();
-            const { query: _query, encrypt } = input;
+            const { query: _query, encrypt, limit, cursor } = input;
             const {
                 user: { did },
             } = ctx;
@@ -55,15 +56,24 @@ export const indexRouter = t.router({
                 query = await learnCard.invoke.getDIDObject().decryptDagJWE(query);
             }
 
-            const result = (await getCredentialRecordsForDid(did, query)).map(record => {
-                const { did: _did, _id, ...rest } = record;
+            const rawResults = await getCredentialRecordsForDid(did, query, cursor, limit + 1);
+            const results = rawResults.map(record => {
+                const { did: _did, _id, created: _created, modified: _modified, ...rest } = record;
 
                 return { ...rest, id: _id };
             });
 
-            if (encrypt) return encryptObject(result, ctx.domain, [did]);
+            const hasMore = results.length > limit;
 
-            return result;
+            const paginationResult = {
+                cursor: rawResults.at(hasMore ? -2 : -1)?.created.toISOString(),
+                hasMore,
+                records: results.slice(0, limit),
+            };
+
+            if (encrypt) return encryptObject(paginationResult, ctx.domain, [did]);
+
+            return paginationResult;
         }),
 
     add: didAndChallengeRoute

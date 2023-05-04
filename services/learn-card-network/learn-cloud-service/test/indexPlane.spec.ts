@@ -1,4 +1,4 @@
-import { JWE } from '@learncard/types';
+import { JWE, PaginatedEncryptedCredentialRecordsType } from '@learncard/types';
 import { isEncrypted } from '@learncard/helpers';
 
 import { getClient, getUser } from './helpers/getClient';
@@ -50,7 +50,7 @@ describe('Index', () => {
                 .getDIDObject()
                 .decryptDagJWE((await recordsPromise) as JWE);
 
-            expect(unencryptedRecords).toHaveLength(2);
+            expect(unencryptedRecords.records).toHaveLength(2);
         });
 
         it('should allow querying encrypted fields', async () => {
@@ -61,8 +61,8 @@ describe('Index', () => {
                 .getDIDObject()
                 .decryptDagJWE(encryptedRecords as JWE);
 
-            expect(records).toHaveLength(1);
-            expect(records[0]).toEqual(testRecordA);
+            expect(records.records).toHaveLength(1);
+            expect(records.records[0]).toEqual(testRecordA);
         });
 
         it('should allow multiple results when querying encrypted fields', async () => {
@@ -73,7 +73,7 @@ describe('Index', () => {
                 .getDIDObject()
                 .decryptDagJWE(encryptedRecords as JWE);
 
-            expect(records).toHaveLength(2);
+            expect(records.records).toHaveLength(2);
         });
 
         it('should allow querying unencrypted fields', async () => {
@@ -84,8 +84,64 @@ describe('Index', () => {
                 .getDIDObject()
                 .decryptDagJWE(encryptedRecords as JWE);
 
-            expect(records).toHaveLength(1);
-            expect(records[0]).toEqual(testRecordA);
+            expect(records.records).toHaveLength(1);
+            expect(records.records[0]).toEqual(testRecordA);
+        });
+
+        it('should have working pagination', async () => {
+            const old = new Date(1995, 4, 19);
+            const lessOld = new Date(2000, 4, 19);
+            const evenLessOld = new Date(2010, 4, 19);
+            const newIsh = new Date(2023, 4, 19);
+
+            const records = [
+                { ...testRecordA, created: old, id: '1' },
+                { ...testRecordA, created: lessOld, id: '2' },
+                { ...testRecordA, created: evenLessOld, id: '3' },
+                { ...testRecordA, created: newIsh, id: '4' },
+            ];
+
+            await userA.clients.fullAuth.index.removeAll();
+            await userA.clients.fullAuth.index.addMany({ records });
+
+            const initialResults = (await userA.clients.fullAuth.index.get({
+                limit: 2,
+                encrypt: false,
+            })) as PaginatedEncryptedCredentialRecordsType;
+
+            expect(initialResults.records).toHaveLength(2);
+            expect(initialResults.hasMore).toBeTruthy();
+            expect(initialResults.cursor).toEqual(lessOld.toISOString());
+
+            const nextResults = (await userA.clients.fullAuth.index.get({
+                limit: 2,
+                cursor: lessOld.toISOString(),
+                encrypt: false,
+            })) as PaginatedEncryptedCredentialRecordsType;
+
+            expect(nextResults.records).toHaveLength(2);
+            expect(nextResults.hasMore).toBeFalsy();
+            expect(nextResults.cursor).toEqual(newIsh.toISOString());
+
+            const middleResults = (await userA.clients.fullAuth.index.get({
+                limit: 2,
+                cursor: old.toISOString(),
+                encrypt: false,
+            })) as PaginatedEncryptedCredentialRecordsType;
+
+            expect(middleResults.records).toHaveLength(2);
+            expect(middleResults.hasMore).toBeTruthy();
+            expect(middleResults.cursor).toEqual(evenLessOld.toISOString());
+
+            const truncatedResults = (await userA.clients.fullAuth.index.get({
+                limit: 2,
+                cursor: evenLessOld.toISOString(),
+                encrypt: false,
+            })) as PaginatedEncryptedCredentialRecordsType;
+
+            expect(truncatedResults.records).toHaveLength(1);
+            expect(truncatedResults.hasMore).toBeFalsy();
+            expect(truncatedResults.cursor).toEqual(newIsh.toISOString());
         });
     });
 
@@ -114,55 +170,71 @@ describe('Index', () => {
         });
 
         it('should allow adding records', async () => {
-            const records = await userA.clients.fullAuth.index.get({ encrypt: false });
+            const records = (await userA.clients.fullAuth.index.get({
+                encrypt: false,
+            })) as PaginatedEncryptedCredentialRecordsType;
 
-            expect(records).toHaveLength(0);
+            expect(records.records).toHaveLength(0);
 
             const promise = userA.clients.fullAuth.index.add({ record: testRecordA });
             await expect(promise).resolves.not.toThrow();
 
-            const newRecords = await userA.clients.fullAuth.index.get({ encrypt: false });
+            const newRecords = (await userA.clients.fullAuth.index.get({
+                encrypt: false,
+            })) as PaginatedEncryptedCredentialRecordsType;
 
-            expect(newRecords).toHaveLength(1);
-            expect((newRecords as any)[0]).toEqual(testRecordA);
+            expect(newRecords.records).toHaveLength(1);
+            expect(newRecords.records[0]).toEqual(testRecordA);
         });
 
         it("should not add to someone else's records", async () => {
             await userA.clients.fullAuth.index.add({ record: testRecordA });
 
-            const userARecords = await userA.clients.fullAuth.index.get({ encrypt: false });
-            const userBRecords = await userB.clients.fullAuth.index.get({ encrypt: false });
+            const userARecords = (await userA.clients.fullAuth.index.get({
+                encrypt: false,
+            })) as PaginatedEncryptedCredentialRecordsType;
+            const userBRecords = (await userB.clients.fullAuth.index.get({
+                encrypt: false,
+            })) as PaginatedEncryptedCredentialRecordsType;
 
-            expect(userARecords).toHaveLength(1);
-            expect(userBRecords).toHaveLength(0);
+            expect(userARecords.records).toHaveLength(1);
+            expect(userBRecords.records).toHaveLength(0);
         });
 
         it('should allow adding a record with a custom ID', async () => {
-            const records = await userA.clients.fullAuth.index.get({ encrypt: false });
+            const records = (await userA.clients.fullAuth.index.get({
+                encrypt: false,
+            })) as PaginatedEncryptedCredentialRecordsType;
 
-            expect(records).toHaveLength(0);
+            expect(records.records).toHaveLength(0);
 
             const promise = userA.clients.fullAuth.index.add({ record: testRecordA });
             await expect(promise).resolves.not.toThrow();
 
-            const newRecords = await userA.clients.fullAuth.index.get({ encrypt: false });
+            const newRecords = (await userA.clients.fullAuth.index.get({
+                encrypt: false,
+            })) as PaginatedEncryptedCredentialRecordsType;
 
-            expect(newRecords).toHaveLength(1);
-            expect((newRecords as any)[0].id).toEqual(testRecordA.id);
+            expect(newRecords.records).toHaveLength(1);
+            expect(newRecords.records[0]!.id).toEqual(testRecordA.id);
         });
 
         it("Generate an ID for a record that doesn't have one", async () => {
-            const records = await userA.clients.fullAuth.index.get({ encrypt: false });
+            const records = (await userA.clients.fullAuth.index.get({
+                encrypt: false,
+            })) as PaginatedEncryptedCredentialRecordsType;
 
-            expect(records).toHaveLength(0);
+            expect(records.records).toHaveLength(0);
 
             const promise = userA.clients.fullAuth.index.add({ record: testRecordC });
             await expect(promise).resolves.not.toThrow();
 
-            const newRecords = await userA.clients.fullAuth.index.get({ encrypt: false });
+            const newRecords = (await userA.clients.fullAuth.index.get({
+                encrypt: false,
+            })) as PaginatedEncryptedCredentialRecordsType;
 
-            expect(newRecords).toHaveLength(1);
-            expect((newRecords as any)[0].id).toBeDefined();
+            expect(newRecords.records).toHaveLength(1);
+            expect(newRecords.records[0]!.id).toBeDefined();
         });
     });
 
@@ -193,32 +265,40 @@ describe('Index', () => {
         });
 
         it('should allow adding one record', async () => {
-            const records = await userA.clients.fullAuth.index.get({ encrypt: false });
+            const records = (await userA.clients.fullAuth.index.get({
+                encrypt: false,
+            })) as PaginatedEncryptedCredentialRecordsType;
 
-            expect(records).toHaveLength(0);
+            expect(records.records).toHaveLength(0);
 
             const promise = userA.clients.fullAuth.index.addMany({ records: [testRecordA] });
             await expect(promise).resolves.not.toThrow();
 
-            const newRecords = await userA.clients.fullAuth.index.get({ encrypt: false });
+            const newRecords = (await userA.clients.fullAuth.index.get({
+                encrypt: false,
+            })) as PaginatedEncryptedCredentialRecordsType;
 
-            expect(newRecords).toHaveLength(1);
-            expect((newRecords as any)[0]).toEqual(testRecordA);
+            expect(newRecords.records).toHaveLength(1);
+            expect(newRecords.records[0]).toEqual(testRecordA);
         });
 
         it('should allow adding many records', async () => {
-            const records = await userA.clients.fullAuth.index.get({ encrypt: false });
+            const records = (await userA.clients.fullAuth.index.get({
+                encrypt: false,
+            })) as PaginatedEncryptedCredentialRecordsType;
 
-            expect(records).toHaveLength(0);
+            expect(records.records).toHaveLength(0);
 
             const promise = userA.clients.fullAuth.index.addMany({
                 records: [testRecordA, testRecordB],
             });
             await expect(promise).resolves.not.toThrow();
 
-            const newRecords = await userA.clients.fullAuth.index.get({ encrypt: false });
+            const newRecords = (await userA.clients.fullAuth.index.get({
+                encrypt: false,
+            })) as PaginatedEncryptedCredentialRecordsType;
 
-            expect(newRecords).toHaveLength(2);
+            expect(newRecords.records).toHaveLength(2);
         });
     });
 
@@ -256,11 +336,11 @@ describe('Index', () => {
         });
 
         it('should allow updating a record', async () => {
-            const records = await userA.clients.fullAuth.index.get({ encrypt: false });
+            const records = (await userA.clients.fullAuth.index.get({
+                encrypt: false,
+            })) as PaginatedEncryptedCredentialRecordsType;
 
-            if (isEncrypted(records)) throw new Error('Check encrypt: false option in index.get');
-
-            const recordPreUpdate = records[0]!;
+            const recordPreUpdate = records.records[0]!;
 
             expect(recordPreUpdate.title).toEqual('Record A');
 
@@ -276,7 +356,7 @@ describe('Index', () => {
                 throw new Error('Check encrypt: false option in index.get');
             }
 
-            const recordPostUpdate = newRecords[0]!;
+            const recordPostUpdate = newRecords.records[0]!;
 
             expect(recordPostUpdate.title).toEqual('Different');
         });
@@ -315,7 +395,7 @@ describe('Index', () => {
 
             if (isEncrypted(records)) throw new Error('Check encrypt: false option in index.get');
 
-            expect(records.length).toEqual(2);
+            expect(records.records).toHaveLength(2);
 
             const promise = userA.clients.fullAuth.index.remove({ id: 'testRecordA' });
             await expect(promise).resolves.not.toThrow();
@@ -326,7 +406,7 @@ describe('Index', () => {
                 throw new Error('Check encrypt: false option in index.get');
             }
 
-            expect(newRecords.length).toEqual(1);
+            expect(newRecords.records).toHaveLength(1);
         });
     });
 
@@ -361,7 +441,7 @@ describe('Index', () => {
 
             if (isEncrypted(records)) throw new Error('Check encrypt: false option in index.get');
 
-            expect(records.length).toEqual(2);
+            expect(records.records).toHaveLength(2);
 
             const promise = userA.clients.fullAuth.index.removeAll();
             await expect(promise).resolves.not.toThrow();
@@ -372,7 +452,7 @@ describe('Index', () => {
                 throw new Error('Check encrypt: false option in index.get');
             }
 
-            expect(newRecords.length).toEqual(0);
+            expect(newRecords.records).toHaveLength(0);
         });
     });
 });

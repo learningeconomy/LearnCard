@@ -4,3 +4,4 @@ export * from './learncard';
 export * from './learncloud';
 export * from './lcn';
 export * from './crypto';
+export * from './mongo';

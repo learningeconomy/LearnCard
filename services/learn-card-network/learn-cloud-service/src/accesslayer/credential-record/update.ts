@@ -8,7 +8,10 @@ export const updateCredentialRecord = async (
 ): Promise<number | false> => {
     try {
         return (
-            await getCredentialRecordCollection().updateOne({ did, _id: id }, { $set: updates })
+            await getCredentialRecordCollection().updateOne(
+                { did, _id: id },
+                { $set: { modified: new Date(), ...updates } }
+            )
         ).modifiedCount;
     } catch (e) {
         console.error(e);

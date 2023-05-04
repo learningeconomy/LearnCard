@@ -1,7 +1,10 @@
 import { getClient } from '@learncard/learn-cloud-client';
 import { LearnCard } from '@learncard/core';
 import { isEncrypted } from '@learncard/helpers';
-import { EncryptedCredentialRecord } from '@learncard/types';
+import {
+    EncryptedCredentialRecord,
+    PaginatedEncryptedCredentialRecordsType,
+} from '@learncard/types';
 
 import { LearnCloudPluginDependentMethods, LearnCloudPlugin } from './types';
 import {
@@ -71,8 +74,8 @@ export const getLearnCloudPlugin = async (
                     _learnCard.debug?.('LearnCloud index.get (no query response)', jwe);
 
                     const encryptedRecords = isEncrypted(jwe)
-                        ? await decryptJWE<EncryptedCredentialRecord[]>(_learnCard, jwe)
-                        : (jwe as EncryptedCredentialRecord[]);
+                        ? await decryptJWE<PaginatedEncryptedCredentialRecordsType>(_learnCard, jwe)
+                        : (jwe as PaginatedEncryptedCredentialRecordsType);
 
                     _learnCard.debug?.(
                         'LearnCloud index.get (no query encryptedRecords)',
@@ -80,7 +83,7 @@ export const getLearnCloudPlugin = async (
                     );
 
                     return Promise.all(
-                        encryptedRecords.map(async record => ({
+                        encryptedRecords.records.map(async record => ({
                             ...(await decryptJWE(_learnCard, record.encryptedRecord)),
                             id: record.id,
                         }))
@@ -116,8 +119,8 @@ export const getLearnCloudPlugin = async (
                 _learnCard.debug?.('LearnCloud index.get (query jwe)', jwe);
 
                 const encryptedRecords = isEncrypted(jwe)
-                    ? await decryptJWE<EncryptedCredentialRecord[]>(_learnCard, jwe)
-                    : (jwe as EncryptedCredentialRecord[]);
+                    ? await decryptJWE<PaginatedEncryptedCredentialRecordsType>(_learnCard, jwe)
+                    : (jwe as PaginatedEncryptedCredentialRecordsType);
 
                 _learnCard.debug?.(
                     'LearnCloud index.get (query encryptedRecords)',
@@ -125,7 +128,7 @@ export const getLearnCloudPlugin = async (
                 );
 
                 return Promise.all(
-                    encryptedRecords.map(async record => ({
+                    encryptedRecords.records.map(async record => ({
                         ...(await decryptJWE(_learnCard, record.encryptedRecord)),
                         id: record.id,
                     }))

@@ -4,11 +4,15 @@ import { Filter } from 'mongodb';
 
 export const getCredentialRecordsForDid = async (
     did: string,
-    query: Filter<MongoCredentialRecordType> = {}
+    query: Filter<MongoCredentialRecordType> = {},
+    cursor?: string,
+    limit = 25
 ): Promise<MongoCredentialRecordType[]> => {
     try {
         return await getCredentialRecordCollection()
-            .find({ ...query, did })
+            .find({ ...query, did, ...(cursor ? { created: { $gt: new Date(cursor) } } : {}) })
+            .sort({ created: 1 })
+            .limit(limit)
             .toArray();
     } catch (e) {
         console.error(e);

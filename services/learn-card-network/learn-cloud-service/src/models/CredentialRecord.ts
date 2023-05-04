@@ -9,5 +9,7 @@ export const MongoCredentialRecordValidator = EncryptedCredentialRecordValidator
 }).extend({
     _id: z.string(),
     did: z.string(),
+    created: z.date(),
+    modified: z.date(),
 });
 export type MongoCredentialRecordType = z.infer<typeof MongoCredentialRecordValidator>;

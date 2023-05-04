@@ -10,8 +10,15 @@ export const createCredentialRecord = async (
     const { id = uuid(), ...record } = _record;
 
     try {
-        return (await getCredentialRecordCollection().insertOne({ did, _id: id, ...record }))
-            .insertedId;
+        return (
+            await getCredentialRecordCollection().insertOne({
+                did,
+                _id: id,
+                created: new Date(),
+                modified: new Date(),
+                ...record,
+            })
+        ).insertedId;
     } catch (e) {
         console.error(e);
         return false;
@@ -25,7 +32,13 @@ export const createCredentialRecords = async (
     const records = _records.map(_record => {
         const { id = uuid(), ...record } = _record;
 
-        return { did, _id: id, ...record };
+        return {
+            did,
+            _id: id,
+            created: new Date(),
+            modified: new Date(),
+            ...record,
+        };
     });
 
     try {
