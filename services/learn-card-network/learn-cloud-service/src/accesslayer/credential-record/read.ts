@@ -10,8 +10,8 @@ export const getCredentialRecordsForDid = async (
 ): Promise<MongoCredentialRecordType[]> => {
     try {
         return await getCredentialRecordCollection()
-            .find({ ...query, did, ...(cursor ? { created: { $gt: new Date(cursor) } } : {}) })
-            .sort({ created: 1 })
+            .find({ ...query, did, ...(cursor ? { cursor: { $gt: Number(cursor) } } : {}) })
+            .sort({ cursor: 1 })
             .limit(limit)
             .toArray();
     } catch (e) {

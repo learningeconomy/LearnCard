@@ -2,15 +2,14 @@ import { JWE, PaginatedEncryptedCredentialRecordsType } from '@learncard/types';
 import { isEncrypted } from '@learncard/helpers';
 
 import { getClient, getUser } from './helpers/getClient';
-import { getCredentialRecordCollection } from '@accesslayer/credential-record';
+import { CredentialRecords } from '@accesslayer/credential-record';
+import { Users } from '@accesslayer/user';
 import { testRecordA, testRecordB, testRecordC } from './helpers/records';
 import { client } from '@mongo';
 
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;
 let userB: Awaited<ReturnType<typeof getUser>>;
-
-const CredentialRecords = getCredentialRecordCollection();
 
 describe('Index', () => {
     beforeAll(async () => {
@@ -25,12 +24,19 @@ describe('Index', () => {
     describe('get', () => {
         beforeAll(async () => {
             await CredentialRecords.deleteMany({});
+            await Users.deleteMany({});
+        });
+
+        beforeEach(async () => {
+            await CredentialRecords.deleteMany({});
+            await Users.deleteMany({});
 
             await userA.clients.fullAuth.index.addMany({ records: [testRecordA, testRecordB] });
         });
 
         afterAll(async () => {
             await CredentialRecords.deleteMany({});
+            await Users.deleteMany({});
         });
 
         it('should require full auth to get index', async () => {
@@ -51,6 +57,19 @@ describe('Index', () => {
                 .decryptDagJWE((await recordsPromise) as JWE);
 
             expect(unencryptedRecords.records).toHaveLength(2);
+        });
+
+        it('should allow getting an empty list of records', async () => {
+            await userA.clients.fullAuth.index.removeAll();
+
+            const recordsPromise = userA.clients.fullAuth.index.get();
+            await expect(recordsPromise).resolves.not.toThrow();
+
+            const unencryptedRecords = await userA.learnCard.invoke
+                .getDIDObject()
+                .decryptDagJWE((await recordsPromise) as JWE);
+
+            expect(unencryptedRecords.records).toHaveLength(0);
         });
 
         it('should allow querying encrypted fields', async () => {
@@ -89,18 +108,14 @@ describe('Index', () => {
         });
 
         it('should have working pagination', async () => {
-            const old = new Date(1995, 4, 19);
-            const lessOld = new Date(2000, 4, 19);
-            const evenLessOld = new Date(2010, 4, 19);
-            const newIsh = new Date(2023, 4, 19);
-
             const records = [
-                { ...testRecordA, created: old, id: '1' },
-                { ...testRecordA, created: lessOld, id: '2' },
-                { ...testRecordA, created: evenLessOld, id: '3' },
-                { ...testRecordA, created: newIsh, id: '4' },
+                { ...testRecordA, id: '1' },
+                { ...testRecordA, id: '2' },
+                { ...testRecordA, id: '3' },
+                { ...testRecordA, id: '4' },
             ];
 
+            await Users.deleteMany({});
             await userA.clients.fullAuth.index.removeAll();
             await userA.clients.fullAuth.index.addMany({ records });
 
@@ -111,51 +126,54 @@ describe('Index', () => {
 
             expect(initialResults.records).toHaveLength(2);
             expect(initialResults.hasMore).toBeTruthy();
-            expect(initialResults.cursor).toEqual(lessOld.toISOString());
+            expect(initialResults.cursor).toEqual('1');
 
             const nextResults = (await userA.clients.fullAuth.index.get({
                 limit: 2,
-                cursor: lessOld.toISOString(),
+                cursor: '1',
                 encrypt: false,
             })) as PaginatedEncryptedCredentialRecordsType;
 
             expect(nextResults.records).toHaveLength(2);
             expect(nextResults.hasMore).toBeFalsy();
-            expect(nextResults.cursor).toEqual(newIsh.toISOString());
+            expect(nextResults.cursor).toEqual('3');
 
             const middleResults = (await userA.clients.fullAuth.index.get({
                 limit: 2,
-                cursor: old.toISOString(),
+                cursor: '0',
                 encrypt: false,
             })) as PaginatedEncryptedCredentialRecordsType;
 
             expect(middleResults.records).toHaveLength(2);
             expect(middleResults.hasMore).toBeTruthy();
-            expect(middleResults.cursor).toEqual(evenLessOld.toISOString());
+            expect(middleResults.cursor).toEqual('2');
 
             const truncatedResults = (await userA.clients.fullAuth.index.get({
                 limit: 2,
-                cursor: evenLessOld.toISOString(),
+                cursor: '2',
                 encrypt: false,
             })) as PaginatedEncryptedCredentialRecordsType;
 
             expect(truncatedResults.records).toHaveLength(1);
             expect(truncatedResults.hasMore).toBeFalsy();
-            expect(truncatedResults.cursor).toEqual(newIsh.toISOString());
+            expect(truncatedResults.cursor).toEqual('3');
         });
     });
 
     describe('add', () => {
         beforeAll(async () => {
             await CredentialRecords.deleteMany({});
+            await Users.deleteMany({});
         });
 
         beforeEach(async () => {
             await CredentialRecords.deleteMany({});
+            await Users.deleteMany({});
         });
 
         afterAll(async () => {
             await CredentialRecords.deleteMany({});
+            await Users.deleteMany({});
         });
 
         it('should require full auth to add to index', async () => {
@@ -241,14 +259,17 @@ describe('Index', () => {
     describe('addMany', () => {
         beforeAll(async () => {
             await CredentialRecords.deleteMany({});
+            await Users.deleteMany({});
         });
 
         beforeEach(async () => {
             await CredentialRecords.deleteMany({});
+            await Users.deleteMany({});
         });
 
         afterAll(async () => {
             await CredentialRecords.deleteMany({});
+            await Users.deleteMany({});
         });
 
         it('should require full auth to add many to index', async () => {
@@ -305,18 +326,21 @@ describe('Index', () => {
     describe('update', () => {
         beforeAll(async () => {
             await CredentialRecords.deleteMany({});
+            await Users.deleteMany({});
 
             await userA.clients.fullAuth.index.addMany({ records: [testRecordA, testRecordB] });
         });
 
         beforeEach(async () => {
             await CredentialRecords.deleteMany({});
+            await Users.deleteMany({});
 
             await userA.clients.fullAuth.index.addMany({ records: [testRecordA, testRecordB] });
         });
 
         afterAll(async () => {
             await CredentialRecords.deleteMany({});
+            await Users.deleteMany({});
         });
 
         it('should require full auth to update a record', async () => {
@@ -365,18 +389,21 @@ describe('Index', () => {
     describe('remove', () => {
         beforeAll(async () => {
             await CredentialRecords.deleteMany({});
+            await Users.deleteMany({});
 
             await userA.clients.fullAuth.index.addMany({ records: [testRecordA, testRecordB] });
         });
 
         beforeEach(async () => {
             await CredentialRecords.deleteMany({});
+            await Users.deleteMany({});
 
             await userA.clients.fullAuth.index.addMany({ records: [testRecordA, testRecordB] });
         });
 
         afterAll(async () => {
             await CredentialRecords.deleteMany({});
+            await Users.deleteMany({});
         });
 
         it('should require full auth to remove a record', async () => {
@@ -413,18 +440,21 @@ describe('Index', () => {
     describe('removeAll', () => {
         beforeAll(async () => {
             await CredentialRecords.deleteMany({});
+            await Users.deleteMany({});
 
             await userA.clients.fullAuth.index.addMany({ records: [testRecordA, testRecordB] });
         });
 
         beforeEach(async () => {
             await CredentialRecords.deleteMany({});
+            await Users.deleteMany({});
 
             await userA.clients.fullAuth.index.addMany({ records: [testRecordA, testRecordB] });
         });
 
         afterAll(async () => {
             await CredentialRecords.deleteMany({});
+            await Users.deleteMany({});
         });
 
         it('should require full auth to remove all records', async () => {

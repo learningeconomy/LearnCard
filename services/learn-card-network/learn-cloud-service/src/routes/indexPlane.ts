@@ -58,17 +58,25 @@ export const indexRouter = t.router({
 
             const rawResults = await getCredentialRecordsForDid(did, query, cursor, limit + 1);
             const results = rawResults.map(record => {
-                const { did: _did, _id, created: _created, modified: _modified, ...rest } = record;
+                const {
+                    did: _did,
+                    _id,
+                    cursor: _cursor,
+                    created: _created,
+                    modified: _modified,
+                    ...rest
+                } = record;
 
                 return { ...rest, id: _id };
             });
 
             const hasMore = results.length > limit;
+            const newCursor = rawResults.at(hasMore ? -2 : -1)?.cursor.toString();
 
             const paginationResult = {
-                cursor: rawResults.at(hasMore ? -2 : -1)?.created.toISOString(),
-                hasMore,
                 records: results.slice(0, limit),
+                hasMore,
+                ...(newCursor ? { cursor: newCursor } : {}),
             };
 
             if (encrypt) return encryptObject(paginationResult, ctx.domain, [did]);

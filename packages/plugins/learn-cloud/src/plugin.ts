@@ -1,10 +1,7 @@
 import { getClient } from '@learncard/learn-cloud-client';
 import { LearnCard } from '@learncard/core';
 import { isEncrypted } from '@learncard/helpers';
-import {
-    EncryptedCredentialRecord,
-    PaginatedEncryptedCredentialRecordsType,
-} from '@learncard/types';
+import { CredentialRecord, PaginatedEncryptedCredentialRecordsType } from '@learncard/types';
 
 import { LearnCloudPluginDependentMethods, LearnCloudPlugin } from './types';
 import {
@@ -69,7 +66,7 @@ export const getLearnCloudPlugin = async (
 
                 if (!query) {
                     _learnCard.debug?.('LearnCloud index.get (no query)');
-                    const jwe = await client.index.get.query();
+                    const jwe = await client.index.get.query({ limit: Number.MAX_VALUE });
 
                     _learnCard.debug?.('LearnCloud index.get (no query response)', jwe);
 
@@ -113,6 +110,7 @@ export const getLearnCloudPlugin = async (
                     query: await generateJWE(_learnCard, learnCloudDid, {
                         ...unencryptedEntries,
                         fields: { $in: fields },
+                        limit: Number.MAX_VALUE,
                     }),
                 });
 
@@ -134,6 +132,91 @@ export const getLearnCloudPlugin = async (
                     }))
                 );
             },
+            getPage: async (_learnCard, query, paginationOptions) => {
+                await updateLearnCard(_learnCard);
+
+                _learnCard.debug?.('LearnCloud index.getPaginated', query, paginationOptions);
+
+                if (!query) {
+                    _learnCard.debug?.('LearnCloud index.get (no query)');
+                    const jwe = await client.index.get.query(paginationOptions);
+
+                    _learnCard.debug?.('LearnCloud index.get (no query response)', jwe);
+
+                    const encryptedRecords = isEncrypted(jwe)
+                        ? await decryptJWE<PaginatedEncryptedCredentialRecordsType>(_learnCard, jwe)
+                        : (jwe as PaginatedEncryptedCredentialRecordsType);
+
+                    _learnCard.debug?.(
+                        'LearnCloud index.get (no query encryptedRecords)',
+                        encryptedRecords
+                    );
+
+                    return {
+                        ...encryptedRecords,
+                        records: await Promise.all(
+                            encryptedRecords.records.map(async record => ({
+                                ...(await decryptJWE<CredentialRecord>(
+                                    _learnCard,
+                                    record.encryptedRecord
+                                )),
+                                id: record.id,
+                            }))
+                        ),
+                    };
+                }
+
+                _learnCard.debug?.('LearnCloud index.get (query)');
+
+                const fields = await generateEncryptedFieldsArray(
+                    _learnCard,
+                    query as any,
+                    unencryptedFields
+                );
+
+                _learnCard.debug?.('LearnCloud index.get (query fields)', fields);
+
+                const unencryptedEntries = Object.fromEntries(
+                    Object.entries(query).filter(([key]) => unencryptedFields.includes(key))
+                );
+
+                _learnCard.debug?.(
+                    'LearnCloud index.get (query unencryptedEntries)',
+                    unencryptedEntries
+                );
+
+                const jwe = await client.index.get.query({
+                    query: await generateJWE(_learnCard, learnCloudDid, {
+                        ...unencryptedEntries,
+                        fields: { $in: fields },
+                    }),
+                    ...paginationOptions,
+                });
+
+                _learnCard.debug?.('LearnCloud index.get (query jwe)', jwe);
+
+                const encryptedRecords = isEncrypted(jwe)
+                    ? await decryptJWE<PaginatedEncryptedCredentialRecordsType>(_learnCard, jwe)
+                    : (jwe as PaginatedEncryptedCredentialRecordsType);
+
+                _learnCard.debug?.(
+                    'LearnCloud index.get (query encryptedRecords)',
+                    encryptedRecords
+                );
+
+                return {
+                    ...encryptedRecords,
+                    records: await Promise.all(
+                        encryptedRecords.records.map(async record => ({
+                            ...(await decryptJWE<CredentialRecord>(
+                                _learnCard,
+                                record.encryptedRecord
+                            )),
+                            id: record.id,
+                        }))
+                    ),
+                };
+            },
             add: async (_learnCard, record) => {
                 await updateLearnCard(_learnCard);
 
@@ -145,7 +228,10 @@ export const getLearnCloudPlugin = async (
                             record,
                             unencryptedFields
                         )),
-                        ...(record.id ? { id: record.id } : {}),
+                        id: await hash(
+                            _learnCard,
+                            record.id || _learnCard.invoke.crypto().randomUUID()
+                        ),
                     }),
                 });
             },
@@ -161,7 +247,10 @@ export const getLearnCloudPlugin = async (
                                 record,
                                 unencryptedFields
                             )),
-                            ...(record.id ? { id: hash(_learnCard, record.id) } : {}),
+                            id: await hash(
+                                _learnCard,
+                                record.id || _learnCard.invoke.crypto().randomUUID()
+                            ),
                         });
                     })
                 );
@@ -180,7 +269,7 @@ export const getLearnCloudPlugin = async (
                 const newRecord = { ...record, ...updates };
 
                 return client.index.update.mutate({
-                    id,
+                    id: await hash(_learnCard, id),
                     updates: await generateJWE(
                         _learnCard,
                         learnCloudDid,
@@ -196,7 +285,7 @@ export const getLearnCloudPlugin = async (
             remove: async (_learnCard, id) => {
                 await updateLearnCard(_learnCard);
 
-                return client.index.remove.mutate({ id });
+                return client.index.remove.mutate({ id: await hash(_learnCard, id) });
             },
             removeAll: async _learnCard => {
                 await updateLearnCard(_learnCard);

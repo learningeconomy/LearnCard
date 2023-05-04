@@ -1,7 +1,8 @@
 import { v4 as uuid } from 'uuid';
 
-import { getCredentialRecordCollection } from '.';
+import { CredentialRecords } from '.';
 import { EncryptedCredentialRecord } from '@learncard/types';
+import { incrementUserCursor } from '@accesslayer/user/update';
 
 export const createCredentialRecord = async (
     did: string,
@@ -10,8 +11,13 @@ export const createCredentialRecord = async (
     const { id = uuid(), ...record } = _record;
 
     try {
+        const cursor = await incrementUserCursor(did);
+
+        if (cursor === false) return false;
+
         return (
-            await getCredentialRecordCollection().insertOne({
+            await CredentialRecords.insertOne({
+                cursor,
                 did,
                 _id: id,
                 created: new Date(),
@@ -29,12 +35,18 @@ export const createCredentialRecords = async (
     did: string,
     _records: EncryptedCredentialRecord[]
 ): Promise<number> => {
-    const records = _records.map(_record => {
+    const length = _records.length;
+    const newCursor = await incrementUserCursor(did, length);
+
+    if (newCursor === false) return 0;
+
+    const records = _records.map((_record, index) => {
         const { id = uuid(), ...record } = _record;
 
         return {
             did,
             _id: id,
+            cursor: newCursor - length + index + 1,
             created: new Date(),
             modified: new Date(),
             ...record,
@@ -42,7 +54,7 @@ export const createCredentialRecords = async (
     });
 
     try {
-        return (await getCredentialRecordCollection().insertMany(records)).insertedCount;
+        return (await CredentialRecords.insertMany(records)).insertedCount;
     } catch (e) {
         console.error(e);
         return 0;
