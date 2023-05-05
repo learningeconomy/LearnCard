@@ -3,6 +3,7 @@ import { v4 as uuid } from 'uuid';
 import { CredentialRecords } from '.';
 import { EncryptedCredentialRecord } from '@learncard/types';
 import { incrementUserCursor } from '@accesslayer/user/update';
+import { MongoCredentialRecordType } from '@models';
 
 export const createCredentialRecord = async (
     did: string,
@@ -33,7 +34,7 @@ export const createCredentialRecord = async (
 
 export const createCredentialRecords = async (
     did: string,
-    _records: EncryptedCredentialRecord[]
+    _records: Omit<EncryptedCredentialRecord, 'id'>[]
 ): Promise<number> => {
     const length = _records.length;
     const newCursor = await incrementUserCursor(did, length);
@@ -50,7 +51,7 @@ export const createCredentialRecords = async (
             created: new Date(),
             modified: new Date(),
             ...record,
-        };
+        } as MongoCredentialRecordType;
     });
 
     try {

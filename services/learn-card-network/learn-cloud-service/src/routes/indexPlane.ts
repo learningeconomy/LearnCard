@@ -140,8 +140,8 @@ export const indexRouter = t.router({
         .input(
             z.object({
                 records: EncryptedCredentialRecordValidator.omit({ id: true })
-                    .or(JWEValidator)
-                    .array(),
+                    .array()
+                    .or(JWEValidator),
             })
         )
         .output(z.boolean())
@@ -152,15 +152,11 @@ export const indexRouter = t.router({
                 user: { did },
             } = ctx;
 
-            const records = await Promise.all(
-                _records.map<Promise<EncryptedCredentialRecord>>(async record => {
-                    if (isEncrypted(record)) {
-                        return learnCard.invoke.getDIDObject().decryptDagJWE(record) as any;
-                    }
-
-                    return record;
-                })
-            );
+            const records = isEncrypted(_records)
+                ? ((await learnCard.invoke
+                    .getDIDObject()
+                    .decryptDagJWE(_records)) as EncryptedCredentialRecord[])
+                : _records;
 
             await createCredentialRecords(did, records);
 

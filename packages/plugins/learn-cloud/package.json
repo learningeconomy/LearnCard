@@ -26,6 +26,7 @@
     "devDependencies": {
         "@learncard/types": "workspace:*",
         "@types/jest": "^29.2.2",
+        "@types/lodash": "^4.14.191",
         "@types/node": "^17.0.31",
         "aqu": "0.4.3",
         "dids": "^3.2.0",
@@ -42,6 +43,7 @@
         "@learncard/helpers": "workspace:^",
         "@learncard/learn-cloud-client": "workspace:*",
         "json-stringify-deterministic": "^1.0.8",
+        "lodash": "^4.17.21",
         "pbkdf2-hmac": "^1.2.1"
     },
     "pnpm": {

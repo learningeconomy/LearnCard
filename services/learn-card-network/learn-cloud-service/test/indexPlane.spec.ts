@@ -126,37 +126,37 @@ describe('Index', () => {
 
             expect(initialResults.records).toHaveLength(2);
             expect(initialResults.hasMore).toBeTruthy();
-            expect(initialResults.cursor).toEqual('1');
+            expect(initialResults.cursor).toEqual('2');
 
             const nextResults = (await userA.clients.fullAuth.index.get({
-                limit: 2,
-                cursor: '1',
-                encrypt: false,
-            })) as PaginatedEncryptedCredentialRecordsType;
-
-            expect(nextResults.records).toHaveLength(2);
-            expect(nextResults.hasMore).toBeFalsy();
-            expect(nextResults.cursor).toEqual('3');
-
-            const middleResults = (await userA.clients.fullAuth.index.get({
-                limit: 2,
-                cursor: '0',
-                encrypt: false,
-            })) as PaginatedEncryptedCredentialRecordsType;
-
-            expect(middleResults.records).toHaveLength(2);
-            expect(middleResults.hasMore).toBeTruthy();
-            expect(middleResults.cursor).toEqual('2');
-
-            const truncatedResults = (await userA.clients.fullAuth.index.get({
                 limit: 2,
                 cursor: '2',
                 encrypt: false,
             })) as PaginatedEncryptedCredentialRecordsType;
 
+            expect(nextResults.records).toHaveLength(2);
+            expect(nextResults.hasMore).toBeFalsy();
+            expect(nextResults.cursor).toEqual('4');
+
+            const middleResults = (await userA.clients.fullAuth.index.get({
+                limit: 2,
+                cursor: '1',
+                encrypt: false,
+            })) as PaginatedEncryptedCredentialRecordsType;
+
+            expect(middleResults.records).toHaveLength(2);
+            expect(middleResults.hasMore).toBeTruthy();
+            expect(middleResults.cursor).toEqual('3');
+
+            const truncatedResults = (await userA.clients.fullAuth.index.get({
+                limit: 2,
+                cursor: '3',
+                encrypt: false,
+            })) as PaginatedEncryptedCredentialRecordsType;
+
             expect(truncatedResults.records).toHaveLength(1);
             expect(truncatedResults.hasMore).toBeFalsy();
-            expect(truncatedResults.cursor).toEqual('3');
+            expect(truncatedResults.cursor).toEqual('4');
         });
     });
 
@@ -244,7 +244,7 @@ describe('Index', () => {
 
             expect(records.records).toHaveLength(0);
 
-            const promise = userA.clients.fullAuth.index.add({ record: testRecordC });
+            const promise = userA.clients.fullAuth.index.add({ record: testRecordC as any });
             await expect(promise).resolves.not.toThrow();
 
             const newRecords = (await userA.clients.fullAuth.index.get({

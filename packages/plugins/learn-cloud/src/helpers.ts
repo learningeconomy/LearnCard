@@ -68,11 +68,12 @@ export const generateEncryptedFieldsArray = async (
 
 export const generateEncryptedRecord = async (
     learnCard: LearnCloudDependentLearnCard,
-    learnCloudDid: string,
     record: CredentialRecord,
     unencryptedFields: string[] = []
 ): Promise<Omit<EncryptedCredentialRecord, 'id'>> => {
-    const encryptedRecord = await generateJWE(learnCard, learnCloudDid, record);
+    const encryptedRecord = await learnCard.invoke
+        .getDIDObject()
+        .createDagJWE(record, [learnCard.id.did()]);
 
     const fields = await generateEncryptedFieldsArray(learnCard, record, unencryptedFields);
 

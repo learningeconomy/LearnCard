@@ -7,6 +7,7 @@ import { base58btc } from 'multiformats/bases/base58';
 import { getLearnCard } from '@helpers/learnCard.helpers';
 import { TypedRequest } from '@helpers/types.helpers';
 import { getDidDocForProfile, setDidDocForProfile } from '@cache/did-docs';
+import { lock } from '@cache/mutex';
 
 const encodeKey = (key: Uint8Array) => {
     const bytes = new Uint8Array(key.length + 2);
@@ -35,46 +36,62 @@ app.get('/.well-known/did.json', async (req: TypedRequest<{}, {}, {}>, res) => {
 
     if (cachedResult) return res.json(cachedResult);
 
-    await _sodium.ready;
-    const sodium = _sodium;
+    // Grab/wait for lock for generating did doc
+    const release = await lock('did');
 
-    const learnCard = await getLearnCard();
+    try {
+        // Check to see if someone else grabbed the lock and generated the did doc first
+        const secondCheck = await getDidDocForProfile('::root::');
 
-    const domainName: string = (req as any).requestContext.domainName;
-    const domain =
-        !domainName || process.env.IS_OFFLINE
-            ? `localhost%3A${process.env.PORT || 3000}`
-            : domainName;
+        if (secondCheck) {
+            release();
+            return res.json(secondCheck);
+        }
 
-    const did = learnCard.id.did();
-    const didDoc = await learnCard.invoke.resolveDid(did);
-    const key = did.split(':')[2];
-    const didWeb = `did:web:${domain}`;
+        await _sodium.ready;
+        const sodium = _sodium;
 
-    const replacedDoc = JSON.parse(
-        JSON.stringify(didDoc).replaceAll(did, didWeb).replaceAll(`#${key}`, '#owner')
-    );
+        const learnCard = await getLearnCard();
 
-    const jwk = replacedDoc.verificationMethod[0].publicKeyJwk;
+        const domainName: string = (req as any).requestContext.domainName;
+        const domain =
+            !domainName || process.env.IS_OFFLINE
+                ? `localhost%3A${process.env.PORT || 3000}`
+                : domainName;
 
-    const decodedJwk = base64url.decode(`u${jwk.x}`);
-    const x25519PublicKeyBytes = sodium.crypto_sign_ed25519_pk_to_curve25519(decodedJwk);
+        const did = learnCard.id.did();
+        const didDoc = await learnCard.invoke.resolveDid(did);
+        const key = did.split(':')[2];
+        const didWeb = `did:web:${domain}`;
 
-    const finalDoc = {
-        ...replacedDoc,
-        keyAgreement: [
-            {
-                id: `${didWeb}#${encodeKey(x25519PublicKeyBytes)}`,
-                type: 'X25519KeyAgreementKey2019',
-                controller: didWeb,
-                publicKeyBase58: base58btc.encode(x25519PublicKeyBytes).slice(1),
-            },
-        ],
-    };
+        const replacedDoc = JSON.parse(
+            JSON.stringify(didDoc).replaceAll(did, didWeb).replaceAll(`#${key}`, '#owner')
+        );
 
-    setDidDocForProfile('::root::', finalDoc);
+        const jwk = replacedDoc.verificationMethod[0].publicKeyJwk;
 
-    return res.json(finalDoc);
+        const decodedJwk = base64url.decode(`u${jwk.x}`);
+        const x25519PublicKeyBytes = sodium.crypto_sign_ed25519_pk_to_curve25519(decodedJwk);
+
+        const finalDoc = {
+            ...replacedDoc,
+            keyAgreement: [
+                {
+                    id: `${didWeb}#${encodeKey(x25519PublicKeyBytes)}`,
+                    type: 'X25519KeyAgreementKey2019',
+                    controller: didWeb,
+                    publicKeyBase58: base58btc.encode(x25519PublicKeyBytes).slice(1),
+                },
+            ],
+        };
+
+        setDidDocForProfile('::root::', finalDoc).finally(release);
+
+        return res.json(finalDoc);
+    } catch (error) {
+        console.error('Did error! Releasing lock');
+        return release();
+    }
 });
 
 export default app;

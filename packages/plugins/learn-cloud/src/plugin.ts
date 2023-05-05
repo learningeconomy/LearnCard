@@ -1,3 +1,4 @@
+import { chunk } from 'lodash';
 import { getClient } from '@learncard/learn-cloud-client';
 import { LearnCard } from '@learncard/core';
 import { isEncrypted } from '@learncard/helpers';
@@ -222,12 +223,7 @@ export const getLearnCloudPlugin = async (
 
                 return client.index.add.mutate({
                     record: await generateJWE(_learnCard, learnCloudDid, {
-                        ...(await generateEncryptedRecord(
-                            _learnCard,
-                            learnCloudDid,
-                            record,
-                            unencryptedFields
-                        )),
+                        ...(await generateEncryptedRecord(_learnCard, record, unencryptedFields)),
                         id: await hash(
                             _learnCard,
                             record.id || _learnCard.invoke.crypto().randomUUID()
@@ -238,24 +234,31 @@ export const getLearnCloudPlugin = async (
             addMany: async (_learnCard, _records) => {
                 await updateLearnCard(_learnCard);
 
-                const records = await Promise.all(
-                    _records.map(async record => {
-                        return generateJWE(_learnCard, learnCloudDid, {
-                            ...(await generateEncryptedRecord(
-                                _learnCard,
-                                learnCloudDid,
-                                record,
-                                unencryptedFields
-                            )),
-                            id: await hash(
-                                _learnCard,
-                                record.id || _learnCard.invoke.crypto().randomUUID()
-                            ),
+                const results = await Promise.all(
+                    chunk(_records, 25).map(async batch => {
+                        const records = await Promise.all(
+                            batch.map(async record => {
+                                return {
+                                    ...(await generateEncryptedRecord(
+                                        _learnCard,
+                                        record,
+                                        unencryptedFields
+                                    )),
+                                    id: await hash(
+                                        _learnCard,
+                                        record.id || _learnCard.invoke.crypto().randomUUID()
+                                    ),
+                                };
+                            })
+                        );
+
+                        return client.index.addMany.mutate({
+                            records: await generateJWE(_learnCard, learnCloudDid, records),
                         });
                     })
                 );
 
-                return client.index.addMany.mutate({ records });
+                return results.every(Boolean);
             },
             update: async (_learnCard, id, updates) => {
                 await updateLearnCard(_learnCard);
@@ -273,12 +276,7 @@ export const getLearnCloudPlugin = async (
                     updates: await generateJWE(
                         _learnCard,
                         learnCloudDid,
-                        await generateEncryptedRecord(
-                            _learnCard,
-                            learnCloudDid,
-                            newRecord,
-                            unencryptedFields
-                        )
+                        await generateEncryptedRecord(_learnCard, newRecord, unencryptedFields)
                     ),
                 });
             },
