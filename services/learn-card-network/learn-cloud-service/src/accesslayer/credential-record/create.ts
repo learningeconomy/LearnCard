@@ -1,26 +1,21 @@
-import { v4 as uuid } from 'uuid';
-
 import { CredentialRecords } from '.';
 import { EncryptedCredentialRecord } from '@learncard/types';
-import { incrementUserCursor } from '@accesslayer/user/update';
 import { MongoCredentialRecordType } from '@models';
+import { ObjectId } from 'mongodb';
 
 export const createCredentialRecord = async (
     did: string,
     _record: EncryptedCredentialRecord
 ): Promise<string | false> => {
-    const { id = uuid(), ...record } = _record;
+    const { id, ...record } = _record;
+    const cursor = new ObjectId().toString();
 
     try {
-        const cursor = await incrementUserCursor(did);
-
-        if (cursor === false) return false;
-
         return (
             await CredentialRecords.insertOne({
                 cursor,
                 did,
-                _id: id,
+                _id: id || cursor,
                 created: new Date(),
                 modified: new Date(),
                 ...record,
@@ -36,18 +31,14 @@ export const createCredentialRecords = async (
     did: string,
     _records: Omit<EncryptedCredentialRecord, 'id'>[]
 ): Promise<number> => {
-    const length = _records.length;
-    const newCursor = await incrementUserCursor(did, length);
-
-    if (newCursor === false) return 0;
-
-    const records = _records.map((_record, index) => {
-        const { id = uuid(), ...record } = _record;
+    const records = _records.map(_record => {
+        const { id, ...record } = _record;
+        const cursor = new ObjectId().toString();
 
         return {
             did,
-            _id: id,
-            cursor: newCursor - length + index + 1,
+            _id: id || cursor,
+            cursor,
             created: new Date(),
             modified: new Date(),
             ...record,

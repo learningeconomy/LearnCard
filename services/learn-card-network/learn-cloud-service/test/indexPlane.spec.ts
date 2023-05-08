@@ -108,16 +108,18 @@ describe('Index', () => {
         });
 
         it('should have working pagination', async () => {
-            const records = [
-                { ...testRecordA, id: '1' },
-                { ...testRecordA, id: '2' },
-                { ...testRecordA, id: '3' },
-                { ...testRecordA, id: '4' },
-            ];
+            const { id, ...testRecord } = testRecordA;
+            const records = [testRecord, testRecord, testRecord, testRecord];
 
             await Users.deleteMany({});
             await userA.clients.fullAuth.index.removeAll();
             await userA.clients.fullAuth.index.addMany({ records });
+
+            const ids = (
+                (await userA.clients.fullAuth.index.get({
+                    encrypt: false,
+                })) as PaginatedEncryptedCredentialRecordsType
+            ).records.map(record => record.id);
 
             const initialResults = (await userA.clients.fullAuth.index.get({
                 limit: 2,
@@ -126,37 +128,37 @@ describe('Index', () => {
 
             expect(initialResults.records).toHaveLength(2);
             expect(initialResults.hasMore).toBeTruthy();
-            expect(initialResults.cursor).toEqual('2');
+            expect(initialResults.cursor).toEqual(ids[1]);
 
             const nextResults = (await userA.clients.fullAuth.index.get({
                 limit: 2,
-                cursor: '2',
+                cursor: ids[1],
                 encrypt: false,
             })) as PaginatedEncryptedCredentialRecordsType;
 
             expect(nextResults.records).toHaveLength(2);
             expect(nextResults.hasMore).toBeFalsy();
-            expect(nextResults.cursor).toEqual('4');
+            expect(nextResults.cursor).toEqual(ids[3]);
 
             const middleResults = (await userA.clients.fullAuth.index.get({
                 limit: 2,
-                cursor: '1',
+                cursor: ids[0],
                 encrypt: false,
             })) as PaginatedEncryptedCredentialRecordsType;
 
             expect(middleResults.records).toHaveLength(2);
             expect(middleResults.hasMore).toBeTruthy();
-            expect(middleResults.cursor).toEqual('3');
+            expect(middleResults.cursor).toEqual(ids[2]);
 
             const truncatedResults = (await userA.clients.fullAuth.index.get({
                 limit: 2,
-                cursor: '3',
+                cursor: ids[2],
                 encrypt: false,
             })) as PaginatedEncryptedCredentialRecordsType;
 
             expect(truncatedResults.records).toHaveLength(1);
             expect(truncatedResults.hasMore).toBeFalsy();
-            expect(truncatedResults.cursor).toEqual('4');
+            expect(truncatedResults.cursor).toEqual(ids[3]);
         });
     });
 

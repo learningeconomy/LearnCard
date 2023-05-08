@@ -9,7 +9,7 @@ export const MongoCredentialRecordValidator = EncryptedCredentialRecordValidator
 }).extend({
     _id: z.string(),
     did: z.string(),
-    cursor: z.number(),
+    cursor: z.string(),
     created: z.date(),
     modified: z.date(),
 });

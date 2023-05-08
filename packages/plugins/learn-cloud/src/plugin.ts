@@ -104,13 +104,9 @@ export const getLearnCloudPlugin = async (
                     return {
                         ...encryptedRecords,
                         records: await Promise.all(
-                            encryptedRecords.records.map(async record => ({
-                                ...(await decryptJWE<CredentialRecord>(
-                                    _learnCard,
-                                    record.encryptedRecord
-                                )),
-                                id: record.id,
-                            }))
+                            encryptedRecords.records.map(async record =>
+                                decryptJWE<CredentialRecord>(_learnCard, record.encryptedRecord)
+                            )
                         ),
                     };
                 }
@@ -156,26 +152,25 @@ export const getLearnCloudPlugin = async (
                 return {
                     ...encryptedRecords,
                     records: await Promise.all(
-                        encryptedRecords.records.map(async record => ({
-                            ...(await decryptJWE<CredentialRecord>(
-                                _learnCard,
-                                record.encryptedRecord
-                            )),
-                            id: record.id,
-                        }))
+                        encryptedRecords.records.map(async record =>
+                            decryptJWE<CredentialRecord>(_learnCard, record.encryptedRecord)
+                        )
                     ),
                 };
             },
             add: async (_learnCard, record) => {
                 await updateLearnCard(_learnCard);
 
+                const id = record.id || _learnCard.invoke.crypto().randomUUID();
+
                 return client.index.add.mutate({
                     record: await generateJWE(_learnCard, learnCloudDid, {
-                        ...(await generateEncryptedRecord(_learnCard, record, unencryptedFields)),
-                        id: await hash(
+                        ...(await generateEncryptedRecord(
                             _learnCard,
-                            record.id || _learnCard.invoke.crypto().randomUUID()
-                        ),
+                            { ...record, id },
+                            unencryptedFields
+                        )),
+                        id: await hash(_learnCard, id),
                     }),
                 });
             },
@@ -186,16 +181,15 @@ export const getLearnCloudPlugin = async (
                     chunk(_records, 25).map(async batch => {
                         const records = await Promise.all(
                             batch.map(async record => {
+                                const id = record.id || _learnCard.invoke.crypto().randomUUID();
+
                                 return {
                                     ...(await generateEncryptedRecord(
                                         _learnCard,
-                                        record,
+                                        { ...record, id },
                                         unencryptedFields
                                     )),
-                                    id: await hash(
-                                        _learnCard,
-                                        record.id || _learnCard.invoke.crypto().randomUUID()
-                                    ),
+                                    id: await hash(_learnCard, id),
                                 };
                             })
                         );

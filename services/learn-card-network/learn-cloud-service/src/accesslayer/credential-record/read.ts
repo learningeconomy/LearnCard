@@ -1,4 +1,4 @@
-import { getCredentialRecordCollection } from '.';
+import { CredentialRecords } from '.';
 import { MongoCredentialRecordType } from '@models';
 import { Filter } from 'mongodb';
 
@@ -9,8 +9,11 @@ export const getCredentialRecordsForDid = async (
     limit = 25
 ): Promise<MongoCredentialRecordType[]> => {
     try {
-        return await getCredentialRecordCollection()
-            .find({ ...query, did, ...(cursor ? { cursor: { $gt: Number(cursor) } } : {}) })
+        return await CredentialRecords.find({
+            ...query,
+            did,
+            ...(cursor ? { cursor: { $gt: cursor } } : {}),
+        })
             .sort({ cursor: 1 })
             .limit(limit)
             .toArray();

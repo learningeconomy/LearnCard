@@ -4,6 +4,5 @@ export const USER_COLLECTION = 'user';
 
 export const MongoUserValidator = z.object({
     did: z.string(),
-    currentCursor: z.number().int().positive(),
 });
 export type MongoUserType = z.infer<typeof MongoUserValidator>;
