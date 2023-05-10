@@ -1,4 +1,5 @@
 import { CredentialRecord } from '@learncard/types';
+import { Query } from 'sift';
 
 import { Plugin, LearnCard, GetPluginMethods, AddImplicitLearnCardArgument } from 'types/wallet';
 import {
@@ -145,16 +146,16 @@ const addCachingToStorePlane = <
     ...('uploadMany' in plane ? { uploadMany: plane.uploadMany } : {}),
     ...('uploadEncrypted' in plane
         ? {
-            uploadEncrypted: async (_learnCard, vc, params, { cache = 'cache-first' } = {}) => {
-                const uri = await plane.uploadEncrypted?.(_learnCard, vc, params);
+              uploadEncrypted: async (_learnCard, vc, params, { cache = 'cache-first' } = {}) => {
+                  const uri = await plane.uploadEncrypted?.(_learnCard, vc, params);
 
-                if (cache !== 'skip-cache' && learnCardImplementsPlane(_learnCard, 'cache')) {
-                    await _learnCard.cache.setVc(uri, vc);
-                }
+                  if (cache !== 'skip-cache' && learnCardImplementsPlane(_learnCard, 'cache')) {
+                      await _learnCard.cache.setVc(uri, vc);
+                  }
 
-                return uri;
-            },
-        }
+                  return uri;
+              },
+          }
         : {}),
 });
 
@@ -229,33 +230,79 @@ const addCachingToIndexPlane = <
     },
     ...(plane.getPage
         ? {
-            getPage: async (
-                _learnCard,
-                query,
-                paginationOptions,
-                { cache = 'cache-first' } = {}
-            ) => {
-                return plane.getPage?.(_learnCard, query, paginationOptions);
-            },
-        }
+              getPage: async (
+                  _learnCard,
+                  query,
+                  paginationOptions,
+                  { cache = 'cache-first' } = {}
+              ) => {
+                  if (cache === 'cache-only' && !learnCardImplementsPlane(_learnCard, 'cache')) {
+                      throw new Error('Cannot read from cache. Cache Plane is not implemented!');
+                  }
+
+                  if (learnCardImplementsPlane(_learnCard, 'cache') && cache !== 'skip-cache') {
+                      const cachedResponse = await _learnCard.cache.getIndexPage(
+                          name,
+                          query ?? {},
+                          paginationOptions
+                      );
+
+                      if (cachedResponse) {
+                          if (cache === 'cache-first') {
+                              plane
+                                  .getPage?.(_learnCard, query, paginationOptions, {
+                                      cache: 'skip-cache',
+                                  })
+                                  .then((res: any) =>
+                                      _learnCard.cache.setIndexPage(
+                                          name,
+                                          query ?? {},
+                                          res,
+                                          paginationOptions
+                                      )
+                                  );
+                          }
+
+                          return cachedResponse;
+                      }
+                  }
+
+                  const result = await plane.getPage?.(_learnCard, query, paginationOptions);
+
+                  if (
+                      result &&
+                      learnCardImplementsPlane(_learnCard, 'cache') &&
+                      cache !== 'skip-cache'
+                  ) {
+                      await _learnCard.cache.setIndexPage(
+                          name,
+                          query ?? {},
+                          result,
+                          paginationOptions
+                      );
+                  }
+
+                  return result;
+              },
+          }
         : {}),
     add: async (_learnCard, record, { cache = 'cache-first' } = {}) => {
-        if (cache !== 'skip-cache' && learnCardImplementsPlane(_learnCard, 'cache')) {
-            await _learnCard.cache.flushIndex();
+        if (cache === 'cache-only' && !learnCardImplementsPlane(_learnCard, 'cache')) {
+            throw new Error('Cannot read from cache. Cache Plane is not implemented!');
         }
 
         return plane.add(_learnCard, record);
     },
     ...(plane.addMany
         ? {
-            addMany: async (_learnCard, records, { cache = 'cache-first' } = {}) => {
-                if (cache !== 'skip-cache' && learnCardImplementsPlane(_learnCard, 'cache')) {
-                    await _learnCard.cache.flushIndex();
-                }
+              addMany: async (_learnCard, records, { cache = 'cache-first' } = {}) => {
+                  if (cache !== 'skip-cache' && learnCardImplementsPlane(_learnCard, 'cache')) {
+                      await _learnCard.cache.flushIndex();
+                  }
 
-                return plane.addMany?.(_learnCard, records);
-            },
-        }
+                  return plane.addMany?.(_learnCard, records);
+              },
+          }
         : {}),
     update: async (_learnCard, id, update, { cache = 'cache-first' } = {}) => {
         if (cache !== 'skip-cache' && learnCardImplementsPlane(_learnCard, 'cache')) {
@@ -273,14 +320,14 @@ const addCachingToIndexPlane = <
     },
     ...(plane.removeAll
         ? {
-            removeAll: async (_learnCard, { cache = 'cache-first' } = {}) => {
-                if (cache !== 'skip-cache' && learnCardImplementsPlane(_learnCard, 'cache')) {
-                    await _learnCard.cache.flushIndex();
-                }
+              removeAll: async (_learnCard, { cache = 'cache-first' } = {}) => {
+                  if (cache !== 'skip-cache' && learnCardImplementsPlane(_learnCard, 'cache')) {
+                      await _learnCard.cache.flushIndex();
+                  }
 
-                return plane.removeAll?.(_learnCard);
-            },
-        }
+                  return plane.removeAll?.(_learnCard);
+              },
+          }
         : {}),
 });
 
@@ -307,7 +354,7 @@ const generateIndexPlane = <
 
     const all: Pick<IndexPlane, 'get'> = {
         get: async <Metadata extends Record<string, any> = Record<never, never>>(
-            query?: Record<string, any>,
+            query?: Partial<Query<CredentialRecord<Metadata>>>,
             { cache = 'cache-first' }: PlaneOptions = {}
         ) => {
             learnCard.debug?.('learnCard.index.all.get');
@@ -365,7 +412,7 @@ const generateCachePlane = <
     return {
         getIndex: async <Metadata extends Record<string, any> = Record<never, never>>(
             name: string,
-            query: Record<string, any>
+            query: Partial<Query<CredentialRecord<Metadata>>>
         ) => {
             learnCard.debug?.('learnCard.cache.getIndex');
 
@@ -399,6 +446,64 @@ const generateCachePlane = <
                     }
 
                     return plugin.cache.setIndex(learnCard as any, name, query, value);
+                })
+            );
+
+            return result.some(promiseResult => promiseResult.status === 'fulfilled');
+        },
+        getIndexPage: async <Metadata extends Record<string, any> = Record<never, never>>(
+            name: string,
+            query: Partial<Query<CredentialRecord<Metadata>>>,
+            paginationOptions?: { limit?: number; cursor?: string }
+        ) => {
+            learnCard.debug?.('learnCard.cache.getIndex');
+
+            try {
+                const results = await Promise.allSettled(
+                    learnCard.plugins.map(async plugin => {
+                        if (!pluginImplementsPlane(plugin, 'cache')) {
+                            throw new Error('Plugin is not a Cache Plugin');
+                        }
+
+                        return plugin.cache.getIndexPage(
+                            learnCard as any,
+                            name,
+                            query,
+                            paginationOptions
+                        ) as Promise<
+                            | {
+                                  records: CredentialRecord<Metadata>[];
+                                  hasMore: boolean;
+                                  cursor?: string;
+                              }
+                            | undefined
+                        >;
+                    })
+                );
+
+                const index = results.find(isFulfilledAndNotEmpty)?.value;
+
+                return index;
+            } catch (error) {
+                return undefined;
+            }
+        },
+        setIndexPage: async (name, query, value, paginationOptions) => {
+            learnCard.debug?.('learnCard.cache.setIndex');
+
+            const result = await Promise.allSettled(
+                learnCard.plugins.map(async plugin => {
+                    if (!pluginImplementsPlane(plugin, 'cache')) {
+                        throw new Error('Plugin is not a Cache Plugin');
+                    }
+
+                    return plugin.cache.setIndexPage(
+                        learnCard as any,
+                        name,
+                        query,
+                        value,
+                        paginationOptions
+                    );
                 })
             );
 
@@ -553,7 +658,7 @@ export const generateLearnCard = async <
         id: {} as LearnCardIdPlane<Plugins>,
         plugins: plugins as Plugins,
         invoke: pluginMethods,
-        addPlugin: function(plugin) {
+        addPlugin: function (plugin) {
             return addPluginToLearnCard(this as any, plugin);
         },
         debug: _learnCard.debug,

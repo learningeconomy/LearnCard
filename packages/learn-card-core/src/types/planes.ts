@@ -86,11 +86,11 @@ export type LearnCardStorePlane<Plugins extends Plugin[]> = Record<
 
 export type IndexPlane = {
     get: <Metadata extends Record<string, any> = Record<never, never>>(
-        query?: Query<CredentialRecord<Metadata>>,
+        query?: Partial<Query<CredentialRecord<Metadata>>>,
         options?: PlaneOptions
     ) => Promise<CredentialRecord<Metadata>[]>;
     getPage?: <Metadata extends Record<string, any> = Record<never, never>>(
-        query?: Query<CredentialRecord<Metadata>>,
+        query?: Partial<Query<CredentialRecord<Metadata>>>,
         paginationOptions?: { limit?: number; cursor?: string },
         options?: PlaneOptions
     ) => Promise<{ records: CredentialRecord<Metadata>[]; hasMore: boolean; cursor?: string }>;
@@ -123,12 +123,25 @@ export type LearnCardIndexPlane<Plugins extends Plugin[]> = {
 export type CachePlane = {
     getIndex: <Metadata extends Record<string, any> = Record<never, never>>(
         name: string,
-        query: Record<string, any>
+        query: Partial<Query<CredentialRecord<Metadata>>>
     ) => Promise<CredentialRecord<Metadata>[] | undefined>;
     setIndex: <Metadata extends Record<string, any> = Record<never, never>>(
         name: string,
-        query: Record<string, any>,
+        query: Partial<Query<CredentialRecord<Metadata>>>,
         value: CredentialRecord<Metadata>[]
+    ) => Promise<boolean>;
+    getIndexPage: <Metadata extends Record<string, any> = Record<never, never>>(
+        name: string,
+        query: Partial<Query<CredentialRecord<Metadata>>>,
+        paginationOptions?: { limit?: number; cursor?: string }
+    ) => Promise<
+        { records: CredentialRecord<Metadata>[]; hasMore: boolean; cursor?: string } | undefined
+    >;
+    setIndexPage: <Metadata extends Record<string, any> = Record<never, never>>(
+        name: string,
+        query: Partial<Query<CredentialRecord<Metadata>>>,
+        value: { records: CredentialRecord<Metadata>[]; hasMore: boolean; cursor?: string },
+        paginationOptions?: { limit?: number; cursor?: string }
     ) => Promise<boolean>;
     flushIndex: () => Promise<boolean>;
     getVc: (uri: string) => Promise<VC | VP | undefined>;
