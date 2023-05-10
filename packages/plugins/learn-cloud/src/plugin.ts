@@ -41,13 +41,29 @@ export const getLearnCloudPlugin = async (
     learnCard.debug?.('Adding LearnCloud Plugin');
 
     let client = await getLearnCloudClient(url, learnCard);
+    let dids = await client.user.getDids.query();
 
     const learnCloudDid = await client.utilities.getDid.query();
 
     const updateLearnCard = async (
         _learnCard: LearnCard<any, 'id', LearnCloudPluginDependentMethods>
     ) => {
-        if (_learnCard.id.did() !== learnCard.id.did()) {
+        const oldDid = learnCard.id.did();
+        const newDid = _learnCard.id.did();
+
+        if (oldDid !== newDid) {
+            if (!dids.includes(newDid)) {
+                const presentation = await _learnCard.invoke.getDidAuthVp();
+
+                await client.user.addDid.mutate({ presentation });
+
+                if (newDid.split(':')[1] === 'web') {
+                    await client.user.setPrimaryDid.mutate({ presentation });
+                }
+
+                dids = await client.user.getDids.query();
+            }
+
             client = await getLearnCloudClient(url, _learnCard);
         }
 

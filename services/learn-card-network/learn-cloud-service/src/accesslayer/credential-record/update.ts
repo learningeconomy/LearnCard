@@ -9,7 +9,7 @@ export const updateCredentialRecord = async (
     try {
         return (
             await getCredentialRecordCollection().updateOne(
-                { did, _id: id },
+                { did, id },
                 { $set: { modified: new Date(), ...updates } }
             )
         ).modifiedCount;

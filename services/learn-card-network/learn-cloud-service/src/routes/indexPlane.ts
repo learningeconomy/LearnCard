@@ -40,12 +40,13 @@ export const indexRouter = t.router({
                 limit: PaginationOptionsValidator.shape.limit.default(25),
                 query: z.record(z.any()).or(JWEValidator).optional(),
                 encrypt: z.boolean().default(true),
+                includeAssociatedDids: z.boolean().default(true),
             }).default({})
         )
         .output(PaginatedEncryptedCredentialRecordsValidator.or(JWEValidator))
         .query(async ({ ctx, input }) => {
             const learnCard = await getLearnCard();
-            const { query: _query, encrypt, limit, cursor } = input;
+            const { query: _query, encrypt, limit, cursor, includeAssociatedDids } = input;
             const {
                 user: { did },
             } = ctx;
@@ -56,7 +57,13 @@ export const indexRouter = t.router({
                 query = await learnCard.invoke.getDIDObject().decryptDagJWE(query);
             }
 
-            const rawResults = await getCredentialRecordsForDid(did, query, cursor, limit + 1);
+            const rawResults = await getCredentialRecordsForDid(
+                did,
+                query,
+                cursor,
+                limit + 1,
+                includeAssociatedDids
+            );
             const results = rawResults.map(record => {
                 const {
                     did: _did,
@@ -67,7 +74,7 @@ export const indexRouter = t.router({
                     ...rest
                 } = record;
 
-                return { ...rest, id: _id };
+                return { ...rest };
             });
 
             const hasMore = results.length > limit;

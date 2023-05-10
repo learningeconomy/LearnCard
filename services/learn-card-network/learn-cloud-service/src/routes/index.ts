@@ -5,16 +5,7 @@ import jwtDecode from 'jwt-decode';
 
 import { getEmptyLearnCard } from '@helpers/learnCard.helpers';
 import { invalidateChallengeForDid, isChallengeValidForDid } from '@cache/challenges';
-
-export type DidAuthVP = {
-    iss: string;
-    vp: {
-        '@context': ['https://www.w3.org/2018/credentials/v1'];
-        type: ['VerifiablePresentation'];
-        holder: string;
-    };
-    nonce?: string;
-};
+import { DidAuthVP } from 'types/vp';
 
 export type Context = {
     user?: {

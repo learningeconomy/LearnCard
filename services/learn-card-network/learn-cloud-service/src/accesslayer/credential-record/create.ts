@@ -15,12 +15,12 @@ export const createCredentialRecord = async (
             await CredentialRecords.insertOne({
                 cursor,
                 did,
-                _id: id || cursor,
+                id: id || cursor,
                 created: new Date(),
                 modified: new Date(),
                 ...record,
             })
-        ).insertedId;
+        ).insertedId.toString();
     } catch (e) {
         console.error(e);
         return false;
@@ -37,7 +37,7 @@ export const createCredentialRecords = async (
 
         return {
             did,
-            _id: id || cursor,
+            id: id || cursor,
             cursor,
             created: new Date(),
             modified: new Date(),

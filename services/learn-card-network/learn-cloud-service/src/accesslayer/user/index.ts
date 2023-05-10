@@ -9,3 +9,4 @@ export const getUserCollection = () => {
 export const Users = getUserCollection();
 
 Users.createIndex({ did: 1 }, { unique: true });
+Users.createIndex({ did: 1, associatedDids: 1 });

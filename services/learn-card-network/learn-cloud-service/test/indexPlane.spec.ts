@@ -5,7 +5,6 @@ import { getClient, getUser } from './helpers/getClient';
 import { CredentialRecords } from '@accesslayer/credential-record';
 import { Users } from '@accesslayer/user';
 import { testRecordA, testRecordB, testRecordC } from './helpers/records';
-import { client } from '@mongo';
 
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;
@@ -15,10 +14,6 @@ describe('Index', () => {
     beforeAll(async () => {
         userA = await getUser();
         userB = await getUser('b'.repeat(64));
-    });
-
-    afterAll(async () => {
-        await client.close();
     });
 
     describe('get', () => {

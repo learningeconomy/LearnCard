@@ -5,7 +5,7 @@ export const deleteCredentialRecordById = async (
     id: string
 ): Promise<number | false> => {
     try {
-        return (await getCredentialRecordCollection().deleteOne({ did, _id: id })).deletedCount;
+        return (await getCredentialRecordCollection().deleteOne({ did, id })).deletedCount;
     } catch (e) {
         console.error(e);
         return false;
