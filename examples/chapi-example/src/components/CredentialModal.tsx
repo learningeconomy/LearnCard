@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
-import type { VC } from '@learncard/core';
+import type { VC } from '@learncard/types';
 import { VCCard } from '@learncard/react';
 
 import '@learncard/react/dist/main.css';

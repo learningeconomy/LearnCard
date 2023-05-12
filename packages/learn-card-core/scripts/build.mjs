@@ -34,6 +34,7 @@ const buildOptions = {
         'cross-fetch',
         'ethers',
         'cipher-base',
+        '@learncard/types',
     ],
 };
 

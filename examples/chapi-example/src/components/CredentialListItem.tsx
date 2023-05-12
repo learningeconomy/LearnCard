@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useStore } from '@nanostores/react';
-import type { CredentialRecord, VC } from '@learncard/core';
+import type { CredentialRecord, VC } from '@learncard/types';
 
 import CredentialModal from '@components/CredentialModal';
 

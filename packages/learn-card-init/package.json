@@ -1,0 +1,72 @@
+{
+    "name": "@learncard/init",
+    "version": "0.0.1",
+    "description": "",
+    "main": "./dist/index.js",
+    "module": "./dist/init.esm.js",
+    "files": [
+        "dist"
+    ],
+    "scripts": {
+        "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.js && tsc --p tsconfig.build.json && tsc-alias",
+        "start": "aqu watch",
+        "lint": "aqu lint",
+        "lint:fix": "aqu lint --fix",
+        "test": "jest",
+        "test:watch": "jest --watch",
+        "test:coverage": "jest --silent --ci --coverage --coverageReporters=\"text\" --coverageReporters=\"text-summary\""
+    },
+    "author": "Learning Economy Foundation (www.learningeconomy.io)",
+    "license": "MIT",
+    "homepage": "https://github.com/WeLibraryOS/LearnCard#readme",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/WeLibraryOS/LearnCard.git"
+    },
+    "bugs": {
+        "url": "https://github.com/WeLibraryOS/LearnCard/issues"
+    },
+    "devDependencies": {
+        "@types/jest": "^29.2.2",
+        "@types/node": "^17.0.31",
+        "aqu": "0.4.3",
+        "esbuild": "^0.14.38",
+        "esbuild-jest": "^0.5.0",
+        "esbuild-plugin-copy": "^1.3.0",
+        "jest": "^29.3.0",
+        "jest-resolver-enhanced": "^1.1.0",
+        "jimp": "^0.16.1",
+        "qrcode-reader": "^1.0.4",
+        "shx": "^0.3.4",
+        "ts-jest": "^29.0.3",
+        "tsc-alias": "^1.6.9",
+        "typescript": "^4.6.4"
+    },
+    "types": "./dist/index.d.ts",
+    "dependencies": {
+        "@learncard/ceramic-plugin": "workspace:*",
+        "@learncard/chapi-plugin": "workspace:*",
+        "@learncard/core": "workspace:*",
+        "@learncard/crypto-plugin": "workspace:*",
+        "@learncard/did-web-plugin": "workspace:*",
+        "@learncard/didkey-plugin": "workspace:*",
+        "@learncard/didkit-plugin": "workspace:*",
+        "@learncard/ethereum-plugin": "workspace:*",
+        "@learncard/expiration-plugin": "workspace:*",
+        "@learncard/helpers": "workspace:*",
+        "@learncard/idx-plugin": "workspace:*",
+        "@learncard/learn-card-plugin": "workspace:*",
+        "@learncard/types": "workspace:*",
+        "@learncard/vc-api-plugin": "workspace:*",
+        "@learncard/vc-plugin": "workspace:*",
+        "@learncard/vc-templates-plugin": "workspace:*",
+        "@learncard/vpqr-plugin": "workspace:*"
+    },
+    "pnpm": {
+        "overrides": {
+            "pvutils": "1.0.17",
+            "did-jwt": "5.9.0",
+            "uint8arrays": "^3.0.0"
+        }
+    }
+}

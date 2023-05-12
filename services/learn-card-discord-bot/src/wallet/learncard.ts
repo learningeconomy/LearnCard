@@ -1,7 +1,7 @@
 import crypto from 'crypto';
-import { initLearnCard } from '@learncard/core';
+import { initLearnCard, LearnCardFromSeed } from '@learncard/init';
 
-export const getWallet = async (seed: string) => {
+export const getWallet = async (seed: string): Promise<LearnCardFromSeed['returnValue']> => {
     return initLearnCard({ seed });
 };
 

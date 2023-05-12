@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useStore } from '@nanostores/react';
-import { initLearnCard, CredentialRequestEvent } from '@learncard/core';
+import type { CredentialRequestEvent } from '@learncard/chapi-plugin';
+import { initLearnCard } from '@learncard/init';
 
 import '@learncard/react/dist/main.css';
 

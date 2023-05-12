@@ -5,7 +5,7 @@
     "projectType": "application",
     "root": "examples/chapi-example",
     "tags": [],
-    "implicitDependencies": ["core", "helpers", "react"],
+    "implicitDependencies": ["chapi-plugin", "init", "helpers", "react", "types"],
     "namedInputs": {
         "source": ["{projectRoot}/src/**/*"],
         "dist": ["{projectRoot}/dist/**/*"]

@@ -1,4 +1,4 @@
-import type { VP, VC } from '@learncard/core';
+import type { VP, VC } from '@learncard/types';
 
 export const getCredentialFromVp = (vp: VP): VC => {
     const vcField = vp.verifiableCredential;

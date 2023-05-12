@@ -1,4 +1,4 @@
-import { initLearnCard } from '@learncard/core';
+import { initLearnCard } from '@learncard/init';
 import { getDIDForSource } from '../../accesslayer/didregistry/read';
 import {
     getCredentialTemplates,

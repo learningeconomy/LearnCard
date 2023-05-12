@@ -5,7 +5,7 @@
     "projectType": "application",
     "root": "services/learn-card-network/learn-cloud-service",
     "tags": [],
-    "implicitDependencies": ["core", "types", "nx-run-command"],
+    "implicitDependencies": ["init", "didkit-plugin", "did-web-plugin", "helpers", "types", "nx-run-command"],
     "namedInputs": {
         "source": ["{projectRoot}/src/**/*"],
         "tests": ["{projectRoot}/test/**/*"],

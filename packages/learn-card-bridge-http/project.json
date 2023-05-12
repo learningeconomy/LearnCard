@@ -5,7 +5,7 @@
     "projectType": "library",
     "root": "packages/learn-card-bridge-http",
     "tags": [],
-    "implicitDependencies": ["types", "core"],
+    "implicitDependencies": ["types", "init"],
     "namedInputs": {
         "source": ["{projectRoot}/src/**/*"],
         "dist": ["{projectRoot}/dist/**/*"]

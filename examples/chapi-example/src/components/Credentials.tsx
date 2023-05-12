@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useStore } from '@nanostores/react';
 
 import { _wallet } from '@stores/walletStore';
-import type { CredentialRecord } from '@learncard/core';
+import type { CredentialRecord } from '@learncard/types';
 import CredentialListItem from '@components/CredentialListItem';
 
 const Credentials: React.FC = () => {
@@ -15,15 +15,12 @@ const Credentials: React.FC = () => {
 
     if (!wallet || !credentialsList) return <></>;
 
-    if(credentialsList.length === 0) {
+    if (credentialsList.length === 0) {
         return <></>;
     }
     const credentials =
         credentialsList.length === 0 ? (
-            <>
-                You have no credentials. Hit the "Issue Test Credential" button
-                above to add one.
-            </>
+            <>You have no credentials. Hit the "Issue Test Credential" button above to add one.</>
         ) : (
             credentialsList.map(credential => (
                 <CredentialListItem key={credential.title} credential={credential} />

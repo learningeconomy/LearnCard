@@ -1,0 +1,86 @@
+import { customLearnCard } from './initializers/customLearnCard';
+import { emptyLearnCard } from './initializers/emptyLearnCard';
+import { learnCardFromSeed } from './initializers/learnCardFromSeed';
+import { learnCardFromApiUrl } from './initializers/apiLearnCard';
+
+import {
+    InitLearnCard,
+    EmptyLearnCard,
+    LearnCardFromSeed,
+    LearnCardFromVcApi,
+    CustomLearnCard,
+} from 'types/LearnCard';
+
+export * from './initializers/customLearnCard';
+export * from './initializers/emptyLearnCard';
+export * from './initializers/learnCardFromSeed';
+export * from './initializers/apiLearnCard';
+
+// Overloads (Unfortunately necessary boilerplate 😢)
+
+/**
+ * Generates an Empty Wallet
+ *
+ * @group Init Functions
+ */
+export function initLearnCard(
+    config?: EmptyLearnCard['args']
+): Promise<EmptyLearnCard['returnValue']>;
+
+/**
+ * Generates a full wallet from a 32 byte seed
+ *
+ * @group Init Functions
+ */
+export function initLearnCard(
+    config: LearnCardFromSeed['args']
+): Promise<LearnCardFromSeed['returnValue']>;
+
+/**
+ * Generates a wallet that can sign VCs/VPs from a VC API
+ *
+ * @group Init Functions
+ */
+export function initLearnCard(
+    config: LearnCardFromVcApi['args']
+): Promise<LearnCardFromVcApi['returnValue']>;
+
+/**
+ * Generates a custom wallet with no plugins added
+ *
+ * @group Init Functions
+ */
+export function initLearnCard(
+    config: CustomLearnCard['args']
+): Promise<CustomLearnCard['returnValue']>;
+
+// Implementation
+
+/**
+ * Generates a new LearnCard wallet
+ *
+ * @group Init Functions
+ */
+export async function initLearnCard(
+    config: InitLearnCard['args'] = {}
+): InitLearnCard['returnValue'] {
+    if ('custom' in config) return customLearnCard({ debug: config.debug });
+
+    if ('vcApi' in config) {
+        const { vcApi, did, debug } = config;
+
+        return learnCardFromApiUrl({
+            url: typeof vcApi === 'string' ? vcApi : 'https://bridge.learncard.com',
+            did: vcApi === true ? 'did:key:z6MkjSz4mYqcn7dePGuktJ5PxecMkXQQHWRg8Lm6okATyFVh' : did,
+            debug,
+        });
+    }
+
+    if ('seed' in config) {
+        const { seed, ...keyConfig } = config;
+
+        return learnCardFromSeed(seed, keyConfig);
+    }
+
+    return emptyLearnCard(config);
+}

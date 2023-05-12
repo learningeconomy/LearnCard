@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { DidMethod } from '@learncard/core';
+import { DidMethod } from '@learncard/didkit-plugin';
 
 import DidSelector from '@components/DidSelector';
 

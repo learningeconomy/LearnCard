@@ -12,6 +12,7 @@
     "license": "MIT",
     "dependencies": {
         "@learncard/core": "workspace:*",
+        "@learncard/init": "workspace:^",
         "@learncard/learn-cloud-plugin": "workspace:*",
         "@learncard/network-plugin": "workspace:*",
         "@learncard/types": "workspace:*",

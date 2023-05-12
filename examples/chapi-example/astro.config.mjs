@@ -11,7 +11,7 @@ export default defineConfig({
     vite: {
         plugins: [basicSsl()],
         optimizeDeps: {
-            exclude: ['@learncard/core'],
+            exclude: [],
             esbuildOptions: {
                 define: { global: 'globalThis' },
                 plugins: [GlobalPolyfill({ process: true, buffer: true })],

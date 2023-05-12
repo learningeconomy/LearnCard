@@ -1,0 +1,23 @@
+{
+    "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+    "name": "didkey-plugin",
+    "sourceRoot": "packages/plugins/didkey/src",
+    "projectType": "library",
+    "root": "packages/plugins/didkey",
+    "tags": [],
+    "implicitDependencies": ["types", "core", "helpers"],
+    "namedInputs": {
+        "scripts": ["{projectRoot}/scripts/**/*"],
+        "source": ["{projectRoot}/src/**/*"],
+        "dist": ["{projectRoot}/dist/**/*"]
+    },
+    "targets": {
+        "build": {
+            "executor": "nx:run-script",
+            "inputs": ["source", "scripts"],
+            "options": {
+                "script": "build"
+            }
+        }
+    }
+}
