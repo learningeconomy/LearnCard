@@ -39,7 +39,9 @@
     "types": "./dist/index.d.ts",
     "dependencies": {
         "@learncard/core": "workspace:*",
-        "@learncard/network-brain-client": "workspace:*"
+        "@learncard/didkit-plugin": "workspace:^",
+        "@learncard/network-brain-client": "workspace:*",
+        "@learncard/vc-plugin": "workspace:^"
     },
     "pnpm": {
         "overrides": {

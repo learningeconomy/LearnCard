@@ -40,7 +40,6 @@
         "testcontainers": "^9.1.1"
     },
     "dependencies": {
-        "@learncard/did-web-plugin": "workspace:*",
         "@learncard/didkit-plugin": "workspace:^",
         "@learncard/helpers": "workspace:*",
         "@learncard/init": "workspace:^",

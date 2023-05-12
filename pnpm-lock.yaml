@@ -53,8 +53,8 @@ importers:
         specifier: ^0.5.0
         version: 0.5.0
       nx:
-        specifier: 15.6.3
-        version: 15.6.3
+        specifier: 16.1.4
+        version: 16.1.4
       prettier:
         specifier: ^2.8.4
         version: 2.8.4
@@ -417,6 +417,9 @@ importers:
       '@learncard/core':
         specifier: workspace:*
         version: link:../learn-card-core
+      '@learncard/didkit-plugin':
+        specifier: workspace:^
+        version: link:../plugins/didkit
       '@learncard/init':
         specifier: workspace:^
         version: link:../learn-card-init
@@ -472,91 +475,34 @@ importers:
 
   packages/learn-card-core:
     dependencies:
-      '@ceramicnetwork/common':
-        specifier: 2.13.0
-        version: 2.13.0
-      '@ceramicnetwork/http-client':
-        specifier: 2.7.0
-        version: 2.7.0
-      '@ceramicnetwork/stream-tile':
-        specifier: 2.9.0
-        version: 2.9.0
-      '@ceramicnetwork/streamid':
-        specifier: 2.7.0
-        version: 2.7.0
-      '@digitalbazaar/vpqr':
-        specifier: ^3.0.0
-        version: 3.0.0
-      '@glazed/did-datastore':
-        specifier: 0.3.2
-        version: 0.3.2
-      '@glazed/tile-loader':
-        specifier: 0.2.1
-        version: 0.2.1
       '@learncard/helpers':
         specifier: workspace:*
         version: link:../learn-card-helpers
-      '@uniswap/default-token-list':
-        specifier: ^4.1.0
-        version: 4.1.0
       abort-controller:
         specifier: ^3.0.0
         version: 3.0.0
       core-js:
         specifier: ^3.25.5
         version: 3.28.0
-      credential-handler-polyfill:
-        specifier: ^3.0.0
-        version: 3.1.0
       cross-fetch:
         specifier: ^3.1.5
         version: 3.1.5
-      date-fns:
-        specifier: ^2.28.0
-        version: 2.29.3
-      dids:
-        specifier: 3.4.0
-        version: 3.4.0
-      ethers:
-        specifier: ^5.6.9
-        version: 5.7.2
-      hex-lite:
-        specifier: ^1.5.0
-        version: 1.5.0
       isomorphic-fetch:
         specifier: ^3.0.0
         version: 3.0.0
       isomorphic-webcrypto:
         specifier: ^2.3.8
         version: 2.3.8(expo@48.0.4)(react-native@0.71.3)
-      key-did-provider-ed25519:
-        specifier: ^2.0.0
-        version: 2.0.1
-      key-did-resolver:
-        specifier: 2.3.0
-        version: 2.3.0
-      lodash:
-        specifier: ^4.17.21
-        version: 4.17.21
-      web-credential-handler:
-        specifier: ^2.0.0
-        version: 2.0.2
       zod:
         specifier: ^3.20.2
         version: 3.20.6
     devDependencies:
-      '@glazed/types':
-        specifier: ^0.2.0
-        version: 0.2.0
       '@learncard/types':
         specifier: workspace:*
         version: link:../learn-card-types
       '@types/jest':
         specifier: ^29.2.2
         version: 29.4.0
-      '@types/lodash':
-        specifier: ^4.14.191
-        version: 4.14.191
       '@types/node':
         specifier: ^17.0.31
         version: 17.0.45
@@ -569,24 +515,12 @@ importers:
       esbuild-jest:
         specifier: ^0.5.0
         version: 0.5.0(esbuild@0.14.54)
-      esbuild-plugin-copy:
-        specifier: ^1.3.0
-        version: 1.6.0(esbuild@0.14.54)
       jest:
         specifier: ^29.3.0
         version: 29.4.3(@types/node@17.0.45)
       jest-resolver-enhanced:
         specifier: ^1.1.0
         version: 1.1.0
-      jimp:
-        specifier: ^0.16.1
-        version: 0.16.13
-      multiformats:
-        specifier: ^11.0.1
-        version: 11.0.1
-      qrcode-reader:
-        specifier: ^1.0.4
-        version: 1.0.4
       shx:
         specifier: ^0.3.4
         version: 0.3.4
@@ -660,9 +594,6 @@ importers:
       '@learncard/crypto-plugin':
         specifier: workspace:*
         version: link:../plugins/crypto
-      '@learncard/did-web-plugin':
-        specifier: workspace:*
-        version: link:../plugins/did-web-plugin
       '@learncard/didkey-plugin':
         specifier: workspace:*
         version: link:../plugins/didkey
@@ -684,6 +615,9 @@ importers:
       '@learncard/learn-card-plugin':
         specifier: workspace:*
         version: link:../plugins/learn-card
+      '@learncard/network-plugin':
+        specifier: workspace:^
+        version: link:../plugins/learn-card-network
       '@learncard/types':
         specifier: workspace:*
         version: link:../learn-card-types
@@ -979,13 +913,37 @@ importers:
 
   packages/plugins/did-web-plugin:
     dependencies:
+      '@learncard/ceramic-plugin':
+        specifier: workspace:*
+        version: link:../ceramic
       '@learncard/core':
         specifier: workspace:*
         version: link:../../learn-card-core
-    devDependencies:
+      '@learncard/didkey-plugin':
+        specifier: workspace:*
+        version: link:../didkey
+      '@learncard/didkit-plugin':
+        specifier: workspace:^
+        version: link:../didkit
+      '@learncard/expiration-plugin':
+        specifier: workspace:*
+        version: link:../expiration
+      '@learncard/helpers':
+        specifier: workspace:*
+        version: link:../../learn-card-helpers
+      '@learncard/learn-card-plugin':
+        specifier: workspace:*
+        version: link:../learn-card
       '@learncard/types':
         specifier: workspace:*
         version: link:../../learn-card-types
+      '@learncard/vc-plugin':
+        specifier: workspace:*
+        version: link:../vc
+      '@learncard/vc-templates-plugin':
+        specifier: workspace:*
+        version: link:../vc-templates
+    devDependencies:
       '@types/jest':
         specifier: ^29.2.2
         version: 29.4.0
@@ -1148,6 +1106,9 @@ importers:
       '@learncard/vc-plugin':
         specifier: workspace:^
         version: link:../vc
+      why-is-node-running:
+        specifier: ^2.2.2
+        version: 2.2.2
     devDependencies:
       '@types/jest':
         specifier: ^29.2.2
@@ -1198,6 +1159,9 @@ importers:
         specifier: workspace:*
         version: link:../../learn-card-types
     devDependencies:
+      '@glazed/types':
+        specifier: 0.2.0
+        version: 0.2.0
       '@types/jest':
         specifier: ^29.2.2
         version: 29.4.0
@@ -1274,9 +1238,15 @@ importers:
       '@learncard/core':
         specifier: workspace:*
         version: link:../../learn-card-core
+      '@learncard/didkit-plugin':
+        specifier: workspace:^
+        version: link:../didkit
       '@learncard/network-brain-client':
         specifier: workspace:*
         version: link:../../learn-card-network/brain-client
+      '@learncard/vc-plugin':
+        specifier: workspace:^
+        version: link:../vc
     devDependencies:
       '@learncard/types':
         specifier: workspace:*
@@ -1317,9 +1287,15 @@ importers:
       '@learncard/core':
         specifier: workspace:*
         version: link:../../learn-card-core
+      '@learncard/didkit-plugin':
+        specifier: workspace:*
+        version: link:../didkit
       '@learncard/helpers':
         specifier: workspace:^
         version: link:../../learn-card-helpers
+      '@learncard/init':
+        specifier: workspace:*
+        version: link:../../learn-card-init
       '@learncard/learn-cloud-client':
         specifier: workspace:*
         version: link:../../learn-card-network/cloud-client
@@ -1783,21 +1759,42 @@ importers:
 
   services/learn-card-network/brain-service:
     dependencies:
+      '@learncard/ceramic-plugin':
+        specifier: workspace:*
+        version: link:../../../packages/plugins/ceramic
+      '@learncard/core':
+        specifier: workspace:*
+        version: link:../../../packages/learn-card-core
+      '@learncard/crypto-plugin':
+        specifier: workspace:*
+        version: link:../../../packages/plugins/crypto
       '@learncard/did-web-plugin':
         specifier: workspace:*
         version: link:../../../packages/plugins/did-web-plugin
+      '@learncard/didkey-plugin':
+        specifier: workspace:*
+        version: link:../../../packages/plugins/didkey
       '@learncard/didkit-plugin':
         specifier: workspace:^
         version: link:../../../packages/plugins/didkit
+      '@learncard/expiration-plugin':
+        specifier: workspace:*
+        version: link:../../../packages/plugins/expiration
       '@learncard/helpers':
         specifier: workspace:*
         version: link:../../../packages/learn-card-helpers
-      '@learncard/init':
-        specifier: workspace:^
-        version: link:../../../packages/learn-card-init
+      '@learncard/learn-card-plugin':
+        specifier: workspace:*
+        version: link:../../../packages/plugins/learn-card
       '@learncard/types':
         specifier: workspace:*
         version: link:../../../packages/learn-card-types
+      '@learncard/vc-plugin':
+        specifier: workspace:*
+        version: link:../../../packages/plugins/vc
+      '@learncard/vc-templates-plugin':
+        specifier: workspace:*
+        version: link:../../../packages/plugins/vc-templates
       '@trpc/client':
         specifier: ^10.17.0
         version: 10.17.0(@trpc/server@10.17.0)
@@ -1904,9 +1901,6 @@ importers:
 
   services/learn-card-network/learn-cloud-service:
     dependencies:
-      '@learncard/did-web-plugin':
-        specifier: workspace:*
-        version: link:../../../packages/plugins/did-web-plugin
       '@learncard/didkit-plugin':
         specifier: workspace:^
         version: link:../../../packages/plugins/didkit
@@ -2110,7 +2104,7 @@ importers:
     devDependencies:
       '@nrwl/devkit':
         specifier: ^15.6.3
-        version: 15.7.2(nx@15.6.3)(typescript@4.9.5)
+        version: 15.7.2(nx@16.1.4)(typescript@4.9.5)
       esbuild:
         specifier: ^0.17.5
         version: 0.17.10
@@ -9778,17 +9772,7 @@ packages:
       mkdirp: 1.0.4
       rimraf: 3.0.2
 
-  /@nrwl/cli@15.6.3:
-    resolution: {integrity: sha512-K4E0spofThZXMnhA6R8hkUTdfqmwSnUE2+DlD5Y3jqsvKTAgwF5U41IFkEouFZCf+dWjy0RA20bWoX48EVFtmQ==}
-    dependencies:
-      nx: 15.6.3
-    transitivePeerDependencies:
-      - '@swc-node/register'
-      - '@swc/core'
-      - debug
-    dev: true
-
-  /@nrwl/devkit@15.7.2(nx@15.6.3)(typescript@4.9.5):
+  /@nrwl/devkit@15.7.2(nx@16.1.4)(typescript@4.9.5):
     resolution: {integrity: sha512-HMGi7L6w2g4IrYwhb04snD8Zr24Z/gzau5i9WUNkwzrjeR1xAm0Cc9WRre221zaeohtK11gyBt7BerT1tgkNwA==}
     peerDependencies:
       nx: '>= 14.1 <= 16'
@@ -9796,18 +9780,18 @@ packages:
       '@phenomnomnominal/tsquery': 4.1.1(typescript@4.9.5)
       ejs: 3.1.8
       ignore: 5.2.4
-      nx: 15.6.3
+      nx: 16.1.4
       semver: 7.3.4
       tslib: 2.5.0
     transitivePeerDependencies:
       - typescript
     dev: true
 
-  /@nrwl/tao@15.6.3:
-    resolution: {integrity: sha512-bDZbPIbU5Mf2BvX0q8GjPxrm1WkYyfW+gp7mLuuJth2sEpZiCr47mSwuGko/y4CKXvIX46VQcAS0pKQMKugXsg==}
+  /@nrwl/tao@16.1.4:
+    resolution: {integrity: sha512-aArX3E7j+foUUzutsrgOc1lh9Rj5LDCAncHlszu0XGgHRO2EHE4qxZHvmgogGEpRf1ojTNAfN72xhVCSjtca/Q==}
     hasBin: true
     dependencies:
-      nx: 15.6.3
+      nx: 16.1.4
     transitivePeerDependencies:
       - '@swc-node/register'
       - '@swc/core'
@@ -9819,6 +9803,87 @@ packages:
     dependencies:
       tslib: 2.5.0
     dev: false
+
+  /@nx/nx-darwin-arm64@16.1.4:
+    resolution: {integrity: sha512-0eITl+18xLtdiAVlv+LRukCHBLSLk8L8OkMnfLoK286sIblK31p2pzr1jL68ILUWPGGbdgo+nDEaaDTwh4tYRA==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [darwin]
+    requiresBuild: true
+    dev: true
+    optional: true
+
+  /@nx/nx-darwin-x64@16.1.4:
+    resolution: {integrity: sha512-owgIq/KsCU/QBK6Y7FsblnPPI0oSccJXaISKbPcCWnkD38rtUkaR99Eh2LvoUpcnvvpL0yldkkdMBzVvDwOSZg==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [darwin]
+    requiresBuild: true
+    dev: true
+    optional: true
+
+  /@nx/nx-linux-arm-gnueabihf@16.1.4:
+    resolution: {integrity: sha512-TqphSqAvQcgu83hE/XvJfGALq6EFqfRROct92whj+K5sz/AH67jnFPW+cHnXDwqIlgRB3lj/DFVqlNED8pBHfg==}
+    engines: {node: '>= 10'}
+    cpu: [arm]
+    os: [linux]
+    requiresBuild: true
+    dev: true
+    optional: true
+
+  /@nx/nx-linux-arm64-gnu@16.1.4:
+    resolution: {integrity: sha512-0AmO57zf5+ZrIa9XIkmRSbPF/gMqDNlMtMj8q1S+uYRU+WOAW+k1RbcFKdN0voH5eBDVQ03sqkgj9wTNS/m/vQ==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [linux]
+    requiresBuild: true
+    dev: true
+    optional: true
+
+  /@nx/nx-linux-arm64-musl@16.1.4:
+    resolution: {integrity: sha512-10zAgZP+xh7HwyfDJyiyjAQD2gjvb4ZfCDAOE2Boe5yYcD27SqwAIzgrCc4DjRbUWSdufA4rclyXXp2tSb3uyA==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [linux]
+    requiresBuild: true
+    dev: true
+    optional: true
+
+  /@nx/nx-linux-x64-gnu@16.1.4:
+    resolution: {integrity: sha512-vVea3E6uHvrVieaOHIXKziN/vMbn9g2caiE4N7WiuAPrp2t4jbhtYqcQoNeNVjl92trQu/l2Ma3knmbn75J7jA==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [linux]
+    requiresBuild: true
+    dev: true
+    optional: true
+
+  /@nx/nx-linux-x64-musl@16.1.4:
+    resolution: {integrity: sha512-HhJPPU0rBzGeqTrylEjOu190rnMvA0HK7nghyEtTGhdCcTRs1ulfgl6swjAjXtXtGA/rXXkk0IKI7luGBcH6zg==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [linux]
+    requiresBuild: true
+    dev: true
+    optional: true
+
+  /@nx/nx-win32-arm64-msvc@16.1.4:
+    resolution: {integrity: sha512-+iaU0yXkgF0Y5fvWFPP2cziDvd+QjQDnhk7/+i9Nk1C8vOaNHkMjx6qL2dNO2qoT49qMhjnI/hzL7+FBVPh11w==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [win32]
+    requiresBuild: true
+    dev: true
+    optional: true
+
+  /@nx/nx-win32-x64-msvc@16.1.4:
+    resolution: {integrity: sha512-s+H59UBB/dtdvZ+KWCe2PrVWZyoxsl6Vx+hzdUvCwI8f+cZmLRblTThLhUaBgdWLVqzFPemTkWIUasiRx/+3PQ==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [win32]
+    requiresBuild: true
+    dev: true
+    optional: true
 
   /@octokit/auth-token@2.5.0:
     resolution: {integrity: sha512-r5FVUJCOLl19AxiuZD2VRZ/ORjp/4IN98Of6YJoJOkY75CIBuYfmiNHGrDwXr+aLGG55igl9QrxX3hbiXlLb+g==}
@@ -19635,7 +19700,7 @@ packages:
     dependencies:
       confusing-browser-globals: 1.0.11
       eslint: 8.35.0
-      eslint-plugin-import: 2.27.5(@typescript-eslint/parser@5.53.0)(eslint-import-resolver-typescript@2.7.1)(eslint@8.35.0)
+      eslint-plugin-import: 2.27.5(@typescript-eslint/parser@5.54.0)(eslint-import-resolver-typescript@2.7.1)(eslint@8.35.0)
       object.assign: 4.1.4
       object.entries: 1.1.6
       semver: 6.3.0
@@ -19699,7 +19764,7 @@ packages:
     dependencies:
       debug: 4.3.4(supports-color@8.1.1)
       eslint: 8.35.0
-      eslint-plugin-import: 2.27.5(@typescript-eslint/parser@5.53.0)(eslint-import-resolver-typescript@2.7.1)(eslint@8.35.0)
+      eslint-plugin-import: 2.27.5(@typescript-eslint/parser@5.54.0)(eslint-import-resolver-typescript@2.7.1)(eslint@8.35.0)
       glob: 7.2.3
       is-glob: 4.0.3
       resolve: 1.22.1
@@ -25106,16 +25171,6 @@ packages:
       regenerator-runtime: 0.13.11
     dev: true
 
-  /jimp@0.16.13:
-    resolution: {integrity: sha512-Bxz8q7V4rnCky9A0ktTNGA9SkNFVWRHodddI/DaAWZJzF7sVUlFYKQ60y9JGqrKpi48ECA/TnfMzzc5C70VByA==}
-    dependencies:
-      '@babel/runtime': 7.21.0
-      '@jimp/custom': 0.16.13
-      '@jimp/plugins': 0.16.13(@jimp/custom@0.16.13)
-      '@jimp/types': 0.16.13(@jimp/custom@0.16.13)
-      regenerator-runtime: 0.13.11
-    dev: true
-
   /jmespath@0.16.0:
     resolution: {integrity: sha512-9FzQjJ7MATs1tSpnco1K6ayiYE3figslrXA72G2HQ/n76RzvYlofyi5QM+iX4YRs/pu3yzxlVQSST23+dMDknw==}
     engines: {node: '>= 0.6.0'}
@@ -27758,6 +27813,7 @@ packages:
   /multiformats@11.0.1:
     resolution: {integrity: sha512-atWruyH34YiknSdL5yeIir00EDlJRpHzELYQxG7Iy29eCyL+VrZHpPrX5yqlik3jnuqpLpRKVZ0SGVb9UzKaSA==}
     engines: {node: '>=16.0.0', npm: '>=7.0.0'}
+    dev: false
 
   /multiformats@9.9.0:
     resolution: {integrity: sha512-HoMUjhH9T8DDBNT+6xzkrd9ga/XiBI4xLr58LJACwK6G3HTOPeMz4nB4KJs33L2BelrIJa7P0VuNaVF3hMYfjg==}
@@ -28392,8 +28448,8 @@ packages:
     resolution: {integrity: sha512-90yv+6538zuvUMnN+zCr8LuV6bPFdq50304114vJYJ8RDyK8D5O9Phpbd6SZWgI7PwzmmfN1upeOJlvybDSgCw==}
     dev: true
 
-  /nx@15.6.3:
-    resolution: {integrity: sha512-3t0A0GPLNen1yPAyE+VGZ3nkAzZYb5nfXtAcx8SHBlKq4u42yBY3khBmP1y4Og3jhIwFIj7J7Npeh8ZKrthmYQ==}
+  /nx@16.1.4:
+    resolution: {integrity: sha512-fSkgC8wXLdW6QMaBHDXeEUJINgxBa0Vsut6Hq2SxEhtxmnx+lx++7NlhYVNZixTMRmI4a5vK0jdfPpe9hknsRA==}
     hasBin: true
     requiresBuild: true
     peerDependencies:
@@ -28405,8 +28461,7 @@ packages:
       '@swc/core':
         optional: true
     dependencies:
-      '@nrwl/cli': 15.6.3
-      '@nrwl/tao': 15.6.3
+      '@nrwl/tao': 16.1.4
       '@parcel/watcher': 2.0.4
       '@yarnpkg/lockfile': 1.1.0
       '@yarnpkg/parsers': 3.0.0-rc.40
@@ -28440,6 +28495,16 @@ packages:
       v8-compile-cache: 2.3.0
       yargs: 17.7.1
       yargs-parser: 21.1.1
+    optionalDependencies:
+      '@nx/nx-darwin-arm64': 16.1.4
+      '@nx/nx-darwin-x64': 16.1.4
+      '@nx/nx-linux-arm-gnueabihf': 16.1.4
+      '@nx/nx-linux-arm64-gnu': 16.1.4
+      '@nx/nx-linux-arm64-musl': 16.1.4
+      '@nx/nx-linux-x64-gnu': 16.1.4
+      '@nx/nx-linux-x64-musl': 16.1.4
+      '@nx/nx-win32-arm64-msvc': 16.1.4
+      '@nx/nx-win32-x64-msvc': 16.1.4
     transitivePeerDependencies:
       - debug
     dev: true
@@ -33008,6 +33073,10 @@ packages:
     resolution: {integrity: sha512-10rmPF5nuz5UdKuhhxgfS7Vz1aIRGmb+kn5Zy6bntCgNwkbZc0a7Z2dUw2Y9wSoRrBzf7Oim81SUsYdOkVnI8Q==}
     dev: true
 
+  /siginfo@2.0.0:
+    resolution: {integrity: sha512-ybx0WO1/8bSBLEWXZvEd7gMW3Sn3JFlW3TvX1nREbDLRNQNaeNN8WK0meBwPdAaOI7TtRRRJn/Es1zhrrCHu7g==}
+    dev: false
+
   /signal-exit@3.0.7:
     resolution: {integrity: sha512-wnD2ZE+l+SPC/uoS0vXeE9L1+0wuaMqKlfz9AMUo38JsyLSBWSFcHR1Rri62LZc12vLr1gb3jl7iwQhgwpAbGQ==}
 
@@ -33507,6 +33576,10 @@ packages:
     engines: {node: '>=10'}
     dependencies:
       escape-string-regexp: 2.0.0
+
+  /stackback@0.0.2:
+    resolution: {integrity: sha512-1XMJE5fQo1jGH6Y/7ebnwPOBEkIEnT4QF32d5R1+VXdXveM0IBMJt8zfaxX1P3QhVwrYe+576+jkANtSS2mBbw==}
+    dev: false
 
   /stackframe@1.3.4:
     resolution: {integrity: sha512-oeVtt7eWQS+Na6F//S4kJ2K2VbRlS9D43mAlMyVpVWovy9o+jfgH8O9agzANzaiLjclA0oYzUXEM4PurhSUChw==}
@@ -36782,6 +36855,15 @@ packages:
     hasBin: true
     dependencies:
       isexe: 2.0.0
+
+  /why-is-node-running@2.2.2:
+    resolution: {integrity: sha512-6tSwToZxTOcotxHeA+qGCq1mVzKR3CwcJGmVcY+QE8SHy6TnpFnh8PAvPNHYr7EcuVeG0QSMxtYCuO1ta/G/oA==}
+    engines: {node: '>=8'}
+    hasBin: true
+    dependencies:
+      siginfo: 2.0.0
+      stackback: 0.0.2
+    dev: false
 
   /wide-align@1.1.5:
     resolution: {integrity: sha512-eDMORYaPNZ4sQIuuYPDHdQvf4gyCF9rEEV/yPxGfwPkRodwEgiMUUXTx/dex+Me0wxx53S+NgUHaP7y3MGlDmg==}

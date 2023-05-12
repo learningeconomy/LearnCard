@@ -14,6 +14,7 @@ import { VpqrPlugin } from '@learncard/vpqr-plugin';
 import { CHAPIPlugin } from '@learncard/chapi-plugin';
 import { VCAPIPlugin } from '@learncard/vc-api-plugin';
 import { LearnCardPlugin } from '@learncard/learn-card-plugin';
+import { VerifyBoostPlugin, LearnCardNetworkPlugin } from '@learncard/network-plugin';
 
 import { InitFunction, GenericInitFunction } from 'types/helpers';
 
@@ -64,6 +65,30 @@ export type LearnCardFromSeed = InitFunction<
 >;
 
 /** @group Init Functions */
+export type NetworkLearnCardFromSeed = InitFunction<
+    { seed: string; network: true | string; trustedBoostRegistry?: string },
+    keyof LearnCardConfig,
+    LearnCard<
+        [
+            CryptoPluginType,
+            DIDKitPlugin,
+            DidKeyPlugin<DidMethod>,
+            VCPlugin,
+            VCTemplatePlugin,
+            CeramicPlugin,
+            IDXPlugin,
+            ExpirationPlugin,
+            EthereumPlugin,
+            VpqrPlugin,
+            CHAPIPlugin,
+            VerifyBoostPlugin,
+            LearnCardPlugin,
+            LearnCardNetworkPlugin
+        ]
+    >
+>;
+
+/** @group Init Functions */
 export type LearnCardFromVcApi = InitFunction<
     { vcApi: true | string; did?: string },
     'debug',
@@ -84,5 +109,11 @@ export type CustomLearnCard = InitFunction<{ custom: true }, 'debug', LearnCard<
 
 /** @group Init Functions */
 export type InitLearnCard = GenericInitFunction<
-    [EmptyLearnCard, LearnCardFromSeed, LearnCardFromVcApi, CustomLearnCard]
+    [
+        EmptyLearnCard,
+        LearnCardFromSeed,
+        NetworkLearnCardFromSeed,
+        LearnCardFromVcApi,
+        CustomLearnCard
+    ]
 >;

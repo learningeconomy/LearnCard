@@ -37,6 +37,7 @@
     "types": "./dist/index.d.ts",
     "dependencies": {
         "@learncard/core": "workspace:*",
-        "@learncard/vc-plugin": "workspace:^"
+        "@learncard/vc-plugin": "workspace:^",
+        "why-is-node-running": "^2.2.2"
     }
 }

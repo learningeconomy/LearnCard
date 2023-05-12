@@ -7,7 +7,7 @@ export type InitFunction<
     ReturnValue extends LearnCard<any, any> = LearnCard<any, any>
 > = {
     args: Args &
-    (undefined extends Config ? {} : Partial<Pick<LearnCardConfig, NonNullable<Config>>>);
+        (undefined extends Config ? {} : Partial<Pick<LearnCardConfig, NonNullable<Config>>>);
     returnValue: ReturnValue;
 };
 

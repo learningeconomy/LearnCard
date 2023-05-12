@@ -1,4 +1,5 @@
-import { initLearnCard, LearnCardFromSeed, AddPlugin } from '@learncard/core';
+import { initLearnCard, LearnCardFromSeed } from '@learncard/init';
+import { AddPlugin } from '@learncard/core';
 import { getLearnCloudPlugin } from './plugin';
 import { LearnCloudPlugin } from './types';
 

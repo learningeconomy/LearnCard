@@ -5,7 +5,7 @@
     "projectType": "library",
     "root": "packages/plugins/learn-cloud",
     "tags": [],
-    "implicitDependencies": ["types", "learn-cloud-client", "core"],
+    "implicitDependencies": ["types", "learn-cloud-client", "core", "didkit-plugin", "helpers", "init"],
     "namedInputs": {
         "scripts": ["{projectRoot}/scripts/**/*"],
         "source": ["{projectRoot}/src/**/*"],

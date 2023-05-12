@@ -1,6 +1,7 @@
 import type { DID } from 'dids';
 import { UnsignedVC, VC, VP } from '@learncard/types';
-import { LearnCard, Plugin, ProofOptions } from '@learncard/core';
+import { LearnCard, Plugin } from '@learncard/core';
+import { ProofOptions } from '@learncard/didkit-plugin';
 
 /** @group LearnCloud Plugin */
 export type LearnCloudPluginDependentMethods = {

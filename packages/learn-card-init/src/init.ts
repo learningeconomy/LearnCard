@@ -9,7 +9,9 @@ import {
     LearnCardFromSeed,
     LearnCardFromVcApi,
     CustomLearnCard,
+    NetworkLearnCardFromSeed,
 } from 'types/LearnCard';
+import { networkLearnCardFromSeed } from './initializers/networkLearnCardFromSeed';
 
 export * from './initializers/customLearnCard';
 export * from './initializers/emptyLearnCard';
@@ -35,6 +37,15 @@ export function initLearnCard(
 export function initLearnCard(
     config: LearnCardFromSeed['args']
 ): Promise<LearnCardFromSeed['returnValue']>;
+
+/**
+ * Generates a full wallet with access to LearnCard Network from a 32 byte seed
+ *
+ * @group Init Functions
+ */
+export function initLearnCard(
+    config: NetworkLearnCardFromSeed['args']
+): Promise<NetworkLearnCardFromSeed['returnValue']>;
 
 /**
  * Generates a wallet that can sign VCs/VPs from a VC API
@@ -77,6 +88,8 @@ export async function initLearnCard(
     }
 
     if ('seed' in config) {
+        if ('network' in config) return networkLearnCardFromSeed(config);
+
         const { seed, ...keyConfig } = config;
 
         return learnCardFromSeed(seed, keyConfig);

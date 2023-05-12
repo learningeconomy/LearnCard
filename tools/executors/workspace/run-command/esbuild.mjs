@@ -1,6 +1,6 @@
 import esbuild from 'esbuild';
 
-esbuild.build({
+await esbuild.build({
     target: 'es2020',
     bundle: true,
     entryPoints: ['src/index.ts'],

@@ -20,6 +20,6 @@ if (process.env.NODE_ENV !== 'production') {
     finalBuildObj.minify = false;
 }
 
-build(finalBuildObj).then(() => {
+await build(finalBuildObj).then(() => {
     console.log(`🎁 Done building main bundle! (${Date.now() - startTime}ms)`);
 });

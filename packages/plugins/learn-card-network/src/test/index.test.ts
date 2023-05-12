@@ -1,4 +1,4 @@
-import {
+/* import {
     UnsignedVCValidator,
     VC,
     VCValidator,
@@ -84,4 +84,4 @@ describe.skip('LearnCard Network Plugin', () => {
             ).toBeGreaterThan(0);
         });
     });
-});
+}); */

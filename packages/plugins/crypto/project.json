@@ -8,8 +8,7 @@
     "implicitDependencies": ["core"],
     "namedInputs": {
         "scripts": ["{projectRoot}/scripts/**/*"],
-        "source": ["{projectRoot}/src/**/*"],
-        "dist": ["{projectRoot}/dist/**/*"]
+        "source": ["{projectRoot}/src/**/*"]
     },
     "targets": {
         "build": {

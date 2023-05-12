@@ -12,7 +12,9 @@ import {
     LCNBoostClaimLinkSigningAuthorityType,
     LCNBoostClaimLinkOptionsType,
 } from '@learncard/types';
-import { Plugin, ProofOptions, VerifyExtension } from '@learncard/core';
+import { Plugin } from '@learncard/core';
+import { ProofOptions } from '@learncard/didkit-plugin';
+import { VerifyExtension } from '@learncard/vc-plugin';
 
 /** @group LearnCardNetwork Plugin */
 export type LearnCardNetworkPluginDependentMethods = {

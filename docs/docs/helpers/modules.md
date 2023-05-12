@@ -8,6 +8,28 @@ custom_edit_url: null
 
 ## Functions
 
+### isEncrypted
+
+▸ **isEncrypted**(`item`): item is Object
+
+Determines whether or not an object is an encrypted JWE
+
+#### Parameters
+
+| Name | Type |
+| :------ | :------ |
+| `item` | `Record`<`string`, `any`\> |
+
+#### Returns
+
+item is Object
+
+#### Defined in
+
+[learn-card-helpers/src/index.ts:11](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-helpers/src/index.ts#L11)
+
+___
+
 ### isHex
 
 ▸ **isHex**(`str`): `boolean`
@@ -28,4 +50,4 @@ E.g. 'abc123' is valid hex, 'zzz' is not
 
 #### Defined in
 
-[index.ts:6](https://github.com/WeLibraryOS/LearnCard/blob/b5b4a74/packages/learn-card-helpers/src/index.ts#L6)
+[learn-card-helpers/src/index.ts:8](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-helpers/src/index.ts#L8)

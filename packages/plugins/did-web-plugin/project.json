@@ -5,11 +5,21 @@
     "projectType": "library",
     "root": "packages/plugins/did-web-plugin",
     "tags": [],
-    "implicitDependencies": ["types", "core"],
+    "implicitDependencies": [
+        "types",
+        "core",
+        "helpers",
+        "ceramic-plugin",
+        "didkey-plugin",
+        "didkit-plugin",
+        "expiration-plugin",
+        "learn-card-plugin",
+        "vc-plugin",
+        "vc-templates-plugin"
+    ],
     "namedInputs": {
         "scripts": ["{projectRoot}/scripts/**/*"],
-        "source": ["{projectRoot}/src/**/*"],
-        "dist": ["{projectRoot}/dist/**/*"]
+        "source": ["{projectRoot}/src/**/*"]
     },
     "targets": {
         "build": {
