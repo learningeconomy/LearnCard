@@ -5,6 +5,7 @@ import { getDidKeyPlugin } from '@learncard/didkey-plugin';
 import { getVCPlugin } from '@learncard/vc-plugin';
 import { getVCTemplatesPlugin } from '@learncard/vc-templates-plugin';
 import { getCeramicPlugin } from '@learncard/ceramic-plugin';
+import { getLearnCloudPlugin } from '@learncard/learn-cloud-plugin';
 import { getIDXPlugin } from '@learncard/idx-plugin';
 import { expirationPlugin } from '@learncard/expiration-plugin';
 import { getEthereumPlugin } from '@learncard/ethereum-plugin';
@@ -25,6 +26,8 @@ export const networkLearnCardFromSeed = async ({
     seed,
     network: _network,
     trustedBoostRegistry,
+
+    cloud: { url = 'https://cloud.learncard.com/trpc', unencryptedFields = [] } = {},
     ceramicIdx = defaultCeramicIDXArgs,
     didkit,
     ethereumConfig = defaultEthereumArgs,
@@ -46,7 +49,11 @@ export const networkLearnCardFromSeed = async ({
 
     const ceramicLc = await templateLc.addPlugin(await getCeramicPlugin(templateLc, ceramicIdx));
 
-    const idxLc = await ceramicLc.addPlugin(await getIDXPlugin(ceramicLc, ceramicIdx));
+    const cloudLc = await ceramicLc.addPlugin(
+        await getLearnCloudPlugin(ceramicLc, url, unencryptedFields)
+    );
+
+    const idxLc = await cloudLc.addPlugin(await getIDXPlugin(cloudLc, ceramicIdx));
 
     const expirationLc = await idxLc.addPlugin(expirationPlugin(idxLc));
 

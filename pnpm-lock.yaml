@@ -426,9 +426,6 @@ importers:
       '@learncard/learn-cloud-plugin':
         specifier: workspace:*
         version: link:../plugins/learn-cloud
-      '@learncard/network-plugin':
-        specifier: workspace:*
-        version: link:../plugins/learn-card-network
       '@learncard/types':
         specifier: workspace:*
         version: link:../learn-card-types
@@ -615,6 +612,9 @@ importers:
       '@learncard/learn-card-plugin':
         specifier: workspace:*
         version: link:../plugins/learn-card
+      '@learncard/learn-cloud-plugin':
+        specifier: workspace:*
+        version: link:../plugins/learn-cloud
       '@learncard/network-plugin':
         specifier: workspace:^
         version: link:../plugins/learn-card-network
@@ -1293,9 +1293,6 @@ importers:
       '@learncard/helpers':
         specifier: workspace:^
         version: link:../../learn-card-helpers
-      '@learncard/init':
-        specifier: workspace:*
-        version: link:../../learn-card-init
       '@learncard/learn-cloud-client':
         specifier: workspace:*
         version: link:../../learn-card-network/cloud-client
@@ -1901,18 +1898,42 @@ importers:
 
   services/learn-card-network/learn-cloud-service:
     dependencies:
+      '@learncard/ceramic-plugin':
+        specifier: workspace:*
+        version: link:../../../packages/plugins/ceramic
+      '@learncard/core':
+        specifier: workspace:*
+        version: link:../../../packages/learn-card-core
+      '@learncard/crypto-plugin':
+        specifier: workspace:*
+        version: link:../../../packages/plugins/crypto
+      '@learncard/did-web-plugin':
+        specifier: workspace:*
+        version: link:../../../packages/plugins/did-web-plugin
+      '@learncard/didkey-plugin':
+        specifier: workspace:*
+        version: link:../../../packages/plugins/didkey
       '@learncard/didkit-plugin':
         specifier: workspace:^
         version: link:../../../packages/plugins/didkit
+      '@learncard/expiration-plugin':
+        specifier: workspace:*
+        version: link:../../../packages/plugins/expiration
       '@learncard/helpers':
         specifier: workspace:*
         version: link:../../../packages/learn-card-helpers
-      '@learncard/init':
-        specifier: workspace:^
-        version: link:../../../packages/learn-card-init
+      '@learncard/learn-card-plugin':
+        specifier: workspace:*
+        version: link:../../../packages/plugins/learn-card
       '@learncard/types':
         specifier: workspace:*
         version: link:../../../packages/learn-card-types
+      '@learncard/vc-plugin':
+        specifier: workspace:*
+        version: link:../../../packages/plugins/vc
+      '@learncard/vc-templates-plugin':
+        specifier: workspace:*
+        version: link:../../../packages/plugins/vc-templates
       '@trpc/client':
         specifier: ^10.17.0
         version: 10.17.0(@trpc/server@10.17.0)
@@ -19700,7 +19721,7 @@ packages:
     dependencies:
       confusing-browser-globals: 1.0.11
       eslint: 8.35.0
-      eslint-plugin-import: 2.27.5(@typescript-eslint/parser@5.54.0)(eslint-import-resolver-typescript@2.7.1)(eslint@8.35.0)
+      eslint-plugin-import: 2.27.5(@typescript-eslint/parser@5.53.0)(eslint-import-resolver-typescript@2.7.1)(eslint@8.35.0)
       object.assign: 4.1.4
       object.entries: 1.1.6
       semver: 6.3.0
@@ -19764,7 +19785,7 @@ packages:
     dependencies:
       debug: 4.3.4(supports-color@8.1.1)
       eslint: 8.35.0
-      eslint-plugin-import: 2.27.5(@typescript-eslint/parser@5.54.0)(eslint-import-resolver-typescript@2.7.1)(eslint@8.35.0)
+      eslint-plugin-import: 2.27.5(@typescript-eslint/parser@5.53.0)(eslint-import-resolver-typescript@2.7.1)(eslint@8.35.0)
       glob: 7.2.3
       is-glob: 4.0.3
       resolve: 1.22.1

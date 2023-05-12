@@ -90,9 +90,7 @@ export async function initLearnCard(
     if ('seed' in config) {
         if ('network' in config) return networkLearnCardFromSeed(config);
 
-        const { seed, ...keyConfig } = config;
-
-        return learnCardFromSeed(seed, keyConfig);
+        return learnCardFromSeed(config);
     }
 
     return emptyLearnCard(config);

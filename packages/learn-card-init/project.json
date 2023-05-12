@@ -18,6 +18,7 @@
         "expiration-plugin",
         "idx-plugin",
         "learn-card-plugin",
+        "learn-cloud-plugin",
         "network-plugin",
         "vc-plugin",
         "vc-api-plugin",

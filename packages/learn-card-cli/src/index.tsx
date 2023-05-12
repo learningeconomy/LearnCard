@@ -2,7 +2,6 @@ import fs from 'fs/promises';
 import dns from 'node:dns';
 
 import repl from 'pretty-repl';
-import { initLearnCloudLearnCard, getLearnCloudPlugin } from '@learncard/learn-cloud-plugin';
 import { getTestCache } from '@learncard/core';
 import { initLearnCard, emptyLearnCard, learnCardFromSeed } from '@learncard/init';
 import types from '@learncard/types';
@@ -46,8 +45,6 @@ program
         globalThis.emptyLearnCard = emptyLearnCard;
         globalThis.learnCardFromSeed = learnCardFromSeed;
         globalThis.initLearnCard = initLearnCard;
-        globalThis.initLearnCloudLearnCard = initLearnCloudLearnCard;
-        globalThis.getLearnCloudPlugin = getLearnCloudPlugin;
         globalThis.learnCard = await initLearnCard({
             seed,
             network: true,

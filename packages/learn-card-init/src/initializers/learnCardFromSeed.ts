@@ -5,6 +5,7 @@ import { getDidKeyPlugin } from '@learncard/didkey-plugin';
 import { getVCPlugin } from '@learncard/vc-plugin';
 import { getVCTemplatesPlugin } from '@learncard/vc-templates-plugin';
 import { getCeramicPlugin } from '@learncard/ceramic-plugin';
+import { getLearnCloudPlugin } from '@learncard/learn-cloud-plugin';
 import { getIDXPlugin } from '@learncard/idx-plugin';
 import { expirationPlugin } from '@learncard/expiration-plugin';
 import { getEthereumPlugin } from '@learncard/ethereum-plugin';
@@ -12,7 +13,7 @@ import { getVpqrPlugin } from '@learncard/vpqr-plugin';
 import { getCHAPIPlugin } from '@learncard/chapi-plugin';
 import { getLearnCardPlugin } from '@learncard/learn-card-plugin';
 
-import { LearnCardConfig, LearnCardFromSeed } from 'types/LearnCard';
+import { LearnCardFromSeed } from 'types/LearnCard';
 import { defaultCeramicIDXArgs, defaultEthereumArgs } from '../defaults';
 
 /**
@@ -20,15 +21,15 @@ import { defaultCeramicIDXArgs, defaultEthereumArgs } from '../defaults';
  *
  * @group Init Functions
  */
-export const learnCardFromSeed = async (
-    seed: string,
-    {
-        ceramicIdx = defaultCeramicIDXArgs,
-        didkit,
-        ethereumConfig = defaultEthereumArgs,
-        debug,
-    }: Partial<LearnCardConfig> = {}
-): Promise<LearnCardFromSeed['returnValue']> => {
+export const learnCardFromSeed = async ({
+    seed,
+
+    cloud: { url = 'https://cloud.learncard.com/trpc', unencryptedFields = [] } = {},
+    ceramicIdx = defaultCeramicIDXArgs,
+    didkit,
+    ethereumConfig = defaultEthereumArgs,
+    debug,
+}: LearnCardFromSeed['args']): Promise<LearnCardFromSeed['returnValue']> => {
     const cryptoLc = await (await generateLearnCard({ debug })).addPlugin(CryptoPlugin);
 
     const didkitLc = await cryptoLc.addPlugin(await getDidKitPlugin(didkit));
@@ -43,7 +44,11 @@ export const learnCardFromSeed = async (
 
     const ceramicLc = await templateLc.addPlugin(await getCeramicPlugin(templateLc, ceramicIdx));
 
-    const idxLc = await ceramicLc.addPlugin(await getIDXPlugin(ceramicLc, ceramicIdx));
+    const cloudLc = await ceramicLc.addPlugin(
+        await getLearnCloudPlugin(ceramicLc, url, unencryptedFields)
+    );
+
+    const idxLc = await cloudLc.addPlugin(await getIDXPlugin(cloudLc, ceramicIdx));
 
     const expirationLc = await idxLc.addPlugin(expirationPlugin(idxLc));
 

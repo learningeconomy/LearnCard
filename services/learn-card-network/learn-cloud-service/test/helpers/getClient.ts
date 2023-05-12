@@ -1,23 +1,6 @@
-import { readFile } from 'fs/promises';
-
 import { appRouter } from '../../src/app';
-import { initLearnCard, LearnCardFromSeed } from '@learncard/init';
 
-let learnCards: Record<string, LearnCardFromSeed['returnValue']> = {};
-
-const getLearnCard = async (seed = 'a'.repeat(64)): Promise<LearnCardFromSeed['returnValue']> => {
-    if (!learnCards[seed]) {
-        const didkit = await readFile(
-            require.resolve('@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm')
-        );
-
-        const learnCard = await initLearnCard({ seed, didkit });
-
-        learnCards[seed] = learnCard;
-    }
-
-    return learnCards[seed]!;
-};
+import { getLearnCard, SeedLearnCard } from '@helpers/learnCard.helpers';
 
 export const getClient = (options?: { did?: string; isChallengeValid?: boolean }) => {
     const { did, isChallengeValid } = options ?? {};
@@ -34,7 +17,7 @@ export const getClient = (options?: { did?: string; isChallengeValid?: boolean }
 export const getUser = async (
     seed?: string
 ): Promise<{
-    learnCard: LearnCardFromSeed['returnValue'];
+    learnCard: SeedLearnCard;
     clients: {
         partialAuth: ReturnType<typeof getClient>;
         fullAuth: ReturnType<typeof getClient>;

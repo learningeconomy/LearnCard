@@ -6,6 +6,7 @@ import { DIDKitPlugin, DidMethod } from '@learncard/didkit-plugin';
 import { DidKeyPlugin } from '@learncard/didkey-plugin';
 import { VCPlugin } from '@learncard/vc-plugin';
 import { VCTemplatePlugin } from '@learncard/vc-templates-plugin';
+import { LearnCloudPlugin } from '@learncard/learn-cloud-plugin';
 import { CeramicPlugin, CeramicArgs } from '@learncard/ceramic-plugin';
 import { IDXPlugin, IDXArgs } from '@learncard/idx-plugin';
 import { ExpirationPlugin } from '@learncard/expiration-plugin';
@@ -20,6 +21,7 @@ import { InitFunction, GenericInitFunction } from 'types/helpers';
 
 /** @group LearnCard */
 export type LearnCardConfig = {
+    cloud?: { url?: string; unencryptedFields?: string[] };
     ceramicIdx: CeramicArgs & IDXArgs;
     didkit: InitInput | Promise<InitInput>;
     ethereumConfig: EthereumConfig;
@@ -54,6 +56,7 @@ export type LearnCardFromSeed = InitFunction<
             VCPlugin,
             VCTemplatePlugin,
             CeramicPlugin,
+            LearnCloudPlugin,
             IDXPlugin,
             ExpirationPlugin,
             EthereumPlugin,
@@ -76,6 +79,7 @@ export type NetworkLearnCardFromSeed = InitFunction<
             VCPlugin,
             VCTemplatePlugin,
             CeramicPlugin,
+            LearnCloudPlugin,
             IDXPlugin,
             ExpirationPlugin,
             EthereumPlugin,

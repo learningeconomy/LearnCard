@@ -55,6 +55,7 @@
         "@learncard/helpers": "workspace:*",
         "@learncard/idx-plugin": "workspace:*",
         "@learncard/learn-card-plugin": "workspace:*",
+        "@learncard/learn-cloud-plugin": "workspace:*",
         "@learncard/network-plugin": "workspace:^",
         "@learncard/types": "workspace:*",
         "@learncard/vc-api-plugin": "workspace:*",

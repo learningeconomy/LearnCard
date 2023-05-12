@@ -42,7 +42,6 @@
         "@learncard/core": "workspace:*",
         "@learncard/didkit-plugin": "workspace:*",
         "@learncard/helpers": "workspace:^",
-        "@learncard/init": "workspace:*",
         "@learncard/learn-cloud-client": "workspace:*",
         "json-stringify-deterministic": "^1.0.8",
         "lodash": "^4.17.21",
