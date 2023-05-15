@@ -86,6 +86,10 @@ jobs:
         if: contains(env.AFFECTED, 'network-brain-service')
         run: pnpm exec nx serverless-deploy network-brain-service --stage production
 
+      - name: Deploy LearnCloud Lambda
+        if: contains(env.AFFECTED, 'learn-cloud-service')
+        run: pnpm exec nx serverless-deploy learn-cloud-service --stage production
+
       - name: Save nx cache
         uses: actions/cache/save@v3
         with:

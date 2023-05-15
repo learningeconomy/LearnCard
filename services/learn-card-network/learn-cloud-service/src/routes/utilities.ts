@@ -47,7 +47,7 @@ export const utilitiesRouter = t.router({
             return challenges;
         }),
 
-    getDid: didRoute
+    getDid: openRoute
         .meta({
             openapi: {
                 method: 'GET',

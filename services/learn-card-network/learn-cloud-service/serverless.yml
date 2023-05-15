@@ -24,19 +24,22 @@ custom:
     domains:
         # References to 'prod' stage
         production:
+            # don't forget the dot on the end!
+            hostedZoneName: 'cloud.learncard.com.'
             domainName: cloud.learncard.com
             certificateName: cloud.learncard.com
 
         # References to 'dev' stage
         dev:
+            # don't forget the dot on the end!
+            hostedZoneName: 'testnet-cloud.learncard.com.'
             domainName: testnet-cloud.learncard.com
             certificateName: testnet-cloud.learncard.com
 
     # Amazon Certificate Manager
     customCertificate:
         # Route 53 Hosted Zone name
-        # don't forget the dot on the end!
-        hostedZoneNames: 'cloud.learncard.com.'
+        hostedZoneNames: ${self:custom.domains.${self:provider.stage}.hostedZoneName}
 
         # Here we get our certificate name inside custom.domain.STAGE.certificateName
         # STAGE will be automatically filled with the value from "provider > stage"
@@ -71,12 +74,11 @@ provider:
     stage: ${opt:stage, "dev"}
     region: ${opt:region, "us-east-1"}
     environment:
-        PORT: ${env:PORT}
+        PORT: ${env:PORT, 3000}
         LAMBDA_STAGE: ${opt:stage, "dev"}
-        SEED: ${env:SEED}
-        DOMAIN_NAME: ${env:DOMAIN_NAME}
-        MONGO_URI: ${env:MONGO_URI}
-        MONGO_DB_NAME: ${env:MONGO_DB_NAME}
+        LEARN_CLOUD_SEED: ${env:LEARN_CLOUD_SEED}
+        LEARN_CLOUD_MONGO_URI: ${env:LEARN_CLOUD_MONGO_URI}
+        LEARN_CLOUD_MONGO_DB_NAME: ${env:LEARN_CLOUD_MONGO_DB_NAME}
         REDIS_HOST:
             'Fn::GetAtt': [ElasticCacheCluster, RedisEndpoint.Address]
         REDIS_PORT:

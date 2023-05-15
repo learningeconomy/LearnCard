@@ -47,7 +47,7 @@ export const getEmptyLearnCard = async (): Promise<EmptyLearnCard> => {
     return emptyLearnCard;
 };
 
-export const getLearnCard = async (seed = process.env.SEED): Promise<SeedLearnCard> => {
+export const getLearnCard = async (seed = process.env.LEARN_CLOUD_SEED): Promise<SeedLearnCard> => {
     if (!seed) throw new Error('No seed set!');
 
     if (!learnCards[seed]) {
