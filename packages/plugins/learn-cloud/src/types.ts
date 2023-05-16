@@ -20,7 +20,7 @@ export type LearnCloudPluginMethods = Record<never, never>;
 /** @group LearnCloud Plugin */
 export type LearnCloudPlugin = Plugin<
     'LearnCloud',
-    'index',
+    'index' | 'read' | 'store',
     LearnCloudPluginMethods,
     'id',
     LearnCloudPluginDependentMethods

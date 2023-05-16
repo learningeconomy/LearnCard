@@ -2,7 +2,13 @@ import { chunk } from 'lodash';
 import { getClient } from '@learncard/learn-cloud-client';
 import { LearnCard } from '@learncard/core';
 import { isEncrypted } from '@learncard/helpers';
-import { CredentialRecord, JWE, PaginatedEncryptedCredentialRecordsType } from '@learncard/types';
+import {
+    CredentialRecord,
+    JWE,
+    PaginatedEncryptedCredentialRecordsType,
+    VCValidator,
+    VPValidator,
+} from '@learncard/types';
 
 import { LearnCloudPluginDependentMethods, LearnCloudPlugin } from './types';
 import {
@@ -75,6 +81,52 @@ export const getLearnCloudPlugin = async (
         displayName: 'LearnCloud',
         description: 'LearnCloud Integration',
         methods: {},
+        read: {
+            get: async (_learnCard, uri) => {
+                if (!uri) return undefined;
+
+                const parts = uri.split(':');
+
+                if (parts.length !== 5) return undefined;
+
+                const [lc, method] = parts as [string, string, string, string, string];
+
+                if (lc !== 'lc' || method !== 'cloud') return undefined;
+
+                try {
+                    const result = await client.storage.resolve.query({ uri: uri });
+
+                    const decryptedResult = await _learnCard.invoke
+                        .getDIDObject()
+                        .decryptDagJWE(result);
+
+                    return await VCValidator.or(VPValidator).parseAsync(decryptedResult);
+                } catch (error) {
+                    _learnCard.debug?.(error);
+                    return undefined;
+                }
+            },
+        },
+        store: {
+            upload: async (_learnCard, credential) => {
+                _learnCard.debug?.("learnCard.store['LearnCard Network'].upload");
+
+                return client.storage.store.mutate({ item: credential });
+            },
+            uploadEncrypted: async (
+                _learnCard,
+                credential,
+                { recipients = [] } = { recipients: [] }
+            ) => {
+                _learnCard.debug?.("learnCard.store['LearnCard Network'].upload");
+
+                const jwe = await _learnCard.invoke
+                    .getDIDObject()
+                    .createDagJWE(credential, [_learnCard.id.did(), ...recipients]);
+
+                return client.storage.store.mutate({ item: jwe });
+            },
+        },
         index: {
             get: async (_learnCard, query) => {
                 await updateLearnCard(_learnCard);
