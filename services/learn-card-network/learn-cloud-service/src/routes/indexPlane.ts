@@ -9,7 +9,10 @@ import {
 import { t, didAndChallengeRoute } from '@routes';
 import { isEncrypted } from '@learncard/helpers';
 import { getLearnCard } from '@helpers/learnCard.helpers';
-import { getCredentialRecordsForDid } from '@accesslayer/credential-record/read';
+import {
+    countCredentialRecordsForDid,
+    getCredentialRecordsForDid,
+} from '@accesslayer/credential-record/read';
 import {
     createCredentialRecord,
     createCredentialRecords,
@@ -89,6 +92,48 @@ export const indexRouter = t.router({
             if (encrypt) return encryptObject(paginationResult, ctx.domain, [did]);
 
             return paginationResult;
+        }),
+
+    count: didAndChallengeRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/index/count',
+                tags: ['Index'],
+                summary: 'Count records in index for query',
+                description:
+                    'This endpoint allows the user to see how many records they have in their index for a query',
+            },
+        })
+        .input(
+            z
+                .object({
+                    query: z.record(z.any()).or(JWEValidator).optional(),
+                    encrypt: z.boolean().default(true),
+                    includeAssociatedDids: z.boolean().default(true),
+                })
+                .default({})
+        )
+        .output(z.number().int().positive().or(JWEValidator))
+        .query(async ({ ctx, input }) => {
+            const learnCard = await getLearnCard();
+            const { query: _query, encrypt, includeAssociatedDids } = input;
+            const {
+                user: { did },
+            } = ctx;
+
+            let query: Record<string, any> = _query || {};
+
+            if (isEncrypted(query)) {
+                query = await learnCard.invoke.getDIDObject().decryptDagJWE(query);
+            }
+
+            const count = await countCredentialRecordsForDid(did, query, includeAssociatedDids);
+
+            if (encrypt) return encryptObject(count, ctx.domain, [did]);
+
+            return count;
         }),
 
     add: didAndChallengeRoute

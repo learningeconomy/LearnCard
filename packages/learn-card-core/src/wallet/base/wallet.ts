@@ -286,6 +286,48 @@ const addCachingToIndexPlane = <
               },
           }
         : {}),
+    ...(plane.getCount
+        ? {
+              getCount: async (_learnCard, query, { cache = 'cache-first' } = {}) => {
+                  if (cache === 'cache-only' && !learnCardImplementsPlane(_learnCard, 'cache')) {
+                      throw new Error('Cannot read from cache. Cache Plane is not implemented!');
+                  }
+
+                  if (learnCardImplementsPlane(_learnCard, 'cache') && cache !== 'skip-cache') {
+                      const cachedResponse = await _learnCard.cache.getIndexCount?.(
+                          name,
+                          query ?? {}
+                      );
+
+                      if (cachedResponse) {
+                          if (cache === 'cache-first') {
+                              plane
+                                  .getCount?.(_learnCard, query, {
+                                      cache: 'skip-cache',
+                                  })
+                                  .then((res: number) =>
+                                      _learnCard.cache.setIndexCount?.(name, query ?? {}, res)
+                                  );
+                          }
+
+                          return cachedResponse;
+                      }
+                  }
+
+                  const result = await plane.getCount?.(_learnCard, query);
+
+                  if (
+                      result &&
+                      learnCardImplementsPlane(_learnCard, 'cache') &&
+                      cache !== 'skip-cache'
+                  ) {
+                      await _learnCard.cache.setIndexCount?.(name, query ?? {}, result);
+                  }
+
+                  return result;
+              },
+          }
+        : {}),
     add: async (_learnCard, record, { cache = 'cache-first' } = {}) => {
         if (cache === 'cache-only' && !learnCardImplementsPlane(_learnCard, 'cache')) {
             throw new Error('Cannot read from cache. Cache Plane is not implemented!');
@@ -504,6 +546,49 @@ const generateCachePlane = <
                         value,
                         paginationOptions
                     );
+                })
+            );
+
+            return result.some(promiseResult => promiseResult.status === 'fulfilled');
+        },
+        getIndexCount: async <Metadata extends Record<string, any> = Record<never, never>>(
+            name: string,
+            query: Partial<Query<CredentialRecord<Metadata>>>
+        ) => {
+            learnCard.debug?.('learnCard.cache.getIndex');
+
+            try {
+                const results = await Promise.allSettled(
+                    learnCard.plugins.map(async plugin => {
+                        if (!pluginImplementsPlane(plugin, 'cache')) {
+                            throw new Error('Plugin is not a Cache Plugin');
+                        }
+
+                        return plugin.cache.getIndexCount?.(
+                            learnCard as any,
+                            name,
+                            query
+                        ) as Promise<number | undefined>;
+                    })
+                );
+
+                const index = results.find(isFulfilledAndNotEmpty)?.value;
+
+                return index;
+            } catch (error) {
+                return undefined;
+            }
+        },
+        setIndexCount: async (name, query, value) => {
+            learnCard.debug?.('learnCard.cache.setIndex');
+
+            const result = await Promise.allSettled(
+                learnCard.plugins.map(async plugin => {
+                    if (!pluginImplementsPlane(plugin, 'cache')) {
+                        throw new Error('Plugin is not a Cache Plugin');
+                    }
+
+                    return plugin.cache.setIndexCount?.(learnCard as any, name, query, value);
                 })
             );
 

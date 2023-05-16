@@ -2,7 +2,7 @@ import { chunk } from 'lodash';
 import { getClient } from '@learncard/learn-cloud-client';
 import { LearnCard } from '@learncard/core';
 import { isEncrypted } from '@learncard/helpers';
-import { CredentialRecord, PaginatedEncryptedCredentialRecordsType } from '@learncard/types';
+import { CredentialRecord, JWE, PaginatedEncryptedCredentialRecordsType } from '@learncard/types';
 
 import { LearnCloudPluginDependentMethods, LearnCloudPlugin } from './types';
 import {
@@ -173,6 +173,60 @@ export const getLearnCloudPlugin = async (
                         )
                     ),
                 };
+            },
+            getCount: async (_learnCard, query) => {
+                await updateLearnCard(_learnCard);
+
+                if (!query) {
+                    _learnCard.debug?.('LearnCloud index.count (no query)');
+                    const jwe = await client.index.count.query();
+
+                    _learnCard.debug?.('LearnCloud index.count (no query response)', jwe);
+
+                    const count = isEncrypted(jwe as any)
+                        ? await decryptJWE<number>(_learnCard, jwe as JWE)
+                        : (jwe as number);
+
+                    _learnCard.debug?.('LearnCloud index.count (no query count)', count);
+
+                    return count;
+                }
+
+                _learnCard.debug?.('LearnCloud index.getCount (query)');
+
+                const fields = await generateEncryptedFieldsArray(
+                    _learnCard,
+                    query as any,
+                    unencryptedFields
+                );
+
+                _learnCard.debug?.('LearnCloud index.getCount (query fields)', fields);
+
+                const unencryptedEntries = Object.fromEntries(
+                    Object.entries(query).filter(([key]) => unencryptedFields.includes(key))
+                );
+
+                _learnCard.debug?.(
+                    'LearnCloud index.getCount (query unencryptedEntries)',
+                    unencryptedEntries
+                );
+
+                const jwe = await client.index.count.query({
+                    query: await generateJWE(_learnCard, learnCloudDid, {
+                        ...unencryptedEntries,
+                        fields: { $in: fields },
+                    }),
+                });
+
+                _learnCard.debug?.('LearnCloud index.count (query response)', jwe);
+
+                const count = isEncrypted(jwe as any)
+                    ? await decryptJWE<number>(_learnCard, jwe as JWE)
+                    : (jwe as number);
+
+                _learnCard.debug?.('LearnCloud index.count (query count)', count);
+
+                return count;
             },
             add: async (_learnCard, record) => {
                 await updateLearnCard(_learnCard);

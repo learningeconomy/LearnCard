@@ -94,6 +94,10 @@ export type IndexPlane = {
         paginationOptions?: { limit?: number; cursor?: string },
         options?: PlaneOptions
     ) => Promise<{ records: CredentialRecord<Metadata>[]; hasMore: boolean; cursor?: string }>;
+    getCount?: <Metadata extends Record<string, any> = Record<never, never>>(
+        query?: Partial<Query<CredentialRecord<Metadata>>>,
+        options?: PlaneOptions
+    ) => Promise<number>;
     add: <Metadata extends Record<string, any> = Record<never, never>>(
         record: CredentialRecord<Metadata>,
         options?: PlaneOptions
@@ -142,6 +146,15 @@ export type CachePlane = {
         query: Partial<Query<CredentialRecord<Metadata>>>,
         value: { records: CredentialRecord<Metadata>[]; hasMore: boolean; cursor?: string },
         paginationOptions?: { limit?: number; cursor?: string }
+    ) => Promise<boolean>;
+    getIndexCount?: <Metadata extends Record<string, any> = Record<never, never>>(
+        name: string,
+        query: Partial<Query<CredentialRecord<Metadata>>>
+    ) => Promise<number | undefined>;
+    setIndexCount?: <Metadata extends Record<string, any> = Record<never, never>>(
+        name: string,
+        query: Partial<Query<CredentialRecord<Metadata>>>,
+        value: number
     ) => Promise<boolean>;
     flushIndex: () => Promise<boolean>;
     getVc: (uri: string) => Promise<VC | VP | undefined>;

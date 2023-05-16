@@ -157,6 +157,91 @@ describe('Index', () => {
         });
     });
 
+    describe('count', () => {
+        beforeAll(async () => {
+            await CredentialRecords.deleteMany({});
+            await Users.deleteMany({});
+        });
+
+        beforeEach(async () => {
+            await CredentialRecords.deleteMany({});
+            await Users.deleteMany({});
+
+            await userA.clients.fullAuth.index.addMany({ records: [testRecordA, testRecordB] });
+        });
+
+        afterAll(async () => {
+            await CredentialRecords.deleteMany({});
+            await Users.deleteMany({});
+        });
+
+        it('should require full auth to count index', async () => {
+            await expect(noAuthClient.index.count()).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+            await expect(userA.clients.partialAuth.index.count()).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+        });
+
+        it('should allow counting all records', async () => {
+            const countPromise = userA.clients.fullAuth.index.count();
+            await expect(countPromise).resolves.not.toThrow();
+
+            const unencryptedCount = await userA.learnCard.invoke
+                .getDIDObject()
+                .decryptDagJWE((await countPromise) as JWE);
+
+            expect(unencryptedCount).toEqual(2);
+        });
+
+        it('should allow counting an empty list of records', async () => {
+            await userA.clients.fullAuth.index.removeAll();
+
+            const countPromise = userA.clients.fullAuth.index.count();
+            await expect(countPromise).resolves.not.toThrow();
+
+            const unencryptedCount = await userA.learnCard.invoke
+                .getDIDObject()
+                .decryptDagJWE((await countPromise) as JWE);
+
+            expect(unencryptedCount).toEqual(0);
+        });
+
+        it('should allow querying encrypted fields', async () => {
+            const encryptedCount = await userA.clients.fullAuth.index.count({
+                query: { fields: { $in: ['recordA'] } },
+            });
+            const count = await userA.learnCard.invoke
+                .getDIDObject()
+                .decryptDagJWE(encryptedCount as JWE);
+
+            expect(count).toEqual(1);
+        });
+
+        it('should allow multiple results when querying encrypted fields', async () => {
+            const encryptedCount = await userA.clients.fullAuth.index.count({
+                query: { fields: { $in: ['record'] } },
+            });
+            const count = await userA.learnCard.invoke
+                .getDIDObject()
+                .decryptDagJWE(encryptedCount as JWE);
+
+            expect(count).toEqual(2);
+        });
+
+        it('should allow querying unencrypted fields', async () => {
+            const encryptedCount = await userA.clients.fullAuth.index.count({
+                query: { title: 'Record A' },
+            });
+            const count = await userA.learnCard.invoke
+                .getDIDObject()
+                .decryptDagJWE(encryptedCount as JWE);
+
+            expect(count).toEqual(1);
+        });
+    });
+
     describe('add', () => {
         beforeAll(async () => {
             await CredentialRecords.deleteMany({});
