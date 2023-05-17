@@ -591,6 +591,9 @@ importers:
       '@learncard/crypto-plugin':
         specifier: workspace:*
         version: link:../plugins/crypto
+      '@learncard/did-web-plugin':
+        specifier: workspace:*
+        version: link:../plugins/did-web-plugin
       '@learncard/didkey-plugin':
         specifier: workspace:*
         version: link:../plugins/didkey
@@ -19727,7 +19730,7 @@ packages:
     dependencies:
       confusing-browser-globals: 1.0.11
       eslint: 8.35.0
-      eslint-plugin-import: 2.27.5(@typescript-eslint/parser@5.54.0)(eslint-import-resolver-typescript@2.7.1)(eslint@8.35.0)
+      eslint-plugin-import: 2.27.5(@typescript-eslint/parser@5.53.0)(eslint-import-resolver-typescript@2.7.1)(eslint@8.35.0)
       object.assign: 4.1.4
       object.entries: 1.1.6
       semver: 6.3.0
@@ -19791,7 +19794,7 @@ packages:
     dependencies:
       debug: 4.3.4(supports-color@8.1.1)
       eslint: 8.35.0
-      eslint-plugin-import: 2.27.5(@typescript-eslint/parser@5.54.0)(eslint-import-resolver-typescript@2.7.1)(eslint@8.35.0)
+      eslint-plugin-import: 2.27.5(@typescript-eslint/parser@5.53.0)(eslint-import-resolver-typescript@2.7.1)(eslint@8.35.0)
       glob: 7.2.3
       is-glob: 4.0.3
       resolve: 1.22.1

@@ -1,6 +1,8 @@
 import { customLearnCard } from './initializers/customLearnCard';
 import { emptyLearnCard } from './initializers/emptyLearnCard';
 import { learnCardFromSeed } from './initializers/learnCardFromSeed';
+import { networkLearnCardFromSeed } from './initializers/networkLearnCardFromSeed';
+import { didWebLearnCardFromSeed } from './initializers/didWebLearnCardFromSeed';
 import { learnCardFromApiUrl } from './initializers/apiLearnCard';
 
 import {
@@ -10,12 +12,14 @@ import {
     LearnCardFromVcApi,
     CustomLearnCard,
     NetworkLearnCardFromSeed,
+    DidWebLearnCardFromSeed,
 } from 'types/LearnCard';
-import { networkLearnCardFromSeed } from './initializers/networkLearnCardFromSeed';
 
 export * from './initializers/customLearnCard';
 export * from './initializers/emptyLearnCard';
 export * from './initializers/learnCardFromSeed';
+export * from './initializers/networkLearnCardFromSeed';
+export * from './initializers/didWebLearnCardFromSeed';
 export * from './initializers/apiLearnCard';
 
 // Overloads (Unfortunately necessary boilerplate 😢)
@@ -37,6 +41,15 @@ export function initLearnCard(
 export function initLearnCard(
     config: LearnCardFromSeed['args']
 ): Promise<LearnCardFromSeed['returnValue']>;
+
+/**
+ * Generates a full wallet from a 32 byte seed
+ *
+ * @group Init Functions
+ */
+export function initLearnCard(
+    config: DidWebLearnCardFromSeed['args']
+): Promise<DidWebLearnCardFromSeed['returnValue']>;
 
 /**
  * Generates a full wallet with access to LearnCard Network from a 32 byte seed
@@ -89,6 +102,8 @@ export async function initLearnCard(
 
     if ('seed' in config) {
         if ('network' in config) return networkLearnCardFromSeed(config);
+
+        if ('didWeb' in config) return didWebLearnCardFromSeed(config);
 
         return learnCardFromSeed(config);
     }
