@@ -1,3 +1,4 @@
+import { getAllDidsForDid } from '@accesslayer/user/read';
 import { getCredentialRecordCollection } from '.';
 
 export const deleteCredentialRecordById = async (
@@ -5,7 +6,10 @@ export const deleteCredentialRecordById = async (
     id: string
 ): Promise<number | false> => {
     try {
-        return (await getCredentialRecordCollection().deleteOne({ did, id })).deletedCount;
+        const dids = await getAllDidsForDid(did);
+
+        return (await getCredentialRecordCollection().deleteOne({ did: { $in: dids }, id }))
+            .deletedCount;
     } catch (e) {
         console.error(e);
         return false;

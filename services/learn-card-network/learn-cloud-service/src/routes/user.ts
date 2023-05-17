@@ -3,7 +3,7 @@ import { TRPCError } from '@trpc/server';
 import jwtDecode from 'jwt-decode';
 
 import { t, didAndChallengeRoute } from '@routes';
-import { getUserForDid } from '@accesslayer/user/read';
+import { getAllDidsForDid, getUserForDid } from '@accesslayer/user/read';
 import { VPValidator } from '@learncard/types';
 import { getEmptyLearnCard } from '@helpers/learnCard.helpers';
 import { DidAuthVP } from 'types/vp';
@@ -24,9 +24,7 @@ export const userRouter = t.router({
         .input(z.void())
         .output(z.string().array())
         .query(async ({ ctx }) => {
-            const user = await ensureUserForDid(ctx.user.did);
-
-            return [user.did, ...user.associatedDids];
+            return getAllDidsForDid(ctx.user.did);
         }),
 
     addDid: didAndChallengeRoute
