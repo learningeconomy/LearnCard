@@ -1238,19 +1238,25 @@ importers:
       '@learncard/core':
         specifier: workspace:*
         version: link:../../learn-card-core
-      '@learncard/didkit-plugin':
-        specifier: workspace:^
-        version: link:../didkit
       '@learncard/network-brain-client':
         specifier: workspace:*
         version: link:../../learn-card-network/brain-client
-      '@learncard/vc-plugin':
-        specifier: workspace:^
-        version: link:../vc
     devDependencies:
+      '@learncard/ceramic-plugin':
+        specifier: workspace:^
+        version: link:../ceramic
+      '@learncard/didkey-plugin':
+        specifier: workspace:^
+        version: link:../didkey
+      '@learncard/didkit-plugin':
+        specifier: workspace:^
+        version: link:../didkit
       '@learncard/types':
         specifier: workspace:*
         version: link:../../learn-card-types
+      '@learncard/vc-plugin':
+        specifier: workspace:^
+        version: link:../vc
       '@types/jest':
         specifier: ^29.2.2
         version: 29.4.0
@@ -19721,7 +19727,7 @@ packages:
     dependencies:
       confusing-browser-globals: 1.0.11
       eslint: 8.35.0
-      eslint-plugin-import: 2.27.5(@typescript-eslint/parser@5.53.0)(eslint-import-resolver-typescript@2.7.1)(eslint@8.35.0)
+      eslint-plugin-import: 2.27.5(@typescript-eslint/parser@5.54.0)(eslint-import-resolver-typescript@2.7.1)(eslint@8.35.0)
       object.assign: 4.1.4
       object.entries: 1.1.6
       semver: 6.3.0
@@ -19785,7 +19791,7 @@ packages:
     dependencies:
       debug: 4.3.4(supports-color@8.1.1)
       eslint: 8.35.0
-      eslint-plugin-import: 2.27.5(@typescript-eslint/parser@5.53.0)(eslint-import-resolver-typescript@2.7.1)(eslint@8.35.0)
+      eslint-plugin-import: 2.27.5(@typescript-eslint/parser@5.54.0)(eslint-import-resolver-typescript@2.7.1)(eslint@8.35.0)
       glob: 7.2.3
       is-glob: 4.0.3
       resolve: 1.22.1
