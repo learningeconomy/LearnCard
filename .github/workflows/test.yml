@@ -57,6 +57,7 @@ jobs:
         run: pnpm exec nx affected --target=test --base=origin/main --head=HEAD
         env:
           SEED: ${{ secrets.SEED }}
+          LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED }}
 
       - name: Save nx cache
         uses: actions/cache/save@v3
