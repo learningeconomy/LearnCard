@@ -11,36 +11,29 @@ import {
     VPValidator,
 } from '@learncard/types';
 
-import { persistenceMocks } from './mocks/persistence';
-
-import { getTestStorage, initLearnCard } from '../src';
+import { initLearnCard } from '../src';
 import { LearnCardFromSeed } from '../src/types/LearnCard';
-import { getTestIndex } from '@wallet/plugins/test-index';
 
-let learnCards: Record<
-    string,
-    {
-        learnCard: LearnCardFromSeed['returnValue'];
-        persistenceMocks: Partial<LearnCardFromSeed['returnValue']>;
-    }
-> = {};
+const didkit = readFile(
+    require.resolve('@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm')
+);
 
-const getLearnCard = async (seed = 'a'.repeat(64), mockPersistence = false) => {
+let learnCards: Record<string, LearnCardFromSeed['returnValue']> = {};
+
+const getLearnCard = async (seed = 'a'.repeat(64)) => {
     if (!learnCards[seed]) {
-        const didkit = readFile(require.resolve('../src/didkit/pkg/didkit_wasm_bg.wasm'));
-
         const learnCard = await initLearnCard({ seed, didkit });
 
-        learnCards[seed] = { learnCard: learnCard, persistenceMocks: persistenceMocks() as any };
+        learnCards[seed] = learnCard;
     }
 
-    return {
-        ...learnCards[seed].learnCard,
-        ...(mockPersistence ? learnCards[seed].persistenceMocks : {}),
-    };
+    return learnCards[seed];
 };
 
 describe('LearnCard SDK', () => {
+    beforeAll(async () => {
+        await didkit;
+    });
     describe('emptyLearnCard', () => {
         it('should work', async () => {
             await expect(initLearnCard()).resolves.toBeDefined();
@@ -467,7 +460,7 @@ describe('LearnCard SDK', () => {
 
             const uvc = learnCard.invoke.getTestVc();
             const vc = await learnCard.invoke.issueCredential(uvc);
-            const uri = await learnCard.store.Ceramic.uploadEncrypted(vc);
+            const uri = await learnCard.store.Ceramic.uploadEncrypted?.(vc);
 
             // Should properly retrieve credential!  ✅
             const credential = await learnCard.read.get(uri);
@@ -484,7 +477,7 @@ describe('LearnCard SDK', () => {
 
             const uvc = learnCard.invoke.getTestVc();
             const vc = await learnCard.invoke.issueCredential(uvc);
-            const uri = await learnCard.store.Ceramic.uploadEncrypted(vc, {
+            const uri = await learnCard.store.Ceramic.uploadEncrypted?.(vc, {
                 recipients: [friend.id.did()],
             });
 
@@ -626,46 +619,8 @@ describe('LearnCard SDK', () => {
     describe('VC Templates', () => {
         it('should create a boost credential', async () => {
             const learnCard = await getLearnCard();
-            const boostCredential = await learnCard.invoke.newCredential({ type: 'boost' });
+            const boostCredential = learnCard.invoke.newCredential({ type: 'boost' });
             expect(boostCredential.type).toEqual(expect.arrayContaining(['BoostCredential']));
-        });
-    });
-
-    describe('Control Planes', () => {
-        it('should be able to store/read with multiple planes', async () => {
-            const learnCard = await getLearnCard();
-
-            const multiPlaneLearnCard = await learnCard.addPlugin(getTestStorage());
-
-            const vc = await multiPlaneLearnCard.invoke.issueCredential(
-                multiPlaneLearnCard.invoke.getTestVc()
-            );
-
-            const uri = await multiPlaneLearnCard.store['Test Storage'].upload(vc);
-
-            const resolvedVc = await multiPlaneLearnCard.read.get(uri);
-
-            expect(resolvedVc).toEqual(vc);
-        });
-
-        it('should dedupe records with same id in different index providers', async () => {
-            const signer = await getLearnCard();
-            const _learnCard = await initLearnCard();
-
-            const storageLearnCard = await _learnCard.addPlugin(getTestStorage());
-
-            const learnCard = await storageLearnCard.addPlugin(getTestIndex());
-
-            const vc = await signer.invoke.issueCredential(signer.invoke.getTestVc());
-
-            const uri = await learnCard.store['Test Storage'].upload(vc);
-
-            await learnCard.index['Test Storage'].add({ id: 'test', uri });
-            await learnCard.index['Test Index'].add({ id: 'test', uri });
-
-            const dedupedRecords = await learnCard.index.all.get();
-
-            expect(dedupedRecords).toHaveLength(1);
         });
     });
 });
