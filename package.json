@@ -24,7 +24,9 @@
     "prettier": "^2.8.4",
     "prettier-plugin-astro": "^0.5.5",
     "ts-jest": "^29.0.5",
-    "tslib": "^2.5.0",
+    "tslib": "^2.5.0"
+  },
+  "dependencies": {
     "typescript": "^5.0.4"
   },
   "pnpm": {
