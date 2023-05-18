@@ -1,5 +1,7 @@
-import { client } from '@mongo';
+/* import { client } from '@mongo';
 
 afterAll(async () => {
-    await client.close(true);
-});
+    try {
+        await client.close(true);
+    } catch (error) { }
+}); */

@@ -2,9 +2,27 @@ import { getClient, getUser } from './helpers/getClient';
 import { Users } from '@accesslayer/user';
 import { Credentials } from '@accesslayer/credential';
 
+import { client } from '@mongo';
+
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;
 let userB: Awaited<ReturnType<typeof getUser>>;
+
+beforeAll(async () => {
+    try {
+        await client.connect();
+    } catch (error) {
+        console.error(error);
+    }
+});
+
+afterAll(async () => {
+    try {
+        await client.close();
+    } catch (error) {
+        console.error(error);
+    }
+});
 
 describe('Storage', () => {
     beforeAll(async () => {

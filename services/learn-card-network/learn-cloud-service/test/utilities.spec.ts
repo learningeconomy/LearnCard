@@ -1,7 +1,24 @@
 import { getClient, getUser } from './helpers/getClient';
+import { client } from '@mongo';
 
 const noAuthClient = getClient();
 let user: Awaited<ReturnType<typeof getUser>>;
+
+beforeAll(async () => {
+    try {
+        await client.connect();
+    } catch (error) {
+        console.error(error);
+    }
+});
+
+afterAll(async () => {
+    try {
+        await client.close();
+    } catch (error) {
+        console.error(error);
+    }
+});
 
 describe('Utilities', () => {
     beforeAll(async () => {

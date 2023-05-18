@@ -4,9 +4,27 @@ import { testRecordA, testRecordB } from './helpers/records';
 import { EncryptedCredentialRecord } from '@learncard/types';
 import { CredentialRecords } from '@accesslayer/credential-record';
 
+import { client } from '@mongo';
+
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;
 let userB: Awaited<ReturnType<typeof getUser>>;
+
+beforeAll(async () => {
+    try {
+        await client.connect();
+    } catch (error) {
+        console.error(error);
+    }
+});
+
+afterAll(async () => {
+    try {
+        await client.close();
+    } catch (error) {
+        console.error(error);
+    }
+});
 
 describe('Users', () => {
     beforeAll(async () => {

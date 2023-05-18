@@ -5,10 +5,27 @@ import { getClient, getUser } from './helpers/getClient';
 import { CredentialRecords } from '@accesslayer/credential-record';
 import { Users } from '@accesslayer/user';
 import { testRecordA, testRecordB, testRecordC } from './helpers/records';
+import { client } from '@mongo';
 
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;
 let userB: Awaited<ReturnType<typeof getUser>>;
+
+beforeAll(async () => {
+    try {
+        await client.connect();
+    } catch (error) {
+        console.error(error);
+    }
+});
+
+afterAll(async () => {
+    try {
+        await client.close();
+    } catch (error) {
+        console.error(error);
+    }
+});
 
 describe('Index', () => {
     beforeAll(async () => {
