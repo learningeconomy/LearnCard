@@ -6,7 +6,7 @@
 NPM_FLAGS = "--version"
 # Global Context Default
 [build]
-command = "npx pnpm install -P false --store=node_modules/.pnpm-store && npx pnpm build"
+command = "npx pnpm install -P false --store=node_modules/.pnpm-store && npx nx build chapi-example"
 publish = "dist/"
 
 [[headers]]
