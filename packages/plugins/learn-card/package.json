@@ -1,6 +1,6 @@
 {
     "name": "@learncard/learn-card-plugin",
-    "version": "0.0.1",
+    "version": "1.0.0",
     "description": "",
     "main": "./dist/index.js",
     "module": "./dist/learn-card-plugin.esm.js",
