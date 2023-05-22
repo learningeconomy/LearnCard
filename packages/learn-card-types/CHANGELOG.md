@@ -1,5 +1,15 @@
 # learn-card-types
 
+## 5.3.0
+
+### Minor Changes
+
+-   [#300](https://github.com/learningeconomy/LearnCard/pull/300) [`2e80eb8`](https://github.com/learningeconomy/LearnCard/commit/2e80eb83fc5ee2b954b40cc020ad5c790b571209) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - LearnCloud types
+
+### Patch Changes
+
+-   [#300](https://github.com/learningeconomy/LearnCard/pull/300) [`2e80eb8`](https://github.com/learningeconomy/LearnCard/commit/2e80eb83fc5ee2b954b40cc020ad5c790b571209) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add paginated types for EncryptedCredentialRecords
+
 ## 5.2.9
 
 ### Patch Changes

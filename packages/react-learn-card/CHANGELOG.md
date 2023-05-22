@@ -1,5 +1,58 @@
 # @welibraryos/react-learn-card
 
+## 2.6.0
+
+### Minor Changes
+
+-   [#300](https://github.com/learningeconomy/LearnCard/pull/300) [`2e80eb8`](https://github.com/learningeconomy/LearnCard/commit/2e80eb83fc5ee2b954b40cc020ad5c790b571209) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - BREAKING CHANGE: Split @learncard/core into multiple plugin packages and @learncard/init.
+
+    _Breaking Changes_
+
+    -   `initLearnCard` is no longer exported by `@learncard/core`, as it is now the responsibility of `@learncard/init`
+
+    ```ts
+    // Old
+    const { initLearnCard } from '@learncard/core';
+
+    // New
+    const { initLearnCard } from '@learncard/init';
+    ```
+
+    -   The didkit wasm binary is no longer exported by `@learncard/core` as it is now the responsibility of `@learncard/didkit-plugin`
+
+    ```ts
+    // Old
+    import didkit from '@learncard/core/dist/didkit/didkit_wasm_bg.wasm';
+
+    // New
+    import didkit from '@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm';
+    ```
+
+    -   `@learncard/network-plugin` and `@learncard/did-web-plugin` no longer export their own version of `initLearnCard`, and are instead now proper instantiation targets from `@learncard/init`
+
+    ```ts
+    // Old
+    import { initNetworkLearnCard } from '@learncard/network-plugin';
+    import { initDidWebLearnCard } from '@learncard/did-web-plugin';
+
+    const networkLearnCard = await initNetworkLearnCard({ seed: 'a'.repeat(64) });
+    const didWebLearnCard = await initDidWebLearnCard({
+        seed: 'a'.repeat(64),
+        didWeb: 'did:web:test',
+    });
+
+    // New
+    import { initLearnCard } from '@learncard/init';
+
+    const networkLearnCard = await initLearnCard({ seed: 'a'.repeat(64), network: true });
+    const didWebLearnCard = await initLearnCard({ seed: 'a'.repeat(64), didWeb: 'did:web:test' });
+    ```
+
+### Patch Changes
+
+-   Updated dependencies [[`2e80eb8`](https://github.com/learningeconomy/LearnCard/commit/2e80eb83fc5ee2b954b40cc020ad5c790b571209)]:
+    -   @learncard/init@1.0.0
+
 ## 2.5.20
 
 ### Patch Changes
