@@ -71,7 +71,7 @@ provider:
     stage: ${opt:stage, "dev"}
     region: ${opt:region, "us-east-1"}
     environment:
-        PORT: ${env:PORT}
+        PORT: ${env:PORT, 3000}
         LAMBDA_STAGE: ${opt:stage, "dev"}
         SEED: ${env:SEED}
         DOMAIN_NAME: ${env:DOMAIN_NAME}
