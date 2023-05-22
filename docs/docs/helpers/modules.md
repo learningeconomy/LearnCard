@@ -26,7 +26,7 @@ item is Object
 
 #### Defined in
 
-[learn-card-helpers/src/index.ts:11](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-helpers/src/index.ts#L11)
+[learn-card-helpers/src/index.ts:11](https://github.com/learningeconomy/LearnCard/blob/9e930eeb3/packages/learn-card-helpers/src/index.ts#L11)
 
 ___
 
@@ -50,4 +50,4 @@ E.g. 'abc123' is valid hex, 'zzz' is not
 
 #### Defined in
 
-[learn-card-helpers/src/index.ts:8](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-helpers/src/index.ts#L8)
+[learn-card-helpers/src/index.ts:8](https://github.com/learningeconomy/LearnCard/blob/9e930eeb3/packages/learn-card-helpers/src/index.ts#L8)
