@@ -1,0 +1,57 @@
+{
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
+    "name": "init",
+    "sourceRoot": "packages/learn-card-init/src",
+    "projectType": "library",
+    "root": "packages/learn-card-init",
+    "tags": [],
+    "implicitDependencies": [
+        "types",
+        "helpers",
+        "nx-run-command",
+        "ceramic-plugin",
+        "chapi-plugin",
+        "crypto-plugin",
+        "didkey-plugin",
+        "didkit-plugin",
+        "ethereum-plugin",
+        "expiration-plugin",
+        "idx-plugin",
+        "learn-card-plugin",
+        "learn-cloud-plugin",
+        "network-plugin",
+        "vc-plugin",
+        "vc-api-plugin",
+        "vc-templates-plugin",
+        "vpqr-plugin"
+    ],
+    "namedInputs": {
+        "source": ["{projectRoot}/src/**/*"],
+        "scripts": ["{projectRoot}/scripts/**/*"],
+        "tests": ["{projectRoot}/test/**/*"],
+        "dist": ["{projectRoot}/dist/**/*"]
+    },
+    "targets": {
+        "build": {
+            "executor": "nx:run-script",
+            "inputs": ["source", "scripts"],
+            "options": {
+                "script": "build"
+            }
+        },
+        "test": {
+            "executor": "nx:run-script",
+            "inputs": ["source", "tests"],
+            "options": {
+                "script": "test"
+            }
+        },
+        "test:watch": {
+            "executor": "./tools/executors/workspace:run-command",
+            "options": {
+                "command": "pnpm test:watch",
+                "cwd": "{root}/packages/learn-card-init"
+            }
+        }
+    }
+}

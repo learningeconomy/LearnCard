@@ -1,9 +1,9 @@
 import { atom } from 'nanostores';
 import { persistentAtom } from '@nanostores/persistent';
 
-import type { LearnCardFromKey } from '@learncard/core';
+import type { LearnCardFromSeed } from '@learncard/init';
 
-export const _wallet = atom<LearnCardFromKey | null>(null);
+export const _wallet = atom<LearnCardFromSeed['returnValue'] | null>(null);
 
 /**
  * Storing seed in localStorage for demo.

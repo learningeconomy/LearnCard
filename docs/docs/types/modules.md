@@ -14,7 +14,7 @@ custom_edit_url: null
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:169](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/obv3.ts#L169)
+[packages/learn-card-types/src/obv3.ts:169](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/obv3.ts#L169)
 
 ___
 
@@ -24,7 +24,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:248](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/obv3.ts#L248)
+[packages/learn-card-types/src/obv3.ts:248](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/obv3.ts#L248)
 
 ___
 
@@ -34,7 +34,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:10](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/vc.ts#L10)
+[packages/learn-card-types/src/vc.ts:10](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/vc.ts#L10)
 
 ___
 
@@ -44,7 +44,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:220](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/obv3.ts#L220)
+[packages/learn-card-types/src/obv3.ts:220](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/obv3.ts#L220)
 
 ___
 
@@ -54,7 +54,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:70](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/obv3.ts#L70)
+[packages/learn-card-types/src/obv3.ts:70](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/obv3.ts#L70)
 
 ___
 
@@ -64,7 +64,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:39](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/vc.ts#L39)
+[packages/learn-card-types/src/vc.ts:39](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/vc.ts#L39)
 
 ___
 
@@ -74,7 +74,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:32](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/obv3.ts#L32)
+[packages/learn-card-types/src/obv3.ts:32](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/obv3.ts#L32)
 
 ___
 
@@ -84,7 +84,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:21](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/obv3.ts#L21)
+[packages/learn-card-types/src/obv3.ts:21](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/obv3.ts#L21)
 
 ___
 
@@ -94,7 +94,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/lcn.ts:36](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/lcn.ts#L36)
+[packages/learn-card-types/src/lcn.ts:41](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/lcn.ts#L41)
 
 ___
 
@@ -104,7 +104,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/lcn.ts:44](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/lcn.ts#L44)
+[packages/learn-card-types/src/lcn.ts:49](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/lcn.ts#L49)
 
 ___
 
@@ -114,7 +114,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:4](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/vc.ts#L4)
+[packages/learn-card-types/src/vc.ts:4](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/vc.ts#L4)
 
 ___
 
@@ -124,7 +124,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/learncard.ts:30](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/learncard.ts#L30)
+[packages/learn-card-types/src/learncard.ts:30](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/learncard.ts#L30)
 
 ___
 
@@ -140,7 +140,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/learncard.ts:32](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/learncard.ts#L32)
+[packages/learn-card-types/src/learncard.ts:32](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/learncard.ts#L32)
 
 ___
 
@@ -150,7 +150,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:108](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/vc.ts#L108)
+[packages/learn-card-types/src/vc.ts:108](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/vc.ts#L108)
 
 ___
 
@@ -160,7 +160,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:105](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/vc.ts#L105)
+[packages/learn-card-types/src/vc.ts:105](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/vc.ts#L105)
 
 ___
 
@@ -170,7 +170,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:102](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/vc.ts#L102)
+[packages/learn-card-types/src/vc.ts:102](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/vc.ts#L102)
 
 ___
 
@@ -180,7 +180,17 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:75](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/obv3.ts#L75)
+[packages/learn-card-types/src/obv3.ts:75](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/obv3.ts#L75)
+
+___
+
+### EncryptedCredentialRecord
+
+Ƭ **EncryptedCredentialRecord**: `z.infer`<typeof [`EncryptedCredentialRecordValidator`](modules.md#encryptedcredentialrecordvalidator)\>
+
+#### Defined in
+
+[packages/learn-card-types/src/learncloud.ts:13](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/learncloud.ts#L13)
 
 ___
 
@@ -190,7 +200,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:88](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/obv3.ts#L88)
+[packages/learn-card-types/src/obv3.ts:88](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/obv3.ts#L88)
 
 ___
 
@@ -200,7 +210,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:82](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/obv3.ts#L82)
+[packages/learn-card-types/src/obv3.ts:82](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/obv3.ts#L82)
 
 ___
 
@@ -210,7 +220,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:233](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/obv3.ts#L233)
+[packages/learn-card-types/src/obv3.ts:233](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/obv3.ts#L233)
 
 ___
 
@@ -220,7 +230,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:26](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/vc.ts#L26)
+[packages/learn-card-types/src/vc.ts:26](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/vc.ts#L26)
 
 ___
 
@@ -230,7 +240,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:70](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/vc.ts#L70)
+[packages/learn-card-types/src/vc.ts:70](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/vc.ts#L70)
 
 ___
 
@@ -240,7 +250,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:63](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/vc.ts#L63)
+[packages/learn-card-types/src/vc.ts:63](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/vc.ts#L63)
 
 ___
 
@@ -250,7 +260,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:178](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/obv3.ts#L178)
+[packages/learn-card-types/src/obv3.ts:178](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/obv3.ts#L178)
 
 ___
 
@@ -260,7 +270,17 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:19](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/vc.ts#L19)
+[packages/learn-card-types/src/vc.ts:19](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/vc.ts#L19)
+
+___
+
+### InitInput
+
+Ƭ **InitInput**: `RequestInfo` \| `URL` \| `Response` \| `BufferSource` \| `WebAssembly.Module`
+
+#### Defined in
+
+[packages/learn-card-types/src/wasm.ts:1](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/wasm.ts#L1)
 
 ___
 
@@ -270,7 +290,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/crypto.ts:38](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/crypto.ts#L38)
+[packages/learn-card-types/src/crypto.ts:38](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/crypto.ts#L38)
 
 ___
 
@@ -280,7 +300,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/crypto.ts:28](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/crypto.ts#L28)
+[packages/learn-card-types/src/crypto.ts:28](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/crypto.ts#L28)
 
 ___
 
@@ -290,7 +310,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/crypto.ts:22](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/crypto.ts#L22)
+[packages/learn-card-types/src/crypto.ts:22](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/crypto.ts#L22)
 
 ___
 
@@ -300,7 +320,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/crypto.ts:11](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/crypto.ts#L11)
+[packages/learn-card-types/src/crypto.ts:11](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/crypto.ts#L11)
 
 ___
 
@@ -310,7 +330,77 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:67](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/obv3.ts#L67)
+[packages/learn-card-types/src/obv3.ts:67](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/obv3.ts#L67)
+
+___
+
+### LCNBoostClaimLinkOptionsType
+
+Ƭ **LCNBoostClaimLinkOptionsType**: `z.infer`<typeof [`LCNBoostClaimLinkOptionsValidator`](modules.md#lcnboostclaimlinkoptionsvalidator)\>
+
+#### Defined in
+
+[packages/learn-card-types/src/lcn.ts:102](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/lcn.ts#L102)
+
+___
+
+### LCNBoostClaimLinkSigningAuthorityType
+
+Ƭ **LCNBoostClaimLinkSigningAuthorityType**: `z.infer`<typeof [`LCNBoostClaimLinkSigningAuthorityValidator`](modules.md#lcnboostclaimlinksigningauthorityvalidator)\>
+
+#### Defined in
+
+[packages/learn-card-types/src/lcn.ts:94](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/lcn.ts#L94)
+
+___
+
+### LCNBoostStatusEnum
+
+Ƭ **LCNBoostStatusEnum**: `z.infer`<typeof [`LCNBoostStatus`](modules.md#lcnbooststatus)\>
+
+#### Defined in
+
+[packages/learn-card-types/src/lcn.ts:32](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/lcn.ts#L32)
+
+___
+
+### LCNNotification
+
+Ƭ **LCNNotification**: `z.infer`<typeof [`LCNNotificationValidator`](modules.md#lcnnotificationvalidator)\>
+
+#### Defined in
+
+[packages/learn-card-types/src/lcn.ts:87](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/lcn.ts#L87)
+
+___
+
+### LCNNotificationData
+
+Ƭ **LCNNotificationData**: `z.infer`<typeof [`LCNNotificationDataValidator`](modules.md#lcnnotificationdatavalidator)\>
+
+#### Defined in
+
+[packages/learn-card-types/src/lcn.ts:76](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/lcn.ts#L76)
+
+___
+
+### LCNNotificationMessage
+
+Ƭ **LCNNotificationMessage**: `z.infer`<typeof [`LCNNotificationMessageValidator`](modules.md#lcnnotificationmessagevalidator)\>
+
+#### Defined in
+
+[packages/learn-card-types/src/lcn.ts:69](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/lcn.ts#L69)
+
+___
+
+### LCNNotificationTypeEnum
+
+Ƭ **LCNNotificationTypeEnum**: `z.infer`<typeof [`LCNNotificationTypeEnumValidator`](modules.md#lcnnotificationtypeenumvalidator)\>
+
+#### Defined in
+
+[packages/learn-card-types/src/lcn.ts:62](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/lcn.ts#L62)
 
 ___
 
@@ -320,7 +410,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/lcn.ts:11](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/lcn.ts#L11)
+[packages/learn-card-types/src/lcn.ts:12](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/lcn.ts#L12)
 
 ___
 
@@ -330,9 +420,59 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/lcn.ts:13](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/lcn.ts#L13)
+[packages/learn-card-types/src/lcn.ts:14](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/lcn.ts#L14)
 
-[packages/learn-card-types/src/lcn.ts:19](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/lcn.ts#L19)
+[packages/learn-card-types/src/lcn.ts:20](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/lcn.ts#L20)
+
+___
+
+### LCNSigningAuthorityForUserType
+
+Ƭ **LCNSigningAuthorityForUserType**: `z.infer`<typeof [`LCNSigningAuthorityForUserValidator`](modules.md#lcnsigningauthorityforuservalidator)\>
+
+#### Defined in
+
+[packages/learn-card-types/src/lcn.ts:122](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/lcn.ts#L122)
+
+___
+
+### LCNSigningAuthorityType
+
+Ƭ **LCNSigningAuthorityType**: `z.infer`<typeof [`LCNSigningAuthorityValidator`](modules.md#lcnsigningauthorityvalidator)\>
+
+#### Defined in
+
+[packages/learn-card-types/src/lcn.ts:107](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/lcn.ts#L107)
+
+___
+
+### PaginatedEncryptedCredentialRecordsType
+
+Ƭ **PaginatedEncryptedCredentialRecordsType**: `z.infer`<typeof [`PaginatedEncryptedCredentialRecordsValidator`](modules.md#paginatedencryptedcredentialrecordsvalidator)\>
+
+#### Defined in
+
+[packages/learn-card-types/src/learncloud.ts:18](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/learncloud.ts#L18)
+
+___
+
+### PaginationOptionsType
+
+Ƭ **PaginationOptionsType**: `z.infer`<typeof [`PaginationOptionsValidator`](modules.md#paginationoptionsvalidator)\>
+
+#### Defined in
+
+[packages/learn-card-types/src/mongo.ts:7](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/mongo.ts#L7)
+
+___
+
+### PaginationResponseType
+
+Ƭ **PaginationResponseType**: `z.infer`<typeof [`PaginationResponseValidator`](modules.md#paginationresponsevalidator)\>
+
+#### Defined in
+
+[packages/learn-card-types/src/mongo.ts:13](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/mongo.ts#L13)
 
 ___
 
@@ -342,7 +482,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:99](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/vc.ts#L99)
+[packages/learn-card-types/src/vc.ts:99](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/vc.ts#L99)
 
 ___
 
@@ -352,7 +492,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:143](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/vc.ts#L143)
+[packages/learn-card-types/src/vc.ts:143](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/vc.ts#L143)
 
 ___
 
@@ -362,7 +502,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:113](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/vc.ts#L113)
+[packages/learn-card-types/src/vc.ts:113](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/vc.ts#L113)
 
 ___
 
@@ -372,7 +512,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:95](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/obv3.ts#L95)
+[packages/learn-card-types/src/obv3.ts:95](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/obv3.ts#L95)
 
 ___
 
@@ -382,7 +522,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:200](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/obv3.ts#L200)
+[packages/learn-card-types/src/obv3.ts:200](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/obv3.ts#L200)
 
 ___
 
@@ -392,7 +532,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:143](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/obv3.ts#L143)
+[packages/learn-card-types/src/obv3.ts:143](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/obv3.ts#L143)
 
 ___
 
@@ -402,7 +542,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:188](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/obv3.ts#L188)
+[packages/learn-card-types/src/obv3.ts:188](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/obv3.ts#L188)
 
 ___
 
@@ -412,7 +552,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:113](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/obv3.ts#L113)
+[packages/learn-card-types/src/obv3.ts:113](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/obv3.ts#L113)
 
 ___
 
@@ -422,7 +562,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:126](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/obv3.ts#L126)
+[packages/learn-card-types/src/obv3.ts:126](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/obv3.ts#L126)
 
 ___
 
@@ -432,7 +572,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/lcn.ts:28](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/lcn.ts#L28)
+[packages/learn-card-types/src/lcn.ts:29](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/lcn.ts#L29)
 
 ___
 
@@ -442,7 +582,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:243](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/obv3.ts#L243)
+[packages/learn-card-types/src/obv3.ts:243](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/obv3.ts#L243)
 
 ___
 
@@ -452,7 +592,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:129](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/vc.ts#L129)
+[packages/learn-card-types/src/vc.ts:129](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/vc.ts#L129)
 
 ___
 
@@ -462,7 +602,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:159](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/vc.ts#L159)
+[packages/learn-card-types/src/vc.ts:159](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/vc.ts#L159)
 
 ___
 
@@ -472,7 +612,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:148](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/vc.ts#L148)
+[packages/learn-card-types/src/vc.ts:148](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/vc.ts#L148)
 
 ___
 
@@ -482,7 +622,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:164](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/vc.ts#L164)
+[packages/learn-card-types/src/vc.ts:164](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/vc.ts#L164)
 
 ___
 
@@ -492,7 +632,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/learncard.ts:9](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/learncard.ts#L9)
+[packages/learn-card-types/src/learncard.ts:9](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/learncard.ts#L9)
 
 ___
 
@@ -502,7 +642,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/learncard.ts:21](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/learncard.ts#L21)
+[packages/learn-card-types/src/learncard.ts:21](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/learncard.ts#L21)
 
 ___
 
@@ -512,7 +652,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/learncard.ts:12](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/learncard.ts#L12)
+[packages/learn-card-types/src/learncard.ts:12](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/learncard.ts#L12)
 
 ## Variables
 
@@ -522,7 +662,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:245](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/obv3.ts#L245)
+[packages/learn-card-types/src/obv3.ts:245](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/obv3.ts#L245)
 
 ___
 
@@ -532,7 +672,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:6](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/vc.ts#L6)
+[packages/learn-card-types/src/vc.ts:6](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/vc.ts#L6)
 
 ___
 
@@ -542,7 +682,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:202](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/obv3.ts#L202)
+[packages/learn-card-types/src/obv3.ts:202](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/obv3.ts#L202)
 
 ___
 
@@ -552,7 +692,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:69](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/obv3.ts#L69)
+[packages/learn-card-types/src/obv3.ts:69](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/obv3.ts#L69)
 
 ___
 
@@ -562,7 +702,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:145](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/obv3.ts#L145)
+[packages/learn-card-types/src/obv3.ts:145](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/obv3.ts#L145)
 
 ___
 
@@ -572,7 +712,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:28](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/vc.ts#L28)
+[packages/learn-card-types/src/vc.ts:28](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/vc.ts#L28)
 
 ___
 
@@ -582,7 +722,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:10](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/obv3.ts#L10)
+[packages/learn-card-types/src/obv3.ts:10](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/obv3.ts#L10)
 
 ___
 
@@ -592,27 +732,27 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:23](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/obv3.ts#L23)
+[packages/learn-card-types/src/obv3.ts:23](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/obv3.ts#L23)
 
 ___
 
 ### BoostRecipientValidator
 
-• `Const` **BoostRecipientValidator**: `ZodObject`<{ `from`: `ZodString` ; `received`: `ZodString` ; `to`: `ZodObject`<{ `did`: `ZodString` ; `displayName`: `ZodDefault`<`ZodString`\> ; `email`: `ZodOptional`<`ZodString`\> ; `image`: `ZodOptional`<`ZodString`\> ; `isServiceProfile`: `ZodOptional`<`ZodDefault`<`ZodBoolean`\>\> ; `profileId`: `ZodString`  }, ``"strip"``, `ZodTypeAny`, { `did`: `string` ; `displayName`: `string` ; `email`: `undefined` \| `string` ; `image`: `undefined` \| `string` ; `isServiceProfile`: `undefined` \| `boolean` ; `profileId`: `string`  }, { `did`: `string` ; `displayName`: `undefined` \| `string` ; `email`: `undefined` \| `string` ; `image`: `undefined` \| `string` ; `isServiceProfile`: `undefined` \| `boolean` ; `profileId`: `string`  }\> = LCNProfileValidator }, ``"strip"``, `ZodTypeAny`, { `from`: `string` ; `received`: `string` ; `to`: { image?: string \| undefined; email?: string \| undefined; isServiceProfile?: boolean \| undefined; profileId: string; displayName: string; did: string; } = LCNProfileValidator }, { `from`: `string` ; `received`: `string` ; `to`: { image?: string \| undefined; email?: string \| undefined; displayName?: string \| undefined; isServiceProfile?: boolean \| undefined; profileId: string; did: string; } = LCNProfileValidator }\>
+• `Const` **BoostRecipientValidator**: `ZodObject`<{ `from`: `ZodString` ; `received`: `ZodString` ; `to`: `ZodObject`<{ `did`: `ZodString` ; `displayName`: `ZodDefault`<`ZodString`\> ; `email`: `ZodOptional`<`ZodString`\> ; `image`: `ZodOptional`<`ZodString`\> ; `isServiceProfile`: `ZodOptional`<`ZodDefault`<`ZodBoolean`\>\> ; `notificationsWebhook`: `ZodOptional`<`ZodString`\> ; `profileId`: `ZodString`  }, ``"strip"``, `ZodTypeAny`, { `did`: `string` ; `displayName`: `string` ; `email`: `undefined` \| `string` ; `image`: `undefined` \| `string` ; `isServiceProfile`: `undefined` \| `boolean` ; `notificationsWebhook`: `undefined` \| `string` ; `profileId`: `string`  }, { `did`: `string` ; `displayName`: `undefined` \| `string` ; `email`: `undefined` \| `string` ; `image`: `undefined` \| `string` ; `isServiceProfile`: `undefined` \| `boolean` ; `notificationsWebhook`: `undefined` \| `string` ; `profileId`: `string`  }\> = LCNProfileValidator }, ``"strip"``, `ZodTypeAny`, { `from`: `string` ; `received`: `string` ; `to`: { image?: string \| undefined; email?: string \| undefined; isServiceProfile?: boolean \| undefined; notificationsWebhook?: string \| undefined; profileId: string; displayName: string; did: string; } = LCNProfileValidator }, { `from`: `string` ; `received`: `string` ; `to`: { image?: string \| undefined; email?: string \| undefined; displayName?: string \| undefined; isServiceProfile?: boolean \| undefined; notificationsWebhook?: string \| undefined; profileId: string; did: string; } = LCNProfileValidator }\>
 
 #### Defined in
 
-[packages/learn-card-types/src/lcn.ts:38](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/lcn.ts#L38)
+[packages/learn-card-types/src/lcn.ts:43](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/lcn.ts#L43)
 
 ___
 
 ### BoostValidator
 
-• `Const` **BoostValidator**: `ZodObject`<{ `category`: `ZodOptional`<`ZodString`\> ; `name`: `ZodOptional`<`ZodString`\> ; `type`: `ZodOptional`<`ZodString`\> ; `uri`: `ZodString`  }, ``"strip"``, `ZodTypeAny`, { `category`: `undefined` \| `string` ; `name`: `undefined` \| `string` ; `type`: `undefined` \| `string` ; `uri`: `string`  }, { `category`: `undefined` \| `string` ; `name`: `undefined` \| `string` ; `type`: `undefined` \| `string` ; `uri`: `string`  }\>
+• `Const` **BoostValidator**: `ZodObject`<{ `category`: `ZodOptional`<`ZodString`\> ; `name`: `ZodOptional`<`ZodString`\> ; `status`: `ZodOptional`<`ZodEnum`<[``"DRAFT"``, ``"LIVE"``]\>\> ; `type`: `ZodOptional`<`ZodString`\> ; `uri`: `ZodString`  }, ``"strip"``, `ZodTypeAny`, { `category`: `undefined` \| `string` ; `name`: `undefined` \| `string` ; `status`: `undefined` \| ``"DRAFT"`` \| ``"LIVE"`` ; `type`: `undefined` \| `string` ; `uri`: `string`  }, { `category`: `undefined` \| `string` ; `name`: `undefined` \| `string` ; `status`: `undefined` \| ``"DRAFT"`` \| ``"LIVE"`` ; `type`: `undefined` \| `string` ; `uri`: `string`  }\>
 
 #### Defined in
 
-[packages/learn-card-types/src/lcn.ts:30](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/lcn.ts#L30)
+[packages/learn-card-types/src/lcn.ts:34](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/lcn.ts#L34)
 
 ___
 
@@ -622,7 +762,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:3](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/vc.ts#L3)
+[packages/learn-card-types/src/vc.ts:3](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/vc.ts#L3)
 
 ___
 
@@ -632,17 +772,17 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/learncard.ts:23](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/learncard.ts#L23)
+[packages/learn-card-types/src/learncard.ts:23](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/learncard.ts#L23)
 
 ___
 
 ### CredentialRecordValidator
 
-• `Const` **CredentialRecordValidator**: `z.ZodType`<[`CredentialRecord`](modules.md#credentialrecord)\>
+• `Const` **CredentialRecordValidator**: `ZodObject`<{ `id`: `ZodString` ; `uri`: `ZodString`  }, ``"strip"``, `ZodAny`, { `id`: `string` ; `uri`: `string`  }, { `id`: `string` ; `uri`: `string`  }\>
 
 #### Defined in
 
-[packages/learn-card-types/src/learncard.ts:38](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/learncard.ts#L38)
+[packages/learn-card-types/src/learncard.ts:38](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/learncard.ts#L38)
 
 ___
 
@@ -652,7 +792,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:107](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/vc.ts#L107)
+[packages/learn-card-types/src/vc.ts:107](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/vc.ts#L107)
 
 ___
 
@@ -662,7 +802,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:104](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/vc.ts#L104)
+[packages/learn-card-types/src/vc.ts:104](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/vc.ts#L104)
 
 ___
 
@@ -672,7 +812,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:101](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/vc.ts#L101)
+[packages/learn-card-types/src/vc.ts:101](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/vc.ts#L101)
 
 ___
 
@@ -682,7 +822,17 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:72](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/obv3.ts#L72)
+[packages/learn-card-types/src/obv3.ts:72](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/obv3.ts#L72)
+
+___
+
+### EncryptedCredentialRecordValidator
+
+• `Const` **EncryptedCredentialRecordValidator**: `ZodObject`<{ `encryptedRecord`: `ZodObject`<{ `aad`: `ZodOptional`<`ZodString`\> ; `ciphertext`: `ZodString` ; `iv`: `ZodString` ; `protected`: `ZodString` ; `recipients`: `ZodOptional`<`ZodArray`<`ZodObject`<{ `encrypted_key`: `ZodString` ; `header`: `ZodObject`<{ `alg`: `ZodString` ; `apu`: `ZodOptional`<`ZodString`\> ; `apv`: `ZodOptional`<`ZodString`\> ; `epk`: `ZodOptional`<`ZodObject`<{ `crv`: `ZodOptional`<`ZodString`\> ; `d`: `ZodOptional`<`ZodString`\> ; `kty`: `ZodOptional`<`ZodString`\> ; `n`: `ZodOptional`<`ZodOptional`<`ZodString`\>\> ; `x`: `ZodOptional`<`ZodString`\> ; `y`: `ZodOptional`<`ZodOptional`<`ZodString`\>\>  }, ``"strip"``, `ZodTypeAny`, { `crv`: `undefined` \| `string` ; `d`: `undefined` \| `string` ; `kty`: `undefined` \| `string` ; `n`: `undefined` \| `string` ; `x`: `undefined` \| `string` ; `y`: `undefined` \| `string`  }, { `crv`: `undefined` \| `string` ; `d`: `undefined` \| `string` ; `kty`: `undefined` \| `string` ; `n`: `undefined` \| `string` ; `x`: `undefined` \| `string` ; `y`: `undefined` \| `string`  }\>\> ; `iv`: `ZodString` ; `kid`: `ZodOptional`<`ZodString`\> ; `tag`: `ZodString`  }, ``"strip"``, `ZodTypeAny`, { `alg`: `string` ; `apu`: `undefined` \| `string` ; `apv`: `undefined` \| `string` ; `epk`: `undefined` \| { `crv`: `undefined` \| `string` ; `d`: `undefined` \| `string` ; `kty`: `undefined` \| `string` ; `n`: `undefined` \| `string` ; `x`: `undefined` \| `string` ; `y`: `undefined` \| `string`  } ; `iv`: `string` ; `kid`: `undefined` \| `string` ; `tag`: `string`  }, { `alg`: `string` ; `apu`: `undefined` \| `string` ; `apv`: `undefined` \| `string` ; `epk`: `undefined` \| { `crv`: `undefined` \| `string` ; `d`: `undefined` \| `string` ; `kty`: `undefined` \| `string` ; `n`: `undefined` \| `string` ; `x`: `undefined` \| `string` ; `y`: `undefined` \| `string`  } ; `iv`: `string` ; `kid`: `undefined` \| `string` ; `tag`: `string`  }\> = JWERecipientHeaderValidator }, ``"strip"``, `ZodTypeAny`, { `encrypted_key`: `string` ; `header`: { epk?: { kty?: string \| undefined; crv?: string \| undefined; x?: string \| undefined; y?: string \| undefined; n?: string \| undefined; d?: string \| undefined; } \| undefined; kid?: string \| undefined; ... 4 more ...; tag: string; } = JWERecipientHeaderValidator }, { `encrypted_key`: `string` ; `header`: { epk?: { kty?: string \| undefined; crv?: string \| undefined; x?: string \| undefined; y?: string \| undefined; n?: string \| undefined; d?: string \| undefined; } \| undefined; kid?: string \| undefined; ... 4 more ...; tag: string; } = JWERecipientHeaderValidator }\>, ``"many"``\>\> ; `tag`: `ZodString`  }, ``"strip"``, `ZodTypeAny`, { `aad`: `undefined` \| `string` ; `ciphertext`: `string` ; `iv`: `string` ; `protected`: `string` ; `recipients`: `undefined` \| { header: { epk?: { kty?: string \| undefined; crv?: string \| undefined; x?: string \| undefined; y?: string \| undefined; n?: string \| undefined; d?: string \| undefined; } \| undefined; kid?: string \| undefined; ... 4 more ...; tag: string; }; encrypted\_key: string; }[] ; `tag`: `string`  }, { `aad`: `undefined` \| `string` ; `ciphertext`: `string` ; `iv`: `string` ; `protected`: `string` ; `recipients`: `undefined` \| { header: { epk?: { kty?: string \| undefined; crv?: string \| undefined; x?: string \| undefined; y?: string \| undefined; n?: string \| undefined; d?: string \| undefined; } \| undefined; kid?: string \| undefined; ... 4 more ...; tag: string; }; encrypted\_key: string; }[] ; `tag`: `string`  }\> = JWEValidator; `fields`: `ZodArray`<`ZodString`, ``"many"``\> ; `id`: `ZodString`  }, ``"strip"``, `ZodAny`, { `encryptedRecord`: { `aad`: `undefined` \| `string` ; `ciphertext`: `string` ; `iv`: `string` ; `protected`: `string` ; `recipients`: `undefined` \| { header: { epk?: { kty?: string \| undefined; crv?: string \| undefined; x?: string \| undefined; y?: string \| undefined; n?: string \| undefined; d?: string \| undefined; } \| undefined; kid?: string \| undefined; ... 4 more ...; tag: string; }; encrypted\_key: string; }[] ; `tag`: `string`  } = JWEValidator; `fields`: `string`[] ; `id`: `string`  }, { `encryptedRecord`: { `aad`: `undefined` \| `string` ; `ciphertext`: `string` ; `iv`: `string` ; `protected`: `string` ; `recipients`: `undefined` \| { header: { epk?: { kty?: string \| undefined; crv?: string \| undefined; x?: string \| undefined; y?: string \| undefined; n?: string \| undefined; d?: string \| undefined; } \| undefined; kid?: string \| undefined; ... 4 more ...; tag: string; }; encrypted\_key: string; }[] ; `tag`: `string`  } = JWEValidator; `fields`: `string`[] ; `id`: `string`  }\>
+
+#### Defined in
+
+[packages/learn-card-types/src/learncloud.ts:6](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/learncloud.ts#L6)
 
 ___
 
@@ -692,7 +842,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:84](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/obv3.ts#L84)
+[packages/learn-card-types/src/obv3.ts:84](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/obv3.ts#L84)
 
 ___
 
@@ -702,7 +852,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:77](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/obv3.ts#L77)
+[packages/learn-card-types/src/obv3.ts:77](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/obv3.ts#L77)
 
 ___
 
@@ -712,7 +862,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:222](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/obv3.ts#L222)
+[packages/learn-card-types/src/obv3.ts:222](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/obv3.ts#L222)
 
 ___
 
@@ -722,7 +872,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:21](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/vc.ts#L21)
+[packages/learn-card-types/src/vc.ts:21](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/vc.ts#L21)
 
 ___
 
@@ -732,7 +882,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:65](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/vc.ts#L65)
+[packages/learn-card-types/src/vc.ts:65](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/vc.ts#L65)
 
 ___
 
@@ -742,7 +892,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:41](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/vc.ts#L41)
+[packages/learn-card-types/src/vc.ts:41](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/vc.ts#L41)
 
 ___
 
@@ -752,7 +902,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:171](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/obv3.ts#L171)
+[packages/learn-card-types/src/obv3.ts:171](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/obv3.ts#L171)
 
 ___
 
@@ -762,7 +912,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:12](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/vc.ts#L12)
+[packages/learn-card-types/src/vc.ts:12](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/vc.ts#L12)
 
 ___
 
@@ -772,7 +922,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/crypto.ts:13](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/crypto.ts#L13)
+[packages/learn-card-types/src/crypto.ts:13](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/crypto.ts#L13)
 
 ___
 
@@ -782,7 +932,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/crypto.ts:24](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/crypto.ts#L24)
+[packages/learn-card-types/src/crypto.ts:24](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/crypto.ts#L24)
 
 ___
 
@@ -792,7 +942,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/crypto.ts:30](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/crypto.ts#L30)
+[packages/learn-card-types/src/crypto.ts:30](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/crypto.ts#L30)
 
 ___
 
@@ -802,7 +952,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/crypto.ts:3](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/crypto.ts#L3)
+[packages/learn-card-types/src/crypto.ts:3](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/crypto.ts#L3)
 
 ___
 
@@ -812,7 +962,77 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:34](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/obv3.ts#L34)
+[packages/learn-card-types/src/obv3.ts:34](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/obv3.ts#L34)
+
+___
+
+### LCNBoostClaimLinkOptionsValidator
+
+• `Const` **LCNBoostClaimLinkOptionsValidator**: `ZodObject`<{ `totalUses`: `ZodOptional`<`ZodNumber`\> ; `ttlSeconds`: `ZodOptional`<`ZodNumber`\>  }, ``"strip"``, `ZodTypeAny`, { `totalUses`: `undefined` \| `number` ; `ttlSeconds`: `undefined` \| `number`  }, { `totalUses`: `undefined` \| `number` ; `ttlSeconds`: `undefined` \| `number`  }\>
+
+#### Defined in
+
+[packages/learn-card-types/src/lcn.ts:98](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/lcn.ts#L98)
+
+___
+
+### LCNBoostClaimLinkSigningAuthorityValidator
+
+• `Const` **LCNBoostClaimLinkSigningAuthorityValidator**: `ZodObject`<{ `did`: `ZodOptional`<`ZodString`\> ; `endpoint`: `ZodString` ; `name`: `ZodString`  }, ``"strip"``, `ZodTypeAny`, { `did`: `undefined` \| `string` ; `endpoint`: `string` ; `name`: `string`  }, { `did`: `undefined` \| `string` ; `endpoint`: `string` ; `name`: `string`  }\>
+
+#### Defined in
+
+[packages/learn-card-types/src/lcn.ts:89](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/lcn.ts#L89)
+
+___
+
+### LCNBoostStatus
+
+• `Const` **LCNBoostStatus**: `ZodEnum`<[``"DRAFT"``, ``"LIVE"``]\>
+
+#### Defined in
+
+[packages/learn-card-types/src/lcn.ts:31](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/lcn.ts#L31)
+
+___
+
+### LCNNotificationDataValidator
+
+• `Const` **LCNNotificationDataValidator**: `ZodObject`<{ `vcUris`: `ZodOptional`<`ZodArray`<`ZodString`, ``"many"``\>\> ; `vpUris`: `ZodOptional`<`ZodArray`<`ZodString`, ``"many"``\>\>  }, ``"strip"``, `ZodTypeAny`, { `vcUris`: `undefined` \| `string`[] ; `vpUris`: `undefined` \| `string`[]  }, { `vcUris`: `undefined` \| `string`[] ; `vpUris`: `undefined` \| `string`[]  }\>
+
+#### Defined in
+
+[packages/learn-card-types/src/lcn.ts:71](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/lcn.ts#L71)
+
+___
+
+### LCNNotificationMessageValidator
+
+• `Const` **LCNNotificationMessageValidator**: `ZodObject`<{ `body`: `ZodOptional`<`ZodString`\> ; `title`: `ZodOptional`<`ZodString`\>  }, ``"strip"``, `ZodTypeAny`, { `body`: `undefined` \| `string` ; `title`: `undefined` \| `string`  }, { `body`: `undefined` \| `string` ; `title`: `undefined` \| `string`  }\>
+
+#### Defined in
+
+[packages/learn-card-types/src/lcn.ts:64](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/lcn.ts#L64)
+
+___
+
+### LCNNotificationTypeEnumValidator
+
+• `Const` **LCNNotificationTypeEnumValidator**: `ZodEnum`<[``"CONNECTION_REQUEST"``, ``"CONNECTION_ACCEPTED"``, ``"CREDENTIAL_RECEIVED"``, ``"CREDENTIAL_ACCEPTED"``, ``"BOOST_RECEIVED"``, ``"BOOST_ACCEPTED"``, ``"PRESENTATION_REQUEST"``, ``"PRESENTATION_RECEIVED"``]\>
+
+#### Defined in
+
+[packages/learn-card-types/src/lcn.ts:51](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/lcn.ts#L51)
+
+___
+
+### LCNNotificationValidator
+
+• `Const` **LCNNotificationValidator**: `ZodObject`<{ `data`: `ZodOptional`<`ZodObject`<{ `vcUris`: `ZodOptional`<`ZodArray`<`ZodString`, ``"many"``\>\> ; `vpUris`: `ZodOptional`<`ZodArray`<`ZodString`, ``"many"``\>\>  }, ``"strip"``, `ZodTypeAny`, { `vcUris`: `undefined` \| `string`[] ; `vpUris`: `undefined` \| `string`[]  }, { `vcUris`: `undefined` \| `string`[] ; `vpUris`: `undefined` \| `string`[]  }\>\> ; `from`: `ZodIntersection`<`ZodObject`<{ `did`: `ZodOptional`<`ZodString`\> ; `displayName`: `ZodOptional`<`ZodDefault`<`ZodString`\>\> ; `email`: `ZodOptional`<`ZodOptional`<`ZodString`\>\> ; `image`: `ZodOptional`<`ZodOptional`<`ZodString`\>\> ; `isServiceProfile`: `ZodOptional`<`ZodOptional`<`ZodDefault`<`ZodBoolean`\>\>\> ; `notificationsWebhook`: `ZodOptional`<`ZodOptional`<`ZodString`\>\> ; `profileId`: `ZodOptional`<`ZodString`\>  }, ``"strip"``, `ZodTypeAny`, { `did`: `undefined` \| `string` ; `displayName`: `undefined` \| `string` ; `email`: `undefined` \| `string` ; `image`: `undefined` \| `string` ; `isServiceProfile`: `undefined` \| `boolean` ; `notificationsWebhook`: `undefined` \| `string` ; `profileId`: `undefined` \| `string`  }, { `did`: `undefined` \| `string` ; `displayName`: `undefined` \| `string` ; `email`: `undefined` \| `string` ; `image`: `undefined` \| `string` ; `isServiceProfile`: `undefined` \| `boolean` ; `notificationsWebhook`: `undefined` \| `string` ; `profileId`: `undefined` \| `string`  }\>, `ZodObject`<{ `did`: `ZodString`  }, ``"strip"``, `ZodTypeAny`, { `did`: `string`  }, { `did`: `string`  }\>\> ; `message`: `ZodOptional`<`ZodObject`<{ `body`: `ZodOptional`<`ZodString`\> ; `title`: `ZodOptional`<`ZodString`\>  }, ``"strip"``, `ZodTypeAny`, { `body`: `undefined` \| `string` ; `title`: `undefined` \| `string`  }, { `body`: `undefined` \| `string` ; `title`: `undefined` \| `string`  }\>\> ; `sent`: `ZodOptional`<`ZodString`\> ; `to`: `ZodIntersection`<`ZodObject`<{ `did`: `ZodOptional`<`ZodString`\> ; `displayName`: `ZodOptional`<`ZodDefault`<`ZodString`\>\> ; `email`: `ZodOptional`<`ZodOptional`<`ZodString`\>\> ; `image`: `ZodOptional`<`ZodOptional`<`ZodString`\>\> ; `isServiceProfile`: `ZodOptional`<`ZodOptional`<`ZodDefault`<`ZodBoolean`\>\>\> ; `notificationsWebhook`: `ZodOptional`<`ZodOptional`<`ZodString`\>\> ; `profileId`: `ZodOptional`<`ZodString`\>  }, ``"strip"``, `ZodTypeAny`, { `did`: `undefined` \| `string` ; `displayName`: `undefined` \| `string` ; `email`: `undefined` \| `string` ; `image`: `undefined` \| `string` ; `isServiceProfile`: `undefined` \| `boolean` ; `notificationsWebhook`: `undefined` \| `string` ; `profileId`: `undefined` \| `string`  }, { `did`: `undefined` \| `string` ; `displayName`: `undefined` \| `string` ; `email`: `undefined` \| `string` ; `image`: `undefined` \| `string` ; `isServiceProfile`: `undefined` \| `boolean` ; `notificationsWebhook`: `undefined` \| `string` ; `profileId`: `undefined` \| `string`  }\>, `ZodObject`<{ `did`: `ZodString`  }, ``"strip"``, `ZodTypeAny`, { `did`: `string`  }, { `did`: `string`  }\>\> ; `type`: `ZodEnum`<[``"CONNECTION_REQUEST"``, ``"CONNECTION_ACCEPTED"``, ``"CREDENTIAL_RECEIVED"``, ``"CREDENTIAL_ACCEPTED"``, ``"BOOST_RECEIVED"``, ``"BOOST_ACCEPTED"``, ``"PRESENTATION_REQUEST"``, ``"PRESENTATION_RECEIVED"``]\> = LCNNotificationTypeEnumValidator }, ``"strip"``, `ZodTypeAny`, { `data`: `undefined` \| { vcUris?: string[] \| undefined; vpUris?: string[] \| undefined; } ; `from`: { `did`: `undefined` \| `string` ; `displayName`: `undefined` \| `string` ; `email`: `undefined` \| `string` ; `image`: `undefined` \| `string` ; `isServiceProfile`: `undefined` \| `boolean` ; `notificationsWebhook`: `undefined` \| `string` ; `profileId`: `undefined` \| `string`  } & { did: string; } ; `message`: `undefined` \| { title?: string \| undefined; body?: string \| undefined; } ; `sent`: `undefined` \| `string` ; `to`: { `did`: `undefined` \| `string` ; `displayName`: `undefined` \| `string` ; `email`: `undefined` \| `string` ; `image`: `undefined` \| `string` ; `isServiceProfile`: `undefined` \| `boolean` ; `notificationsWebhook`: `undefined` \| `string` ; `profileId`: `undefined` \| `string`  } & { did: string; } ; `type`: ``"CONNECTION_REQUEST"`` \| ``"CONNECTION_ACCEPTED"`` \| ``"CREDENTIAL_RECEIVED"`` \| ``"CREDENTIAL_ACCEPTED"`` \| ``"BOOST_RECEIVED"`` \| ``"BOOST_ACCEPTED"`` \| ``"PRESENTATION_REQUEST"`` \| ``"PRESENTATION_RECEIVED"`` = LCNNotificationTypeEnumValidator }, { `data`: `undefined` \| { vcUris?: string[] \| undefined; vpUris?: string[] \| undefined; } ; `from`: { `did`: `undefined` \| `string` ; `displayName`: `undefined` \| `string` ; `email`: `undefined` \| `string` ; `image`: `undefined` \| `string` ; `isServiceProfile`: `undefined` \| `boolean` ; `notificationsWebhook`: `undefined` \| `string` ; `profileId`: `undefined` \| `string`  } & { did: string; } ; `message`: `undefined` \| { title?: string \| undefined; body?: string \| undefined; } ; `sent`: `undefined` \| `string` ; `to`: { `did`: `undefined` \| `string` ; `displayName`: `undefined` \| `string` ; `email`: `undefined` \| `string` ; `image`: `undefined` \| `string` ; `isServiceProfile`: `undefined` \| `boolean` ; `notificationsWebhook`: `undefined` \| `string` ; `profileId`: `undefined` \| `string`  } & { did: string; } ; `type`: ``"CONNECTION_REQUEST"`` \| ``"CONNECTION_ACCEPTED"`` \| ``"CREDENTIAL_RECEIVED"`` \| ``"CREDENTIAL_ACCEPTED"`` \| ``"BOOST_RECEIVED"`` \| ``"BOOST_ACCEPTED"`` \| ``"PRESENTATION_REQUEST"`` \| ``"PRESENTATION_RECEIVED"`` = LCNNotificationTypeEnumValidator }\>
+
+#### Defined in
+
+[packages/learn-card-types/src/lcn.ts:78](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/lcn.ts#L78)
 
 ___
 
@@ -822,19 +1042,69 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/lcn.ts:13](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/lcn.ts#L13)
+[packages/learn-card-types/src/lcn.ts:14](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/lcn.ts#L14)
 
-[packages/learn-card-types/src/lcn.ts:19](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/lcn.ts#L19)
+[packages/learn-card-types/src/lcn.ts:20](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/lcn.ts#L20)
 
 ___
 
 ### LCNProfileValidator
 
-• `Const` **LCNProfileValidator**: `ZodObject`<{ `did`: `ZodString` ; `displayName`: `ZodDefault`<`ZodString`\> ; `email`: `ZodOptional`<`ZodString`\> ; `image`: `ZodOptional`<`ZodString`\> ; `isServiceProfile`: `ZodOptional`<`ZodDefault`<`ZodBoolean`\>\> ; `profileId`: `ZodString`  }, ``"strip"``, `ZodTypeAny`, { `did`: `string` ; `displayName`: `string` ; `email`: `undefined` \| `string` ; `image`: `undefined` \| `string` ; `isServiceProfile`: `undefined` \| `boolean` ; `profileId`: `string`  }, { `did`: `string` ; `displayName`: `undefined` \| `string` ; `email`: `undefined` \| `string` ; `image`: `undefined` \| `string` ; `isServiceProfile`: `undefined` \| `boolean` ; `profileId`: `string`  }\>
+• `Const` **LCNProfileValidator**: `ZodObject`<{ `did`: `ZodString` ; `displayName`: `ZodDefault`<`ZodString`\> ; `email`: `ZodOptional`<`ZodString`\> ; `image`: `ZodOptional`<`ZodString`\> ; `isServiceProfile`: `ZodOptional`<`ZodDefault`<`ZodBoolean`\>\> ; `notificationsWebhook`: `ZodOptional`<`ZodString`\> ; `profileId`: `ZodString`  }, ``"strip"``, `ZodTypeAny`, { `did`: `string` ; `displayName`: `string` ; `email`: `undefined` \| `string` ; `image`: `undefined` \| `string` ; `isServiceProfile`: `undefined` \| `boolean` ; `notificationsWebhook`: `undefined` \| `string` ; `profileId`: `string`  }, { `did`: `string` ; `displayName`: `undefined` \| `string` ; `email`: `undefined` \| `string` ; `image`: `undefined` \| `string` ; `isServiceProfile`: `undefined` \| `boolean` ; `notificationsWebhook`: `undefined` \| `string` ; `profileId`: `string`  }\>
 
 #### Defined in
 
-[packages/learn-card-types/src/lcn.ts:3](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/lcn.ts#L3)
+[packages/learn-card-types/src/lcn.ts:3](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/lcn.ts#L3)
+
+___
+
+### LCNSigningAuthorityForUserValidator
+
+• `Const` **LCNSigningAuthorityForUserValidator**: `ZodObject`<{ `relationship`: `ZodObject`<{ `did`: `ZodString` ; `name`: `ZodString`  }, ``"strip"``, `ZodTypeAny`, { `did`: `string` ; `name`: `string`  }, { `did`: `string` ; `name`: `string`  }\> ; `signingAuthority`: `ZodObject`<{ `endpoint`: `ZodString`  }, ``"strip"``, `ZodTypeAny`, { `endpoint`: `string`  }, { `endpoint`: `string`  }\> = LCNSigningAuthorityValidator }, ``"strip"``, `ZodTypeAny`, { `relationship`: { name: string; did: string; } ; `signingAuthority`: { endpoint: string; } = LCNSigningAuthorityValidator }, { `relationship`: { name: string; did: string; } ; `signingAuthority`: { endpoint: string; } = LCNSigningAuthorityValidator }\>
+
+#### Defined in
+
+[packages/learn-card-types/src/lcn.ts:109](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/lcn.ts#L109)
+
+___
+
+### LCNSigningAuthorityValidator
+
+• `Const` **LCNSigningAuthorityValidator**: `ZodObject`<{ `endpoint`: `ZodString`  }, ``"strip"``, `ZodTypeAny`, { `endpoint`: `string`  }, { `endpoint`: `string`  }\>
+
+#### Defined in
+
+[packages/learn-card-types/src/lcn.ts:104](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/lcn.ts#L104)
+
+___
+
+### PaginatedEncryptedCredentialRecordsValidator
+
+• `Const` **PaginatedEncryptedCredentialRecordsValidator**: `ZodObject`<{ `cursor`: `ZodOptional`<`ZodString`\> ; `hasMore`: `ZodBoolean` ; `records`: `ZodArray`<`ZodObject`<{ `encryptedRecord`: `ZodObject`<{ `aad`: `ZodOptional`<`ZodString`\> ; `ciphertext`: `ZodString` ; `iv`: `ZodString` ; `protected`: `ZodString` ; `recipients`: `ZodOptional`<`ZodArray`<`ZodObject`<{ `encrypted_key`: `ZodString` ; `header`: `ZodObject`<{ `alg`: `ZodString` ; `apu`: `ZodOptional`<`ZodString`\> ; `apv`: `ZodOptional`<`ZodString`\> ; `epk`: `ZodOptional`<`ZodObject`<{ `crv`: `ZodOptional`<`ZodString`\> ; `d`: `ZodOptional`<`ZodString`\> ; `kty`: `ZodOptional`<`ZodString`\> ; `n`: `ZodOptional`<`ZodOptional`<`ZodString`\>\> ; `x`: `ZodOptional`<`ZodString`\> ; `y`: `ZodOptional`<`ZodOptional`<`ZodString`\>\>  }, ``"strip"``, `ZodTypeAny`, { `crv`: `undefined` \| `string` ; `d`: `undefined` \| `string` ; `kty`: `undefined` \| `string` ; `n`: `undefined` \| `string` ; `x`: `undefined` \| `string` ; `y`: `undefined` \| `string`  }, { `crv`: `undefined` \| `string` ; `d`: `undefined` \| `string` ; `kty`: `undefined` \| `string` ; `n`: `undefined` \| `string` ; `x`: `undefined` \| `string` ; `y`: `undefined` \| `string`  }\>\> ; `iv`: `ZodString` ; `kid`: `ZodOptional`<`ZodString`\> ; `tag`: `ZodString`  }, ``"strip"``, `ZodTypeAny`, { `alg`: `string` ; `apu`: `undefined` \| `string` ; `apv`: `undefined` \| `string` ; `epk`: `undefined` \| { `crv`: `undefined` \| `string` ; `d`: `undefined` \| `string` ; `kty`: `undefined` \| `string` ; `n`: `undefined` \| `string` ; `x`: `undefined` \| `string` ; `y`: `undefined` \| `string`  } ; `iv`: `string` ; `kid`: `undefined` \| `string` ; `tag`: `string`  }, { `alg`: `string` ; `apu`: `undefined` \| `string` ; `apv`: `undefined` \| `string` ; `epk`: `undefined` \| { `crv`: `undefined` \| `string` ; `d`: `undefined` \| `string` ; `kty`: `undefined` \| `string` ; `n`: `undefined` \| `string` ; `x`: `undefined` \| `string` ; `y`: `undefined` \| `string`  } ; `iv`: `string` ; `kid`: `undefined` \| `string` ; `tag`: `string`  }\> = JWERecipientHeaderValidator }, ``"strip"``, `ZodTypeAny`, { `encrypted_key`: `string` ; `header`: { epk?: { kty?: string \| undefined; crv?: string \| undefined; x?: string \| undefined; y?: string \| undefined; n?: string \| undefined; d?: string \| undefined; } \| undefined; kid?: string \| undefined; ... 4 more ...; tag: string; } = JWERecipientHeaderValidator }, { `encrypted_key`: `string` ; `header`: { epk?: { kty?: string \| undefined; crv?: string \| undefined; x?: string \| undefined; y?: string \| undefined; n?: string \| undefined; d?: string \| undefined; } \| undefined; kid?: string \| undefined; ... 4 more ...; tag: string; } = JWERecipientHeaderValidator }\>, ``"many"``\>\> ; `tag`: `ZodString`  }, ``"strip"``, `ZodTypeAny`, { `aad`: `undefined` \| `string` ; `ciphertext`: `string` ; `iv`: `string` ; `protected`: `string` ; `recipients`: `undefined` \| { header: { epk?: { kty?: string \| undefined; crv?: string \| undefined; x?: string \| undefined; y?: string \| undefined; n?: string \| undefined; d?: string \| undefined; } \| undefined; kid?: string \| undefined; ... 4 more ...; tag: string; }; encrypted\_key: string; }[] ; `tag`: `string`  }, { `aad`: `undefined` \| `string` ; `ciphertext`: `string` ; `iv`: `string` ; `protected`: `string` ; `recipients`: `undefined` \| { header: { epk?: { kty?: string \| undefined; crv?: string \| undefined; x?: string \| undefined; y?: string \| undefined; n?: string \| undefined; d?: string \| undefined; } \| undefined; kid?: string \| undefined; ... 4 more ...; tag: string; }; encrypted\_key: string; }[] ; `tag`: `string`  }\> = JWEValidator; `fields`: `ZodArray`<`ZodString`, ``"many"``\> ; `id`: `ZodString`  }, ``"strip"``, `ZodAny`, { `encryptedRecord`: { `aad`: `undefined` \| `string` ; `ciphertext`: `string` ; `iv`: `string` ; `protected`: `string` ; `recipients`: `undefined` \| { header: { epk?: { kty?: string \| undefined; crv?: string \| undefined; x?: string \| undefined; y?: string \| undefined; n?: string \| undefined; d?: string \| undefined; } \| undefined; kid?: string \| undefined; ... 4 more ...; tag: string; }; encrypted\_key: string; }[] ; `tag`: `string`  } = JWEValidator; `fields`: `string`[] ; `id`: `string`  }, { `encryptedRecord`: { `aad`: `undefined` \| `string` ; `ciphertext`: `string` ; `iv`: `string` ; `protected`: `string` ; `recipients`: `undefined` \| { header: { epk?: { kty?: string \| undefined; crv?: string \| undefined; x?: string \| undefined; y?: string \| undefined; n?: string \| undefined; d?: string \| undefined; } \| undefined; kid?: string \| undefined; ... 4 more ...; tag: string; }; encrypted\_key: string; }[] ; `tag`: `string`  } = JWEValidator; `fields`: `string`[] ; `id`: `string`  }\>, ``"many"``\>  }, ``"strip"``, `ZodTypeAny`, { `cursor`: `undefined` \| `string` ; `hasMore`: `boolean` ; `records`: { [x: string]: any; id: string; encryptedRecord: { aad?: string \| undefined; recipients?: { header: { epk?: { kty?: string \| undefined; crv?: string \| undefined; x?: string \| undefined; y?: string \| undefined; n?: string \| undefined; d?: string \| undefined; } \| undefined; ... 5 more ...; tag: string; }; encrypted\_ke...[]  }, { `cursor`: `undefined` \| `string` ; `hasMore`: `boolean` ; `records`: { [x: string]: any; id: string; encryptedRecord: { aad?: string \| undefined; recipients?: { header: { epk?: { kty?: string \| undefined; crv?: string \| undefined; x?: string \| undefined; y?: string \| undefined; n?: string \| undefined; d?: string \| undefined; } \| undefined; ... 5 more ...; tag: string; }; encrypted\_ke...[]  }\>
+
+#### Defined in
+
+[packages/learn-card-types/src/learncloud.ts:15](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/learncloud.ts#L15)
+
+___
+
+### PaginationOptionsValidator
+
+• `Const` **PaginationOptionsValidator**: `ZodObject`<{ `cursor`: `ZodOptional`<`ZodString`\> ; `limit`: `ZodNumber`  }, ``"strip"``, `ZodTypeAny`, { `cursor`: `undefined` \| `string` ; `limit`: `number`  }, { `cursor`: `undefined` \| `string` ; `limit`: `number`  }\>
+
+#### Defined in
+
+[packages/learn-card-types/src/mongo.ts:3](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/mongo.ts#L3)
+
+___
+
+### PaginationResponseValidator
+
+• `Const` **PaginationResponseValidator**: `ZodObject`<{ `cursor`: `ZodOptional`<`ZodString`\> ; `hasMore`: `ZodBoolean`  }, ``"strip"``, `ZodTypeAny`, { `cursor`: `undefined` \| `string` ; `hasMore`: `boolean`  }, { `cursor`: `undefined` \| `string` ; `hasMore`: `boolean`  }\>
+
+#### Defined in
+
+[packages/learn-card-types/src/mongo.ts:9](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/mongo.ts#L9)
 
 ___
 
@@ -844,7 +1114,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:72](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/vc.ts#L72)
+[packages/learn-card-types/src/vc.ts:72](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/vc.ts#L72)
 
 ___
 
@@ -854,7 +1124,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:131](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/vc.ts#L131)
+[packages/learn-card-types/src/vc.ts:131](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/vc.ts#L131)
 
 ___
 
@@ -864,7 +1134,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:110](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/vc.ts#L110)
+[packages/learn-card-types/src/vc.ts:110](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/vc.ts#L110)
 
 ___
 
@@ -874,7 +1144,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:90](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/obv3.ts#L90)
+[packages/learn-card-types/src/obv3.ts:90](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/obv3.ts#L90)
 
 ___
 
@@ -884,7 +1154,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:128](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/obv3.ts#L128)
+[packages/learn-card-types/src/obv3.ts:128](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/obv3.ts#L128)
 
 ___
 
@@ -894,7 +1164,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:180](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/obv3.ts#L180)
+[packages/learn-card-types/src/obv3.ts:180](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/obv3.ts#L180)
 
 ___
 
@@ -904,7 +1174,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:97](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/obv3.ts#L97)
+[packages/learn-card-types/src/obv3.ts:97](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/obv3.ts#L97)
 
 ___
 
@@ -914,7 +1184,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:190](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/obv3.ts#L190)
+[packages/learn-card-types/src/obv3.ts:190](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/obv3.ts#L190)
 
 ___
 
@@ -924,7 +1194,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:115](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/obv3.ts#L115)
+[packages/learn-card-types/src/obv3.ts:115](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/obv3.ts#L115)
 
 ___
 
@@ -934,7 +1204,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/lcn.ts:21](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/lcn.ts#L21)
+[packages/learn-card-types/src/lcn.ts:22](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/lcn.ts#L22)
 
 ___
 
@@ -944,7 +1214,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/obv3.ts:235](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/obv3.ts#L235)
+[packages/learn-card-types/src/obv3.ts:235](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/obv3.ts#L235)
 
 ___
 
@@ -954,7 +1224,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:115](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/vc.ts#L115)
+[packages/learn-card-types/src/vc.ts:115](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/vc.ts#L115)
 
 ___
 
@@ -964,7 +1234,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:150](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/vc.ts#L150)
+[packages/learn-card-types/src/vc.ts:150](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/vc.ts#L150)
 
 ___
 
@@ -974,7 +1244,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:145](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/vc.ts#L145)
+[packages/learn-card-types/src/vc.ts:145](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/vc.ts#L145)
 
 ___
 
@@ -984,7 +1254,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/vc.ts:161](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/vc.ts#L161)
+[packages/learn-card-types/src/vc.ts:161](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/vc.ts#L161)
 
 ___
 
@@ -994,7 +1264,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/learncard.ts:4](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/learncard.ts#L4)
+[packages/learn-card-types/src/learncard.ts:4](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/learncard.ts#L4)
 
 ___
 
@@ -1004,7 +1274,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/learncard.ts:15](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/learncard.ts#L15)
+[packages/learn-card-types/src/learncard.ts:15](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/learncard.ts#L15)
 
 ___
 
@@ -1014,7 +1284,7 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/learncard.ts:13](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/learncard.ts#L13)
+[packages/learn-card-types/src/learncard.ts:13](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/learncard.ts#L13)
 
 ___
 
@@ -1024,4 +1294,4 @@ ___
 
 #### Defined in
 
-[packages/learn-card-types/src/learncard.ts:11](https://github.com/learningeconomy/LearnCard/blob/db45a6e/packages/learn-card-types/src/learncard.ts#L11)
+[packages/learn-card-types/src/learncard.ts:11](https://github.com/learningeconomy/LearnCard/blob/132b7b1e0/packages/learn-card-types/src/learncard.ts#L11)

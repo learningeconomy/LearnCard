@@ -10,7 +10,7 @@ import {
 import { VC } from '@learncard/types';
 
 import { createIssuerConfig } from '../accesslayer/issuers/create/index';
-import { initLearnCard } from '@learncard/core';
+import { initLearnCard } from '@learncard/init';
 import { generateRandomSeed } from '../wallet/learncard';
 
 export const ConfigureIssuer: Command = {

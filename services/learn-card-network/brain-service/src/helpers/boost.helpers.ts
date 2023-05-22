@@ -1,6 +1,7 @@
 import isEqual from 'lodash/isEqual';
 import { v4 as uuidv4 } from 'uuid';
 import { VC, JWE, UnsignedVC, LCNNotificationTypeEnumValidator } from '@learncard/types';
+import { isEncrypted } from '@learncard/helpers';
 import { SigningAuthorityForUserType } from 'types/profile';
 
 import { getBoostOwner } from '@accesslayer/boost/relationships/read';
@@ -8,7 +9,6 @@ import { BoostInstance, ProfileInstance } from '@models';
 import { constructUri } from './uri.helpers';
 import { storeCredential } from '@accesslayer/credential/create';
 import { createBoostInstanceOfRelationship } from '@accesslayer/boost/relationships/create';
-import { isEncrypted } from './types.helpers';
 import {
     createSentCredentialRelationship,
     createReceivedCredentialRelationship,

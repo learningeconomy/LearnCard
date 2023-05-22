@@ -36,6 +36,7 @@
   },
   "dependencies": {
     "@learncard/core": "workspace:*",
+    "@learncard/didkit-plugin": "workspace:^",
     "@learncard/meta-mask-snap": "workspace:*",
     "@metamask/detect-provider": "^1.2.0",
     "@nanostores/react": "^0.2.0",

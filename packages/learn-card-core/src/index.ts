@@ -2,7 +2,6 @@
 
 import './polyfills';
 
-export * from '@wallet/init';
 export { LearnCard, Plugin } from 'types/wallet';
 export * from 'types/LearnCard';
 export * from '@wallet/base';

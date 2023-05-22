@@ -9,7 +9,7 @@
     ],
     "scripts": {
         "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.js && tsc --p tsconfig.json",
-        "test": "jest",
+        "test": "jest --passWithNoTests",
         "test:watch": "jest --watch",
         "test:coverage": "jest --silent --ci --coverage --coverageReporters=\"text\" --coverageReporters=\"text-summary\""
     },
@@ -24,7 +24,11 @@
         "url": "https://github.com/WeLibraryOS/LearnCard/issues"
     },
     "devDependencies": {
+        "@learncard/ceramic-plugin": "workspace:^",
+        "@learncard/didkey-plugin": "workspace:^",
+        "@learncard/didkit-plugin": "workspace:^",
         "@learncard/types": "workspace:*",
+        "@learncard/vc-plugin": "workspace:^",
         "@types/jest": "^29.2.2",
         "@types/node": "^17.0.31",
         "aqu": "0.4.3",

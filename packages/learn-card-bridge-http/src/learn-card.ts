@@ -1,8 +1,8 @@
 import fs from 'fs/promises';
-import { initLearnCard } from '@learncard/core';
+import { initLearnCard, LearnCardFromSeed } from '@learncard/init';
 import didkit from './didkit_wasm_bg.wasm';
 
-export const getLearnCard = async () => {
+export const getLearnCard = async (): Promise<LearnCardFromSeed['returnValue']> => {
     const seed = process.env.WALLET_SEED;
 
     if (!seed) {

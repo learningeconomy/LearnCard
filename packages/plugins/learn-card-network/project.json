@@ -5,7 +5,7 @@
     "projectType": "library",
     "root": "packages/plugins/learn-card-network",
     "tags": [],
-    "implicitDependencies": ["types", "network-brain-client", "core"],
+    "implicitDependencies": ["types", "network-brain-client", "core", "didkit-plugin", "vc-plugin"],
     "namedInputs": {
         "scripts": ["{projectRoot}/scripts/**/*"],
         "source": ["{projectRoot}/src/**/*"],

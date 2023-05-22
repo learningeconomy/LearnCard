@@ -1,6 +1,5 @@
 import { BaseCommandInteraction, Client, Interaction, InteractionType } from 'discord.js';
 import { Commands, Modals, MessageComponents } from './../Commands';
-import { UnlockedWallet } from '@learncard/types';
 import { Context } from 'src/types/index';
 
 export default (context: Context): void => {

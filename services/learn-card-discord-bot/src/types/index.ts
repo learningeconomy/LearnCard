@@ -1,9 +1,9 @@
-import { UnlockedWallet, VC } from '@learncard/types';
+import { LearnCardFromSeed } from '@learncard/init';
 import { Client } from 'discord.js';
 import { Cache } from 'src/cache/index';
 
 export interface Context {
-    wallet: UnlockedWallet;
+    wallet: LearnCardFromSeed['returnValue'];
     client: Client;
     cache: Cache;
 }

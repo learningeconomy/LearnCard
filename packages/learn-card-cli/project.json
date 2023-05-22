@@ -5,7 +5,14 @@
     "projectType": "library",
     "root": "packages/learn-card-cli",
     "tags": [],
-    "implicitDependencies": ["nx-run-command", "types", "core", "network-plugin"],
+    "implicitDependencies": [
+        "nx-run-command",
+        "types",
+        "core",
+        "init",
+        "didkit-plugin",
+        "learn-cloud-plugin"
+    ],
     "namedInputs": {
         "source": ["{projectRoot}/src/**/*"],
         "dist": ["{projectRoot}/dist/**/*"]

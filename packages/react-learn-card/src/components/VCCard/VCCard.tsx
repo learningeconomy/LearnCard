@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { initLearnCard } from '@learncard/core';
+import { initLearnCard } from '@learncard/init';
 import { VC, Profile, VerificationItem } from '@learncard/types';
 
 import { VCDisplayCard } from '../VCDisplayCard';

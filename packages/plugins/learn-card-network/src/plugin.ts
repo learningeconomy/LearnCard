@@ -7,7 +7,8 @@ import {
     VPValidator,
     Profile,
 } from '@learncard/types';
-import { LearnCard, VerifyExtension } from '@learncard/core';
+import { LearnCard } from '@learncard/core';
+import { VerifyExtension } from '@learncard/vc-plugin';
 
 import {
     LearnCardNetworkPluginDependentMethods,

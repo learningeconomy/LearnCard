@@ -22,7 +22,7 @@ const configurations = [
         bundle: true,
         sourcemap: 'external',
         tsconfig: 'tsconfig.json',
-        plugins: [nodeResolveExternal],
+        // plugins: [nodeResolveExternal],
         entryPoints: ['src/index.ts'],
         format: 'cjs',
         outfile: 'dist/types.cjs.development.js',
@@ -32,7 +32,7 @@ const configurations = [
         bundle: true,
         sourcemap: 'external',
         tsconfig: 'tsconfig.json',
-        plugins: [nodeResolveExternal],
+        // plugins: [nodeResolveExternal],
         entryPoints: ['src/index.ts'],
         minify: true,
         format: 'cjs',
@@ -62,25 +62,19 @@ function asyncRimraf(path) {
     });
 }
 
-function main() {
-    Promise.all(
-        configurations.map(config => {
-            var dir = config.outdir || path.dirname(config.outfile);
-            asyncRimraf(dir).catch(() => {
-                console.log('Unable to delete directory', dir);
-            });
-        })
-    ).then(() => {
-        Promise.all(configurations.map(config => esbuild.build(config)))
-            .then(() => {
-                console.log('✔ Build successful');
-                process.exit(0);
-            })
-            .catch(err => {
-                console.error('❌ Build failed');
-                process.exit(1);
-            });
-    });
-}
+await Promise.all(
+    configurations.map(async config => {
+        var dir = config.outdir || path.dirname(config.outfile);
+        await asyncRimraf(dir).catch(() => {
+            console.log('Unable to delete directory', dir);
+        });
+    })
+);
 
-main();
+await Promise.all(configurations.map(config => esbuild.build(config))).catch(err => {
+    console.error('❌ Build failed');
+    process.exit(1);
+});
+
+console.log('✔ Build successful');
+process.exit(0);

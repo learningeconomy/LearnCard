@@ -38,7 +38,16 @@
     },
     "types": "./dist/index.d.ts",
     "dependencies": {
-        "@learncard/core": "workspace:*"
+        "@learncard/ceramic-plugin": "workspace:*",
+        "@learncard/core": "workspace:*",
+        "@learncard/didkey-plugin": "workspace:*",
+        "@learncard/didkit-plugin": "workspace:^",
+        "@learncard/expiration-plugin": "workspace:*",
+        "@learncard/helpers": "workspace:*",
+        "@learncard/learn-card-plugin": "workspace:*",
+        "@learncard/types": "workspace:*",
+        "@learncard/vc-plugin": "workspace:*",
+        "@learncard/vc-templates-plugin": "workspace:*"
     },
     "pnpm": {
         "overrides": {

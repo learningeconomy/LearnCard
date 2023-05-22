@@ -1,15 +1,7 @@
 import type { DID } from 'dids';
-import {
-    LCNProfile,
-    UnsignedVC,
-    VC,
-    VP,
-    SentCredentialInfo,
-    JWE,
-    Boost,
-    BoostRecipientInfo,
-} from '@learncard/types';
-import { Plugin, ProofOptions, VerifyExtension } from '@learncard/core';
+import { UnsignedVC, VC, VP } from '@learncard/types';
+import { Plugin } from '@learncard/core';
+import { ProofOptions } from '@learncard/didkit-plugin';
 
 /** @group DID Web Plugin */
 export type DidWebPluginDependentMethods = {

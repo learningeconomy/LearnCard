@@ -35,6 +35,6 @@ export type CredentialRecord<Metadata extends Record<string, any> = Record<never
     [key: string]: any;
 } & Metadata;
 
-export const CredentialRecordValidator: z.ZodType<CredentialRecord> = z
+export const CredentialRecordValidator = z
     .object({ id: z.string(), uri: z.string() })
-    .catchall(z.any());
+    .catchall(z.any()) satisfies z.ZodType<CredentialRecord>;

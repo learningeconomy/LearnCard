@@ -3,6 +3,10 @@ import { TestCachePlugin } from './types';
 
 export const getTestCache = (): TestCachePlugin => {
     let index: Record<string, CredentialRecord[]> = {};
+    let paginatedIndex: Record<
+        string,
+        { records: CredentialRecord<Metadata>[]; hasMore: boolean; cursor?: string }
+    > = {};
     let vcs: Record<string, VC | VP | undefined> = {};
 
     return {
@@ -17,6 +21,25 @@ export const getTestCache = (): TestCachePlugin => {
             setIndex: async (_learnCard, name, query, value) => {
                 _learnCard.debug?.('Test Cache, setIndex', { name, query, value });
                 index[name] = value as any;
+                return true;
+            },
+            getIndexPage: async (_learnCard, name, query, paginationOptions) => {
+                _learnCard.debug?.('Test Cache, getIndex', {
+                    name,
+                    query,
+                    paginationOptions,
+                    value: index,
+                });
+                return paginatedIndex[name];
+            },
+            setIndexPage: async (_learnCard, name, query, value, paginationOptions) => {
+                _learnCard.debug?.('Test Cache, setIndex', {
+                    name,
+                    query,
+                    paginationOptions,
+                    value,
+                });
+                paginatedIndex[name] = value as any;
                 return true;
             },
             flushIndex: async _learnCard => {

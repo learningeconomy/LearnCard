@@ -7,7 +7,7 @@ import Credentials from '@components/Credentials';
     <section id="modal-container"></section>
 
     <main class="w-full h-full flex flex-col justify-center items-center p-4">
-        <header class="flex ">
+        <header class="flex">
             <img
                 class="h-36"
                 src="https://cdn.filestackcontent.com/rotate=deg:exif/auto_image/7X2erX66T8Wq2IfvYIMt"
@@ -16,10 +16,10 @@ import Credentials from '@components/Credentials';
         </header>
         <div class="gap-2 mb-10">
             <img
-                    class="max-w-sm"
-                    src="https://cdn.filestackcontent.com/rotate=deg:exif/auto_image/PcSN5SODTgKForLpIdAa"
-                    alt="LearnCard"
-                />
+                class="max-w-sm"
+                src="https://cdn.filestackcontent.com/rotate=deg:exif/auto_image/PcSN5SODTgKForLpIdAa"
+                alt="LearnCard"
+            />
         </div>
         <h3 id="loading-wallet">Loading...</h3>
 
@@ -55,7 +55,7 @@ import Credentials from '@components/Credentials';
 </Layout>
 
 <script>
-    import { initLearnCard } from '@learncard/core';
+    import { initLearnCard } from '@learncard/init';
     import { _wallet, _seed } from '../stores/walletStore';
 
     const seed = _seed.get();
@@ -82,12 +82,14 @@ import Credentials from '@components/Credentials';
     const testLcwStorage = async () => {
         const testWallet = await initLearnCard({ vcApi: true });
 
-        const vc = await testWallet.invoke.issueCredential(testWallet.invoke.newCredential({ type: 'jff2' }));
+        const vc = await testWallet.invoke.issueCredential(
+            testWallet.invoke.newCredential({ type: 'jff2' })
+        );
         const uri = await wallet.store.Ceramic.upload(vc); // Have to use "normal" wallet for now...
 
         const challenge = window.crypto.randomUUID();
 
-        window.location.href = `org.dcconsortium://request?auth_type=bearer&issuer=jff&challenge=${challenge}&vc_request_url=https://bridge.learncard.com/exchanges/${uri}`
+        window.location.href = `org.dcconsortium://request?auth_type=bearer&issuer=jff&challenge=${challenge}&vc_request_url=https://bridge.learncard.com/exchanges/${uri}`;
     };
 
     const changeSeed = () => {
@@ -116,3 +118,4 @@ import Credentials from '@components/Credentials';
     //changeSeedButton.classList.remove('opacity-0');
     //changeSeedButton.addEventListener('click', changeSeed);
 </script>
+

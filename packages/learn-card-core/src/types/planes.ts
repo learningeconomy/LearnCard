@@ -1,6 +1,8 @@
 import { CredentialRecord, VC, VP, JWK } from '@learncard/types';
+import { Query } from 'sift';
 import { Plugin } from './wallet';
 import { OmitNevers } from './helpers';
+import { DeepPartial } from './utilities';
 
 export type CacheStrategy = 'cache-only' | 'cache-first' | 'skip-cache';
 
@@ -10,11 +12,15 @@ export type PlaneOptions = {
 
 export type ControlPlane = 'read' | 'store' | 'index' | 'cache' | 'id';
 
-export type FilterForPlane<Plugins extends Plugin[], Plane extends ControlPlane> = {
-    [Index in keyof Plugins]: undefined extends Plugins[Index][Plane]
-        ? never
-        : Plugins[Index]['name'];
-}[number];
+export type FilterForPlane<Plugins extends Plugin[], Plane extends ControlPlane> = [
+    Plugins
+] extends [1 & Plugins]
+    ? any
+    : {
+          [Index in keyof Plugins]: undefined extends Plugins[Index][Plane]
+              ? never
+              : Plugins[Index]['name'];
+      }[number];
 
 export type GetPlanesForPlugins<Plugins extends Plugin[]> = any[] extends Plugins
     ? never
@@ -39,7 +45,7 @@ export type GetPlaneProviders<
                 }>;
       }[number];
 
-// --- Read ---
+// --- Read --- \\
 
 export type ReadPlane = {
     get: (uri?: string, options?: PlaneOptions) => Promise<VC | VP | undefined>;
@@ -51,7 +57,7 @@ export type LearnCardReadPlane<Plugins extends Plugin[]> = ReadPlane & {
     providers: GetPlaneProviders<Plugins, 'read'>;
 };
 
-// --- Store ---
+// --- Store --- \\
 
 export type EncryptionParams = {
     recipients: string[];
@@ -76,13 +82,22 @@ export type LearnCardStorePlane<Plugins extends Plugin[]> = Record<
     providers: GetPlaneProviders<Plugins, 'store'>;
 };
 
-// --- Index ---
+// --- Index --- \\
 
 export type IndexPlane = {
     get: <Metadata extends Record<string, any> = Record<never, never>>(
-        query?: Record<string, any>,
+        query?: Partial<Query<CredentialRecord<Metadata>>>,
         options?: PlaneOptions
     ) => Promise<CredentialRecord<Metadata>[]>;
+    getPage?: <Metadata extends Record<string, any> = Record<never, never>>(
+        query?: Partial<Query<CredentialRecord<Metadata>>>,
+        paginationOptions?: { limit?: number; cursor?: string },
+        options?: PlaneOptions
+    ) => Promise<{ records: CredentialRecord<Metadata>[]; hasMore: boolean; cursor?: string }>;
+    getCount?: <Metadata extends Record<string, any> = Record<never, never>>(
+        query?: Partial<Query<CredentialRecord<Metadata>>>,
+        options?: PlaneOptions
+    ) => Promise<number>;
     add: <Metadata extends Record<string, any> = Record<never, never>>(
         record: CredentialRecord<Metadata>,
         options?: PlaneOptions
@@ -91,7 +106,11 @@ export type IndexPlane = {
         records: CredentialRecord<Metadata>[],
         options?: PlaneOptions
     ) => Promise<boolean>;
-    update: (id: string, updates: Record<string, any>, options?: PlaneOptions) => Promise<boolean>;
+    update: <Metadata extends Record<string, any> = Record<never, never>>(
+        id: string,
+        updates: DeepPartial<CredentialRecord<Metadata>>,
+        options?: PlaneOptions
+    ) => Promise<boolean>;
     remove: (id: string, options?: PlaneOptions) => Promise<boolean>;
     removeAll?: (options?: PlaneOptions) => Promise<boolean>;
 };
@@ -103,17 +122,39 @@ export type LearnCardIndexPlane<Plugins extends Plugin[]> = {
     providers: GetPlaneProviders<Plugins, 'index'>;
 } & Record<FilterForPlane<Plugins, 'index'>, IndexPlane>;
 
-// --- Cache ---
+// --- Cache --- \\
 
 export type CachePlane = {
     getIndex: <Metadata extends Record<string, any> = Record<never, never>>(
         name: string,
-        query: Record<string, any>
+        query: Partial<Query<CredentialRecord<Metadata>>>
     ) => Promise<CredentialRecord<Metadata>[] | undefined>;
     setIndex: <Metadata extends Record<string, any> = Record<never, never>>(
         name: string,
-        query: Record<string, any>,
+        query: Partial<Query<CredentialRecord<Metadata>>>,
         value: CredentialRecord<Metadata>[]
+    ) => Promise<boolean>;
+    getIndexPage: <Metadata extends Record<string, any> = Record<never, never>>(
+        name: string,
+        query: Partial<Query<CredentialRecord<Metadata>>>,
+        paginationOptions?: { limit?: number; cursor?: string }
+    ) => Promise<
+        { records: CredentialRecord<Metadata>[]; hasMore: boolean; cursor?: string } | undefined
+    >;
+    setIndexPage: <Metadata extends Record<string, any> = Record<never, never>>(
+        name: string,
+        query: Partial<Query<CredentialRecord<Metadata>>>,
+        value: { records: CredentialRecord<Metadata>[]; hasMore: boolean; cursor?: string },
+        paginationOptions?: { limit?: number; cursor?: string }
+    ) => Promise<boolean>;
+    getIndexCount?: <Metadata extends Record<string, any> = Record<never, never>>(
+        name: string,
+        query: Partial<Query<CredentialRecord<Metadata>>>
+    ) => Promise<number | undefined>;
+    setIndexCount?: <Metadata extends Record<string, any> = Record<never, never>>(
+        name: string,
+        query: Partial<Query<CredentialRecord<Metadata>>>,
+        value: number
     ) => Promise<boolean>;
     flushIndex: () => Promise<boolean>;
     getVc: (uri: string) => Promise<VC | VP | undefined>;
@@ -126,7 +167,7 @@ export type LearnCardCachePlane<Plugins extends Plugin[]> = CachePlane & {
     providers: GetPlaneProviders<Plugins, 'cache'>;
 };
 
-// --- Identity ---
+// --- Identity --- \\
 
 export type IdPlane = {
     did: (method?: string, options?: PlaneOptions) => string;

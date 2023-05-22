@@ -1,0 +1,261 @@
+# serverless.yml
+
+service: learn-cloud-service
+
+frameworkVersion: '3'
+
+useDotenv: true
+
+plugins:
+    - serverless-esbuild
+    - serverless-offline
+    - serverless-domain-manager
+    - serverless-certificate-creator
+
+custom:
+    config:
+        CACHE_INSTANCE_SIZE: cache.t2.micro
+    esbuild:
+        packager: pnpm
+        plugins: esbuildWasmPlugin.cjs
+        watch:
+            pattern: ['src/**/*.ts', 'dids.ts']
+
+    domains:
+        # References to 'prod' stage
+        production:
+            # don't forget the dot on the end!
+            hostedZoneName: 'cloud.learncard.com.'
+            domainName: cloud.learncard.com
+            certificateName: cloud.learncard.com
+
+        # References to 'dev' stage
+        dev:
+            # don't forget the dot on the end!
+            hostedZoneName: 'testnet-cloud.learncard.com.'
+            domainName: testnet-cloud.learncard.com
+            certificateName: testnet-cloud.learncard.com
+
+    # Amazon Certificate Manager
+    customCertificate:
+        # Route 53 Hosted Zone name
+        hostedZoneNames: ${self:custom.domains.${self:provider.stage}.hostedZoneName}
+
+        # Here we get our certificate name inside custom.domain.STAGE.certificateName
+        # STAGE will be automatically filled with the value from "provider > stage"
+        certificateName: ${self:custom.domains.${self:provider.stage}.certificateName}
+
+        region: ${self:provider.region}
+
+    # Route53
+    customDomain:
+        # Get value from "domains" section using stage that is being deployed
+        domainName: ${self:custom.domains.${self:provider.stage}.domainName}
+
+        # Same case of certificaName inside customCertificate
+        certificateName: ${self:custom.domains.${self:provider.stage}.certificateName}
+
+        # Enable plugin to create an A Alias and AAAA Alias records in Route53
+        # mapping the domainName to the generated distribution domain name.
+        createRoute53Record: true
+
+        # Enable plugin to autorun create_domain/delete_domain as part of sls deploy/remove
+        autoDomain: true
+
+        basePath: ''
+        endpointType: regional
+        apiType: http
+
+provider:
+    name: aws
+    runtime: nodejs16.x
+    memorySize: 2048
+    timeout: 18
+    stage: ${opt:stage, "dev"}
+    region: ${opt:region, "us-east-1"}
+    environment:
+        PORT: ${env:PORT, 3000}
+        LAMBDA_STAGE: ${opt:stage, "dev"}
+        LEARN_CLOUD_SEED: ${env:LEARN_CLOUD_SEED}
+        LEARN_CLOUD_MONGO_URI: ${env:LEARN_CLOUD_MONGO_URI}
+        LEARN_CLOUD_MONGO_DB_NAME: ${env:LEARN_CLOUD_MONGO_DB_NAME}
+        REDIS_HOST:
+            'Fn::GetAtt': [ElasticCacheCluster, RedisEndpoint.Address]
+        REDIS_PORT:
+            'Fn::GetAtt': [ElasticCacheCluster, RedisEndpoint.Port]
+    tracing:
+        apiGateway: true
+        lambda: true
+    httpApi:
+        cors:
+            allowedOrigins: '*'
+            allowedHeaders: '*'
+            allowedMethods: '*'
+
+functions:
+    trpc:
+        handler: lambda.trpcHandler
+        vpc:
+            securityGroupIds:
+                - 'Fn::GetAtt': [ServerlessSecurityGroup, GroupId]
+            subnetIds:
+                - Ref: PrivateSubnetA
+        events:
+            - httpApi: ANY /trpc/{trpc+}
+
+    api:
+        handler: lambda.openApiHandler
+        vpc:
+            securityGroupIds:
+                - 'Fn::GetAtt': [ServerlessSecurityGroup, GroupId]
+            subnetIds:
+                - Ref: PrivateSubnetA
+        events:
+            - httpApi: ANY /api/{trpc+}
+
+    didWeb:
+        handler: lambda.didWebHandler
+        vpc:
+            securityGroupIds:
+                - 'Fn::GetAtt': [ServerlessSecurityGroup, GroupId]
+            subnetIds:
+                - Ref: PrivateSubnetA
+        events:
+            - httpApi: GET /users/{params+}
+            - httpApi: OPTIONS /users/{params+}
+            - httpApi: GET /.well-known/did.json
+            - httpApi: OPTIONS /.well-known/did.json
+        url:
+            cors: true
+
+    swagger:
+        handler: lambda.swaggerUiHandler
+        package:
+            patterns:
+                - src/swagger-ui/**
+        events:
+            - httpApi: GET /docs
+            - httpApi: GET /docs/{trpc+}
+
+resources:
+    Resources:
+        VPC:
+            Type: AWS::EC2::VPC
+            Properties:
+                CidrBlock: '10.0.0.0/16'
+        IP:
+            Type: AWS::EC2::EIP
+            Properties:
+                Domain: vpc
+        InternetGateway:
+            Type: AWS::EC2::InternetGateway
+        VPCGatewayAttachment:
+            Type: AWS::EC2::VPCGatewayAttachment
+            Properties:
+                VpcId:
+                    Ref: VPC
+                InternetGatewayId:
+                    Ref: InternetGateway
+        NatGateway:
+            Type: AWS::EC2::NatGateway
+            Properties:
+                AllocationId:
+                    Fn::GetAtt:
+                        - IP
+                        - AllocationId
+                SubnetId:
+                    Ref: PublicSubnetA
+        PrivateSubnetA:
+            DependsOn: VPC
+            Type: AWS::EC2::Subnet
+            Properties:
+                VpcId:
+                    Ref: VPC
+                AvailabilityZone: ${self:provider.region}a
+                CidrBlock: '10.0.1.0/24'
+        PublicSubnetA:
+            DependsOn: VPC
+            Type: AWS::EC2::Subnet
+            Properties:
+                VpcId:
+                    Ref: VPC
+                AvailabilityZone: ${self:provider.region}a
+                CidrBlock: '10.0.2.0/24'
+        PrivateRouteTable:
+            Type: AWS::EC2::RouteTable
+            Properties:
+                VpcId:
+                    Ref: VPC
+        PrivateRoute:
+            Type: AWS::EC2::Route
+            Properties:
+                RouteTableId:
+                    Ref: PrivateRouteTable
+                DestinationCidrBlock: 0.0.0.0/0
+                NatGatewayId:
+                    Ref: NatGateway
+        PublicRouteTable:
+            Type: AWS::EC2::RouteTable
+            Properties:
+                VpcId:
+                    Ref: VPC
+        PublicRoute:
+            Type: AWS::EC2::Route
+            Properties:
+                RouteTableId:
+                    Ref: PublicRouteTable
+                DestinationCidrBlock: 0.0.0.0/0
+                GatewayId:
+                    Ref: InternetGateway
+        SubnetRouteTableAssociationLambdaPrivateA:
+            Type: AWS::EC2::SubnetRouteTableAssociation
+            Properties:
+                SubnetId:
+                    Ref: PrivateSubnetA
+                RouteTableId:
+                    Ref: PrivateRouteTable
+        SubnetRouteTableAssociationLambdaPublicA:
+            Type: AWS::EC2::SubnetRouteTableAssociation
+            Properties:
+                SubnetId:
+                    Ref: PublicSubnetA
+                RouteTableId:
+                    Ref: PublicRouteTable
+        ServerlessSecurityGroup:
+            DependsOn: VPC
+            Type: AWS::EC2::SecurityGroup
+            Properties:
+                GroupDescription: SecurityGroup for Serverless Functions
+                VpcId:
+                    Ref: VPC
+        ServerlessStorageSecurityGroup:
+            DependsOn: VPC
+            Type: AWS::EC2::SecurityGroup
+            Properties:
+                GroupDescription: Ingress for Redis Cluster
+                VpcId:
+                    Ref: VPC
+                SecurityGroupIngress:
+                    - IpProtocol: tcp
+                      FromPort: '6379'
+                      ToPort: '6379'
+                      SourceSecurityGroupId:
+                          Ref: ServerlessSecurityGroup
+        ServerlessCacheSubnetGroup:
+            Type: AWS::ElastiCache::SubnetGroup
+            Properties:
+                Description: 'Cache Subnet Group'
+                SubnetIds:
+                    - Ref: PrivateSubnetA
+        ElasticCacheCluster:
+            DependsOn: ServerlessStorageSecurityGroup
+            Type: AWS::ElastiCache::CacheCluster
+            Properties:
+                AutoMinorVersionUpgrade: true
+                Engine: redis
+                CacheNodeType: ${self:custom.config.CACHE_INSTANCE_SIZE}
+                NumCacheNodes: 1
+                VpcSecurityGroupIds:
+                    - 'Fn::GetAtt': [ServerlessStorageSecurityGroup, GroupId]
+                CacheSubnetGroupName:
+                    Ref: ServerlessCacheSubnetGroup

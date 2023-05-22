@@ -1,9 +1,28 @@
-import { initDidWebLearnCard, DidWebLearnCard } from '../';
+import { generateLearnCard, LearnCard } from '@learncard/core';
+import { DidMethod, getDidKitPlugin, DIDKitPlugin } from '@learncard/didkit-plugin';
+import { getDidKeyPlugin, DidKeyPlugin } from '@learncard/didkey-plugin';
+import { VCPlugin, getVCPlugin } from '@learncard/vc-plugin';
+import { VCTemplatePlugin, getVCTemplatesPlugin } from '@learncard/vc-templates-plugin';
+import { CeramicPlugin, getCeramicPlugin } from '@learncard/ceramic-plugin';
+import { ExpirationPlugin, expirationPlugin } from '@learncard/expiration-plugin';
+import { LearnCardPlugin, getLearnCardPlugin } from '@learncard/learn-card-plugin';
+import { DidWebPlugin, getDidWebPlugin } from '../';
 
 let learnCards: Record<
     string,
     {
-        learnCard: DidWebLearnCard;
+        learnCard: LearnCard<
+            [
+                DIDKitPlugin,
+                DidKeyPlugin<DidMethod>,
+                VCPlugin,
+                VCTemplatePlugin,
+                CeramicPlugin,
+                ExpirationPlugin,
+                LearnCardPlugin,
+                DidWebPlugin
+            ]
+        >;
     }
 > = {};
 
@@ -11,7 +30,19 @@ const DEFAULT_DID_WEB = 'did:web:network.learncard.com';
 
 const getLearnCard = async (seed = 'a'.repeat(64), didWeb = DEFAULT_DID_WEB) => {
     if (!learnCards[seed]) {
-        const learnCard = await initDidWebLearnCard({ seed, didWeb });
+        const emptyLearnCard = await generateLearnCard();
+        const didkitLc = await emptyLearnCard.addPlugin(await getDidKitPlugin());
+        const didkeyLc = await didkitLc.addPlugin(
+            await getDidKeyPlugin(didkitLc, seed, 'key' as DidMethod)
+        );
+        const vcLc = await didkeyLc.addPlugin(getVCPlugin(didkeyLc));
+        const vcTemplateLc = await vcLc.addPlugin(getVCTemplatesPlugin());
+        const ceramicLc = await vcTemplateLc.addPlugin(
+            await getCeramicPlugin(vcTemplateLc, {} as any)
+        );
+        const expirationLc = await ceramicLc.addPlugin(expirationPlugin(ceramicLc));
+        const lcLc = await expirationLc.addPlugin(getLearnCardPlugin(expirationLc));
+        const learnCard = await lcLc.addPlugin(await getDidWebPlugin(lcLc, didWeb));
         learnCards[seed] = { learnCard: learnCard };
     }
 

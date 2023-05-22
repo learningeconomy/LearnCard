@@ -2,8 +2,8 @@ import fs from 'fs/promises';
 import dns from 'node:dns';
 
 import repl from 'pretty-repl';
-import { initNetworkLearnCard, getLearnCardNetworkPlugin } from '@learncard/network-plugin';
-import { initLearnCard, emptyLearnCard, learnCardFromSeed, getTestCache } from '@learncard/core';
+import { getTestCache } from '@learncard/core';
+import { initLearnCard, emptyLearnCard, learnCardFromSeed } from '@learncard/init';
 import types from '@learncard/types';
 import gradient from 'gradient-string';
 import figlet from 'figlet';
@@ -45,11 +45,12 @@ program
         globalThis.emptyLearnCard = emptyLearnCard;
         globalThis.learnCardFromSeed = learnCardFromSeed;
         globalThis.initLearnCard = initLearnCard;
-        globalThis.initNetworkLearnCard = initNetworkLearnCard;
-        globalThis.getLearnCardNetworkPlugin = getLearnCardNetworkPlugin;
         globalThis.learnCard = await initLearnCard({
             seed,
-            didkit: fs.readFile(require.resolve('@learncard/core/dist/didkit/didkit_wasm_bg.wasm')),
+            network: true,
+            didkit: fs.readFile(
+                require.resolve('@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm')
+            ),
         });
         globalThis.types = types;
         globalThis.getTestCache = getTestCache;

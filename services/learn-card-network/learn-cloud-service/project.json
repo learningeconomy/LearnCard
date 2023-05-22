@@ -1,0 +1,51 @@
+{
+    "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+    "name": "learn-cloud-service",
+    "sourceRoot": "services/learn-card-network/learn-cloud-service/src",
+    "projectType": "application",
+    "root": "services/learn-card-network/learn-cloud-service",
+    "tags": [],
+    "implicitDependencies": [
+        "core",
+        "ceramic-plugin",
+        "crypto-plugin",
+        "did-web-plugin",
+        "didkey-plugin",
+        "didkit-plugin",
+        "expiration-plugin",
+        "learn-card-plugin",
+        "vc-plugin",
+        "vc-templates-plugin",
+        "helpers",
+        "types",
+        "nx-run-command"
+    ],
+    "namedInputs": {
+        "source": ["{projectRoot}/src/**/*"],
+        "tests": ["{projectRoot}/test/**/*"],
+        "dist": ["{projectRoot}/dist/**/*"]
+    },
+    "targets": {
+        "build": {
+            "executor": "nx:run-script",
+            "inputs": ["source"],
+            "options": {
+                "script": "build"
+            }
+        },
+        "test": {
+            "executor": "nx:run-script",
+            "inputs": ["source", "tests"],
+            "options": {
+                "script": "test"
+            }
+        },
+        "test:watch": {
+            "executor": "./tools/executors/workspace:run-command",
+            "options": {
+                "command": "pnpm test:watch",
+                "cwd": "{root}/services/learn-card-network/brain-service"
+            }
+        }
+    }
+}

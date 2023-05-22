@@ -1,25 +1,36 @@
-import {
-    UnsignedVCValidator,
-    VC,
-    VCValidator,
-    UnsignedVPValidator,
-    VPValidator,
-} from '@learncard/types';
+import { generateLearnCard, LearnCard } from '@learncard/core';
+import { getDidKitPlugin, DIDKitPlugin, DidMethod } from '@learncard/didkit-plugin';
+import { getDidKeyPlugin, DidKeyPlugin } from '@learncard/didkey-plugin';
+import { getCeramicPlugin, CeramicPlugin } from '@learncard/ceramic-plugin';
+import { getVCPlugin, VCPlugin } from '@learncard/vc-plugin';
 
-import { initNetworkLearnCard, NetworkLearnCard } from '../';
+import { getLearnCardNetworkPlugin, LearnCardNetworkPlugin } from '../';
 import { SAMPLE_VCS } from './mocks/sample-vcs';
 
 let learnCards: Record<
     string,
     {
-        learnCard: NetworkLearnCard;
+        learnCard: LearnCard<
+            [DIDKitPlugin, DidKeyPlugin<DidMethod>, CeramicPlugin, VCPlugin, LearnCardNetworkPlugin]
+        >;
     }
 > = {};
 
 const getLearnCard = async (seed = 'a'.repeat(64)) => {
     if (!learnCards[seed]) {
-        const learnCard = await initNetworkLearnCard({ seed });
-        learnCards[seed] = { learnCard: learnCard };
+        const didkitCard = await (await generateLearnCard()).addPlugin(await getDidKitPlugin());
+        const didkeyCard = await didkitCard.addPlugin(
+            await getDidKeyPlugin(didkitCard, seed, 'key' as DidMethod)
+        );
+        const ceramicCard = await didkeyCard.addPlugin(
+            await getCeramicPlugin(didkeyCard, {} as any)
+        );
+        const vcCard = await ceramicCard.addPlugin(getVCPlugin(ceramicCard));
+        const learnCard = await vcCard.addPlugin(
+            await getLearnCardNetworkPlugin(vcCard, 'https://network.learncard.com/trpc')
+        );
+
+        learnCards[seed] = { learnCard };
     }
 
     return {
@@ -36,11 +47,6 @@ describe.skip('LearnCard Network Plugin', () => {
     });
 
     describe('VerifyBoost Plugin', () => {
-        it('should be added to the Network LearnCard', async () => {
-            const networkLC = await getLearnCard();
-            expect(networkLC.plugins.find(p => p.name === 'VerifyBoost')).toBeDefined();
-        });
-
         // This test can't pass till we can sign an authentic boost with LearnCard Network.
         it.skip('should verify an Authentic Boost as valid', async () => {
             const networkLC = await getLearnCard();
