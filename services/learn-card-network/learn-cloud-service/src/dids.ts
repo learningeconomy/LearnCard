@@ -36,14 +36,18 @@ app.get('/.well-known/did.json', async (req: TypedRequest<{}, {}, {}>, res) => {
 
     if (cachedResult) return res.json(cachedResult);
 
+    console.log('Grabbing lock...');
     // Grab/wait for lock for generating did doc
     const release = await lock('did');
+
+    console.log('Got the lock!');
 
     try {
         // Check to see if someone else grabbed the lock and generated the did doc first
         const secondCheck = await getDidDocForProfile('::root::');
 
         if (secondCheck) {
+            console.log('Cache hit, releasing lock...');
             release();
             return res.json(secondCheck);
         }
@@ -85,6 +89,7 @@ app.get('/.well-known/did.json', async (req: TypedRequest<{}, {}, {}>, res) => {
             ],
         };
 
+        console.log('Successfully created did, releasing lock...');
         setDidDocForProfile('::root::', finalDoc).finally(release);
 
         return res.json(finalDoc);
