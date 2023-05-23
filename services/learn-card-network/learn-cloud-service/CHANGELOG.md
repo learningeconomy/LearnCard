@@ -1,5 +1,11 @@
 # @learncard/network-brain-service
 
+## 1.0.1
+
+### Patch Changes
+
+-   Add timeout to mutex lock
+
 ## 1.0.0
 
 ### Major Changes
