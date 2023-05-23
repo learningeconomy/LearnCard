@@ -12,7 +12,7 @@
         "start": "pnpm update-didkit && PORT=3000 serverless offline --httpPort 3000 --websocketPort 3001 --lambdaPort 3002 --albPort 3003",
         "start-p-4000": "pnpm update-didkit && PORT=4000 serverless offline --httpPort 4000 --websocketPort 4001 --lambdaPort 4002 --albPort 4003",
         "dev": "pnpm start",
-        "serverless-deploy": "update-didkit && serverless deploy"
+        "serverless-deploy": "pnpm update-didkit && serverless deploy"
     },
     "keywords": [],
     "author": "Learning Economy Foundation (www.learningeconomy.io)",
