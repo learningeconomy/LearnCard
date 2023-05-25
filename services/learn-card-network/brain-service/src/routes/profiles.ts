@@ -180,6 +180,7 @@ export const profilesRouter = t.router({
                 limit: z.number().int().positive().lt(100).default(25),
                 includeSelf: z.boolean().default(false),
                 includeConnectionStatus: z.boolean().default(false),
+                includeServiceProfiles: z.boolean().default(false),
             })
         )
         .output(
