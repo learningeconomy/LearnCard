@@ -74,8 +74,9 @@ export const searchProfiles = async (
     )
         .match({ identifier: 'profile', model: Profile })
         .where(
-            `(profile.profileId CONTAINS $input OR profile.displayName =~ $inputRegex)${
-                includeServiceProfiles ? '' : 'AND NOT profile.isServiceProfile = true'
+            `(profile.profileId CONTAINS $input OR profile.displayName =~ $inputRegex)${includeServiceProfiles
+                ? ''
+                : ' AND (profile.isServiceProfile IS NULL OR profile.isServiceProfile = false)'
             }${blacklist.length > 0 ? ' AND NOT profile.profileId IN $blacklist' : ''}`
         )
         .return('profile')

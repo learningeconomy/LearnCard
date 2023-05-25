@@ -7,11 +7,13 @@ import { testVc, sendBoost, testVp, testUnsignedBoost } from './helpers/send';
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;
 let userB: Awaited<ReturnType<typeof getUser>>;
+let userC: Awaited<ReturnType<typeof getUser>>;
 
 describe('Profiles', () => {
     beforeAll(async () => {
         userA = await getUser();
         userB = await getUser('b'.repeat(64));
+        userC = await getUser('c'.repeat(64));
     });
 
     describe('createProfile', () => {
@@ -358,6 +360,11 @@ describe('Profiles', () => {
                 displayName: 'BName',
                 email: 'userB@test.com',
             });
+            await userC.clients.fullAuth.profile.createServiceProfile({
+                profileId: 'serviceProfile',
+                displayName: 'Service Profile',
+            });
+
             await Promise.all(
                 Array(30)
                     .fill(0)
@@ -475,6 +482,24 @@ describe('Profiles', () => {
 
             expect(results).toHaveLength(1);
             expect(results.find(result => result.profileId === 'usera')).toBeFalsy();
+        });
+
+        it('should not include service profiles by default', async () => {
+            const results = await userA.clients.fullAuth.profile.searchProfiles({
+                input: 'serviceProfile',
+            });
+
+            expect(results).toHaveLength(0);
+        });
+
+        it('should allow including service profiles', async () => {
+            const results = await userA.clients.fullAuth.profile.searchProfiles({
+                input: 'serviceProfile',
+                includeServiceProfiles: true,
+            });
+
+            expect(results).toHaveLength(1);
+            expect(results[0]?.isServiceProfile).toBeTruthy();
         });
 
         it('should omit the connection status if includeConnectionStatus is false', async () => {
