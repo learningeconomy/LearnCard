@@ -324,6 +324,28 @@ describe('Boosts', () => {
 
             expect(await userA.clients.fullAuth.boost.getBoostRecipients({ uri })).toHaveLength(1);
         });
+
+        it("should allow not returning recipients that haven't accepted yet", async () => {
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            expect(await userA.clients.fullAuth.boost.getBoostRecipients({ uri })).toHaveLength(0);
+
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB },
+                uri,
+                false
+            );
+
+            expect(
+                await userA.clients.fullAuth.boost.getBoostRecipients({
+                    uri,
+                    includeUnacceptedBoosts: false,
+                })
+            ).toHaveLength(0);
+        });
     });
 
     describe('updateBoost', () => {

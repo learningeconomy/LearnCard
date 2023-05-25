@@ -207,18 +207,19 @@ export const boostsRouter = t.router({
                 uri: z.string(),
                 limit: z.number().optional().default(25),
                 skip: z.number().optional(),
+                includeUnacceptedBoosts: z.boolean().default(true),
             })
         )
         .output(BoostRecipientValidator.array())
         .query(async ({ input }) => {
-            const { uri, limit, skip } = input;
+            const { uri, limit, skip, includeUnacceptedBoosts } = input;
 
             const boost = await getBoostByUri(uri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
             //TODO: Should we restrict who can see the recipients of a boost? Maybe to Boost owner / people who have the boost?
-            return getBoostRecipients(boost, { limit, skip });
+            return getBoostRecipients(boost, { limit, skip, includeUnacceptedBoosts });
         }),
     updateBoost: profileRoute
         .meta({

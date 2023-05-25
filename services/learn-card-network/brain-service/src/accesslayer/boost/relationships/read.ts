@@ -37,9 +37,11 @@ export const getBoostRecipients = async (
     {
         limit,
         skip,
+        includeUnacceptedBoosts = true,
     }: {
         limit: number;
         skip?: number;
+        includeUnacceptedBoosts?: boolean;
     }
 ): Promise<BoostRecipientInfo[]> => {
     const query = new QueryBuilder()
@@ -61,7 +63,7 @@ export const getBoostRecipients = async (
             ],
         })
         .match({
-            optional: true,
+            optional: includeUnacceptedBoosts,
             related: [
                 { identifier: 'credential', model: Credential },
                 {
