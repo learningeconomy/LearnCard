@@ -1,5 +1,15 @@
 # learn-card-core
 
+## 1.4.14
+
+### Patch Changes
+
+-   [#301](https://github.com/learningeconomy/LearnCard/pull/301) [`23b48d7`](https://github.com/learningeconomy/LearnCard/commit/23b48d7b8221e6191d089735f13d925f69d3c800) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Return unaccepted boost recipients in getBoostRecipients
+
+-   Updated dependencies []:
+    -   @learncard/core@9.0.1
+    -   @learncard/network-brain-client@1.1.15
+
 ## 1.4.13
 
 ### Patch Changes

@@ -1,5 +1,25 @@
 # @learncard/network-brain-service
 
+## 1.4.11
+
+### Patch Changes
+
+-   [#301](https://github.com/learningeconomy/LearnCard/pull/301) [`23b48d7`](https://github.com/learningeconomy/LearnCard/commit/23b48d7b8221e6191d089735f13d925f69d3c800) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Return unaccepted boost recipients in getBoostRecipients
+
+-   Updated dependencies [[`23b48d7`](https://github.com/learningeconomy/LearnCard/commit/23b48d7b8221e6191d089735f13d925f69d3c800)]:
+    -   @learncard/types@5.3.1
+    -   @learncard/core@9.0.1
+    -   @learncard/helpers@1.0.5
+    -   @learncard/ceramic-plugin@1.0.1
+    -   @learncard/did-web-plugin@1.0.5
+    -   @learncard/didkey-plugin@1.0.1
+    -   @learncard/didkit-plugin@1.0.2
+    -   @learncard/learn-card-plugin@1.0.2
+    -   @learncard/vc-plugin@1.0.2
+    -   @learncard/vc-templates-plugin@1.0.2
+    -   @learncard/expiration-plugin@1.0.2
+    -   @learncard/crypto-plugin@1.0.1
+
 ## 1.4.10
 
 ### Patch Changes

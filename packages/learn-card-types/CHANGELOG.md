@@ -1,5 +1,11 @@
 # learn-card-types
 
+## 5.3.1
+
+### Patch Changes
+
+-   [#301](https://github.com/learningeconomy/LearnCard/pull/301) [`23b48d7`](https://github.com/learningeconomy/LearnCard/commit/23b48d7b8221e6191d089735f13d925f69d3c800) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Loosen BoostRecipientInfo type to allow getting recipient info for boosts that haven't been received yet
+
 ## 5.3.0
 
 ### Minor Changes
