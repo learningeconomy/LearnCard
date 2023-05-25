@@ -11,6 +11,18 @@ export const getProfilesByProfileId = async (profileId: string): Promise<Profile
     return Profile.findMany({ where: { profileId: transformProfileId(profileId) } });
 };
 
+export const getProfilesByProfileIds = async (profileIds: string[]): Promise<ProfileType[]> => {
+    const result = await new QueryBuilder(
+        new BindParam({ profileIds: profileIds.map(transformProfileId) })
+    )
+        .match({ identifier: 'profile', model: Profile })
+        .where('profile.profileId IN $profileIds')
+        .return('profile')
+        .run();
+
+    return QueryRunner.getResultProperties<ProfileType>(result, 'profile');
+};
+
 export const getProfileByDid = async (did: string): Promise<ProfileInstance | null> => {
     return Profile.findOne({ where: { did } });
 };

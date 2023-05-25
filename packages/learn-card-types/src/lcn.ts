@@ -43,7 +43,7 @@ export type Boost = z.infer<typeof BoostValidator>;
 export const BoostRecipientValidator = z.object({
     to: LCNProfileValidator,
     from: z.string(),
-    received: z.string(),
+    received: z.string().optional(),
 });
 
 export type BoostRecipientInfo = z.infer<typeof BoostRecipientValidator>;

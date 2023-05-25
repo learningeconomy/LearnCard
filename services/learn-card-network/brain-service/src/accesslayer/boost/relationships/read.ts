@@ -9,7 +9,9 @@ import {
     Credential,
     CredentialInstance,
     CredentialRelationships,
+    ProfileRelationships,
 } from '@models';
+import { getProfilesByProfileIds } from '@accesslayer/profile/read';
 
 export const getBoostOwner = async (boost: BoostInstance): Promise<ProfileInstance | undefined> => {
     return (await boost.findRelationships({ alias: 'createdBy' }))[0]?.target;
@@ -35,45 +37,68 @@ export const getBoostRecipients = async (
     {
         limit,
         skip,
+        includeUnacceptedBoosts = true,
     }: {
         limit: number;
         skip?: number;
+        includeUnacceptedBoosts?: boolean;
     }
 ): Promise<BoostRecipientInfo[]> => {
-    const query = new QueryBuilder().match({
-        related: [
-            { identifier: 'source', model: Boost, where: { id: boost.id } },
-            {
-                ...Credential.getRelationshipByAlias('instanceOf'),
-                identifier: 'instanceOf',
-                direction: 'in',
-            },
-            { identifier: 'credential', model: Credential },
-            {
-                ...Credential.getRelationshipByAlias('credentialReceived'),
-                identifier: 'received',
-            },
-            {
-                identifier: 'recipient',
-                model: Profile,
-            },
-        ],
-    });
+    const query = new QueryBuilder()
+        .match({
+            related: [
+                { identifier: 'source', model: Boost, where: { id: boost.id } },
+                {
+                    ...Credential.getRelationshipByAlias('instanceOf'),
+                    identifier: 'instanceOf',
+                    direction: 'in',
+                },
+                { identifier: 'credential', model: Credential },
+                {
+                    ...Profile.getRelationshipByAlias('credentialSent'),
+                    identifier: 'sent',
+                    direction: 'in',
+                },
+                { identifier: 'sender', model: Profile },
+            ],
+        })
+        .match({
+            optional: includeUnacceptedBoosts,
+            related: [
+                { identifier: 'credential', model: Credential },
+                {
+                    ...Credential.getRelationshipByAlias('credentialReceived'),
+                    identifier: 'received',
+                },
+                { identifier: 'recipient', model: Profile },
+            ],
+        });
 
     const results = convertQueryResultToPropertiesObjectArray<{
-        recipient: ProfileInstance;
-        received: CredentialRelationships['credentialReceived']['RelationshipProperties'];
+        sender: ProfileInstance;
+        sent: ProfileRelationships['credentialSent']['RelationshipProperties'];
+        recipient?: ProfileInstance;
+        received?: CredentialRelationships['credentialReceived']['RelationshipProperties'];
     }>(
         await query
-            .return('received, recipient')
+            .return('sender, sent, received')
             .limit(limit)
             .skip(skip ?? 0)
             .run()
     );
 
-    return results.map(({ received, recipient }) => ({
-        to: recipient,
-        from: received.from,
-        received: received.date,
+    const resultsWithIds = results.map(({ sender, sent, received }) => ({
+        to: sent.to,
+        from: sender.profileId,
+        received: received?.date,
     }));
+
+    const recipients = await getProfilesByProfileIds(resultsWithIds.map(result => result.to));
+
+    return resultsWithIds
+        .map(result => ({
+            ...result,
+            to: recipients.find(recipient => recipient.profileId === result.to),
+        }))
+        .filter(result => Boolean(result.to)) as BoostRecipientInfo[];
 };

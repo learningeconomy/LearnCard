@@ -78,7 +78,8 @@ export type LearnCardNetworkPluginMethods = {
     getBoostRecipients: (
         uri: string,
         limit?: number,
-        skip?: number
+        skip?: number,
+        includeUnacceptedBoosts?: boolean
     ) => Promise<BoostRecipientInfo[]>;
     updateBoost: (
         uri: string,
