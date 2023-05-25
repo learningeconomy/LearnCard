@@ -58,9 +58,11 @@ export const searchProfiles = async (
     {
         limit = 25,
         blacklist = [],
+        includeServiceProfiles = false,
     }: {
         limit?: number;
         blacklist?: string[];
+        includeServiceProfiles?: boolean;
     } = {}
 ): Promise<ProfileType[]> => {
     const result = await new QueryBuilder(
@@ -72,11 +74,13 @@ export const searchProfiles = async (
     )
         .match({ identifier: 'profile', model: Profile })
         .where(
-            `(profile.profileId CONTAINS $input OR profile.displayName =~ $inputRegex)${
-                blacklist.length > 0 ? ' AND NOT profile.profileId IN $blacklist' : ''
-            }`
+            `(profile.profileId CONTAINS $input OR profile.displayName =~ $inputRegex)${includeServiceProfiles
+                ? ''
+                : ' AND (profile.isServiceProfile IS NULL OR profile.isServiceProfile = false)'
+            }${blacklist.length > 0 ? ' AND NOT profile.profileId IN $blacklist' : ''}`
         )
         .return('profile')
+        .orderBy('profile.displayName')
         .limit(limit)
         .run();
 

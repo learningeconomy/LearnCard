@@ -180,6 +180,7 @@ export const profilesRouter = t.router({
                 limit: z.number().int().positive().lt(100).default(25),
                 includeSelf: z.boolean().default(false),
                 includeConnectionStatus: z.boolean().default(false),
+                includeServiceProfiles: z.boolean().default(false),
             })
         )
         .output(
@@ -188,7 +189,13 @@ export const profilesRouter = t.router({
             }).array()
         )
         .query(async ({ ctx, input }) => {
-            const { input: searchInput, limit, includeSelf, includeConnectionStatus } = input;
+            const {
+                input: searchInput,
+                limit,
+                includeSelf,
+                includeConnectionStatus,
+                includeServiceProfiles,
+            } = input;
 
             const _selfProfile = ctx.user && ctx.user.did && (await getProfileByDid(ctx.user.did));
             const selfProfile = !includeSelf && _selfProfile;
@@ -199,6 +206,7 @@ export const profilesRouter = t.router({
             const profiles = await searchProfiles(searchInput, {
                 limit,
                 blacklist: selfProfile ? [selfProfile.profileId, ...blacklist] : blacklist,
+                includeServiceProfiles,
             });
             // TODO: Allow filtering out service profiles
             if (selfProfile && includeConnectionStatus) {
