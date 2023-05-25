@@ -58,9 +58,11 @@ export const searchProfiles = async (
     {
         limit = 25,
         blacklist = [],
+        includeServiceProfiles = false,
     }: {
         limit?: number;
         blacklist?: string[];
+        includeServiceProfiles?: boolean;
     } = {}
 ): Promise<ProfileType[]> => {
     const result = await new QueryBuilder(
