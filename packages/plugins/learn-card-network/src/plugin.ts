@@ -161,7 +161,12 @@ export const getLearnCardNetworkPlugin = async (
             searchProfiles: async (
                 _learnCard,
                 input = '',
-                { limit = 25, includeSelf = false, includeConnectionStatus = false, includeServiceProfiles = false } = {}
+                {
+                    limit = 25,
+                    includeSelf = false,
+                    includeConnectionStatus = false,
+                    includeServiceProfiles = false,
+                } = {}
             ) => {
                 return client.profile.searchProfiles.query({
                     input,

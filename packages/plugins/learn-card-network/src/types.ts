@@ -39,7 +39,12 @@ export type LearnCardNetworkPluginMethods = {
     getProfile: (profileId?: string) => Promise<LCNProfile | undefined>;
     searchProfiles: (
         profileId?: string,
-        options?: { limit?: number; includeSelf?: boolean; includeConnectionStatus?: boolean }
+        options?: {
+            limit?: number;
+            includeSelf?: boolean;
+            includeConnectionStatus?: boolean;
+            includeServiceProfiles?: boolean;
+        }
     ) => Promise<LCNProfile[]>;
     connectWith: (profileId: string) => Promise<boolean>;
     connectWithInvite: (profileId: string, challenge: string) => Promise<boolean>;
