@@ -1,5 +1,15 @@
 # @learncard/network-brain-service
 
+## 1.4.12
+
+### Patch Changes
+
+-   [#304](https://github.com/learningeconomy/LearnCard/pull/304) [`543a622`](https://github.com/learningeconomy/LearnCard/commit/543a6227911d205c2d9254f3a16e21b4f748bdc7) Thanks [@goblincore](https://github.com/goblincore)! - [WE-2684][WE-2745] Add optional includeServiceProfiles(default = false) to searchProfiles, default orderby displayName
+
+-   Updated dependencies [[`543a622`](https://github.com/learningeconomy/LearnCard/commit/543a6227911d205c2d9254f3a16e21b4f748bdc7)]:
+    -   @learncard/learn-card-plugin@1.0.3
+    -   @learncard/did-web-plugin@1.0.6
+
 ## 1.4.11
 
 ### Patch Changes
