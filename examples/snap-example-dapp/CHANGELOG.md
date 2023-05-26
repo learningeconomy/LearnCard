@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.43
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/didkit-plugin@1.0.3
+
 ## 1.0.42
 
 ### Patch Changes
