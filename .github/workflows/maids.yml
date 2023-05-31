@@ -1,13 +1,21 @@
-name: Test Runner
+# For some reason, there are certain files that tend to just update automatically when running
+# our usual scripts, resulting in an unclean git worktree that can be solved by simply committing
+# the updated files. This script does that by creating a PR that cleans the worktree.
+
+name: Maid-Service
 
 on:
-  pull_request:
-    types: [opened, synchronize]
+  push:
+    branches:
+      - main
+
+env:
+  CI: true
 
 jobs:
-  Test:
+  maid-service:
+    name: Maid-Service
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
@@ -19,13 +27,13 @@ jobs:
         run: |
           git fetch --no-tags --prune --depth=5 origin main
 
-      - name: Setup Node.js
+      - name: Setup Node.js 16.x
         uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version: 16.x
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v2
+        uses: pnpm/action-setup@v2.0.1
         id: pnpm-install
         with:
           version: 7
@@ -62,6 +70,37 @@ jobs:
         env:
           SEED: ${{ secrets.SEED }}
           LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED }}
+
+      - name: Commit changes
+        run: |
+          echo "DIRTY_TREE=$(git diff --quiet && echo false || echo true)" >> $GITHUB_ENV
+          git config --global user.name "Auto-Commit"
+          git config --global user.email "beestontaylor@learningeconomy.io"
+          git add .
+          git status -s
+          git commit -m ":green_heart: Housekeeping!" || echo "Nothing to see here!"
+
+      - name: Create Pull Request
+        if: ${{ contains(env.DIRTY_TREE, 'true') }}
+        uses: peter-evans/create-pull-request@v5
+        with:
+          commit-message: ":green_heart: Housekeeping!"
+          branch: maid-service/housekeeping
+          title: '[Auto] Housekeeping'
+          body: |
+            This PR was generated automatically by the [Maid Service][1].
+
+            It's existence implies that `main` currently has an untree git worktree, and can be 
+            cleaned by the changes in this PR. 
+
+            Please merge this to clean up main!
+
+            [1]: ./.github/workflows/maids.yml
+
+          labels: |
+            automated pr
+          assignees: TaylorBeeston
+          reviewers: TaylorBeeston
 
       - name: Save nx cache
         uses: actions/cache/save@v3

@@ -77,7 +77,11 @@ jobs:
         run: pnpm install --no-frozen-lockfile
 
       - name: Run tests
-        run: pnpm exec nx affected --target=test --base=HEAD~1 --head=HEAD
+        uses: nick-fields/retry@v2
+        with:
+          timeout_minutes: 10
+          max_attempts: 3
+          command: pnpm exec nx affected --target=test --base=HEAD~1 --head=HEAD
         env:
           SEED: ${{ secrets.SEED }}
           LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED }}

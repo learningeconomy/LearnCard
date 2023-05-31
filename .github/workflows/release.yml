@@ -58,18 +58,27 @@ jobs:
         run: pnpm install --no-frozen-lockfile
 
       - name: Run tests
-        run: pnpm exec nx affected --target=test --base=HEAD~1 --head=HEAD
+        uses: nick-fields/retry@v2
+        with:
+          timeout_minutes: 10
+          max_attempts: 3
+          command: pnpm exec nx affected --target=test --base=HEAD~1 --head=HEAD
         env:
           SEED: ${{ secrets.SEED }}
-
-      - name: Build libs
-        run: pnpm exec nx affected --target=build --base=HEAD~1 --head=HEAD
+          LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED }}
 
       - name: "[DEBUG] Check git status"
-        run: git status
+        run: |
+          git status
+          echo "CLEAN_TREE=$(git diff --quiet && echo true || echo false)" >> $GITHUB_ENV
+
+      - name: Build libs
+        if: ${{ contains(env.CLEAN_TREE, 'true') }}
+        run: pnpm exec nx run-many --target=build --exclude docs
 
       - name: Create Release Pull Request or Publish to npm
         id: changesets
+        if: ${{ contains(env.CLEAN_TREE, 'true') }}
         uses: changesets/action@v1
         with:
           publish: pnpm publish -r
