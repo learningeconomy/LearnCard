@@ -81,7 +81,7 @@ jobs:
           git commit -m ":green_heart: Housekeeping!" || echo "Nothing to see here!"
 
       - name: Create Pull Request
-        if: ${{ env.DIRTY_TREE }}
+        if: ${{ contains(env.DIRTY_TREE, 'true') }}
         uses: peter-evans/create-pull-request@v5
         with:
           commit-message: ":green_heart: Housekeeping!"

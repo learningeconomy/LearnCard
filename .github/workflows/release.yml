@@ -67,17 +67,18 @@ jobs:
           SEED: ${{ secrets.SEED }}
           LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED }}
 
-      - name: Build libs
-        run: pnpm exec nx affected --target=build --base=HEAD~1 --head=HEAD
-
       - name: "[DEBUG] Check git status"
         run: |
           git status
           echo "CLEAN_TREE=$(git --quiet diff && echo true || echo false)" >> $GITHUB_ENV
 
+      - name: Build libs
+        if: ${{ contains(env.CLEAN_TREE, 'true') }}
+        run: pnpm exec nx run-many --target=build
+
       - name: Create Release Pull Request or Publish to npm
         id: changesets
-        if: ${{ env.CLEAN_TREE }}
+        if: ${{ contains(env.CLEAN_TREE, 'true') }}
         uses: changesets/action@v1
         with:
           publish: pnpm publish -r
