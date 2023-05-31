@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useLayoutEffect, useRef } from 'react';
 import fitty, { FittyInstance, FittyOptions } from 'fitty';
 
 type FitTextProps = {
@@ -18,9 +18,14 @@ const FitText: React.FC<FitTextProps> = ({
 }) => {
     const textRef = useRef<HTMLSpanElement>(null);
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         let fit: FittyInstance;
-        if (textRef.current) fit = fitty(textRef.current, options);
+
+        if (textRef.current) {
+            fit = fitty(textRef.current, options);
+
+            setTimeout(fit.fit, 0);
+        }
 
         return () => fit?.unsubscribe();
     }, [textRef.current]);
