@@ -73,7 +73,7 @@ jobs:
 
       - name: Commit changes
         run: |
-          echo "DIRTY_TREE=$(git --quiet diff && echo false || echo true)" >> $GITHUB_ENV
+          echo "DIRTY_TREE=$(git diff --quiet && echo false || echo true)" >> $GITHUB_ENV
           git config --global user.name "Auto-Commit"
           git config --global user.email "beestontaylor@learningeconomy.io"
           git add .

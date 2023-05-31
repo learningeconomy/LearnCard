@@ -70,7 +70,7 @@ jobs:
       - name: "[DEBUG] Check git status"
         run: |
           git status
-          echo "CLEAN_TREE=$(git --quiet diff && echo true || echo false)" >> $GITHUB_ENV
+          echo "CLEAN_TREE=$(git diff --quiet && echo true || echo false)" >> $GITHUB_ENV
 
       - name: Build libs
         if: ${{ contains(env.CLEAN_TREE, 'true') }}
