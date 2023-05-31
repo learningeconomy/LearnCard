@@ -5,7 +5,9 @@
 name: Auto-Commits
 
 on:
-  push: main
+  push:
+    branches:
+      - main
 
 env:
   CI: true
