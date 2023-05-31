@@ -66,10 +66,13 @@ jobs:
         run: pnpm exec nx affected --target=build --base=HEAD~1 --head=HEAD
 
       - name: "[DEBUG] Check git status"
-        run: git status
+        run: |
+          git status
+          echo "CLEAN_TREE=$(git --quiet diff && echo true || echo false)" >> $GITHUB_ENV
 
       - name: Create Release Pull Request or Publish to npm
         id: changesets
+        if: ${{ env.GITHUB_ENV }}
         uses: changesets/action@v1
         with:
           publish: pnpm publish -r

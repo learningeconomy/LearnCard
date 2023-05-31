@@ -1,21 +1,18 @@
-# The MM Snap has a manifest file that _must be tracked_ in order for its build script to work, 
-# however it will unintentionally change when pnpm i is ran as it is techincally a build artifact.
-# 
-# This action simply builds the MM Snap, then commits any changest that could have appeared as a result of
-# that. It is designed specifically to fix the snap file being updated and breaking releases
+# For some reason, there are certain files that tend to just update automatically when running
+# our usual scripts, resulting in an unclean git worktree that can be solved by simply committing
+# the updated files. This script does that.
 
-name: Manifest
+name: Auto-Commits
 
 on:
-  pull_request:
-    types: [opened, synchronize]
+  push: main
 
 env:
   CI: true
 
 jobs:
-  manifest:
-    name: Release
+  auto-commits:
+    name: Auto-Commits
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
@@ -62,17 +59,14 @@ jobs:
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
 
-      - name: Build MM Snap
-        run: pnpm exec nx build meta-mask-snap
-
       - name: Commit and push changes
         run: |
           git config --global pull.rebase true
-          git config --global user.name "Manifest Destiny"
+          git config --global user.name "Auto-Commit"
           git config --global user.email "beestontaylor@learningeconomy.io"
-          git add .
+          git diff --quiet pnpm-lock.yaml || git add pnpm-lock.yaml
           git status -v
-          git commit -m ":green_heart: Update snap.manifest.json" && git pull && git push || echo "Nothing to see here!"
+          git commit -m ":green_heart: Auto-commits" && git pull && git push || echo "Nothing to see here!"
 
       - name: Save nx cache
         uses: actions/cache/save@v3
