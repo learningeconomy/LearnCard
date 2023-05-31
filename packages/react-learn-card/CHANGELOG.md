@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.6.6
+
+### Patch Changes
+
+-   [#307](https://github.com/learningeconomy/LearnCard/pull/307) [`ea1fc75`](https://github.com/learningeconomy/LearnCard/commit/ea1fc7593ebdc8b2800dd034b04b6653fad2171d) Thanks [@Cyntheon](https://github.com/Cyntheon)! - Update rollup config to fix learncardapp bug when using local @learncard/react package
+
 ## 2.6.5
 
 ### Patch Changes
