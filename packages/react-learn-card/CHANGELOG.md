@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.6.7
+
+### Patch Changes
+
+-   [#310](https://github.com/learningeconomy/LearnCard/pull/310) [`0c53923`](https://github.com/learningeconomy/LearnCard/commit/0c539231aeb26ebaaa07e7fca6be8a216f30c399) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix weird text display issue
+
 ## 2.6.6
 
 ### Patch Changes
