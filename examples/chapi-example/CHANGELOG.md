@@ -1,5 +1,12 @@
 # @learncard/chapi-example
 
+## 1.0.68
+
+### Patch Changes
+
+-   Updated dependencies [[`ea1fc75`](https://github.com/learningeconomy/LearnCard/commit/ea1fc7593ebdc8b2800dd034b04b6653fad2171d)]:
+    -   @learncard/react@2.6.6
+
 ## 1.0.67
 
 ### Patch Changes
