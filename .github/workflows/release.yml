@@ -74,7 +74,7 @@ jobs:
 
       - name: Build libs
         if: ${{ contains(env.CLEAN_TREE, 'true') }}
-        run: pnpm exec nx run-many --target=build
+        run: pnpm exec nx run-many --target=build --exclude docs
 
       - name: Create Release Pull Request or Publish to npm
         id: changesets
