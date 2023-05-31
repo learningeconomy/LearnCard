@@ -1,8 +1,8 @@
 # For some reason, there are certain files that tend to just update automatically when running
 # our usual scripts, resulting in an unclean git worktree that can be solved by simply committing
-# the updated files. This script does that.
+# the updated files. This script does that by creating a PR that cleans the worktree.
 
-name: Auto-Commits
+name: Maid-Service
 
 on:
   push:
@@ -13,8 +13,8 @@ env:
   CI: true
 
 jobs:
-  auto-commits:
-    name: Auto-Commits
+  maid-service:
+    name: Maid-Service
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
@@ -61,14 +61,46 @@ jobs:
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
 
-      - name: Commit and push changes
+      - name: Run tests
+        uses: nick-fields/retry@v2
+        with:
+          timeout_minutes: 10
+          max_attempts: 3
+          command: pnpm exec nx affected --target=test --base=HEAD~1 --head=HEAD
+        env:
+          SEED: ${{ secrets.SEED }}
+          LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED }}
+
+      - name: Commit changes
         run: |
-          git config --global pull.rebase true
+          echo "DIRTY_TREE=$(git --quiet diff && echo false || echo true)" >> $GITHUB_ENV
           git config --global user.name "Auto-Commit"
           git config --global user.email "beestontaylor@learningeconomy.io"
-          git diff --quiet pnpm-lock.yaml || git add pnpm-lock.yaml
-          git status -v
-          git commit -m ":green_heart: Auto-commits" && git pull && git push || echo "Nothing to see here!"
+          git add .
+          git status -s
+          git commit -m ":green_heart: Housekeeping!" || echo "Nothing to see here!"
+
+      - name: Create Pull Request
+        if: ${{ env.DIRTY_TREE }}
+        uses: peter-evans/create-pull-request@v5
+        with:
+          commit-message: ":green_heart: Housekeeping!"
+          branch: maid-service/housekeeping
+          title: '[Auto] Housekeeping'
+          body: |
+            This PR was generated automatically by the [Maid Service][1].
+
+            It's existence implies that `main` currently has an untree git worktree, and can be 
+            cleaned by the changes in this PR. 
+
+            Please merge this to clean up main!
+
+            [1]: ./.github/workflows/maids.yml
+
+          labels: |
+            automated pr
+          assignees: TaylorBeeston
+          reviewers: TaylorBeeston
 
       - name: Save nx cache
         uses: actions/cache/save@v3
