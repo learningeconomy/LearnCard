@@ -1,5 +1,8 @@
-import { getCredentialRecordCollection } from '.';
+import { MongoServerError } from 'mongodb';
+import { TRPCError } from '@trpc/server';
 import { EncryptedCredentialRecord } from '@learncard/types';
+
+import { getCredentialRecordCollection } from '.';
 
 export const updateCredentialRecord = async (
     did: string,
@@ -13,8 +16,16 @@ export const updateCredentialRecord = async (
                 { $set: { modified: new Date(), ...updates } }
             )
         ).modifiedCount;
-    } catch (e) {
-        console.error(e);
+    } catch (error) {
+        // 11000 is the Mongo Duplicate Key Error Code
+        if (error instanceof MongoServerError && error.code === 11000) {
+            throw new TRPCError({
+                code: 'CONFLICT',
+                message: 'Record with that ID already exists!',
+            });
+        }
+        console.error(error);
+
         return false;
     }
 };

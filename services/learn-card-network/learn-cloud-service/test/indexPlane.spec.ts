@@ -353,6 +353,26 @@ describe('Index', () => {
             expect(newRecords.records).toHaveLength(1);
             expect(newRecords.records[0]!.id).toBeDefined();
         });
+
+        it('should not allow adding a record with a duplicate ID', async () => {
+            await userA.clients.fullAuth.index.add({ record: testRecordA });
+
+            const records = (await userA.clients.fullAuth.index.get({
+                encrypt: false,
+            })) as PaginatedEncryptedCredentialRecordsType;
+
+            expect(records.records).toHaveLength(1);
+
+            await expect(
+                userA.clients.fullAuth.index.add({ record: testRecordA })
+            ).rejects.toMatchObject({ code: 'CONFLICT' });
+
+            const newRecords = (await userA.clients.fullAuth.index.get({
+                encrypt: false,
+            })) as PaginatedEncryptedCredentialRecordsType;
+
+            expect(newRecords.records).toHaveLength(1);
+        });
     });
 
     describe('addMany', () => {
@@ -420,6 +440,46 @@ describe('Index', () => {
 
             expect(newRecords.records).toHaveLength(2);
         });
+
+        it('should not allow adding a record with a duplicate ID', async () => {
+            await userA.clients.fullAuth.index.add({ record: testRecordA });
+
+            const records = (await userA.clients.fullAuth.index.get({
+                encrypt: false,
+            })) as PaginatedEncryptedCredentialRecordsType;
+
+            expect(records.records).toHaveLength(1);
+
+            await expect(
+                userA.clients.fullAuth.index.addMany({ records: [testRecordA] })
+            ).rejects.toMatchObject({ code: 'CONFLICT' });
+
+            const newRecords = (await userA.clients.fullAuth.index.get({
+                encrypt: false,
+            })) as PaginatedEncryptedCredentialRecordsType;
+
+            expect(newRecords.records).toHaveLength(1);
+        });
+
+        it('should not allow adding multiple records with duplicate IDs', async () => {
+            await userA.clients.fullAuth.index.add({ record: testRecordA });
+
+            const records = (await userA.clients.fullAuth.index.get({
+                encrypt: false,
+            })) as PaginatedEncryptedCredentialRecordsType;
+
+            expect(records.records).toHaveLength(1);
+
+            await expect(
+                userA.clients.fullAuth.index.addMany({ records: [testRecordB, testRecordB] })
+            ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+
+            const newRecords = (await userA.clients.fullAuth.index.get({
+                encrypt: false,
+            })) as PaginatedEncryptedCredentialRecordsType;
+
+            expect(newRecords.records).toHaveLength(1);
+        });
     });
 
     describe('update', () => {
@@ -459,6 +519,37 @@ describe('Index', () => {
         });
 
         it('should allow updating a record', async () => {
+            const records = (await userA.clients.fullAuth.index.get({
+                encrypt: false,
+            })) as PaginatedEncryptedCredentialRecordsType;
+
+            const recordA = records.records[0]!;
+            const recordB = records.records[1]!;
+
+            expect(recordA.id).toEqual('testRecordA');
+            expect(recordB.id).toEqual('testRecordB');
+
+            await expect(
+                userA.clients.fullAuth.index.update({
+                    id: 'testRecordA',
+                    updates: { id: 'testRecordB' },
+                })
+            ).rejects.toMatchObject({ code: 'CONFLICT' });
+
+            const newRecords = await userA.clients.fullAuth.index.get({ encrypt: false });
+
+            if (isEncrypted(newRecords)) {
+                throw new Error('Check encrypt: false option in index.get');
+            }
+
+            const recordAPostUpdate = newRecords.records[0]!;
+            const recordBPostUpdate = newRecords.records[1]!;
+
+            expect(recordAPostUpdate.id).toEqual('testRecordA');
+            expect(recordBPostUpdate.id).toEqual('testRecordB');
+        });
+
+        it('should not allow changing to a duplicate ID', async () => {
             const records = (await userA.clients.fullAuth.index.get({
                 encrypt: false,
             })) as PaginatedEncryptedCredentialRecordsType;
