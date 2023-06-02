@@ -80,7 +80,38 @@ export const getLearnCloudPlugin = async (
         name: 'LearnCloud',
         displayName: 'LearnCloud',
         description: 'LearnCloud Integration',
-        methods: {},
+        methods: {
+            learnCloudCreate: async (_learnCard, document) => {
+                await updateLearnCard(_learnCard);
+
+                return client.customStorage.create.mutate({ item: document });
+            },
+            learnCloudCreateMany: async (_learnCard, documents) => {
+                await updateLearnCard(_learnCard);
+
+                return client.customStorage.createMany.mutate({ items: documents });
+            },
+            learnCloudRead: async (_learnCard, query, includeAssociatedDids) => {
+                await updateLearnCard(_learnCard);
+
+                return client.customStorage.read.query({ query, includeAssociatedDids });
+            },
+            learnCloudCount: async (_learnCard, query, includeAssociatedDids) => {
+                await updateLearnCard(_learnCard);
+
+                return client.customStorage.count.query({ query, includeAssociatedDids });
+            },
+            learnCloudUpdate: async (_learnCard, query, update, includeAssociatedDids) => {
+                await updateLearnCard(_learnCard);
+
+                return client.customStorage.update.mutate({ query, update, includeAssociatedDids });
+            },
+            learnCloudDelete: async (_learnCard, query, includeAssociatedDids) => {
+                await updateLearnCard(_learnCard);
+
+                return client.customStorage.delete.mutate({ query, includeAssociatedDids });
+            },
+        },
         read: {
             get: async (_learnCard, uri) => {
                 if (!uri) return undefined;

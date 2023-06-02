@@ -1,7 +1,8 @@
 import type { DID } from 'dids';
+import type { MongoCustomDocumentType, Filter, UpdateFilter } from '@learncard/learn-cloud-service';
 import { UnsignedVC, VC, VP } from '@learncard/types';
-import { LearnCard, Plugin } from '@learncard/core';
-import { ProofOptions } from '@learncard/didkit-plugin';
+import type { LearnCard, Plugin } from '@learncard/core';
+import type { ProofOptions } from '@learncard/didkit-plugin';
 
 /** @group LearnCloud Plugin */
 export type LearnCloudPluginDependentMethods = {
@@ -15,7 +16,27 @@ export type LearnCloudPluginDependentMethods = {
 };
 
 /** @group LearnCloud Plugin */
-export type LearnCloudPluginMethods = Record<never, never>;
+export type LearnCloudPluginMethods = {
+    learnCloudCreate: (document: MongoCustomDocumentType) => Promise<boolean>;
+    learnCloudCreateMany: (documents: MongoCustomDocumentType[]) => Promise<boolean>;
+    learnCloudRead: (
+        query: Filter<MongoCustomDocumentType>,
+        includeAssociatedDids?: boolean
+    ) => Promise<MongoCustomDocumentType[]>;
+    learnCloudCount: (
+        query: Filter<MongoCustomDocumentType>,
+        includeAssociatedDids?: boolean
+    ) => Promise<number>;
+    learnCloudUpdate: (
+        query: Filter<MongoCustomDocumentType>,
+        update: UpdateFilter<MongoCustomDocumentType>,
+        includeAssociatedDids?: boolean
+    ) => Promise<number>;
+    learnCloudDelete: (
+        query: Filter<MongoCustomDocumentType>,
+        includeAssociatedDids?: boolean
+    ) => Promise<number | false>;
+};
 
 /** @group LearnCloud Plugin */
 export type LearnCloudPlugin = Plugin<
