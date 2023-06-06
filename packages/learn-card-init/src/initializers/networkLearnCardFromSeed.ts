@@ -27,7 +27,11 @@ export const networkLearnCardFromSeed = async ({
     network: _network,
     trustedBoostRegistry,
 
-    cloud: { url = 'https://cloud.learncard.com/trpc', unencryptedFields = [] } = {},
+    cloud: {
+        url = 'https://cloud.learncard.com/trpc',
+        unencryptedFields = [],
+        unencryptedCustomFields = [],
+    } = {},
     ceramicIdx = defaultCeramicIDXArgs,
     didkit,
     ethereumConfig = defaultEthereumArgs,
@@ -50,7 +54,7 @@ export const networkLearnCardFromSeed = async ({
     const ceramicLc = await templateLc.addPlugin(await getCeramicPlugin(templateLc, ceramicIdx));
 
     const cloudLc = await ceramicLc.addPlugin(
-        await getLearnCloudPlugin(ceramicLc, url, unencryptedFields)
+        await getLearnCloudPlugin(ceramicLc, url, unencryptedFields, unencryptedCustomFields)
     );
 
     const idxLc = await cloudLc.addPlugin(await getIDXPlugin(cloudLc, ceramicIdx));

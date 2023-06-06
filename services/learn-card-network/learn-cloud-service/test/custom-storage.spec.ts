@@ -1,8 +1,8 @@
 import { getClient, getUser } from './helpers/getClient';
-import { Users } from '@accesslayer/user';
 import { CustomDocuments } from '@accesslayer/custom-document';
 
 import { client } from '@mongo';
+import { testDocumentA, testDocumentB } from './helpers/documents';
 
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;
@@ -26,7 +26,7 @@ afterAll(async () => {
 
 describe('Custom Storage', () => {
     beforeAll(async () => {
-        userA = await getUser();
+        userA = await getUser('a'.repeat(64));
         userB = await getUser('b'.repeat(64));
     });
 
@@ -40,34 +40,30 @@ describe('Custom Storage', () => {
         });
 
         it('should require full auth to create custom documents', async () => {
-            const item = { test: 'test' };
-
-            await expect(noAuthClient.customStorage.create({ item })).rejects.toMatchObject({
+            await expect(
+                noAuthClient.customStorage.create({ item: testDocumentA })
+            ).rejects.toMatchObject({
                 code: 'UNAUTHORIZED',
             });
             await expect(
-                userB.clients.partialAuth.customStorage.create({ item })
+                userB.clients.partialAuth.customStorage.create({ item: testDocumentA })
             ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
         });
 
         it('should allow storing an arbitrary object', async () => {
-            const item = { test: 'test' };
-
             await expect(
-                userA.clients.fullAuth.customStorage.create({ item })
+                userA.clients.fullAuth.customStorage.create({ item: testDocumentA })
             ).resolves.not.toThrow();
         });
 
         it('should allow storing complex objects', async () => {
-            const item = { test: 'test', nested: { other: new Date(), array: [{ nice: 3 }] } };
-
             await expect(
-                userA.clients.fullAuth.customStorage.create({ item })
+                userA.clients.fullAuth.customStorage.create({ item: testDocumentB })
             ).resolves.not.toThrow();
 
-            const retrievedItem = (await userA.clients.fullAuth.customStorage.read())[0];
+            const retrievedItem = (await userA.clients.fullAuth.customStorage.read()).records[0];
 
-            expect(retrievedItem).toMatchObject(item);
+            expect(retrievedItem).toMatchObject(testDocumentB);
         });
     });
 
@@ -81,29 +77,31 @@ describe('Custom Storage', () => {
         });
 
         it('should require full auth to create multiple custom documents', async () => {
-            const items = [{ test: 'test' }, { nice: 'lol' }];
-
-            await expect(noAuthClient.customStorage.createMany({ items })).rejects.toMatchObject({
+            await expect(
+                noAuthClient.customStorage.createMany({ items: [testDocumentA, testDocumentB] })
+            ).rejects.toMatchObject({
                 code: 'UNAUTHORIZED',
             });
             await expect(
-                userB.clients.partialAuth.customStorage.createMany({ items })
+                userB.clients.partialAuth.customStorage.createMany({
+                    items: [testDocumentA, testDocumentB],
+                })
             ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
         });
 
         it('should allow storing multiple objects', async () => {
-            const items = [{ test: 'test' }, { nice: 'nice' }];
-
             await expect(
-                userA.clients.fullAuth.customStorage.createMany({ items })
+                userA.clients.fullAuth.customStorage.createMany({
+                    items: [testDocumentA, testDocumentB],
+                })
             ).resolves.not.toThrow();
         });
 
         it('should allow storing redundant objects', async () => {
-            const items = [{ test: 'test' }, { test: 'test' }];
-
             await expect(
-                userA.clients.fullAuth.customStorage.createMany({ items })
+                userA.clients.fullAuth.customStorage.createMany({
+                    items: [testDocumentA, testDocumentA],
+                })
             ).resolves.not.toThrow();
         });
     });
@@ -127,48 +125,46 @@ describe('Custom Storage', () => {
         });
 
         it('should allow reading an arbitrary object', async () => {
-            const item = { test: 'test' };
-
-            await userA.clients.fullAuth.customStorage.create({ item });
+            await userA.clients.fullAuth.customStorage.create({ item: testDocumentA });
 
             const promise = userA.clients.fullAuth.customStorage.read();
 
             await expect(promise).resolves.not.toThrow();
 
-            const retrievedItem = (await promise)[0];
+            const retrievedItem = (await promise).records[0];
 
-            expect(retrievedItem).toMatchObject(item); // Can't use toEqual because of added _id
+            expect(retrievedItem).toMatchObject(testDocumentA);
         });
 
         it('should allow querying for objects', async () => {
-            const items = [{ test: 'test' }, { test: 'nice' }];
-
-            await userA.clients.fullAuth.customStorage.createMany({ items });
+            await userA.clients.fullAuth.customStorage.createMany({
+                items: [testDocumentA, testDocumentB],
+            });
 
             const testItems = await userA.clients.fullAuth.customStorage.read({
                 query: { test: 'test' },
             });
 
-            expect(testItems).toHaveLength(1);
-            expect(testItems[0]).toMatchObject({ test: 'test' });
+            expect(testItems.records).toHaveLength(1);
+            expect(testItems.records[0]).toMatchObject({ test: 'test' });
 
             const niceItems = await userA.clients.fullAuth.customStorage.read({
                 query: { test: 'nice' },
             });
 
-            expect(niceItems).toHaveLength(1);
-            expect(niceItems[0]).toMatchObject({ test: 'nice' });
+            expect(niceItems.records).toHaveLength(1);
+            expect(niceItems.records[0]).toMatchObject({ test: 'nice' });
 
             const existsItems = await userA.clients.fullAuth.customStorage.read({
                 query: { test: { $exists: true } },
             });
 
-            expect(existsItems).toHaveLength(2);
+            expect(existsItems.records).toHaveLength(2);
         });
 
         it('should allow numeric comparisons when querying', async () => {
-            const low = { number: 1 };
-            const high = { number: 10 };
+            const low = { ...testDocumentA, number: 1 };
+            const high = { ...testDocumentB, number: 10 };
 
             await userA.clients.fullAuth.customStorage.createMany({ items: [low, high] });
 
@@ -176,13 +172,13 @@ describe('Custom Storage', () => {
                 query: { number: { $gt: 5 } },
             });
 
-            expect(retrievedItems).toHaveLength(1);
-            expect(retrievedItems[0]).toMatchObject(high);
+            expect(retrievedItems.records).toHaveLength(1);
+            expect(retrievedItems.records[0]).toMatchObject(high);
         });
 
         it('should store different documents for different users', async () => {
-            const userAItem = { test: 'userA' };
-            const userBItem = { test: 'userB' };
+            const userAItem = testDocumentA;
+            const userBItem = testDocumentB;
 
             await userA.clients.fullAuth.customStorage.create({ item: userAItem });
             await userB.clients.fullAuth.customStorage.create({ item: userBItem });
@@ -190,11 +186,11 @@ describe('Custom Storage', () => {
             const userAItems = await userA.clients.fullAuth.customStorage.read();
             const userBItems = await userB.clients.fullAuth.customStorage.read();
 
-            expect(userAItems).toHaveLength(1);
-            expect(userAItems[0]).toMatchObject(userAItem);
+            expect(userAItems.records).toHaveLength(1);
+            expect(userAItems.records[0]).toMatchObject(userAItem);
 
-            expect(userBItems).toHaveLength(1);
-            expect(userBItems[0]).toMatchObject(userBItem);
+            expect(userBItems.records).toHaveLength(1);
+            expect(userBItems.records[0]).toMatchObject(userBItem);
         });
     });
 
@@ -217,9 +213,7 @@ describe('Custom Storage', () => {
         });
 
         it('should allow counting arbitrary objects', async () => {
-            const item = { test: 'test' };
-
-            await userA.clients.fullAuth.customStorage.create({ item });
+            await userA.clients.fullAuth.customStorage.create({ item: testDocumentA });
 
             const promise = userA.clients.fullAuth.customStorage.count();
 
@@ -231,9 +225,9 @@ describe('Custom Storage', () => {
         });
 
         it('should allow counting queries for objects', async () => {
-            const items = [{ test: 'test' }, { test: 'nice' }];
-
-            await userA.clients.fullAuth.customStorage.createMany({ items });
+            await userA.clients.fullAuth.customStorage.createMany({
+                items: [testDocumentA, testDocumentB],
+            });
 
             const testCount = await userA.clients.fullAuth.customStorage.count({
                 query: { test: 'test' },
@@ -259,7 +253,7 @@ describe('Custom Storage', () => {
         beforeEach(async () => {
             await CustomDocuments.deleteMany({});
 
-            await userA.clients.fullAuth.customStorage.create({ item: { test: 'test' } });
+            await userA.clients.fullAuth.customStorage.create({ item: testDocumentA });
         });
 
         afterAll(async () => {
@@ -268,14 +262,12 @@ describe('Custom Storage', () => {
 
         it('should require full auth to update custom documents', async () => {
             await expect(
-                noAuthClient.customStorage.update({ update: { $set: { test: 'nice' } } })
+                noAuthClient.customStorage.update({ update: { test: 'nice' } })
             ).rejects.toMatchObject({
                 code: 'UNAUTHORIZED',
             });
             await expect(
-                userB.clients.partialAuth.customStorage.update({
-                    update: { $set: { test: 'nice' } },
-                })
+                userB.clients.partialAuth.customStorage.update({ update: { test: 'nice' } })
             ).rejects.toMatchObject({
                 code: 'UNAUTHORIZED',
             });
@@ -283,7 +275,7 @@ describe('Custom Storage', () => {
 
         it('should allow updating arbitrary objects', async () => {
             const promise = userA.clients.fullAuth.customStorage.update({
-                update: { $set: { test: 'nice' } },
+                update: { test: 'nice' },
             });
 
             await expect(promise).resolves.not.toThrow();
@@ -294,17 +286,17 @@ describe('Custom Storage', () => {
 
             const retrievedItems = await userA.clients.fullAuth.customStorage.read();
 
-            expect(retrievedItems).toHaveLength(1);
-            expect(retrievedItems[0]).toMatchObject({ test: 'nice' });
+            expect(retrievedItems.records).toHaveLength(1);
+            expect(retrievedItems.records[0]).toMatchObject({ test: 'nice' });
         });
 
         it('should allow updating multiple objects', async () => {
             await userA.clients.fullAuth.customStorage.create({
-                item: { test: 'test', nice: 'lol' },
+                item: { ...testDocumentA, nice: 'lol' },
             });
 
             const promise = userA.clients.fullAuth.customStorage.update({
-                update: { $set: { test: 'nice' } },
+                update: { test: 'nice' },
             });
 
             await expect(promise).resolves.not.toThrow();
@@ -315,18 +307,18 @@ describe('Custom Storage', () => {
 
             const retrievedItems = await userA.clients.fullAuth.customStorage.read();
 
-            expect(retrievedItems).toHaveLength(2);
-            expect(retrievedItems.every(item => item.test === 'nice')).toBeTruthy();
+            expect(retrievedItems.records).toHaveLength(2);
+            expect(retrievedItems.records.every(item => item.test === 'nice')).toBeTruthy();
         });
 
         it('should allow selectively updating objects', async () => {
             await userA.clients.fullAuth.customStorage.create({
-                item: { test: 'test', nice: 'lol' },
+                item: { ...testDocumentA, nice: 'lol' },
             });
 
             const promise = userA.clients.fullAuth.customStorage.update({
                 query: { nice: 'lol' },
-                update: { $set: { test: 'nice' } },
+                update: { test: 'nice' },
             });
 
             await expect(promise).resolves.not.toThrow();
@@ -337,9 +329,9 @@ describe('Custom Storage', () => {
 
             const retrievedItems = await userA.clients.fullAuth.customStorage.read();
 
-            expect(retrievedItems).toHaveLength(2);
-            expect(retrievedItems.every(item => item.test === 'nice')).toBeFalsy();
-            expect(retrievedItems.some(item => item.test === 'nice')).toBeTruthy();
+            expect(retrievedItems.records).toHaveLength(2);
+            expect(retrievedItems.records.every(item => item.test === 'nice')).toBeFalsy();
+            expect(retrievedItems.records.some(item => item.test === 'nice')).toBeTruthy();
         });
     });
 
@@ -347,7 +339,7 @@ describe('Custom Storage', () => {
         beforeEach(async () => {
             await CustomDocuments.deleteMany({});
 
-            await userA.clients.fullAuth.customStorage.create({ item: { test: 'test' } });
+            await userA.clients.fullAuth.customStorage.create({ item: testDocumentA });
         });
 
         afterAll(async () => {
@@ -374,12 +366,12 @@ describe('Custom Storage', () => {
 
             const retrievedItems = await userA.clients.fullAuth.customStorage.read();
 
-            expect(retrievedItems).toHaveLength(0);
+            expect(retrievedItems.records).toHaveLength(0);
         });
 
         it('should allow deleting multiple objects', async () => {
             await userA.clients.fullAuth.customStorage.create({
-                item: { test: 'nice', nice: 'lol' },
+                item: { ...testDocumentA, nice: 'lol' },
             });
 
             const promise = userA.clients.fullAuth.customStorage.delete();
@@ -392,12 +384,12 @@ describe('Custom Storage', () => {
 
             const retrievedItems = await userA.clients.fullAuth.customStorage.read();
 
-            expect(retrievedItems).toHaveLength(0);
+            expect(retrievedItems.records).toHaveLength(0);
         });
 
         it('should allow selectively deleting objects', async () => {
             await userA.clients.fullAuth.customStorage.create({
-                item: { test: 'nice', nice: 'lol' },
+                item: { ...testDocumentA, nice: 'lol' },
             });
 
             const promise = userA.clients.fullAuth.customStorage.delete({
@@ -412,8 +404,8 @@ describe('Custom Storage', () => {
 
             const retrievedItems = await userA.clients.fullAuth.customStorage.read();
 
-            expect(retrievedItems).toHaveLength(1);
-            expect(retrievedItems[0]).toMatchObject({ test: 'test' });
+            expect(retrievedItems.records).toHaveLength(1);
+            expect(retrievedItems.records[0]).toMatchObject({ test: 'test' });
         });
     });
 });

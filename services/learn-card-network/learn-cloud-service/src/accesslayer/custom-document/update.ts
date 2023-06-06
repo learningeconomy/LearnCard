@@ -1,4 +1,5 @@
-import { Filter, UpdateFilter } from 'mongodb';
+import { Filter, ObjectId } from 'mongodb';
+import { EncryptedRecord } from '@learncard/types';
 
 import { CustomDocuments } from '.';
 import { MongoCustomDocumentType } from '@models';
@@ -7,7 +8,7 @@ import { getUserForDid } from '@accesslayer/user/read';
 export const updateCustomDocumentsByQuery = async (
     did: string,
     query: Filter<MongoCustomDocumentType> = {},
-    update: UpdateFilter<MongoCustomDocumentType> = {},
+    update: Partial<EncryptedRecord> = {},
     includeAssociatedDids = true
 ): Promise<number> => {
     try {
@@ -19,8 +20,16 @@ export const updateCustomDocumentsByQuery = async (
 
         const dids = [user?.did ?? did, ...(user?.associatedDids ?? [])];
 
-        return (await CustomDocuments.updateMany({ ...query, did: { $in: dids } }, update))
-            .modifiedCount;
+        return (
+            await CustomDocuments.updateMany(
+                {
+                    ...query,
+                    did: { $in: dids },
+                    ...(typeof query._id === 'string' ? { _id: new ObjectId(query._id) } : {}),
+                },
+                { $set: { modified: new Date(), ...update } }
+            )
+        ).modifiedCount;
     } catch (e) {
         console.error(e);
         return 0;

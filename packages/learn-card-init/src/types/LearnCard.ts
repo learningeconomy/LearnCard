@@ -22,7 +22,7 @@ import { InitFunction, GenericInitFunction } from 'types/helpers';
 
 /** @group LearnCard */
 export type LearnCardConfig = {
-    cloud?: { url?: string; unencryptedFields?: string[] };
+    cloud?: { url?: string; unencryptedFields?: string[]; unencryptedCustomFields?: string[] };
     ceramicIdx: CeramicArgs & IDXArgs;
     didkit: InitInput | Promise<InitInput>;
     ethereumConfig: EthereumConfig;

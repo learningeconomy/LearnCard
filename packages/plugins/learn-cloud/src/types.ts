@@ -1,6 +1,12 @@
 import type { DID } from 'dids';
-import type { MongoCustomDocumentType, Filter, UpdateFilter } from '@learncard/learn-cloud-service';
-import { UnsignedVC, VC, VP } from '@learncard/types';
+import type { Filter } from '@learncard/learn-cloud-service';
+import {
+    UnsignedVC,
+    VC,
+    VP,
+    PaginationResponseType,
+    PaginationOptionsType,
+} from '@learncard/types';
 import type { LearnCard, Plugin } from '@learncard/core';
 import type { ProofOptions } from '@learncard/didkit-plugin';
 
@@ -17,23 +23,31 @@ export type LearnCloudPluginDependentMethods = {
 
 /** @group LearnCloud Plugin */
 export type LearnCloudPluginMethods = {
-    learnCloudCreate: (document: MongoCustomDocumentType) => Promise<boolean>;
-    learnCloudCreateMany: (documents: MongoCustomDocumentType[]) => Promise<boolean>;
-    learnCloudRead: (
-        query: Filter<MongoCustomDocumentType>,
+    learnCloudCreate: <Document extends Record<string, any>>(
+        document: Document
+    ) => Promise<boolean>;
+    learnCloudCreateMany: <Document extends Record<string, any>>(
+        documents: Document[]
+    ) => Promise<boolean>;
+    learnCloudRead: <Document extends Record<string, any>>(
+        query: Filter<Document>,
         includeAssociatedDids?: boolean
-    ) => Promise<MongoCustomDocumentType[]>;
-    learnCloudCount: (
-        query: Filter<MongoCustomDocumentType>,
+    ) => Promise<Document[]>;
+    learnCloudReadPage: <Document extends Record<string, any>>(
+        query: Filter<Document>,
+        paginationOptions?: Partial<PaginationOptionsType>,
+        includeAssociatedDids?: boolean
+    ) => Promise<PaginationResponseType & { records: Document[] }>;
+    learnCloudCount: <Document extends Record<string, any>>(
+        query: Filter<Document>,
         includeAssociatedDids?: boolean
     ) => Promise<number>;
-    learnCloudUpdate: (
-        query: Filter<MongoCustomDocumentType>,
-        update: UpdateFilter<MongoCustomDocumentType>,
-        includeAssociatedDids?: boolean
+    learnCloudUpdate: <Document extends Record<string, any>>(
+        query: Filter<Document>,
+        update: Partial<Document>
     ) => Promise<number>;
-    learnCloudDelete: (
-        query: Filter<MongoCustomDocumentType>,
+    learnCloudDelete: <Document extends Record<string, any>>(
+        query: Filter<Document>,
         includeAssociatedDids?: boolean
     ) => Promise<number | false>;
 };

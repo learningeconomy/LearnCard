@@ -1,4 +1,4 @@
-import { Filter } from 'mongodb';
+import { Filter, ObjectId } from 'mongodb';
 
 import { MongoCustomDocumentType } from '@models';
 import { CustomDocuments } from '.';
@@ -11,14 +11,26 @@ export const deleteCustomDocumentsByQuery = async (
 ): Promise<number | false> => {
     try {
         if (!includeAssociatedDids) {
-            return (await CustomDocuments.deleteMany({ ...query, did })).deletedCount;
+            return (
+                await CustomDocuments.deleteMany({
+                    ...query,
+                    did,
+                    ...(typeof query._id === 'string' ? { _id: new ObjectId(query._id) } : {}),
+                })
+            ).deletedCount;
         }
 
         const user = await getUserForDid(did);
 
         const dids = [user?.did ?? did, ...(user?.associatedDids ?? [])];
 
-        return (await CustomDocuments.deleteMany({ ...query, did: { $in: dids } })).deletedCount;
+        return (
+            await CustomDocuments.deleteMany({
+                ...query,
+                did: { $in: dids },
+                ...(typeof query._id === 'string' ? { _id: new ObjectId(query._id) } : {}),
+            })
+        ).deletedCount;
     } catch (e) {
         console.error(e);
         return false;

@@ -1,9 +1,10 @@
-import { Filter, UpdateFilter } from 'mongodb';
+import { Filter } from 'mongodb';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
+import { EncryptedRecordValidator, PaginatedEncryptedRecordsValidator } from '@learncard/types';
 
 import { t, didAndChallengeRoute } from '@routes';
-import { MongoCustomDocumentType, MongoCustomDocumentValidator } from '@models';
+import { MongoCustomDocumentType } from '@models';
 import { createCustomDocument, createCustomDocuments } from '@accesslayer/custom-document/create';
 import {
     countCustomDocumentsByQuery,
@@ -11,6 +12,7 @@ import {
 } from '@accesslayer/custom-document/read';
 import { updateCustomDocumentsByQuery } from '@accesslayer/custom-document/update';
 import { deleteCustomDocumentsByQuery } from '@accesslayer/custom-document/delete';
+import { PaginationOptionsValidator } from 'types/mongo';
 
 export const customStorageRouter = t.router({
     create: didAndChallengeRoute
@@ -25,7 +27,7 @@ export const customStorageRouter = t.router({
                     'This endpoint allows the user to create a document in their custom store.',
             },
         })
-        .input(z.object({ item: MongoCustomDocumentValidator }))
+        .input(z.object({ item: EncryptedRecordValidator }))
         .output(z.boolean())
         .mutation(async ({ ctx, input }) => {
             const id = await createCustomDocument(ctx.user.did, input.item);
@@ -51,7 +53,7 @@ export const customStorageRouter = t.router({
                     'This endpoint allows the user to create a document in their custom store.',
             },
         })
-        .input(z.object({ items: MongoCustomDocumentValidator.array() }))
+        .input(z.object({ items: EncryptedRecordValidator.array() }))
         .output(z.boolean())
         .mutation(async ({ ctx, input }) => {
             const count = await createCustomDocuments(ctx.user.did, input.items);
@@ -79,30 +81,40 @@ export const customStorageRouter = t.router({
             },
         })
         .input(
-            z
-                .object({
-                    query: z
-                        .custom<Filter<MongoCustomDocumentType>>(z.record(z.any()).parse)
-                        .optional(),
-                    includeAssociatedDids: z.boolean().default(true),
-                })
-                .default({})
+            PaginationOptionsValidator.extend({
+                limit: PaginationOptionsValidator.shape.limit.default(25),
+                query: z.record(z.any()).optional(),
+                includeAssociatedDids: z.boolean().default(true),
+            }).default({})
         )
-        .output(MongoCustomDocumentValidator.array())
+        .output(PaginatedEncryptedRecordsValidator)
         .query(async ({ ctx, input }) => {
-            const { query, includeAssociatedDids } = input;
+            const { query, includeAssociatedDids, limit, cursor } = input;
 
-            const results = await getCustomDocumentsByQuery(
+            const rawResults = await getCustomDocumentsByQuery(
                 ctx.user.did,
                 query,
+                cursor,
+                limit + 1,
                 includeAssociatedDids
             );
 
-            return results.map(_result => {
-                const { did, ...result } = _result;
+            const results = rawResults.map(_result => {
+                const { did, cursor: _cursor, modified, created, ...result } = _result;
 
                 return result;
             });
+
+            const hasMore = results.length > limit;
+            const newCursor = rawResults.at(hasMore ? -2 : -1)?.cursor.toString();
+
+            const paginationResult = {
+                records: results.slice(0, limit),
+                hasMore,
+                ...(newCursor ? { cursor: newCursor } : {}),
+            };
+
+            return paginationResult;
         }),
 
     count: didAndChallengeRoute
@@ -151,9 +163,7 @@ export const customStorageRouter = t.router({
                 query: z
                     .custom<Filter<MongoCustomDocumentType>>(z.record(z.any()).parse)
                     .optional(),
-                update: z
-                    .custom<UpdateFilter<MongoCustomDocumentType>>(z.record(z.any()).parse)
-                    .optional(), // For some reason, if this isn't optional, tRPC breaks with a cryptic, [object Object] error...
+                update: EncryptedRecordValidator.partial(),
                 includeAssociatedDids: z.boolean().default(true),
             })
         )

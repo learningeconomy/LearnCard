@@ -25,7 +25,11 @@ import { defaultCeramicIDXArgs, defaultEthereumArgs } from '../defaults';
 export const didWebLearnCardFromSeed = async ({
     seed,
     didWeb,
-    cloud: { url = 'https://cloud.learncard.com/trpc', unencryptedFields = [] } = {},
+    cloud: {
+        url = 'https://cloud.learncard.com/trpc',
+        unencryptedFields = [],
+        unencryptedCustomFields = [],
+    } = {},
     ceramicIdx = defaultCeramicIDXArgs,
     didkit,
     ethereumConfig = defaultEthereumArgs,
@@ -46,7 +50,7 @@ export const didWebLearnCardFromSeed = async ({
     const ceramicLc = await templateLc.addPlugin(await getCeramicPlugin(templateLc, ceramicIdx));
 
     const cloudLc = await ceramicLc.addPlugin(
-        await getLearnCloudPlugin(ceramicLc, url, unencryptedFields)
+        await getLearnCloudPlugin(ceramicLc, url, unencryptedFields, unencryptedCustomFields)
     );
 
     const idxLc = await cloudLc.addPlugin(await getIDXPlugin(cloudLc, ceramicIdx));
