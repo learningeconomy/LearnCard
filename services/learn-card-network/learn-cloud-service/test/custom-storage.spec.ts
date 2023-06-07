@@ -3,6 +3,7 @@ import { CustomDocuments } from '@accesslayer/custom-document';
 
 import { client } from '@mongo';
 import { testDocumentA, testDocumentB } from './helpers/documents';
+import { PaginatedEncryptedRecordsType } from '@learncard/types';
 
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;
@@ -61,7 +62,11 @@ describe('Custom Storage', () => {
                 userA.clients.fullAuth.customStorage.create({ item: testDocumentB })
             ).resolves.not.toThrow();
 
-            const retrievedItem = (await userA.clients.fullAuth.customStorage.read()).records[0];
+            const retrievedItem = (
+                (await userA.clients.fullAuth.customStorage.read({
+                    encrypt: false,
+                })) as PaginatedEncryptedRecordsType
+            ).records[0];
 
             expect(retrievedItem).toMatchObject(testDocumentB);
         });
@@ -127,11 +132,11 @@ describe('Custom Storage', () => {
         it('should allow reading an arbitrary object', async () => {
             await userA.clients.fullAuth.customStorage.create({ item: testDocumentA });
 
-            const promise = userA.clients.fullAuth.customStorage.read();
+            const promise = userA.clients.fullAuth.customStorage.read({ encrypt: false });
 
             await expect(promise).resolves.not.toThrow();
 
-            const retrievedItem = (await promise).records[0];
+            const retrievedItem = ((await promise) as PaginatedEncryptedRecordsType).records[0];
 
             expect(retrievedItem).toMatchObject(testDocumentA);
         });
@@ -141,23 +146,26 @@ describe('Custom Storage', () => {
                 items: [testDocumentA, testDocumentB],
             });
 
-            const testItems = await userA.clients.fullAuth.customStorage.read({
+            const testItems = (await userA.clients.fullAuth.customStorage.read({
                 query: { test: 'test' },
-            });
+                encrypt: false,
+            })) as PaginatedEncryptedRecordsType;
 
             expect(testItems.records).toHaveLength(1);
             expect(testItems.records[0]).toMatchObject({ test: 'test' });
 
-            const niceItems = await userA.clients.fullAuth.customStorage.read({
+            const niceItems = (await userA.clients.fullAuth.customStorage.read({
                 query: { test: 'nice' },
-            });
+                encrypt: false,
+            })) as PaginatedEncryptedRecordsType;
 
             expect(niceItems.records).toHaveLength(1);
             expect(niceItems.records[0]).toMatchObject({ test: 'nice' });
 
-            const existsItems = await userA.clients.fullAuth.customStorage.read({
+            const existsItems = (await userA.clients.fullAuth.customStorage.read({
                 query: { test: { $exists: true } },
-            });
+                encrypt: false,
+            })) as PaginatedEncryptedRecordsType;
 
             expect(existsItems.records).toHaveLength(2);
         });
@@ -168,9 +176,10 @@ describe('Custom Storage', () => {
 
             await userA.clients.fullAuth.customStorage.createMany({ items: [low, high] });
 
-            const retrievedItems = await userA.clients.fullAuth.customStorage.read({
+            const retrievedItems = (await userA.clients.fullAuth.customStorage.read({
                 query: { number: { $gt: 5 } },
-            });
+                encrypt: false,
+            })) as PaginatedEncryptedRecordsType;
 
             expect(retrievedItems.records).toHaveLength(1);
             expect(retrievedItems.records[0]).toMatchObject(high);
@@ -183,8 +192,12 @@ describe('Custom Storage', () => {
             await userA.clients.fullAuth.customStorage.create({ item: userAItem });
             await userB.clients.fullAuth.customStorage.create({ item: userBItem });
 
-            const userAItems = await userA.clients.fullAuth.customStorage.read();
-            const userBItems = await userB.clients.fullAuth.customStorage.read();
+            const userAItems = (await userA.clients.fullAuth.customStorage.read({
+                encrypt: false,
+            })) as PaginatedEncryptedRecordsType;
+            const userBItems = (await userB.clients.fullAuth.customStorage.read({
+                encrypt: false,
+            })) as PaginatedEncryptedRecordsType;
 
             expect(userAItems.records).toHaveLength(1);
             expect(userAItems.records[0]).toMatchObject(userAItem);
@@ -284,7 +297,9 @@ describe('Custom Storage', () => {
 
             expect(count).toEqual(1);
 
-            const retrievedItems = await userA.clients.fullAuth.customStorage.read();
+            const retrievedItems = (await userA.clients.fullAuth.customStorage.read({
+                encrypt: false,
+            })) as PaginatedEncryptedRecordsType;
 
             expect(retrievedItems.records).toHaveLength(1);
             expect(retrievedItems.records[0]).toMatchObject({ test: 'nice' });
@@ -305,7 +320,9 @@ describe('Custom Storage', () => {
 
             expect(count).toEqual(2);
 
-            const retrievedItems = await userA.clients.fullAuth.customStorage.read();
+            const retrievedItems = (await userA.clients.fullAuth.customStorage.read({
+                encrypt: false,
+            })) as PaginatedEncryptedRecordsType;
 
             expect(retrievedItems.records).toHaveLength(2);
             expect(retrievedItems.records.every(item => item.test === 'nice')).toBeTruthy();
@@ -327,7 +344,9 @@ describe('Custom Storage', () => {
 
             expect(count).toEqual(1);
 
-            const retrievedItems = await userA.clients.fullAuth.customStorage.read();
+            const retrievedItems = (await userA.clients.fullAuth.customStorage.read({
+                encrypt: false,
+            })) as PaginatedEncryptedRecordsType;
 
             expect(retrievedItems.records).toHaveLength(2);
             expect(retrievedItems.records.every(item => item.test === 'nice')).toBeFalsy();
@@ -364,7 +383,9 @@ describe('Custom Storage', () => {
 
             expect(count).toEqual(1);
 
-            const retrievedItems = await userA.clients.fullAuth.customStorage.read();
+            const retrievedItems = (await userA.clients.fullAuth.customStorage.read({
+                encrypt: false,
+            })) as PaginatedEncryptedRecordsType;
 
             expect(retrievedItems.records).toHaveLength(0);
         });
@@ -382,7 +403,9 @@ describe('Custom Storage', () => {
 
             expect(count).toEqual(2);
 
-            const retrievedItems = await userA.clients.fullAuth.customStorage.read();
+            const retrievedItems = (await userA.clients.fullAuth.customStorage.read({
+                encrypt: false,
+            })) as PaginatedEncryptedRecordsType;
 
             expect(retrievedItems.records).toHaveLength(0);
         });
@@ -402,7 +425,9 @@ describe('Custom Storage', () => {
 
             expect(count).toEqual(1);
 
-            const retrievedItems = await userA.clients.fullAuth.customStorage.read();
+            const retrievedItems = (await userA.clients.fullAuth.customStorage.read({
+                encrypt: false,
+            })) as PaginatedEncryptedRecordsType;
 
             expect(retrievedItems.records).toHaveLength(1);
             expect(retrievedItems.records[0]).toMatchObject({ test: 'test' });

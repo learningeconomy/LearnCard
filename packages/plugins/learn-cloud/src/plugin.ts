@@ -5,6 +5,7 @@ import { isEncrypted } from '@learncard/helpers';
 import {
     CredentialRecord,
     JWE,
+    PaginatedEncryptedRecordsType,
     PaginatedEncryptedCredentialRecordsType,
     VCValidator,
     VPValidator,
@@ -91,7 +92,9 @@ export const getLearnCloudPlugin = async (
                     unencryptedCustomFields
                 );
 
-                return client.customStorage.create.mutate({ item });
+                return client.customStorage.create.mutate({
+                    item: await generateJWE(_learnCard, learnCloudDid, item),
+                });
             },
             learnCloudCreateMany: async (_learnCard, documents) => {
                 await updateLearnCard(_learnCard);
@@ -102,7 +105,9 @@ export const getLearnCloudPlugin = async (
                     )
                 );
 
-                return client.customStorage.createMany.mutate({ items });
+                return client.customStorage.createMany.mutate({
+                    items: await generateJWE(_learnCard, learnCloudDid, items),
+                });
             },
             learnCloudRead: async (_learnCard, query, includeAssociatedDids) => {
                 await updateLearnCard(_learnCard);
@@ -138,10 +143,14 @@ export const getLearnCloudPlugin = async (
                 await updateLearnCard(_learnCard);
 
                 if (!query) {
-                    const encryptedRecords = await client.customStorage.read.query({
+                    const jwe = await client.customStorage.read.query({
                         includeAssociatedDids,
                         ...paginationOptions,
                     });
+
+                    const encryptedRecords = isEncrypted(jwe)
+                        ? await decryptJWE<PaginatedEncryptedRecordsType>(_learnCard, jwe)
+                        : (jwe as PaginatedEncryptedRecordsType);
 
                     return {
                         ...encryptedRecords,
@@ -168,14 +177,18 @@ export const getLearnCloudPlugin = async (
                     )
                 );
 
-                const encryptedRecords = await client.customStorage.read.query({
-                    query: {
+                const jwe = await client.customStorage.read.query({
+                    query: await generateJWE(_learnCard, learnCloudDid, {
                         ...unencryptedEntries,
                         ...(fields.length > 0 ? { fields: { $in: fields } } : {}),
-                    },
+                    }),
                     ...paginationOptions,
                     includeAssociatedDids,
                 });
+
+                const encryptedRecords = isEncrypted(jwe)
+                    ? await decryptJWE<PaginatedEncryptedRecordsType>(_learnCard, jwe)
+                    : (jwe as PaginatedEncryptedRecordsType);
 
                 return {
                     ...encryptedRecords,
@@ -207,10 +220,10 @@ export const getLearnCloudPlugin = async (
                 );
 
                 return client.customStorage.count.query({
-                    query: {
+                    query: await generateJWE(_learnCard, learnCloudDid, {
                         ...unencryptedEntries,
                         ...(fields.length > 0 ? { fields: { $in: fields } } : {}),
-                    },
+                    }),
                     includeAssociatedDids,
                 });
             },
@@ -222,11 +235,17 @@ export const getLearnCloudPlugin = async (
                 const updates = await Promise.all(
                     documents.map(async document =>
                         client.customStorage.update.mutate({
-                            query: { _id: document._id },
-                            update: await generateEncryptedRecord(
+                            query: await generateJWE(_learnCard, learnCloudDid, {
+                                _id: document._id,
+                            }),
+                            update: await generateJWE(
                                 _learnCard,
-                                { ...document, ...update },
-                                unencryptedCustomFields
+                                learnCloudDid,
+                                await generateEncryptedRecord(
+                                    _learnCard,
+                                    { ...document, ...update },
+                                    unencryptedCustomFields
+                                )
                             ),
                         })
                     )
@@ -251,10 +270,10 @@ export const getLearnCloudPlugin = async (
                 );
 
                 return client.customStorage.delete.mutate({
-                    query: {
+                    query: await generateJWE(_learnCard, learnCloudDid, {
                         ...unencryptedEntries,
                         ...(fields.length > 0 ? { fields: { $in: fields } } : {}),
-                    },
+                    }),
                     includeAssociatedDids,
                 });
             },

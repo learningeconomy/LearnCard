@@ -1,7 +1,13 @@
-import { Filter } from 'mongodb';
+import { Filter, ObjectId } from 'mongodb';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
-import { EncryptedRecordValidator, PaginatedEncryptedRecordsValidator } from '@learncard/types';
+import {
+    JWEValidator,
+    EncryptedRecord,
+    EncryptedRecordValidator,
+    PaginatedEncryptedRecordsValidator,
+} from '@learncard/types';
+import { isEncrypted } from '@learncard/helpers';
 
 import { t, didAndChallengeRoute } from '@routes';
 import { MongoCustomDocumentType } from '@models';
@@ -13,6 +19,7 @@ import {
 import { updateCustomDocumentsByQuery } from '@accesslayer/custom-document/update';
 import { deleteCustomDocumentsByQuery } from '@accesslayer/custom-document/delete';
 import { PaginationOptionsValidator } from 'types/mongo';
+import { decryptObject, encryptObject } from '@helpers/encryption.helpers';
 
 export const customStorageRouter = t.router({
     create: didAndChallengeRoute
@@ -27,10 +34,16 @@ export const customStorageRouter = t.router({
                     'This endpoint allows the user to create a document in their custom store.',
             },
         })
-        .input(z.object({ item: EncryptedRecordValidator }))
+        .input(z.object({ item: EncryptedRecordValidator.or(JWEValidator) }))
         .output(z.boolean())
         .mutation(async ({ ctx, input }) => {
-            const id = await createCustomDocument(ctx.user.did, input.item);
+            const { item: _item } = input;
+
+            let item: EncryptedRecord = (_item as any) || [];
+
+            if (isEncrypted(item)) item = await decryptObject(item);
+
+            const id = await createCustomDocument(ctx.user.did, item);
 
             if (!id) {
                 throw new TRPCError({
@@ -53,10 +66,16 @@ export const customStorageRouter = t.router({
                     'This endpoint allows the user to create a document in their custom store.',
             },
         })
-        .input(z.object({ items: EncryptedRecordValidator.array() }))
+        .input(z.object({ items: EncryptedRecordValidator.array().or(JWEValidator) }))
         .output(z.boolean())
         .mutation(async ({ ctx, input }) => {
-            const count = await createCustomDocuments(ctx.user.did, input.items);
+            const { items: _items } = input;
+
+            let items: EncryptedRecord[] = (_items as any) || [];
+
+            if (isEncrypted(items)) items = await decryptObject(items);
+
+            const count = await createCustomDocuments(ctx.user.did, items);
 
             if (count === 0) {
                 throw new TRPCError({
@@ -83,13 +102,21 @@ export const customStorageRouter = t.router({
         .input(
             PaginationOptionsValidator.extend({
                 limit: PaginationOptionsValidator.shape.limit.default(25),
-                query: z.record(z.any()).optional(),
+                query: z.record(z.any()).or(JWEValidator).optional(),
+                encrypt: z.boolean().default(true),
                 includeAssociatedDids: z.boolean().default(true),
             }).default({})
         )
-        .output(PaginatedEncryptedRecordsValidator)
+        .output(PaginatedEncryptedRecordsValidator.or(JWEValidator))
         .query(async ({ ctx, input }) => {
-            const { query, includeAssociatedDids, limit, cursor } = input;
+            const { query: _query, includeAssociatedDids, limit, cursor, encrypt } = input;
+            const {
+                user: { did },
+            } = ctx;
+
+            let query: Record<string, any> = _query || {};
+
+            if (isEncrypted(query)) query = await decryptObject(query);
 
             const rawResults = await getCustomDocumentsByQuery(
                 ctx.user.did,
@@ -100,9 +127,12 @@ export const customStorageRouter = t.router({
             );
 
             const results = rawResults.map(_result => {
-                const { did, cursor: _cursor, modified, created, ...result } = _result;
+                const { did: _did, cursor: _cursor, modified, created, ...result } = _result;
 
-                return result;
+                return {
+                    ...result,
+                    ...(result._id instanceof ObjectId ? { _id: result._id.toString() } : {}),
+                };
             });
 
             const hasMore = results.length > limit;
@@ -113,6 +143,8 @@ export const customStorageRouter = t.router({
                 hasMore,
                 ...(newCursor ? { cursor: newCursor } : {}),
             };
+
+            if (encrypt) return encryptObject(paginationResult, ctx.domain, [did]);
 
             return paginationResult;
         }),
@@ -134,6 +166,7 @@ export const customStorageRouter = t.router({
                 .object({
                     query: z
                         .custom<Filter<MongoCustomDocumentType>>(z.record(z.any()).parse)
+                        .or(JWEValidator)
                         .optional(),
                     includeAssociatedDids: z.boolean().default(true),
                 })
@@ -141,7 +174,11 @@ export const customStorageRouter = t.router({
         )
         .output(z.number())
         .query(async ({ ctx, input }) => {
-            const { query, includeAssociatedDids } = input;
+            const { query: _query, includeAssociatedDids } = input;
+
+            let query: MongoCustomDocumentType = (_query as any) || {};
+
+            if (isEncrypted(query)) query = await decryptObject(query);
 
             return countCustomDocumentsByQuery(ctx.user.did, query, includeAssociatedDids);
         }),
@@ -162,14 +199,21 @@ export const customStorageRouter = t.router({
             z.object({
                 query: z
                     .custom<Filter<MongoCustomDocumentType>>(z.record(z.any()).parse)
+                    .or(JWEValidator)
                     .optional(),
-                update: EncryptedRecordValidator.partial(),
+                update: EncryptedRecordValidator.partial().or(JWEValidator),
                 includeAssociatedDids: z.boolean().default(true),
             })
         )
         .output(z.number())
         .mutation(async ({ ctx, input }) => {
-            const { query, update, includeAssociatedDids } = input;
+            const { query: _query, update: _update, includeAssociatedDids } = input;
+
+            let query: MongoCustomDocumentType = (_query as any) || {};
+            let update: Partial<EncryptedRecord> = (_update as any) || {};
+
+            if (isEncrypted(query)) query = await decryptObject(query);
+            if (isEncrypted(update)) update = await decryptObject(update);
 
             return updateCustomDocumentsByQuery(ctx.user.did, query, update, includeAssociatedDids);
         }),
@@ -191,6 +235,7 @@ export const customStorageRouter = t.router({
                 .object({
                     query: z
                         .custom<Filter<MongoCustomDocumentType>>(z.record(z.any()).parse)
+                        .or(JWEValidator)
                         .optional(),
                     includeAssociatedDids: z.boolean().default(true),
                 })
@@ -198,7 +243,11 @@ export const customStorageRouter = t.router({
         )
         .output(z.number().or(z.literal(false)))
         .mutation(async ({ ctx, input }) => {
-            const { query, includeAssociatedDids } = input;
+            const { query: _query, includeAssociatedDids } = input;
+
+            let query: MongoCustomDocumentType = (_query as any) || {};
+
+            if (isEncrypted(query)) query = await decryptObject(query);
 
             return deleteCustomDocumentsByQuery(ctx.user.did, query, includeAssociatedDids);
         }),

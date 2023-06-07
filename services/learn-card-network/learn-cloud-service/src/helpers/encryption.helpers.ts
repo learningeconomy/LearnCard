@@ -13,3 +13,11 @@ export const encryptObject = async (
         .getDIDObject()
         .createDagJWE(object, [isTest ? learnCard.id.did() : `did:web:${domain}`, ...recipients]);
 };
+
+export const decryptObject = async <Output extends Record<string, any>>(
+    jwe: JWE
+): Promise<Output> => {
+    const learnCard = await getLearnCard();
+
+    return learnCard.invoke.getDIDObject().decryptDagJWE(jwe) as any;
+};
