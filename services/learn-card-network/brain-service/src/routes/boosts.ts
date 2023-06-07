@@ -340,12 +340,7 @@ export const boostsRouter = t.router({
         .output(z.object({ boostUri: z.string(), challenge: z.string() }))
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const {
-                boostUri,
-                challenge = uuid(),
-                claimLinkSA,
-                options = { ttlSeconds: 86_400 },
-            } = input ?? {};
+            const { boostUri, challenge = uuid(), claimLinkSA, options = {} } = input ?? {};
 
             const boost = await getBoostByUri(boostUri);
 

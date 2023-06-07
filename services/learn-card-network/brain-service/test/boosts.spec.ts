@@ -802,6 +802,41 @@ describe('Boosts', () => {
             }
         });
 
+        it('should set NO TTL for a claimable boost if no expiration is specified', async () => {
+            const boosts = await userA.clients.fullAuth.boost.getBoosts();
+            const uri = boosts[0]!.uri;
+
+            const sa = await userA.clients.fullAuth.profile.signingAuthority({
+                endpoint: 'http://localhost:5000/api',
+                name: 'mysa',
+            });
+            if (sa) {
+                const claimLinkSA = {
+                    endpoint: sa.signingAuthority.endpoint,
+                    name: sa.relationship.name,
+                };
+                const challenge = 'mychallenge';
+
+                await expect(
+                    userA.clients.fullAuth.boost.generateClaimLink({
+                        boostUri: uri,
+                        challenge,
+                        claimLinkSA,
+                    })
+                ).resolves.toMatchObject({
+                    boostUri: uri,
+                    challenge,
+                });
+
+                await expect(
+                    getClaimLinkOptionsInfoForBoost(uri, challenge)
+                ).resolves.toMatchObject({});
+                await expect(getTTLForClaimLink(uri, challenge)).resolves.toBe(-1);
+            } else {
+                expect(sa).toBeDefined();
+            }
+        });
+
         it('should allow setting a custom time to live in seconds for a claimable boost', async () => {
             const boosts = await userA.clients.fullAuth.boost.getBoosts();
             const uri = boosts[0]!.uri;
@@ -880,7 +915,11 @@ describe('Boosts', () => {
 
                 // Ensure that the TTL of the claim link is NOT being reset after users claim it.
                 const ttlAfterClaims = await getTTLForClaimLink(uri, challenge);
-                if (ttlBeforeClaims) expect(ttlAfterClaims).toBeLessThan(ttlBeforeClaims);
+                if (ttlBeforeClaims === -1) {
+                    expect(ttlAfterClaims).toBe(ttlBeforeClaims);
+                } else if (ttlBeforeClaims) {
+                    expect(ttlAfterClaims).toBeLessThan(ttlBeforeClaims);
+                }
 
                 await expect(
                     userD.clients.fullAuth.boost.claimBoostWithLink({ boostUri: uri, challenge })
