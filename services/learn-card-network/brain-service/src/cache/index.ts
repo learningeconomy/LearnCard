@@ -48,7 +48,7 @@ export type Cache = {
     set: (
         key: RedisKey,
         value: RedisValue,
-        ttl?: number,
+        ttl?: number | false,
         keepTtl?: boolean
     ) => Promise<'OK' | undefined>;
 
@@ -72,16 +72,27 @@ export const getCache = (): Cache => {
     const cache: Cache = {
         node: new MemoryRedis(),
         set: async (key, value, ttl = DEFAULT_TTL_SECS, keepTtl) => {
-            try {
-                if (keepTtl) {
+            if (keepTtl) {
+                try {
                     if (cache?.redis) return await cache.redis.set(key, value, 'KEEPTTL');
                     if (cache?.node) return await cache.node.set(key, value, 'KEEPTTL');
-                } else {
+                } catch (e) {
+                    console.error('Cache set error', e);
+                }
+            } else if (ttl) {
+                try {
                     if (cache?.redis) return await cache.redis.setex(key, ttl, value);
                     if (cache?.node) return await cache.node.setex(key, ttl, value);
+                } catch (e) {
+                    console.error('Cache set error', e);
                 }
-            } catch (e) {
-                console.error('Cache set error', e);
+            } else {
+                try {
+                    if (cache?.redis) return await cache.redis.set(key, value);
+                    if (cache?.node) return await cache.node.set(key, value);
+                } catch (e) {
+                    console.error('Cache set error', e);
+                }
             }
 
             return undefined;

@@ -52,7 +52,7 @@ export const setValidClaimLinkForBoost = async (
     return cache.set(
         getClaimLinkCacheKey(boostUri, challenge),
         stringifyClaimLinkValue(claimLinkSA, options),
-        options.ttlSeconds
+        options.ttlSeconds ?? false
     );
 };
 
