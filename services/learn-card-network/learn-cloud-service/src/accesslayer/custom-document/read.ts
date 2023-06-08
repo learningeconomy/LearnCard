@@ -90,3 +90,14 @@ export const countCustomDocumentsByQuery = async (
         return 0;
     }
 };
+
+export const getUsageForDid = async (did: string): Promise<number> => {
+    return (
+        (
+            await CustomDocuments.aggregate()
+                .match({ did })
+                .group({ _id: null, combined_object_size: { $sum: { $bsonSize: '$$ROOT' } } })
+                .toArray()
+        )?.[0]?.combined_object_size ?? 0
+    );
+};

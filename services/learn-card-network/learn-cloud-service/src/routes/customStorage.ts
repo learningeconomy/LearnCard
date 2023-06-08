@@ -1,3 +1,4 @@
+import { calculateObjectSize } from 'bson';
 import { Filter, ObjectId } from 'mongodb';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
@@ -15,11 +16,13 @@ import { createCustomDocument, createCustomDocuments } from '@accesslayer/custom
 import {
     countCustomDocumentsByQuery,
     getCustomDocumentsByQuery,
+    getUsageForDid,
 } from '@accesslayer/custom-document/read';
 import { updateCustomDocumentsByQuery } from '@accesslayer/custom-document/update';
 import { deleteCustomDocumentsByQuery } from '@accesslayer/custom-document/delete';
 import { PaginationOptionsValidator } from 'types/mongo';
 import { decryptObject, encryptObject } from '@helpers/encryption.helpers';
+import { MAX_CUSTOM_STORAGE_SIZE } from 'src/constants/limits';
 
 export const customStorageRouter = t.router({
     create: didAndChallengeRoute
@@ -42,6 +45,16 @@ export const customStorageRouter = t.router({
             let item: EncryptedRecord = (_item as any) || [];
 
             if (isEncrypted(item)) item = await decryptObject(item);
+
+            const itemSize = calculateObjectSize(item);
+            const currentUsage = await getUsageForDid(ctx.user.did);
+
+            if (itemSize + currentUsage > MAX_CUSTOM_STORAGE_SIZE) {
+                throw new TRPCError({
+                    code: 'PAYLOAD_TOO_LARGE',
+                    message: 'Cannot store more than 10 MB per did',
+                });
+            }
 
             const id = await createCustomDocument(ctx.user.did, item);
 
@@ -74,6 +87,16 @@ export const customStorageRouter = t.router({
             let items: EncryptedRecord[] = (_items as any) || [];
 
             if (isEncrypted(items)) items = await decryptObject(items);
+
+            const itemSize = calculateObjectSize(items);
+            const currentUsage = await getUsageForDid(ctx.user.did);
+
+            if (itemSize + currentUsage > MAX_CUSTOM_STORAGE_SIZE) {
+                throw new TRPCError({
+                    code: 'PAYLOAD_TOO_LARGE',
+                    message: 'Cannot store more than 10 MB per did',
+                });
+            }
 
             const count = await createCustomDocuments(ctx.user.did, items);
 
@@ -214,6 +237,25 @@ export const customStorageRouter = t.router({
 
             if (isEncrypted(query)) query = await decryptObject(query);
             if (isEncrypted(update)) update = await decryptObject(update);
+
+            const recordsToUpdate = await getCustomDocumentsByQuery(
+                ctx.user.did,
+                query,
+                undefined,
+                Infinity,
+                false
+            );
+
+            const updatedRecords = recordsToUpdate.map(record => ({ ...record, ...update }));
+
+            const updatedRecordsSize = calculateObjectSize(updatedRecords);
+
+            if (updatedRecordsSize > MAX_CUSTOM_STORAGE_SIZE) {
+                throw new TRPCError({
+                    code: 'PAYLOAD_TOO_LARGE',
+                    message: 'Cannot store more than 10 MB per did',
+                });
+            }
 
             return updateCustomDocumentsByQuery(ctx.user.did, query, update, includeAssociatedDids);
         }),
