@@ -5,6 +5,8 @@ import { getChallenges } from '@helpers/challenges.helpers';
 import { t, openRoute, didRoute } from '@routes';
 import { setValidChallengeForDid } from '@cache/challenges';
 
+import packageJson from '../../package.json';
+
 export const utilitiesRouter = t.router({
     healthCheck: openRoute
         .meta({
@@ -19,7 +21,7 @@ export const utilitiesRouter = t.router({
         .input(z.void())
         .output(z.string())
         .query(async () => {
-            return 'Healthy and well!';
+            return `Healthy and well! (Version ${packageJson.version})`;
         }),
 
     getChallenges: didRoute

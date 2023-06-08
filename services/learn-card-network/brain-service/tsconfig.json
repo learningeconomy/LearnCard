@@ -24,7 +24,7 @@
         "declaration": true,
         "emitDeclarationOnly": true,
         "sourceMap": true,
-        "rootDir": "src",
+        "rootDir": ".",
         "baseUrl": ".",
         "paths": {
             "@accesslayer/*": ["src/accesslayer/*"],
