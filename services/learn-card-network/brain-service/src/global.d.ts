@@ -21,3 +21,5 @@ declare module 'ioredis-mock' {
 }
 
 declare module '*.wasm';
+
+declare module '*.json';
