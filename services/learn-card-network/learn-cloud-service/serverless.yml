@@ -17,6 +17,7 @@ custom:
         CACHE_INSTANCE_SIZE: cache.t2.micro
     esbuild:
         packager: pnpm
+        external: bson
         plugins: esbuildWasmPlugin.cjs
         watch:
             pattern: ['src/**/*.ts', 'dids.ts']

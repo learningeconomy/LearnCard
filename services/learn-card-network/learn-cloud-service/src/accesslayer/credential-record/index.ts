@@ -11,3 +11,4 @@ export const CredentialRecords = getCredentialRecordCollection();
 CredentialRecords.createIndex({ cursor: 1 }, { unique: true });
 CredentialRecords.createIndex({ did: 1, cursor: 1 }, { unique: true });
 CredentialRecords.createIndex({ did: 1, fields: 1, cursor: 1 });
+CredentialRecords.createIndex({ did: 1, id: 1 }, { unique: true });

@@ -1,4 +1,4 @@
-import { CredentialRecord, JWE, EncryptedCredentialRecord } from '@learncard/types';
+import { JWE, EncryptedRecord } from '@learncard/types';
 import stringify from 'json-stringify-deterministic';
 import pbkdf2Hmac from 'pbkdf2-hmac';
 
@@ -46,7 +46,7 @@ export const decryptJWE = async <T>(
 
 export const generateEncryptedFieldsArray = async (
     learnCard: LearnCloudDependentLearnCard,
-    record: CredentialRecord,
+    record: Record<string, any>,
     unencryptedFields: string[] = []
 ): Promise<string[]> => {
     const entries = Object.entries(record);
@@ -68,9 +68,9 @@ export const generateEncryptedFieldsArray = async (
 
 export const generateEncryptedRecord = async (
     learnCard: LearnCloudDependentLearnCard,
-    record: CredentialRecord,
+    record: Record<string, any>,
     unencryptedFields: string[] = []
-): Promise<Omit<EncryptedCredentialRecord, 'id'>> => {
+): Promise<EncryptedRecord> => {
     const encryptedRecord = await learnCard.invoke
         .getDIDObject()
         .createDagJWE(record, [learnCard.id.did()]);

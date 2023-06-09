@@ -24,6 +24,7 @@
         "url": "https://github.com/WeLibraryOS/LearnCard/issues"
     },
     "devDependencies": {
+        "@learncard/learn-cloud-service": "workspace:^",
         "@learncard/types": "workspace:*",
         "@types/jest": "^29.2.2",
         "@types/lodash": "^4.14.191",

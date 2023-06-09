@@ -5,6 +5,7 @@ import { isEncrypted } from '@learncard/helpers';
 import {
     CredentialRecord,
     JWE,
+    PaginatedEncryptedRecordsType,
     PaginatedEncryptedCredentialRecordsType,
     VCValidator,
     VPValidator,
@@ -40,7 +41,8 @@ const getLearnCloudClient = async (
 export const getLearnCloudPlugin = async (
     initialLearnCard: LearnCard<any, 'id', LearnCloudPluginDependentMethods>,
     url: string,
-    unencryptedFields: string[] = []
+    unencryptedFields: string[] = [],
+    unencryptedCustomFields: string[] = []
 ): Promise<LearnCloudPlugin> => {
     let learnCard = initialLearnCard;
 
@@ -80,7 +82,202 @@ export const getLearnCloudPlugin = async (
         name: 'LearnCloud',
         displayName: 'LearnCloud',
         description: 'LearnCloud Integration',
-        methods: {},
+        methods: {
+            learnCloudCreate: async (_learnCard, document) => {
+                await updateLearnCard(_learnCard);
+
+                const item = await generateEncryptedRecord(
+                    _learnCard,
+                    document,
+                    unencryptedCustomFields
+                );
+
+                return client.customStorage.create.mutate({
+                    item: await generateJWE(_learnCard, learnCloudDid, item),
+                });
+            },
+            learnCloudCreateMany: async (_learnCard, documents) => {
+                await updateLearnCard(_learnCard);
+
+                const items = await Promise.all(
+                    documents.map(async document =>
+                        generateEncryptedRecord(_learnCard, document, unencryptedCustomFields)
+                    )
+                );
+
+                return client.customStorage.createMany.mutate({
+                    items: await generateJWE(_learnCard, learnCloudDid, items),
+                });
+            },
+            learnCloudRead: async (_learnCard, query, includeAssociatedDids) => {
+                await updateLearnCard(_learnCard);
+
+                const documents: Record<string, any>[] = [];
+
+                let result = await _learnCard.invoke.learnCloudReadPage(
+                    query,
+                    {},
+                    includeAssociatedDids
+                );
+
+                documents.push(...result.records);
+
+                while (result.hasMore) {
+                    result = await _learnCard.invoke.learnCloudReadPage(
+                        query,
+                        {},
+                        includeAssociatedDids
+                    );
+
+                    documents.push(...result.records);
+                }
+
+                return documents;
+            },
+            learnCloudReadPage: async (
+                _learnCard,
+                query,
+                paginationOptions,
+                includeAssociatedDids
+            ) => {
+                await updateLearnCard(_learnCard);
+
+                if (!query) {
+                    const jwe = await client.customStorage.read.query({
+                        includeAssociatedDids,
+                        ...paginationOptions,
+                    });
+
+                    const encryptedRecords = isEncrypted(jwe)
+                        ? await decryptJWE<PaginatedEncryptedRecordsType>(_learnCard, jwe)
+                        : (jwe as PaginatedEncryptedRecordsType);
+
+                    return {
+                        ...encryptedRecords,
+                        records: await Promise.all(
+                            encryptedRecords.records.map(async record => ({
+                                ...(await decryptJWE<CredentialRecord>(
+                                    _learnCard,
+                                    record.encryptedRecord
+                                )),
+                                _id: record._id,
+                            }))
+                        ),
+                    };
+                }
+
+                const fields = await generateEncryptedFieldsArray(_learnCard, query, [
+                    ...unencryptedCustomFields,
+                    '_id',
+                ]);
+
+                const unencryptedEntries = Object.fromEntries(
+                    Object.entries(query).filter(([key]) =>
+                        [...unencryptedCustomFields, '_id'].includes(key)
+                    )
+                );
+
+                const jwe = await client.customStorage.read.query({
+                    query: await generateJWE(_learnCard, learnCloudDid, {
+                        ...unencryptedEntries,
+                        ...(fields.length > 0 ? { fields: { $in: fields } } : {}),
+                    }),
+                    ...paginationOptions,
+                    includeAssociatedDids,
+                });
+
+                const encryptedRecords = isEncrypted(jwe)
+                    ? await decryptJWE<PaginatedEncryptedRecordsType>(_learnCard, jwe)
+                    : (jwe as PaginatedEncryptedRecordsType);
+
+                return {
+                    ...encryptedRecords,
+                    records: await Promise.all(
+                        encryptedRecords.records.map(async record => ({
+                            ...(await decryptJWE<CredentialRecord>(
+                                _learnCard,
+                                record.encryptedRecord
+                            )),
+                            _id: record._id,
+                        }))
+                    ),
+                };
+            },
+            learnCloudCount: async (_learnCard, query, includeAssociatedDids) => {
+                await updateLearnCard(_learnCard);
+
+                if (!query) return client.customStorage.count.query({ includeAssociatedDids });
+
+                const fields = await generateEncryptedFieldsArray(_learnCard, query, [
+                    ...unencryptedCustomFields,
+                    '_id',
+                ]);
+
+                const unencryptedEntries = Object.fromEntries(
+                    Object.entries(query).filter(([key]) =>
+                        [...unencryptedCustomFields, '_id'].includes(key)
+                    )
+                );
+
+                return client.customStorage.count.query({
+                    query: await generateJWE(_learnCard, learnCloudDid, {
+                        ...unencryptedEntries,
+                        ...(fields.length > 0 ? { fields: { $in: fields } } : {}),
+                    }),
+                    includeAssociatedDids,
+                });
+            },
+            learnCloudUpdate: async (_learnCard, query, update) => {
+                await updateLearnCard(_learnCard);
+
+                const documents = await _learnCard.invoke.learnCloudRead(query);
+
+                const updates = await Promise.all(
+                    documents.map(async document =>
+                        client.customStorage.update.mutate({
+                            query: await generateJWE(_learnCard, learnCloudDid, {
+                                _id: document._id,
+                            }),
+                            update: await generateJWE(
+                                _learnCard,
+                                learnCloudDid,
+                                await generateEncryptedRecord(
+                                    _learnCard,
+                                    { ...document, ...update },
+                                    unencryptedCustomFields
+                                )
+                            ),
+                        })
+                    )
+                );
+
+                return updates.reduce((sum, current) => current + sum, 0);
+            },
+            learnCloudDelete: async (_learnCard, query, includeAssociatedDids) => {
+                await updateLearnCard(_learnCard);
+
+                if (!query) return client.customStorage.delete.mutate({ includeAssociatedDids });
+
+                const fields = await generateEncryptedFieldsArray(_learnCard, query, [
+                    ...unencryptedCustomFields,
+                    '_id',
+                ]);
+
+                const unencryptedEntries = Object.fromEntries(
+                    Object.entries(query).filter(([key]) =>
+                        [...unencryptedCustomFields, '_id'].includes(key)
+                    )
+                );
+
+                return client.customStorage.delete.mutate({
+                    query: await generateJWE(_learnCard, learnCloudDid, {
+                        ...unencryptedEntries,
+                        ...(fields.length > 0 ? { fields: { $in: fields } } : {}),
+                    }),
+                    includeAssociatedDids,
+                });
+            },
+        },
         read: {
             get: async (_learnCard, uri) => {
                 if (!uri) return undefined;
@@ -183,7 +380,7 @@ export const getLearnCloudPlugin = async (
 
                 const fields = await generateEncryptedFieldsArray(
                     _learnCard,
-                    query as any,
+                    query,
                     unencryptedFields
                 );
 
@@ -201,7 +398,7 @@ export const getLearnCloudPlugin = async (
                 const jwe = await client.index.get.query({
                     query: await generateJWE(_learnCard, learnCloudDid, {
                         ...unencryptedEntries,
-                        fields: { $in: fields },
+                        ...(fields.length > 0 ? { fields: { $in: fields } } : {}),
                     }),
                     ...paginationOptions,
                 });
@@ -248,7 +445,7 @@ export const getLearnCloudPlugin = async (
 
                 const fields = await generateEncryptedFieldsArray(
                     _learnCard,
-                    query as any,
+                    query,
                     unencryptedFields
                 );
 
@@ -266,7 +463,7 @@ export const getLearnCloudPlugin = async (
                 const jwe = await client.index.count.query({
                     query: await generateJWE(_learnCard, learnCloudDid, {
                         ...unencryptedEntries,
-                        fields: { $in: fields },
+                        ...(fields.length > 0 ? { fields: { $in: fields } } : {}),
                     }),
                 });
 

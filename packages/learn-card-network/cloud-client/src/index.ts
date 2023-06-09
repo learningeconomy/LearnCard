@@ -1,6 +1,10 @@
 import { createTRPCProxyClient, CreateTRPCProxyClient, httpBatchLink } from '@trpc/client';
 import type { inferRouterInputs } from '@trpc/server';
-import type { JWE, PaginatedEncryptedCredentialRecordsType } from '@learncard/types';
+import type {
+    JWE,
+    PaginatedEncryptedRecordsType,
+    PaginatedEncryptedCredentialRecordsType,
+} from '@learncard/types';
 import type { AppRouter } from '@learncard/learn-cloud-service';
 
 import { callbackLink } from './callbackLink';
@@ -9,12 +13,19 @@ type Inputs = inferRouterInputs<AppRouter>;
 
 type Client = CreateTRPCProxyClient<AppRouter>;
 
-type OverriddenClient = Omit<Client, 'index'> & {
+type OverriddenClient = Omit<Client, 'index' | 'customStorage'> & {
     index: Client['index'] & {
         get: {
             query: (
                 args: Inputs['index']['get']
             ) => Promise<PaginatedEncryptedCredentialRecordsType | JWE>;
+        };
+    };
+    customStorage: Omit<Client['customStorage'], 'read'> & {
+        read: {
+            query: (
+                args: Inputs['customStorage']['read']
+            ) => Promise<PaginatedEncryptedRecordsType>;
         };
     };
 };
