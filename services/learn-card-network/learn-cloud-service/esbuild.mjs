@@ -12,7 +12,7 @@ const finalBuildObj = {
     format: 'cjs',
     outdir: 'dist',
     target: 'node18',
-    external: ['bson'],
+    external: [],
     plugins: wasmPlugin,
     minify: true,
 };
