@@ -25,11 +25,12 @@ type VC2BackFaceProps = {
     // convertTagsToSkills?: (tags: string[]) => { [skill: string]: string[] };
     getFileMetadata?: (url: string) => MediaMetadata;
     getVideoMetadata?: (url: string) => VideoMetadata;
-    onMediaAttachmentClick?: (url: string) => void;
+    onMediaAttachmentClick?: (url: string, type: 'photo' | 'document' | 'video' | 'link') => void;
     issueHistory?: IssueHistory[];
     showBackButton?: boolean;
     showFrontFace: () => void;
     customIssueHistoryComponent?: React.ReactNode;
+    enableLightbox?: boolean;
 };
 
 const VC2BackFace: React.FC<VC2BackFaceProps> = ({
@@ -43,6 +44,7 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
     showBackButton,
     showFrontFace,
     customIssueHistoryComponent,
+    enableLightbox,
 }) => {
     const expiration = credential.expirationDate
         ? format(new Date(credential.expirationDate), 'MMM dd, yyyy')
@@ -105,6 +107,7 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
                     getFileMetadata={getFileMetadata}
                     getVideoMetadata={getVideoMetadata}
                     onMediaAttachmentClick={onMediaAttachmentClick}
+                    enableLightbox={enableLightbox}
                 />
             )}
             {/* {credential.notes && <TruncateTextBox headerText="Notes" text={credential.notes} />} */}

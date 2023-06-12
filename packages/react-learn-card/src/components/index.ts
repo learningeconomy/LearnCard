@@ -17,6 +17,7 @@ export * from "./JobListCard/index";
 export * from "./LearnCardCreditCardBackFace/index";
 export * from "./LearnCardCreditCardFrontFace/index";
 export * from "./LearnPill/index";
+export * from "./Lightbox/index";
 export * from "./Loading/index";
 export * from "./MiniVCThumbnail/index";
 export * from "./Notification/index";

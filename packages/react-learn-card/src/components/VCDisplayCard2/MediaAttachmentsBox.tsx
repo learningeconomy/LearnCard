@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import prettyBytes from 'pretty-bytes';
 
 import Camera from '../svgs/Camera';
@@ -8,6 +8,7 @@ import GenericDocumentIcon from '../svgs/GenericDocumentIcon';
 
 import { Attachment } from '../../types';
 import { getBaseUrl } from '../../helpers/url.helpers';
+import { Lightbox, LightboxItem } from '../Lightbox';
 
 export type MediaMetadata = {
     fileExtension?: string;
@@ -25,7 +26,8 @@ type MediaAttachmentsBoxProps = {
     attachments: Attachment[];
     getFileMetadata?: (url: string) => MediaMetadata;
     getVideoMetadata?: (url: string) => VideoMetadata;
-    onMediaAttachmentClick?: (url: string) => void;
+    onMediaAttachmentClick?: (url: string, type: 'photo' | 'document' | 'video' | 'link') => void;
+    enableLightbox?: boolean;
 };
 
 const defaultGetFileMetadata = async (url: string) => {
@@ -77,6 +79,7 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
     getFileMetadata = defaultGetFileMetadata,
     getVideoMetadata = defaultGetVideoMetadata,
     onMediaAttachmentClick,
+    enableLightbox = false,
 }) => {
     const [documentMetadata, setDocumentMetadata] = useState<{
         [documentUrl: string]: MediaMetadata | undefined;
@@ -124,11 +127,33 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
         getMetadata([...documentsAndLinks, ...videos]);
     }, []);
 
+    const [currentLightboxUrl, setCurrentLightboxUrl] = useState<string | undefined>(undefined);
+    const lightboxItems = mediaAttachments.filter(
+        a => a.type === 'photo' || a.type === 'video'
+    ) as LightboxItem[];
+    const handleMediaAttachmentClick = (
+        url: string,
+        type: 'photo' | 'document' | 'video' | 'link'
+    ) => {
+        if (type === 'photo' || type === 'video') {
+            setCurrentLightboxUrl(url);
+        }
+
+        onMediaAttachmentClick?.(url, type);
+    };
+
     return (
         <div className="media-attachments-box bg-white flex flex-col items-start gap-[10px] rounded-[20px] shadow-bottom px-[15px] py-[20px] w-full">
             <h3 className="text-[20px] leading-[20px] text-grayscale-900">Media Attachments</h3>
             {mediaAttachments.length > 0 && (
                 <div className="flex gap-[5px] justify-between flex-wrap w-full">
+                    {enableLightbox && (
+                        <Lightbox
+                            items={lightboxItems}
+                            currentUrl={currentLightboxUrl}
+                            setCurrentUrl={setCurrentLightboxUrl}
+                        />
+                    )}
                     {mediaAttachments.map((media, index) => {
                         let innerContent: React.ReactNode;
                         let title = media.title;
@@ -141,7 +166,7 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
 
                             innerContent = (
                                 <div
-                                    className="absolute top-0 left-0 right-0 bottom-0 bg-cover bg-no-repeat font-poppins text-white text-[12px] font-[400] leading-[17px] flex flex-col justify-end items-start p-[10px] text-left bg-rose-600"
+                                    className="absolute top-0 left-0 right-0 bottom-0 bg-cover bg-no-repeat font-poppins text-white text-[12px] font-[400] leading-[17px] flex flex-col justify-end items-start p-[10px] text-left bg-rose-600 rounded-[15px]"
                                     style={{
                                         backgroundImage: metadata?.imageUrl
                                             ? `linear-gradient(180deg, rgba(0, 0, 0, 0) 44.20%, rgba(0, 0, 0, 0.6) 69%), url(${
@@ -171,24 +196,23 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                             );
                         } else {
                             innerContent = (
-                                <>
-                                    <img
-                                        className="absolute top-0 left-0 right-0 bottom-0"
-                                        src={media.url}
-                                    />
-                                    <Camera className="absolute bottom-[10px] left-[10px] z-10" />
-                                </>
+                                <div className="absolute top-0 left-0 right-0 bottom-0 h-min">
+                                    <img className="rounded-[15px]" src={media.url} />
+                                    <Camera className="relative bottom-[30px] left-[10px] z-10" />
+                                </div>
                             );
                         }
 
-                        const className = `media-attachment ${media.type} w-[49%] pt-[49%] rounded-[15px] overflow-hidden relative`;
+                        const className = `media-attachment ${media.type} w-[49%] pt-[49%] overflow-hidden relative`;
 
-                        if (onMediaAttachmentClick) {
+                        if (onMediaAttachmentClick || enableLightbox) {
                             return (
                                 <button
                                     key={index}
                                     className={className}
-                                    onClick={() => onMediaAttachmentClick(media.url)}
+                                    onClick={() =>
+                                        handleMediaAttachmentClick(media.url, media.type)
+                                    }
                                 >
                                     {innerContent}
                                 </button>
@@ -258,7 +282,9 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                                 <button
                                     key={index}
                                     className={className}
-                                    onClick={() => onMediaAttachmentClick(docOrLink.url)}
+                                    onClick={() =>
+                                        handleMediaAttachmentClick(docOrLink.url, docOrLink.type)
+                                    }
                                 >
                                     {innerContent}
                                 </button>
