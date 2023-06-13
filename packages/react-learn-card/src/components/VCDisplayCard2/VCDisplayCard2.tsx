@@ -1,4 +1,4 @@
-import React, { useLayoutEffect, useState, useRef } from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 
 import { VCVerificationCheckWithSpinner } from '../VCVerificationCheck/VCVerificationCheck';
 import VC2FrontFaceInfo from './VC2FrontFaceInfo';
@@ -9,7 +9,7 @@ import AwardRibbon from '../svgs/AwardRibbon';
 import LeftArrow from '../svgs/LeftArrow';
 import RoundedX from '../svgs/RoundedX';
 
-import { VC, VerificationItem, VerificationStatusEnum, Profile } from '@learncard/types';
+import { Profile, VC, VerificationItem, VerificationStatusEnum } from '@learncard/types';
 import {
     getColorForVerificationStatus,
     getInfoFromCredential,
@@ -36,7 +36,7 @@ export type VCDisplayCard2Props = {
     handleXClick?: () => void;
     getFileMetadata?: (url: string) => MediaMetadata;
     getVideoMetadata?: (url: string) => VideoMetadata;
-    onMediaAttachmentClick?: (url: string) => void;
+    onMediaAttachmentClick?: (url: string, type: 'photo' | 'document' | 'video' | 'link') => void;
     bottomRightIcon?: CredentialIconType;
     customFooterComponent?: React.ReactNode;
     customBodyCardComponent?: React.ReactNode;
@@ -45,6 +45,7 @@ export type VCDisplayCard2Props = {
     issueHistory?: IssueHistory[];
     titleOverride?: string;
     showBackButton?: boolean;
+    enableLightbox?: boolean;
 };
 
 export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
@@ -69,6 +70,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     issueHistory,
     titleOverride,
     showBackButton = true,
+    enableLightbox,
 }) => {
     const {
         title = '',
@@ -204,6 +206,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                             showBackButton={showBackButton}
                             showFrontFace={() => setIsFront(true)}
                             customIssueHistoryComponent={customIssueHistoryComponent}
+                            enableLightbox={enableLightbox}
                         />
                     )}
                     <button
