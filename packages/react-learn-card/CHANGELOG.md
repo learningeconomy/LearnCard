@@ -1,5 +1,14 @@
 # @welibraryos/react-learn-card
 
+## 2.6.9
+
+### Patch Changes
+
+-   [#318](https://github.com/learningeconomy/LearnCard/pull/318) [`ba70a92`](https://github.com/learningeconomy/LearnCard/commit/ba70a922be3f9ac9db8c2dbaf6beade4d678dce0) Thanks [@Cyntheon](https://github.com/Cyntheon)! - Add default lightbox implementation for boost attachments
+
+-   Updated dependencies [[`a0b62f3`](https://github.com/learningeconomy/LearnCard/commit/a0b62f351d32c4e0a788b519dd852aa5df9e6c8a)]:
+    -   @learncard/init@1.0.7
+
 ## 2.6.8
 
 ### Patch Changes

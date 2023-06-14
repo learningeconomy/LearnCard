@@ -1,5 +1,19 @@
 # learn-card-core
 
+## 1.1.0
+
+### Minor Changes
+
+-   [#312](https://github.com/learningeconomy/LearnCard/pull/312) [`a0b62f3`](https://github.com/learningeconomy/LearnCard/commit/a0b62f351d32c4e0a788b519dd852aa5df9e6c8a) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add Custom Storage to LearnCloud
+
+### Patch Changes
+
+-   Updated dependencies [[`a0b62f3`](https://github.com/learningeconomy/LearnCard/commit/a0b62f351d32c4e0a788b519dd852aa5df9e6c8a)]:
+    -   @learncard/learn-cloud-client@1.1.0
+    -   @learncard/core@9.0.2
+    -   @learncard/helpers@1.0.6
+    -   @learncard/didkit-plugin@1.0.4
+
 ## 1.0.6
 
 ### Patch Changes
