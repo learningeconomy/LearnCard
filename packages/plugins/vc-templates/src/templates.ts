@@ -155,8 +155,8 @@ export const VC_TEMPLATES: { [Key in keyof VcTemplates]: (args: VcTemplates[Key]
                                         '@id': 'lcn:boostIdIssuerThumbnail',
                                         '@type': 'xsd:boolean',
                                     },
-                                    showIdIssuerImage: {
-                                        '@id': 'lcn:boostShowIdIssuerImage',
+                                    showIdIssuerThumbnail: {
+                                        '@id': 'lcn:boostShowIdIssuerThumbnail',
                                         '@type': 'xsd:boolean',
                                     },
                                 },
