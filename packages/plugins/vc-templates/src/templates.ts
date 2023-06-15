@@ -133,6 +133,32 @@ export const VC_TEMPLATES: { [Key in keyof VcTemplates]: (args: VcTemplates[Key]
                                         '@id': 'lcn:boostBackgroundColor',
                                         '@type': 'xsd:string',
                                     },
+
+                                    // boost ID type
+                                    fontColor: {
+                                        '@id': 'lcn:boostFontColor',
+                                        '@type': 'xsd:string',
+                                    },
+                                    accentColor: {
+                                        '@id': 'lcn:boostAccentColor',
+                                        '@type': 'xsd:string',
+                                    },
+                                    idBackgroundImage: {
+                                        '@id': 'lcn:boostIdBackgroundImage',
+                                        '@type': 'xsd:string',
+                                    },
+                                    dimIdBackgroundImage: {
+                                        '@id': 'lcn:boostDimIdBackgroundImage',
+                                        '@type': 'xsd:boolean',
+                                    },
+                                    idIssuerThumbnail: {
+                                        '@id': 'lcn:boostIdIssuerThumbnail',
+                                        '@type': 'xsd:boolean',
+                                    },
+                                    showIdIssuerImage: {
+                                        '@id': 'lcn:boostShowIdIssuerImage',
+                                        '@type': 'xsd:boolean',
+                                    },
                                 },
                             },
                             image: {
