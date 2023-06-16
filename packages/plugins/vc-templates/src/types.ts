@@ -15,6 +15,24 @@ export type BoostDisplay = {
     backgroundColor?: string;
 };
 
+export type BoostTemplate = {
+    did?: string;
+    subject?: string;
+    issuanceDate?: string;
+    expirationDate?: string;
+    boostId?: string;
+    boostName?: string;
+    boostImage?: string;
+    achievementId?: string;
+    achievementType?: string;
+    achievementName?: string;
+    achievementDescription?: string;
+    achievementNarrative?: string;
+    achievementImage?: string;
+    attachments?: BoostAttachment[];
+    display?: BoostDisplay;
+};
+
 /** @group VC Templates Plugin */
 export type VcTemplates = {
     basic: { did?: string; subject?: string; issuanceDate?: string };
@@ -28,23 +46,8 @@ export type VcTemplates = {
         issuanceDate?: string;
     };
     jff2: { did?: string; subject?: string; issuanceDate?: string };
-    boost: {
-        did?: string;
-        subject?: string;
-        issuanceDate?: string;
-        expirationDate?: string;
-        boostId?: string;
-        boostName?: string;
-        boostImage?: string;
-        achievementId?: string;
-        achievementType?: string;
-        achievementName?: string;
-        achievementDescription?: string;
-        achievementNarrative?: string;
-        achievementImage?: string;
-        attachments?: BoostAttachment[];
-        display?: BoostDisplay;
-    };
+    boost: BoostTemplate;
+    boostID: BoostTemplate;
 };
 
 /** @group VC Templates Plugin */

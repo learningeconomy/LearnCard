@@ -133,32 +133,6 @@ export const VC_TEMPLATES: { [Key in keyof VcTemplates]: (args: VcTemplates[Key]
                                         '@id': 'lcn:boostBackgroundColor',
                                         '@type': 'xsd:string',
                                     },
-
-                                    // boost ID type
-                                    fontColor: {
-                                        '@id': 'lcn:boostFontColor',
-                                        '@type': 'xsd:string',
-                                    },
-                                    accentColor: {
-                                        '@id': 'lcn:boostAccentColor',
-                                        '@type': 'xsd:string',
-                                    },
-                                    idBackgroundImage: {
-                                        '@id': 'lcn:boostIdBackgroundImage',
-                                        '@type': 'xsd:string',
-                                    },
-                                    dimIdBackgroundImage: {
-                                        '@id': 'lcn:boostDimIdBackgroundImage',
-                                        '@type': 'xsd:boolean',
-                                    },
-                                    idIssuerThumbnail: {
-                                        '@id': 'lcn:boostIdIssuerThumbnail',
-                                        '@type': 'xsd:string',
-                                    },
-                                    showIdIssuerThumbnail: {
-                                        '@id': 'lcn:boostShowIdIssuerThumbnail',
-                                        '@type': 'xsd:boolean',
-                                    },
                                 },
                             },
                             image: {
@@ -188,6 +162,135 @@ export const VC_TEMPLATES: { [Key in keyof VcTemplates]: (args: VcTemplates[Key]
                 },
             ],
             type: ['VerifiableCredential', 'OpenBadgeCredential', 'BoostCredential'],
+            issuer: did,
+            issuanceDate,
+            name: boostName,
+            expirationDate,
+            credentialSubject: {
+                id: subject,
+                type: ['AchievementSubject'],
+                achievement: {
+                    id: achievementId,
+                    type: ['Achievement'],
+                    achievementType: achievementType,
+                    name: achievementName,
+                    description: achievementDescription,
+                    image: achievementImage,
+                    criteria: {
+                        narrative: achievementNarrative,
+                    },
+                },
+            },
+            display,
+            image: boostImage,
+            attachments,
+        }),
+        boostID: ({
+            did = 'did:example:d23dd687a7dc6787646f2eb98d0',
+            subject = 'did:example:d23dd687a7dc6787646f2eb98d0',
+            issuanceDate = '2020-08-19T21:41:50Z',
+            expirationDate,
+            boostName = 'Example Boost',
+            boostId = 'urn:uuid:boost:example:555',
+            boostImage,
+            achievementId = 'urn:uuid:123',
+            achievementType = 'Influencer',
+            achievementName = 'Awesome Badge',
+            achievementDescription = 'Awesome People Earn Awesome Badge',
+            achievementNarrative = 'Earned by being awesome.',
+            achievementImage = '',
+            attachments,
+            display,
+        } = {}) => ({
+            '@context': [
+                'https://www.w3.org/2018/credentials/v1',
+                'https://purl.imsglobal.org/spec/ob/v3p0/context.json',
+                {
+                    // id: '@id',
+                    type: '@type',
+                    xsd: 'https://www.w3.org/2001/XMLSchema#',
+                    lcn: 'https://docs.learncard.com/definitions#',
+                    BoostCredential: {
+                        '@id': 'lcn:boostCredential',
+                        '@context': {
+                            boostId: {
+                                '@id': 'lcn:boostId',
+                                '@type': 'xsd:string',
+                            },
+                            display: {
+                                '@id': 'lcn:boostDisplay',
+                                '@context': {
+                                    backgroundImage: {
+                                        '@id': 'lcn:boostBackgroundImage',
+                                        '@type': 'xsd:string',
+                                    },
+                                    backgroundColor: {
+                                        '@id': 'lcn:boostBackgroundColor',
+                                        '@type': 'xsd:string',
+                                    },
+                                },
+                            },
+                            image: {
+                                '@id': 'lcn:boostImage',
+                                '@type': 'xsd:string',
+                            },
+                            attachments: {
+                                '@id': 'lcn:boostAttachments',
+                                '@container': '@set',
+                                '@context': {
+                                    type: {
+                                        '@id': 'lcn:boostAttachmentType',
+                                        '@type': 'xsd:string',
+                                    },
+                                    title: {
+                                        '@id': 'lcn:boostAttachmentTitle',
+                                        '@type': 'xsd:string',
+                                    },
+                                    url: {
+                                        '@id': 'lcn:boostAttachmentUrl',
+                                        '@type': 'xsd:string',
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+                {
+                    type: '@type',
+                    xsd: 'https://www.w3.org/2001/XMLSchema#',
+                    lcn: 'https://docs.learncard.com/definitions#',
+                    BoostID: {
+                        '@id': 'lcn:boostID',
+                        '@context': {
+                            fontColor: {
+                                '@id': 'lcn:boostIDFontColor',
+                                '@type': 'xsd:string',
+                            },
+                            accentColor: {
+                                '@id': 'lcn:boostIDAccentColor',
+                                '@type': 'xsd:string',
+                            },
+                            backgroundImage: {
+                                '@id': 'lcn:boostIDBackgroundImage',
+                                '@type': 'xsd:string',
+                            },
+                            dimBackgroundImage: {
+                                '@id': 'lcn:boostIDDimBackgroundImage',
+                                '@type': 'xsd:boolean',
+                            },
+                            issuerThumbnail: {
+                                '@id': 'lcn:boostIDIssuerThumbnail',
+                                '@type': 'xsd:string',
+                            },
+                            showIssuerThumbnail: {
+                                '@id': 'lcn:boostIDShowIssuerThumbnail',
+                                '@type': 'xsd:boolean',
+                            },
+                        },
+                    },
+                },
+            ],
+            type: ['VerifiableCredential', 'OpenBadgeCredential', 'BoostCredential', 'BoostID'],
             issuer: did,
             issuanceDate,
             name: boostName,
