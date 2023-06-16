@@ -15,6 +15,15 @@ export type BoostDisplay = {
     backgroundColor?: string;
 };
 
+export type BoostID = {
+    fontColor?: string;
+    accentColor?: string;
+    backgroundImage?: string;
+    dimBackgroundImage?: boolean;
+    issuerThumbnail?: string;
+    showIssuerThumbnail?: boolean;
+};
+
 export type BoostTemplate = {
     did?: string;
     subject?: string;
@@ -31,6 +40,7 @@ export type BoostTemplate = {
     achievementImage?: string;
     attachments?: BoostAttachment[];
     display?: BoostDisplay;
+    boostID?: BoostID;
 };
 
 /** @group VC Templates Plugin */

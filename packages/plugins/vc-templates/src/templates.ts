@@ -201,6 +201,7 @@ export const VC_TEMPLATES: { [Key in keyof VcTemplates]: (args: VcTemplates[Key]
             achievementImage = '',
             attachments,
             display,
+            boostID,
         } = {}) => ({
             '@context': [
                 'https://www.w3.org/2018/credentials/v1',
@@ -313,5 +314,6 @@ export const VC_TEMPLATES: { [Key in keyof VcTemplates]: (args: VcTemplates[Key]
             display,
             image: boostImage,
             attachments,
+            boostID,
         }),
     };
