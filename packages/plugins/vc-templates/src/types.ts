@@ -24,6 +24,17 @@ export type BoostID = {
     showIssuerThumbnail?: boolean;
 };
 
+export type AddressSpec = {
+    streetAddress?: string | undefined;
+    addressLocality?: string | undefined;
+    addressRegion?: string | undefined;
+    addressCountry?: string | undefined;
+    postalCode?: string | undefined;
+    geo?: {
+        latitude?: number | undefined;
+        longitude?: number | undefined;
+    };
+};
 export type BoostTemplate = {
     did?: string;
     subject?: string;
@@ -41,6 +52,7 @@ export type BoostTemplate = {
     attachments?: BoostAttachment[];
     display?: BoostDisplay;
     boostID?: BoostID;
+    address?: AddressSpec;
 };
 
 /** @group VC Templates Plugin */
