@@ -264,29 +264,34 @@ export const VC_TEMPLATES: { [Key in keyof VcTemplates]: (args: VcTemplates[Key]
                     BoostID: {
                         '@id': 'lcn:boostID',
                         '@context': {
-                            fontColor: {
-                                '@id': 'lcn:boostIDFontColor',
-                                '@type': 'xsd:string',
-                            },
-                            accentColor: {
-                                '@id': 'lcn:boostIDAccentColor',
-                                '@type': 'xsd:string',
-                            },
-                            backgroundImage: {
-                                '@id': 'lcn:boostIDBackgroundImage',
-                                '@type': 'xsd:string',
-                            },
-                            dimBackgroundImage: {
-                                '@id': 'lcn:boostIDDimBackgroundImage',
-                                '@type': 'xsd:boolean',
-                            },
-                            issuerThumbnail: {
-                                '@id': 'lcn:boostIDIssuerThumbnail',
-                                '@type': 'xsd:string',
-                            },
-                            showIssuerThumbnail: {
-                                '@id': 'lcn:boostIDShowIssuerThumbnail',
-                                '@type': 'xsd:boolean',
+                            boostID: {
+                                '@id': 'lcn:boostIDField',
+                                '@context': {
+                                    fontColor: {
+                                        '@id': 'lcn:boostIDFontColor',
+                                        '@type': 'xsd:string',
+                                    },
+                                    accentColor: {
+                                        '@id': 'lcn:boostIDAccentColor',
+                                        '@type': 'xsd:string',
+                                    },
+                                    backgroundImage: {
+                                        '@id': 'lcn:boostIDBackgroundImage',
+                                        '@type': 'xsd:string',
+                                    },
+                                    dimBackgroundImage: {
+                                        '@id': 'lcn:boostIDDimBackgroundImage',
+                                        '@type': 'xsd:boolean',
+                                    },
+                                    issuerThumbnail: {
+                                        '@id': 'lcn:boostIDIssuerThumbnail',
+                                        '@type': 'xsd:string',
+                                    },
+                                    showIssuerThumbnail: {
+                                        '@id': 'lcn:boostIDShowIssuerThumbnail',
+                                        '@type': 'xsd:boolean',
+                                    },
+                                },
                             },
                         },
                     },
