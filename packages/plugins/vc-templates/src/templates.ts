@@ -157,6 +157,9 @@ export const VC_TEMPLATES: { [Key in keyof VcTemplates]: (args: VcTemplates[Key]
                                     },
                                 },
                             },
+                            address: {
+                                '@id': 'https://purl.imsglobal.org/spec/vc/ob/vocab.html#Address',
+                            },
                         },
                     },
                 },
@@ -253,6 +256,9 @@ export const VC_TEMPLATES: { [Key in keyof VcTemplates]: (args: VcTemplates[Key]
                                         '@type': 'xsd:string',
                                     },
                                 },
+                            },
+                            address: {
+                                '@id': 'https://purl.imsglobal.org/spec/vc/ob/vocab.html#Address',
                             },
                         },
                     },
