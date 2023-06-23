@@ -105,6 +105,9 @@ functions:
                 - Ref: PrivateSubnetA
         events:
             - httpApi: ANY /trpc/{trpc+}
+        package:
+            patterns:
+                - src/**/*
 
     api:
         handler: lambda.openApiHandler
@@ -115,6 +118,9 @@ functions:
                 - Ref: PrivateSubnetA
         events:
             - httpApi: ANY /api/{trpc+}
+        package:
+            patterns:
+                - src/**/*
 
     didWeb:
         handler: lambda.didWebHandler
@@ -130,6 +136,9 @@ functions:
             - httpApi: OPTIONS /.well-known/did.json
         url:
             cors: true
+        package:
+            patterns:
+                - src/**/*
 
     swagger:
         handler: lambda.swaggerUiHandler
