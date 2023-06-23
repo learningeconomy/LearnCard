@@ -1,5 +1,13 @@
 # learn-card-core
 
+## 1.0.9
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-plugin@1.1.2
+    -   @learncard/network-plugin@1.4.20
+
 ## 1.0.8
 
 ### Patch Changes
