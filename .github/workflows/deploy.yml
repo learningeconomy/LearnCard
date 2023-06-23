@@ -92,7 +92,7 @@ jobs:
         run: echo "AFFECTED=$(pnpm exec nx print-affected --base=HEAD~1 --head=HEAD --select=projects)" >> $GITHUB_ENV
 
       - name: Deploy Brain Service Lambda
-        if: contains(env.AFFECTED, 'network-brain-service')
+        # if: contains(env.AFFECTED, 'network-brain-service')
         run: pnpm exec nx serverless-deploy network-brain-service --stage production
 
       - name: Deploy LearnCloud Lambda
