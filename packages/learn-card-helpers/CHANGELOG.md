@@ -1,5 +1,11 @@
 # @learncard/helpers
 
+## 1.0.7
+
+### Patch Changes
+
+-   [#320](https://github.com/learningeconomy/LearnCard/pull/320) [`46aeb32`](https://github.com/learningeconomy/LearnCard/commit/46aeb32c38e5e0246bc04ad9b06fa7d5011701f6) Thanks [@gerardopar](https://github.com/gerardopar)! - [WE-2801] - add additional VC fields
+
 ## 1.0.6
 
 ### Patch Changes
