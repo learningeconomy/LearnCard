@@ -1,5 +1,11 @@
 # @learncard/network-brain-service
 
+## 1.4.17
+
+### Patch Changes
+
+-   [#324](https://github.com/learningeconomy/LearnCard/pull/324) [`5d7ccdc`](https://github.com/learningeconomy/LearnCard/commit/5d7ccdc59792ff6e5fb7f5312c427396ab169068) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix LearnCard Network/Cloud deploys
+
 ## 1.4.16
 
 ### Patch Changes
