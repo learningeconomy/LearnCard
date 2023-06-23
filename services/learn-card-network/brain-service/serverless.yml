@@ -12,6 +12,10 @@ plugins:
     - serverless-domain-manager
     - serverless-certificate-creator
 
+package:
+    patterns:
+        - src/**/*
+
 custom:
     config:
         CACHE_INSTANCE_SIZE: cache.t2.micro
@@ -102,9 +106,6 @@ functions:
                 - Ref: PrivateSubnetA
         events:
             - httpApi: ANY /trpc/{trpc+}
-        package:
-            patterns:
-                - src/**/*
 
     api:
         handler: lambda.openApiHandler
@@ -115,9 +116,6 @@ functions:
                 - Ref: PrivateSubnetA
         events:
             - httpApi: ANY /api/{trpc+}
-        package:
-            patterns:
-                - src/**/*
 
     didWeb:
         handler: lambda.didWebHandler
@@ -133,15 +131,9 @@ functions:
             - httpApi: OPTIONS /.well-known/did.json
         url:
             cors: true
-        package:
-            patterns:
-                - src/**/*
 
     swagger:
         handler: lambda.swaggerUiHandler
-        package:
-            patterns:
-                - src/swagger-ui/**
         events:
             - httpApi: GET /docs
             - httpApi: GET /docs/{trpc+}

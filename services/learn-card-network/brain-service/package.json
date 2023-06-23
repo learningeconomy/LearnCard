@@ -48,7 +48,6 @@
         "@learncard/types": "workspace:*",
         "@learncard/vc-plugin": "workspace:*",
         "@learncard/vc-templates-plugin": "workspace:*",
-        "@trpc/client": "^10.17.0",
         "@trpc/server": "^10.17.0",
         "@types/lodash": "^4.14.191",
         "cors": "^2.8.5",
