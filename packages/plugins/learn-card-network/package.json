@@ -1,6 +1,6 @@
 {
     "name": "@learncard/network-plugin",
-    "version": "1.4.18",
+    "version": "1.4.19",
     "description": "",
     "main": "./dist/index.js",
     "module": "./dist/lcn-plugin.esm.js",

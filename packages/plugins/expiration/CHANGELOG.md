@@ -1,5 +1,13 @@
 # learn-card-core
 
+## 1.0.5
+
+### Patch Changes
+
+-   Updated dependencies [[`46aeb32`](https://github.com/learningeconomy/LearnCard/commit/46aeb32c38e5e0246bc04ad9b06fa7d5011701f6)]:
+    -   @learncard/vc-plugin@1.0.5
+    -   @learncard/core@9.0.3
+
 ## 1.0.4
 
 ### Patch Changes

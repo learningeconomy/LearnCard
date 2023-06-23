@@ -1,5 +1,22 @@
 # @learncard/network-brain-service
 
+## 1.1.1
+
+### Patch Changes
+
+-   Updated dependencies [[`46aeb32`](https://github.com/learningeconomy/LearnCard/commit/46aeb32c38e5e0246bc04ad9b06fa7d5011701f6)]:
+    -   @learncard/helpers@1.0.7
+    -   @learncard/vc-templates-plugin@1.0.4
+    -   @learncard/vc-plugin@1.0.5
+    -   @learncard/core@9.0.3
+    -   @learncard/did-web-plugin@1.0.9
+    -   @learncard/didkey-plugin@1.0.3
+    -   @learncard/expiration-plugin@1.0.5
+    -   @learncard/ceramic-plugin@1.0.3
+    -   @learncard/crypto-plugin@1.0.3
+    -   @learncard/didkit-plugin@1.0.5
+    -   @learncard/learn-card-plugin@1.0.6
+
 ## 1.1.0
 
 ### Minor Changes

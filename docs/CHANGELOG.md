@@ -1,5 +1,11 @@
 # docs
 
+## 0.1.2
+
+### Patch Changes
+
+-   [#322](https://github.com/learningeconomy/LearnCard/pull/322) [`bde35ba`](https://github.com/learningeconomy/LearnCard/commit/bde35baa4821688e97d49e5f5ea2c3f3748e5327) Thanks [@gerardopar](https://github.com/gerardopar)! - bump react to v18
+
 ## 0.1.1
 
 ### Patch Changes

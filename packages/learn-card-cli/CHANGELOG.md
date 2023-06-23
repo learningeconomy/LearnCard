@@ -1,5 +1,15 @@
 # @learncard/cli
 
+## 3.1.8
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.0.3
+    -   @learncard/init@1.0.8
+    -   @learncard/learn-cloud-plugin@1.1.1
+    -   @learncard/didkit-plugin@1.0.5
+
 ## 3.1.7
 
 ### Patch Changes
