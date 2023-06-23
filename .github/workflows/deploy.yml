@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - fix-lcn-deploy
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
@@ -96,7 +95,7 @@ jobs:
         run: pnpm exec nx serverless-deploy network-brain-service --stage production
 
       - name: Deploy LearnCloud Lambda
-        # if: contains(env.AFFECTED, 'learn-cloud-service')
+        if: contains(env.AFFECTED, 'learn-cloud-service')
         run: pnpm exec nx serverless-deploy learn-cloud-service --stage production
 
       - name: Save nx cache
