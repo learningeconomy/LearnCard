@@ -18,6 +18,10 @@ custom:
     esbuild:
         packager: pnpm
         plugins: esbuildWasmPlugin.cjs
+        bundle: true
+        minify: true
+        sourcemap: false
+        target: 'node16'
         watch:
             pattern: ['src/**/*.ts', 'dids.ts']
 
@@ -130,9 +134,6 @@ functions:
 
     swagger:
         handler: lambda.swaggerUiHandler
-        package:
-            patterns:
-                - src/swagger-ui/**
         events:
             - httpApi: GET /docs
             - httpApi: GET /docs/{trpc+}
