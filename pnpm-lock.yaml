@@ -2060,6 +2060,9 @@ importers:
       serverless-domain-manager:
         specifier: ^6.3.1
         version: 6.3.1
+      serverless-esbuild:
+        specifier: ^1.45.1
+        version: 1.45.1(esbuild@0.16.16)
       serverless-http:
         specifier: ^3.2.0
         version: 3.2.0
