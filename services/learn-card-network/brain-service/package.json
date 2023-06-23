@@ -31,6 +31,7 @@
         "serverless": "^3.26.0",
         "serverless-certificate-creator": "^1.6.0",
         "serverless-domain-manager": "^6.3.1",
+        "serverless-esbuild": "^1.45.1",
         "serverless-http": "^3.2.0",
         "shx": "^0.3.4",
         "testcontainers": "^9.1.1"
