@@ -16,6 +16,7 @@ export type RoundedSquareProps = {
     onClick?: () => void;
     bgColor?: string;
     iconCircleClass?: string;
+    loading?: boolean;
 };
 
 export const RoundedSquare: React.FC<RoundedSquareProps> = ({
