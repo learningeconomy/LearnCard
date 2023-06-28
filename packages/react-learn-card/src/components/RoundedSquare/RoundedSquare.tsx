@@ -1,7 +1,6 @@
 import React from 'react';
 
 import CircleIcon from '../CircleIcon/CircleIcon';
-
 import { Icons, WalletCategoryTypes } from '../../types';
 import { ICONS_TO_SOURCE } from '../../constants/icons';
 import { TYPE_TO_IMG_SRC, TYPE_TO_WALLET_COLOR } from '../../constants';
@@ -16,6 +15,7 @@ export type RoundedSquareProps = {
     onClick?: () => void;
     bgColor?: string;
     iconCircleClass?: string;
+    loading?: boolean;
 };
 
 export const RoundedSquare: React.FC<RoundedSquareProps> = ({
@@ -28,6 +28,7 @@ export const RoundedSquare: React.FC<RoundedSquareProps> = ({
     onClick = () => {},
     bgColor,
     iconCircleClass = '',
+    loading,
 }) => {
     const imgSource = imgSrc || TYPE_TO_IMG_SRC[type];
     const backgroundColor = bgColor ?? `bg-${TYPE_TO_WALLET_COLOR[type]}`;
@@ -51,7 +52,7 @@ export const RoundedSquare: React.FC<RoundedSquareProps> = ({
             </div>
 
             <div className={`${circleClass} ${iconCircleClass}`}>
-                <CircleIcon iconSrc={iconSrc} count={count} size="40" />
+                <CircleIcon iconSrc={iconSrc} count={count} size="40" loading={loading} />
             </div>
         </button>
     );
