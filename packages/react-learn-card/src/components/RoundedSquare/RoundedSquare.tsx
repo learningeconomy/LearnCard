@@ -65,8 +65,8 @@ export const RoundedSquare: React.FC<RoundedSquareProps> = ({
                     <CircleSpinner
                         color={'white'}
                         loadingState={circleLoadingState}
-                        thickness={2}
-                        size={30}
+                        thickness={3}
+                        size={25}
                     />
                 </div>
             )}
