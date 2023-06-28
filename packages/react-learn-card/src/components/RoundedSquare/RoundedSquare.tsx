@@ -1,7 +1,7 @@
 import React from 'react';
 
 import CircleIcon from '../CircleIcon/CircleIcon';
-
+import CircleSpinner, { CircleLoadingState } from '../Loading/CircleSpinner';
 import { Icons, WalletCategoryTypes } from '../../types';
 import { ICONS_TO_SOURCE } from '../../constants/icons';
 import { TYPE_TO_IMG_SRC, TYPE_TO_WALLET_COLOR } from '../../constants';
@@ -29,10 +29,13 @@ export const RoundedSquare: React.FC<RoundedSquareProps> = ({
     onClick = () => {},
     bgColor,
     iconCircleClass = '',
+    loading,
 }) => {
     const imgSource = imgSrc || TYPE_TO_IMG_SRC[type];
     const backgroundColor = bgColor ?? `bg-${TYPE_TO_WALLET_COLOR[type]}`;
     const circleClass = `flex w-full justify-end icon-display absolute right-[15px] bottom-[10px] max-h-[40px] max-w-[40px] rounded-full`;
+
+    const circleLoadingState = loading ? CircleLoadingState.spin : CircleLoadingState.stop;
 
     return (
         <button
@@ -51,9 +54,22 @@ export const RoundedSquare: React.FC<RoundedSquareProps> = ({
                 </div>
             </div>
 
-            <div className={`${circleClass} ${iconCircleClass}`}>
-                <CircleIcon iconSrc={iconSrc} count={count} size="40" />
-            </div>
+            {!loading && count && (
+                <div className={`${circleClass} ${iconCircleClass}`}>
+                    <CircleIcon iconSrc={iconSrc} count={count} size="40" />
+                </div>
+            )}
+
+            {loading && (
+                <div className={`${circleClass} `}>
+                    <CircleSpinner
+                        color={'white'}
+                        loadingState={circleLoadingState}
+                        thickness={2}
+                        size={30}
+                    />
+                </div>
+            )}
         </button>
     );
 };
