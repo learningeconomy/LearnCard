@@ -44,7 +44,7 @@ export const CountCircle: React.FC<CountCircleProps> = ({
 
     const spinnerStyle = {
         transform: 'translateX(-2px) translateY(1px)',
-    }
+    };
 
     return (
         <section
