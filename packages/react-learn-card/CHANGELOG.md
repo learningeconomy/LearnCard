@@ -1,5 +1,13 @@
 # @welibraryos/react-learn-card
 
+## 2.6.12
+
+### Patch Changes
+
+-   [#329](https://github.com/learningeconomy/LearnCard/pull/329) [`25e1339`](https://github.com/learningeconomy/LearnCard/commit/25e133906bb01c34a61e580cca680a306848bb8b) Thanks [@goblincore](https://github.com/goblincore)! - chore: Add loading spinner display and props to Rounded Square
+
+-   [#329](https://github.com/learningeconomy/LearnCard/pull/329) [`25e1339`](https://github.com/learningeconomy/LearnCard/commit/25e133906bb01c34a61e580cca680a306848bb8b) Thanks [@goblincore](https://github.com/goblincore)! - chore: Add loading spinner display and props to Rounded Square
+
 ## 2.6.11
 
 ### Patch Changes
