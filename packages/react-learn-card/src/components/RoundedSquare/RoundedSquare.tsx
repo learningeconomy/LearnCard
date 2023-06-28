@@ -35,8 +35,6 @@ export const RoundedSquare: React.FC<RoundedSquareProps> = ({
     const backgroundColor = bgColor ?? `bg-${TYPE_TO_WALLET_COLOR[type]}`;
     const circleClass = `flex w-full justify-end icon-display absolute right-[15px] bottom-[10px] max-h-[40px] max-w-[40px] rounded-full`;
 
-    const circleLoadingState = loading ? CircleLoadingState.spin : CircleLoadingState.stop;
-
     return (
         <button
             onClick={onClick}
@@ -54,22 +52,9 @@ export const RoundedSquare: React.FC<RoundedSquareProps> = ({
                 </div>
             </div>
 
-            {!loading && count && (
-                <div className={`${circleClass} ${iconCircleClass}`}>
-                    <CircleIcon iconSrc={iconSrc} count={count} size="40" />
-                </div>
-            )}
-
-            {loading && (
-                <div className={`${circleClass} `}>
-                    <CircleSpinner
-                        color={'white'}
-                        loadingState={circleLoadingState}
-                        thickness={3}
-                        size={25}
-                    />
-                </div>
-            )}
+            <div className={`${circleClass} ${iconCircleClass}`}>
+                <CircleIcon iconSrc={iconSrc} count={count} size="40" loading={loading} />
+            </div>
         </button>
     );
 };
