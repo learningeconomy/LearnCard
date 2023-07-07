@@ -253,7 +253,12 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                                     </span>
                                 </div>
                                 {docOrLink.type === 'document' && metadata && (
-                                    <div className="text-grayscale-600 font-[600] px-[5px]">
+                                    <a
+                                        href={docOrLink.url}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="text-grayscale-600 font-[600] px-[5px] hover:underline"
+                                    >
                                         {fileExtension && (
                                             <span className="uppercase">{fileExtension}</span>
                                         )}
@@ -265,12 +270,17 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                                         )}
                                         {numberOfPages && sizeInBytes && ' • '}
                                         {sizeInBytes && <span>{prettyBytes(sizeInBytes)}</span>}
-                                    </div>
+                                    </a>
                                 )}
                                 {docOrLink.type === 'link' && (
-                                    <div className="text-indigo-500 font-[600] px-[5px]">
+                                    <a
+                                        href={docOrLink.url}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="text-indigo-500 font-[600] px-[5px] hover:underline"
+                                    >
                                         {baseUrl}
-                                    </div>
+                                    </a>
                                 )}
                             </div>
                         );

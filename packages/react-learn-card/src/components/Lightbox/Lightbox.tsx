@@ -1,4 +1,4 @@
-import React, { createRef, useCallback } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 
 export type LightboxItemType = 'photo' | 'video';
@@ -42,11 +42,46 @@ export const Lightbox: React.FC<LightboxProps> = ({ items, currentUrl, setCurren
         }
     }, [currentUrl]);
 
+    const innerRef = useRef<HTMLImageElement>(null);
+
+    useEffect(() => {
+        const keydownListener: (this: Window, e: KeyboardEvent) => any = e => {
+            if (!currentUrl || !currentItem) {
+                return;
+            }
+
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                e.stopPropagation();
+
+                setCurrentUrl(undefined);
+            }
+
+            if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                e.stopPropagation();
+
+                goToNextItem();
+            }
+
+            if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                e.stopPropagation();
+
+                goToPreviousItem();
+            }
+        };
+
+        window.addEventListener('keydown', keydownListener);
+
+        return () => {
+            window.removeEventListener('keydown', keydownListener);
+        };
+    }, [currentUrl, currentItem]);
+
     if (!currentUrl || !currentItem) {
         return null;
     }
-
-    const innerRef = createRef<HTMLImageElement>();
 
     return (
         <>
@@ -58,27 +93,10 @@ export const Lightbox: React.FC<LightboxProps> = ({ items, currentUrl, setCurren
                             setCurrentUrl(undefined);
                         }
                     }}
-                    tabIndex={-1}
-                    onKeyDown={e => {
-                        return; // This doesn't trigger for some reason, so it's disabled for now.
-                        if (e.key === 'Escape') {
-                            setCurrentUrl(undefined);
-                        }
-
-                        if (e.key === 'ArrowRight') {
-                            console.log('next');
-                            goToNextItem();
-                        }
-
-                        if (e.key === 'ArrowLeft') {
-                            console.log('prev');
-                            goToPreviousItem();
-                        }
-                    }}
                 >
                     {currentItem.type === 'photo' && (
                         <img
-                            className="cursor-pointer"
+                            className="cursor-pointer max-w-[90vw] max-h-[90vh]"
                             src={currentUrl}
                             onClick={() => {
                                 window.open(currentUrl, '_blank');
@@ -86,13 +104,16 @@ export const Lightbox: React.FC<LightboxProps> = ({ items, currentUrl, setCurren
                             ref={innerRef}
                         />
                     )}
-                    {currentItem.type === 'video' && currentUrl.includes('youtube.com') && (
-                        <iframe
-                            width="560"
-                            height="315"
-                            src={currentUrl.replace('watch?v=', 'embed/')}
-                        />
-                    )}
+                    {currentItem.type === 'video' &&
+                        new URL(currentUrl).hostname
+                            .replace('www.', '')
+                            .startsWith('youtube.com') && (
+                            <iframe
+                                width="560"
+                                height="315"
+                                src={currentUrl.replace('watch?v=', 'embed/')}
+                            />
+                        )}
                 </div>,
                 document.body
             )}
