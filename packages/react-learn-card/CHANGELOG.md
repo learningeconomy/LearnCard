@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.6.13
+
+### Patch Changes
+
+-   [#332](https://github.com/learningeconomy/LearnCard/pull/332) [`68b0610`](https://github.com/learningeconomy/LearnCard/commit/68b0610a30de0994cb45bbcfa6760a8a0aabf7c6) Thanks [@Cyntheon](https://github.com/Cyntheon)! - Various lightbox iterations
+
 ## 2.6.12
 
 ### Patch Changes
