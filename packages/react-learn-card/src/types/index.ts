@@ -17,6 +17,7 @@ export enum Icons {
     trophylight,
     puzzlelight,
     award,
+    keyIcon,
 }
 
 export enum LCCategoryEnum {
@@ -29,6 +30,7 @@ export enum LCCategoryEnum {
     currency = 'Currency',
     learningHistory = 'Learning History',
     skill = 'Skill',
+    membership = 'Membership',
 }
 
 export enum LCSubtypes {
@@ -47,6 +49,7 @@ export enum WalletCategoryTypes {
     learningHistory = 'learningHistory',
     skills = 'skills',
     socialBadge = 'socialBadge',
+    membership = 'membership',
 }
 
 export type CredentialInfo = {

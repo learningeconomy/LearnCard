@@ -25,6 +25,7 @@ export const WALLET_SUBTYPES = {
     LEARNING_HISTORY: 'learningHistory',
     SKILLS: 'skills',
     SOCIAL_BADGES: 'socialBadges',
+    MEMBERSHIP: 'membership',
 };
 
 export const TYPE_TO_IMG_SRC = {
@@ -35,6 +36,7 @@ export const TYPE_TO_IMG_SRC = {
     [WALLET_SUBTYPES.CURRENCIES]: coinsGraphic,
     [WALLET_SUBTYPES.SKILLS]: skillsGraphic,
     [WALLET_SUBTYPES.SOCIAL_BADGES]: badgeGraphic,
+    [WALLET_SUBTYPES.MEMBERSHIP]: learningHistoryGraphic,
 };
 
 export const TYPE_TO_WALLET_COLOR = {
@@ -45,4 +47,5 @@ export const TYPE_TO_WALLET_COLOR = {
     [WALLET_SUBTYPES.CURRENCIES]: 'cyan-200',
     [WALLET_SUBTYPES.SKILLS]: 'indigo-300',
     [WALLET_SUBTYPES.SOCIAL_BADGES]: 'cyan-200',
+    [WALLET_SUBTYPES.MEMBERSHIP]: 'teal-300',
 };

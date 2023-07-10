@@ -25,6 +25,7 @@ export const TYPE_TO_IMG_SRC = {
     [WalletCategoryTypes.currency]: coinsGraphic,
     [WalletCategoryTypes.skills]: skillsGraphic,
     [WalletCategoryTypes.socialBadge]: socialBadge,
+    [WalletCategoryTypes.membership]: jobhistoryGraphic, // TODO: Add Membership graphic
 };
 
 export const TYPE_TO_WALLET_COLOR = {
@@ -35,6 +36,7 @@ export const TYPE_TO_WALLET_COLOR = {
     [WalletCategoryTypes.currency]: 'cyan-200',
     [WalletCategoryTypes.skills]: 'indigo-300',
     [WalletCategoryTypes.socialBadge]: 'cyan-200',
+    [WalletCategoryTypes.membership]: 'teal-300',
 };
 
 export const TYPE_TO_WALLET_LIGHT_COLOR = {
@@ -45,6 +47,7 @@ export const TYPE_TO_WALLET_LIGHT_COLOR = {
     [WalletCategoryTypes.currency]: 'cyan-200',
     [WalletCategoryTypes.skills]: 'indigo-200',
     [WalletCategoryTypes.socialBadge]: 'cyan-200',
+    [WalletCategoryTypes.membership]: 'teal-200',
 };
 
 export const TYPE_TO_WALLET_DARK_COLOR = {
@@ -55,4 +58,5 @@ export const TYPE_TO_WALLET_DARK_COLOR = {
     [WalletCategoryTypes.currency]: 'cyan-200',
     [WalletCategoryTypes.skills]: 'indigo-400',
     [WalletCategoryTypes.socialBadge]: 'cyan-700',
+    [WalletCategoryTypes.membership]: 'teal-700',
 };

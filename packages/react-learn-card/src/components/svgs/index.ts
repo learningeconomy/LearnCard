@@ -16,6 +16,7 @@ export * from "./GenericArrow";
 export * from "./GenericDocumentIcon";
 export * from "./Graduation";
 export * from "./InfoIcon";
+export * from "./KeyIcon";
 export * from "./LeftArrow";
 export * from "./Lightbulb";
 export * from "./LinkIcon";
