@@ -28,19 +28,14 @@ custom:
     domains:
         # References to 'prod' stage
         production:
-            domainName: network.learncard.com
-            certificateName: network.learncard.com
-
-        # References to 'dev' stage
-        dev:
-            domainName: testnet-network.learncard.com
-            certificateName: testnet-network.learncard.com
+            domainName: scoutnetwork.org
+            certificateName: scoutnetwork.org
 
     # Amazon Certificate Manager
     customCertificate:
         # Route 53 Hosted Zone name
         # don't forget the dot on the end!
-        hostedZoneNames: 'network.learncard.com.'
+        hostedZoneNames: 'scoutnetwork.org.'
 
         # Here we get our certificate name inside custom.domain.STAGE.certificateName
         # STAGE will be automatically filled with the value from "provider > stage"
@@ -73,7 +68,7 @@ provider:
     memorySize: 2048
     timeout: 18
     stage: ${opt:stage, "dev"}
-    region: ${opt:region, "us-east-1"}
+    region: ${opt:region, "ap-northeast-2"}
     environment:
         PORT: ${env:PORT, 3000}
         LAMBDA_STAGE: ${opt:stage, "dev"}
