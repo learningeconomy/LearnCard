@@ -5,7 +5,7 @@ export * from './pkg/didkit_wasm';
 let initialized = false;
 
 export const init = async (
-    arg: InitInput | Promise<InitInput> = 'https://cdn.filestackcontent.com/F3DEJgGARIZV1BpYE5mg'
+    arg: InitInput | Promise<InitInput> = 'https://cdn.filestackcontent.com/NXWgZbAoRVSr3oVsHXpX'
 ) => {
     // allow calling multiple times without reinitializing
     if (initialized) return;
