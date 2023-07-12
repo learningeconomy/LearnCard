@@ -68,7 +68,7 @@ provider:
     memorySize: 2048
     timeout: 18
     stage: ${opt:stage, "dev"}
-    region: ${opt:region, "eu-central-1"}
+    region: ${opt:region, "eu-west-1"}
     environment:
         PORT: ${env:PORT, 3000}
         LAMBDA_STAGE: ${opt:stage, "dev"}
