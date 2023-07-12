@@ -36,7 +36,7 @@ export const TYPE_TO_IMG_SRC = {
     [WALLET_SUBTYPES.CURRENCIES]: coinsGraphic,
     [WALLET_SUBTYPES.SKILLS]: skillsGraphic,
     [WALLET_SUBTYPES.SOCIAL_BADGES]: badgeGraphic,
-    [WALLET_SUBTYPES.MEMBERSHIP]: learningHistoryGraphic,
+    [WALLET_SUBTYPES.MEMBERSHIP]: jobhistoryGraphic,
 };
 
 export const TYPE_TO_WALLET_COLOR = {

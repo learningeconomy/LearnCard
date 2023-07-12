@@ -13,6 +13,7 @@ const getCategoryTextColor = (category = LCCategoryEnum.achievement): string => 
     if (category === LCCategoryEnum.course) return 'text-emerald-700';
     if (category === LCCategoryEnum.job) return 'text-rose-600';
     if (category === LCCategoryEnum.currency) return 'text-cyan-700';
+    if (category === LCCategoryEnum.membership) return 'text-teal-500';
 
     return 'text-spice-600';
 };
@@ -24,7 +25,7 @@ const VCDisplayCardCategoryType: React.FC<{ categoryType?: LCCategoryEnum }> = (
 
     return (
         <span
-            className={`uppercase ${categoryColor} font-poppins text-[12px] font-[600] leading-[12px] select-none`}
+            className={`uppercase font-poppins text-[12px] font-[600] leading-[12px] select-none ${categoryColor}`}
         >
             {categoryType}
         </span>
