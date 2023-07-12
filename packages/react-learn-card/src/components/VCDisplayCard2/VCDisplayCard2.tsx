@@ -46,6 +46,7 @@ export type VCDisplayCard2Props = {
     titleOverride?: string;
     showBackButton?: boolean;
     enableLightbox?: boolean;
+    customRibbonCategoryComponent?: React.ReactNode;
 };
 
 export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
@@ -71,6 +72,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     titleOverride,
     showBackButton = true,
     enableLightbox,
+    customRibbonCategoryComponent,
 }) => {
     const {
         title = '',
@@ -148,7 +150,11 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 className="vc-card-header px-[20px] pb-[10px] pt-[3px] overflow-visible mt-[40px] absolute text-center bg-white border-y-[5px] border-[#EEF2FF] shadow-bottom w-[calc(100%_+_16px)] rounded-t-[8px] z-50"
                 style={{ wordBreak: 'break-word' }}
             >
-                <VCDisplayCardCategoryType categoryType={categoryType} />
+                {customRibbonCategoryComponent && customRibbonCategoryComponent}
+                {!customRibbonCategoryComponent && (
+                    <VCDisplayCardCategoryType categoryType={categoryType} />
+                )}
+
                 <FitText
                     text={_title ?? ''}
                     width={((headerWidth ?? 290) - 40).toString()}
