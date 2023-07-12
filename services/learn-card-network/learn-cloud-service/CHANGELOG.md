@@ -1,5 +1,19 @@
 # @learncard/network-brain-service
 
+## 1.1.3
+
+### Patch Changes
+
+-   [#334](https://github.com/learningeconomy/LearnCard/pull/334) [`a4e4800`](https://github.com/learningeconomy/LearnCard/commit/a4e4800d05ead0336a0e9fb0140ffe2f63d847da) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add CLR context (https://www.imsglobal.org/spec/clr/v2p0)
+
+-   Updated dependencies [[`a4e4800`](https://github.com/learningeconomy/LearnCard/commit/a4e4800d05ead0336a0e9fb0140ffe2f63d847da)]:
+    -   @learncard/didkit-plugin@1.0.6
+    -   @learncard/ceramic-plugin@1.0.3
+    -   @learncard/did-web-plugin@1.0.10
+    -   @learncard/learn-card-plugin@1.0.7
+    -   @learncard/vc-plugin@1.0.6
+    -   @learncard/expiration-plugin@1.0.6
+
 ## 1.1.2
 
 ### Patch Changes
