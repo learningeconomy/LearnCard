@@ -5,6 +5,7 @@ import briefcase from '../assets/images/briefcase.svg';
 import graduation from '../assets/images/graduation.svg';
 import lightbulb from '../assets/images/lightbulb.svg';
 import award from '../assets/images/award.svg';
+import keyIcon from '../assets/images/key-icon.svg';
 
 import puzzlelight from '../assets/images/minipuzzle.svg';
 import trophylight from '../assets/images/minitrophy.svg';
@@ -22,6 +23,7 @@ export {
     trophylight,
     puzzlelight,
     award,
+    keyIcon,
 };
 
 export const ICONS_TO_SOURCE = {
@@ -35,6 +37,7 @@ export const ICONS_TO_SOURCE = {
     [Icons.trophylight]: trophylight,
     [Icons.gradcaplight]: gradcaplight,
     [Icons.award]: award,
+    [Icons.keyIcon]: keyIcon,
 };
 
 export const TYPE_TO_ICON: any = {

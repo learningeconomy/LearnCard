@@ -16,6 +16,7 @@ export type RoundedSquareProps = {
     bgColor?: string;
     iconCircleClass?: string;
     loading?: boolean;
+    containerClass?: string;
 };
 
 export const RoundedSquare: React.FC<RoundedSquareProps> = ({
@@ -29,6 +30,7 @@ export const RoundedSquare: React.FC<RoundedSquareProps> = ({
     bgColor,
     iconCircleClass = '',
     loading,
+    containerClass = '',
 }) => {
     const imgSource = imgSrc || TYPE_TO_IMG_SRC[type];
     const backgroundColor = bgColor ?? `bg-${TYPE_TO_WALLET_COLOR[type]}`;
@@ -37,7 +39,7 @@ export const RoundedSquare: React.FC<RoundedSquareProps> = ({
     return (
         <button
             onClick={onClick}
-            className={`flex relative ${backgroundColor} py-[15px] px-[15px] w-[170px] h-[170px] rounded-[40px] rounded-square-card-container`}
+            className={`flex relative ${backgroundColor} py-[15px] px-[15px] w-[170px] h-[170px] rounded-[40px] rounded-square-card-container ${containerClass}`}
         >
             <div className="w-full relative">
                 <section className="title-headline-container flex items-center">
