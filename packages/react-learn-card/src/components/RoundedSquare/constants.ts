@@ -5,6 +5,7 @@ import learningHistoryGraphic from '../../assets/images/walletlearninghistory.we
 import skillsGraphic from '../../assets/images/walletskills.webp';
 import achievementsGraphic from '../../assets/images/walletTrophy.webp';
 import badgeGraphic from '../../assets/images/badge.png';
+import membershipGraphic from '../../assets/images/membership-graphic.png';
 
 import MiniTrophyIcon from '../../assets/images/minitrophycolored.svg';
 import MiniGradIcon from '../../assets/images/minigradcapcolored.svg';
@@ -36,7 +37,7 @@ export const TYPE_TO_IMG_SRC = {
     [WALLET_SUBTYPES.CURRENCIES]: coinsGraphic,
     [WALLET_SUBTYPES.SKILLS]: skillsGraphic,
     [WALLET_SUBTYPES.SOCIAL_BADGES]: badgeGraphic,
-    [WALLET_SUBTYPES.MEMBERSHIP]: jobhistoryGraphic,
+    [WALLET_SUBTYPES.MEMBERSHIP]: membershipGraphic,
 };
 
 export const TYPE_TO_WALLET_COLOR = {
