@@ -52,7 +52,12 @@ export type VCDependentLearnCard = LearnCard<any, 'id', VCPluginDependentMethods
 export type VCImplicitLearnCard = LearnCard<any, 'id', VCPluginMethods & VCPluginDependentMethods>;
 
 /** @group VC Plugin */
-export type VerifyExtension = { verifyCredential: (credential: VC) => Promise<VerificationCheck> };
+export type VerifyExtension = {
+    verifyCredential: (
+        credential: VC,
+        options?: Partial<ProofOptions>
+    ) => Promise<VerificationCheck>;
+};
 
 /** @group VC Plugin */
 export type VCPlugin = Plugin<'VC', any, VCPluginMethods, 'id', VCPluginDependentMethods>;
