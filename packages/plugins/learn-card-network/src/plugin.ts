@@ -520,8 +520,11 @@ export const getVerifyBoostPlugin = async (
         displayName: 'Verify Boost Extension',
         description: 'Adds a check for validating Boost Credentials.',
         methods: {
-            verifyCredential: async (_learnCard, credential) => {
-                const verificationCheck = await learnCard.invoke.verifyCredential(credential);
+            verifyCredential: async (_learnCard, credential, options) => {
+                const verificationCheck = await learnCard.invoke.verifyCredential(
+                    credential,
+                    options
+                );
                 const boostCredential = credential?.boostCredential;
                 try {
                     if (boostCredential) {
