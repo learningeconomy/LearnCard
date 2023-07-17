@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 1.0.8
+
+### Patch Changes
+
+-   [`630fdcf`](https://github.com/learningeconomy/LearnCard/commit/630fdcf0f55dbef6693f21a32fcefe541e5ec9e6) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix wasm payload issue
+
 ## 1.0.7
 
 ### Patch Changes
