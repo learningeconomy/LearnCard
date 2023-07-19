@@ -47,7 +47,7 @@ program
         globalThis.initLearnCard = initLearnCard;
         globalThis.learnCard = await initLearnCard({
             seed,
-            network: true,
+            network: 'http://localhost:3000/trpc',
             didkit: fs.readFile(
                 require.resolve('@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm')
             ),

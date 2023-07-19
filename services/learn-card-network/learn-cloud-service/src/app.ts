@@ -1,3 +1,4 @@
+import './sentry';
 import { t } from '@routes';
 import { customStorageRouter } from '@routes/customStorage';
 import { indexRouter } from '@routes/indexPlane';

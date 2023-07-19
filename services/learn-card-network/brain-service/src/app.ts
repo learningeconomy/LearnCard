@@ -1,3 +1,4 @@
+import './sentry';
 import { t } from '@routes';
 import { boostsRouter } from '@routes/boosts';
 import { profilesRouter } from '@routes/profiles';

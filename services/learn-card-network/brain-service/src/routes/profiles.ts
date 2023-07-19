@@ -2,6 +2,7 @@ import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { LCNProfileValidator, LCNProfileConnectionStatusEnum } from '@learncard/types';
 import { v4 as uuid } from 'uuid';
+import * as Sentry from '@sentry/serverless';
 
 import {
     cancelConnectionRequest,
@@ -161,7 +162,12 @@ export const profilesRouter = t.router({
             if (selfProfile && (await isRelationshipBlocked(selfProfile, otherProfile))) {
                 return undefined;
             }
-            return otherProfile ? updateDidForProfile(ctx.domain, otherProfile) : undefined;
+            Sentry.captureMessage('TESTING SENTRY! 🚀');
+            throw new TRPCError({
+                code: 'CONFLICT',
+                message: 'TESTING SENTRY! 🚀',
+            });
+            //return otherProfile ? updateDidForProfile(ctx.domain, otherProfile) : undefined;
         }),
 
     searchProfiles: openRoute
