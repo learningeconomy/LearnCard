@@ -1,5 +1,17 @@
 # learn-card-core
 
+## 1.0.8
+
+### Patch Changes
+
+-   [`630fdcf`](https://github.com/learningeconomy/LearnCard/commit/630fdcf0f55dbef6693f21a32fcefe541e5ec9e6) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix wasm payload issue
+
+## 1.0.7
+
+### Patch Changes
+
+-   [#337](https://github.com/learningeconomy/LearnCard/pull/337) [`2caacab`](https://github.com/learningeconomy/LearnCard/commit/2caacab80e7d6beda1f7c6366db85bc7350312c5) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Sync didkit/ssi with upstream
+
 ## 1.0.6
 
 ### Patch Changes

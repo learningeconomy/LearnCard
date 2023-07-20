@@ -5,6 +5,7 @@ import learningHistoryGraphic from '../assets/images/walletlearninghistory.webp'
 import skillsGraphic from '../assets/images/walletskills.webp';
 import achievementsGraphic from '../assets/images/walletTrophy.webp';
 import socialBadge from '../assets/images/social-badge.png';
+import membershipGraphic from '../assets/images/membership-graphic.png';
 
 import MiniTrophyIcon from '../assets/images/minitrophycolored.svg';
 import MiniGradIcon from '../assets/images/minigradcapcolored.svg';
@@ -25,6 +26,7 @@ export const TYPE_TO_IMG_SRC = {
     [WalletCategoryTypes.currency]: coinsGraphic,
     [WalletCategoryTypes.skills]: skillsGraphic,
     [WalletCategoryTypes.socialBadge]: socialBadge,
+    [WalletCategoryTypes.membership]: membershipGraphic,
 };
 
 export const TYPE_TO_WALLET_COLOR = {
@@ -35,6 +37,7 @@ export const TYPE_TO_WALLET_COLOR = {
     [WalletCategoryTypes.currency]: 'cyan-200',
     [WalletCategoryTypes.skills]: 'indigo-300',
     [WalletCategoryTypes.socialBadge]: 'cyan-200',
+    [WalletCategoryTypes.membership]: 'teal-300',
 };
 
 export const TYPE_TO_WALLET_LIGHT_COLOR = {
@@ -45,6 +48,7 @@ export const TYPE_TO_WALLET_LIGHT_COLOR = {
     [WalletCategoryTypes.currency]: 'cyan-200',
     [WalletCategoryTypes.skills]: 'indigo-200',
     [WalletCategoryTypes.socialBadge]: 'cyan-200',
+    [WalletCategoryTypes.membership]: 'teal-200',
 };
 
 export const TYPE_TO_WALLET_DARK_COLOR = {
@@ -55,4 +59,5 @@ export const TYPE_TO_WALLET_DARK_COLOR = {
     [WalletCategoryTypes.currency]: 'cyan-200',
     [WalletCategoryTypes.skills]: 'indigo-400',
     [WalletCategoryTypes.socialBadge]: 'cyan-700',
+    [WalletCategoryTypes.membership]: 'teal-700',
 };

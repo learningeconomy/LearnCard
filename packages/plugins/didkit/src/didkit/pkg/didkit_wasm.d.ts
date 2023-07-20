@@ -221,26 +221,24 @@ export interface InitOutput {
   readonly contextLoader: (a: number, b: number) => number;
   readonly didkit_error_message: () => number;
   readonly didkit_error_code: () => number;
-  readonly __wbindgen_malloc: (a: number, b: number) => number;
-  readonly __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;
+  readonly __wbindgen_malloc: (a: number) => number;
+  readonly __wbindgen_realloc: (a: number, b: number, c: number) => number;
   readonly __wbindgen_export_2: WebAssembly.Table;
-  readonly _dyn_core__ops__function__FnMut__A____Output___R_as_wasm_bindgen__closure__WasmClosure___describe__invoke__h7955a8bde413354d: (a: number, b: number, c: number) => void;
+  readonly _dyn_core__ops__function__FnMut__A____Output___R_as_wasm_bindgen__closure__WasmClosure___describe__invoke__hd6ecfa201cc6ac51: (a: number, b: number, c: number) => void;
   readonly __wbindgen_add_to_stack_pointer: (a: number) => number;
-  readonly __wbindgen_free: (a: number, b: number, c: number) => void;
+  readonly __wbindgen_free: (a: number, b: number) => void;
   readonly __wbindgen_exn_store: (a: number) => void;
-  readonly wasm_bindgen__convert__closures__invoke2_mut__h787c66a4f6d2c392: (a: number, b: number, c: number, d: number) => void;
+  readonly wasm_bindgen__convert__closures__invoke2_mut__h361d90515cfd8001: (a: number, b: number, c: number, d: number) => void;
 }
 
-export type SyncInitInput = BufferSource | WebAssembly.Module;
 /**
-* Instantiates the given `module`, which can either be bytes or
-* a precompiled `WebAssembly.Module`.
+* Synchronously compiles the given `bytes` and instantiates the WebAssembly module.
 *
-* @param {SyncInitInput} module
+* @param {BufferSource} bytes
 *
 * @returns {InitOutput}
 */
-export function initSync(module: SyncInitInput): InitOutput;
+export function initSync(bytes: BufferSource): InitOutput;
 
 /**
 * If `module_or_path` is {RequestInfo} or {URL}, makes a request and
@@ -250,4 +248,4 @@ export function initSync(module: SyncInitInput): InitOutput;
 *
 * @returns {Promise<InitOutput>}
 */
-export default function __wbg_init (module_or_path?: InitInput | Promise<InitInput>): Promise<InitOutput>;
+export default function init (module_or_path?: InitInput | Promise<InitInput>): Promise<InitOutput>;

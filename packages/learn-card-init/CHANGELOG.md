@@ -1,5 +1,37 @@
 # learn-card-core
 
+## 1.0.12
+
+### Patch Changes
+
+-   [`630fdcf`](https://github.com/learningeconomy/LearnCard/commit/630fdcf0f55dbef6693f21a32fcefe541e5ec9e6) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix wasm payload issue
+
+-   Updated dependencies [[`630fdcf`](https://github.com/learningeconomy/LearnCard/commit/630fdcf0f55dbef6693f21a32fcefe541e5ec9e6)]:
+    -   @learncard/didkit-plugin@1.0.8
+    -   @learncard/ceramic-plugin@1.0.3
+    -   @learncard/chapi-plugin@1.0.8
+    -   @learncard/did-web-plugin@1.0.12
+    -   @learncard/learn-card-plugin@1.0.9
+    -   @learncard/network-plugin@1.4.23
+    -   @learncard/learn-cloud-plugin@1.1.5
+    -   @learncard/vc-plugin@1.0.8
+    -   @learncard/expiration-plugin@1.0.8
+
+## 1.0.11
+
+### Patch Changes
+
+-   Updated dependencies [[`2caacab`](https://github.com/learningeconomy/LearnCard/commit/2caacab80e7d6beda1f7c6366db85bc7350312c5)]:
+    -   @learncard/didkit-plugin@1.0.7
+    -   @learncard/learn-cloud-plugin@1.1.4
+    -   @learncard/ceramic-plugin@1.0.3
+    -   @learncard/chapi-plugin@1.0.7
+    -   @learncard/did-web-plugin@1.0.11
+    -   @learncard/learn-card-plugin@1.0.8
+    -   @learncard/network-plugin@1.4.22
+    -   @learncard/vc-plugin@1.0.7
+    -   @learncard/expiration-plugin@1.0.7
+
 ## 1.0.10
 
 ### Patch Changes
