@@ -1,6 +1,6 @@
 # serverless.yml
 
-service: lcn-brain-service
+service: scouts-network-service
 
 frameworkVersion: '3'
 
