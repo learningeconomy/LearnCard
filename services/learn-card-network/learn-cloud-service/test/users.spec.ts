@@ -134,6 +134,50 @@ describe('Users', () => {
             expect(newRecords).toContainEqual(testRecordA);
             expect(newRecords).toContainEqual(testRecordB);
         });
+
+        it('should allow adding a did when user has a different primary did', async () => {
+            const userC = await getUser('c'.repeat(64));
+            const dids = await userA.clients.fullAuth.user.getDids();
+
+            expect(dids).toHaveLength(1);
+            expect(dids).toContain(userA.learnCard.id.did());
+            expect(dids).not.toContain(userB.learnCard.id.did());
+
+            await userA.clients.fullAuth.user.addDid({
+                presentation: await userB.learnCard.invoke.getDidAuthVp(),
+            });
+
+            const newDids = await userA.clients.fullAuth.user.getDids();
+
+            expect(newDids).toHaveLength(2);
+            expect(newDids).toContain(userA.learnCard.id.did());
+            expect(newDids).toContain(userB.learnCard.id.did());
+
+            await userB.clients.fullAuth.user.addDid({
+                presentation: await userC.learnCard.invoke.getDidAuthVp(),
+            });
+
+            const userADids = await userA.clients.fullAuth.user.getDids();
+
+            expect(userADids).toHaveLength(3);
+            expect(userADids).toContain(userA.learnCard.id.did());
+            expect(userADids).toContain(userB.learnCard.id.did());
+            expect(userADids).toContain(userC.learnCard.id.did());
+
+            const userBDids = await userB.clients.fullAuth.user.getDids();
+
+            expect(userBDids).toHaveLength(3);
+            expect(userBDids).toContain(userA.learnCard.id.did());
+            expect(userBDids).toContain(userB.learnCard.id.did());
+            expect(userBDids).toContain(userC.learnCard.id.did());
+
+            const userCDids = await userC.clients.fullAuth.user.getDids();
+
+            expect(userCDids).toHaveLength(3);
+            expect(userCDids).toContain(userA.learnCard.id.did());
+            expect(userCDids).toContain(userB.learnCard.id.did());
+            expect(userCDids).toContain(userC.learnCard.id.did());
+        });
     });
 
     describe('removeDid', () => {
