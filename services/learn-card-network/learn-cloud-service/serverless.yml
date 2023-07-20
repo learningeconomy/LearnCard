@@ -1,6 +1,6 @@
 # serverless.yml
 
-service: learn-cloud-service
+service: scouts-learn-cloud-service
 
 frameworkVersion: '3'
 
@@ -29,16 +29,16 @@ custom:
         # References to 'prod' stage
         production:
             # don't forget the dot on the end!
-            hostedZoneName: 'cloud.learncard.com.'
-            domainName: cloud.learncard.com
-            certificateName: cloud.learncard.com
+            hostedZoneName: 'scoutnetwork.org.'
+            domainName: cloud.scoutnetwork.org
+            certificateName: cloud.scoutnetwork.org
 
         # References to 'dev' stage
         dev:
             # don't forget the dot on the end!
-            hostedZoneName: 'testnet-cloud.learncard.com.'
-            domainName: testnet-cloud.learncard.com
-            certificateName: testnet-cloud.learncard.com
+            hostedZoneName: 'scoutnetwork.org.'
+            domainName: testnet-cloud.scoutnetwork.org
+            certificateName: testnet-cloud.scoutnetwork.org
 
     # Amazon Certificate Manager
     customCertificate:
@@ -76,7 +76,7 @@ provider:
     memorySize: 2048
     timeout: 18
     stage: ${opt:stage, "dev"}
-    region: ${opt:region, "us-east-1"}
+    region: ${opt:region, "eu-west-1"}
     environment:
         PORT: ${env:PORT, 3000}
         LAMBDA_STAGE: ${opt:stage, "dev"}

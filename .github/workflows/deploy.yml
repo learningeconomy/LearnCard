@@ -13,11 +13,11 @@ env:
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
   AWS_DEFAULT_REGION: us-east-1
   SEED: ${{ secrets.SCOUTS_SEED }}
-  LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED }}
-  LEARN_CLOUD_MONGO_URI: ${{ secrets.LEARN_CLOUD_MONGO_URI }}
-  LEARN_CLOUD_MONGO_DB_NAME: ${{ secrets.LEARN_CLOUD_MONGO_DB_NAME }}
+  LEARN_CLOUD_SEED: ${{ secrets.SCOUTS_LEARN_CLOUD_SEED }}
+  LEARN_CLOUD_MONGO_URI: ${{ secrets.SCOUTS_LEARN_CLOUD_MONGO_URI }}
+  LEARN_CLOUD_MONGO_DB_NAME: ${{ secrets.SCOUTS_LEARN_CLOUD_MONGO_DB_NAME }}
   DOMAIN_NAME: ${{ secrets.SCOUTS_DOMAIN_NAME }}
-  NOTIFICATIONS_SERVICE_WEBHOOK_URL: ${{ secrets.NOTIFICATIONS_SERVICE_WEBHOOK_URL }}
+  NOTIFICATIONS_SERVICE_WEBHOOK_URL: ${{ secrets.SCOUTS_NOTIFICATIONS_SERVICE_WEBHOOK_URL }}
   NEO4J_URI: ${{ secrets.SCOUTS_NEO4J_URI }}
   NEO4J_USERNAME: ${{ secrets.SCOUTS_NEO4J_USERNAME }}
   NEO4J_PASSWORD: ${{ secrets.SCOUTS_NEO4J_PASSWORD }}
@@ -93,6 +93,10 @@ jobs:
       - name: Deploy Brain Service Lambda
         if: contains(env.AFFECTED, 'network-brain-service')
         run: pnpm exec nx serverless-deploy network-brain-service --stage production
+
+      - name: Deploy LearnCloud Lambda
+        if: contains(env.AFFECTED, 'learn-cloud-service')
+        run: pnpm exec nx serverless-deploy learn-cloud-service --stage production
 
       - name: Save nx cache
         uses: actions/cache/save@v3
