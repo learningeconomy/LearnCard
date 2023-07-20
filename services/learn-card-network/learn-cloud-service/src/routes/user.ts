@@ -68,9 +68,9 @@ export const userRouter = t.router({
                     });
                 }
 
-                await ensureUserForDid(ctx.user.did);
+                const user = await ensureUserForDid(ctx.user.did);
 
-                return addDidToUser(ctx.user.did, did);
+                return addDidToUser(user.did, did);
             }
 
             throw new TRPCError({
