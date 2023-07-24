@@ -9,8 +9,8 @@
         "test:watch": "jest -i --watch",
         "update-didkit": "shx cp ../../../packages/plugins/didkit/src/didkit/pkg/didkit_wasm_bg.wasm src/didkit_wasm_bg.wasm",
         "build": "shx rm -rf dist && pnpm update-didkit && node esbuild.mjs && tsc --p tsconfig.build.json",
-        "start": "pnpm update-didkit && PORT=3000 serverless offline --httpPort 3000 --websocketPort 3001 --lambdaPort 3002 --albPort 3003",
-        "start-p-4000": "pnpm update-didkit && PORT=4000 serverless offline --httpPort 4000 --websocketPort 4001 --lambdaPort 4002 --albPort 4003",
+        "start": "pnpm update-didkit && PORT=3000 serverless offline --config serverless.local.yml --httpPort 3000 --websocketPort 3001 --lambdaPort 3002 --albPort 3003",
+        "start-p-4000": "pnpm update-didkit && PORT=4000 serverless offline --config serverless.local.yml --httpPort 4000 --websocketPort 4001 --lambdaPort 4002 --albPort 4003",
         "dev": "pnpm start",
         "serverless-deploy": "pnpm update-didkit && serverless deploy"
     },
