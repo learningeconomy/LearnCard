@@ -170,10 +170,12 @@ export const issueCertifiedBoost = async (
             lcnDID = learnCard.id.did();
         }
     } catch (e) {
-        console.warn(
-            'LCN DID Document is unable to resolve while issuing Certified Boost. Reverting to did:key. Is this a test environment?',
-            lcnDID
-        );
+        if (process.env.NODE_ENV !== 'test') {
+            console.warn(
+                'LCN DID Document is unable to resolve while issuing Certified Boost. Reverting to did:key. Is this a test environment?',
+                lcnDID
+            );
+        }
         lcnDID = learnCard.id.did();
     }
 
@@ -226,7 +228,7 @@ export const sendBoost = async (
     const decryptedCredential = await decryptCredential(credential);
     let boostUri: string | undefined;
     if (decryptedCredential) {
-        console.log('🚀 sendBoost:VC Decrypted');
+        if (process.env.NODE_ENV !== 'test') console.log('🚀 sendBoost:VC Decrypted');
         const certifiedBoost = await issueCertifiedBoost(boost, decryptedCredential, domain);
         if (certifiedBoost) {
             const credentialInstance = await storeCredential(certifiedBoost);
@@ -240,7 +242,9 @@ export const sendBoost = async (
             ]);
 
             boostUri = getCredentialUri(credentialInstance.id, domain);
-            console.log('🚀 sendBoost:boost certified', boostUri);
+            if (process.env.NODE_ENV !== 'test') {
+                console.log('🚀 sendBoost:boost certified', boostUri);
+            }
         } else {
             throw new Error('Credential does not match boost template.');
         }
@@ -257,7 +261,9 @@ export const sendBoost = async (
         ]);
 
         boostUri = getCredentialUri(credentialInstance.id, domain);
-        console.log('🚀 sendBoost:boost sent uncertified', boostUri);
+        if (process.env.NODE_ENV !== 'test') {
+            console.log('🚀 sendBoost:boost sent uncertified', boostUri);
+        }
     }
 
     if (typeof boostUri === 'string') {
@@ -274,7 +280,9 @@ export const sendBoost = async (
                     vcUris: [boostUri],
                 },
             });
-            console.log('🚀 sendBoost:notification sent! ✅');
+            if (process.env.NODE_ENV !== 'test') {
+                console.log('🚀 sendBoost:notification sent! ✅');
+            }
         }
         return boostUri;
     } else {
@@ -335,7 +343,6 @@ export const issueClaimLinkBoost = async (
     to: ProfileInstance,
     signingAuthorityForUser: SigningAuthorityForUserType
 ): Promise<string> => {
-    console.log('issueClaimLinkBoost');
     const boostCredential = JSON.parse(boost.dataValues?.boost) as UnsignedVC | VC;
     const boostId = boost?.dataValues?.id;
     const boostURI = getBoostUri(boostId, domain);
@@ -356,7 +363,6 @@ export const issueClaimLinkBoost = async (
         boostCredential.boostId = boostURI;
     }
 
-    console.log('issueCredentialWithSigningAuthority');
     const vc = await issueCredentialWithSigningAuthority(
         from,
         boostCredential,

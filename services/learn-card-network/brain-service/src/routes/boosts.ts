@@ -63,10 +63,14 @@ export const boostsRouter = t.router({
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
             const { profileId, credential, uri } = input;
-            console.log('🚀 BEGIN - Send Boost', JSON.stringify(input));
+
+            if (process.env.NODE_ENV !== 'test') {
+                console.log('🚀 BEGIN - Send Boost', JSON.stringify(input));
+            }
 
             const targetProfile = await getProfileByProfileId(profileId);
             const isBlocked = await isRelationshipBlocked(profile, targetProfile);
+
             if (!targetProfile || isBlocked) {
                 throw new TRPCError({
                     code: 'NOT_FOUND',
