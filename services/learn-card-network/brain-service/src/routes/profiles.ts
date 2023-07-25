@@ -1,6 +1,11 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
-import { LCNProfileValidator, LCNProfileConnectionStatusEnum } from '@learncard/types';
+import {
+    LCNProfileValidator,
+    LCNProfileConnectionStatusEnum,
+    PaginatedLCNProfilesValidator,
+    PaginationOptionsValidator,
+} from '@learncard/types';
 import { v4 as uuid } from 'uuid';
 
 import {
@@ -18,7 +23,7 @@ import {
     getBlockedAndBlockedByIds,
     isRelationshipBlocked,
 } from '@helpers/connection.helpers';
-import { getDidWeb, updateDidForProfile } from '@helpers/did.helpers';
+import { getDidWeb, updateDidForProfile, updateDidForProfiles } from '@helpers/did.helpers';
 
 import { createProfile } from '@accesslayer/profile/create';
 import { deleteProfile } from '@accesslayer/profile/delete';
@@ -475,12 +480,25 @@ export const profilesRouter = t.router({
                 description: "This route shows the current user's connections",
             },
         })
-        .input(z.void())
-        .output(LCNProfileValidator.array())
-        .query(async ({ ctx }) => {
-            const connections = await getConnections(ctx.user.profile);
+        .input(
+            PaginationOptionsValidator.extend({
+                limit: PaginationOptionsValidator.shape.limit.default(25),
+            }).default({})
+        )
+        .output(PaginatedLCNProfilesValidator)
+        .query(async ({ ctx, input }) => {
+            const { limit, cursor } = input;
 
-            return connections.map(connection => updateDidForProfile(ctx.domain, connection));
+            const records = await getConnections(ctx.user.profile, { limit: limit + 1, cursor });
+
+            const hasMore = records.length > limit;
+            const newCursor = records.at(hasMore ? -2 : -1)?.displayName;
+
+            return {
+                hasMore: records.length > limit,
+                records: updateDidForProfiles(ctx.domain, records).slice(0, limit),
+                ...(cursor && { cursor: newCursor }),
+            };
         }),
 
     pendingConnections: profileRoute
@@ -494,12 +512,25 @@ export const profilesRouter = t.router({
                 description: "This route shows the current user's pending connections",
             },
         })
-        .input(z.void())
-        .output(LCNProfileValidator.array())
-        .query(async ({ ctx }) => {
-            const connections = await getPendingConnections(ctx.user.profile);
+        .input(
+            PaginationOptionsValidator.extend({
+                limit: PaginationOptionsValidator.shape.limit.default(25),
+            }).default({})
+        )
+        .output(PaginatedLCNProfilesValidator)
+        .query(async ({ ctx, input }) => {
+            const { limit, cursor } = input;
 
-            return connections.map(connection => updateDidForProfile(ctx.domain, connection));
+            const records = await getPendingConnections(ctx.user.profile, { limit, cursor });
+
+            const hasMore = records.length > limit;
+            const newCursor = records.at(hasMore ? -2 : -1)?.displayName;
+
+            return {
+                hasMore: records.length > limit,
+                records: updateDidForProfiles(ctx.domain, records).slice(0, limit),
+                ...(cursor && { cursor: newCursor }),
+            };
         }),
 
     connectionRequests: profileRoute
@@ -513,12 +544,25 @@ export const profilesRouter = t.router({
                 description: "This route shows the current user's connection requests",
             },
         })
-        .input(z.void())
-        .output(LCNProfileValidator.array())
-        .query(async ({ ctx }) => {
-            const connections = await getConnectionRequests(ctx.user.profile);
+        .input(
+            PaginationOptionsValidator.extend({
+                limit: PaginationOptionsValidator.shape.limit.default(25),
+            }).default({})
+        )
+        .output(PaginatedLCNProfilesValidator)
+        .query(async ({ ctx, input }) => {
+            const { limit, cursor } = input;
 
-            return connections.map(connection => updateDidForProfile(ctx.domain, connection));
+            const records = await getConnectionRequests(ctx.user.profile, { limit, cursor });
+
+            const hasMore = records.length > limit;
+            const newCursor = records.at(hasMore ? -2 : -1)?.displayName;
+
+            return {
+                hasMore: records.length > limit,
+                records: updateDidForProfiles(ctx.domain, records).slice(0, limit),
+                ...(cursor && { cursor: newCursor }),
+            };
         }),
 
     generateInvite: profileRoute

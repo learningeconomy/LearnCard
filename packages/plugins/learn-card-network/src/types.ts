@@ -11,6 +11,8 @@ import {
     LCNSigningAuthorityForUserType,
     LCNBoostClaimLinkSigningAuthorityType,
     LCNBoostClaimLinkOptionsType,
+    PaginationOptionsType,
+    PaginatedLCNProfilesType,
 } from '@learncard/types';
 import { Plugin } from '@learncard/core';
 import { ProofOptions } from '@learncard/didkit-plugin';
@@ -51,9 +53,9 @@ export type LearnCardNetworkPluginMethods = {
     cancelConnectionRequest: (profileId: string) => Promise<boolean>;
     disconnectWith: (profileId: string) => Promise<boolean>;
     acceptConnectionRequest: (id: string) => Promise<boolean>;
-    getConnections: () => Promise<LCNProfile[]>;
-    getPendingConnections: () => Promise<LCNProfile[]>;
-    getConnectionRequests: () => Promise<LCNProfile[]>;
+    getConnections: (options?: PaginationOptionsType) => Promise<PaginatedLCNProfilesType>;
+    getPendingConnections: (options?: PaginationOptionsType) => Promise<PaginatedLCNProfilesType>;
+    getConnectionRequests: (options?: PaginationOptionsType) => Promise<PaginatedLCNProfilesType>;
     generateInvite: (challenge?: string) => Promise<{ profileId: string; challenge: string }>;
 
     blockProfile: (profileId: string) => Promise<boolean>;

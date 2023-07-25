@@ -2,51 +2,85 @@ import { LCNProfileConnectionStatusEnum, LCNNotificationTypeEnumValidator } from
 import { TRPCError } from '@trpc/server';
 import { Profile, ProfileInstance } from '@models';
 import { sendNotification } from './notifications.helpers';
+import { Op, QueryBuilder, Where } from 'neogma';
+import { convertQueryResultToPropertiesObjectArray } from './neo4j.helpers';
+import { ProfileType } from 'types/profile';
 
-export const getConnections = async (profile: ProfileInstance): Promise<ProfileInstance[]> => {
-    const [connectedTo, connectedBy] = await Promise.all([
-        profile.findRelationships({ alias: 'connectedWith' }),
-        Profile.findRelationships({
-            alias: 'connectedWith',
-            where: { target: { profileId: profile.profileId } },
-        }),
-    ]);
+export const getConnections = async (
+    profile: ProfileInstance,
+    { limit, cursor }: { limit: number; cursor?: string }
+): Promise<ProfileType[]> => {
+    const _query = new QueryBuilder().match({
+        related: [
+            { model: Profile, where: { profileId: profile.profileId } },
+            {
+                ...Profile.getRelationshipByAlias('connectedWith'),
+                direction: 'none',
+            },
+            { identifier: 'target', model: Profile },
+        ],
+    });
 
-    const connectedTos = connectedTo.map(result => result.target);
-    const connectedBys = connectedBy.map(result => result.source);
+    const query = cursor
+        ? _query.where(
+            new Where({ target: { displayName: { [Op.gt]: cursor } } }, _query.getBindParam())
+        )
+        : _query;
 
-    return [...connectedTos, ...connectedBys].reduce<ProfileInstance[]>(
-        (profiles, currentProfile) => {
-            if (
-                !profiles.find(
-                    existingProfile => existingProfile.profileId === currentProfile.profileId
-                )
-            ) {
-                profiles.push(currentProfile);
-            }
-
-            return profiles;
-        },
-        []
+    const results = convertQueryResultToPropertiesObjectArray<{ target: ProfileType }>(
+        await query.return('DISTINCT target').orderBy('target.displayName').limit(limit).run()
     );
+
+    return results.map(result => result.target);
 };
 
 export const getPendingConnections = async (
-    profile: ProfileInstance
-): Promise<ProfileInstance[]> => {
-    return (await profile.findRelationships({ alias: 'connectionRequested' })).map(
-        result => result.target
+    profile: ProfileInstance,
+    { limit, cursor }: { limit: number; cursor?: string }
+): Promise<ProfileType[]> => {
+    const _query = new QueryBuilder().match({
+        related: [
+            { model: Profile, where: { profileId: profile.profileId } },
+            Profile.getRelationshipByAlias('connectionRequested'),
+            { identifier: 'target', model: Profile },
+        ],
+    });
+
+    const query = cursor
+        ? _query.where(
+            new Where({ target: { displayName: { [Op.gt]: cursor } } }, _query.getBindParam())
+        )
+        : _query;
+
+    const results = convertQueryResultToPropertiesObjectArray<{ target: ProfileType }>(
+        await query.return('DISTINCT target').orderBy('target.displayName').limit(limit).run()
     );
+
+    return results.map(result => result.target);
 };
 export const getConnectionRequests = async (
-    profile: ProfileInstance
-): Promise<ProfileInstance[]> => {
-    return (
-        await Profile.findRelationships({
-            alias: 'connectionRequested',
-            where: { target: { profileId: profile.profileId } },
-        })
-    ).map(result => result.source);
+    profile: ProfileInstance,
+    { limit, cursor }: { limit: number; cursor?: string }
+): Promise<ProfileType[]> => {
+    const _query = new QueryBuilder().match({
+        related: [
+            { identifier: 'source', model: Profile },
+            Profile.getRelationshipByAlias('connectionRequested'),
+            { model: Profile, where: { profileId: profile.profileId } },
+        ],
+    });
+
+    const query = cursor
+        ? _query.where(
+            new Where({ source: { displayName: { [Op.gt]: cursor } } }, _query.getBindParam())
+        )
+        : _query;
+
+    const results = convertQueryResultToPropertiesObjectArray<{ source: ProfileType }>(
+        await query.return('DISTINCT source').orderBy('source.displayName').limit(limit).run()
+    );
+
+    return results.map(result => result.source);
 };
 
 /** Checks whether two profiles are already connected */

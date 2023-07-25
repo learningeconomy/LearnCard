@@ -201,20 +201,20 @@ export const getLearnCardNetworkPlugin = async (
 
                 return client.profile.acceptConnectionRequest.mutate({ profileId });
             },
-            getConnections: async () => {
+            getConnections: async (_learnCard, options) => {
                 if (!userData) throw new Error('Please make an account first!');
 
-                return client.profile.connections.query();
+                return client.profile.connections.query(options);
             },
-            getPendingConnections: async () => {
+            getPendingConnections: async (_learnCard, options) => {
                 if (!userData) throw new Error('Please make an account first!');
 
-                return client.profile.pendingConnections.query();
+                return client.profile.pendingConnections.query(options);
             },
-            getConnectionRequests: async () => {
+            getConnectionRequests: async (_learnCard, options) => {
                 if (!userData) throw new Error('Please make an account first!');
 
-                return client.profile.connectionRequests.query();
+                return client.profile.connectionRequests.query(options);
             },
             generateInvite: async (_learnCard, challenge) => {
                 if (!userData) throw new Error('Please make an account first!');

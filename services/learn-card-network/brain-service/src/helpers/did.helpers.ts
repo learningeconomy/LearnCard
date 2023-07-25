@@ -13,3 +13,12 @@ export const updateDidForProfile = (
     ...('dataValues' in profile ? profile.dataValues : profile),
     did: getDidWeb(domain, profile.profileId),
 });
+
+export const updateDidForProfiles = (
+    domain: string,
+    profiles: (ProfileType | ProfileInstance)[]
+): ProfileType[] =>
+    profiles.map(profile => ({
+        ...('dataValues' in profile ? profile.dataValues : profile),
+        did: getDidWeb(domain, profile.profileId),
+    }));
