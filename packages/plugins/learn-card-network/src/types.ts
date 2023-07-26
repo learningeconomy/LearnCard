@@ -13,6 +13,7 @@ import {
     LCNBoostClaimLinkOptionsType,
     PaginationOptionsType,
     PaginatedLCNProfilesType,
+    PaginatedBoostsType,
 } from '@learncard/types';
 import { Plugin } from '@learncard/core';
 import { ProofOptions } from '@learncard/didkit-plugin';
@@ -81,7 +82,7 @@ export type LearnCardNetworkPluginMethods = {
         metadata?: Partial<Omit<Boost, 'uri'>>
     ) => Promise<string>;
     getBoost: (uri: string) => Promise<Boost & { boost: UnsignedVC }>;
-    getBoosts: () => Promise<{ name?: string; uri: string }[]>;
+    getBoosts: (options?: PaginationOptionsType) => Promise<PaginatedBoostsType>;
     getBoostRecipients: (
         uri: string,
         limit?: number,

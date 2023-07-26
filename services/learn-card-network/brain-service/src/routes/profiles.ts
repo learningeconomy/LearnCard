@@ -521,7 +521,10 @@ export const profilesRouter = t.router({
         .query(async ({ ctx, input }) => {
             const { limit, cursor } = input;
 
-            const records = await getPendingConnections(ctx.user.profile, { limit, cursor });
+            const records = await getPendingConnections(ctx.user.profile, {
+                limit: limit + 1,
+                cursor,
+            });
 
             const hasMore = records.length > limit;
             const newCursor = records.at(hasMore ? -2 : -1)?.displayName;
@@ -553,7 +556,10 @@ export const profilesRouter = t.router({
         .query(async ({ ctx, input }) => {
             const { limit, cursor } = input;
 
-            const records = await getConnectionRequests(ctx.user.profile, { limit, cursor });
+            const records = await getConnectionRequests(ctx.user.profile, {
+                limit: limit + 1,
+                cursor,
+            });
 
             const hasMore = records.length > limit;
             const newCursor = records.at(hasMore ? -2 : -1)?.displayName;

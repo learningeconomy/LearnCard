@@ -7,6 +7,8 @@ import {
     VCValidator,
     JWEValidator,
     BoostRecipientValidator,
+    PaginationOptionsValidator,
+    PaginatedBoostsValidator,
 } from '@learncard/types';
 
 import { t, profileRoute } from '@routes';
@@ -180,20 +182,30 @@ export const boostsRouter = t.router({
                 description: "This endpoint gets the current user's boosts",
             },
         })
-        .input(z.void())
-        .output(BoostValidator.omit({ id: true, boost: true }).extend({ uri: z.string() }).array())
-        .query(async ({ ctx }) => {
+        .input(
+            PaginationOptionsValidator.extend({
+                limit: PaginationOptionsValidator.shape.limit.default(25),
+            }).default({})
+        )
+        .output(PaginatedBoostsValidator)
+        .query(async ({ ctx, input }) => {
+            const { limit, cursor } = input;
             const { profile } = ctx.user;
 
-            const boosts = await getBoostsForProfile(profile);
+            const records = await getBoostsForProfile(profile, { limit: limit + 1, cursor });
 
-            return boosts.map(boost => {
-                const { id, boost: _boost, ...remaining } = boost.dataValues;
-                return {
-                    ...remaining,
-                    uri: getBoostUri(id, ctx.domain),
-                };
-            });
+            const hasMore = records.length > limit;
+            const newCursor = records.at(hasMore ? -2 : -1)?.created;
+
+            return {
+                hasMore,
+                records: records.map(boost => {
+                    const { id, boost: _boost, created: _created, ...remaining } = boost;
+
+                    return { ...remaining, uri: getBoostUri(id, ctx.domain) };
+                }),
+                ...(cursor && { cursor: newCursor }),
+            };
         }),
     getBoostRecipients: profileRoute
         .meta({
@@ -406,19 +418,22 @@ export const boostsRouter = t.router({
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
             const boostOwner = await getBoostOwner(boost);
-            if (!boostOwner)
+            if (!boostOwner) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost owner' });
+            }
 
             const signingAuthority = await getSigningAuthorityForUserByName(
                 boostOwner,
                 claimLinkSA.endpoint,
                 claimLinkSA.name
             );
-            if (!signingAuthority)
+
+            if (!signingAuthority) {
                 throw new TRPCError({
                     code: 'NOT_FOUND',
                     message: 'Could not find signing authority for boost',
                 });
+            }
 
             try {
                 const sentBoostUri = await issueClaimLinkBoost(

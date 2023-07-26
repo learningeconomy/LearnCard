@@ -133,7 +133,7 @@ describe('Boosts', () => {
 
             const boosts = await userA.clients.fullAuth.boost.getBoosts();
 
-            expect(boosts).toHaveLength(1);
+            expect(boosts.records).toHaveLength(1);
         });
     });
 
@@ -381,7 +381,7 @@ describe('Boosts', () => {
         it('should prevent you from updating a published boosts name', async () => {
             await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
             const boosts = await userA.clients.fullAuth.boost.getBoosts();
-            const boost = boosts[0]!;
+            const boost = boosts.records[0]!;
             const uri = boost.uri;
 
             expect(boost.name).toBeUndefined();
@@ -391,7 +391,7 @@ describe('Boosts', () => {
             ).rejects.toThrow();
 
             const newBoosts = await userA.clients.fullAuth.boost.getBoosts();
-            const newBoost = newBoosts[0]!;
+            const newBoost = newBoosts.records[0]!;
 
             expect(newBoost.name).not.toEqual('nice');
         });
@@ -402,7 +402,7 @@ describe('Boosts', () => {
                 status: BoostStatus.enum.DRAFT,
             });
             const boosts = await userA.clients.fullAuth.boost.getBoosts();
-            const boost = boosts[0]!;
+            const boost = boosts.records[0]!;
             const uri = boost.uri;
 
             expect(boost.status).toBe(BoostStatus.enum.DRAFT);
@@ -413,7 +413,7 @@ describe('Boosts', () => {
             ).resolves.not.toThrow();
 
             const newBoosts = await userA.clients.fullAuth.boost.getBoosts();
-            const newBoost = newBoosts[0]!;
+            const newBoost = newBoosts.records[0]!;
 
             expect(newBoost.name).toEqual('nice');
         });
@@ -421,7 +421,7 @@ describe('Boosts', () => {
         it('should prevent you from updating a published boosts category', async () => {
             await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
             const boosts = await userA.clients.fullAuth.boost.getBoosts();
-            const boost = boosts[0]!;
+            const boost = boosts.records[0]!;
             const uri = boost.uri;
 
             expect(boost.category).toBeUndefined();
@@ -431,7 +431,7 @@ describe('Boosts', () => {
             ).rejects.toThrow();
 
             const newBoosts = await userA.clients.fullAuth.boost.getBoosts();
-            const newBoost = newBoosts[0]!;
+            const newBoost = newBoosts.records[0]!;
 
             expect(newBoost.category).not.toEqual('nice');
         });
@@ -442,7 +442,7 @@ describe('Boosts', () => {
                 status: BoostStatus.enum.DRAFT,
             });
             const boosts = await userA.clients.fullAuth.boost.getBoosts();
-            const boost = boosts[0]!;
+            const boost = boosts.records[0]!;
             const uri = boost.uri;
 
             expect(boost.category).toBeUndefined();
@@ -452,7 +452,7 @@ describe('Boosts', () => {
             ).resolves.not.toThrow();
 
             const newBoosts = await userA.clients.fullAuth.boost.getBoosts();
-            const newBoost = newBoosts[0]!;
+            const newBoost = newBoosts.records[0]!;
 
             expect(newBoost.category).toEqual('nice');
         });
@@ -460,7 +460,7 @@ describe('Boosts', () => {
         it('should prevent you from updating a published boosts type', async () => {
             await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
             const boosts = await userA.clients.fullAuth.boost.getBoosts();
-            const boost = boosts[0]!;
+            const boost = boosts.records[0]!;
             const uri = boost.uri;
 
             expect(boost.type).toBeUndefined();
@@ -470,7 +470,7 @@ describe('Boosts', () => {
             ).rejects.toThrow();
 
             const newBoosts = await userA.clients.fullAuth.boost.getBoosts();
-            const newBoost = newBoosts[0]!;
+            const newBoost = newBoosts.records[0]!;
 
             expect(newBoost.type).not.toEqual('nice');
         });
@@ -481,7 +481,7 @@ describe('Boosts', () => {
                 status: BoostStatus.enum.DRAFT,
             });
             const boosts = await userA.clients.fullAuth.boost.getBoosts();
-            const boost = boosts[0]!;
+            const boost = boosts.records[0]!;
             const uri = boost.uri;
 
             expect(boost.type).toBeUndefined();
@@ -491,7 +491,7 @@ describe('Boosts', () => {
             ).resolves.not.toThrow();
 
             const newBoosts = await userA.clients.fullAuth.boost.getBoosts();
-            const newBoost = newBoosts[0]!;
+            const newBoost = newBoosts.records[0]!;
 
             expect(newBoost.type).toEqual('nice');
         });
@@ -499,7 +499,7 @@ describe('Boosts', () => {
         it('should prevent you from updating a published boosts credential', async () => {
             await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
             const boosts = await userA.clients.fullAuth.boost.getBoosts();
-            const boost = boosts[0]!;
+            const boost = boosts.records[0]!;
             const uri = boost.uri;
 
             const beforeUpdateBoostCredential = await userA.clients.fullAuth.storage.resolve({
@@ -513,7 +513,7 @@ describe('Boosts', () => {
             ).rejects.toThrow();
 
             const newBoosts = await userA.clients.fullAuth.boost.getBoosts();
-            const newBoost = newBoosts[0]!;
+            const newBoost = newBoosts.records[0]!;
 
             expect(
                 await userA.clients.fullAuth.storage.resolve({ uri: newBoost.uri })
@@ -526,7 +526,7 @@ describe('Boosts', () => {
                 status: BoostStatus.enum.DRAFT,
             });
             const boosts = await userA.clients.fullAuth.boost.getBoosts();
-            const boost = boosts[0]!;
+            const boost = boosts.records[0]!;
             const uri = boost.uri;
 
             const beforeUpdateBoostCredential = await userA.clients.fullAuth.storage.resolve({
@@ -540,7 +540,7 @@ describe('Boosts', () => {
             ).resolves.not.toThrow();
 
             const newBoosts = await userA.clients.fullAuth.boost.getBoosts();
-            const newBoost = newBoosts[0]!;
+            const newBoost = newBoosts.records[0]!;
 
             expect(
                 await userA.clients.fullAuth.storage.resolve({ uri: newBoost.uri })
@@ -568,7 +568,7 @@ describe('Boosts', () => {
 
         it('should require full auth to delete a boost', async () => {
             const boosts = await userA.clients.fullAuth.boost.getBoosts();
-            const uri = boosts[0]!.uri;
+            const uri = boosts.records[0]!.uri;
 
             await expect(noAuthClient.boost.deleteBoost({ uri })).rejects.toMatchObject({
                 code: 'UNAUTHORIZED',
@@ -584,24 +584,28 @@ describe('Boosts', () => {
                 status: BoostStatus.enum.DRAFT,
             });
 
-            const beforeDeleteLength = (await userA.clients.fullAuth.boost.getBoosts()).length;
+            const beforeDeleteLength = (await userA.clients.fullAuth.boost.getBoosts()).records
+                .length;
             await expect(
                 userA.clients.fullAuth.boost.deleteBoost({ uri: draftBoostUri })
             ).resolves.not.toThrow();
 
-            expect(await userA.clients.fullAuth.boost.getBoosts()).toHaveLength(
+            expect((await userA.clients.fullAuth.boost.getBoosts()).records).toHaveLength(
                 beforeDeleteLength - 1
             );
         });
 
         it('should prevent you from deleting a published boost', async () => {
             const boosts = await userA.clients.fullAuth.boost.getBoosts();
-            const boost = boosts[0]!;
+            const boost = boosts.records[0]!;
             const uri = boost.uri;
 
-            const beforeDeleteLength = (await userA.clients.fullAuth.boost.getBoosts()).length;
+            const beforeDeleteLength = (await userA.clients.fullAuth.boost.getBoosts()).records
+                .length;
             await expect(userA.clients.fullAuth.boost.deleteBoost({ uri })).rejects.toThrow();
-            expect(await userA.clients.fullAuth.boost.getBoosts()).toHaveLength(beforeDeleteLength);
+            expect((await userA.clients.fullAuth.boost.getBoosts()).records).toHaveLength(
+                beforeDeleteLength
+            );
         });
     });
 
@@ -635,7 +639,7 @@ describe('Boosts', () => {
 
         it('should require full auth to generate a claim boost', async () => {
             const boosts = await userA.clients.fullAuth.boost.getBoosts();
-            const uri = boosts[0]!.uri;
+            const uri = boosts.records[0]!.uri;
 
             const sa = await userA.clients.fullAuth.profile.signingAuthority({
                 endpoint: 'http://localhost:5000/api',
@@ -693,7 +697,7 @@ describe('Boosts', () => {
 
         it('should generate a valid claim challenge', async () => {
             const boosts = await userA.clients.fullAuth.boost.getBoosts();
-            const uri = boosts[0]!.uri;
+            const uri = boosts.records[0]!.uri;
 
             const sa = await userA.clients.fullAuth.profile.signingAuthority({
                 endpoint: 'http://localhost:5000/api',
@@ -723,7 +727,7 @@ describe('Boosts', () => {
 
         it('should allow claiming a claimable boost', async () => {
             const boosts = await userA.clients.fullAuth.boost.getBoosts();
-            const uri = boosts[0]!.uri;
+            const uri = boosts.records[0]!.uri;
 
             const sa = await userA.clients.fullAuth.profile.signingAuthority({
                 endpoint: 'http://localhost:5000/api',
@@ -761,7 +765,7 @@ describe('Boosts', () => {
 
         it("should auto-accept a boost you've claimed", async () => {
             const boosts = await userA.clients.fullAuth.boost.getBoosts();
-            const uri = boosts[0]!.uri;
+            const uri = boosts.records[0]!.uri;
 
             const sa = await userA.clients.fullAuth.profile.signingAuthority({
                 endpoint: 'http://localhost:5000/api',
@@ -804,7 +808,7 @@ describe('Boosts', () => {
 
         it('should set NO TTL for a claimable boost if no expiration is specified', async () => {
             const boosts = await userA.clients.fullAuth.boost.getBoosts();
-            const uri = boosts[0]!.uri;
+            const uri = boosts.records[0]!.uri;
 
             const sa = await userA.clients.fullAuth.profile.signingAuthority({
                 endpoint: 'http://localhost:5000/api',
@@ -839,7 +843,7 @@ describe('Boosts', () => {
 
         it('should allow setting a custom time to live in seconds for a claimable boost', async () => {
             const boosts = await userA.clients.fullAuth.boost.getBoosts();
-            const uri = boosts[0]!.uri;
+            const uri = boosts.records[0]!.uri;
 
             const sa = await userA.clients.fullAuth.profile.signingAuthority({
                 endpoint: 'http://localhost:5000/api',
@@ -878,7 +882,7 @@ describe('Boosts', () => {
             await userE.clients.fullAuth.profile.createProfile({ profileId: 'usere' });
 
             const boosts = await userA.clients.fullAuth.boost.getBoosts();
-            const uri = boosts[0]!.uri;
+            const uri = boosts.records[0]!.uri;
 
             const sa = await userA.clients.fullAuth.profile.signingAuthority({
                 endpoint: 'http://localhost:5000/api',
