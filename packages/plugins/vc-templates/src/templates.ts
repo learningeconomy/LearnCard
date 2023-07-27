@@ -297,14 +297,9 @@ export const VC_TEMPLATES: { [Key in keyof VcTemplates]: (args: VcTemplates[Key]
                                     '@id': 'lcn:boostIDShowIssuerThumbnail',
                                     '@type': 'xsd:boolean',
                                 },
-                                IDIssuer: {
-                                    '@id': 'lcn:boostIDIssuer',
-                                    '@context': {
-                                        name: {
-                                            '@id': 'lcn:boostIDIssuerName',
-                                            '@type': 'xsd:string',
-                                        },
-                                    },
+                                IDIssuerName: {
+                                    '@id': 'lcn:boostIDIssuerName',
+                                    '@type': 'xsd:string',
                                 },
                             },
                         },
