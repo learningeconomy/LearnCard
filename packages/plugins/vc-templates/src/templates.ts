@@ -206,7 +206,6 @@ export const VC_TEMPLATES: { [Key in keyof VcTemplates]: (args: VcTemplates[Key]
         attachments,
         display,
         boostID,
-        boostIDIssuer
     } = {}) => ({
         '@context': [
             'https://www.w3.org/2018/credentials/v1',
@@ -298,7 +297,7 @@ export const VC_TEMPLATES: { [Key in keyof VcTemplates]: (args: VcTemplates[Key]
                                     '@id': 'lcn:boostIDShowIssuerThumbnail',
                                     '@type': 'xsd:boolean',
                                 },
-                                boostIDIssuer: {
+                                IDIssuer: {
                                     '@id': 'lcn:boostIDIssuer',
                                     '@context': {
                                         name: {
@@ -348,6 +347,5 @@ export const VC_TEMPLATES: { [Key in keyof VcTemplates]: (args: VcTemplates[Key]
         image: boostImage,
         attachments,
         boostID,
-        boostIDIssuer
     }),
 };
