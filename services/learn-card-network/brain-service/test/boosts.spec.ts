@@ -277,7 +277,6 @@ describe('Boosts', () => {
             const uri = await userA.clients.fullAuth.boost.createBoost({
                 credential: testUnsignedBoost,
             });
-            await userA.clients.fullAuth.boost.getBoostRecipients({ uri });
 
             await expect(noAuthClient.boost.getBoostRecipients({ uri })).rejects.toMatchObject({
                 code: 'UNAUTHORIZED',
@@ -297,7 +296,9 @@ describe('Boosts', () => {
                 userA.clients.fullAuth.boost.getBoostRecipients({ uri })
             ).resolves.not.toThrow();
 
-            expect(await userA.clients.fullAuth.boost.getBoostRecipients({ uri })).toHaveLength(0);
+            expect(
+                (await userA.clients.fullAuth.boost.getBoostRecipients({ uri })).records
+            ).toHaveLength(0);
 
             await sendBoost(
                 { profileId: 'usera', user: userA },
@@ -305,7 +306,9 @@ describe('Boosts', () => {
                 uri
             );
 
-            expect(await userA.clients.fullAuth.boost.getBoostRecipients({ uri })).toHaveLength(1);
+            expect(
+                (await userA.clients.fullAuth.boost.getBoostRecipients({ uri })).records
+            ).toHaveLength(1);
         });
 
         it("should return recipients that haven't accepted yet", async () => {
@@ -313,24 +316,9 @@ describe('Boosts', () => {
                 credential: testUnsignedBoost,
             });
 
-            expect(await userA.clients.fullAuth.boost.getBoostRecipients({ uri })).toHaveLength(0);
-
-            await sendBoost(
-                { profileId: 'usera', user: userA },
-                { profileId: 'userb', user: userB },
-                uri,
-                false
-            );
-
-            expect(await userA.clients.fullAuth.boost.getBoostRecipients({ uri })).toHaveLength(1);
-        });
-
-        it("should allow not returning recipients that haven't accepted yet", async () => {
-            const uri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testUnsignedBoost,
-            });
-
-            expect(await userA.clients.fullAuth.boost.getBoostRecipients({ uri })).toHaveLength(0);
+            expect(
+                (await userA.clients.fullAuth.boost.getBoostRecipients({ uri })).records
+            ).toHaveLength(0);
 
             await sendBoost(
                 { profileId: 'usera', user: userA },
@@ -340,10 +328,33 @@ describe('Boosts', () => {
             );
 
             expect(
-                await userA.clients.fullAuth.boost.getBoostRecipients({
-                    uri,
-                    includeUnacceptedBoosts: false,
-                })
+                (await userA.clients.fullAuth.boost.getBoostRecipients({ uri })).records
+            ).toHaveLength(1);
+        });
+
+        it("should allow not returning recipients that haven't accepted yet", async () => {
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            expect(
+                (await userA.clients.fullAuth.boost.getBoostRecipients({ uri })).records
+            ).toHaveLength(0);
+
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB },
+                uri,
+                false
+            );
+
+            expect(
+                (
+                    await userA.clients.fullAuth.boost.getBoostRecipients({
+                        uri,
+                        includeUnacceptedBoosts: false,
+                    })
+                ).records
             ).toHaveLength(0);
         });
     });

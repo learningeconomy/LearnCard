@@ -7,13 +7,13 @@ import {
     SentCredentialInfo,
     JWE,
     Boost,
-    BoostRecipientInfo,
     LCNSigningAuthorityForUserType,
     LCNBoostClaimLinkSigningAuthorityType,
     LCNBoostClaimLinkOptionsType,
     PaginationOptionsType,
     PaginatedLCNProfilesType,
     PaginatedBoostsType,
+    PaginatedBoostRecipientsType,
 } from '@learncard/types';
 import { Plugin } from '@learncard/core';
 import { ProofOptions } from '@learncard/didkit-plugin';
@@ -86,9 +86,9 @@ export type LearnCardNetworkPluginMethods = {
     getBoostRecipients: (
         uri: string,
         limit?: number,
-        skip?: number,
+        cursor?: string,
         includeUnacceptedBoosts?: boolean
-    ) => Promise<BoostRecipientInfo[]>;
+    ) => Promise<PaginatedBoostRecipientsType>;
     updateBoost: (
         uri: string,
         updates: Partial<Omit<Boost, 'uri'>>,

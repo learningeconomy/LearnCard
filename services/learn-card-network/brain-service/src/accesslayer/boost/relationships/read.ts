@@ -1,4 +1,4 @@
-import { QueryBuilder } from 'neogma';
+import { Op, QueryBuilder, Where } from 'neogma';
 import { convertQueryResultToPropertiesObjectArray } from '@helpers/neo4j.helpers';
 import { BoostRecipientInfo } from '@learncard/types';
 import {
@@ -36,15 +36,15 @@ export const getBoostRecipients = async (
     boost: BoostInstance,
     {
         limit,
-        skip,
+        cursor,
         includeUnacceptedBoosts = true,
     }: {
         limit: number;
-        skip?: number;
+        cursor?: string;
         includeUnacceptedBoosts?: boolean;
     }
-): Promise<BoostRecipientInfo[]> => {
-    const query = new QueryBuilder()
+): Promise<Array<BoostRecipientInfo & { sent: string }>> => {
+    const _query = new QueryBuilder()
         .match({
             related: [
                 { identifier: 'source', model: Boost, where: { id: boost.id } },
@@ -74,20 +74,19 @@ export const getBoostRecipients = async (
             ],
         });
 
+    const query = cursor
+        ? _query.where(new Where({ sent: { date: { [Op.gt]: cursor } } }, _query.getBindParam()))
+        : _query;
+
     const results = convertQueryResultToPropertiesObjectArray<{
         sender: ProfileInstance;
         sent: ProfileRelationships['credentialSent']['RelationshipProperties'];
         recipient?: ProfileInstance;
         received?: CredentialRelationships['credentialReceived']['RelationshipProperties'];
-    }>(
-        await query
-            .return('sender, sent, received')
-            .limit(limit)
-            .skip(skip ?? 0)
-            .run()
-    );
+    }>(await query.return('sender, sent, received').orderBy('sent.date').limit(limit).run());
 
     const resultsWithIds = results.map(({ sender, sent, received }) => ({
+        sent: sent.date,
         to: sent.to,
         from: sender.profileId,
         received: received?.date,
@@ -100,5 +99,5 @@ export const getBoostRecipients = async (
             ...result,
             to: recipients.find(recipient => recipient.profileId === result.to),
         }))
-        .filter(result => Boolean(result.to)) as BoostRecipientInfo[];
+        .filter(result => Boolean(result.to)) as Array<BoostRecipientInfo & { sent: string }>;
 };

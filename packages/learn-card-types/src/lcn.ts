@@ -59,6 +59,11 @@ export const BoostRecipientValidator = z.object({
 });
 export type BoostRecipientInfo = z.infer<typeof BoostRecipientValidator>;
 
+export const PaginatedBoostRecipientsValidator = PaginationResponseValidator.extend({
+    records: BoostRecipientValidator.array(),
+});
+export type PaginatedBoostRecipientsType = z.infer<typeof PaginatedBoostRecipientsValidator>;
+
 export const LCNNotificationTypeEnumValidator = z.enum([
     'CONNECTION_REQUEST',
     'CONNECTION_ACCEPTED',

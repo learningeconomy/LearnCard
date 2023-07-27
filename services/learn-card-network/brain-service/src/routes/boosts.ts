@@ -6,7 +6,7 @@ import {
     UnsignedVCValidator,
     VCValidator,
     JWEValidator,
-    BoostRecipientValidator,
+    PaginatedBoostRecipientsValidator,
     PaginationOptionsValidator,
     PaginatedBoostsValidator,
 } from '@learncard/types';
@@ -219,23 +219,30 @@ export const boostsRouter = t.router({
             },
         })
         .input(
-            z.object({
+            PaginationOptionsValidator.extend({
+                limit: PaginationOptionsValidator.shape.limit.default(25),
                 uri: z.string(),
-                limit: z.number().optional().default(25),
-                skip: z.number().optional(),
                 includeUnacceptedBoosts: z.boolean().default(true),
             })
         )
-        .output(BoostRecipientValidator.array())
+        .output(PaginatedBoostRecipientsValidator)
         .query(async ({ input }) => {
-            const { uri, limit, skip, includeUnacceptedBoosts } = input;
+            const { uri, limit, cursor, includeUnacceptedBoosts } = input;
 
             const boost = await getBoostByUri(uri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
-            //TODO: Should we restrict who can see the recipients of a boost? Maybe to Boost owner / people who have the boost?
-            return getBoostRecipients(boost, { limit, skip, includeUnacceptedBoosts });
+            const records = await getBoostRecipients(boost, {
+                limit,
+                cursor,
+                includeUnacceptedBoosts,
+            });
+
+            const hasMore = records.length > limit;
+            const newCursor = records.at(hasMore ? -2 : -1)?.sent;
+
+            return { hasMore, records, ...(cursor && { cursor: newCursor }) };
         }),
     updateBoost: profileRoute
         .meta({
