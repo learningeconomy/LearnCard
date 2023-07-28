@@ -101,3 +101,42 @@ export const getBoostRecipients = async (
         }))
         .filter(result => Boolean(result.to)) as Array<BoostRecipientInfo & { sent: string }>;
 };
+
+export const countBoostRecipients = async (
+    boost: BoostInstance,
+    { includeUnacceptedBoosts = true }: { includeUnacceptedBoosts?: boolean }
+): Promise<number> => {
+    const query = new QueryBuilder()
+        .match({
+            related: [
+                { identifier: 'source', model: Boost, where: { id: boost.id } },
+                {
+                    ...Credential.getRelationshipByAlias('instanceOf'),
+                    identifier: 'instanceOf',
+                    direction: 'in',
+                },
+                { identifier: 'credential', model: Credential },
+                {
+                    ...Profile.getRelationshipByAlias('credentialSent'),
+                    identifier: 'sent',
+                    direction: 'in',
+                },
+                { identifier: 'sender', model: Profile },
+            ],
+        })
+        .match({
+            optional: includeUnacceptedBoosts,
+            related: [
+                { identifier: 'credential', model: Credential },
+                {
+                    ...Credential.getRelationshipByAlias('credentialReceived'),
+                    identifier: 'received',
+                },
+                { identifier: 'recipient', model: Profile },
+            ],
+        });
+
+    const result = await query.return('count(sent) AS count').run();
+
+    return Number(result.records[0]?.get('count') ?? 0);
+};

@@ -359,6 +359,96 @@ describe('Boosts', () => {
         });
     });
 
+    describe('countBoostRecipients', () => {
+        beforeEach(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+        });
+
+        afterAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+        });
+
+        it('should require full count to get boost recipients', async () => {
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            await expect(noAuthClient.boost.countBoostRecipients({ uri })).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+            await expect(
+                userA.clients.partialAuth.boost.countBoostRecipients({ uri })
+            ).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+        });
+
+        it('should allow counting boost recipients', async () => {
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+            await expect(
+                userA.clients.fullAuth.boost.countBoostRecipients({ uri })
+            ).resolves.not.toThrow();
+
+            expect(await userA.clients.fullAuth.boost.countBoostRecipients({ uri })).toEqual(0);
+
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB },
+                uri
+            );
+
+            expect(await userA.clients.fullAuth.boost.countBoostRecipients({ uri })).toEqual(1);
+        });
+
+        it("should count recipients that haven't accepted yet", async () => {
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            expect(await userA.clients.fullAuth.boost.countBoostRecipients({ uri })).toEqual(0);
+
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB },
+                uri,
+                false
+            );
+
+            expect(await userA.clients.fullAuth.boost.countBoostRecipients({ uri })).toEqual(1);
+        });
+
+        it("should allow not counting recipients that haven't accepted yet", async () => {
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            expect(await userA.clients.fullAuth.boost.countBoostRecipients({ uri })).toEqual(0);
+
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB },
+                uri,
+                false
+            );
+
+            expect(
+                await userA.clients.fullAuth.boost.countBoostRecipients({
+                    uri,
+                    includeUnacceptedBoosts: false,
+                })
+            ).toEqual(0);
+            expect(await userA.clients.fullAuth.boost.countBoostRecipients({ uri })).toEqual(1);
+        });
+    });
+
     describe('updateBoost', () => {
         beforeEach(async () => {
             await Profile.delete({ detach: true, where: {} });

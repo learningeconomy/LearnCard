@@ -346,7 +346,7 @@ export const getLearnCardNetworkPlugin = async (
                 _learnCard,
                 uri,
                 limit = 25,
-                skip = undefined,
+                cursor = undefined,
                 includeUnacceptedBoosts = true
             ) => {
                 if (!userData) throw new Error('Please make an account first!');
@@ -354,9 +354,14 @@ export const getLearnCardNetworkPlugin = async (
                 return client.boost.getBoostRecipients.query({
                     uri,
                     limit,
-                    skip,
+                    cursor,
                     includeUnacceptedBoosts,
                 });
+            },
+            countBoostRecipients: async (_learnCard, uri, includeUnacceptedBoosts = true) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.boost.countBoostRecipients.query({ uri, includeUnacceptedBoosts });
             },
             updateBoost: async (_learnCard, uri, updates, credential) => {
                 if (!userData) throw new Error('Please make an account first!');

@@ -14,7 +14,7 @@ import {
 import { t, profileRoute } from '@routes';
 
 import { getBoostByUri, getBoostsForProfile } from '@accesslayer/boost/read';
-import { getBoostRecipients } from '@accesslayer/boost/relationships/read';
+import { getBoostRecipients, countBoostRecipients } from '@accesslayer/boost/relationships/read';
 
 import {
     getBoostUri,
@@ -243,6 +243,33 @@ export const boostsRouter = t.router({
             const newCursor = records.at(hasMore ? -2 : -1)?.sent;
 
             return { hasMore, records, ...(cursor && { cursor: newCursor }) };
+        }),
+    countBoostRecipients: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/boost/recipients/count/{uri}',
+                tags: ['Boosts'],
+                summary: 'Get number of boost recipients',
+                description: 'This endpoint gets the number of recipients of a particular boost',
+            },
+        })
+        .input(
+            z.object({
+                uri: z.string(),
+                includeUnacceptedBoosts: z.boolean().default(true),
+            })
+        )
+        .output(z.number())
+        .query(async ({ input }) => {
+            const { uri, includeUnacceptedBoosts } = input;
+
+            const boost = await getBoostByUri(uri);
+
+            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            return countBoostRecipients(boost, { includeUnacceptedBoosts });
         }),
     updateBoost: profileRoute
         .meta({

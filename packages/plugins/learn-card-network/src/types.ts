@@ -89,6 +89,7 @@ export type LearnCardNetworkPluginMethods = {
         cursor?: string,
         includeUnacceptedBoosts?: boolean
     ) => Promise<PaginatedBoostRecipientsType>;
+    countBoostRecipients: (uri: string, includeUnacceptedBoosts?: boolean) => Promise<number>;
     updateBoost: (
         uri: string,
         updates: Partial<Omit<Boost, 'uri'>>,
