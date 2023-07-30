@@ -6,6 +6,7 @@ import {
     UnsignedVCValidator,
     VCValidator,
     JWEValidator,
+    BoostRecipientValidator,
     PaginatedBoostRecipientsValidator,
     PaginationOptionsValidator,
     PaginatedBoostsValidator,
@@ -14,7 +15,11 @@ import {
 import { t, profileRoute } from '@routes';
 
 import { getBoostByUri, getBoostsForProfile } from '@accesslayer/boost/read';
-import { getBoostRecipients, countBoostRecipients } from '@accesslayer/boost/relationships/read';
+import {
+    getBoostRecipients,
+    countBoostRecipients,
+    getBoostRecipientsSkipLimit,
+} from '@accesslayer/boost/relationships/read';
 
 import {
     getBoostUri,
@@ -179,6 +184,33 @@ export const boostsRouter = t.router({
                 path: '/boost',
                 tags: ['Boosts'],
                 summary: 'Get boosts',
+                deprecated: true,
+                description:
+                    "This endpoint gets the current user's boosts.\nWarning! This route is deprecated and currently has a hard limit of returning only the first 50 boosts. Please use getPaginatedBoosts instead",
+            },
+        })
+        .input(z.void())
+        .output(BoostValidator.omit({ id: true, boost: true }).extend({ uri: z.string() }).array())
+        .query(async ({ ctx }) => {
+            const { profile } = ctx.user;
+
+            const boosts = await getBoostsForProfile(profile, { limit: 50 });
+
+            return boosts.map(boost => {
+                const { id, boost: _boost, ...remaining } = boost;
+
+                return { ...remaining, uri: getBoostUri(id, ctx.domain) };
+            });
+        }),
+
+    getPaginatedBoosts: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/boost/paginated',
+                tags: ['Boosts'],
+                summary: 'Get boosts',
                 description: "This endpoint gets the current user's boosts",
             },
         })
@@ -207,12 +239,46 @@ export const boostsRouter = t.router({
                 ...(cursor && { cursor: newCursor }),
             };
         }),
+
     getBoostRecipients: profileRoute
         .meta({
             openapi: {
                 protect: true,
                 method: 'GET',
                 path: '/boost/recipients/{uri}',
+                tags: ['Boosts'],
+                summary: 'Get boost recipients',
+                deprecated: true,
+                description:
+                    'This endpoint gets the recipients of a particular boost.\nWarning! This route is deprecated and currently has a hard limit of returning only the first 50 boosts. Please use getPaginatedBoostRecipients instead',
+            },
+        })
+        .input(
+            z.object({
+                uri: z.string(),
+                limit: z.number().optional().default(25),
+                skip: z.number().optional(),
+                includeUnacceptedBoosts: z.boolean().default(true),
+            })
+        )
+        .output(BoostRecipientValidator.array())
+        .query(async ({ input }) => {
+            const { uri, limit, skip, includeUnacceptedBoosts } = input;
+
+            const boost = await getBoostByUri(uri);
+
+            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            //TODO: Should we restrict who can see the recipients of a boost? Maybe to Boost owner / people who have the boost?
+            return getBoostRecipientsSkipLimit(boost, { limit, skip, includeUnacceptedBoosts });
+        }),
+
+    getPaginatedBoostRecipients: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/boost/recipients/paginated/{uri}',
                 tags: ['Boosts'],
                 summary: 'Get boost recipients',
                 description: 'This endpoint gets the recipients of a particular boost',
@@ -244,6 +310,7 @@ export const boostsRouter = t.router({
 
             return { hasMore, records, ...(cursor && { cursor: newCursor }) };
         }),
+
     countBoostRecipients: profileRoute
         .meta({
             openapi: {

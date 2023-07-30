@@ -754,10 +754,10 @@ describe('Profiles', () => {
             ).resolves.not.toThrow();
 
             expect(
-                (await userA.clients.fullAuth.profile.pendingConnections()).records
+                (await userA.clients.fullAuth.profile.paginatedPendingConnections()).records
             ).toHaveLength(1);
             expect(
-                (await userB.clients.fullAuth.profile.connectionRequests()).records
+                (await userB.clients.fullAuth.profile.paginatedConnectionRequests()).records
             ).toHaveLength(1);
         });
 
@@ -803,10 +803,10 @@ describe('Profiles', () => {
             await userA.clients.fullAuth.profile.connectWith({ profileId: 'userb' });
 
             expect(
-                (await userA.clients.fullAuth.profile.pendingConnections()).records
+                (await userA.clients.fullAuth.profile.paginatedPendingConnections()).records
             ).toHaveLength(1);
             expect(
-                (await userB.clients.fullAuth.profile.connectionRequests()).records
+                (await userB.clients.fullAuth.profile.paginatedConnectionRequests()).records
             ).toHaveLength(1);
 
             await expect(
@@ -814,10 +814,10 @@ describe('Profiles', () => {
             ).resolves.not.toThrow();
 
             expect(
-                (await userA.clients.fullAuth.profile.pendingConnections()).records
+                (await userA.clients.fullAuth.profile.paginatedPendingConnections()).records
             ).toHaveLength(0);
             expect(
-                (await userB.clients.fullAuth.profile.connectionRequests()).records
+                (await userB.clients.fullAuth.profile.paginatedConnectionRequests()).records
             ).toHaveLength(0);
         });
 
@@ -864,7 +864,7 @@ describe('Profiles', () => {
                 userA.clients.fullAuth.profile.connectWithInvite({ profileId: 'userb', challenge })
             ).resolves.not.toThrow();
 
-            const oneConnection = await userA.clients.fullAuth.profile.connections();
+            const oneConnection = await userA.clients.fullAuth.profile.paginatedConnections();
 
             expect(oneConnection.records).toHaveLength(1);
             expect(oneConnection.records[0]!.profileId).toEqual('userb');
@@ -918,8 +918,12 @@ describe('Profiles', () => {
                 userA.clients.fullAuth.profile.disconnectWith({ profileId: 'userb' })
             ).resolves.not.toThrow();
 
-            expect((await userA.clients.fullAuth.profile.connections()).records).toHaveLength(0);
-            expect((await userB.clients.fullAuth.profile.connections()).records).toHaveLength(0);
+            expect(
+                (await userA.clients.fullAuth.profile.paginatedConnections()).records
+            ).toHaveLength(0);
+            expect(
+                (await userB.clients.fullAuth.profile.paginatedConnections()).records
+            ).toHaveLength(0);
         });
 
         it('errors when users are not connected', async () => {
@@ -966,16 +970,20 @@ describe('Profiles', () => {
         });
 
         it('removes the pending request', async () => {
-            const pendingFromUserA = await userA.clients.fullAuth.profile.connectionRequests();
-            const pendingFromUserB = await userB.clients.fullAuth.profile.pendingConnections();
+            const pendingFromUserA =
+                await userA.clients.fullAuth.profile.paginatedConnectionRequests();
+            const pendingFromUserB =
+                await userB.clients.fullAuth.profile.paginatedPendingConnections();
 
             expect(pendingFromUserA.records).toHaveLength(1);
             expect(pendingFromUserB.records).toHaveLength(1);
 
             await userA.clients.fullAuth.profile.acceptConnectionRequest({ profileId: 'userb' });
 
-            const newPendingFromUserA = await userA.clients.fullAuth.profile.connectionRequests();
-            const newPendingFromUserB = await userB.clients.fullAuth.profile.pendingConnections();
+            const newPendingFromUserA =
+                await userA.clients.fullAuth.profile.paginatedConnectionRequests();
+            const newPendingFromUserB =
+                await userB.clients.fullAuth.profile.paginatedPendingConnections();
 
             expect(newPendingFromUserA.records).toHaveLength(0);
             expect(newPendingFromUserB.records).toHaveLength(0);
@@ -987,7 +995,6 @@ describe('Profiles', () => {
             await Profile.delete({ detach: true, where: {} });
             await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
             await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
-            await userC.clients.fullAuth.profile.createProfile({ profileId: 'userc' });
         });
 
         afterAll(async () => {
@@ -1008,12 +1015,54 @@ describe('Profiles', () => {
 
             const noConnections = await userA.clients.fullAuth.profile.connections();
 
-            expect(noConnections.records).toHaveLength(0);
+            expect(noConnections).toHaveLength(0);
 
             await userA.clients.fullAuth.profile.connectWith({ profileId: 'userb' });
             await userB.clients.fullAuth.profile.acceptConnectionRequest({ profileId: 'usera' });
 
             const oneConnection = await userA.clients.fullAuth.profile.connections();
+
+            expect(oneConnection).toHaveLength(1);
+            expect(oneConnection[0]!.profileId).toEqual('userb');
+        });
+    });
+
+    describe('paginatedConnections', () => {
+        beforeEach(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+            await userC.clients.fullAuth.profile.createProfile({ profileId: 'userc' });
+        });
+
+        afterAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+        });
+
+        it('should require full auth to view connections', async () => {
+            await expect(noAuthClient.profile.paginatedConnections()).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+            await expect(
+                userA.clients.partialAuth.profile.paginatedConnections()
+            ).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+        });
+
+        it('allows users to view connections', async () => {
+            await expect(
+                userA.clients.fullAuth.profile.paginatedConnections()
+            ).resolves.not.toThrow();
+
+            const noConnections = await userA.clients.fullAuth.profile.paginatedConnections();
+
+            expect(noConnections.records).toHaveLength(0);
+
+            await userA.clients.fullAuth.profile.connectWith({ profileId: 'userb' });
+            await userB.clients.fullAuth.profile.acceptConnectionRequest({ profileId: 'usera' });
+
+            const oneConnection = await userA.clients.fullAuth.profile.paginatedConnections();
 
             expect(oneConnection.records).toHaveLength(1);
             expect(oneConnection.records[0]!.profileId).toEqual('userb');
@@ -1021,7 +1070,7 @@ describe('Profiles', () => {
             await userA.clients.fullAuth.profile.connectWith({ profileId: 'userc' });
             await userC.clients.fullAuth.profile.acceptConnectionRequest({ profileId: 'usera' });
 
-            const twoConnections = await userA.clients.fullAuth.profile.connections();
+            const twoConnections = await userA.clients.fullAuth.profile.paginatedConnections();
 
             expect(twoConnections.records).toHaveLength(2);
         });
@@ -1056,11 +1105,53 @@ describe('Profiles', () => {
 
             const noPendingConnections = await userA.clients.fullAuth.profile.pendingConnections();
 
-            expect(noPendingConnections.records).toHaveLength(0);
+            expect(noPendingConnections).toHaveLength(0);
 
             await userA.clients.fullAuth.profile.connectWith({ profileId: 'userb' });
 
             const onePendingConnection = await userA.clients.fullAuth.profile.pendingConnections();
+
+            expect(onePendingConnection).toHaveLength(1);
+            expect(onePendingConnection[0]!.profileId).toEqual('userb');
+        });
+    });
+
+    describe('paginatedPendingConnections', () => {
+        beforeEach(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+        });
+
+        afterAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+        });
+
+        it('should require full auth to view pending connections', async () => {
+            await expect(noAuthClient.profile.paginatedPendingConnections()).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+            await expect(
+                userA.clients.partialAuth.profile.paginatedPendingConnections()
+            ).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+        });
+
+        it('allows users to view pending connections', async () => {
+            await expect(
+                userA.clients.fullAuth.profile.paginatedPendingConnections()
+            ).resolves.not.toThrow();
+
+            const noPendingConnections =
+                await userA.clients.fullAuth.profile.paginatedPendingConnections();
+
+            expect(noPendingConnections.records).toHaveLength(0);
+
+            await userA.clients.fullAuth.profile.connectWith({ profileId: 'userb' });
+
+            const onePendingConnection =
+                await userA.clients.fullAuth.profile.paginatedPendingConnections();
 
             expect(onePendingConnection.records).toHaveLength(1);
             expect(onePendingConnection.records[0]!.profileId).toEqual('userb');
@@ -1096,11 +1187,53 @@ describe('Profiles', () => {
 
             const noConnectionRequests = await userA.clients.fullAuth.profile.connectionRequests();
 
-            expect(noConnectionRequests.records).toHaveLength(0);
+            expect(noConnectionRequests).toHaveLength(0);
 
             await userB.clients.fullAuth.profile.connectWith({ profileId: 'usera' });
 
             const oneConnectionRequest = await userA.clients.fullAuth.profile.connectionRequests();
+
+            expect(oneConnectionRequest).toHaveLength(1);
+            expect(oneConnectionRequest[0]!.profileId).toEqual('userb');
+        });
+    });
+
+    describe('paginatedConnectionRequests', () => {
+        beforeEach(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+        });
+
+        afterAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+        });
+
+        it('should require full auth to view connection requests', async () => {
+            await expect(noAuthClient.profile.paginatedConnectionRequests()).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+            await expect(
+                userA.clients.partialAuth.profile.paginatedConnectionRequests()
+            ).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+        });
+
+        it('allows users to view connection requests', async () => {
+            await expect(
+                userA.clients.fullAuth.profile.paginatedConnectionRequests()
+            ).resolves.not.toThrow();
+
+            const noConnectionRequests =
+                await userA.clients.fullAuth.profile.paginatedConnectionRequests();
+
+            expect(noConnectionRequests.records).toHaveLength(0);
+
+            await userB.clients.fullAuth.profile.connectWith({ profileId: 'usera' });
+
+            const oneConnectionRequest =
+                await userA.clients.fullAuth.profile.paginatedConnectionRequests();
 
             expect(oneConnectionRequest.records).toHaveLength(1);
             expect(oneConnectionRequest.records[0]!.profileId).toEqual('userb');
@@ -1148,14 +1281,15 @@ describe('Profiles', () => {
             await userB.clients.fullAuth.profile.connectWith({ profileId: 'usera' });
             await userA.clients.fullAuth.profile.connectWith({ profileId: 'userb' });
 
-            const connections = await userA.clients.fullAuth.profile.connections();
+            const connections = await userA.clients.fullAuth.profile.paginatedConnections();
 
             expect(connections.records).toHaveLength(1);
             expect(connections.records[0]!.profileId).toEqual('userb');
 
             await userA.clients.fullAuth.profile.blockProfile({ profileId: 'userb' });
 
-            const connectionsAfterBlock = await userA.clients.fullAuth.profile.connections();
+            const connectionsAfterBlock =
+                await userA.clients.fullAuth.profile.paginatedConnections();
 
             expect(connectionsAfterBlock.records).toHaveLength(0);
         });
@@ -1163,7 +1297,8 @@ describe('Profiles', () => {
         it('remove connection requests after blocking a user', async () => {
             await userB.clients.fullAuth.profile.connectWith({ profileId: 'usera' });
 
-            const connectionRequests = await userA.clients.fullAuth.profile.connectionRequests();
+            const connectionRequests =
+                await userA.clients.fullAuth.profile.paginatedConnectionRequests();
 
             expect(connectionRequests.records).toHaveLength(1);
             expect(connectionRequests.records[0]!.profileId).toEqual('userb');
@@ -1171,7 +1306,7 @@ describe('Profiles', () => {
             await userA.clients.fullAuth.profile.blockProfile({ profileId: 'userb' });
 
             const connectionRequestsAfterBlock =
-                await userA.clients.fullAuth.profile.connectionRequests();
+                await userA.clients.fullAuth.profile.paginatedConnectionRequests();
             expect(connectionRequestsAfterBlock.records).toHaveLength(0);
         });
 

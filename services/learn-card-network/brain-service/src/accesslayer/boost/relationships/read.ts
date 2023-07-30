@@ -140,3 +140,75 @@ export const countBoostRecipients = async (
 
     return Number(result.records[0]?.get('count') ?? 0);
 };
+
+/** @deprecated */
+export const getBoostRecipientsSkipLimit = async (
+    boost: BoostInstance,
+    {
+        limit,
+        skip,
+        includeUnacceptedBoosts = true,
+    }: {
+        limit: number;
+        skip?: number;
+        includeUnacceptedBoosts?: boolean;
+    }
+): Promise<BoostRecipientInfo[]> => {
+    const query = new QueryBuilder()
+        .match({
+            related: [
+                { identifier: 'source', model: Boost, where: { id: boost.id } },
+                {
+                    ...Credential.getRelationshipByAlias('instanceOf'),
+                    identifier: 'instanceOf',
+                    direction: 'in',
+                },
+                { identifier: 'credential', model: Credential },
+                {
+                    ...Profile.getRelationshipByAlias('credentialSent'),
+                    identifier: 'sent',
+                    direction: 'in',
+                },
+                { identifier: 'sender', model: Profile },
+            ],
+        })
+        .match({
+            optional: includeUnacceptedBoosts,
+            related: [
+                { identifier: 'credential', model: Credential },
+                {
+                    ...Credential.getRelationshipByAlias('credentialReceived'),
+                    identifier: 'received',
+                },
+                { identifier: 'recipient', model: Profile },
+            ],
+        });
+
+    const results = convertQueryResultToPropertiesObjectArray<{
+        sender: ProfileInstance;
+        sent: ProfileRelationships['credentialSent']['RelationshipProperties'];
+        recipient?: ProfileInstance;
+        received?: CredentialRelationships['credentialReceived']['RelationshipProperties'];
+    }>(
+        await query
+            .return('sender, sent, received')
+            .limit(limit)
+            .skip(skip ?? 0)
+            .run()
+    );
+
+    const resultsWithIds = results.map(({ sender, sent, received }) => ({
+        to: sent.to,
+        from: sender.profileId,
+        received: received?.date,
+    }));
+
+    const recipients = await getProfilesByProfileIds(resultsWithIds.map(result => result.to));
+
+    return resultsWithIds
+        .map(result => ({
+            ...result,
+            to: recipients.find(recipient => recipient.profileId === result.to),
+        }))
+        .filter(result => Boolean(result.to)) as BoostRecipientInfo[];
+};

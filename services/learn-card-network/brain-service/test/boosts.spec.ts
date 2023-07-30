@@ -133,6 +133,45 @@ describe('Boosts', () => {
 
             const boosts = await userA.clients.fullAuth.boost.getBoosts();
 
+            expect(boosts).toHaveLength(1);
+        });
+    });
+
+    describe('getPaginatedBoosts', () => {
+        beforeEach(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+        });
+
+        afterAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+        });
+
+        it('should require full auth to get boosts', async () => {
+            await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
+
+            await expect(noAuthClient.boost.getPaginatedBoosts()).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+            await expect(
+                userA.clients.partialAuth.boost.getPaginatedBoosts()
+            ).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+        });
+
+        it('should allow getting boosts', async () => {
+            await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
+
+            await expect(userA.clients.fullAuth.boost.getPaginatedBoosts()).resolves.not.toThrow();
+
+            const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
+
             expect(boosts.records).toHaveLength(1);
         });
     });
@@ -277,6 +316,7 @@ describe('Boosts', () => {
             const uri = await userA.clients.fullAuth.boost.createBoost({
                 credential: testUnsignedBoost,
             });
+            await userA.clients.fullAuth.boost.getBoostRecipients({ uri });
 
             await expect(noAuthClient.boost.getBoostRecipients({ uri })).rejects.toMatchObject({
                 code: 'UNAUTHORIZED',
@@ -296,8 +336,99 @@ describe('Boosts', () => {
                 userA.clients.fullAuth.boost.getBoostRecipients({ uri })
             ).resolves.not.toThrow();
 
+            expect(await userA.clients.fullAuth.boost.getBoostRecipients({ uri })).toHaveLength(0);
+
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB },
+                uri
+            );
+
+            expect(await userA.clients.fullAuth.boost.getBoostRecipients({ uri })).toHaveLength(1);
+        });
+
+        it("should return recipients that haven't accepted yet", async () => {
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            expect(await userA.clients.fullAuth.boost.getBoostRecipients({ uri })).toHaveLength(0);
+
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB },
+                uri,
+                false
+            );
+
+            expect(await userA.clients.fullAuth.boost.getBoostRecipients({ uri })).toHaveLength(1);
+        });
+
+        it("should allow not returning recipients that haven't accepted yet", async () => {
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            expect(await userA.clients.fullAuth.boost.getBoostRecipients({ uri })).toHaveLength(0);
+
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB },
+                uri,
+                false
+            );
+
             expect(
-                (await userA.clients.fullAuth.boost.getBoostRecipients({ uri })).records
+                await userA.clients.fullAuth.boost.getBoostRecipients({
+                    uri,
+                    includeUnacceptedBoosts: false,
+                })
+            ).toHaveLength(0);
+        });
+    });
+
+    describe('getPaginatedBoostRecipients', () => {
+        beforeEach(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+        });
+
+        afterAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+        });
+
+        it('should require full auth to get boost recipients', async () => {
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            await expect(
+                noAuthClient.boost.getPaginatedBoostRecipients({ uri })
+            ).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+            await expect(
+                userA.clients.partialAuth.boost.getPaginatedBoostRecipients({ uri })
+            ).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+        });
+
+        it('should allow getting boost recipients', async () => {
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+            await expect(
+                userA.clients.fullAuth.boost.getPaginatedBoostRecipients({ uri })
+            ).resolves.not.toThrow();
+
+            expect(
+                (await userA.clients.fullAuth.boost.getPaginatedBoostRecipients({ uri })).records
             ).toHaveLength(0);
 
             await sendBoost(
@@ -307,7 +438,7 @@ describe('Boosts', () => {
             );
 
             expect(
-                (await userA.clients.fullAuth.boost.getBoostRecipients({ uri })).records
+                (await userA.clients.fullAuth.boost.getPaginatedBoostRecipients({ uri })).records
             ).toHaveLength(1);
         });
 
@@ -317,7 +448,7 @@ describe('Boosts', () => {
             });
 
             expect(
-                (await userA.clients.fullAuth.boost.getBoostRecipients({ uri })).records
+                (await userA.clients.fullAuth.boost.getPaginatedBoostRecipients({ uri })).records
             ).toHaveLength(0);
 
             await sendBoost(
@@ -328,7 +459,7 @@ describe('Boosts', () => {
             );
 
             expect(
-                (await userA.clients.fullAuth.boost.getBoostRecipients({ uri })).records
+                (await userA.clients.fullAuth.boost.getPaginatedBoostRecipients({ uri })).records
             ).toHaveLength(1);
         });
 
@@ -338,7 +469,7 @@ describe('Boosts', () => {
             });
 
             expect(
-                (await userA.clients.fullAuth.boost.getBoostRecipients({ uri })).records
+                (await userA.clients.fullAuth.boost.getPaginatedBoostRecipients({ uri })).records
             ).toHaveLength(0);
 
             await sendBoost(
@@ -350,7 +481,7 @@ describe('Boosts', () => {
 
             expect(
                 (
-                    await userA.clients.fullAuth.boost.getBoostRecipients({
+                    await userA.clients.fullAuth.boost.getPaginatedBoostRecipients({
                         uri,
                         includeUnacceptedBoosts: false,
                     })
@@ -481,7 +612,7 @@ describe('Boosts', () => {
 
         it('should prevent you from updating a published boosts name', async () => {
             await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
-            const boosts = await userA.clients.fullAuth.boost.getBoosts();
+            const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
             const boost = boosts.records[0]!;
             const uri = boost.uri;
 
@@ -491,7 +622,7 @@ describe('Boosts', () => {
                 userA.clients.fullAuth.boost.updateBoost({ uri, updates: { name: 'nice' } })
             ).rejects.toThrow();
 
-            const newBoosts = await userA.clients.fullAuth.boost.getBoosts();
+            const newBoosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
             const newBoost = newBoosts.records[0]!;
 
             expect(newBoost.name).not.toEqual('nice');
@@ -502,7 +633,7 @@ describe('Boosts', () => {
                 credential: testVc,
                 status: BoostStatus.enum.DRAFT,
             });
-            const boosts = await userA.clients.fullAuth.boost.getBoosts();
+            const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
             const boost = boosts.records[0]!;
             const uri = boost.uri;
 
@@ -513,7 +644,7 @@ describe('Boosts', () => {
                 userA.clients.fullAuth.boost.updateBoost({ uri, updates: { name: 'nice' } })
             ).resolves.not.toThrow();
 
-            const newBoosts = await userA.clients.fullAuth.boost.getBoosts();
+            const newBoosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
             const newBoost = newBoosts.records[0]!;
 
             expect(newBoost.name).toEqual('nice');
@@ -521,7 +652,7 @@ describe('Boosts', () => {
 
         it('should prevent you from updating a published boosts category', async () => {
             await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
-            const boosts = await userA.clients.fullAuth.boost.getBoosts();
+            const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
             const boost = boosts.records[0]!;
             const uri = boost.uri;
 
@@ -531,7 +662,7 @@ describe('Boosts', () => {
                 userA.clients.fullAuth.boost.updateBoost({ uri, updates: { category: 'nice' } })
             ).rejects.toThrow();
 
-            const newBoosts = await userA.clients.fullAuth.boost.getBoosts();
+            const newBoosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
             const newBoost = newBoosts.records[0]!;
 
             expect(newBoost.category).not.toEqual('nice');
@@ -542,7 +673,7 @@ describe('Boosts', () => {
                 credential: testVc,
                 status: BoostStatus.enum.DRAFT,
             });
-            const boosts = await userA.clients.fullAuth.boost.getBoosts();
+            const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
             const boost = boosts.records[0]!;
             const uri = boost.uri;
 
@@ -552,7 +683,7 @@ describe('Boosts', () => {
                 userA.clients.fullAuth.boost.updateBoost({ uri, updates: { category: 'nice' } })
             ).resolves.not.toThrow();
 
-            const newBoosts = await userA.clients.fullAuth.boost.getBoosts();
+            const newBoosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
             const newBoost = newBoosts.records[0]!;
 
             expect(newBoost.category).toEqual('nice');
@@ -560,7 +691,7 @@ describe('Boosts', () => {
 
         it('should prevent you from updating a published boosts type', async () => {
             await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
-            const boosts = await userA.clients.fullAuth.boost.getBoosts();
+            const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
             const boost = boosts.records[0]!;
             const uri = boost.uri;
 
@@ -570,7 +701,7 @@ describe('Boosts', () => {
                 userA.clients.fullAuth.boost.updateBoost({ uri, updates: { type: 'nice' } })
             ).rejects.toThrow();
 
-            const newBoosts = await userA.clients.fullAuth.boost.getBoosts();
+            const newBoosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
             const newBoost = newBoosts.records[0]!;
 
             expect(newBoost.type).not.toEqual('nice');
@@ -581,7 +712,7 @@ describe('Boosts', () => {
                 credential: testVc,
                 status: BoostStatus.enum.DRAFT,
             });
-            const boosts = await userA.clients.fullAuth.boost.getBoosts();
+            const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
             const boost = boosts.records[0]!;
             const uri = boost.uri;
 
@@ -591,7 +722,7 @@ describe('Boosts', () => {
                 userA.clients.fullAuth.boost.updateBoost({ uri, updates: { type: 'nice' } })
             ).resolves.not.toThrow();
 
-            const newBoosts = await userA.clients.fullAuth.boost.getBoosts();
+            const newBoosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
             const newBoost = newBoosts.records[0]!;
 
             expect(newBoost.type).toEqual('nice');
@@ -599,7 +730,7 @@ describe('Boosts', () => {
 
         it('should prevent you from updating a published boosts credential', async () => {
             await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
-            const boosts = await userA.clients.fullAuth.boost.getBoosts();
+            const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
             const boost = boosts.records[0]!;
             const uri = boost.uri;
 
@@ -613,7 +744,7 @@ describe('Boosts', () => {
                 })
             ).rejects.toThrow();
 
-            const newBoosts = await userA.clients.fullAuth.boost.getBoosts();
+            const newBoosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
             const newBoost = newBoosts.records[0]!;
 
             expect(
@@ -626,7 +757,7 @@ describe('Boosts', () => {
                 credential: testVc,
                 status: BoostStatus.enum.DRAFT,
             });
-            const boosts = await userA.clients.fullAuth.boost.getBoosts();
+            const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
             const boost = boosts.records[0]!;
             const uri = boost.uri;
 
@@ -640,7 +771,7 @@ describe('Boosts', () => {
                 })
             ).resolves.not.toThrow();
 
-            const newBoosts = await userA.clients.fullAuth.boost.getBoosts();
+            const newBoosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
             const newBoost = newBoosts.records[0]!;
 
             expect(
@@ -668,7 +799,7 @@ describe('Boosts', () => {
         });
 
         it('should require full auth to delete a boost', async () => {
-            const boosts = await userA.clients.fullAuth.boost.getBoosts();
+            const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
             const uri = boosts.records[0]!.uri;
 
             await expect(noAuthClient.boost.deleteBoost({ uri })).rejects.toMatchObject({
@@ -685,26 +816,26 @@ describe('Boosts', () => {
                 status: BoostStatus.enum.DRAFT,
             });
 
-            const beforeDeleteLength = (await userA.clients.fullAuth.boost.getBoosts()).records
-                .length;
+            const beforeDeleteLength = (await userA.clients.fullAuth.boost.getPaginatedBoosts())
+                .records.length;
             await expect(
                 userA.clients.fullAuth.boost.deleteBoost({ uri: draftBoostUri })
             ).resolves.not.toThrow();
 
-            expect((await userA.clients.fullAuth.boost.getBoosts()).records).toHaveLength(
+            expect((await userA.clients.fullAuth.boost.getPaginatedBoosts()).records).toHaveLength(
                 beforeDeleteLength - 1
             );
         });
 
         it('should prevent you from deleting a published boost', async () => {
-            const boosts = await userA.clients.fullAuth.boost.getBoosts();
+            const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
             const boost = boosts.records[0]!;
             const uri = boost.uri;
 
-            const beforeDeleteLength = (await userA.clients.fullAuth.boost.getBoosts()).records
-                .length;
+            const beforeDeleteLength = (await userA.clients.fullAuth.boost.getPaginatedBoosts())
+                .records.length;
             await expect(userA.clients.fullAuth.boost.deleteBoost({ uri })).rejects.toThrow();
-            expect((await userA.clients.fullAuth.boost.getBoosts()).records).toHaveLength(
+            expect((await userA.clients.fullAuth.boost.getPaginatedBoosts()).records).toHaveLength(
                 beforeDeleteLength
             );
         });
@@ -739,7 +870,7 @@ describe('Boosts', () => {
         });
 
         it('should require full auth to generate a claim boost', async () => {
-            const boosts = await userA.clients.fullAuth.boost.getBoosts();
+            const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
             const uri = boosts.records[0]!.uri;
 
             const sa = await userA.clients.fullAuth.profile.signingAuthority({
@@ -797,7 +928,7 @@ describe('Boosts', () => {
         });
 
         it('should generate a valid claim challenge', async () => {
-            const boosts = await userA.clients.fullAuth.boost.getBoosts();
+            const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
             const uri = boosts.records[0]!.uri;
 
             const sa = await userA.clients.fullAuth.profile.signingAuthority({
@@ -827,7 +958,7 @@ describe('Boosts', () => {
         });
 
         it('should allow claiming a claimable boost', async () => {
-            const boosts = await userA.clients.fullAuth.boost.getBoosts();
+            const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
             const uri = boosts.records[0]!.uri;
 
             const sa = await userA.clients.fullAuth.profile.signingAuthority({
@@ -865,7 +996,7 @@ describe('Boosts', () => {
         });
 
         it("should auto-accept a boost you've claimed", async () => {
-            const boosts = await userA.clients.fullAuth.boost.getBoosts();
+            const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
             const uri = boosts.records[0]!.uri;
 
             const sa = await userA.clients.fullAuth.profile.signingAuthority({
@@ -908,7 +1039,7 @@ describe('Boosts', () => {
         });
 
         it('should set NO TTL for a claimable boost if no expiration is specified', async () => {
-            const boosts = await userA.clients.fullAuth.boost.getBoosts();
+            const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
             const uri = boosts.records[0]!.uri;
 
             const sa = await userA.clients.fullAuth.profile.signingAuthority({
@@ -943,7 +1074,7 @@ describe('Boosts', () => {
         });
 
         it('should allow setting a custom time to live in seconds for a claimable boost', async () => {
-            const boosts = await userA.clients.fullAuth.boost.getBoosts();
+            const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
             const uri = boosts.records[0]!.uri;
 
             const sa = await userA.clients.fullAuth.profile.signingAuthority({
@@ -982,7 +1113,7 @@ describe('Boosts', () => {
             await userD.clients.fullAuth.profile.createProfile({ profileId: 'userd' });
             await userE.clients.fullAuth.profile.createProfile({ profileId: 'usere' });
 
-            const boosts = await userA.clients.fullAuth.boost.getBoosts();
+            const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
             const uri = boosts.records[0]!.uri;
 
             const sa = await userA.clients.fullAuth.profile.signingAuthority({
