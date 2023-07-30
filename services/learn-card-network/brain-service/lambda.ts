@@ -1,5 +1,10 @@
 import serverlessHttp from 'serverless-http';
-import type { Context, APIGatewayProxyResultV2, APIGatewayProxyEventV2 } from 'aws-lambda';
+import type {
+    Context,
+    APIGatewayProxyResultV2,
+    APIGatewayProxyEventV2,
+    SQSHandler,
+} from 'aws-lambda';
 import { awsLambdaRequestHandler } from '@trpc/server/adapters/aws-lambda';
 import { createOpenApiAwsLambdaHandler } from 'trpc-openapi';
 
@@ -63,4 +68,8 @@ export const trpcHandler = async (
     }
 
     return _trpcHandler(event, context);
+};
+
+export const notificationsWorker: SQSHandler = async (event, context) => {
+    console.log({ event, context });
 };

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
 
 import { getChallenges } from '@helpers/challenges.helpers';
 
@@ -6,6 +7,8 @@ import { t, openRoute, didRoute } from '@routes';
 import { setValidChallengeForDid } from '@cache/challenges';
 
 import packageJson from '../../package.json';
+
+const sqs = new SQSClient({ apiVersion: 'latest', region: process.env.AWS_REGION });
 
 export const utilitiesRouter = t.router({
     healthCheck: openRoute
@@ -21,6 +24,15 @@ export const utilitiesRouter = t.router({
         .input(z.void())
         .output(z.string())
         .query(async () => {
+            const command = new SendMessageCommand({
+                QueueUrl: process.env.NOTIFICATIONS_QUEUE_URL,
+                MessageBody: `{ nice: 'lol' }`,
+            });
+
+            const res = await sqs.send(command);
+
+            console.log({ res });
+
             return `Healthy and well! (Version ${packageJson.version})`;
         }),
 
