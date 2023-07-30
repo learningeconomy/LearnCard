@@ -11,10 +11,14 @@ export const getBoostByUri = async (uri: string): Promise<BoostInstance | null> 
     return Boost.findOne({ where: { id } });
 };
 
-export const getBoostsForProfile = async (profile: ProfileInstance): Promise<BoostInstance[]> => {
+export const getBoostsForProfile = async (
+    profile: ProfileInstance,
+    { limit }: { limit: number }
+): Promise<BoostInstance[]> => {
     const results = await Boost.findRelationships({
         alias: 'createdBy',
         where: { target: { profileId: profile.profileId } },
+        limit,
     });
 
     return results.map(result => result.source);
