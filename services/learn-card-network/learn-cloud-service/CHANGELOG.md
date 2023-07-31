@@ -1,5 +1,11 @@
 # @learncard/network-brain-service
 
+## 1.1.7
+
+### Patch Changes
+
+-   [#349](https://github.com/learningeconomy/LearnCard/pull/349) [`8c1adac`](https://github.com/learningeconomy/LearnCard/commit/8c1adacffaa83b28333a86100d70f775411a8f84) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add Sentry integration
+
 ## 1.1.6
 
 ### Patch Changes
