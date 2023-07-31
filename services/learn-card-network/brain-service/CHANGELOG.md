@@ -1,5 +1,23 @@
 # @learncard/network-brain-service
 
+## 1.5.0
+
+### Minor Changes
+
+-   [#346](https://github.com/learningeconomy/LearnCard/pull/346) [`4a1b411`](https://github.com/learningeconomy/LearnCard/commit/4a1b41143737d65126e2142d8c67edd7a7f23818) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add hard limits to all routes that return arrays.
+
+    This is in preparation for deprecating these routes in favor of paginated routes that have a different return type
+
+## 1.4.21
+
+### Patch Changes
+
+-   Updated dependencies [[`535411f`](https://github.com/learningeconomy/LearnCard/commit/535411f6f8eb6a60eb607ba0cb8ebc58948808ca)]:
+    -   @learncard/vc-templates-plugin@1.0.5
+    -   @learncard/vc-plugin@1.0.9
+    -   @learncard/did-web-plugin@1.0.13
+    -   @learncard/expiration-plugin@1.0.9
+
 ## 1.4.20
 
 ### Patch Changes

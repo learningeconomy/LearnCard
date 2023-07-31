@@ -1,5 +1,25 @@
 # @learncard/network-brain-client
 
+## 1.2.0
+
+### Minor Changes
+
+-   [#346](https://github.com/learningeconomy/LearnCard/pull/346) [`4a1b411`](https://github.com/learningeconomy/LearnCard/commit/4a1b41143737d65126e2142d8c67edd7a7f23818) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add hard limits to all routes that return arrays.
+
+    This is in preparation for deprecating these routes in favor of paginated routes that have a different return type
+
+### Patch Changes
+
+-   Updated dependencies [[`4a1b411`](https://github.com/learningeconomy/LearnCard/commit/4a1b41143737d65126e2142d8c67edd7a7f23818)]:
+    -   @learncard/network-brain-service@1.5.0
+
+## 1.1.25
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-service@1.4.21
+
 ## 1.1.24
 
 ### Patch Changes

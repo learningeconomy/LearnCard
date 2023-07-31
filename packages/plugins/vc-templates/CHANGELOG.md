@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 1.0.5
+
+### Patch Changes
+
+-   [#343](https://github.com/learningeconomy/LearnCard/pull/343) [`535411f`](https://github.com/learningeconomy/LearnCard/commit/535411f6f8eb6a60eb607ba0cb8ebc58948808ca) Thanks [@gerardopar](https://github.com/gerardopar)! - add boost ID issuer name
+
 ## 1.0.4
 
 ### Patch Changes
