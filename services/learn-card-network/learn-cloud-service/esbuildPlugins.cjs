@@ -1,3 +1,5 @@
+const { sentryEsbuildPlugin } = require('@sentry/esbuild-plugin');
+
 const wasmPlugin = {
     name: 'wasm',
     setup(build) {
@@ -28,4 +30,11 @@ const wasmPlugin = {
     },
 };
 
-module.exports = [wasmPlugin];
+module.exports = [
+    wasmPlugin,
+    sentryEsbuildPlugin({
+        authToken: process.env.SENTRY_AUTH_TOKEN,
+        org: process.env.SENTRY_ORG,
+        project: process.env.SENTRY_PROJECT,
+    }),
+];
