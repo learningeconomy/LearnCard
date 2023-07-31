@@ -2,6 +2,7 @@ import { initTRPC, TRPCError } from '@trpc/server';
 import { APIGatewayEvent, CreateAWSLambdaContextOptions } from '@trpc/server/adapters/aws-lambda';
 import { OpenApiMeta } from 'trpc-openapi';
 import jwtDecode from 'jwt-decode';
+import * as Sentry from '@sentry/serverless';
 
 import { getEmptyLearnCard } from '@helpers/learnCard.helpers';
 import { invalidateChallengeForDid, isChallengeValidForDid } from '@cache/challenges';
@@ -51,6 +52,8 @@ export const createContext = async ({
                 const cacheResponse = await isChallengeValidForDid(did, challenge);
                 await invalidateChallengeForDid(did, challenge);
 
+                Sentry.setUser({ id: did });
+
                 return { user: { did, isChallengeValid: Boolean(cacheResponse) }, domain };
             }
         }
@@ -59,7 +62,14 @@ export const createContext = async ({
     return { domain };
 };
 
-export const openRoute = t.procedure;
+export const openRoute = t.procedure
+    .use(t.middleware(Sentry.Handlers.trpcMiddleware({ attachRpcInput: true })))
+    .use(({ ctx, next, path }) => {
+        Sentry.configureScope(scope => {
+            scope.setTransactionName(`trpc-${path}`);
+        });
+        return next({ ctx });
+    });
 
 export const didRoute = openRoute.use(({ ctx, next }) => {
     if (!ctx.user?.did) throw new TRPCError({ code: 'UNAUTHORIZED' });
