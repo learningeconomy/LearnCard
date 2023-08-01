@@ -1,6 +1,6 @@
 {
     "name": "@learncard/learn-cloud-service",
-    "version": "1.1.6",
+    "version": "1.1.7",
     "description": "",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
@@ -53,6 +53,8 @@
         "@learncard/types": "workspace:*",
         "@learncard/vc-plugin": "workspace:*",
         "@learncard/vc-templates-plugin": "workspace:*",
+        "@sentry/esbuild-plugin": "^2.5.0",
+        "@sentry/serverless": "^7.61.0",
         "@trpc/client": "^10.17.0",
         "@trpc/server": "^10.17.0",
         "@types/lodash": "^4.14.191",

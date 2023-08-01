@@ -10,7 +10,7 @@ dotenv.config();
 const IS_TEST_ENVIRONMENT = process.env.NODE_ENV === 'test';
 
 // Timeout value in milliseconds for aborting the request
-const TIMEOUT = 12_000;
+const TIMEOUT = 21_000;
 
 const _mockIssueCredentialWithSigningAuthority = async (credential: UnsignedVC) => {
     const learnCard = await getLearnCard();

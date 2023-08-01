@@ -17,10 +17,10 @@ custom:
         CACHE_INSTANCE_SIZE: cache.t2.micro
     esbuild:
         packager: pnpm
-        plugins: esbuildWasmPlugin.cjs
+        plugins: esbuildPlugins.cjs
         bundle: true
         minify: true
-        sourcemap: false
+        sourcemap: external
         target: 'node16'
         watch:
             pattern: ['src/**/*.ts', 'dids.ts']
@@ -66,7 +66,7 @@ provider:
     name: aws
     runtime: nodejs16.x
     memorySize: 2048
-    timeout: 18
+    timeout: 29
     stage: ${opt:stage, "dev"}
     region: ${opt:region, "eu-west-1"}
     environment:
@@ -78,6 +78,11 @@ provider:
         NEO4J_URI: ${env:NEO4J_URI}
         NEO4J_USERNAME: ${env:NEO4J_USERNAME}
         NEO4J_PASSWORD: ${env:NEO4J_PASSWORD}
+        SENTRY_DSN: ${env:SENTRY_DSN}
+        SENTRY_ENV: ${env:SENTRY_ENV}
+        SENTRY_AUTH_TOKEN: ${env:SENTRY_AUTH_TOKEN}
+        SENTRY_ORG: ${env:SENTRY_ORG}
+        SENTRY_PROJECT: ${env:SENTRY_PROJECT}
         REDIS_HOST:
             'Fn::GetAtt': [ElasticCacheCluster, RedisEndpoint.Address]
         REDIS_PORT:
