@@ -1,5 +1,23 @@
 # @learncard/network-brain-service
 
+## 1.1.7
+
+### Patch Changes
+
+-   [#349](https://github.com/learningeconomy/LearnCard/pull/349) [`8c1adac`](https://github.com/learningeconomy/LearnCard/commit/8c1adacffaa83b28333a86100d70f775411a8f84) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add Sentry integration
+
+## 1.1.6
+
+### Patch Changes
+
+-   [#342](https://github.com/learningeconomy/LearnCard/pull/342) [`1f4622e`](https://github.com/learningeconomy/LearnCard/commit/1f4622e43c050559cac413489563aad9c4754ea1) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix adding a did to a user with a different primary did
+
+-   Updated dependencies [[`535411f`](https://github.com/learningeconomy/LearnCard/commit/535411f6f8eb6a60eb607ba0cb8ebc58948808ca)]:
+    -   @learncard/vc-templates-plugin@1.0.5
+    -   @learncard/vc-plugin@1.0.9
+    -   @learncard/did-web-plugin@1.0.13
+    -   @learncard/expiration-plugin@1.0.9
+
 ## 1.1.5
 
 ### Patch Changes

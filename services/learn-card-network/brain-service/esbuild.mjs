@@ -1,5 +1,5 @@
 import { build } from 'esbuild';
-import wasmPlugin from './esbuildWasmPlugin.cjs';
+import plugins from './esbuildPlugins.cjs';
 
 const startTime = Date.now();
 
@@ -13,7 +13,7 @@ const finalBuildObj = {
     outdir: 'dist',
     target: 'node18',
     external: [],
-    plugins: wasmPlugin,
+    plugins,
     minify: true,
 };
 

@@ -161,8 +161,10 @@ export const profilesRouter = t.router({
         .output(LCNProfileValidator.optional())
         .query(async ({ ctx, input }) => {
             const { profileId } = input;
+
             const selfProfile = ctx.user && ctx.user.did && (await getProfileByDid(ctx.user.did));
             const otherProfile = await getProfileByProfileId(profileId);
+
             if (selfProfile && (await isRelationshipBlocked(selfProfile, otherProfile))) {
                 return undefined;
             }

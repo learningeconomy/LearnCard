@@ -26,6 +26,12 @@ env:
   DD_SERVICE: ${{ secrets.DD_SERVICE }}
   DD_SITE: ${{ secrets.DD_SITE }}
   DD_VERSION: ${{ secrets.DD_VERSION }}
+  SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+  SENTRY_ENV: ${{ secrets.SENTRY_ENV }}
+  LEARN_CLOUD_SENTRY_ENV: ${{ secrets.LEARN_CLOUD_SENTRY_ENV }}
+  SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+  SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+  SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
 
 jobs:
   deploy:

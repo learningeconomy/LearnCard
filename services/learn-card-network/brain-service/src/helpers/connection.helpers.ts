@@ -1,9 +1,9 @@
+import { Op, QueryBuilder, Where } from 'neogma';
 import { LCNProfileConnectionStatusEnum, LCNNotificationTypeEnumValidator } from '@learncard/types';
 import { TRPCError } from '@trpc/server';
 import { Profile, ProfileInstance } from '@models';
-import { sendNotification } from './notifications.helpers';
-import { Op, QueryBuilder, Where } from 'neogma';
-import { convertQueryResultToPropertiesObjectArray } from './neo4j.helpers';
+import { sendNotification } from '@helpers/notifications.helpers';
+import { convertQueryResultToPropertiesObjectArray } from '@helpers/neo4j.helpers';
 import { ProfileType } from 'types/profile';
 
 export const getConnections = async (
@@ -23,8 +23,8 @@ export const getConnections = async (
 
     const query = cursor
         ? _query.where(
-            new Where({ target: { displayName: { [Op.gt]: cursor } } }, _query.getBindParam())
-        )
+              new Where({ target: { displayName: { [Op.gt]: cursor } } }, _query.getBindParam())
+          )
         : _query;
 
     const results = convertQueryResultToPropertiesObjectArray<{ target: ProfileType }>(
@@ -48,8 +48,8 @@ export const getPendingConnections = async (
 
     const query = cursor
         ? _query.where(
-            new Where({ target: { displayName: { [Op.gt]: cursor } } }, _query.getBindParam())
-        )
+              new Where({ target: { displayName: { [Op.gt]: cursor } } }, _query.getBindParam())
+          )
         : _query;
 
     const results = convertQueryResultToPropertiesObjectArray<{ target: ProfileType }>(
@@ -72,8 +72,8 @@ export const getConnectionRequests = async (
 
     const query = cursor
         ? _query.where(
-            new Where({ source: { displayName: { [Op.gt]: cursor } } }, _query.getBindParam())
-        )
+              new Where({ source: { displayName: { [Op.gt]: cursor } } }, _query.getBindParam())
+          )
         : _query;
 
     const results = convertQueryResultToPropertiesObjectArray<{ source: ProfileType }>(
