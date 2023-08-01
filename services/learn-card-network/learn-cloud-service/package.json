@@ -1,5 +1,6 @@
 {
     "name": "@learncard/learn-cloud-service",
+    "private": true,
     "version": "1.1.7",
     "description": "",
     "main": "dist/index.js",
