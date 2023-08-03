@@ -14,7 +14,7 @@ import { t, profileRoute } from '@routes';
 import { getBoostByUri, getBoostsForProfile } from '@accesslayer/boost/read';
 import { getBoostRecipients } from '@accesslayer/boost/relationships/read';
 
-import { deleteStorageForUri } from '@cache/storage';
+import { deleteStorageForUri, setStorageForUri } from '@cache/storage';
 
 import {
     getBoostUri,
@@ -282,6 +282,7 @@ export const boostsRouter = t.router({
             }
 
             await boost.save();
+            await setStorageForUri(uri, JSON.parse(boost.boost));
 
             return true;
         }),
