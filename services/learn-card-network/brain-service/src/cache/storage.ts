@@ -17,6 +17,6 @@ export const setStorageForUri = async (uri: string, item: UnsignedVC | VC | VP |
     return cache.set(getStorageCacheKey(uri), JSON.stringify(item), STORAGE_TTL);
 };
 
-export const deleteStorageForUri = async (id: string) => {
-    return cache.delete([getStorageCacheKey(id)]);
+export const deleteStorageForUri = async (uri: string) => {
+    return cache.delete([getStorageCacheKey(uri)]);
 };

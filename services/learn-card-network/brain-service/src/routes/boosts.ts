@@ -14,6 +14,8 @@ import { t, profileRoute } from '@routes';
 import { getBoostByUri, getBoostsForProfile } from '@accesslayer/boost/read';
 import { getBoostRecipients } from '@accesslayer/boost/relationships/read';
 
+import { deleteStorageForUri } from '@cache/storage';
+
 import {
     getBoostUri,
     isProfileBoostOwner,
@@ -321,7 +323,7 @@ export const boostsRouter = t.router({
                 });
             }
 
-            await deleteBoost(boost);
+            await Promise.all([deleteBoost(boost), deleteStorageForUri(uri)]);
 
             return true;
         }),
