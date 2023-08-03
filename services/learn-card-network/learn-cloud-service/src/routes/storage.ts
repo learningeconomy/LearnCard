@@ -78,6 +78,8 @@ export const storageRouter = t.router({
                     throw new TRPCError({ code: 'NOT_FOUND', message: 'Credential not found' });
                 }
 
+                await setCredentialForId(id, credential.jwe);
+
                 return credential.jwe;
             }
 
