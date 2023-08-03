@@ -21,6 +21,7 @@ import { getPresentationById } from '@accesslayer/presentation/read';
 import { getUriParts } from '@helpers/uri.helpers';
 import { getPresentationUri } from '@helpers/presentation.helpers';
 import { getBoostById } from '@accesslayer/boost/read';
+import { getCachedStorageByUri, setStorageForUri } from '@cache/storage';
 
 export const storageRouter = t.router({
     store: didAndChallengeRoute
@@ -50,12 +51,20 @@ export const storageRouter = t.router({
             if (isVP && type !== 'credential') {
                 const instance = await storePresentation(item as VP | JWE);
 
-                return getPresentationUri(instance.id, ctx.domain);
+                const uri = getPresentationUri(instance.id, ctx.domain);
+
+                await setStorageForUri(uri, item);
+
+                return uri;
             }
 
             const instance = await storeCredential(item as UnsignedVC | VC | JWE);
 
-            return getCredentialUri(instance.id, ctx.domain);
+            const uri = getCredentialUri(instance.id, ctx.domain);
+
+            await setStorageForUri(uri, item);
+
+            return uri;
         }),
 
     resolve: didAndChallengeRoute
@@ -76,6 +85,10 @@ export const storageRouter = t.router({
             const { uri } = input;
 
             const { id, type } = getUriParts(uri);
+
+            const cachedResponse = await getCachedStorageByUri(uri);
+
+            if (cachedResponse) return cachedResponse;
 
             if (type === 'credential') {
                 const instance = await getCredentialById(id);
