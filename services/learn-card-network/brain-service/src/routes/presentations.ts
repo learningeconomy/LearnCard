@@ -2,6 +2,7 @@ import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { SentCredentialInfoValidator, VPValidator, JWEValidator } from '@learncard/types';
 
+import { deleteStorageForUri } from '@cache/storage';
 import { t, profileRoute } from '@routes';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
 import { acceptPresentation, sendPresentation } from '@helpers/presentation.helpers';
@@ -177,7 +178,7 @@ export const presentationsRouter = t.router({
                 });
             }
 
-            await deletePresentation(presentation);
+            await Promise.all([deletePresentation(presentation), deleteStorageForUri(uri)]);
 
             return true;
         }),

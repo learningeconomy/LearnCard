@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 1.1.0
+
+### Minor Changes
+
+-   [#351](https://github.com/learningeconomy/LearnCard/pull/351) [`92759e2`](https://github.com/learningeconomy/LearnCard/commit/92759e202017f1a9818ee781d216979e5fc64790) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix didkit failing to properly init when instantiating multiple LearnCards concurrently
+
 ## 1.0.8
 
 ### Patch Changes
