@@ -1,5 +1,11 @@
 # @learncard/network-brain-service
 
+## 1.5.3
+
+### Patch Changes
+
+-   [#353](https://github.com/learningeconomy/LearnCard/pull/353) [`568112b`](https://github.com/learningeconomy/LearnCard/commit/568112b50403a39e9482dcf4b645c8970a9afece) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add caching to storage routes
+
 ## 1.5.2
 
 ### Patch Changes
