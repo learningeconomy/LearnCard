@@ -5,7 +5,7 @@ export const getDidDocCacheKey = (profileId: string): string => `did-doc:${profi
 export const getDidDocForProfile = async (
     profileId: string
 ): Promise<Record<string, any> | null | undefined> => {
-    const result = await cache.get(getDidDocCacheKey(profileId));
+    const result = await cache.get(getDidDocCacheKey(profileId), true);
 
     return result && JSON.parse(result);
 };

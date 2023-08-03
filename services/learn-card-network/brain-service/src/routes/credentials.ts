@@ -16,6 +16,8 @@ import {
     getSentCredentialsForProfile,
 } from '@accesslayer/credential/read';
 
+import { deleteStorageForUri } from '@cache/storage';
+
 import { t, profileRoute } from '@routes';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
 import { getCredentialOwner } from '@accesslayer/credential/relationships/read';
@@ -188,7 +190,7 @@ export const credentialsRouter = t.router({
                 });
             }
 
-            await deleteCredential(credential);
+            await Promise.all([deleteCredential(credential), deleteStorageForUri(uri)]);
 
             return true;
         }),
