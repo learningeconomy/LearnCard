@@ -8,6 +8,7 @@ import { getCredentialById } from '@accesslayer/credential/read';
 import { getUriParts, constructUri } from '@helpers/uri.helpers';
 import { encryptObject } from '@helpers/encryption.helpers';
 import { isEncrypted } from '@learncard/helpers';
+import { setCredentialForId, getCachedCredentialById } from '@cache/credentials';
 
 export const storageRouter = t.router({
     store: didAndChallengeRoute
@@ -42,6 +43,8 @@ export const storageRouter = t.router({
                 });
             }
 
+            await setCredentialForId(id, jwe);
+
             return constructUri('credential', id, ctx.domain);
         }),
 
@@ -63,6 +66,10 @@ export const storageRouter = t.router({
             const { uri } = input;
 
             const { id, type } = getUriParts(uri);
+
+            const cachedResponse = await getCachedCredentialById(id);
+
+            if (cachedResponse) return cachedResponse;
 
             if (type === 'credential') {
                 const credential = await getCredentialById(id);
