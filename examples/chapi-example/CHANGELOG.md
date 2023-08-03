@@ -1,5 +1,14 @@
 # @learncard/chapi-example
 
+## 1.0.83
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.0.16
+    -   @learncard/chapi-plugin@1.0.9
+    -   @learncard/react@2.6.21
+
 ## 1.0.82
 
 ### Patch Changes
