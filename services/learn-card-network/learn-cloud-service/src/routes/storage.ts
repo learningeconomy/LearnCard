@@ -4,11 +4,15 @@ import { UnsignedVCValidator, VCValidator, VPValidator, JWEValidator } from '@le
 
 import { t, didAndChallengeRoute } from '@routes';
 import { createCredential } from '@accesslayer/credential/create';
-import { getCredentialById } from '@accesslayer/credential/read';
+import { getCredentialById, getCredentialsById } from '@accesslayer/credential/read';
 import { getUriParts, constructUri } from '@helpers/uri.helpers';
 import { encryptObject } from '@helpers/encryption.helpers';
 import { isEncrypted } from '@learncard/helpers';
-import { setCredentialForId, getCachedCredentialById } from '@cache/credentials';
+import {
+    setCredentialForId,
+    getCachedCredentialById,
+    getCachedCredentialsById,
+} from '@cache/credentials';
 
 export const storageRouter = t.router({
     store: didAndChallengeRoute
@@ -86,6 +90,69 @@ export const storageRouter = t.router({
             throw new TRPCError({
                 code: 'BAD_REQUEST',
                 message: 'Unknown URI type',
+            });
+        }),
+
+    batchResolve: didAndChallengeRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/storage/resolve/batch/{uris}',
+                tags: ['Storage'],
+                summary: 'Resolves URIs to Credentials/Presentations',
+                description: 'This endpoint resolves a batch or URIs',
+            },
+        })
+        .input(z.object({ uris: z.string().array() }))
+        .output(JWEValidator.or(z.null()).array())
+        .query(async ({ input }) => {
+            const { uris } = input;
+
+            const ids = uris.map(uri => {
+                try {
+                    const { id } = getUriParts(uri);
+
+                    return id;
+                } catch (error) {
+                    return null;
+                }
+            });
+
+            const filteredIds = ids.filter(Boolean) as string[];
+
+            const cachedValues = await getCachedCredentialsById(filteredIds);
+
+            // An array where each element has three possible values:
+            // - Resolved object from cache hit
+            // - String URI from cache miss
+            // - Null from invalid URI or other error
+            const withCachedValues = uris.map((uri, index) => {
+                const id = ids[index];
+
+                if (!id) return null; // Null if invalid ID
+
+                const filteredIndex = filteredIds.findIndex(filteredId => filteredId === id);
+
+                if (filteredIndex < 0) return null; // This is theoretically impossible, but a good sanity check
+
+                return cachedValues[filteredIndex] || uri; // Resolved object if cache hit, string uri if cache miss
+            });
+
+            const cacheMisses = withCachedValues.filter(
+                value => typeof value === 'string'
+            ) as string[];
+
+            const credentials = await getCredentialsById(cacheMisses);
+
+            return withCachedValues.map(value => {
+                if (typeof value !== 'string') return value;
+
+                const index = credentials.findIndex(
+                    credential => credential._id.toString() === value
+                );
+
+                return index > -1 ? credentials[index]!.jwe : null;
             });
         }),
 });
