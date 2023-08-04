@@ -97,8 +97,8 @@ export const storageRouter = t.router({
         .meta({
             openapi: {
                 protect: true,
-                method: 'GET',
-                path: '/storage/resolve/batch/{uris}',
+                method: 'POST',
+                path: '/storage/resolve/batch',
                 tags: ['Storage'],
                 summary: 'Resolves URIs to Credentials/Presentations',
                 description: 'This endpoint resolves a batch or URIs',
