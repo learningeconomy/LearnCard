@@ -11,6 +11,16 @@ export const getCachedCredentialById = async (id: string): Promise<JWE | null | 
     return result && JSON.parse(result);
 };
 
+export const getCachedCredentialsById = async (
+    ids: string[]
+): Promise<(JWE | null | undefined)[]> => {
+    const keys = ids.map(getCredentialCacheKey);
+
+    const results = await cache.mget(keys, true, CREDENTIAL_TTL);
+
+    return results.map(result => result && JSON.parse(result));
+};
+
 export const setCredentialForId = async (id: string, credential: JWE) => {
     return cache.set(getCredentialCacheKey(id), JSON.stringify(credential), CREDENTIAL_TTL);
 };
