@@ -1,5 +1,14 @@
 # learn-card-core
 
+## 1.1.10
+
+### Patch Changes
+
+-   [#355](https://github.com/learningeconomy/LearnCard/pull/355) [`81618f2`](https://github.com/learningeconomy/LearnCard/commit/81618f2bec3365924e4bd24d61dead4e77f462b3) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add batchResolve endpoint
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-client@1.1.10
+
 ## 1.1.9
 
 ### Patch Changes

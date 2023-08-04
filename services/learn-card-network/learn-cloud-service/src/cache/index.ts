@@ -55,6 +55,9 @@ export type Cache = {
     /** Gets a key from the cache, optionally reseting it's time to live */
     get: (key: RedisKey, resetTTL?: boolean, ttl?: number) => Promise<string | null | undefined>;
 
+    /** Gets multiple keys from the cache, optionally reseting their time to live */
+    mget: (keys: RedisKey[], resetTTL?: boolean, ttl?: number) => Promise<(string | null)[]>;
+
     /** Returns an array of keys matching a pattern */
     keys: (pattern: string) => Promise<RedisKey[] | undefined>;
 
@@ -71,7 +74,7 @@ const DEFAULT_TTL_SECS = 60 * 60;
 export const getCache = (): Cache => {
     const cache: Cache = {
         node: new MemoryRedis(),
-        set: async (key, value, ttl = DEFAULT_TTL_SECS, keepTtl) => {
+        set: async (key, value, ttl = DEFAULT_TTL_SECS, keepTtl = false) => {
             try {
                 if (keepTtl) {
                     if (cache?.redis) return await cache.redis.set(key, value, 'KEEPTTL');
@@ -100,6 +103,37 @@ export const getCache = (): Cache => {
             }
 
             return undefined;
+        },
+        mget: async (keys, resetTTL = false, ttl = DEFAULT_TTL_SECS) => {
+            try {
+                if (resetTTL) {
+                    if (cache?.redis) {
+                        const pipeline = cache.redis.pipeline();
+
+                        keys.forEach(key => pipeline.getex(key, 'EX', ttl));
+
+                        const results = await pipeline.exec();
+
+                        return results?.map(result => result[1] || null) ?? [];
+                    }
+                    if (cache?.node) {
+                        const pipeline = cache.node.pipeline();
+
+                        keys.forEach(key => pipeline.getex(key, 'EX', ttl));
+
+                        const results = await pipeline.exec();
+
+                        return results?.map(result => result[1] || null) ?? [];
+                    }
+                } else {
+                    if (cache?.redis) return await cache.redis.mget(keys);
+                    if (cache?.node) return await cache.node.mget(keys);
+                }
+            } catch (e) {
+                // logger.error('Cache get error', e);
+            }
+
+            return Array(keys.length).fill(null);
         },
         keys: async pattern => {
             try {
