@@ -12,7 +12,7 @@ const finalBuildObj = {
     format: 'cjs',
     outdir: 'dist',
     target: 'node18',
-    external: [],
+    external: ['@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm'],
     plugins,
     minify: true,
 };

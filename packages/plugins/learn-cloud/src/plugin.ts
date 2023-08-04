@@ -277,6 +277,27 @@ export const getLearnCloudPlugin = async (
                     includeAssociatedDids,
                 });
             },
+            learnCloudBatchResolve: async (_learnCard, uris) => {
+                const results = await client.storage.batchResolve.query({ uris });
+
+                return Promise.all(
+                    results.map(async result => {
+                        if (!result) return null;
+
+                        try {
+                            const decryptedResult = await _learnCard.invoke
+                                .getDIDObject()
+                                .decryptDagJWE(result);
+
+                            return await VCValidator.or(VPValidator).parseAsync(decryptedResult);
+                        } catch (error) {
+                            _learnCard.debug?.(error);
+
+                            return null;
+                        }
+                    })
+                );
+            },
         },
         read: {
             get: async (_learnCard, uri) => {
