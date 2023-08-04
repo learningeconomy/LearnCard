@@ -50,6 +50,7 @@ export type LearnCloudPluginMethods = {
         query: Filter<Document>,
         includeAssociatedDids?: boolean
     ) => Promise<number | false>;
+    learnCloudBatchResolve: (uris: string[]) => Promise<(VC | VP | null)[]>;
 };
 
 /** @group LearnCloud Plugin */
