@@ -4,6 +4,8 @@ import { Credentials } from '@accesslayer/credential';
 
 import { client } from '@mongo';
 
+import cache from '@cache';
+
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;
 let userB: Awaited<ReturnType<typeof getUser>>;
@@ -169,6 +171,105 @@ describe('Storage', () => {
             ).toEqual(vc);
             expect(
                 await userB.learnCard.invoke.getDIDObject().decryptDagJWE(resolvedPresentation)
+            ).toEqual(vp);
+        });
+    });
+
+    describe('batchResolve', () => {
+        beforeEach(async () => {
+            await Users.deleteMany({});
+            await Credentials.deleteMany({});
+            await cache.node.flushall();
+        });
+
+        afterAll(async () => {
+            await Users.deleteMany({});
+            await Credentials.deleteMany({});
+        });
+
+        it('should require full auth to batch resolve', async () => {
+            const unsignedVc = userA.learnCard.invoke.getTestVc(userB.learnCard.id.did());
+            const vc = await userA.learnCard.invoke.issueCredential(unsignedVc);
+
+            const uri = await userA.clients.fullAuth.storage.store({ item: vc });
+
+            await expect(noAuthClient.storage.batchResolve({ uris: [uri] })).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+            await expect(
+                userB.clients.partialAuth.storage.batchResolve({ uris: [uri] })
+            ).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+        });
+
+        it('should allow batch resolving a credentials/presentations', async () => {
+            const unsignedVc = userA.learnCard.invoke.getTestVc(userB.learnCard.id.did());
+            const vc = await userA.learnCard.invoke.issueCredential(unsignedVc);
+            const unsignedVp = await userA.learnCard.invoke.newPresentation(vc);
+            const vp = await userA.learnCard.invoke.issuePresentation(unsignedVp);
+
+            const vcUri = await userA.clients.fullAuth.storage.store({ item: vc });
+            const vpUri = await userA.clients.fullAuth.storage.store({ item: vp });
+
+            const vcPromise = userA.clients.fullAuth.storage.batchResolve({ uris: [vcUri] });
+            const vpPromise = userA.clients.fullAuth.storage.batchResolve({ uris: [vpUri] });
+            const bothPromise = userA.clients.fullAuth.storage.batchResolve({
+                uris: [vcUri, vpUri],
+            });
+
+            await expect(vcPromise).resolves.not.toThrow();
+            await expect(vpPromise).resolves.not.toThrow();
+            await expect(bothPromise).resolves.not.toThrow();
+
+            const resolvedCredential = await vcPromise;
+            const resolvedPresentation = await vpPromise;
+            const both = await bothPromise;
+
+            expect(resolvedCredential).toHaveLength(1);
+            expect(resolvedPresentation).toHaveLength(1);
+            expect(both).toHaveLength(2);
+
+            expect(resolvedCredential[0]).not.toBeNull();
+            expect(resolvedPresentation[0]).not.toBeNull();
+            expect(both[0]).not.toBeNull();
+            expect(both[1]).not.toBeNull();
+
+            expect(
+                await userA.learnCard.invoke.getDIDObject().decryptDagJWE(resolvedCredential[0]!)
+            ).toEqual(vc);
+            expect(
+                await userA.learnCard.invoke.getDIDObject().decryptDagJWE(resolvedPresentation[0]!)
+            ).toEqual(vp);
+            expect(await userA.learnCard.invoke.getDIDObject().decryptDagJWE(both[0]!)).toEqual(vc);
+            expect(await userA.learnCard.invoke.getDIDObject().decryptDagJWE(both[1]!)).toEqual(vp);
+        });
+
+        it('should return null for invalid URIs', async () => {
+            const unsignedVc = userA.learnCard.invoke.getTestVc(userB.learnCard.id.did());
+            const vc = await userA.learnCard.invoke.issueCredential(unsignedVc);
+            const unsignedVp = await userA.learnCard.invoke.newPresentation(vc);
+            const vp = await userA.learnCard.invoke.issuePresentation(unsignedVp);
+
+            const vcUri = await userA.clients.fullAuth.storage.store({ item: vc });
+            const vpUri = await userA.clients.fullAuth.storage.store({ item: vp });
+
+            const resolvedUris = await userA.clients.fullAuth.storage.batchResolve({
+                uris: ['invalid', vcUri, 'also-invalid', vpUri],
+            });
+
+            expect(resolvedUris).toHaveLength(4);
+
+            expect(resolvedUris[0]).toBeNull();
+            expect(resolvedUris[1]).not.toBeNull();
+            expect(resolvedUris[2]).toBeNull();
+            expect(resolvedUris[3]).not.toBeNull();
+
+            expect(
+                await userA.learnCard.invoke.getDIDObject().decryptDagJWE(resolvedUris[1]!)
+            ).toEqual(vc);
+            expect(
+                await userA.learnCard.invoke.getDIDObject().decryptDagJWE(resolvedUris[3]!)
             ).toEqual(vp);
         });
     });

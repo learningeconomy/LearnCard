@@ -18,6 +18,7 @@ Sentry.AWSLambda.init({
         new Sentry.Integrations.Console(),
         new Sentry.Integrations.Http(),
         new Sentry.Integrations.ContextLines(),
+        new Sentry.Integrations.Mongo(),
     ],
 });
 
