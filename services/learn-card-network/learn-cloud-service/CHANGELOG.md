@@ -1,5 +1,11 @@
 # @learncard/network-brain-service
 
+## 1.2.2
+
+### Patch Changes
+
+-   [#357](https://github.com/learningeconomy/LearnCard/pull/357) [`d0f4aff`](https://github.com/learningeconomy/LearnCard/commit/d0f4affa82ce006238f91d94eec353893b26bfb0) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Batch set challenges in Redis
+
 ## 1.2.1
 
 ### Patch Changes
