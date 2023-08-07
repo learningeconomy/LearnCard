@@ -65,7 +65,12 @@ export const indexRouter = t.router({
                 query = await learnCard.invoke.getDIDObject().decryptDagJWE(query);
             }
 
-            const cachedResponse = await getCachedIndexPageForDid(did, query, { limit, cursor });
+            const cachedResponse = await getCachedIndexPageForDid(
+                did,
+                query,
+                { limit, cursor },
+                includeAssociatedDids
+            );
 
             if (cachedResponse) {
                 return encrypt ? encryptObject(cachedResponse, ctx.domain, [did]) : cachedResponse;
@@ -100,7 +105,13 @@ export const indexRouter = t.router({
                 ...(newCursor ? { cursor: newCursor } : {}),
             };
 
-            await setCachedIndexPageForDid(did, query, { limit, cursor }, paginationResult);
+            await setCachedIndexPageForDid(
+                did,
+                query,
+                { limit, cursor },
+                paginationResult,
+                includeAssociatedDids
+            );
 
             if (encrypt) return encryptObject(paginationResult, ctx.domain, [did]);
 
