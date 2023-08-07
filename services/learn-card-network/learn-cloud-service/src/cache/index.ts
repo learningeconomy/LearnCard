@@ -52,6 +52,16 @@ export type Cache = {
         keepTtl?: boolean
     ) => Promise<'OK' | undefined>;
 
+    /**
+     * Sets a key to a given value in the cache.
+     * Optionally give it a time to live before being evicted (defaults to 1 hour)
+     */
+    mset: (
+        values: Record<string, RedisValue>,
+        ttl?: number,
+        keepTtl?: boolean
+    ) => Promise<'OK' | undefined>;
+
     /** Gets a key from the cache, optionally reseting it's time to live */
     get: (key: RedisKey, resetTTL?: boolean, ttl?: number) => Promise<string | null | undefined>;
 
@@ -82,6 +92,43 @@ export const getCache = (): Cache => {
                 } else {
                     if (cache?.redis) return await cache.redis.setex(key, ttl, value);
                     if (cache?.node) return await cache.node.setex(key, ttl, value);
+                }
+            } catch (e) {
+                console.error('Cache set error', e);
+            }
+
+            return undefined;
+        },
+        mset: async (values, ttl = DEFAULT_TTL_SECS, keepTtl = false) => {
+            try {
+                if (keepTtl || ttl) {
+                    if (cache?.redis) {
+                        const pipeline = cache.redis.pipeline();
+
+                        Object.entries(values).forEach(([key, value]) => {
+                            if (keepTtl) pipeline.set(key, value, 'KEEPTTL');
+                            else pipeline.setex(key, ttl, value);
+                        });
+
+                        await pipeline.exec();
+
+                        return 'OK';
+                    }
+                    if (cache?.node) {
+                        const pipeline = cache.node.pipeline();
+
+                        Object.entries(values).forEach(([key, value]) => {
+                            if (keepTtl) pipeline.set(key, value, 'KEEPTTL');
+                            else pipeline.setex(key, ttl, value);
+                        });
+
+                        await pipeline.exec();
+
+                        return 'OK';
+                    }
+                } else {
+                    if (cache?.redis) return await cache.redis.mset(values);
+                    if (cache?.node) return await cache.node.mset(values);
                 }
             } catch (e) {
                 console.error('Cache set error', e);
