@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { getChallenges } from '@helpers/challenges.helpers';
 
 import { t, openRoute, didRoute } from '@routes';
-import { setValidChallengeForDid } from '@cache/challenges';
+import { setValidChallengesForDid } from '@cache/challenges';
 
 import packageJson from '../../package.json';
 
@@ -42,9 +42,7 @@ export const utilitiesRouter = t.router({
 
             const did = ctx.user.did;
 
-            await Promise.all(
-                challenges.map(async challenge => setValidChallengeForDid(did, challenge))
-            );
+            await setValidChallengesForDid(did, challenges);
 
             return challenges;
         }),
