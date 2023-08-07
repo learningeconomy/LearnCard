@@ -15,13 +15,17 @@ custom:
         CACHE_INSTANCE_SIZE: cache.t2.micro
     esbuild:
         packager: pnpm
-        plugins: esbuildWasmPlugin.cjs
         bundle: true
-        minify: true
-        sourcemap: false
+        minify: false
+        sourcemap: true
         target: 'node16'
         watch:
             pattern: ['src/**/*.ts', 'dids.ts']
+
+package:
+  patterns: 
+    - '!node_modules/**'
+    - 'node_modules/@learncard/didkit-plugin'
 
 provider:
     name: aws
