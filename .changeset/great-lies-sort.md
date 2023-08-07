@@ -1,6 +1,6 @@
 ---
-'@learncard/network-brain-service': major
-'@learncard/network-plugin': major
+'@learncard/network-brain-service': minor
+'@learncard/network-plugin': minor
 ---
 
-[BREAKING] Paginate connections, getConnections, connectionRequests, getBoosts, and getBoostRecipients. Also, add countBoostRecipients
+Paginate connections, getConnections, connectionRequests, getBoosts, and getBoostRecipients. Also, add countBoostRecipients
