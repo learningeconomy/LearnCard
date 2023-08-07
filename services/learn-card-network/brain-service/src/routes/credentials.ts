@@ -16,6 +16,8 @@ import {
     getSentCredentialsForProfile,
 } from '@accesslayer/credential/read';
 
+import { deleteStorageForUri } from '@cache/storage';
+
 import { t, profileRoute } from '@routes';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
 import { getCredentialOwner } from '@accesslayer/credential/relationships/read';
@@ -85,9 +87,8 @@ export const credentialsRouter = t.router({
                 method: 'GET',
                 path: '/credentials/received',
                 tags: ['Credentials'],
-                summary: 'Store a Credential',
-                description:
-                    'This endpoint stores a credential, returning a uri that can be used to resolve it',
+                summary: 'Get received credentials',
+                description: "This endpoint returns the current user's received credentials",
             },
         })
         .input(
@@ -113,9 +114,8 @@ export const credentialsRouter = t.router({
                 method: 'GET',
                 path: '/credentials/sent',
                 tags: ['Credentials'],
-                summary: 'Store a Credential',
-                description:
-                    'This endpoint stores a credential, returning a uri that can be used to resolve it',
+                summary: 'Get sent credentials',
+                description: "This endpoint returns the current user's sent credentials",
             },
         })
         .input(
@@ -141,9 +141,8 @@ export const credentialsRouter = t.router({
                 method: 'GET',
                 path: '/credentials/incoming',
                 tags: ['Credentials'],
-                summary: 'Store a Credential',
-                description:
-                    'This endpoint stores a credential, returning a uri that can be used to resolve it',
+                summary: 'Get incoming credentials',
+                description: "This endpoint returns the current user's incoming credentials",
             },
         })
         .input(
@@ -191,7 +190,7 @@ export const credentialsRouter = t.router({
                 });
             }
 
-            await deleteCredential(credential);
+            await Promise.all([deleteCredential(credential), deleteStorageForUri(uri)]);
 
             return true;
         }),

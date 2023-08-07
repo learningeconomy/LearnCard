@@ -21,6 +21,7 @@ import { getPresentationById } from '@accesslayer/presentation/read';
 import { getUriParts } from '@helpers/uri.helpers';
 import { getPresentationUri } from '@helpers/presentation.helpers';
 import { getBoostById } from '@accesslayer/boost/read';
+import { getCachedStorageByUri, setStorageForUri } from '@cache/storage';
 
 export const storageRouter = t.router({
     store: didAndChallengeRoute
@@ -50,12 +51,20 @@ export const storageRouter = t.router({
             if (isVP && type !== 'credential') {
                 const instance = await storePresentation(item as VP | JWE);
 
-                return getPresentationUri(instance.id, ctx.domain);
+                const uri = getPresentationUri(instance.id, ctx.domain);
+
+                await setStorageForUri(uri, item);
+
+                return uri;
             }
 
             const instance = await storeCredential(item as UnsignedVC | VC | JWE);
 
-            return getCredentialUri(instance.id, ctx.domain);
+            const uri = getCredentialUri(instance.id, ctx.domain);
+
+            await setStorageForUri(uri, item);
+
+            return uri;
         }),
 
     resolve: didAndChallengeRoute
@@ -77,6 +86,10 @@ export const storageRouter = t.router({
 
             const { id, type } = getUriParts(uri);
 
+            const cachedResponse = await getCachedStorageByUri(uri);
+
+            if (cachedResponse) return cachedResponse;
+
             if (type === 'credential') {
                 const instance = await getCredentialById(id);
 
@@ -84,7 +97,11 @@ export const storageRouter = t.router({
                     throw new TRPCError({ code: 'NOT_FOUND', message: 'Credential not found' });
                 }
 
-                return JSON.parse(instance.credential);
+                const credential = JSON.parse(instance.credential);
+
+                await setStorageForUri(uri, credential);
+
+                return credential;
             }
 
             if (type === 'presentation') {
@@ -94,7 +111,11 @@ export const storageRouter = t.router({
                     throw new TRPCError({ code: 'NOT_FOUND', message: 'Presentation not found' });
                 }
 
-                return JSON.parse(instance.presentation);
+                const presentation = JSON.parse(instance.presentation);
+
+                await setStorageForUri(uri, presentation);
+
+                return presentation;
             }
 
             if (type === 'boost') {
@@ -104,7 +125,11 @@ export const storageRouter = t.router({
                     throw new TRPCError({ code: 'NOT_FOUND', message: 'Boost not found' });
                 }
 
-                return JSON.parse(instance.boost);
+                const boost = JSON.parse(instance.boost);
+
+                await setStorageForUri(uri, boost);
+
+                return boost;
             }
 
             throw new TRPCError({

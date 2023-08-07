@@ -17,10 +17,11 @@ custom:
         CACHE_INSTANCE_SIZE: cache.t2.micro
     esbuild:
         packager: pnpm
-        plugins: esbuildWasmPlugin.cjs
+        plugins: esbuildPlugins.cjs
         bundle: true
         minify: true
-        sourcemap: false
+        external: ['@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm']
+        sourcemap: external
         target: 'node16'
         watch:
             pattern: ['src/**/*.ts', 'dids.ts']
@@ -70,6 +71,11 @@ custom:
         endpointType: regional
         apiType: http
 
+package:
+  patterns: 
+    - '!node_modules/**'
+    - 'node_modules/@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm'
+
 provider:
     name: aws
     runtime: nodejs16.x
@@ -83,6 +89,11 @@ provider:
         LEARN_CLOUD_SEED: ${env:LEARN_CLOUD_SEED}
         LEARN_CLOUD_MONGO_URI: ${env:LEARN_CLOUD_MONGO_URI}
         LEARN_CLOUD_MONGO_DB_NAME: ${env:LEARN_CLOUD_MONGO_DB_NAME}
+        SENTRY_DSN: ${env:SENTRY_DSN}
+        SENTRY_ENV: ${env:LEARN_CLOUD_SENTRY_ENV}
+        SENTRY_AUTH_TOKEN: ${env:SENTRY_AUTH_TOKEN}
+        SENTRY_ORG: ${env:SENTRY_ORG}
+        SENTRY_PROJECT: ${env:SENTRY_PROJECT}
         REDIS_HOST:
             'Fn::GetAtt': [ElasticCacheCluster, RedisEndpoint.Address]
         REDIS_PORT:

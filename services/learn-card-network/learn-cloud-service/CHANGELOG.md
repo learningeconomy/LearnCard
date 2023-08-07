@@ -1,5 +1,41 @@
 # @learncard/network-brain-service
 
+## 1.2.2
+
+### Patch Changes
+
+-   [#357](https://github.com/learningeconomy/LearnCard/pull/357) [`d0f4aff`](https://github.com/learningeconomy/LearnCard/commit/d0f4affa82ce006238f91d94eec353893b26bfb0) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Batch set challenges in Redis
+
+## 1.2.1
+
+### Patch Changes
+
+-   [#355](https://github.com/learningeconomy/LearnCard/pull/355) [`81618f2`](https://github.com/learningeconomy/LearnCard/commit/81618f2bec3365924e4bd24d61dead4e77f462b3) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add batchResolve endpoint
+
+## 1.2.0
+
+### Minor Changes
+
+-   [#353](https://github.com/learningeconomy/LearnCard/pull/353) [`568112b`](https://github.com/learningeconomy/LearnCard/commit/568112b50403a39e9482dcf4b645c8970a9afece) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add caching to storage routes
+
+## 1.1.8
+
+### Patch Changes
+
+-   Updated dependencies [[`92759e2`](https://github.com/learningeconomy/LearnCard/commit/92759e202017f1a9818ee781d216979e5fc64790)]:
+    -   @learncard/didkit-plugin@1.1.0
+    -   @learncard/ceramic-plugin@1.0.3
+    -   @learncard/did-web-plugin@1.0.14
+    -   @learncard/learn-card-plugin@1.0.10
+    -   @learncard/vc-plugin@1.0.10
+    -   @learncard/expiration-plugin@1.0.10
+
+## 1.1.7
+
+### Patch Changes
+
+-   [#349](https://github.com/learningeconomy/LearnCard/pull/349) [`8c1adac`](https://github.com/learningeconomy/LearnCard/commit/8c1adacffaa83b28333a86100d70f775411a8f84) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add Sentry integration
+
 ## 1.1.6
 
 ### Patch Changes

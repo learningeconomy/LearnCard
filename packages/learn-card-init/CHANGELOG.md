@@ -1,5 +1,58 @@
 # learn-card-core
 
+## 1.0.19
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-plugin@1.1.11
+    -   @learncard/network-plugin@1.4.29
+
+## 1.0.18
+
+### Patch Changes
+
+-   Updated dependencies [[`81618f2`](https://github.com/learningeconomy/LearnCard/commit/81618f2bec3365924e4bd24d61dead4e77f462b3)]:
+    -   @learncard/learn-cloud-plugin@1.1.10
+
+## 1.0.17
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-plugin@1.1.9
+    -   @learncard/network-plugin@1.4.28
+
+## 1.0.16
+
+### Patch Changes
+
+-   Updated dependencies [[`92759e2`](https://github.com/learningeconomy/LearnCard/commit/92759e202017f1a9818ee781d216979e5fc64790)]:
+    -   @learncard/didkit-plugin@1.1.0
+    -   @learncard/ceramic-plugin@1.0.3
+    -   @learncard/chapi-plugin@1.0.9
+    -   @learncard/did-web-plugin@1.0.14
+    -   @learncard/learn-card-plugin@1.0.10
+    -   @learncard/network-plugin@1.4.27
+    -   @learncard/learn-cloud-plugin@1.1.8
+    -   @learncard/vc-plugin@1.0.10
+    -   @learncard/expiration-plugin@1.0.10
+
+## 1.0.15
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-plugin@1.1.7
+    -   @learncard/network-plugin@1.4.26
+
+## 1.0.14
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-plugin@1.4.25
+
 ## 1.0.13
 
 ### Patch Changes

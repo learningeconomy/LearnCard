@@ -2,6 +2,7 @@ import { initTRPC, TRPCError } from '@trpc/server';
 import { APIGatewayEvent, CreateAWSLambdaContextOptions } from '@trpc/server/adapters/aws-lambda';
 import { OpenApiMeta } from 'trpc-openapi';
 import jwtDecode from 'jwt-decode';
+import * as Sentry from '@sentry/serverless';
 
 import { getProfileByDid } from '@accesslayer/profile/read';
 import { getEmptyLearnCard } from '@helpers/learnCard.helpers';
@@ -61,6 +62,8 @@ export const createContext = async ({
                 const cacheResponse = await isChallengeValidForDid(did, challenge);
                 await invalidateChallengeForDid(did, challenge);
 
+                Sentry.setUser({ id: did });
+
                 return { user: { did, isChallengeValid: Boolean(cacheResponse) }, domain };
             }
         }
@@ -69,12 +72,23 @@ export const createContext = async ({
     return { domain };
 };
 
-export const openRoute = t.procedure;
+export const openRoute = t.procedure
+    .use(t.middleware(Sentry.Handlers.trpcMiddleware({ attachRpcInput: true })))
+    .use(({ ctx, next, path }) => {
+        Sentry.configureScope(scope => {
+            scope.setTransactionName(`trpc-${path}`);
+        });
+        return next({ ctx });
+    });
 
-export const didRoute = openRoute.use(({ ctx, next }) => {
+export const didRoute = openRoute.use(async ({ ctx, next }) => {
     if (!ctx.user?.did) throw new TRPCError({ code: 'UNAUTHORIZED' });
 
-    return next({ ctx: { ...ctx, user: ctx.user } });
+    const profile = await getProfileByDid(ctx.user.did);
+
+    if (profile) Sentry.setUser({ id: profile.profileId, username: profile.displayName });
+
+    return next({ ctx: { ...ctx, user: { ...ctx.user, profile } } });
 });
 
 export const didAndChallengeRoute = didRoute.use(({ ctx, next }) => {
@@ -84,7 +98,7 @@ export const didAndChallengeRoute = didRoute.use(({ ctx, next }) => {
 });
 
 export const openProfileRoute = didRoute.use(async ({ ctx, next }) => {
-    const profile = await getProfileByDid(ctx.user.did);
+    const { profile } = ctx.user;
 
     if (!profile) {
         throw new TRPCError({
@@ -97,7 +111,7 @@ export const openProfileRoute = didRoute.use(async ({ ctx, next }) => {
 });
 
 export const profileRoute = didAndChallengeRoute.use(async ({ ctx, next }) => {
-    const profile = await getProfileByDid(ctx.user.did);
+    const { profile } = ctx.user;
 
     if (!profile) {
         throw new TRPCError({
