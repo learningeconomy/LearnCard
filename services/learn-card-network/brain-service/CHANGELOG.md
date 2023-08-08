@@ -1,5 +1,11 @@
 # @learncard/network-brain-service
 
+## 1.5.5
+
+### Patch Changes
+
+-   [#360](https://github.com/learningeconomy/LearnCard/pull/360) [`d4d7de7`](https://github.com/learningeconomy/LearnCard/commit/d4d7de7ac6eedddc3bb9a8ce7b77d83a03469915) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Use a queue for notifications
+
 ## 1.5.4
 
 ### Patch Changes
