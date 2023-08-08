@@ -1,5 +1,11 @@
 # @learncard/network-brain-service
 
+## 1.2.3
+
+### Patch Changes
+
+-   [#359](https://github.com/learningeconomy/LearnCard/pull/359) [`52024bc`](https://github.com/learningeconomy/LearnCard/commit/52024bcd55ac35c43cf55abc6ba4f08f4e867e9a) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Cache index plane and users
+
 ## 1.2.2
 
 ### Patch Changes
