@@ -9,6 +9,7 @@ import { getEmptyLearnCard } from '@helpers/learnCard.helpers';
 import { DidAuthVP } from 'types/vp';
 import { addDidToUser, removeDidFromUser, setDidAsPrimary } from '@accesslayer/user/update';
 import { ensureUserForDid } from '@accesslayer/user/create';
+import { deleteUserByDid } from '@accesslayer/user/delete';
 
 export const userRouter = t.router({
     getDids: didAndChallengeRoute
@@ -62,10 +63,22 @@ export const userRouter = t.router({
                 const existing = await getUserForDid(did);
 
                 if (existing) {
-                    throw new TRPCError({
-                        code: 'CONFLICT',
-                        message: 'Did is already associated with a user',
-                    });
+                    // If existing user is only a very simple user with just the one did as primary
+                    // and no associated dids, then it was probably made by accident prior to this call!
+                    //
+                    // We can safely just delete that user for now, though in the future we may want
+                    // to add a more robust check
+                    //
+                    // Otherwise, we should throw an error here to prevent accidentally screwing up
+                    // existing users!
+                    if (existing.did !== did || existing.associatedDids.length > 0) {
+                        throw new TRPCError({
+                            code: 'CONFLICT',
+                            message: 'Did is already associated with a user',
+                        });
+                    }
+
+                    await deleteUserByDid(did);
                 }
 
                 const user = await ensureUserForDid(ctx.user.did);

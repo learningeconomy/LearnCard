@@ -69,7 +69,7 @@ export type Cache = {
     mget: (keys: RedisKey[], resetTTL?: boolean, ttl?: number) => Promise<(string | null)[]>;
 
     /** Returns an array of keys matching a pattern */
-    keys: (pattern: string) => Promise<RedisKey[] | undefined>;
+    keys: (pattern: string) => Promise<RedisKey[]>;
 
     /** Forcibly evicts a key or keys from the cache */
     delete: (keys: RedisKey[]) => Promise<number | undefined>;
@@ -190,7 +190,7 @@ export const getCache = (): Cache => {
                 console.error('Cache keys error', error);
             }
 
-            return undefined;
+            return [];
         },
         delete: async keys => {
             if (keys.length === 0) return;

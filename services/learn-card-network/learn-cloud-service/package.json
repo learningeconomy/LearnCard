@@ -63,6 +63,7 @@
         "express": "^4.18.2",
         "ioredis": "^5.2.2",
         "ioredis-mock": "^8.2.2",
+        "json-stringify-deterministic": "^1.0.8",
         "jwt-decode": "^3.1.2",
         "libsodium-wrappers": "^0.7.11",
         "lodash": "^4.17.21",
