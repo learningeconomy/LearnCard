@@ -1,5 +1,13 @@
 # @learncard/cli
 
+## 3.1.20
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-plugin@1.1.12
+    -   @learncard/init@1.0.20
+
 ## 3.1.19
 
 ### Patch Changes
