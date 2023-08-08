@@ -63,6 +63,14 @@ export const userRouter = t.router({
                 const existing = await getUserForDid(did);
 
                 if (existing) {
+                    // If existing user is only a very simple user with just the one did as primary
+                    // and no associated dids, then it was probably made by accident prior to this call!
+                    //
+                    // We can safely just delete that user for now, though in the future we may want
+                    // to add a more robust check
+                    //
+                    // Otherwise, we should throw an error here to prevent accidentally screwing up
+                    // existing users!
                     if (existing.did !== did || existing.associatedDids.length > 0) {
                         throw new TRPCError({
                             code: 'CONFLICT',
