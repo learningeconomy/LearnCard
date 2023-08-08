@@ -3,7 +3,7 @@ import { LCNProfileConnectionStatusEnum, LCNNotificationTypeEnumValidator } from
 import { TRPCError } from '@trpc/server';
 import { Profile, ProfileInstance } from '@models';
 import { convertQueryResultToPropertiesObjectArray } from '@helpers/neo4j.helpers';
-import { sendNotification } from '@helpers/notifications.helpers';
+import { addNotificationToQueue } from '@helpers/notifications.helpers';
 import { ProfileType } from 'types/profile';
 
 export const getConnections = async (
@@ -124,7 +124,7 @@ export const connectProfiles = async (
         target.relateTo({ alias: 'connectedWith', where: { profileId: source.profileId } }),
     ]);
 
-    await sendNotification({
+    await addNotificationToQueue({
         type: LCNNotificationTypeEnumValidator.enum.CONNECTION_ACCEPTED,
         to: target.dataValues,
         from: source.dataValues,
@@ -216,7 +216,7 @@ export const requestConnection = async (
 
     await source.relateTo({ alias: 'connectionRequested', where: { profileId: target.profileId } });
 
-    await sendNotification({
+    await addNotificationToQueue({
         type: LCNNotificationTypeEnumValidator.enum.CONNECTION_REQUEST,
         to: target.dataValues,
         from: source.dataValues,
