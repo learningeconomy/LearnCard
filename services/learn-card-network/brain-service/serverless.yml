@@ -11,6 +11,13 @@ plugins:
     - serverless-offline
     - serverless-domain-manager
     - serverless-certificate-creator
+    - serverless-lift
+
+constructs:
+    notifications-queue:
+        type: queue
+        worker:
+            handler: lambda.notificationsWorker
 
 custom:
     config:
@@ -98,6 +105,7 @@ provider:
             'Fn::GetAtt': [ElasticCacheCluster, RedisEndpoint.Address]
         REDIS_PORT:
             'Fn::GetAtt': [ElasticCacheCluster, RedisEndpoint.Port]
+        NOTIFICATIONS_QUEUE_URL: ${construct:notifications-queue.queueUrl}
     tracing:
         apiGateway: true
         lambda: true
