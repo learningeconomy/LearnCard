@@ -1,7 +1,8 @@
 import cache from '@cache';
 import { JWE } from '@learncard/types';
 
-const CREDENTIAL_TTL = 60 * 60 * 24;
+/** 1 Day */
+export const CREDENTIAL_TTL = 60 * 60 * 24;
 
 export const getCredentialCacheKey = (id: string): string => `credential:${id}`;
 

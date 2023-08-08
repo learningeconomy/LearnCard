@@ -1,9 +1,20 @@
 import serverlessHttp from 'serverless-http';
-import type { Context, APIGatewayProxyResultV2, APIGatewayProxyEventV2 } from 'aws-lambda';
+import type {
+    Context,
+    APIGatewayProxyResultV2,
+    APIGatewayProxyEventV2,
+    SQSHandler,
+} from 'aws-lambda';
+import { LCNNotificationValidator } from '@learncard/types';
 import { awsLambdaRequestHandler } from '@trpc/server/adapters/aws-lambda';
 import { createOpenApiAwsLambdaHandler } from 'trpc-openapi';
 import { TRPC_ERROR_CODE_HTTP_STATUS } from 'trpc-openapi/dist/adapters/node-http/errors';
 import * as Sentry from '@sentry/serverless';
+
+import app from './src/openapi';
+import didWebApp from './src/dids';
+import { appRouter, createContext } from './src/app';
+import { sendNotification } from './src/helpers/notifications.helpers';
 
 Sentry.AWSLambda.init({
     dsn: process.env.SENTRY_DSN,
@@ -16,10 +27,6 @@ Sentry.AWSLambda.init({
         new Sentry.Integrations.ContextLines(),
     ],
 });
-
-import app from './src/openapi';
-import didWebApp from './src/dids';
-import { appRouter, createContext } from './src/app';
 
 export const swaggerUiHandler = serverlessHttp(app, { basePath: '/docs' });
 export const didWebHandler = Sentry.AWSLambda.wrapHandler(serverlessHttp(didWebApp));
@@ -88,5 +95,24 @@ export const trpcHandler = Sentry.AWSLambda.wrapHandler(
         }
 
         return _trpcHandler(event, context);
+    }
+);
+
+export const notificationsWorker: SQSHandler = Sentry.AWSLambda.wrapHandler(
+    async (event, context) => {
+        console.log('lolwat');
+        await Promise.all(
+            event.Records.map(async record => {
+                try {
+                    const _notification = JSON.parse(record.body);
+
+                    const notification = await LCNNotificationValidator.parseAsync(_notification);
+
+                    await sendNotification(notification);
+                } catch (error) {
+                    console.error('Invalid Notification Object', record.body);
+                }
+            })
+        );
     }
 );

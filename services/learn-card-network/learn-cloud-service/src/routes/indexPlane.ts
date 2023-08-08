@@ -25,6 +25,11 @@ import {
 } from '@accesslayer/credential-record/delete';
 import { encryptObject } from '@helpers/encryption.helpers';
 import { PaginationOptionsValidator } from 'types/mongo';
+import {
+    flushIndexCacheForDid,
+    getCachedIndexPageForDid,
+    setCachedIndexPageForDid,
+} from '@cache/indexPlane';
 
 export const indexRouter = t.router({
     get: didAndChallengeRoute
@@ -60,6 +65,17 @@ export const indexRouter = t.router({
                 query = await learnCard.invoke.getDIDObject().decryptDagJWE(query);
             }
 
+            const cachedResponse = await getCachedIndexPageForDid(
+                did,
+                query,
+                { limit, cursor },
+                includeAssociatedDids
+            );
+
+            if (cachedResponse) {
+                return encrypt ? encryptObject(cachedResponse, ctx.domain, [did]) : cachedResponse;
+            }
+
             const rawResults = await getCredentialRecordsForDid(
                 did,
                 query,
@@ -88,6 +104,14 @@ export const indexRouter = t.router({
                 hasMore,
                 ...(newCursor ? { cursor: newCursor } : {}),
             };
+
+            await setCachedIndexPageForDid(
+                did,
+                query,
+                { limit, cursor },
+                paginationResult,
+                includeAssociatedDids
+            );
 
             if (encrypt) return encryptObject(paginationResult, ctx.domain, [did]);
 
@@ -169,6 +193,8 @@ export const indexRouter = t.router({
 
             const success = Boolean(await createCredentialRecord(did, record));
 
+            await flushIndexCacheForDid(did);
+
             if (!success) {
                 throw new TRPCError({
                     code: 'INTERNAL_SERVER_ERROR',
@@ -212,6 +238,8 @@ export const indexRouter = t.router({
 
             await createCredentialRecords(did, records);
 
+            await flushIndexCacheForDid(did);
+
             return true;
         }),
     update: didAndChallengeRoute
@@ -247,6 +275,7 @@ export const indexRouter = t.router({
             }
 
             const success = Boolean(await updateCredentialRecord(did, id, updates));
+            await flushIndexCacheForDid(did);
 
             if (!success) {
                 throw new TRPCError({
@@ -277,6 +306,7 @@ export const indexRouter = t.router({
             } = ctx;
 
             const success = Boolean(await deleteCredentialRecordById(did, id));
+            await flushIndexCacheForDid(did);
 
             if (!success) {
                 throw new TRPCError({
@@ -306,6 +336,7 @@ export const indexRouter = t.router({
             } = ctx;
 
             const success = Boolean(await deleteCredentialRecordsForDid(did));
+            await flushIndexCacheForDid(did);
 
             if (!success) {
                 throw new TRPCError({

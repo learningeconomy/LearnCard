@@ -1,7 +1,7 @@
 {
     "name": "@learncard/network-brain-service",
     "private": true,
-    "version": "1.5.4",
+    "version": "1.5.5",
     "description": "",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
@@ -33,10 +33,12 @@
         "serverless-domain-manager": "^6.3.1",
         "serverless-esbuild": "^1.45.1",
         "serverless-http": "^3.2.0",
+        "serverless-lift": "^1.27.0",
         "shx": "^0.3.4",
         "testcontainers": "^9.1.1"
     },
     "dependencies": {
+        "@aws-sdk/client-sqs": "^3.379.1",
         "@learncard/ceramic-plugin": "workspace:*",
         "@learncard/core": "workspace:*",
         "@learncard/crypto-plugin": "workspace:*",

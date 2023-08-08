@@ -5,6 +5,7 @@ import { EncryptedCredentialRecord } from '@learncard/types';
 import { CredentialRecords } from '@accesslayer/credential-record';
 
 import { client } from '@mongo';
+import cache from '@cache';
 
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;
@@ -35,6 +36,7 @@ describe('Users', () => {
     describe('getDids', () => {
         beforeAll(async () => {
             await Users.deleteMany({});
+            await cache.node.flushall();
             await userA.clients.fullAuth.user.addDid({
                 presentation: await userB.learnCard.invoke.getDidAuthVp(),
             });
@@ -42,6 +44,7 @@ describe('Users', () => {
 
         afterAll(async () => {
             await Users.deleteMany({});
+            await cache.node.flushall();
         });
 
         it('should require full auth', async () => {
@@ -70,11 +73,13 @@ describe('Users', () => {
         beforeEach(async () => {
             await Users.deleteMany({});
             await CredentialRecords.deleteMany({});
+            await cache.node.flushall();
         });
 
         afterAll(async () => {
             await Users.deleteMany({});
             await CredentialRecords.deleteMany({});
+            await cache.node.flushall();
         });
 
         it('should require full auth', async () => {
@@ -183,6 +188,7 @@ describe('Users', () => {
     describe('removeDid', () => {
         beforeEach(async () => {
             await Users.deleteMany({});
+            await cache.node.flushall();
             await CredentialRecords.deleteMany({});
             await userA.clients.fullAuth.user.addDid({
                 presentation: await userB.learnCard.invoke.getDidAuthVp(),
@@ -191,6 +197,7 @@ describe('Users', () => {
 
         afterAll(async () => {
             await Users.deleteMany({});
+            await cache.node.flushall();
             await CredentialRecords.deleteMany({});
         });
 
