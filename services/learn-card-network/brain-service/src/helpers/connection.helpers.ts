@@ -2,8 +2,8 @@ import { Op, QueryBuilder, Where } from 'neogma';
 import { LCNProfileConnectionStatusEnum, LCNNotificationTypeEnumValidator } from '@learncard/types';
 import { TRPCError } from '@trpc/server';
 import { Profile, ProfileInstance } from '@models';
-import { convertQueryResultToPropertiesObjectArray } from '@helpers/neo4j.helpers';
 import { sendNotification } from '@helpers/notifications.helpers';
+import { convertQueryResultToPropertiesObjectArray } from '@helpers/neo4j.helpers';
 import { ProfileType } from 'types/profile';
 
 export const getConnections = async (
@@ -23,8 +23,8 @@ export const getConnections = async (
 
     const query = cursor
         ? _query.where(
-            new Where({ target: { displayName: { [Op.gt]: cursor } } }, _query.getBindParam())
-        )
+              new Where({ target: { displayName: { [Op.gt]: cursor } } }, _query.getBindParam())
+          )
         : _query;
 
     const results = convertQueryResultToPropertiesObjectArray<{ target: ProfileType }>(
@@ -36,23 +36,51 @@ export const getConnections = async (
 
 export const getPendingConnections = async (
     profile: ProfileInstance,
-    { limit }: { limit: number }
-): Promise<ProfileInstance[]> => {
-    return (await profile.findRelationships({ alias: 'connectionRequested', limit })).map(
-        result => result.target
+    { limit, cursor }: { limit: number; cursor?: string }
+): Promise<ProfileType[]> => {
+    const _query = new QueryBuilder().match({
+        related: [
+            { model: Profile, where: { profileId: profile.profileId } },
+            Profile.getRelationshipByAlias('connectionRequested'),
+            { identifier: 'target', model: Profile },
+        ],
+    });
+
+    const query = cursor
+        ? _query.where(
+              new Where({ target: { displayName: { [Op.gt]: cursor } } }, _query.getBindParam())
+          )
+        : _query;
+
+    const results = convertQueryResultToPropertiesObjectArray<{ target: ProfileType }>(
+        await query.return('DISTINCT target').orderBy('target.displayName').limit(limit).run()
     );
+
+    return results.map(result => result.target);
 };
 export const getConnectionRequests = async (
     profile: ProfileInstance,
-    { limit }: { limit: number }
-): Promise<ProfileInstance[]> => {
-    return (
-        await Profile.findRelationships({
-            alias: 'connectionRequested',
-            where: { target: { profileId: profile.profileId } },
-            limit,
-        })
-    ).map(result => result.source);
+    { limit, cursor }: { limit: number; cursor?: string }
+): Promise<ProfileType[]> => {
+    const _query = new QueryBuilder().match({
+        related: [
+            { identifier: 'source', model: Profile },
+            Profile.getRelationshipByAlias('connectionRequested'),
+            { model: Profile, where: { profileId: profile.profileId } },
+        ],
+    });
+
+    const query = cursor
+        ? _query.where(
+              new Where({ source: { displayName: { [Op.gt]: cursor } } }, _query.getBindParam())
+          )
+        : _query;
+
+    const results = convertQueryResultToPropertiesObjectArray<{ source: ProfileType }>(
+        await query.return('DISTINCT source').orderBy('source.displayName').limit(limit).run()
+    );
+
+    return results.map(result => result.source);
 };
 
 /** Checks whether two profiles are already connected */

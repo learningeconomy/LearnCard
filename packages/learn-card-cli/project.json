@@ -8,10 +8,7 @@
     "implicitDependencies": [
         "nx-run-command",
         "types",
-        "core",
-        "init",
-        "didkit-plugin",
-        "learn-cloud-plugin"
+        "init"
     ],
     "namedInputs": {
         "source": ["{projectRoot}/src/**/*"],
@@ -27,6 +24,7 @@
         },
         "start": {
             "executor": "./tools/executors/workspace:run-command",
+            "dependsOn": ["^build"],
             "options": {
                 "command": "pnpm start",
                 "cwd": "{root}/packages/learn-card-cli"

@@ -7,10 +7,13 @@ import {
     SentCredentialInfo,
     JWE,
     Boost,
-    BoostRecipientInfo,
     LCNSigningAuthorityForUserType,
     LCNBoostClaimLinkSigningAuthorityType,
     LCNBoostClaimLinkOptionsType,
+    PaginationOptionsType,
+    PaginatedLCNProfilesType,
+    PaginatedBoostsType,
+    PaginatedBoostRecipientsType,
 } from '@learncard/types';
 import { Plugin } from '@learncard/core';
 import { ProofOptions } from '@learncard/didkit-plugin';
@@ -51,9 +54,9 @@ export type LearnCardNetworkPluginMethods = {
     cancelConnectionRequest: (profileId: string) => Promise<boolean>;
     disconnectWith: (profileId: string) => Promise<boolean>;
     acceptConnectionRequest: (id: string) => Promise<boolean>;
-    getConnections: () => Promise<LCNProfile[]>;
-    getPendingConnections: () => Promise<LCNProfile[]>;
-    getConnectionRequests: () => Promise<LCNProfile[]>;
+    getConnections: (options?: PaginationOptionsType) => Promise<PaginatedLCNProfilesType>;
+    getPendingConnections: (options?: PaginationOptionsType) => Promise<PaginatedLCNProfilesType>;
+    getConnectionRequests: (options?: PaginationOptionsType) => Promise<PaginatedLCNProfilesType>;
     generateInvite: (challenge?: string) => Promise<{ profileId: string; challenge: string }>;
 
     blockProfile: (profileId: string) => Promise<boolean>;
@@ -79,13 +82,14 @@ export type LearnCardNetworkPluginMethods = {
         metadata?: Partial<Omit<Boost, 'uri'>>
     ) => Promise<string>;
     getBoost: (uri: string) => Promise<Boost & { boost: UnsignedVC }>;
-    getBoosts: () => Promise<{ name?: string; uri: string }[]>;
+    getBoosts: (options?: PaginationOptionsType) => Promise<PaginatedBoostsType>;
     getBoostRecipients: (
         uri: string,
         limit?: number,
-        skip?: number,
+        cursor?: string,
         includeUnacceptedBoosts?: boolean
-    ) => Promise<BoostRecipientInfo[]>;
+    ) => Promise<PaginatedBoostRecipientsType>;
+    countBoostRecipients: (uri: string, includeUnacceptedBoosts?: boolean) => Promise<number>;
     updateBoost: (
         uri: string,
         updates: Partial<Omit<Boost, 'uri'>>,

@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { PaginationResponseValidator } from './mongo';
+
 export const LCNProfileValidator = z.object({
     profileId: z.string().min(3).max(40),
     displayName: z.string().default(''),
@@ -10,6 +12,11 @@ export const LCNProfileValidator = z.object({
     notificationsWebhook: z.string().url().startsWith('https://').optional(),
 });
 export type LCNProfile = z.infer<typeof LCNProfileValidator>;
+
+export const PaginatedLCNProfilesValidator = PaginationResponseValidator.extend({
+    records: LCNProfileValidator.array(),
+});
+export type PaginatedLCNProfilesType = z.infer<typeof PaginatedLCNProfilesValidator>;
 
 export const LCNProfileConnectionStatusEnum = z.enum([
     'CONNECTED',
@@ -40,13 +47,22 @@ export const BoostValidator = z.object({
 });
 export type Boost = z.infer<typeof BoostValidator>;
 
+export const PaginatedBoostsValidator = PaginationResponseValidator.extend({
+    records: BoostValidator.array(),
+});
+export type PaginatedBoostsType = z.infer<typeof PaginatedBoostsValidator>;
+
 export const BoostRecipientValidator = z.object({
     to: LCNProfileValidator,
     from: z.string(),
     received: z.string().optional(),
 });
-
 export type BoostRecipientInfo = z.infer<typeof BoostRecipientValidator>;
+
+export const PaginatedBoostRecipientsValidator = PaginationResponseValidator.extend({
+    records: BoostRecipientValidator.array(),
+});
+export type PaginatedBoostRecipientsType = z.infer<typeof PaginatedBoostRecipientsValidator>;
 
 export const LCNNotificationTypeEnumValidator = z.enum([
     'CONNECTION_REQUEST',
