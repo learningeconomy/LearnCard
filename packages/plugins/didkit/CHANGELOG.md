@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 1.1.1
+
+### Patch Changes
+
+-   [#363](https://github.com/learningeconomy/LearnCard/pull/363) [`1a17fd9`](https://github.com/learningeconomy/LearnCard/commit/1a17fd9e6f8f62df2814e6243a12a948203e5545) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Cache did:web resolution for 10s
+
 ## 1.1.0
 
 ### Minor Changes
