@@ -10,7 +10,7 @@ import {
 } from '@accesslayer/credential/relationships/create';
 import { getCredentialSentToProfile } from '@accesslayer/credential/relationships/read';
 import { constructUri, getUriParts } from './uri.helpers';
-import { sendNotification } from './notifications.helpers';
+import { addNotificationToQueue } from './notifications.helpers';
 
 export const getCredentialUri = (id: string, domain: string): string =>
     constructUri('credential', id, domain);
@@ -27,7 +27,7 @@ export const sendCredential = async (
 
     let uri = getCredentialUri(credentialInstance.id, domain);
 
-    await sendNotification({
+    await addNotificationToQueue({
         type: LCNNotificationTypeEnumValidator.enum.CREDENTIAL_RECEIVED,
         to: to.dataValues,
         from: from.dataValues,
@@ -64,7 +64,7 @@ export const acceptCredential = async (profile: ProfileInstance, uri: string): P
 
     await createReceivedCredentialRelationship(profile, pendingVc.source, pendingVc.target);
 
-    await sendNotification({
+    await addNotificationToQueue({
         type: LCNNotificationTypeEnumValidator.enum.BOOST_ACCEPTED,
         to: pendingVc.source,
         from: profile,

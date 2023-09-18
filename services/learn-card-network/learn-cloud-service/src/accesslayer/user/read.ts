@@ -1,19 +1,19 @@
 import { Users } from '.';
 import { MongoUserType } from '@models';
 import { ensureUserForDid } from './create';
-
-export const getUserByDid = async (did: string): Promise<MongoUserType | null> => {
-    try {
-        return await Users.findOne({ did });
-    } catch (e) {
-        console.error(e);
-        return null;
-    }
-};
+import { getCachedUserForDid, setCachedUserForDid } from '@cache/user';
 
 export const getUserForDid = async (did: string): Promise<MongoUserType | null> => {
     try {
-        return await Users.findOne({ $or: [{ did }, { associatedDids: did }] });
+        const cachedResponse = await getCachedUserForDid(did);
+
+        if (cachedResponse) return cachedResponse;
+
+        const user = await Users.findOne({ $or: [{ did }, { associatedDids: did }] });
+
+        if (user) await setCachedUserForDid(did, user);
+
+        return user;
     } catch (e) {
         console.error(e);
         return null;

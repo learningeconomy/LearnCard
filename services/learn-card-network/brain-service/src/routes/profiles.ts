@@ -156,8 +156,10 @@ export const profilesRouter = t.router({
         .output(LCNProfileValidator.optional())
         .query(async ({ ctx, input }) => {
             const { profileId } = input;
+
             const selfProfile = ctx.user && ctx.user.did && (await getProfileByDid(ctx.user.did));
             const otherProfile = await getProfileByProfileId(profileId);
+
             if (selfProfile && (await isRelationshipBlocked(selfProfile, otherProfile))) {
                 return undefined;
             }
@@ -472,13 +474,14 @@ export const profilesRouter = t.router({
                 path: '/profile/connections',
                 tags: ['Profiles'],
                 summary: 'View connections',
-                description: "This route shows the current user's connections",
+                description:
+                    "This route shows the current user's connections.\nWarning! This route will soon be deprecated and currently has a hard limit of returning only the first 50 connections",
             },
         })
         .input(z.void())
         .output(LCNProfileValidator.array())
         .query(async ({ ctx }) => {
-            const connections = await getConnections(ctx.user.profile);
+            const connections = await getConnections(ctx.user.profile, { limit: 50 });
 
             return connections.map(connection => updateDidForProfile(ctx.domain, connection));
         }),
@@ -491,13 +494,14 @@ export const profilesRouter = t.router({
                 path: '/profile/pending-connections',
                 tags: ['Profiles'],
                 summary: 'View pending connections',
-                description: "This route shows the current user's pending connections",
+                description:
+                    "This route shows the current user's pending connections.\nWarning! This route will soon be deprecated and currently has a hard limit of returning only the first 50 connections",
             },
         })
         .input(z.void())
         .output(LCNProfileValidator.array())
         .query(async ({ ctx }) => {
-            const connections = await getPendingConnections(ctx.user.profile);
+            const connections = await getPendingConnections(ctx.user.profile, { limit: 50 });
 
             return connections.map(connection => updateDidForProfile(ctx.domain, connection));
         }),
@@ -510,13 +514,14 @@ export const profilesRouter = t.router({
                 path: '/profile/connection-requests',
                 tags: ['Profiles'],
                 summary: 'View connection requests',
-                description: "This route shows the current user's connection requests",
+                description:
+                    "This route shows the current user's connection requests.\nWarning! This route will soon be deprecated and currently has a hard limit of returning only the first 50 connections",
             },
         })
         .input(z.void())
         .output(LCNProfileValidator.array())
         .query(async ({ ctx }) => {
-            const connections = await getConnectionRequests(ctx.user.profile);
+            const connections = await getConnectionRequests(ctx.user.profile, { limit: 50 });
 
             return connections.map(connection => updateDidForProfile(ctx.domain, connection));
         }),

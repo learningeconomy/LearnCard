@@ -1,5 +1,23 @@
 # learn-card-core
 
+## 1.1.1
+
+### Patch Changes
+
+-   [#363](https://github.com/learningeconomy/LearnCard/pull/363) [`1a17fd9`](https://github.com/learningeconomy/LearnCard/commit/1a17fd9e6f8f62df2814e6243a12a948203e5545) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Cache did:web resolution for 10s
+
+## 1.1.0
+
+### Minor Changes
+
+-   [#351](https://github.com/learningeconomy/LearnCard/pull/351) [`92759e2`](https://github.com/learningeconomy/LearnCard/commit/92759e202017f1a9818ee781d216979e5fc64790) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix didkit failing to properly init when instantiating multiple LearnCards concurrently
+
+## 1.0.8
+
+### Patch Changes
+
+-   [`630fdcf`](https://github.com/learningeconomy/LearnCard/commit/630fdcf0f55dbef6693f21a32fcefe541e5ec9e6) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix wasm payload issue
+
 ## 1.0.7
 
 ### Patch Changes

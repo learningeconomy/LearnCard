@@ -1,5 +1,96 @@
 # @learncard/cli
 
+## 3.1.22
+
+### Patch Changes
+
+-   Updated dependencies [[`1a17fd9`](https://github.com/learningeconomy/LearnCard/commit/1a17fd9e6f8f62df2814e6243a12a948203e5545)]:
+    -   @learncard/didkit-plugin@1.1.1
+    -   @learncard/init@1.0.22
+    -   @learncard/learn-cloud-plugin@1.1.13
+
+## 3.1.21
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.0.21
+
+## 3.1.20
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-plugin@1.1.12
+    -   @learncard/init@1.0.20
+
+## 3.1.19
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-plugin@1.1.11
+    -   @learncard/init@1.0.19
+
+## 3.1.18
+
+### Patch Changes
+
+-   Updated dependencies [[`81618f2`](https://github.com/learningeconomy/LearnCard/commit/81618f2bec3365924e4bd24d61dead4e77f462b3)]:
+    -   @learncard/learn-cloud-plugin@1.1.10
+    -   @learncard/init@1.0.18
+
+## 3.1.17
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-plugin@1.1.9
+    -   @learncard/init@1.0.17
+
+## 3.1.16
+
+### Patch Changes
+
+-   Updated dependencies [[`92759e2`](https://github.com/learningeconomy/LearnCard/commit/92759e202017f1a9818ee781d216979e5fc64790)]:
+    -   @learncard/didkit-plugin@1.1.0
+    -   @learncard/init@1.0.16
+    -   @learncard/learn-cloud-plugin@1.1.8
+
+## 3.1.15
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-plugin@1.1.7
+    -   @learncard/init@1.0.15
+
+## 3.1.14
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.0.14
+
+## 3.1.13
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-plugin@1.1.6
+    -   @learncard/init@1.0.13
+
+## 3.1.12
+
+### Patch Changes
+
+-   [`630fdcf`](https://github.com/learningeconomy/LearnCard/commit/630fdcf0f55dbef6693f21a32fcefe541e5ec9e6) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix wasm payload issue
+
+-   Updated dependencies [[`630fdcf`](https://github.com/learningeconomy/LearnCard/commit/630fdcf0f55dbef6693f21a32fcefe541e5ec9e6)]:
+    -   @learncard/init@1.0.12
+    -   @learncard/didkit-plugin@1.0.8
+    -   @learncard/learn-cloud-plugin@1.1.5
+
 ## 3.1.11
 
 ### Patch Changes

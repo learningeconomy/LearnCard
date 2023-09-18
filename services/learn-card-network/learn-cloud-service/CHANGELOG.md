@@ -1,5 +1,83 @@
 # @learncard/network-brain-service
 
+## 1.2.4
+
+### Patch Changes
+
+-   Updated dependencies [[`1a17fd9`](https://github.com/learningeconomy/LearnCard/commit/1a17fd9e6f8f62df2814e6243a12a948203e5545)]:
+    -   @learncard/didkit-plugin@1.1.1
+    -   @learncard/ceramic-plugin@1.0.3
+    -   @learncard/did-web-plugin@1.0.15
+    -   @learncard/learn-card-plugin@1.0.11
+    -   @learncard/vc-plugin@1.0.11
+    -   @learncard/expiration-plugin@1.0.11
+
+## 1.2.3
+
+### Patch Changes
+
+-   [#359](https://github.com/learningeconomy/LearnCard/pull/359) [`52024bc`](https://github.com/learningeconomy/LearnCard/commit/52024bcd55ac35c43cf55abc6ba4f08f4e867e9a) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Cache index plane and users
+
+## 1.2.2
+
+### Patch Changes
+
+-   [#357](https://github.com/learningeconomy/LearnCard/pull/357) [`d0f4aff`](https://github.com/learningeconomy/LearnCard/commit/d0f4affa82ce006238f91d94eec353893b26bfb0) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Batch set challenges in Redis
+
+## 1.2.1
+
+### Patch Changes
+
+-   [#355](https://github.com/learningeconomy/LearnCard/pull/355) [`81618f2`](https://github.com/learningeconomy/LearnCard/commit/81618f2bec3365924e4bd24d61dead4e77f462b3) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add batchResolve endpoint
+
+## 1.2.0
+
+### Minor Changes
+
+-   [#353](https://github.com/learningeconomy/LearnCard/pull/353) [`568112b`](https://github.com/learningeconomy/LearnCard/commit/568112b50403a39e9482dcf4b645c8970a9afece) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add caching to storage routes
+
+## 1.1.8
+
+### Patch Changes
+
+-   Updated dependencies [[`92759e2`](https://github.com/learningeconomy/LearnCard/commit/92759e202017f1a9818ee781d216979e5fc64790)]:
+    -   @learncard/didkit-plugin@1.1.0
+    -   @learncard/ceramic-plugin@1.0.3
+    -   @learncard/did-web-plugin@1.0.14
+    -   @learncard/learn-card-plugin@1.0.10
+    -   @learncard/vc-plugin@1.0.10
+    -   @learncard/expiration-plugin@1.0.10
+
+## 1.1.7
+
+### Patch Changes
+
+-   [#349](https://github.com/learningeconomy/LearnCard/pull/349) [`8c1adac`](https://github.com/learningeconomy/LearnCard/commit/8c1adacffaa83b28333a86100d70f775411a8f84) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add Sentry integration
+
+## 1.1.6
+
+### Patch Changes
+
+-   [#342](https://github.com/learningeconomy/LearnCard/pull/342) [`1f4622e`](https://github.com/learningeconomy/LearnCard/commit/1f4622e43c050559cac413489563aad9c4754ea1) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix adding a did to a user with a different primary did
+
+-   Updated dependencies [[`535411f`](https://github.com/learningeconomy/LearnCard/commit/535411f6f8eb6a60eb607ba0cb8ebc58948808ca)]:
+    -   @learncard/vc-templates-plugin@1.0.5
+    -   @learncard/vc-plugin@1.0.9
+    -   @learncard/did-web-plugin@1.0.13
+    -   @learncard/expiration-plugin@1.0.9
+
+## 1.1.5
+
+### Patch Changes
+
+-   Updated dependencies [[`630fdcf`](https://github.com/learningeconomy/LearnCard/commit/630fdcf0f55dbef6693f21a32fcefe541e5ec9e6)]:
+    -   @learncard/didkit-plugin@1.0.8
+    -   @learncard/ceramic-plugin@1.0.3
+    -   @learncard/did-web-plugin@1.0.12
+    -   @learncard/learn-card-plugin@1.0.9
+    -   @learncard/vc-plugin@1.0.8
+    -   @learncard/expiration-plugin@1.0.8
+
 ## 1.1.4
 
 ### Patch Changes

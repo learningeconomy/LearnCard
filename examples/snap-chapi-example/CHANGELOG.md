@@ -1,5 +1,82 @@
 # @learncard/snap-chapi-example
 
+## 1.0.91
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/react@2.6.27
+
+## 1.0.90
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/react@2.6.26
+
+## 1.0.89
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/react@2.6.25
+
+## 1.0.88
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/react@2.6.24
+
+## 1.0.87
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/react@2.6.23
+
+## 1.0.86
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/react@2.6.22
+
+## 1.0.85
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/react@2.6.21
+
+## 1.0.84
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/react@2.6.20
+
+## 1.0.83
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/react@2.6.19
+
+## 1.0.82
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/react@2.6.18
+
+## 1.0.81
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/react@2.6.17
+
 ## 1.0.80
 
 ### Patch Changes

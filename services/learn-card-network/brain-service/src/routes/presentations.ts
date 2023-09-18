@@ -2,6 +2,7 @@ import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { SentCredentialInfoValidator, VPValidator, JWEValidator } from '@learncard/types';
 
+import { deleteStorageForUri } from '@cache/storage';
 import { t, profileRoute } from '@routes';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
 import { acceptPresentation, sendPresentation } from '@helpers/presentation.helpers';
@@ -74,9 +75,8 @@ export const presentationsRouter = t.router({
                 method: 'GET',
                 path: '/presentation/received',
                 tags: ['Presentations'],
-                summary: 'Store a Credential',
-                description:
-                    'This endpoint stores a credential, returning a uri that can be used to resolve it',
+                summary: 'Get received presentations',
+                description: "This endpoint returns the current user's received presentations",
             },
         })
         .input(
@@ -102,9 +102,8 @@ export const presentationsRouter = t.router({
                 method: 'GET',
                 path: '/presentation/sent',
                 tags: ['Presentations'],
-                summary: 'Store a Credential',
-                description:
-                    'This endpoint stores a credential, returning a uri that can be used to resolve it',
+                summary: 'Get sent presentations',
+                description: "This endpoint returns the current user's sent presentations",
             },
         })
         .input(
@@ -130,9 +129,8 @@ export const presentationsRouter = t.router({
                 method: 'GET',
                 path: '/presentation/incoming',
                 tags: ['Presentations'],
-                summary: 'Store a Credential',
-                description:
-                    'This endpoint stores a credential, returning a uri that can be used to resolve it',
+                summary: 'Get incoming presentations',
+                description: "This endpoint returns the current user's incoming presentations",
             },
         })
         .input(
@@ -180,7 +178,7 @@ export const presentationsRouter = t.router({
                 });
             }
 
-            await deletePresentation(presentation);
+            await Promise.all([deletePresentation(presentation), deleteStorageForUri(uri)]);
 
             return true;
         }),

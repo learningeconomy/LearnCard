@@ -1,50 +1,56 @@
+import { Op, QueryBuilder, Where } from 'neogma';
 import { LCNProfileConnectionStatusEnum, LCNNotificationTypeEnumValidator } from '@learncard/types';
 import { TRPCError } from '@trpc/server';
 import { Profile, ProfileInstance } from '@models';
-import { sendNotification } from './notifications.helpers';
+import { convertQueryResultToPropertiesObjectArray } from '@helpers/neo4j.helpers';
+import { addNotificationToQueue } from '@helpers/notifications.helpers';
+import { ProfileType } from 'types/profile';
 
-export const getConnections = async (profile: ProfileInstance): Promise<ProfileInstance[]> => {
-    const [connectedTo, connectedBy] = await Promise.all([
-        profile.findRelationships({ alias: 'connectedWith' }),
-        Profile.findRelationships({
-            alias: 'connectedWith',
-            where: { target: { profileId: profile.profileId } },
-        }),
-    ]);
+export const getConnections = async (
+    profile: ProfileInstance,
+    { limit, cursor }: { limit: number; cursor?: string }
+): Promise<ProfileType[]> => {
+    const _query = new QueryBuilder().match({
+        related: [
+            { model: Profile, where: { profileId: profile.profileId } },
+            {
+                ...Profile.getRelationshipByAlias('connectedWith'),
+                direction: 'none',
+            },
+            { identifier: 'target', model: Profile },
+        ],
+    });
 
-    const connectedTos = connectedTo.map(result => result.target);
-    const connectedBys = connectedBy.map(result => result.source);
+    const query = cursor
+        ? _query.where(
+            new Where({ target: { displayName: { [Op.gt]: cursor } } }, _query.getBindParam())
+        )
+        : _query;
 
-    return [...connectedTos, ...connectedBys].reduce<ProfileInstance[]>(
-        (profiles, currentProfile) => {
-            if (
-                !profiles.find(
-                    existingProfile => existingProfile.profileId === currentProfile.profileId
-                )
-            ) {
-                profiles.push(currentProfile);
-            }
-
-            return profiles;
-        },
-        []
+    const results = convertQueryResultToPropertiesObjectArray<{ target: ProfileType }>(
+        await query.return('DISTINCT target').orderBy('target.displayName').limit(limit).run()
     );
+
+    return results.map(result => result.target);
 };
 
 export const getPendingConnections = async (
-    profile: ProfileInstance
+    profile: ProfileInstance,
+    { limit }: { limit: number }
 ): Promise<ProfileInstance[]> => {
-    return (await profile.findRelationships({ alias: 'connectionRequested' })).map(
+    return (await profile.findRelationships({ alias: 'connectionRequested', limit })).map(
         result => result.target
     );
 };
 export const getConnectionRequests = async (
-    profile: ProfileInstance
+    profile: ProfileInstance,
+    { limit }: { limit: number }
 ): Promise<ProfileInstance[]> => {
     return (
         await Profile.findRelationships({
             alias: 'connectionRequested',
             where: { target: { profileId: profile.profileId } },
+            limit,
         })
     ).map(result => result.source);
 };
@@ -118,7 +124,7 @@ export const connectProfiles = async (
         target.relateTo({ alias: 'connectedWith', where: { profileId: source.profileId } }),
     ]);
 
-    await sendNotification({
+    await addNotificationToQueue({
         type: LCNNotificationTypeEnumValidator.enum.CONNECTION_ACCEPTED,
         to: target.dataValues,
         from: source.dataValues,
@@ -210,7 +216,7 @@ export const requestConnection = async (
 
     await source.relateTo({ alias: 'connectionRequested', where: { profileId: target.profileId } });
 
-    await sendNotification({
+    await addNotificationToQueue({
         type: LCNNotificationTypeEnumValidator.enum.CONNECTION_REQUEST,
         to: target.dataValues,
         from: source.dataValues,

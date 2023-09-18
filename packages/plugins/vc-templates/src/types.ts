@@ -22,6 +22,7 @@ export type BoostID = {
     dimBackgroundImage?: boolean;
     issuerThumbnail?: string;
     showIssuerThumbnail?: boolean;
+    IDIssuerName?: string;
 };
 
 export type AddressSpec = {

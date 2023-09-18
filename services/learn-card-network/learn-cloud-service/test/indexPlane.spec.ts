@@ -6,6 +6,7 @@ import { CredentialRecords } from '@accesslayer/credential-record';
 import { Users } from '@accesslayer/user';
 import { testRecordA, testRecordB, testRecordC } from './helpers/records';
 import { client } from '@mongo';
+import cache from '@cache';
 
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;
@@ -37,11 +38,13 @@ describe('Index', () => {
         beforeAll(async () => {
             await CredentialRecords.deleteMany({});
             await Users.deleteMany({});
+            await cache.node.flushall();
         });
 
         beforeEach(async () => {
             await CredentialRecords.deleteMany({});
             await Users.deleteMany({});
+            await cache.node.flushall();
 
             await userA.clients.fullAuth.index.addMany({ records: [testRecordA, testRecordB] });
         });
@@ -49,6 +52,7 @@ describe('Index', () => {
         afterAll(async () => {
             await CredentialRecords.deleteMany({});
             await Users.deleteMany({});
+            await cache.node.flushall();
         });
 
         it('should require full auth to get index', async () => {
@@ -124,6 +128,7 @@ describe('Index', () => {
             const records = [testRecord, testRecord, testRecord, testRecord];
 
             await Users.deleteMany({});
+            await cache.node.flushall();
             await userA.clients.fullAuth.index.removeAll();
             await userA.clients.fullAuth.index.addMany({ records });
 
@@ -178,11 +183,13 @@ describe('Index', () => {
         beforeAll(async () => {
             await CredentialRecords.deleteMany({});
             await Users.deleteMany({});
+            await cache.node.flushall();
         });
 
         beforeEach(async () => {
             await CredentialRecords.deleteMany({});
             await Users.deleteMany({});
+            await cache.node.flushall();
 
             await userA.clients.fullAuth.index.addMany({ records: [testRecordA, testRecordB] });
         });
@@ -190,6 +197,7 @@ describe('Index', () => {
         afterAll(async () => {
             await CredentialRecords.deleteMany({});
             await Users.deleteMany({});
+            await cache.node.flushall();
         });
 
         it('should require full auth to count index', async () => {
@@ -263,16 +271,19 @@ describe('Index', () => {
         beforeAll(async () => {
             await CredentialRecords.deleteMany({});
             await Users.deleteMany({});
+            await cache.node.flushall();
         });
 
         beforeEach(async () => {
             await CredentialRecords.deleteMany({});
             await Users.deleteMany({});
+            await cache.node.flushall();
         });
 
         afterAll(async () => {
             await CredentialRecords.deleteMany({});
             await Users.deleteMany({});
+            await cache.node.flushall();
         });
 
         it('should require full auth to add to index', async () => {
@@ -379,16 +390,19 @@ describe('Index', () => {
         beforeAll(async () => {
             await CredentialRecords.deleteMany({});
             await Users.deleteMany({});
+            await cache.node.flushall();
         });
 
         beforeEach(async () => {
             await CredentialRecords.deleteMany({});
             await Users.deleteMany({});
+            await cache.node.flushall();
         });
 
         afterAll(async () => {
             await CredentialRecords.deleteMany({});
             await Users.deleteMany({});
+            await cache.node.flushall();
         });
 
         it('should require full auth to add many to index', async () => {
@@ -486,6 +500,7 @@ describe('Index', () => {
         beforeAll(async () => {
             await CredentialRecords.deleteMany({});
             await Users.deleteMany({});
+            await cache.node.flushall();
 
             await userA.clients.fullAuth.index.addMany({ records: [testRecordA, testRecordB] });
         });
@@ -493,6 +508,7 @@ describe('Index', () => {
         beforeEach(async () => {
             await CredentialRecords.deleteMany({});
             await Users.deleteMany({});
+            await cache.node.flushall();
 
             await userA.clients.fullAuth.index.addMany({ records: [testRecordA, testRecordB] });
         });
@@ -500,6 +516,7 @@ describe('Index', () => {
         afterAll(async () => {
             await CredentialRecords.deleteMany({});
             await Users.deleteMany({});
+            await cache.node.flushall();
         });
 
         it('should require full auth to update a record', async () => {
@@ -580,6 +597,7 @@ describe('Index', () => {
         beforeAll(async () => {
             await CredentialRecords.deleteMany({});
             await Users.deleteMany({});
+            await cache.node.flushall();
 
             await userA.clients.fullAuth.index.addMany({ records: [testRecordA, testRecordB] });
         });
@@ -587,6 +605,7 @@ describe('Index', () => {
         beforeEach(async () => {
             await CredentialRecords.deleteMany({});
             await Users.deleteMany({});
+            await cache.node.flushall();
 
             await userA.clients.fullAuth.index.addMany({ records: [testRecordA, testRecordB] });
         });
@@ -594,6 +613,7 @@ describe('Index', () => {
         afterAll(async () => {
             await CredentialRecords.deleteMany({});
             await Users.deleteMany({});
+            await cache.node.flushall();
         });
 
         it('should require full auth to remove a record', async () => {
@@ -631,6 +651,7 @@ describe('Index', () => {
         beforeAll(async () => {
             await CredentialRecords.deleteMany({});
             await Users.deleteMany({});
+            await cache.node.flushall();
 
             await userA.clients.fullAuth.index.addMany({ records: [testRecordA, testRecordB] });
         });
@@ -638,6 +659,7 @@ describe('Index', () => {
         beforeEach(async () => {
             await CredentialRecords.deleteMany({});
             await Users.deleteMany({});
+            await cache.node.flushall();
 
             await userA.clients.fullAuth.index.addMany({ records: [testRecordA, testRecordB] });
         });
@@ -645,6 +667,7 @@ describe('Index', () => {
         afterAll(async () => {
             await CredentialRecords.deleteMany({});
             await Users.deleteMany({});
+            await cache.node.flushall();
         });
 
         it('should require full auth to remove all records', async () => {

@@ -1,5 +1,32 @@
 # learn-card-core
 
+## 1.0.11
+
+### Patch Changes
+
+-   Updated dependencies [[`1a17fd9`](https://github.com/learningeconomy/LearnCard/commit/1a17fd9e6f8f62df2814e6243a12a948203e5545)]:
+    -   @learncard/didkit-plugin@1.1.1
+
+## 1.0.10
+
+### Patch Changes
+
+-   Updated dependencies [[`92759e2`](https://github.com/learningeconomy/LearnCard/commit/92759e202017f1a9818ee781d216979e5fc64790)]:
+    -   @learncard/didkit-plugin@1.1.0
+
+## 1.0.9
+
+### Patch Changes
+
+-   [#343](https://github.com/learningeconomy/LearnCard/pull/343) [`535411f`](https://github.com/learningeconomy/LearnCard/commit/535411f6f8eb6a60eb607ba0cb8ebc58948808ca) Thanks [@gerardopar](https://github.com/gerardopar)! - add boost ID issuer name
+
+## 1.0.8
+
+### Patch Changes
+
+-   Updated dependencies [[`630fdcf`](https://github.com/learningeconomy/LearnCard/commit/630fdcf0f55dbef6693f21a32fcefe541e5ec9e6)]:
+    -   @learncard/didkit-plugin@1.0.8
+
 ## 1.0.7
 
 ### Patch Changes

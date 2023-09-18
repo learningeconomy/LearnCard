@@ -1,5 +1,5 @@
 import { build } from 'esbuild';
-import wasmPlugin from './esbuildWasmPlugin.cjs';
+import plugins from './esbuildPlugins.cjs';
 
 const startTime = Date.now();
 
@@ -12,8 +12,8 @@ const finalBuildObj = {
     format: 'cjs',
     outdir: 'dist',
     target: 'node18',
-    external: [],
-    plugins: wasmPlugin,
+    external: ['@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm'],
+    plugins,
     minify: true,
 };
 

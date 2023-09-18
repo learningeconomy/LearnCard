@@ -14,6 +14,8 @@ import { t, profileRoute } from '@routes';
 import { getBoostByUri, getBoostsForProfile } from '@accesslayer/boost/read';
 import { getBoostRecipients } from '@accesslayer/boost/relationships/read';
 
+import { deleteStorageForUri, setStorageForUri } from '@cache/storage';
+
 import {
     getBoostUri,
     isProfileBoostOwner,
@@ -173,7 +175,8 @@ export const boostsRouter = t.router({
                 path: '/boost',
                 tags: ['Boosts'],
                 summary: 'Get boosts',
-                description: "This endpoint gets the current user's boosts",
+                description:
+                    "This endpoint gets the current user's boosts.\nWarning! This route will soon be deprecated and currently has a hard limit of returning only the first 50 boosts",
             },
         })
         .input(z.void())
@@ -181,7 +184,7 @@ export const boostsRouter = t.router({
         .query(async ({ ctx }) => {
             const { profile } = ctx.user;
 
-            const boosts = await getBoostsForProfile(profile);
+            const boosts = await getBoostsForProfile(profile, { limit: 50 });
 
             return boosts.map(boost => {
                 const { id, boost: _boost, ...remaining } = boost.dataValues;
@@ -199,7 +202,8 @@ export const boostsRouter = t.router({
                 path: '/boost/recipients/{uri}',
                 tags: ['Boosts'],
                 summary: 'Get boost recipients',
-                description: 'This endpoint gets the recipients of a particular boost',
+                description:
+                    'This endpoint gets the recipients of a particular boost.\nWarning! This route will soon be deprecated and currently has a hard limit of returning only the first 50 boosts',
             },
         })
         .input(
@@ -278,6 +282,7 @@ export const boostsRouter = t.router({
             }
 
             await boost.save();
+            await setStorageForUri(uri, JSON.parse(boost.boost));
 
             return true;
         }),
@@ -319,7 +324,7 @@ export const boostsRouter = t.router({
                 });
             }
 
-            await deleteBoost(boost);
+            await Promise.all([deleteBoost(boost), deleteStorageForUri(uri)]);
 
             return true;
         }),
