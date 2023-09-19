@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 1.1.2
+
+### Patch Changes
+
+-   [#366](https://github.com/learningeconomy/LearnCard/pull/366) [`5e102ff`](https://github.com/learningeconomy/LearnCard/commit/5e102ff8e41d171e26d1a070e2ca6b25a202845e) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add OBv3.0.2 Context
+
 ## 1.1.1
 
 ### Patch Changes
