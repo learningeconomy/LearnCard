@@ -31,6 +31,7 @@ export const pluginImplementsPlane = <Plane extends ControlPlane>(
     if (plane === 'index') return 'get' in (plugin.index ?? {});
     if (plane === 'cache') return 'getIndex' in (plugin.cache ?? {});
     if (plane === 'id') return 'did' in (plugin.id ?? {});
+    if (plane === 'context') return 'resolveStaticDocument' in (plugin.context ?? {});
 
     return false;
 };
@@ -44,6 +45,7 @@ export const learnCardImplementsPlane = <Plane extends ControlPlane>(
     if (plane === 'index') return 'index' in learnCard;
     if (plane === 'cache') return 'cache' in learnCard;
     if (plane === 'id') return 'id' in learnCard;
+    if (plane === 'context') return 'context' in learnCard;
 
     return false;
 };

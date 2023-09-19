@@ -6,11 +6,13 @@ import {
     PluginIndexPlane,
     PluginCachePlane,
     PluginIdPlane,
+    PluginContextPlane,
     LearnCardReadPlane,
     LearnCardStorePlane,
     LearnCardIndexPlane,
     LearnCardCachePlane,
     LearnCardIdPlane,
+    LearnCardContextPlane,
 } from './planes';
 import { UnionToIntersection, MergeObjects } from './utilities';
 
@@ -82,6 +84,7 @@ export type Plugin<
     index?: {};
     cache?: {};
     id?: {};
+    context?: {};
 } & ([ControlPlanes] extends [1 & ControlPlanes] // Check for any/never and prevent it from requiring all planes
     ? {}
     : ('read' extends ControlPlanes
@@ -138,6 +141,17 @@ export type Plugin<
                         DependentMethods
                     >;
                 }
+              : {}) &
+          ('context' extends ControlPlanes
+              ? {
+                    context: AddImplicitLearnCardArgument<
+                        PluginContextPlane,
+                        ControlPlanes,
+                        Methods,
+                        DependentControlPlanes,
+                        DependentMethods
+                    >;
+                }
               : {}));
 
 /** @group Universal Wallets */
@@ -158,4 +172,5 @@ export type LearnCard<
           ('store' extends ControlPlanes ? { store: LearnCardStorePlane<Plugins> } : {}) &
           ('index' extends ControlPlanes ? { index: LearnCardIndexPlane<Plugins> } : {}) &
           ('cache' extends ControlPlanes ? { cache: LearnCardCachePlane<Plugins> } : {}) &
-          ('id' extends ControlPlanes ? { id: LearnCardIdPlane<Plugins> } : {}));
+          ('id' extends ControlPlanes ? { id: LearnCardIdPlane<Plugins> } : {}) &
+          ('context' extends ControlPlanes ? { context: LearnCardContextPlane<Plugins> } : {}));
