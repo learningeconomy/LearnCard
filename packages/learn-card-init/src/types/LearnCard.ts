@@ -4,6 +4,7 @@ import { InitInput } from '@learncard/types';
 import { CryptoPluginType } from '@learncard/crypto-plugin';
 import { DIDKitPlugin, DidMethod } from '@learncard/didkit-plugin';
 import { DidKeyPlugin } from '@learncard/didkey-plugin';
+import { DynamicLoaderPluginType } from '@learncard/dynamic-loader-plugin';
 import { VCPlugin } from '@learncard/vc-plugin';
 import { VCTemplatePlugin } from '@learncard/vc-templates-plugin';
 import { LearnCloudPlugin } from '@learncard/learn-cloud-plugin';
@@ -25,6 +26,7 @@ export type LearnCardConfig = {
     cloud?: { url?: string; unencryptedFields?: string[]; unencryptedCustomFields?: string[] };
     ceramicIdx: CeramicArgs & IDXArgs;
     didkit: InitInput | Promise<InitInput>;
+    allowRemoteContexts?: boolean;
     ethereumConfig: EthereumConfig;
     debug?: typeof console.log;
 };
@@ -32,9 +34,10 @@ export type LearnCardConfig = {
 /** @group Init Functions */
 export type EmptyLearnCard = InitFunction<
     {},
-    'didkit' | 'debug',
+    'didkit' | 'debug' | 'allowRemoteContexts',
     LearnCard<
         [
+            DynamicLoaderPluginType,
             CryptoPluginType,
             DIDKitPlugin,
             ExpirationPlugin,
@@ -51,6 +54,7 @@ export type LearnCardFromSeed = InitFunction<
     keyof LearnCardConfig,
     LearnCard<
         [
+            DynamicLoaderPluginType,
             CryptoPluginType,
             DIDKitPlugin,
             DidKeyPlugin<DidMethod>,
@@ -74,6 +78,7 @@ export type NetworkLearnCardFromSeed = InitFunction<
     keyof LearnCardConfig,
     LearnCard<
         [
+            DynamicLoaderPluginType,
             CryptoPluginType,
             DIDKitPlugin,
             DidKeyPlugin<DidMethod>,
@@ -99,6 +104,7 @@ export type DidWebLearnCardFromSeed = InitFunction<
     keyof LearnCardConfig,
     LearnCard<
         [
+            DynamicLoaderPluginType,
             CryptoPluginType,
             DIDKitPlugin,
             DidKeyPlugin<DidMethod>,

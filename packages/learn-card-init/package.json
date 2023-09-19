@@ -51,6 +51,7 @@
         "@learncard/didkey-plugin": "workspace:*",
         "@learncard/didkit-plugin": "workspace:*",
         "@learncard/did-web-plugin": "workspace:*",
+        "@learncard/dynamic-loader-plugin": "workspace:*",
         "@learncard/ethereum-plugin": "workspace:*",
         "@learncard/expiration-plugin": "workspace:*",
         "@learncard/helpers": "workspace:*",

@@ -1,4 +1,5 @@
 import { generateLearnCard } from '@learncard/core';
+import { DynamicLoaderPlugin } from '@learncard/dynamic-loader-plugin';
 import { CryptoPlugin } from '@learncard/crypto-plugin';
 import { DidMethod, getDidKitPlugin } from '@learncard/didkit-plugin';
 import { getDidKeyPlugin } from '@learncard/didkey-plugin';
@@ -32,12 +33,15 @@ export const didWebLearnCardFromSeed = async ({
     } = {},
     ceramicIdx = defaultCeramicIDXArgs,
     didkit,
+    allowRemoteContexts = false,
     ethereumConfig = defaultEthereumArgs,
     debug,
 }: DidWebLearnCardFromSeed['args']): Promise<DidWebLearnCardFromSeed['returnValue']> => {
-    const cryptoLc = await (await generateLearnCard({ debug })).addPlugin(CryptoPlugin);
+    const dynamicLc = await (await generateLearnCard({ debug })).addPlugin(DynamicLoaderPlugin);
 
-    const didkitLc = await cryptoLc.addPlugin(await getDidKitPlugin(didkit));
+    const cryptoLc = await dynamicLc.addPlugin(CryptoPlugin);
+
+    const didkitLc = await cryptoLc.addPlugin(await getDidKitPlugin(didkit, allowRemoteContexts));
 
     const didkeyLc = await didkitLc.addPlugin(
         await getDidKeyPlugin<DidMethod>(didkitLc, seed, 'key')
