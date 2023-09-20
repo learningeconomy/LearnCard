@@ -1,11 +1,11 @@
 {
     "$schema": "../../../node_modules/nx/schemas/project-schema.json",
-    "name": "expiration-plugin",
-    "sourceRoot": "packages/plugins/expiration/src",
+    "name": "dynamic-loader-plugin",
+    "sourceRoot": "packages/plugins/dynamic-loader/src",
     "projectType": "library",
-    "root": "packages/plugins/expiration",
+    "root": "packages/plugins/dynamic-loader",
     "tags": [],
-    "implicitDependencies": ["core", "vc-plugin"],
+    "implicitDependencies": ["core"],
     "namedInputs": {
         "scripts": ["{projectRoot}/scripts/**/*"],
         "source": ["{projectRoot}/src/**/*"]
