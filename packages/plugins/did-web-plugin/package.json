@@ -1,6 +1,6 @@
 {
     "name": "@learncard/did-web-plugin",
-    "version": "1.0.17",
+    "version": "1.0.18",
     "description": "",
     "main": "./dist/index.js",
     "module": "./dist/did-web-plugin.esm.js",

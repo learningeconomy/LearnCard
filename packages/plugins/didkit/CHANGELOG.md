@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 1.3.0
+
+### Minor Changes
+
+-   [#340](https://github.com/learningeconomy/LearnCard/pull/340) [`867d38c`](https://github.com/learningeconomy/LearnCard/commit/867d38c5f606ff73fa328a4616a8a58a8f49d0f0) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add support for credentialSchema checks
+
 ## 1.2.0
 
 ### Minor Changes
