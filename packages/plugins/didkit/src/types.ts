@@ -65,4 +65,4 @@ export type DidkitPluginMethods = {
 };
 
 /** @group DIDKit Plugin */
-export type DIDKitPlugin = Plugin<'DIDKit', any, DidkitPluginMethods>;
+export type DIDKitPlugin = Plugin<'DIDKit', 'context', DidkitPluginMethods>;

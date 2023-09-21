@@ -443,16 +443,19 @@ export function didToVerificationMethod(did) {
 * @param {string} credential
 * @param {string} proof_options
 * @param {string} key
+* @param {string} context_map
 * @returns {Promise<any>}
 */
-export function issueCredential(credential, proof_options, key) {
+export function issueCredential(credential, proof_options, key, context_map) {
     const ptr0 = passStringToWasm0(credential, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
     const len0 = WASM_VECTOR_LEN;
     const ptr1 = passStringToWasm0(proof_options, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
     const len1 = WASM_VECTOR_LEN;
     const ptr2 = passStringToWasm0(key, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
     const len2 = WASM_VECTOR_LEN;
-    const ret = wasm.issueCredential(ptr0, len0, ptr1, len1, ptr2, len2);
+    const ptr3 = passStringToWasm0(context_map, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len3 = WASM_VECTOR_LEN;
+    const ret = wasm.issueCredential(ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3);
     return takeObject(ret);
 }
 
@@ -493,14 +496,17 @@ export function completeIssueCredential(credential, preparation, signature) {
 /**
 * @param {string} vc
 * @param {string} proof_options
+* @param {string} context_map
 * @returns {Promise<any>}
 */
-export function verifyCredential(vc, proof_options) {
+export function verifyCredential(vc, proof_options, context_map) {
     const ptr0 = passStringToWasm0(vc, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
     const len0 = WASM_VECTOR_LEN;
     const ptr1 = passStringToWasm0(proof_options, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
     const len1 = WASM_VECTOR_LEN;
-    const ret = wasm.verifyCredential(ptr0, len0, ptr1, len1);
+    const ptr2 = passStringToWasm0(context_map, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len2 = WASM_VECTOR_LEN;
+    const ret = wasm.verifyCredential(ptr0, len0, ptr1, len1, ptr2, len2);
     return takeObject(ret);
 }
 
@@ -508,16 +514,19 @@ export function verifyCredential(vc, proof_options) {
 * @param {string} presentation
 * @param {string} proof_options
 * @param {string} key
+* @param {string} context_map
 * @returns {Promise<any>}
 */
-export function issuePresentation(presentation, proof_options, key) {
+export function issuePresentation(presentation, proof_options, key, context_map) {
     const ptr0 = passStringToWasm0(presentation, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
     const len0 = WASM_VECTOR_LEN;
     const ptr1 = passStringToWasm0(proof_options, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
     const len1 = WASM_VECTOR_LEN;
     const ptr2 = passStringToWasm0(key, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
     const len2 = WASM_VECTOR_LEN;
-    const ret = wasm.issuePresentation(ptr0, len0, ptr1, len1, ptr2, len2);
+    const ptr3 = passStringToWasm0(context_map, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len3 = WASM_VECTOR_LEN;
+    const ret = wasm.issuePresentation(ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3);
     return takeObject(ret);
 }
 
@@ -558,14 +567,17 @@ export function completeIssuePresentation(presentation, preparation, signature) 
 /**
 * @param {string} vp
 * @param {string} proof_options
+* @param {string} context_map
 * @returns {Promise<any>}
 */
-export function verifyPresentation(vp, proof_options) {
+export function verifyPresentation(vp, proof_options, context_map) {
     const ptr0 = passStringToWasm0(vp, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
     const len0 = WASM_VECTOR_LEN;
     const ptr1 = passStringToWasm0(proof_options, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
     const len1 = WASM_VECTOR_LEN;
-    const ret = wasm.verifyPresentation(ptr0, len0, ptr1, len1);
+    const ptr2 = passStringToWasm0(context_map, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len2 = WASM_VECTOR_LEN;
+    const ret = wasm.verifyPresentation(ptr0, len0, ptr1, len1, ptr2, len2);
     return takeObject(ret);
 }
 
@@ -573,16 +585,19 @@ export function verifyPresentation(vp, proof_options) {
 * @param {string} holder
 * @param {string} linked_data_proof_options
 * @param {string} key
+* @param {string} context_map
 * @returns {Promise<any>}
 */
-export function DIDAuth(holder, linked_data_proof_options, key) {
+export function DIDAuth(holder, linked_data_proof_options, key, context_map) {
     const ptr0 = passStringToWasm0(holder, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
     const len0 = WASM_VECTOR_LEN;
     const ptr1 = passStringToWasm0(linked_data_proof_options, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
     const len1 = WASM_VECTOR_LEN;
     const ptr2 = passStringToWasm0(key, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
     const len2 = WASM_VECTOR_LEN;
-    const ret = wasm.DIDAuth(ptr0, len0, ptr1, len1, ptr2, len2);
+    const ptr3 = passStringToWasm0(context_map, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len3 = WASM_VECTOR_LEN;
+    const ret = wasm.DIDAuth(ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3);
     return takeObject(ret);
 }
 
@@ -1123,8 +1138,8 @@ function __wbg_get_imports() {
         const ret = wasm.memory;
         return addHeapObject(ret);
     };
-    imports.wbg.__wbindgen_closure_wrapper12800 = function(arg0, arg1, arg2) {
-        const ret = makeMutClosure(arg0, arg1, 3864, __wbg_adapter_26);
+    imports.wbg.__wbindgen_closure_wrapper12794 = function(arg0, arg1, arg2) {
+        const ret = makeMutClosure(arg0, arg1, 3868, __wbg_adapter_26);
         return addHeapObject(ret);
     };
 
