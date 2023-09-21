@@ -602,6 +602,9 @@ importers:
       '@learncard/didkit-plugin':
         specifier: workspace:*
         version: link:../plugins/didkit
+      '@learncard/dynamic-loader-plugin':
+        specifier: workspace:*
+        version: link:../plugins/dynamic-loader
       '@learncard/ethereum-plugin':
         specifier: workspace:*
         version: link:../plugins/ethereum
@@ -1062,6 +1065,40 @@ importers:
       ts-jest:
         specifier: ^29.0.3
         version: 29.0.5(@babel/core@7.22.5)(esbuild@0.14.38)(jest@29.5.0)(typescript@4.9.5)
+
+  packages/plugins/dynamic-loader:
+    dependencies:
+      '@learncard/core':
+        specifier: workspace:*
+        version: link:../../learn-card-core
+    devDependencies:
+      '@types/jest':
+        specifier: ^29.2.2
+        version: 29.2.2
+      '@types/node':
+        specifier: ^17.0.31
+        version: 17.0.38
+      aqu:
+        specifier: 0.4.3
+        version: 0.4.3(@babel/core@7.22.5)(@types/node@17.0.38)
+      esbuild:
+        specifier: ^0.14.38
+        version: 0.14.54
+      esbuild-jest:
+        specifier: ^0.5.0
+        version: 0.5.0(esbuild@0.14.54)
+      esbuild-plugin-copy:
+        specifier: ^1.3.0
+        version: 1.6.0(esbuild@0.14.54)
+      jest:
+        specifier: ^29.3.0
+        version: 29.5.0(@types/node@17.0.38)
+      shx:
+        specifier: ^0.3.4
+        version: 0.3.4
+      ts-jest:
+        specifier: ^29.0.3
+        version: 29.0.5(@babel/core@7.22.5)(esbuild@0.14.54)(jest@29.5.0)(typescript@4.9.5)
 
   packages/plugins/ethereum:
     dependencies:
@@ -2340,7 +2377,7 @@ packages:
     hasBin: true
     dependencies:
       '@vscode/emmet-helper': 2.9.1
-      prettier: 2.8.4
+      prettier: 2.8.8
       prettier-plugin-astro: 0.5.5
       source-map: 0.7.4
       typescript: 4.6.4
@@ -4426,7 +4463,7 @@ packages:
       '@babel/core': ^7.0.0-0
     dependencies:
       '@babel/core': 7.12.9
-      '@babel/helper-plugin-utils': 7.10.4
+      '@babel/helper-plugin-utils': 7.22.5
       '@babel/plugin-syntax-object-rest-spread': 7.8.3(@babel/core@7.12.9)
       '@babel/plugin-transform-parameters': 7.22.5(@babel/core@7.12.9)
     dev: false
@@ -6429,7 +6466,7 @@ packages:
       fs-extra: 7.0.1
       lodash.startcase: 4.4.0
       outdent: 0.5.0
-      prettier: 2.8.4
+      prettier: 2.8.8
       resolve-from: 5.0.0
       semver: 5.7.1
     dev: true
@@ -6616,7 +6653,7 @@ packages:
       '@changesets/types': 5.2.1
       fs-extra: 7.0.1
       human-id: 1.0.2
-      prettier: 2.8.4
+      prettier: 2.8.8
     dev: true
 
   /@cnakazawa/watch@1.0.4:
@@ -11604,7 +11641,7 @@ packages:
       node-dir: 0.1.17
       node-fetch: 2.6.11
       open: 7.4.2
-      semver: 7.5.2
+      semver: 7.5.4
       simple-git: 3.19.0(supports-color@8.1.1)
       type: 2.7.2
       uuid: 8.3.2
@@ -11884,7 +11921,7 @@ packages:
     peerDependencies:
       size-limit: 7.0.8
     dependencies:
-      esbuild: 0.14.38
+      esbuild: 0.14.54
       nanoid: 3.3.6
       size-limit: 7.0.8
     dev: true
@@ -13205,7 +13242,7 @@ packages:
       memoizerific: 1.11.3
       react: 18.2.0
       react-dom: 18.0.0(react@18.2.0)
-      semver: 7.5.2
+      semver: 7.5.4
       store2: 2.14.2
       telejson: 7.1.0
       ts-dedent: 2.2.0
@@ -13230,7 +13267,7 @@ packages:
       memoizerific: 1.11.3
       react: 18.2.0
       react-dom: 18.0.0(react@18.2.0)
-      semver: 7.5.2
+      semver: 7.5.4
       store2: 2.14.2
       telejson: 7.1.0
       ts-dedent: 2.2.0
@@ -13866,7 +13903,7 @@ packages:
     resolution: {integrity: sha512-ALYone6pm6QmwZoAgeyNksccT9Q4AWZQ6PvfwR37GT6r6FWUPguq6sUmNGSMV2Wr761oQoBxwGGa6DR5o1DC9g==}
     dependencies:
       '@types/connect': 3.4.35
-      '@types/node': 18.7.19
+      '@types/node': 18.16.18
 
   /@types/bonjour@3.5.10:
     resolution: {integrity: sha512-p7ienRMiS41Nu2/igbJxxLDWrSZ0WxM8UQgCeO9KhoVF7cOVFkrKsiDr1EsJIla8vV3oEEjGcz11jc5yimhzZw==}
@@ -13941,7 +13978,7 @@ packages:
     resolution: {integrity: sha512-7CC5yIpQi+bHXwDK43b/deYXteP3Lem9gdocVVHJPSRJJLMfbiOchQV3rDmAPkMw+n3GIVj7m1six3JW+VcwwA==}
     dependencies:
       '@types/docker-modem': 3.0.2
-      '@types/node': 18.7.19
+      '@types/node': 18.16.18
     dev: true
 
   /@types/doctrine@0.0.3:
@@ -13991,7 +14028,7 @@ packages:
   /@types/express-serve-static-core@4.17.35:
     resolution: {integrity: sha512-wALWQwrgiB2AWTT91CB62b6Yt0sNHpznUXeZEcnPU3DRdlDIz74x8Qg1UUYKSVFi+va5vKOLYRBI1bRKiLLKIg==}
     dependencies:
-      '@types/node': 18.7.19
+      '@types/node': 18.16.18
       '@types/qs': 6.9.7
       '@types/range-parser': 1.2.4
       '@types/send': 0.17.1
@@ -14217,6 +14254,7 @@ packages:
 
   /@types/node@18.7.19:
     resolution: {integrity: sha512-Sq1itGUKUX1ap7GgZlrzdBydjbsJL/NSQt/4wkAxUJ7/OS5c2WkoN6WSpWc2Yc5wtKMZOUA0VCs/j2XJadN3HA==}
+    dev: true
 
   /@types/normalize-package-data@2.4.1:
     resolution: {integrity: sha512-Gj7cI7z+98M282Tqmp2K5EIsoouUEzbBJhQQzDE3jSIRk6r9gsz0oUokqIUR4u1R3dMHo0pDHM7sNOHyhulypw==}
@@ -14360,7 +14398,7 @@ packages:
     resolution: {integrity: sha512-NUo5XNiAdULrJENtJXZZ3fHtfMolzZwczzBbnAeBbqBwG+LaG6YaJtuwzwGSQZ2wsCrxjEhNNjAkKigy3n8teQ==}
     dependencies:
       '@types/mime': 3.0.1
-      '@types/node': 18.7.19
+      '@types/node': 18.16.18
 
   /@types/sockjs@0.3.33:
     resolution: {integrity: sha512-f0KEEe05NvUnat+boPTZ0dgaLZ4SfSouXUgv5noUiefG2ajgKjmETo9ZJyuqsl7dfl2aHlLJUiki6B4ZYldiiw==}
@@ -14511,7 +14549,7 @@ packages:
       ignore: 5.2.4
       natural-compare-lite: 1.4.0
       regexpp: 3.2.0
-      semver: 7.5.2
+      semver: 7.5.4
       tsutils: 3.21.0(typescript@4.9.5)
       typescript: 4.9.5
     transitivePeerDependencies:
@@ -14539,7 +14577,7 @@ packages:
       ignore: 5.2.4
       natural-compare-lite: 1.4.0
       regexpp: 3.2.0
-      semver: 7.5.2
+      semver: 7.5.4
       tsutils: 3.21.0(typescript@5.0.4)
       typescript: 5.0.4
     transitivePeerDependencies:
@@ -14706,7 +14744,7 @@ packages:
       debug: 4.3.4(supports-color@8.1.1)
       globby: 11.1.0
       is-glob: 4.0.3
-      semver: 7.5.2
+      semver: 7.5.4
       tsutils: 3.21.0(typescript@4.7.4)
       typescript: 4.7.4
     transitivePeerDependencies:
@@ -14727,7 +14765,7 @@ packages:
       debug: 4.3.4(supports-color@8.1.1)
       globby: 11.1.0
       is-glob: 4.0.3
-      semver: 7.5.2
+      semver: 7.5.4
       tsutils: 3.21.0(typescript@4.9.5)
       typescript: 4.9.5
     transitivePeerDependencies:
@@ -14748,7 +14786,7 @@ packages:
       debug: 4.3.4(supports-color@8.1.1)
       globby: 11.1.0
       is-glob: 4.0.3
-      semver: 7.5.2
+      semver: 7.5.4
       tsutils: 3.21.0(typescript@5.0.4)
       typescript: 5.0.4
     transitivePeerDependencies:
@@ -18681,7 +18719,7 @@ packages:
       postcss-modules-scope: 3.0.0(postcss@8.4.24)
       postcss-modules-values: 4.0.0(postcss@8.4.24)
       postcss-value-parser: 4.2.0
-      semver: 7.5.2
+      semver: 7.5.4
       webpack: 5.88.0(esbuild@0.14.38)
     dev: true
 
@@ -20364,6 +20402,19 @@ packages:
       - supports-color
     dev: true
 
+  /esbuild-jest@0.5.0(esbuild@0.14.54):
+    resolution: {integrity: sha512-AMZZCdEpXfNVOIDvURlqYyHwC8qC1/BFjgsrOiSL1eyiIArVtHL8YAC83Shhn16cYYoAWEW17yZn0W/RJKJKHQ==}
+    peerDependencies:
+      esbuild: '>=0.8.50'
+    dependencies:
+      '@babel/core': 7.22.5
+      '@babel/plugin-transform-modules-commonjs': 7.22.5(@babel/core@7.22.5)
+      babel-jest: 26.6.3(@babel/core@7.22.5)
+      esbuild: 0.14.54
+    transitivePeerDependencies:
+      - supports-color
+    dev: true
+
   /esbuild-jest@0.5.0(esbuild@0.17.17):
     resolution: {integrity: sha512-AMZZCdEpXfNVOIDvURlqYyHwC8qC1/BFjgsrOiSL1eyiIArVtHL8YAC83Shhn16cYYoAWEW17yZn0W/RJKJKHQ==}
     peerDependencies:
@@ -20628,6 +20679,17 @@ packages:
     dependencies:
       chalk: 4.1.2
       esbuild: 0.14.38
+      fs-extra: 10.1.0
+      globby: 11.1.0
+    dev: true
+
+  /esbuild-plugin-copy@1.6.0(esbuild@0.14.54):
+    resolution: {integrity: sha512-wN1paBCoE0yRBl9ZY3ZSD6SxGE4Yfr0Em7zh2yTbJv1JaHEIR3FYYN7HU6F+j/peSaGZJNSORSGxJ5QX1a1Sgg==}
+    peerDependencies:
+      esbuild: '>= 0.14.0'
+    dependencies:
+      chalk: 4.1.2
+      esbuild: 0.14.54
       fs-extra: 10.1.0
       globby: 11.1.0
     dev: true
@@ -22486,7 +22548,7 @@ packages:
       memfs: 3.5.3
       minimatch: 3.1.2
       schema-utils: 2.7.0
-      semver: 7.5.2
+      semver: 7.5.4
       tapable: 1.1.3
       typescript: 4.7.4
       webpack: 5.88.0(esbuild@0.17.17)
@@ -22843,7 +22905,7 @@ packages:
     dev: true
 
   /github-from-package@0.0.0:
-    resolution: {integrity: sha1-l/tdlr/eiXMxPyDoKI75oWf6ZM4=}
+    resolution: {integrity: sha512-SyHy3T1v2NUXn29OsWdxmK6RwHD+vkj3v8en8AOBZ1wBQ/hCAQ5bAQTD02kW4W9tUp/3Qh6J8r9EvntiyCmOOw==}
     requiresBuild: true
     dev: true
     optional: true
@@ -22988,7 +23050,7 @@ packages:
       es6-error: 4.1.1
       matcher: 3.0.0
       roarr: 2.15.4
-      semver: 7.5.2
+      semver: 7.5.4
       serialize-error: 7.0.1
 
   /global-dirs@2.1.0:
@@ -23270,7 +23332,7 @@ packages:
     dev: true
 
   /has-cors@1.1.0:
-    resolution: {integrity: sha1-XkdHk/fqmEPRu5nCPu9J/xJv/zk=}
+    resolution: {integrity: sha512-g5VNKdkFuUuVCP9gYfDJHjK2nqdQJ7aDLTnycnc2+RvsOQbuLdF5pm7vuE5J76SEBIQjs4kQY/BWq74JUmjbXA==}
     dev: true
 
   /has-flag@3.0.0:
@@ -25502,7 +25564,7 @@ packages:
       '@jest/fake-timers': 29.5.0
       '@jest/types': 29.5.0
       '@types/jsdom': 20.0.1
-      '@types/node': 18.7.19
+      '@types/node': 18.16.18
       jest-mock: 29.5.0
       jest-util: 29.5.0
       jsdom: 20.0.3
@@ -25978,7 +26040,7 @@ packages:
       jest-util: 28.1.3
       natural-compare: 1.4.0
       pretty-format: 28.1.3
-      semver: 7.5.2
+      semver: 7.5.4
     transitivePeerDependencies:
       - supports-color
     dev: true
@@ -26009,7 +26071,7 @@ packages:
       jest-util: 29.5.0
       natural-compare: 1.4.0
       pretty-format: 29.5.0
-      semver: 7.5.2
+      semver: 7.5.4
     transitivePeerDependencies:
       - supports-color
     dev: true
@@ -29288,7 +29350,7 @@ packages:
     dependencies:
       hosted-git-info: 4.1.0
       is-core-module: 2.12.1
-      semver: 7.5.2
+      semver: 7.5.4
       validate-npm-package-license: 3.0.4
     dev: true
 
@@ -29410,7 +29472,7 @@ packages:
       fs2: 0.3.9
       memoizee: 0.4.15
       node-fetch: 2.6.11
-      semver: 7.5.2
+      semver: 7.5.4
       type: 2.7.2
       validate-npm-package-name: 3.0.0
     transitivePeerDependencies:
@@ -30813,7 +30875,7 @@ packages:
       cosmiconfig: 8.2.0
       jiti: 1.18.2
       postcss: 8.4.13
-      semver: 7.5.2
+      semver: 7.5.4
       webpack: 5.88.0(esbuild@0.14.38)
     dev: true
 
@@ -30827,7 +30889,7 @@ packages:
       cosmiconfig: 8.2.0
       jiti: 1.18.2
       postcss: 8.4.24
-      semver: 7.5.2
+      semver: 7.5.4
       webpack: 5.88.0(esbuild@0.17.17)
     dev: false
 
@@ -31496,7 +31558,7 @@ packages:
     engines: {node: ^14.15.0 || >=16.0.0, pnpm: '>=7.14.0'}
     dependencies:
       '@astrojs/compiler': 1.5.1
-      prettier: 2.8.4
+      prettier: 2.8.8
       sass-formatter: 0.7.6
       synckit: 0.8.5
     dev: false
@@ -35271,7 +35333,7 @@ packages:
       mime: 2.6.0
       qs: 6.11.2
       readable-stream: 3.6.2
-      semver: 7.5.2
+      semver: 7.5.4
     transitivePeerDependencies:
       - supports-color
 
@@ -36122,6 +36184,41 @@ packages:
       yargs-parser: 21.1.1
     dev: true
 
+  /ts-jest@29.0.5(@babel/core@7.22.5)(esbuild@0.14.54)(jest@29.5.0)(typescript@4.9.5):
+    resolution: {integrity: sha512-PL3UciSgIpQ7f6XjVOmbi96vmDHUqAyqDr8YxzopDqX3kfgYtX1cuNeBjP+L9sFXi6nzsGGA6R3fP3DDDJyrxA==}
+    engines: {node: ^14.15.0 || ^16.10.0 || >=18.0.0}
+    hasBin: true
+    peerDependencies:
+      '@babel/core': '>=7.0.0-beta.0 <8'
+      '@jest/types': ^29.0.0
+      babel-jest: ^29.0.0
+      esbuild: '*'
+      jest: ^29.0.0
+      typescript: '>=4.3'
+    peerDependenciesMeta:
+      '@babel/core':
+        optional: true
+      '@jest/types':
+        optional: true
+      babel-jest:
+        optional: true
+      esbuild:
+        optional: true
+    dependencies:
+      '@babel/core': 7.22.5
+      bs-logger: 0.2.6
+      esbuild: 0.14.54
+      fast-json-stable-stringify: 2.1.0
+      jest: 29.5.0(@types/node@17.0.38)
+      jest-util: 29.5.0
+      json5: 2.2.3
+      lodash.memoize: 4.1.2
+      make-error: 1.3.6
+      semver: 7.5.2
+      typescript: 4.9.5
+      yargs-parser: 21.1.1
+    dev: true
+
   /ts-jest@29.0.5(@babel/core@7.22.5)(esbuild@0.15.18)(jest@29.5.0)(typescript@4.9.5):
     resolution: {integrity: sha512-PL3UciSgIpQ7f6XjVOmbi96vmDHUqAyqDr8YxzopDqX3kfgYtX1cuNeBjP+L9sFXi6nzsGGA6R3fP3DDDJyrxA==}
     engines: {node: ^14.15.0 || ^16.10.0 || >=18.0.0}
@@ -36908,7 +37005,7 @@ packages:
       is-yarn-global: 0.3.0
       latest-version: 5.1.0
       pupa: 2.1.1
-      semver: 7.5.2
+      semver: 7.5.4
       semver-diff: 3.1.1
       xdg-basedir: 4.0.0
 
@@ -38203,7 +38300,7 @@ packages:
       fd-slicer: 1.1.0
 
   /yeast@0.1.2:
-    resolution: {integrity: sha1-AI4G2AlDIMNy28L47XagymyKxBk=}
+    resolution: {integrity: sha512-8HFIh676uyGYP6wP13R/j6OJ/1HwJ46snpvzE7aHAN3Ryqh2yX6Xox2B4CUmTwwOIzlG3Bs7ocsP5dZH/R1Qbg==}
     dev: true
 
   /yn@3.1.1:

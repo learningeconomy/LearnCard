@@ -1,5 +1,18 @@
 # learn-card-core
 
+## 1.0.7
+
+### Patch Changes
+
+-   Updated dependencies [[`1c4e09d`](https://github.com/learningeconomy/LearnCard/commit/1c4e09d136464286959000e5ed14cdf59dba9196)]:
+    -   @learncard/core@9.1.0
+
+## 1.0.6
+
+### Patch Changes
+
+-   [#366](https://github.com/learningeconomy/LearnCard/pull/366) [`5e102ff`](https://github.com/learningeconomy/LearnCard/commit/5e102ff8e41d171e26d1a070e2ca6b25a202845e) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add OBv3.0.2 Context
+
 ## 1.0.5
 
 ### Patch Changes

@@ -48,6 +48,7 @@ program
         globalThis.learnCard = await initLearnCard({
             seed,
             network: true,
+            allowRemoteContexts: true,
             didkit: fs.readFile(
                 require.resolve('@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm')
             ),
