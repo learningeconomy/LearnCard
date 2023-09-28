@@ -101,10 +101,14 @@ export type Profile = z.infer<typeof ProfileValidator>;
 export const CredentialSubjectValidator = z.object({ id: z.string().optional() }).catchall(z.any());
 export type CredentialSubject = z.infer<typeof CredentialSubjectValidator>;
 
-export const CredentialStatusValidator = z.object({ type: z.string(), id: z.string() });
+export const CredentialStatusValidator = z
+    .object({ type: z.string(), id: z.string() })
+    .catchall(z.any());
 export type CredentialStatus = z.infer<typeof CredentialStatusValidator>;
 
-export const CredentialSchemaValidator = z.object({ id: z.string(), type: z.string() });
+export const CredentialSchemaValidator = z
+    .object({ id: z.string(), type: z.string() })
+    .catchall(z.any());
 export type CredentialSchema = z.infer<typeof CredentialSchemaValidator>;
 
 export const RefreshServiceValidator = z
@@ -151,7 +155,7 @@ export const UnsignedVPValidator = z
     .object({
         '@context': ContextValidator,
         id: z.string().optional(),
-        type: z.string().array().nonempty(),
+        type: z.string().or(z.string().array().nonempty()),
         verifiableCredential: VCValidator.or(VCValidator.array()).optional(),
         holder: z.string().optional(),
     })
