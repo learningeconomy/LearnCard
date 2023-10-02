@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.6.32
+
+### Patch Changes
+
+-   [#374](https://github.com/learningeconomy/LearnCard/pull/374) [`db5fcaf`](https://github.com/learningeconomy/LearnCard/commit/db5fcaf2afaf24d3cfb3d47219ad777cdf96108d) Thanks [@gerardopar](https://github.com/gerardopar)! - VC Backface Overrides
+
 ## 2.6.31
 
 ### Patch Changes
