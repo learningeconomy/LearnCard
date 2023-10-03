@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.6.33
+
+### Patch Changes
+
+-   [#376](https://github.com/learningeconomy/LearnCard/pull/376) [`b419f1f`](https://github.com/learningeconomy/LearnCard/commit/b419f1f4eaf229f54555ee9c60495a2edfcad07e) Thanks [@gerardopar](https://github.com/gerardopar)! - add prop to display subject did
+
 ## 2.6.32
 
 ### Patch Changes
