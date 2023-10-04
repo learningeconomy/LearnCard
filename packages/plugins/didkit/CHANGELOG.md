@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 1.3.2
+
+### Patch Changes
+
+-   [#378](https://github.com/learningeconomy/LearnCard/pull/378) [`e0c2e3c`](https://github.com/learningeconomy/LearnCard/commit/e0c2e3cb202697b6875c729e35326d75bbae4f65) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add support for P256
+
 ## 1.3.1
 
 ### Patch Changes
