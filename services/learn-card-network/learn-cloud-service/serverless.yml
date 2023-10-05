@@ -72,6 +72,7 @@ custom:
         apiType: http
 
 package:
+  individually: true
   patterns: 
     - '!node_modules/**'
     - 'node_modules/@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm'
@@ -129,7 +130,7 @@ functions:
             - httpApi: ANY /api/{trpc+}
 
     didWeb:
-        handler: lambda.didWebHandler
+        handler: didWebLambda.didWebHandler
         vpc:
             securityGroupIds:
                 - 'Fn::GetAtt': [ServerlessSecurityGroup, GroupId]

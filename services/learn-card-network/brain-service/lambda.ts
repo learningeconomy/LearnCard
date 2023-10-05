@@ -12,7 +12,6 @@ import { TRPC_ERROR_CODE_HTTP_STATUS } from 'trpc-openapi/dist/adapters/node-htt
 import * as Sentry from '@sentry/serverless';
 
 import app from './src/openapi';
-import didWebApp from './src/dids';
 import { appRouter, createContext } from './src/app';
 import { sendNotification } from './src/helpers/notifications.helpers';
 
@@ -29,7 +28,6 @@ Sentry.AWSLambda.init({
 });
 
 export const swaggerUiHandler = serverlessHttp(app, { basePath: '/docs' });
-export const didWebHandler = Sentry.AWSLambda.wrapHandler(serverlessHttp(didWebApp));
 
 export const _openApiHandler = createOpenApiAwsLambdaHandler({
     router: appRouter,
