@@ -51,8 +51,8 @@ export async function issueCredentialWithSigningAuthority(
 
         const encryption = encrypt
             ? {
-                  recipients: [learnCard.id.did()],
-              }
+                recipients: [learnCard.id.did()],
+            }
             : undefined;
 
         // Create an AbortController instance and get the signal
@@ -99,8 +99,8 @@ export async function issueCredentialWithSigningAuthority(
                 throw new Error('Signing Authority returned malformed VC');
             return validationResult.data;
         }
-    } catch (error) {
-        console.error('SA Helpers - Error While Sending:', error);
+    } catch (error: any) {
+        console.error('SA Helpers - Error While Sending:', error, error.message);
         throw new Error('SA Helpers - Error While Sending');
     }
 }
