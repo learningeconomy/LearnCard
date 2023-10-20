@@ -13,15 +13,17 @@ import init, {
     resolveDID,
     didResolver,
 } from './didkit/index';
+import { getDocumentMap } from './helpers';
 
 import { DIDKitPlugin, DidMethod } from './types';
 
 /**
- *
+ j
  * @group Plugins
  */
 export const getDidKitPlugin = async (
-    input?: InitInput | Promise<InitInput>
+    input?: InitInput | Promise<InitInput>,
+    allowRemoteContexts = false
 ): Promise<DIDKitPlugin> => {
     await init(input);
 
@@ -32,6 +34,17 @@ export const getDidKitPlugin = async (
         displayName: 'DIDKit',
         description:
             'Provides an interface to DIDKit, which allows for the generation of key material, as well as signing and verifying credentials and presentations',
+        context: {
+            resolveStaticDocument: async (_learnCard, url) => {
+                try {
+                    return JSON.parse((await contextLoader(url)) ?? '') || undefined;
+                } catch (error) {
+                    _learnCard.debug?.(error);
+
+                    return undefined;
+                }
+            },
+        },
         methods: {
             generateEd25519KeyFromBytes: (_learnCard, bytes) =>
                 JSON.parse(generateEd25519KeyFromBytes(bytes)),
@@ -58,19 +71,30 @@ export const getDidKitPlugin = async (
 
             didToVerificationMethod: async (_learnCard, did) => didToVerificationMethod(did),
 
-            issueCredential: async (_learnCard, credential, options, keypair) =>
-                JSON.parse(
+            issueCredential: async (_learnCard, credential, options, keypair) => {
+                return JSON.parse(
                     await issueCredential(
                         JSON.stringify(credential),
                         JSON.stringify(options),
-                        JSON.stringify(keypair)
+                        JSON.stringify(keypair),
+                        JSON.stringify(
+                            await getDocumentMap(_learnCard, credential, allowRemoteContexts)
+                        )
                     )
-                ),
+                );
+            },
 
-            verifyCredential: async (_learnCard, credential, options = {}) =>
-                JSON.parse(
-                    await verifyCredential(JSON.stringify(credential), JSON.stringify(options))
-                ),
+            verifyCredential: async (_learnCard, credential, options = {}) => {
+                return JSON.parse(
+                    await verifyCredential(
+                        JSON.stringify(credential),
+                        JSON.stringify(options),
+                        JSON.stringify(
+                            await getDocumentMap(_learnCard, credential, allowRemoteContexts)
+                        )
+                    )
+                );
+            },
 
             issuePresentation: async (_learnCard, presentation, options, keypair) => {
                 const isJwt = options.proofFormat === 'jwt';
@@ -78,7 +102,10 @@ export const getDidKitPlugin = async (
                 const result = await issuePresentation(
                     JSON.stringify(presentation),
                     JSON.stringify(options),
-                    JSON.stringify(keypair)
+                    JSON.stringify(keypair),
+                    JSON.stringify(
+                        await getDocumentMap(_learnCard, presentation, allowRemoteContexts)
+                    )
                 );
 
                 return isJwt ? result : JSON.parse(result);
@@ -90,12 +117,29 @@ export const getDidKitPlugin = async (
                 return JSON.parse(
                     await verifyPresentation(
                         isJwt ? presentation : JSON.stringify(presentation),
-                        JSON.stringify(options)
+                        JSON.stringify(options),
+                        isJwt
+                            ? '{}'
+                            : JSON.stringify(
+                                await getDocumentMap(
+                                    _learnCard,
+                                    presentation,
+                                    allowRemoteContexts
+                                )
+                            )
                     )
                 );
             },
 
-            contextLoader: async (_learnCard, url) => JSON.parse(await contextLoader(url)),
+            contextLoader: async (_learnCard, url) => {
+                try {
+                    return JSON.parse((await contextLoader(url)) ?? '') || undefined;
+                } catch (error) {
+                    _learnCard.debug?.(error);
+
+                    return undefined;
+                }
+            },
 
             resolveDid: async (_learnCard, did, inputMetadata = {}) =>
                 JSON.parse(await resolveDID(did, JSON.stringify(inputMetadata))),

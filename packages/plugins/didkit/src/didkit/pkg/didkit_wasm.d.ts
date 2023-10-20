@@ -55,9 +55,10 @@ export function didToVerificationMethod(did: string): Promise<any>;
 * @param {string} credential
 * @param {string} proof_options
 * @param {string} key
+* @param {string} context_map
 * @returns {Promise<any>}
 */
-export function issueCredential(credential: string, proof_options: string, key: string): Promise<any>;
+export function issueCredential(credential: string, proof_options: string, key: string, context_map: string): Promise<any>;
 /**
 * @param {string} credential
 * @param {string} linked_data_proof_options
@@ -75,16 +76,18 @@ export function completeIssueCredential(credential: string, preparation: string,
 /**
 * @param {string} vc
 * @param {string} proof_options
+* @param {string} context_map
 * @returns {Promise<any>}
 */
-export function verifyCredential(vc: string, proof_options: string): Promise<any>;
+export function verifyCredential(vc: string, proof_options: string, context_map: string): Promise<any>;
 /**
 * @param {string} presentation
 * @param {string} proof_options
 * @param {string} key
+* @param {string} context_map
 * @returns {Promise<any>}
 */
-export function issuePresentation(presentation: string, proof_options: string, key: string): Promise<any>;
+export function issuePresentation(presentation: string, proof_options: string, key: string, context_map: string): Promise<any>;
 /**
 * @param {string} presentation
 * @param {string} linked_data_proof_options
@@ -102,16 +105,18 @@ export function completeIssuePresentation(presentation: string, preparation: str
 /**
 * @param {string} vp
 * @param {string} proof_options
+* @param {string} context_map
 * @returns {Promise<any>}
 */
-export function verifyPresentation(vp: string, proof_options: string): Promise<any>;
+export function verifyPresentation(vp: string, proof_options: string, context_map: string): Promise<any>;
 /**
 * @param {string} holder
 * @param {string} linked_data_proof_options
 * @param {string} key
+* @param {string} context_map
 * @returns {Promise<any>}
 */
-export function DIDAuth(holder: string, linked_data_proof_options: string, key: string): Promise<any>;
+export function DIDAuth(holder: string, linked_data_proof_options: string, key: string, context_map: string): Promise<any>;
 /**
 * @param {string} tz
 * @returns {Promise<any>}
@@ -199,15 +204,15 @@ export interface InitOutput {
   readonly keyToDID: (a: number, b: number, c: number, d: number, e: number) => void;
   readonly keyToVerificationMethod: (a: number, b: number, c: number, d: number) => number;
   readonly didToVerificationMethod: (a: number, b: number) => number;
-  readonly issueCredential: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
+  readonly issueCredential: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => number;
   readonly prepareIssueCredential: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
   readonly completeIssueCredential: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
-  readonly verifyCredential: (a: number, b: number, c: number, d: number) => number;
-  readonly issuePresentation: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
+  readonly verifyCredential: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
+  readonly issuePresentation: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => number;
   readonly prepareIssuePresentation: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
   readonly completeIssuePresentation: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
-  readonly verifyPresentation: (a: number, b: number, c: number, d: number) => number;
-  readonly DIDAuth: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
+  readonly verifyPresentation: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
+  readonly DIDAuth: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => number;
   readonly JWKFromTezos: (a: number, b: number) => number;
   readonly delegateCapability: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => number;
   readonly prepareDelegateCapability: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number) => number;
@@ -224,11 +229,11 @@ export interface InitOutput {
   readonly __wbindgen_malloc: (a: number, b: number) => number;
   readonly __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;
   readonly __wbindgen_export_2: WebAssembly.Table;
-  readonly _dyn_core__ops__function__FnMut__A____Output___R_as_wasm_bindgen__closure__WasmClosure___describe__invoke__heb2947e09b459f26: (a: number, b: number, c: number) => void;
+  readonly _dyn_core__ops__function__FnMut__A____Output___R_as_wasm_bindgen__closure__WasmClosure___describe__invoke__hae32635367f5810e: (a: number, b: number, c: number) => void;
   readonly __wbindgen_add_to_stack_pointer: (a: number) => number;
   readonly __wbindgen_free: (a: number, b: number, c: number) => void;
   readonly __wbindgen_exn_store: (a: number) => void;
-  readonly wasm_bindgen__convert__closures__invoke2_mut__h37b98ed5001919e7: (a: number, b: number, c: number, d: number) => void;
+  readonly wasm_bindgen__convert__closures__invoke2_mut__h6e6bc1a8c3634b3b: (a: number, b: number, c: number, d: number) => void;
 }
 
 export type SyncInitInput = BufferSource | WebAssembly.Module;

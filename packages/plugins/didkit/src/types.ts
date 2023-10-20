@@ -30,7 +30,7 @@ export type ProofOptions = {
     created?: string;
     challenge?: string;
     domain?: string;
-    checks?: ('Proof' | 'JWS' | 'CredentialStatus')[];
+    checks?: ('proof' | 'JWS' | 'credentialStatus' | 'credentialSchema')[];
 };
 
 /** @group DIDKit Plugin */
@@ -65,4 +65,4 @@ export type DidkitPluginMethods = {
 };
 
 /** @group DIDKit Plugin */
-export type DIDKitPlugin = Plugin<'DIDKit', any, DidkitPluginMethods>;
+export type DIDKitPlugin = Plugin<'DIDKit', 'context', DidkitPluginMethods>;

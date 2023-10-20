@@ -1,5 +1,11 @@
 # learn-card-types
 
+## 5.3.3
+
+### Patch Changes
+
+-   [#371](https://github.com/learningeconomy/LearnCard/pull/371) [`56aef2d`](https://github.com/learningeconomy/LearnCard/commit/56aef2d7830a5c66fa3b569b3c25eb3ecb6cc465) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Don't strip fields from credentialStatus
+
 ## 5.3.2
 
 ### Patch Changes

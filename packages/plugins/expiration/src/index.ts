@@ -14,8 +14,8 @@ export const expirationPlugin = (
     displayName: 'Expiration Extension',
     description: "Adds a check to make sure credentials aren't expired when verifying them",
     methods: {
-        verifyCredential: async (_learnCard, credential) => {
-            const verificationCheck = await learnCard.invoke.verifyCredential(credential);
+        verifyCredential: async (_learnCard, credential, options) => {
+            const verificationCheck = await learnCard.invoke.verifyCredential(credential, options);
 
             if (credential.expirationDate && new Date() > new Date(credential.expirationDate)) {
                 verificationCheck.errors.push('expiration error: Credential is expired');

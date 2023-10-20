@@ -28,7 +28,7 @@ export const VC_TEMPLATES: { [Key in keyof VcTemplates]: (args: VcTemplates[Key]
     } = {}): UnsignedAchievementCredential => ({
         '@context': [
             'https://www.w3.org/2018/credentials/v1',
-            'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.1.json',
+            'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.2.json',
         ],
         id: 'http://example.com/credentials/3527',
         type: ['VerifiableCredential', 'OpenBadgeCredential'],
@@ -109,7 +109,7 @@ export const VC_TEMPLATES: { [Key in keyof VcTemplates]: (args: VcTemplates[Key]
     } = {}) => ({
         '@context': [
             'https://www.w3.org/2018/credentials/v1',
-            'https://purl.imsglobal.org/spec/ob/v3p0/context.json',
+            'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.2.json',
             {
                 // id: '@id',
                 type: '@type',
@@ -209,7 +209,7 @@ export const VC_TEMPLATES: { [Key in keyof VcTemplates]: (args: VcTemplates[Key]
     } = {}) => ({
         '@context': [
             'https://www.w3.org/2018/credentials/v1',
-            'https://purl.imsglobal.org/spec/ob/v3p0/context.json',
+            'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.2.json',
             {
                 // id: '@id',
                 type: '@type',

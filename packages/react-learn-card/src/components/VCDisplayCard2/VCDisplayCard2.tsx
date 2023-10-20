@@ -29,6 +29,7 @@ export type VCDisplayCard2Props = {
     verificationItems: VerificationItem[];
     issueeOverride?: Profile;
     issuerOverride?: Profile;
+    subjectDID?: string;
     subjectImageComponent?: React.ReactNode;
     issuerImageComponent?: React.ReactNode;
     verificationInProgress?: boolean;
@@ -41,6 +42,8 @@ export type VCDisplayCard2Props = {
     customFooterComponent?: React.ReactNode;
     customBodyCardComponent?: React.ReactNode;
     customThumbComponent?: React.ReactNode;
+    customDescription?: React.ReactNode;
+    customCriteria?: React.ReactNode;
     customIssueHistoryComponent?: React.ReactNode;
     issueHistory?: IssueHistory[];
     titleOverride?: string;
@@ -55,6 +58,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     verificationItems,
     issueeOverride,
     issuerOverride,
+    subjectDID,
     subjectImageComponent,
     issuerImageComponent,
     verificationInProgress = false,
@@ -67,6 +71,8 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     customFooterComponent,
     customBodyCardComponent,
     customThumbComponent,
+    customCriteria,
+    customDescription,
     customIssueHistoryComponent,
     issueHistory,
     titleOverride,
@@ -190,6 +196,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                     {isFront && (
                         <VC2FrontFaceInfo
                             issuee={issuee}
+                            subjectDID={subjectDID}
                             issuer={issuer}
                             title={title}
                             subjectImageComponent={subjectImageComponent}
@@ -211,6 +218,8 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                             onMediaAttachmentClick={onMediaAttachmentClick}
                             showBackButton={showBackButton}
                             showFrontFace={() => setIsFront(true)}
+                            customDescription={customDescription}
+                            customCriteria={customCriteria}
                             customIssueHistoryComponent={customIssueHistoryComponent}
                             enableLightbox={enableLightbox}
                         />

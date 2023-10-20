@@ -29,6 +29,8 @@ type VC2BackFaceProps = {
     issueHistory?: IssueHistory[];
     showBackButton?: boolean;
     showFrontFace: () => void;
+    customDescription?: React.ReactNode;
+    customCriteria?: React.ReactNode;
     customIssueHistoryComponent?: React.ReactNode;
     enableLightbox?: boolean;
 };
@@ -43,6 +45,8 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
     issueHistory,
     showBackButton,
     showFrontFace,
+    customDescription,
+    customCriteria,
     customIssueHistoryComponent,
     enableLightbox,
 }) => {
@@ -80,7 +84,12 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
                 </div>
             )}
 
-            {(description || expiration) && (
+            {customDescription && (
+                <TruncateTextBox headerText="About" text={description} className="description-box">
+                    {customDescription}
+                </TruncateTextBox>
+            )}
+            {!customDescription && (description || expiration) && (
                 <TruncateTextBox headerText="About" text={description} className="description-box">
                     {expiration && (
                         <p className="text-grayscale-800 font-poppins font-[600] text-[12px] leading-[18px] mb-0">
@@ -89,7 +98,17 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
                     )}
                 </TruncateTextBox>
             )}
-            {criteria && (
+
+            {customCriteria && (
+                <TruncateTextBox
+                    headerText="Criteria"
+                    text={description}
+                    className="description-box"
+                >
+                    {customCriteria}
+                </TruncateTextBox>
+            )}
+            {!customCriteria && criteria && (
                 <TruncateTextBox headerText="Criteria" text={criteria} className="criteria-box" />
             )}
             {/* {skillsObject && <SkillsBox skillsObject={skillsObject} />} */}

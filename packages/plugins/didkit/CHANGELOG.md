@@ -1,5 +1,42 @@
 # learn-card-core
 
+## 1.3.2
+
+### Patch Changes
+
+-   [#378](https://github.com/learningeconomy/LearnCard/pull/378) [`e0c2e3c`](https://github.com/learningeconomy/LearnCard/commit/e0c2e3cb202697b6875c729e35326d75bbae4f65) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add support for P256
+
+## 1.3.1
+
+### Patch Changes
+
+-   Updated dependencies [[`56aef2d`](https://github.com/learningeconomy/LearnCard/commit/56aef2d7830a5c66fa3b569b3c25eb3ecb6cc465)]:
+    -   @learncard/types@5.3.3
+    -   @learncard/core@9.1.1
+
+## 1.3.0
+
+### Minor Changes
+
+-   [#340](https://github.com/learningeconomy/LearnCard/pull/340) [`867d38c`](https://github.com/learningeconomy/LearnCard/commit/867d38c5f606ff73fa328a4616a8a58a8f49d0f0) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add support for credentialSchema checks
+
+## 1.2.0
+
+### Minor Changes
+
+-   [#368](https://github.com/learningeconomy/LearnCard/pull/368) [`1c4e09d`](https://github.com/learningeconomy/LearnCard/commit/1c4e09d136464286959000e5ed14cdf59dba9196) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Use Context Plane for resolving extra contexts
+
+### Patch Changes
+
+-   Updated dependencies [[`1c4e09d`](https://github.com/learningeconomy/LearnCard/commit/1c4e09d136464286959000e5ed14cdf59dba9196)]:
+    -   @learncard/core@9.1.0
+
+## 1.1.2
+
+### Patch Changes
+
+-   [#366](https://github.com/learningeconomy/LearnCard/pull/366) [`5e102ff`](https://github.com/learningeconomy/LearnCard/commit/5e102ff8e41d171e26d1a070e2ca6b25a202845e) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add OBv3.0.2 Context
+
 ## 1.1.1
 
 ### Patch Changes
