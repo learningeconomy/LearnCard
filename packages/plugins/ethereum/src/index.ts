@@ -48,7 +48,7 @@ export const getEthereumPlugin = (
         ethersWallet = ethersWallet.connect(provider);
         return provider;
     };
-    let provider = getProvider();
+    let provider: ethers.providers.Provider;
 
     const getDefaultTokenList = (): TokenList => {
         return require('@uniswap/default-token-list/build/uniswap-default.tokenlist.json').tokens.concat(
@@ -58,6 +58,8 @@ export const getEthereumPlugin = (
     const defaultTokenList: TokenList = getDefaultTokenList();
 
     const getTokenAddress = async (tokenSymbolOrAddress: string) => {
+        if (!provider) provider = getProvider();
+
         return (
             await getTokenFromSymbolOrAddress(
                 tokenSymbolOrAddress,
@@ -71,6 +73,8 @@ export const getEthereumPlugin = (
         tokenContractAddress: string,
         walletPublicAddress = publicKey
     ) => {
+        if (!provider) provider = getProvider();
+
         const contract = new ethers.Contract(tokenContractAddress, ERC20ABI, provider);
 
         const balance = await contract.balanceOf(walletPublicAddress);
@@ -86,6 +90,8 @@ export const getEthereumPlugin = (
 
     // Core Methods
     const getBalance = async (walletAddress = publicKey, tokenSymbolOrAddress = 'ETH') => {
+        if (!provider) provider = getProvider();
+
         if (!tokenSymbolOrAddress || tokenSymbolOrAddress === 'ETH') {
             // check ETH by default
             const balance = await provider.getBalance(walletAddress);
@@ -118,6 +124,8 @@ export const getEthereumPlugin = (
                 getBalance(walletAddress, symbolOrAddress),
 
             transferTokens: async (_learnCard, tokenSymbolOrAddress, amount, toAddress) => {
+                if (!provider) provider = getProvider();
+
                 if (tokenSymbolOrAddress === 'ETH') {
                     const transaction = {
                         to: toAddress,
@@ -152,6 +160,8 @@ export const getEthereumPlugin = (
             },
 
             getGasPrice: async () => {
+                if (!provider) provider = getProvider();
+
                 return ethers.utils.formatUnits(await provider.getGasPrice());
             },
 
