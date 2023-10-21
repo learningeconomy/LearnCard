@@ -1,5 +1,11 @@
 # @learncard/network-brain-service
 
+## 1.3.3
+
+### Patch Changes
+
+-   [#380](https://github.com/learningeconomy/LearnCard/pull/380) [`9db67f82`](https://github.com/learningeconomy/LearnCard/commit/9db67f82abbbda840bad1c8b46301ff78da4e87a) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Optimize did:web routes
+
 ## 1.3.2
 
 ### Patch Changes
