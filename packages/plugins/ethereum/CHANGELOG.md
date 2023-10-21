@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 1.0.6
+
+### Patch Changes
+
+-   [`ef8d077`](https://github.com/learningeconomy/LearnCard/commit/ef8d077dde36b13d4fb8869fb0f8efd3dd909a80) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Lazily initialize infura provider
+
 ## 1.0.5
 
 ### Patch Changes
