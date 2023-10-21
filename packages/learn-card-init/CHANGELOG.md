@@ -1,5 +1,14 @@
 # learn-card-core
 
+## 1.2.3
+
+### Patch Changes
+
+-   Updated dependencies [[`ef8d077`](https://github.com/learningeconomy/LearnCard/commit/ef8d077dde36b13d4fb8869fb0f8efd3dd909a80)]:
+    -   @learncard/ethereum-plugin@1.0.6
+    -   @learncard/learn-cloud-plugin@1.1.19
+    -   @learncard/network-plugin@1.5.3
+
 ## 1.2.2
 
 ### Patch Changes
