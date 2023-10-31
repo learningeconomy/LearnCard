@@ -15,7 +15,7 @@ Sentry.AWSLambda.init({
     tracesSampleRate: 1.0,
     integrations: [
         new Sentry.Integrations.Console(),
-        new Sentry.Integrations.Http(),
+        new Sentry.Integrations.Http({ tracing: true }),
         new Sentry.Integrations.ContextLines(),
         new Sentry.Integrations.Mongo(),
     ],

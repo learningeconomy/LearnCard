@@ -1,4 +1,4 @@
-import { getUserForDid } from '@accesslayer/user/read';
+import { getAllDidsForDid, getUserForDid } from '@accesslayer/user/read';
 import { CredentialRecords } from '.';
 import { MongoCredentialRecordType } from '@models';
 import { Filter } from 'mongodb';
@@ -22,9 +22,7 @@ export const getCredentialRecordsForDid = async (
                 .toArray();
         }
 
-        const user = await getUserForDid(did);
-
-        const dids = [user?.did ?? did, ...(user?.associatedDids ?? [])];
+        const dids = await getAllDidsForDid(did);
 
         return await CredentialRecords.find({
             ...query,
