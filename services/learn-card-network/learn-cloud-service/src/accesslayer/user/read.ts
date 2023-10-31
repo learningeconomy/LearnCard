@@ -1,6 +1,6 @@
 import { Users } from '.';
 import { MongoUserType } from '@models';
-import { ensureUserForDid } from './create';
+import { createUser } from './create';
 import { getCachedUserForDid, setCachedUserForDid } from '@cache/user';
 
 export const getUserForDid = async (did: string): Promise<MongoUserType | null> => {
@@ -9,7 +9,7 @@ export const getUserForDid = async (did: string): Promise<MongoUserType | null> 
 
         if (cachedResponse) return cachedResponse;
 
-        const user = await Users.findOne({ $or: [{ did }, { associatedDids: did }] });
+        const user = await Users.findOne({ dids: did });
 
         if (user) await setCachedUserForDid(did, user);
 
@@ -21,7 +21,13 @@ export const getUserForDid = async (did: string): Promise<MongoUserType | null> 
 };
 
 export const getAllDidsForDid = async (did: string): Promise<string[]> => {
-    const user = await ensureUserForDid(did);
+    let user = await Users.findOne({ dids: did }, { projection: { dids: 1, _id: 0 } });
 
-    return [user.did, ...user.associatedDids];
+    if (!user) {
+        await createUser(did);
+
+        return [did];
+    }
+
+    return user.dids;
 };

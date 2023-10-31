@@ -8,8 +8,12 @@ export const addDidToUser = async (primaryDid: string, did: string): Promise<boo
         await Promise.all([deleteCachedUsersForDid(primaryDid), deleteCachedUsersForDid(did)]);
 
         return Boolean(
-            (await Users.updateOne({ did: primaryDid }, { $push: { associatedDids: did } }))
-                .modifiedCount
+            (
+                await Users.updateOne(
+                    { did: primaryDid },
+                    { $push: { associatedDids: did, dids: did } }
+                )
+            ).modifiedCount
         );
     } catch (e) {
         console.error(e);
@@ -23,8 +27,12 @@ export const removeDidFromUser = async (primaryDid: string, did: string): Promis
         await Promise.all([deleteCachedUsersForDid(primaryDid), deleteCachedUsersForDid(did)]);
 
         return Boolean(
-            (await Users.updateOne({ did: primaryDid }, { $pull: { associatedDids: did } }))
-                .modifiedCount
+            (
+                await Users.updateOne(
+                    { did: primaryDid },
+                    { $pull: { associatedDids: did, dids: did } }
+                )
+            ).modifiedCount
         );
     } catch (e) {
         console.error(e);
@@ -50,7 +58,13 @@ export const setDidAsPrimary = async (
             (
                 await Users.updateOne(
                     { did: currentPrimary },
-                    { $push: { associatedDids: currentPrimary }, $set: { did: newPrimary } }
+                    {
+                        $push: {
+                            associatedDids: currentPrimary,
+                            dids: { $each: [newPrimary], $position: 0 },
+                        },
+                        $set: { did: newPrimary },
+                    }
                 )
             ).modifiedCount
         );

@@ -5,7 +5,7 @@ import { getCachedUserForDid, setCachedUserForDid } from '@cache/user';
 
 export const createUser = async (did: string): Promise<string | false> => {
     try {
-        const newUser = { did, associatedDids: [] };
+        const newUser = { did, associatedDids: [], dids: [did] };
 
         const id = (await Users.insertOne(newUser)).insertedId.toString();
 
