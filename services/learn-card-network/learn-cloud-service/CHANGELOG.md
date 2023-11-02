@@ -1,5 +1,11 @@
 # @learncard/network-brain-service
 
+## 1.3.6
+
+### Patch Changes
+
+-   [`f01d4b8`](https://github.com/learningeconomy/LearnCard/commit/f01d4b8ea1e7a63477097208d2badd6bf4b57e5c) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix Mongo timeout errors
+
 ## 1.3.5
 
 ### Patch Changes
