@@ -13,7 +13,13 @@ const dbName = isTest
     ? (global as any).__MONGO_DB_NAME__
     : process.env.__MONGO_DB_NAME__ || process.env.LEARN_CLOUD_MONGO_DB_NAME;
 
-export const client = new MongoClient(uri, { connectTimeoutMS: 30_000 });
+export const client = new MongoClient(uri, {
+    connectTimeoutMS: 30_000,
+    socketTimeoutMS: 30_000,
+    maxPoolSize: 10,
+    minPoolSize: 1,
+    serverSelectionTimeoutMS: 30_000,
+});
 export const mongodb = client.db(dbName);
 
 export default mongodb;
