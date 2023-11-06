@@ -69,6 +69,8 @@ export const openApiHandler = Sentry.AWSLambda.wrapHandler(
             };
         }
 
+        context.callbackWaitsForEmptyEventLoop = false;
+
         return _openApiHandler(event, context);
     }
 );
@@ -85,6 +87,8 @@ export const trpcHandler = Sentry.AWSLambda.wrapHandler(
                 },
             };
         }
+
+        context.callbackWaitsForEmptyEventLoop = false;
 
         return _trpcHandler(event, context);
     }

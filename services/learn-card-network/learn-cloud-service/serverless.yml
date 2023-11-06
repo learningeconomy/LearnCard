@@ -81,7 +81,7 @@ provider:
     name: aws
     runtime: nodejs16.x
     memorySize: 2048
-    timeout: 18
+    timeout: 20
     stage: ${opt:stage, "dev"}
     region: ${opt:region, "us-east-1"}
     environment:
