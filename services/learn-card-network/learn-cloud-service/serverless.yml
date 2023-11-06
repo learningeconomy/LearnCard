@@ -19,7 +19,7 @@ custom:
         packager: pnpm
         plugins: esbuildPlugins.cjs
         bundle: true
-        minify: true
+        # minify: true
         external: ['@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm']
         sourcemap: external
         target: 'node16'
