@@ -14,12 +14,15 @@ const dbName = isTest
     : process.env.__MONGO_DB_NAME__ || process.env.LEARN_CLOUD_MONGO_DB_NAME;
 
 export const client = new MongoClient(uri, {
-    connectTimeoutMS: 30_000,
-    socketTimeoutMS: 30_000,
-    maxPoolSize: 10,
+    connectTimeoutMS: 180_000,
+    socketTimeoutMS: 180_000,
+    maxPoolSize: 5,
     minPoolSize: 1,
-    serverSelectionTimeoutMS: 30_000,
+    maxIdleTimeMS: 180_000,
+    serverSelectionTimeoutMS: 180_000,
 });
 export const mongodb = client.db(dbName);
+
+client.on('error', error => console.log('Mongo error!', error));
 
 export default mongodb;
