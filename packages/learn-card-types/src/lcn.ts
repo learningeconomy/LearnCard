@@ -37,6 +37,7 @@ export const BoostValidator = z.object({
     type: z.string().optional(),
     category: z.string().optional(),
     status: LCNBoostStatus.optional(),
+    autoConnectRecipients: z.boolean().optional(),
 });
 export type Boost = z.infer<typeof BoostValidator>;
 

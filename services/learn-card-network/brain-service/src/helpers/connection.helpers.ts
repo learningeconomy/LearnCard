@@ -1,7 +1,7 @@
 import { Op, QueryBuilder, Where } from 'neogma';
 import { LCNProfileConnectionStatusEnum, LCNNotificationTypeEnumValidator } from '@learncard/types';
 import { TRPCError } from '@trpc/server';
-import { Profile, ProfileInstance } from '@models';
+import { Boost, Profile, Credential, ProfileInstance } from '@models';
 import { convertQueryResultToPropertiesObjectArray } from '@helpers/neo4j.helpers';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
 import { ProfileType } from 'types/profile';
@@ -10,16 +10,57 @@ export const getConnections = async (
     profile: ProfileInstance,
     { limit, cursor }: { limit: number; cursor?: string }
 ): Promise<ProfileType[]> => {
-    const _query = new QueryBuilder().match({
-        related: [
-            { model: Profile, where: { profileId: profile.profileId } },
-            {
-                ...Profile.getRelationshipByAlias('connectedWith'),
-                direction: 'none',
-            },
-            { identifier: 'target', model: Profile },
-        ],
-    });
+    const _query = new QueryBuilder()
+        .match({ model: Profile, where: { profileId: profile.profileId }, identifier: 'source' })
+        .match({
+            optional: true,
+            related: [
+                { identifier: 'source' },
+                {
+                    ...Profile.getRelationshipByAlias('connectedWith'),
+                    direction: 'none',
+                },
+                { identifier: 'directTarget', model: Profile },
+            ],
+        })
+        .with('source, COLLECT(DISTINCT directTarget) AS directlyConnected')
+        .match({
+            optional: true,
+            related: [
+                { identifier: 'source' },
+                { ...Credential.getRelationshipByAlias('credentialReceived') },
+                { model: Credential },
+                { ...Credential.getRelationshipByAlias('instanceOf') },
+                { model: Boost, where: { autoConnectRecipients: true } },
+                { ...Credential.getRelationshipByAlias('instanceOf'), direction: 'in' },
+                { model: Credential },
+                { ...Credential.getRelationshipByAlias('credentialReceived') },
+                { model: Profile, identifier: 'receivedBoostTarget' },
+            ],
+        })
+        .with(
+            'source, directlyConnected, COLLECT(DISTINCT receivedBoostTarget) AS receivedBoostTargets'
+        )
+        .match({
+            optional: true,
+            related: [
+                { identifier: 'source' },
+                { ...Boost.getRelationshipByAlias('createdBy'), direction: 'in' },
+                { model: Boost, where: { autoConnectRecipients: true } },
+                { ...Credential.getRelationshipByAlias('instanceOf'), direction: 'in' },
+                { model: Credential },
+                { ...Credential.getRelationshipByAlias('credentialReceived') },
+                { model: Profile, identifier: 'ownedBoostTarget' },
+            ],
+        })
+        .with(
+            'source, directlyConnected, receivedBoostTargets, COLLECT(DISTINCT ownedBoostTarget) AS ownedBoostTargets'
+        )
+        .with(
+            'source, directlyConnected, receivedBoostTargets + ownedBoostTargets AS connectedViaBoost'
+        )
+        .with('directlyConnected, directlyConnected + connectedViaBoost AS allConnectedProfiles')
+        .unwind('allConnectedProfiles AS target');
 
     const query = cursor
         ? _query.where(
