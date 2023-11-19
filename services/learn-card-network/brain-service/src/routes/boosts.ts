@@ -86,7 +86,7 @@ export const boostsRouter = t.router({
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
-            if (!(await isProfileBoostOwner(profile, boost))) {
+            if (!(await isProfileBoostAdmin(profile, boost))) {
                 throw new TRPCError({
                     code: 'UNAUTHORIZED',
                     message: 'Profile does not own boost',
@@ -163,7 +163,7 @@ export const boostsRouter = t.router({
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
-            if (!(await isProfileBoostOwner(profile, boost))) {
+            if (!(await isProfileBoostAdmin(profile, boost))) {
                 throw new TRPCError({
                     code: 'UNAUTHORIZED',
                     message: 'Profile does not own boost',
@@ -263,7 +263,7 @@ export const boostsRouter = t.router({
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
-            if (!(await isProfileBoostOwner(profile, boost))) {
+            if (!(await isProfileBoostAdmin(profile, boost))) {
                 throw new TRPCError({
                     code: 'UNAUTHORIZED',
                     message: 'Profile does not own boost',
@@ -382,7 +382,7 @@ export const boostsRouter = t.router({
             if (!(await isProfileBoostAdmin(profile, boost))) {
                 throw new TRPCError({
                     code: 'UNAUTHORIZED',
-                    message: 'Profile does not own boost',
+                    message: 'Profile does not have admin rights over boost',
                 });
             }
 
@@ -477,7 +477,7 @@ export const boostsRouter = t.router({
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
-            if (!(await isProfileBoostOwner(profile, boost))) {
+            if (!(await isProfileBoostAdmin(profile, boost))) {
                 throw new TRPCError({
                     code: 'UNAUTHORIZED',
                     message: 'Profile does not own boost',
@@ -519,7 +519,7 @@ export const boostsRouter = t.router({
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
-            if (!(await isProfileBoostOwner(profile, boost))) {
+            if (!(await isProfileBoostAdmin(profile, boost))) {
                 throw new TRPCError({
                     code: 'UNAUTHORIZED',
                     message: 'Profile does not own boost',
