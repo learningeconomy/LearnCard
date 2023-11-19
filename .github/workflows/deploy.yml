@@ -9,8 +9,8 @@ concurrency: ${{ github.workflow }}-${{ github.ref }}
 
 env:
   CI: true
-  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  AWS_ACCESS_KEY_ID: ${{ secrets.COMMISSIONED_AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.COMMISSIONED_AWS_SECRET_ACCESS_KEY }}
   AWS_DEFAULT_REGION: us-east-1
   SEED: ${{ secrets.COMMISSIONED_SEED }}
   LEARN_CLOUD_SEED: ${{ secrets.COMMISSIONED_LEARN_CLOUD_SEED }}
