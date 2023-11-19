@@ -1,6 +1,6 @@
 # serverless.yml
 
-service: commissioned-learn-cloud-service
+service: comm-cloud
 
 frameworkVersion: '3'
 

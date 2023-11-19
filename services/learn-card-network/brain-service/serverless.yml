@@ -1,6 +1,6 @@
 # serverless.yml
 
-service: commissioned-lcn-brain-service
+service: comm-brain
 
 frameworkVersion: '3'
 
