@@ -1,4 +1,4 @@
-import { QueryBuilder } from 'neogma';
+import { BindParam, Op, QueryBuilder, Where } from 'neogma';
 import { convertQueryResultToPropertiesObjectArray } from '@helpers/neo4j.helpers';
 import { BoostRecipientInfo } from '@learncard/types';
 import {
@@ -12,6 +12,7 @@ import {
     ProfileRelationships,
 } from '@models';
 import { getProfilesByProfileIds } from '@accesslayer/profile/read';
+import { ProfileType } from 'types/profile';
 
 export const getBoostOwner = async (boost: BoostInstance): Promise<ProfileInstance | undefined> => {
     return (await boost.findRelationships({ alias: 'createdBy' }))[0]?.target;
@@ -101,4 +102,47 @@ export const getBoostRecipients = async (
             to: recipients.find(recipient => recipient.profileId === result.to),
         }))
         .filter(result => Boolean(result.to)) as BoostRecipientInfo[];
+};
+
+export const getBoostAdmins = async (
+    boost: BoostInstance,
+    { limit, cursor, blacklist = [] }: { limit: number; cursor?: string; blacklist?: string[] }
+): Promise<ProfileType[]> => {
+    const _query = new QueryBuilder(new BindParam({ blacklist }))
+        .match({
+            related: [
+                { identifier: 'source', model: Boost, where: { id: boost.id } },
+                `-[:${Profile.getRelationshipByAlias('adminOf').name}|${Boost.getRelationshipByAlias('createdBy').name
+                }]-`,
+                { identifier: 'admin', model: Profile },
+            ],
+        })
+        .where('NOT admin.profileId IN $blacklist');
+
+    const query = cursor
+        ? _query.where(
+            new Where({ admin: { profileId: { [Op.gt]: cursor } } }, _query.getBindParam())
+        )
+        : _query;
+
+    const results = convertQueryResultToPropertiesObjectArray<{
+        admin: ProfileType;
+    }>(await query.return('admin').orderBy('admin.profileId').limit(limit).run());
+
+    return results.map(({ admin }) => admin);
+};
+
+export const isProfileBoostAdmin = async (profile: ProfileInstance, boost: BoostInstance) => {
+    const query = new QueryBuilder().match({
+        related: [
+            { model: Boost, where: { id: boost.id } },
+            `-[:${Profile.getRelationshipByAlias('adminOf').name}|${Boost.getRelationshipByAlias('createdBy').name
+            }]-`,
+            { identifier: 'profile', model: Profile, where: { profileId: profile.profileId } },
+        ],
+    });
+
+    const result = await query.return('count(profile) AS count').run();
+
+    return Number(result.records[0]?.get('count') ?? 0) > 0;
 };

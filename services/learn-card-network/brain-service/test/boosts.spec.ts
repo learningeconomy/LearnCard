@@ -548,6 +548,290 @@ describe('Boosts', () => {
         });
     });
 
+    describe('getBoostAdmins', () => {
+        beforeEach(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+        });
+
+        afterAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+        });
+
+        it('should require full auth to get boost admins', async () => {
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+            await userA.clients.fullAuth.boost.getBoostAdmins({ uri });
+
+            await expect(noAuthClient.boost.getBoostAdmins({ uri })).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+            await expect(
+                userA.clients.partialAuth.boost.getBoostAdmins({ uri })
+            ).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+        });
+
+        it('should allow getting boost admins', async () => {
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+            await expect(
+                userA.clients.fullAuth.boost.getBoostAdmins({ uri })
+            ).resolves.not.toThrow();
+
+            expect(
+                (await userA.clients.fullAuth.boost.getBoostAdmins({ uri })).records
+            ).toHaveLength(0);
+
+            await userA.clients.fullAuth.boost.addBoostAdmin({ uri, profileId: 'userb' });
+
+            expect(
+                (await userA.clients.fullAuth.boost.getBoostAdmins({ uri })).records
+            ).toHaveLength(1);
+        });
+
+        it('should allow including self in boost admins', async () => {
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            expect(
+                (await userA.clients.fullAuth.boost.getBoostAdmins({ uri, includeSelf: true }))
+                    .records
+            ).toHaveLength(1);
+
+            await userA.clients.fullAuth.boost.addBoostAdmin({ uri, profileId: 'userb' });
+
+            expect(
+                (await userA.clients.fullAuth.boost.getBoostAdmins({ uri, includeSelf: true }))
+                    .records
+            ).toHaveLength(2);
+        });
+
+        it('should allow anyone to see boost admins', async () => {
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            expect(
+                (await userB.clients.fullAuth.boost.getBoostAdmins({ uri, includeSelf: true }))
+                    .records
+            ).toHaveLength(1);
+        });
+    });
+
+    describe('addBoostAdmin', () => {
+        beforeEach(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+        });
+
+        afterAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+        });
+
+        it('should require full auth to add boost admin', async () => {
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            await expect(
+                noAuthClient.boost.addBoostAdmin({ uri, profileId: 'userb' })
+            ).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+            await expect(
+                userA.clients.partialAuth.boost.addBoostAdmin({ uri, profileId: 'userb' })
+            ).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+        });
+
+        it('should allow adding boost admins', async () => {
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            expect(
+                (await userA.clients.fullAuth.boost.getBoostAdmins({ uri })).records
+            ).toHaveLength(0);
+
+            await expect(
+                userA.clients.fullAuth.boost.addBoostAdmin({ uri, profileId: 'userb' })
+            ).resolves.not.toThrow();
+
+            expect(
+                (await userA.clients.fullAuth.boost.getBoostAdmins({ uri })).records
+            ).toHaveLength(1);
+        });
+
+        it('should allow admins to add more admins', async () => {
+            await userC.clients.fullAuth.profile.createProfile({ profileId: 'userc' });
+
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            await userA.clients.fullAuth.boost.addBoostAdmin({ uri, profileId: 'userb' });
+
+            expect(
+                (await userA.clients.fullAuth.boost.getBoostAdmins({ uri })).records
+            ).toHaveLength(1);
+
+            await expect(
+                userB.clients.fullAuth.boost.addBoostAdmin({ uri, profileId: 'userc' })
+            ).resolves.not.toThrow();
+
+            expect(
+                (await userA.clients.fullAuth.boost.getBoostAdmins({ uri })).records
+            ).toHaveLength(2);
+        });
+
+        it('should not allow non-admins to add more admins', async () => {
+            await userC.clients.fullAuth.profile.createProfile({ profileId: 'userc' });
+
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            expect(
+                (await userA.clients.fullAuth.boost.getBoostAdmins({ uri })).records
+            ).toHaveLength(0);
+
+            await expect(
+                userB.clients.fullAuth.boost.addBoostAdmin({ uri, profileId: 'userc' })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+
+            expect(
+                (await userA.clients.fullAuth.boost.getBoostAdmins({ uri })).records
+            ).toHaveLength(0);
+        });
+    });
+
+    describe('removeBoostAdmin', () => {
+        beforeEach(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+        });
+
+        afterAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+        });
+
+        it('should require full auth to remove boost admin', async () => {
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            await userA.clients.fullAuth.boost.addBoostAdmin({ uri, profileId: 'userb' });
+
+            await expect(
+                noAuthClient.boost.removeBoostAdmin({ uri, profileId: 'userb' })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+            await expect(
+                userA.clients.partialAuth.boost.removeBoostAdmin({ uri, profileId: 'userb' })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        });
+
+        it('should allow removing boost admins', async () => {
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            await userA.clients.fullAuth.boost.addBoostAdmin({ uri, profileId: 'userb' });
+
+            expect(
+                (await userA.clients.fullAuth.boost.getBoostAdmins({ uri })).records
+            ).toHaveLength(1);
+
+            await expect(
+                userA.clients.fullAuth.boost.removeBoostAdmin({ uri, profileId: 'userb' })
+            ).resolves.not.toThrow();
+
+            expect(
+                (await userA.clients.fullAuth.boost.getBoostAdmins({ uri })).records
+            ).toHaveLength(0);
+        });
+
+        it('should only allow admins to remove admins', async () => {
+            await userC.clients.fullAuth.profile.createProfile({ profileId: 'userc' });
+
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            await userA.clients.fullAuth.boost.addBoostAdmin({ uri, profileId: 'userb' });
+
+            expect(
+                (await userA.clients.fullAuth.boost.getBoostAdmins({ uri })).records
+            ).toHaveLength(1);
+
+            await expect(
+                userC.clients.fullAuth.boost.removeBoostAdmin({ uri, profileId: 'userb' })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+
+            expect(
+                (await userA.clients.fullAuth.boost.getBoostAdmins({ uri })).records
+            ).toHaveLength(1);
+        });
+
+        it('should not allow removing boost creator', async () => {
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            await userA.clients.fullAuth.boost.addBoostAdmin({ uri, profileId: 'userb' });
+
+            expect(
+                (await userA.clients.fullAuth.boost.getBoostAdmins({ uri })).records
+            ).toHaveLength(1);
+
+            await expect(
+                userB.clients.fullAuth.boost.removeBoostAdmin({ uri, profileId: 'usera' })
+            ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+
+            await expect(
+                userA.clients.fullAuth.boost.removeBoostAdmin({ uri, profileId: 'usera' })
+            ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+
+            expect(
+                (await userA.clients.fullAuth.boost.getBoostAdmins({ uri })).records
+            ).toHaveLength(1);
+        });
+
+        it('should allow admins to remove themselves', async () => {
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            await userA.clients.fullAuth.boost.addBoostAdmin({ uri, profileId: 'userb' });
+
+            expect(
+                (await userA.clients.fullAuth.boost.getBoostAdmins({ uri })).records
+            ).toHaveLength(1);
+
+            await expect(
+                userB.clients.fullAuth.boost.removeBoostAdmin({ uri, profileId: 'userb' })
+            ).resolves.not.toThrow();
+
+            expect(
+                (await userA.clients.fullAuth.boost.getBoostAdmins({ uri })).records
+            ).toHaveLength(0);
+        });
+    });
+
     describe('deleteBoost', () => {
         beforeEach(async () => {
             await Profile.delete({ detach: true, where: {} });

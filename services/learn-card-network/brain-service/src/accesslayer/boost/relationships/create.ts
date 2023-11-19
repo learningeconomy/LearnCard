@@ -18,3 +18,13 @@ export const createReceivedCredentialRelationship = async (
         properties: { from: from.profileId, date: new Date().toISOString() },
     });
 };
+
+export const setProfileAsBoostAdmin = async (
+    profile: ProfileInstance,
+    boost: BoostInstance
+): Promise<void> => {
+    await profile.relateTo({
+        alias: 'adminOf',
+        where: { id: boost.id },
+    });
+};
