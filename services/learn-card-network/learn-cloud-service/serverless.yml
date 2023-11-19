@@ -1,6 +1,6 @@
 # serverless.yml
 
-service: learn-cloud-service
+service: commissioned-learn-cloud-service
 
 frameworkVersion: '3'
 
