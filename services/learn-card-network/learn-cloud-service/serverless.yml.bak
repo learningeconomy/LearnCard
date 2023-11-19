@@ -1,6 +1,6 @@
 # serverless.yml
 
-service: commissioned-lcn-brain-service
+service: commissioned-learn-cloud-service
 
 frameworkVersion: '3'
 
@@ -9,13 +9,8 @@ useDotenv: true
 plugins:
     - serverless-esbuild
     - serverless-offline
-    - serverless-lift
-
-constructs:
-    notifications-queue:
-        type: queue
-        worker:
-            handler: lambda.notificationsWorker
+    - serverless-domain-manager
+    - serverless-certificate-creator
 
 custom:
     config:
@@ -24,12 +19,57 @@ custom:
         packager: pnpm
         plugins: esbuildPlugins.cjs
         bundle: true
-        minify: true
+        # minify: true
         external: ['@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm']
         sourcemap: external
         target: 'node16'
         watch:
             pattern: ['src/**/*.ts', 'dids.ts']
+
+    domains:
+        # References to 'prod' stage
+        production:
+            # don't forget the dot on the end!
+            hostedZoneName: 'cloud.learncard.com.'
+            domainName: commissioned.cloud.learncard.com
+            certificateName: commissioned.cloud.learncard.com
+
+        # References to 'dev' stage
+        dev:
+            # don't forget the dot on the end!
+            hostedZoneName: 'testnet-cloud.learncard.com.'
+            domainName: testnet-cloud.commissioned.learncard.com
+            certificateName: testnet-cloud.commissioned.learncard.com
+
+    # Amazon Certificate Manager
+    customCertificate:
+        # Route 53 Hosted Zone name
+        hostedZoneNames: ${self:custom.domains.${self:provider.stage}.hostedZoneName}
+
+        # Here we get our certificate name inside custom.domain.STAGE.certificateName
+        # STAGE will be automatically filled with the value from "provider > stage"
+        certificateName: ${self:custom.domains.${self:provider.stage}.certificateName}
+
+        region: ${self:provider.region}
+
+    # Route53
+    customDomain:
+        # Get value from "domains" section using stage that is being deployed
+        domainName: ${self:custom.domains.${self:provider.stage}.domainName}
+
+        # Same case of certificaName inside customCertificate
+        certificateName: ${self:custom.domains.${self:provider.stage}.certificateName}
+
+        # Enable plugin to create an A Alias and AAAA Alias records in Route53
+        # mapping the domainName to the generated distribution domain name.
+        createRoute53Record: true
+
+        # Enable plugin to autorun create_domain/delete_domain as part of sls deploy/remove
+        autoDomain: true
+
+        basePath: ''
+        endpointType: regional
+        apiType: http
 
 package:
   individually: true
@@ -41,20 +81,17 @@ provider:
     name: aws
     runtime: nodejs16.x
     memorySize: 2048
-    timeout: 29
+    timeout: 20
     stage: ${opt:stage, "dev"}
     region: ${opt:region, "us-east-1"}
     environment:
         PORT: ${env:PORT, 3000}
         LAMBDA_STAGE: ${opt:stage, "dev"}
-        SEED: ${env:SEED}
-        DOMAIN_NAME: ${env:DOMAIN_NAME}
-        NOTIFICATIONS_SERVICE_WEBHOOK_URL: ${env:NOTIFICATIONS_SERVICE_WEBHOOK_URL}
-        NEO4J_URI: ${env:NEO4J_URI}
-        NEO4J_USERNAME: ${env:NEO4J_USERNAME}
-        NEO4J_PASSWORD: ${env:NEO4J_PASSWORD}
+        LEARN_CLOUD_SEED: ${env:LEARN_CLOUD_SEED}
+        LEARN_CLOUD_MONGO_URI: ${env:LEARN_CLOUD_MONGO_URI}
+        LEARN_CLOUD_MONGO_DB_NAME: ${env:LEARN_CLOUD_MONGO_DB_NAME}
         SENTRY_DSN: ${env:SENTRY_DSN}
-        SENTRY_ENV: ${env:SENTRY_ENV}
+        SENTRY_ENV: ${env:LEARN_CLOUD_SENTRY_ENV}
         SENTRY_AUTH_TOKEN: ${env:SENTRY_AUTH_TOKEN}
         SENTRY_ORG: ${env:SENTRY_ORG}
         SENTRY_PROJECT: ${env:SENTRY_PROJECT}
@@ -62,7 +99,6 @@ provider:
             'Fn::GetAtt': [ElasticCacheCluster, RedisEndpoint.Address]
         REDIS_PORT:
             'Fn::GetAtt': [ElasticCacheCluster, RedisEndpoint.Port]
-        NOTIFICATIONS_QUEUE_URL: ${construct:notifications-queue.queueUrl}
     tracing:
         apiGateway: true
         lambda: true

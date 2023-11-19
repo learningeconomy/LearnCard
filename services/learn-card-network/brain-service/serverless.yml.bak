@@ -9,6 +9,8 @@ useDotenv: true
 plugins:
     - serverless-esbuild
     - serverless-offline
+    - serverless-domain-manager
+    - serverless-certificate-creator
     - serverless-lift
 
 constructs:
@@ -30,6 +32,48 @@ custom:
         target: 'node16'
         watch:
             pattern: ['src/**/*.ts', 'dids.ts']
+
+    domains:
+        # References to 'prod' stage
+        production:
+            domainName: commissioned.network.learncard.com
+            certificateName: commissioned.network.learncard.com
+
+        # References to 'dev' stage
+        dev:
+            domainName: testnet.commissioned.network.learncard.com
+            certificateName: testnet.commissioned.network.learncard.com
+
+    # Amazon Certificate Manager
+    customCertificate:
+        # Route 53 Hosted Zone name
+        # don't forget the dot on the end!
+        hostedZoneNames: 'network.learncard.com.'
+
+        # Here we get our certificate name inside custom.domain.STAGE.certificateName
+        # STAGE will be automatically filled with the value from "provider > stage"
+        certificateName: ${self:custom.domains.${self:provider.stage}.certificateName}
+
+        region: ${self:provider.region}
+
+    # Route53
+    customDomain:
+        # Get value from "domains" section using stage that is being deployed
+        domainName: ${self:custom.domains.${self:provider.stage}.domainName}
+
+        # Same case of certificaName inside customCertificate
+        certificateName: ${self:custom.domains.${self:provider.stage}.certificateName}
+
+        # Enable plugin to create an A Alias and AAAA Alias records in Route53
+        # mapping the domainName to the generated distribution domain name.
+        createRoute53Record: true
+
+        # Enable plugin to autorun create_domain/delete_domain as part of sls deploy/remove
+        autoDomain: true
+
+        basePath: ''
+        endpointType: regional
+        apiType: http
 
 package:
   individually: true
