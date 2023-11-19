@@ -13,6 +13,7 @@ import {
 } from '@models';
 import { getProfilesByProfileIds } from '@accesslayer/profile/read';
 import { ProfileType } from 'types/profile';
+import { BoostType } from 'types/boost';
 
 export const getBoostOwner = async (boost: BoostInstance): Promise<ProfileInstance | undefined> => {
     return (await boost.findRelationships({ alias: 'createdBy' }))[0]?.target;
@@ -145,4 +146,24 @@ export const isProfileBoostAdmin = async (profile: ProfileInstance, boost: Boost
     const result = await query.return('count(profile) AS count').run();
 
     return Number(result.records[0]?.get('count') ?? 0) > 0;
+};
+
+export const getBoostsForProfile = async (
+    profile: ProfileInstance,
+    { limit }: { limit: number }
+): Promise<BoostType[]> => {
+    const query = new QueryBuilder().match({
+        related: [
+            { identifier: 'boost', model: Boost },
+            `-[:${Profile.getRelationshipByAlias('adminOf').name}|${Boost.getRelationshipByAlias('createdBy').name
+            }]-`,
+            { model: Profile, where: { profileId: profile.profileId } },
+        ],
+    });
+
+    const results = convertQueryResultToPropertiesObjectArray<{
+        boost: BoostType;
+    }>(await query.return('DISTINCT boost').limit(limit).run());
+
+    return results.map(({ boost }) => boost);
 };

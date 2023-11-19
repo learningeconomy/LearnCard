@@ -13,11 +13,12 @@ import {
 
 import { t, profileRoute } from '@routes';
 
-import { getBoostByUri, getBoostsForProfile } from '@accesslayer/boost/read';
+import { getBoostByUri } from '@accesslayer/boost/read';
 import {
     getBoostAdmins,
     getBoostRecipients,
     isProfileBoostAdmin,
+    getBoostsForProfile,
 } from '@accesslayer/boost/relationships/read';
 
 import { deleteStorageForUri, setStorageForUri } from '@cache/storage';
@@ -195,7 +196,7 @@ export const boostsRouter = t.router({
             const boosts = await getBoostsForProfile(profile, { limit: 50 });
 
             return boosts.map(boost => {
-                const { id, boost: _boost, ...remaining } = boost.dataValues;
+                const { id, boost: _boost, ...remaining } = boost;
                 return {
                     ...remaining,
                     uri: getBoostUri(id, ctx.domain),

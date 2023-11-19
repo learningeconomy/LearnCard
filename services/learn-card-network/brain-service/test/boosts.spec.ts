@@ -145,6 +145,18 @@ describe('Boosts', () => {
 
             expect(boosts).toHaveLength(1);
         });
+
+        it('should get boosts you are admin of, not just created', async () => {
+            const uri = await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
+
+            await userA.clients.fullAuth.boost.addBoostAdmin({ uri, profileId: 'userb' });
+
+            await expect(userB.clients.fullAuth.boost.getBoosts()).resolves.not.toThrow();
+
+            const boosts = await userB.clients.fullAuth.boost.getBoosts();
+
+            expect(boosts).toHaveLength(1);
+        });
     });
 
     describe('sendBoost', () => {
