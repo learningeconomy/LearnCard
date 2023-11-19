@@ -3,6 +3,7 @@
     "target": "es6",
     "module": "ES2015",
     "declaration": true,
+    "declarationMap": true,
     "emitDeclarationOnly": true,
     "outDir": "dist",
     "strict": true,
