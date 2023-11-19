@@ -315,7 +315,7 @@ export const boostsRouter = t.router({
             })
         )
         .output(PaginatedLCNProfilesValidator)
-        .mutation(async ({ input, ctx }) => {
+        .query(async ({ input, ctx }) => {
             const { uri, limit, cursor, includeSelf } = input;
 
             const boost = await getBoostByUri(uri);

@@ -366,6 +366,21 @@ export const getLearnCardNetworkPlugin = async (
                     updates: { credential, ...updates },
                 });
             },
+            getBoostAdmins: async (_learnCard, uri, options = {}) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.boost.getBoostAdmins.query({ uri, ...options });
+            },
+            addBoostAdmin: async (_learnCard, uri, profileId) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.boost.addBoostAdmin.mutate({ uri, profileId });
+            },
+            removeBoostAdmin: async (_learnCard, uri, profileId) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.boost.removeBoostAdmin.mutate({ uri, profileId });
+            },
             deleteBoost: async (_learnCard, uri) => {
                 if (!userData) throw new Error('Please make an account first!');
 
