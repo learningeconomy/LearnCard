@@ -1,6 +1,6 @@
 # serverless.yml
 
-service: lcn-brain-service
+service: commissioned-lcn-brain-service
 
 frameworkVersion: '3'
 
@@ -36,13 +36,13 @@ custom:
     domains:
         # References to 'prod' stage
         production:
-            domainName: network.learncard.com
-            certificateName: network.learncard.com
+            domainName: commissioned.network.learncard.com
+            certificateName: commissioned.network.learncard.com
 
         # References to 'dev' stage
         dev:
-            domainName: testnet.network.learncard.com
-            certificateName: testnet.network.learncard.com
+            domainName: testnet.commissioned.network.learncard.com
+            certificateName: testnet.commissioned.network.learncard.com
 
     # Amazon Certificate Manager
     customCertificate:

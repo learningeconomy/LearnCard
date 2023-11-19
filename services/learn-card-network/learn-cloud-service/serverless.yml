@@ -31,15 +31,15 @@ custom:
         production:
             # don't forget the dot on the end!
             hostedZoneName: 'cloud.learncard.com.'
-            domainName: cloud.learncard.com
-            certificateName: cloud.learncard.com
+            domainName: commissioned.cloud.learncard.com
+            certificateName: commissioned.cloud.learncard.com
 
         # References to 'dev' stage
         dev:
             # don't forget the dot on the end!
             hostedZoneName: 'testnet-cloud.learncard.com.'
-            domainName: testnet-cloud.learncard.com
-            certificateName: testnet-cloud.learncard.com
+            domainName: testnet-cloud.commissioned.learncard.com
+            certificateName: testnet-cloud.commissioned.learncard.com
 
     # Amazon Certificate Manager
     customCertificate:
