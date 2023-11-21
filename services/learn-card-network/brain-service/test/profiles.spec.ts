@@ -973,6 +973,7 @@ describe('Profiles', () => {
 
     describe('connections', () => {
         beforeEach(async () => {
+            await cache.node.flushall();
             await Boost.delete({ detach: true, where: {} });
             await Credential.delete({ detach: true, where: {} });
             await Profile.delete({ detach: true, where: {} });

@@ -402,6 +402,7 @@ export const boostsRouter = t.router({
                 getClaimLinkSAInfoForBoost(boostUri, challenge),
                 getBoostByUri(boostUri),
             ]);
+
             if (!claimLinkSA) {
                 throw new TRPCError({
                     code: 'NOT_FOUND',
@@ -411,19 +412,23 @@ export const boostsRouter = t.router({
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
             const boostOwner = await getBoostOwner(boost);
-            if (!boostOwner)
+
+            if (!boostOwner) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost owner' });
+            }
 
             const signingAuthority = await getSigningAuthorityForUserByName(
                 boostOwner,
                 claimLinkSA.endpoint,
                 claimLinkSA.name
             );
-            if (!signingAuthority)
+
+            if (!signingAuthority) {
                 throw new TRPCError({
                     code: 'NOT_FOUND',
                     message: 'Could not find signing authority for boost',
                 });
+            }
 
             try {
                 const sentBoostUri = await issueClaimLinkBoost(
