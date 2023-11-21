@@ -310,7 +310,7 @@ export const boostsRouter = t.router({
         .input(
             PaginationOptionsValidator.extend({
                 limit: PaginationOptionsValidator.shape.limit.default(25),
-                includeSelf: z.boolean().default(false),
+                includeSelf: z.boolean().default(true),
                 uri: z.string(),
             })
         )

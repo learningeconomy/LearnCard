@@ -714,31 +714,31 @@ describe('Boosts', () => {
 
             expect(
                 (await userA.clients.fullAuth.boost.getBoostAdmins({ uri })).records
-            ).toHaveLength(0);
+            ).toHaveLength(1);
 
             await userA.clients.fullAuth.boost.addBoostAdmin({ uri, profileId: 'userb' });
 
             expect(
                 (await userA.clients.fullAuth.boost.getBoostAdmins({ uri })).records
-            ).toHaveLength(1);
+            ).toHaveLength(2);
         });
 
-        it('should allow including self in boost admins', async () => {
+        it('should allow discluding self in boost admins', async () => {
             const uri = await userA.clients.fullAuth.boost.createBoost({
                 credential: testUnsignedBoost,
             });
 
             expect(
-                (await userA.clients.fullAuth.boost.getBoostAdmins({ uri, includeSelf: true }))
+                (await userA.clients.fullAuth.boost.getBoostAdmins({ uri, includeSelf: false }))
                     .records
-            ).toHaveLength(1);
+            ).toHaveLength(0);
 
             await userA.clients.fullAuth.boost.addBoostAdmin({ uri, profileId: 'userb' });
 
             expect(
-                (await userA.clients.fullAuth.boost.getBoostAdmins({ uri, includeSelf: true }))
+                (await userA.clients.fullAuth.boost.getBoostAdmins({ uri, includeSelf: false }))
                     .records
-            ).toHaveLength(2);
+            ).toHaveLength(1);
         });
 
         it('should allow anyone to see boost admins', async () => {
@@ -747,8 +747,7 @@ describe('Boosts', () => {
             });
 
             expect(
-                (await userB.clients.fullAuth.boost.getBoostAdmins({ uri, includeSelf: true }))
-                    .records
+                (await userB.clients.fullAuth.boost.getBoostAdmins({ uri })).records
             ).toHaveLength(1);
         });
     });
@@ -790,7 +789,7 @@ describe('Boosts', () => {
 
             expect(
                 (await userA.clients.fullAuth.boost.getBoostAdmins({ uri })).records
-            ).toHaveLength(0);
+            ).toHaveLength(1);
 
             await expect(
                 userA.clients.fullAuth.boost.addBoostAdmin({ uri, profileId: 'userb' })
@@ -798,7 +797,7 @@ describe('Boosts', () => {
 
             expect(
                 (await userA.clients.fullAuth.boost.getBoostAdmins({ uri })).records
-            ).toHaveLength(1);
+            ).toHaveLength(2);
         });
 
         it('should allow admins to add more admins', async () => {
@@ -812,7 +811,7 @@ describe('Boosts', () => {
 
             expect(
                 (await userA.clients.fullAuth.boost.getBoostAdmins({ uri })).records
-            ).toHaveLength(1);
+            ).toHaveLength(2);
 
             await expect(
                 userB.clients.fullAuth.boost.addBoostAdmin({ uri, profileId: 'userc' })
@@ -820,7 +819,7 @@ describe('Boosts', () => {
 
             expect(
                 (await userA.clients.fullAuth.boost.getBoostAdmins({ uri })).records
-            ).toHaveLength(2);
+            ).toHaveLength(3);
         });
 
         it('should not allow non-admins to add more admins', async () => {
@@ -832,7 +831,7 @@ describe('Boosts', () => {
 
             expect(
                 (await userA.clients.fullAuth.boost.getBoostAdmins({ uri })).records
-            ).toHaveLength(0);
+            ).toHaveLength(1);
 
             await expect(
                 userB.clients.fullAuth.boost.addBoostAdmin({ uri, profileId: 'userc' })
@@ -840,7 +839,7 @@ describe('Boosts', () => {
 
             expect(
                 (await userA.clients.fullAuth.boost.getBoostAdmins({ uri })).records
-            ).toHaveLength(0);
+            ).toHaveLength(1);
         });
     });
 
@@ -881,7 +880,7 @@ describe('Boosts', () => {
 
             expect(
                 (await userA.clients.fullAuth.boost.getBoostAdmins({ uri })).records
-            ).toHaveLength(1);
+            ).toHaveLength(2);
 
             await expect(
                 userA.clients.fullAuth.boost.removeBoostAdmin({ uri, profileId: 'userb' })
@@ -889,7 +888,7 @@ describe('Boosts', () => {
 
             expect(
                 (await userA.clients.fullAuth.boost.getBoostAdmins({ uri })).records
-            ).toHaveLength(0);
+            ).toHaveLength(1);
         });
 
         it('should only allow admins to remove admins', async () => {
@@ -903,7 +902,7 @@ describe('Boosts', () => {
 
             expect(
                 (await userA.clients.fullAuth.boost.getBoostAdmins({ uri })).records
-            ).toHaveLength(1);
+            ).toHaveLength(2);
 
             await expect(
                 userC.clients.fullAuth.boost.removeBoostAdmin({ uri, profileId: 'userb' })
@@ -911,7 +910,7 @@ describe('Boosts', () => {
 
             expect(
                 (await userA.clients.fullAuth.boost.getBoostAdmins({ uri })).records
-            ).toHaveLength(1);
+            ).toHaveLength(2);
         });
 
         it('should not allow removing boost creator', async () => {
@@ -923,7 +922,7 @@ describe('Boosts', () => {
 
             expect(
                 (await userA.clients.fullAuth.boost.getBoostAdmins({ uri })).records
-            ).toHaveLength(1);
+            ).toHaveLength(2);
 
             await expect(
                 userB.clients.fullAuth.boost.removeBoostAdmin({ uri, profileId: 'usera' })
@@ -935,7 +934,7 @@ describe('Boosts', () => {
 
             expect(
                 (await userA.clients.fullAuth.boost.getBoostAdmins({ uri })).records
-            ).toHaveLength(1);
+            ).toHaveLength(2);
         });
 
         it('should allow admins to remove themselves', async () => {
@@ -947,7 +946,7 @@ describe('Boosts', () => {
 
             expect(
                 (await userA.clients.fullAuth.boost.getBoostAdmins({ uri })).records
-            ).toHaveLength(1);
+            ).toHaveLength(2);
 
             await expect(
                 userB.clients.fullAuth.boost.removeBoostAdmin({ uri, profileId: 'userb' })
@@ -955,7 +954,7 @@ describe('Boosts', () => {
 
             expect(
                 (await userA.clients.fullAuth.boost.getBoostAdmins({ uri })).records
-            ).toHaveLength(0);
+            ).toHaveLength(1);
         });
     });
 
