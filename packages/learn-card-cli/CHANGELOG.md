@@ -1,5 +1,18 @@
 # @learncard/cli
 
+## 3.3.9
+
+### Patch Changes
+
+-   [#388](https://github.com/learningeconomy/LearnCard/pull/388) [`336876b`](https://github.com/learningeconomy/LearnCard/commit/336876b4b98e37157b8a133ed3b72801eb3d1cd8) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Emit declarationMap
+
+-   Updated dependencies [[`336876b`](https://github.com/learningeconomy/LearnCard/commit/336876b4b98e37157b8a133ed3b72801eb3d1cd8)]:
+    -   @learncard/learn-cloud-plugin@1.1.25
+    -   @learncard/types@5.3.4
+    -   @learncard/core@9.1.2
+    -   @learncard/init@1.2.9
+    -   @learncard/didkit-plugin@1.4.1
+
 ## 3.3.8
 
 ### Patch Changes
