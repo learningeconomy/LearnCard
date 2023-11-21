@@ -11,6 +11,8 @@ import {
     LCNSigningAuthorityForUserType,
     LCNBoostClaimLinkSigningAuthorityType,
     LCNBoostClaimLinkOptionsType,
+    PaginationOptionsType,
+    PaginatedLCNProfiles,
 } from '@learncard/types';
 import { Plugin } from '@learncard/core';
 import { ProofOptions } from '@learncard/didkit-plugin';
@@ -92,6 +94,12 @@ export type LearnCardNetworkPluginMethods = {
         credential: UnsignedVC | VC
     ) => Promise<boolean>;
     deleteBoost: (uri: string) => Promise<boolean>;
+    getBoostAdmins: (
+        uri: string,
+        options?: Partial<PaginationOptionsType> & { includeSelf?: boolean }
+    ) => Promise<PaginatedLCNProfiles>;
+    addBoostAdmin: (uri: string, profileId: string) => Promise<boolean>;
+    removeBoostAdmin: (uri: string, profileId: string) => Promise<boolean>;
     sendBoost: (profileId: string, boostUri: string, encrypt?: boolean) => Promise<string>;
 
     registerSigningAuthority: (endpoint: string, name: string, did: string) => Promise<boolean>;

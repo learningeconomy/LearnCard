@@ -1,5 +1,21 @@
 # @welibraryos/react-learn-card
 
+## 2.6.41
+
+### Patch Changes
+
+-   [#388](https://github.com/learningeconomy/LearnCard/pull/388) [`336876b`](https://github.com/learningeconomy/LearnCard/commit/336876b4b98e37157b8a133ed3b72801eb3d1cd8) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Emit declarationMap
+
+-   Updated dependencies [[`336876b`](https://github.com/learningeconomy/LearnCard/commit/336876b4b98e37157b8a133ed3b72801eb3d1cd8)]:
+    -   @learncard/init@1.2.9
+
+## 2.6.40
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.8
+
 ## 2.6.39
 
 ### Patch Changes

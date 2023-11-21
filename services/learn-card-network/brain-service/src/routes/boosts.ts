@@ -7,12 +7,19 @@ import {
     VCValidator,
     JWEValidator,
     BoostRecipientValidator,
+    PaginationOptionsValidator,
+    PaginatedLCNProfilesValidator,
 } from '@learncard/types';
 
 import { t, profileRoute } from '@routes';
 
-import { getBoostByUri, getBoostsForProfile } from '@accesslayer/boost/read';
-import { getBoostRecipients } from '@accesslayer/boost/relationships/read';
+import { getBoostByUri } from '@accesslayer/boost/read';
+import {
+    getBoostAdmins,
+    getBoostRecipients,
+    isProfileBoostAdmin,
+    getBoostsForProfile,
+} from '@accesslayer/boost/relationships/read';
 
 import { deleteStorageForUri, setStorageForUri } from '@cache/storage';
 
@@ -37,8 +44,10 @@ import {
     getClaimLinkSAInfoForBoost,
     useClaimLinkForBoost,
 } from '@cache/claim-links';
-import { isRelationshipBlocked } from '@helpers/connection.helpers';
+import { getBlockedAndBlockedByIds, isRelationshipBlocked } from '@helpers/connection.helpers';
 import { getDidWeb } from '@helpers/did.helpers';
+import { setProfileAsBoostAdmin } from '@accesslayer/boost/relationships/create';
+import { removeProfileAsBoostAdmin } from '@accesslayer/boost/relationships/delete';
 
 export const boostsRouter = t.router({
     sendBoost: profileRoute
@@ -82,7 +91,7 @@ export const boostsRouter = t.router({
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
-            if (!(await isProfileBoostOwner(profile, boost))) {
+            if (!(await isProfileBoostAdmin(profile, boost))) {
                 throw new TRPCError({
                     code: 'UNAUTHORIZED',
                     message: 'Profile does not own boost',
@@ -159,7 +168,7 @@ export const boostsRouter = t.router({
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
-            if (!(await isProfileBoostOwner(profile, boost))) {
+            if (!(await isProfileBoostAdmin(profile, boost))) {
                 throw new TRPCError({
                     code: 'UNAUTHORIZED',
                     message: 'Profile does not own boost',
@@ -191,7 +200,7 @@ export const boostsRouter = t.router({
             const boosts = await getBoostsForProfile(profile, { limit: 50 });
 
             return boosts.map(boost => {
-                const { id, boost: _boost, ...remaining } = boost.dataValues;
+                const { id, boost: _boost, ...remaining } = boost;
                 return {
                     ...remaining,
                     uri: getBoostUri(id, ctx.domain),
@@ -259,7 +268,7 @@ export const boostsRouter = t.router({
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
-            if (!(await isProfileBoostOwner(profile, boost))) {
+            if (!(await isProfileBoostAdmin(profile, boost))) {
                 throw new TRPCError({
                     code: 'UNAUTHORIZED',
                     message: 'Profile does not own boost',
@@ -291,6 +300,166 @@ export const boostsRouter = t.router({
             return true;
         }),
 
+    getBoostAdmins: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/boost/admins/{uri}',
+                tags: ['Boosts'],
+                summary: 'Get boost admins',
+                description: 'This route returns the admins for a boost',
+            },
+        })
+        .input(
+            PaginationOptionsValidator.extend({
+                limit: PaginationOptionsValidator.shape.limit.default(25),
+                includeSelf: z.boolean().default(true),
+                uri: z.string(),
+            })
+        )
+        .output(PaginatedLCNProfilesValidator)
+        .query(async ({ input, ctx }) => {
+            const { uri, limit, cursor, includeSelf } = input;
+
+            const boost = await getBoostByUri(uri);
+
+            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            const selfProfile = ctx.user.profile;
+
+            const blacklist = await getBlockedAndBlockedByIds(selfProfile);
+
+            const results = await getBoostAdmins(boost, {
+                limit: limit + 1,
+                cursor,
+                blacklist: includeSelf ? blacklist : [selfProfile.profileId, ...blacklist],
+            });
+
+            const hasMore = results.length > limit;
+            const nextCursor = hasMore ? results.at(-2)?.profileId : undefined;
+
+            return {
+                hasMore,
+                ...(nextCursor && { cursor: nextCursor }),
+                records: results.slice(0, limit),
+            };
+        }),
+
+    addBoostAdmin: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/boost/add-admin/{uri}',
+                tags: ['Boosts'],
+                summary: 'Add a Boost admin',
+                description: 'This route adds a new admin for a boost',
+            },
+        })
+        .input(
+            z.object({
+                uri: z.string(),
+                profileId: z.string(),
+            })
+        )
+        .output(z.boolean())
+        .mutation(async ({ input, ctx }) => {
+            const { profile } = ctx.user;
+
+            const { uri, profileId } = input;
+
+            const targetProfile = await getProfileByProfileId(profileId);
+
+            const isBlocked = await isRelationshipBlocked(profile, targetProfile);
+
+            if (!targetProfile || isBlocked) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Profile not found. Are you sure this person exists?',
+                });
+            }
+
+            const boost = await getBoostByUri(uri);
+
+            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            if (!(await isProfileBoostAdmin(profile, boost))) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile does not have admin rights over boost',
+                });
+            }
+
+            if (await isProfileBoostAdmin(targetProfile, boost)) {
+                throw new TRPCError({
+                    code: 'CONFLICT',
+                    message: 'Target profile is already an admin of this boost',
+                });
+            }
+
+            await setProfileAsBoostAdmin(targetProfile, boost);
+
+            return true;
+        }),
+
+    removeBoostAdmin: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/boost/remove-admin/{uri}',
+                tags: ['Boosts'],
+                summary: 'Remove a Boost admin',
+                description: 'This route removes an  admin from a boost',
+            },
+        })
+        .input(
+            z.object({
+                uri: z.string(),
+                profileId: z.string(),
+            })
+        )
+        .output(z.boolean())
+        .mutation(async ({ input, ctx }) => {
+            const { profile } = ctx.user;
+
+            const { uri, profileId } = input;
+
+            const targetProfile = await getProfileByProfileId(profileId);
+
+            const isBlocked = await isRelationshipBlocked(profile, targetProfile);
+
+            if (!targetProfile || isBlocked) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Profile not found. Are you sure this person exists?',
+                });
+            }
+
+            const boost = await getBoostByUri(uri);
+
+            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            if (!(await isProfileBoostAdmin(profile, boost))) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile does not have admin rights over boost',
+                });
+            }
+
+            if (await isProfileBoostOwner(targetProfile, boost)) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'Cannot remove boost creator',
+                });
+            }
+
+            await removeProfileAsBoostAdmin(targetProfile, boost);
+
+            return true;
+        }),
+
     deleteBoost: profileRoute
         .meta({
             openapi: {
@@ -313,7 +482,7 @@ export const boostsRouter = t.router({
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
-            if (!(await isProfileBoostOwner(profile, boost))) {
+            if (!(await isProfileBoostAdmin(profile, boost))) {
                 throw new TRPCError({
                     code: 'UNAUTHORIZED',
                     message: 'Profile does not own boost',
@@ -355,7 +524,7 @@ export const boostsRouter = t.router({
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
-            if (!(await isProfileBoostOwner(profile, boost))) {
+            if (!(await isProfileBoostAdmin(profile, boost))) {
                 throw new TRPCError({
                     code: 'UNAUTHORIZED',
                     message: 'Profile does not own boost',
@@ -409,6 +578,7 @@ export const boostsRouter = t.router({
                     message: `Challenge not found for ${boostUri}`,
                 });
             }
+
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
             const boostOwner = await getBoostOwner(boost);
