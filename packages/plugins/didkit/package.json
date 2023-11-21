@@ -1,6 +1,6 @@
 {
     "name": "@learncard/didkit-plugin",
-    "version": "1.3.2",
+    "version": "1.4.0",
     "description": "",
     "main": "./dist/index.js",
     "module": "./dist/didkit-plugin.esm.js",
