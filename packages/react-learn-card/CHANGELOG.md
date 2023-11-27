@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.6.42
+
+### Patch Changes
+
+-   [#392](https://github.com/learningeconomy/LearnCard/pull/392) [`fd21c7c`](https://github.com/learningeconomy/LearnCard/commit/fd21c7c30d499805c03aa6ee0c328f969e189b87) Thanks [@gerardopar](https://github.com/gerardopar)! - VCDisplayCard updates - allow front face button customization
+
 ## 2.6.41
 
 ### Patch Changes
