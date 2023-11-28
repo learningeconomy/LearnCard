@@ -1717,7 +1717,7 @@ importers:
         specifier: workspace:^
         version: link:../../packages/learn-card-init
       '@learncard/types':
-        specifier: 5.3.4
+        specifier: 5.4.0
         version: link:../../packages/learn-card-types
       '@rollup/plugin-json':
         specifier: ^4.1.0
