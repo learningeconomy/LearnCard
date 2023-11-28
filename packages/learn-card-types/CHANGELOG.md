@@ -1,5 +1,11 @@
 # learn-card-types
 
+## 5.4.0
+
+### Minor Changes
+
+-   [#386](https://github.com/learningeconomy/LearnCard/pull/386) [`3438685`](https://github.com/learningeconomy/LearnCard/commit/3438685d8a0ba2ac7d7fb6d05fe817f1763e2f55) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add autoConnectRecipients to Boost metadata
+
 ## 5.3.4
 
 ### Patch Changes
