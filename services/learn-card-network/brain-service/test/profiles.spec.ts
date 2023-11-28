@@ -973,12 +973,17 @@ describe('Profiles', () => {
 
     describe('connections', () => {
         beforeEach(async () => {
+            await cache.node.flushall();
+            await Boost.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
             await Profile.delete({ detach: true, where: {} });
             await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
             await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
         });
 
         afterAll(async () => {
+            await Boost.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
             await Profile.delete({ detach: true, where: {} });
         });
 
@@ -1005,6 +1010,76 @@ describe('Profiles', () => {
 
             expect(oneConnection).toHaveLength(1);
             expect(oneConnection[0]!.profileId).toEqual('userb');
+        });
+
+        it('should show connections from auto-connect boosts', async () => {
+            await expect(userA.clients.fullAuth.profile.connections()).resolves.not.toThrow();
+
+            const noConnections = await userA.clients.fullAuth.profile.connections();
+
+            expect(noConnections).toHaveLength(0);
+
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                autoConnectRecipients: true,
+            });
+            const userBProfile = await userB.clients.fullAuth.profile.getProfile();
+
+            const credential = await userA.learnCard.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: userA.learnCard.id.did(),
+                credentialSubject: {
+                    ...testUnsignedBoost.credentialSubject,
+                    id: userA.learnCard.id.did(),
+                },
+                boostId: uri,
+            });
+
+            const credentialUri = await userA.clients.fullAuth.boost.sendBoost({
+                profileId: userBProfile.profileId,
+                uri,
+                credential,
+            });
+            await userB.clients.fullAuth.credential.acceptCredential({ uri: credentialUri });
+
+            const oneConnection = await userA.clients.fullAuth.profile.connections();
+
+            expect(oneConnection).toHaveLength(1);
+            expect(oneConnection[0]!.profileId).toEqual('userb');
+        });
+
+        it('should not show connections from non-auto-connect boosts', async () => {
+            await expect(userA.clients.fullAuth.profile.connections()).resolves.not.toThrow();
+
+            const noConnections = await userA.clients.fullAuth.profile.connections();
+
+            expect(noConnections).toHaveLength(0);
+
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+            const userBProfile = await userB.clients.fullAuth.profile.getProfile();
+
+            const credential = await userA.learnCard.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: userA.learnCard.id.did(),
+                credentialSubject: {
+                    ...testUnsignedBoost.credentialSubject,
+                    id: userA.learnCard.id.did(),
+                },
+                boostId: uri,
+            });
+
+            const credentialUri = await userA.clients.fullAuth.boost.sendBoost({
+                profileId: userBProfile.profileId,
+                uri,
+                credential,
+            });
+            await userB.clients.fullAuth.credential.acceptCredential({ uri: credentialUri });
+
+            const stillNoConnections = await userA.clients.fullAuth.profile.connections();
+
+            expect(stillNoConnections).toHaveLength(0);
         });
     });
 
