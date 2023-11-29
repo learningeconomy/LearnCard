@@ -24,6 +24,7 @@ export const Boost = ModelFactory<BoostType, BoostRelationships>(
             name: { type: 'string' },
             type: { type: 'string' },
             category: { type: 'string' },
+            autoConnectRecipients: { type: 'boolean' },
             boost: { type: 'string', required: true },
             status: { type: 'string', enum: BoostStatus.options },
         },

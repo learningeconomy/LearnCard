@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { PaginationResponseValidator } from './mongo';
+
 export const LCNProfileValidator = z.object({
     profileId: z.string().min(3).max(40),
     displayName: z.string().default(''),
@@ -10,6 +12,11 @@ export const LCNProfileValidator = z.object({
     notificationsWebhook: z.string().url().startsWith('https://').optional(),
 });
 export type LCNProfile = z.infer<typeof LCNProfileValidator>;
+
+export const PaginatedLCNProfilesValidator = PaginationResponseValidator.extend({
+    records: LCNProfileValidator.array(),
+});
+export type PaginatedLCNProfiles = z.infer<typeof PaginatedLCNProfilesValidator>;
 
 export const LCNProfileConnectionStatusEnum = z.enum([
     'CONNECTED',
@@ -37,6 +44,7 @@ export const BoostValidator = z.object({
     type: z.string().optional(),
     category: z.string().optional(),
     status: LCNBoostStatus.optional(),
+    autoConnectRecipients: z.boolean().optional(),
 });
 export type Boost = z.infer<typeof BoostValidator>;
 

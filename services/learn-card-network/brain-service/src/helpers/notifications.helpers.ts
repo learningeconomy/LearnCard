@@ -43,11 +43,14 @@ export async function sendNotification(notification: LCNNotification) {
             notification.sent = new Date().toISOString();
         }
         if (typeof notificationsWebhook === 'string' && notificationsWebhook?.startsWith('http')) {
-            console.log(
-                'Sending notification!',
-                notificationsWebhook,
-                JSON.stringify(notification)
-            );
+            if (process.env.NODE_ENV !== 'test') {
+                console.log(
+                    'Sending notification!',
+                    notificationsWebhook,
+                    JSON.stringify(notification)
+                );
+            }
+
             const learnCard = await getDidWebLearnCard();
 
             const didJwt = await learnCard.invoke.getDidAuthVp({ proofFormat: 'jwt' });
@@ -84,7 +87,9 @@ export async function sendNotification(notification: LCNNotification) {
             return validationResult.data;
         }
     } catch (error) {
-        console.error('Notifications Helpers - Error While Sending:', error);
+        if (process.env.NODE_ENV !== 'test') {
+            console.error('Notifications Helpers - Error While Sending:', error);
+        }
     }
     return false;
 }

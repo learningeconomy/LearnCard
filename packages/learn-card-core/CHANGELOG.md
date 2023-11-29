@@ -1,5 +1,21 @@
 # learn-card-core
 
+## 9.1.3
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.0.10
+
+## 9.1.2
+
+### Patch Changes
+
+-   [#388](https://github.com/learningeconomy/LearnCard/pull/388) [`336876b`](https://github.com/learningeconomy/LearnCard/commit/336876b4b98e37157b8a133ed3b72801eb3d1cd8) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Emit declarationMap
+
+-   Updated dependencies [[`336876b`](https://github.com/learningeconomy/LearnCard/commit/336876b4b98e37157b8a133ed3b72801eb3d1cd8)]:
+    -   @learncard/helpers@1.0.9
+
 ## 9.1.1
 
 ### Patch Changes
