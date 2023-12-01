@@ -1,5 +1,11 @@
 # @learncard/network-brain-service
 
+## 1.3.11
+
+### Patch Changes
+
+-   [`01b6e48`](https://github.com/learningeconomy/LearnCard/commit/01b6e4815e9671fdbea204e875f1c408dd456867) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Better redis connection logic
+
 ## 1.3.10
 
 ### Patch Changes
