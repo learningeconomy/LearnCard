@@ -47,6 +47,11 @@ import {
     isInviteValidForProfile,
     setValidInviteForProfile,
 } from '@cache/invites';
+import {
+    deleteCachedConnectionsForProfileId,
+    getCachedConnectionsByProfileId,
+    setCachedConnectionsForProfileId,
+} from '@cache/connections';
 
 export const profilesRouter = t.router({
     createProfile: didAndChallengeRoute
@@ -403,7 +408,16 @@ export const profilesRouter = t.router({
                 });
             }
 
-            return connectProfiles(profile, targetProfile, false);
+            const success = await connectProfiles(profile, targetProfile, false);
+
+            if (success) {
+                await Promise.all([
+                    deleteCachedConnectionsForProfileId(profile.profileId),
+                    deleteCachedConnectionsForProfileId(targetProfile.profileId),
+                ]);
+            }
+
+            return success;
         }),
 
     disconnectWith: profileRoute
@@ -463,7 +477,16 @@ export const profilesRouter = t.router({
                 });
             }
 
-            return connectProfiles(profile, targetProfile);
+            const success = await connectProfiles(profile, targetProfile);
+
+            if (success) {
+                await Promise.all([
+                    deleteCachedConnectionsForProfileId(profile.profileId),
+                    deleteCachedConnectionsForProfileId(targetProfile.profileId),
+                ]);
+            }
+
+            return success;
         }),
 
     connections: profileRoute
@@ -481,9 +504,21 @@ export const profilesRouter = t.router({
         .input(z.void())
         .output(LCNProfileValidator.array())
         .query(async ({ ctx }) => {
-            const connections = await getConnections(ctx.user.profile, { limit: 50 });
+            const cachedResponse = await getCachedConnectionsByProfileId(
+                ctx.user.profile.profileId
+            );
 
-            return connections.map(connection => updateDidForProfile(ctx.domain, connection));
+            if (cachedResponse) return cachedResponse;
+
+            const _connections = await getConnections(ctx.user.profile, { limit: 50 });
+
+            const connections = _connections.map(connection =>
+                updateDidForProfile(ctx.domain, connection)
+            );
+
+            await setCachedConnectionsForProfileId(ctx.user.profile.profileId, connections);
+
+            return connections;
         }),
 
     pendingConnections: profileRoute
@@ -582,7 +617,16 @@ export const profilesRouter = t.router({
                 });
             }
 
-            return blockProfile(profile, targetProfile);
+            const success = await blockProfile(profile, targetProfile);
+
+            if (success) {
+                await Promise.all([
+                    deleteCachedConnectionsForProfileId(profile.profileId),
+                    deleteCachedConnectionsForProfileId(targetProfile.profileId),
+                ]);
+            }
+
+            return success;
         }),
 
     unblockProfile: profileRoute
@@ -611,7 +655,16 @@ export const profilesRouter = t.router({
                 });
             }
 
-            return unblockProfile(profile, targetProfile);
+            const success = await unblockProfile(profile, targetProfile);
+
+            if (success) {
+                await Promise.all([
+                    deleteCachedConnectionsForProfileId(profile.profileId),
+                    deleteCachedConnectionsForProfileId(targetProfile.profileId),
+                ]);
+            }
+
+            return success;
         }),
 
     blocked: profileRoute

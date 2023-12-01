@@ -24,17 +24,18 @@ export async function issueCredentialWithSigningAuthority(
     encrypt: boolean = true
 ): Promise<VC | JWE> {
     try {
-        console.log(
-            'Issuing Credential with SA',
-            JSON.stringify({
-                credential,
-                signingAuthorityForUser,
-            })
-        );
+        if (!IS_TEST_ENVIRONMENT) {
+            console.log(
+                'Issuing Credential with SA',
+                JSON.stringify({
+                    credential,
+                    signingAuthorityForUser,
+                })
+            );
+        }
 
         if (IS_TEST_ENVIRONMENT) {
-            console.log('✅ IS TEST ENVIRONMENT _mockIssueCredentialWithSigningAuthority');
-            return _mockIssueCredentialWithSigningAuthority(credential);
+            return await _mockIssueCredentialWithSigningAuthority(credential);
         }
 
         const learnCard = await getDidWebLearnCard();
@@ -42,18 +43,15 @@ export async function issueCredentialWithSigningAuthority(
         const didJwt = await learnCard.invoke.getDidAuthVp({ proofFormat: 'jwt' });
 
         const issuerEndpoint = `${signingAuthorityForUser.signingAuthority.endpoint}/credentials/issue`;
-        console.log('Issuer Endpoint: ', issuerEndpoint);
+
+        if (!IS_TEST_ENVIRONMENT) console.log('Issuer Endpoint: ', issuerEndpoint);
 
         const ownerDid = getDidWeb(
             process.env.DOMAIN_NAME ?? 'network.learncard.com',
             owner.profileId
         );
 
-        const encryption = encrypt
-            ? {
-                recipients: [learnCard.id.did()],
-            }
-            : undefined;
+        const encryption = encrypt ? { recipients: [learnCard.id.did()] } : undefined;
 
         // Create an AbortController instance and get the signal
         const controller = new AbortController();
@@ -81,8 +79,10 @@ export async function issueCredentialWithSigningAuthority(
         });
 
         clearTimeout(timeoutId);
+
         const res = await response.json();
-        console.log('RESPONSE: ', res);
+
+        if (!IS_TEST_ENVIRONMENT) console.log('RESPONSE: ', res);
 
         if (!res || res?.code === 'INTERNAL_SERVER_ERROR') {
             throw new Error(res);

@@ -50,6 +50,7 @@ export type VCDisplayCard2Props = {
     showBackButton?: boolean;
     enableLightbox?: boolean;
     customRibbonCategoryComponent?: React.ReactNode;
+    customFrontButton?: React.ReactNode;
 };
 
 export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
@@ -79,6 +80,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     showBackButton = true,
     enableLightbox,
     customRibbonCategoryComponent,
+    customFrontButton,
 }) => {
     const {
         title = '',
@@ -224,19 +226,28 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                             enableLightbox={enableLightbox}
                         />
                     )}
-                    <button
-                        type="button"
-                        className="vc-toggle-side-button text-white shadow-bottom bg-[#00000099] px-[30px] py-[8px] rounded-[40px] text-[28px] tracking-[0.75px] uppercase leading-[28px] mt-[40px] w-fit select-none"
-                        onClick={() => setIsFront(!isFront)}
-                    >
-                        {isFront && 'Details'}
-                        {!isFront && (
+                    {isFront && customFrontButton}
+                    {isFront && !customFrontButton && (
+                        <button
+                            type="button"
+                            className="vc-toggle-side-button text-white shadow-bottom bg-[#00000099] px-[30px] py-[8px] rounded-[40px] text-[28px] tracking-[0.75px] uppercase leading-[28px] mt-[40px] w-fit select-none"
+                            onClick={() => setIsFront(!isFront)}
+                        >
+                            Details
+                        </button>
+                    )}
+                    {!isFront && (
+                        <button
+                            type="button"
+                            className="vc-toggle-side-button text-white shadow-bottom bg-[#00000099] px-[30px] py-[8px] rounded-[40px] text-[28px] tracking-[0.75px] uppercase leading-[28px] mt-[40px] w-fit select-none"
+                            onClick={() => setIsFront(!isFront)}
+                        >
                             <span className="flex gap-[10px] items-center">
                                 <LeftArrow />
                                 Back
                             </span>
-                        )}
-                    </button>
+                        </button>
+                    )}
                 </div>
             </div>
             <footer className="vc-card-footer w-full flex justify-between p-[5px] mt-[5px]">
