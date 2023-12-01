@@ -14,7 +14,7 @@ plugins:
 
 custom:
     config:
-        CACHE_INSTANCE_SIZE: cache.t2.micro
+        CACHE_INSTANCE_SIZE: cache.t2.medium
     esbuild:
         packager: pnpm
         plugins: esbuildPlugins.cjs
