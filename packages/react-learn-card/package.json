@@ -69,7 +69,6 @@
   "dependencies": {
     "@learncard/init": "workspace:*",
     "date-fns": "^2.28.0",
-    "fitty": "^2.3.6",
     "numeral": "^2.0.6",
     "pretty-bytes": "^6.0.0",
     "qrcode.react": "^3.0.2",
