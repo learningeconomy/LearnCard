@@ -1,5 +1,11 @@
 # @learncard/network-brain-service
 
+## 1.8.1
+
+### Patch Changes
+
+-   [#399](https://github.com/learningeconomy/LearnCard/pull/399) [`8c6ef15`](https://github.com/learningeconomy/LearnCard/commit/8c6ef15f185af7547efb39885dba966b164797ac) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix cache error with connections
+
 ## 1.8.0
 
 ### Minor Changes
