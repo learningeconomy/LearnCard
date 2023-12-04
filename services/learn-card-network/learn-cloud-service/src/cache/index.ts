@@ -3,6 +3,8 @@
 import Redis, { RedisValue, RedisKey } from 'ioredis';
 import MemoryRedis, { Redis as RedisMockType } from 'ioredis-mock';
 
+let ioredisInstance: Redis;
+
 const simpleScan = async (redis: Redis, pattern: string): Promise<string[]> => {
     try {
         return await new Promise<string[]>(res => {
@@ -221,14 +223,28 @@ export const getCache = (): Cache => {
         const port = parseInt(_port ?? '');
 
         if (url && !Number.isNaN(port)) {
-            console.info('Setting up Redis-backed cache');
+            if (ioredisInstance) {
+                console.log('Reusing ioredis instance =)');
 
-            cache.redis = new Redis({
+                cache.redis = ioredisInstance;
+            }
+
+            console.info('Setting up Redis-backed cache =(');
+
+            ioredisInstance = new Redis({
                 host: url,
                 port: port,
                 retryStrategy: (times: number) => Math.min(times * 50, 2000),
+                reconnectOnError: error => {
+                    return [/READONLY/, /ETIMEDOUT/].some(targetError => {
+                        return targetError.test(error.message);
+                    });
+                },
                 enableAutoPipelining: true,
+                connectTimeout: 20_000,
             });
+
+            cache.redis = ioredisInstance;
         }
     } catch (e) {
         console.error('Could not connect to redis', e);
