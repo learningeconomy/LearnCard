@@ -49,6 +49,7 @@ import {
 } from '@cache/invites';
 import {
     deleteCachedConnectionsForProfileId,
+    deleteCachedConnectionsForProfileIds,
     getCachedConnectionsByProfileId,
     setCachedConnectionsForProfileId,
 } from '@cache/connections';
@@ -291,6 +292,12 @@ export const profilesRouter = t.router({
             if (notificationsWebhook) profile.notificationsWebhook = notificationsWebhook;
 
             await profile.save();
+
+            const connections = await getConnections(profile, { limit: 50 });
+
+            await deleteCachedConnectionsForProfileIds(
+                connections.map(connection => connection.profileId)
+            );
 
             return true;
         }),

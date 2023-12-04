@@ -27,3 +27,7 @@ export const setCachedConnectionsForProfileId = async (
 export const deleteCachedConnectionsForProfileId = async (profileId: string) => {
     return cache.delete([getConnectionsCacheKey(profileId)]);
 };
+
+export const deleteCachedConnectionsForProfileIds = async (profileIds: string[]) => {
+    return cache.delete(profileIds.map(getConnectionsCacheKey));
+};
