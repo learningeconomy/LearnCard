@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.6.45
+
+### Patch Changes
+
+-   [#396](https://github.com/learningeconomy/LearnCard/pull/396) [`3b1d2687`](https://github.com/learningeconomy/LearnCard/commit/3b1d2687c035297da8b34ca2ffbd33ad49687faf) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix text resizing issues
+
 ## 2.6.44
 
 ### Patch Changes
