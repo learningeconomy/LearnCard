@@ -1081,6 +1081,29 @@ describe('Profiles', () => {
 
             expect(stillNoConnections).toHaveLength(0);
         });
+
+        it('should show profile updates for connections', async () => {
+            await userA.clients.fullAuth.profile.connectWith({ profileId: 'userb' });
+            await userB.clients.fullAuth.profile.acceptConnectionRequest({ profileId: 'usera' });
+
+            const userBBeforeUpdate = await userB.clients.fullAuth.profile.getProfile();
+
+            const nonUpdatedConnections = await userA.clients.fullAuth.profile.connections();
+
+            expect(nonUpdatedConnections).toHaveLength(1);
+            expect(nonUpdatedConnections[0]).toEqual(userBBeforeUpdate);
+
+            await userB.clients.fullAuth.profile.updateProfile({
+                displayName: 'something else lol',
+            });
+
+            const userBAfterUpdate = await userB.clients.fullAuth.profile.getProfile();
+            const updatedConnections = await userA.clients.fullAuth.profile.connections();
+
+            expect(userBAfterUpdate).not.toEqual(userBBeforeUpdate);
+            expect(updatedConnections).toHaveLength(1);
+            expect(updatedConnections[0]).toEqual(userBAfterUpdate);
+        });
     });
 
     describe('pendingConnections', () => {
