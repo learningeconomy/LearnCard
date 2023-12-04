@@ -1,4 +1,6 @@
 import cache from '@cache';
+import { getConnections } from '@helpers/connection.helpers';
+import { ProfileInstance } from '@models';
 import { ProfileType } from 'types/profile';
 
 const CONNECTIONS_TTL = 60 * 60 * 24;
@@ -30,4 +32,12 @@ export const deleteCachedConnectionsForProfileId = async (profileId: string) => 
 
 export const deleteCachedConnectionsForProfileIds = async (profileIds: string[]) => {
     return cache.delete(profileIds.map(getConnectionsCacheKey));
+};
+
+export const deleteAllCachedConnectionsForProfile = async (profile: ProfileInstance) => {
+    const connections =
+        (await getCachedConnectionsByProfileId(profile.profileId)) ||
+        (await getConnections(profile, { limit: 50 }));
+
+    await deleteCachedConnectionsForProfileIds(connections.map(connection => connection.profileId));
 };

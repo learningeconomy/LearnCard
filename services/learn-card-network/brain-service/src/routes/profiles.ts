@@ -48,8 +48,8 @@ import {
     setValidInviteForProfile,
 } from '@cache/invites';
 import {
+    deleteAllCachedConnectionsForProfile,
     deleteCachedConnectionsForProfileId,
-    deleteCachedConnectionsForProfileIds,
     getCachedConnectionsByProfileId,
     setCachedConnectionsForProfileId,
 } from '@cache/connections';
@@ -293,11 +293,7 @@ export const profilesRouter = t.router({
 
             await profile.save();
 
-            const connections = await getConnections(profile, { limit: 50 });
-
-            await deleteCachedConnectionsForProfileIds(
-                connections.map(connection => connection.profileId)
-            );
+            await deleteAllCachedConnectionsForProfile(profile);
 
             return true;
         }),
