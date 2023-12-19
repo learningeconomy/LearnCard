@@ -145,7 +145,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
             <RibbonEnd
                 side="left"
                 className="absolute left-[-30px] top-[50px] z-0"
-                height={'100''}
+                height={'100'}
             />
             <RibbonEnd
                 side="right"
