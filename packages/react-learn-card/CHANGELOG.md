@@ -1,5 +1,13 @@
 # @welibraryos/react-learn-card
 
+## 2.6.47
+
+### Patch Changes
+
+-   [#403](https://github.com/learningeconomy/LearnCard/pull/403) [`f4135a3`](https://github.com/learningeconomy/LearnCard/commit/f4135a387e3865a40d7bc4005dc034b6040269db) Thanks [@goblincore](https://github.com/goblincore)! - Fix syntax error
+
+-   [#402](https://github.com/learningeconomy/LearnCard/pull/402) [`26aa86c4`](https://github.com/learningeconomy/LearnCard/commit/26aa86c4a805adc2c012922a518000349d600e8a) Thanks [@goblincore](https://github.com/goblincore)! - Fix: VCDisplayCard2 bug on iosSafari with resizing header
+
 ## 2.6.46
 
 ### Patch Changes
