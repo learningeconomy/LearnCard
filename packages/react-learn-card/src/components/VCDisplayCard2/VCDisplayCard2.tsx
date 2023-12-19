@@ -85,7 +85,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     const issuer = issuerOverride || _issuer;
 
     const [isFront, setIsFront] = useState(true);
-    const [headerHeight, setHeaderHeight] = useState(79); // 79 is the height if the header is one line
+    const [headerHeight, setHeaderHeight] = useState(100); // 79 is the height if the header is one line
     const [headerWidth, setHeaderWidth] = useState(0);
 
     const headerRef = useRef<HTMLHeadingElement>(null);
@@ -94,7 +94,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
         // Needs a small setTimeout otherwise it'll be wrong sometimes with multiline header.
         //   Probably because of the interaction with FitText
         setTimeout(() => {
-            setHeaderHeight(headerRef.current?.clientHeight ?? 44);
+            setHeaderHeight(headerRef.current?.clientHeight ?? 100);
             setHeaderWidth(headerRef.current?.clientWidth ?? 0);
         }, 10);
     });
@@ -137,12 +137,12 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
             <RibbonEnd
                 side="left"
                 className="absolute left-[-30px] top-[50px] z-0"
-                height={(headerHeight + 10).toString()}
+                height={'103'}
             />
             <RibbonEnd
                 side="right"
                 className="absolute right-[-30px] top-[50px] z-0"
-                height={(headerHeight + 10).toString()}
+                height={'103'}
             />
 
             <h1
@@ -185,7 +185,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 */}
                 <div
                     className="vc-card-content-scroll-container w-full flex flex-col justify-center items-center rounded-b-[200px] bg-[#353E64] pb-[50px]"
-                    style={{ paddingTop: headerHeight + 70, ...backgroundStyle }}
+                    style={{ paddingTop: 170, ...backgroundStyle }}
                 >
                     {isFront && (
                         <VC2FrontFaceInfo
