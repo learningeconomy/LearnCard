@@ -1,7 +1,7 @@
 {
   "name": "@learncard/chapi-example",
   "type": "module",
-  "version": "1.0.109",
+  "version": "1.0.110",
   "private": true,
   "scripts": {
     "dev": "astro dev",
