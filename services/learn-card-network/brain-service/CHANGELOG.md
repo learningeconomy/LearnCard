@@ -1,5 +1,11 @@
 # @learncard/network-brain-service
 
+## 1.8.2
+
+### Patch Changes
+
+-   [`02e5d4d`](https://github.com/learningeconomy/LearnCard/commit/02e5d4d1b9ae37e2e1d14f004348a73a18fb733f) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Forcibly redeploy LCN
+
 ## 1.8.1
 
 ### Patch Changes
