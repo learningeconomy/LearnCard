@@ -80,6 +80,7 @@ package:
   patterns: 
     - '!node_modules/**'
     - 'node_modules/@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm'
+    - 'src/swagger-ui'
 
 provider:
     name: aws
