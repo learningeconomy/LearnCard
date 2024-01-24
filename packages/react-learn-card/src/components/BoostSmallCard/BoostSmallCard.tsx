@@ -73,6 +73,7 @@ export const BoostSmallCard: React.FC<BoostSmallCardProps> = ({
                     onClick={handleOptionsClick}
                 >
                     <img
+                        alt="Menu dropdown icon"
                         className="h-[20px] w-[20px] object-cover overflow-hidden"
                         src={ThreeDots}
                     />

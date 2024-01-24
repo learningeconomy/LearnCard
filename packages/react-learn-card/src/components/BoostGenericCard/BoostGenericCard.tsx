@@ -48,7 +48,8 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
                     className="absolute cursor-pointer shadow-bottom h-[30px] w-[30px] top-[5px] right-[5px] rounded-full overflow-hidden z-20 bg-white flex items-center justify-center"
                     onClick={handleOptionsClick}
                 >
-                    <img
+                    <img 
+                        alt="Menu dropdown icon"
                         className="h-[20px] w-[20px] object-cover overflow-hidden"
                         src={ThreeDots}
                     />
