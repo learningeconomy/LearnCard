@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.6.49
+
+### Patch Changes
+
+-   [#406](https://github.com/learningeconomy/LearnCard/pull/406) [`7d30db5`](https://github.com/learningeconomy/LearnCard/commit/7d30db5b51b842b74c6806b537e08d8f26879843) Thanks [@goblincore](https://github.com/goblincore)! - fix: [LC-25] Add alt tag to BoostGenericCard and BoostSmallCard components
+
 ## 2.6.48
 
 ### Patch Changes
