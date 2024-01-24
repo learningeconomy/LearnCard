@@ -35,7 +35,7 @@ export const RoundedSquare: React.FC<RoundedSquareProps> = ({
     const imgSource = imgSrc || TYPE_TO_IMG_SRC[type];
     const backgroundColor = bgColor ?? `bg-${TYPE_TO_WALLET_COLOR[type]}`;
     const circleClass = `flex w-full justify-end icon-display absolute right-[15px] bottom-[10px] max-h-[40px] max-w-[40px] rounded-full`;
-
+    const iconAltDescription = `${title} Icon`;
     return (
         <button
             onClick={onClick}
@@ -49,7 +49,7 @@ export const RoundedSquare: React.FC<RoundedSquareProps> = ({
                 </section>
 
                 <div className="graphic-background relative flex justify-center">
-                    <img className="max-w-[130px]" src={imgSource} />
+                    <img alt={iconAltDescription} className="max-w-[130px]" src={imgSource} />
                 </div>
             </div>
 
