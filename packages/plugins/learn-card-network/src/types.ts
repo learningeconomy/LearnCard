@@ -49,14 +49,14 @@ export type LearnCardNetworkPluginMethods = {
         }
     ) => Promise<LCNProfile[]>;
     connectWith: (profileId: string) => Promise<boolean>;
-    connectWithInvite: (profileId: string, challenge: string) => Promise<boolean>;
+    connectWithInvite: (profileId: string, challenge: string, expiration: number) => Promise<boolean>;
     cancelConnectionRequest: (profileId: string) => Promise<boolean>;
     disconnectWith: (profileId: string) => Promise<boolean>;
     acceptConnectionRequest: (id: string) => Promise<boolean>;
     getConnections: () => Promise<LCNProfile[]>;
     getPendingConnections: () => Promise<LCNProfile[]>;
     getConnectionRequests: () => Promise<LCNProfile[]>;
-    generateInvite: (challenge?: string) => Promise<{ profileId: string; challenge: string }>;
+    generateInvite: (challenge?: string, expiration?: number) => Promise<{ profileId: string; challenge: string; expiration: number }>;
 
     blockProfile: (profileId: string) => Promise<boolean>;
     unblockProfile: (profileId: string) => Promise<boolean>;
@@ -117,8 +117,9 @@ export type LearnCardNetworkPluginMethods = {
         boostUri: string,
         claimLinkSA: LCNBoostClaimLinkSigningAuthorityType,
         options?: LCNBoostClaimLinkOptionsType,
-        challenge?: string
-    ) => Promise<{ boostUri: string; challenge: string }>;
+        challenge?: string,
+        expiration?: number
+    ) => Promise<{ boostUri: string; challenge: string; expiration: number }>;
     claimBoostWithLink: (boostUri: string, challenge: string) => Promise<string>;
 
     resolveFromLCN: (uri: string) => Promise<VC | UnsignedVC | VP | JWE>;

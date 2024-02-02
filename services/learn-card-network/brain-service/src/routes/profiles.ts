@@ -389,13 +389,13 @@ export const profilesRouter = t.router({
                 description: 'Connects with another profile using an invitation challenge',
             },
         })
-        .input(z.object({ profileId: z.string(), challenge: z.string() }))
+        .input(z.object({ profileId: z.string(), challenge: z.string(), expiration: z.number() }))
         .output(z.boolean())
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const { profileId, challenge } = input;
+            const { profileId, challenge, expiration } = input;
 
-            if (!(await isInviteValidForProfile(profileId, challenge))) {
+            if (!(await isInviteValidForProfile(profileId, challenge, expiration))) {
                 throw new TRPCError({
                     code: 'NOT_FOUND',
                     message: `Challenge not found for ${profileId}`,
@@ -577,19 +577,20 @@ export const profilesRouter = t.router({
             },
         })
         .input(z.object({ challenge: z.string().optional() }).optional())
-        .output(z.object({ profileId: z.string(), challenge: z.string() }))
+        .output(z.object({ profileId: z.string(), challenge: z.string(), expiration: z.number() }))
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
             const { challenge = uuid() } = input ?? {};
+            const expiration = Math.floor(Date.now() / 1000) + 60 * 60; // 1 hour expiration
 
-            if (await isInviteAlreadySetForProfile(profile.profileId, challenge)) {
+            if (await isInviteAlreadySetForProfile(profile.profileId, challenge, expiration)) {
                 throw new TRPCError({
                     code: 'CONFLICT',
                     message: 'Challenge already in use!',
                 });
             }
 
-            await setValidInviteForProfile(profile.profileId, challenge);
+            await setValidInviteForProfile(profile.profileId, challenge, expiration);
 
             return { profileId: profile.profileId, challenge };
         }),
