@@ -389,13 +389,13 @@ export const profilesRouter = t.router({
                 description: 'Connects with another profile using an invitation challenge',
             },
         })
-        .input(z.object({ profileId: z.string(), challenge: z.string(), expiration: z.number() }))
+        .input(z.object({ profileId: z.string(), challenge: z.string()}))
         .output(z.boolean())
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const { profileId, challenge, expiration } = input;
+            const { profileId, challenge } = input;
 
-            if (!(await isInviteValidForProfile(profileId, challenge, expiration))) {
+            if (!(await isInviteValidForProfile(profileId, challenge))) {
                 throw new TRPCError({
                     code: 'NOT_FOUND',
                     message: `Challenge not found for ${profileId}`,
@@ -576,14 +576,13 @@ export const profilesRouter = t.router({
                     'This route creates a one-time challenge that an unknown profile can use to connect with this account',
             },
         })
-        .input(z.object({ challenge: z.string().optional() }).optional())
-        .output(z.object({ profileId: z.string(), challenge: z.string(), expiration: z.number() }))
+        .input(z.object({ challenge: z.string().optional(), expiration: z.number().default(3600) }).optional(),)
+        .output(z.object({ profileId: z.string(), challenge: z.string() }))
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const { challenge = uuid() } = input ?? {};
-            const expiration = Math.floor(Date.now() / 1000) + 60 * 60; // 1 hour expiration
+            const { challenge = uuid(), expiration } = input ?? {};
 
-            if (await isInviteAlreadySetForProfile(profile.profileId, challenge, expiration)) {
+            if (await isInviteAlreadySetForProfile(profile.profileId, challenge)) {
                 throw new TRPCError({
                     code: 'CONFLICT',
                     message: 'Challenge already in use!',

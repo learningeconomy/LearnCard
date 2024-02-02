@@ -1,17 +1,15 @@
 import cache from '@cache';
-import exp from 'node:constants';
 
-export const getInviteCacheKey = (profileId: string, challenge: string, expiration: number): string =>
-    `inviteChallenge:${profileId}:${challenge}:${expiration}`;
+export const getInviteCacheKey = (profileId: string, challenge: string): string =>
+    `inviteChallenge:${profileId}:${challenge}`;
 
 export const VALID = 'valid';
 
 export const isInviteValidForProfile = async (
     profileId: string,
     challenge: string,
-    expiration: number
 ): Promise<typeof VALID | null | undefined> => {
-    const result = await cache.get(getInviteCacheKey(profileId, challenge, expiration));
+    const result = await cache.get(getInviteCacheKey(profileId, challenge));
 
     return result === VALID ? result : undefined;
 };
@@ -19,17 +17,16 @@ export const isInviteValidForProfile = async (
 export const isInviteAlreadySetForProfile = async (
     profileId: string,
     challenge: string,
-    expiration: number
 ): Promise<boolean> => {
-    const result = await cache.get(getInviteCacheKey(profileId, challenge, expiration));
+    const result = await cache.get(getInviteCacheKey(profileId, challenge));
 
     return Boolean(result);
 };
 
-export const setValidInviteForProfile = async (profileId: string, challenge: string, expiration: number) => {
-    return cache.set(getInviteCacheKey(profileId, challenge, expiration), VALID);
+export const setValidInviteForProfile = async (profileId: string, challenge: string, expiration?: number) => {
+    return cache.set(getInviteCacheKey(profileId, challenge), VALID, expiration);
 };
 
-export const invalidateInviteForProfile = async (profileId: string, challenge: string, expiration: number) => {
-    return cache.delete([getInviteCacheKey(profileId, challenge, expiration)]);
+export const invalidateInviteForProfile = async (profileId: string, challenge: string) => {
+    return cache.delete([getInviteCacheKey(profileId, challenge)]);
 };

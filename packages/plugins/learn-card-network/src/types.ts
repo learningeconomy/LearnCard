@@ -56,7 +56,7 @@ export type LearnCardNetworkPluginMethods = {
     getConnections: () => Promise<LCNProfile[]>;
     getPendingConnections: () => Promise<LCNProfile[]>;
     getConnectionRequests: () => Promise<LCNProfile[]>;
-    generateInvite: (challenge?: string, expiration?: number) => Promise<{ profileId: string; challenge: string; expiration: number }>;
+    generateInvite: (challenge?: string, expiration?: number) => Promise<{ profileId: string; challenge: string}>;
 
     blockProfile: (profileId: string) => Promise<boolean>;
     unblockProfile: (profileId: string) => Promise<boolean>;
@@ -119,7 +119,7 @@ export type LearnCardNetworkPluginMethods = {
         options?: LCNBoostClaimLinkOptionsType,
         challenge?: string,
         expiration?: number
-    ) => Promise<{ boostUri: string; challenge: string; expiration: number }>;
+    ) => Promise<{ boostUri: string; challenge: string }>;
     claimBoostWithLink: (boostUri: string, challenge: string) => Promise<string>;
 
     resolveFromLCN: (uri: string) => Promise<VC | UnsignedVC | VP | JWE>;

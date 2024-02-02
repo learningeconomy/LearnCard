@@ -217,13 +217,10 @@ export const getLearnCardNetworkPlugin = async (
                 return client.profile.connectionRequests.query();
             },
 
-            generateInvite: async (_learnCard, challenge: string, expiration: number) => {
+            generateInvite: async (_learnCard, challenge, expiration) => {
                 if (!userData) throw new Error('Please make an account first!');
-
-                // Assuming mutate only returns profileId and challenge, you need to include expiration manually
                 const result = await client.profile.generateInvite.mutate({ challenge, expiration });
-                // Make sure the result includes expiration, or manually add it if necessary
-                return { ...result, expiration };
+                return result
             },
 
             blockProfile: async (_learnCard, profileId) => {
@@ -470,6 +467,7 @@ export const getLearnCardNetworkPlugin = async (
                     challenge,
                 });
             },
+            
             claimBoostWithLink: async (_learnCard, boostUri, challenge) => {
                 if (!userData) throw new Error('Please make an account first!');
 
