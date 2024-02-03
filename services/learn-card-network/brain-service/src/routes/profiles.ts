@@ -576,7 +576,7 @@ export const profilesRouter = t.router({
                     'This route creates a one-time challenge that an unknown profile can use to connect with this account',
             },
         })
-        .input(z.object({ challenge: z.string().optional(), expiration: z.number().default(3600) }).optional(),)
+        .input(z.object({ challenge: z.string().optional(), expiration: z.number().default(3600 * 24 * 30) }).optional(),)
         .output(z.object({ profileId: z.string(), challenge: z.string() }))
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
