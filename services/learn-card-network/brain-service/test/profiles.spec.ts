@@ -1416,7 +1416,7 @@ describe('Profiles', () => {
 
             await userA.clients.fullAuth.profile.generateInvite({
                 challenge: 'nice',
-                expiration: new Date('02-06-2025').getTime(),
+                expiration: 60 * 60 * 24 * 7 * 52 *3, // 3 Years
             });
 
             jest.setSystemTime(new Date('02-06-2025'));
