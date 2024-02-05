@@ -117,8 +117,7 @@ export type LearnCardNetworkPluginMethods = {
         boostUri: string,
         claimLinkSA: LCNBoostClaimLinkSigningAuthorityType,
         options?: LCNBoostClaimLinkOptionsType,
-        challenge?: string,
-        expiration?: number
+        challenge?: string
     ) => Promise<{ boostUri: string; challenge: string }>;
     claimBoostWithLink: (boostUri: string, challenge: string) => Promise<string>;
 
