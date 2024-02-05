@@ -1416,7 +1416,7 @@ describe('Profiles', () => {
 
             await userA.clients.fullAuth.profile.generateInvite({
                 challenge: 'nice',
-                expiration: 60 * 60 * 24 * 7 * 52 *3, // 3 Years
+                expiration: 60 * 60 * 24 * 7 * 52 * 3, // 3 Years
             });
 
             jest.setSystemTime(new Date('02-06-2025'));
@@ -1429,26 +1429,24 @@ describe('Profiles', () => {
             ).resolves.not.toThrow();
 
             jest.useRealTimers();
-        });  
+        });
 
-        it('the generation date cannot be updated after creation', async () => {
-            jest.useFakeTimers().setSystemTime(new Date('02-06-2023'));
-
+        it('allows connections with challenges before they expire', async () => {
             await userA.clients.fullAuth.profile.generateInvite({
-                challenge: 'nice',
-                expiration: new Date('02-06-2025').getTime(),
+                challenge: 'validChallenge',
+                expiration: 60 * 60 * 24 * 7, // Expires in 1 week
             });
 
-            jest.setSystemTime(new Date('02-06-2025'));
+            // Fast-forward time by 3 days
+            jest.advanceTimersByTime(60 * 60 * 24 * 1000 * 3);
 
+            // Attempt to connect with the challenge before it expires
             await expect(
                 userB.clients.fullAuth.profile.connectWithInvite({
-                    challenge: 'nice',
+                    challenge: 'validChallenge',
                     profileId: 'usera',
                 })
             ).resolves.not.toThrow();
-
-            jest.useRealTimers();
         });
     });
 
