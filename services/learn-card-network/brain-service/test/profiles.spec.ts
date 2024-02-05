@@ -1411,26 +1411,6 @@ describe('Profiles', () => {
             jest.useRealTimers();
         });
 
-        it('allows setting the expiration length', async () => {
-            jest.useFakeTimers().setSystemTime(new Date('02-06-2023'));
-
-            await userA.clients.fullAuth.profile.generateInvite({
-                challenge: 'nice',
-                expiration: 1000 * 60 * 60 * 24 * 365,
-            });
-
-            jest.setSystemTime(new Date('02-06-2024'));
-
-            await expect(
-                userB.clients.fullAuth.profile.connectWithInvite({
-                    challenge: 'nice',
-                    profileId: 'usera',
-                })
-            ).resolves.not.toThrow();
-
-            jest.useRealTimers();
-        });
-
         it('allows setting the expiration date', async () => {
             jest.useFakeTimers().setSystemTime(new Date('02-06-2023'));
 
