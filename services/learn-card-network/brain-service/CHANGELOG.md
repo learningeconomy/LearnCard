@@ -1,5 +1,11 @@
 # @learncard/network-brain-service
 
+## 1.9.0
+
+### Minor Changes
+
+-   [#409](https://github.com/learningeconomy/LearnCard/pull/409) [`aa2fac6`](https://github.com/learningeconomy/LearnCard/commit/aa2fac6cf86d662aadd4185fc36da999360620cf) Thanks [@cboydstun](https://github.com/cboydstun)! - "expiration" added to profile invite
+
 ## 1.8.2
 
 ### Patch Changes

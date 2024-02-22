@@ -1,5 +1,16 @@
 # learn-card-core
 
+## 1.6.0
+
+### Minor Changes
+
+-   [#409](https://github.com/learningeconomy/LearnCard/pull/409) [`aa2fac6`](https://github.com/learningeconomy/LearnCard/commit/aa2fac6cf86d662aadd4185fc36da999360620cf) Thanks [@cboydstun](https://github.com/cboydstun)! - "expiration" added to profile invite
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@1.2.19
+
 ## 1.5.9
 
 ### Patch Changes
