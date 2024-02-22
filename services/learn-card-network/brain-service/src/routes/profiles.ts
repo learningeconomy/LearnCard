@@ -389,7 +389,7 @@ export const profilesRouter = t.router({
                 description: 'Connects with another profile using an invitation challenge',
             },
         })
-        .input(z.object({ profileId: z.string(), challenge: z.string() }))
+        .input(z.object({ profileId: z.string(), challenge: z.string()}))
         .output(z.boolean())
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
@@ -576,11 +576,11 @@ export const profilesRouter = t.router({
                     'This route creates a one-time challenge that an unknown profile can use to connect with this account',
             },
         })
-        .input(z.object({ challenge: z.string().optional() }).optional())
+        .input(z.object({ challenge: z.string().optional(), expiration: z.number().default(3600 * 24 * 30) }).optional(),)
         .output(z.object({ profileId: z.string(), challenge: z.string() }))
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const { challenge = uuid() } = input ?? {};
+            const { challenge = uuid(), expiration } = input ?? {};
 
             if (await isInviteAlreadySetForProfile(profile.profileId, challenge)) {
                 throw new TRPCError({
@@ -589,7 +589,7 @@ export const profilesRouter = t.router({
                 });
             }
 
-            await setValidInviteForProfile(profile.profileId, challenge);
+            await setValidInviteForProfile(profile.profileId, challenge, expiration);
 
             return { profileId: profile.profileId, challenge };
         }),
