@@ -128,3 +128,26 @@ export const LCNSigningAuthorityForUserValidator = z.object({
     }),
 });
 export type LCNSigningAuthorityForUserType = z.infer<typeof LCNSigningAuthorityForUserValidator>;
+
+export const ConsentFlowRelationshipValidator = z.object({
+    read: z.object({
+        credentials: z.object({
+            shareAll: z.boolean(),
+            categories: z.record(
+                z.string(),
+                z.object({
+                    sharing: z.boolean(),
+                    shared: z.string().array(),
+                    shareAll: z.boolean(),
+                })
+            ),
+        }),
+        personal: z.record(z.string(), z.boolean()),
+    }),
+    write: z.object({
+        credentials: z.object({
+            categories: z.record(z.string(), z.boolean()),
+        }),
+    }),
+});
+export type ConsentFlowRelationship = z.infer<typeof ConsentFlowRelationshipValidator>;

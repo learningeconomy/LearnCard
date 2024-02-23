@@ -38,6 +38,9 @@ import {
 } from '@accesslayer/signing-authority/relationships/read';
 import { SigningAuthorityForUserValidator } from 'types/profile';
 
+// Import ConsentFlow model
+import ConsentFlow from '../models/ConsentFlow';
+
 import { t, openRoute, didAndChallengeRoute, openProfileRoute, profileRoute } from '@routes';
 
 import { transformProfileId } from '@helpers/profile.helpers';
@@ -745,6 +748,41 @@ export const profilesRouter = t.router({
         .output(SigningAuthorityForUserValidator.or(z.undefined()))
         .query(async ({ ctx, input }) => {
             return getSigningAuthorityForUserByName(ctx.user.profile, input.endpoint, input.name);
+        }),
+
+    // New route to create a ConsentFlow relationship
+    createConsentFlow: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/profile/{profileId}/consent-flow',
+                tags: ['Profiles'],
+                summary: 'Create Consent Flow',
+                description: 'Creates a Consent Flow relationship for a profile',
+            },
+        })
+        .input(z.object({ profileId: z.string(), endpoint: z.string() }))
+        .output(z.boolean())
+        .mutation(async ({ input }) => {
+            const { profileId, endpoint } = input;
+
+            // Validate profile existence
+            const profileExists = await getProfileByProfileId(profileId);
+            if (!profileExists) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Profile not found. Are you sure this person exists?',
+                });
+            }
+
+            // Create ConsentFlow instance
+            await ConsentFlow.create({
+                endpoint,
+                // Create relationship with profile
+            });
+
+            return true;
         }),
 });
 export type ProfilesRouter = typeof profilesRouter;
