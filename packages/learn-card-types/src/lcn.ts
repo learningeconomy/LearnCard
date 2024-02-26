@@ -129,12 +129,26 @@ export const LCNSigningAuthorityForUserValidator = z.object({
 });
 export type LCNSigningAuthorityForUserType = z.infer<typeof LCNSigningAuthorityForUserValidator>;
 
-export const ConsentFlowRelationshipValidator = z.object({
+export const ConsentFlowContractValidator = z.object({
     read: z.object({
+        anonymize: z.boolean().optional(),
+        credentials: z.object({ categories: z.record(z.object({ required: z.boolean() })) }),
+        personal: z.record(z.object({ required: z.boolean() })),
+    }),
+    write: z.object({
+        credentials: z.object({ categories: z.record(z.object({ required: z.boolean() })) }),
+        personal: z.record(z.object({ required: z.boolean() })),
+    }),
+});
+export type ConsentFlowContract = z.infer<typeof ConsentFlowContractValidator>;
+
+export const ConsentFlowTermsValidator = z.object({
+    read: z.object({
+        anonymize: z.boolean().optional(),
         credentials: z.object({
             shareAll: z.boolean(),
+            sharing: z.boolean(),
             categories: z.record(
-                z.string(),
                 z.object({
                     sharing: z.boolean(),
                     shared: z.string().array(),
@@ -142,12 +156,11 @@ export const ConsentFlowRelationshipValidator = z.object({
                 })
             ),
         }),
-        personal: z.record(z.string(), z.boolean()),
+        personal: z.record(z.boolean()),
     }),
     write: z.object({
-        credentials: z.object({
-            categories: z.record(z.string(), z.boolean()),
-        }),
+        credentials: z.object({ categories: z.record(z.boolean()) }),
+        personal: z.record(z.boolean()),
     }),
 });
-export type ConsentFlowRelationship = z.infer<typeof ConsentFlowRelationshipValidator>;
+export type ConsentFlowTerms = z.infer<typeof ConsentFlowTermsValidator>;
