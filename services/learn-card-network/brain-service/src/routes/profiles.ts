@@ -39,7 +39,7 @@ import {
 import { SigningAuthorityForUserValidator } from 'types/profile';
 
 // Import ConsentFlow model
-import ConsentFlow from '../models/ConsentFlow';
+import ConsentFlowContract from '../models/ConsentFlowContract';
 
 import { t, openRoute, didAndChallengeRoute, openProfileRoute, profileRoute } from '@routes';
 
@@ -751,7 +751,7 @@ export const profilesRouter = t.router({
         }),
 
     // New route to create a ConsentFlow relationship
-    createConsentFlow: profileRoute
+    createConsentFlowContract: profileRoute
         .meta({
             openapi: {
                 protect: true,
@@ -777,7 +777,7 @@ export const profilesRouter = t.router({
             }
 
             // Create ConsentFlow instance
-            await ConsentFlow.create({
+            await ConsentFlowContract.create({
                 endpoint,
                 // Create relationship with profile
             });

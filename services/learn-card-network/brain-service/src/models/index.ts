@@ -2,7 +2,6 @@ import { Boost } from './Boost';
 import { Profile } from './Profile';
 import { Credential } from './Credential';
 import { Presentation } from './Presentation';
-import { ConsentFlow } from './ConsentFlow';
 
 Profile.addRelationships({ adminOf: { model: Boost, direction: 'out', name: 'ADMIN_OF' } });
 
@@ -40,4 +39,4 @@ export * from './Profile';
 export * from './Credential';
 export * from './Presentation';
 export * from './SigningAuthority';
-export * from './ConsentFlow';
+export * from './ConsentFlowContract';

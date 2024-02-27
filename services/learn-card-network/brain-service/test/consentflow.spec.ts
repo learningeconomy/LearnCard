@@ -1,70 +1,45 @@
-import { ConsentFlow } from '../src/models/ConsentFlow';
-import { ConsentFlowValidator } from '../src/types/consentflow';
+import { testContract } from './helpers/contract';
+import { getClient, getUser } from './helpers/getClient';
+import { Profile, Credential, ConsentFlowContract } from '@models';
 
-describe('ConsentFlow Model', () => {
+const noAuthClient = getClient();
+let userA: Awaited<ReturnType<typeof getUser>>;
+let userB: Awaited<ReturnType<typeof getUser>>;
+
+describe('Consent Flow Contracts', () => {
   beforeAll(async () => {
-    // Setup database connection or any other setup required before tests run
+    userA = await getUser();
+    userB = await getUser('b'.repeat(64));
   });
 
-  afterAll(async () => {
-    // Clean up database or any other teardown required after tests are done
-  });
-
-  describe('Validation', () => {
-    it('should validate a valid consent flow endpoint', () => {
-      const validEndpoint = { endpoint: 'https://example.com/consent' };
-      const result = ConsentFlowValidator.safeParse(validEndpoint);
-      expect(result.success).toBe(true);
+  describe('createConsentFlowContract', () => {
+    beforeEach(async () => {
+      await Profile.delete({ detach: true, where: {} });
+      await ConsentFlowContract.delete({ detach: true, where: {} });
+      await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+      await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
     });
 
-    it('should invalidate an empty endpoint', () => {
-      const invalidEndpoint = { endpoint: '' };
-      const result = ConsentFlowValidator.safeParse(invalidEndpoint);
-      expect(result.success).toBe(false);
+    afterAll(async () => {
+      await Profile.delete({ detach: true, where: {} });
+      await Credential.delete({ detach: true, where: {} });
     });
 
-    it('should invalidate a consent flow without an endpoint', () => {
-      // @ts-ignore to test runtime validation
-      const invalidConsentFlow = {};
-      const result = ConsentFlowValidator.safeParse(invalidConsentFlow);
-      expect(result.success).toBe(false);
-    });
-  });
-
-  describe('Persistence', () => {
-    it('should create a ConsentFlow instance', async () => {
-      const endpoint = 'https://example.com/consent';
-      const consentFlow = await ConsentFlow.create({
-        endpoint,
+    it('should not allow you to create a contract without full auth', async () => {
+      await expect(
+        noAuthClient.contracts.createConsentFlowContract({ contract: testContract })
+      ).rejects.toMatchObject({
+        code: 'UNAUTHORIZED',
       });
-
-      expect(consentFlow).toBeDefined();
-      expect(consentFlow.endpoint).toBe(endpoint);
+      await expect(
+        userA.clients.partialAuth.contracts.createConsentFlowContract({ contract: testContract })
+      ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
     });
 
-    it('should find a ConsentFlow instance by endpoint', async () => {
-      const endpoint = 'https://example.com/consent';
-      // Assuming the instance was already created in the previous test
-      const consentFlow = await ConsentFlow.findOne({
-        where: {
-          endpoint,
-        },
-      });
-
-      expect(consentFlow).toBeDefined();
-      expect(consentFlow.endpoint).toBe(endpoint);
-    });
-
-    it('should delete a ConsentFlow instance', async () => {
-      const endpoint = 'https://example.com/consent';
-      // Assuming the instance exists from previous tests
-      const deleteResult = await ConsentFlow.delete({
-        where: {
-          endpoint,
-        },
-      });
-
-      expect(deleteResult).toBeGreaterThan(0); // Assuming deleteResult indicates the number of rows deleted
+    it('should allow you to create a contract', async () => {
+      await expect(
+        userA.clients.fullAuth.contracts.createConsentFlowContract({ contract: testContract })
+      ).resolves.not.toThrow();
     });
   });
 });
