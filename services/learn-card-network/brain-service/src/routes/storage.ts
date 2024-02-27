@@ -9,6 +9,7 @@ import {
     VCValidator,
     VPValidator,
     JWEValidator,
+    ConsentFlowContractValidator,
 } from '@learncard/types';
 
 import { getCredentialUri } from '@helpers/credential.helpers';
@@ -22,6 +23,7 @@ import { getUriParts } from '@helpers/uri.helpers';
 import { getPresentationUri } from '@helpers/presentation.helpers';
 import { getBoostById } from '@accesslayer/boost/read';
 import { getCachedStorageByUri, setStorageForUri } from '@cache/storage';
+import { getContractById } from '@accesslayer/consentflowcontract/read';
 
 export const storageRouter = t.router({
     store: didAndChallengeRoute
@@ -80,7 +82,12 @@ export const storageRouter = t.router({
             },
         })
         .input(z.object({ uri: z.string() }))
-        .output(UnsignedVCValidator.or(VCValidator).or(VPValidator).or(JWEValidator))
+        .output(
+            UnsignedVCValidator.or(VCValidator)
+                .or(VPValidator)
+                .or(JWEValidator)
+                .or(ConsentFlowContractValidator)
+        )
         .query(async ({ input }) => {
             const { uri } = input;
 
@@ -130,6 +137,20 @@ export const storageRouter = t.router({
                 await setStorageForUri(uri, boost);
 
                 return boost;
+            }
+
+            if (type === 'contract') {
+                const instance = await getContractById(id);
+
+                if (!instance) {
+                    throw new TRPCError({ code: 'NOT_FOUND', message: 'Contract not found' });
+                }
+
+                const contract = JSON.parse(instance.contract);
+
+                await setStorageForUri(uri, contract);
+
+                return contract;
             }
 
             throw new TRPCError({

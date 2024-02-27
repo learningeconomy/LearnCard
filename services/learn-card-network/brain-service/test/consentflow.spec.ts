@@ -45,6 +45,20 @@ describe('Consent Flow Contracts', () => {
                 })
             ).resolves.not.toThrow();
         });
+
+        it('should become resolveable after creation', async () => {
+            await userA.clients.fullAuth.contracts.createConsentFlowContract({
+                contract: testContract,
+            });
+
+            const contracts = await userA.clients.fullAuth.contracts.getConsentFlowContracts();
+
+            const contract = await userA.clients.fullAuth.storage.resolve({
+                uri: contracts[0].uri,
+            });
+
+            expect(contract).toEqual(testContract);
+        });
     });
 
     describe('getConsentFlowContracts', () => {
@@ -85,7 +99,7 @@ describe('Consent Flow Contracts', () => {
             const newContracts = await userA.clients.fullAuth.contracts.getConsentFlowContracts();
 
             expect(newContracts).toHaveLength(1);
-            expect(newContracts[0]).toEqual(testContract);
+            expect(newContracts[0]!.contract).toEqual(testContract);
         });
 
         it("should not return other user's contracts", async () => {
@@ -96,7 +110,7 @@ describe('Consent Flow Contracts', () => {
             const userAContracts = await userA.clients.fullAuth.contracts.getConsentFlowContracts();
 
             expect(userAContracts).toHaveLength(1);
-            expect(userAContracts[0]).toEqual(testContract);
+            expect(userAContracts[0]!.contract).toEqual(testContract);
 
             const userBContracts = await userB.clients.fullAuth.contracts.getConsentFlowContracts();
 

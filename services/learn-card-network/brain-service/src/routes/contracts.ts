@@ -4,6 +4,7 @@ import { t, profileRoute } from '@routes';
 import { ConsentFlowContractValidator } from '@learncard/types';
 import { createConsentFlowContract } from '@accesslayer/consentflowcontract/create';
 import { getConsentFlowContractsForProfile } from '@accesslayer/consentflowcontract/relationships/read';
+import { constructUri } from '@helpers/uri.helpers';
 
 export const contractsRouter = t.router({
     createConsentFlowContract: profileRoute
@@ -46,14 +47,17 @@ export const contractsRouter = t.router({
             },
         })
         .input(z.object({ limit: z.number().int().lt(100).default(25) }).default({ limit: 25 }))
-        .output(ConsentFlowContractValidator.array())
+        .output(z.object({ contract: ConsentFlowContractValidator, uri: z.string() }).array())
         .mutation(async ({ input, ctx }) => {
             const { limit } = input;
             const { profile } = ctx.user;
 
             const contracts = await getConsentFlowContractsForProfile(profile, { limit });
 
-            return contracts.map(contract => JSON.parse(contract.contract));
+            return contracts.map(contract => ({
+                contract: JSON.parse(contract.contract),
+                uri: constructUri('contract', contract.id, ctx.domain),
+            }));
         }),
 });
 export type ContractsRouter = typeof contractsRouter;

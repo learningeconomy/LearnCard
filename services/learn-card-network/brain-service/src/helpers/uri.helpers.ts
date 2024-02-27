@@ -1,6 +1,6 @@
 import { TRPCError } from '@trpc/server';
 
-export type URIType = 'credential' | 'presentation' | 'boost';
+export type URIType = 'credential' | 'presentation' | 'boost' | 'contract';
 
 export type URIParts = {
     domain: string;
@@ -9,7 +9,7 @@ export type URIParts = {
 };
 
 export const isURIType = (type: string): type is URIType =>
-    ['credential', 'presentation', 'boost'].includes(type);
+    ['credential', 'presentation', 'boost', 'contract'].includes(type);
 
 export const getUriParts = (uri: string): URIParts => {
     const parts = uri.split(':');
