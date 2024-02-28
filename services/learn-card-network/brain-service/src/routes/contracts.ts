@@ -34,7 +34,7 @@ export const contractsRouter = t.router({
             const contractInstance = await createConsentFlowContract(contract);
 
             // Get profile by profileId
-            contractInstance.relateTo({
+            await contractInstance.relateTo({
                 alias: 'createdBy',
                 where: { profileId: ctx.user.profile.profileId },
             });
