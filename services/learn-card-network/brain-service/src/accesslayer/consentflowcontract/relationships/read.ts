@@ -1,7 +1,24 @@
 import { QueryBuilder } from 'neogma';
 import { convertQueryResultToPropertiesObjectArray } from '@helpers/neo4j.helpers';
-import { Profile, ProfileInstance, ConsentFlowContract } from '@models';
+import { Profile, ProfileInstance, ConsentFlowContract, ConsentFlowInstance } from '@models';
 import { ConsentFlowType } from 'types/consentflowcontract';
+
+export const isProfileConsentFlowContractAdmin = async (
+    profile: ProfileInstance,
+    contract: ConsentFlowInstance
+) => {
+    const query = new QueryBuilder().match({
+        related: [
+            { model: ConsentFlowContract, where: { id: contract.id } },
+            `-[:${ConsentFlowContract.getRelationshipByAlias('createdBy').name}]-`,
+            { identifier: 'profile', model: Profile, where: { profileId: profile.profileId } },
+        ],
+    });
+
+    const result = await query.return('count(profile) AS count').run();
+
+    return Number(result.records[0]?.get('count') ?? 0) > 0;
+};
 
 export const getConsentFlowContractsForProfile = async (
     profile: ProfileInstance,

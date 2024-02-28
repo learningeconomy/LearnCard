@@ -1,10 +1,17 @@
+import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
 import { t, profileRoute } from '@routes';
 import { ConsentFlowContractValidator } from '@learncard/types';
 import { createConsentFlowContract } from '@accesslayer/consentflowcontract/create';
-import { getConsentFlowContractsForProfile } from '@accesslayer/consentflowcontract/relationships/read';
+import {
+    getConsentFlowContractsForProfile,
+    isProfileConsentFlowContractAdmin,
+} from '@accesslayer/consentflowcontract/relationships/read';
 import { constructUri } from '@helpers/uri.helpers';
+import { getContractByUri } from '@accesslayer/consentflowcontract/read';
+import { deleteStorageForUri } from '@cache/storage';
+import { deleteConsentFlowContract } from '@accesslayer/consentflowcontract/delete';
 
 export const contractsRouter = t.router({
     createConsentFlowContract: profileRoute
@@ -19,7 +26,7 @@ export const contractsRouter = t.router({
             },
         })
         .input(z.object({ contract: ConsentFlowContractValidator }))
-        .output(z.boolean())
+        .output(z.string())
         .mutation(async ({ input, ctx }) => {
             const { contract } = input;
 
@@ -32,7 +39,7 @@ export const contractsRouter = t.router({
                 where: { profileId: ctx.user.profile.profileId },
             });
 
-            return true;
+            return constructUri('contract', contractInstance.id, ctx.domain);
         }),
 
     getConsentFlowContracts: profileRoute
@@ -58,6 +65,41 @@ export const contractsRouter = t.router({
                 contract: JSON.parse(contract.contract),
                 uri: constructUri('contract', contract.id, ctx.domain),
             }));
+        }),
+
+    deleteConsentFlowContract: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'DELETE',
+                path: '/consent-flow-contract',
+                tags: ['Consenst Flow Contracts'],
+                summary: 'Delete a Consent Flow Contract',
+                description: 'This route deletes a Consent Flow Contract',
+            },
+        })
+        .input(z.object({ uri: z.string() }))
+        .output(z.boolean())
+        .mutation(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+
+            const { uri } = input;
+
+            const contract = await getContractByUri(uri);
+
+            if (!contract) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find contract' });
+            }
+
+            if (!(await isProfileConsentFlowContractAdmin(profile, contract))) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile does not own contract',
+                });
+            }
+            await Promise.all([deleteConsentFlowContract(contract), deleteStorageForUri(uri)]);
+
+            return true;
         }),
 });
 export type ContractsRouter = typeof contractsRouter;

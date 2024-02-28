@@ -54,7 +54,7 @@ describe('Consent Flow Contracts', () => {
             const contracts = await userA.clients.fullAuth.contracts.getConsentFlowContracts();
 
             const contract = await userA.clients.fullAuth.storage.resolve({
-                uri: contracts[0].uri,
+                uri: contracts[0]?.uri ?? '',
             });
 
             expect(contract).toEqual(testContract);
@@ -115,6 +115,51 @@ describe('Consent Flow Contracts', () => {
             const userBContracts = await userB.clients.fullAuth.contracts.getConsentFlowContracts();
 
             expect(userBContracts).toHaveLength(0);
+        });
+    });
+
+    describe('deleteConsentFlowContracts', () => {
+        let uri: string;
+
+        beforeEach(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await ConsentFlowContract.delete({ detach: true, where: {} });
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+
+            uri = await userA.clients.fullAuth.contracts.createConsentFlowContract({
+                contract: testContract,
+            });
+        });
+
+        afterAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+        });
+
+        it('should not allow you to delete contracts without full auth', async () => {
+            await expect(
+                noAuthClient.contracts.deleteConsentFlowContract({ uri })
+            ).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+            await expect(
+                userA.clients.partialAuth.contracts.deleteConsentFlowContract({ uri })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        });
+
+        it('should allow you to delete contracts', async () => {
+            const contracts = await userA.clients.fullAuth.contracts.getConsentFlowContracts();
+
+            expect(contracts).toHaveLength(1);
+
+            await expect(
+                userA.clients.fullAuth.contracts.deleteConsentFlowContract({ uri })
+            ).resolves.not.toThrow();
+
+            const newContracts = await userA.clients.fullAuth.contracts.getConsentFlowContracts();
+
+            expect(newContracts).toHaveLength(0);
         });
     });
 });
