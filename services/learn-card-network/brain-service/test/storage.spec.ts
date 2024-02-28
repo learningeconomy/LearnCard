@@ -1,7 +1,7 @@
 import { JWE } from '@learncard/types';
 import { getClient, getUser } from './helpers/getClient';
 import { Profile, Credential, Presentation } from '@models';
-import { testContract } from './helpers/contract';
+import { minimalContract } from './helpers/contract';
 
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;
@@ -174,7 +174,7 @@ describe('Storage', () => {
 
         it('should allow resolving a consent flow contract', async () => {
             const uri = await userA.clients.fullAuth.contracts.createConsentFlowContract({
-                contract: testContract,
+                contract: minimalContract,
             });
 
             const promise = userA.clients.fullAuth.storage.resolve({ uri });
@@ -183,7 +183,7 @@ describe('Storage', () => {
 
             const resolvedContract = await promise;
 
-            expect(resolvedContract).toEqual(testContract);
+            expect(resolvedContract).toEqual(minimalContract);
         });
     });
 });

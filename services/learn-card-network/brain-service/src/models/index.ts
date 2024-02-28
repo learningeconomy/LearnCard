@@ -2,8 +2,21 @@ import { Boost } from './Boost';
 import { Profile } from './Profile';
 import { Credential } from './Credential';
 import { Presentation } from './Presentation';
+import { ConsentFlowContract } from './ConsentFlowContract';
 
-Profile.addRelationships({ adminOf: { model: Boost, direction: 'out', name: 'ADMIN_OF' } });
+Profile.addRelationships({
+    adminOf: { model: Boost, direction: 'out', name: 'ADMIN_OF' },
+    consentsTo: {
+        model: ConsentFlowContract,
+        direction: 'out',
+        name: 'CONSENTS_TO',
+        properties: {
+            terms: { property: 'terms', schema: { type: 'string' } },
+            createdAt: { property: 'createdAt', schema: { type: 'string' } },
+            updatedAt: { property: 'updatedAt', schema: { type: 'string' } },
+        },
+    },
+});
 
 Credential.addRelationships({
     credentialReceived: {

@@ -2,7 +2,7 @@ import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
 import { t, profileRoute } from '@routes';
-import { ConsentFlowContractValidator } from '@learncard/types';
+import { ConsentFlowContractValidator, ConsentFlowTermsValidator } from '@learncard/types';
 import { createConsentFlowContract } from '@accesslayer/consentflowcontract/create';
 import {
     getConsentFlowContractsForProfile,
@@ -12,6 +12,7 @@ import { constructUri } from '@helpers/uri.helpers';
 import { getContractByUri } from '@accesslayer/consentflowcontract/read';
 import { deleteStorageForUri } from '@cache/storage';
 import { deleteConsentFlowContract } from '@accesslayer/consentflowcontract/delete';
+import { areTermsValid } from '@helpers/contract.helpers';
 
 export const contractsRouter = t.router({
     createConsentFlowContract: profileRoute
@@ -98,6 +99,47 @@ export const contractsRouter = t.router({
                 });
             }
             await Promise.all([deleteConsentFlowContract(contract), deleteStorageForUri(uri)]);
+
+            return true;
+        }),
+
+    consentToContract: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/consent-flow-contract/consent/{contractUri}',
+                tags: ['Consent Flow Contracts'],
+                summary: 'Consent To Contract',
+                description: 'Consents to a Contract with a hard set of terms',
+            },
+        })
+        .input(z.object({ terms: ConsentFlowTermsValidator, contractUri: z.string() }))
+        .output(z.boolean())
+        .mutation(async ({ input, ctx }) => {
+            const { profile } = ctx.user;
+
+            const { terms, contractUri } = input;
+
+            const contract = await getContractByUri(contractUri);
+
+            if (!contract) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find contract' });
+            }
+
+            if (!areTermsValid(terms, JSON.parse(contract.contract))) {
+                throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid Terms for Contract' });
+            }
+
+            await profile.relateTo({
+                alias: 'consentsTo',
+                where: { id: contract.id },
+                properties: {
+                    terms: JSON.stringify(terms),
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                },
+            });
 
             return true;
         }),
