@@ -1,6 +1,7 @@
 import { JWE } from '@learncard/types';
 import { getClient, getUser } from './helpers/getClient';
 import { Profile, Credential, Presentation } from '@models';
+import { testContract } from './helpers/contract';
 
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;
@@ -169,6 +170,20 @@ describe('Storage', () => {
                     .getDIDObject()
                     .decryptDagJWE(resolvedPresentation as JWE)
             ).toEqual(vp);
+        });
+
+        it('should allow resolving a consent flow contract', async () => {
+            const uri = await userA.clients.fullAuth.contracts.createConsentFlowContract({
+                contract: testContract,
+            });
+
+            const promise = userA.clients.fullAuth.storage.resolve({ uri });
+
+            await expect(promise).resolves.not.toThrow();
+
+            const resolvedContract = await promise;
+
+            expect(resolvedContract).toEqual(testContract);
         });
     });
 });
