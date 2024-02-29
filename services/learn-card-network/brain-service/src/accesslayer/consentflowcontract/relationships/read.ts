@@ -21,6 +21,23 @@ export const isProfileConsentFlowContractAdmin = async (
     return Number(result.records[0]?.get('count') ?? 0) > 0;
 };
 
+export const hasProfileConsentedToContract = async (
+    profile: ProfileInstance,
+    contract: ConsentFlowInstance
+) => {
+    const query = new QueryBuilder().match({
+        related: [
+            { model: Profile, where: { profileId: profile.profileId } },
+            { ...Profile.getRelationshipByAlias('consentsTo'), identifier: 'terms' },
+            { model: ConsentFlowContract, where: { id: contract.id } },
+        ],
+    });
+
+    const result = await query.return('count(terms) AS count').run();
+
+    return Number(result.records[0]?.get('count') ?? 0) > 0;
+};
+
 export const getConsentFlowContractsForProfile = async (
     profile: ProfileInstance,
     { limit, cursor }: { limit: number; cursor?: string }

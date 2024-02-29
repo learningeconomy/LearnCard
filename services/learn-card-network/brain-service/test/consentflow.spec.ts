@@ -289,6 +289,22 @@ describe('Consent Flow Contracts', () => {
                 })
             ).resolves.not.toThrow();
         });
+
+        it("should not allow you to consent to contracts that you've already consented to", async () => {
+            await expect(
+                userB.clients.fullAuth.contracts.consentToContract({
+                    terms: minimalTerms,
+                    contractUri: uri,
+                })
+            ).resolves.not.toThrow();
+
+            await expect(
+                userB.clients.fullAuth.contracts.consentToContract({
+                    terms: minimalTerms,
+                    contractUri: uri,
+                })
+            ).rejects.toMatchObject({ code: 'CONFLICT' });
+        });
     });
 
     describe('getConsentedContracts', () => {

@@ -14,6 +14,7 @@ import { createConsentFlowContract } from '@accesslayer/consentflowcontract/crea
 import {
     getConsentFlowContractsForProfile,
     getConsentedContractsForProfile,
+    hasProfileConsentedToContract,
     isProfileConsentFlowContractAdmin,
 } from '@accesslayer/consentflowcontract/relationships/read';
 import { constructUri } from '@helpers/uri.helpers';
@@ -149,6 +150,13 @@ export const contractsRouter = t.router({
 
             if (!contract) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find contract' });
+            }
+
+            if (await hasProfileConsentedToContract(profile, contract)) {
+                throw new TRPCError({
+                    code: 'CONFLICT',
+                    message: "You've already consented to this contract!",
+                });
             }
 
             if (!areTermsValid(terms, JSON.parse(contract.contract))) {
