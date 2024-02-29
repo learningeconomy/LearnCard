@@ -13,6 +13,10 @@ import {
     LCNBoostClaimLinkOptionsType,
     PaginationOptionsType,
     PaginatedLCNProfiles,
+    ConsentFlowContract,
+    ConsentFlowTerms,
+    PaginatedConsentFlowContracts,
+    PaginatedConsentFlowTerms,
 } from '@learncard/types';
 import { Plugin } from '@learncard/core';
 import { ProofOptions } from '@learncard/didkit-plugin';
@@ -121,7 +125,18 @@ export type LearnCardNetworkPluginMethods = {
     ) => Promise<{ boostUri: string; challenge: string }>;
     claimBoostWithLink: (boostUri: string, challenge: string) => Promise<string>;
 
-    resolveFromLCN: (uri: string) => Promise<VC | UnsignedVC | VP | JWE>;
+    createContract: (contract: ConsentFlowContract) => Promise<string>;
+    getContracts: (options?: PaginationOptionsType) => Promise<PaginatedConsentFlowContracts>;
+    deleteContract: (uri: string) => Promise<boolean>;
+    consentToContract: (uri: string, terms: ConsentFlowTerms) => Promise<string>;
+    getConsentedContracts: (options?: PaginationOptionsType) => Promise<PaginatedConsentFlowTerms>;
+    updateContractTerms: (uri: string, terms: ConsentFlowTerms) => Promise<boolean>;
+    withdrawConsent: (uri: string) => Promise<boolean>;
+    verifyConsent: (uri: string, profileId: string) => Promise<boolean>;
+
+    resolveFromLCN: (
+        uri: string
+    ) => Promise<VC | UnsignedVC | VP | JWE | ConsentFlowContract | ConsentFlowTerms>;
 };
 
 /** @group LearnCardNetwork Plugin */

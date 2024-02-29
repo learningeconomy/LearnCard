@@ -472,6 +472,52 @@ export const getLearnCardNetworkPlugin = async (
                 return client.boost.claimBoostWithLink.mutate({ boostUri, challenge });
             },
 
+            createContract: async (_learnCard, contract) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.contracts.createConsentFlowContract.mutate({ contract });
+            },
+
+            getContracts: async (_learnCard, options) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.contracts.getConsentFlowContracts.query(options);
+            },
+
+            deleteContract: async (_learnCard, uri) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.contracts.deleteConsentFlowContract.mutate({ uri });
+            },
+
+            consentToContract: async (_learnCard, contractUri, terms) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.contracts.consentToContract.mutate({ contractUri, terms });
+            },
+
+            getConsentedContracts: async (_learnCard, options) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.contracts.getConsentedContracts.query(options);
+            },
+
+            updateContractTerms: async (_learnCard, uri, terms) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.contracts.updateConsentedContractTerms.mutate({ uri, terms });
+            },
+
+            withdrawConsent: async (_learnCard, uri) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.contracts.withdrawConsent.mutate({ uri });
+            },
+
+            verifyConsent: async (_learnCard, uri, profileId) => {
+                return client.contracts.verifyConsent.query({ uri, profileId });
+            },
+
             resolveFromLCN: async (_learnCard, uri) => {
                 const result = await client.storage.resolve.query({ uri });
 
