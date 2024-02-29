@@ -6,7 +6,6 @@ import { t, profileRoute } from '@routes';
 import {
     ConsentFlowContractValidator,
     ConsentFlowTermsValidator,
-    LCNProfileValidator,
     PaginationOptionsValidator,
     PaginatedConsentFlowContractsValidator,
     PaginatedConsentFlowTermsValidator,
