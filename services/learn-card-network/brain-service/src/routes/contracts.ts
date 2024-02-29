@@ -6,6 +6,8 @@ import {
     ConsentFlowContractValidator,
     ConsentFlowTermsValidator,
     LCNProfileValidator,
+    PaginationOptionsValidator,
+    PaginatedConsentFlowContractsValidator,
 } from '@learncard/types';
 import { createConsentFlowContract } from '@accesslayer/consentflowcontract/create';
 import {
@@ -60,18 +62,33 @@ export const contractsRouter = t.router({
                 description: 'Gets Consent Flow Contracts for a profile',
             },
         })
-        .input(z.object({ limit: z.number().int().lt(100).default(25) }).default({ limit: 25 }))
-        .output(z.object({ contract: ConsentFlowContractValidator, uri: z.string() }).array())
+        .input(
+            PaginationOptionsValidator.extend({
+                limit: PaginationOptionsValidator.shape.limit.default(25),
+            }).default({})
+        )
+        .output(PaginatedConsentFlowContractsValidator)
         .query(async ({ input, ctx }) => {
-            const { limit } = input;
+            const { limit, cursor } = input;
             const { profile } = ctx.user;
 
-            const contracts = await getConsentFlowContractsForProfile(profile, { limit });
+            const results = await getConsentFlowContractsForProfile(profile, {
+                limit: limit + 1,
+                cursor,
+            });
+            const contracts = results.slice(0, limit);
 
-            return contracts.map(contract => ({
-                contract: JSON.parse(contract.contract),
-                uri: constructUri('contract', contract.id, ctx.domain),
-            }));
+            const hasMore = results.length > limit;
+            const nextCursor = contracts.at(-1)?.updatedAt;
+
+            return {
+                hasMore,
+                cursor: nextCursor,
+                records: contracts.map(contract => ({
+                    contract: JSON.parse(contract.contract),
+                    uri: constructUri('contract', contract.id, ctx.domain),
+                })),
+            };
         }),
 
     deleteConsentFlowContract: profileRoute

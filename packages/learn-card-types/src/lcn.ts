@@ -142,6 +142,11 @@ export const ConsentFlowContractValidator = z.object({
 });
 export type ConsentFlowContract = z.infer<typeof ConsentFlowContractValidator>;
 
+export const PaginatedConsentFlowContractsValidator = PaginationResponseValidator.extend({
+    records: z.object({ contract: ConsentFlowContractValidator, uri: z.string() }).array(),
+});
+export type PaginatedConsentFlowContracts = z.infer<typeof PaginatedConsentFlowContractsValidator>;
+
 export const ConsentFlowTermsValidator = z.object({
     read: z.object({
         anonymize: z.boolean().optional(),

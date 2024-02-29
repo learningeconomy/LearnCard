@@ -59,7 +59,7 @@ describe('Consent Flow Contracts', () => {
             const contracts = await userA.clients.fullAuth.contracts.getConsentFlowContracts();
 
             const contract = await userA.clients.fullAuth.storage.resolve({
-                uri: contracts[0]?.uri ?? '',
+                uri: contracts.records[0]?.uri ?? '',
             });
 
             expect(contract).toEqual(minimalContract);
@@ -95,7 +95,7 @@ describe('Consent Flow Contracts', () => {
 
             const contracts = await userA.clients.fullAuth.contracts.getConsentFlowContracts();
 
-            expect(contracts).toHaveLength(0);
+            expect(contracts.records).toHaveLength(0);
 
             await userA.clients.fullAuth.contracts.createConsentFlowContract({
                 contract: minimalContract,
@@ -103,8 +103,8 @@ describe('Consent Flow Contracts', () => {
 
             const newContracts = await userA.clients.fullAuth.contracts.getConsentFlowContracts();
 
-            expect(newContracts).toHaveLength(1);
-            expect(newContracts[0]!.contract).toEqual(minimalContract);
+            expect(newContracts.records).toHaveLength(1);
+            expect(newContracts.records[0]!.contract).toEqual(minimalContract);
         });
 
         it("should not return other user's contracts", async () => {
@@ -114,12 +114,48 @@ describe('Consent Flow Contracts', () => {
 
             const userAContracts = await userA.clients.fullAuth.contracts.getConsentFlowContracts();
 
-            expect(userAContracts).toHaveLength(1);
-            expect(userAContracts[0]!.contract).toEqual(minimalContract);
+            expect(userAContracts.records).toHaveLength(1);
+            expect(userAContracts.records[0]!.contract).toEqual(minimalContract);
 
             const userBContracts = await userB.clients.fullAuth.contracts.getConsentFlowContracts();
 
-            expect(userBContracts).toHaveLength(0);
+            expect(userBContracts.records).toHaveLength(0);
+        });
+
+        it('should paginate', async () => {
+            await Promise.all(
+                Array(10)
+                    .fill(0)
+                    .map(async () =>
+                        userA.clients.fullAuth.contracts.createConsentFlowContract({
+                            contract: minimalContract,
+                        })
+                    )
+            );
+
+            const contracts = await userA.clients.fullAuth.contracts.getConsentFlowContracts({
+                limit: 20,
+            });
+
+            expect(contracts.records).toHaveLength(10);
+
+            const firstPage = await userA.clients.fullAuth.contracts.getConsentFlowContracts({
+                limit: 5,
+            });
+
+            expect(firstPage.records).toHaveLength(5);
+            expect(firstPage.hasMore).toBeTruthy();
+            expect(firstPage.cursor).toBeDefined();
+
+            const secondPage = await userA.clients.fullAuth.contracts.getConsentFlowContracts({
+                limit: 5,
+                cursor: firstPage.cursor,
+            });
+
+            expect(secondPage.records).toHaveLength(5);
+            expect(secondPage.hasMore).toBeFalsy();
+
+            expect([...firstPage.records, ...secondPage.records]).toEqual(contracts.records);
         });
     });
 
@@ -156,7 +192,7 @@ describe('Consent Flow Contracts', () => {
         it('should allow you to delete contracts', async () => {
             const contracts = await userA.clients.fullAuth.contracts.getConsentFlowContracts();
 
-            expect(contracts).toHaveLength(1);
+            expect(contracts.records).toHaveLength(1);
 
             await expect(
                 userA.clients.fullAuth.contracts.deleteConsentFlowContract({ uri })
@@ -164,7 +200,7 @@ describe('Consent Flow Contracts', () => {
 
             const newContracts = await userA.clients.fullAuth.contracts.getConsentFlowContracts();
 
-            expect(newContracts).toHaveLength(0);
+            expect(newContracts.records).toHaveLength(0);
         });
 
         it('should remove contract from profiles that have consented to it', async () => {

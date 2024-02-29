@@ -1,4 +1,4 @@
-import { QueryBuilder } from 'neogma';
+import { QueryBuilder, Where, Op } from 'neogma';
 import { convertQueryResultToPropertiesObjectArray } from '@helpers/neo4j.helpers';
 import { Profile, ProfileInstance, ConsentFlowContract, ConsentFlowInstance } from '@models';
 import { ConsentFlowType } from 'types/consentflowcontract';
@@ -23,9 +23,9 @@ export const isProfileConsentFlowContractAdmin = async (
 
 export const getConsentFlowContractsForProfile = async (
     profile: ProfileInstance,
-    { limit }: { limit: number }
+    { limit, cursor }: { limit: number; cursor?: string }
 ): Promise<ConsentFlowType[]> => {
-    const query = new QueryBuilder().match({
+    const _query = new QueryBuilder().match({
         related: [
             { identifier: 'contract', model: ConsentFlowContract },
             `-[:${ConsentFlowContract.getRelationshipByAlias('createdBy').name}]-`,
@@ -33,9 +33,15 @@ export const getConsentFlowContractsForProfile = async (
         ],
     });
 
+    const query = cursor
+        ? _query.where(
+            new Where({ contract: { updatedAt: { [Op.gt]: cursor } } }, _query.getBindParam())
+        )
+        : _query;
+
     const results = convertQueryResultToPropertiesObjectArray<{
         contract: ConsentFlowType;
-    }>(await query.return('DISTINCT contract').limit(limit).run());
+    }>(await query.return('DISTINCT contract').orderBy('contract.updatedAt').limit(limit).run());
 
     return results.map(({ contract }) => contract);
 };
