@@ -23,12 +23,15 @@ export const isProfileConsentFlowContractAdmin = async (
 };
 
 export const hasProfileConsentedToContract = async (
-    profile: ProfileInstance,
+    profile: ProfileInstance | string,
     contract: ConsentFlowInstance
 ): Promise<boolean> => {
     const query = new QueryBuilder().match({
         related: [
-            { model: Profile, where: { profileId: profile.profileId } },
+            {
+                model: Profile,
+                where: { profileId: typeof profile === 'string' ? profile : profile.profileId },
+            },
             { ...Profile.getRelationshipByAlias('consentsTo'), identifier: 'terms' },
             { model: ConsentFlowContract, where: { id: contract.id } },
         ],

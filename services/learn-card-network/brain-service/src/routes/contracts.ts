@@ -2,7 +2,7 @@ import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { v4 as uuid } from 'uuid';
 
-import { t, profileRoute } from '@routes';
+import { t, profileRoute, openRoute } from '@routes';
 import {
     ConsentFlowContractValidator,
     ConsentFlowTermsValidator,
@@ -322,6 +322,31 @@ export const contractsRouter = t.router({
             await Promise.all([deleteTermsById(relationship.terms.id), deleteStorageForUri(uri)]);
 
             return true;
+        }),
+
+    verifyConsent: openRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/consent-flow-contract/verify/{uri}',
+                tags: ['Consent Flow Contracts'],
+                summary: 'Verifies that a profile has consented to a contract',
+                description: 'Withdraws consent by deleting Contract Terms',
+            },
+        })
+        .input(z.object({ uri: z.string(), profileId: z.string() }))
+        .output(z.boolean())
+        .query(async ({ input }) => {
+            const { uri, profileId } = input;
+
+            const contract = await getContractByUri(uri);
+
+            if (!contract) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find contract' });
+            }
+
+            return hasProfileConsentedToContract(profileId, contract);
         }),
 });
 export type ContractsRouter = typeof contractsRouter;

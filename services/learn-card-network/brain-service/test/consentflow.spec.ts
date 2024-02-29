@@ -548,4 +548,80 @@ describe('Consent Flow Contracts', () => {
             expect(newContracts.records).toHaveLength(0);
         });
     });
+
+    describe('verifyConsent', () => {
+        let contractUri: string;
+        let termsUri: string;
+
+        beforeEach(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await ConsentFlowContract.delete({ detach: true, where: {} });
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+
+            contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract({
+                contract: minimalContract,
+            });
+            termsUri = await userB.clients.fullAuth.contracts.consentToContract({
+                contractUri,
+                terms: minimalTerms,
+            });
+        });
+
+        afterAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await ConsentFlowContract.delete({ detach: true, where: {} });
+        });
+
+        it('should not allow you to verify consent without full auth', async () => {
+            await expect(
+                noAuthClient.contracts.verifyConsent({ uri: contractUri, profileId: 'userb' })
+            ).resolves.not.toThrow();
+            await expect(
+                userA.clients.partialAuth.contracts.verifyConsent({
+                    uri: contractUri,
+                    profileId: 'userb',
+                })
+            ).resolves.not.toThrow();
+            await expect(
+                userA.clients.fullAuth.contracts.verifyConsent({
+                    uri: contractUri,
+                    profileId: 'userb',
+                })
+            ).resolves.not.toThrow();
+        });
+
+        it('should actually verify consent', async () => {
+            expect(
+                await userA.clients.fullAuth.contracts.verifyConsent({
+                    uri: contractUri,
+                    profileId: 'userb',
+                })
+            ).toBeTruthy();
+            expect(
+                await userA.clients.fullAuth.contracts.verifyConsent({
+                    uri: contractUri,
+                    profileId: 'usera',
+                })
+            ).toBeFalsy();
+        });
+
+        it('should stop verifying when you withdraw consent', async () => {
+            expect(
+                await userA.clients.fullAuth.contracts.verifyConsent({
+                    uri: contractUri,
+                    profileId: 'userb',
+                })
+            ).toBeTruthy();
+
+            await userB.clients.fullAuth.contracts.withdrawConsent({ uri: termsUri });
+
+            expect(
+                await userA.clients.fullAuth.contracts.verifyConsent({
+                    uri: contractUri,
+                    profileId: 'userb',
+                })
+            ).toBeFalsy();
+        });
+    });
 });
