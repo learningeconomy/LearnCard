@@ -212,6 +212,7 @@ export const contractsRouter = t.router({
                 hasMore,
                 cursor: nextCursor,
                 records: contracts.map(contract => ({
+                    contract: JSON.parse(contract.contract.contract),
                     uri: constructUri('contract', contract.contract.id, ctx.domain),
                     terms: JSON.parse(contract.terms.terms),
                     contractOwner: updateDidForProfile(ctx.domain, contract.owner),

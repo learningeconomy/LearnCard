@@ -174,6 +174,7 @@ export const PaginatedConsentFlowTermsValidator = PaginationResponseValidator.ex
     records: z
         .object({
             terms: ConsentFlowTermsValidator,
+            contract: ConsentFlowContractValidator,
             uri: z.string(),
             contractOwner: LCNProfileValidator,
             consenter: LCNProfileValidator,
