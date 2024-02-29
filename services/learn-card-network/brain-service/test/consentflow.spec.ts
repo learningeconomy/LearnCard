@@ -123,7 +123,7 @@ describe('Consent Flow Contracts', () => {
         });
     });
 
-    describe('deleteConsentFlowContracts', () => {
+    describe('deleteConsentFlowContract', () => {
         let uri: string;
 
         beforeEach(async () => {
@@ -163,6 +163,23 @@ describe('Consent Flow Contracts', () => {
             ).resolves.not.toThrow();
 
             const newContracts = await userA.clients.fullAuth.contracts.getConsentFlowContracts();
+
+            expect(newContracts).toHaveLength(0);
+        });
+
+        it('should remove contract from profiles that have consented to it', async () => {
+            await userB.clients.fullAuth.contracts.consentToContract({
+                terms: minimalTerms,
+                contractUri: uri,
+            });
+
+            const contracts = await userB.clients.fullAuth.contracts.getConsentedContracts();
+
+            expect(contracts).toHaveLength(1);
+
+            await userA.clients.fullAuth.contracts.deleteConsentFlowContract({ uri });
+
+            const newContracts = await userB.clients.fullAuth.contracts.getConsentedContracts();
 
             expect(newContracts).toHaveLength(0);
         });
