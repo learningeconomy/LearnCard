@@ -2,10 +2,15 @@ import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
 import { t, profileRoute } from '@routes';
-import { ConsentFlowContractValidator, ConsentFlowTermsValidator } from '@learncard/types';
+import {
+    ConsentFlowContractValidator,
+    ConsentFlowTermsValidator,
+    LCNProfileValidator,
+} from '@learncard/types';
 import { createConsentFlowContract } from '@accesslayer/consentflowcontract/create';
 import {
     getConsentFlowContractsForProfile,
+    getConsentedContractsForProfile,
     isProfileConsentFlowContractAdmin,
 } from '@accesslayer/consentflowcontract/relationships/read';
 import { constructUri } from '@helpers/uri.helpers';
@@ -13,6 +18,7 @@ import { getContractByUri } from '@accesslayer/consentflowcontract/read';
 import { deleteStorageForUri } from '@cache/storage';
 import { deleteConsentFlowContract } from '@accesslayer/consentflowcontract/delete';
 import { areTermsValid } from '@helpers/contract.helpers';
+import { updateDidForProfile } from '@helpers/did.helpers';
 
 export const contractsRouter = t.router({
     createConsentFlowContract: profileRoute
@@ -56,7 +62,7 @@ export const contractsRouter = t.router({
         })
         .input(z.object({ limit: z.number().int().lt(100).default(25) }).default({ limit: 25 }))
         .output(z.object({ contract: ConsentFlowContractValidator, uri: z.string() }).array())
-        .mutation(async ({ input, ctx }) => {
+        .query(async ({ input, ctx }) => {
             const { limit } = input;
             const { profile } = ctx.user;
 
@@ -142,6 +148,41 @@ export const contractsRouter = t.router({
             });
 
             return true;
+        }),
+
+    getConsentedContracts: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/consent-flow-contract/consent',
+                tags: ['Consent Flow Contracts'],
+                summary: 'Consent To Contract',
+                description: 'Consents to a Contract with a hard set of terms',
+            },
+        })
+        .input(z.object({ limit: z.number().int().lt(100).default(25) }).default({ limit: 25 }))
+        .output(
+            z
+                .object({
+                    terms: ConsentFlowTermsValidator,
+                    uri: z.string(),
+                    contractOwner: LCNProfileValidator,
+                })
+                .array()
+        )
+        .query(async ({ input, ctx }) => {
+            const { profile } = ctx.user;
+
+            const { limit } = input;
+
+            const contracts = await getConsentedContractsForProfile(profile, { limit });
+
+            return contracts.map(contract => ({
+                uri: constructUri('contract', contract.contract.id, ctx.domain),
+                terms: contract.terms,
+                contractOwner: updateDidForProfile(ctx.domain, contract.owner),
+            }));
         }),
 });
 export type ContractsRouter = typeof contractsRouter;

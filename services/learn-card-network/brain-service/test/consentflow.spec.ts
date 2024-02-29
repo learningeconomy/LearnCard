@@ -237,4 +237,73 @@ describe('Consent Flow Contracts', () => {
             ).resolves.not.toThrow();
         });
     });
+
+    describe('getConsentedContracts', () => {
+        let uri: string;
+
+        beforeEach(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await ConsentFlowContract.delete({ detach: true, where: {} });
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+
+            uri = await userA.clients.fullAuth.contracts.createConsentFlowContract({
+                contract: minimalContract,
+            });
+        });
+
+        afterAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await ConsentFlowContract.delete({ detach: true, where: {} });
+        });
+
+        it('should not allow you to get contracts without full auth', async () => {
+            await expect(noAuthClient.contracts.getConsentedContracts()).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+            await expect(
+                userB.clients.partialAuth.contracts.getConsentedContracts()
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        });
+
+        it("should allow you to get contracts you've consented to", async () => {
+            await expect(
+                userB.clients.fullAuth.contracts.getConsentedContracts()
+            ).resolves.not.toThrow();
+
+            const contracts = await userB.clients.fullAuth.contracts.getConsentedContracts();
+
+            expect(contracts).toHaveLength(0);
+
+            await userB.clients.fullAuth.contracts.consentToContract({
+                terms: minimalTerms,
+                contractUri: uri,
+            });
+
+            const newContracts = await userB.clients.fullAuth.contracts.getConsentedContracts();
+
+            expect(newContracts).toHaveLength(1);
+            expect(newContracts[0]!.uri).toEqual(uri);
+            expect(newContracts[0]!.contractOwner.did).toEqual(
+                (await userA.clients.fullAuth.profile.getProfile()).did
+            );
+            expect(newContracts[0]!.terms).toEqual(minimalTerms);
+        });
+
+        it("should not return other user's contracts", async () => {
+            await userB.clients.fullAuth.contracts.consentToContract({
+                terms: minimalTerms,
+                contractUri: uri,
+            });
+
+            const userAContracts = await userA.clients.fullAuth.contracts.getConsentedContracts();
+
+            expect(userAContracts).toHaveLength(0);
+
+            const userBContracts = await userB.clients.fullAuth.contracts.getConsentedContracts();
+
+            expect(userBContracts).toHaveLength(1);
+            expect(userBContracts[0]!.uri).toEqual(uri);
+        });
+    });
 });
