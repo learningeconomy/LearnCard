@@ -7,7 +7,7 @@ import { LCNProfile } from '@learncard/types';
 export const isProfileConsentFlowContractAdmin = async (
     profile: ProfileInstance,
     contract: ConsentFlowInstance
-) => {
+): Promise<boolean> => {
     const query = new QueryBuilder().match({
         related: [
             { model: ConsentFlowContract, where: { id: contract.id } },
@@ -24,7 +24,7 @@ export const isProfileConsentFlowContractAdmin = async (
 export const hasProfileConsentedToContract = async (
     profile: ProfileInstance,
     contract: ConsentFlowInstance
-) => {
+): Promise<boolean> => {
     const query = new QueryBuilder().match({
         related: [
             { model: Profile, where: { profileId: profile.profileId } },
@@ -36,6 +36,27 @@ export const hasProfileConsentedToContract = async (
     const result = await query.return('count(terms) AS count').run();
 
     return Number(result.records[0]?.get('count') ?? 0) > 0;
+};
+
+export const getContractTermsForProfile = async (
+    profile: ProfileInstance,
+    contract: ConsentFlowInstance
+): Promise<ConsentFlowTermsType | null> => {
+    const result = await profile.findRelationships({
+        alias: 'consentsTo',
+        where: { target: { id: contract.id }, relationship: {} },
+    });
+
+    return result.length > 0 ? result[0]!.relationship : null;
+};
+
+export const getContractTermsById = async (id: string): Promise<ConsentFlowTermsType | null> => {
+    const result = await Profile.findRelationships({
+        alias: 'consentsTo',
+        where: { relationship: { id } },
+    });
+
+    return result.length > 0 ? result[0]!.relationship : null;
 };
 
 export const getConsentFlowContractsForProfile = async (

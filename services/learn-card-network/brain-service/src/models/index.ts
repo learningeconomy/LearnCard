@@ -11,9 +11,10 @@ Profile.addRelationships({
         direction: 'out',
         name: 'CONSENTS_TO',
         properties: {
-            terms: { property: 'terms', schema: { type: 'string' } },
-            createdAt: { property: 'createdAt', schema: { type: 'string' } },
-            updatedAt: { property: 'updatedAt', schema: { type: 'string' } },
+            id: { property: 'id', schema: { type: 'string', required: true } },
+            terms: { property: 'terms', schema: { type: 'string', required: true } },
+            createdAt: { property: 'createdAt', schema: { type: 'string', required: true } },
+            updatedAt: { property: 'updatedAt', schema: { type: 'string', required: true } },
         },
     },
 });

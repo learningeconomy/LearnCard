@@ -9,6 +9,7 @@ export const ConsentFlowValidator = z.object({
 export type ConsentFlowType = z.infer<typeof ConsentFlowValidator>;
 
 export const ConsentFlowTermsValidator = z.object({
+    id: z.string(),
     terms: z.string(),
     createdAt: z.string(),
     updatedAt: z.string(),

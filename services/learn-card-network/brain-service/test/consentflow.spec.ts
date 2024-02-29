@@ -344,7 +344,7 @@ describe('Consent Flow Contracts', () => {
 
             expect(contracts.records).toHaveLength(0);
 
-            await userB.clients.fullAuth.contracts.consentToContract({
+            const termsUri = await userB.clients.fullAuth.contracts.consentToContract({
                 terms: minimalTerms,
                 contractUri: uri,
             });
@@ -352,7 +352,7 @@ describe('Consent Flow Contracts', () => {
             const newContracts = await userB.clients.fullAuth.contracts.getConsentedContracts();
 
             expect(newContracts.records).toHaveLength(1);
-            expect(newContracts.records[0]!.uri).toEqual(uri);
+            expect(newContracts.records[0]!.uri).toEqual(termsUri);
             expect(newContracts.records[0]!.contractOwner.did).toEqual(
                 (await userA.clients.fullAuth.profile.getProfile()).did
             );
@@ -360,7 +360,7 @@ describe('Consent Flow Contracts', () => {
         });
 
         it("should not return other user's contracts", async () => {
-            await userB.clients.fullAuth.contracts.consentToContract({
+            const termsUri = await userB.clients.fullAuth.contracts.consentToContract({
                 terms: minimalTerms,
                 contractUri: uri,
             });
@@ -372,7 +372,7 @@ describe('Consent Flow Contracts', () => {
             const userBContracts = await userB.clients.fullAuth.contracts.getConsentedContracts();
 
             expect(userBContracts.records).toHaveLength(1);
-            expect(userBContracts.records[0]!.uri).toEqual(uri);
+            expect(userBContracts.records[0]!.uri).toEqual(termsUri);
         });
 
         it('should paginate', async () => {

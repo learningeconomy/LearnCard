@@ -10,6 +10,7 @@ import {
     VPValidator,
     JWEValidator,
     ConsentFlowContractValidator,
+    ConsentFlowTermsValidator,
 } from '@learncard/types';
 
 import { getCredentialUri } from '@helpers/credential.helpers';
@@ -24,6 +25,7 @@ import { getPresentationUri } from '@helpers/presentation.helpers';
 import { getBoostById } from '@accesslayer/boost/read';
 import { getCachedStorageByUri, setStorageForUri } from '@cache/storage';
 import { getContractById } from '@accesslayer/consentflowcontract/read';
+import { getContractTermsById } from '@accesslayer/consentflowcontract/relationships/read';
 
 export const storageRouter = t.router({
     store: didAndChallengeRoute
@@ -87,6 +89,7 @@ export const storageRouter = t.router({
                 .or(VPValidator)
                 .or(JWEValidator)
                 .or(ConsentFlowContractValidator)
+                .or(ConsentFlowTermsValidator)
         )
         .query(async ({ input }) => {
             const { uri } = input;
@@ -151,6 +154,20 @@ export const storageRouter = t.router({
                 await setStorageForUri(uri, contract);
 
                 return contract;
+            }
+
+            if (type === 'terms') {
+                const instance = await getContractTermsById(id);
+
+                if (!instance) {
+                    throw new TRPCError({ code: 'NOT_FOUND', message: 'Contract not found' });
+                }
+
+                const terms = JSON.parse(instance.terms);
+
+                await setStorageForUri(uri, terms);
+
+                return terms;
             }
 
             throw new TRPCError({

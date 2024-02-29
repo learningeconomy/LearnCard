@@ -1,7 +1,7 @@
 import { JWE } from '@learncard/types';
 import { getClient, getUser } from './helpers/getClient';
 import { Profile, Credential, Presentation } from '@models';
-import { minimalContract } from './helpers/contract';
+import { minimalContract, minimalTerms } from './helpers/contract';
 
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;
@@ -184,6 +184,25 @@ describe('Storage', () => {
             const resolvedContract = await promise;
 
             expect(resolvedContract).toEqual(minimalContract);
+        });
+
+        it('should allow resolving a consent flow contract terms', async () => {
+            const contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract({
+                contract: minimalContract,
+            });
+
+            const uri = await userB.clients.fullAuth.contracts.consentToContract({
+                contractUri,
+                terms: minimalTerms,
+            });
+
+            const promise = userA.clients.fullAuth.storage.resolve({ uri });
+
+            await expect(promise).resolves.not.toThrow();
+
+            const resolvedContract = await promise;
+
+            expect(resolvedContract).toEqual(minimalTerms);
         });
     });
 });

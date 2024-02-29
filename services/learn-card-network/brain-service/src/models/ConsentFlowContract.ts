@@ -32,6 +32,7 @@ export const ConsentFlowContract = ModelFactory<ConsentFlowType, ConsentFlowRela
                 direction: 'in',
                 name: 'CONSENTS_TO',
                 properties: {
+                    id: { property: 'id', schema: { type: 'string', required: true } },
                     terms: { property: 'terms', schema: { type: 'string', required: true } },
                     createdAt: {
                         property: 'createdAt',

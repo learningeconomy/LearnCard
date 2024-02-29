@@ -1,5 +1,6 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
+import { v4 as uuid } from 'uuid';
 
 import { t, profileRoute } from '@routes';
 import {
@@ -14,6 +15,7 @@ import { createConsentFlowContract } from '@accesslayer/consentflowcontract/crea
 import {
     getConsentFlowContractsForProfile,
     getConsentedContractsForProfile,
+    getContractTermsForProfile,
     hasProfileConsentedToContract,
     isProfileConsentFlowContractAdmin,
 } from '@accesslayer/consentflowcontract/relationships/read';
@@ -140,7 +142,7 @@ export const contractsRouter = t.router({
             },
         })
         .input(z.object({ terms: ConsentFlowTermsValidator, contractUri: z.string() }))
-        .output(z.boolean())
+        .output(z.string())
         .mutation(async ({ input, ctx }) => {
             const { profile } = ctx.user;
 
@@ -167,13 +169,23 @@ export const contractsRouter = t.router({
                 alias: 'consentsTo',
                 where: { id: contract.id },
                 properties: {
+                    id: uuid(),
                     terms: JSON.stringify(terms),
                     createdAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString(),
                 },
             });
 
-            return true;
+            const relationship = await getContractTermsForProfile(profile, contract);
+
+            if (!relationship) {
+                throw new TRPCError({
+                    code: 'INTERNAL_SERVER_ERROR',
+                    message: 'Internal Error. Could not find the newly created terms ',
+                });
+            }
+
+            return constructUri('terms', relationship.id, ctx.domain);
         }),
 
     getConsentedContracts: profileRoute
@@ -213,7 +225,8 @@ export const contractsRouter = t.router({
                 cursor: nextCursor,
                 records: contracts.map(contract => ({
                     contract: JSON.parse(contract.contract.contract),
-                    uri: constructUri('contract', contract.contract.id, ctx.domain),
+                    contractUri: constructUri('contract', contract.contract.id, ctx.domain),
+                    uri: constructUri('terms', contract.terms.id, ctx.domain),
                     terms: JSON.parse(contract.terms.terms),
                     contractOwner: updateDidForProfile(ctx.domain, contract.owner),
                     consenter: updateDidForProfile(ctx.domain, profile),
