@@ -2,6 +2,7 @@ import {
     promiscuousTerms,
     minimalContract,
     minimalTerms,
+    noTerms,
     predatoryContract,
 } from './helpers/contract';
 import { getClient, getUser } from './helpers/getClient';
@@ -418,6 +419,83 @@ describe('Consent Flow Contracts', () => {
             expect(secondPage.hasMore).toBeFalsy();
 
             expect([...firstPage.records, ...secondPage.records]).toEqual(contracts.records);
+        });
+    });
+
+    describe('updateConsentedContractTerms', () => {
+        let contractUri: string;
+        let termsUri: string;
+
+        beforeEach(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await ConsentFlowContract.delete({ detach: true, where: {} });
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+
+            contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract({
+                contract: minimalContract,
+            });
+            termsUri = await userB.clients.fullAuth.contracts.consentToContract({
+                contractUri,
+                terms: minimalTerms,
+            });
+        });
+
+        afterAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await ConsentFlowContract.delete({ detach: true, where: {} });
+        });
+
+        it('should not allow you to update terms without full auth', async () => {
+            await expect(
+                noAuthClient.contracts.updateConsentedContractTerms({
+                    terms: noTerms,
+                    uri: termsUri,
+                })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+            await expect(
+                userB.clients.partialAuth.contracts.updateConsentedContractTerms({
+                    terms: noTerms,
+                    uri: termsUri,
+                })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        });
+
+        it('should allow you to update terms', async () => {
+            await expect(
+                userB.clients.fullAuth.contracts.updateConsentedContractTerms({
+                    terms: noTerms,
+                    uri: termsUri,
+                })
+            ).resolves.not.toThrow();
+        });
+
+        it('should not allow you to terms with overly promicuous terms', async () => {
+            await expect(
+                userB.clients.fullAuth.contracts.updateConsentedContractTerms({
+                    terms: promiscuousTerms,
+                    uri: termsUri,
+                })
+            ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+        });
+
+        it('should not allow you to update terms without meeting the minimum requirements', async () => {
+            const predatoryContractUri =
+                await userA.clients.fullAuth.contracts.createConsentFlowContract({
+                    contract: predatoryContract,
+                });
+
+            const promiscuousTermsUri = await userB.clients.fullAuth.contracts.consentToContract({
+                contractUri: predatoryContractUri,
+                terms: promiscuousTerms,
+            });
+
+            await expect(
+                userB.clients.fullAuth.contracts.updateConsentedContractTerms({
+                    terms: minimalTerms,
+                    uri: promiscuousTermsUri,
+                })
+            ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
         });
     });
 });

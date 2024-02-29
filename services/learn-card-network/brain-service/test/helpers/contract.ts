@@ -75,6 +75,17 @@ export const minimalTerms: ConsentFlowTerms = {
     },
 };
 
+export const noTerms: ConsentFlowTerms = {
+    read: {
+        personal: { name: true },
+        credentials: { shareAll: false, sharing: false, categories: {} },
+    },
+    write: {
+        personal: {},
+        credentials: { categories: {} },
+    },
+};
+
 export const promiscuousTerms: ConsentFlowTerms = {
     read: {
         personal: {

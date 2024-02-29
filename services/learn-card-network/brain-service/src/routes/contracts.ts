@@ -15,6 +15,7 @@ import { createConsentFlowContract } from '@accesslayer/consentflowcontract/crea
 import {
     getConsentFlowContractsForProfile,
     getConsentedContractsForProfile,
+    getContractTermsByUri,
     getContractTermsForProfile,
     hasProfileConsentedToContract,
     isProfileConsentFlowContractAdmin,
@@ -25,6 +26,7 @@ import { deleteStorageForUri } from '@cache/storage';
 import { deleteConsentFlowContract } from '@accesslayer/consentflowcontract/delete';
 import { areTermsValid } from '@helpers/contract.helpers';
 import { updateDidForProfile } from '@helpers/did.helpers';
+import { updateTermsById } from '@accesslayer/consentflowcontract/relationships/update';
 
 export const contractsRouter = t.router({
     createConsentFlowContract: profileRoute
@@ -101,7 +103,7 @@ export const contractsRouter = t.router({
                 protect: true,
                 method: 'DELETE',
                 path: '/consent-flow-contract',
-                tags: ['Consenst Flow Contracts'],
+                tags: ['Consent Flow Contracts'],
                 summary: 'Delete a Consent Flow Contract',
                 description: 'This route deletes a Consent Flow Contract',
             },
@@ -195,8 +197,8 @@ export const contractsRouter = t.router({
                 method: 'GET',
                 path: '/consent-flow-contract/consent',
                 tags: ['Consent Flow Contracts'],
-                summary: 'Consent To Contract',
-                description: 'Consents to a Contract with a hard set of terms',
+                summary: 'Gets Consented Contracts',
+                description: 'Gets all consented contracts for a user',
             },
         })
         .input(
@@ -232,6 +234,55 @@ export const contractsRouter = t.router({
                     consenter: updateDidForProfile(ctx.domain, profile),
                 })),
             };
+        }),
+
+    updateConsentedContractTerms: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/consent-flow-contract/consent/{uri}',
+                tags: ['Consent Flow Contracts'],
+                summary: 'Updates Contract Terms',
+                description: 'Updates the terms for a consented contract',
+            },
+        })
+        .input(z.object({ uri: z.string(), terms: ConsentFlowTermsValidator }))
+        .output(z.boolean())
+        .mutation(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+
+            const { uri, terms } = input;
+
+            const relationship = await getContractTermsByUri(uri);
+
+            if (!relationship) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Could not find contract terms',
+                });
+            }
+
+            if (relationship.consenter.profileId !== profile.profileId) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile does not own terms',
+                });
+            }
+
+            if (!areTermsValid(terms, JSON.parse(relationship.contract.contract))) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'New Terms are invalid for Contract',
+                });
+            }
+
+            await Promise.all([
+                updateTermsById(relationship.terms.id, terms),
+                deleteStorageForUri(uri),
+            ]);
+
+            return true;
         }),
 });
 export type ContractsRouter = typeof contractsRouter;

@@ -157,13 +157,13 @@ export const storageRouter = t.router({
             }
 
             if (type === 'terms') {
-                const instance = await getContractTermsById(id);
+                const relationship = await getContractTermsById(id);
 
-                if (!instance) {
+                if (!relationship) {
                     throw new TRPCError({ code: 'NOT_FOUND', message: 'Contract not found' });
                 }
 
-                const terms = JSON.parse(instance.terms);
+                const terms = JSON.parse(relationship.terms.terms);
 
                 await setStorageForUri(uri, terms);
 

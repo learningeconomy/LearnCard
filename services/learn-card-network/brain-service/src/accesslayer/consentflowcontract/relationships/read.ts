@@ -3,6 +3,7 @@ import { convertQueryResultToPropertiesObjectArray } from '@helpers/neo4j.helper
 import { Profile, ProfileInstance, ConsentFlowContract, ConsentFlowInstance } from '@models';
 import { ConsentFlowTermsType, ConsentFlowType } from 'types/consentflowcontract';
 import { LCNProfile } from '@learncard/types';
+import { getIdFromUri } from '@helpers/uri.helpers';
 
 export const isProfileConsentFlowContractAdmin = async (
     profile: ProfileInstance,
@@ -50,13 +51,35 @@ export const getContractTermsForProfile = async (
     return result.length > 0 ? result[0]!.relationship : null;
 };
 
-export const getContractTermsById = async (id: string): Promise<ConsentFlowTermsType | null> => {
+export const getContractTermsById = async (
+    id: string
+): Promise<{
+    terms: ConsentFlowTermsType;
+    consenter: LCNProfile;
+    contract: ConsentFlowType;
+} | null> => {
     const result = await Profile.findRelationships({
         alias: 'consentsTo',
         where: { relationship: { id } },
     });
 
-    return result.length > 0 ? result[0]!.relationship : null;
+    return result.length > 0
+        ? {
+            terms: result[0]!.relationship,
+            consenter: result[0]!.source,
+            contract: result[0]!.target,
+        }
+        : null;
+};
+
+export const getContractTermsByUri = async (
+    uri: string
+): Promise<{
+    terms: ConsentFlowTermsType;
+    consenter: LCNProfile;
+    contract: ConsentFlowType;
+} | null> => {
+    return getContractTermsById(getIdFromUri(uri));
 };
 
 export const getConsentFlowContractsForProfile = async (

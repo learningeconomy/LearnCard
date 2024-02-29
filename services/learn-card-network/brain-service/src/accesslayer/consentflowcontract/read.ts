@@ -6,7 +6,5 @@ export const getContractById = async (id: string): Promise<ConsentFlowInstance |
 };
 
 export const getContractByUri = async (uri: string): Promise<ConsentFlowInstance | null> => {
-    const id = getIdFromUri(uri);
-
-    return ConsentFlowContract.findOne({ where: { id } });
+    return getContractById(getIdFromUri(uri));
 };
