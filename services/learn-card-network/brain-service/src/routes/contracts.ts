@@ -26,6 +26,7 @@ import { deleteConsentFlowContract } from '@accesslayer/consentflowcontract/dele
 import { areTermsValid } from '@helpers/contract.helpers';
 import { updateDidForProfile } from '@helpers/did.helpers';
 import { updateTermsById } from '@accesslayer/consentflowcontract/relationships/update';
+import { deleteTermsById } from '@accesslayer/consentflowcontract/relationships/delete';
 
 export const contractsRouter = t.router({
     createConsentFlowContract: profileRoute
@@ -280,6 +281,45 @@ export const contractsRouter = t.router({
                 updateTermsById(relationship.terms.id, terms),
                 deleteStorageForUri(uri),
             ]);
+
+            return true;
+        }),
+
+    withdrawConsent: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'DELETE',
+                path: '/consent-flow-contract/consent/{uri}',
+                tags: ['Consent Flow Contracts'],
+                summary: 'Deletes Contract Terms',
+                description: 'Withdraws consent by deleting Contract Terms',
+            },
+        })
+        .input(z.object({ uri: z.string() }))
+        .output(z.boolean())
+        .mutation(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+
+            const { uri } = input;
+
+            const relationship = await getContractTermsByUri(uri);
+
+            if (!relationship) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Could not find contract terms',
+                });
+            }
+
+            if (relationship.consenter.profileId !== profile.profileId) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile does not own terms',
+                });
+            }
+
+            await Promise.all([deleteTermsById(relationship.terms.id), deleteStorageForUri(uri)]);
 
             return true;
         }),

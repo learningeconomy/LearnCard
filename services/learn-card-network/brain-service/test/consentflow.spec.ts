@@ -498,4 +498,54 @@ describe('Consent Flow Contracts', () => {
             ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
         });
     });
+
+    describe('withdrawConsent', () => {
+        let contractUri: string;
+        let termsUri: string;
+
+        beforeEach(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await ConsentFlowContract.delete({ detach: true, where: {} });
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+
+            contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract({
+                contract: minimalContract,
+            });
+            termsUri = await userB.clients.fullAuth.contracts.consentToContract({
+                contractUri,
+                terms: minimalTerms,
+            });
+        });
+
+        afterAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await ConsentFlowContract.delete({ detach: true, where: {} });
+        });
+
+        it('should not allow you to withdraw consent without full auth', async () => {
+            await expect(
+                noAuthClient.contracts.withdrawConsent({ uri: termsUri })
+            ).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+            await expect(
+                userB.clients.partialAuth.contracts.withdrawConsent({ uri: termsUri })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        });
+
+        it('should allow you to withdraw consent', async () => {
+            const contracts = await userB.clients.fullAuth.contracts.getConsentedContracts();
+
+            expect(contracts.records).toHaveLength(1);
+
+            await expect(
+                userB.clients.fullAuth.contracts.withdrawConsent({ uri: termsUri })
+            ).resolves.not.toThrow();
+
+            const newContracts = await userB.clients.fullAuth.contracts.getConsentedContracts();
+
+            expect(newContracts.records).toHaveLength(0);
+        });
+    });
 });
