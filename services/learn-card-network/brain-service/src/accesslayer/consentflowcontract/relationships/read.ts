@@ -1,8 +1,8 @@
 import { QueryBuilder, Where, Op } from 'neogma';
 import { convertQueryResultToPropertiesObjectArray } from '@helpers/neo4j.helpers';
 import { Profile, ProfileInstance, ConsentFlowContract, ConsentFlowInstance } from '@models';
-import { ConsentFlowType } from 'types/consentflowcontract';
-import { ConsentFlowTerms, LCNProfile } from '@learncard/types';
+import { ConsentFlowTermsType, ConsentFlowType } from 'types/consentflowcontract';
+import { LCNProfile } from '@learncard/types';
 
 export const isProfileConsentFlowContractAdmin = async (
     profile: ProfileInstance,
@@ -48,15 +48,15 @@ export const getConsentFlowContractsForProfile = async (
 
 export const getConsentedContractsForProfile = async (
     profile: ProfileInstance,
-    { limit }: { limit: number }
+    { limit, cursor }: { limit: number; cursor?: string }
 ): Promise<
     {
         contract: ConsentFlowType;
         owner: LCNProfile;
-        terms: ConsentFlowTerms;
+        terms: ConsentFlowTermsType;
     }[]
 > => {
-    const query = new QueryBuilder().match({
+    const _query = new QueryBuilder().match({
         related: [
             { model: Profile, where: { profileId: profile.profileId } },
             { ...Profile.getRelationshipByAlias('consentsTo'), identifier: 'terms' },
@@ -66,11 +66,21 @@ export const getConsentedContractsForProfile = async (
         ],
     });
 
-    const results = convertQueryResultToPropertiesObjectArray<{
+    const query = cursor
+        ? _query.where(
+            new Where({ terms: { updatedAt: { [Op.gt]: cursor } } }, _query.getBindParam())
+        )
+        : _query;
+
+    return convertQueryResultToPropertiesObjectArray<{
         contract: ConsentFlowType;
         owner: LCNProfile;
-        terms: { terms: string; createdAt: string; updatedAt: string };
-    }>(await query.return('DISTINCT contract, owner, terms').limit(limit).run());
-
-    return results.map(result => ({ ...result, terms: JSON.parse(result.terms.terms) }));
+        terms: ConsentFlowTermsType;
+    }>(
+        await query
+            .return('DISTINCT contract, owner, terms')
+            .orderBy('terms.updatedAt')
+            .limit(limit)
+            .run()
+    );
 };

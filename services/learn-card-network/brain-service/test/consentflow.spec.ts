@@ -211,13 +211,13 @@ describe('Consent Flow Contracts', () => {
 
             const contracts = await userB.clients.fullAuth.contracts.getConsentedContracts();
 
-            expect(contracts).toHaveLength(1);
+            expect(contracts.records).toHaveLength(1);
 
             await userA.clients.fullAuth.contracts.deleteConsentFlowContract({ uri });
 
             const newContracts = await userB.clients.fullAuth.contracts.getConsentedContracts();
 
-            expect(newContracts).toHaveLength(0);
+            expect(newContracts.records).toHaveLength(0);
         });
     });
 
@@ -326,7 +326,7 @@ describe('Consent Flow Contracts', () => {
 
             const contracts = await userB.clients.fullAuth.contracts.getConsentedContracts();
 
-            expect(contracts).toHaveLength(0);
+            expect(contracts.records).toHaveLength(0);
 
             await userB.clients.fullAuth.contracts.consentToContract({
                 terms: minimalTerms,
@@ -335,12 +335,12 @@ describe('Consent Flow Contracts', () => {
 
             const newContracts = await userB.clients.fullAuth.contracts.getConsentedContracts();
 
-            expect(newContracts).toHaveLength(1);
-            expect(newContracts[0]!.uri).toEqual(uri);
-            expect(newContracts[0]!.contractOwner.did).toEqual(
+            expect(newContracts.records).toHaveLength(1);
+            expect(newContracts.records[0]!.uri).toEqual(uri);
+            expect(newContracts.records[0]!.contractOwner.did).toEqual(
                 (await userA.clients.fullAuth.profile.getProfile()).did
             );
-            expect(newContracts[0]!.terms).toEqual(minimalTerms);
+            expect(newContracts.records[0]!.terms).toEqual(minimalTerms);
         });
 
         it("should not return other user's contracts", async () => {
@@ -351,12 +351,57 @@ describe('Consent Flow Contracts', () => {
 
             const userAContracts = await userA.clients.fullAuth.contracts.getConsentedContracts();
 
-            expect(userAContracts).toHaveLength(0);
+            expect(userAContracts.records).toHaveLength(0);
 
             const userBContracts = await userB.clients.fullAuth.contracts.getConsentedContracts();
 
-            expect(userBContracts).toHaveLength(1);
-            expect(userBContracts[0]!.uri).toEqual(uri);
+            expect(userBContracts.records).toHaveLength(1);
+            expect(userBContracts.records[0]!.uri).toEqual(uri);
+        });
+
+        it('should paginate', async () => {
+            const uris = await Promise.all(
+                Array(10)
+                    .fill(0)
+                    .map(async () =>
+                        userA.clients.fullAuth.contracts.createConsentFlowContract({
+                            contract: minimalContract,
+                        })
+                    )
+            );
+
+            await Promise.all(
+                uris.map(async contractUri =>
+                    userB.clients.fullAuth.contracts.consentToContract({
+                        contractUri,
+                        terms: minimalTerms,
+                    })
+                )
+            );
+
+            const contracts = await userB.clients.fullAuth.contracts.getConsentedContracts({
+                limit: 20,
+            });
+
+            expect(contracts.records).toHaveLength(10);
+
+            const firstPage = await userB.clients.fullAuth.contracts.getConsentedContracts({
+                limit: 5,
+            });
+
+            expect(firstPage.records).toHaveLength(5);
+            expect(firstPage.hasMore).toBeTruthy();
+            expect(firstPage.cursor).toBeDefined();
+
+            const secondPage = await userB.clients.fullAuth.contracts.getConsentedContracts({
+                limit: 5,
+                cursor: firstPage.cursor,
+            });
+
+            expect(secondPage.records).toHaveLength(5);
+            expect(secondPage.hasMore).toBeFalsy();
+
+            expect([...firstPage.records, ...secondPage.records]).toEqual(contracts.records);
         });
     });
 });

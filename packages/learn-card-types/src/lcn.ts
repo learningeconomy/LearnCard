@@ -169,3 +169,15 @@ export const ConsentFlowTermsValidator = z.object({
     }),
 });
 export type ConsentFlowTerms = z.infer<typeof ConsentFlowTermsValidator>;
+
+export const PaginatedConsentFlowTermsValidator = PaginationResponseValidator.extend({
+    records: z
+        .object({
+            terms: ConsentFlowTermsValidator,
+            uri: z.string(),
+            contractOwner: LCNProfileValidator,
+            consenter: LCNProfileValidator,
+        })
+        .array(),
+});
+export type PaginatedConsentFlowTerms = z.infer<typeof PaginatedConsentFlowTermsValidator>;

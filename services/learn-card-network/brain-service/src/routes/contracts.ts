@@ -8,6 +8,7 @@ import {
     LCNProfileValidator,
     PaginationOptionsValidator,
     PaginatedConsentFlowContractsValidator,
+    PaginatedConsentFlowTermsValidator,
 } from '@learncard/types';
 import { createConsentFlowContract } from '@accesslayer/consentflowcontract/create';
 import {
@@ -178,28 +179,37 @@ export const contractsRouter = t.router({
                 description: 'Consents to a Contract with a hard set of terms',
             },
         })
-        .input(z.object({ limit: z.number().int().lt(100).default(25) }).default({ limit: 25 }))
-        .output(
-            z
-                .object({
-                    terms: ConsentFlowTermsValidator,
-                    uri: z.string(),
-                    contractOwner: LCNProfileValidator,
-                })
-                .array()
+        .input(
+            PaginationOptionsValidator.extend({
+                limit: PaginationOptionsValidator.shape.limit.default(25),
+            }).default({})
         )
+        .output(PaginatedConsentFlowTermsValidator)
         .query(async ({ input, ctx }) => {
             const { profile } = ctx.user;
 
-            const { limit } = input;
+            const { limit, cursor } = input;
 
-            const contracts = await getConsentedContractsForProfile(profile, { limit });
+            const results = await getConsentedContractsForProfile(profile, {
+                limit: limit + 1,
+                cursor,
+            });
 
-            return contracts.map(contract => ({
-                uri: constructUri('contract', contract.contract.id, ctx.domain),
-                terms: contract.terms,
-                contractOwner: updateDidForProfile(ctx.domain, contract.owner),
-            }));
+            const contracts = results.slice(0, limit);
+
+            const hasMore = results.length > limit;
+            const nextCursor = contracts.at(-1)?.terms.updatedAt;
+
+            return {
+                hasMore,
+                cursor: nextCursor,
+                records: contracts.map(contract => ({
+                    uri: constructUri('contract', contract.contract.id, ctx.domain),
+                    terms: JSON.parse(contract.terms.terms),
+                    contractOwner: updateDidForProfile(ctx.domain, contract.owner),
+                    consenter: updateDidForProfile(ctx.domain, profile),
+                })),
+            };
         }),
 });
 export type ContractsRouter = typeof contractsRouter;
