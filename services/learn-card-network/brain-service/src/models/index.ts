@@ -6,17 +6,7 @@ import { ConsentFlowContract } from './ConsentFlowContract';
 
 Profile.addRelationships({
     adminOf: { model: Boost, direction: 'out', name: 'ADMIN_OF' },
-    consentsTo: {
-        model: ConsentFlowContract,
-        direction: 'out',
-        name: 'CONSENTS_TO',
-        properties: {
-            id: { property: 'id', schema: { type: 'string', required: true } },
-            terms: { property: 'terms', schema: { type: 'string', required: true } },
-            createdAt: { property: 'createdAt', schema: { type: 'string', required: true } },
-            updatedAt: { property: 'updatedAt', schema: { type: 'string', required: true } },
-        },
-    },
+    consentsTo: ConsentFlowContract.reverseRelationshipConfiguration('consentsTo'),
 });
 
 Credential.addRelationships({
