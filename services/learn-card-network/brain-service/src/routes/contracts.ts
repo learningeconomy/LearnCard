@@ -27,6 +27,7 @@ import { areTermsValid } from '@helpers/contract.helpers';
 import { updateDidForProfile } from '@helpers/did.helpers';
 import { updateTermsById } from '@accesslayer/consentflowcontract/relationships/update';
 import { deleteTermsById } from '@accesslayer/consentflowcontract/relationships/delete';
+import { setCreatorForContract } from '@accesslayer/consentflowcontract/relationships/create';
 
 export const contractsRouter = t.router({
     createConsentFlowContract: profileRoute
@@ -46,15 +47,12 @@ export const contractsRouter = t.router({
             const { contract } = input;
 
             // Create ConsentFlow instance
-            const contractInstance = await createConsentFlowContract(contract);
+            const createdContract = await createConsentFlowContract(contract);
 
             // Get profile by profileId
-            await contractInstance.relateTo({
-                alias: 'createdBy',
-                where: { profileId: ctx.user.profile.profileId },
-            });
+            await setCreatorForContract(createdContract, ctx.user.profile);
 
-            return constructUri('contract', contractInstance.id, ctx.domain);
+            return constructUri('contract', createdContract.id, ctx.domain);
         }),
 
     getConsentFlowContracts: profileRoute

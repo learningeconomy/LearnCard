@@ -15,8 +15,8 @@ Credential.addRelationships({
         direction: 'out',
         name: 'CREDENTIAL_RECEIVED',
         properties: {
-            from: { property: 'from', schema: { type: 'string' } },
-            date: { property: 'date', schema: { type: 'string' } },
+            from: { property: 'from', schema: { type: 'string', required: true } },
+            date: { property: 'date', schema: { type: 'string', required: true } },
         },
     },
     instanceOf: {
@@ -32,8 +32,8 @@ Presentation.addRelationships({
         direction: 'out',
         name: 'PRESENTATION_RECEIVED',
         properties: {
-            from: { property: 'from', schema: { type: 'string' } },
-            date: { property: 'date', schema: { type: 'string' } },
+            from: { property: 'from', schema: { type: 'string', required: true } },
+            date: { property: 'date', schema: { type: 'string', required: true } },
         },
     },
 });

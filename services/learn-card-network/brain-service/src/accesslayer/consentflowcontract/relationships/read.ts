@@ -1,13 +1,13 @@
 import { QueryBuilder, Where, Op } from 'neogma';
 import { convertQueryResultToPropertiesObjectArray } from '@helpers/neo4j.helpers';
-import { Profile, ProfileInstance, ConsentFlowContract, ConsentFlowInstance } from '@models';
+import { Profile, ProfileInstance, ConsentFlowContract } from '@models';
 import { ConsentFlowTermsType, ConsentFlowType } from 'types/consentflowcontract';
 import { LCNProfile } from '@learncard/types';
 import { getIdFromUri } from '@helpers/uri.helpers';
 
 export const isProfileConsentFlowContractAdmin = async (
     profile: ProfileInstance,
-    contract: ConsentFlowInstance
+    contract: ConsentFlowType
 ): Promise<boolean> => {
     const query = new QueryBuilder().match({
         related: [
@@ -24,7 +24,7 @@ export const isProfileConsentFlowContractAdmin = async (
 
 export const hasProfileConsentedToContract = async (
     profile: ProfileInstance | string,
-    contract: ConsentFlowInstance
+    contract: ConsentFlowType
 ): Promise<boolean> => {
     const query = new QueryBuilder().match({
         related: [
@@ -44,7 +44,7 @@ export const hasProfileConsentedToContract = async (
 
 export const getContractTermsForProfile = async (
     profile: ProfileInstance,
-    contract: ConsentFlowInstance
+    contract: ConsentFlowType
 ): Promise<ConsentFlowTermsType | null> => {
     const result = await profile.findRelationships({
         alias: 'consentsTo',

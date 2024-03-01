@@ -1,12 +1,27 @@
-import { ConsentFlowContract as ConsentFlowContractType } from '@learncard/types';
-import { ConsentFlowContract, ConsentFlowInstance } from '@models';
-import { v4 as uuid } from 'uuid';
+import { QueryBuilder } from 'neogma';
 
-export const createConsentFlowContract = async (contract: ConsentFlowContractType): Promise<ConsentFlowInstance> => {
-    return ConsentFlowContract.createOne({
-        id: uuid(),
-        contract: JSON.stringify(contract),
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-    });
+import { ConsentFlowContract as ConsentFlowContractType } from '@learncard/types';
+import { ConsentFlowContract } from '@models';
+import { v4 as uuid } from 'uuid';
+import { getContractById } from './read';
+import { ConsentFlowType } from 'types/consentflowcontract';
+
+export const createConsentFlowContract = async (
+    contract: ConsentFlowContractType
+): Promise<ConsentFlowType> => {
+    const id = uuid();
+
+    await new QueryBuilder()
+        .create({
+            model: ConsentFlowContract,
+            properties: {
+                id,
+                contract: JSON.stringify(contract),
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+            },
+        })
+        .run();
+
+    return (await getContractById(id))!;
 };
