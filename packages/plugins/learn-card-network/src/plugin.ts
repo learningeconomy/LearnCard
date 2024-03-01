@@ -6,6 +6,8 @@ import {
     VCValidator,
     VPValidator,
     Profile,
+    ConsentFlowContractValidator,
+    ConsentFlowTermsValidator,
 } from '@learncard/types';
 import { LearnCard } from '@learncard/core';
 import { VerifyExtension } from '@learncard/vc-plugin';
@@ -524,6 +526,8 @@ export const getLearnCardNetworkPlugin = async (
                 return UnsignedVCValidator.or(VCValidator)
                     .or(VPValidator)
                     .or(JWEValidator)
+                    .or(ConsentFlowContractValidator)
+                    .or(ConsentFlowTermsValidator)
                     .parseAsync(result);
             },
         },
