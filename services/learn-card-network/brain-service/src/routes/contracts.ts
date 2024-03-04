@@ -70,15 +70,17 @@ export const contractsRouter = t.router({
         })
         .input(
             PaginationOptionsValidator.extend({
+                query: ConsentFlowContractValidator.deepPartial().default({}),
                 limit: PaginationOptionsValidator.shape.limit.default(25),
             }).default({})
         )
         .output(PaginatedConsentFlowContractsValidator)
         .query(async ({ input, ctx }) => {
-            const { limit, cursor } = input;
+            const { query, limit, cursor } = input;
             const { profile } = ctx.user;
 
             const results = await getConsentFlowContractsForProfile(profile, {
+                query,
                 limit: limit + 1,
                 cursor,
             });

@@ -124,6 +124,29 @@ describe('Consent Flow Contracts', () => {
             expect(userBContracts.records).toHaveLength(0);
         });
 
+        it('should allow you to query for certain contracts', async () => {
+            const contracts = await userA.clients.fullAuth.contracts.getConsentFlowContracts();
+
+            expect(contracts.records).toHaveLength(0);
+
+            await userA.clients.fullAuth.contracts.createConsentFlowContract({
+                contract: minimalContract,
+            });
+            await userA.clients.fullAuth.contracts.createConsentFlowContract({
+                contract: predatoryContract,
+            });
+
+            const allContracts = await userA.clients.fullAuth.contracts.getConsentFlowContracts();
+            expect(allContracts.records).toHaveLength(2);
+
+            const filteredContracts =
+                await userA.clients.fullAuth.contracts.getConsentFlowContracts({
+                    query: { read: { personal: { email: { required: true } } } },
+                });
+            expect(filteredContracts.records).toHaveLength(1);
+            expect(filteredContracts.records[0]!.contract).toEqual(predatoryContract);
+        });
+
         it('should paginate', async () => {
             await Promise.all(
                 Array(10)
