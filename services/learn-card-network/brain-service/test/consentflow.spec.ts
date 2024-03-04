@@ -7,7 +7,6 @@ import {
 } from './helpers/contract';
 import { getClient, getUser } from './helpers/getClient';
 import { Profile, ConsentFlowContract } from '@models';
-import { flattenObject, inflateObject } from '../src/helpers/objects.helpers';
 
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;
@@ -398,6 +397,32 @@ describe('Consent Flow Contracts', () => {
 
             expect(userBContracts.records).toHaveLength(1);
             expect(userBContracts.records[0]!.uri).toEqual(termsUri);
+        });
+
+        it('should allow you to query for certain contracts', async () => {
+            const predatoryContractUri =
+                await userA.clients.fullAuth.contracts.createConsentFlowContract({
+                    contract: predatoryContract,
+                });
+
+            await userB.clients.fullAuth.contracts.consentToContract({
+                terms: minimalTerms,
+                contractUri: uri,
+            });
+
+            await userB.clients.fullAuth.contracts.consentToContract({
+                terms: promiscuousTerms,
+                contractUri: predatoryContractUri,
+            });
+
+            const allContracts = await userB.clients.fullAuth.contracts.getConsentedContracts();
+            expect(allContracts.records).toHaveLength(2);
+
+            const filteredContracts = await userB.clients.fullAuth.contracts.getConsentedContracts({
+                query: { read: { personal: { email: true } } },
+            });
+            expect(filteredContracts.records).toHaveLength(1);
+            expect(filteredContracts.records[0]!.contract).toEqual(predatoryContract);
         });
 
         it('should paginate', async () => {

@@ -162,14 +162,14 @@ export const ConsentFlowTermsValidator = z.object({
             anonymize: z.boolean().optional(),
             credentials: z
                 .object({
-                    shareAll: z.boolean().default(false),
-                    sharing: z.boolean().default(false),
+                    shareAll: z.boolean().optional(),
+                    sharing: z.boolean().optional(),
                     categories: z
                         .record(
                             z.object({
-                                sharing: z.boolean().default(false),
-                                shared: z.string().array().default([]),
-                                shareAll: z.boolean().default(false),
+                                sharing: z.boolean().optional(),
+                                shared: z.string().array().optional(),
+                                shareAll: z.boolean().optional(),
                             })
                         )
                         .default({}),

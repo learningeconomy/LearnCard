@@ -1,4 +1,4 @@
-import { QueryBuilder, Where, Op, BindParam } from 'neogma';
+import { QueryBuilder, BindParam } from 'neogma';
 import { convertQueryResultToPropertiesObjectArray } from '@helpers/neo4j.helpers';
 import { Profile, ProfileInstance, ConsentFlowContract } from '@models';
 import {
@@ -7,7 +7,11 @@ import {
     DbContractType,
     FlatDbContractType,
 } from 'types/consentflowcontract';
-import { ConsentFlowContract as ConsentFlowContractType, LCNProfile } from '@learncard/types';
+import {
+    ConsentFlowContract as ConsentFlowContractType,
+    ConsentFlowTerms,
+    LCNProfile,
+} from '@learncard/types';
 import { getIdFromUri } from '@helpers/uri.helpers';
 import { flattenObject, inflateObject } from '@helpers/objects.helpers';
 import { DeepPartial } from 'types/helpers';
@@ -129,7 +133,7 @@ export const getConsentFlowContractsForProfile = async (
         query: matchQuery = {},
         limit,
         cursor,
-    }: { query: DeepPartial<ConsentFlowContractType>; limit: number; cursor?: string }
+    }: { query?: DeepPartial<ConsentFlowContractType>; limit: number; cursor?: string }
 ): Promise<DbContractType[]> => {
     const _query = new QueryBuilder(
         new BindParam({ params: flattenObject({ contract: matchQuery }), cursor })
@@ -157,7 +161,11 @@ export const getConsentFlowContractsForProfile = async (
 
 export const getConsentedContractsForProfile = async (
     profile: ProfileInstance,
-    { limit, cursor }: { limit: number; cursor?: string }
+    {
+        query: matchQuery = {},
+        limit,
+        cursor,
+    }: { query?: DeepPartial<ConsentFlowTerms>; limit: number; cursor?: string }
 ): Promise<
     {
         contract: DbContractType;
@@ -165,21 +173,21 @@ export const getConsentedContractsForProfile = async (
         terms: DbTermsType;
     }[]
 > => {
-    const _query = new QueryBuilder().match({
-        related: [
-            { model: Profile, where: { profileId: profile.profileId } },
-            { ...Profile.getRelationshipByAlias('consentsTo'), identifier: 'terms' },
-            { identifier: 'contract', model: ConsentFlowContract },
-            `-[:${ConsentFlowContract.getRelationshipByAlias('createdBy').name}]-`,
-            { model: Profile, identifier: 'owner' },
-        ],
-    });
+    const _query = new QueryBuilder(
+        new BindParam({ params: flattenObject({ terms: matchQuery }), cursor })
+    )
+        .match({
+            related: [
+                { model: Profile, where: { profileId: profile.profileId } },
+                { ...Profile.getRelationshipByAlias('consentsTo'), identifier: 'terms' },
+                { identifier: 'contract', model: ConsentFlowContract },
+                `-[:${ConsentFlowContract.getRelationshipByAlias('createdBy').name}]-`,
+                { model: Profile, identifier: 'owner' },
+            ],
+        })
+        .where('all(key IN keys($params) WHERE terms[key] = $params[key])');
 
-    const query = cursor
-        ? _query.where(
-            new Where({ terms: { updatedAt: { [Op.gt]: cursor } } }, _query.getBindParam())
-        )
-        : _query;
+    const query = cursor ? _query.raw('AND terms.updatedAt > $cursor') : _query;
 
     const results = convertQueryResultToPropertiesObjectArray<{
         contract: FlatDbContractType;
