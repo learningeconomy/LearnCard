@@ -1,17 +1,21 @@
+import { FlattenObject } from '@helpers/objects.helpers';
+import { ConsentFlowContractValidator, ConsentFlowTermsValidator } from '@learncard/types';
 import { z } from 'zod';
 
-export const ConsentFlowValidator = z.object({
+export const DbContractValidator = z.object({
     id: z.string(),
-    contract: z.string(),
+    contract: ConsentFlowContractValidator,
     createdAt: z.string(),
     updatedAt: z.string(),
 });
-export type ConsentFlowType = z.infer<typeof ConsentFlowValidator>;
+export type DbContractType = z.infer<typeof DbContractValidator>;
+export type FlatDbContractType = FlattenObject<DbContractType>;
 
-export const ConsentFlowTermsValidator = z.object({
+export const DbTermsValidator = z.object({
     id: z.string(),
-    terms: z.string(),
+    terms: ConsentFlowTermsValidator,
     createdAt: z.string(),
     updatedAt: z.string(),
 });
-export type ConsentFlowTermsType = z.infer<typeof ConsentFlowTermsValidator>;
+export type DbTermsType = z.infer<typeof DbTermsValidator>;
+export type FlatDbTermsType = FlattenObject<DbTermsType>;

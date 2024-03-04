@@ -1,6 +1,6 @@
 import { ConsentFlowContract } from '@models';
-import { ConsentFlowType } from 'types/consentflowcontract';
+import { DbContractType } from 'types/consentflowcontract';
 
-export const deleteConsentFlowContract = async (contract: ConsentFlowType): Promise<number> => {
+export const deleteConsentFlowContract = async (contract: DbContractType): Promise<number> => {
     return ConsentFlowContract.delete({ where: { id: contract.id }, detach: true });
 };

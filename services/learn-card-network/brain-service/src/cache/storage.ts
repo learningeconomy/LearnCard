@@ -1,5 +1,5 @@
 import cache from '@cache';
-import { UnsignedVC, VC, VP, JWE, ConsentFlowContract } from '@learncard/types';
+import { UnsignedVC, VC, VP, JWE, ConsentFlowContract, ConsentFlowTerms } from '@learncard/types';
 
 const STORAGE_TTL = 60 * 60 * 24;
 
@@ -15,7 +15,7 @@ export const getCachedStorageByUri = async (
 
 export const setStorageForUri = async (
     uri: string,
-    item: UnsignedVC | VC | VP | JWE | ConsentFlowContract
+    item: UnsignedVC | VC | VP | JWE | ConsentFlowContract | ConsentFlowTerms
 ) => {
     return cache.set(getStorageCacheKey(uri), JSON.stringify(item), STORAGE_TTL);
 };

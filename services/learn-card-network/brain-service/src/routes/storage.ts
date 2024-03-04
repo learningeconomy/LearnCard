@@ -149,7 +149,7 @@ export const storageRouter = t.router({
                     throw new TRPCError({ code: 'NOT_FOUND', message: 'Contract not found' });
                 }
 
-                const contract = JSON.parse(instance.contract);
+                const contract = instance.contract;
 
                 await setStorageForUri(uri, contract);
 
@@ -163,7 +163,7 @@ export const storageRouter = t.router({
                     throw new TRPCError({ code: 'NOT_FOUND', message: 'Contract not found' });
                 }
 
-                const terms = JSON.parse(relationship.terms.terms);
+                const terms = relationship.terms.terms;
 
                 await setStorageForUri(uri, terms);
 

@@ -1,13 +1,19 @@
 import { QueryBuilder, Where, Op } from 'neogma';
 import { convertQueryResultToPropertiesObjectArray } from '@helpers/neo4j.helpers';
 import { Profile, ProfileInstance, ConsentFlowContract } from '@models';
-import { ConsentFlowTermsType, ConsentFlowType } from 'types/consentflowcontract';
+import {
+    DbTermsType,
+    FlatDbTermsType,
+    DbContractType,
+    FlatDbContractType,
+} from 'types/consentflowcontract';
 import { LCNProfile } from '@learncard/types';
 import { getIdFromUri } from '@helpers/uri.helpers';
+import { inflateObject } from '@helpers/objects.helpers';
 
 export const isProfileConsentFlowContractAdmin = async (
     profile: ProfileInstance,
-    contract: ConsentFlowType
+    contract: DbContractType
 ): Promise<boolean> => {
     const query = new QueryBuilder().match({
         related: [
@@ -24,7 +30,7 @@ export const isProfileConsentFlowContractAdmin = async (
 
 export const hasProfileConsentedToContract = async (
     profile: ProfileInstance | string,
-    contract: ConsentFlowType
+    contract: DbContractType
 ): Promise<boolean> => {
     const query = new QueryBuilder().match({
         related: [
@@ -43,34 +49,65 @@ export const hasProfileConsentedToContract = async (
 };
 
 export const getContractTermsForProfile = async (
-    profile: ProfileInstance,
-    contract: ConsentFlowType
-): Promise<ConsentFlowTermsType | null> => {
-    const result = await profile.findRelationships({
-        alias: 'consentsTo',
-        where: { target: { id: contract.id }, relationship: {} },
-    });
+    profile: ProfileInstance | string,
+    contract: DbContractType
+): Promise<DbTermsType | null> => {
+    const result = convertQueryResultToPropertiesObjectArray<{
+        terms: FlatDbTermsType;
+    }>(
+        await new QueryBuilder()
+            .match({
+                related: [
+                    {
+                        model: Profile,
+                        where: {
+                            profileId: typeof profile === 'string' ? profile : profile.profileId,
+                        },
+                    },
+                    { ...Profile.getRelationshipByAlias('consentsTo'), identifier: 'terms' },
+                    { model: ConsentFlowContract, where: { id: contract.id } },
+                ],
+            })
+            .return('terms')
+            .run()
+    );
 
-    return result.length > 0 ? result[0]!.relationship : null;
+    return result.length > 0 ? inflateObject<DbTermsType>(result[0]!.terms) : null;
 };
 
 export const getContractTermsById = async (
     id: string
 ): Promise<{
-    terms: ConsentFlowTermsType;
+    terms: DbTermsType;
     consenter: LCNProfile;
-    contract: ConsentFlowType;
+    contract: DbContractType;
 } | null> => {
-    const result = await Profile.findRelationships({
-        alias: 'consentsTo',
-        where: { relationship: { id } },
-    });
+    const result = convertQueryResultToPropertiesObjectArray<{
+        consenter: LCNProfile;
+        terms: FlatDbTermsType;
+        contract: FlatDbContractType;
+    }>(
+        await new QueryBuilder()
+            .match({
+                related: [
+                    { model: Profile, identifier: 'consenter' },
+                    {
+                        ...Profile.getRelationshipByAlias('consentsTo'),
+                        where: { id },
+                        identifier: 'terms',
+                    },
+                    { model: ConsentFlowContract, identifier: 'contract' },
+                ],
+            })
+            .return('consenter, terms, contract')
+            .run()
+    );
 
     return result.length > 0
         ? {
-            terms: result[0]!.relationship,
-            consenter: result[0]!.source,
-            contract: result[0]!.target,
+            consenter: result[0]!.consenter,
+            terms: inflateObject(result[0]!.terms),
+            contract: inflateObject(result[0]!.contract),
         }
         : null;
 };
@@ -78,9 +115,9 @@ export const getContractTermsById = async (
 export const getContractTermsByUri = async (
     uri: string
 ): Promise<{
-    terms: ConsentFlowTermsType;
+    terms: DbTermsType;
     consenter: LCNProfile;
-    contract: ConsentFlowType;
+    contract: DbContractType;
 } | null> => {
     return getContractTermsById(getIdFromUri(uri));
 };
@@ -88,7 +125,7 @@ export const getContractTermsByUri = async (
 export const getConsentFlowContractsForProfile = async (
     profile: ProfileInstance,
     { limit, cursor }: { limit: number; cursor?: string }
-): Promise<ConsentFlowType[]> => {
+): Promise<DbContractType[]> => {
     const _query = new QueryBuilder().match({
         related: [
             { identifier: 'contract', model: ConsentFlowContract },
@@ -104,10 +141,10 @@ export const getConsentFlowContractsForProfile = async (
         : _query;
 
     const results = convertQueryResultToPropertiesObjectArray<{
-        contract: ConsentFlowType;
+        contract: FlatDbContractType;
     }>(await query.return('DISTINCT contract').orderBy('contract.updatedAt').limit(limit).run());
 
-    return results.map(({ contract }) => contract);
+    return results.map(({ contract }) => inflateObject(contract));
 };
 
 export const getConsentedContractsForProfile = async (
@@ -115,9 +152,9 @@ export const getConsentedContractsForProfile = async (
     { limit, cursor }: { limit: number; cursor?: string }
 ): Promise<
     {
-        contract: ConsentFlowType;
+        contract: DbContractType;
         owner: LCNProfile;
-        terms: ConsentFlowTermsType;
+        terms: DbTermsType;
     }[]
 > => {
     const _query = new QueryBuilder().match({
@@ -136,10 +173,10 @@ export const getConsentedContractsForProfile = async (
         )
         : _query;
 
-    return convertQueryResultToPropertiesObjectArray<{
-        contract: ConsentFlowType;
+    const results = convertQueryResultToPropertiesObjectArray<{
+        contract: FlatDbContractType;
         owner: LCNProfile;
-        terms: ConsentFlowTermsType;
+        terms: FlatDbTermsType;
     }>(
         await query
             .return('DISTINCT contract, owner, terms')
@@ -147,4 +184,10 @@ export const getConsentedContractsForProfile = async (
             .limit(limit)
             .run()
     );
+
+    return results.map(result => ({
+        ...result,
+        contract: inflateObject(result.contract),
+        terms: inflateObject(result.terms),
+    }));
 };

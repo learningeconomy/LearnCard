@@ -130,17 +130,26 @@ export const LCNSigningAuthorityForUserValidator = z.object({
 export type LCNSigningAuthorityForUserType = z.infer<typeof LCNSigningAuthorityForUserValidator>;
 
 export const ConsentFlowContractValidator = z.object({
-    read: z.object({
-        anonymize: z.boolean().optional(),
-        credentials: z.object({ categories: z.record(z.object({ required: z.boolean() })) }),
-        personal: z.record(z.object({ required: z.boolean() })),
-    }),
-    write: z.object({
-        credentials: z.object({ categories: z.record(z.object({ required: z.boolean() })) }),
-        personal: z.record(z.object({ required: z.boolean() })),
-    }),
+    read: z
+        .object({
+            anonymize: z.boolean().optional(),
+            credentials: z
+                .object({ categories: z.record(z.object({ required: z.boolean() })).default({}) })
+                .default({}),
+            personal: z.record(z.object({ required: z.boolean() })).default({}),
+        })
+        .default({}),
+    write: z
+        .object({
+            credentials: z
+                .object({ categories: z.record(z.object({ required: z.boolean() })).default({}) })
+                .default({}),
+            personal: z.record(z.object({ required: z.boolean() })).default({}),
+        })
+        .default({}),
 });
 export type ConsentFlowContract = z.infer<typeof ConsentFlowContractValidator>;
+export type ConsentFlowContractInput = z.input<typeof ConsentFlowContractValidator>;
 
 export const PaginatedConsentFlowContractsValidator = PaginationResponseValidator.extend({
     records: z.object({ contract: ConsentFlowContractValidator, uri: z.string() }).array(),
@@ -148,27 +157,36 @@ export const PaginatedConsentFlowContractsValidator = PaginationResponseValidato
 export type PaginatedConsentFlowContracts = z.infer<typeof PaginatedConsentFlowContractsValidator>;
 
 export const ConsentFlowTermsValidator = z.object({
-    read: z.object({
-        anonymize: z.boolean().optional(),
-        credentials: z.object({
-            shareAll: z.boolean(),
-            sharing: z.boolean(),
-            categories: z.record(
-                z.object({
-                    sharing: z.boolean(),
-                    shared: z.string().array(),
-                    shareAll: z.boolean(),
+    read: z
+        .object({
+            anonymize: z.boolean().optional(),
+            credentials: z
+                .object({
+                    shareAll: z.boolean().default(false),
+                    sharing: z.boolean().default(false),
+                    categories: z
+                        .record(
+                            z.object({
+                                sharing: z.boolean().default(false),
+                                shared: z.string().array().default([]),
+                                shareAll: z.boolean().default(false),
+                            })
+                        )
+                        .default({}),
                 })
-            ),
-        }),
-        personal: z.record(z.boolean()),
-    }),
-    write: z.object({
-        credentials: z.object({ categories: z.record(z.boolean()) }),
-        personal: z.record(z.boolean()),
-    }),
+                .default({}),
+            personal: z.record(z.boolean()).default({}),
+        })
+        .default({}),
+    write: z
+        .object({
+            credentials: z.object({ categories: z.record(z.boolean()).default({}) }).default({}),
+            personal: z.record(z.boolean()).default({}),
+        })
+        .default({}),
 });
 export type ConsentFlowTerms = z.infer<typeof ConsentFlowTermsValidator>;
+export type ConsentFlowTermsInput = z.input<typeof ConsentFlowTermsValidator>;
 
 export const PaginatedConsentFlowTermsValidator = PaginationResponseValidator.extend({
     records: z

@@ -10,7 +10,7 @@ import { ProfileType } from 'types/profile';
 import { SigningAuthorityInstance } from './SigningAuthority';
 import { Boost, BoostInstance } from './Boost';
 import ConsentFlowContract, { ConsentFlowInstance } from './ConsentFlowContract';
-import { ConsentFlowTermsType } from 'types/consentflowcontract';
+import { FlatDbTermsType } from 'types/consentflowcontract';
 
 export type ProfileRelationships = {
     connectionRequested: ModelRelatedNodesI<typeof Profile, ProfileInstance>;
@@ -38,8 +38,8 @@ export type ProfileRelationships = {
     consentsTo: ModelRelatedNodesI<
         typeof ConsentFlowContract,
         ConsentFlowInstance,
-        ConsentFlowTermsType,
-        ConsentFlowTermsType
+        FlatDbTermsType,
+        FlatDbTermsType
     >;
 };
 

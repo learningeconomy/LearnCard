@@ -6,7 +6,8 @@ import {
     predatoryContract,
 } from './helpers/contract';
 import { getClient, getUser } from './helpers/getClient';
-import { Profile, Credential, ConsentFlowContract } from '@models';
+import { Profile, ConsentFlowContract } from '@models';
+import { flattenObject, inflateObject } from '../src/helpers/objects.helpers';
 
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;

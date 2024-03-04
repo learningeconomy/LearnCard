@@ -1,6 +1,5 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
-import { v4 as uuid } from 'uuid';
 
 import { t, profileRoute, openRoute } from '@routes';
 import {
@@ -27,7 +26,10 @@ import { areTermsValid } from '@helpers/contract.helpers';
 import { updateDidForProfile } from '@helpers/did.helpers';
 import { updateTermsById } from '@accesslayer/consentflowcontract/relationships/update';
 import { deleteTermsById } from '@accesslayer/consentflowcontract/relationships/delete';
-import { setCreatorForContract } from '@accesslayer/consentflowcontract/relationships/create';
+import {
+    consentToContract,
+    setCreatorForContract,
+} from '@accesslayer/consentflowcontract/relationships/create';
 
 export const contractsRouter = t.router({
     createConsentFlowContract: profileRoute
@@ -89,7 +91,7 @@ export const contractsRouter = t.router({
                 hasMore,
                 cursor: nextCursor,
                 records: contracts.map(contract => ({
-                    contract: JSON.parse(contract.contract),
+                    contract: contract.contract,
                     uri: constructUri('contract', contract.id, ctx.domain),
                 })),
             };
@@ -161,20 +163,11 @@ export const contractsRouter = t.router({
                 });
             }
 
-            if (!areTermsValid(terms, JSON.parse(contract.contract))) {
+            if (!areTermsValid(terms, contract.contract)) {
                 throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid Terms for Contract' });
             }
 
-            await profile.relateTo({
-                alias: 'consentsTo',
-                where: { id: contract.id },
-                properties: {
-                    id: uuid(),
-                    terms: JSON.stringify(terms),
-                    createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString(),
-                },
-            });
+            await consentToContract(profile, contract, terms);
 
             const relationship = await getContractTermsForProfile(profile, contract);
 
@@ -223,12 +216,12 @@ export const contractsRouter = t.router({
             return {
                 hasMore,
                 cursor: nextCursor,
-                records: contracts.map(contract => ({
-                    contract: JSON.parse(contract.contract.contract),
-                    contractUri: constructUri('contract', contract.contract.id, ctx.domain),
-                    uri: constructUri('terms', contract.terms.id, ctx.domain),
-                    terms: JSON.parse(contract.terms.terms),
-                    contractOwner: updateDidForProfile(ctx.domain, contract.owner),
+                records: contracts.map(record => ({
+                    contract: record.contract.contract,
+                    contractUri: constructUri('contract', record.contract.id, ctx.domain),
+                    uri: constructUri('terms', record.terms.id, ctx.domain),
+                    terms: record.terms.terms,
+                    contractOwner: updateDidForProfile(ctx.domain, record.owner),
                     consenter: updateDidForProfile(ctx.domain, profile),
                 })),
             };
@@ -268,7 +261,7 @@ export const contractsRouter = t.router({
                 });
             }
 
-            if (!areTermsValid(terms, JSON.parse(relationship.contract.contract))) {
+            if (!areTermsValid(terms, relationship.contract.contract)) {
                 throw new TRPCError({
                     code: 'BAD_REQUEST',
                     message: 'New Terms are invalid for Contract',
