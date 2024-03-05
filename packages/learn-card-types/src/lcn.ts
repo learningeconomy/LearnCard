@@ -200,3 +200,63 @@ export const PaginatedConsentFlowTermsValidator = PaginationResponseValidator.ex
         .array(),
 });
 export type PaginatedConsentFlowTerms = z.infer<typeof PaginatedConsentFlowTermsValidator>;
+
+export const ConsentFlowContractQueryValidator = z.object({
+    read: z
+        .object({
+            anonymize: z.boolean().optional(),
+            credentials: z
+                .object({
+                    categories: z.record(z.object({ required: z.boolean().optional() })).optional(),
+                })
+                .optional(),
+            personal: z.record(z.object({ required: z.boolean().optional() })).optional(),
+        })
+        .optional(),
+    write: z
+        .object({
+            credentials: z
+                .object({
+                    categories: z.record(z.object({ required: z.boolean().optional() })).optional(),
+                })
+                .optional(),
+            personal: z.record(z.object({ required: z.boolean().optional() })).optional(),
+        })
+        .optional(),
+});
+export type ConsentFlowContractQuery = z.infer<typeof ConsentFlowContractQueryValidator>;
+export type ConsentFlowContractQueryInput = z.input<typeof ConsentFlowContractQueryValidator>;
+
+export const ConsentFlowTermsQueryValidator = z.object({
+    read: z
+        .object({
+            anonymize: z.boolean().optional(),
+            credentials: z
+                .object({
+                    shareAll: z.boolean().optional(),
+                    sharing: z.boolean().optional(),
+                    categories: z
+                        .record(
+                            z
+                                .object({
+                                    sharing: z.boolean().optional(),
+                                    shared: z.string().array().optional(),
+                                    shareAll: z.boolean().optional(),
+                                })
+                                .optional()
+                        )
+                        .optional(),
+                })
+                .optional(),
+            personal: z.record(z.boolean()).optional(),
+        })
+        .optional(),
+    write: z
+        .object({
+            credentials: z.object({ categories: z.record(z.boolean()).optional() }).optional(),
+            personal: z.record(z.boolean()).optional(),
+        })
+        .optional(),
+});
+export type ConsentFlowTermsQuery = z.infer<typeof ConsentFlowTermsQueryValidator>;
+export type ConsentFlowTermsQueryInput = z.input<typeof ConsentFlowTermsQueryValidator>;

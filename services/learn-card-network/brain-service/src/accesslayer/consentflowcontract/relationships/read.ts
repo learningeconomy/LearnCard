@@ -7,14 +7,9 @@ import {
     DbContractType,
     FlatDbContractType,
 } from 'types/consentflowcontract';
-import {
-    ConsentFlowContract as ConsentFlowContractType,
-    ConsentFlowTerms,
-    LCNProfile,
-} from '@learncard/types';
+import { ConsentFlowContractQuery, ConsentFlowTermsQuery, LCNProfile } from '@learncard/types';
 import { getIdFromUri } from '@helpers/uri.helpers';
 import { flattenObject, inflateObject } from '@helpers/objects.helpers';
-import { DeepPartial } from 'types/helpers';
 
 export const isProfileConsentFlowContractAdmin = async (
     profile: ProfileInstance,
@@ -133,7 +128,7 @@ export const getConsentFlowContractsForProfile = async (
         query: matchQuery = {},
         limit,
         cursor,
-    }: { query?: DeepPartial<ConsentFlowContractType>; limit: number; cursor?: string }
+    }: { query?: ConsentFlowContractQuery; limit: number; cursor?: string }
 ): Promise<DbContractType[]> => {
     const _query = new QueryBuilder(
         new BindParam({ params: flattenObject({ contract: matchQuery }), cursor })
@@ -165,7 +160,7 @@ export const getConsentedContractsForProfile = async (
         query: matchQuery = {},
         limit,
         cursor,
-    }: { query?: DeepPartial<ConsentFlowTerms>; limit: number; cursor?: string }
+    }: { query?: ConsentFlowTermsQuery; limit: number; cursor?: string }
 ): Promise<
     {
         contract: DbContractType;

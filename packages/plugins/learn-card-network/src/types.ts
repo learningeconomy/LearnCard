@@ -14,7 +14,9 @@ import {
     PaginationOptionsType,
     PaginatedLCNProfiles,
     ConsentFlowContract,
+    ConsentFlowContractQuery,
     ConsentFlowTerms,
+    ConsentFlowTermsQuery,
     PaginatedConsentFlowContracts,
     PaginatedConsentFlowTerms,
 } from '@learncard/types';
@@ -126,10 +128,14 @@ export type LearnCardNetworkPluginMethods = {
     claimBoostWithLink: (boostUri: string, challenge: string) => Promise<string>;
 
     createContract: (contract: ConsentFlowContract) => Promise<string>;
-    getContracts: (options?: PaginationOptionsType) => Promise<PaginatedConsentFlowContracts>;
+    getContracts: (
+        options?: PaginationOptionsType & { query: ConsentFlowContractQuery }
+    ) => Promise<PaginatedConsentFlowContracts>;
     deleteContract: (uri: string) => Promise<boolean>;
     consentToContract: (uri: string, terms: ConsentFlowTerms) => Promise<string>;
-    getConsentedContracts: (options?: PaginationOptionsType) => Promise<PaginatedConsentFlowTerms>;
+    getConsentedContracts: (
+        options?: PaginationOptionsType & { query: ConsentFlowTermsQuery }
+    ) => Promise<PaginatedConsentFlowTerms>;
     updateContractTerms: (uri: string, terms: ConsentFlowTerms) => Promise<boolean>;
     withdrawConsent: (uri: string) => Promise<boolean>;
     verifyConsent: (uri: string, profileId: string) => Promise<boolean>;

@@ -4,7 +4,9 @@ import { z } from 'zod';
 import { t, profileRoute, openRoute } from '@routes';
 import {
     ConsentFlowContractValidator,
+    ConsentFlowContractQueryValidator,
     ConsentFlowTermsValidator,
+    ConsentFlowTermsQueryValidator,
     PaginationOptionsValidator,
     PaginatedConsentFlowContractsValidator,
     PaginatedConsentFlowTermsValidator,
@@ -70,7 +72,7 @@ export const contractsRouter = t.router({
         })
         .input(
             PaginationOptionsValidator.extend({
-                query: ConsentFlowContractValidator.deepPartial().default({}),
+                query: ConsentFlowContractQueryValidator.default({}),
                 limit: PaginationOptionsValidator.shape.limit.default(25),
             }).default({})
         )
@@ -196,7 +198,7 @@ export const contractsRouter = t.router({
         })
         .input(
             PaginationOptionsValidator.extend({
-                query: ConsentFlowTermsValidator.deepPartial().default({}),
+                query: ConsentFlowTermsQueryValidator.default({}),
                 limit: PaginationOptionsValidator.shape.limit.default(25),
             }).default({})
         )
