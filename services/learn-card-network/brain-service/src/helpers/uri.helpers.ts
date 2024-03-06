@@ -10,9 +10,13 @@ export type URIParts = {
     id: string;
 };
 
+export const escapeLocalhostInUri = (uri: string): string =>
+    uri.replace('localhost:', 'localhost%3A');
+
 export const isURIType = (type: string): type is URIType => URI_TYPES.includes(type as any);
 
-export const getUriParts = (uri: string): URIParts => {
+export const getUriParts = (_uri: string): URIParts => {
+    const uri = escapeLocalhostInUri(_uri);
     const parts = uri.split(':');
 
     if (parts.length !== 5) {
