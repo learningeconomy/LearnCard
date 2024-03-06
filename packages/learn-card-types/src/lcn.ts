@@ -161,6 +161,7 @@ export const ConsentFlowContractDetailsValidator = z.object({
     uri: z.string(),
     createdAt: z.string(),
     updatedAt: z.string(),
+    expiresAt: z.string().optional(),
 });
 export type ConsentFlowContractDetails = z.infer<typeof ConsentFlowContractDetailsValidator>;
 export type ConsentFlowContractDetailsInput = z.input<typeof ConsentFlowContractDetailsValidator>;
@@ -205,6 +206,7 @@ export type ConsentFlowTermsInput = z.input<typeof ConsentFlowTermsValidator>;
 export const PaginatedConsentFlowTermsValidator = PaginationResponseValidator.extend({
     records: z
         .object({
+            expiresAt: z.string().optional(),
             terms: ConsentFlowTermsValidator,
             contract: ConsentFlowContractDetailsValidator,
             uri: z.string(),

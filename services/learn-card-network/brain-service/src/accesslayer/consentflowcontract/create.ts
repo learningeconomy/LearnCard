@@ -13,12 +13,14 @@ export const createConsentFlowContract = async ({
     subtitle = '',
     description = '',
     image = '',
+    expiresAt,
 }: {
     contract: ConsentFlowContractType;
     name: string;
     subtitle?: string;
     description?: string;
     image?: string;
+    expiresAt?: string;
 }): Promise<DbContractType> => {
     const id = uuid();
 

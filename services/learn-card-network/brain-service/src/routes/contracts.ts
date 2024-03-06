@@ -54,11 +54,12 @@ export const contractsRouter = t.router({
                 subtitle: z.string().optional(),
                 description: z.string().optional(),
                 image: z.string().optional(),
+                expiresAt: z.string().optional(),
             })
         )
         .output(z.string())
         .mutation(async ({ input, ctx }) => {
-            const { contract, name, subtitle, description, image } = input;
+            const { contract, name, subtitle, description, image, expiresAt } = input;
 
             // Create ConsentFlow instance
             const createdContract = await createConsentFlowContract({
@@ -67,6 +68,7 @@ export const contractsRouter = t.router({
                 subtitle,
                 description,
                 image,
+                expiresAt,
             });
 
             // Get profile by profileId
@@ -107,6 +109,7 @@ export const contractsRouter = t.router({
                 createdAt: result.contract.createdAt,
                 updatedAt: result.contract.updatedAt,
                 uri: constructUri('contract', result.contract.id, ctx.domain),
+                ...(result.contract.expiresAt ? { expiresAt: result.contract.expiresAt } : {}),
             };
         }),
 
@@ -154,6 +157,7 @@ export const contractsRouter = t.router({
                     createdAt: contract.createdAt,
                     updatedAt: contract.updatedAt,
                     uri: constructUri('contract', contract.id, ctx.domain),
+                    ...(contract.expiresAt ? { expiresAt: contract.expiresAt } : {}),
                 })),
             };
         }),
@@ -204,12 +208,18 @@ export const contractsRouter = t.router({
                 description: 'Consents to a Contract with a hard set of terms',
             },
         })
-        .input(z.object({ terms: ConsentFlowTermsValidator, contractUri: z.string() }))
+        .input(
+            z.object({
+                terms: ConsentFlowTermsValidator,
+                contractUri: z.string(),
+                expiresAt: z.string().optional(),
+            })
+        )
         .output(z.string())
         .mutation(async ({ input, ctx }) => {
             const { profile } = ctx.user;
 
-            const { terms, contractUri } = input;
+            const { terms, contractUri, expiresAt } = input;
 
             const contract = await getContractByUri(contractUri);
 
@@ -228,7 +238,7 @@ export const contractsRouter = t.router({
                 throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid Terms for Contract' });
             }
 
-            await consentToContract(profile, contract, terms);
+            await consentToContract(profile, contract, { terms, expiresAt });
 
             const relationship = await getContractTermsForProfile(profile, contract);
 
@@ -290,9 +300,13 @@ export const contractsRouter = t.router({
                         updatedAt: record.contract.updatedAt,
                         uri: constructUri('contract', record.contract.id, ctx.domain),
                         owner: updateDidForProfile(ctx.domain, record.owner),
+                        ...(record.contract.expiresAt
+                            ? { expiresAt: record.contract.expiresAt }
+                            : {}),
                     },
                     uri: constructUri('terms', record.terms.id, ctx.domain),
                     terms: record.terms.terms,
+                    ...(record.terms.expiresAt ? { expiresAt: record.terms.expiresAt } : {}),
                     consenter: updateDidForProfile(ctx.domain, profile),
                 })),
             };
@@ -309,12 +323,18 @@ export const contractsRouter = t.router({
                 description: 'Updates the terms for a consented contract',
             },
         })
-        .input(z.object({ uri: z.string(), terms: ConsentFlowTermsValidator }))
+        .input(
+            z.object({
+                uri: z.string(),
+                terms: ConsentFlowTermsValidator,
+                expiresAt: z.string().optional(),
+            })
+        )
         .output(z.boolean())
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
 
-            const { uri, terms } = input;
+            const { uri, terms, expiresAt } = input;
 
             const relationship = await getContractTermsByUri(uri);
 
@@ -340,7 +360,7 @@ export const contractsRouter = t.router({
             }
 
             await Promise.all([
-                updateTermsById(relationship.terms.id, terms),
+                updateTermsById(relationship.terms.id, { terms, expiresAt }),
                 deleteStorageForUri(uri),
             ]);
 
