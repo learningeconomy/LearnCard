@@ -693,5 +693,74 @@ describe('Consent Flow Contracts', () => {
                 })
             ).toBeFalsy();
         });
+
+        it('should stop verifying when contract expires', async () => {
+            jest.useFakeTimers();
+            jest.setSystemTime(new Date(2024, 3, 21));
+
+            const newContractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract(
+                {
+                    contract: minimalContract,
+                    name: 'b',
+                    expiresAt: new Date(2024, 4, 19).toISOString(),
+                }
+            );
+
+            await userB.clients.fullAuth.contracts.consentToContract({
+                contractUri: newContractUri,
+                terms: minimalTerms,
+            });
+
+            expect(
+                await userA.clients.fullAuth.contracts.verifyConsent({
+                    uri: newContractUri,
+                    profileId: 'userb',
+                })
+            ).toBeTruthy();
+
+            jest.setSystemTime(new Date(2024, 5, 21));
+
+            expect(
+                await userA.clients.fullAuth.contracts.verifyConsent({
+                    uri: newContractUri,
+                    profileId: 'userb',
+                })
+            ).toBeFalsy();
+
+            jest.useRealTimers();
+        });
+
+        it('should stop verifying when terms expire', async () => {
+            jest.useFakeTimers();
+            jest.setSystemTime(new Date(2024, 3, 21));
+
+            const newContractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract(
+                { contract: minimalContract, name: 'b' }
+            );
+
+            await userB.clients.fullAuth.contracts.consentToContract({
+                contractUri: newContractUri,
+                terms: minimalTerms,
+                expiresAt: new Date(2024, 4, 19).toISOString(),
+            });
+
+            expect(
+                await userA.clients.fullAuth.contracts.verifyConsent({
+                    uri: newContractUri,
+                    profileId: 'userb',
+                })
+            ).toBeTruthy();
+
+            jest.setSystemTime(new Date(2024, 5, 21));
+
+            expect(
+                await userA.clients.fullAuth.contracts.verifyConsent({
+                    uri: newContractUri,
+                    profileId: 'userb',
+                })
+            ).toBeFalsy();
+
+            jest.useRealTimers();
+        });
     });
 });
