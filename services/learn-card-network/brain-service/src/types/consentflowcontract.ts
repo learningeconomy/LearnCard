@@ -11,7 +11,9 @@ export const DbContractValidator = z.object({
     contract: ConsentFlowContractValidator,
     createdAt: z.string(),
     updatedAt: z.string(),
+    expiresAt: z.string().optional(),
 });
+
 export type DbContractType = z.infer<typeof DbContractValidator>;
 export type FlatDbContractType = FlattenObject<DbContractType>;
 
@@ -20,6 +22,14 @@ export const DbTermsValidator = z.object({
     terms: ConsentFlowTermsValidator,
     createdAt: z.string(),
     updatedAt: z.string(),
+    expiresAt: z.string().optional().refine(expiresAt => {
+        const createdAt = new Date(expiresAt as string);
+        const expiresAtDate = new Date(expiresAt as string);
+        return expiresAtDate > createdAt;
+    }, {
+        message: "expiresAt must be after createdAt",
+        path: ['expiresAt'] // path to the field for the error message
+    }),
 });
+
 export type DbTermsType = z.infer<typeof DbTermsValidator>;
-export type FlatDbTermsType = FlattenObject<DbTermsType>;

@@ -33,6 +33,7 @@ export const createConsentFlowContract = async ({
                 contract,
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
+                expiresAt,
             }),
         })
     )
