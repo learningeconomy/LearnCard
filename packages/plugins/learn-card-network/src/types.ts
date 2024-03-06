@@ -19,6 +19,7 @@ import {
     ConsentFlowTermsQuery,
     PaginatedConsentFlowContracts,
     PaginatedConsentFlowTerms,
+    ConsentFlowContractDetails,
 } from '@learncard/types';
 import { Plugin } from '@learncard/core';
 import { ProofOptions } from '@learncard/didkit-plugin';
@@ -127,14 +128,14 @@ export type LearnCardNetworkPluginMethods = {
     ) => Promise<{ boostUri: string; challenge: string }>;
     claimBoostWithLink: (boostUri: string, challenge: string) => Promise<string>;
 
-    createContract: (contract: ConsentFlowContract) => Promise<string>;
-    getContract: (uri: string) => Promise<{
-        contractOwner: LCNProfile;
+    createContract: (contract: {
         contract: ConsentFlowContract;
-        createdAt: string;
-        updatedAt: string;
-        uri: string;
-    }>;
+        name: string;
+        subtitle?: string;
+        description?: string;
+        image?: string;
+    }) => Promise<string>;
+    getContract: (uri: string) => Promise<ConsentFlowContractDetails>;
     getContracts: (
         options?: PaginationOptionsType & { query: ConsentFlowContractQuery }
     ) => Promise<PaginatedConsentFlowContracts>;
