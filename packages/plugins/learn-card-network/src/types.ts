@@ -128,6 +128,13 @@ export type LearnCardNetworkPluginMethods = {
     claimBoostWithLink: (boostUri: string, challenge: string) => Promise<string>;
 
     createContract: (contract: ConsentFlowContract) => Promise<string>;
+    getContract: (uri: string) => Promise<{
+        contractOwner: LCNProfile;
+        contract: ConsentFlowContract;
+        createdAt: string;
+        updatedAt: string;
+        uri: string;
+    }>;
     getContracts: (
         options?: PaginationOptionsType & { query: ConsentFlowContractQuery }
     ) => Promise<PaginatedConsentFlowContracts>;

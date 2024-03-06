@@ -4,6 +4,10 @@ import { z } from 'zod';
 
 export const DbContractValidator = z.object({
     id: z.string(),
+    name: z.string(),
+    subtitle: z.string().optional(),
+    description: z.string().optional(),
+    image: z.string().optional(),
     contract: ConsentFlowContractValidator,
     createdAt: z.string(),
     updatedAt: z.string(),

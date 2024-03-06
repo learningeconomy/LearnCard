@@ -33,13 +33,17 @@ describe('Consent Flow Contracts', () => {
 
         it('should not allow you to create a contract without full auth', async () => {
             await expect(
-                noAuthClient.contracts.createConsentFlowContract({ contract: minimalContract })
+                noAuthClient.contracts.createConsentFlowContract({
+                    contract: minimalContract,
+                    name: 'a',
+                })
             ).rejects.toMatchObject({
                 code: 'UNAUTHORIZED',
             });
             await expect(
                 userA.clients.partialAuth.contracts.createConsentFlowContract({
                     contract: minimalContract,
+                    name: 'a',
                 })
             ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
         });
@@ -48,6 +52,7 @@ describe('Consent Flow Contracts', () => {
             await expect(
                 userA.clients.fullAuth.contracts.createConsentFlowContract({
                     contract: minimalContract,
+                    name: 'a',
                 })
             ).resolves.not.toThrow();
         });
@@ -55,6 +60,7 @@ describe('Consent Flow Contracts', () => {
         it('should become resolveable after creation', async () => {
             await userA.clients.fullAuth.contracts.createConsentFlowContract({
                 contract: minimalContract,
+                name: 'a',
             });
 
             const contracts = await userA.clients.fullAuth.contracts.getConsentFlowContracts();
@@ -100,6 +106,7 @@ describe('Consent Flow Contracts', () => {
 
             await userA.clients.fullAuth.contracts.createConsentFlowContract({
                 contract: minimalContract,
+                name: 'a',
             });
 
             const newContracts = await userA.clients.fullAuth.contracts.getConsentFlowContracts();
@@ -111,6 +118,7 @@ describe('Consent Flow Contracts', () => {
         it("should not return other user's contracts", async () => {
             await userA.clients.fullAuth.contracts.createConsentFlowContract({
                 contract: minimalContract,
+                name: 'a',
             });
 
             const userAContracts = await userA.clients.fullAuth.contracts.getConsentFlowContracts();
@@ -130,9 +138,11 @@ describe('Consent Flow Contracts', () => {
 
             await userA.clients.fullAuth.contracts.createConsentFlowContract({
                 contract: minimalContract,
+                name: 'a',
             });
             await userA.clients.fullAuth.contracts.createConsentFlowContract({
                 contract: predatoryContract,
+                name: 'b',
             });
 
             const allContracts = await userA.clients.fullAuth.contracts.getConsentFlowContracts();
@@ -150,9 +160,10 @@ describe('Consent Flow Contracts', () => {
             await Promise.all(
                 Array(10)
                     .fill(0)
-                    .map(async () =>
+                    .map(async (_, index) =>
                         userA.clients.fullAuth.contracts.createConsentFlowContract({
                             contract: minimalContract,
+                            name: `a${index}`,
                         })
                     )
             );
@@ -194,6 +205,7 @@ describe('Consent Flow Contracts', () => {
 
             uri = await userA.clients.fullAuth.contracts.createConsentFlowContract({
                 contract: minimalContract,
+                name: 'a',
             });
         });
 
@@ -256,6 +268,7 @@ describe('Consent Flow Contracts', () => {
 
             uri = await userA.clients.fullAuth.contracts.createConsentFlowContract({
                 contract: minimalContract,
+                name: 'a',
             });
         });
 
@@ -297,6 +310,7 @@ describe('Consent Flow Contracts', () => {
         it('should not allow you to consent to contracts without meeting the minimum requirements', async () => {
             const predatoryUri = await userA.clients.fullAuth.contracts.createConsentFlowContract({
                 contract: predatoryContract,
+                name: 'b',
             });
 
             await expect(
@@ -342,6 +356,7 @@ describe('Consent Flow Contracts', () => {
 
             uri = await userA.clients.fullAuth.contracts.createConsentFlowContract({
                 contract: minimalContract,
+                name: 'a',
             });
         });
 
@@ -377,7 +392,7 @@ describe('Consent Flow Contracts', () => {
 
             expect(newContracts.records).toHaveLength(1);
             expect(newContracts.records[0]!.uri).toEqual(termsUri);
-            expect(newContracts.records[0]!.contractOwner.did).toEqual(
+            expect(newContracts.records[0]!.contract.owner.did).toEqual(
                 (await userA.clients.fullAuth.profile.getProfile()).did
             );
             expect(newContracts.records[0]!.terms).toEqual(minimalTerms);
@@ -403,6 +418,7 @@ describe('Consent Flow Contracts', () => {
             const predatoryContractUri =
                 await userA.clients.fullAuth.contracts.createConsentFlowContract({
                     contract: predatoryContract,
+                    name: 'b',
                 });
 
             await userB.clients.fullAuth.contracts.consentToContract({
@@ -422,16 +438,17 @@ describe('Consent Flow Contracts', () => {
                 query: { read: { personal: { email: true } } },
             });
             expect(filteredContracts.records).toHaveLength(1);
-            expect(filteredContracts.records[0]!.contract).toEqual(predatoryContract);
+            expect(filteredContracts.records[0]!.contract.contract).toEqual(predatoryContract);
         });
 
         it('should paginate', async () => {
             const uris = await Promise.all(
                 Array(10)
                     .fill(0)
-                    .map(async () =>
+                    .map(async (_, index) =>
                         userA.clients.fullAuth.contracts.createConsentFlowContract({
                             contract: minimalContract,
+                            name: `a${index}`,
                         })
                     )
             );
@@ -483,6 +500,7 @@ describe('Consent Flow Contracts', () => {
 
             contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract({
                 contract: minimalContract,
+                name: 'a',
             });
             termsUri = await userB.clients.fullAuth.contracts.consentToContract({
                 contractUri,
@@ -532,6 +550,7 @@ describe('Consent Flow Contracts', () => {
             const predatoryContractUri =
                 await userA.clients.fullAuth.contracts.createConsentFlowContract({
                     contract: predatoryContract,
+                    name: 'b',
                 });
 
             const promiscuousTermsUri = await userB.clients.fullAuth.contracts.consentToContract({
@@ -560,6 +579,7 @@ describe('Consent Flow Contracts', () => {
 
             contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract({
                 contract: minimalContract,
+                name: 'a',
             });
             termsUri = await userB.clients.fullAuth.contracts.consentToContract({
                 contractUri,
@@ -610,6 +630,7 @@ describe('Consent Flow Contracts', () => {
 
             contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract({
                 contract: minimalContract,
+                name: 'a',
             });
             termsUri = await userB.clients.fullAuth.contracts.consentToContract({
                 contractUri,

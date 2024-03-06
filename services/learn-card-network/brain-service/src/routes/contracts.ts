@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { t, profileRoute, openRoute } from '@routes';
 import {
     ConsentFlowContractValidator,
+    ConsentFlowContractDetailsValidator,
     ConsentFlowContractQueryValidator,
     ConsentFlowTermsValidator,
     ConsentFlowTermsQueryValidator,
@@ -15,6 +16,7 @@ import { createConsentFlowContract } from '@accesslayer/consentflowcontract/crea
 import {
     getConsentFlowContractsForProfile,
     getConsentedContractsForProfile,
+    getContractDetailsByUri,
     getContractTermsByUri,
     getContractTermsForProfile,
     hasProfileConsentedToContract,
@@ -45,18 +47,67 @@ export const contractsRouter = t.router({
                 description: 'Creates a Consent Flow Contract for a profile',
             },
         })
-        .input(z.object({ contract: ConsentFlowContractValidator }))
+        .input(
+            z.object({
+                contract: ConsentFlowContractValidator,
+                name: z.string(),
+                subtitle: z.string().optional(),
+                description: z.string().optional(),
+                image: z.string().optional(),
+            })
+        )
         .output(z.string())
         .mutation(async ({ input, ctx }) => {
-            const { contract } = input;
+            const { contract, name, subtitle, description, image } = input;
 
             // Create ConsentFlow instance
-            const createdContract = await createConsentFlowContract(contract);
+            const createdContract = await createConsentFlowContract({
+                contract,
+                name,
+                subtitle,
+                description,
+                image,
+            });
 
             // Get profile by profileId
             await setCreatorForContract(createdContract, ctx.user.profile);
 
             return constructUri('contract', createdContract.id, ctx.domain);
+        }),
+
+    getConsentFlowContract: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/consent-flow-contract/{uri}',
+                tags: ['Consent Flow Contracts'],
+                summary: 'Get Consent Flow Contracts',
+                description: 'Gets Consent Flow Contracts for a profile',
+            },
+        })
+        .input(z.object({ uri: z.string() }))
+        .output(ConsentFlowContractDetailsValidator)
+        .query(async ({ input, ctx }) => {
+            const { uri } = input;
+
+            const result = await getContractDetailsByUri(uri);
+
+            if (!result) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find contract' });
+            }
+
+            return {
+                owner: updateDidForProfile(ctx.domain, result.contractOwner),
+                contract: result.contract.contract,
+                name: result.contract.name,
+                subtitle: result.contract.subtitle,
+                description: result.contract.description,
+                image: result.contract.image,
+                createdAt: result.contract.createdAt,
+                updatedAt: result.contract.updatedAt,
+                uri: constructUri('contract', result.contract.id, ctx.domain),
+            };
         }),
 
     getConsentFlowContracts: profileRoute
@@ -96,6 +147,12 @@ export const contractsRouter = t.router({
                 cursor: nextCursor,
                 records: contracts.map(contract => ({
                     contract: contract.contract,
+                    name: contract.name,
+                    subtitle: contract.subtitle,
+                    description: contract.description,
+                    image: contract.image,
+                    createdAt: contract.createdAt,
+                    updatedAt: contract.updatedAt,
                     uri: constructUri('contract', contract.id, ctx.domain),
                 })),
             };
@@ -223,11 +280,19 @@ export const contractsRouter = t.router({
                 hasMore,
                 cursor: nextCursor,
                 records: contracts.map(record => ({
-                    contract: record.contract.contract,
-                    contractUri: constructUri('contract', record.contract.id, ctx.domain),
+                    contract: {
+                        contract: record.contract.contract,
+                        name: record.contract.name,
+                        subtitle: record.contract.subtitle,
+                        description: record.contract.description,
+                        image: record.contract.image,
+                        createdAt: record.contract.createdAt,
+                        updatedAt: record.contract.updatedAt,
+                        uri: constructUri('contract', record.contract.id, ctx.domain),
+                        owner: updateDidForProfile(ctx.domain, record.owner),
+                    },
                     uri: constructUri('terms', record.terms.id, ctx.domain),
                     terms: record.terms.terms,
-                    contractOwner: updateDidForProfile(ctx.domain, record.owner),
                     consenter: updateDidForProfile(ctx.domain, profile),
                 })),
             };

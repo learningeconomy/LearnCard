@@ -151,8 +151,22 @@ export const ConsentFlowContractValidator = z.object({
 export type ConsentFlowContract = z.infer<typeof ConsentFlowContractValidator>;
 export type ConsentFlowContractInput = z.input<typeof ConsentFlowContractValidator>;
 
+export const ConsentFlowContractDetailsValidator = z.object({
+    contract: ConsentFlowContractValidator,
+    owner: LCNProfileValidator,
+    name: z.string(),
+    subtitle: z.string().optional(),
+    description: z.string().optional(),
+    image: z.string().optional(),
+    uri: z.string(),
+    createdAt: z.string(),
+    updatedAt: z.string(),
+});
+export type ConsentFlowContractDetails = z.infer<typeof ConsentFlowContractDetailsValidator>;
+export type ConsentFlowContractDetailsInput = z.input<typeof ConsentFlowContractDetailsValidator>;
+
 export const PaginatedConsentFlowContractsValidator = PaginationResponseValidator.extend({
-    records: z.object({ contract: ConsentFlowContractValidator, uri: z.string() }).array(),
+    records: ConsentFlowContractDetailsValidator.omit({ owner: true }).array(),
 });
 export type PaginatedConsentFlowContracts = z.infer<typeof PaginatedConsentFlowContractsValidator>;
 
@@ -192,9 +206,8 @@ export const PaginatedConsentFlowTermsValidator = PaginationResponseValidator.ex
     records: z
         .object({
             terms: ConsentFlowTermsValidator,
-            contract: ConsentFlowContractValidator,
+            contract: ConsentFlowContractDetailsValidator,
             uri: z.string(),
-            contractOwner: LCNProfileValidator,
             consenter: LCNProfileValidator,
         })
         .array(),

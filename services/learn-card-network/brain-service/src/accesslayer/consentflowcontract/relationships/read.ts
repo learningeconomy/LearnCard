@@ -48,6 +48,35 @@ export const hasProfileConsentedToContract = async (
     return Number(result.records[0]?.get('count') ?? 0) > 0;
 };
 
+export const getContractDetailsById = async (
+    id: string
+): Promise<{ contractOwner: LCNProfile; contract: DbContractType } | null> => {
+    const query = new QueryBuilder().match({
+        related: [
+            { model: ConsentFlowContract, where: { id }, identifier: 'contract' },
+            `-[:${ConsentFlowContract.getRelationshipByAlias('createdBy').name}]-`,
+            { identifier: 'profile', model: Profile },
+        ],
+    });
+
+    const result = convertQueryResultToPropertiesObjectArray<{
+        contract: FlatDbContractType;
+        profile: LCNProfile;
+    }>(await query.return('contract, profile').run());
+
+    return result.length > 0
+        ? { contract: inflateObject(result[0]!.contract), contractOwner: result[0]!.profile }
+        : null;
+};
+
+export const getContractDetailsByUri = async (
+    uri: string
+): Promise<{ contractOwner: LCNProfile; contract: DbContractType } | null> => {
+    const id = getIdFromUri(uri);
+
+    return getContractDetailsById(id);
+};
+
 export const getContractTermsForProfile = async (
     profile: ProfileInstance | string,
     contract: DbContractType

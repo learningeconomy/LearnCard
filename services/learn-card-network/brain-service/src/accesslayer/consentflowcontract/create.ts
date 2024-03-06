@@ -7,15 +7,29 @@ import { getContractById } from './read';
 import { DbContractType } from 'types/consentflowcontract';
 import { flattenObject } from '@helpers/objects.helpers';
 
-export const createConsentFlowContract = async (
-    contract: ConsentFlowContractType
-): Promise<DbContractType> => {
+export const createConsentFlowContract = async ({
+    contract,
+    name,
+    subtitle = '',
+    description = '',
+    image = '',
+}: {
+    contract: ConsentFlowContractType;
+    name: string;
+    subtitle?: string;
+    description?: string;
+    image?: string;
+}): Promise<DbContractType> => {
     const id = uuid();
 
     const query = new QueryBuilder(
         new BindParam({
             params: flattenObject({
                 id,
+                name,
+                subtitle,
+                description,
+                image,
                 contract,
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),

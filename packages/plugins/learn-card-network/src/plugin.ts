@@ -480,6 +480,12 @@ export const getLearnCardNetworkPlugin = async (
                 return client.contracts.createConsentFlowContract.mutate({ contract });
             },
 
+            getContract: async (_learnCard, uri) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.contracts.getConsentFlowContract.query({ uri });
+            },
+
             getContracts: async (_learnCard, options) => {
                 if (!userData) throw new Error('Please make an account first!');
 
