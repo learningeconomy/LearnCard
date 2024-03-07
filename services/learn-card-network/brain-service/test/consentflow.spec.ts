@@ -623,7 +623,6 @@ describe('Consent Flow Contracts', () => {
         let termsUri: string;
 
         beforeEach(async () => {
-            // Assuming Profile.delete() and ConsentFlowContract.delete() clear all relevant state
             await Profile.delete({ detach: true, where: {} });
             await ConsentFlowContract.delete({ detach: true, where: {} });
 
@@ -641,10 +640,6 @@ describe('Consent Flow Contracts', () => {
                 terms: minimalTerms,
                 contractUri,
             });
-        });
-
-        afterEach(() => {
-            jest.useRealTimers();
         });
 
         afterAll(async () => {
@@ -706,7 +701,7 @@ describe('Consent Flow Contracts', () => {
 
         it('should stop verifying when contract expires', async () => {
             jest.useFakeTimers();
-            jest.setSystemTime(new Date(Date.UTC(2024, 2, 21))); // March 21, 2024
+            jest.setSystemTime(new Date(Date.UTC(2024, 2, 21)));
 
             // Verify consent before expiration.
             let verificationResult = await userA.clients.fullAuth.contracts.verifyConsent({
@@ -716,7 +711,7 @@ describe('Consent Flow Contracts', () => {
             expect(verificationResult).toBeTruthy();
 
             // Advance time to after the expiration date.
-            jest.setSystemTime(new Date(Date.UTC(2024, 4, 21))); // May 21, 2024
+            jest.setSystemTime(new Date(Date.UTC(2024, 4, 21)));
 
             // Verify consent after expiration.
             verificationResult = await userA.clients.fullAuth.contracts.verifyConsent({
@@ -729,7 +724,7 @@ describe('Consent Flow Contracts', () => {
 
         it('should stop verifying when terms expire', async () => {
             jest.useFakeTimers();
-            jest.setSystemTime(new Date(Date.UTC(2024, 2, 21))); // March 21, 2024, months are zero-indexed
+            jest.setSystemTime(new Date(Date.UTC(2024, 2, 21)));
 
             // Verify consent before expiration.
             let verificationResult = await userA.clients.fullAuth.contracts.verifyConsent({
@@ -740,7 +735,7 @@ describe('Consent Flow Contracts', () => {
             expect(verificationResult).toBeTruthy();
 
             // Advance time to after the expiration date.
-            jest.setSystemTime(new Date(Date.UTC(2024, 4, 21))); // May 21, 2024
+            jest.setSystemTime(new Date(Date.UTC(2024, 4, 21)));
 
             // Verify consent after expiration.
             verificationResult = await userA.clients.fullAuth.contracts.verifyConsent({
