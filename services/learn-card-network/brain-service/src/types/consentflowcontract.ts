@@ -25,17 +25,6 @@ export const DbTermsValidator = z.object({
     expiresAt: z
         .string()
         .optional()
-        .refine(
-            expiresAt => {
-                const createdAt = new Date(expiresAt as string);
-                const expiresAtDate = new Date(expiresAt as string);
-                return expiresAtDate > createdAt;
-            },
-            {
-                message: 'expiresAt must be after createdAt',
-                path: ['expiresAt'], // path to the field for the error message
-            }
-        ),
 });
 
 export type DbTermsType = z.infer<typeof DbTermsValidator>;

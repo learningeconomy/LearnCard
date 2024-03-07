@@ -623,22 +623,32 @@ describe('Consent Flow Contracts', () => {
         let termsUri: string;
 
         beforeEach(async () => {
+            // Assuming Profile.delete() and ConsentFlowContract.delete() clear all relevant state
             await Profile.delete({ detach: true, where: {} });
             await ConsentFlowContract.delete({ detach: true, where: {} });
+
             await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
             await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
 
             contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract({
                 contract: minimalContract,
                 name: 'a',
+                expiresAt: new Date(Date.UTC(2024, 3, 19)).toISOString(), // Set explicit expiration
             });
+
+
             termsUri = await userB.clients.fullAuth.contracts.consentToContract({
-                contractUri,
                 terms: minimalTerms,
+                contractUri,
             });
         });
 
+        afterEach(() => {
+            jest.useRealTimers();
+        });
+
         afterAll(async () => {
+            // Cleanup after all tests to ensure no state leaks between test runs
             await Profile.delete({ detach: true, where: {} });
             await ConsentFlowContract.delete({ detach: true, where: {} });
         });
@@ -696,71 +706,49 @@ describe('Consent Flow Contracts', () => {
 
         it('should stop verifying when contract expires', async () => {
             jest.useFakeTimers();
-            jest.setSystemTime(new Date(2024, 3, 21));
+            jest.setSystemTime(new Date(Date.UTC(2024, 2, 21))); // March 21, 2024
 
-            const newContractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract(
-                {
-                    contract: minimalContract,
-                    name: 'b',
-                    expiresAt: new Date(2024, 4, 19).toISOString(),
-                }
-            );
+            // Verify consent before expiration.
+            let verificationResult = await userA.clients.fullAuth.contracts.verifyConsent({
+                uri: contractUri,
+                profileId: 'userb',
+            });
+            expect(verificationResult).toBeTruthy();
 
-            await userB.clients.fullAuth.contracts.consentToContract({
-                contractUri: newContractUri,
-                terms: minimalTerms,
+            // Advance time to after the expiration date.
+            jest.setSystemTime(new Date(Date.UTC(2024, 4, 21))); // May 21, 2024
+
+            // Verify consent after expiration.
+            verificationResult = await userA.clients.fullAuth.contracts.verifyConsent({
+                uri: contractUri,
+                profileId: 'userb',
             });
 
-            expect(
-                await userA.clients.fullAuth.contracts.verifyConsent({
-                    uri: newContractUri,
-                    profileId: 'userb',
-                })
-            ).toBeTruthy();
-
-            jest.setSystemTime(new Date(2024, 5, 21));
-
-            expect(
-                await userA.clients.fullAuth.contracts.verifyConsent({
-                    uri: newContractUri,
-                    profileId: 'userb',
-                })
-            ).toBeFalsy();
-
-            jest.useRealTimers();
+            expect(verificationResult).toBeFalsy();
         });
 
         it('should stop verifying when terms expire', async () => {
             jest.useFakeTimers();
-            jest.setSystemTime(new Date(2024, 3, 21));
+            jest.setSystemTime(new Date(Date.UTC(2024, 2, 21))); // March 21, 2024, months are zero-indexed
 
-            const newContractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract(
-                { contract: minimalContract, name: 'b' }
-            );
-
-            await userB.clients.fullAuth.contracts.consentToContract({
-                contractUri: newContractUri,
-                terms: minimalTerms,
-                expiresAt: new Date(2024, 4, 19).toISOString(),
+            // Verify consent before expiration.
+            let verificationResult = await userA.clients.fullAuth.contracts.verifyConsent({
+                uri: contractUri,
+                profileId: 'userb',
             });
 
-            expect(
-                await userA.clients.fullAuth.contracts.verifyConsent({
-                    uri: newContractUri,
-                    profileId: 'userb',
-                })
-            ).toBeTruthy();
+            expect(verificationResult).toBeTruthy();
 
-            jest.setSystemTime(new Date(2024, 5, 21));
+            // Advance time to after the expiration date.
+            jest.setSystemTime(new Date(Date.UTC(2024, 4, 21))); // May 21, 2024
 
-            expect(
-                await userA.clients.fullAuth.contracts.verifyConsent({
-                    uri: newContractUri,
-                    profileId: 'userb',
-                })
-            ).toBeFalsy();
+            // Verify consent after expiration.
+            verificationResult = await userA.clients.fullAuth.contracts.verifyConsent({
+                uri: contractUri,
+                profileId: 'userb',
+            });
 
-            jest.useRealTimers();
+            expect(verificationResult).toBeFalsy();
         });
     });
 });

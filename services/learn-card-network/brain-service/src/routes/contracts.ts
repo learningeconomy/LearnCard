@@ -428,7 +428,12 @@ export const contractsRouter = t.router({
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find contract' });
             }
 
-            return hasProfileConsentedToContract(profileId, contract);
-        }),
+            // Check if the current date is past the expiresAt date.
+            if (contract.expiresAt && new Date() > new Date(contract.expiresAt)) {
+                return false; // Contract has expired
+            }
+
+            return await hasProfileConsentedToContract(profileId, contract);
+        })
 });
 export type ContractsRouter = typeof contractsRouter;
