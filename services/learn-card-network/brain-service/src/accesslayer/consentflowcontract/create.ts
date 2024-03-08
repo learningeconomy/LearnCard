@@ -12,6 +12,7 @@ export const createConsentFlowContract = async ({
     name,
     subtitle = '',
     description = '',
+    reasonForAccessing = '',
     image = '',
     expiresAt,
 }: {
@@ -19,6 +20,7 @@ export const createConsentFlowContract = async ({
     name: string;
     subtitle?: string;
     description?: string;
+    reasonForAccessing?: string;
     image?: string;
     expiresAt?: string;
 }): Promise<DbContractType> => {
@@ -31,6 +33,7 @@ export const createConsentFlowContract = async ({
                 name,
                 subtitle,
                 description,
+                reasonForAccessing,
                 image,
                 contract,
                 createdAt: new Date().toISOString(),

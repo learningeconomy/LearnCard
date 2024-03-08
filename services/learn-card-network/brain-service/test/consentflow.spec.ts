@@ -94,6 +94,42 @@ describe('Consent Flow Contracts', () => {
             expect(contract.subtitle).toEqual(contractData.subtitle);
         });
 
+        it('should allow setting and retrieving the description field for a contract', async () => {
+            const contractData = {
+                name: 'Test Contract',
+                description: 'This is for testing lol',
+                contract: minimalContract,
+            };
+
+            const contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract(
+                contractData
+            );
+
+            const contract = await userA.clients.fullAuth.contracts.getConsentFlowContract({
+                uri: contractUri,
+            });
+
+            expect(contract.description).toEqual(contractData.description);
+        });
+
+        it('should allow setting and retrieving the reason for accessing for a contract', async () => {
+            const contractData = {
+                name: 'Test Contract',
+                reasonForAccessing: 'This is for testing lol',
+                contract: minimalContract,
+            };
+
+            const contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract(
+                contractData
+            );
+
+            const contract = await userA.clients.fullAuth.contracts.getConsentFlowContract({
+                uri: contractUri,
+            });
+
+            expect(contract.reasonForAccessing).toEqual(contractData.reasonForAccessing);
+        });
+
         it('should allow setting and retrieving the image field for a contract', async () => {
             const contractData = {
                 name: 'Test Contract',

@@ -53,13 +53,15 @@ export const contractsRouter = t.router({
                 name: z.string(),
                 subtitle: z.string().optional(),
                 description: z.string().optional(),
+                reasonForAccessing: z.string().optional(),
                 image: z.string().optional(),
                 expiresAt: z.string().optional(),
             })
         )
         .output(z.string())
         .mutation(async ({ input, ctx }) => {
-            const { contract, name, subtitle, description, image, expiresAt } = input;
+            const { contract, name, subtitle, description, reasonForAccessing, image, expiresAt } =
+                input;
 
             // Create ConsentFlow instance
             const createdContract = await createConsentFlowContract({
@@ -67,6 +69,7 @@ export const contractsRouter = t.router({
                 name,
                 subtitle,
                 description,
+                reasonForAccessing,
                 image,
                 expiresAt,
             });
@@ -105,6 +108,7 @@ export const contractsRouter = t.router({
                 name: result.contract.name,
                 subtitle: result.contract.subtitle,
                 description: result.contract.description,
+                reasonForAccessing: result.contract.reasonForAccessing,
                 image: result.contract.image,
                 createdAt: result.contract.createdAt,
                 updatedAt: result.contract.updatedAt,
@@ -153,6 +157,7 @@ export const contractsRouter = t.router({
                     name: contract.name,
                     subtitle: contract.subtitle,
                     description: contract.description,
+                    reasonForAccessing: contract.reasonForAccessing,
                     image: contract.image,
                     createdAt: contract.createdAt,
                     updatedAt: contract.updatedAt,
@@ -297,6 +302,7 @@ export const contractsRouter = t.router({
                         name: record.contract.name,
                         subtitle: record.contract.subtitle,
                         description: record.contract.description,
+                        reasonForAccessing: record.contract.reasonForAccessing,
                         image: record.contract.image,
                         createdAt: record.contract.createdAt,
                         updatedAt: record.contract.updatedAt,

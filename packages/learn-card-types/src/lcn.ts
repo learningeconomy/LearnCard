@@ -157,6 +157,7 @@ export const ConsentFlowContractDetailsValidator = z.object({
     name: z.string(),
     subtitle: z.string().optional(),
     description: z.string().optional(),
+    reasonForAccessing: z.string().optional(),
     image: z.string().optional(),
     uri: z.string(),
     createdAt: z.string(),

@@ -24,6 +24,7 @@ export const ConsentFlowContract = ModelFactory<FlatDbContractType, ConsentFlowR
             name: { type: 'string', required: true },
             subtitle: { type: 'string', required: false },
             description: { type: 'string', required: false },
+            reasonForAccessing: { type: 'string', required: false },
             image: { type: 'string', required: false },
             createdAt: { type: 'string', required: true },
             updatedAt: { type: 'string', required: true },

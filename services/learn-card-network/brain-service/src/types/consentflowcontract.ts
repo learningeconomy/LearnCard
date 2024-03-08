@@ -7,6 +7,7 @@ export const DbContractValidator = z.object({
     name: z.string(),
     subtitle: z.string().optional(),
     description: z.string().optional(),
+    reasonForAccessing: z.string().optional(),
     image: z.string().optional(),
     contract: ConsentFlowContractValidator,
     createdAt: z.string(),
