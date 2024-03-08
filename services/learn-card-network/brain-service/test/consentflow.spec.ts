@@ -71,6 +71,41 @@ describe('Consent Flow Contracts', () => {
 
             expect(contract).toEqual(minimalContract);
         });
+
+        it('should allow setting and retrieving the name and subtitle fields for a contract', async () => {
+            const contractData = {
+                name: 'Test Contract',
+                subtitle: 'A brief description',
+                contract: minimalContract,
+            };
+
+            // Simulating contract creation
+            const contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract(contractData);
+
+            // Fetching the created contract
+            const contract = await userA.clients.fullAuth.contracts.getConsentFlowContract({ uri: contractUri });
+
+            // Verifying the name and subtitle fields
+            expect(contract.name).toEqual(contractData.name);
+            expect(contract.subtitle).toEqual(contractData.subtitle);
+        });
+
+        it('should allow setting and retrieving the image field for a contract', async () => {
+            const contractData = {
+                name: 'Test Contract',
+                image: 'https://example.com/image.png',
+                contract: minimalContract,
+            };
+
+            // Simulating contract creation
+            const contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract(contractData);
+
+            // Fetching the created contract
+            const contract = await userA.clients.fullAuth.contracts.getConsentFlowContract({ uri: contractUri });
+
+            // Verifying the image field
+            expect(contract.image).toEqual(contractData.image);
+        });
     });
 
     describe('getConsentFlowContracts', () => {
