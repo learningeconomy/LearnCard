@@ -80,10 +80,14 @@ describe('Consent Flow Contracts', () => {
             };
 
             // Simulating contract creation
-            const contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract(contractData);
+            const contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract(
+                contractData
+            );
 
             // Fetching the created contract
-            const contract = await userA.clients.fullAuth.contracts.getConsentFlowContract({ uri: contractUri });
+            const contract = await userA.clients.fullAuth.contracts.getConsentFlowContract({
+                uri: contractUri,
+            });
 
             // Verifying the name and subtitle fields
             expect(contract.name).toEqual(contractData.name);
@@ -98,10 +102,14 @@ describe('Consent Flow Contracts', () => {
             };
 
             // Simulating contract creation
-            const contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract(contractData);
+            const contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract(
+                contractData
+            );
 
             // Fetching the created contract
-            const contract = await userA.clients.fullAuth.contracts.getConsentFlowContract({ uri: contractUri });
+            const contract = await userA.clients.fullAuth.contracts.getConsentFlowContract({
+                uri: contractUri,
+            });
 
             // Verifying the image field
             expect(contract.image).toEqual(contractData.image);
@@ -768,16 +776,33 @@ describe('Consent Flow Contracts', () => {
 
         it('should stop verifying when terms expire', async () => {
             jest.useFakeTimers();
-            jest.setSystemTime(new Date(Date.UTC(2024, 3, 20))); // Set the system time to after the terms expiration
+            jest.setSystemTime(new Date(2024, 3, 21));
 
-            // Verify consent before expiration.
-            const verificationResult = await userA.clients.fullAuth.contracts.verifyConsent({
-                uri: contractUri,
-                profileId: 'userb',
+            const newContractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract(
+                { contract: minimalContract, name: 'b' }
+            );
+
+            await userB.clients.fullAuth.contracts.consentToContract({
+                contractUri: newContractUri,
+                terms: minimalTerms,
+                expiresAt: new Date(2024, 4, 19).toISOString(),
             });
 
-            // Verify that consent is not verified after terms expiration.
-            expect(verificationResult).toBeFalsy();
+            expect(
+                await userA.clients.fullAuth.contracts.verifyConsent({
+                    uri: newContractUri,
+                    profileId: 'userb',
+                })
+            ).toBeTruthy();
+
+            jest.setSystemTime(new Date(2024, 5, 21));
+
+            expect(
+                await userA.clients.fullAuth.contracts.verifyConsent({
+                    uri: newContractUri,
+                    profileId: 'userb',
+                })
+            ).toBeFalsy();
 
             jest.useRealTimers();
         });
