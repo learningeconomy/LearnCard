@@ -175,6 +175,7 @@ describe('Storage', () => {
         it('should allow resolving a consent flow contract', async () => {
             const uri = await userA.clients.fullAuth.contracts.createConsentFlowContract({
                 contract: minimalContract,
+                name: 'a',
             });
 
             const promise = userA.clients.fullAuth.storage.resolve({ uri });
@@ -189,6 +190,7 @@ describe('Storage', () => {
         it('should allow resolving a consent flow contract terms', async () => {
             const contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract({
                 contract: minimalContract,
+                name: 'a',
             });
 
             const uri = await userB.clients.fullAuth.contracts.consentToContract({
