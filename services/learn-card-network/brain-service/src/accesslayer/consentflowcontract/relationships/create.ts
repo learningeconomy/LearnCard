@@ -18,7 +18,12 @@ export const setCreatorForContract = async (contract: DbContractType, profile: L
 export const consentToContract = async (
     profile: LCNProfile,
     contract: DbContractType,
-    { terms, expiresAt }: { terms: ConsentFlowTerms; expiresAt?: string }
+    {
+        terms,
+        expiresAt,
+        liveSyncing,
+        oneTime,
+    }: { terms: ConsentFlowTerms; expiresAt?: string; liveSyncing?: boolean; oneTime?: boolean }
 ) => {
     const result = await new QueryBuilder(new BindParam({ params: flattenObject({ terms }) }))
         .match({
@@ -37,6 +42,8 @@ export const consentToContract = async (
                         createdAt: new Date().toISOString(),
                         updatedAt: new Date().toISOString(),
                         ...(expiresAt ? { expiresAt } : {}),
+                        ...(liveSyncing ? { liveSyncing } : {}),
+                        ...(oneTime ? { oneTime } : {}),
                     },
                     identifier: 'terms',
                 },

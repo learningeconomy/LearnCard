@@ -213,13 +213,15 @@ export const contractsRouter = t.router({
                 terms: ConsentFlowTermsValidator,
                 contractUri: z.string(),
                 expiresAt: z.string().optional(),
+                liveSyncing: z.boolean().optional(),
+                oneTime: z.boolean().optional(),
             })
         )
         .output(z.string())
         .mutation(async ({ input, ctx }) => {
             const { profile } = ctx.user;
 
-            const { terms, contractUri, expiresAt } = input;
+            const { terms, contractUri, expiresAt, liveSyncing, oneTime } = input;
 
             const contract = await getContractByUri(contractUri);
 
@@ -238,7 +240,7 @@ export const contractsRouter = t.router({
                 throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid Terms for Contract' });
             }
 
-            await consentToContract(profile, contract, { terms, expiresAt });
+            await consentToContract(profile, contract, { terms, expiresAt, liveSyncing, oneTime });
 
             const relationship = await getContractTermsForProfile(profile, contract);
 
@@ -328,13 +330,15 @@ export const contractsRouter = t.router({
                 uri: z.string(),
                 terms: ConsentFlowTermsValidator,
                 expiresAt: z.string().optional(),
+                liveSyncing: z.boolean().optional(),
+                oneTime: z.boolean().optional(),
             })
         )
         .output(z.boolean())
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
 
-            const { uri, terms, expiresAt } = input;
+            const { uri, terms, expiresAt, liveSyncing, oneTime } = input;
 
             const relationship = await getContractTermsByUri(uri);
 
@@ -360,7 +364,7 @@ export const contractsRouter = t.router({
             }
 
             await Promise.all([
-                updateTermsById(relationship.terms.id, { terms, expiresAt }),
+                updateTermsById(relationship.terms.id, { terms, expiresAt, liveSyncing, oneTime }),
                 deleteStorageForUri(uri),
             ]);
 

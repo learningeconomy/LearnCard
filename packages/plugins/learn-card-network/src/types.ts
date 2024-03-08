@@ -143,16 +143,24 @@ export type LearnCardNetworkPluginMethods = {
     deleteContract: (uri: string) => Promise<boolean>;
     consentToContract: (
         uri: string,
-        terms: ConsentFlowTerms,
-        expiresAt?: string
+        terms: {
+            terms: ConsentFlowTerms;
+            expiresAt?: string;
+            liveSyncing?: boolean;
+            oneTime?: boolean;
+        }
     ) => Promise<string>;
     getConsentedContracts: (
         options?: PaginationOptionsType & { query: ConsentFlowTermsQuery }
     ) => Promise<PaginatedConsentFlowTerms>;
     updateContractTerms: (
         uri: string,
-        terms: ConsentFlowTerms,
-        expiresAt?: string
+        terms: {
+            terms: ConsentFlowTerms;
+            expiresAt?: string;
+            liveSyncing?: boolean;
+            oneTime?: boolean;
+        }
     ) => Promise<boolean>;
     withdrawConsent: (uri: string) => Promise<boolean>;
     verifyConsent: (uri: string, profileId: string) => Promise<boolean>;

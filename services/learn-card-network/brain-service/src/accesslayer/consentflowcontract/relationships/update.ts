@@ -5,10 +5,22 @@ import { flattenObject } from '@helpers/objects.helpers';
 
 export const updateTermsById = async (
     id: string,
-    { terms, expiresAt }: { terms: ConsentFlowTerms; expiresAt?: string }
+    {
+        terms,
+        expiresAt,
+        liveSyncing,
+        oneTime,
+    }: { terms: ConsentFlowTerms; expiresAt?: string; liveSyncing?: boolean; oneTime?: boolean }
 ): Promise<boolean> => {
     const result = await new QueryBuilder(
-        new BindParam({ params: flattenObject({ terms, ...(expiresAt ? { expiresAt } : {}) }) })
+        new BindParam({
+            params: flattenObject({
+                terms,
+                ...(expiresAt ? { expiresAt } : {}),
+                ...(liveSyncing ? { liveSyncing } : {}),
+                ...(oneTime ? { oneTime } : {}),
+            }),
+        })
     )
         .match({
             related: [

@@ -49,6 +49,14 @@ export const ConsentFlowContract = ModelFactory<FlatDbContractType, ConsentFlowR
                         property: 'expiresAt',
                         schema: { type: 'string', required: false },
                     },
+                    liveSyncing: {
+                        property: 'liveSyncing',
+                        schema: { type: 'boolean', required: false },
+                    },
+                    oneTime: {
+                        property: 'oneTime',
+                        schema: { type: 'boolean', required: false },
+                    },
                 } as any,
             },
         },

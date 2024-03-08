@@ -22,9 +22,9 @@ export const DbTermsValidator = z.object({
     terms: ConsentFlowTermsValidator,
     createdAt: z.string(),
     updatedAt: z.string(),
-    expiresAt: z
-        .string()
-        .optional()
+    expiresAt: z.string().optional(),
+    liveSyncing: z.boolean().optional(),
+    oneTime: z.boolean().optional(),
 });
 
 export type DbTermsType = z.infer<typeof DbTermsValidator>;
