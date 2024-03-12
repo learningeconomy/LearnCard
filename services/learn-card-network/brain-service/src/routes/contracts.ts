@@ -315,6 +315,8 @@ export const contractsRouter = t.router({
                     uri: constructUri('terms', record.terms.id, ctx.domain),
                     terms: record.terms.terms,
                     ...(record.terms.expiresAt ? { expiresAt: record.terms.expiresAt } : {}),
+                    ...(record.terms.liveSyncing ? { liveSyncing: record.terms.liveSyncing } : {}),
+                    ...(record.terms.oneTime ? { oneTime: record.terms.oneTime } : {}),
                     consenter: updateDidForProfile(ctx.domain, profile),
                 })),
             };
