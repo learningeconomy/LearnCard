@@ -151,6 +151,21 @@ describe('Profiles', () => {
                 'https://api.learncard.app/send/notifications'
             );
         });
+
+        it('should allow setting your bio', async () => {
+            await userA.clients.fullAuth.profile.createProfile({
+                profileId: 'usera',
+                displayName: 'A',
+                bio: 'I am user A',
+            });
+            await expect(
+                userB.clients.fullAuth.profile.createProfile({
+                    profileId: 'userb',
+                    displayName: 'B',
+                    bio: 'I am user B',
+                })
+            ).resolves.not.toThrow();
+        });
     });
 
     describe('createServiceProfile', () => {
@@ -263,11 +278,13 @@ describe('Profiles', () => {
                 profileId: 'usera',
                 displayName: 'A',
                 email: 'userA@test.com',
+                bio: 'I am user A',
             });
             await userB.clients.fullAuth.profile.createProfile({
                 profileId: 'userb',
                 displayName: 'B',
                 email: 'userB@test.com',
+                bio: 'I am user B',
             });
         });
 
@@ -293,9 +310,11 @@ describe('Profiles', () => {
             expect(userAProfile?.profileId).toEqual('usera');
             expect(userAProfile?.displayName).toEqual('A');
             expect(userAProfile?.email).toEqual('userA@test.com');
+            expect(userAProfile?.bio).toEqual('I am user A');
             expect(userBProfile?.profileId).toEqual('userb');
             expect(userBProfile?.displayName).toEqual('B');
             expect(userBProfile?.email).toEqual('userB@test.com');
+            expect(userBProfile?.bio).toEqual('I am user B');
         });
     });
 
@@ -306,11 +325,13 @@ describe('Profiles', () => {
                 profileId: 'usera',
                 displayName: 'A',
                 email: 'userA@test.com',
+                bio: 'I am user A',
             });
             await userB.clients.fullAuth.profile.createProfile({
                 profileId: 'userb',
                 displayName: 'B',
                 email: 'userB@test.com',
+                bio: 'I am user B',
             });
         });
 
@@ -341,9 +362,11 @@ describe('Profiles', () => {
             expect(userAProfile?.profileId).toEqual('usera');
             expect(userAProfile?.displayName).toEqual('A');
             expect(userAProfile?.email).toEqual('userA@test.com');
+            expect(userAProfile?.bio).toEqual('I am user A');
             expect(userBProfile?.profileId).toEqual('userb');
             expect(userBProfile?.displayName).toEqual('B');
             expect(userBProfile?.email).toEqual('userB@test.com');
+            expect(userBProfile?.bio).toEqual('I am user B');
         });
     });
 

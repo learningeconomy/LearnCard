@@ -51,6 +51,7 @@ export const Profile = ModelFactory<ProfileType, ProfileRelationships>(
         schema: {
             profileId: { type: 'string', required: true, uniqueItems: true },
             displayName: { type: 'string', required: false },
+            bio: { type: 'string', required: false },
             did: { type: 'string', required: true, uniqueItems: true },
             email: { type: 'string', required: false, uniqueItems: true },
             image: { type: 'string', required: false },

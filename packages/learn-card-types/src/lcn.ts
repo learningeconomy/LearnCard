@@ -5,6 +5,7 @@ import { PaginationResponseValidator } from './mongo';
 export const LCNProfileValidator = z.object({
     profileId: z.string().min(3).max(40),
     displayName: z.string().default(''),
+    bio: z.string().default(''),
     did: z.string(),
     email: z.string().optional(),
     image: z.string().optional(),
@@ -208,6 +209,8 @@ export const PaginatedConsentFlowTermsValidator = PaginationResponseValidator.ex
     records: z
         .object({
             expiresAt: z.string().optional(),
+            liveSyncing: z.boolean().optional(),
+            oneTime: z.boolean().optional(),
             terms: ConsentFlowTermsValidator,
             contract: ConsentFlowContractDetailsValidator,
             uri: z.string(),
