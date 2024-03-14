@@ -80,7 +80,7 @@ export const contractsRouter = t.router({
             return constructUri('contract', createdContract.id, ctx.domain);
         }),
 
-    getConsentFlowContract: profileRoute
+    getConsentFlowContract: openRoute
         .meta({
             openapi: {
                 protect: true,
@@ -88,7 +88,7 @@ export const contractsRouter = t.router({
                 path: '/consent-flow-contract/{uri}',
                 tags: ['Consent Flow Contracts'],
                 summary: 'Get Consent Flow Contracts',
-                description: 'Gets Consent Flow Contracts for a profile',
+                description: 'Gets Consent Flow Contract Details',
             },
         })
         .input(z.object({ uri: z.string() }))
