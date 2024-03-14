@@ -16,7 +16,7 @@ export const updateTermsById = async (
         new BindParam({
             params: flattenObject({
                 terms,
-                ...(expiresAt ? { expiresAt } : {}),
+                ...(typeof expiresAt === 'string' ? { expiresAt } : {}), // Allow removing by passing ''
                 ...(liveSyncing ? { liveSyncing } : {}),
                 ...(oneTime ? { oneTime } : {}),
             }),
