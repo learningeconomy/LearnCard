@@ -41,15 +41,29 @@ export enum LCSubtypes {
     locked = 'locked',
 }
 
+// courses(learningHistory - ladder), social badges, achievements, accomplishments,
+// skills, experiences, relationships, accomodations
+// todo - memberships, goals
+// deprecated - ids, currency
 export enum WalletCategoryTypes {
     achievements = 'achievements',
-    ids = 'ids',
     jobHistory = 'jobHistory',
-    currency = 'currency',
     learningHistory = 'learningHistory',
     skills = 'skills',
     socialBadge = 'socialBadge',
+
+    // new
+    relationships = 'relationships',
+    accomodations = 'accomodations',
+    accomplishments = 'accomplishments',
+
+    // todo
     membership = 'membership',
+    goals = 'goals',
+
+    // deprecated
+    ids = 'ids',
+    currency = 'currency',
 }
 
 export type CredentialInfo = {
