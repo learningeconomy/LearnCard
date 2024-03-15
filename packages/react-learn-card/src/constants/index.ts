@@ -47,36 +47,36 @@ export const TYPE_TO_IMG_SRC = {
 
 export const TYPE_TO_WALLET_COLOR = {
     [WalletCategoryTypes.learningHistory]: 'emerald-300',
-    [WalletCategoryTypes.socialBadge]: 'cyan-200',
-    [WalletCategoryTypes.achievements]: 'spice-300',
-    [WalletCategoryTypes.accomplishments]: 'emerald-300',
-    [WalletCategoryTypes.skills]: 'indigo-300',
-    [WalletCategoryTypes.jobHistory]: 'rose-300',
-    [WalletCategoryTypes.relationships]: 'rose-300',
-    [WalletCategoryTypes.accomodations]: 'rose-300',
+    [WalletCategoryTypes.socialBadge]: 'cyan-300',
+    [WalletCategoryTypes.achievements]: 'orange-300',
+    [WalletCategoryTypes.accomplishments]: 'lime-300',
+    [WalletCategoryTypes.skills]: 'violet-300',
+    [WalletCategoryTypes.jobHistory]: 'blue-300',
+    [WalletCategoryTypes.relationships]: 'pink-300',
+    [WalletCategoryTypes.accomodations]: 'amber-300',
 
     // todo
     [WalletCategoryTypes.membership]: 'teal-300',
-    [WalletCategoryTypes.goals]: 'teal-300',
+    [WalletCategoryTypes.goals]: 'rose-300',
 
     // deprecated
     [WalletCategoryTypes.ids]: 'yellow-300',
-    [WalletCategoryTypes.currency]: 'cyan-200',
+    [WalletCategoryTypes.currency]: 'cyan-300',
 };
 
 export const TYPE_TO_WALLET_LIGHT_COLOR = {
     [WalletCategoryTypes.learningHistory]: 'emerald-200',
     [WalletCategoryTypes.socialBadge]: 'cyan-200',
-    [WalletCategoryTypes.achievements]: 'spice-200',
-    [WalletCategoryTypes.accomplishments]: 'emerald-200',
-    [WalletCategoryTypes.skills]: 'indigo-200',
-    [WalletCategoryTypes.jobHistory]: 'rose-200',
-    [WalletCategoryTypes.relationships]: 'rose-200',
-    [WalletCategoryTypes.accomodations]: 'rose-200',
+    [WalletCategoryTypes.achievements]: 'orange-200',
+    [WalletCategoryTypes.accomplishments]: 'lime-200',
+    [WalletCategoryTypes.skills]: 'violet-200',
+    [WalletCategoryTypes.jobHistory]: 'blue-200',
+    [WalletCategoryTypes.relationships]: 'pink-200',
+    [WalletCategoryTypes.accomodations]: 'amber-200',
 
     // todo
     [WalletCategoryTypes.membership]: 'teal-200',
-    [WalletCategoryTypes.goals]: 'teal-200',
+    [WalletCategoryTypes.goals]: 'rose-200',
 
     // deprecated
     [WalletCategoryTypes.ids]: 'yellow-200',
@@ -86,16 +86,16 @@ export const TYPE_TO_WALLET_LIGHT_COLOR = {
 export const TYPE_TO_WALLET_DARK_COLOR = {
     [WalletCategoryTypes.learningHistory]: 'emerald-500',
     [WalletCategoryTypes.socialBadge]: 'cyan-500',
-    [WalletCategoryTypes.achievements]: 'spice-500',
-    [WalletCategoryTypes.accomplishments]: 'emerald-500',
-    [WalletCategoryTypes.skills]: 'indigo-500',
-    [WalletCategoryTypes.jobHistory]: 'rose-500',
-    [WalletCategoryTypes.relationships]: 'rose-500',
-    [WalletCategoryTypes.accomodations]: 'rose-500',
+    [WalletCategoryTypes.achievements]: 'orange-500',
+    [WalletCategoryTypes.accomplishments]: 'lime-500',
+    [WalletCategoryTypes.skills]: 'violet-500',
+    [WalletCategoryTypes.jobHistory]: 'blue-500',
+    [WalletCategoryTypes.relationships]: 'pink-500',
+    [WalletCategoryTypes.accomodations]: 'amber-500',
 
     // todo
     [WalletCategoryTypes.membership]: 'teal-500',
-    [WalletCategoryTypes.goals]: 'teal-500',
+    [WalletCategoryTypes.goals]: 'rose-500',
 
     // deprecated
     [WalletCategoryTypes.ids]: 'yellow-500',
