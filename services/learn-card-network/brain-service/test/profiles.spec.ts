@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { LCNProfileConnectionStatusEnum } from '@learncard/types';
 import { getClient, getUser } from './helpers/getClient';
 import { Profile, SigningAuthority, Credential, Boost } from '@models';
@@ -1414,11 +1415,11 @@ describe('Profiles', () => {
         });
 
         it('expires challenges after a while, allowing them to be used again', async () => {
-            jest.useFakeTimers().setSystemTime(new Date('02-06-2023'));
+            vi.useFakeTimers().setSystemTime(new Date('02-06-2023'));
 
             await userA.clients.fullAuth.profile.generateInvite({ challenge: 'nice' });
 
-            jest.setSystemTime(new Date('02-06-2024'));
+            vi.setSystemTime(new Date('02-06-2024'));
 
             await expect(
                 userB.clients.fullAuth.profile.connectWithInvite({
@@ -1431,7 +1432,7 @@ describe('Profiles', () => {
                 userA.clients.fullAuth.profile.generateInvite({ challenge: 'nice' })
             ).resolves.not.toThrow();
 
-            jest.useRealTimers();
+            vi.useRealTimers();
         });
     });
 
