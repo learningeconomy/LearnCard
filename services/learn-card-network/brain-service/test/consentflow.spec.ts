@@ -8,7 +8,6 @@ import {
 } from './helpers/contract';
 import { getClient, getUser } from './helpers/getClient';
 import { Profile, ConsentFlowContract } from '@models';
-import { OverLimit } from '@aws-sdk/client-sqs';
 
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;

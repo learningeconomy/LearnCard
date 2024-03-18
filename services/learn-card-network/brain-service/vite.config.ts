@@ -1,5 +1,8 @@
+import { createRequire } from 'module';
 import { defineConfig } from 'vitest/config';
 import tsconfigPaths from 'vite-tsconfig-paths';
+
+const require = createRequire(import.meta.url);
 
 export default defineConfig({
     plugins: [tsconfigPaths({ root: '../../' }) as any],
@@ -7,8 +10,8 @@ export default defineConfig({
         environment: 'node',
         globals: true,
         fileParallelism: false,
-        poolOptions: { threads: { singleThread: true, maxThreads: 1 } },
         globalSetup: './test-setup.ts',
+        alias: { '@instance': require.resolve('./test/helpers/mock-instance.ts') },
         exclude: [
             '**/node_modules/**',
             '**/dist/**',
