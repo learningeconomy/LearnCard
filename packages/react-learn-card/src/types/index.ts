@@ -47,7 +47,7 @@ export enum LCSubtypes {
 // deprecated - ids, currency
 export enum WalletCategoryTypes {
     achievements = 'achievements',
-    jobHistory = 'jobHistory',
+    jobHistory = 'jobhistory',
     learningHistory = 'learningHistory',
     skills = 'skills',
     socialBadge = 'socialBadge',

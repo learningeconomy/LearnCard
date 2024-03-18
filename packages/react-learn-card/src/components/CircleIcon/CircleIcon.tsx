@@ -52,16 +52,12 @@ export const CountCircle: React.FC<CountCircleProps> = ({
             className={`bg-grayscale-900 text-grayscale-50 rounded-full`}
             style={style}
         >
-                {!loading && count && (
-                    <p className="">
-                        {_count}
-                    </p>
-                )}
-                {loading && (
-                    <div style={spinnerStyle}>
-                        <CircleSpinner loadingState={circleLoadingState} thickness={3} size={20} />
-                    </div>
-                )}
+            {!loading && count && <p className="">{_count}</p>}
+            {loading && (
+                <div style={spinnerStyle}>
+                    <CircleSpinner loadingState={circleLoadingState} thickness={3} size={20} />
+                </div>
+            )}
         </section>
     );
 };
@@ -86,8 +82,8 @@ export const CircleIcon: React.FC<CircleIconProps> = ({
                 className={`flex flex-row-reverse justify-center items-center ${bgColor} rounded-full relative overflow-hidden w-16 `}
                 style={style}
             >
-                    <CountCircle count={count} loading={loading} />
-                    <img src={iconSrc ?? ''} alt="Icon image" />
+                <CountCircle count={count} loading={loading} />
+                <img src={iconSrc ?? ''} alt="Icon image" />
             </section>
         </div>
     );
