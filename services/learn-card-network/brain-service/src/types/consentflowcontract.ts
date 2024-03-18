@@ -18,13 +18,25 @@ export const DbContractValidator = z.object({
 export type DbContractType = z.infer<typeof DbContractValidator>;
 export type FlatDbContractType = FlattenObject<DbContractType>;
 
+export const DbTransactionValidator = z.object({
+    id: z.string(),
+    action: z.enum(['consent', 'update', 'sync', 'withdraw']),
+    terms: ConsentFlowTermsValidator,
+    date: z.string(),
+    expiresAt: z.string().optional(),
+    oneTime: z.boolean().optional(),
+});
+
+export type DbTransactionType = z.infer<typeof DbTransactionValidator>;
+export type FlatDbTransactionType = FlattenObject<DbTransactionType>;
+
 export const DbTermsValidator = z.object({
     id: z.string(),
+    status: z.enum(['live', 'stale', 'withdrawn']),
     terms: ConsentFlowTermsValidator,
-    createdAt: z.string(),
-    updatedAt: z.string(),
+    createdAt: z.string().optional(),
+    updatedAt: z.string().optional(),
     expiresAt: z.string().optional(),
-    liveSyncing: z.boolean().optional(),
     oneTime: z.boolean().optional(),
 });
 

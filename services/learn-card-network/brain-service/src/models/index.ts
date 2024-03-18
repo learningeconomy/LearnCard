@@ -2,11 +2,9 @@ import { Boost } from './Boost';
 import { Profile } from './Profile';
 import { Credential } from './Credential';
 import { Presentation } from './Presentation';
-import { ConsentFlowContract } from './ConsentFlowContract';
 
 Profile.addRelationships({
     adminOf: { model: Boost, direction: 'out', name: 'ADMIN_OF' },
-    consentsTo: ConsentFlowContract.reverseRelationshipConfiguration('consentsTo'),
 });
 
 Credential.addRelationships({
@@ -43,4 +41,6 @@ export * from './Profile';
 export * from './Credential';
 export * from './Presentation';
 export * from './SigningAuthority';
+export * from './ConsentFlowTerms';
 export * from './ConsentFlowContract';
+export * from './ConsentFlowTransaction';

@@ -9,8 +9,6 @@ import { transformProfileId } from '@helpers/profile.helpers';
 import { ProfileType } from 'types/profile';
 import { SigningAuthorityInstance } from './SigningAuthority';
 import { Boost, BoostInstance } from './Boost';
-import ConsentFlowContract, { ConsentFlowInstance } from './ConsentFlowContract';
-import { FlatDbTermsType } from 'types/consentflowcontract';
 
 export type ProfileRelationships = {
     connectionRequested: ModelRelatedNodesI<typeof Profile, ProfileInstance>;
@@ -34,12 +32,6 @@ export type ProfileRelationships = {
         SigningAuthorityInstance,
         { name: string; did: string },
         { name: string; did: string }
-    >;
-    consentsTo: ModelRelatedNodesI<
-        typeof ConsentFlowContract,
-        ConsentFlowInstance,
-        FlatDbTermsType,
-        FlatDbTermsType
     >;
 };
 

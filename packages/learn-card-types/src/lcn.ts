@@ -130,6 +130,9 @@ export const LCNSigningAuthorityForUserValidator = z.object({
 });
 export type LCNSigningAuthorityForUserType = z.infer<typeof LCNSigningAuthorityForUserValidator>;
 
+export const ConsentFlowTermsStatusValidator = z.enum(['live', 'stale', 'withdrawn']);
+export type ConsentFlowTermsStatus = z.infer<typeof ConsentFlowTermsStatusValidator>;
+
 export const ConsentFlowContractValidator = z.object({
     read: z
         .object({
@@ -209,12 +212,12 @@ export const PaginatedConsentFlowTermsValidator = PaginationResponseValidator.ex
     records: z
         .object({
             expiresAt: z.string().optional(),
-            liveSyncing: z.boolean().optional(),
             oneTime: z.boolean().optional(),
             terms: ConsentFlowTermsValidator,
             contract: ConsentFlowContractDetailsValidator,
             uri: z.string(),
             consenter: LCNProfileValidator,
+            status: ConsentFlowTermsStatusValidator,
         })
         .array(),
 });

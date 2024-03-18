@@ -687,7 +687,8 @@ describe('Consent Flow Contracts', () => {
 
             const newContracts = await userB.clients.fullAuth.contracts.getConsentedContracts();
 
-            expect(newContracts.records).toHaveLength(0);
+            expect(newContracts.records).toHaveLength(1);
+            expect(newContracts.records[0].status).toEqual('withdrawn');
         });
     });
 

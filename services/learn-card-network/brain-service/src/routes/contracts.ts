@@ -28,8 +28,10 @@ import { deleteStorageForUri } from '@cache/storage';
 import { deleteConsentFlowContract } from '@accesslayer/consentflowcontract/delete';
 import { areTermsValid } from '@helpers/contract.helpers';
 import { updateDidForProfile } from '@helpers/did.helpers';
-import { updateTermsById } from '@accesslayer/consentflowcontract/relationships/update';
-import { deleteTermsById } from '@accesslayer/consentflowcontract/relationships/delete';
+import {
+    updateTermsById,
+    withdrawTermsById,
+} from '@accesslayer/consentflowcontract/relationships/update';
 import {
     consentToContract,
     setCreatorForContract,
@@ -218,7 +220,6 @@ export const contractsRouter = t.router({
                 terms: ConsentFlowTermsValidator,
                 contractUri: z.string(),
                 expiresAt: z.string().optional(),
-                liveSyncing: z.boolean().optional(),
                 oneTime: z.boolean().optional(),
             })
         )
@@ -226,7 +227,7 @@ export const contractsRouter = t.router({
         .mutation(async ({ input, ctx }) => {
             const { profile } = ctx.user;
 
-            const { terms, contractUri, expiresAt, liveSyncing, oneTime } = input;
+            const { terms, contractUri, expiresAt, oneTime } = input;
 
             const contract = await getContractByUri(contractUri);
 
@@ -245,7 +246,7 @@ export const contractsRouter = t.router({
                 throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid Terms for Contract' });
             }
 
-            await consentToContract(profile, contract, { terms, expiresAt, liveSyncing, oneTime });
+            await consentToContract(profile, contract, { terms, expiresAt, oneTime });
 
             const relationship = await getContractTermsForProfile(profile, contract);
 
@@ -315,9 +316,9 @@ export const contractsRouter = t.router({
                     uri: constructUri('terms', record.terms.id, ctx.domain),
                     terms: record.terms.terms,
                     ...(record.terms.expiresAt ? { expiresAt: record.terms.expiresAt } : {}),
-                    ...(record.terms.liveSyncing ? { liveSyncing: record.terms.liveSyncing } : {}),
                     ...(record.terms.oneTime ? { oneTime: record.terms.oneTime } : {}),
                     consenter: updateDidForProfile(ctx.domain, profile),
+                    status: record.terms.status,
                 })),
             };
         }),
@@ -338,7 +339,6 @@ export const contractsRouter = t.router({
                 uri: z.string(),
                 terms: ConsentFlowTermsValidator,
                 expiresAt: z.string().optional(),
-                liveSyncing: z.boolean().optional(),
                 oneTime: z.boolean().optional(),
             })
         )
@@ -346,7 +346,7 @@ export const contractsRouter = t.router({
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
 
-            const { uri, terms, expiresAt, liveSyncing, oneTime } = input;
+            const { uri, terms, expiresAt, oneTime } = input;
 
             const relationship = await getContractTermsByUri(uri);
 
@@ -372,7 +372,7 @@ export const contractsRouter = t.router({
             }
 
             await Promise.all([
-                updateTermsById(relationship.terms.id, { terms, expiresAt, liveSyncing, oneTime }),
+                updateTermsById(relationship.terms.id, { terms, expiresAt, oneTime }),
                 deleteStorageForUri(uri),
             ]);
 
@@ -413,7 +413,7 @@ export const contractsRouter = t.router({
                 });
             }
 
-            await Promise.all([deleteTermsById(relationship.terms.id), deleteStorageForUri(uri)]);
+            await Promise.all([withdrawTermsById(relationship.terms.id), deleteStorageForUri(uri)]);
 
             return true;
         }),
@@ -445,6 +445,8 @@ export const contractsRouter = t.router({
             const terms = await getContractTermsForProfile(profileId, contract);
 
             if (!terms) return false;
+
+            if (terms.status !== 'live') return false;
 
             if (terms.expiresAt && new Date() > new Date(terms.expiresAt)) return false;
 

@@ -51,7 +51,7 @@
         "@learncard/types": "workspace:*",
         "@learncard/vc-plugin": "workspace:*",
         "@learncard/vc-templates-plugin": "workspace:*",
-        "@sentry/esbuild-plugin": "^2.5.0",
+        "@sentry/esbuild-plugin": "^2.16.0",
         "@sentry/serverless": "^7.61.0",
         "@trpc/server": "^10.17.0",
         "@types/lodash": "^4.14.191",

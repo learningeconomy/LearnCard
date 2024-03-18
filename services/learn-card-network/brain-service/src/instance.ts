@@ -1,3 +1,10 @@
+declare module 'vitest' {
+    export interface ProvidedContext {
+        'neo4j-uri': string;
+        'neo4j-password': string;
+    }
+}
+
 import { inject } from 'vitest';
 import dotenv from 'dotenv';
 import { Neogma, QueryBuilder } from 'neogma';

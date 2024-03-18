@@ -1,6 +1,6 @@
 import { QueryBuilder, BindParam } from 'neogma';
 import { convertQueryResultToPropertiesObjectArray } from '@helpers/neo4j.helpers';
-import { Profile, ProfileInstance, ConsentFlowContract } from '@models';
+import { Profile, ProfileInstance, ConsentFlowContract, ConsentFlowTerms } from '@models';
 import {
     DbTermsType,
     FlatDbTermsType,
@@ -38,7 +38,9 @@ export const hasProfileConsentedToContract = async (
                 model: Profile,
                 where: { profileId: typeof profile === 'string' ? profile : profile.profileId },
             },
-            { ...Profile.getRelationshipByAlias('consentsTo'), identifier: 'terms' },
+            { ...ConsentFlowTerms.getRelationshipByAlias('createdBy') },
+            { model: ConsentFlowTerms, identifier: 'terms', where: { status: 'live' } },
+            { ...ConsentFlowTerms.getRelationshipByAlias('consentsTo') },
             { model: ConsentFlowContract, where: { id: contract.id } },
         ],
     });
@@ -93,7 +95,9 @@ export const getContractTermsForProfile = async (
                             profileId: typeof profile === 'string' ? profile : profile.profileId,
                         },
                     },
-                    { ...Profile.getRelationshipByAlias('consentsTo'), identifier: 'terms' },
+                    ConsentFlowTerms.getRelationshipByAlias('createdBy'),
+                    { model: ConsentFlowTerms, identifier: 'terms' },
+                    ConsentFlowTerms.getRelationshipByAlias('consentsTo'),
                     { model: ConsentFlowContract, where: { id: contract.id } },
                 ],
             })
@@ -120,11 +124,9 @@ export const getContractTermsById = async (
             .match({
                 related: [
                     { model: Profile, identifier: 'consenter' },
-                    {
-                        ...Profile.getRelationshipByAlias('consentsTo'),
-                        where: { id },
-                        identifier: 'terms',
-                    },
+                    ConsentFlowTerms.getRelationshipByAlias('createdBy'),
+                    { model: ConsentFlowTerms, identifier: 'terms', where: { id } },
+                    ConsentFlowTerms.getRelationshipByAlias('consentsTo'),
                     { model: ConsentFlowContract, identifier: 'contract' },
                 ],
             })
@@ -203,7 +205,9 @@ export const getConsentedContractsForProfile = async (
         .match({
             related: [
                 { model: Profile, where: { profileId: profile.profileId } },
-                { ...Profile.getRelationshipByAlias('consentsTo'), identifier: 'terms' },
+                ConsentFlowTerms.getRelationshipByAlias('createdBy'),
+                { identifier: 'terms', model: ConsentFlowTerms },
+                ConsentFlowTerms.getRelationshipByAlias('consentsTo'),
                 { identifier: 'contract', model: ConsentFlowContract },
                 `-[:${ConsentFlowContract.getRelationshipByAlias('createdBy').name}]-`,
                 { model: Profile, identifier: 'owner' },

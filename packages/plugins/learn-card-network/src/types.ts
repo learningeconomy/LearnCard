@@ -146,7 +146,6 @@ export type LearnCardNetworkPluginMethods = {
         terms: {
             terms: ConsentFlowTerms;
             expiresAt?: string;
-            liveSyncing?: boolean;
             oneTime?: boolean;
         }
     ) => Promise<string>;
@@ -158,7 +157,6 @@ export type LearnCardNetworkPluginMethods = {
         terms: {
             terms: ConsentFlowTerms;
             expiresAt?: string;
-            liveSyncing?: boolean;
             oneTime?: boolean;
         }
     ) => Promise<boolean>;
