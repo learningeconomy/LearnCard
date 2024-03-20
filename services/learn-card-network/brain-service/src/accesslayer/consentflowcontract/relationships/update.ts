@@ -9,9 +9,8 @@ export const updateTermsById = async (
     {
         terms,
         expiresAt,
-        liveSyncing,
         oneTime,
-    }: { terms: ConsentFlowTermsType; expiresAt?: string; liveSyncing?: boolean; oneTime?: boolean }
+    }: { terms: ConsentFlowTermsType; expiresAt?: string; oneTime?: boolean }
 ): Promise<boolean> => {
     const result = await new QueryBuilder(
         new BindParam({
@@ -19,9 +18,8 @@ export const updateTermsById = async (
                 terms,
                 updatedAt: new Date().toISOString(),
                 status: oneTime ? 'stale' : 'live',
-                ...(typeof expiresAt === 'string' ? { expiresAt } : {}), // Allow removing by passing ''
-                ...(liveSyncing ? { liveSyncing } : {}),
-                ...(oneTime ? { oneTime } : {}),
+                ...(typeof expiresAt === 'string' ? { expiresAt } : {}),
+                ...(typeof oneTime === 'boolean' ? { oneTime } : {}),
             }),
         })
     )
@@ -39,8 +37,8 @@ export const updateTermsById = async (
                         id: uuid(),
                         action: 'update',
                         date: new Date().toISOString(),
-                        ...(expiresAt ? { expiresAt } : {}),
-                        ...(oneTime ? { oneTime } : {}),
+                        ...(typeof expiresAt === 'string' ? { expiresAt } : {}),
+                        ...(typeof oneTime === 'boolean' ? { oneTime } : {}),
                     },
                 },
             ],
