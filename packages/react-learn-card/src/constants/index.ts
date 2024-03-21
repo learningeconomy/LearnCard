@@ -10,6 +10,7 @@ import ladder from '../assets/images/ladder.svg';
 import relationshipCats from '../assets/images/relationships-cats.svg';
 import membershipKey from '../assets/images/membership-key.svg';
 import accommodationHands from '../assets/images/accommodation-hands.svg';
+import eventsGraphic from '../assets/images/eventsGraphic.svg';
 
 import MiniTrophyIcon from '../assets/images/minitrophycolored.svg';
 import MiniGradIcon from '../assets/images/minigradcapcolored.svg';
@@ -35,6 +36,7 @@ export const TYPE_TO_IMG_SRC = {
     [WalletCategoryTypes.jobHistory]: experienceMountain,
     [WalletCategoryTypes.relationships]: relationshipCats,
     [WalletCategoryTypes.accomodations]: accommodationHands,
+    [WalletCategoryTypes.events]: eventsGraphic,
 
     // todo
     [WalletCategoryTypes.membership]: membershipKey,
@@ -54,6 +56,7 @@ export const TYPE_TO_WALLET_COLOR = {
     [WalletCategoryTypes.jobHistory]: 'blue-300',
     [WalletCategoryTypes.relationships]: 'pink-300',
     [WalletCategoryTypes.accomodations]: 'amber-300',
+    [WalletCategoryTypes.events]: 'fuchsia-300',
 
     // todo
     [WalletCategoryTypes.membership]: 'teal-300',
@@ -73,6 +76,7 @@ export const TYPE_TO_WALLET_LIGHT_COLOR = {
     [WalletCategoryTypes.jobHistory]: 'blue-200',
     [WalletCategoryTypes.relationships]: 'pink-200',
     [WalletCategoryTypes.accomodations]: 'amber-200',
+    [WalletCategoryTypes.events]: 'fuchsia-200',
 
     // todo
     [WalletCategoryTypes.membership]: 'teal-200',
@@ -92,6 +96,7 @@ export const TYPE_TO_WALLET_DARK_COLOR = {
     [WalletCategoryTypes.jobHistory]: 'blue-500',
     [WalletCategoryTypes.relationships]: 'pink-500',
     [WalletCategoryTypes.accomodations]: 'amber-500',
+    [WalletCategoryTypes.events]: 'fuchsia-500',
 
     // todo
     [WalletCategoryTypes.membership]: 'teal-500',

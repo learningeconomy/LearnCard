@@ -18,6 +18,19 @@ export enum Icons {
     puzzlelight,
     award,
     keyIcon,
+
+    // new icons
+    coursesIcon,
+    socialBagesIcon,
+    achievementsIcon,
+    accomplishmentsIcon,
+    skillsIcon,
+    experiencesIcon,
+    relationshipsIcon,
+    accomodationsIcon,
+    membershipsIcon,
+    goalsIcon,
+    eventsIcon,
 }
 
 export enum LCCategoryEnum {
@@ -31,6 +44,7 @@ export enum LCCategoryEnum {
     learningHistory = 'Learning History',
     skill = 'Skill',
     membership = 'Membership',
+    event = 'Event',
 }
 
 export enum LCSubtypes {
@@ -56,6 +70,7 @@ export enum WalletCategoryTypes {
     relationships = 'relationships',
     accomodations = 'accomodations',
     accomplishments = 'accomplishments',
+    events = 'events',
 
     // todo
     membership = 'membership',
