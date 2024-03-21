@@ -8,6 +8,7 @@ import badgeGraphic from '../../assets/images/social-badge-2.svg';
 import membershipGraphic from '../../assets/images/membership-graphic.png';
 
 import ladder from '../../assets/images/ladder.svg';
+import accommodationHands from '../../assets/images/accommodation-hands.svg';
 
 import MiniTrophyIcon from '../../assets/images/minitrophycolored.svg';
 import MiniGradIcon from '../../assets/images/minigradcapcolored.svg';
@@ -29,6 +30,8 @@ export const WALLET_SUBTYPES = {
     SKILLS: 'skills',
     SOCIAL_BADGES: 'socialBadges',
     MEMBERSHIP: 'membership',
+    ACCOMPLISHMENTS: 'accomplishments',
+    ACCOMMODATIONS: 'accommodations',
 };
 
 export const TYPE_TO_IMG_SRC = {
@@ -40,6 +43,8 @@ export const TYPE_TO_IMG_SRC = {
     [WALLET_SUBTYPES.SKILLS]: skillsGraphic,
     [WALLET_SUBTYPES.SOCIAL_BADGES]: badgeGraphic,
     [WALLET_SUBTYPES.MEMBERSHIP]: membershipGraphic,
+    [WALLET_SUBTYPES.ACCOMPLISHMENTS]: learningHistoryGraphic,
+    [WALLET_SUBTYPES.ACCOMMODATIONS]: accommodationHands,
 };
 
 export const TYPE_TO_WALLET_COLOR = {
@@ -51,4 +56,6 @@ export const TYPE_TO_WALLET_COLOR = {
     [WALLET_SUBTYPES.SKILLS]: 'indigo-300',
     [WALLET_SUBTYPES.SOCIAL_BADGES]: 'cyan-200',
     [WALLET_SUBTYPES.MEMBERSHIP]: 'teal-300',
+    [WALLET_SUBTYPES.ACCOMPLISHMENTS]: 'lime-300',
+    [WALLET_SUBTYPES.ACCOMMODATIONS]: 'amber-300',
 };
