@@ -9,6 +9,7 @@ import membershipGraphic from '../../assets/images/membership-graphic.png';
 
 import ladder from '../../assets/images/ladder.svg';
 import accommodationHands from '../../assets/images/accommodation-hands.svg';
+import experienceMountain from '../../assets/images/experience-mountain.svg';
 
 import MiniTrophyIcon from '../../assets/images/minitrophycolored.svg';
 import MiniGradIcon from '../../assets/images/minigradcapcolored.svg';
@@ -37,7 +38,7 @@ export const WALLET_SUBTYPES = {
 export const TYPE_TO_IMG_SRC = {
     [WALLET_SUBTYPES.ACHIEVEMENTS]: achievementsGraphic,
     [WALLET_SUBTYPES.IDS]: idsGraphic,
-    [WALLET_SUBTYPES.JOB_HISTORY]: jobhistoryGraphic,
+    [WALLET_SUBTYPES.JOB_HISTORY]: experienceMountain,
     [WALLET_SUBTYPES.LEARNING_HISTORY]: ladder,
     [WALLET_SUBTYPES.CURRENCIES]: coinsGraphic,
     [WALLET_SUBTYPES.SKILLS]: skillsGraphic,
