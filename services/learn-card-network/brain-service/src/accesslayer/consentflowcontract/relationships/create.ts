@@ -4,7 +4,7 @@ import { ConsentFlowContract, ConsentFlowTerms, ConsentFlowTransaction, Profile 
 import { BindParam, QueryBuilder } from 'neogma';
 import { DbContractType } from 'types/consentflowcontract';
 import { flattenObject } from '@helpers/objects.helpers';
-import { updateTermsById } from './update';
+import { reconsentTermsById } from './update';
 
 export const setCreatorForContract = async (contract: DbContractType, profile: LCNProfile) => {
     return ConsentFlowContract.relateTo({
@@ -39,7 +39,7 @@ export const consentToContract = async (
         .run();
 
     if (existing.records.length > 0) {
-        return updateTermsById(existing.records[0]?.get('id'), {
+        return reconsentTermsById(existing.records[0]?.get('terms')?.properties?.id, {
             terms,
             expiresAt,
             oneTime,

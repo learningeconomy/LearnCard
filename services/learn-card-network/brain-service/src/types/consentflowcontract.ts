@@ -1,5 +1,10 @@
 import { FlattenObject } from '@helpers/objects.helpers';
-import { ConsentFlowContractValidator, ConsentFlowTermsValidator } from '@learncard/types';
+import {
+    ConsentFlowContractValidator,
+    ConsentFlowTermsValidator,
+    ConsentFlowTermsStatusValidator,
+    ConsentFlowTransactionActionValidator,
+} from '@learncard/types';
 import { z } from 'zod';
 
 export const DbContractValidator = z.object({
@@ -20,7 +25,7 @@ export type FlatDbContractType = FlattenObject<DbContractType>;
 
 export const DbTransactionValidator = z.object({
     id: z.string(),
-    action: z.enum(['consent', 'update', 'sync', 'withdraw']),
+    action: ConsentFlowTransactionActionValidator,
     terms: ConsentFlowTermsValidator,
     date: z.string(),
     expiresAt: z.string().optional(),
@@ -32,7 +37,7 @@ export type FlatDbTransactionType = FlattenObject<DbTransactionType>;
 
 export const DbTermsValidator = z.object({
     id: z.string(),
-    status: z.enum(['live', 'stale', 'withdrawn']),
+    status: ConsentFlowTermsStatusValidator,
     terms: ConsentFlowTermsValidator,
     createdAt: z.string().optional(),
     updatedAt: z.string().optional(),

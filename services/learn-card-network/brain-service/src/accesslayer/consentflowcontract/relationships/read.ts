@@ -1,13 +1,28 @@
 import { QueryBuilder, BindParam } from 'neogma';
+import mapValues from 'lodash/mapValues';
 import { convertQueryResultToPropertiesObjectArray } from '@helpers/neo4j.helpers';
-import { Profile, ProfileInstance, ConsentFlowContract, ConsentFlowTerms } from '@models';
+import {
+    Profile,
+    ProfileInstance,
+    ConsentFlowContract,
+    ConsentFlowTerms,
+    ConsentFlowTransaction,
+} from '@models';
 import {
     DbTermsType,
     FlatDbTermsType,
     DbContractType,
     FlatDbContractType,
+    FlatDbTransactionType,
+    DbTransactionType,
 } from 'types/consentflowcontract';
-import { ConsentFlowContractQuery, ConsentFlowTermsQuery, LCNProfile } from '@learncard/types';
+import {
+    ConsentFlowContractData,
+    ConsentFlowContractQuery,
+    ConsentFlowTermsQuery,
+    ConsentFlowTransactionsQuery,
+    LCNProfile,
+} from '@learncard/types';
 import { getIdFromUri } from '@helpers/uri.helpers';
 import { flattenObject, inflateObject } from '@helpers/objects.helpers';
 
@@ -234,4 +249,69 @@ export const getConsentedContractsForProfile = async (
         contract: inflateObject(result.contract),
         terms: inflateObject(result.terms),
     }));
+};
+
+export const getConsentedDataForContract = async (
+    id: string,
+    { limit, cursor }: { limit: number; cursor?: string }
+): Promise<ConsentFlowContractData[]> => {
+    const _query = new QueryBuilder().match({
+        related: [
+            { identifier: 'terms', model: ConsentFlowTerms },
+            ConsentFlowTerms.getRelationshipByAlias('consentsTo'),
+            { model: ConsentFlowContract, where: { id: id } },
+        ],
+    });
+
+    const query = cursor ? _query.raw('terms.updatedAt < $cursor') : _query;
+
+    const results = convertQueryResultToPropertiesObjectArray<{
+        terms: FlatDbTermsType;
+    }>(await query.return('DISTINCT terms').orderBy('terms.updatedAt DESC').limit(limit).run());
+
+    const terms = results.map(result => inflateObject<DbTermsType>(result.terms));
+
+    return terms.map(term => ({
+        date: term.updatedAt!,
+        credentials: {
+            categories: mapValues(
+                term.terms.read.credentials.categories,
+                category => category.shared ?? []
+            ),
+        },
+        personal: term.terms.read.personal,
+    }));
+};
+
+export const getTransactionsForTerms = async (
+    termsId: string,
+    {
+        query: matchQuery = {},
+        limit,
+        cursor,
+    }: { query?: ConsentFlowTransactionsQuery; limit: number; cursor?: string }
+): Promise<DbTransactionType[]> => {
+    const _query = new QueryBuilder(new BindParam({ params: flattenObject(matchQuery), cursor }))
+        .match({
+            related: [
+                { model: ConsentFlowTerms, where: { id: termsId } },
+                ConsentFlowTransaction.getRelationshipByAlias('isFor'),
+                { identifier: 'transaction', model: ConsentFlowTransaction },
+            ],
+        })
+        .where('all(key IN keys($params) WHERE transaction[key] = $params[key])');
+
+    const query = cursor ? _query.raw('AND transaction.date < $cursor') : _query;
+
+    const results = convertQueryResultToPropertiesObjectArray<{
+        transaction: FlatDbTransactionType;
+    }>(
+        await query
+            .return('DISTINCT transaction')
+            .orderBy('transaction.date DESC')
+            .limit(limit)
+            .run()
+    );
+
+    return results.map(result => inflateObject(result.transaction));
 };

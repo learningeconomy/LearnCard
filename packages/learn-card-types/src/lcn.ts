@@ -176,6 +176,18 @@ export const PaginatedConsentFlowContractsValidator = PaginationResponseValidato
 });
 export type PaginatedConsentFlowContracts = z.infer<typeof PaginatedConsentFlowContractsValidator>;
 
+export const ConsentFlowContractDataValidator = z.object({
+    credentials: z.object({ categories: z.record(z.string().array()).default({}) }),
+    personal: z.record(z.string()).default({}),
+    date: z.string(),
+});
+export type ConsentFlowContractData = z.infer<typeof ConsentFlowContractDataValidator>;
+
+export const PaginatedConsentFlowDataValidator = PaginationResponseValidator.extend({
+    records: ConsentFlowContractDataValidator.array(),
+});
+export type PaginatedConsentFlowData = z.infer<typeof PaginatedConsentFlowDataValidator>;
+
 export const ConsentFlowTermsValidator = z.object({
     read: z
         .object({
@@ -195,7 +207,7 @@ export const ConsentFlowTermsValidator = z.object({
                         .default({}),
                 })
                 .default({}),
-            personal: z.record(z.boolean()).default({}),
+            personal: z.record(z.string()).default({}),
         })
         .default({}),
     write: z
@@ -270,7 +282,7 @@ export const ConsentFlowTermsQueryValidator = z.object({
                         .optional(),
                 })
                 .optional(),
-            personal: z.record(z.boolean()).optional(),
+            personal: z.record(z.string()).optional(),
         })
         .optional(),
     write: z
@@ -282,3 +294,50 @@ export const ConsentFlowTermsQueryValidator = z.object({
 });
 export type ConsentFlowTermsQuery = z.infer<typeof ConsentFlowTermsQueryValidator>;
 export type ConsentFlowTermsQueryInput = z.input<typeof ConsentFlowTermsQueryValidator>;
+
+export const ConsentFlowTransactionActionValidator = z.enum([
+    'consent',
+    'update',
+    'sync',
+    'withdraw',
+]);
+export type ConsentFlowTransactionAction = z.infer<typeof ConsentFlowTransactionActionValidator>;
+
+export const ConsentFlowTransactionsQueryValidator = z.object({
+    terms: ConsentFlowTermsQueryValidator.optional(),
+    action: ConsentFlowTransactionActionValidator.or(
+        ConsentFlowTransactionActionValidator.array()
+    ).optional(),
+    date: z
+        .object({ $gt: z.string() })
+        .or(z.object({ $lt: z.string() }))
+        .or(z.object({ $eq: z.string() }))
+        .optional(),
+    expiresAt: z
+        .object({ $gt: z.string() })
+        .or(z.object({ $lt: z.string() }))
+        .or(z.object({ $eq: z.string() }))
+        .optional(),
+    oneTime: z.boolean().optional(),
+});
+export type ConsentFlowTransactionsQuery = z.infer<typeof ConsentFlowTransactionsQueryValidator>;
+export type ConsentFlowTransactionsQueryInput = z.input<
+    typeof ConsentFlowTransactionsQueryValidator
+>;
+
+export const ConsentFlowTransactionValidator = z.object({
+    expiresAt: z.string().optional(),
+    oneTime: z.boolean().optional(),
+    terms: ConsentFlowTermsValidator.optional(),
+    id: z.string(),
+    action: ConsentFlowTransactionActionValidator,
+    date: z.string(),
+});
+export type ConsentFlowTransaction = z.infer<typeof ConsentFlowTransactionValidator>;
+
+export const PaginatedConsentFlowTransactionsValidator = PaginationResponseValidator.extend({
+    records: ConsentFlowTransactionValidator.array(),
+});
+export type PaginatedConsentFlowTransactions = z.infer<
+    typeof PaginatedConsentFlowTransactionsValidator
+>;

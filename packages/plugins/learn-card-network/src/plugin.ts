@@ -496,6 +496,12 @@ export const getLearnCardNetworkPlugin = async (
                 return client.contracts.deleteConsentFlowContract.mutate({ uri });
             },
 
+            getConsentFlowData: async (_learnCard, uri, options) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.contracts.getConsentedDataForContract.query({ uri, ...options });
+            },
+
             consentToContract: async (_learnCard, contractUri, { terms, expiresAt, oneTime }) => {
                 if (!userData) throw new Error('Please make an account first!');
 
@@ -528,6 +534,12 @@ export const getLearnCardNetworkPlugin = async (
                 if (!userData) throw new Error('Please make an account first!');
 
                 return client.contracts.withdrawConsent.mutate({ uri });
+            },
+
+            getConsentFlowTransactions: async (_learnCard, uri, options) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.contracts.getTermsTransactionHistory.query({ uri, ...options });
             },
 
             verifyConsent: async (_learnCard, uri, profileId) => {

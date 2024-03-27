@@ -29,7 +29,9 @@ export const areTermsValid = (terms: ConsentFlowTermsInput, contract: ConsentFlo
         key => contract.write?.credentials?.categories?.[key]?.required
     );
 
-    if (requiredPersonalReadKeys.some(key => !terms.read?.personal?.[key])) return false;
+    if (requiredPersonalReadKeys.some(key => typeof terms.read?.personal?.[key] !== 'string')) {
+        return false;
+    }
     if (requiredPersonalWriteKeys.some(key => !terms.write?.personal?.[key])) return false;
     if (
         !terms.read?.credentials?.shareAll &&

@@ -11,18 +11,23 @@ import {
     PaginationOptionsValidator,
     PaginatedConsentFlowContractsValidator,
     PaginatedConsentFlowTermsValidator,
+    ConsentFlowTransactionsQueryValidator,
+    PaginatedConsentFlowTransactionsValidator,
+    PaginatedConsentFlowDataValidator,
 } from '@learncard/types';
 import { createConsentFlowContract } from '@accesslayer/consentflowcontract/create';
 import {
     getConsentFlowContractsForProfile,
     getConsentedContractsForProfile,
+    getConsentedDataForContract,
     getContractDetailsByUri,
     getContractTermsByUri,
     getContractTermsForProfile,
+    getTransactionsForTerms,
     hasProfileConsentedToContract,
     isProfileConsentFlowContractAdmin,
 } from '@accesslayer/consentflowcontract/relationships/read';
-import { constructUri } from '@helpers/uri.helpers';
+import { constructUri, getIdFromUri } from '@helpers/uri.helpers';
 import { getContractByUri } from '@accesslayer/consentflowcontract/read';
 import { deleteStorageForUri } from '@cache/storage';
 import { deleteConsentFlowContract } from '@accesslayer/consentflowcontract/delete';
@@ -204,6 +209,61 @@ export const contractsRouter = t.router({
             return true;
         }),
 
+    getConsentedDataForContract: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/consent-flow-contract/{uri}/data',
+                tags: ['Consent Flow Contracts'],
+                summary: 'Get the data that has been consented for a contract',
+                description: 'This route grabs all the data that has been consented for a contract',
+            },
+        })
+        .input(
+            PaginationOptionsValidator.extend({
+                uri: z.string(),
+                limit: PaginationOptionsValidator.shape.limit.default(25),
+            })
+        )
+        .output(PaginatedConsentFlowDataValidator)
+        .query(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+
+            const { uri, limit, cursor } = input;
+
+            const contract = await getContractByUri(uri);
+
+            if (!contract) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find contract' });
+            }
+
+            if (!(await isProfileConsentFlowContractAdmin(profile, contract))) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile does not own contract',
+                });
+            }
+
+            const contractId = getIdFromUri(uri);
+
+            const results = await getConsentedDataForContract(contractId, {
+                limit: limit + 1,
+                cursor,
+            });
+
+            const data = results.slice(0, limit);
+
+            const hasMore = results.length > limit;
+            const nextCursor = data.at(-1)?.date;
+
+            return {
+                hasMore,
+                cursor: nextCursor,
+                records: data,
+            };
+        }),
+
     consentToContract: profileRoute
         .meta({
             openapi: {
@@ -328,7 +388,7 @@ export const contractsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/consent-flow-contract/consent/{uri}',
+                path: '/consent-flow-contract/consent/update/{uri}',
                 tags: ['Consent Flow Contracts'],
                 summary: 'Updates Contract Terms',
                 description: 'Updates the terms for a consented contract',
@@ -384,7 +444,7 @@ export const contractsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'DELETE',
-                path: '/consent-flow-contract/consent/{uri}',
+                path: '/consent-flow-contract/consent/withdraw/{uri}',
                 tags: ['Consent Flow Contracts'],
                 summary: 'Deletes Contract Terms',
                 description: 'Withdraws consent by deleting Contract Terms',
@@ -416,6 +476,66 @@ export const contractsRouter = t.router({
             await Promise.all([withdrawTermsById(relationship.terms.id), deleteStorageForUri(uri)]);
 
             return true;
+        }),
+
+    getTermsTransactionHistory: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/consent-flow-contract/consent/history/{uri}',
+                tags: ['Consent Flow Contracts'],
+                summary: 'Gets Transaction History',
+                description:
+                    'Gets the transaction history for a set of Consent Flow Contract Terms',
+            },
+        })
+        .input(
+            PaginationOptionsValidator.extend({
+                uri: z.string(),
+                query: ConsentFlowTransactionsQueryValidator.default({}),
+                limit: PaginationOptionsValidator.shape.limit.default(25),
+            })
+        )
+        .output(PaginatedConsentFlowTransactionsValidator)
+        .query(async ({ input, ctx }) => {
+            const { profile } = ctx.user;
+            const { uri, query, limit, cursor } = input;
+
+            const relationship = await getContractTermsByUri(uri);
+
+            if (!relationship) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Could not find contract terms',
+                });
+            }
+
+            if (relationship.consenter.profileId !== profile.profileId) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile does not own terms',
+                });
+            }
+
+            const termsId = getIdFromUri(uri);
+
+            const results = await getTransactionsForTerms(termsId, {
+                query,
+                limit: limit + 1,
+                cursor,
+            });
+
+            const transactions = results.slice(0, limit);
+
+            const hasMore = results.length > limit;
+            const nextCursor = transactions.at(-1)?.date;
+
+            return {
+                hasMore,
+                cursor: nextCursor,
+                records: transactions,
+            };
         }),
 
     verifyConsent: openRoute

@@ -1,4 +1,4 @@
-import { vi } from 'vitest';
+import { vi, describe, beforeAll, beforeEach, it, expect } from 'vitest';
 import {
     promiscuousTerms,
     minimalContract,
@@ -7,7 +7,7 @@ import {
     predatoryContract,
 } from './helpers/contract';
 import { getClient, getUser } from './helpers/getClient';
-import { Profile, ConsentFlowContract } from '@models';
+import { Profile, ConsentFlowContract, ConsentFlowTransaction, ConsentFlowTerms } from '@models';
 
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;
@@ -332,12 +332,74 @@ describe('Consent Flow Contracts', () => {
         });
     });
 
+    describe('getConsentedDataForContract', () => {
+        let uri: string;
+
+        beforeEach(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await ConsentFlowContract.delete({ detach: true, where: {} });
+            await ConsentFlowTerms.delete({ detach: true, where: {} });
+            await ConsentFlowTransaction.delete({ detach: true, where: {} });
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+
+            uri = await userA.clients.fullAuth.contracts.createConsentFlowContract({
+                contract: minimalContract,
+                name: 'a',
+            });
+            await userB.clients.fullAuth.contracts.consentToContract({
+                contractUri: uri,
+                terms: minimalTerms,
+            });
+        });
+
+        afterAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await ConsentFlowContract.delete({ detach: true, where: {} });
+            await ConsentFlowTerms.delete({ detach: true, where: {} });
+            await ConsentFlowTransaction.delete({ detach: true, where: {} });
+        });
+
+        it('should not allow you to get data without full auth', async () => {
+            await expect(
+                noAuthClient.contracts.getConsentedDataForContract({ uri })
+            ).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+            await expect(
+                userA.clients.partialAuth.contracts.getConsentedDataForContract({ uri })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        });
+
+        it('should allow you to get data for contracts you own', async () => {
+            await expect(
+                userA.clients.fullAuth.contracts.getConsentedDataForContract({ uri })
+            ).resolves.not.toThrow();
+
+            const data = await userA.clients.fullAuth.contracts.getConsentedDataForContract({
+                uri,
+            });
+
+            expect(data.records).toHaveLength(1);
+            expect(data.records[0]!.personal.name).toEqual('Name lol');
+            expect(data.records[0]!.credentials.categories).toEqual({});
+        });
+
+        it("should not allow you to get data for someone else's contracts", async () => {
+            await expect(
+                userB.clients.fullAuth.contracts.getConsentedDataForContract({ uri })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        });
+    });
+
     describe('consentToContract', () => {
         let uri: string;
 
         beforeEach(async () => {
             await Profile.delete({ detach: true, where: {} });
             await ConsentFlowContract.delete({ detach: true, where: {} });
+            await ConsentFlowTerms.delete({ detach: true, where: {} });
+            await ConsentFlowTransaction.delete({ detach: true, where: {} });
             await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
             await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
 
@@ -350,6 +412,8 @@ describe('Consent Flow Contracts', () => {
         afterAll(async () => {
             await Profile.delete({ detach: true, where: {} });
             await ConsentFlowContract.delete({ detach: true, where: {} });
+            await ConsentFlowTerms.delete({ detach: true, where: {} });
+            await ConsentFlowTransaction.delete({ detach: true, where: {} });
         });
 
         it('should not allow you to consent to contracts without full auth', async () => {
@@ -426,6 +490,8 @@ describe('Consent Flow Contracts', () => {
         beforeEach(async () => {
             await Profile.delete({ detach: true, where: {} });
             await ConsentFlowContract.delete({ detach: true, where: {} });
+            await ConsentFlowTerms.delete({ detach: true, where: {} });
+            await ConsentFlowTransaction.delete({ detach: true, where: {} });
             await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
             await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
 
@@ -438,6 +504,8 @@ describe('Consent Flow Contracts', () => {
         afterAll(async () => {
             await Profile.delete({ detach: true, where: {} });
             await ConsentFlowContract.delete({ detach: true, where: {} });
+            await ConsentFlowTerms.delete({ detach: true, where: {} });
+            await ConsentFlowTransaction.delete({ detach: true, where: {} });
         });
 
         it('should not allow you to get contracts without full auth', async () => {
@@ -510,7 +578,7 @@ describe('Consent Flow Contracts', () => {
             expect(allContracts.records).toHaveLength(2);
 
             const filteredContracts = await userB.clients.fullAuth.contracts.getConsentedContracts({
-                query: { read: { personal: { email: true } } },
+                query: { read: { personal: { email: promiscuousTerms.read.personal.email! } } },
             });
             expect(filteredContracts.records).toHaveLength(1);
             expect(filteredContracts.records[0]!.contract.contract).toEqual(predatoryContract);
@@ -567,6 +635,8 @@ describe('Consent Flow Contracts', () => {
         beforeEach(async () => {
             await Profile.delete({ detach: true, where: {} });
             await ConsentFlowContract.delete({ detach: true, where: {} });
+            await ConsentFlowTerms.delete({ detach: true, where: {} });
+            await ConsentFlowTransaction.delete({ detach: true, where: {} });
             await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
             await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
 
@@ -646,6 +716,8 @@ describe('Consent Flow Contracts', () => {
         beforeEach(async () => {
             await Profile.delete({ detach: true, where: {} });
             await ConsentFlowContract.delete({ detach: true, where: {} });
+            await ConsentFlowTerms.delete({ detach: true, where: {} });
+            await ConsentFlowTransaction.delete({ detach: true, where: {} });
             await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
             await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
 
@@ -687,7 +759,124 @@ describe('Consent Flow Contracts', () => {
             const newContracts = await userB.clients.fullAuth.contracts.getConsentedContracts();
 
             expect(newContracts.records).toHaveLength(1);
-            expect(newContracts.records[0].status).toEqual('withdrawn');
+            expect(newContracts.records[0]!.status).toEqual('withdrawn');
+        });
+    });
+
+    describe('getTermsTransactionHistory', () => {
+        let contractUri: string;
+        let termsUri: string;
+
+        beforeEach(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await ConsentFlowContract.delete({ detach: true, where: {} });
+            await ConsentFlowTerms.delete({ detach: true, where: {} });
+            await ConsentFlowTransaction.delete({ detach: true, where: {} });
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+
+            contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract({
+                contract: minimalContract,
+                name: 'a',
+            });
+            termsUri = await userB.clients.fullAuth.contracts.consentToContract({
+                contractUri,
+                terms: minimalTerms,
+            });
+        });
+
+        afterAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await ConsentFlowContract.delete({ detach: true, where: {} });
+            await ConsentFlowTerms.delete({ detach: true, where: {} });
+            await ConsentFlowTransaction.delete({ detach: true, where: {} });
+        });
+
+        it('should not allow you to get transactions without full auth', async () => {
+            await expect(
+                noAuthClient.contracts.getTermsTransactionHistory({ uri: termsUri })
+            ).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+            await expect(
+                userB.clients.partialAuth.contracts.getTermsTransactionHistory({ uri: termsUri })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        });
+
+        it("should allow you to get transactions for contracts you've consented to", async () => {
+            await expect(
+                userB.clients.fullAuth.contracts.getTermsTransactionHistory({ uri: termsUri })
+            ).resolves.not.toThrow();
+
+            const transactions = await userB.clients.fullAuth.contracts.getTermsTransactionHistory({
+                uri: termsUri,
+            });
+
+            expect(transactions.records).toHaveLength(1);
+            expect(transactions.records[0]!.action).toEqual('consent');
+            expect(transactions.records[0]!.terms).toEqual(minimalTerms);
+        });
+
+        it('should not allow you to get transactions for contracts someone else consented to', async () => {
+            await expect(
+                userA.clients.fullAuth.contracts.getTermsTransactionHistory({ uri: termsUri })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        });
+
+        it('should allow you to query for certain transactions', async () => {
+            await userB.clients.fullAuth.contracts.updateConsentedContractTerms({
+                uri: termsUri,
+                terms: noTerms,
+            });
+
+            const allTransactions =
+                await userB.clients.fullAuth.contracts.getTermsTransactionHistory({
+                    uri: termsUri,
+                });
+            expect(allTransactions.records).toHaveLength(2);
+
+            const filteredTransactions =
+                await userB.clients.fullAuth.contracts.getTermsTransactionHistory({
+                    uri: termsUri,
+                    query: { action: 'update' },
+                });
+            expect(filteredTransactions.records).toHaveLength(1);
+            expect(filteredTransactions.records[0]!.action).toEqual('update');
+        });
+
+        it('should paginate', async () => {
+            for (let i = 0; i < 9; i += 1) {
+                await userB.clients.fullAuth.contracts.updateConsentedContractTerms({
+                    uri: termsUri,
+                    terms: i % 2 === 0 ? noTerms : minimalTerms,
+                });
+            }
+
+            const history = await userB.clients.fullAuth.contracts.getTermsTransactionHistory({
+                uri: termsUri,
+                limit: 20,
+            });
+
+            expect(history.records).toHaveLength(10);
+
+            const firstPage = await userB.clients.fullAuth.contracts.getTermsTransactionHistory({
+                uri: termsUri,
+                limit: 5,
+            });
+
+            expect(firstPage.records).toHaveLength(5);
+            expect(firstPage.hasMore).toBeTruthy();
+            expect(firstPage.cursor).toBeDefined();
+
+            const secondPage = await userB.clients.fullAuth.contracts.getTermsTransactionHistory({
+                uri: termsUri,
+                limit: 5,
+                cursor: firstPage.cursor,
+            });
+
+            expect(secondPage.hasMore).toBeFalsy();
+
+            expect([...firstPage.records, ...secondPage.records]).toEqual(history.records);
         });
     });
 
@@ -698,6 +887,8 @@ describe('Consent Flow Contracts', () => {
         beforeEach(async () => {
             await Profile.delete({ detach: true, where: {} });
             await ConsentFlowContract.delete({ detach: true, where: {} });
+            await ConsentFlowTerms.delete({ detach: true, where: {} });
+            await ConsentFlowTransaction.delete({ detach: true, where: {} });
             await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
             await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
 
@@ -715,6 +906,8 @@ describe('Consent Flow Contracts', () => {
         afterAll(async () => {
             await Profile.delete({ detach: true, where: {} });
             await ConsentFlowContract.delete({ detach: true, where: {} });
+            await ConsentFlowTerms.delete({ detach: true, where: {} });
+            await ConsentFlowTransaction.delete({ detach: true, where: {} });
         });
 
         it('should not allow you to verify consent without full auth', async () => {

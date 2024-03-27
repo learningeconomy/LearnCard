@@ -66,7 +66,7 @@ export const predatoryContract: ConsentFlowContract = {
 
 export const minimalTerms: ConsentFlowTerms = {
     read: {
-        personal: { name: true },
+        personal: { name: 'Name lol' },
         credentials: { shareAll: false, sharing: false, categories: {} },
     },
     write: {
@@ -77,7 +77,7 @@ export const minimalTerms: ConsentFlowTerms = {
 
 export const noTerms: ConsentFlowTerms = {
     read: {
-        personal: { name: true },
+        personal: {},
         credentials: { shareAll: false, sharing: false, categories: {} },
     },
     write: {
@@ -89,14 +89,14 @@ export const noTerms: ConsentFlowTerms = {
 export const promiscuousTerms: ConsentFlowTerms = {
     read: {
         personal: {
-            name: true,
-            email: true,
-            address: true,
-            ssn: true,
-            securityQA: true,
-            bloodType: true,
-            dob: true,
-            bankAccounts: true,
+            name: 'Name lol',
+            email: 'name@example.com',
+            address: '1234 Example St',
+            ssn: '555-55-5555',
+            securityQA: "My mother's maiden name is Ejemplo",
+            bloodType: 'O+',
+            dob: '9/9/99',
+            bankAccounts: '12345',
         },
         credentials: { shareAll: true, sharing: true, categories: {} },
     },

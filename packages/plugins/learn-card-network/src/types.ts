@@ -20,6 +20,9 @@ import {
     PaginatedConsentFlowContracts,
     PaginatedConsentFlowTerms,
     ConsentFlowContractDetails,
+    PaginatedConsentFlowTransactions,
+    ConsentFlowTransactionsQuery,
+    PaginatedConsentFlowData,
 } from '@learncard/types';
 import { Plugin } from '@learncard/core';
 import { ProofOptions } from '@learncard/didkit-plugin';
@@ -138,9 +141,13 @@ export type LearnCardNetworkPluginMethods = {
     }) => Promise<string>;
     getContract: (uri: string) => Promise<ConsentFlowContractDetails>;
     getContracts: (
-        options?: PaginationOptionsType & { query: ConsentFlowContractQuery }
+        options?: Partial<PaginationOptionsType> & { query?: ConsentFlowContractQuery }
     ) => Promise<PaginatedConsentFlowContracts>;
     deleteContract: (uri: string) => Promise<boolean>;
+    getConsentFlowData: (
+        uri: string,
+        options?: Partial<PaginationOptionsType>
+    ) => Promise<PaginatedConsentFlowData>;
     consentToContract: (
         uri: string,
         terms: {
@@ -150,7 +157,7 @@ export type LearnCardNetworkPluginMethods = {
         }
     ) => Promise<string>;
     getConsentedContracts: (
-        options?: PaginationOptionsType & { query: ConsentFlowTermsQuery }
+        options?: Partial<PaginationOptionsType> & { query?: ConsentFlowTermsQuery }
     ) => Promise<PaginatedConsentFlowTerms>;
     updateContractTerms: (
         uri: string,
@@ -161,6 +168,10 @@ export type LearnCardNetworkPluginMethods = {
         }
     ) => Promise<boolean>;
     withdrawConsent: (uri: string) => Promise<boolean>;
+    getConsentFlowTransactions: (
+        uri: string,
+        options?: Partial<PaginationOptionsType> & { query?: ConsentFlowTransactionsQuery }
+    ) => Promise<PaginatedConsentFlowTransactions>;
     verifyConsent: (uri: string, profileId: string) => Promise<boolean>;
 
     resolveFromLCN: (
