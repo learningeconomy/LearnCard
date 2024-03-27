@@ -24,7 +24,7 @@ export const TYPE_TO_MINI_ICON: any = {
 };
 
 // courses(learningHistory - ladder), social badges, achievements, accomplishments,
-// skills, experiences, relationships, accomodations
+// skills, experiences, relationships, accommodations
 // todo - memberships, goals
 // deprecated - ids, currency
 export const TYPE_TO_IMG_SRC = {
@@ -35,7 +35,7 @@ export const TYPE_TO_IMG_SRC = {
     [WalletCategoryTypes.skills]: skillsGraphic,
     [WalletCategoryTypes.jobHistory]: experienceMountain,
     [WalletCategoryTypes.relationships]: relationshipCats,
-    [WalletCategoryTypes.accomodations]: accommodationHands,
+    [WalletCategoryTypes.accommodations]: accommodationHands,
     [WalletCategoryTypes.events]: eventsGraphic,
 
     // todo
@@ -55,7 +55,7 @@ export const TYPE_TO_WALLET_COLOR = {
     [WalletCategoryTypes.skills]: 'violet-300',
     [WalletCategoryTypes.jobHistory]: 'blue-300',
     [WalletCategoryTypes.relationships]: 'pink-300',
-    [WalletCategoryTypes.accomodations]: 'amber-300',
+    [WalletCategoryTypes.accommodations]: 'amber-300',
     [WalletCategoryTypes.events]: 'fuchsia-300',
 
     // todo
@@ -75,7 +75,7 @@ export const TYPE_TO_WALLET_LIGHT_COLOR = {
     [WalletCategoryTypes.skills]: 'violet-200',
     [WalletCategoryTypes.jobHistory]: 'blue-200',
     [WalletCategoryTypes.relationships]: 'pink-200',
-    [WalletCategoryTypes.accomodations]: 'amber-200',
+    [WalletCategoryTypes.accommodations]: 'amber-200',
     [WalletCategoryTypes.events]: 'fuchsia-200',
 
     // todo
@@ -95,7 +95,7 @@ export const TYPE_TO_WALLET_DARK_COLOR = {
     [WalletCategoryTypes.skills]: 'violet-500',
     [WalletCategoryTypes.jobHistory]: 'blue-500',
     [WalletCategoryTypes.relationships]: 'pink-500',
-    [WalletCategoryTypes.accomodations]: 'amber-500',
+    [WalletCategoryTypes.accommodations]: 'amber-500',
     [WalletCategoryTypes.events]: 'fuchsia-500',
 
     // todo

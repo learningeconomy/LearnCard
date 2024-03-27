@@ -73,7 +73,7 @@ export const ICONS_TO_SOURCE = {
     [Icons.skillsIcon]: skillsIcon,
     [Icons.experiencesIcon]: experiencesIcon,
     [Icons.relationshipsIcon]: relationshipsIcon,
-    [Icons.accomodationsIcon]: accommodationsIcon,
+    [Icons.accommodationsIcon]: accommodationsIcon,
     [Icons.membershipsIcon]: membershipsIcon,
     [Icons.goalsIcon]: goalsIcon,
     [Icons.eventsIcon]: eventsIcon,

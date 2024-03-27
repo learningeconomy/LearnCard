@@ -27,7 +27,7 @@ export enum Icons {
     skillsIcon,
     experiencesIcon,
     relationshipsIcon,
-    accomodationsIcon,
+    accommodationsIcon,
     membershipsIcon,
     goalsIcon,
     eventsIcon,
@@ -56,7 +56,7 @@ export enum LCSubtypes {
 }
 
 // courses(learningHistory - ladder), social badges, achievements, accomplishments,
-// skills, experiences, relationships, accomodations
+// skills, experiences, relationships, accommodations
 // todo - memberships, goals
 // deprecated - ids, currency
 export enum WalletCategoryTypes {
@@ -68,7 +68,7 @@ export enum WalletCategoryTypes {
 
     // new
     relationships = 'relationships',
-    accomodations = 'accomodations',
+    accommodations = 'accommodations',
     accomplishments = 'accomplishments',
     events = 'events',
 
