@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { getInfoFromCredential } from '../../helpers/credential.helpers';
 import { VC, VerificationStatusEnum } from '@learncard/types';
+import { TYPE_TO_WALLET_DARK_COLOR } from '../../constants';
 import { BoostAchievementCredential } from '../../types';
+import CertificateImageDisplay from './CertificateImageDisplay';
 
 type CertificateDisplayCardProps = {
     credential: VC | BoostAchievementCredential;
@@ -26,14 +28,30 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({ 
     const credentialType = type?.[0];
 
     console.log('credentialSubject:', credentialSubject);
-    console.log('imageUrl:', imageUrl);
 
+    // console.log('🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧');
+    // console.log('TYPE_TO_WALLET_DARK_COLOR:', TYPE_TO_WALLET_DARK_COLOR);
+    // console.log('credentialType:', credentialType);
+    // console.log(
+    //     'TYPE_TO_WALLET_DARK_COLOR[credentialType]:',
+    //     TYPE_TO_WALLET_DARK_COLOR[credentialType]
+    // );
+
+    // const credentialPrimaryColor = TYPE_TO_WALLET_DARK_COLOR[credentialType] ?? 'emerald-500';
     const credentialPrimaryColor = 'emerald-500';
 
     return (
-        <section className="border-solid border-[5px] border-grayscale-200 bg-white rounded-[30px] p-[13px]">
+        <section className="border-solid border-[5px] border-grayscale-200 bg-white rounded-[30px] p-[13px] relative">
+            <div className="w-[calc(100%-26px)] absolute top-[-52px]">
+                <CertificateImageDisplay
+                    imageUrl={imageUrl ?? ''}
+                    className="mx-auto"
+                    ribbonColor={credentialPrimaryColor}
+                />
+            </div>
+
             <div
-                className={`flex flex-col gap-[15px] items-center p-[20px] border-solid border-[4px] border-${credentialPrimaryColor} rounded-[30px]`}
+                className={`flex flex-col gap-[15px] items-center p-[20px] !pt-[75px] border-solid border-[4px] border-${credentialPrimaryColor} rounded-[30px]`}
             >
                 <div className="flex flex-col gap-[5px] items-center">
                     <div
