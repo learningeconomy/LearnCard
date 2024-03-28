@@ -45,7 +45,7 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({ 
     const isSelfVerified = true; // TODO actual logic
 
     return (
-        <section className="border-solid border-[5px] border-grayscale-200 bg-white rounded-[30px] p-[13px] relative">
+        <section className="border-solid border-[5px] border-grayscale-200 bg-white rounded-[30px] p-[13px] relative max-w-[300px]">
             <div className="w-[calc(100%-26px)] absolute top-[-52px]">
                 <CertificateImageDisplay
                     imageUrl={imageUrl ?? ''}
