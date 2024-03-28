@@ -1436,14 +1436,14 @@ describe('Profiles', () => {
         });
 
         it('allows setting the expiration date', async () => {
-            jest.useFakeTimers().setSystemTime(new Date('02-06-2023'));
+            vi.useFakeTimers().setSystemTime(new Date('02-06-2023'));
 
             await userA.clients.fullAuth.profile.generateInvite({
                 challenge: 'nice',
                 expiration: 60 * 60 * 24 * 7 * 52 * 3, // 3 Years
             });
 
-            jest.setSystemTime(new Date('02-06-2025'));
+            vi.setSystemTime(new Date('02-06-2025'));
 
             await expect(
                 userB.clients.fullAuth.profile.connectWithInvite({
@@ -1452,11 +1452,11 @@ describe('Profiles', () => {
                 })
             ).resolves.not.toThrow();
 
-            jest.useRealTimers();
+            vi.useRealTimers();
         });
 
         it('allows connections with challenges before they expire', async () => {
-            jest.useFakeTimers().setSystemTime(new Date('02-06-2023'));
+            vi.useFakeTimers().setSystemTime(new Date('02-06-2023'));
 
             await userA.clients.fullAuth.profile.generateInvite({
                 challenge: 'validChallenge',
@@ -1464,7 +1464,7 @@ describe('Profiles', () => {
             });
 
             // Fast-forward time by 3 days
-            jest.advanceTimersByTime(60 * 60 * 24 * 1000 * 3);
+            vi.advanceTimersByTime(60 * 60 * 24 * 1000 * 3);
 
             // Attempt to connect with the challenge before it expires
             await expect(
@@ -1474,11 +1474,11 @@ describe('Profiles', () => {
                 })
             ).resolves.not.toThrow();
 
-            jest.useRealTimers();
+            vi.useRealTimers();
         });
 
         it('does not allow connections with challenges after they expire', async () => {
-            jest.useFakeTimers().setSystemTime(new Date('02-06-2023'));
+            vi.useFakeTimers().setSystemTime(new Date('02-06-2023'));
 
             await userA.clients.fullAuth.profile.generateInvite({
                 challenge: 'validChallenge',
@@ -1486,7 +1486,7 @@ describe('Profiles', () => {
             });
 
             // Fast-forward time by 3 weeks
-            jest.advanceTimersByTime(3 * 7 * 60 * 60 * 24 * 1000);
+            vi.advanceTimersByTime(3 * 7 * 60 * 60 * 24 * 1000);
 
             // Attempt to connect with the challenge before it expires
             await expect(
@@ -1496,7 +1496,7 @@ describe('Profiles', () => {
                 })
             ).rejects.toMatchObject({ code: 'NOT_FOUND' });
 
-            jest.useRealTimers();
+            vi.useRealTimers();
         });
     });
 
