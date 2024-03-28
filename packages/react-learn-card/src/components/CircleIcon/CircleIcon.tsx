@@ -29,17 +29,17 @@ export const CountCircle: React.FC<CountCircleProps> = ({
     size = 'auto',
     count = '28',
     innerPadding = '3px 5px',
-    className,
     onClick = () => {},
     bgColor = 'bg-grayscale-50',
     loading,
 }) => {
-    const _count = count >= 1000 ? numeral(count).format('0.0a') : count;
+    const _count = Number(count) >= 1000 ? numeral(Number(count)).format('0.0a') : count;
     const circleLoadingState = loading ? CircleLoadingState.spin : CircleLoadingState.stop;
     const style = {
         width: size,
         height: size,
         padding: !loading ? innerPadding : '0px',
+        backgroundColor: bgColor,
     };
 
     const spinnerStyle = {
@@ -49,21 +49,15 @@ export const CountCircle: React.FC<CountCircleProps> = ({
     return (
         <section
             onClick={onClick}
-            className={`${bgColor} rounded-full circle-icon-wrapper text-center absolute right-[-18px] top-[-18px] min-w-[25px] ${className}`}
+            className={`bg-grayscale-900 text-grayscale-50 rounded-full`}
             style={style}
         >
-            <div className={`h-full`}>
-                {!loading && count && (
-                    <p className="h-full line-clamp-1 font-semibold text-grayscale-900 text-[12px]">
-                        {_count}
-                    </p>
-                )}
-                {loading && (
-                    <div style={spinnerStyle}>
-                        <CircleSpinner loadingState={circleLoadingState} thickness={3} size={20} />
-                    </div>
-                )}
-            </div>
+            {!loading && count && <p className="">{_count}</p>}
+            {loading && (
+                <div style={spinnerStyle}>
+                    <CircleSpinner loadingState={circleLoadingState} thickness={3} size={20} />
+                </div>
+            )}
         </section>
     );
 };
@@ -72,7 +66,6 @@ export const CircleIcon: React.FC<CircleIconProps> = ({
     iconSrc = ICONS_TO_SOURCE[Icons.coinsIcon],
     size = '52px',
     count = '28',
-    innerPadding = '6px',
     onClick = () => {},
     bgColor = 'bg-grayscale-900',
     loading,
@@ -80,20 +73,19 @@ export const CircleIcon: React.FC<CircleIconProps> = ({
     const style = {
         width: size,
         height: size,
-        padding: innerPadding,
     };
 
     return (
-        <section
-            onClick={onClick}
-            className={`${bgColor} rounded-full circle-icon-wrapper p-[0px] m-[0px]`}
-            style={style}
-        >
-            <div className={`relative w-full h-full`}>
+        <div style={style}>
+            <section
+                onClick={onClick}
+                className={`flex flex-row-reverse justify-center items-center ${bgColor} rounded-full relative overflow-hidden w-16 `}
+                style={style}
+            >
                 <CountCircle count={count} loading={loading} />
-                <img className="h-full w-full object-cover" src={iconSrc ?? ''} alt="Icon image" />
-            </div>
-        </section>
+                <img src={iconSrc ?? ''} alt="Icon image" />
+            </section>
+        </div>
     );
 };
 

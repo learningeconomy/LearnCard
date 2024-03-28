@@ -35,7 +35,7 @@ export const BoostSmallCard: React.FC<BoostSmallCardProps> = ({
     const checkBtnClass = checkStatus ? 'generic-vc-card checked' : 'generic-vc-card unchecked';
     const defaultHeaderClass = `flex generic-card-title w-full justify-center ${customHeaderClass}`;
     const defaultBodyClass = ` boost-small-card-body flex justify-center items-center text-center text-[14px] overflow-hidden text-grayscale-500 py-[5px] px-[10px] ${customBodyClass}`;
-    const defaultButtonClass = `cursor-pointer small-boost-boost-btn flex shadow-bottom boost-btn-click rounded-[40px] w-[140px] h-[48px] text-white flex justify-center items-center ${headerBgColor}`;
+    const defaultButtonClass = `cursor-pointer small-boost-boost-btn flex boost-btn-click rounded-[40px] w-[140px] h-[48px] text-white flex justify-center items-center ${headerBgColor}`;
     const innerClickContainerClass = `relative cursor-pointer boost-small-card inner-click-container z-10`;
 
     const issueHistoryDisplay =
@@ -44,7 +44,7 @@ export const BoostSmallCard: React.FC<BoostSmallCardProps> = ({
         return (
             <div
                 key={issueItem?.id}
-                className="profile-thumb-img border-[2px] border-white border-solid  vc-issuee-image h-[35px] w-[35px] rounded-full overflow-hidden mx-[-5px]"
+                className="profile-thumb-img border-[1px] border-white border-solid  vc-issuee-image h-[35px] w-[35px] rounded-full overflow-hidden mx-[-5px]"
             >
                 <img
                     className="h-full w-full object-cover"
@@ -69,7 +69,7 @@ export const BoostSmallCard: React.FC<BoostSmallCardProps> = ({
         >
             {optionsTriggerOnClick && (
                 <section
-                    className="absolute shadow-bottom cursor-pointer h-[30px] w-[30px] top-[5px] right-[5px] rounded-full overflow-hidden z-20 bg-white flex items-center justify-center"
+                    className="absolute cursor-pointer h-[30px] w-[30px] top-[5px] right-[5px] rounded-full overflow-hidden z-20 bg-white flex items-center justify-center"
                     onClick={handleOptionsClick}
                 >
                     <img
@@ -81,7 +81,7 @@ export const BoostSmallCard: React.FC<BoostSmallCardProps> = ({
             )}
 
             {bgImgSrc && (
-                <section className="absolute top-[-50px] left-[0px] rounded-b-full overflow-hidden z-0">
+                <section className="absolute top-[-50px]  shadow-bottom left-[0px] rounded-b-full overflow-hidden z-0 mt-3">
                     <img className="h-full w-full object-cover overflow-hidden" src={bgImgSrc} />
                 </section>
             )}
@@ -99,7 +99,7 @@ export const BoostSmallCard: React.FC<BoostSmallCardProps> = ({
                         )}
                         {(!thumbImgSrc || thumbImgSrc?.trim() === '') && (
                             <img
-                                className="max-w-[110px] w-full h-full p-[0px] object-cover rounded-full"
+                                className="max-w-[110px] w-full h-full p-[0px] object-cover  rounded-full"
                                 src={imgSrc}
                             />
                         )}

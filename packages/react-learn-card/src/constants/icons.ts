@@ -11,6 +11,19 @@ import puzzlelight from '../assets/images/minipuzzle.svg';
 import trophylight from '../assets/images/minitrophy.svg';
 import gradcaplight from '../assets/images/gradcaplight.svg';
 
+// new icons
+import coursesIcon from '../assets/icons/coursesIcon.svg';
+import socialBadgesIcon from '../assets/icons/socialBadgesIcon.svg';
+import achievementsIcon from '../assets/icons/achievementsIcon.svg';
+import accomplishmentsIcon from '../assets/icons/accomplishmentsIcon.svg';
+import skillsIcon from '../assets/icons/skillsIcon.svg';
+import experiencesIcon from '../assets/icons/experiencesIcon.svg';
+import relationshipsIcon from '../assets/icons/relationshipsIcon.svg';
+import accommodationsIcon from '../assets/icons/accommodationsIcon.svg';
+import membershipsIcon from '../assets/icons/membershipsIcon.svg';
+import goalsIcon from '../assets/icons/goalsIcon.svg';
+import eventsIcon from '../assets/icons/eventsIcon.svg';
+
 import { Icons } from '../types';
 export {
     coins,
@@ -24,6 +37,19 @@ export {
     puzzlelight,
     award,
     keyIcon,
+
+    // new icons
+    coursesIcon,
+    socialBadgesIcon,
+    achievementsIcon,
+    accomplishmentsIcon,
+    skillsIcon,
+    experiencesIcon,
+    relationshipsIcon,
+    accommodationsIcon,
+    membershipsIcon,
+    goalsIcon,
+    eventsIcon,
 };
 
 export const ICONS_TO_SOURCE = {
@@ -38,6 +64,19 @@ export const ICONS_TO_SOURCE = {
     [Icons.gradcaplight]: gradcaplight,
     [Icons.award]: award,
     [Icons.keyIcon]: keyIcon,
+
+    // new icons
+    [Icons.coursesIcon]: coursesIcon,
+    [Icons.socialBagesIcon]: socialBadgesIcon,
+    [Icons.achievementsIcon]: achievementsIcon,
+    [Icons.accomplishmentsIcon]: accomplishmentsIcon,
+    [Icons.skillsIcon]: skillsIcon,
+    [Icons.experiencesIcon]: experiencesIcon,
+    [Icons.relationshipsIcon]: relationshipsIcon,
+    [Icons.accommodationsIcon]: accommodationsIcon,
+    [Icons.membershipsIcon]: membershipsIcon,
+    [Icons.goalsIcon]: goalsIcon,
+    [Icons.eventsIcon]: eventsIcon,
 };
 
 export const TYPE_TO_ICON: any = {
