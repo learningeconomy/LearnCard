@@ -13,6 +13,16 @@ import {
     LCNBoostClaimLinkOptionsType,
     PaginationOptionsType,
     PaginatedLCNProfiles,
+    ConsentFlowContract,
+    ConsentFlowContractQuery,
+    ConsentFlowTerms,
+    ConsentFlowTermsQuery,
+    PaginatedConsentFlowContracts,
+    PaginatedConsentFlowTerms,
+    ConsentFlowContractDetails,
+    PaginatedConsentFlowTransactions,
+    ConsentFlowTransactionsQuery,
+    PaginatedConsentFlowData,
 } from '@learncard/types';
 import { Plugin } from '@learncard/core';
 import { ProofOptions } from '@learncard/didkit-plugin';
@@ -121,7 +131,52 @@ export type LearnCardNetworkPluginMethods = {
     ) => Promise<{ boostUri: string; challenge: string }>;
     claimBoostWithLink: (boostUri: string, challenge: string) => Promise<string>;
 
-    resolveFromLCN: (uri: string) => Promise<VC | UnsignedVC | VP | JWE>;
+    createContract: (contract: {
+        contract: ConsentFlowContract;
+        name: string;
+        subtitle?: string;
+        description?: string;
+        image?: string;
+        expiresAt?: string;
+    }) => Promise<string>;
+    getContract: (uri: string) => Promise<ConsentFlowContractDetails>;
+    getContracts: (
+        options?: Partial<PaginationOptionsType> & { query?: ConsentFlowContractQuery }
+    ) => Promise<PaginatedConsentFlowContracts>;
+    deleteContract: (uri: string) => Promise<boolean>;
+    getConsentFlowData: (
+        uri: string,
+        options?: Partial<PaginationOptionsType>
+    ) => Promise<PaginatedConsentFlowData>;
+    consentToContract: (
+        uri: string,
+        terms: {
+            terms: ConsentFlowTerms;
+            expiresAt?: string;
+            oneTime?: boolean;
+        }
+    ) => Promise<string>;
+    getConsentedContracts: (
+        options?: Partial<PaginationOptionsType> & { query?: ConsentFlowTermsQuery }
+    ) => Promise<PaginatedConsentFlowTerms>;
+    updateContractTerms: (
+        uri: string,
+        terms: {
+            terms: ConsentFlowTerms;
+            expiresAt?: string;
+            oneTime?: boolean;
+        }
+    ) => Promise<boolean>;
+    withdrawConsent: (uri: string) => Promise<boolean>;
+    getConsentFlowTransactions: (
+        uri: string,
+        options?: Partial<PaginationOptionsType> & { query?: ConsentFlowTransactionsQuery }
+    ) => Promise<PaginatedConsentFlowTransactions>;
+    verifyConsent: (uri: string, profileId: string) => Promise<boolean>;
+
+    resolveFromLCN: (
+        uri: string
+    ) => Promise<VC | UnsignedVC | VP | JWE | ConsentFlowContract | ConsentFlowTerms>;
 };
 
 /** @group LearnCardNetwork Plugin */

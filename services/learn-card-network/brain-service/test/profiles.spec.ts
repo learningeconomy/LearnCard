@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { LCNProfileConnectionStatusEnum } from '@learncard/types';
 import { getClient, getUser } from './helpers/getClient';
 import { Profile, SigningAuthority, Credential, Boost } from '@models';
@@ -151,6 +152,21 @@ describe('Profiles', () => {
                 'https://api.learncard.app/send/notifications'
             );
         });
+
+        it('should allow setting your bio', async () => {
+            await userA.clients.fullAuth.profile.createProfile({
+                profileId: 'usera',
+                displayName: 'A',
+                bio: 'I am user A',
+            });
+            await expect(
+                userB.clients.fullAuth.profile.createProfile({
+                    profileId: 'userb',
+                    displayName: 'B',
+                    bio: 'I am user B',
+                })
+            ).resolves.not.toThrow();
+        });
     });
 
     describe('createServiceProfile', () => {
@@ -263,11 +279,13 @@ describe('Profiles', () => {
                 profileId: 'usera',
                 displayName: 'A',
                 email: 'userA@test.com',
+                bio: 'I am user A',
             });
             await userB.clients.fullAuth.profile.createProfile({
                 profileId: 'userb',
                 displayName: 'B',
                 email: 'userB@test.com',
+                bio: 'I am user B',
             });
         });
 
@@ -293,9 +311,11 @@ describe('Profiles', () => {
             expect(userAProfile?.profileId).toEqual('usera');
             expect(userAProfile?.displayName).toEqual('A');
             expect(userAProfile?.email).toEqual('userA@test.com');
+            expect(userAProfile?.bio).toEqual('I am user A');
             expect(userBProfile?.profileId).toEqual('userb');
             expect(userBProfile?.displayName).toEqual('B');
             expect(userBProfile?.email).toEqual('userB@test.com');
+            expect(userBProfile?.bio).toEqual('I am user B');
         });
     });
 
@@ -306,11 +326,13 @@ describe('Profiles', () => {
                 profileId: 'usera',
                 displayName: 'A',
                 email: 'userA@test.com',
+                bio: 'I am user A',
             });
             await userB.clients.fullAuth.profile.createProfile({
                 profileId: 'userb',
                 displayName: 'B',
                 email: 'userB@test.com',
+                bio: 'I am user B',
             });
         });
 
@@ -341,9 +363,11 @@ describe('Profiles', () => {
             expect(userAProfile?.profileId).toEqual('usera');
             expect(userAProfile?.displayName).toEqual('A');
             expect(userAProfile?.email).toEqual('userA@test.com');
+            expect(userAProfile?.bio).toEqual('I am user A');
             expect(userBProfile?.profileId).toEqual('userb');
             expect(userBProfile?.displayName).toEqual('B');
             expect(userBProfile?.email).toEqual('userB@test.com');
+            expect(userBProfile?.bio).toEqual('I am user B');
         });
     });
 
@@ -1391,11 +1415,11 @@ describe('Profiles', () => {
         });
 
         it('expires challenges after a while, allowing them to be used again', async () => {
-            jest.useFakeTimers().setSystemTime(new Date('02-06-2023'));
+            vi.useFakeTimers().setSystemTime(new Date('02-06-2023'));
 
             await userA.clients.fullAuth.profile.generateInvite({ challenge: 'nice' });
 
-            jest.setSystemTime(new Date('02-06-2024'));
+            vi.setSystemTime(new Date('02-06-2024'));
 
             await expect(
                 userB.clients.fullAuth.profile.connectWithInvite({
@@ -1408,7 +1432,7 @@ describe('Profiles', () => {
                 userA.clients.fullAuth.profile.generateInvite({ challenge: 'nice' })
             ).resolves.not.toThrow();
 
-            jest.useRealTimers();
+            vi.useRealTimers();
         });
 
         it('allows setting the expiration date', async () => {
