@@ -60,7 +60,9 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({ 
                         {credentialType}
                     </div>
 
-                    <h1 className="text-grayscale-900 text-center text-[20px]">{title}</h1>
+                    <h1 className="text-grayscale-900 text-center text-[20px] font-jacques">
+                        {title}
+                    </h1>
                 </div>
 
                 <img
@@ -68,20 +70,31 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({ 
                     src="https://imgs.search.brave.com/mR-qTglzpGl8uw83n_ErbMNuZKXcqnfulrRGN17nsn0/rs:fit:860:0:0/g:ce/aHR0cHM6Ly93YWxs/cGFwZXJzLmNvbS9p/bWFnZXMvZmVhdHVy/ZWQvY29vbC1wcm9m/aWxlLXBpY3R1cmUt/ODdoNDZnY29iamw1/ZTR4dS5qcGc"
                 />
 
-                <div>
-                    Awarded to {issuee || '[No Issuee Name]'} on {createdAt}
+                <div className="text-[14px] text-grayscale-800 flex flex-col items-center">
+                    <span className="font-jacques">Awarded to {issuee || '[No Issuee Name]'}</span>
+                    <span className="font-jacques">on {createdAt}</span>
                 </div>
 
                 <div className="flex flex-col gap-[10px] items-center">
-                    {description && <div>{description}</div>}
+                    {description && (
+                        <div className="text-center text-grayscale-700 text-[12px] font-jacques line-clamp-4">
+                            {description}
+                        </div>
+                    )}
 
-                    <div>+2 Skills</div>
+                    <div className="text-violet-500 font-poppins text-[14px]">+2 Skills</div>
                 </div>
 
                 <div className="flex flex-col gap-[5px] items-center">
-                    <span>Certified by</span>
-                    <span className="mb-[3px]">{issuer || 'Someone'}</span>
-                    <span className="uppercase">Trusted Verifier</span>
+                    <span className="font-jacques text-[12px] text-grayscale-800">
+                        Certified by
+                    </span>
+                    <span className="mb-[3px] text-grayscale-900 text-[25px] leading-[90%] font-sacramento">
+                        {issuer || 'Someone'}
+                    </span>
+                    <span className="uppercase font-poppins text-[12px] font-[500] text-blue-light">
+                        Trusted Verifier
+                    </span>
                 </div>
             </div>
 
