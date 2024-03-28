@@ -29,7 +29,8 @@ export const getImageFromProfile = (profile: Profile): string => {
 
 export const getInfoFromCredential = (
     credential: VC | AchievementCredential,
-    dateFormat: string = 'dd MMM yyyy'
+    dateFormat: string = 'dd MMM yyyy',
+    options: { uppercaseDate?: boolean } = { uppercaseDate: true }
 ): CredentialInfo => {
     const { issuer, issuanceDate } = credential;
 
@@ -38,9 +39,13 @@ export const getInfoFromCredential = (
         : credential.credentialSubject;
 
     const title = credentialSubject.achievement?.name;
-    const createdAt = format(new Date(issuanceDate), dateFormat).toUpperCase();
     const issuee = credentialSubject.id;
     const imageUrl = credentialSubject.achievement?.image;
+
+    let createdAt = format(new Date(issuanceDate), dateFormat);
+    if (options.uppercaseDate) {
+        createdAt = createdAt.toUpperCase();
+    }
 
     return { title, createdAt, issuer, issuee, credentialSubject, imageUrl };
 };

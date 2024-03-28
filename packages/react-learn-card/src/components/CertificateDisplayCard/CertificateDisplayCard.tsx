@@ -21,7 +21,7 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({ 
         issuee = '',
         credentialSubject,
         imageUrl,
-    } = getInfoFromCredential(credential, 'MMM dd, yyyy');
+    } = getInfoFromCredential(credential, 'MMM dd, yyyy', { uppercaseDate: false });
 
     const { description, type } = credentialSubject.achievement ?? {};
 
