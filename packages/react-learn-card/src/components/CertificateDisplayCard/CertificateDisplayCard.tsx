@@ -1,19 +1,20 @@
 import React, { useState } from 'react';
-import { getInfoFromCredential } from '../../helpers/credential.helpers';
-import { VC, VerificationStatusEnum } from '@learncard/types';
-import { TYPE_TO_WALLET_DARK_COLOR } from '../../constants';
-import { BoostAchievementCredential } from '../../types';
+import { getInfoFromCredential, getCategoryColor } from '../../helpers/credential.helpers';
+import { VC } from '@learncard/types';
+import { BoostAchievementCredential, LCCategoryEnum } from '../../types';
 import CertificateImageDisplay from './CertificateImageDisplay';
 import VerifiedBadge from '../svgs/VerifiedBadge';
 import PersonBadge from '../svgs/PersonBadge';
 
 type CertificateDisplayCardProps = {
     credential: VC | BoostAchievementCredential;
+    categoryType?: LCCategoryEnum;
 };
 
-export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({ credential }) => {
-    console.log('🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆 CertificateDisplayCard');
-    console.log('credential:', credential);
+export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
+    credential,
+    categoryType,
+}) => {
     const [isFront, setIsFront] = useState(true);
 
     const {
@@ -25,22 +26,11 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({ 
         imageUrl,
     } = getInfoFromCredential(credential, 'MMM dd, yyyy', { uppercaseDate: false });
 
-    const { description, type } = credentialSubject.achievement ?? {};
+    const { description, type } = credentialSubject?.achievement ?? {};
 
     const credentialType = type?.[0];
 
-    console.log('credentialSubject:', credentialSubject);
-
-    // console.log('🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧');
-    // console.log('TYPE_TO_WALLET_DARK_COLOR:', TYPE_TO_WALLET_DARK_COLOR);
-    // console.log('credentialType:', credentialType);
-    // console.log(
-    //     'TYPE_TO_WALLET_DARK_COLOR[credentialType]:',
-    //     TYPE_TO_WALLET_DARK_COLOR[credentialType]
-    // );
-
-    // const credentialPrimaryColor = TYPE_TO_WALLET_DARK_COLOR[credentialType] ?? 'emerald-500';
-    const credentialPrimaryColor = 'emerald-500';
+    const credentialPrimaryColor = getCategoryColor(categoryType) ?? 'emerald-500';
 
     const isSelfVerified = true; // TODO actual logic
 
@@ -111,6 +101,8 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({ 
                     )}
                 </div>
             </div>
+
+            <span className="hidden border-rose-600"></span>
         </section>
     );
 };

@@ -141,11 +141,8 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
 
     const _title = titleOverride || title;
 
-    console.log('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥');
-    console.log('issuer:', issuer);
-
     if (credential.display.displayType === 'certificate') {
-        return <CertificateDisplayCard credential={credential} />;
+        return <CertificateDisplayCard credential={credential} categoryType={categoryType} />;
         // return (
         //     <CertificateDisplayCard
         //         credential={credential}

@@ -6,7 +6,7 @@ import {
     // CredentialInfo,
     VerificationStatusEnum,
 } from '@learncard/types';
-import { CredentialInfo } from '../types';
+import { CredentialInfo, LCCategoryEnum } from '../types';
 import { format } from 'date-fns';
 
 export const getImageFromImage = (image: Image): string => {
@@ -62,5 +62,32 @@ export const getColorForVerificationStatus = (
             return '#FFBD06';
         default:
             return '#000000';
+    }
+};
+
+export const getCategoryColor = (category = LCCategoryEnum.achievement) => {
+    switch (category) {
+        case LCCategoryEnum.socialBadge:
+            return 'cyan-700';
+        case LCCategoryEnum.skill:
+            return 'indigo-600';
+        case LCCategoryEnum.achievement:
+            return 'spice-600';
+        case LCCategoryEnum.learningHistory:
+            return 'emerald-700';
+        case LCCategoryEnum.id:
+            return 'yellow-400';
+        case LCCategoryEnum.workHistory:
+            return 'rose-600';
+        case LCCategoryEnum.course:
+            return 'emerald-700';
+        case LCCategoryEnum.job:
+            return 'rose-600';
+        case LCCategoryEnum.currency:
+            return 'cyan-700';
+        case LCCategoryEnum.membership:
+            return 'teal-500';
+        default:
+            return 'spice-600';
     }
 };
