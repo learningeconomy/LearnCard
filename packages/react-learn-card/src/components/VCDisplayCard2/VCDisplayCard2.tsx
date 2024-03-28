@@ -17,6 +17,7 @@ import {
 import { BoostAchievementCredential, IssueHistory, LCCategoryEnum } from '../../types';
 import { MediaMetadata, VideoMetadata } from './MediaAttachmentsBox';
 import VCDisplayCardCategoryType from './VCDisplayCardCategoryType';
+import { CertificateDisplayCard } from '../CertificateDisplayCard';
 
 export type CredentialIconType = {
     image?: React.ReactNode;
@@ -139,6 +140,27 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     };
 
     const _title = titleOverride || title;
+
+    console.log('🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆 VCDisplayCard2');
+    console.log('credential:', credential);
+
+    if (credential.display.displayType === 'certificate') {
+        return (
+            <CertificateDisplayCard
+                credential={credential}
+                issueeOverride={issueeOverride}
+                verificationInProgress={verificationInProgress}
+                verificationItems={verificationItems}
+                subjectImageComponent={subjectImageComponent}
+                // convertTagsToSkills={convertTagsToSkills}
+                handleXClick={handleXClick}
+                getFileMetadata={getFileMetadata}
+                getVideoMetadata={getVideoMetadata}
+                onMediaAttachmentClick={onMediaAttachmentClick}
+                bottomRightIcon={bottomRightIcon}
+            />
+        );
+    }
 
     return (
         <section className="vc-display-card font-mouse flex flex-col items-center border-solid border-[5px] border-white rounded-[30px] overflow-visible z-10 max-w-[400px] relative bg-white shadow-3xl">
