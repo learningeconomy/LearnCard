@@ -4,6 +4,7 @@ import { VC, VerificationStatusEnum } from '@learncard/types';
 import { TYPE_TO_WALLET_DARK_COLOR } from '../../constants';
 import { BoostAchievementCredential } from '../../types';
 import CertificateImageDisplay from './CertificateImageDisplay';
+import VerifiedBadge from '../svgs/VerifiedBadge';
 
 type CertificateDisplayCardProps = {
     credential: VC | BoostAchievementCredential;
@@ -92,7 +93,8 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({ 
                     <span className="mb-[3px] text-grayscale-900 text-[25px] leading-[90%] font-sacramento border-b-[1px] border-solid border-grayscale-200 w-full text-center">
                         {issuer || 'A Prestigious University'}
                     </span>
-                    <span className="uppercase font-poppins text-[12px] font-[500] text-blue-light">
+                    <span className="uppercase font-poppins text-[12px] font-[500] text-blue-light flex gap-[3px] items-center">
+                        <VerifiedBadge />
                         Trusted Verifier
                     </span>
                 </div>
