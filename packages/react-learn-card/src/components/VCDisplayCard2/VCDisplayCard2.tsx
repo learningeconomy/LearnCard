@@ -141,25 +141,26 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
 
     const _title = titleOverride || title;
 
-    console.log('🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆 VCDisplayCard2');
-    console.log('credential:', credential);
+    console.log('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥');
+    console.log('issuer:', issuer);
 
     if (credential.display.displayType === 'certificate') {
-        return (
-            <CertificateDisplayCard
-                credential={credential}
-                issueeOverride={issueeOverride}
-                verificationInProgress={verificationInProgress}
-                verificationItems={verificationItems}
-                subjectImageComponent={subjectImageComponent}
-                // convertTagsToSkills={convertTagsToSkills}
-                handleXClick={handleXClick}
-                getFileMetadata={getFileMetadata}
-                getVideoMetadata={getVideoMetadata}
-                onMediaAttachmentClick={onMediaAttachmentClick}
-                bottomRightIcon={bottomRightIcon}
-            />
-        );
+        return <CertificateDisplayCard credential={credential} />;
+        // return (
+        //     <CertificateDisplayCard
+        //         credential={credential}
+        //         issueeOverride={issueeOverride}
+        //         verificationInProgress={verificationInProgress}
+        //         verificationItems={verificationItems}
+        //         subjectImageComponent={subjectImageComponent}
+        //         // convertTagsToSkills={convertTagsToSkills}
+        //         handleXClick={handleXClick}
+        //         getFileMetadata={getFileMetadata}
+        //         getVideoMetadata={getVideoMetadata}
+        //         onMediaAttachmentClick={onMediaAttachmentClick}
+        //         bottomRightIcon={bottomRightIcon}
+        //     />
+        // );
     }
 
     return (
