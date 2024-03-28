@@ -5,6 +5,7 @@ import { TYPE_TO_WALLET_DARK_COLOR } from '../../constants';
 import { BoostAchievementCredential } from '../../types';
 import CertificateImageDisplay from './CertificateImageDisplay';
 import VerifiedBadge from '../svgs/VerifiedBadge';
+import PersonBadge from '../svgs/PersonBadge';
 
 type CertificateDisplayCardProps = {
     credential: VC | BoostAchievementCredential;
@@ -40,6 +41,8 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({ 
 
     // const credentialPrimaryColor = TYPE_TO_WALLET_DARK_COLOR[credentialType] ?? 'emerald-500';
     const credentialPrimaryColor = 'emerald-500';
+
+    const isSelfVerified = true; // TODO actual logic
 
     return (
         <section className="border-solid border-[5px] border-grayscale-200 bg-white rounded-[30px] p-[13px] relative">
@@ -93,10 +96,19 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({ 
                     <span className="mb-[3px] text-grayscale-900 text-[25px] leading-[90%] font-sacramento border-b-[1px] border-solid border-grayscale-200 w-full text-center">
                         {issuer || 'A Prestigious University'}
                     </span>
-                    <span className="uppercase font-poppins text-[12px] font-[500] text-blue-light flex gap-[3px] items-center">
-                        <VerifiedBadge />
-                        Trusted Verifier
-                    </span>
+
+                    {!isSelfVerified && (
+                        <span className="uppercase font-poppins text-[12px] font-[500] text-blue-light flex gap-[3px] items-center">
+                            <VerifiedBadge />
+                            Trusted Verifier
+                        </span>
+                    )}
+                    {isSelfVerified && (
+                        <span className="uppercase font-poppins text-[12px] font-[500] text-green-dark flex gap-[3px] items-center">
+                            <PersonBadge />
+                            Self Verified
+                        </span>
+                    )}
                 </div>
             </div>
         </section>

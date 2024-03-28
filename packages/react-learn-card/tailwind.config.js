@@ -85,6 +85,9 @@ module.exports = {
                 blue: {
                     light: '#026BFF',
                 },
+                green: {
+                    dark: '#05B65D',
+                },
             },
             fontFamily: {
                 mouse: ['Mouse Memoirs'],
