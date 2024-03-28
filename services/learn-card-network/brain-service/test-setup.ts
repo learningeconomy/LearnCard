@@ -6,5 +6,5 @@ export default async function setup({ provide }) {
     provide('neo4j-uri', container.getBoltUri());
     provide('neo4j-password', container.getPassword());
 
-    return container?.stop;
+    return () => container?.stop?.();
 }
