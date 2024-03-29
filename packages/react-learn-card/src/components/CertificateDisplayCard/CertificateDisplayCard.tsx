@@ -5,6 +5,7 @@ import { BoostAchievementCredential, LCCategoryEnum } from '../../types';
 import CertificateImageDisplay from './CertificateImageDisplay';
 import VerifiedBadge from '../svgs/VerifiedBadge';
 import PersonBadge from '../svgs/PersonBadge';
+import CertificateCornerIcon from './CertificateCornerIcon';
 
 type CertificateDisplayCardProps = {
     credential: VC | BoostAchievementCredential;
@@ -26,9 +27,7 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
         imageUrl,
     } = getInfoFromCredential(credential, 'MMM dd, yyyy', { uppercaseDate: false });
 
-    const { description, type } = credentialSubject?.achievement ?? {};
-
-    const credentialType = type?.[0];
+    const { description } = credentialSubject?.achievement ?? {};
 
     const credentialPrimaryColor = getCategoryColor(categoryType) ?? 'emerald-500';
 
@@ -51,7 +50,7 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
                     <div
                         className={`text-${credentialPrimaryColor} uppercase text-[14px] font-poppins`}
                     >
-                        {credentialType}
+                        {categoryType}
                     </div>
 
                     <h1 className="text-grayscale-900 text-center text-[20px] font-jacques">
@@ -102,7 +101,17 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
                 </div>
             </div>
 
-            <span className="hidden border-rose-600"></span>
+            {categoryType && (
+                <>
+                    <CertificateCornerIcon categoryType={categoryType} position="top-left" />
+                    <CertificateCornerIcon categoryType={categoryType} position="top-right" />
+                    <CertificateCornerIcon categoryType={categoryType} position="bottom-left" />
+                    <CertificateCornerIcon categoryType={categoryType} position="bottom-right" />
+                </>
+            )}
+
+            {/* so that tailwind will put these colors in the css */}
+            <span className="hidden border-rose-600 text-spice-600"></span>
         </section>
     );
 };

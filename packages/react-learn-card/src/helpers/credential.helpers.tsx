@@ -1,13 +1,19 @@
+import React from 'react';
+import { format } from 'date-fns';
+
 import {
     Image,
     Profile,
     VC,
     AchievementCredential,
-    // CredentialInfo,
     VerificationStatusEnum,
 } from '@learncard/types';
 import { CredentialInfo, LCCategoryEnum } from '../types';
-import { format } from 'date-fns';
+
+import SocialBadgesIcon from '../components/svgs/SocialBadgesIcon';
+import PuzzlePiece from '../components/svgs/PuzzlePiece';
+import KeyIcon from '../components/svgs/KeyIcon';
+import { Briefcase, Graduation, Trophy, User } from '../components';
 
 export const getImageFromImage = (image: Image): string => {
     if (typeof image === 'string') return image;
@@ -89,5 +95,31 @@ export const getCategoryColor = (category = LCCategoryEnum.achievement) => {
             return 'teal-500';
         default:
             return 'spice-600';
+    }
+};
+
+export const getCategoryIcon = (category = LCCategoryEnum.achievement) => {
+    switch (category) {
+        case LCCategoryEnum.socialBadge:
+            return <SocialBadgesIcon />;
+        case LCCategoryEnum.skill:
+            return <PuzzlePiece />;
+        case LCCategoryEnum.achievement:
+            return <Trophy size="21" />;
+        case LCCategoryEnum.course:
+        case LCCategoryEnum.learningHistory:
+            return <Graduation size="21" />;
+        case LCCategoryEnum.job:
+        case LCCategoryEnum.workHistory:
+            return <Briefcase size="21" />;
+        case LCCategoryEnum.id:
+            return <User size="21" />;
+        case LCCategoryEnum.membership:
+            return <KeyIcon size="21" />;
+        case LCCategoryEnum.currency:
+        default:
+            console.log('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥');
+            console.log('getCategoryIcon - unhandled category:', category);
+            return undefined;
     }
 };
