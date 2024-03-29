@@ -1,5 +1,29 @@
 # @learncard/network-brain-service
 
+## 1.10.0
+
+### Minor Changes
+
+-   [#411](https://github.com/learningeconomy/LearnCard/pull/411) [`725e508c`](https://github.com/learningeconomy/LearnCard/commit/725e508c848b8c7752f44e5bf9915eebb421d766) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add ConsentFlow routes for basic CRUD operations of contracts and terms
+
+### Patch Changes
+
+-   [#411](https://github.com/learningeconomy/LearnCard/pull/411) [`725e508c`](https://github.com/learningeconomy/LearnCard/commit/725e508c848b8c7752f44e5bf9915eebb421d766) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add bio to LCN Profiles
+
+-   Updated dependencies [[`1cb031d7`](https://github.com/learningeconomy/LearnCard/commit/1cb031d7483e80f947c93e3479fe85af8ec09dbb), [`725e508c`](https://github.com/learningeconomy/LearnCard/commit/725e508c848b8c7752f44e5bf9915eebb421d766), [`725e508c`](https://github.com/learningeconomy/LearnCard/commit/725e508c848b8c7752f44e5bf9915eebb421d766)]:
+    -   @learncard/types@5.4.1
+    -   @learncard/learn-card-plugin@1.1.6
+    -   @learncard/core@9.1.4
+    -   @learncard/helpers@1.0.11
+    -   @learncard/ceramic-plugin@1.0.8
+    -   @learncard/did-web-plugin@1.0.24
+    -   @learncard/didkey-plugin@1.0.8
+    -   @learncard/didkit-plugin@1.4.3
+    -   @learncard/vc-plugin@1.1.6
+    -   @learncard/vc-templates-plugin@1.0.11
+    -   @learncard/expiration-plugin@1.1.6
+    -   @learncard/crypto-plugin@1.0.8
+
 ## 1.9.0
 
 ### Minor Changes

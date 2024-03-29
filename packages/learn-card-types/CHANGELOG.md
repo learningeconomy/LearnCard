@@ -1,5 +1,17 @@
 # learn-card-types
 
+## 5.4.1
+
+### Patch Changes
+
+-   [#412](https://github.com/learningeconomy/LearnCard/pull/412) [`1cb031d7`](https://github.com/learningeconomy/LearnCard/commit/1cb031d7483e80f947c93e3479fe85af8ec09dbb) Thanks [@cboydstun](https://github.com/cboydstun)! - quest [LC-155] Updated Boost Cards
+
+    updated wallet card squares
+
+-   [#411](https://github.com/learningeconomy/LearnCard/pull/411) [`725e508c`](https://github.com/learningeconomy/LearnCard/commit/725e508c848b8c7752f44e5bf9915eebb421d766) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add ConsentFlow types
+
+-   [#411](https://github.com/learningeconomy/LearnCard/pull/411) [`725e508c`](https://github.com/learningeconomy/LearnCard/commit/725e508c848b8c7752f44e5bf9915eebb421d766) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add bio to LCN Profiles
+
 ## 5.4.0
 
 ### Minor Changes
