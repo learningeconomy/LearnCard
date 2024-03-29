@@ -1,5 +1,23 @@
 # learn-card-core
 
+## 1.7.0
+
+### Minor Changes
+
+-   [#411](https://github.com/learningeconomy/LearnCard/pull/411) [`725e508c`](https://github.com/learningeconomy/LearnCard/commit/725e508c848b8c7752f44e5bf9915eebb421d766) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add ConsentFlow routes for basic CRUD operations of contracts and terms
+
+### Patch Changes
+
+-   [#412](https://github.com/learningeconomy/LearnCard/pull/412) [`1cb031d7`](https://github.com/learningeconomy/LearnCard/commit/1cb031d7483e80f947c93e3479fe85af8ec09dbb) Thanks [@cboydstun](https://github.com/cboydstun)! - quest [LC-155] Updated Boost Cards
+
+    updated wallet card squares
+
+-   [#411](https://github.com/learningeconomy/LearnCard/pull/411) [`725e508c`](https://github.com/learningeconomy/LearnCard/commit/725e508c848b8c7752f44e5bf9915eebb421d766) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add bio to LCN Profiles
+
+-   Updated dependencies []:
+    -   @learncard/core@9.1.4
+    -   @learncard/network-brain-client@1.2.20
+
 ## 1.6.0
 
 ### Minor Changes

@@ -1,5 +1,16 @@
 # @welibraryos/react-learn-card
 
+## 2.6.51
+
+### Patch Changes
+
+-   [#412](https://github.com/learningeconomy/LearnCard/pull/412) [`1cb031d7`](https://github.com/learningeconomy/LearnCard/commit/1cb031d7483e80f947c93e3479fe85af8ec09dbb) Thanks [@cboydstun](https://github.com/cboydstun)! - quest [LC-155] Updated Boost Cards
+
+    updated wallet card squares
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.15
+
 ## 2.6.50
 
 ### Patch Changes
