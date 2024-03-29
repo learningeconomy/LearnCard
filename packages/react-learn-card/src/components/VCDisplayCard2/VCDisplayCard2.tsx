@@ -142,7 +142,17 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     const _title = titleOverride || title;
 
     if (credential.display.displayType === 'certificate') {
-        return <CertificateDisplayCard credential={credential} categoryType={categoryType} />;
+        return (
+            <CertificateDisplayCard
+                credential={credential}
+                categoryType={categoryType}
+                verificationItems={verificationItems}
+                getFileMetadata={getFileMetadata}
+                getVideoMetadata={getVideoMetadata}
+                onMediaAttachmentClick={onMediaAttachmentClick}
+                enableLightbox={enableLightbox}
+            />
+        );
         // return (
         //     <CertificateDisplayCard
         //         credential={credential}

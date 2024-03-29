@@ -1,26 +1,55 @@
 import React, { useState } from 'react';
 import { getCategoryColor } from '../../helpers/credential.helpers';
 import { VC } from '@learncard/types';
-import { BoostAchievementCredential, LCCategoryEnum } from '../../types';
+import { BoostAchievementCredential, LCCategoryEnum, VerificationItem } from '../../types';
 import CertificateFrontFace from './CertificateFrontFace';
+import CertificateBackFace from './CertificateBackFace';
+import { MediaMetadata, VideoMetadata } from './MediaAttachmentsBox';
 
 type CertificateDisplayCardProps = {
     credential: VC | BoostAchievementCredential;
     categoryType?: LCCategoryEnum;
+    verificationItems: VerificationItem[];
+
+    getFileMetadata?: (url: string) => MediaMetadata;
+    getVideoMetadata?: (url: string) => VideoMetadata;
+    onMediaAttachmentClick?: (url: string, type: 'photo' | 'document' | 'video' | 'link') => void;
+    enableLightbox?: boolean;
 };
 
 export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
     credential,
     categoryType,
+    verificationItems,
+
+    getFileMetadata,
+    getVideoMetadata,
+    onMediaAttachmentClick,
+    enableLightbox,
 }) => {
     const [isFront, setIsFront] = useState(true);
 
     const credentialPrimaryColor = getCategoryColor(categoryType) ?? 'emerald-500';
 
     return (
-        <section className="border-solid border-[5px] border-grayscale-200 bg-white rounded-[30px] p-[13px] relative max-w-[300px]">
+        <section
+            className={`border-solid border-[5px] border-grayscale-200 rounded-[30px] p-[13px] relative max-w-[300px] ${isFront ? 'bg-white' : `bg-${credentialPrimaryColor}`
+                }`}
+        >
             {isFront && (
                 <CertificateFrontFace credential={credential} categoryType={categoryType} />
+            )}
+
+            {!isFront && (
+                <CertificateBackFace
+                    credential={credential}
+                    categoryType={categoryType}
+                    verificationItems={verificationItems}
+                    getFileMetadata={getFileMetadata}
+                    getVideoMetadata={getVideoMetadata}
+                    onMediaAttachmentClick={onMediaAttachmentClick}
+                    enableLightbox={enableLightbox}
+                />
             )}
 
             <button
