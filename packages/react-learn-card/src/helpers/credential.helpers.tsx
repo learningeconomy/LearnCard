@@ -123,3 +123,20 @@ export const getCategoryIcon = (category = LCCategoryEnum.achievement) => {
             return undefined;
     }
 };
+
+export const getTotalCountOfSkills = (
+    skills: { skill: string; category: string; subSkills: string[] }[]
+) => {
+    if (skills.length === 0 || !skills) return 0;
+    let totalCount = 0;
+
+    skills?.forEach(skill => {
+        totalCount++; // Increment for each skill
+
+        if (skill?.subSkills) {
+            totalCount += skill?.subSkills.length; // Increment for each subskill
+        }
+    });
+
+    return totalCount;
+};
