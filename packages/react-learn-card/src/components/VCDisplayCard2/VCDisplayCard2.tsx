@@ -8,6 +8,8 @@ import FitText from './FitText';
 import AwardRibbon from '../svgs/AwardRibbon';
 import LeftArrow from '../svgs/LeftArrow';
 import RoundedX from '../svgs/RoundedX';
+import VCDisplayCardCategoryType from './VCDisplayCardCategoryType';
+import VCDisplayCardSkillsCount from './VCDisplayCardSkillsCount';
 
 import { Profile, VC, VerificationItem, VerificationStatusEnum } from '@learncard/types';
 import {
@@ -16,7 +18,6 @@ import {
 } from '../../helpers/credential.helpers';
 import { BoostAchievementCredential, IssueHistory, LCCategoryEnum } from '../../types';
 import { MediaMetadata, VideoMetadata } from './MediaAttachmentsBox';
-import VCDisplayCardCategoryType from './VCDisplayCardCategoryType';
 import { CertificateDisplayCard } from '../CertificateDisplayCard';
 
 export type CredentialIconType = {
@@ -83,6 +84,8 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     customRibbonCategoryComponent,
     customFrontButton,
 }) => {
+    console.log('credential', credential);
+
     const {
         title = '',
         createdAt,
@@ -130,8 +133,8 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     const statusColor = getColorForVerificationStatus(worstVerificationStatus);
 
     const backgroundStyle = {
-        backgroundColor: credential.display?.backgroundColor,
-        backgroundImage: credential.display?.backgroundImage
+        backgroundColor: credential?.display?.backgroundColor,
+        backgroundImage: credential?.display?.backgroundImage
             ? `linear-gradient(to bottom, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.25)), url(${credential.display?.backgroundImage})`
             : undefined,
         backgroundSize: 'contain',
@@ -141,7 +144,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
 
     const _title = titleOverride || title;
 
-    if (credential.display.displayType === 'certificate') {
+    if (credential?.display?.displayType === 'certificate') {
         return (
             <CertificateDisplayCard
                 credential={credential}
@@ -257,6 +260,9 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                             enableLightbox={enableLightbox}
                         />
                     )}
+
+                    <VCDisplayCardSkillsCount skills={credential?.skills} />
+
                     {isFront && customFrontButton}
                     {isFront && !customFrontButton && (
                         <button

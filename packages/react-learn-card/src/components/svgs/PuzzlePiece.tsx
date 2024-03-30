@@ -1,15 +1,16 @@
 import React from 'react';
 
-const PuzzlePiece: React.FC<{ className?: string; size?: string }> = ({
+const PuzzlePiece: React.FC<{ className?: string; size?: string; fill: string }> = ({
     className = '',
     size = '21',
+    fill = 'none',
 }) => {
     return (
         <svg
             width={size}
             height={size}
             viewBox="0 0 26 26"
-            fill="none"
+            fill={fill}
             className={className}
             data-testid="skill-icon"
         >
