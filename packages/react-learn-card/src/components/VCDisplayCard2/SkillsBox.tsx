@@ -7,13 +7,19 @@ import {
 } from '../../constants/skills';
 
 import SelectedSkills from './SelectedSkills';
+import PuzzlePiece from '../svgs/PuzzlePiece';
 
 const SkillsBox: React.FC<{ category: string; skill: string; subSkills: string[] }[]> = ({
     skills,
 }) => {
     return (
         <div className="bg-white flex flex-col items-start gap-[10px] rounded-[20px] shadow-bottom px-[15px] py-[20px] w-full relative">
-            <h3 className="text-[20px] leading-[20px] text-grayscale-900">Skills</h3>
+            <div className="flex items-center justify-start">
+                <div className="bg-violet-500 rounded-full flex items-center justify-center ml-2 h-[30px] w-[30px] p-1">
+                    <PuzzlePiece className="text-white" fill="#fff" />
+                </div>{' '}
+                <h3 className="text-[20px] leading-[20px] text-grayscale-900 ml-2">Skills</h3>
+            </div>
 
             {skills?.length > 0 && (
                 <div className="ion-padding pt-0 pb-4 flex items-center justify-center flex-col w-full">
