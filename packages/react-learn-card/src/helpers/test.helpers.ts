@@ -156,12 +156,12 @@ export const AllFieldsCredential = {
         {
             category: 'digital',
             skill: 'softwareProficiency',
-            subskills: ['productivitySuite', 'specializedSoftware', 'designSoftware'],
+            subskills: ['productivitySuites', 'specializedSoftware', 'designSoftware'],
         },
         {
             category: 'stem',
             skill: 'technology',
-            subskills: ['coding', 'softwareDevelopmenet', 'dataAnalysis'],
+            subskills: ['coding', 'softwareDevelopment', 'dataAnalysis'],
         },
     ],
 };
@@ -258,12 +258,12 @@ export const BoostCredential = {
         {
             category: 'digital',
             skill: 'softwareProficiency',
-            subskills: ['productivitySuite', 'specializedSoftware', 'designSoftware'],
+            subskills: ['productivitySuites', 'specializedSoftware', 'designSoftware'],
         },
         {
             category: 'stem',
             skill: 'technology',
-            subskills: ['coding', 'softwareDevelopmenet', 'dataAnalysis'],
+            subskills: ['coding', 'softwareDevelopment', 'dataAnalysis'],
         },
     ],
 };
