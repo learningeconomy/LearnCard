@@ -3,7 +3,7 @@ import { format } from 'date-fns';
 
 import MediaAttachmentsBox, { MediaMetadata, VideoMetadata } from './MediaAttachmentsBox';
 import TruncateTextBox from './TruncateTextBox';
-// import SkillsBox from './SkillsBox';
+import SkillsBox from './SkillsBox';
 import IssueHistoryBox from './IssueHistoryBox';
 import { VC, VerificationItem } from '@learncard/types';
 import VerificationsBox from './VerificationsBox';
@@ -31,6 +31,7 @@ type VC2BackFaceProps = {
     showFrontFace: () => void;
     customDescription?: React.ReactNode;
     customCriteria?: React.ReactNode;
+    customSkillsComponenta?: React.ReactNode;
     customIssueHistoryComponent?: React.ReactNode;
     enableLightbox?: boolean;
 };
@@ -47,6 +48,7 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
     showFrontFace,
     customDescription,
     customCriteria,
+    customSkillsComponent,
     customIssueHistoryComponent,
     enableLightbox,
 }) => {
@@ -111,7 +113,8 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
             {!customCriteria && criteria && (
                 <TruncateTextBox headerText="Criteria" text={criteria} className="criteria-box" />
             )}
-            {/* {skillsObject && <SkillsBox skillsObject={skillsObject} />} */}
+            {customSkillsComponent && customSkillsComponent}
+            {!customSkillsComponent && <SkillsBox skills={credential?.skills} />}
 
             {issueHistory && issueHistory?.length > 0 && (
                 <IssueHistoryBox
