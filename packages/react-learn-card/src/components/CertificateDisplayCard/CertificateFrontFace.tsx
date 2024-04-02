@@ -6,6 +6,8 @@ import CertificateImageDisplay from './CertificateImageDisplay';
 import VerifiedBadge from '../svgs/VerifiedBadge';
 import PersonBadge from '../svgs/PersonBadge';
 import CertificateCornerIcon from './CertificateCornerIcon';
+import Smiley from '../svgs/Smiley';
+import Line from '../svgs/Line';
 
 type CertificateFrontFaceProps = {
     credential: VC | BoostAchievementCredential;
@@ -30,6 +32,8 @@ const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
     const credentialPrimaryColor = getCategoryColor(categoryType) ?? 'emerald-500';
 
     const isSelfVerified = true; // TODO actual logic
+
+    const issueeImage = '';
 
     return (
         <>
@@ -56,13 +60,19 @@ const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
                     </h1>
                 </div>
 
-                <img
-                    className="h-[50px] w-[50px] rounded-full"
-                    src="https://imgs.search.brave.com/mR-qTglzpGl8uw83n_ErbMNuZKXcqnfulrRGN17nsn0/rs:fit:860:0:0/g:ce/aHR0cHM6Ly93YWxs/cGFwZXJzLmNvbS9p/bWFnZXMvZmVhdHVy/ZWQvY29vbC1wcm9m/aWxlLXBpY3R1cmUt/ODdoNDZnY29iamw1/ZTR4dS5qcGc"
-                />
+                {issueeImage && (
+                    <img className="h-[50px] w-[50px] rounded-full" src={issueeImage} />
+                )}
+                {!issueeImage && (
+                    <div className="h-[50px] w-[50px] rounded-full bg-grayscale-500 flex items-center justify-center">
+                        <Smiley />
+                    </div>
+                )}
 
                 <div className="text-[14px] text-grayscale-800 flex flex-col items-center">
-                    <span className="font-jacques">Awarded to {issuee || '[No Issuee Name]'}</span>
+                    <span className="font-jacques flex gap-[5px] items-center">
+                        Awarded to {issuee || <Line width="60" />}
+                    </span>
                     <span className="font-jacques">on {createdAt}</span>
                 </div>
 
