@@ -136,10 +136,6 @@ export const VC_TEMPLATES: { [Key in keyof VcTemplates]: (args: VcTemplates[Key]
                                     },
                                 },
                             },
-                            image: {
-                                '@id': 'lcn:boostImage',
-                                '@type': 'xsd:string',
-                            },
                             attachments: {
                                 '@id': 'lcn:boostAttachments',
                                 '@container': '@set',
@@ -256,10 +252,6 @@ export const VC_TEMPLATES: { [Key in keyof VcTemplates]: (args: VcTemplates[Key]
                                         '@type': 'xsd:string',
                                     },
                                 },
-                            },
-                            image: {
-                                '@id': 'lcn:boostImage',
-                                '@type': 'xsd:string',
                             },
                             attachments: {
                                 '@id': 'lcn:boostAttachments',
