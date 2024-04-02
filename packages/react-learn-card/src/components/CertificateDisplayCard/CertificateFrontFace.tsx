@@ -13,6 +13,7 @@ import PersonBadge from '../svgs/PersonBadge';
 import CertificateCornerIcon from './CertificateCornerIcon';
 import Smiley from '../svgs/Smiley';
 import Line from '../svgs/Line';
+import CertificateProfileImageDisplay from './CertificateProfileImageDisplay';
 
 type CertificateFrontFaceProps = {
     credential: VC | BoostAchievementCredential;
@@ -40,7 +41,7 @@ const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
 
     const credentialPrimaryColor = getCategoryColor(categoryType) ?? 'emerald-500';
 
-    const isSelfVerified = true; // TODO actual logic
+    const isSelfVerified = false; // TODO actual logic
 
     const issuerName = getNameFromProfile(issuer ?? '');
     // const issueeName = getNameFromProfile(issuee ?? '');
@@ -59,7 +60,8 @@ const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
             </div>
 
             <div
-                className={`flex flex-col gap-[15px] items-center p-[20px] !pt-[55px] border-solid border-[4px] border-${credentialPrimaryColor} rounded-[30px]`}
+                className={`flex flex-col gap-[15px] items-center px-[20px] pt-[55px] ${isSelfVerified ? 'pb-[20px]' : 'pb-[77px]'
+                    } border-solid border-[4px] border-${credentialPrimaryColor} rounded-[30px]`}
             >
                 <div className="flex flex-col gap-[5px] items-center">
                     <div
