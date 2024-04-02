@@ -5,6 +5,7 @@ import { BoostAchievementCredential, LCCategoryEnum, VerificationItem } from '..
 import CertificateFrontFace from './CertificateFrontFace';
 import CertificateBackFace from './CertificateBackFace';
 import { MediaMetadata, VideoMetadata } from './MediaAttachmentsBox';
+import FatArrow from '../svgs/FatArrow';
 
 type CertificateDisplayCardProps = {
     credential: VC | BoostAchievementCredential;
@@ -17,6 +18,8 @@ type CertificateDisplayCardProps = {
     getVideoMetadata?: (url: string) => VideoMetadata;
     onMediaAttachmentClick?: (url: string, type: 'photo' | 'document' | 'video' | 'link') => void;
     enableLightbox?: boolean;
+
+    handleXClick?: () => void;
 };
 
 export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
@@ -30,6 +33,8 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
     getVideoMetadata,
     onMediaAttachmentClick,
     enableLightbox,
+
+    handleXClick,
 }) => {
     const [isFront, setIsFront] = useState(true);
 
@@ -61,12 +66,34 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
                 />
             )}
 
-            <button
-                className={`bg-${credentialPrimaryColor} text-white font-sacramento font-[600] py-[5px] px-[15px] rounded-full absolute bottom-[-50px] right-0 left-0 min-w-[200px]`}
-                onClick={() => setIsFront(!isFront)}
-            >
-                FLIP IT
-            </button>
+            <div className="flex gap-[10px] font-mouse text-[30px] leading-[28px] tracking-[0.75px] absolute bottom-[-83px] left-0 w-full">
+                {!isFront && (
+                    <button
+                        className="bg-grayscale-900 text-white py-[15px] px-[20px] rounded-[20px] grow flex justify-center items-center gap-[5px] border-[3px] border-solid border-white"
+                        onClick={() => setIsFront(!isFront)}
+                    >
+                        <FatArrow direction="left" /> Back
+                    </button>
+                )}
+
+                {handleXClick && (
+                    <button
+                        onClick={handleXClick}
+                        className="bg-white text-grayscale-900 rounded-[20px] py-[15px] px-[20px] grow"
+                    >
+                        Close
+                    </button>
+                )}
+
+                {isFront && (
+                    <button
+                        className="bg-grayscale-900 text-white py-[15px] px-[20px] rounded-[20px] grow flex justify-center items-center gap-[5px] border-[3px] border-solid border-white"
+                        onClick={() => setIsFront(!isFront)}
+                    >
+                        Details <FatArrow direction="right" />
+                    </button>
+                )}
+            </div>
         </section>
     );
 };

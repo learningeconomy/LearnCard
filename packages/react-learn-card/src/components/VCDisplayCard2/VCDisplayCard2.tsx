@@ -158,6 +158,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 onMediaAttachmentClick={onMediaAttachmentClick}
                 enableLightbox={enableLightbox}
                 trustedAppRegistry={trustedAppRegistry}
+                handleXClick={handleXClick}
             />
         );
         // return (
