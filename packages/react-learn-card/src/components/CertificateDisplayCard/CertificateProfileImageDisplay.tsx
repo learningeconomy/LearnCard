@@ -21,7 +21,8 @@ const CertificateProfileImageDisplay: React.FC<CertificateProfileImageDisplayPro
             )}
 
             <img
-                className="h-[50px] w-[50px] rounded-full absolute border-[2px] border-solid border-grayscale-200"
+                className={`h-[50px] w-[50px] rounded-full ${isIssuer ? 'absolute border-[2px] border-solid border-grayscale-200' : ''
+                    }`}
                 src={imageUrl}
             />
         </div>

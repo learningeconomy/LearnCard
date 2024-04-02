@@ -109,7 +109,11 @@ const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
                 </div>
 
                 {issueeImage && (
-                    <img className="h-[50px] w-[50px] rounded-full" src={issueeImage} />
+                    <CertificateProfileImageDisplay
+                        imageUrl={issueeImage}
+                        className={`flex justify-center items-center text-${credentialPrimaryColor}`}
+                        isIssuer={isSelfVerified}
+                    />
                 )}
                 {!issueeImage && (
                     <div className="h-[50px] w-[50px] rounded-full bg-grayscale-500 flex items-center justify-center">
