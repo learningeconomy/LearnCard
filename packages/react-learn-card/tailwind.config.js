@@ -88,6 +88,12 @@ module.exports = {
                 green: {
                     dark: '#05B65D',
                 },
+                orange: {
+                    500: '#EF5D35',
+                },
+                red: {
+                    mastercard: '#EB001B',
+                },
             },
             fontFamily: {
                 mouse: ['Mouse Memoirs'],

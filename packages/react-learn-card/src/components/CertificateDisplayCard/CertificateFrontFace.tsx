@@ -1,30 +1,46 @@
 import React from 'react';
+
+import CertificateCornerIcon from './CertificateCornerIcon';
+import CertificateImageDisplay from './CertificateImageDisplay';
+import CertificateProfileImageDisplay from './CertificateProfileImageDisplay';
+
+import UnknownVerifierBadge from '../svgs/UnknownVerifierBadge';
+import VerifiedBadge from '../svgs/VerifiedBadge';
+import PersonBadge from '../svgs/PersonBadge';
+import RedFlag from '../svgs/RedFlag';
+import Smiley from '../svgs/Smiley';
+import Line from '../svgs/Line';
+
 import {
     getInfoFromCredential,
     getCategoryColor,
     getNameFromProfile,
     getImageFromProfile,
 } from '../../helpers/credential.helpers';
+
 import { VC, Profile } from '@learncard/types';
 import { BoostAchievementCredential, LCCategoryEnum } from '../../types';
-import CertificateImageDisplay from './CertificateImageDisplay';
-import VerifiedBadge from '../svgs/VerifiedBadge';
-import PersonBadge from '../svgs/PersonBadge';
-import CertificateCornerIcon from './CertificateCornerIcon';
-import Smiley from '../svgs/Smiley';
-import Line from '../svgs/Line';
-import CertificateProfileImageDisplay from './CertificateProfileImageDisplay';
+
+const VERIFIER_STATES = {
+    selfVerified: 'Self Verified',
+    trustedVerifier: 'Trusted Verifier',
+    unknownVerifier: 'Unknown Verifier',
+    untrustedVerifier: 'Untrusted Verifier',
+} as const;
+type VerifierState = (typeof VERIFIER_STATES)[keyof typeof VERIFIER_STATES];
 
 type CertificateFrontFaceProps = {
     credential: VC | BoostAchievementCredential;
     categoryType?: LCCategoryEnum;
     issuerOverride?: Profile;
+    trustedAppRegistry?: any[];
 };
 
 const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
     credential,
     categoryType,
     issuerOverride,
+    trustedAppRegistry,
 }) => {
     const {
         title = '',
@@ -41,13 +57,30 @@ const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
 
     const credentialPrimaryColor = getCategoryColor(categoryType) ?? 'emerald-500';
 
-    const isSelfVerified = false; // TODO actual logic
-
     const issuerName = getNameFromProfile(issuer ?? '');
     // const issueeName = getNameFromProfile(issuee ?? '');
     const issuerImage = getImageFromProfile(issuer ?? '');
     // const issueeImage = getImageFromProfile(issuee ?? '');
     const issueeImage = '';
+    const issueeName = '';
+
+    let verifierState: VerifierState;
+    if (issuerName === issueeName) {
+        // TODO real logic by did
+        verifierState = VERIFIER_STATES.selfVerified;
+    } else {
+        const appRegistryEntry = trustedAppRegistry?.find(
+            registryEntry => registryEntry.did === issuer?.did
+        );
+
+        if (appRegistryEntry) {
+            // TODO add an 'isTrusted' flag to the registry to distinguish between trusted + untrusted
+            verifierState = VERIFIER_STATES.trustedVerifier;
+        } else {
+            verifierState = VERIFIER_STATES.unknownVerifier;
+        }
+    }
+    const isSelfVerified = verifierState === VERIFIER_STATES.selfVerified;
 
     return (
         <>
@@ -109,16 +142,28 @@ const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
                         {issuerName || 'A Prestigious University'}
                     </span>
 
-                    {!isSelfVerified && (
+                    {isSelfVerified && (
+                        <span className="uppercase font-poppins text-[12px] font-[500] text-green-dark flex gap-[3px] items-center">
+                            <PersonBadge />
+                            Self Verified
+                        </span>
+                    )}
+                    {verifierState === VERIFIER_STATES.trustedVerifier && (
                         <span className="uppercase font-poppins text-[12px] font-[500] text-blue-light flex gap-[3px] items-center">
                             <VerifiedBadge />
                             Trusted Verifier
                         </span>
                     )}
-                    {isSelfVerified && (
-                        <span className="uppercase font-poppins text-[12px] font-[500] text-green-dark flex gap-[3px] items-center">
-                            <PersonBadge />
-                            Self Verified
+                    {verifierState === VERIFIER_STATES.unknownVerifier && (
+                        <span className="uppercase font-poppins text-[12px] font-[500] text-orange-500 flex gap-[3px] items-center">
+                            <UnknownVerifierBadge />
+                            Unknown Verifier
+                        </span>
+                    )}
+                    {verifierState === VERIFIER_STATES.untrustedVerifier && (
+                        <span className="uppercase font-poppins text-[12px] font-[500] text-red-mastercard flex gap-[3px] items-center">
+                            <RedFlag />
+                            Untrusted Verifier
                         </span>
                     )}
                 </div>
@@ -131,6 +176,14 @@ const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
                     <CertificateCornerIcon categoryType={categoryType} position="bottom-left" />
                     <CertificateCornerIcon categoryType={categoryType} position="bottom-right" />
                 </>
+            )}
+
+            {!isSelfVerified && (
+                <CertificateProfileImageDisplay
+                    imageUrl={issuerImage}
+                    className={`w-[calc(100%-26px)] absolute bottom-0 flex justify-center items-center text-${credentialPrimaryColor}`}
+                    isIssuer
+                />
             )}
 
             {/* so that tailwind will put these colors in the css */}

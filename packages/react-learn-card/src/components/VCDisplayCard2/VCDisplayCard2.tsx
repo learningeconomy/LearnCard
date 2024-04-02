@@ -53,6 +53,7 @@ export type VCDisplayCard2Props = {
     enableLightbox?: boolean;
     customRibbonCategoryComponent?: React.ReactNode;
     customFrontButton?: React.ReactNode;
+    trustedAppRegistry?: any[];
 };
 
 export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
@@ -83,6 +84,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     enableLightbox,
     customRibbonCategoryComponent,
     customFrontButton,
+    trustedAppRegistry,
 }) => {
     console.log('credential', credential);
 
@@ -155,6 +157,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 getVideoMetadata={getVideoMetadata}
                 onMediaAttachmentClick={onMediaAttachmentClick}
                 enableLightbox={enableLightbox}
+                trustedAppRegistry={trustedAppRegistry}
             />
         );
         // return (
