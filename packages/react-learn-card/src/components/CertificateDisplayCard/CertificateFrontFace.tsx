@@ -46,7 +46,7 @@ const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
             </div>
 
             <div
-                className={`flex flex-col gap-[15px] items-center p-[20px] !pt-[75px] border-solid border-[4px] border-${credentialPrimaryColor} rounded-[30px]`}
+                className={`flex flex-col gap-[15px] items-center p-[20px] !pt-[55px] border-solid border-[4px] border-${credentialPrimaryColor} rounded-[30px]`}
             >
                 <div className="flex flex-col gap-[5px] items-center">
                     <div
