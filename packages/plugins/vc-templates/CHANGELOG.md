@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 1.0.12
+
+### Patch Changes
+
+-   [#415](https://github.com/learningeconomy/LearnCard/pull/415) [`4bb9472`](https://github.com/learningeconomy/LearnCard/commit/4bb94729339d638fac6883b6e40441f257429ded) Thanks [@gerardopar](https://github.com/gerardopar)! - Add skills to context
+
 ## 1.0.11
 
 ### Patch Changes
