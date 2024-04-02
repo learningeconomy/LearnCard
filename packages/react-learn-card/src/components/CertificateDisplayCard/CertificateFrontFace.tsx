@@ -1,6 +1,11 @@
 import React from 'react';
-import { getInfoFromCredential, getCategoryColor } from '../../helpers/credential.helpers';
-import { VC } from '@learncard/types';
+import {
+    getInfoFromCredential,
+    getCategoryColor,
+    getNameFromProfile,
+    getImageFromProfile,
+} from '../../helpers/credential.helpers';
+import { VC, Profile } from '@learncard/types';
 import { BoostAchievementCredential, LCCategoryEnum } from '../../types';
 import CertificateImageDisplay from './CertificateImageDisplay';
 import VerifiedBadge from '../svgs/VerifiedBadge';
@@ -12,20 +17,24 @@ import Line from '../svgs/Line';
 type CertificateFrontFaceProps = {
     credential: VC | BoostAchievementCredential;
     categoryType?: LCCategoryEnum;
+    issuerOverride?: Profile;
 };
 
 const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
     credential,
     categoryType,
+    issuerOverride,
 }) => {
     const {
         title = '',
         createdAt,
-        issuer = '',
+        issuer: _issuer = '',
         issuee = '',
         credentialSubject,
         imageUrl,
     } = getInfoFromCredential(credential, 'MMM dd, yyyy', { uppercaseDate: false });
+
+    const issuer = issuerOverride || _issuer;
 
     const { description } = credentialSubject?.achievement ?? {};
 
@@ -33,6 +42,10 @@ const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
 
     const isSelfVerified = true; // TODO actual logic
 
+    const issuerName = getNameFromProfile(issuer ?? '');
+    // const issueeName = getNameFromProfile(issuee ?? '');
+    const issuerImage = getImageFromProfile(issuer ?? '');
+    // const issueeImage = getImageFromProfile(issuee ?? '');
     const issueeImage = '';
 
     return (
@@ -91,7 +104,7 @@ const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
                         Certified by
                     </span>
                     <span className="mb-[3px] text-grayscale-900 text-[25px] leading-[90%] font-sacramento border-b-[1px] border-solid border-grayscale-200 w-full text-center">
-                        {issuer || 'A Prestigious University'}
+                        {issuerName || 'A Prestigious University'}
                     </span>
 
                     {!isSelfVerified && (

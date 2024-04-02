@@ -149,6 +149,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
             <CertificateDisplayCard
                 credential={credential}
                 categoryType={categoryType}
+                issuerOverride={issuer}
                 verificationItems={verificationItems}
                 getFileMetadata={getFileMetadata}
                 getVideoMetadata={getVideoMetadata}

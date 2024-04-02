@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { getCategoryColor } from '../../helpers/credential.helpers';
-import { VC } from '@learncard/types';
+import { VC, Profile } from '@learncard/types';
 import { BoostAchievementCredential, LCCategoryEnum, VerificationItem } from '../../types';
 import CertificateFrontFace from './CertificateFrontFace';
 import CertificateBackFace from './CertificateBackFace';
@@ -10,6 +10,7 @@ type CertificateDisplayCardProps = {
     credential: VC | BoostAchievementCredential;
     categoryType?: LCCategoryEnum;
     verificationItems: VerificationItem[];
+    issuerOverride?: Profile;
 
     getFileMetadata?: (url: string) => MediaMetadata;
     getVideoMetadata?: (url: string) => VideoMetadata;
@@ -21,6 +22,7 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
     credential,
     categoryType,
     verificationItems,
+    issuerOverride,
 
     getFileMetadata,
     getVideoMetadata,
@@ -33,11 +35,15 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
 
     return (
         <section
-            className={`border-solid border-[5px] border-grayscale-200 rounded-[30px] p-[13px] relative max-w-[300px] ${isFront ? 'bg-white' : `bg-${credentialPrimaryColor}`
+            className={`border-solid border-[5px] border-grayscale-200 rounded-[30px] p-[13px] relative min-w-[250px] max-w-[300px] ${isFront ? 'bg-white' : `bg-${credentialPrimaryColor}`
                 }`}
         >
             {isFront && (
-                <CertificateFrontFace credential={credential} categoryType={categoryType} />
+                <CertificateFrontFace
+                    credential={credential}
+                    categoryType={categoryType}
+                    issuerOverride={issuerOverride}
+                />
             )}
 
             {!isFront && (

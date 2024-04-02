@@ -24,7 +24,7 @@ export const getImageFromImage = (image: Image): string => {
 export const getNameFromProfile = (profile: Profile): string => {
     if (typeof profile === 'string') return profile;
 
-    return profile.name ?? '';
+    return profile.name || profile.displayName || '';
 };
 
 export const getImageFromProfile = (profile: Profile): string => {
