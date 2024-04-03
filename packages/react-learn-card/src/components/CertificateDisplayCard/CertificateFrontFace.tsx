@@ -152,12 +152,12 @@ const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
                     <div className="text-violet-500 font-poppins text-[14px]">+2 Skills</div>
                 </div>
 
-                <div className="flex flex-col gap-[5px] items-center">
+                <div className="flex flex-col gap-[5px] items-center w-full">
                     <span className="font-jacques text-[12px] text-grayscale-800">
                         Certified by
                     </span>
-                    <span className="mb-[3px] text-grayscale-900 text-[25px] leading-[90%] font-sacramento border-b-[1px] border-solid border-grayscale-200 w-full text-center">
-                        {issuerName || 'A Prestigious University'}
+                    <span className="mb-[3px] text-grayscale-900 text-[25px] leading-[90%] font-sacramento border-b-[1px] border-solid border-grayscale-200 w-full text-center overflow-ellipsis whitespace-nowrap overflow-x-hidden overflow-y-visible scrollbar-hide">
+                        {issuerName}
                     </span>
 
                     {isSelfVerified && (
