@@ -15,6 +15,7 @@ type CertificateDisplayCardProps = {
     issueeOverride?: Profile;
     trustedAppRegistry?: any[];
     subjectImageComponent?: React.ReactNode;
+    issuerImageComponent?: React.ReactNode;
 
     getFileMetadata?: (url: string) => MediaMetadata;
     getVideoMetadata?: (url: string) => VideoMetadata;
@@ -31,6 +32,7 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
     issuerOverride,
     issueeOverride,
     subjectImageComponent,
+    issuerImageComponent,
     trustedAppRegistry,
 
     getFileMetadata,
@@ -57,6 +59,7 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
                     issueeOverride={issueeOverride}
                     trustedAppRegistry={trustedAppRegistry}
                     subjectImageComponent={subjectImageComponent}
+                    issuerImageComponent={issuerImageComponent}
                 />
             )}
 

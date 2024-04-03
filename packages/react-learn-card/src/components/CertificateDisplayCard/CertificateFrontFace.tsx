@@ -37,6 +37,7 @@ type CertificateFrontFaceProps = {
     issueeOverride?: Profile;
     trustedAppRegistry?: any[];
     subjectImageComponent?: React.ReactNode;
+    issuerImageComponent?: React.ReactNode;
 };
 
 const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
@@ -46,6 +47,7 @@ const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
     issueeOverride,
     trustedAppRegistry,
     subjectImageComponent,
+    issuerImageComponent,
 }) => {
     const {
         title = '',
@@ -196,6 +198,7 @@ const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
             {!isSelfVerified && (
                 <CertificateProfileImageDisplay
                     imageUrl={issuerImage}
+                    imageComponent={issuerImageComponent}
                     className={`w-[calc(100%-26px)] absolute bottom-0 flex justify-center items-center text-${credentialPrimaryColor}`}
                     isIssuer
                 />
