@@ -69,17 +69,21 @@ const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
     const issuerImage = getImageFromProfile(issuer ?? '');
     const issueeImage = getImageFromProfile(issuee ?? '');
 
+    const issuerDid =
+        typeof credential.issuer === 'string' ? credential.issuer : credential.issuer.id;
+
     let verifierState: VerifierState;
-    if (credentialSubject?.id === credential.issuer) {
+    if (credentialSubject?.id === issuerDid) {
         verifierState = VERIFIER_STATES.selfVerified;
     } else {
         const appRegistryEntry = trustedAppRegistry?.find(
-            registryEntry => registryEntry.did === issuer?.did
+            registryEntry => registryEntry.did === issuerDid
         );
 
         if (appRegistryEntry) {
-            // TODO add an 'isTrusted' flag to the registry to distinguish between trusted + untrusted
-            verifierState = VERIFIER_STATES.trustedVerifier;
+            verifierState = appRegistryEntry.isTrusted
+                ? VERIFIER_STATES.trustedVerifier
+                : VERIFIER_STATES.untrustedVerifier;
         } else {
             verifierState = VERIFIER_STATES.unknownVerifier;
         }
