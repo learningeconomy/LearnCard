@@ -166,16 +166,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
         );
         // return (
         //     <CertificateDisplayCard
-        //         credential={credential}
-        //         issueeOverride={issueeOverride}
         //         verificationInProgress={verificationInProgress}
-        //         verificationItems={verificationItems}
-        //         subjectImageComponent={subjectImageComponent}
-        //         // convertTagsToSkills={convertTagsToSkills}
-        //         handleXClick={handleXClick}
-        //         getFileMetadata={getFileMetadata}
-        //         getVideoMetadata={getVideoMetadata}
-        //         onMediaAttachmentClick={onMediaAttachmentClick}
         //         bottomRightIcon={bottomRightIcon}
         //     />
         // );
