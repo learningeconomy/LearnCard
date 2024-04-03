@@ -38,6 +38,8 @@ type CertificateFrontFaceProps = {
     trustedAppRegistry?: any[];
     subjectImageComponent?: React.ReactNode;
     issuerImageComponent?: React.ReactNode;
+    customBodyCardComponent?: React.ReactNode;
+    hideIssueDate?: boolean;
 };
 
 const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
@@ -48,6 +50,8 @@ const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
     trustedAppRegistry,
     subjectImageComponent,
     issuerImageComponent,
+    customBodyCardComponent,
+    hideIssueDate,
 }) => {
     const {
         title = '',
@@ -121,7 +125,8 @@ const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
                     </h1>
                 </div>
 
-                {issueeImageExists && (
+                {customBodyCardComponent}
+                {issueeImageExists && !customBodyCardComponent && (
                     <CertificateProfileImageDisplay
                         imageUrl={issueeImage}
                         imageComponent={subjectImageComponent}
@@ -129,7 +134,7 @@ const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
                         isIssuer={isSelfVerified}
                     />
                 )}
-                {!issueeImageExists && (
+                {!issueeImageExists && !customBodyCardComponent && (
                     <div className="h-[50px] w-[50px] rounded-full bg-grayscale-500 flex items-center justify-center">
                         <Smiley />
                     </div>
@@ -139,7 +144,7 @@ const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
                     <span className="font-jacques flex gap-[5px] items-center w-full overflow-ellipsis whitespace-nowrap overflow-hidden justify-center">
                         Awarded to {issueeName || <Line width="60" />}
                     </span>
-                    <span className="font-jacques">on {createdAt}</span>
+                    {!hideIssueDate && <span className="font-jacques">on {createdAt}</span>}
                 </div>
 
                 <div className="flex flex-col gap-[10px] items-center">

@@ -54,6 +54,7 @@ export type VCDisplayCard2Props = {
     customRibbonCategoryComponent?: React.ReactNode;
     customFrontButton?: React.ReactNode;
     trustedAppRegistry?: any[];
+    hideIssueDate?: boolean;
 };
 
 export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
@@ -85,6 +86,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     customRibbonCategoryComponent,
     customFrontButton,
     trustedAppRegistry,
+    hideIssueDate,
 }) => {
     console.log('credential', credential);
 
@@ -162,6 +164,8 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 handleXClick={handleXClick}
                 subjectImageComponent={subjectImageComponent}
                 issuerImageComponent={issuerImageComponent}
+                customBodyCardComponent={customBodyCardComponent}
+                hideIssueDate={hideIssueDate}
             />
         );
         // return (
