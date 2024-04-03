@@ -38,7 +38,7 @@ const CertificateBackFace: React.FC<CertificateBackFaceProps> = ({
 
     return (
         <div
-            className={`flex flex-col gap-[15px] items-center py-[30px] px-[20px] rounded-[30px] bg-${credentialDarkColor}`}
+            className={`flex flex-col gap-[15px] items-center py-[30px] px-[20px] rounded-[25px] bg-${credentialDarkColor}`}
         >
             <h1 className="text-white text-center text-[22px] font-jacques">Details</h1>
 
