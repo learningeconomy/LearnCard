@@ -817,6 +817,17 @@ describe('Consent Flow Contracts', () => {
             expect(transactions.records[0]!.terms).toEqual(minimalTerms);
         });
 
+        it('should return withdraw events', async () => {
+            await userB.clients.fullAuth.contracts.withdrawConsent({ uri: termsUri });
+
+            const transactions = await userB.clients.fullAuth.contracts.getTermsTransactionHistory({
+                uri: termsUri,
+            });
+
+            expect(transactions.records).toHaveLength(2);
+            expect(transactions.records[0]!.action).toEqual('withdraw');
+        });
+
         it('should not allow you to get transactions for contracts someone else consented to', async () => {
             await expect(
                 userA.clients.fullAuth.contracts.getTermsTransactionHistory({ uri: termsUri })

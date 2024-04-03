@@ -101,6 +101,8 @@ export const withdrawTermsById = async (id: string): Promise<boolean> => {
         .with('terms')
         .create({
             related: [
+                { identifier: 'terms' },
+                ConsentFlowTransaction.getRelationshipByAlias('isFor'),
                 {
                     identifier: 'transaction',
                     model: ConsentFlowTransaction,
@@ -110,8 +112,6 @@ export const withdrawTermsById = async (id: string): Promise<boolean> => {
                         date: new Date().toISOString(),
                     },
                 },
-                ConsentFlowTransaction.getRelationshipByAlias('isFor'),
-                { identifier: 'terms' },
             ],
         })
         .run();
