@@ -112,7 +112,7 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
 
             {onDotsClick && (
                 <button
-                    className="fixed top-[10px] right-[10px] bg-white rounded-full p-[10px] shadow-bottom"
+                    className="absolute right-[-20px] top-[-52px] bg-white rounded-full p-[10px] shadow-bottom"
                     onClick={onDotsClick}
                 >
                     <img alt="Menu dropdown icon" className="h-[20px] w-[20px]" src={ThreeDots} />
