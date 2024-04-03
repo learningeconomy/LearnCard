@@ -276,40 +276,50 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                                         <GenericDocumentIcon className="shrink-0" />
                                     )}
                                     {docOrLink.type === 'link' && <LinkIcon className="shrink-0" />}
-                                    <span className="text-grayscale-900 font-[400]">
-                                        {docOrLink.title ?? 'No title'}
-                                    </span>
+
+                                    <div className="flex flex-col">
+                                        <span className="text-grayscale-900 font-[400]">
+                                            {docOrLink.title ?? 'No title'}
+                                        </span>
+                                        {docOrLink.type === 'document' && metadata && (
+                                            <a
+                                                href={docOrLink.url}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="text-grayscale-700 font-[500] text-[12px] font-poppins hover:underline"
+                                            >
+                                                {fileExtension && (
+                                                    <span className="uppercase">
+                                                        {fileExtension}
+                                                    </span>
+                                                )}
+                                                {fileExtension &&
+                                                    (numberOfPages || sizeInBytes) &&
+                                                    ' • '}
+                                                {numberOfPages && (
+                                                    <span>
+                                                        {numberOfPages} page
+                                                        {numberOfPages === 1 ? '' : 's'}
+                                                    </span>
+                                                )}
+                                                {numberOfPages && sizeInBytes && ' • '}
+                                                {sizeInBytes && (
+                                                    <span>{prettyBytes(sizeInBytes)}</span>
+                                                )}
+                                            </a>
+                                        )}
+                                        {docOrLink.type === 'link' && (
+                                            <a
+                                                href={docOrLink.url}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="text-indigo-500 font-[500] text-[12px] font-poppins hover:underline"
+                                            >
+                                                {baseUrl}
+                                            </a>
+                                        )}
+                                    </div>
                                 </div>
-                                {docOrLink.type === 'document' && metadata && (
-                                    <a
-                                        href={docOrLink.url}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="text-grayscale-600 font-[600] px-[5px] hover:underline"
-                                    >
-                                        {fileExtension && (
-                                            <span className="uppercase">{fileExtension}</span>
-                                        )}
-                                        {fileExtension && (numberOfPages || sizeInBytes) && ' • '}
-                                        {numberOfPages && (
-                                            <span>
-                                                {numberOfPages} page{numberOfPages === 1 ? '' : 's'}
-                                            </span>
-                                        )}
-                                        {numberOfPages && sizeInBytes && ' • '}
-                                        {sizeInBytes && <span>{prettyBytes(sizeInBytes)}</span>}
-                                    </a>
-                                )}
-                                {docOrLink.type === 'link' && (
-                                    <a
-                                        href={docOrLink.url}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="text-indigo-500 font-[600] px-[5px] hover:underline"
-                                    >
-                                        {baseUrl}
-                                    </a>
-                                )}
                             </div>
                         );
 
