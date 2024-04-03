@@ -171,12 +171,6 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 onDotsClick={onDotsClick}
             />
         );
-        // return (
-        //     <CertificateDisplayCard
-        //         verificationInProgress={verificationInProgress}
-        //         bottomRightIcon={bottomRightIcon}
-        //     />
-        // );
     }
 
     return (

@@ -52,7 +52,7 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
 
     return (
         <section
-            className={`border-solid border-[5px] border-grayscale-200 rounded-[30px] relative min-w-[250px] max-w-[300px] ${isFront ? 'bg-white p-[13px]' : ``
+            className={`w-full border-solid border-[5px] border-grayscale-200 rounded-[30px] relative min-w-[250px] max-w-[300px] ${isFront ? 'bg-white p-[13px]' : ``
                 }`}
         >
             {isFront && (
