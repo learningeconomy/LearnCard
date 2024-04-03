@@ -134,6 +134,10 @@ export const VC_TEMPLATES: { [Key in keyof VcTemplates]: (args: VcTemplates[Key]
                                         '@id': 'lcn:boostBackgroundColor',
                                         '@type': 'xsd:string',
                                     },
+                                    displayType: {
+                                        '@id': 'lcn:boostDisplayType',
+                                        '@type': 'xsd:string',
+                                    },
                                 },
                             },
                             attachments: {
@@ -249,6 +253,10 @@ export const VC_TEMPLATES: { [Key in keyof VcTemplates]: (args: VcTemplates[Key]
                                     },
                                     backgroundColor: {
                                         '@id': 'lcn:boostBackgroundColor',
+                                        '@type': 'xsd:string',
+                                    },
+                                    displayType: {
+                                        '@id': 'lcn:boostDisplayType',
                                         '@type': 'xsd:string',
                                     },
                                 },
