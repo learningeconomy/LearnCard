@@ -1,6 +1,6 @@
 import React from 'react';
 import RoundedCorner from '../svgs/RoundedCorner';
-import { getCategoryColor, getCategoryIcon } from '../../helpers/credential.helpers';
+import { getCategoryIcon, getCategoryLightColor } from '../../helpers/credential.helpers';
 import { LCCategoryEnum } from '../../types';
 
 type CertificateCornerIconProps = {
@@ -12,7 +12,7 @@ const CertificateCornerIcon: React.FC<CertificateCornerIconProps> = ({
     categoryType,
     position,
 }) => {
-    const credentialPrimaryColor = getCategoryColor(categoryType) ?? 'emerald-500';
+    const credentialPrimaryColor = getCategoryLightColor(categoryType);
     const credentialIcon = getCategoryIcon(categoryType);
 
     let iconPositionClassName, cornerPositionClassName;

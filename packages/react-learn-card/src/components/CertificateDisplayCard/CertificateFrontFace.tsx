@@ -13,10 +13,10 @@ import Line from '../svgs/Line';
 
 import {
     getInfoFromCredential,
-    getCategoryColor,
     getNameFromProfile,
     getImageFromProfile,
-    getCategorySecondaryColor,
+    getCategoryLightColor,
+    getCategoryDarkColor,
 } from '../../helpers/credential.helpers';
 
 import { VC, Profile } from '@learncard/types';
@@ -63,8 +63,8 @@ const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
 
     const { description } = credentialSubject?.achievement ?? {};
 
-    const credentialPrimaryColor = getCategoryColor(categoryType) ?? 'emerald-500';
-    const credentialSecondaryColor = getCategorySecondaryColor(categoryType) ?? 'emerald-500';
+    const credentialLightColor = getCategoryLightColor(categoryType);
+    const credentialDarkColor = getCategoryDarkColor(categoryType);
 
     const issuerName = getNameFromProfile(issuer ?? '');
     const issueeName = getNameFromProfile(issuee ?? '');
@@ -100,17 +100,17 @@ const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
                 <CertificateImageDisplay
                     imageUrl={imageUrl ?? ''}
                     className="mx-auto"
-                    ribbonColor={credentialSecondaryColor}
+                    ribbonColor={credentialLightColor}
                 />
             </div>
 
             <div
                 className={`flex flex-col gap-[15px] items-center px-[20px] pt-[55px] ${isSelfVerified ? 'pb-[20px]' : 'pb-[77px]'
-                    } border-solid border-[4px] border-${credentialSecondaryColor} rounded-[30px]`}
+                    } border-solid border-[4px] border-${credentialLightColor} rounded-[30px]`}
             >
                 <div className="flex flex-col gap-[5px] items-center">
                     <div
-                        className={`text-${credentialPrimaryColor} uppercase text-[14px] font-poppins`}
+                        className={`text-${credentialLightColor} uppercase text-[14px] font-poppins`}
                     >
                         {categoryType}
                     </div>
@@ -124,7 +124,7 @@ const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
                     <CertificateProfileImageDisplay
                         imageUrl={issueeImage}
                         imageComponent={subjectImageComponent}
-                        className={`flex justify-center items-center text-${credentialPrimaryColor}`}
+                        className={`flex justify-center items-center text-${credentialDarkColor}`}
                         isIssuer={isSelfVerified}
                     />
                 )}
@@ -199,13 +199,13 @@ const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
                 <CertificateProfileImageDisplay
                     imageUrl={issuerImage}
                     imageComponent={issuerImageComponent}
-                    className={`w-[calc(100%-26px)] absolute bottom-0 flex justify-center items-center text-${credentialPrimaryColor}`}
+                    className={`w-[calc(100%-26px)] absolute bottom-0 flex justify-center items-center text-${credentialDarkColor}`}
                     isIssuer
                 />
             )}
 
             {/* so that tailwind will put these colors in the css */}
-            <span className="hidden border-rose-600 text-spice-600"></span>
+            <span className="hidden border-rose-500 text-spice-500 border-spice-500 border-cyan-500 text-cyan-500 border-indigo-500"></span>
         </>
     );
 };

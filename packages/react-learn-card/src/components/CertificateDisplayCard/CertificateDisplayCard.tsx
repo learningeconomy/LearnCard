@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { getCategoryColor } from '../../helpers/credential.helpers';
 import { VC, Profile } from '@learncard/types';
 import { BoostAchievementCredential, LCCategoryEnum, VerificationItem } from '../../types';
 import CertificateFrontFace from './CertificateFrontFace';
@@ -44,11 +43,9 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
 }) => {
     const [isFront, setIsFront] = useState(true);
 
-    const credentialPrimaryColor = getCategoryColor(categoryType) ?? 'emerald-500';
-
     return (
         <section
-            className={`border-solid border-[5px] border-grayscale-200 rounded-[30px] p-[13px] relative min-w-[250px] max-w-[300px] ${isFront ? 'bg-white' : `bg-${credentialPrimaryColor}`
+            className={`border-solid border-[5px] border-grayscale-200 rounded-[30px] relative min-w-[250px] max-w-[300px] ${isFront ? 'bg-white p-[13px]' : ``
                 }`}
         >
             {isFront && (

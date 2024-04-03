@@ -1,5 +1,5 @@
 import React from 'react';
-import { getInfoFromCredential } from '../../helpers/credential.helpers';
+import { getCategoryDarkColor, getInfoFromCredential } from '../../helpers/credential.helpers';
 import { VC, VerificationItem } from '@learncard/types';
 import { BoostAchievementCredential, LCCategoryEnum } from '../../types';
 import VerificationsBox from './VerificationsBox';
@@ -34,8 +34,12 @@ const CertificateBackFace: React.FC<CertificateBackFaceProps> = ({
     const { description } = credentialSubject?.achievement ?? {};
     const criteria = credentialSubject?.achievement?.criteria?.narrative;
 
+    const credentialDarkColor = getCategoryDarkColor(categoryType);
+
     return (
-        <div className="flex flex-col gap-[15px] items-center py-[17px] px-[7px]">
+        <div
+            className={`flex flex-col gap-[15px] items-center py-[30px] px-[20px] rounded-[30px] bg-${credentialDarkColor}`}
+        >
             <h1 className="text-white text-center text-[22px] font-jacques">Details</h1>
 
             <TruncateTextBox headerText="About" text={description}>
@@ -64,6 +68,9 @@ const CertificateBackFace: React.FC<CertificateBackFaceProps> = ({
             {verificationItems && verificationItems.length > 0 && (
                 <VerificationsBox verificationItems={verificationItems} />
             )}
+
+            {/* so that tailwind will put these colors in the css */}
+            <span className="hidden bg-amber-700 bg-spice-700 bg-rose-700 bg-yellow-700 bg-teal-700"></span>
         </div>
     );
 };

@@ -97,30 +97,38 @@ export const getCategoryColor = (category = LCCategoryEnum.achievement) => {
     }
 };
 
-export const getCategorySecondaryColor = (category = LCCategoryEnum.achievement) => {
+export const getCategoryPrimaryColor = (category = LCCategoryEnum.achievement) => {
     switch (category) {
         case LCCategoryEnum.socialBadge:
-            return 'cyan-400';
+            return 'cyan';
         case LCCategoryEnum.skill:
-            return 'indigo-400';
+            return 'indigo';
         case LCCategoryEnum.achievement:
-            return 'spice-400';
+            return 'spice';
         case LCCategoryEnum.learningHistory:
-            return 'emerald-500';
+            return 'emerald';
         case LCCategoryEnum.id:
-            return 'yellow-300';
+            return 'yellow';
         case LCCategoryEnum.workHistory:
         case LCCategoryEnum.job:
-            return 'rose-400';
+            return 'rose';
         case LCCategoryEnum.course:
-            return 'emerald-700';
+            return 'emerald';
         case LCCategoryEnum.currency:
-            return 'cyan-400';
+            return 'cyan';
         case LCCategoryEnum.membership:
-            return 'teal-300';
+            return 'teal';
         default:
-            return 'spice-400';
+            return 'spice';
     }
+};
+
+export const getCategoryLightColor = (category = LCCategoryEnum.achievement) => {
+    return `${getCategoryPrimaryColor(category)}-500`;
+};
+
+export const getCategoryDarkColor = (category = LCCategoryEnum.achievement) => {
+    return `${getCategoryPrimaryColor(category)}-700`;
 };
 
 export const getCategoryIcon = (category = LCCategoryEnum.achievement) => {
