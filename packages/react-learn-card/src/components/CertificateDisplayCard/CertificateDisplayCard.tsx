@@ -81,7 +81,7 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
             <div className="flex gap-[10px] font-mouse text-[30px] leading-[28px] tracking-[0.75px] absolute bottom-[-83px] left-0 w-full">
                 {!isFront && (
                     <button
-                        className="bg-grayscale-900 text-white py-[15px] px-[20px] rounded-[20px] grow flex justify-center items-center gap-[5px] border-[3px] border-solid border-white"
+                        className="bg-grayscale-900 text-white py-[15px] px-[20px] rounded-[20px] flex justify-center items-center gap-[5px] border-[3px] border-solid border-white"
                         onClick={() => setIsFront(!isFront)}
                     >
                         <FatArrow direction="left" /> Back
