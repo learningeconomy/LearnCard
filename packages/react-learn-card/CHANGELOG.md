@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.6.54
+
+### Patch Changes
+
+-   [#420](https://github.com/learningeconomy/LearnCard/pull/420) [`1d13b3e`](https://github.com/learningeconomy/LearnCard/commit/1d13b3eed13644f7b1778b214e3d351bdcd05079) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Don't tile Boost BG Image
+
 ## 2.6.53
 
 ### Patch Changes
