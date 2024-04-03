@@ -182,8 +182,6 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                         />
                     )}
                     {mediaAttachments.map((media, index) => {
-                        console.log('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥');
-                        console.log('media:', media);
                         let innerContent: React.ReactNode;
                         let title = media.title;
 
