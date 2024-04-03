@@ -48,7 +48,7 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
                     className="absolute cursor-pointer shadow-bottom h-[30px] w-[30px] top-[5px] right-[5px] rounded-full overflow-hidden z-20 bg-white flex items-center justify-center"
                     onClick={handleOptionsClick}
                 >
-                    <img 
+                    <img
                         alt="Menu dropdown icon"
                         className="h-[20px] w-[20px] object-cover overflow-hidden"
                         src={ThreeDots}
@@ -57,13 +57,13 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
             )}
 
             {bgImgSrc && (
-                <section className="absolute top-[-50px] left-[0px] rounded-b-full overflow-hidden z-0">
+                <section className="absolute top-[-50px] shadow-bottom left-[0px] rounded-b-full overflow-hidden z-0 mt-3">
                     <img className="h-full w-full object-cover overflow-hidden" src={bgImgSrc} />
                 </section>
             )}
             <button
                 type="button"
-                className="boost-small-card inner-click-containe z-10"
+                className="boost-small-card inner-click-container z-10"
                 onClick={handleInnerClick}
             >
                 {customThumbComponent && customThumbComponent}
@@ -85,8 +85,8 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
                     </section>
                 )}
 
-                <section className={defaultHeaderClass}>
-                    <p className="relative z-[100] small-boost-title text-[16px] leading-[130%] p-[0px] font-medium text-center  text-grayscale-900 line-clamp-2">
+                <section className={`${defaultHeaderClass} items-center`}>
+                    <p className="relative z-[100] small-boost-title text-[16px] leading-[130%] px-[0px] font-medium text-center text-grayscale-900 line-clamp-2 max-w-full">
                         {title}
                     </p>
                 </section>

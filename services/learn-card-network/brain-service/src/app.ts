@@ -5,6 +5,7 @@ import { credentialsRouter } from '@routes/credentials';
 import { presentationsRouter } from '@routes/presentations';
 import { storageRouter } from '@routes/storage';
 import { utilitiesRouter } from '@routes/utilities';
+import { contractsRouter } from '@routes/contracts';
 
 export { createContext } from '@routes';
 
@@ -15,5 +16,7 @@ export const appRouter = t.router({
     presentation: presentationsRouter,
     storage: storageRouter,
     utilities: utilitiesRouter,
+    contracts: contractsRouter,
 });
+
 export type AppRouter = typeof appRouter;

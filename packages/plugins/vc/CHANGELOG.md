@@ -1,5 +1,20 @@
 # learn-card-core
 
+## 1.1.7
+
+### Patch Changes
+
+-   [#415](https://github.com/learningeconomy/LearnCard/pull/415) [`4bb9472`](https://github.com/learningeconomy/LearnCard/commit/4bb94729339d638fac6883b6e40441f257429ded) Thanks [@gerardopar](https://github.com/gerardopar)! - Add skills to context
+
+## 1.1.6
+
+### Patch Changes
+
+-   Updated dependencies [[`1cb031d7`](https://github.com/learningeconomy/LearnCard/commit/1cb031d7483e80f947c93e3479fe85af8ec09dbb), [`725e508c`](https://github.com/learningeconomy/LearnCard/commit/725e508c848b8c7752f44e5bf9915eebb421d766), [`725e508c`](https://github.com/learningeconomy/LearnCard/commit/725e508c848b8c7752f44e5bf9915eebb421d766)]:
+    -   @learncard/types@5.4.1
+    -   @learncard/core@9.1.4
+    -   @learncard/didkit-plugin@1.4.3
+
 ## 1.1.5
 
 ### Patch Changes

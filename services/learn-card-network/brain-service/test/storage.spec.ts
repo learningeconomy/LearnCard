@@ -1,6 +1,7 @@
 import { JWE } from '@learncard/types';
 import { getClient, getUser } from './helpers/getClient';
 import { Profile, Credential, Presentation } from '@models';
+import { minimalContract, minimalTerms } from './helpers/contract';
 
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;
@@ -169,6 +170,41 @@ describe('Storage', () => {
                     .getDIDObject()
                     .decryptDagJWE(resolvedPresentation as JWE)
             ).toEqual(vp);
+        });
+
+        it('should allow resolving a consent flow contract', async () => {
+            const uri = await userA.clients.fullAuth.contracts.createConsentFlowContract({
+                contract: minimalContract,
+                name: 'a',
+            });
+
+            const promise = userA.clients.fullAuth.storage.resolve({ uri });
+
+            await expect(promise).resolves.not.toThrow();
+
+            const resolvedContract = await promise;
+
+            expect(resolvedContract).toEqual(minimalContract);
+        });
+
+        it('should allow resolving a consent flow contract terms', async () => {
+            const contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract({
+                contract: minimalContract,
+                name: 'a',
+            });
+
+            const uri = await userB.clients.fullAuth.contracts.consentToContract({
+                contractUri,
+                terms: minimalTerms,
+            });
+
+            const promise = userA.clients.fullAuth.storage.resolve({ uri });
+
+            await expect(promise).resolves.not.toThrow();
+
+            const resolvedContract = await promise;
+
+            expect(resolvedContract).toEqual(minimalTerms);
         });
     });
 });

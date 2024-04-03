@@ -1,6 +1,6 @@
 {
     "name": "learn-card-discord-bot",
-    "version": "1.1.66",
+    "version": "1.1.68",
     "description": "",
     "main": "dist/index.js",
     "bin": "dist/index.js",
@@ -14,7 +14,7 @@
     "license": "MIT",
     "dependencies": {
         "@learncard/init": "workspace:^",
-        "@learncard/types": "5.4.0",
+        "@learncard/types": "5.4.1",
         "@rollup/plugin-json": "^4.1.0",
         "discord.js": "^14.6.0",
         "dotenv": "^16.0.1",

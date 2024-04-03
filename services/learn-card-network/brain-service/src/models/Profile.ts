@@ -43,6 +43,7 @@ export const Profile = ModelFactory<ProfileType, ProfileRelationships>(
         schema: {
             profileId: { type: 'string', required: true, uniqueItems: true },
             displayName: { type: 'string', required: false },
+            bio: { type: 'string', required: false },
             did: { type: 'string', required: true, uniqueItems: true },
             email: { type: 'string', required: false, uniqueItems: true },
             image: { type: 'string', required: false },
@@ -62,8 +63,8 @@ export const Profile = ModelFactory<ProfileType, ProfileRelationships>(
                 direction: 'out',
                 name: 'CREDENTIAL_SENT',
                 properties: {
-                    to: { property: 'to', schema: { type: 'string' } },
-                    date: { property: 'date', schema: { type: 'string' } },
+                    to: { property: 'to', schema: { type: 'string', required: true } },
+                    date: { property: 'date', schema: { type: 'string', required: true } },
                 },
             },
             presentationSent: {
@@ -71,8 +72,8 @@ export const Profile = ModelFactory<ProfileType, ProfileRelationships>(
                 direction: 'out',
                 name: 'PRESENTATION_SENT',
                 properties: {
-                    to: { property: 'to', schema: { type: 'string' } },
-                    date: { property: 'date', schema: { type: 'string' } },
+                    to: { property: 'to', schema: { type: 'string', required: true } },
+                    date: { property: 'date', schema: { type: 'string', required: true } },
                 },
             },
             usesSigningAuthority: {
@@ -80,8 +81,8 @@ export const Profile = ModelFactory<ProfileType, ProfileRelationships>(
                 direction: 'out',
                 name: 'USES_SIGNING_AUTHORITY',
                 properties: {
-                    name: { property: 'name', schema: { type: 'string' } },
-                    did: { property: 'did', schema: { type: 'string' } },
+                    name: { property: 'name', schema: { type: 'string', required: true } },
+                    did: { property: 'did', schema: { type: 'string', required: true } },
                 },
             },
         },
