@@ -79,8 +79,9 @@ const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
         typeof credential.issuer === 'string' ? credential.issuer : credential.issuer.id;
 
     let verifierState: VerifierState;
-    if (credentialSubject?.id === issuerDid && issuerDid) {
+    if (credentialSubject?.id === issuerDid && issuerDid && issuerDid !== 'did:example:123') {
         // the extra "&& issuerDid" is so that the credential preview doesn't say "Self Verified"
+        // the did:example:123 condition is so that we don't show this status from the Manage Boosts tab
         verifierState = VERIFIER_STATES.selfVerified;
     } else {
         const appRegistryEntry = trustedAppRegistry?.find(
