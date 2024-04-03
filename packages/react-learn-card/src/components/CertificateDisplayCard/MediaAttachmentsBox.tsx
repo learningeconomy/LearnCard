@@ -54,8 +54,33 @@ const defaultGetFileMetadata = async (url: string) => {
     };
 };
 
+// Function to determine if the URL is from YouTube
+const isYoutubeUrl = (url: string) => {
+    const youtubeUrl = new URL(url);
+    return youtubeUrl.hostname === 'www.youtube.com';
+};
+
+// Function to get the YouTube video ID from the URL
+const getYoutubeVideoId = (url: string) => {
+    const regex = /(?:\?v=|\.com\/embed\/)([^&]+)/;
+    const match = url.match(regex);
+    return match ? match[1] : '';
+};
+
+// Function to get the cover image URL for YouTube videos
+const getCoverImageUrl = (youtubeWatchUrl: string) => {
+    if (!isYoutubeUrl(youtubeWatchUrl)) {
+        return ''; // Return an empty string if the URL is not a YouTube URL
+    }
+
+    const videoId = getYoutubeVideoId(youtubeWatchUrl);
+    // Construct and return the URL for the video's cover image
+    // This URL fetches the highest resolution image available
+    return videoId ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg` : '';
+};
+
 const defaultGetVideoMetadata = async (url: string) => {
-    const isYoutube = url.includes('youtube');
+    const isYoutube = isYoutubeUrl(url);
     if (!isYoutube) return;
 
     const metadataUrl = `http://youtube.com/oembed?url=${url}&format=json`;
@@ -65,11 +90,13 @@ const defaultGetVideoMetadata = async (url: string) => {
         .then(res => res.json())
         .catch(() => (fetchFailed = true));
 
-    if (fetchFailed) return;
+    const coverImageUrl = getCoverImageUrl(url);
+
+    if (fetchFailed) return { imageUrl: coverImageUrl };
 
     return {
         title: metadata.title,
-        imageUrl: metadata.thumbnail_url,
+        imageUrl: coverImageUrl,
         videoLength: '', // TODO figure out how to get this
     };
 };
@@ -164,11 +191,10 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                             const metadata = videoMetadata[media.url];
                             title = (title || metadata?.title) ?? '';
                             const baseUrl = getBaseUrl(media.url);
-                            const iconTop = title || baseUrl;
 
                             innerContent = (
                                 <div
-                                    className="bg-cover bg-no-repeat font-poppins text-white text-[12px] font-[400] leading-[17px] flex flex-col justify-end items-start p-[10px] text-left bg-rose-600 rounded-[15px]"
+                                    className="bg-cover bg-no-repeat bg-center relative font-poppins text-white text-[12px] font-[400] leading-[17px] flex flex-col justify-end items-start p-[10px] text-left bg-rose-600 rounded-[15px] h-full"
                                     style={{
                                         backgroundImage: metadata?.imageUrl
                                             ? `linear-gradient(180deg, rgba(0, 0, 0, 0) 44.20%, rgba(0, 0, 0, 0.6) 69%), url(${metadata?.imageUrl ?? ''
@@ -180,8 +206,7 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                                         <VideoIcon size="60" className="m-auto" />
                                     )}
                                     <div
-                                        className={`absolute ${iconTop ? 'top-[10px]' : 'bottom-[10px]'
-                                            } left-[10px] z-10 flex items-center gap-[5px]`}
+                                        className={`absolute bottom-[10px] left-[10px] z-10 flex items-center gap-[5px]`}
                                     >
                                         {metadata?.imageUrl && <VideoIcon />}
                                         {metadata?.videoLength && (
@@ -190,8 +215,6 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                                             </span>
                                         )}
                                     </div>
-                                    {baseUrl && <span className="font-[600]">{baseUrl}</span>}
-                                    {title && <span className="line-clamp-2">{title}</span>}
                                 </div>
                             );
                         } else {
