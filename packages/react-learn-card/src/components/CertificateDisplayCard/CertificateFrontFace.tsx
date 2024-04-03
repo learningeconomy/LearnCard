@@ -34,24 +34,29 @@ type CertificateFrontFaceProps = {
     credential: VC | BoostAchievementCredential;
     categoryType?: LCCategoryEnum;
     issuerOverride?: Profile;
+    issueeOverride?: Profile;
     trustedAppRegistry?: any[];
+    subjectImageComponent?: React.ReactNode;
 };
 
 const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
     credential,
     categoryType,
     issuerOverride,
+    issueeOverride,
     trustedAppRegistry,
+    subjectImageComponent,
 }) => {
     const {
         title = '',
         createdAt,
         issuer: _issuer = '',
-        issuee = '',
+        issuee: _issuee = '',
         credentialSubject,
         imageUrl,
     } = getInfoFromCredential(credential, 'MMM dd, yyyy', { uppercaseDate: false });
 
+    const issuee = issueeOverride || _issuee;
     const issuer = issuerOverride || _issuer;
 
     const { description } = credentialSubject?.achievement ?? {};
@@ -60,15 +65,12 @@ const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
     const credentialSecondaryColor = getCategorySecondaryColor(categoryType) ?? 'emerald-500';
 
     const issuerName = getNameFromProfile(issuer ?? '');
-    // const issueeName = getNameFromProfile(issuee ?? '');
+    const issueeName = getNameFromProfile(issuee ?? '');
     const issuerImage = getImageFromProfile(issuer ?? '');
-    // const issueeImage = getImageFromProfile(issuee ?? '');
-    const issueeImage = '';
-    const issueeName = '';
+    const issueeImage = getImageFromProfile(issuee ?? '');
 
     let verifierState: VerifierState;
-    if (issuerName === issueeName) {
-        // TODO real logic by did
+    if (credentialSubject?.id === credential.issuer) {
         verifierState = VERIFIER_STATES.selfVerified;
     } else {
         const appRegistryEntry = trustedAppRegistry?.find(
@@ -83,6 +85,8 @@ const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
         }
     }
     const isSelfVerified = verifierState === VERIFIER_STATES.selfVerified;
+
+    const issueeImageExists = issueeImage || subjectImageComponent;
 
     return (
         <>
@@ -110,22 +114,23 @@ const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
                     </h1>
                 </div>
 
-                {issueeImage && (
+                {issueeImageExists && (
                     <CertificateProfileImageDisplay
                         imageUrl={issueeImage}
+                        imageComponent={subjectImageComponent}
                         className={`flex justify-center items-center text-${credentialPrimaryColor}`}
                         isIssuer={isSelfVerified}
                     />
                 )}
-                {!issueeImage && (
+                {!issueeImageExists && (
                     <div className="h-[50px] w-[50px] rounded-full bg-grayscale-500 flex items-center justify-center">
                         <Smiley />
                     </div>
                 )}
 
-                <div className="text-[14px] text-grayscale-800 flex flex-col items-center">
-                    <span className="font-jacques flex gap-[5px] items-center">
-                        Awarded to {issuee || <Line width="60" />}
+                <div className="text-[14px] text-grayscale-800 flex flex-col items-center w-full">
+                    <span className="font-jacques flex gap-[5px] items-center w-full overflow-ellipsis whitespace-nowrap overflow-hidden justify-center">
+                        Awarded to {issueeName || <Line width="60" />}
                     </span>
                     <span className="font-jacques">on {createdAt}</span>
                 </div>

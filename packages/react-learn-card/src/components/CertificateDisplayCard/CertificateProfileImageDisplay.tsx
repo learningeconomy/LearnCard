@@ -2,7 +2,8 @@ import React from 'react';
 import IssuerSeal from '../svgs/IssuerSeal';
 
 type CertificateProfileImageDisplayProps = {
-    imageUrl: string;
+    imageUrl?: string;
+    imageComponent?: React.ReactNode;
     isIssuer?: boolean;
     className?: string;
 };
@@ -11,7 +12,10 @@ const CertificateProfileImageDisplay: React.FC<CertificateProfileImageDisplayPro
     imageUrl,
     isIssuer = false,
     className = '',
+    imageComponent,
 }) => {
+    const imageClassName = `h-[50px] w-[50px] rounded-full overflow-hidden ${isIssuer ? 'absolute border-[2px] border-solid border-grayscale-200' : ''
+        }`;
     return (
         <div className={className}>
             {isIssuer && (
@@ -20,11 +24,8 @@ const CertificateProfileImageDisplay: React.FC<CertificateProfileImageDisplayPro
                 </div>
             )}
 
-            <img
-                className={`h-[50px] w-[50px] rounded-full ${isIssuer ? 'absolute border-[2px] border-solid border-grayscale-200' : ''
-                    }`}
-                src={imageUrl}
-            />
+            {imageComponent && <div className={imageClassName}>{imageComponent}</div>}
+            {!imageComponent && <img className={imageClassName} src={imageUrl} />}
         </div>
     );
 };

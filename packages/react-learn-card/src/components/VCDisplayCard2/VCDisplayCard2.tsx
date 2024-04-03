@@ -151,6 +151,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
             <CertificateDisplayCard
                 credential={credential}
                 categoryType={categoryType}
+                issueeOverride={issuee}
                 issuerOverride={issuer}
                 verificationItems={verificationItems}
                 getFileMetadata={getFileMetadata}
@@ -159,6 +160,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 enableLightbox={enableLightbox}
                 trustedAppRegistry={trustedAppRegistry}
                 handleXClick={handleXClick}
+                subjectImageComponent={subjectImageComponent}
             />
         );
         // return (

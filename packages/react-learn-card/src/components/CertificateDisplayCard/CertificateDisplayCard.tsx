@@ -12,7 +12,9 @@ type CertificateDisplayCardProps = {
     categoryType?: LCCategoryEnum;
     verificationItems: VerificationItem[];
     issuerOverride?: Profile;
+    issueeOverride?: Profile;
     trustedAppRegistry?: any[];
+    subjectImageComponent?: React.ReactNode;
 
     getFileMetadata?: (url: string) => MediaMetadata;
     getVideoMetadata?: (url: string) => VideoMetadata;
@@ -27,6 +29,8 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
     categoryType,
     verificationItems,
     issuerOverride,
+    issueeOverride,
+    subjectImageComponent,
     trustedAppRegistry,
 
     getFileMetadata,
@@ -50,7 +54,9 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
                     credential={credential}
                     categoryType={categoryType}
                     issuerOverride={issuerOverride}
+                    issueeOverride={issueeOverride}
                     trustedAppRegistry={trustedAppRegistry}
+                    subjectImageComponent={subjectImageComponent}
                 />
             )}
 
