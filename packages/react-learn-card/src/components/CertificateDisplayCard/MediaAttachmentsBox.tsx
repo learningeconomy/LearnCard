@@ -170,7 +170,7 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
     };
 
     return (
-        <div className="media-attachments-box bg-white flex flex-col items-start gap-[10px] rounded-[20px] shadow-bottom px-[15px] py-[20px] w-full">
+        <div className="bg-white flex flex-col items-start gap-[10px] rounded-[20px] shadow-bottom px-[15px] py-[20px] w-full">
             <h3 className="text-[17px] text-grayscale-900 font-poppins">Attachments</h3>
             {mediaAttachments.length > 0 && (
                 <div className="flex gap-[5px] justify-between flex-wrap w-full">
@@ -205,9 +205,7 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                                     {!metadata?.imageUrl && (
                                         <VideoIcon size="60" className="m-auto" />
                                     )}
-                                    <div
-                                        className={`absolute bottom-[10px] left-[10px] z-10 flex items-center gap-[5px]`}
-                                    >
+                                    <div className="absolute bottom-[10px] left-[10px] z-10 flex items-center gap-[5px]">
                                         {metadata?.imageUrl && <VideoIcon />}
                                         {metadata?.videoLength && (
                                             <span className="leading-[23px]">
