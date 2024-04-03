@@ -55,6 +55,7 @@ export type VCDisplayCard2Props = {
     customFrontButton?: React.ReactNode;
     trustedAppRegistry?: any[];
     hideIssueDate?: boolean;
+    onDotsClick?: () => void;
 };
 
 export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
@@ -87,6 +88,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     customFrontButton,
     trustedAppRegistry,
     hideIssueDate,
+    onDotsClick,
 }) => {
     console.log('credential', credential);
 
@@ -166,6 +168,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 issuerImageComponent={issuerImageComponent}
                 customBodyCardComponent={customBodyCardComponent}
                 hideIssueDate={hideIssueDate}
+                onDotsClick={onDotsClick}
             />
         );
         // return (

@@ -5,6 +5,7 @@ import CertificateFrontFace from './CertificateFrontFace';
 import CertificateBackFace from './CertificateBackFace';
 import { MediaMetadata, VideoMetadata } from './MediaAttachmentsBox';
 import FatArrow from '../svgs/FatArrow';
+import ThreeDots from '../../assets/images/DotsThreeOutline.svg';
 
 type CertificateDisplayCardProps = {
     credential: VC | BoostAchievementCredential;
@@ -24,6 +25,7 @@ type CertificateDisplayCardProps = {
     enableLightbox?: boolean;
 
     handleXClick?: () => void;
+    onDotsClick?: () => void;
 };
 
 export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
@@ -44,6 +46,7 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
     enableLightbox,
 
     handleXClick,
+    onDotsClick,
 }) => {
     const [isFront, setIsFront] = useState(true);
 
@@ -106,6 +109,15 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
                     </button>
                 )}
             </div>
+
+            {onDotsClick && (
+                <button
+                    className="fixed top-[10px] right-[10px] bg-white rounded-full p-[10px] shadow-bottom"
+                    onClick={onDotsClick}
+                >
+                    <img alt="Menu dropdown icon" className="h-[20px] w-[20px]" src={ThreeDots} />
+                </button>
+            )}
         </section>
     );
 };
