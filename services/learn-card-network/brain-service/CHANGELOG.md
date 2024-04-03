@@ -1,5 +1,11 @@
 # @learncard/network-brain-service
 
+## 1.10.2
+
+### Patch Changes
+
+-   [#418](https://github.com/learningeconomy/LearnCard/pull/418) [`20095aa`](https://github.com/learningeconomy/LearnCard/commit/20095aa8e867b6a5c62a82f6d123366acb4fdcb0) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix withdraw events not appearing in transaction history
+
 ## 1.10.1
 
 ### Patch Changes
