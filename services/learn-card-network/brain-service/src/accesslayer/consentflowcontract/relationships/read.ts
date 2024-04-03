@@ -294,9 +294,9 @@ export const getTransactionsForTerms = async (
     const _query = new QueryBuilder(new BindParam({ params: flattenObject(matchQuery), cursor }))
         .match({
             related: [
-                { model: ConsentFlowTerms, where: { id: termsId } },
-                ConsentFlowTransaction.getRelationshipByAlias('isFor'),
                 { identifier: 'transaction', model: ConsentFlowTransaction },
+                ConsentFlowTransaction.getRelationshipByAlias('isFor'),
+                { model: ConsentFlowTerms, where: { id: termsId } },
             ],
         })
         .where('all(key IN keys($params) WHERE transaction[key] = $params[key])');

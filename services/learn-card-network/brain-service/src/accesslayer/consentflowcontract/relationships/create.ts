@@ -75,8 +75,6 @@ export const consentToContract = async (
         })
         .create({
             related: [
-                { identifier: 'terms' },
-                ConsentFlowTransaction.getRelationshipByAlias('isFor'),
                 {
                     identifier: 'transaction',
                     model: ConsentFlowTransaction,
@@ -88,6 +86,8 @@ export const consentToContract = async (
                         ...(oneTime ? { oneTime } : {}),
                     },
                 },
+                ConsentFlowTransaction.getRelationshipByAlias('isFor'),
+                { identifier: 'terms' },
             ],
         })
         .set('terms += $params')
