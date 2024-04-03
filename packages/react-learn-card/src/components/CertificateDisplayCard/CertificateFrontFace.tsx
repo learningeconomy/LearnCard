@@ -16,6 +16,7 @@ import {
     getCategoryColor,
     getNameFromProfile,
     getImageFromProfile,
+    getCategorySecondaryColor,
 } from '../../helpers/credential.helpers';
 
 import { VC, Profile } from '@learncard/types';
@@ -56,6 +57,7 @@ const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
     const { description } = credentialSubject?.achievement ?? {};
 
     const credentialPrimaryColor = getCategoryColor(categoryType) ?? 'emerald-500';
+    const credentialSecondaryColor = getCategorySecondaryColor(categoryType) ?? 'emerald-500';
 
     const issuerName = getNameFromProfile(issuer ?? '');
     // const issueeName = getNameFromProfile(issuee ?? '');
@@ -88,13 +90,13 @@ const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
                 <CertificateImageDisplay
                     imageUrl={imageUrl ?? ''}
                     className="mx-auto"
-                    ribbonColor={credentialPrimaryColor}
+                    ribbonColor={credentialSecondaryColor}
                 />
             </div>
 
             <div
                 className={`flex flex-col gap-[15px] items-center px-[20px] pt-[55px] ${isSelfVerified ? 'pb-[20px]' : 'pb-[77px]'
-                    } border-solid border-[4px] border-${credentialPrimaryColor} rounded-[30px]`}
+                    } border-solid border-[4px] border-${credentialSecondaryColor} rounded-[30px]`}
             >
                 <div className="flex flex-col gap-[5px] items-center">
                     <div

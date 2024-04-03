@@ -84,17 +84,42 @@ export const getCategoryColor = (category = LCCategoryEnum.achievement) => {
         case LCCategoryEnum.id:
             return 'yellow-400';
         case LCCategoryEnum.workHistory:
+        case LCCategoryEnum.job:
             return 'rose-600';
         case LCCategoryEnum.course:
             return 'emerald-700';
-        case LCCategoryEnum.job:
-            return 'rose-600';
         case LCCategoryEnum.currency:
             return 'cyan-700';
         case LCCategoryEnum.membership:
             return 'teal-500';
         default:
             return 'spice-600';
+    }
+};
+
+export const getCategorySecondaryColor = (category = LCCategoryEnum.achievement) => {
+    switch (category) {
+        case LCCategoryEnum.socialBadge:
+            return 'cyan-400';
+        case LCCategoryEnum.skill:
+            return 'indigo-400';
+        case LCCategoryEnum.achievement:
+            return 'spice-400';
+        case LCCategoryEnum.learningHistory:
+            return 'emerald-500';
+        case LCCategoryEnum.id:
+            return 'yellow-300';
+        case LCCategoryEnum.workHistory:
+        case LCCategoryEnum.job:
+            return 'rose-400';
+        case LCCategoryEnum.course:
+            return 'emerald-700';
+        case LCCategoryEnum.currency:
+            return 'cyan-400';
+        case LCCategoryEnum.membership:
+            return 'teal-300';
+        default:
+            return 'spice-400';
     }
 };
 
