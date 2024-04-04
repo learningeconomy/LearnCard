@@ -1,10 +1,10 @@
 import React from 'react';
 import { getCategoryDarkColor, getInfoFromCredential } from '../../helpers/credential.helpers';
 import { VC, VerificationItem } from '@learncard/types';
-import { BoostAchievementCredential, LCCategoryEnum } from '../../types';
+import { BoostAchievementCredential, LCCategoryEnum, MediaMetadata, VideoMetadata } from '../../types';
 import VerificationsBox from './VerificationsBox';
 import TruncateTextBox from './TruncateTextBox';
-import MediaAttachmentsBox, { MediaMetadata, VideoMetadata } from './MediaAttachmentsBox';
+import MediaAttachmentsBox from './MediaAttachmentsBox';
 
 type CertificateBackFaceProps = {
     credential: VC | BoostAchievementCredential;

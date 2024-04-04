@@ -21,7 +21,7 @@ const Subskill: React.FC<{
         id: number;
         title: string;
         type: BoostCMSSubSkillEnum;
-    };
+    } | undefined;
     subskillSelected: boolean;
 }> = ({ subskillSelected, skill, subSkill }) => {
 

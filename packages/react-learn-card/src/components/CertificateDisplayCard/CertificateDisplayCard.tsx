@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import { VC, Profile } from '@learncard/types';
-import { BoostAchievementCredential, LCCategoryEnum, VerificationItem } from '../../types';
+import { VC, Profile, VerificationItem } from '@learncard/types';
+import { BoostAchievementCredential, LCCategoryEnum, MediaMetadata, VideoMetadata } from '../../types';
 import CertificateFrontFace from './CertificateFrontFace';
 import CertificateBackFace from './CertificateBackFace';
-import { MediaMetadata, VideoMetadata } from './MediaAttachmentsBox';
 import FatArrow from '../svgs/FatArrow';
 import ThreeDots from '../../assets/images/DotsThreeOutline.svg';
 

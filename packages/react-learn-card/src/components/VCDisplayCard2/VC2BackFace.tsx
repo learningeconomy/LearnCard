@@ -1,13 +1,13 @@
 import React from 'react';
 import { format } from 'date-fns';
 
-import MediaAttachmentsBox, { MediaMetadata, VideoMetadata } from './MediaAttachmentsBox';
+import MediaAttachmentsBox from './MediaAttachmentsBox';
 import TruncateTextBox from './TruncateTextBox';
 import SkillsBox from './SkillsBox';
 import IssueHistoryBox from './IssueHistoryBox';
 import { VC, VerificationItem } from '@learncard/types';
 import VerificationsBox from './VerificationsBox';
-import { BoostAchievementCredential, IssueHistory } from '../../types';
+import { BoostAchievementCredential, IssueHistory, MediaMetadata, VideoMetadata } from '../../types';
 import LeftArrow from '../svgs/LeftArrow';
 
 /*

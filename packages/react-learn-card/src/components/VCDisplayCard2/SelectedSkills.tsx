@@ -41,7 +41,7 @@ export const SelectedSkills: React.FC<{
                 skillSelected={skillSelected}
                 handleExpandSubSkills={handleExpandSubSkills}
             />
-            {skillSelected?.subskills?.length > 0 && expandSubSkills && (
+            {skillSelected && skillSelected?.subskills?.length > 0 && expandSubSkills && (
                 <div className="w-full flex items-center justify-end">
                     <div className="w-[90%] flex items-center flex-col">
                         {skillSelected?.subskills.map((subSkill, i) => {
