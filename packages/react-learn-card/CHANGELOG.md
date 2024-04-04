@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.6.55
+
+### Patch Changes
+
+-   [#422](https://github.com/learningeconomy/LearnCard/pull/422) [`639f5b5`](https://github.com/learningeconomy/LearnCard/commit/639f5b5655e1126a6cef31828269a0dbbddc7b41) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Polish VCDisplayCard2
+
 ## 2.6.54
 
 ### Patch Changes
