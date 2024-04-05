@@ -19,6 +19,7 @@ type MediaAttachmentsBoxProps = {
 };
 
 const defaultGetFileMetadata = async (url: string) => {
+    console.log({ url });
     const isFilestack = url.includes('filestack');
     if (!isFilestack) return;
 

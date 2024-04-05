@@ -1,6 +1,6 @@
 import React from 'react';
 
-const PuzzlePiece: React.FC<{ className?: string; size?: string; fill: string }> = ({
+const PuzzlePiece: React.FC<{ className?: string; size?: string; fill?: string }> = ({
     className = '',
     size = '21',
     fill = 'none',

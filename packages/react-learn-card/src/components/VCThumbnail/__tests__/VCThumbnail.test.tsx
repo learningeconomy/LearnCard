@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import React from 'react';
 import '@testing-library/jest-dom';
 import { render, fireEvent } from '@testing-library/react';
@@ -6,7 +7,7 @@ import VCThumbnail from '../VCThumbnail';
 
 describe('Running Tests for VCThumbnail Full View', () => {
     test('Checks VCThumbnail renders with props', () => {
-        const handleOnClick = jest.fn();
+        const handleOnClick = vi.fn();
 
         const { getByTestId, getByAltText } = render(
             <VCThumbnail
@@ -40,7 +41,7 @@ describe('Running Tests for VCThumbnail Full View', () => {
     });
 
     test('Checks VCThumbnail renders without props', () => {
-        const handleOnClick = jest.fn();
+        const handleOnClick = vi.fn();
 
         const { getByTestId, getByAltText, queryByTestId, queryByAltText } = render(
             <VCThumbnail />
@@ -68,7 +69,7 @@ describe('Running Tests for VCThumbnail Full View', () => {
 
 describe('Running Tests for VCThumbnail List View', () => {
     test('Checks VCThumbnail List View renders with props', () => {
-        const handleOnClick = jest.fn();
+        const handleOnClick = vi.fn();
 
         const { getByTestId, getByAltText } = render(
             <VCThumbnail
@@ -94,7 +95,7 @@ describe('Running Tests for VCThumbnail List View', () => {
     });
 
     test('Checks VCThumbnail List View renders without props', () => {
-        const handleOnClick = jest.fn();
+        const handleOnClick = vi.fn();
 
         const { getByTestId, queryByTestId } = render(<VCThumbnail listView />);
 
