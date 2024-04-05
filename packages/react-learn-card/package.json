@@ -1,6 +1,6 @@
 {
   "name": "@learncard/react",
-  "version": "2.6.52",
+  "version": "2.6.55",
   "description": "",
   "main": "dist/cjs",
   "module": "dist/esm",
@@ -73,6 +73,7 @@
     "pretty-bytes": "^6.0.0",
     "qrcode.react": "^3.0.2",
     "react-barcode": "^1.4.5",
+    "react-flip-toolkit": "^7.1.0",
     "tailwind-scrollbar-hide": "^1.1.7"
   },
   "peerDependencies": {

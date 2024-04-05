@@ -1,5 +1,24 @@
 # @welibraryos/react-learn-card
 
+## 2.6.55
+
+### Patch Changes
+
+-   [#422](https://github.com/learningeconomy/LearnCard/pull/422) [`639f5b5`](https://github.com/learningeconomy/LearnCard/commit/639f5b5655e1126a6cef31828269a0dbbddc7b41) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Polish VCDisplayCard2
+
+## 2.6.54
+
+### Patch Changes
+
+-   [#420](https://github.com/learningeconomy/LearnCard/pull/420) [`1d13b3e`](https://github.com/learningeconomy/LearnCard/commit/1d13b3eed13644f7b1778b214e3d351bdcd05079) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Don't tile Boost BG Image
+
+## 2.6.53
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.17
+
 ## 2.6.52
 
 ### Patch Changes

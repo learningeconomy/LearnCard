@@ -7,7 +7,12 @@ import SkillsBox from './SkillsBox';
 import IssueHistoryBox from './IssueHistoryBox';
 import { VC, VerificationItem } from '@learncard/types';
 import VerificationsBox from './VerificationsBox';
-import { BoostAchievementCredential, IssueHistory, MediaMetadata, VideoMetadata } from '../../types';
+import {
+    BoostAchievementCredential,
+    IssueHistory,
+    MediaMetadata,
+    VideoMetadata,
+} from '../../types';
 import LeftArrow from '../svgs/LeftArrow';
 
 /*
@@ -113,8 +118,12 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
             {!customCriteria && criteria && (
                 <TruncateTextBox headerText="Criteria" text={criteria} className="criteria-box" />
             )}
-            {customSkillsComponent && customSkillsComponent}
-            {!customSkillsComponent && <SkillsBox skills={credential.skills} />}
+            {(credential.skills?.length ?? 0) > 0 &&
+                (customSkillsComponent ? (
+                    customSkillsComponent
+                ) : (
+                    <SkillsBox skills={credential.skills ?? []} />
+                ))}
 
             {issueHistory && issueHistory?.length > 0 && (
                 <IssueHistoryBox
