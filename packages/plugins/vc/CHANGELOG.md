@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 1.1.8
+
+### Patch Changes
+
+-   [#417](https://github.com/learningeconomy/LearnCard/pull/417) [`b8855d3b`](https://github.com/learningeconomy/LearnCard/commit/b8855d3b4b80c4fdc5d1830a8c2ee63df022a866) Thanks [@smurflo2](https://github.com/smurflo2)! - [LC-158] Certificate Display Card
+
 ## 1.1.7
 
 ### Patch Changes
