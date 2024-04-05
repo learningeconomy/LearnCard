@@ -16,19 +16,17 @@ export const SelectedSkills: React.FC<{
     skill: {
         id: number;
         title: string;
-        IconComponent: React.ReactNode;
+        IconComponent: React.ReactNode | string;
         iconClassName: string;
         iconCircleClass: string;
-        category: BoostCMSSKillsCategoryEnum;
-        type: BoostCMSCategorySkillEnum;
+        category: BoostCMSSKillsCategoryEnum | string;
+        type: BoostCMSCategorySkillEnum | string;
     };
-    skillSelected:
-        | {
-              category: BoostCMSSKillsCategoryEnum;
-              skill: BoostCMSCategorySkillEnum;
-              subskills: BoostCMSSubSkillEnum[];
-          }
-        | undefined;
+    skillSelected: {
+        category: BoostCMSSKillsCategoryEnum | string;
+        skill: BoostCMSCategorySkillEnum | string;
+        subskills: BoostCMSSubSkillEnum[] | string[];
+    };
 }> = ({ skill, skillSelected }) => {
     const [expandSubSkills, setExandSubSkills] = useState<boolean>(false);
 
@@ -41,18 +39,21 @@ export const SelectedSkills: React.FC<{
                 skillSelected={skillSelected}
                 handleExpandSubSkills={handleExpandSubSkills}
             />
-            {skillSelected && skillSelected?.subskills?.length > 0 && expandSubSkills && (
+            {skillSelected && skillSelected.subskills.length > 0 && expandSubSkills && (
                 <div className="w-full flex items-center justify-end">
                     <div className="w-[90%] flex items-center flex-col">
-                        {skillSelected?.subskills.map((subSkill, i) => {
-                            const subskillSelected = skillSelected?.subskills?.includes(subSkill);
-
-                            const _subSkill = SKILLS_TO_SUBSKILLS?.[skill?.type]?.find(
-                                ss => ss.type === subSkill
+                        {skillSelected.subskills.map((subSkill, i) => {
+                            const subskillSelected = skillSelected?.subskills?.includes(
+                                subSkill as BoostCMSSubSkillEnum
                             );
+
+                            const _subSkill: any = SKILLS_TO_SUBSKILLS[
+                                skill.type as BoostCMSCategorySkillEnum
+                            ].find((ss: any) => ss.type === subSkill);
 
                             return (
                                 <Subskill
+                                    key={i}
                                     skill={skill}
                                     subSkill={_subSkill}
                                     subskillSelected={subskillSelected}

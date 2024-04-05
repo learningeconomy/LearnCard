@@ -168,7 +168,17 @@ export enum BoostCMSCategorySkillEnum {
     HealthcareAdministration = 'healthcareAdministration',
 }
 
-export const CATEGORY_TO_SKILLS = {
+export const CATEGORY_TO_SKILLS: {
+    [key: BoostCMSSKillsCategoryEnum | string]: {
+        id: number;
+        title: string;
+        IconComponent: React.ReactNode | string;
+        iconClassName: string;
+        iconCircleClass: string;
+        category: BoostCMSSKillsCategoryEnum | string;
+        type: BoostCMSCategorySkillEnum | string;
+    }[];
+} = {
     [BoostCMSSKillsCategoryEnum.Durable]: [
         {
             id: 1,
@@ -925,7 +935,13 @@ export enum BoostCMSSubSkillEnum {
     facilityManagement = 'facilityManagement',
 }
 
-export const SKILLS_TO_SUBSKILLS = {
+export const SKILLS_TO_SUBSKILLS: {
+    [key: BoostCMSCategorySkillEnum | string]: {
+        id: number;
+        title: string;
+        type: BoostCMSCategorySkillEnum | string;
+    }[];
+} = {
     // Durable
     [BoostCMSCategorySkillEnum.Adaptability]: [
         {

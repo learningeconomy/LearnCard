@@ -31,7 +31,7 @@ type VC2BackFaceProps = {
     showFrontFace: () => void;
     customDescription?: React.ReactNode;
     customCriteria?: React.ReactNode;
-    customSkillsComponenta?: React.ReactNode;
+    customSkillsComponent?: React.ReactNode;
     customIssueHistoryComponent?: React.ReactNode;
     enableLightbox?: boolean;
 };
@@ -114,7 +114,7 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
                 <TruncateTextBox headerText="Criteria" text={criteria} className="criteria-box" />
             )}
             {customSkillsComponent && customSkillsComponent}
-            {!customSkillsComponent && <SkillsBox skills={credential?.skills} />}
+            {!customSkillsComponent && <SkillsBox skills={credential.skills} />}
 
             {issueHistory && issueHistory?.length > 0 && (
                 <IssueHistoryBox

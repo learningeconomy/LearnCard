@@ -16,7 +16,13 @@ import {
     getColorForVerificationStatus,
     getInfoFromCredential,
 } from '../../helpers/credential.helpers';
-import { BoostAchievementCredential, IssueHistory, LCCategoryEnum, MediaMetadata, VideoMetadata  } from '../../types';
+import {
+    BoostAchievementCredential,
+    IssueHistory,
+    LCCategoryEnum,
+    MediaMetadata,
+    VideoMetadata,
+} from '../../types';
 import { CertificateDisplayCard } from '../CertificateDisplayCard';
 
 export type CredentialIconType = {

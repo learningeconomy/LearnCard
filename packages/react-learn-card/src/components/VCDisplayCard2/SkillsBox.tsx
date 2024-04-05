@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 
 import {
     boostCMSSKillCategories,
+    BoostCMSSKillsCategoryEnum,
     CATEGORY_TO_SKILLS,
     SKILLS_TO_SUBSKILLS,
 } from '../../constants/skills';
@@ -9,9 +10,9 @@ import {
 import SelectedSkills from './SelectedSkills';
 import PuzzlePiece from '../svgs/PuzzlePiece';
 
-const SkillsBox: React.FC<{ category: string; skill: string; subSkills: string[] }[]> = ({
-    skills,
-}) => {
+const SkillsBox: React.FC<{
+    skills: { category: string; skill: string; subSkills: string[] }[];
+}> = ({ skills }) => {
     return (
         <div className="bg-white flex flex-col items-start gap-[10px] rounded-[20px] shadow-bottom px-[15px] py-[20px] w-full relative">
             <div className="flex items-center justify-start">
@@ -21,21 +22,27 @@ const SkillsBox: React.FC<{ category: string; skill: string; subSkills: string[]
                 <h3 className="text-[20px] leading-[20px] text-grayscale-900 ml-2">Skills</h3>
             </div>
 
-            {skills?.length > 0 && (
+            {skills.length > 0 && (
                 <div className="ion-padding pt-0 pb-4 flex items-center justify-center flex-col w-full">
-                    {skills?.map((_skill, index) => {
-                        const category = boostCMSSKillCategories?.find(
-                            c => c?.type === _skill?.category
+                    {skills.map((_skill, index) => {
+                        const category = boostCMSSKillCategories.find(
+                            c => c.type === _skill.category
                         );
-                        const skill = CATEGORY_TO_SKILLS?.[_skill?.category]?.find(
-                            s => s.type === _skill.skill
-                        );
-                        const subSkills = SKILLS_TO_SUBSKILLS?.[_skill?.skill];
+                        const skill: any = CATEGORY_TO_SKILLS[
+                            _skill.category as BoostCMSSKillsCategoryEnum
+                        ].find(s => s.type === _skill.skill);
+                        const subSkills = SKILLS_TO_SUBSKILLS[_skill.skill];
 
                         const selectedSkills = skills ?? [];
-                        const skillSelected = selectedSkills?.find(s => s?.skill === skill?.type);
+                        const skillSelected: any = selectedSkills.find(s => s.skill === skill.type);
 
-                        return <SelectedSkills skill={skill} skillSelected={skillSelected} />;
+                        return (
+                            <SelectedSkills
+                                key={index}
+                                skill={skill}
+                                skillSelected={skillSelected}
+                            />
+                        );
                     })}
                 </div>
             )}
