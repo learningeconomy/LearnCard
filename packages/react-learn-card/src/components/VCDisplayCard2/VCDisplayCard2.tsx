@@ -9,15 +9,22 @@ import FitText from './FitText';
 import AwardRibbon from '../svgs/AwardRibbon';
 import LeftArrow from '../svgs/LeftArrow';
 import RoundedX from '../svgs/RoundedX';
+import VCDisplayCardCategoryType from './VCDisplayCardCategoryType';
+import VCDisplayCardSkillsCount from './VCDisplayCardSkillsCount';
 
 import { Profile, VC, VerificationItem, VerificationStatusEnum } from '@learncard/types';
 import {
     getColorForVerificationStatus,
     getInfoFromCredential,
 } from '../../helpers/credential.helpers';
-import { BoostAchievementCredential, IssueHistory, LCCategoryEnum } from '../../types';
-import { MediaMetadata, VideoMetadata } from './MediaAttachmentsBox';
-import VCDisplayCardCategoryType from './VCDisplayCardCategoryType';
+import {
+    BoostAchievementCredential,
+    IssueHistory,
+    LCCategoryEnum,
+    MediaMetadata,
+    VideoMetadata,
+} from '../../types';
+import { CertificateDisplayCard } from '../CertificateDisplayCard';
 
 export type CredentialIconType = {
     image?: React.ReactNode;
@@ -52,6 +59,9 @@ export type VCDisplayCard2Props = {
     enableLightbox?: boolean;
     customRibbonCategoryComponent?: React.ReactNode;
     customFrontButton?: React.ReactNode;
+    trustedAppRegistry?: any[];
+    hideIssueDate?: boolean;
+    onDotsClick?: () => void;
 };
 
 export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
@@ -82,7 +92,12 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     enableLightbox,
     customRibbonCategoryComponent,
     customFrontButton,
+    trustedAppRegistry,
+    hideIssueDate,
+    onDotsClick,
 }) => {
+    console.log('credential', credential);
+
     const {
         title = '',
         createdAt,
@@ -130,8 +145,8 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     const statusColor = getColorForVerificationStatus(worstVerificationStatus);
 
     const backgroundStyle = {
-        backgroundColor: credential.display?.backgroundColor,
-        backgroundImage: credential.display?.backgroundImage
+        backgroundColor: credential?.display?.backgroundColor,
+        backgroundImage: credential?.display?.backgroundImage
             ? `linear-gradient(to bottom, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.25)), url(${credential.display?.backgroundImage})`
             : undefined,
         backgroundSize: 'cover',
@@ -140,6 +155,29 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     };
 
     const _title = titleOverride || title;
+
+    if (credential?.display?.displayType === 'certificate') {
+        return (
+            <CertificateDisplayCard
+                credential={credential}
+                categoryType={categoryType}
+                issueeOverride={issuee}
+                issuerOverride={issuer}
+                verificationItems={verificationItems}
+                getFileMetadata={getFileMetadata}
+                getVideoMetadata={getVideoMetadata}
+                onMediaAttachmentClick={onMediaAttachmentClick}
+                enableLightbox={enableLightbox}
+                trustedAppRegistry={trustedAppRegistry}
+                handleXClick={handleXClick}
+                subjectImageComponent={subjectImageComponent}
+                issuerImageComponent={issuerImageComponent}
+                customBodyCardComponent={customBodyCardComponent}
+                hideIssueDate={hideIssueDate}
+                onDotsClick={onDotsClick}
+            />
+        );
+    }
 
     return (
         <Flipper className="w-full" flipKey={isFront}>
@@ -231,6 +269,9 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                                         />
                                     </Flipped>
                                 )}
+
+                                <VCDisplayCardSkillsCount skills={credential?.skills} />
+
                                 {isFront && customFrontButton}
                                 {isFront && !customFrontButton && (
                                     <Flipped flipId="details-back-button">

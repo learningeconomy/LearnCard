@@ -82,11 +82,25 @@ module.exports = {
                     800: '#3730A3',
                     900: '#312E81',
                 },
+                blue: {
+                    light: '#026BFF',
+                },
+                green: {
+                    dark: '#05B65D',
+                },
+                orange: {
+                    500: '#EF5D35',
+                },
+                red: {
+                    mastercard: '#EB001B',
+                },
             },
             fontFamily: {
                 mouse: ['Mouse Memoirs'],
                 montserrat: ['Montserrat', 'Helvetica', 'Serif'],
                 poppins: ['Poppins'],
+                jacques: ['Jacques Francois'],
+                sacramento: ['Sacramento'],
             },
         },
     },

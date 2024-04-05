@@ -1,8 +1,18 @@
 import React from 'react';
 
-export const Briefcase: React.FC<{ className?: string }> = ({ className = '' }) => {
+export const Briefcase: React.FC<{ className?: string; size?: string }> = ({
+    className = '',
+    size = '',
+}) => {
     return (
-        <svg viewBox="0 0 31 31" fill="none" className={className} data-testid="job-icon">
+        <svg
+            height={size}
+            width={size}
+            viewBox="0 0 31 31"
+            fill="none"
+            className={className}
+            data-testid="job-icon"
+        >
             <path
                 d="M25.8135 8.9375H5.18848C4.67071 8.9375 4.25098 9.35723 4.25098 9.875V24.875C4.25098 25.3928 4.67071 25.8125 5.18848 25.8125H25.8135C26.3312 25.8125 26.751 25.3928 26.751 24.875V9.875C26.751 9.35723 26.3312 8.9375 25.8135 8.9375Z"
                 stroke="currentColor"

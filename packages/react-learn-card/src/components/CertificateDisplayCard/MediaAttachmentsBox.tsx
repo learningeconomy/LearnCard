@@ -42,8 +42,33 @@ const defaultGetFileMetadata = async (url: string) => {
     };
 };
 
+// Function to determine if the URL is from YouTube
+const isYoutubeUrl = (url: string) => {
+    const youtubeUrl = new URL(url);
+    return youtubeUrl.hostname === 'www.youtube.com';
+};
+
+// Function to get the YouTube video ID from the URL
+const getYoutubeVideoId = (url: string) => {
+    const regex = /(?:\?v=|\.com\/embed\/)([^&]+)/;
+    const match = url.match(regex);
+    return match ? match[1] : '';
+};
+
+// Function to get the cover image URL for YouTube videos
+const getCoverImageUrl = (youtubeWatchUrl: string) => {
+    if (!isYoutubeUrl(youtubeWatchUrl)) {
+        return ''; // Return an empty string if the URL is not a YouTube URL
+    }
+
+    const videoId = getYoutubeVideoId(youtubeWatchUrl);
+    // Construct and return the URL for the video's cover image
+    // This URL fetches the highest resolution image available
+    return videoId ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg` : '';
+};
+
 const defaultGetVideoMetadata = async (url: string) => {
-    const isYoutube = url.includes('youtube');
+    const isYoutube = isYoutubeUrl(url);
     if (!isYoutube) return;
 
     const metadataUrl = `http://youtube.com/oembed?url=${url}&format=json`;
@@ -53,11 +78,13 @@ const defaultGetVideoMetadata = async (url: string) => {
         .then(res => res.json())
         .catch(() => (fetchFailed = true));
 
-    if (fetchFailed) return;
+    const coverImageUrl = getCoverImageUrl(url);
+
+    if (fetchFailed) return { imageUrl: coverImageUrl };
 
     return {
         title: metadata.title,
-        imageUrl: metadata.thumbnail_url,
+        imageUrl: coverImageUrl,
         videoLength: '', // TODO figure out how to get this
     };
 };
@@ -131,8 +158,8 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
     };
 
     return (
-        <div className="media-attachments-box bg-white flex flex-col items-start gap-[10px] rounded-[20px] shadow-bottom px-[15px] py-[20px] w-full">
-            <h3 className="text-[20px] leading-[20px] text-grayscale-900">Media Attachments</h3>
+        <div className="bg-white flex flex-col items-start gap-[10px] rounded-[20px] shadow-bottom px-[15px] py-[20px] w-full">
+            <h3 className="text-[17px] text-grayscale-900 font-poppins">Attachments</h3>
             {mediaAttachments.length > 0 && (
                 <div className="flex gap-[5px] justify-between flex-wrap w-full">
                     {enableLightbox && (
@@ -150,27 +177,21 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                             const metadata = videoMetadata[media.url];
                             title = (title || metadata?.title) ?? '';
                             const baseUrl = getBaseUrl(media.url);
-                            const iconTop = title || baseUrl;
 
                             innerContent = (
                                 <div
-                                    className="absolute top-0 left-0 right-0 bottom-0 bg-cover bg-no-repeat font-poppins text-white text-[12px] font-[400] leading-[17px] flex flex-col justify-end items-start p-[10px] text-left bg-rose-600 rounded-[15px]"
+                                    className="bg-cover bg-no-repeat bg-center relative font-poppins text-white text-[12px] font-[400] leading-[17px] flex flex-col justify-end items-start p-[10px] text-left bg-rose-600 rounded-[15px] h-full"
                                     style={{
                                         backgroundImage: metadata?.imageUrl
-                                            ? `linear-gradient(180deg, rgba(0, 0, 0, 0) 44.20%, rgba(0, 0, 0, 0.6) 69%), url(${
-                                                  metadata?.imageUrl ?? ''
-                                              })`
+                                            ? `linear-gradient(180deg, rgba(0, 0, 0, 0) 44.20%, rgba(0, 0, 0, 0.6) 69%), url(${metadata?.imageUrl ?? ''
+                                            })`
                                             : undefined,
                                     }}
                                 >
                                     {!metadata?.imageUrl && (
                                         <VideoIcon size="60" className="m-auto" />
                                     )}
-                                    <div
-                                        className={`absolute ${
-                                            iconTop ? 'top-[10px]' : 'bottom-[10px]'
-                                        } left-[10px] z-10 flex items-center gap-[5px]`}
-                                    >
+                                    <div className="absolute bottom-[10px] left-[10px] z-10 flex items-center gap-[5px]">
                                         {metadata?.imageUrl && <VideoIcon />}
                                         {metadata?.videoLength && (
                                             <span className="leading-[23px]">
@@ -178,13 +199,11 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                                             </span>
                                         )}
                                     </div>
-                                    {baseUrl && <span className="font-[600]">{baseUrl}</span>}
-                                    {title && <span className="line-clamp-2">{title}</span>}
                                 </div>
                             );
                         } else {
                             innerContent = (
-                                <div className="absolute top-0 left-0 right-0 bottom-0 h-min">
+                                <div className="h-full w-full">
                                     <img className="rounded-[15px]" src={media.url} />
                                     <Camera className="relative bottom-[30px] left-[10px] z-10" />
                                 </div>
@@ -195,15 +214,24 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
 
                         if (onMediaAttachmentClick || enableLightbox) {
                             return (
-                                <button
+                                <div
                                     key={index}
-                                    className={className}
-                                    onClick={() =>
-                                        handleMediaAttachmentClick(media.url, media.type)
-                                    }
+                                    className="flex bg-grayscale-100 items-center rounded-[15px] w-full"
                                 >
-                                    {innerContent}
-                                </button>
+                                    <button
+                                        className="h-[80px] w-[80px] rounded-[15px]"
+                                        onClick={() =>
+                                            handleMediaAttachmentClick(media.url, media.type)
+                                        }
+                                    >
+                                        {innerContent}
+                                    </button>
+                                    {title && (
+                                        <div className="text-[12px] text-grayscale-900 font-poppins px-[10px] line-clamp-3">
+                                            {title}
+                                        </div>
+                                    )}
+                                </div>
                             );
                         }
 
@@ -236,40 +264,50 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                                         <GenericDocumentIcon className="shrink-0" />
                                     )}
                                     {docOrLink.type === 'link' && <LinkIcon className="shrink-0" />}
-                                    <span className="text-grayscale-900 font-[400]">
-                                        {docOrLink.title ?? 'No title'}
-                                    </span>
+
+                                    <div className="flex flex-col">
+                                        <span className="text-grayscale-900 font-[400]">
+                                            {docOrLink.title ?? 'No title'}
+                                        </span>
+                                        {docOrLink.type === 'document' && metadata && (
+                                            <a
+                                                href={docOrLink.url}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="text-grayscale-700 font-[500] text-[12px] font-poppins hover:underline"
+                                            >
+                                                {fileExtension && (
+                                                    <span className="uppercase">
+                                                        {fileExtension}
+                                                    </span>
+                                                )}
+                                                {fileExtension &&
+                                                    (numberOfPages || sizeInBytes) &&
+                                                    ' • '}
+                                                {numberOfPages && (
+                                                    <span>
+                                                        {numberOfPages} page
+                                                        {numberOfPages === 1 ? '' : 's'}
+                                                    </span>
+                                                )}
+                                                {numberOfPages && sizeInBytes && ' • '}
+                                                {sizeInBytes && (
+                                                    <span>{prettyBytes(sizeInBytes)}</span>
+                                                )}
+                                            </a>
+                                        )}
+                                        {docOrLink.type === 'link' && (
+                                            <a
+                                                href={docOrLink.url}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="text-indigo-500 font-[500] text-[12px] font-poppins hover:underline"
+                                            >
+                                                {baseUrl}
+                                            </a>
+                                        )}
+                                    </div>
                                 </div>
-                                {docOrLink.type === 'document' && metadata && (
-                                    <a
-                                        href={docOrLink.url}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="text-grayscale-600 font-[600] px-[5px] hover:underline"
-                                    >
-                                        {fileExtension && (
-                                            <span className="uppercase">{fileExtension}</span>
-                                        )}
-                                        {fileExtension && (numberOfPages || sizeInBytes) && ' • '}
-                                        {numberOfPages && (
-                                            <span>
-                                                {numberOfPages} page{numberOfPages === 1 ? '' : 's'}
-                                            </span>
-                                        )}
-                                        {numberOfPages && sizeInBytes && ' • '}
-                                        {sizeInBytes && <span>{prettyBytes(sizeInBytes)}</span>}
-                                    </a>
-                                )}
-                                {docOrLink.type === 'link' && (
-                                    <a
-                                        href={docOrLink.url}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="text-indigo-500 font-[600] px-[5px] hover:underline"
-                                    >
-                                        {baseUrl}
-                                    </a>
-                                )}
                             </div>
                         );
 

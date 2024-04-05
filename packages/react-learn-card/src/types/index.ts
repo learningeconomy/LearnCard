@@ -347,3 +347,15 @@ export type BoostAchievementCredential = AchievementCredential & {
     image: string;
     attachments: Attachment[];
 };
+
+export type MediaMetadata = {
+    fileExtension?: string;
+    sizeInBytes?: number;
+    numberOfPages?: number;
+};
+
+export type VideoMetadata = {
+    title?: string;
+    videoLength?: string;
+    imageUrl?: string;
+};
