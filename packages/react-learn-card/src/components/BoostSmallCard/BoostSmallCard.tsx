@@ -1,11 +1,14 @@
 import React from 'react';
-import { BoostSmallCardProps, WalletCategoryTypes } from '../../types';
-import { TYPE_TO_IMG_SRC, TYPE_TO_WALLET_DARK_COLOR } from '../../constants';
-import { CircleCheckButton } from '../CircleCheckButton';
+
 import CaretRightFilled from '../../assets/images/CaretRightFilled.svg';
 import DefaultFace from '../../assets/images/default-face.jpeg';
 import AddAwardLight from '../../assets/images/addawardlight.svg';
 import ThreeDots from '../../assets/images/DotsThreeOutline.svg';
+import { CircleCheckButton } from '../CircleCheckButton';
+
+import { BoostSmallCardProps, WalletCategoryTypes } from '../../types';
+import { TYPE_TO_IMG_SRC, TYPE_TO_WALLET_DARK_COLOR } from '../../constants';
+import { getDarkBGColor } from '../../helpers/color.helpers';
 
 export const BoostSmallCard: React.FC<BoostSmallCardProps> = ({
     title = 'Title Lorem Ipsum',
@@ -31,7 +34,7 @@ export const BoostSmallCard: React.FC<BoostSmallCardProps> = ({
     const thumbClass = `bg-${TYPE_TO_WALLET_DARK_COLOR[type]}` ?? 'bg-grayscale-50';
     const defaultThumbClass = `small-boost-card-thumb flex h-[110px] w-[110px] my-[10px] mx-auto ${thumbClass} overflow-hidden flex-col justify-center items-center rounded-full ${customThumbClass}`;
     const imgSrc = thumbImgSrc?.trim() !== '' ? thumbImgSrc : TYPE_TO_IMG_SRC[type];
-    const headerBgColor = `bg-${TYPE_TO_WALLET_DARK_COLOR[type]}` ?? 'bg-grayscale-900';
+    const headerBgColor = getDarkBGColor(type);
     const checkBtnClass = checkStatus ? 'generic-vc-card checked' : 'generic-vc-card unchecked';
     const defaultHeaderClass = `flex generic-card-title w-full justify-center ${customHeaderClass}`;
     const defaultBodyClass = ` boost-small-card-body flex justify-center items-center text-center text-[14px] overflow-hidden text-grayscale-500 py-[5px] px-[10px] ${customBodyClass}`;
