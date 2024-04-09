@@ -160,7 +160,7 @@ export const getCategoryIcon = (category = LCCategoryEnum.achievement) => {
 export const getTotalCountOfSkills = (
     skills: { skill: string; category: string; subSkills: string[] }[]
 ) => {
-    if (!skills || skills.length) return 0;
+    if (!skills || skills.length === 0) return 0;
     let totalCount = 0;
 
     skills?.forEach(skill => {

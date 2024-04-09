@@ -3,6 +3,7 @@ import React from 'react';
 import CertificateCornerIcon from './CertificateCornerIcon';
 import CertificateImageDisplay from './CertificateImageDisplay';
 import CertificateProfileImageDisplay from './CertificateProfileImageDisplay';
+import { VCDisplayCardSkillsCount } from '../VCDisplayCard2';
 
 import UnknownVerifierBadge from '../svgs/UnknownVerifierBadge';
 import VerifiedBadge from '../svgs/VerifiedBadge';
@@ -111,8 +112,9 @@ const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
             </div>
 
             <div
-                className={`flex flex-col gap-[15px] items-center px-[20px] pt-[55px] ${isSelfVerified ? 'pb-[20px]' : 'pb-[77px]'
-                    } border-solid border-[4px] border-${credentialLightColor} rounded-[30px]`}
+                className={`flex flex-col gap-[15px] items-center px-[20px] pt-[55px] ${
+                    isSelfVerified ? 'pb-[20px]' : 'pb-[77px]'
+                } border-solid border-[4px] border-${credentialLightColor} rounded-[30px]`}
             >
                 <div className="flex flex-col gap-[5px] items-center">
                     <div
@@ -155,7 +157,7 @@ const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
                         </div>
                     )}
 
-                    <div className="text-violet-500 font-poppins text-[14px]">+2 Skills</div>
+                    <VCDisplayCardSkillsCount skills={credential?.skills ?? []} />
                 </div>
 
                 <div className="flex flex-col gap-[5px] items-center w-full">
