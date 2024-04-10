@@ -68,8 +68,31 @@ const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
 
     const { description } = credentialSubject?.achievement ?? {};
 
-    const credentialLightColor = getCategoryLightColor(categoryType);
-    const credentialDarkColor = getCategoryDarkColor(categoryType);
+    const credentialLightColor = getCategoryLightColor(categoryType); // 500
+    const credentialDarkColor = getCategoryDarkColor(categoryType); // 700
+
+    let categoryTitle: string | undefined = categoryType;
+
+    let textLightColor = `text-${credentialLightColor}`;
+    let textDarkColor = `text-${credentialDarkColor}`;
+    let borderColor = `border-${credentialLightColor}`;
+
+    if (categoryType === LCCategoryEnum.accommodations) {
+        textLightColor = 'text-amber-500';
+        textDarkColor = 'text-amber-700';
+        borderColor = 'border-amber-500';
+    } else if (categoryType === LCCategoryEnum.accomplishments) {
+        textLightColor = 'text-lime-500';
+        textDarkColor = 'text-lime-700';
+        borderColor = 'border-lime-500';
+    } else if (categoryType === LCCategoryEnum.learningHistory) {
+        categoryTitle = 'Course';
+    } else if (categoryType === LCCategoryEnum.workHistory) {
+        categoryTitle = 'Experiences';
+        textLightColor = 'text-blue-500';
+        textDarkColor = 'text-blue-700';
+        borderColor = 'border-blue-500';
+    }
 
     const issuerName = getNameFromProfile(issuer ?? '');
     const issueeName = getNameFromProfile(issuee ?? '');
@@ -107,20 +130,18 @@ const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
                 <CertificateImageDisplay
                     imageUrl={imageUrl ?? ''}
                     className="mx-auto"
-                    ribbonColor={credentialLightColor}
+                    ribbonColor={textLightColor}
                 />
             </div>
 
             <div
                 className={`flex flex-col gap-[15px] items-center px-[20px] pt-[55px] ${
                     isSelfVerified ? 'pb-[20px]' : 'pb-[77px]'
-                } border-solid border-[4px] border-${credentialLightColor} rounded-[30px]`}
+                } border-solid border-[4px] ${borderColor} rounded-[30px]`}
             >
                 <div className="flex flex-col gap-[5px] items-center">
-                    <div
-                        className={`text-${credentialLightColor} uppercase text-[14px] font-poppins`}
-                    >
-                        {categoryType}
+                    <div className={`${textLightColor} uppercase text-[14px] font-poppins`}>
+                        {categoryTitle}
                     </div>
 
                     <h1 className="text-grayscale-900 text-center text-[20px] font-jacques">
@@ -133,7 +154,7 @@ const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
                     <CertificateProfileImageDisplay
                         imageUrl={issueeImage}
                         imageComponent={subjectImageComponent}
-                        className={`flex justify-center items-center text-${credentialDarkColor}`}
+                        className={`flex justify-center items-center ${textDarkColor}`}
                         isIssuer={isSelfVerified}
                     />
                 )}
@@ -208,7 +229,7 @@ const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
                 <CertificateProfileImageDisplay
                     imageUrl={issuerImage}
                     imageComponent={issuerImageComponent}
-                    className={`w-[calc(100%-26px)] absolute bottom-0 flex justify-center items-center text-${credentialDarkColor}`}
+                    className={`w-[calc(100%-26px)] absolute bottom-0 flex justify-center items-center ${textDarkColor}`}
                     isIssuer
                 />
             )}

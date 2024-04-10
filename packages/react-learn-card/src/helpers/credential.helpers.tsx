@@ -14,6 +14,8 @@ import SocialBadgesIcon from '../components/svgs/SocialBadgesIcon';
 import PuzzlePiece from '../components/svgs/PuzzlePiece';
 import KeyIcon from '../components/svgs/KeyIcon';
 import { Briefcase, Graduation, Trophy, User } from '../components';
+import AccommodationsIcon from '../components/svgs/AccommodationsIcon';
+import AccomplishmentsIcon from '../components/svgs/AccomplishmentsIcon';
 
 export const getImageFromImage = (image: Image): string => {
     if (typeof image === 'string') return image;
@@ -84,6 +86,7 @@ export const getCategoryColor = (category = LCCategoryEnum.achievement) => {
         case LCCategoryEnum.id:
             return 'yellow-400';
         case LCCategoryEnum.workHistory:
+            return 'blue-400';
         case LCCategoryEnum.job:
             return 'rose-600';
         case LCCategoryEnum.course:
@@ -110,6 +113,7 @@ export const getCategoryPrimaryColor = (category = LCCategoryEnum.achievement) =
         case LCCategoryEnum.id:
             return 'yellow';
         case LCCategoryEnum.workHistory:
+            return 'blue';
         case LCCategoryEnum.job:
             return 'rose';
         case LCCategoryEnum.course:
@@ -118,6 +122,10 @@ export const getCategoryPrimaryColor = (category = LCCategoryEnum.achievement) =
             return 'cyan';
         case LCCategoryEnum.membership:
             return 'teal';
+        case LCCategoryEnum.accommodations:
+            return 'amber';
+        case LCCategoryEnum.accomplishments:
+            return 'lime';
         default:
             return 'spice';
     }
@@ -149,6 +157,11 @@ export const getCategoryIcon = (category = LCCategoryEnum.achievement) => {
             return <User size="21" />;
         case LCCategoryEnum.membership:
             return <KeyIcon size="21" />;
+        case LCCategoryEnum.currency:
+        case LCCategoryEnum.accommodations:
+            return <AccommodationsIcon size="21" />;
+        case LCCategoryEnum.accomplishments:
+            return <AccomplishmentsIcon size="21" />;
         case LCCategoryEnum.currency:
         default:
             console.log('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥');

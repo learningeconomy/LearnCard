@@ -252,6 +252,7 @@ export const BoostCredential = {
     display: {
         backgroundColor: '#4e4e',
         backgroundImage: 'https://cdn.filestackcontent.com/wYXbETSCSOSThnZOFJLQ',
+        displayType: 'certificate',
     },
     name: 'test achievement vc',
     skills: [

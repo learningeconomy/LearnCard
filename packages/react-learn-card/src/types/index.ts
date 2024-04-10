@@ -45,6 +45,9 @@ export enum LCCategoryEnum {
     skill = 'Skill',
     membership = 'Membership',
     event = 'Event',
+
+    accommodations = 'Accommodation',
+    accomplishments = 'Accomplishment',
 }
 
 export enum LCSubtypes {

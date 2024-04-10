@@ -1,7 +1,12 @@
 import React from 'react';
 import { getCategoryDarkColor, getInfoFromCredential } from '../../helpers/credential.helpers';
 import { VC, VerificationItem } from '@learncard/types';
-import { BoostAchievementCredential, LCCategoryEnum, MediaMetadata, VideoMetadata } from '../../types';
+import {
+    BoostAchievementCredential,
+    LCCategoryEnum,
+    MediaMetadata,
+    VideoMetadata,
+} from '../../types';
 import VerificationsBox from './VerificationsBox';
 import TruncateTextBox from './TruncateTextBox';
 import MediaAttachmentsBox from './MediaAttachmentsBox';
@@ -36,18 +41,27 @@ const CertificateBackFace: React.FC<CertificateBackFaceProps> = ({
 
     const credentialDarkColor = getCategoryDarkColor(categoryType);
 
+    let bgColor = `bg-${credentialDarkColor}`;
+
+    if (categoryType === LCCategoryEnum.accommodations) {
+        bgColor = 'bg-amber-700';
+    } else if (categoryType === LCCategoryEnum.accomplishments) {
+        bgColor = 'bg-lime-700';
+    }
+
     return (
         <div
-            className={`flex flex-col gap-[15px] items-center py-[30px] px-[20px] rounded-[25px] bg-${credentialDarkColor}`}
+            className={`flex flex-col gap-[15px] items-center py-[30px] px-[20px] rounded-[25px] ${bgColor}`}
         >
             <h1 className="text-white text-center text-[22px] font-jacques">Details</h1>
 
             <TruncateTextBox headerText="About" text={description}>
                 <span
-                    className={`text-grayscale-600 font-poppins text-[12px] font-[600] w-full ${description
+                    className={`text-grayscale-600 font-poppins text-[12px] font-[600] w-full ${
+                        description
                             ? 'pt-[10px] border-t-[1px] border-solid border-grayscale-200'
                             : ''
-                        }`}
+                    }`}
                 >
                     Awarded on {createdAt}
                 </span>
