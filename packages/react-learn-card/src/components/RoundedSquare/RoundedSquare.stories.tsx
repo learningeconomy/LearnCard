@@ -24,5 +24,5 @@ RoundedSquareTest.args = {
         console.log('//goodbye world');
     },
     bgColor: 'bg-cyan-300',
-    // iconCircleClass: 'border-2 border-cyan-200 border-solid rounded-full',
+    iconCircleClass: 'border-2 border-cyan-200 border-solid rounded-full',
 };
