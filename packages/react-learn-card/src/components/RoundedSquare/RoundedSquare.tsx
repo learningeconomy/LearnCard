@@ -53,8 +53,14 @@ export const RoundedSquare: React.FC<RoundedSquareProps> = ({
                 </div>
             </div>
 
-            <div className={`${circleClass} ${iconCircleClass}`}>
-                <CircleIcon iconSrc={iconSrc} count={count} size="40" loading={loading} />
+            <div className={`${circleClass}`}>
+                <CircleIcon
+                    iconCircleClass={iconCircleClass}
+                    iconSrc={iconSrc}
+                    count={count}
+                    size="40"
+                    loading={loading}
+                />
             </div>
         </button>
     );
