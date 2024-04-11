@@ -12,6 +12,7 @@ import trophylight from '../assets/images/minitrophy.svg';
 import gradcaplight from '../assets/images/gradcaplight.svg';
 
 // new icons
+import idIcon from '../assets/icons/idIcon.svg';
 import coursesIcon from '../assets/icons/coursesIcon.svg';
 import socialBadgesIcon from '../assets/icons/socialBadgesIcon.svg';
 import achievementsIcon from '../assets/icons/achievementsIcon.svg';
@@ -54,7 +55,7 @@ export {
 
 export const ICONS_TO_SOURCE = {
     [Icons.coinsIcon]: coins,
-    [Icons.userIcon]: user,
+    [Icons.userIcon]: idIcon,
     [Icons.trophyIcon]: trophy,
     [Icons.briefcaseIcon]: briefcase,
     [Icons.graduationIcon]: graduation,
