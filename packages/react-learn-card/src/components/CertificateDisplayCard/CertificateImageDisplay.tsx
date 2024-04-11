@@ -20,9 +20,7 @@ const CertificateImageDisplay: React.FC<CertificateImageDisplayProps> = ({
                 <img src={imageUrl} alt="certificate thumbnail" />
             </div>
 
-            <CertificateRibbon
-                className={`absolute z-[9999] text-${ribbonColor} w-[120px] h-[120px]`}
-            />
+            <CertificateRibbon className={`absolute z-[9999] ${ribbonColor} w-[120px] h-[120px]`} />
         </div>
     );
 };

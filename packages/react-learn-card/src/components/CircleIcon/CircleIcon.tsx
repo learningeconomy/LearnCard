@@ -13,6 +13,7 @@ export type CircleIconProps = {
     size?: string;
     borderColor?: string;
     loading?: boolean;
+    iconCircleClass?: string;
 };
 
 export type CountCircleProps = {
@@ -47,11 +48,7 @@ export const CountCircle: React.FC<CountCircleProps> = ({
     };
 
     return (
-        <section
-            onClick={onClick}
-            className={`bg-grayscale-900 text-grayscale-50 rounded-full`}
-            style={style}
-        >
+        <section onClick={onClick} className={`text-grayscale-50 rounded-full`} style={style}>
             {!loading && count && <p className="">{_count}</p>}
             {loading && (
                 <div style={spinnerStyle}>
@@ -67,20 +64,21 @@ export const CircleIcon: React.FC<CircleIconProps> = ({
     size = '52px',
     count = '28',
     onClick = () => {},
-    bgColor = 'bg-grayscale-900',
     loading,
+    iconCircleClass = '',
 }) => {
     const style = {
         width: size,
         height: size,
+        backgroundColor: `rgba(24, 34, 78, 0.85)`,
     };
 
     return (
-        <div style={style}>
+        <div style={style} className={`rounded-full ${iconCircleClass}`}>
             <section
                 onClick={onClick}
-                className={`flex flex-row-reverse justify-center items-center ${bgColor} rounded-full relative overflow-hidden w-16 `}
-                style={style}
+                className={`flex flex-row-reverse justify-center items-center rounded-full relative overflow-hidden w-16 `}
+                style={{ ...style, backgroundColor: 'transparent' }}
             >
                 <CountCircle count={count} loading={loading} />
                 <img src={iconSrc ?? ''} alt="Icon image" />
