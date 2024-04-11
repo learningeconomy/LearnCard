@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.6.57
+
+### Patch Changes
+
+-   [#425](https://github.com/learningeconomy/LearnCard/pull/425) [`62ee53a`](https://github.com/learningeconomy/LearnCard/commit/62ee53a39a24b0b15bc3390e99d903e523b9a249) Thanks [@gerardopar](https://github.com/gerardopar)! - Quick style fixes - (boost card, vc card, wallet page icons)
+
 ## 2.6.56
 
 ### Patch Changes
