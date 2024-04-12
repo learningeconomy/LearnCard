@@ -1,6 +1,11 @@
 import React, { useState } from 'react';
 import { VC, Profile, VerificationItem } from '@learncard/types';
-import { BoostAchievementCredential, LCCategoryEnum, MediaMetadata, VideoMetadata } from '../../types';
+import {
+    BoostAchievementCredential,
+    LCCategoryEnum,
+    MediaMetadata,
+    VideoMetadata,
+} from '../../types';
 import CertificateFrontFace from './CertificateFrontFace';
 import CertificateBackFace from './CertificateBackFace';
 import FatArrow from '../svgs/FatArrow';
@@ -17,6 +22,7 @@ type CertificateDisplayCardProps = {
     issuerImageComponent?: React.ReactNode;
     customBodyCardComponent?: React.ReactNode;
     hideIssueDate?: boolean;
+    customSkillsComponent?: React.ReactNode;
 
     getFileMetadata?: (url: string) => MediaMetadata;
     getVideoMetadata?: (url: string) => VideoMetadata;
@@ -38,6 +44,7 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
     customBodyCardComponent,
     trustedAppRegistry,
     hideIssueDate,
+    customSkillsComponent,
 
     getFileMetadata,
     getVideoMetadata,
@@ -51,8 +58,9 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
 
     return (
         <section
-            className={`w-full border-solid border-[5px] border-grayscale-200 rounded-[30px] relative min-w-[250px] max-w-[300px] ${isFront ? 'bg-white p-[13px]' : ``
-                }`}
+            className={`w-full border-solid border-[5px] border-grayscale-200 rounded-[30px] relative min-w-[250px] max-w-[300px] ${
+                isFront ? 'bg-white p-[13px]' : ``
+            }`}
         >
             {isFront && (
                 <CertificateFrontFace
@@ -65,6 +73,7 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
                     issuerImageComponent={issuerImageComponent}
                     customBodyCardComponent={customBodyCardComponent}
                     hideIssueDate={hideIssueDate}
+                    handleViewBackFace={() => setIsFront(!isFront)}
                 />
             )}
 

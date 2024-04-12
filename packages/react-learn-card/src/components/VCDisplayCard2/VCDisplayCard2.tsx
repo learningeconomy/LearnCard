@@ -62,6 +62,7 @@ export type VCDisplayCard2Props = {
     trustedAppRegistry?: any[];
     hideIssueDate?: boolean;
     onDotsClick?: () => void;
+    customSkillsComponent?: React.ReactNode;
 };
 
 export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
@@ -95,6 +96,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     trustedAppRegistry,
     hideIssueDate,
     onDotsClick,
+    customSkillsComponent,
 }) => {
     console.log('credential', credential);
 
@@ -266,11 +268,15 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                                                 customIssueHistoryComponent
                                             }
                                             enableLightbox={enableLightbox}
+                                            customSkillsComponent={customSkillsComponent}
                                         />
                                     </Flipped>
                                 )}
 
-                                <VCDisplayCardSkillsCount skills={credential?.skills} />
+                                <VCDisplayCardSkillsCount
+                                    skills={credential?.skills}
+                                    onClick={() => setIsFront(!isFront)}
+                                />
 
                                 {isFront && customFrontButton}
                                 {isFront && !customFrontButton && (
