@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.6.59
+
+### Patch Changes
+
+-   [#429](https://github.com/learningeconomy/LearnCard/pull/429) [`1649dac`](https://github.com/learningeconomy/LearnCard/commit/1649dace725a5b2515fe825e53c96d8ec4d76b6a) Thanks [@gerardopar](https://github.com/gerardopar)! - Display skills widget
+
 ## 2.6.58
 
 ### Patch Changes
