@@ -41,7 +41,7 @@ export const SelectedSkills: React.FC<{
             />
             {skillSelected && skillSelected.subskills.length > 0 && expandSubSkills && (
                 <div className="w-full flex items-center justify-end">
-                    <div className="w-[90%] flex items-center flex-col">
+                    <div className="w-[95%] flex items-center flex-col">
                         {skillSelected.subskills.map((subSkill, i) => {
                             const subskillSelected = skillSelected?.subskills?.includes(
                                 subSkill as BoostCMSSubSkillEnum
