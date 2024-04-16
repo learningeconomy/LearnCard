@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.6.60
+
+### Patch Changes
+
+-   [#431](https://github.com/learningeconomy/LearnCard/pull/431) [`6a68eab`](https://github.com/learningeconomy/LearnCard/commit/6a68eabb4abc6c8196af8f154515f85114ee14e5) Thanks [@gerardopar](https://github.com/gerardopar)! - Add Skills widget to certificate view
+
 ## 2.6.59
 
 ### Patch Changes
