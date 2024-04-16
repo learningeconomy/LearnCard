@@ -273,10 +273,12 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                                     </Flipped>
                                 )}
 
-                                <VCDisplayCardSkillsCount
-                                    skills={credential?.skills}
-                                    onClick={() => setIsFront(!isFront)}
-                                />
+                                {isFront && (
+                                    <VCDisplayCardSkillsCount
+                                        skills={credential?.skills}
+                                        onClick={() => setIsFront(!isFront)}
+                                    />
+                                )}
 
                                 {isFront && customFrontButton}
                                 {isFront && !customFrontButton && (
