@@ -15,18 +15,18 @@ export const VCDisplayCardSkillsCount: React.FC<{
     const skillsMap = categorizeSkills(skills);
 
     // Calculate total count of skills and subskills
-    const totalSkills = Object.values(skillsMap).reduce(
-        (total, category) => total + category?.length,
+    const totalSkills: any = Object.values(skillsMap).reduce(
+        (total: any, category: any) => total + category?.length,
         0
     );
-    const totalSubskills = Object.values(skillsMap).reduce(
-        (total, category) => total + (category?.totalSubskillsCount || 0),
+    const totalSubskills: any = Object.values(skillsMap).reduce(
+        (total: any, category: any) => total + (category?.totalSubskillsCount || 0),
         0
     );
 
-    const total = totalSkills + totalSubskills;
+    const total: any = totalSkills + totalSubskills;
 
-    const text = skillsCount === 1 ? 'Skill' : 'Skills';
+    const text: string = skillsCount === 1 ? 'Skill' : 'Skills';
 
     return (
         <div className="flex items-center justify-center mt-8 cursor-pointer" onClick={onClick}>
