@@ -1,5 +1,16 @@
 # learn-card-core
 
+## 9.2.0
+
+### Minor Changes
+
+-   [#433](https://github.com/learningeconomy/LearnCard/pull/433) [`be01a1a`](https://github.com/learningeconomy/LearnCard/commit/be01a1a3d1b5dde523b1dcfb5be2a2452f26f7a7) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Allow changing sort order in Index Plane
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.0.12
+
 ## 9.1.4
 
 ### Patch Changes

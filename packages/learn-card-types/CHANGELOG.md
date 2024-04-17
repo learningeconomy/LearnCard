@@ -1,5 +1,11 @@
 # learn-card-types
 
+## 5.5.0
+
+### Minor Changes
+
+-   [#433](https://github.com/learningeconomy/LearnCard/pull/433) [`be01a1a`](https://github.com/learningeconomy/LearnCard/commit/be01a1a3d1b5dde523b1dcfb5be2a2452f26f7a7) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Allow changing sort order in Index Plane
+
 ## 5.4.1
 
 ### Patch Changes
