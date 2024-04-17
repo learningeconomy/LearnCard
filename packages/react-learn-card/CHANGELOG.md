@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.6.62
+
+### Patch Changes
+
+-   [#435](https://github.com/learningeconomy/LearnCard/pull/435) [`74faabb`](https://github.com/learningeconomy/LearnCard/commit/74faabbc1730ef6655ea35266066c5d52b8649d3) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Easier to see skills count and the scrolling thing is reverted
+
 ## 2.6.61
 
 ### Patch Changes
