@@ -30,7 +30,7 @@ const Subskill: React.FC<{
 
     return (
         <div className="flex items-center justify-between w-full mb-4  bg-violet-100 rounded-[20px]">
-            <div className="flex items-center justify-start w-[80%] px-[6px] py-[10px] overflow-hidden">
+            <div className="flex items-center justify-start w-[90%] px-[6px] py-[10px] overflow-hidden">
                 <div className="rounded-full h-[50px] w-[50px]">
                     <img src={IconComponent as string} alt="skill icon" className="w-full h-full" />
                 </div>

@@ -1,5 +1,27 @@
 # @learncard/network-brain-service
 
+## 2.0.0
+
+### Major Changes
+
+-   [#433](https://github.com/learningeconomy/LearnCard/pull/433) [`be01a1a`](https://github.com/learningeconomy/LearnCard/commit/be01a1a3d1b5dde523b1dcfb5be2a2452f26f7a7) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Change default sort order for index plane and allow changing sort order of index plane
+
+### Patch Changes
+
+-   Updated dependencies [[`be01a1a`](https://github.com/learningeconomy/LearnCard/commit/be01a1a3d1b5dde523b1dcfb5be2a2452f26f7a7)]:
+    -   @learncard/types@5.5.0
+    -   @learncard/core@9.2.0
+    -   @learncard/helpers@1.0.12
+    -   @learncard/ceramic-plugin@1.0.9
+    -   @learncard/did-web-plugin@1.0.27
+    -   @learncard/didkey-plugin@1.0.9
+    -   @learncard/didkit-plugin@1.4.4
+    -   @learncard/learn-card-plugin@1.1.7
+    -   @learncard/vc-plugin@1.1.9
+    -   @learncard/vc-templates-plugin@1.0.14
+    -   @learncard/crypto-plugin@1.0.9
+    -   @learncard/expiration-plugin@1.1.9
+
 ## 1.3.14
 
 ### Patch Changes

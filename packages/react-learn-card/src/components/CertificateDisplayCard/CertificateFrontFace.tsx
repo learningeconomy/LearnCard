@@ -41,6 +41,7 @@ type CertificateFrontFaceProps = {
     issuerImageComponent?: React.ReactNode;
     customBodyCardComponent?: React.ReactNode;
     hideIssueDate?: boolean;
+    handleViewBackFace?: () => void;
 };
 
 const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
@@ -53,6 +54,7 @@ const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
     issuerImageComponent,
     customBodyCardComponent,
     hideIssueDate,
+    handleViewBackFace,
 }) => {
     const {
         title = '',
@@ -178,7 +180,10 @@ const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
                         </div>
                     )}
 
-                    <VCDisplayCardSkillsCount skills={credential?.skills ?? []} />
+                    <VCDisplayCardSkillsCount
+                        skills={credential?.skills ?? []}
+                        onClick={handleViewBackFace}
+                    />
                 </div>
 
                 <div className="flex flex-col gap-[5px] items-center w-full">

@@ -62,6 +62,7 @@ export type VCDisplayCard2Props = {
     trustedAppRegistry?: any[];
     hideIssueDate?: boolean;
     onDotsClick?: () => void;
+    customSkillsComponent?: React.ReactNode;
 };
 
 export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
@@ -95,6 +96,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     trustedAppRegistry,
     hideIssueDate,
     onDotsClick,
+    customSkillsComponent,
 }) => {
 
     const {
@@ -181,7 +183,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     return (
         <Flipper className="w-full" flipKey={isFront}>
             <Flipped flipId="card">
-                <section className="vc-display-card font-mouse flex flex-col items-center border-solid border-[5px] border-white rounded-[30px] overflow-visible z-10 min-h-[800px] max-w-[400px] relative bg-white shadow-3xl">
+                <section className="vc-display-card font-mouse flex flex-col items-center border-solid border-[5px] border-white rounded-[30px] z-10 min-h-[800px] max-w-[400px] relative bg-white shadow-3xl">
                     <RibbonEnd
                         side="left"
                         className="absolute left-[-30px] top-[50px] z-0"
@@ -222,7 +224,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                     )}
 
                     <div
-                        className="relative pt-[114px] vc-card-content-container flex flex-col items-center grow basis-0 min-h-0 h-full w-full rounded-t-[30px] bg-[#353E64] rounded-b-[200px]"
+                        className="relative pt-[114px] vc-card-content-container flex flex-col items-center grow min-h-0 w-full rounded-t-[30px] bg-[#353E64] rounded-b-[200px]"
                         style={backgroundStyle}
                     >
                         {/* 
@@ -230,7 +232,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                     that has a rounded bottom at the bottom of the scrollable content 
                 */}
                         <Flipped flipId="scroll-container">
-                            <div className="vc-card-content-scroll-container w-full pt-[20px] min-h-full flex flex-col justify-start items-center rounded-t-[30px] rounded-b-[200px] overflow-y-auto scrollbar-hide pb-[50px]">
+                            <div className="vc-card-content-scroll-container w-full pt-[20px] min-h-full flex flex-col justify-start items-center rounded-t-[30px] rounded-b-[200px] scrollbar-hide pb-[50px]">
                                 {isFront && (
                                     <Flipped flipId="face">
                                         <VC2FrontFaceInfo
@@ -265,11 +267,17 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                                                 customIssueHistoryComponent
                                             }
                                             enableLightbox={enableLightbox}
+                                            customSkillsComponent={customSkillsComponent}
                                         />
                                     </Flipped>
                                 )}
 
-                                <VCDisplayCardSkillsCount skills={credential?.skills} />
+                                {isFront && (
+                                    <VCDisplayCardSkillsCount
+                                        skills={credential?.skills}
+                                        onClick={() => setIsFront(!isFront)}
+                                    />
+                                )}
 
                                 {isFront && customFrontButton}
                                 {isFront && !customFrontButton && (

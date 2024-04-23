@@ -11,11 +11,13 @@ import VerificationsBox from './VerificationsBox';
 import AlignmentsBox from './AlignmentsBox';
 import TruncateTextBox from './TruncateTextBox';
 import MediaAttachmentsBox from './MediaAttachmentsBox';
+import SkillsBox from '../VCDisplayCard2/SkillsBox';
 
 type CertificateBackFaceProps = {
     credential: VC | BoostAchievementCredential;
     categoryType?: LCCategoryEnum;
     verificationItems: VerificationItem[];
+    customSkillsComponent?: React.ReactNode;
 
     getFileMetadata?: (url: string) => MediaMetadata;
     getVideoMetadata?: (url: string) => VideoMetadata;
@@ -27,6 +29,7 @@ const CertificateBackFace: React.FC<CertificateBackFaceProps> = ({
     credential,
     categoryType,
     verificationItems,
+    customSkillsComponent,
 
     getFileMetadata,
     getVideoMetadata,
@@ -70,6 +73,13 @@ const CertificateBackFace: React.FC<CertificateBackFaceProps> = ({
             </TruncateTextBox>
 
             {criteria && <TruncateTextBox headerText="Criteria" text={criteria} />}
+
+            {(credential.skills?.length ?? 0) > 0 &&
+                (customSkillsComponent ? (
+                    customSkillsComponent
+                ) : (
+                    <SkillsBox skills={credential.skills ?? []} />
+                ))}
 
             {credential.attachments && credential.attachments.length > 0 && (
                 <MediaAttachmentsBox

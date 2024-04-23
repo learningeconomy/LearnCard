@@ -1,12 +1,11 @@
 {
     "name": "@learncard/learn-cloud-service",
-    "version": "1.3.14",
+    "version": "2.0.0",
     "description": "",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "scripts": {
-        "test": "jest -i",
-        "test:watch": "jest -i --watch",
+        "test": "vitest",
         "build": "shx rm -rf dist && node esbuild.mjs && tsc --p tsconfig.build.json",
         "start": "PORT=3000 serverless offline --httpPort 3000 --websocketPort 3001 --lambdaPort 3002 --albPort 3003",
         "start-p-4000": "PORT=4000 serverless offline --httpPort 4000 --websocketPort 4001 --lambdaPort 4002 --albPort 4003",

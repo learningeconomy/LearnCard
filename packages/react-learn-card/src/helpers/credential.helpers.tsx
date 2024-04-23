@@ -170,6 +170,41 @@ export const getCategoryIcon = (category = LCCategoryEnum.achievement) => {
     }
 };
 
+export const categorizeSkills = (skills: any) => {
+    let categorizedSkills = skills.reduce((acc, obj) => {
+        // If the category doesn't exist in the accumulator, create a new array for it
+        if (!acc[obj.category]) {
+            acc[obj.category] = [];
+            acc[obj.category].totalSkills = 0; // Initialize totalSkills count
+            acc[obj.category].totalSubskills = 0; // Initialize totalSubskills count
+        }
+
+        // Check if the skill already exists for this category
+        let existingSkill = acc[obj.category].find(skill => skill.skill === obj.skill);
+        if (existingSkill) {
+            // Update the existing object's subskills
+            existingSkill.subskills = [
+                ...new Set(existingSkill?.subskills?.concat(obj?.subskills)),
+            ];
+        } else {
+            // Add a new object to the array for this category
+            acc[obj.category].push(obj);
+            acc[obj.category].totalSkills++; // Increment totalSkills count
+        }
+
+        // Calculate total subskills count for this category
+        let totalSubskillsCount = acc[obj.category].reduce(
+            (total, skill) => total + (skill?.subskills?.length ?? 0),
+            0
+        );
+        acc[obj.category].totalSubskillsCount = totalSubskillsCount;
+
+        return acc;
+    }, {});
+
+    return categorizedSkills;
+};
+
 export const getTotalCountOfSkills = (
     skills: { skill: string; category: string; subSkills: string[] }[]
 ) => {

@@ -1,5 +1,13 @@
 # learn-card-core
 
+## 1.7.4
+
+### Patch Changes
+
+-   Updated dependencies [[`be01a1a`](https://github.com/learningeconomy/LearnCard/commit/be01a1a3d1b5dde523b1dcfb5be2a2452f26f7a7)]:
+    -   @learncard/core@9.2.0
+    -   @learncard/network-brain-client@1.2.24
+
 ## 1.7.3
 
 ### Patch Changes

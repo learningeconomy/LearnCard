@@ -1,12 +1,14 @@
-import dotenv from 'dotenv';
+declare module 'vitest' {
+    export interface ProvidedContext {
+        'mongo-uri': string;
+    }
+}
+
 import { MongoClient } from 'mongodb';
+import { inject } from 'vitest';
 
-dotenv.config();
-
-const uri = process.env.__MONGO_URI__ || process.env.LEARN_CLOUD_MONGO_URI;
-const dbName = process.env.__MONGO_DB_NAME__ || process.env.LEARN_CLOUD_MONGO_DB_NAME;
-
-if (!uri) throw new Error('No Mongo URI set!');
+const uri = inject('mongo-uri');
+const dbName = 'test';
 
 export const client = new MongoClient(uri, {
     connectTimeoutMS: 180_000,

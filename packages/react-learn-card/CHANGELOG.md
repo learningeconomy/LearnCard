@@ -1,5 +1,30 @@
 # @welibraryos/react-learn-card
 
+## 2.6.62
+
+### Patch Changes
+
+-   [#435](https://github.com/learningeconomy/LearnCard/pull/435) [`74faabb`](https://github.com/learningeconomy/LearnCard/commit/74faabbc1730ef6655ea35266066c5d52b8649d3) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Easier to see skills count and the scrolling thing is reverted
+
+## 2.6.61
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.19
+
+## 2.6.60
+
+### Patch Changes
+
+-   [#431](https://github.com/learningeconomy/LearnCard/pull/431) [`6a68eab`](https://github.com/learningeconomy/LearnCard/commit/6a68eabb4abc6c8196af8f154515f85114ee14e5) Thanks [@gerardopar](https://github.com/gerardopar)! - Add Skills widget to certificate view
+
+## 2.6.59
+
+### Patch Changes
+
+-   [#429](https://github.com/learningeconomy/LearnCard/pull/429) [`1649dac`](https://github.com/learningeconomy/LearnCard/commit/1649dace725a5b2515fe825e53c96d8ec4d76b6a) Thanks [@gerardopar](https://github.com/gerardopar)! - Display skills widget
+
 ## 2.6.58
 
 ### Patch Changes

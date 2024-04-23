@@ -3,6 +3,7 @@ import { z } from 'zod';
 export const PaginationOptionsValidator = z.object({
     limit: z.number(),
     cursor: z.string().optional(),
+    sort: z.string().optional(),
 });
 export type PaginationOptionsType = z.infer<typeof PaginationOptionsValidator>;
 
