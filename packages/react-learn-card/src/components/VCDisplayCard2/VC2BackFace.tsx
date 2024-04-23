@@ -7,6 +7,7 @@ import SkillsBox from './SkillsBox';
 import IssueHistoryBox from './IssueHistoryBox';
 import { VC, VerificationItem } from '@learncard/types';
 import VerificationsBox from './VerificationsBox';
+import AlignmentsBox from '../CertificateDisplayCard/AlignmentsBox';
 import {
     BoostAchievementCredential,
     IssueHistory,
@@ -71,6 +72,7 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
             : undefined;
     const criteria = achievement?.criteria?.narrative;
     const description = achievement?.description;
+    const alignment = credential?.credentialSubject?.achievement?.alignment;
 
     /* 
     const tags = credential.credentialSubject.achievement?.tag;
@@ -143,6 +145,8 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
             )}
             {/* {credential.notes && <TruncateTextBox headerText="Notes" text={credential.notes} />} */}
 
+            {alignment && <AlignmentsBox alignment={alignment}/>}
+            
             {verificationItems && verificationItems.length > 0 && (
                 <VerificationsBox verificationItems={verificationItems} />
             )}
