@@ -96,7 +96,6 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     hideIssueDate,
     onDotsClick,
 }) => {
-    console.log('credential', credential);
 
     const {
         title = '',
