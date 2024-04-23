@@ -145,7 +145,7 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
             )}
             {/* {credential.notes && <TruncateTextBox headerText="Notes" text={credential.notes} />} */}
 
-            {alignment && <AlignmentsBox alignment={alignment}/>}
+            {alignment && <AlignmentsBox alignment={alignment} style={"boost"} />}
             
             {verificationItems && verificationItems.length > 0 && (
                 <VerificationsBox verificationItems={verificationItems} />

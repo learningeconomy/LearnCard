@@ -5,10 +5,11 @@ import InfoIcon from '../svgs/InfoIcon';
 import InfoBox from './InfoBox';
 
 type AlignmentsBoxProps = {
-    alignment: any 
+    alignment: any
+    style: string 
 };
 
-const AlignmentsBox:React.FC<AlignmentsBoxProps> = ({ alignment }) => {
+const AlignmentsBox:React.FC<AlignmentsBoxProps> = ({ alignment, style }) => {
     const [showInfo, setShowInfo] = useState(false);
     const alignmentText = `
     Alignments in your Open Badge credential link your achievement to established frameworks, standards, or competencies. 
@@ -35,7 +36,7 @@ const AlignmentsBox:React.FC<AlignmentsBoxProps> = ({ alignment }) => {
     return (
         <div className="bg-white flex flex-col items-start gap-[10px] rounded-[20px] shadow-bottom p-[15px] w-full">
             <div className="flex w-full items-center">
-                <h3 className="text-[17px] text-grayscale-900 font-poppins">Alignments</h3>
+                <h3 className={style === "Certificate" ? "text-[17px] text-grayscale-900 font-poppins" : "text-[22px] font-mouse"}>Alignments</h3>
                 <button className="ml-auto" onClick={() => setShowInfo(!showInfo)}>
                     <InfoIcon color={showInfo ? '#6366F1' : undefined} />
                 </button>
