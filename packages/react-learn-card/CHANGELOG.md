@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.6.63
+
+### Patch Changes
+
+-   [#439](https://github.com/learningeconomy/LearnCard/pull/439) [`283ef624`](https://github.com/learningeconomy/LearnCard/commit/283ef624cb4b1df03174d73985394a0c1f6b9be2) Thanks [@rhen92](https://github.com/rhen92)! - [LC-164] - Add credential engine support to LCA
+
 ## 2.6.62
 
 ### Patch Changes
