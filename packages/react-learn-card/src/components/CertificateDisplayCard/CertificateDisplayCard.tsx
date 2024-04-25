@@ -31,6 +31,9 @@ type CertificateDisplayCardProps = {
 
     handleXClick?: () => void;
     onDotsClick?: () => void;
+    isFrontOverride?: boolean;
+    setIsFrontOverride?: (value: boolean) => void;
+    hideNavButtons?: boolean;
 };
 
 export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
@@ -53,15 +56,51 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
 
     handleXClick,
     onDotsClick,
+    isFrontOverride,
+    setIsFrontOverride,
+    hideNavButtons,
 }) => {
-    const [isFront, setIsFront] = useState(true);
+    const [_isFront, _setIsFront] = useState(isFrontOverride ?? true);
+
+    const isFront = isFrontOverride ?? _isFront;
+    const setIsFront = setIsFrontOverride ?? _setIsFront;
 
     return (
         <section
-            className={`w-full border-solid border-[5px] border-grayscale-200 rounded-[30px] relative min-w-[250px]  ${
-                isFront ? 'bg-white p-[13px] max-w-[300px]' : `max-w-[400px]`
-            }`}
+            className={`w-full flex justify-center relative min-w-[250px]  ${isFront ? '' : `max-w-[400px]`
+                }`}
         >
+            {!hideNavButtons && (
+                <div className="flex gap-[10px] font-mouse text-[30px] leading-[28px] tracking-[0.75px] relative top-[-10px] left-0 w-full">
+                    {!isFront && (
+                        <button
+                            className="bg-grayscale-900 text-white py-[15px] px-[20px] rounded-[20px] flex justify-center items-center gap-[5px] border-[3px] border-solid border-white"
+                            onClick={() => setIsFront(!isFront)}
+                        >
+                            <FatArrow direction="left" /> Back
+                        </button>
+                    )}
+
+                    {handleXClick && (
+                        <button
+                            onClick={handleXClick}
+                            className="bg-white text-grayscale-900 rounded-[20px] py-[15px] px-[20px] grow"
+                        >
+                            Close
+                        </button>
+                    )}
+
+                    {isFront && (
+                        <button
+                            className="bg-grayscale-900 text-white py-[15px] px-[20px] rounded-[20px] grow flex justify-center items-center gap-[5px] border-[3px] border-solid border-white"
+                            onClick={() => setIsFront(!isFront)}
+                        >
+                            Details <FatArrow direction="right" />
+                        </button>
+                    )}
+                </div>
+            )}
+
             {isFront && (
                 <CertificateFrontFace
                     credential={credential}
@@ -88,35 +127,6 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
                     enableLightbox={enableLightbox}
                 />
             )}
-
-            <div className="flex gap-[10px] font-mouse text-[30px] leading-[28px] tracking-[0.75px] absolute bottom-[-83px] left-0 w-full">
-                {!isFront && (
-                    <button
-                        className="bg-grayscale-900 text-white py-[15px] px-[20px] rounded-[20px] flex justify-center items-center gap-[5px] border-[3px] border-solid border-white"
-                        onClick={() => setIsFront(!isFront)}
-                    >
-                        <FatArrow direction="left" /> Back
-                    </button>
-                )}
-
-                {handleXClick && (
-                    <button
-                        onClick={handleXClick}
-                        className="bg-white text-grayscale-900 rounded-[20px] py-[15px] px-[20px] grow"
-                    >
-                        Close
-                    </button>
-                )}
-
-                {isFront && (
-                    <button
-                        className="bg-grayscale-900 text-white py-[15px] px-[20px] rounded-[20px] grow flex justify-center items-center gap-[5px] border-[3px] border-solid border-white"
-                        onClick={() => setIsFront(!isFront)}
-                    >
-                        Details <FatArrow direction="right" />
-                    </button>
-                )}
-            </div>
 
             {onDotsClick && (
                 <button

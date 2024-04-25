@@ -12,6 +12,7 @@
     "scripts": {
         "generate-barrels": "barrelsby -D -e \".*\\.(stories)|(test)|(\\.d\\.).*\" -d ./src/components -l all",
         "build": "pnpm generate-barrels && rollup -c",
+        "build:watch": "rollup -c -w",
         "test": "vitest",
         "test:watch": "vitest",
         "storybook": "storybook dev -p 6006",

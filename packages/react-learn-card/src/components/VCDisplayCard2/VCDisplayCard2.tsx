@@ -63,6 +63,9 @@ export type VCDisplayCard2Props = {
     hideIssueDate?: boolean;
     onDotsClick?: () => void;
     customSkillsComponent?: React.ReactNode;
+    isFrontOverride?: boolean;
+    setIsFrontOverride?: (value: boolean) => void;
+    hideNavButtons?: boolean;
 };
 
 export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
@@ -97,9 +100,10 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     hideIssueDate,
     onDotsClick,
     customSkillsComponent,
+    isFrontOverride,
+    setIsFrontOverride,
+    hideNavButtons,
 }) => {
-    console.log('credential', credential);
-
     const {
         title = '',
         createdAt,
@@ -110,7 +114,10 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     const issuee = issueeOverride || _issuee;
     const issuer = issuerOverride || _issuer;
 
-    const [isFront, setIsFront] = useState(true);
+    const [_isFront, _setIsFront] = useState(isFrontOverride ?? true);
+    const isFront = isFrontOverride ?? _isFront;
+    const setIsFront = setIsFrontOverride ?? _setIsFront;
+
     const [headerHeight, setHeaderHeight] = useState(100); // 79 is the height if the header is one line
     const [headerWidth, setHeaderWidth] = useState(0);
 
@@ -177,6 +184,9 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 customBodyCardComponent={customBodyCardComponent}
                 hideIssueDate={hideIssueDate}
                 onDotsClick={onDotsClick}
+                isFrontOverride={isFrontOverride}
+                setIsFrontOverride={setIsFrontOverride}
+                hideNavButtons={hideNavButtons}
             />
         );
     }
@@ -260,7 +270,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                                             getFileMetadata={getFileMetadata}
                                             getVideoMetadata={getVideoMetadata}
                                             onMediaAttachmentClick={onMediaAttachmentClick}
-                                            showBackButton={showBackButton}
+                                            showBackButton={showBackButton && !hideNavButtons}
                                             showFrontFace={() => setIsFront(true)}
                                             customDescription={customDescription}
                                             customCriteria={customCriteria}
@@ -280,31 +290,35 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                                     />
                                 )}
 
-                                {isFront && customFrontButton}
-                                {isFront && !customFrontButton && (
-                                    <Flipped flipId="details-back-button">
-                                        <button
-                                            type="button"
-                                            className="vc-toggle-side-button text-white shadow-bottom bg-[#00000099] px-[30px] py-[8px] rounded-[40px] text-[28px] tracking-[0.75px] uppercase leading-[28px] mt-[40px] w-fit select-none"
-                                            onClick={() => setIsFront(!isFront)}
-                                        >
-                                            Details
-                                        </button>
-                                    </Flipped>
-                                )}
-                                {!isFront && (
-                                    <Flipped flipId="details-back-button">
-                                        <button
-                                            type="button"
-                                            className="vc-toggle-side-button text-white shadow-bottom bg-[#00000099] px-[30px] py-[8px] rounded-[40px] text-[28px] tracking-[0.75px] uppercase leading-[28px] mt-[40px] w-fit select-none"
-                                            onClick={() => setIsFront(!isFront)}
-                                        >
-                                            <span className="flex gap-[10px] items-center">
-                                                <LeftArrow />
-                                                Back
-                                            </span>
-                                        </button>
-                                    </Flipped>
+                                {!hideNavButtons && (
+                                    <>
+                                        {isFront && customFrontButton}
+                                        {isFront && !customFrontButton && (
+                                            <Flipped flipId="details-back-button">
+                                                <button
+                                                    type="button"
+                                                    className="vc-toggle-side-button text-white shadow-bottom bg-[#00000099] px-[30px] py-[8px] rounded-[40px] text-[28px] tracking-[0.75px] uppercase leading-[28px] mt-[40px] w-fit select-none"
+                                                    onClick={() => setIsFront(!isFront)}
+                                                >
+                                                    Details
+                                                </button>
+                                            </Flipped>
+                                        )}
+                                        {!isFront && (
+                                            <Flipped flipId="details-back-button">
+                                                <button
+                                                    type="button"
+                                                    className="vc-toggle-side-button text-white shadow-bottom bg-[#00000099] px-[30px] py-[8px] rounded-[40px] text-[28px] tracking-[0.75px] uppercase leading-[28px] mt-[40px] w-fit select-none"
+                                                    onClick={() => setIsFront(!isFront)}
+                                                >
+                                                    <span className="flex gap-[10px] items-center">
+                                                        <LeftArrow />
+                                                        Back
+                                                    </span>
+                                                </button>
+                                            </Flipped>
+                                        )}
+                                    </>
                                 )}
                             </div>
                         </Flipped>
