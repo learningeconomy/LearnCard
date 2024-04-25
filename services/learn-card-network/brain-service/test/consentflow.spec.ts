@@ -896,6 +896,9 @@ describe('Consent Flow Contracts', () => {
         let termsUri: string;
 
         beforeEach(async () => {
+            vi.useFakeTimers();
+            vi.setSystemTime(new Date(2024, 3, 21));
+
             await Profile.delete({ detach: true, where: {} });
             await ConsentFlowContract.delete({ detach: true, where: {} });
             await ConsentFlowTerms.delete({ detach: true, where: {} });
@@ -906,12 +909,16 @@ describe('Consent Flow Contracts', () => {
             contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract({
                 contract: minimalContract,
                 name: 'a',
-                expiresAt: new Date(Date.UTC(2024, 3, 19)).toISOString(), // Set explicit expiration
+                expiresAt: new Date(Date.UTC(2024, 3, 25)).toISOString(), // Set explicit expiration
             });
             termsUri = await userB.clients.fullAuth.contracts.consentToContract({
                 contractUri,
                 terms: minimalTerms,
             });
+        });
+
+        afterAll(async () => {
+            vi.useRealTimers();
         });
 
         afterAll(async () => {
@@ -973,9 +980,6 @@ describe('Consent Flow Contracts', () => {
         });
 
         it('should stop verifying when contract expires', async () => {
-            vi.useFakeTimers();
-            vi.setSystemTime(new Date(2024, 3, 21));
-
             const newContractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract(
                 {
                     contract: minimalContract,
@@ -1004,14 +1008,9 @@ describe('Consent Flow Contracts', () => {
                     profileId: 'userb',
                 })
             ).toBeFalsy();
-
-            vi.useRealTimers();
         });
 
         it('should stop verifying when terms expire', async () => {
-            vi.useFakeTimers();
-            vi.setSystemTime(new Date(2024, 3, 21));
-
             const newContractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract(
                 { contract: minimalContract, name: 'b' }
             );
@@ -1037,8 +1036,6 @@ describe('Consent Flow Contracts', () => {
                     profileId: 'userb',
                 })
             ).toBeFalsy();
-
-            vi.useRealTimers();
         });
     });
 });
