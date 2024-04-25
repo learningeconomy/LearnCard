@@ -8,6 +8,7 @@ import {
     VideoMetadata,
 } from '../../types';
 import VerificationsBox from './VerificationsBox';
+import AlignmentsBox from './AlignmentsBox';
 import TruncateTextBox from './TruncateTextBox';
 import MediaAttachmentsBox from './MediaAttachmentsBox';
 import SkillsBox from '../VCDisplayCard2/SkillsBox';
@@ -41,6 +42,7 @@ const CertificateBackFace: React.FC<CertificateBackFaceProps> = ({
 
     const { description } = credentialSubject?.achievement ?? {};
     const criteria = credentialSubject?.achievement?.criteria?.narrative;
+    const alignment = credentialSubject?.achievement?.alignment;
 
     const credentialDarkColor = getCategoryDarkColor(categoryType);
 
@@ -88,6 +90,8 @@ const CertificateBackFace: React.FC<CertificateBackFaceProps> = ({
                     enableLightbox={enableLightbox}
                 />
             )}
+            
+            {alignment && <AlignmentsBox alignment={alignment} style="Certificate" />}
 
             {verificationItems && verificationItems.length > 0 && (
                 <VerificationsBox verificationItems={verificationItems} />
