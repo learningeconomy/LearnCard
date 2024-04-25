@@ -91,7 +91,7 @@ const CertificateBackFace: React.FC<CertificateBackFaceProps> = ({
                 />
             )}
             
-            {alignment && <AlignmentsBox alignment={alignment} style={"Certificate"} />}
+            {alignment && <AlignmentsBox alignment={alignment} style="Certificate" />}
 
             {verificationItems && verificationItems.length > 0 && (
                 <VerificationsBox verificationItems={verificationItems} />

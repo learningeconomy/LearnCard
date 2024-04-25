@@ -4,9 +4,15 @@ import AlignmentRow from './AlignmentRow';
 import InfoIcon from '../svgs/InfoIcon';
 import InfoBox from './InfoBox';
 
+type Alignment = {
+    targetUrl: string;
+    targetName: string;
+    targetFramework: string;
+}
+
 type AlignmentsBoxProps = {
-    alignment: any
-    style: string 
+    alignment: Alignment | Alignment[];
+    style: 'Certificate' | 'boost'; 
 };
 
 const AlignmentsBox:React.FC<AlignmentsBoxProps> = ({ alignment, style }) => {
