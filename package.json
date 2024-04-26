@@ -29,7 +29,7 @@
         "vitest": "^1.4.0"
     },
     "dependencies": {
-        "typescript": "^5.0.4"
+        "typescript": "5.0.4"
     },
     "pnpm": {
         "overrides": {
