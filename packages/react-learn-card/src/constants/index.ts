@@ -6,10 +6,10 @@ import achievementsGraphic from '../assets/images/walletTrophy.svg';
 import socialBadge from '../assets/images/social-badge-2.svg';
 import experienceMountain from '../assets/images/experience-mountain.svg';
 import goalsTarget from '../assets/images/goals-target.svg';
-import ladder from '../assets/images/ladder.svg';
+import apple from '../assets/images/apple.png';
 import relationshipCats from '../assets/images/relationships-cats.svg';
 import membershipKey from '../assets/images/membership-key.svg';
-import accommodationHands from '../assets/images/accommodation-hands.svg';
+import accommodationHands from '../assets/images/Accommodation-Hands.png';
 import eventsGraphic from '../assets/images/eventsGraphic.svg';
 
 import MiniTrophyIcon from '../assets/images/minitrophycolored.svg';
@@ -28,7 +28,7 @@ export const TYPE_TO_MINI_ICON: any = {
 // todo - memberships, goals
 // deprecated - ids, currency
 export const TYPE_TO_IMG_SRC = {
-    [WalletCategoryTypes.learningHistory]: ladder,
+    [WalletCategoryTypes.learningHistory]: apple,
     [WalletCategoryTypes.socialBadge]: socialBadge,
     [WalletCategoryTypes.achievements]: achievementsGraphic,
     [WalletCategoryTypes.accomplishments]: learningHistoryGraphic,

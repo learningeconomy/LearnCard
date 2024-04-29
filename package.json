@@ -1,7 +1,7 @@
 {
     "name": "learncard-monorepo",
     "private": true,
-    "version": "1.0.0",
+    "version": "1.0.1",
     "scripts": {
         "preinstall": "npx only-allow pnpm"
     },
@@ -29,7 +29,7 @@
         "vitest": "^1.4.0"
     },
     "dependencies": {
-        "typescript": "^5.0.4"
+        "typescript": "5.0.4"
     },
     "pnpm": {
         "overrides": {

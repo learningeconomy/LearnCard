@@ -44,7 +44,7 @@ type CertificateFrontFaceProps = {
     handleViewBackFace?: () => void;
 };
 
-const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
+export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
     credential,
     categoryType,
     issuerOverride,
@@ -127,7 +127,7 @@ const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
     const issueeImageExists = issueeImage || subjectImageComponent;
 
     return (
-        <>
+        <section className="relative p-[13px] mt-[55px] bg-white border-[5px] rounded-[30px] border-soid border-grayscale-200 max-w-[300px]">
             <div className="w-[calc(100%-26px)] absolute top-[-52px]">
                 <CertificateImageDisplay
                     imageUrl={imageUrl ?? ''}
@@ -137,9 +137,8 @@ const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
             </div>
 
             <div
-                className={`flex flex-col gap-[15px] items-center px-[20px] pt-[55px] ${
-                    isSelfVerified ? 'pb-[20px]' : 'pb-[77px]'
-                } border-solid border-[4px] ${borderColor} rounded-[30px]`}
+                className={`flex flex-col gap-[15px] items-center px-[20px] pt-[55px] ${isSelfVerified ? 'pb-[20px]' : 'pb-[77px]'
+                    } border-solid border-[4px] ${borderColor} rounded-[30px]`}
             >
                 <div className="flex flex-col gap-[5px] items-center">
                     <div className={`${textLightColor} uppercase text-[14px] font-poppins`}>
@@ -241,7 +240,7 @@ const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
 
             {/* so that tailwind will put these colors in the css */}
             <span className="hidden border-rose-500 text-spice-500 border-spice-500 border-cyan-500 text-cyan-500 border-indigo-500"></span>
-        </>
+        </section>
     );
 };
 
