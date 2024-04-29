@@ -14,7 +14,6 @@ export default defineConfig({
             exclude: [],
             esbuildOptions: {
                 define: { global: 'globalThis' },
-                plugins: [GlobalPolyfill({ process: true, buffer: true })],
             },
         },
         resolve: { alias: stdlibbrowser },
