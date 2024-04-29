@@ -6,7 +6,6 @@
     "bin": "dist/index.js",
     "scripts": {
         "preinstall": "npx only-allow pnpm",
-        "prebuild": "npx pnpm install -r --store=node_modules/.pnpm-store || echo skipping pnpm install",
         "start": "rollup -c & pm2-runtime dist/index.js",
         "build": "rollup -c"
     },
