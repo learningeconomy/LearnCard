@@ -1,5 +1,13 @@
 # @welibraryos/react-learn-card
 
+## 2.6.64
+
+### Patch Changes
+
+-   [#441](https://github.com/learningeconomy/LearnCard/pull/441) [`49cfc5e2`](https://github.com/learningeconomy/LearnCard/commit/49cfc5e2b33ef553511e90b305a6420a5b31f524) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Update Icons
+
+-   [#441](https://github.com/learningeconomy/LearnCard/pull/441) [`49cfc5e2`](https://github.com/learningeconomy/LearnCard/commit/49cfc5e2b33ef553511e90b305a6420a5b31f524) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Allow hiding/overriding nav buttons in VCCard2
+
 ## 2.6.63
 
 ### Patch Changes
