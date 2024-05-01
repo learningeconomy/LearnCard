@@ -179,16 +179,9 @@ export const VCIDDisplayCard: React.FC<VCIDDisplayCardProps> = ({
                                 {isFront && (
                                     <Flipped flipId="face">
                                         <VCIDDisplayFrontFace
-                                            issuee={issuee}
-                                            subjectDID={subjectDID}
-                                            issuer={issuer}
-                                            title={title}
-                                            subjectImageComponent={subjectImageComponent}
-                                            issuerImageComponent={issuerImageComponent}
-                                            customBodyCardComponent={customBodyCardComponent}
                                             customThumbComponent={customThumbComponent}
-                                            createdAt={createdAt ?? ''}
-                                            imageUrl={imageUrl}
+                                            credential={credential}
+                                            trustedAppRegistry={trustedAppRegistry}
                                         />
                                     </Flipped>
                                 )}
