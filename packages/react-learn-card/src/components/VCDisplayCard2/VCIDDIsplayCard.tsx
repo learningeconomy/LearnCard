@@ -11,7 +11,6 @@ import LeftArrow from '../svgs/LeftArrow';
 import RoundedX from '../svgs/RoundedX';
 import VCDisplayCardCategoryType from './VCDisplayCardCategoryType';
 import VCDisplayCardSkillsCount from './VCDisplayCardSkillsCount';
-import VCIDDisplayCard from './VCIDDIsplayCard';
 
 import { Profile, VC, VerificationItem, VerificationStatusEnum } from '@learncard/types';
 import {
@@ -26,13 +25,10 @@ import {
     VideoMetadata,
 } from '../../types';
 import { CertificateDisplayCard } from '../CertificateDisplayCard';
+import VCIDDisplayFrontFace from './VCIDDisplayFrontFace';
+import { CredentialIconType } from './VCDisplayCard2';
 
-export type CredentialIconType = {
-    image?: React.ReactNode;
-    color?: string;
-};
-
-export type VCDisplayCard2Props = {
+export type VCIDDisplayCardProps = {
     categoryType?: LCCategoryEnum;
     credential: VC | BoostAchievementCredential;
     verificationItems: VerificationItem[];
@@ -69,7 +65,7 @@ export type VCDisplayCard2Props = {
     hideNavButtons?: boolean;
 };
 
-export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
+export const VCIDDisplayCard: React.FC<VCIDDisplayCardProps> = ({
     categoryType,
     credential,
     verificationItems,
@@ -166,127 +162,23 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
 
     const _title = titleOverride || title;
 
-    if (credential?.display?.displayType === 'certificate') {
-        return (
-            <CertificateDisplayCard
-                credential={credential}
-                categoryType={categoryType}
-                issueeOverride={issuee}
-                issuerOverride={issuer}
-                verificationItems={verificationItems}
-                getFileMetadata={getFileMetadata}
-                getVideoMetadata={getVideoMetadata}
-                onMediaAttachmentClick={onMediaAttachmentClick}
-                enableLightbox={enableLightbox}
-                trustedAppRegistry={trustedAppRegistry}
-                handleXClick={handleXClick}
-                subjectImageComponent={subjectImageComponent}
-                issuerImageComponent={issuerImageComponent}
-                customBodyCardComponent={customBodyCardComponent}
-                hideIssueDate={hideIssueDate}
-                onDotsClick={onDotsClick}
-                isFrontOverride={isFrontOverride}
-                setIsFrontOverride={setIsFrontOverride}
-                hideNavButtons={hideNavButtons}
-            />
-        );
-    } else if (credential?.display?.displayType === 'id' || categoryType === 'ID') {
-        return (
-            <VCIDDisplayCard
-                categoryType={categoryType}
-                credential={credential}
-                verificationItems={verificationItems}
-                issueeOverride={issueeOverride}
-                issuerOverride={issuerOverride}
-                subjectDID={subjectDID}
-                subjectImageComponent={subjectImageComponent}
-                issuerImageComponent={issuerImageComponent}
-                verificationInProgress={verificationInProgress}
-                // convertTagsToSkills={    // convertTagsToSkills}
-                handleXClick={handleXClick}
-                getFileMetadata={getFileMetadata}
-                getVideoMetadata={getVideoMetadata}
-                onMediaAttachmentClick={onMediaAttachmentClick}
-                bottomRightIcon={bottomRightIcon}
-                customFooterComponent={customFooterComponent}
-                customBodyCardComponent={customBodyCardComponent}
-                customThumbComponent={customThumbComponent}
-                customCriteria={customCriteria}
-                customDescription={customDescription}
-                customIssueHistoryComponent={customIssueHistoryComponent}
-                issueHistory={issueHistory}
-                titleOverride={titleOverride}
-                showBackButton={showBackButton}
-                enableLightbox={enableLightbox}
-                customRibbonCategoryComponent={customRibbonCategoryComponent}
-                customFrontButton={customFrontButton}
-                trustedAppRegistry={trustedAppRegistry}
-                hideIssueDate={hideIssueDate}
-                onDotsClick={onDotsClick}
-                customSkillsComponent={customSkillsComponent}
-                isFrontOverride={isFrontOverride}
-                setIsFrontOverride={setIsFrontOverride}
-                hideNavButtons={hideNavButtons}
-            />
-        );
-    }
-
     return (
         <Flipper className="w-full" flipKey={isFront}>
             <Flipped flipId="card">
-                <section className="vc-display-card font-mouse flex flex-col items-center border-solid border-[5px] border-white rounded-[30px] z-10 min-h-[800px] max-w-[400px] relative bg-white shadow-3xl">
-                    <RibbonEnd
-                        side="left"
-                        className="absolute left-[-30px] top-[50px] z-0"
-                        height={'100'}
-                    />
-                    <RibbonEnd
-                        side="right"
-                        className="absolute right-[-30px] top-[50px] z-0"
-                        height={'100'}
-                    />
-
-                    <h1
-                        ref={headerRef}
-                        className="vc-card-header px-[20px] pb-[10px] pt-[3px] overflow-visible mt-[40px] absolute text-center bg-white border-y-[5px] border-[#EEF2FF] shadow-bottom w-[calc(100%_+_16px)] rounded-t-[8px] z-50"
-                        style={{ wordBreak: 'break-word' }}
-                    >
-                        {customRibbonCategoryComponent && customRibbonCategoryComponent}
-                        {!customRibbonCategoryComponent && (
-                            <VCDisplayCardCategoryType categoryType={categoryType} />
-                        )}
-
-                        <FitText
-                            text={_title ?? ''}
-                            maxFontSize={32}
-                            minFontSize={20}
-                            width={((headerWidth ?? 290) - 40).toString()}
-                            className="vc-card-header-main-title text-[#18224E] leading-[100%] text-shadow text-[32px]"
-                        />
-                    </h1>
-
-                    {isFront && handleXClick && (
-                        <button
-                            className="vc-card-x-button absolute top-[-25px] bg-white rounded-full h-[50px] w-[50px] flex items-center justify-center z-50"
-                            onClick={handleXClick}
-                        >
-                            <RoundedX />
-                        </button>
-                    )}
-
+                <section
+                    className={`vc-display-card font-mouse flex flex-col items-center border-solid border-white rounded-[30px] z-10 max-w-[400px] relative bg-white shadow-3xl ${
+                        isFront ? '' : 'min-h-[800px]'
+                    }`}
+                >
                     <div
-                        className="relative pt-[114px] vc-card-content-container flex flex-col items-center grow min-h-0 w-full rounded-t-[30px] bg-[#353E64] rounded-b-[200px]"
+                        className="relative vc-card-content-container flex flex-col items-center grow min-h-0 w-full rounded-t-[30px] rounded-b-[30px] bg-yellow-300 overflow-hidden"
                         style={backgroundStyle}
                     >
-                        {/* 
-                    div in a div here so that we can have an outer scroll container with an inner container
-                    that has a rounded bottom at the bottom of the scrollable content 
-                */}
                         <Flipped flipId="scroll-container">
-                            <div className="vc-card-content-scroll-container w-full pt-[20px] min-h-full flex flex-col justify-start items-center rounded-t-[30px] rounded-b-[200px] scrollbar-hide pb-[50px]">
+                            <div className="vc-card-content-scroll-container w-full min-h-full flex flex-col justify-start items-center rounded-t-[30px] rounded-b-[30px]  scrollbar-hide pt-[20px]">
                                 {isFront && (
                                     <Flipped flipId="face">
-                                        <VC2FrontFaceInfo
+                                        <VCIDDisplayFrontFace
                                             issuee={issuee}
                                             subjectDID={subjectDID}
                                             issuer={issuer}
@@ -323,13 +215,6 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                                     </Flipped>
                                 )}
 
-                                {isFront && (
-                                    <VCDisplayCardSkillsCount
-                                        skills={credential?.skills}
-                                        onClick={() => setIsFront(!isFront)}
-                                    />
-                                )}
-
                                 {!hideNavButtons && (
                                     <>
                                         {isFront && customFrontButton}
@@ -363,41 +248,10 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                             </div>
                         </Flipped>
                     </div>
-                    <footer className="vc-card-footer w-full flex justify-between p-[5px] mt-[5px]">
-                        {customFooterComponent && customFooterComponent}
-                        {!customFooterComponent && (
-                            <>
-                                {worstVerificationStatus === VerificationStatusEnum.Failed ? (
-                                    <div className="w-[40px]" role="presentation" />
-                                ) : (
-                                    <VCVerificationCheckWithSpinner
-                                        spinnerSize="40px"
-                                        size={'32px'}
-                                        loading={verificationInProgress}
-                                    />
-                                )}
-                                <div className="vc-footer-text font-montserrat flex flex-col items-center justify-center text-[12px] font-[700] leading-[15px] select-none">
-                                    <span className="text-[#4F4F4F]">Verified Credential</span>
-                                    <span
-                                        className="vc-footer-status uppercase"
-                                        style={{ color: statusColor }}
-                                    >
-                                        {worstVerificationStatus}
-                                    </span>
-                                </div>
-                                <div
-                                    className="vc-footer-icon rounded-[20px] h-[40px] w-[40px] flex items-center justify-center overflow-hidden"
-                                    style={{ backgroundColor: bottomRightIcon?.color ?? '#6366F1' }}
-                                >
-                                    {bottomRightIcon?.image ?? <AwardRibbon />}
-                                </div>
-                            </>
-                        )}
-                    </footer>
                 </section>
             </Flipped>
         </Flipper>
     );
 };
 
-export default VCDisplayCard2;
+export default VCIDDisplayCard;
