@@ -17,5 +17,7 @@ export * from "./VC2FrontFaceInfo";
 export * from "./VCDisplayCard2";
 export * from "./VCDisplayCardCategoryType";
 export * from "./VCDisplayCardSkillsCount";
+export * from "./VCIDDIsplayCard";
+export * from "./VCIDDisplayFrontFace";
 export * from "./VerificationRow";
 export * from "./VerificationsBox";

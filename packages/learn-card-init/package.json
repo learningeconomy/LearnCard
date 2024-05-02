@@ -64,12 +64,5 @@
         "@learncard/vc-plugin": "workspace:*",
         "@learncard/vc-templates-plugin": "workspace:*",
         "@learncard/vpqr-plugin": "workspace:*"
-    },
-    "pnpm": {
-        "overrides": {
-            "pvutils": "1.0.17",
-            "did-jwt": "5.9.0",
-            "uint8arrays": "^3.0.0"
-        }
     }
 }
