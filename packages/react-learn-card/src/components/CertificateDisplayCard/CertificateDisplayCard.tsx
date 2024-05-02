@@ -67,8 +67,9 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
 
     return (
         <section
-            className={`w-full flex justify-center relative min-w-[220px]  ${isFront ? '' : `max-w-[400px]`
-                }`}
+            className={`w-full flex justify-center relative min-w-[220px]  ${
+                isFront ? '' : `max-w-[400px]`
+            }`}
         >
             {!hideNavButtons && (
                 <div className="flex gap-[10px] font-mouse text-[30px] leading-[28px] tracking-[0.75px] relative top-[-10px] left-0 w-full">
