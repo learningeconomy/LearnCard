@@ -56,8 +56,8 @@ export const VCIDDisplayCard: React.FC<VCIDDisplayCardProps> = ({
     const setIsFront = setIsFrontOverride ?? _setIsFront;
 
     const backgroundStyle = {
-        backgroundColor: 'linear-gradient(180deg, rgba(255,208,71,1) 0%, rgba(234,179,8,1) 100%)',
-        backgroundImage: 'linear-gradient(180deg, rgba(255,208,71,1) 0%, rgba(234,179,8,1) 100%)',
+        backgroundColor: 'linear-gradient(180deg, rgba(139,145,167,1) 0%, rgba(24,34,78,1) 100%)',
+        backgroundImage: 'linear-gradient(180deg, rgba(139,145,167,1) 0%, rgba(24,34,78,1) 100%)',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundAttachment: 'fixed',
