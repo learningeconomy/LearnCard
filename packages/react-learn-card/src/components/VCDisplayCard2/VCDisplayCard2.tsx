@@ -191,36 +191,19 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     } else if (credential?.display?.displayType === 'id' || categoryType === 'ID') {
         return (
             <VCIDDisplayCard
-                categoryType={categoryType}
                 credential={credential}
                 verificationItems={verificationItems}
-                issueeOverride={issueeOverride}
-                issuerOverride={issuerOverride}
-                subjectDID={subjectDID}
-                subjectImageComponent={subjectImageComponent}
-                issuerImageComponent={issuerImageComponent}
-                verificationInProgress={verificationInProgress}
-                // convertTagsToSkills={    // convertTagsToSkills}
-                handleXClick={handleXClick}
                 getFileMetadata={getFileMetadata}
                 getVideoMetadata={getVideoMetadata}
                 onMediaAttachmentClick={onMediaAttachmentClick}
-                bottomRightIcon={bottomRightIcon}
-                customFooterComponent={customFooterComponent}
-                customBodyCardComponent={customBodyCardComponent}
                 customThumbComponent={customThumbComponent}
                 customCriteria={customCriteria}
                 customDescription={customDescription}
                 customIssueHistoryComponent={customIssueHistoryComponent}
                 issueHistory={issueHistory}
-                titleOverride={titleOverride}
                 showBackButton={showBackButton}
                 enableLightbox={enableLightbox}
-                customRibbonCategoryComponent={customRibbonCategoryComponent}
-                customFrontButton={customFrontButton}
                 trustedAppRegistry={trustedAppRegistry}
-                hideIssueDate={hideIssueDate}
-                onDotsClick={onDotsClick}
                 customSkillsComponent={customSkillsComponent}
                 isFrontOverride={isFrontOverride}
                 setIsFrontOverride={setIsFrontOverride}
