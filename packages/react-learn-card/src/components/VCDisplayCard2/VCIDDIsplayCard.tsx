@@ -151,10 +151,8 @@ export const VCIDDisplayCard: React.FC<VCIDDisplayCardProps> = ({
     const statusColor = getColorForVerificationStatus(worstVerificationStatus);
 
     const backgroundStyle = {
-        backgroundColor: credential?.display?.backgroundColor,
-        backgroundImage: credential?.display?.backgroundImage
-            ? `linear-gradient(to bottom, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.25)), url(${credential.display?.backgroundImage})`
-            : undefined,
+        backgroundColor: 'linear-gradient(180deg, rgba(255,208,71,1) 0%, rgba(234,179,8,1) 100%)',
+        backgroundImage: 'linear-gradient(180deg, rgba(255,208,71,1) 0%, rgba(234,179,8,1) 100%)',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundAttachment: 'fixed',
@@ -171,7 +169,7 @@ export const VCIDDisplayCard: React.FC<VCIDDisplayCardProps> = ({
                     }`}
                 >
                     <div
-                        className="relative vc-card-content-container flex flex-col items-center grow min-h-0 w-full rounded-t-[30px] rounded-b-[30px] bg-yellow-300 overflow-hidden"
+                        className="relative vc-card-content-container flex flex-col items-center grow min-h-0 w-full rounded-t-[30px] rounded-b-[30px] overflow-hidden"
                         style={backgroundStyle}
                     >
                         <Flipped flipId="scroll-container">
