@@ -1,5 +1,6 @@
 import coinsGraphic from '../assets/images/walletcurrency.webp';
 import idsGraphic from '../assets/images/walletids.webp';
+import idPurple from '../assets/images/id-purple.png';
 import learningHistoryGraphic from '../assets/images/walletlearninghistory.svg';
 import skillsGraphic from '../assets/images/walletskills.webp';
 import achievementsGraphic from '../assets/images/walletTrophy.svg';
@@ -43,7 +44,7 @@ export const TYPE_TO_IMG_SRC = {
     [WalletCategoryTypes.goals]: goalsTarget,
 
     // deprecated
-    [WalletCategoryTypes.ids]: idsGraphic,
+    [WalletCategoryTypes.ids]: idPurple,
     [WalletCategoryTypes.currency]: coinsGraphic,
 };
 
@@ -63,7 +64,7 @@ export const TYPE_TO_WALLET_COLOR = {
     [WalletCategoryTypes.goals]: 'rose-300',
 
     // deprecated
-    [WalletCategoryTypes.ids]: 'yellow-300',
+    [WalletCategoryTypes.ids]: 'teal-300',
     [WalletCategoryTypes.currency]: 'cyan-300',
 };
 
@@ -83,7 +84,7 @@ export const TYPE_TO_WALLET_LIGHT_COLOR = {
     [WalletCategoryTypes.goals]: 'rose-200',
 
     // deprecated
-    [WalletCategoryTypes.ids]: 'yellow-200',
+    [WalletCategoryTypes.ids]: 'teal-200',
     [WalletCategoryTypes.currency]: 'cyan-200',
 };
 
@@ -103,6 +104,6 @@ export const TYPE_TO_WALLET_DARK_COLOR = {
     [WalletCategoryTypes.goals]: 'rose-500',
 
     // deprecated
-    [WalletCategoryTypes.ids]: 'yellow-500',
+    [WalletCategoryTypes.ids]: 'teal-500',
     [WalletCategoryTypes.currency]: 'cyan-500',
 };
