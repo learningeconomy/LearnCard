@@ -30,6 +30,7 @@ export type VCIDDisplayCardProps = {
     isFrontOverride?: boolean;
     setIsFrontOverride?: (value: boolean) => void;
     hideNavButtons?: boolean;
+    qrCodeOnClick?: () => void;
 };
 
 export const VCIDDisplayCard: React.FC<VCIDDisplayCardProps> = ({
@@ -50,6 +51,7 @@ export const VCIDDisplayCard: React.FC<VCIDDisplayCardProps> = ({
     isFrontOverride,
     setIsFrontOverride,
     hideNavButtons,
+    qrCodeOnClick,
 }) => {
     const [_isFront, _setIsFront] = useState(isFrontOverride ?? true);
     const isFront = isFrontOverride ?? _isFront;
@@ -83,6 +85,7 @@ export const VCIDDisplayCard: React.FC<VCIDDisplayCardProps> = ({
                                             customThumbComponent={customThumbComponent}
                                             credential={credential}
                                             trustedAppRegistry={trustedAppRegistry}
+                                            qrCodeOnClick={qrCodeOnClick}
                                         />
                                     </Flipped>
                                 )}
