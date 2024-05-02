@@ -208,7 +208,7 @@ export const VCIDDisplayCard: React.FC<VCIDDisplayCardProps> = ({
                                     </Flipped>
                                 )}
 
-                                {!hideNavButtons && (
+                                {/* {!hideNavButtons && (
                                     <>
                                         {isFront && customFrontButton}
                                         {isFront && !customFrontButton && (
@@ -237,7 +237,7 @@ export const VCIDDisplayCard: React.FC<VCIDDisplayCardProps> = ({
                                             </Flipped>
                                         )}
                                     </>
-                                )}
+                                )} */}
                             </div>
                         </Flipped>
                     </div>

@@ -83,7 +83,7 @@ const VCIDDisplayFrontFace: React.FC<VCIDDisplayFrontFaceProps> = ({
                 <img src={IDSleeve} alt="id-sleeve" className="w-full object-cover" />
             </div>
 
-            <div className="w-full bg-white relative mt-[-90px] px-6 pb-4 pt-4">
+            <div className="w-full bg-white relative mt-[-70px] px-6 pb-4 pt-4">
                 {description && (
                     <>
                         <TruncateTextBox
