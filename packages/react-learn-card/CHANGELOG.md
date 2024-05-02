@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.6.66
+
+### Patch Changes
+
+-   [#445](https://github.com/learningeconomy/LearnCard/pull/445) [`14a65f2`](https://github.com/learningeconomy/LearnCard/commit/14a65f2e5b96263b3ace63eef48ece55f9b4ff9b) Thanks [@gerardopar](https://github.com/gerardopar)! - Wallet Page ID asset updates
+
 ## 2.6.65
 
 ### Patch Changes
