@@ -67,6 +67,7 @@ export type VCDisplayCard2Props = {
     isFrontOverride?: boolean;
     setIsFrontOverride?: (value: boolean) => void;
     hideNavButtons?: boolean;
+    qrCodeOnClick?: () => void; // exclusive to the ID display type
 };
 
 export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
@@ -104,6 +105,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     isFrontOverride,
     setIsFrontOverride,
     hideNavButtons,
+    qrCodeOnClick,
 }) => {
     const {
         title = '',
@@ -208,6 +210,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 isFrontOverride={isFrontOverride}
                 setIsFrontOverride={setIsFrontOverride}
                 hideNavButtons={hideNavButtons}
+                qrCodeOnClick={qrCodeOnClick}
             />
         );
     }

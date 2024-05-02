@@ -18,6 +18,7 @@ type VCIDDisplayFrontFaceProps = {
     credential: VC | BoostAchievementCredential;
     trustedAppRegistry?: any[];
     customThumbComponent?: React.ReactNode;
+    qrCodeOnClick?: () => void;
 };
 
 const VERIFIER_STATES = {
@@ -32,6 +33,7 @@ const VCIDDisplayFrontFace: React.FC<VCIDDisplayFrontFaceProps> = ({
     credential,
     trustedAppRegistry,
     customThumbComponent,
+    qrCodeOnClick,
 }) => {
     const { credentialSubject } = getInfoFromCredential(credential, 'MMM dd, yyyy', {
         uppercaseDate: false,
@@ -77,7 +79,7 @@ const VCIDDisplayFrontFace: React.FC<VCIDDisplayFrontFaceProps> = ({
             </div>
 
             <div className="w-full relative">
-                <button className="text-grayscale-900 bg-white rounded-full p-[10px] absolute top-[-10px] right-[45%]">
+                <button onClick={() => qrCodeOnClick?.()} className="text-grayscale-900 bg-white rounded-full p-[10px] absolute top-[-10px] right-[45%]">
                     <QRCodeIcon className="text-grayscale-900 " />
                 </button>
                 <img src={IDSleeve} alt="id-sleeve" className="w-full object-cover" />
