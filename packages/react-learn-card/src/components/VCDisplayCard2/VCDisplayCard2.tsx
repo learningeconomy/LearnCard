@@ -11,6 +11,7 @@ import LeftArrow from '../svgs/LeftArrow';
 import RoundedX from '../svgs/RoundedX';
 import VCDisplayCardCategoryType from './VCDisplayCardCategoryType';
 import VCDisplayCardSkillsCount from './VCDisplayCardSkillsCount';
+import VCIDDisplayCard from './VCIDDIsplayCard';
 
 import { Profile, VC, VerificationItem, VerificationStatusEnum } from '@learncard/types';
 import {
@@ -155,9 +156,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
 
     const backgroundStyle = {
         backgroundColor: credential?.display?.backgroundColor,
-        backgroundImage: credential?.display?.backgroundImage
-            ? `linear-gradient(to bottom, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.25)), url(${credential.display?.backgroundImage})`
-            : undefined,
+        backgroundImage: undefined,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundAttachment: 'fixed',
@@ -184,6 +183,28 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 customBodyCardComponent={customBodyCardComponent}
                 hideIssueDate={hideIssueDate}
                 onDotsClick={onDotsClick}
+                isFrontOverride={isFrontOverride}
+                setIsFrontOverride={setIsFrontOverride}
+                hideNavButtons={hideNavButtons}
+            />
+        );
+    } else if (credential?.display?.displayType === 'id' || categoryType === 'ID') {
+        return (
+            <VCIDDisplayCard
+                credential={credential}
+                verificationItems={verificationItems}
+                getFileMetadata={getFileMetadata}
+                getVideoMetadata={getVideoMetadata}
+                onMediaAttachmentClick={onMediaAttachmentClick}
+                customThumbComponent={customThumbComponent}
+                customCriteria={customCriteria}
+                customDescription={customDescription}
+                customIssueHistoryComponent={customIssueHistoryComponent}
+                issueHistory={issueHistory}
+                showBackButton={showBackButton}
+                enableLightbox={enableLightbox}
+                trustedAppRegistry={trustedAppRegistry}
+                customSkillsComponent={customSkillsComponent}
                 isFrontOverride={isFrontOverride}
                 setIsFrontOverride={setIsFrontOverride}
                 hideNavButtons={hideNavButtons}
