@@ -157,6 +157,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     const statusColor = getColorForVerificationStatus(worstVerificationStatus);
 
     const backgroundStyle = {
+        backgroundColor: credential?.display?.backgroundColor,
         backgroundImage: credential?.display?.backgroundImage
             ? `linear-gradient(to bottom, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.25)), url(${credential.display?.backgroundImage})`
             : undefined,
