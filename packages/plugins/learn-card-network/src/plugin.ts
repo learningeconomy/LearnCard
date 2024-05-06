@@ -129,6 +129,16 @@ export const getLearnCardNetworkPlugin = async (
 
                 return newDid;
             },
+            createManagedServiceProfile: async (_learnCard, profile) => {
+                const newDid = await client.profile.createManagedServiceProfile.mutate(profile);
+
+                return newDid;
+            },
+            getManagedServiceProfiles: async (_learnCard, options = {}) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.profile.getManagedServiceProfiles.query(options);
+            },
             updateProfile: async (_learnCard, profile) => {
                 if (!userData) throw new Error('Please make an account first!');
 
@@ -468,7 +478,7 @@ export const getLearnCardNetworkPlugin = async (
                     challenge,
                 });
             },
-            
+
             claimBoostWithLink: async (_learnCard, boostUri, challenge) => {
                 if (!userData) throw new Error('Please make an account first!');
 

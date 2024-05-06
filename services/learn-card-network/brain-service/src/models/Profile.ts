@@ -14,6 +14,7 @@ export type ProfileRelationships = {
     connectionRequested: ModelRelatedNodesI<typeof Profile, ProfileInstance>;
     connectedWith: ModelRelatedNodesI<typeof Profile, ProfileInstance>;
     blocked: ModelRelatedNodesI<typeof Profile, ProfileInstance>;
+    managedBy: ModelRelatedNodesI<typeof Profile, ProfileInstance>;
     adminOf: ModelRelatedNodesI<typeof Boost, BoostInstance>;
     credentialSent: ModelRelatedNodesI<
         typeof Credential,
@@ -62,6 +63,7 @@ export const Profile = ModelFactory<ProfileType, ProfileRelationships>(
             connectionRequested: { model: 'self', direction: 'out', name: 'CONNECTION_REQUESTED' },
             connectedWith: { model: 'self', direction: 'out', name: 'CONNECTED_WITH' },
             blocked: { model: 'self', direction: 'out', name: 'BLOCKED' },
+            managedBy: { model: 'self', direction: 'out', name: 'MANAGED_BY' },
             credentialSent: {
                 model: Credential,
                 direction: 'out',
