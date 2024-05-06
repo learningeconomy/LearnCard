@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.6.67
+
+### Patch Changes
+
+-   [#447](https://github.com/learningeconomy/LearnCard/pull/447) [`c0aa883`](https://github.com/learningeconomy/LearnCard/commit/c0aa883df0d94dd6bc1225b34386516158dafae1) Thanks [@gerardopar](https://github.com/gerardopar)! - Revert background changes for normal boost types
+
 ## 2.6.66
 
 ### Patch Changes
