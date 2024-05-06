@@ -43,11 +43,15 @@ export const Profile = ModelFactory<ProfileType, ProfileRelationships>(
         schema: {
             profileId: { type: 'string', required: true, uniqueItems: true },
             displayName: { type: 'string', required: false },
+            shortBio: { type: 'string', required: false },
             bio: { type: 'string', required: false },
             did: { type: 'string', required: true, uniqueItems: true },
             email: { type: 'string', required: false, uniqueItems: true },
             image: { type: 'string', required: false },
+            heroImage: { type: 'string', required: false },
+            websiteLink: { type: 'string', required: false },
             isServiceProfile: { type: 'boolean', required: false },
+            type: { type: 'string', required: false },
             notificationsWebhook: {
                 type: 'string',
                 required: false,

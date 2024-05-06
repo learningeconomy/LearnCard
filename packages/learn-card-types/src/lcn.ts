@@ -5,11 +5,15 @@ import { PaginationResponseValidator } from './mongo';
 export const LCNProfileValidator = z.object({
     profileId: z.string().min(3).max(40),
     displayName: z.string().default(''),
+    shortBio: z.string().default(''),
     bio: z.string().default(''),
     did: z.string(),
     email: z.string().optional(),
     image: z.string().optional(),
+    heroImage: z.string().optional(),
+    websiteLink: z.string().optional(),
     isServiceProfile: z.boolean().default(false).optional(),
+    type: z.string().optional(),
     notificationsWebhook: z.string().url().startsWith('https://').optional(),
 });
 export type LCNProfile = z.infer<typeof LCNProfileValidator>;
