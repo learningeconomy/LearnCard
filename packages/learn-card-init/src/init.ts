@@ -3,6 +3,7 @@ import { emptyLearnCard } from './initializers/emptyLearnCard';
 import { learnCardFromSeed } from './initializers/learnCardFromSeed';
 import { networkLearnCardFromSeed } from './initializers/networkLearnCardFromSeed';
 import { didWebLearnCardFromSeed } from './initializers/didWebLearnCardFromSeed';
+import { didWebNetworkLearnCardFromSeed } from './initializers/didWebNetworkLearnCardFromSeed';
 import { learnCardFromApiUrl } from './initializers/apiLearnCard';
 
 import {
@@ -13,6 +14,7 @@ import {
     CustomLearnCard,
     NetworkLearnCardFromSeed,
     DidWebLearnCardFromSeed,
+    DidWebNetworkLearnCardFromSeed,
 } from 'types/LearnCard';
 
 export * from './initializers/customLearnCard';
@@ -20,6 +22,7 @@ export * from './initializers/emptyLearnCard';
 export * from './initializers/learnCardFromSeed';
 export * from './initializers/networkLearnCardFromSeed';
 export * from './initializers/didWebLearnCardFromSeed';
+export * from './initializers/didWebNetworkLearnCardFromSeed';
 export * from './initializers/apiLearnCard';
 
 // Overloads (Unfortunately necessary boilerplate 😢)
@@ -59,6 +62,15 @@ export function initLearnCard(
 export function initLearnCard(
     config: NetworkLearnCardFromSeed['args']
 ): Promise<NetworkLearnCardFromSeed['returnValue']>;
+
+/**
+ * Generates a full wallet with access to LearnCard Network from a 32 byte seed using a different did:web
+ *
+ * @group Init Functions
+ */
+export function initLearnCard(
+    config: DidWebNetworkLearnCardFromSeed['args']
+): Promise<DidWebNetworkLearnCardFromSeed['returnValue']>;
 
 /**
  * Generates a wallet that can sign VCs/VPs from a VC API
@@ -101,7 +113,11 @@ export async function initLearnCard(
     }
 
     if ('seed' in config) {
-        if ('network' in config) return networkLearnCardFromSeed(config);
+        if ('network' in config) {
+            if ('didWeb' in config) return didWebNetworkLearnCardFromSeed(config);
+
+            return networkLearnCardFromSeed(config);
+        }
 
         if ('didWeb' in config) return didWebLearnCardFromSeed(config);
 
