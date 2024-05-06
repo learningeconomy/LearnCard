@@ -158,7 +158,9 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
 
     const backgroundStyle = {
         backgroundColor: credential?.display?.backgroundColor,
-        backgroundImage: undefined,
+        backgroundImage: credential?.display?.backgroundImage
+            ? `linear-gradient(to bottom, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.25)), url(${credential.display?.backgroundImage})`
+            : undefined,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundAttachment: 'fixed',
