@@ -32,6 +32,7 @@ const VERIFIER_STATES = {
 type VerifierState = (typeof VERIFIER_STATES)[keyof typeof VERIFIER_STATES];
 
 type CertificateFrontFaceProps = {
+    isFront?: boolean;
     credential: VC | BoostAchievementCredential;
     categoryType?: LCCategoryEnum;
     issuerOverride?: Profile;
@@ -42,9 +43,11 @@ type CertificateFrontFaceProps = {
     customBodyCardComponent?: React.ReactNode;
     hideIssueDate?: boolean;
     handleViewBackFace?: () => void;
+    showDetailsBtn?: boolean;
 };
 
 export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
+    isFront,
     credential,
     categoryType,
     issuerOverride,
@@ -55,6 +58,7 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
     customBodyCardComponent,
     hideIssueDate,
     handleViewBackFace,
+    showDetailsBtn = false,
 }) => {
     const {
         title = '',
@@ -184,6 +188,16 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
                         skills={credential?.skills ?? []}
                         onClick={handleViewBackFace}
                     />
+
+                    {isFront && showDetailsBtn && (
+                        <button
+                            type="button"
+                            className="vc-toggle-side-button text-white shadow-bottom bg-[#00000099] px-[30px] py-[8px] rounded-[40px] text-[28px] tracking-[0.75px] uppercase leading-[28px] mt-[25px] w-fit select-none"
+                            onClick={() => handleViewBackFace?.()}
+                        >
+                            Details
+                        </button>
+                    )}
                 </div>
 
                 <div className="flex flex-col gap-[5px] items-center w-full">
