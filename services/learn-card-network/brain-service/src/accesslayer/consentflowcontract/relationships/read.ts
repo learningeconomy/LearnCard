@@ -301,21 +301,33 @@ all(key IN keys($params) WHERE
 
 export const getConsentedDataForContract = async (
     id: string,
-    { limit, cursor }: { limit: number; cursor?: string }
+    { query = {}, limit, cursor }: { query?: ConsentFlowDataQuery; limit: number; cursor?: string }
 ): Promise<ConsentFlowContractData[]> => {
-    const _query = new QueryBuilder(new BindParam({ cursor })).match({
+    const _dbQuery = new QueryBuilder(
+        new BindParam({
+            params: flattenObject({ terms: convertDataQueryToNeo4jQuery(query) }),
+            cursor,
+        })
+    ).match({
         related: [
             { identifier: 'terms', model: ConsentFlowTerms },
             ConsentFlowTerms.getRelationshipByAlias('consentsTo'),
             { model: ConsentFlowContract, where: { id: id } },
         ],
-    });
+    }).where(`
+all(key IN keys($params) WHERE 
+    CASE $params[key]
+        WHEN true THEN terms[key] IS NOT NULL AND terms[key] <> []
+        WHEN false THEN terms[key] IS NULL OR terms[key] = []
+    END
+)
+`);
 
-    const query = cursor ? _query.where('terms.updatedAt < $cursor') : _query;
+    const dbQuery = cursor ? _dbQuery.where('terms.updatedAt < $cursor') : _dbQuery;
 
     const results = convertQueryResultToPropertiesObjectArray<{
         terms: FlatDbTermsType;
-    }>(await query.return('DISTINCT terms').orderBy('terms.updatedAt DESC').limit(limit).run());
+    }>(await dbQuery.return('DISTINCT terms').orderBy('terms.updatedAt DESC').limit(limit).run());
 
     const terms = results.map(result => inflateObject<DbTermsType>(result.terms));
 

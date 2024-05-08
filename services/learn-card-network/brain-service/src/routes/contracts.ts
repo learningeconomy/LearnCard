@@ -225,6 +225,7 @@ export const contractsRouter = t.router({
         .input(
             PaginationOptionsValidator.extend({
                 uri: z.string(),
+                query: ConsentFlowDataQueryValidator.default({}),
                 limit: PaginationOptionsValidator.shape.limit.default(25),
             })
         )
@@ -232,7 +233,7 @@ export const contractsRouter = t.router({
         .query(async ({ ctx, input }) => {
             const { profile } = ctx.user;
 
-            const { uri, limit, cursor } = input;
+            const { uri, query, limit, cursor } = input;
 
             const contract = await getContractByUri(uri);
 
@@ -250,6 +251,7 @@ export const contractsRouter = t.router({
             const contractId = getIdFromUri(uri);
 
             const results = await getConsentedDataForContract(contractId, {
+                query,
                 limit: limit + 1,
                 cursor,
             });

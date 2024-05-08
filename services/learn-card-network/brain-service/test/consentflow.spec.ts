@@ -349,13 +349,37 @@ describe('Consent Flow Contracts', () => {
             await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
 
             uri = await userA.clients.fullAuth.contracts.createConsentFlowContract({
-                contract: minimalContract,
+                contract: normalContract,
                 name: 'a',
             });
             await userB.clients.fullAuth.contracts.consentToContract({
                 contractUri: uri,
-                terms: minimalTerms,
+                terms: normalFullTerms,
             });
+
+            await Promise.all(
+                Array(12)
+                    .fill(0)
+                    .map(async (_, index) => {
+                        const client = await getClient({
+                            did: `did:test:${index + 1}`,
+                            isChallengeValid: true,
+                        });
+                        await client.profile.createProfile({
+                            profileId: `user${index}`,
+                        });
+
+                        let terms = normalFullTerms;
+                        if (index % 4 === 0) terms = normalAchievementOnlyTerms;
+                        else if (index % 4 === 1) terms = normalIDOnlyTerms;
+                        else if (index % 4 === 2) terms = normalNoTerms;
+
+                        await client.contracts.consentToContract({
+                            contractUri: uri,
+                            terms,
+                        });
+                    })
+            );
         });
 
         afterAll(async () => {
@@ -385,15 +409,155 @@ describe('Consent Flow Contracts', () => {
                 uri,
             });
 
-            expect(data.records).toHaveLength(1);
-            expect(data.records[0]!.personal.name).toEqual('Name lol');
-            expect(data.records[0]!.credentials.categories).toEqual({});
+            expect(data.records).toHaveLength(13);
         });
 
         it("should not allow you to get data for someone else's contracts", async () => {
             await expect(
                 userB.clients.fullAuth.contracts.getConsentedDataForContract({ uri })
             ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        });
+
+        describe('should allow you to query the data', () => {
+            it('should get all data with empty query', async () => {
+                const allData = await userA.clients.fullAuth.contracts.getConsentedDataForContract({
+                    uri,
+                });
+
+                expect(allData.records).toHaveLength(13);
+            });
+
+            it('should allow inclusive queries', async () => {
+                const achievementsData =
+                    await userA.clients.fullAuth.contracts.getConsentedDataForContract({
+                        uri,
+                        query: { credentials: { categories: { Achievement: true } } },
+                    });
+
+                expect(achievementsData.records).toHaveLength(7);
+                expect(
+                    achievementsData.records.every(
+                        record => (record.credentials.categories.Achievement?.length ?? 0) > 0
+                    )
+                ).toBeTruthy();
+
+                const idsData = await userA.clients.fullAuth.contracts.getConsentedDataForContract({
+                    uri,
+                    query: { credentials: { categories: { ID: true } } },
+                });
+
+                expect(idsData.records).toHaveLength(7);
+                expect(
+                    idsData.records.every(
+                        record => (record.credentials.categories.ID?.length ?? 0) > 0
+                    )
+                ).toBeTruthy();
+            });
+
+            it('should allow combining inclusive queries', async () => {
+                const achievementsAndIdsData =
+                    await userA.clients.fullAuth.contracts.getConsentedDataForContract({
+                        uri,
+                        query: { credentials: { categories: { Achievement: true, ID: true } } },
+                    });
+
+                expect(achievementsAndIdsData.records).toHaveLength(4);
+                expect(
+                    achievementsAndIdsData.records.every(
+                        record => (record.credentials.categories.Achievement?.length ?? 0) > 0
+                    )
+                ).toBeTruthy();
+                expect(
+                    achievementsAndIdsData.records.every(
+                        record => (record.credentials.categories.ID?.length ?? 0) > 0
+                    )
+                ).toBeTruthy();
+            });
+
+            it('should allow exclusive queries', async () => {
+                const noAchievementsData =
+                    await userA.clients.fullAuth.contracts.getConsentedDataForContract({
+                        uri,
+                        query: { credentials: { categories: { Achievement: false } } },
+                    });
+
+                expect(noAchievementsData.records).toHaveLength(6);
+                expect(
+                    noAchievementsData.records.every(
+                        record => (record.credentials.categories.Achievement?.length ?? 0) === 0
+                    )
+                ).toBeTruthy();
+
+                const noIdsData =
+                    await userA.clients.fullAuth.contracts.getConsentedDataForContract({
+                        uri,
+                        query: { credentials: { categories: { ID: false } } },
+                    });
+
+                expect(noIdsData.records).toHaveLength(6);
+                expect(
+                    noIdsData.records.every(
+                        record => (record.credentials.categories.ID?.length ?? 0) === 0
+                    )
+                ).toBeTruthy();
+            });
+
+            it('should allow combining exclusive queries', async () => {
+                const noData = await userA.clients.fullAuth.contracts.getConsentedDataForContract({
+                    uri,
+                    query: { credentials: { categories: { ID: false, Achievement: false } } },
+                });
+
+                expect(noData.records).toHaveLength(3);
+                expect(
+                    noData.records.every(
+                        record => (record.credentials.categories.Achievement?.length ?? 0) === 0
+                    )
+                ).toBeTruthy();
+                expect(
+                    noData.records.every(
+                        record => (record.credentials.categories.ID?.length ?? 0) === 0
+                    )
+                ).toBeTruthy();
+            });
+
+            it('should allow combining inclusive/exclusive queries', async () => {
+                const achievementsOnlyData =
+                    await userA.clients.fullAuth.contracts.getConsentedDataForContract({
+                        uri,
+                        query: { credentials: { categories: { ID: false, Achievement: true } } },
+                    });
+
+                expect(achievementsOnlyData.records).toHaveLength(3);
+                expect(
+                    achievementsOnlyData.records.every(
+                        record => (record.credentials.categories.Achievement?.length ?? 0) > 0
+                    )
+                ).toBeTruthy();
+                expect(
+                    achievementsOnlyData.records.every(
+                        record => (record.credentials.categories.ID?.length ?? 0) === 0
+                    )
+                ).toBeTruthy();
+
+                const idsOnlyData =
+                    await userA.clients.fullAuth.contracts.getConsentedDataForContract({
+                        uri,
+                        query: { credentials: { categories: { ID: true, Achievement: false } } },
+                    });
+
+                expect(idsOnlyData.records).toHaveLength(3);
+                expect(
+                    idsOnlyData.records.every(
+                        record => (record.credentials.categories.ID?.length ?? 0) > 0
+                    )
+                ).toBeTruthy();
+                expect(
+                    idsOnlyData.records.every(
+                        record => (record.credentials.categories.Achievement?.length ?? 0) === 0
+                    )
+                ).toBeTruthy();
+            });
         });
     });
 

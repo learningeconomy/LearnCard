@@ -156,7 +156,7 @@ export type LearnCardNetworkPluginMethods = {
     deleteContract: (uri: string) => Promise<boolean>;
     getConsentFlowData: (
         uri: string,
-        options?: Partial<PaginationOptionsType>
+        options?: Partial<PaginationOptionsType> & { query?: ConsentFlowDataQuery }
     ) => Promise<PaginatedConsentFlowData>;
     getAllConsentFlowData: (
         query?: ConsentFlowDataQuery,
