@@ -12,8 +12,10 @@ import AlignmentsBox from './AlignmentsBox';
 import TruncateTextBox from './TruncateTextBox';
 import MediaAttachmentsBox from './MediaAttachmentsBox';
 import SkillsBox from '../VCDisplayCard2/SkillsBox';
+import LeftArrow from '../svgs/LeftArrow';
 
 type CertificateBackFaceProps = {
+    isFront?: boolean;
     credential: VC | BoostAchievementCredential;
     categoryType?: LCCategoryEnum;
     verificationItems: VerificationItem[];
@@ -23,6 +25,8 @@ type CertificateBackFaceProps = {
     getVideoMetadata?: (url: string) => VideoMetadata;
     onMediaAttachmentClick?: (url: string, type: 'photo' | 'document' | 'video' | 'link') => void;
     enableLightbox?: boolean;
+    showBackButton?: boolean;
+    handleViewFrontFace?: () => void;
 };
 
 export const CertificateBackFace: React.FC<CertificateBackFaceProps> = ({
@@ -35,6 +39,8 @@ export const CertificateBackFace: React.FC<CertificateBackFaceProps> = ({
     getVideoMetadata,
     onMediaAttachmentClick,
     enableLightbox,
+    showBackButton,
+    handleViewFrontFace,
 }) => {
     const { createdAt, credentialSubject } = getInfoFromCredential(credential, 'MMM dd, yyyy', {
         uppercaseDate: false,
@@ -58,14 +64,27 @@ export const CertificateBackFace: React.FC<CertificateBackFaceProps> = ({
         <div
             className={`flex flex-col gap-[15px] items-center border-[5px] border-solid border-grayscale-200 py-[30px] px-[20px] rounded-[25px] ${bgColor}`}
         >
-            <h1 className="text-white text-center text-[22px] font-jacques">Details</h1>
+            {showBackButton ? (
+                <div className="w-full">
+                    <button
+                        className="vc-card-back-button rounded-full h-[50px] px-[15px] flex items-center justify-center gap-[5px] z-50 text-[30px] text-white select-none"
+                        onClick={() => handleViewFrontFace?.()}
+                    >
+                        <LeftArrow className="text-white" size="25" />
+                        Details
+                    </button>
+                </div>
+            ) : (
+                <h1 className="text-white text-center text-[22px] font-jacques">Details</h1>
+            )}
 
             <TruncateTextBox headerText="About" text={description}>
                 <span
-                    className={`text-grayscale-600 font-poppins text-[12px] font-[600] w-full ${description
+                    className={`text-grayscale-600 font-poppins text-[12px] font-[600] w-full ${
+                        description
                             ? 'pt-[10px] border-t-[1px] border-solid border-grayscale-200'
                             : ''
-                        }`}
+                    }`}
                 >
                     Awarded on {createdAt}
                 </span>
@@ -89,7 +108,7 @@ export const CertificateBackFace: React.FC<CertificateBackFaceProps> = ({
                     enableLightbox={enableLightbox}
                 />
             )}
-            
+
             {alignment && <AlignmentsBox alignment={alignment} style="Certificate" />}
 
             {verificationItems && verificationItems.length > 0 && (

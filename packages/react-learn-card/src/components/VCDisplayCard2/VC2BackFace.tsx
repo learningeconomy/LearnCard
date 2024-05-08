@@ -80,7 +80,7 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
     */
 
     return (
-        <section className="vc-back-face flex flex-col gap-[20px] w-full px-[15px]">
+        <section className="vc-back-face flex flex-col gap-[20px] w-full px-[15px] pb-[25px]">
             {showBackButton && (
                 <div className="w-full">
                     <button

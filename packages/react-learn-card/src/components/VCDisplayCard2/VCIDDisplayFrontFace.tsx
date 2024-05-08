@@ -15,9 +15,13 @@ import { BoostAchievementCredential } from '../../types';
 import TruncateTextBox from './TruncateTextBox';
 
 type VCIDDisplayFrontFaceProps = {
+    isFront: boolean;
+    setIsFront: (value: boolean) => void;
+    showDetailsBtn?: boolean;
     credential: VC | BoostAchievementCredential;
     trustedAppRegistry?: any[];
     customThumbComponent?: React.ReactNode;
+    hideQRCode?: boolean;
     qrCodeOnClick?: () => void;
 };
 
@@ -30,9 +34,13 @@ const VERIFIER_STATES = {
 type VerifierState = (typeof VERIFIER_STATES)[keyof typeof VERIFIER_STATES];
 
 const VCIDDisplayFrontFace: React.FC<VCIDDisplayFrontFaceProps> = ({
+    isFront,
+    setIsFront,
+    showDetailsBtn,
     credential,
     trustedAppRegistry,
     customThumbComponent,
+    hideQRCode = false,
     qrCodeOnClick,
 }) => {
     const { credentialSubject } = getInfoFromCredential(credential, 'MMM dd, yyyy', {
@@ -79,9 +87,14 @@ const VCIDDisplayFrontFace: React.FC<VCIDDisplayFrontFaceProps> = ({
             </div>
 
             <div className="w-full relative">
-                <button onClick={() => qrCodeOnClick?.()} className="text-grayscale-900 bg-white rounded-full p-[10px] absolute top-[-10px] right-[45%]">
-                    <QRCodeIcon className="text-grayscale-900 " />
-                </button>
+                {!hideQRCode && (
+                    <button
+                        onClick={() => qrCodeOnClick?.()}
+                        className="text-grayscale-900 bg-white rounded-full p-[10px] absolute top-[-10px] right-[45%]"
+                    >
+                        <QRCodeIcon className="text-grayscale-900 " />
+                    </button>
+                )}
                 <img src={IDSleeve} alt="id-sleeve" className="w-full object-cover" />
             </div>
 
@@ -95,11 +108,22 @@ const VCIDDisplayFrontFace: React.FC<VCIDDisplayFrontFaceProps> = ({
                             textClassName="!font-poppins !text-base !text-grayscale-700 !text-center !w-full"
                             truncateThreshold={204}
                         />
-                        <div className="w-full flex items-center justify-center mt-4">
-                            <div className="h-[2px] w-full bg-gray-200" />
-                        </div>
                     </>
                 )}
+
+                {isFront && showDetailsBtn && (
+                    <button
+                        type="button"
+                        className="vc-toggle-side-button text-white shadow-bottom bg-[#00000099] px-[30px] py-[8px] rounded-[40px] text-[28px] tracking-[0.75px] uppercase leading-[28px] mt-[25px] w-fit select-none"
+                        onClick={() => setIsFront(!isFront)}
+                    >
+                        Details
+                    </button>
+                )}
+
+                <div className="w-full flex items-center justify-center mt-4">
+                    <div className="h-[2px] w-full bg-gray-200" />
+                </div>
 
                 <div className="w-full flex items-center justify-center mt-2">
                     {isSelfVerified && (

@@ -67,7 +67,9 @@ export type VCDisplayCard2Props = {
     isFrontOverride?: boolean;
     setIsFrontOverride?: (value: boolean) => void;
     hideNavButtons?: boolean;
+    hideQRCode?: boolean;
     qrCodeOnClick?: () => void; // exclusive to the ID display type
+    showDetailsBtn?: boolean;
 };
 
 export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
@@ -105,7 +107,9 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     isFrontOverride,
     setIsFrontOverride,
     hideNavButtons,
+    hideQRCode = false,
     qrCodeOnClick,
+    showDetailsBtn = false,
 }) => {
     const {
         title = '',
@@ -190,6 +194,8 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 isFrontOverride={isFrontOverride}
                 setIsFrontOverride={setIsFrontOverride}
                 hideNavButtons={hideNavButtons}
+                showBackButton={showBackButton}
+                showDetailsBtn={showDetailsBtn}
             />
         );
     } else if (credential?.display?.displayType === 'id' || categoryType === 'ID') {
@@ -205,14 +211,16 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 customDescription={customDescription}
                 customIssueHistoryComponent={customIssueHistoryComponent}
                 issueHistory={issueHistory}
-                showBackButton={showBackButton}
                 enableLightbox={enableLightbox}
                 trustedAppRegistry={trustedAppRegistry}
                 customSkillsComponent={customSkillsComponent}
                 isFrontOverride={isFrontOverride}
                 setIsFrontOverride={setIsFrontOverride}
                 hideNavButtons={hideNavButtons}
+                hideQRCode={hideQRCode}
                 qrCodeOnClick={qrCodeOnClick}
+                showBackButton={showBackButton}
+                showDetailsBtn={showDetailsBtn}
             />
         );
     }
@@ -296,7 +304,10 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                                             getFileMetadata={getFileMetadata}
                                             getVideoMetadata={getVideoMetadata}
                                             onMediaAttachmentClick={onMediaAttachmentClick}
-                                            showBackButton={showBackButton && !hideNavButtons}
+                                            showBackButton={
+                                                (showBackButton && !hideNavButtons) ||
+                                                showDetailsBtn
+                                            }
                                             showFrontFace={() => setIsFront(true)}
                                             customDescription={customDescription}
                                             customCriteria={customCriteria}
@@ -316,10 +327,11 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                                     />
                                 )}
 
-                                {!hideNavButtons && (
+                                {(!hideNavButtons || showDetailsBtn) && (
                                     <>
                                         {isFront && customFrontButton}
-                                        {isFront && !customFrontButton && (
+                                        {((isFront && !customFrontButton) ||
+                                            (isFront && showDetailsBtn)) && (
                                             <Flipped flipId="details-back-button">
                                                 <button
                                                     type="button"

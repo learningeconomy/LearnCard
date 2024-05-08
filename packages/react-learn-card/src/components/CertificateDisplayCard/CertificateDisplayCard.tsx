@@ -34,6 +34,8 @@ type CertificateDisplayCardProps = {
     isFrontOverride?: boolean;
     setIsFrontOverride?: (value: boolean) => void;
     hideNavButtons?: boolean;
+    showBackButton?: boolean;
+    showDetailsBtn?: boolean;
 };
 
 export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
@@ -59,6 +61,8 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
     isFrontOverride,
     setIsFrontOverride,
     hideNavButtons,
+    showBackButton = false,
+    showDetailsBtn = false,
 }) => {
     const [_isFront, _setIsFront] = useState(isFrontOverride ?? true);
 
@@ -114,6 +118,8 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
                     customBodyCardComponent={customBodyCardComponent}
                     hideIssueDate={hideIssueDate}
                     handleViewBackFace={() => setIsFront(!isFront)}
+                    isFront={isFront}
+                    showDetailsBtn={showDetailsBtn}
                 />
             )}
 
@@ -126,6 +132,8 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
                     getVideoMetadata={getVideoMetadata}
                     onMediaAttachmentClick={onMediaAttachmentClick}
                     enableLightbox={enableLightbox}
+                    showBackButton={(showBackButton && !hideNavButtons) || showDetailsBtn}
+                    handleViewFrontFace={() => setIsFront(!isFront)}
                 />
             )}
 

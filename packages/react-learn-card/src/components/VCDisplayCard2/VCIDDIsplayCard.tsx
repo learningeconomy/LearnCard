@@ -30,7 +30,9 @@ export type VCIDDisplayCardProps = {
     isFrontOverride?: boolean;
     setIsFrontOverride?: (value: boolean) => void;
     hideNavButtons?: boolean;
+    hideQRCode?: boolean;
     qrCodeOnClick?: () => void;
+    showDetailsBtn?: boolean;
 };
 
 export const VCIDDisplayCard: React.FC<VCIDDisplayCardProps> = ({
@@ -51,9 +53,11 @@ export const VCIDDisplayCard: React.FC<VCIDDisplayCardProps> = ({
     isFrontOverride,
     setIsFrontOverride,
     hideNavButtons,
+    hideQRCode = false,
     qrCodeOnClick,
+    showDetailsBtn = false,
 }) => {
-    const [_isFront, _setIsFront] = useState(isFrontOverride ?? true);
+    const [_isFront, _setIsFront] = useState<boolean>(isFrontOverride ?? true);
     const isFront = isFrontOverride ?? _isFront;
     const setIsFront = setIsFrontOverride ?? _setIsFront;
 
@@ -82,10 +86,14 @@ export const VCIDDisplayCard: React.FC<VCIDDisplayCardProps> = ({
                                 {isFront && (
                                     <Flipped flipId="face">
                                         <VCIDDisplayFrontFace
+                                            isFront={_isFront}
+                                            setIsFront={setIsFront}
+                                            showDetailsBtn={showDetailsBtn}
                                             customThumbComponent={customThumbComponent}
                                             credential={credential}
                                             trustedAppRegistry={trustedAppRegistry}
                                             qrCodeOnClick={qrCodeOnClick}
+                                            hideQRCode={hideQRCode}
                                         />
                                     </Flipped>
                                 )}
@@ -98,7 +106,10 @@ export const VCIDDisplayCard: React.FC<VCIDDisplayCardProps> = ({
                                             getFileMetadata={getFileMetadata}
                                             getVideoMetadata={getVideoMetadata}
                                             onMediaAttachmentClick={onMediaAttachmentClick}
-                                            showBackButton={showBackButton && !hideNavButtons}
+                                            showBackButton={
+                                                (showBackButton && !hideNavButtons) ||
+                                                showDetailsBtn
+                                            }
                                             showFrontFace={() => setIsFront(true)}
                                             customDescription={customDescription}
                                             customCriteria={customCriteria}
