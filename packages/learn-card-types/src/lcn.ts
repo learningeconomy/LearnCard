@@ -265,6 +265,14 @@ export const ConsentFlowContractQueryValidator = z.object({
 export type ConsentFlowContractQuery = z.infer<typeof ConsentFlowContractQueryValidator>;
 export type ConsentFlowContractQueryInput = z.input<typeof ConsentFlowContractQueryValidator>;
 
+export const ConsentFlowDataQueryValidator = z.object({
+    anonymize: z.boolean().optional(),
+    credentials: z.object({ categories: z.record(z.boolean()).optional() }).optional(),
+    personal: z.record(z.boolean()).optional(),
+});
+export type ConsentFlowDataQuery = z.infer<typeof ConsentFlowDataQueryValidator>;
+export type ConsentFlowDataQueryInput = z.input<typeof ConsentFlowDataQueryValidator>;
+
 export const ConsentFlowTermsQueryValidator = z.object({
     read: z
         .object({

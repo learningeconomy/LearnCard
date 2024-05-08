@@ -14,12 +14,14 @@ import {
     ConsentFlowTransactionsQueryValidator,
     PaginatedConsentFlowTransactionsValidator,
     PaginatedConsentFlowDataValidator,
+    ConsentFlowDataQueryValidator,
 } from '@learncard/types';
 import { createConsentFlowContract } from '@accesslayer/consentflowcontract/create';
 import {
     getConsentFlowContractsForProfile,
     getConsentedContractsForProfile,
     getConsentedDataForContract,
+    getConsentedDataForProfile,
     getContractDetailsByUri,
     getContractTermsByUri,
     getContractTermsForProfile,
@@ -264,6 +266,48 @@ export const contractsRouter = t.router({
             };
         }),
 
+    getConsentedData: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/consent-flow-contract/data',
+                tags: ['Consent Flow Contracts'],
+                summary: 'Get the data that has been consented for all of your contracts',
+                description:
+                    'This route grabs all the data that has been consented for all of your contracts',
+            },
+        })
+        .input(
+            PaginationOptionsValidator.extend({
+                limit: PaginationOptionsValidator.shape.limit.default(25),
+                query: ConsentFlowDataQueryValidator.default({}),
+            }).default({})
+        )
+        .output(PaginatedConsentFlowDataValidator)
+        .query(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+
+            const { query, limit, cursor } = input;
+
+            const results = await getConsentedDataForProfile(profile.profileId, {
+                query,
+                limit: limit + 1,
+                cursor,
+            });
+
+            const data = results.slice(0, limit);
+
+            const hasMore = results.length > limit;
+            const nextCursor = data.at(-1)?.date;
+
+            return {
+                hasMore,
+                cursor: nextCursor,
+                records: data,
+            };
+        }),
+
     consentToContract: profileRoute
         .meta({
             openapi: {
@@ -303,6 +347,7 @@ export const contractsRouter = t.router({
             }
 
             if (!areTermsValid(terms, contract.contract)) {
+                console.log(terms);
                 throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid Terms for Contract' });
             }
 

@@ -23,6 +23,7 @@ import {
     PaginatedConsentFlowTransactions,
     ConsentFlowTransactionsQuery,
     PaginatedConsentFlowData,
+    ConsentFlowDataQuery,
 } from '@learncard/types';
 import { LearnCard, Plugin } from '@learncard/core';
 import { ProofOptions } from '@learncard/didkit-plugin';
@@ -155,6 +156,10 @@ export type LearnCardNetworkPluginMethods = {
     deleteContract: (uri: string) => Promise<boolean>;
     getConsentFlowData: (
         uri: string,
+        options?: Partial<PaginationOptionsType>
+    ) => Promise<PaginatedConsentFlowData>;
+    getAllConsentFlowData: (
+        query?: ConsentFlowDataQuery,
         options?: Partial<PaginationOptionsType>
     ) => Promise<PaginatedConsentFlowData>;
     consentToContract: (

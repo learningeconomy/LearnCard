@@ -19,12 +19,14 @@ import {
 import {
     ConsentFlowContractData,
     ConsentFlowContractQuery,
+    ConsentFlowDataQuery,
     ConsentFlowTermsQuery,
     ConsentFlowTransactionsQuery,
     LCNProfile,
 } from '@learncard/types';
 import { getIdFromUri } from '@helpers/uri.helpers';
 import { flattenObject, inflateObject } from '@helpers/objects.helpers';
+import { convertDataQueryToNeo4jQuery } from '@helpers/contract.helpers';
 
 export const isProfileConsentFlowContractAdmin = async (
     profile: ProfileInstance,
@@ -251,11 +253,57 @@ export const getConsentedContractsForProfile = async (
     }));
 };
 
+export const getConsentedDataForProfile = async (
+    profileId: string,
+    { query = {}, limit, cursor }: { query?: ConsentFlowDataQuery; limit: number; cursor?: string }
+): Promise<ConsentFlowContractData[]> => {
+    const _dbQuery = new QueryBuilder(
+        new BindParam({
+            params: flattenObject({ terms: convertDataQueryToNeo4jQuery(query) }),
+            cursor,
+        })
+    ).match({
+        related: [
+            { identifier: 'terms', model: ConsentFlowTerms },
+            ConsentFlowTerms.getRelationshipByAlias('consentsTo'),
+            { model: ConsentFlowContract },
+            ConsentFlowContract.getRelationshipByAlias('createdBy'),
+            { model: Profile, where: { profileId } },
+        ],
+    }).where(`
+all(key IN keys($params) WHERE 
+    CASE $params[key]
+        WHEN true THEN terms[key] IS NOT NULL AND terms[key] <> []
+        WHEN false THEN terms[key] IS NULL OR terms[key] = []
+    END
+)
+`);
+
+    const dbQuery = cursor ? _dbQuery.raw('terms.updatedAt < $cursor') : _dbQuery;
+
+    const results = convertQueryResultToPropertiesObjectArray<{
+        terms: FlatDbTermsType;
+    }>(await dbQuery.return('DISTINCT terms').orderBy('terms.updatedAt DESC').limit(limit).run());
+
+    const terms = results.map(result => inflateObject<DbTermsType>(result.terms));
+
+    return terms.map(term => ({
+        date: term.updatedAt!,
+        credentials: {
+            categories: mapValues(
+                term.terms.read.credentials.categories,
+                category => category.shared ?? []
+            ),
+        },
+        personal: term.terms.read.personal,
+    }));
+};
+
 export const getConsentedDataForContract = async (
     id: string,
     { limit, cursor }: { limit: number; cursor?: string }
 ): Promise<ConsentFlowContractData[]> => {
-    const _query = new QueryBuilder().match({
+    const _query = new QueryBuilder(new BindParam({ cursor })).match({
         related: [
             { identifier: 'terms', model: ConsentFlowTerms },
             ConsentFlowTerms.getRelationshipByAlias('consentsTo'),
@@ -263,7 +311,7 @@ export const getConsentedDataForContract = async (
         ],
     });
 
-    const query = cursor ? _query.raw('terms.updatedAt < $cursor') : _query;
+    const query = cursor ? _query.where('terms.updatedAt < $cursor') : _query;
 
     const results = convertQueryResultToPropertiesObjectArray<{
         terms: FlatDbTermsType;

@@ -507,10 +507,16 @@ export const getLearnCardNetworkPlugin = async (
                 return client.contracts.deleteConsentFlowContract.mutate({ uri });
             },
 
-            getConsentFlowData: async (_learnCard, uri, options) => {
+            getConsentFlowData: async (_learnCard, uri, options = {}) => {
                 if (!userData) throw new Error('Please make an account first!');
 
                 return client.contracts.getConsentedDataForContract.query({ uri, ...options });
+            },
+
+            getAllConsentFlowData: async (_learnCard, query = {}, options = {}) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.contracts.getConsentedData.query({ query, ...options });
             },
 
             consentToContract: async (_learnCard, contractUri, { terms, expiresAt, oneTime }) => {
