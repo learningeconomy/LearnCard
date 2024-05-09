@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.6.68
+
+### Patch Changes
+
+-   [#449](https://github.com/learningeconomy/LearnCard/pull/449) [`2e46c23`](https://github.com/learningeconomy/LearnCard/commit/2e46c2342e092ffa49667a79cd607acc3c766081) Thanks [@gerardopar](https://github.com/gerardopar)! - Add Details button (ID, Cert) VC display types
+
 ## 2.6.67
 
 ### Patch Changes
