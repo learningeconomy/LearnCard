@@ -35,10 +35,7 @@ import { deleteStorageForUri } from '@cache/storage';
 import { deleteConsentFlowContract } from '@accesslayer/consentflowcontract/delete';
 import { areTermsValid } from '@helpers/contract.helpers';
 import { updateDidForProfile } from '@helpers/did.helpers';
-import {
-    updateTermsById,
-    withdrawTermsById,
-} from '@accesslayer/consentflowcontract/relationships/update';
+import { updateTerms, withdrawTerms } from '@accesslayer/consentflowcontract/relationships/update';
 import {
     consentToContract,
     setCreatorForContract,
@@ -335,27 +332,30 @@ export const contractsRouter = t.router({
 
             const { terms, contractUri, expiresAt, oneTime } = input;
 
-            const contract = await getContractByUri(contractUri);
+            const contractDetails = await getContractDetailsByUri(contractUri);
 
-            if (!contract) {
+            if (!contractDetails) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find contract' });
             }
 
-            if (await hasProfileConsentedToContract(profile, contract)) {
+            if (await hasProfileConsentedToContract(profile, contractDetails.contract)) {
                 throw new TRPCError({
                     code: 'CONFLICT',
                     message: "You've already consented to this contract!",
                 });
             }
 
-            if (!areTermsValid(terms, contract.contract)) {
+            if (!areTermsValid(terms, contractDetails.contract.contract)) {
                 console.log(terms);
                 throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid Terms for Contract' });
             }
 
-            await consentToContract(profile, contract, { terms, expiresAt, oneTime });
+            await consentToContract(profile, contractDetails, { terms, expiresAt, oneTime });
 
-            const relationship = await getContractTermsForProfile(profile, contract);
+            const relationship = await getContractTermsForProfile(
+                profile,
+                contractDetails.contract
+            );
 
             if (!relationship) {
                 throw new TRPCError({
@@ -479,7 +479,7 @@ export const contractsRouter = t.router({
             }
 
             await Promise.all([
-                updateTermsById(relationship.terms.id, { terms, expiresAt, oneTime }),
+                updateTerms(relationship, { terms, expiresAt, oneTime }),
                 deleteStorageForUri(uri),
             ]);
 
@@ -520,7 +520,7 @@ export const contractsRouter = t.router({
                 });
             }
 
-            await Promise.all([withdrawTermsById(relationship.terms.id), deleteStorageForUri(uri)]);
+            await Promise.all([withdrawTerms(relationship), deleteStorageForUri(uri)]);
 
             return true;
         }),

@@ -61,44 +61,6 @@ export const BoostRecipientValidator = z.object({
 
 export type BoostRecipientInfo = z.infer<typeof BoostRecipientValidator>;
 
-export const LCNNotificationTypeEnumValidator = z.enum([
-    'CONNECTION_REQUEST',
-    'CONNECTION_ACCEPTED',
-    'CREDENTIAL_RECEIVED',
-    'CREDENTIAL_ACCEPTED',
-    'BOOST_RECEIVED',
-    'BOOST_ACCEPTED',
-    'PRESENTATION_REQUEST',
-    'PRESENTATION_RECEIVED',
-]);
-
-export type LCNNotificationTypeEnum = z.infer<typeof LCNNotificationTypeEnumValidator>;
-
-export const LCNNotificationMessageValidator = z.object({
-    title: z.string().optional(),
-    body: z.string().optional(),
-});
-
-export type LCNNotificationMessage = z.infer<typeof LCNNotificationMessageValidator>;
-
-export const LCNNotificationDataValidator = z.object({
-    vcUris: z.array(z.string()).optional(),
-    vpUris: z.array(z.string()).optional(),
-});
-
-export type LCNNotificationData = z.infer<typeof LCNNotificationDataValidator>;
-
-export const LCNNotificationValidator = z.object({
-    type: LCNNotificationTypeEnumValidator,
-    to: LCNProfileValidator.partial().and(z.object({ did: z.string() })),
-    from: LCNProfileValidator.partial().and(z.object({ did: z.string() })),
-    message: LCNNotificationMessageValidator.optional(),
-    data: LCNNotificationDataValidator.optional(),
-    sent: z.string().datetime().optional(),
-});
-
-export type LCNNotification = z.infer<typeof LCNNotificationValidator>;
-
 export const LCNBoostClaimLinkSigningAuthorityValidator = z.object({
     endpoint: z.string(),
     name: z.string(),
@@ -353,3 +315,43 @@ export const PaginatedConsentFlowTransactionsValidator = PaginationResponseValid
 export type PaginatedConsentFlowTransactions = z.infer<
     typeof PaginatedConsentFlowTransactionsValidator
 >;
+
+export const LCNNotificationTypeEnumValidator = z.enum([
+    'CONNECTION_REQUEST',
+    'CONNECTION_ACCEPTED',
+    'CREDENTIAL_RECEIVED',
+    'CREDENTIAL_ACCEPTED',
+    'BOOST_RECEIVED',
+    'BOOST_ACCEPTED',
+    'PRESENTATION_REQUEST',
+    'PRESENTATION_RECEIVED',
+    'CONSENT_FLOW_TRANSACTION',
+]);
+
+export type LCNNotificationTypeEnum = z.infer<typeof LCNNotificationTypeEnumValidator>;
+
+export const LCNNotificationMessageValidator = z.object({
+    title: z.string().optional(),
+    body: z.string().optional(),
+});
+
+export type LCNNotificationMessage = z.infer<typeof LCNNotificationMessageValidator>;
+
+export const LCNNotificationDataValidator = z.object({
+    vcUris: z.array(z.string()).optional(),
+    vpUris: z.array(z.string()).optional(),
+    transaction: ConsentFlowTransactionValidator.optional(),
+});
+
+export type LCNNotificationData = z.infer<typeof LCNNotificationDataValidator>;
+
+export const LCNNotificationValidator = z.object({
+    type: LCNNotificationTypeEnumValidator,
+    to: LCNProfileValidator.partial().and(z.object({ did: z.string() })),
+    from: LCNProfileValidator.partial().and(z.object({ did: z.string() })),
+    message: LCNNotificationMessageValidator.optional(),
+    data: LCNNotificationDataValidator.optional(),
+    sent: z.string().datetime().optional(),
+});
+
+export type LCNNotification = z.infer<typeof LCNNotificationValidator>;

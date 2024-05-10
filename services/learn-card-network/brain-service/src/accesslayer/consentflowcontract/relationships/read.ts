@@ -131,11 +131,13 @@ export const getContractTermsById = async (
     terms: DbTermsType;
     consenter: LCNProfile;
     contract: DbContractType;
+    contractOwner: LCNProfile;
 } | null> => {
     const result = convertQueryResultToPropertiesObjectArray<{
         consenter: LCNProfile;
         terms: FlatDbTermsType;
         contract: FlatDbContractType;
+        contractOwner: LCNProfile;
     }>(
         await new QueryBuilder()
             .match({
@@ -145,9 +147,11 @@ export const getContractTermsById = async (
                     { model: ConsentFlowTerms, identifier: 'terms', where: { id } },
                     ConsentFlowTerms.getRelationshipByAlias('consentsTo'),
                     { model: ConsentFlowContract, identifier: 'contract' },
+                    `-[:${ConsentFlowContract.getRelationshipByAlias('createdBy').name}]-`,
+                    { identifier: 'contractOwner', model: Profile },
                 ],
             })
-            .return('consenter, terms, contract')
+            .return('consenter, terms, contract, contractOwner')
             .run()
     );
 
@@ -156,6 +160,7 @@ export const getContractTermsById = async (
             consenter: result[0]!.consenter,
             terms: inflateObject(result[0]!.terms),
             contract: inflateObject(result[0]!.contract),
+            contractOwner: result[0]!.contractOwner,
         }
         : null;
 };
@@ -166,6 +171,7 @@ export const getContractTermsByUri = async (
     terms: DbTermsType;
     consenter: LCNProfile;
     contract: DbContractType;
+    contractOwner: LCNProfile;
 } | null> => {
     return getContractTermsById(getIdFromUri(uri));
 };
