@@ -193,6 +193,7 @@ app.get(
                     const { target } = managedRelationship;
 
                     const targetDid = target.did;
+                    const targetKey = target.did.split(':')[2];
 
                     const targetDidDoc = await learnCard.invoke.resolveDid(targetDid);
                     const targetJwk = (targetDidDoc.verificationMethod?.[0] as any)
@@ -202,7 +203,7 @@ app.get(
                     const _x25519PublicKeyBytes =
                         sodium.crypto_sign_ed25519_pk_to_curve25519(_decodedJwk);
 
-                    const id = `${did}#${uuid()}`;
+                    const id = `${did}#${targetKey}`;
 
                     finalDoc.verificationMethod.unshift({
                         id,
