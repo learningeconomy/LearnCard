@@ -95,7 +95,7 @@ export type CHAPIPluginMethods = {
     }) => Promise<void>;
     receiveChapiEvent: () => Promise<CredentialRequestEvent | CredentialStoreEvent>;
     storeCredentialViaChapiDidAuth: (
-        credential: UnsignedVC
+        credential: UnsignedVC | UnsignedVC[]
     ) => Promise<
         | { success: true }
         | { success: false; reason: 'did not auth' | 'auth failed verification' | 'did not store' }
