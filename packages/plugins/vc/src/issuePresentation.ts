@@ -2,6 +2,7 @@ import { UnsignedVP } from '@learncard/types';
 
 import { ProofOptions } from '@learncard/didkit-plugin';
 import { VCDependentLearnCard, VCImplicitLearnCard } from './types';
+import { getDefaultVerificationMethod } from './helpers';
 
 export const issuePresentation = (initLearnCard: VCDependentLearnCard) => {
     return async (
@@ -21,20 +22,10 @@ export const issuePresentation = (initLearnCard: VCDependentLearnCard) => {
         };
 
         if (!('verificationMethod' in options)) {
-            const issuerDid = await learnCard.invoke.resolveDid(learnCard.id.did());
-
-            const verificationMethodEntry =
-                typeof issuerDid === 'string'
-                    ? undefined
-                    : issuerDid?.verificationMethod?.find(entry =>
-                        typeof entry === 'string' ? false : entry?.publicKeyJwk?.x === kp.x
-                    );
-
-            const verificationMethod =
-                (typeof verificationMethodEntry !== 'string' && verificationMethodEntry?.id) ||
-                (await learnCard.invoke.didToVerificationMethod(learnCard.id.did()));
-
-            options.verificationMethod = verificationMethod;
+            options.verificationMethod = await getDefaultVerificationMethod(
+                learnCard,
+                learnCard.id.did()
+            );
         }
 
         return initLearnCard.invoke.issuePresentation(presentation, options, kp);

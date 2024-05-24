@@ -2,6 +2,7 @@ import { UnsignedVC } from '@learncard/types';
 
 import { ProofOptions } from '@learncard/didkit-plugin';
 import { VCDependentLearnCard, VCImplicitLearnCard } from './types';
+import { getDefaultVerificationMethod } from './helpers';
 
 export const issueCredential = (initLearnCard: VCDependentLearnCard) => {
     return async (
@@ -20,26 +21,10 @@ export const issueCredential = (initLearnCard: VCDependentLearnCard) => {
         };
 
         if (!('verificationMethod' in options)) {
-            const issuerDid = await learnCard.invoke.resolveDid(
-                typeof credential.issuer === 'string' ? credential.issuer : credential.issuer.id!
-            );
+            const issuerDid =
+                typeof credential.issuer === 'string' ? credential.issuer : credential.issuer.id!;
 
-            const verificationMethodEntry =
-                typeof issuerDid === 'string'
-                    ? undefined
-                    : issuerDid?.verificationMethod?.find(entry =>
-                        typeof entry === 'string' ? false : entry?.publicKeyJwk?.x === kp.x
-                    );
-
-            const verificationMethod =
-                (typeof verificationMethodEntry !== 'string' && verificationMethodEntry?.id) ||
-                (await learnCard.invoke.didToVerificationMethod(
-                    typeof credential.issuer === 'string'
-                        ? credential.issuer
-                        : credential.issuer.id!
-                ));
-
-            options.verificationMethod = verificationMethod;
+            options.verificationMethod = await getDefaultVerificationMethod(learnCard, issuerDid);
         }
 
         learnCard.debug?.('Signing with these options', {
