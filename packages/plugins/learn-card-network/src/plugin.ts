@@ -130,6 +130,8 @@ export const getLearnCardNetworkPlugin = async (
                 return newDid;
             },
             createManagedServiceProfile: async (_learnCard, profile) => {
+                if (!userData) throw new Error('Please make an account first!');
+
                 const newDid = await client.profile.createManagedServiceProfile.mutate(profile);
 
                 return newDid;
