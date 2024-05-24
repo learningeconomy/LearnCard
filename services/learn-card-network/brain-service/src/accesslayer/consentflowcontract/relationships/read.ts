@@ -157,11 +157,11 @@ export const getContractTermsById = async (
 
     return result.length > 0
         ? {
-            consenter: result[0]!.consenter,
-            terms: inflateObject(result[0]!.terms),
-            contract: inflateObject(result[0]!.contract),
-            contractOwner: result[0]!.contractOwner,
-        }
+              consenter: result[0]!.consenter,
+              terms: inflateObject(result[0]!.terms),
+              contract: inflateObject(result[0]!.contract),
+              contractOwner: result[0]!.contractOwner,
+          }
         : null;
 };
 
@@ -276,6 +276,10 @@ export const getConsentedDataForProfile = async (
             ConsentFlowContract.getRelationshipByAlias('createdBy'),
             { model: Profile, where: { profileId } },
         ],
+        // The following is custom Cypher logic that has the following behavior:
+        // If query key is true, ensure all resulting terms have that key
+        // If query key is false, ensure no resulting terms have that key
+        // If query key is not present, return all terms whether they have it or not
     }).where(`
 all(key IN keys($params) WHERE 
     CASE $params[key]
@@ -320,6 +324,10 @@ export const getConsentedDataForContract = async (
             ConsentFlowTerms.getRelationshipByAlias('consentsTo'),
             { model: ConsentFlowContract, where: { id: id } },
         ],
+        // The following is custom Cypher logic that has the following behavior:
+        // If query key is true, ensure all resulting terms have that key
+        // If query key is false, ensure no resulting terms have that key
+        // If query key is not present, return all terms whether they have it or not
     }).where(`
 all(key IN keys($params) WHERE 
     CASE $params[key]
