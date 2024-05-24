@@ -1,6 +1,12 @@
+import crypto from 'crypto';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
-import { LCNProfileValidator, LCNProfileConnectionStatusEnum } from '@learncard/types';
+import {
+    LCNProfileValidator,
+    LCNProfileConnectionStatusEnum,
+    PaginatedLCNProfilesValidator,
+    PaginationOptionsValidator,
+} from '@learncard/types';
 import { v4 as uuid } from 'uuid';
 
 import {
@@ -53,6 +59,8 @@ import {
     getCachedConnectionsByProfileId,
     setCachedConnectionsForProfileId,
 } from '@cache/connections';
+import { getLearnCard } from '@helpers/learnCard.helpers';
+import { getManagedServiceProfiles } from '@accesslayer/profile/relationships/read';
 
 export const profilesRouter = t.router({
     createProfile: didAndChallengeRoute
@@ -129,6 +137,53 @@ export const profilesRouter = t.router({
             });
         }),
 
+    createManagedServiceProfile: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/profile/create-managed-service',
+                tags: ['Profiles'],
+                summary: 'Create a managed service profile',
+                description: 'Creates a managed service profile',
+            },
+        })
+        .input(LCNProfileValidator.omit({ did: true, isServiceProfile: true, isManaged: true }))
+        .output(z.string())
+        .mutation(async ({ input, ctx }) => {
+            const { profileId } = input;
+            const profileExists = await checkIfProfileExists({ profileId });
+
+            if (profileExists) {
+                throw new TRPCError({
+                    code: 'CONFLICT',
+                    message: 'Profile already exists!',
+                });
+            }
+
+            const randomSeed = crypto.randomBytes(32).toString('hex');
+
+            const spLearnCard = await getLearnCard(randomSeed);
+
+            const profile = await createProfile({
+                ...input,
+                isServiceProfile: true,
+                did: spLearnCard.id.did(),
+            });
+
+            await profile.relateTo({
+                alias: 'managedBy',
+                where: { profileId: ctx.user.profile.profileId },
+            });
+
+            if (profile) return getDidWeb(ctx.domain, profile.profileId);
+
+            throw new TRPCError({
+                code: 'INTERNAL_SERVER_ERROR',
+                message: 'An unexpected error occured, please try again later.',
+            });
+        }),
+
     getProfile: openProfileRoute
         .meta({
             openapi: {
@@ -170,6 +225,43 @@ export const profilesRouter = t.router({
                 return undefined;
             }
             return otherProfile ? updateDidForProfile(ctx.domain, otherProfile) : undefined;
+        }),
+
+    getManagedServiceProfiles: profileRoute
+        .meta({
+            openapi: {
+                method: 'GET',
+                path: '/profile/managed-services',
+                tags: ['Profiles'],
+                summary: 'Managed Service Profiles',
+                description: 'This route gets all of your managed service profiles',
+            },
+        })
+        .input(
+            PaginationOptionsValidator.extend({
+                id: z.string().optional(),
+                limit: PaginationOptionsValidator.shape.limit.default(25),
+            }).default({})
+        )
+        .output(PaginatedLCNProfilesValidator)
+        .query(async ({ ctx, input }) => {
+            const { id = '', limit, cursor } = input;
+
+            const results = await getManagedServiceProfiles(ctx.user.profile.profileId, {
+                limit: limit + 1,
+                cursor,
+                targetId: id,
+            });
+
+            const profiles = results.map(profile => updateDidForProfile(ctx.domain, profile));
+            const hasMore = results.length > limit;
+            const nextCursor = hasMore ? results.at(-2)?.profileId : undefined;
+
+            return {
+                hasMore,
+                ...(nextCursor && { cursor: nextCursor }),
+                records: profiles.slice(0, limit),
+            };
         }),
 
     searchProfiles: openRoute
@@ -257,7 +349,18 @@ export const profilesRouter = t.router({
         .mutation(async ({ input, ctx }) => {
             const { profile } = ctx.user;
 
-            const { profileId, displayName, image, email, notificationsWebhook } = input;
+            const {
+                profileId,
+                displayName,
+                shortBio,
+                bio,
+                image,
+                heroImage,
+                websiteLink,
+                type,
+                email,
+                notificationsWebhook,
+            } = input;
 
             if (profileId) {
                 const profileExists = await getProfileByProfileId(profileId);
@@ -289,6 +392,11 @@ export const profilesRouter = t.router({
 
             if (image) profile.image = image;
             if (displayName) profile.displayName = displayName;
+            if (shortBio) profile.shortBio = shortBio;
+            if (bio) profile.bio = bio;
+            if (heroImage) profile.heroImage = heroImage;
+            if (websiteLink) profile.websiteLink = websiteLink;
+            if (type) profile.type = type;
             if (notificationsWebhook) profile.notificationsWebhook = notificationsWebhook;
 
             await profile.save();
@@ -389,7 +497,7 @@ export const profilesRouter = t.router({
                 description: 'Connects with another profile using an invitation challenge',
             },
         })
-        .input(z.object({ profileId: z.string(), challenge: z.string()}))
+        .input(z.object({ profileId: z.string(), challenge: z.string() }))
         .output(z.boolean())
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
@@ -576,7 +684,14 @@ export const profilesRouter = t.router({
                     'This route creates a one-time challenge that an unknown profile can use to connect with this account',
             },
         })
-        .input(z.object({ challenge: z.string().optional(), expiration: z.number().default(3600 * 24 * 30) }).optional(),)
+        .input(
+            z
+                .object({
+                    challenge: z.string().optional(),
+                    expiration: z.number().default(3600 * 24 * 30),
+                })
+                .optional()
+        )
         .output(z.object({ profileId: z.string(), challenge: z.string() }))
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;

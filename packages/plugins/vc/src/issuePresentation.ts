@@ -2,6 +2,7 @@ import { UnsignedVP } from '@learncard/types';
 
 import { ProofOptions } from '@learncard/didkit-plugin';
 import { VCDependentLearnCard, VCImplicitLearnCard } from './types';
+import { getDefaultVerificationMethod } from './helpers';
 
 export const issuePresentation = (initLearnCard: VCDependentLearnCard) => {
     return async (
@@ -13,16 +14,19 @@ export const issuePresentation = (initLearnCard: VCDependentLearnCard) => {
 
         if (!kp) throw new Error('Cannot issue credential: Could not get subject keypair');
 
-        const verificationMethod = await learnCard.invoke.didToVerificationMethod(
-            learnCard.id.did()
-        );
-
         const options = {
-            verificationMethod,
-            ...(signingOptions.proofFormat === 'jwt' ? {} : { proofPurpose: 'assertionMethod' }),
-            ...(signingOptions.proofFormat === 'jwt' ? {} : { type: 'Ed25519Signature2020' }),
+            ...(signingOptions.proofFormat === 'jwt'
+                ? {}
+                : { proofPurpose: 'assertionMethod', type: 'Ed25519Signature2020' }),
             ...signingOptions,
         };
+
+        if (!('verificationMethod' in options)) {
+            options.verificationMethod = await getDefaultVerificationMethod(
+                learnCard,
+                learnCard.id.did()
+            );
+        }
 
         return initLearnCard.invoke.issuePresentation(presentation, options, kp);
     };

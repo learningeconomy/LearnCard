@@ -19,12 +19,14 @@ import {
 import {
     ConsentFlowContractData,
     ConsentFlowContractQuery,
+    ConsentFlowDataQuery,
     ConsentFlowTermsQuery,
     ConsentFlowTransactionsQuery,
     LCNProfile,
 } from '@learncard/types';
 import { getIdFromUri } from '@helpers/uri.helpers';
 import { flattenObject, inflateObject } from '@helpers/objects.helpers';
+import { convertDataQueryToNeo4jQuery } from '@helpers/contract.helpers';
 
 export const isProfileConsentFlowContractAdmin = async (
     profile: ProfileInstance,
@@ -129,11 +131,13 @@ export const getContractTermsById = async (
     terms: DbTermsType;
     consenter: LCNProfile;
     contract: DbContractType;
+    contractOwner: LCNProfile;
 } | null> => {
     const result = convertQueryResultToPropertiesObjectArray<{
         consenter: LCNProfile;
         terms: FlatDbTermsType;
         contract: FlatDbContractType;
+        contractOwner: LCNProfile;
     }>(
         await new QueryBuilder()
             .match({
@@ -143,18 +147,21 @@ export const getContractTermsById = async (
                     { model: ConsentFlowTerms, identifier: 'terms', where: { id } },
                     ConsentFlowTerms.getRelationshipByAlias('consentsTo'),
                     { model: ConsentFlowContract, identifier: 'contract' },
+                    `-[:${ConsentFlowContract.getRelationshipByAlias('createdBy').name}]-`,
+                    { identifier: 'contractOwner', model: Profile },
                 ],
             })
-            .return('consenter, terms, contract')
+            .return('consenter, terms, contract, contractOwner')
             .run()
     );
 
     return result.length > 0
         ? {
-            consenter: result[0]!.consenter,
-            terms: inflateObject(result[0]!.terms),
-            contract: inflateObject(result[0]!.contract),
-        }
+              consenter: result[0]!.consenter,
+              terms: inflateObject(result[0]!.terms),
+              contract: inflateObject(result[0]!.contract),
+              contractOwner: result[0]!.contractOwner,
+          }
         : null;
 };
 
@@ -164,6 +171,7 @@ export const getContractTermsByUri = async (
     terms: DbTermsType;
     consenter: LCNProfile;
     contract: DbContractType;
+    contractOwner: LCNProfile;
 } | null> => {
     return getContractTermsById(getIdFromUri(uri));
 };
@@ -251,23 +259,89 @@ export const getConsentedContractsForProfile = async (
     }));
 };
 
+export const getConsentedDataForProfile = async (
+    profileId: string,
+    { query = {}, limit, cursor }: { query?: ConsentFlowDataQuery; limit: number; cursor?: string }
+): Promise<ConsentFlowContractData[]> => {
+    const _dbQuery = new QueryBuilder(
+        new BindParam({
+            params: flattenObject({ terms: convertDataQueryToNeo4jQuery(query) }),
+            cursor,
+        })
+    ).match({
+        related: [
+            { identifier: 'terms', model: ConsentFlowTerms },
+            ConsentFlowTerms.getRelationshipByAlias('consentsTo'),
+            { model: ConsentFlowContract },
+            ConsentFlowContract.getRelationshipByAlias('createdBy'),
+            { model: Profile, where: { profileId } },
+        ],
+        // The following is custom Cypher logic that has the following behavior:
+        // If query key is true, ensure all resulting terms have that key
+        // If query key is false, ensure no resulting terms have that key
+        // If query key is not present, return all terms whether they have it or not
+    }).where(`
+all(key IN keys($params) WHERE 
+    CASE $params[key]
+        WHEN true THEN terms[key] IS NOT NULL AND terms[key] <> []
+        WHEN false THEN terms[key] IS NULL OR terms[key] = []
+    END
+)
+`);
+
+    const dbQuery = cursor ? _dbQuery.raw('terms.updatedAt < $cursor') : _dbQuery;
+
+    const results = convertQueryResultToPropertiesObjectArray<{
+        terms: FlatDbTermsType;
+    }>(await dbQuery.return('DISTINCT terms').orderBy('terms.updatedAt DESC').limit(limit).run());
+
+    const terms = results.map(result => inflateObject<DbTermsType>(result.terms));
+
+    return terms.map(term => ({
+        date: term.updatedAt!,
+        credentials: {
+            categories: mapValues(
+                term.terms.read.credentials.categories,
+                category => category.shared ?? []
+            ),
+        },
+        personal: term.terms.read.personal,
+    }));
+};
+
 export const getConsentedDataForContract = async (
     id: string,
-    { limit, cursor }: { limit: number; cursor?: string }
+    { query = {}, limit, cursor }: { query?: ConsentFlowDataQuery; limit: number; cursor?: string }
 ): Promise<ConsentFlowContractData[]> => {
-    const _query = new QueryBuilder().match({
+    const _dbQuery = new QueryBuilder(
+        new BindParam({
+            params: flattenObject({ terms: convertDataQueryToNeo4jQuery(query) }),
+            cursor,
+        })
+    ).match({
         related: [
             { identifier: 'terms', model: ConsentFlowTerms },
             ConsentFlowTerms.getRelationshipByAlias('consentsTo'),
             { model: ConsentFlowContract, where: { id: id } },
         ],
-    });
+        // The following is custom Cypher logic that has the following behavior:
+        // If query key is true, ensure all resulting terms have that key
+        // If query key is false, ensure no resulting terms have that key
+        // If query key is not present, return all terms whether they have it or not
+    }).where(`
+all(key IN keys($params) WHERE 
+    CASE $params[key]
+        WHEN true THEN terms[key] IS NOT NULL AND terms[key] <> []
+        WHEN false THEN terms[key] IS NULL OR terms[key] = []
+    END
+)
+`);
 
-    const query = cursor ? _query.raw('terms.updatedAt < $cursor') : _query;
+    const dbQuery = cursor ? _dbQuery.where('terms.updatedAt < $cursor') : _dbQuery;
 
     const results = convertQueryResultToPropertiesObjectArray<{
         terms: FlatDbTermsType;
-    }>(await query.return('DISTINCT terms').orderBy('terms.updatedAt DESC').limit(limit).run());
+    }>(await dbQuery.return('DISTINCT terms').orderBy('terms.updatedAt DESC').limit(limit).run());
 
     const terms = results.map(result => inflateObject<DbTermsType>(result.terms));
 

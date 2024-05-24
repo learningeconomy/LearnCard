@@ -7,6 +7,7 @@ import * as Sentry from '@sentry/serverless';
 import { getProfileByDid } from '@accesslayer/profile/read';
 import { getEmptyLearnCard } from '@helpers/learnCard.helpers';
 import { invalidateChallengeForDid, isChallengeValidForDid } from '@cache/challenges';
+import { ProfileInstance } from '@models';
 
 export type DidAuthVP = {
     iss: string;
@@ -84,7 +85,27 @@ export const openRoute = t.procedure
 export const didRoute = openRoute.use(async ({ ctx, next }) => {
     if (!ctx.user?.did) throw new TRPCError({ code: 'UNAUTHORIZED' });
 
-    const profile = await getProfileByDid(ctx.user.did);
+    const didParts = ctx.user.did.split(':');
+
+    let did = ctx.user.did;
+
+    // User authenticated with their did:web. Resolve it and use their controller did to find their
+    // profile
+    if (didParts[1] === 'web' && didParts[2] === ctx.domain) {
+        const learnCard = await getEmptyLearnCard();
+
+        const didDoc = await learnCard.invoke.resolveDid(did);
+
+        if (!didDoc.controller) {
+            return next({
+                ctx: { ...ctx, user: { ...ctx.user, profile: null as ProfileInstance | null } },
+            });
+        }
+
+        did = Array.isArray(didDoc.controller) ? didDoc.controller[0] : didDoc.controller;
+    }
+
+    const profile = await getProfileByDid(did);
 
     if (profile) Sentry.setUser({ id: profile.profileId, username: profile.displayName });
 
