@@ -272,6 +272,96 @@ describe('Profiles', () => {
         });
     });
 
+    describe('createManagedServiceProfile', () => {
+        beforeEach(async () => {
+            await Profile.delete({ detach: true, where: {} });
+        });
+
+        afterAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+        });
+
+        it('should not allow you to create a managed profile without a profile/fullAuth', async () => {
+            await expect(
+                noAuthClient.profile.createManagedServiceProfile({ profileId: 'managed-usera' })
+            ).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+            await expect(
+                userA.clients.partialAuth.profile.createManagedServiceProfile({
+                    profileId: 'managed-usera',
+                })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+            await expect(
+                userA.clients.fullAuth.profile.createManagedServiceProfile({
+                    profileId: 'managed-usera',
+                })
+            ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+        });
+
+        it('should allow you to create a managed profile', async () => {
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            await expect(
+                userA.clients.fullAuth.profile.createManagedServiceProfile({
+                    profileId: 'managed-usera',
+                })
+            ).resolves.not.toThrow();
+        });
+    });
+
+    describe('getManagedServiceProfile', () => {
+        beforeAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await userA.clients.fullAuth.profile.createProfile({
+                profileId: 'usera',
+                displayName: 'A',
+                email: 'userA@test.com',
+                bio: 'I am user A',
+            });
+            await userB.clients.fullAuth.profile.createProfile({
+                profileId: 'userb',
+                displayName: 'B',
+                email: 'userB@test.com',
+                bio: 'I am user B',
+            });
+
+            await userA.clients.fullAuth.profile.createManagedServiceProfile({
+                profileId: 'managed-usera',
+                displayName: 'Managed A',
+                email: 'managed-userA@test.com',
+                bio: 'I am managed user A',
+            });
+        });
+
+        afterAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+        });
+
+        it('should not allow you to view your managed profiles without full auth', async () => {
+            await expect(noAuthClient.profile.getManagedServiceProfiles()).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+            await expect(
+                userA.clients.partialAuth.profile.getManagedServiceProfiles()
+            ).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+        });
+
+        it('should get the current users managed profiles', async () => {
+            const userAProfiles = await userA.clients.fullAuth.profile.getManagedServiceProfiles();
+            const userBProfiles = await userB.clients.fullAuth.profile.getManagedServiceProfiles();
+
+            expect(userAProfiles.records).toHaveLength(1);
+            expect(userAProfiles.records[0]?.profileId).toEqual('managed-usera');
+            expect(userAProfiles.records[0]?.displayName).toEqual('Managed A');
+            expect(userAProfiles.records[0]?.email).toEqual('managed-userA@test.com');
+            expect(userAProfiles.records[0]?.bio).toEqual('I am managed user A');
+
+            expect(userBProfiles.records).toHaveLength(0);
+        });
+    });
+
     describe('getProfile', () => {
         beforeAll(async () => {
             await Profile.delete({ detach: true, where: {} });

@@ -1,4 +1,9 @@
-import { ConsentFlowContractInput, ConsentFlowTermsInput } from '@learncard/types';
+import {
+    ConsentFlowContractInput,
+    ConsentFlowDataQuery,
+    ConsentFlowTermsInput,
+} from '@learncard/types';
+import cloneDeep from 'lodash/cloneDeep';
 
 export const areTermsValid = (terms: ConsentFlowTermsInput, contract: ConsentFlowContractInput) => {
     const contractPersonalReadKeys = Object.keys(contract.read?.personal ?? {});
@@ -44,4 +49,16 @@ export const areTermsValid = (terms: ConsentFlowTermsInput, contract: ConsentFlo
     }
 
     return true;
+};
+
+export const convertDataQueryToNeo4jQuery = (_query: ConsentFlowDataQuery) => {
+    const query = cloneDeep(_query);
+
+    Object.keys(query.credentials?.categories ?? {}).forEach(category => {
+        query.credentials!.categories![category] = {
+            shared: query.credentials!.categories![category],
+        } as any;
+    });
+
+    return { read: query };
 };

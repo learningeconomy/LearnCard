@@ -23,8 +23,9 @@ import {
     PaginatedConsentFlowTransactions,
     ConsentFlowTransactionsQuery,
     PaginatedConsentFlowData,
+    ConsentFlowDataQuery,
 } from '@learncard/types';
-import { Plugin } from '@learncard/core';
+import { LearnCard, Plugin } from '@learncard/core';
 import { ProofOptions } from '@learncard/didkit-plugin';
 import { VerifyExtension } from '@learncard/vc-plugin';
 
@@ -44,6 +45,12 @@ export type LearnCardNetworkPluginMethods = {
     createServiceProfile: (
         profile: Omit<LCNProfile, 'did' | 'isServiceProfile'>
     ) => Promise<string>;
+    createManagedServiceProfile: (
+        profile: Omit<LCNProfile, 'did' | 'isServiceProfile'>
+    ) => Promise<string>;
+    getManagedServiceProfiles: (
+        options: Partial<PaginationOptionsType> & { id?: string }
+    ) => Promise<PaginatedLCNProfiles>;
     updateProfile: (
         profile: Partial<Omit<LCNProfile, 'did' | 'isServiceProfile'>>
     ) => Promise<boolean>;
@@ -66,7 +73,10 @@ export type LearnCardNetworkPluginMethods = {
     getConnections: () => Promise<LCNProfile[]>;
     getPendingConnections: () => Promise<LCNProfile[]>;
     getConnectionRequests: () => Promise<LCNProfile[]>;
-    generateInvite: (challenge?: string, expiration?: number) => Promise<{ profileId: string; challenge: string}>;
+    generateInvite: (
+        challenge?: string,
+        expiration?: number
+    ) => Promise<{ profileId: string; challenge: string }>;
 
     blockProfile: (profileId: string) => Promise<boolean>;
     unblockProfile: (profileId: string) => Promise<boolean>;
@@ -146,6 +156,10 @@ export type LearnCardNetworkPluginMethods = {
     deleteContract: (uri: string) => Promise<boolean>;
     getConsentFlowData: (
         uri: string,
+        options?: Partial<PaginationOptionsType> & { query?: ConsentFlowDataQuery }
+    ) => Promise<PaginatedConsentFlowData>;
+    getAllConsentFlowData: (
+        query?: ConsentFlowDataQuery,
         options?: Partial<PaginationOptionsType>
     ) => Promise<PaginatedConsentFlowData>;
     consentToContract: (

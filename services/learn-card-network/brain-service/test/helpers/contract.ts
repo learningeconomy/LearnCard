@@ -15,6 +15,27 @@ export const minimalContract: ConsentFlowContract = {
     },
 };
 
+export const normalContract: ConsentFlowContract = {
+    read: {
+        personal: { name: { required: false } },
+        credentials: {
+            categories: {
+                Achievement: { required: false },
+                ID: { required: false },
+            },
+        },
+    },
+    write: {
+        personal: { name: { required: false } },
+        credentials: {
+            categories: {
+                Achievement: { required: false },
+                ID: { required: false },
+            },
+        },
+    },
+};
+
 export const predatoryContract: ConsentFlowContract = {
     read: {
         personal: {
@@ -83,6 +104,98 @@ export const noTerms: ConsentFlowTerms = {
     write: {
         personal: {},
         credentials: { categories: {} },
+    },
+};
+
+export const normalFullTerms: ConsentFlowTerms = {
+    read: {
+        personal: { name: 'Full Fullerson' },
+        credentials: {
+            shareAll: true,
+            sharing: true,
+            categories: {
+                Achievement: {
+                    shareAll: true,
+                    sharing: true,
+                    shared: ['achievement1', 'achievement2'],
+                },
+                ID: { shareAll: true, sharing: true, shared: ['id1', 'id2'] },
+            },
+        },
+    },
+    write: {
+        personal: { name: true },
+        credentials: { categories: { Achievement: true, ID: true } },
+    },
+};
+
+export const normalAchievementOnlyTerms: ConsentFlowTerms = {
+    read: {
+        personal: { name: 'Full Fullerson Only Achievements' },
+        credentials: {
+            shareAll: false,
+            sharing: true,
+            categories: {
+                Achievement: {
+                    shareAll: true,
+                    sharing: true,
+                    shared: ['achievement1', 'achievement2'],
+                },
+                ID: {
+                    shareAll: false,
+                    sharing: false,
+                    shared: [],
+                },
+            },
+        },
+    },
+    write: {
+        personal: { name: true },
+        credentials: { categories: { Achievement: true, ID: false } },
+    },
+};
+
+export const normalIDOnlyTerms: ConsentFlowTerms = {
+    read: {
+        personal: { name: 'Full Fullerson Only IDs' },
+        credentials: {
+            shareAll: false,
+            sharing: true,
+            categories: {
+                Achievement: {
+                    shareAll: false,
+                    sharing: false,
+                    shared: [],
+                },
+                ID: { shareAll: true, sharing: true, shared: ['id1', 'id2'] },
+            },
+        },
+    },
+    write: {
+        personal: { name: true },
+        credentials: { categories: { Achievement: false, ID: true } },
+    },
+};
+
+export const normalNoTerms: ConsentFlowTerms = {
+    read: {
+        personal: {},
+        credentials: {
+            shareAll: false,
+            sharing: false,
+            categories: {
+                Achievement: {
+                    shareAll: false,
+                    sharing: false,
+                    shared: [],
+                },
+                ID: { shareAll: false, sharing: false, shared: [] },
+            },
+        },
+    },
+    write: {
+        personal: { name: false },
+        credentials: { categories: { Achievement: false, ID: false } },
     },
 };
 
