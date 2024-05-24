@@ -1,6 +1,5 @@
 import express from 'express';
 import cors from 'cors';
-import { v4 as uuid } from 'uuid';
 import _sodium from 'libsodium-wrappers';
 import { base64url } from 'multiformats/bases/base64';
 import { base58btc } from 'multiformats/bases/base58';
