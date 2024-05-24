@@ -1,17 +1,37 @@
 import { QueryBuilder, BindParam } from 'neogma';
 import { v4 as uuid } from 'uuid';
-import { ConsentFlowTerms as ConsentFlowTermsType } from '@learncard/types';
+import {
+    ConsentFlowTerms as ConsentFlowTermsType,
+    ConsentFlowTransaction as ConsentFlowTransactionType,
+    LCNNotificationTypeEnumValidator,
+    LCNProfile,
+} from '@learncard/types';
 import { ConsentFlowTerms, ConsentFlowTransaction } from '@models';
 import { flattenObject } from '@helpers/objects.helpers';
+import { addNotificationToQueue } from '@helpers/notifications.helpers';
+import { DbContractType, DbTermsType } from 'types/consentflowcontract';
 
-export const reconsentTermsById = async (
-    id: string,
+export const reconsentTerms = async (
+    relationship: {
+        terms: DbTermsType;
+        consenter: LCNProfile;
+        contract: DbContractType;
+        contractOwner: LCNProfile;
+    },
     {
         terms,
         expiresAt,
         oneTime,
     }: { terms: ConsentFlowTermsType; expiresAt?: string; oneTime?: boolean }
 ): Promise<boolean> => {
+    const transaction = {
+        id: uuid(),
+        action: 'consent',
+        date: new Date().toISOString(),
+        ...(typeof expiresAt === 'string' ? { expiresAt } : {}),
+        ...(typeof oneTime === 'boolean' ? { oneTime } : {}),
+    } as const satisfies ConsentFlowTransactionType;
+
     const result = await new QueryBuilder(
         new BindParam({
             params: flattenObject({
@@ -23,7 +43,11 @@ export const reconsentTermsById = async (
             }),
         })
     )
-        .match({ model: ConsentFlowTerms, where: { id }, identifier: 'terms' })
+        .match({
+            model: ConsentFlowTerms,
+            where: { id: relationship.terms.id },
+            identifier: 'terms',
+        })
         .set('terms += $params')
         .with('terms')
         .create({
@@ -31,13 +55,7 @@ export const reconsentTermsById = async (
                 {
                     identifier: 'transaction',
                     model: ConsentFlowTransaction,
-                    properties: {
-                        id: uuid(),
-                        action: 'consent',
-                        date: new Date().toISOString(),
-                        ...(typeof expiresAt === 'string' ? { expiresAt } : {}),
-                        ...(typeof oneTime === 'boolean' ? { oneTime } : {}),
-                    },
+                    properties: transaction,
                 },
                 ConsentFlowTransaction.getRelationshipByAlias('isFor'),
                 { identifier: 'terms' },
@@ -46,17 +64,41 @@ export const reconsentTermsById = async (
         .set('transaction += $params')
         .run();
 
+    await addNotificationToQueue({
+        type: LCNNotificationTypeEnumValidator.enum.CONSENT_FLOW_TRANSACTION,
+        from: relationship.consenter,
+        to: relationship.contractOwner,
+        message: {
+            title: 'New Consent Transaction',
+            body: `${relationship.consenter.displayName} has just reconsented to ${relationship.contract.name}!`,
+        },
+        data: { transaction },
+    });
+
     return result.summary.counters.containsUpdates();
 };
 
-export const updateTermsById = async (
-    id: string,
+export const updateTerms = async (
+    relationship: {
+        terms: DbTermsType;
+        consenter: LCNProfile;
+        contract: DbContractType;
+        contractOwner: LCNProfile;
+    },
     {
         terms,
         expiresAt,
         oneTime,
     }: { terms: ConsentFlowTermsType; expiresAt?: string; oneTime?: boolean }
 ): Promise<boolean> => {
+    const transaction = {
+        id: uuid(),
+        action: 'update',
+        date: new Date().toISOString(),
+        ...(typeof expiresAt === 'string' ? { expiresAt } : {}),
+        ...(typeof oneTime === 'boolean' ? { oneTime } : {}),
+    } as const satisfies ConsentFlowTransactionType;
+
     const result = await new QueryBuilder(
         new BindParam({
             params: flattenObject({
@@ -68,7 +110,11 @@ export const updateTermsById = async (
             }),
         })
     )
-        .match({ model: ConsentFlowTerms, where: { id }, identifier: 'terms' })
+        .match({
+            model: ConsentFlowTerms,
+            where: { id: relationship.terms.id },
+            identifier: 'terms',
+        })
         .set('terms += $params')
         .with('terms')
         .create({
@@ -76,13 +122,7 @@ export const updateTermsById = async (
                 {
                     identifier: 'transaction',
                     model: ConsentFlowTransaction,
-                    properties: {
-                        id: uuid(),
-                        action: 'update',
-                        date: new Date().toISOString(),
-                        ...(typeof expiresAt === 'string' ? { expiresAt } : {}),
-                        ...(typeof oneTime === 'boolean' ? { oneTime } : {}),
-                    },
+                    properties: transaction,
                 },
                 ConsentFlowTransaction.getRelationshipByAlias('isFor'),
                 { identifier: 'terms' },
@@ -91,12 +131,38 @@ export const updateTermsById = async (
         .set('transaction += $params')
         .run();
 
+    await addNotificationToQueue({
+        type: LCNNotificationTypeEnumValidator.enum.CONSENT_FLOW_TRANSACTION,
+        from: relationship.consenter,
+        to: relationship.contractOwner,
+        message: {
+            title: 'New Consent Transaction',
+            body: `${relationship.consenter.displayName} has just updated their terms to ${relationship.contract.name}!`,
+        },
+        data: { transaction },
+    });
+
     return result.summary.counters.containsUpdates();
 };
 
-export const withdrawTermsById = async (id: string): Promise<boolean> => {
+export const withdrawTerms = async (relationship: {
+    terms: DbTermsType;
+    consenter: LCNProfile;
+    contract: DbContractType;
+    contractOwner: LCNProfile;
+}): Promise<boolean> => {
+    const transaction = {
+        id: uuid(),
+        action: 'withdraw',
+        date: new Date().toISOString(),
+    } as const satisfies ConsentFlowTransactionType;
+
     const result = await new QueryBuilder()
-        .match({ model: ConsentFlowTerms, where: { id }, identifier: 'terms' })
+        .match({
+            model: ConsentFlowTerms,
+            where: { id: relationship.terms.id },
+            identifier: 'terms',
+        })
         .set('terms.status = "withdrawn"')
         .with('terms')
         .create({
@@ -104,17 +170,24 @@ export const withdrawTermsById = async (id: string): Promise<boolean> => {
                 {
                     identifier: 'transaction',
                     model: ConsentFlowTransaction,
-                    properties: {
-                        id: uuid(),
-                        action: 'withdraw',
-                        date: new Date().toISOString(),
-                    },
+                    properties: transaction,
                 },
                 ConsentFlowTransaction.getRelationshipByAlias('isFor'),
                 { identifier: 'terms' },
             ],
         })
         .run();
+
+    await addNotificationToQueue({
+        type: LCNNotificationTypeEnumValidator.enum.CONSENT_FLOW_TRANSACTION,
+        from: relationship.consenter,
+        to: relationship.contractOwner,
+        message: {
+            title: 'New Consent Transaction',
+            body: `${relationship.consenter.displayName} has just withdrawn their terms to ${relationship.contract.name}!`,
+        },
+        data: { transaction },
+    });
 
     return result.summary.counters.containsUpdates();
 };
