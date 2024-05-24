@@ -188,6 +188,14 @@ export const PaginatedConsentFlowDataValidator = PaginationResponseValidator.ext
 });
 export type PaginatedConsentFlowData = z.infer<typeof PaginatedConsentFlowDataValidator>;
 
+export const ConsentFlowTermValidator = z.object({
+    sharing: z.boolean().optional(),
+    shared: z.string().array().optional(),
+    shareAll: z.boolean().optional(),
+    shareUntil: z.string().optional(),
+});
+export type ConsentFlowTerm = z.infer<typeof ConsentFlowTermValidator>;
+
 export const ConsentFlowTermsValidator = z.object({
     read: z
         .object({
@@ -196,15 +204,7 @@ export const ConsentFlowTermsValidator = z.object({
                 .object({
                     shareAll: z.boolean().optional(),
                     sharing: z.boolean().optional(),
-                    categories: z
-                        .record(
-                            z.object({
-                                sharing: z.boolean().optional(),
-                                shared: z.string().array().optional(),
-                                shareAll: z.boolean().optional(),
-                            })
-                        )
-                        .default({}),
+                    categories: z.record(ConsentFlowTermValidator).default({}),
                 })
                 .default({}),
             personal: z.record(z.string()).default({}),
@@ -269,17 +269,7 @@ export const ConsentFlowTermsQueryValidator = z.object({
                 .object({
                     shareAll: z.boolean().optional(),
                     sharing: z.boolean().optional(),
-                    categories: z
-                        .record(
-                            z
-                                .object({
-                                    sharing: z.boolean().optional(),
-                                    shared: z.string().array().optional(),
-                                    shareAll: z.boolean().optional(),
-                                })
-                                .optional()
-                        )
-                        .optional(),
+                    categories: z.record(ConsentFlowTermValidator.optional()).optional(),
                 })
                 .optional(),
             personal: z.record(z.string()).optional(),
