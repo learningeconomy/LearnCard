@@ -91,7 +91,7 @@ export type IndexPlane = {
     ) => Promise<CredentialRecord<Metadata>[]>;
     getPage?: <Metadata extends Record<string, any> = Record<never, never>>(
         query?: Partial<Query<CredentialRecord<Metadata>>>,
-        paginationOptions?: { limit?: number; cursor?: string },
+        paginationOptions?: { limit?: number; cursor?: string; sort?: string },
         options?: PlaneOptions
     ) => Promise<{ records: CredentialRecord<Metadata>[]; hasMore: boolean; cursor?: string }>;
     getCount?: <Metadata extends Record<string, any> = Record<never, never>>(
@@ -137,7 +137,7 @@ export type CachePlane = {
     getIndexPage: <Metadata extends Record<string, any> = Record<never, never>>(
         name: string,
         query: Partial<Query<CredentialRecord<Metadata>>>,
-        paginationOptions?: { limit?: number; cursor?: string }
+        paginationOptions?: { limit?: number; cursor?: string; sort?: string }
     ) => Promise<
         { records: CredentialRecord<Metadata>[]; hasMore: boolean; cursor?: string } | undefined
     >;

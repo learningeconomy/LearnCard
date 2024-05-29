@@ -1,13 +1,19 @@
 import React from 'react';
 import { format } from 'date-fns';
 
-import MediaAttachmentsBox, { MediaMetadata, VideoMetadata } from './MediaAttachmentsBox';
+import MediaAttachmentsBox from './MediaAttachmentsBox';
 import TruncateTextBox from './TruncateTextBox';
-// import SkillsBox from './SkillsBox';
+import SkillsBox from './SkillsBox';
 import IssueHistoryBox from './IssueHistoryBox';
 import { VC, VerificationItem } from '@learncard/types';
 import VerificationsBox from './VerificationsBox';
-import { BoostAchievementCredential, IssueHistory } from '../../types';
+import AlignmentsBox from '../CertificateDisplayCard/AlignmentsBox';
+import {
+    BoostAchievementCredential,
+    IssueHistory,
+    MediaMetadata,
+    VideoMetadata,
+} from '../../types';
 import LeftArrow from '../svgs/LeftArrow';
 
 /*
@@ -31,6 +37,7 @@ type VC2BackFaceProps = {
     showFrontFace: () => void;
     customDescription?: React.ReactNode;
     customCriteria?: React.ReactNode;
+    customSkillsComponent?: React.ReactNode;
     customIssueHistoryComponent?: React.ReactNode;
     enableLightbox?: boolean;
 };
@@ -47,6 +54,7 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
     showFrontFace,
     customDescription,
     customCriteria,
+    customSkillsComponent,
     customIssueHistoryComponent,
     enableLightbox,
 }) => {
@@ -64,6 +72,7 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
             : undefined;
     const criteria = achievement?.criteria?.narrative;
     const description = achievement?.description;
+    const alignment = achievement?.alignment;
 
     /* 
     const tags = credential.credentialSubject.achievement?.tag;
@@ -71,7 +80,7 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
     */
 
     return (
-        <section className="vc-back-face flex flex-col gap-[20px] w-full px-[15px]">
+        <section className="vc-back-face flex flex-col gap-[20px] w-full px-[15px] pb-[25px]">
             {showBackButton && (
                 <div className="w-full">
                     <button
@@ -111,7 +120,12 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
             {!customCriteria && criteria && (
                 <TruncateTextBox headerText="Criteria" text={criteria} className="criteria-box" />
             )}
-            {/* {skillsObject && <SkillsBox skillsObject={skillsObject} />} */}
+            {(credential.skills?.length ?? 0) > 0 &&
+                (customSkillsComponent ? (
+                    customSkillsComponent
+                ) : (
+                    <SkillsBox skills={credential.skills ?? []} />
+                ))}
 
             {issueHistory && issueHistory?.length > 0 && (
                 <IssueHistoryBox
@@ -130,6 +144,8 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
                 />
             )}
             {/* {credential.notes && <TruncateTextBox headerText="Notes" text={credential.notes} />} */}
+
+            {alignment && <AlignmentsBox alignment={alignment} style="boost" />}
 
             {verificationItems && verificationItems.length > 0 && (
                 <VerificationsBox verificationItems={verificationItems} />

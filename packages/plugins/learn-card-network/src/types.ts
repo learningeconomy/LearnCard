@@ -13,8 +13,19 @@ import {
     LCNBoostClaimLinkOptionsType,
     PaginationOptionsType,
     PaginatedLCNProfiles,
+    ConsentFlowContract,
+    ConsentFlowContractQuery,
+    ConsentFlowTerms,
+    ConsentFlowTermsQuery,
+    PaginatedConsentFlowContracts,
+    PaginatedConsentFlowTerms,
+    ConsentFlowContractDetails,
+    PaginatedConsentFlowTransactions,
+    ConsentFlowTransactionsQuery,
+    PaginatedConsentFlowData,
+    ConsentFlowDataQuery,
 } from '@learncard/types';
-import { Plugin } from '@learncard/core';
+import { LearnCard, Plugin } from '@learncard/core';
 import { ProofOptions } from '@learncard/didkit-plugin';
 import { VerifyExtension } from '@learncard/vc-plugin';
 
@@ -34,6 +45,12 @@ export type LearnCardNetworkPluginMethods = {
     createServiceProfile: (
         profile: Omit<LCNProfile, 'did' | 'isServiceProfile'>
     ) => Promise<string>;
+    createManagedServiceProfile: (
+        profile: Omit<LCNProfile, 'did' | 'isServiceProfile'>
+    ) => Promise<string>;
+    getManagedServiceProfiles: (
+        options: Partial<PaginationOptionsType> & { id?: string }
+    ) => Promise<PaginatedLCNProfiles>;
     updateProfile: (
         profile: Partial<Omit<LCNProfile, 'did' | 'isServiceProfile'>>
     ) => Promise<boolean>;
@@ -56,7 +73,10 @@ export type LearnCardNetworkPluginMethods = {
     getConnections: () => Promise<LCNProfile[]>;
     getPendingConnections: () => Promise<LCNProfile[]>;
     getConnectionRequests: () => Promise<LCNProfile[]>;
-    generateInvite: (challenge?: string) => Promise<{ profileId: string; challenge: string }>;
+    generateInvite: (
+        challenge?: string,
+        expiration?: number
+    ) => Promise<{ profileId: string; challenge: string }>;
 
     blockProfile: (profileId: string) => Promise<boolean>;
     unblockProfile: (profileId: string) => Promise<boolean>;
@@ -121,7 +141,56 @@ export type LearnCardNetworkPluginMethods = {
     ) => Promise<{ boostUri: string; challenge: string }>;
     claimBoostWithLink: (boostUri: string, challenge: string) => Promise<string>;
 
-    resolveFromLCN: (uri: string) => Promise<VC | UnsignedVC | VP | JWE>;
+    createContract: (contract: {
+        contract: ConsentFlowContract;
+        name: string;
+        subtitle?: string;
+        description?: string;
+        image?: string;
+        expiresAt?: string;
+    }) => Promise<string>;
+    getContract: (uri: string) => Promise<ConsentFlowContractDetails>;
+    getContracts: (
+        options?: Partial<PaginationOptionsType> & { query?: ConsentFlowContractQuery }
+    ) => Promise<PaginatedConsentFlowContracts>;
+    deleteContract: (uri: string) => Promise<boolean>;
+    getConsentFlowData: (
+        uri: string,
+        options?: Partial<PaginationOptionsType> & { query?: ConsentFlowDataQuery }
+    ) => Promise<PaginatedConsentFlowData>;
+    getAllConsentFlowData: (
+        query?: ConsentFlowDataQuery,
+        options?: Partial<PaginationOptionsType>
+    ) => Promise<PaginatedConsentFlowData>;
+    consentToContract: (
+        uri: string,
+        terms: {
+            terms: ConsentFlowTerms;
+            expiresAt?: string;
+            oneTime?: boolean;
+        }
+    ) => Promise<string>;
+    getConsentedContracts: (
+        options?: Partial<PaginationOptionsType> & { query?: ConsentFlowTermsQuery }
+    ) => Promise<PaginatedConsentFlowTerms>;
+    updateContractTerms: (
+        uri: string,
+        terms: {
+            terms: ConsentFlowTerms;
+            expiresAt?: string;
+            oneTime?: boolean;
+        }
+    ) => Promise<boolean>;
+    withdrawConsent: (uri: string) => Promise<boolean>;
+    getConsentFlowTransactions: (
+        uri: string,
+        options?: Partial<PaginationOptionsType> & { query?: ConsentFlowTransactionsQuery }
+    ) => Promise<PaginatedConsentFlowTransactions>;
+    verifyConsent: (uri: string, profileId: string) => Promise<boolean>;
+
+    resolveFromLCN: (
+        uri: string
+    ) => Promise<VC | UnsignedVC | VP | JWE | ConsentFlowContract | ConsentFlowTerms>;
 };
 
 /** @group LearnCardNetwork Plugin */

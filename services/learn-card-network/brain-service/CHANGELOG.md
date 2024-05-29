@@ -1,5 +1,121 @@
 # @learncard/network-brain-service
 
+## 1.10.5
+
+### Patch Changes
+
+-   [#451](https://github.com/learningeconomy/LearnCard/pull/451) [`e70c1671`](https://github.com/learningeconomy/LearnCard/commit/e70c1671213712527d0df447ff25ba7f101f94ae) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Allow getting all data for consented contracts
+
+-   [#451](https://github.com/learningeconomy/LearnCard/pull/451) [`e70c1671`](https://github.com/learningeconomy/LearnCard/commit/e70c1671213712527d0df447ff25ba7f101f94ae) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add more fields to LCN Profiles
+
+-   [#451](https://github.com/learningeconomy/LearnCard/pull/451) [`e70c1671`](https://github.com/learningeconomy/LearnCard/commit/e70c1671213712527d0df447ff25ba7f101f94ae) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Allow querying when getting a specific contract's data
+
+-   [#451](https://github.com/learningeconomy/LearnCard/pull/451) [`e70c1671`](https://github.com/learningeconomy/LearnCard/commit/e70c1671213712527d0df447ff25ba7f101f94ae) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Send notifications when a new Transaction is made
+
+-   [#451](https://github.com/learningeconomy/LearnCard/pull/451) [`e70c1671`](https://github.com/learningeconomy/LearnCard/commit/e70c1671213712527d0df447ff25ba7f101f94ae) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Allow managing service profiles
+
+-   [#453](https://github.com/learningeconomy/LearnCard/pull/453) [`587736f`](https://github.com/learningeconomy/LearnCard/commit/587736fd8e562d17b9dfbfcd058572c133367c02) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Granular sharing options for Contract Terms
+
+-   Updated dependencies [[`e70c1671`](https://github.com/learningeconomy/LearnCard/commit/e70c1671213712527d0df447ff25ba7f101f94ae), [`e70c1671`](https://github.com/learningeconomy/LearnCard/commit/e70c1671213712527d0df447ff25ba7f101f94ae), [`587736f`](https://github.com/learningeconomy/LearnCard/commit/587736fd8e562d17b9dfbfcd058572c133367c02), [`e70c1671`](https://github.com/learningeconomy/LearnCard/commit/e70c1671213712527d0df447ff25ba7f101f94ae)]:
+    -   @learncard/types@5.5.1
+    -   @learncard/didkit-plugin@1.4.5
+    -   @learncard/vc-plugin@1.1.10
+    -   @learncard/core@9.2.1
+    -   @learncard/helpers@1.0.13
+    -   @learncard/ceramic-plugin@1.0.10
+    -   @learncard/did-web-plugin@1.0.28
+    -   @learncard/didkey-plugin@1.0.10
+    -   @learncard/learn-card-plugin@1.1.8
+    -   @learncard/vc-templates-plugin@1.0.15
+    -   @learncard/expiration-plugin@1.1.10
+    -   @learncard/crypto-plugin@1.0.10
+
+## 1.10.4
+
+### Patch Changes
+
+-   Updated dependencies [[`be01a1a`](https://github.com/learningeconomy/LearnCard/commit/be01a1a3d1b5dde523b1dcfb5be2a2452f26f7a7)]:
+    -   @learncard/types@5.5.0
+    -   @learncard/core@9.2.0
+    -   @learncard/helpers@1.0.12
+    -   @learncard/ceramic-plugin@1.0.9
+    -   @learncard/did-web-plugin@1.0.27
+    -   @learncard/didkey-plugin@1.0.9
+    -   @learncard/didkit-plugin@1.4.4
+    -   @learncard/learn-card-plugin@1.1.7
+    -   @learncard/vc-plugin@1.1.9
+    -   @learncard/vc-templates-plugin@1.0.14
+    -   @learncard/crypto-plugin@1.0.9
+    -   @learncard/expiration-plugin@1.1.9
+
+## 1.10.3
+
+### Patch Changes
+
+-   Updated dependencies [[`b8855d3b`](https://github.com/learningeconomy/LearnCard/commit/b8855d3b4b80c4fdc5d1830a8c2ee63df022a866)]:
+    -   @learncard/vc-templates-plugin@1.0.13
+    -   @learncard/vc-plugin@1.1.8
+    -   @learncard/did-web-plugin@1.0.26
+    -   @learncard/expiration-plugin@1.1.8
+
+## 1.10.2
+
+### Patch Changes
+
+-   [#418](https://github.com/learningeconomy/LearnCard/pull/418) [`20095aa`](https://github.com/learningeconomy/LearnCard/commit/20095aa8e867b6a5c62a82f6d123366acb4fdcb0) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix withdraw events not appearing in transaction history
+
+## 1.10.1
+
+### Patch Changes
+
+-   Updated dependencies [[`4bb9472`](https://github.com/learningeconomy/LearnCard/commit/4bb94729339d638fac6883b6e40441f257429ded)]:
+    -   @learncard/vc-templates-plugin@1.0.12
+    -   @learncard/vc-plugin@1.1.7
+    -   @learncard/did-web-plugin@1.0.25
+    -   @learncard/expiration-plugin@1.1.7
+
+## 1.10.0
+
+### Minor Changes
+
+-   [#411](https://github.com/learningeconomy/LearnCard/pull/411) [`725e508c`](https://github.com/learningeconomy/LearnCard/commit/725e508c848b8c7752f44e5bf9915eebb421d766) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add ConsentFlow routes for basic CRUD operations of contracts and terms
+
+### Patch Changes
+
+-   [#411](https://github.com/learningeconomy/LearnCard/pull/411) [`725e508c`](https://github.com/learningeconomy/LearnCard/commit/725e508c848b8c7752f44e5bf9915eebb421d766) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add bio to LCN Profiles
+
+-   Updated dependencies [[`1cb031d7`](https://github.com/learningeconomy/LearnCard/commit/1cb031d7483e80f947c93e3479fe85af8ec09dbb), [`725e508c`](https://github.com/learningeconomy/LearnCard/commit/725e508c848b8c7752f44e5bf9915eebb421d766), [`725e508c`](https://github.com/learningeconomy/LearnCard/commit/725e508c848b8c7752f44e5bf9915eebb421d766)]:
+    -   @learncard/types@5.4.1
+    -   @learncard/learn-card-plugin@1.1.6
+    -   @learncard/core@9.1.4
+    -   @learncard/helpers@1.0.11
+    -   @learncard/ceramic-plugin@1.0.8
+    -   @learncard/did-web-plugin@1.0.24
+    -   @learncard/didkey-plugin@1.0.8
+    -   @learncard/didkit-plugin@1.4.3
+    -   @learncard/vc-plugin@1.1.6
+    -   @learncard/vc-templates-plugin@1.0.11
+    -   @learncard/expiration-plugin@1.1.6
+    -   @learncard/crypto-plugin@1.0.8
+
+## 1.9.0
+
+### Minor Changes
+
+-   [#409](https://github.com/learningeconomy/LearnCard/pull/409) [`aa2fac6`](https://github.com/learningeconomy/LearnCard/commit/aa2fac6cf86d662aadd4185fc36da999360620cf) Thanks [@cboydstun](https://github.com/cboydstun)! - "expiration" added to profile invite
+
+## 1.8.2
+
+### Patch Changes
+
+-   [`02e5d4d`](https://github.com/learningeconomy/LearnCard/commit/02e5d4d1b9ae37e2e1d14f004348a73a18fb733f) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Forcibly redeploy LCN
+
+## 1.8.1
+
+### Patch Changes
+
+-   [#399](https://github.com/learningeconomy/LearnCard/pull/399) [`8c6ef15`](https://github.com/learningeconomy/LearnCard/commit/8c6ef15f185af7547efb39885dba966b164797ac) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix cache error with connections
+
 ## 1.8.0
 
 ### Minor Changes

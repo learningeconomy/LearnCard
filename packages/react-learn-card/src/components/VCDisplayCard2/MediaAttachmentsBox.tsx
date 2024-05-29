@@ -6,21 +6,9 @@ import LinkIcon from '../svgs/LinkIcon';
 import VideoIcon from '../svgs/VideoIcon';
 import GenericDocumentIcon from '../svgs/GenericDocumentIcon';
 
-import { Attachment } from '../../types';
+import { Attachment, MediaMetadata, VideoMetadata } from '../../types';
 import { getBaseUrl } from '../../helpers/url.helpers';
 import { Lightbox, LightboxItem } from '../Lightbox';
-
-export type MediaMetadata = {
-    fileExtension?: string;
-    sizeInBytes?: number;
-    numberOfPages?: number;
-};
-
-export type VideoMetadata = {
-    title?: string;
-    videoLength?: string;
-    imageUrl?: string;
-};
 
 type MediaAttachmentsBoxProps = {
     attachments: Attachment[];

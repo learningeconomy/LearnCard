@@ -1,6 +1,8 @@
 import { TRPCError } from '@trpc/server';
 
-export type URIType = 'credential' | 'presentation' | 'boost';
+export const URI_TYPES = ['credential', 'presentation', 'boost', 'contract', 'terms'] as const;
+
+export type URIType = (typeof URI_TYPES)[number];
 
 export type URIParts = {
     domain: string;
@@ -8,10 +10,13 @@ export type URIParts = {
     id: string;
 };
 
-export const isURIType = (type: string): type is URIType =>
-    ['credential', 'presentation', 'boost'].includes(type);
+export const escapeLocalhostInUri = (uri: string): string =>
+    uri.replace('localhost:', 'localhost%3A');
 
-export const getUriParts = (uri: string): URIParts => {
+export const isURIType = (type: string): type is URIType => URI_TYPES.includes(type as any);
+
+export const getUriParts = (_uri: string): URIParts => {
+    const uri = escapeLocalhostInUri(_uri);
     const parts = uri.split(':');
 
     if (parts.length !== 5) {

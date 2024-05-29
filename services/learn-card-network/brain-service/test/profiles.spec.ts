@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { LCNProfileConnectionStatusEnum } from '@learncard/types';
 import { getClient, getUser } from './helpers/getClient';
 import { Profile, SigningAuthority, Credential, Boost } from '@models';
@@ -151,6 +152,21 @@ describe('Profiles', () => {
                 'https://api.learncard.app/send/notifications'
             );
         });
+
+        it('should allow setting your bio', async () => {
+            await userA.clients.fullAuth.profile.createProfile({
+                profileId: 'usera',
+                displayName: 'A',
+                bio: 'I am user A',
+            });
+            await expect(
+                userB.clients.fullAuth.profile.createProfile({
+                    profileId: 'userb',
+                    displayName: 'B',
+                    bio: 'I am user B',
+                })
+            ).resolves.not.toThrow();
+        });
     });
 
     describe('createServiceProfile', () => {
@@ -256,6 +272,96 @@ describe('Profiles', () => {
         });
     });
 
+    describe('createManagedServiceProfile', () => {
+        beforeEach(async () => {
+            await Profile.delete({ detach: true, where: {} });
+        });
+
+        afterAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+        });
+
+        it('should not allow you to create a managed profile without a profile/fullAuth', async () => {
+            await expect(
+                noAuthClient.profile.createManagedServiceProfile({ profileId: 'managed-usera' })
+            ).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+            await expect(
+                userA.clients.partialAuth.profile.createManagedServiceProfile({
+                    profileId: 'managed-usera',
+                })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+            await expect(
+                userA.clients.fullAuth.profile.createManagedServiceProfile({
+                    profileId: 'managed-usera',
+                })
+            ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+        });
+
+        it('should allow you to create a managed profile', async () => {
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            await expect(
+                userA.clients.fullAuth.profile.createManagedServiceProfile({
+                    profileId: 'managed-usera',
+                })
+            ).resolves.not.toThrow();
+        });
+    });
+
+    describe('getManagedServiceProfile', () => {
+        beforeAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await userA.clients.fullAuth.profile.createProfile({
+                profileId: 'usera',
+                displayName: 'A',
+                email: 'userA@test.com',
+                bio: 'I am user A',
+            });
+            await userB.clients.fullAuth.profile.createProfile({
+                profileId: 'userb',
+                displayName: 'B',
+                email: 'userB@test.com',
+                bio: 'I am user B',
+            });
+
+            await userA.clients.fullAuth.profile.createManagedServiceProfile({
+                profileId: 'managed-usera',
+                displayName: 'Managed A',
+                email: 'managed-userA@test.com',
+                bio: 'I am managed user A',
+            });
+        });
+
+        afterAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+        });
+
+        it('should not allow you to view your managed profiles without full auth', async () => {
+            await expect(noAuthClient.profile.getManagedServiceProfiles()).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+            await expect(
+                userA.clients.partialAuth.profile.getManagedServiceProfiles()
+            ).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+        });
+
+        it('should get the current users managed profiles', async () => {
+            const userAProfiles = await userA.clients.fullAuth.profile.getManagedServiceProfiles();
+            const userBProfiles = await userB.clients.fullAuth.profile.getManagedServiceProfiles();
+
+            expect(userAProfiles.records).toHaveLength(1);
+            expect(userAProfiles.records[0]?.profileId).toEqual('managed-usera');
+            expect(userAProfiles.records[0]?.displayName).toEqual('Managed A');
+            expect(userAProfiles.records[0]?.email).toEqual('managed-userA@test.com');
+            expect(userAProfiles.records[0]?.bio).toEqual('I am managed user A');
+
+            expect(userBProfiles.records).toHaveLength(0);
+        });
+    });
+
     describe('getProfile', () => {
         beforeAll(async () => {
             await Profile.delete({ detach: true, where: {} });
@@ -263,11 +369,13 @@ describe('Profiles', () => {
                 profileId: 'usera',
                 displayName: 'A',
                 email: 'userA@test.com',
+                bio: 'I am user A',
             });
             await userB.clients.fullAuth.profile.createProfile({
                 profileId: 'userb',
                 displayName: 'B',
                 email: 'userB@test.com',
+                bio: 'I am user B',
             });
         });
 
@@ -293,9 +401,11 @@ describe('Profiles', () => {
             expect(userAProfile?.profileId).toEqual('usera');
             expect(userAProfile?.displayName).toEqual('A');
             expect(userAProfile?.email).toEqual('userA@test.com');
+            expect(userAProfile?.bio).toEqual('I am user A');
             expect(userBProfile?.profileId).toEqual('userb');
             expect(userBProfile?.displayName).toEqual('B');
             expect(userBProfile?.email).toEqual('userB@test.com');
+            expect(userBProfile?.bio).toEqual('I am user B');
         });
     });
 
@@ -306,11 +416,13 @@ describe('Profiles', () => {
                 profileId: 'usera',
                 displayName: 'A',
                 email: 'userA@test.com',
+                bio: 'I am user A',
             });
             await userB.clients.fullAuth.profile.createProfile({
                 profileId: 'userb',
                 displayName: 'B',
                 email: 'userB@test.com',
+                bio: 'I am user B',
             });
         });
 
@@ -341,9 +453,11 @@ describe('Profiles', () => {
             expect(userAProfile?.profileId).toEqual('usera');
             expect(userAProfile?.displayName).toEqual('A');
             expect(userAProfile?.email).toEqual('userA@test.com');
+            expect(userAProfile?.bio).toEqual('I am user A');
             expect(userBProfile?.profileId).toEqual('userb');
             expect(userBProfile?.displayName).toEqual('B');
             expect(userBProfile?.email).toEqual('userB@test.com');
+            expect(userBProfile?.bio).toEqual('I am user B');
         });
     });
 
@@ -1391,11 +1505,11 @@ describe('Profiles', () => {
         });
 
         it('expires challenges after a while, allowing them to be used again', async () => {
-            jest.useFakeTimers().setSystemTime(new Date('02-06-2023'));
+            vi.useFakeTimers().setSystemTime(new Date('02-06-2023'));
 
             await userA.clients.fullAuth.profile.generateInvite({ challenge: 'nice' });
 
-            jest.setSystemTime(new Date('02-06-2024'));
+            vi.setSystemTime(new Date('02-06-2024'));
 
             await expect(
                 userB.clients.fullAuth.profile.connectWithInvite({
@@ -1408,7 +1522,71 @@ describe('Profiles', () => {
                 userA.clients.fullAuth.profile.generateInvite({ challenge: 'nice' })
             ).resolves.not.toThrow();
 
-            jest.useRealTimers();
+            vi.useRealTimers();
+        });
+
+        it('allows setting the expiration date', async () => {
+            vi.useFakeTimers().setSystemTime(new Date('02-06-2023'));
+
+            await userA.clients.fullAuth.profile.generateInvite({
+                challenge: 'nice',
+                expiration: 60 * 60 * 24 * 7 * 52 * 3, // 3 Years
+            });
+
+            vi.setSystemTime(new Date('02-06-2025'));
+
+            await expect(
+                userB.clients.fullAuth.profile.connectWithInvite({
+                    challenge: 'nice',
+                    profileId: 'usera',
+                })
+            ).resolves.not.toThrow();
+
+            vi.useRealTimers();
+        });
+
+        it('allows connections with challenges before they expire', async () => {
+            vi.useFakeTimers().setSystemTime(new Date('02-06-2023'));
+
+            await userA.clients.fullAuth.profile.generateInvite({
+                challenge: 'validChallenge',
+                expiration: 60 * 60 * 24 * 7, // Expires in 1 week
+            });
+
+            // Fast-forward time by 3 days
+            vi.advanceTimersByTime(60 * 60 * 24 * 1000 * 3);
+
+            // Attempt to connect with the challenge before it expires
+            await expect(
+                userB.clients.fullAuth.profile.connectWithInvite({
+                    challenge: 'validChallenge',
+                    profileId: 'usera',
+                })
+            ).resolves.not.toThrow();
+
+            vi.useRealTimers();
+        });
+
+        it('does not allow connections with challenges after they expire', async () => {
+            vi.useFakeTimers().setSystemTime(new Date('02-06-2023'));
+
+            await userA.clients.fullAuth.profile.generateInvite({
+                challenge: 'validChallenge',
+                expiration: 60 * 60 * 24 * 7, // Expires in 1 week
+            });
+
+            // Fast-forward time by 3 weeks
+            vi.advanceTimersByTime(3 * 7 * 60 * 60 * 24 * 1000);
+
+            // Attempt to connect with the challenge before it expires
+            await expect(
+                userB.clients.fullAuth.profile.connectWithInvite({
+                    challenge: 'validChallenge',
+                    profileId: 'usera',
+                })
+            ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+
+            vi.useRealTimers();
         });
     });
 

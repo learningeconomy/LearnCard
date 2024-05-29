@@ -9,6 +9,7 @@ import { VCTemplatePlugin, getVCTemplatesPlugin } from '@learncard/vc-templates-
 import { CeramicPlugin, getCeramicPlugin } from '@learncard/ceramic-plugin';
 import { ExpirationPlugin, expirationPlugin } from '@learncard/expiration-plugin';
 import { LearnCardPlugin, getLearnCardPlugin } from '@learncard/learn-card-plugin';
+import { isTest } from './test.helpers';
 
 const didkit = readFile(require.resolve('@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm'));
 
@@ -49,7 +50,9 @@ export const getEmptyLearnCard = async (): Promise<EmptyLearnCard> => {
     return emptyLearnCard;
 };
 
-export const getLearnCard = async (seed = process.env.LEARN_CLOUD_SEED): Promise<SeedLearnCard> => {
+export const getLearnCard = async (
+    seed = isTest ? 'a'.repeat(64) : process.env.LEARN_CLOUD_SEED
+): Promise<SeedLearnCard> => {
     if (!seed) throw new Error('No seed set!');
 
     if (!learnCards[seed]) {

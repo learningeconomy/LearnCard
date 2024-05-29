@@ -43,6 +43,15 @@ import Credentials from '@components/Credentials';
             <button
                 disabled
                 type="button"
+                id="test-multi-storage"
+                class="bg-emerald-500 text-slate-100 rounded-md m-3 py-5 px-4 border opacity-0"
+            >
+                Issue Multiple via CHAPI
+            </button>
+
+            <button
+                disabled
+                type="button"
                 id="test-storage-lcw"
                 class="bg-emerald-500 text-slate-100 rounded-md m-3 py-5 px-4 border opacity-0"
             >
@@ -70,11 +79,39 @@ import Credentials from '@components/Credentials';
 
     await wallet.invoke.installChapiHandler();
 
+    const getTestCredential = (learnCard, name = "Test Credential", achievementType = "Achievement", issuanceDate = new Date().toISOString()) => {
+        const vc = learnCard.invoke.newCredential({ type: 'jff2' });
+        vc.name = name
+        vc.credentialSubject.achievement.name = name
+        vc.credentialSubject.achievement.achievementType = achievementType
+        vc.issuanceDate = issuanceDate
+        return vc;
+    }
+
     const testStorage = async () => {
         // Test issuing from a different wallet using VC API
         const testWallet = await initLearnCard({ vcApi: true });
 
-        if (await testWallet.invoke.storeCredentialViaChapiDidAuth(testWallet.invoke.getTestVc())) {
+        const vc1 = getTestCredential(testWallet, "CHAPI Achievement", "Achievement");
+
+        if (await testWallet.invoke.storeCredentialViaChapiDidAuth(vc1)) {
+            window.location.reload();
+        }
+    };
+
+    const testMultiStorage = async () => {
+        // Test issuing from a different wallet using VC API
+        const testWallet = await initLearnCard({ vcApi: true });
+
+        const vc1 = getTestCredential(testWallet, "1: CHAPI Achievement", "Achievement");
+        const vc2 = getTestCredential(testWallet, "2: CHAPI Course", "Course");
+        const vc3 = getTestCredential(testWallet, "3: CHAPI ID", "PermanentResidentCard");
+        const vc4 = getTestCredential(testWallet, "4: CHAPI Work", "ApprenticeshipCertificate");
+        const vc5 = getTestCredential(testWallet, "5: CHAPI Social", "ext:CoolCat");
+        const vc6 = getTestCredential(testWallet, "6: CHAPI Accomplishment", "ext:Project");
+        const vc7 = getTestCredential(testWallet, "7: CHAPI Accomodation", "ext:PermissionSlip");
+
+        if (await testWallet.invoke.storeCredentialViaChapiDidAuth([vc1, vc2, vc3, vc4, vc5, vc6, vc7])) {
             window.location.reload();
         }
     };
@@ -100,6 +137,7 @@ import Credentials from '@components/Credentials';
 
     const loadingWallet = document.getElementById('loading-wallet') as HTMLElement;
     const storageButton = document.getElementById('test-storage') as HTMLButtonElement;
+    const multiStorageButton = document.getElementById('test-multi-storage') as HTMLButtonElement;
     const lcwStorageButton = document.getElementById('test-storage-lcw') as HTMLButtonElement;
     const seedDisplay = document.getElementById('seed-display') as HTMLElement;
     //const changeSeedButton = document.getElementById('change-seed') as HTMLButtonElement;
@@ -109,6 +147,10 @@ import Credentials from '@components/Credentials';
     storageButton.classList.remove('opacity-0');
     storageButton.disabled = false;
     storageButton.addEventListener('click', testStorage);
+
+    multiStorageButton.classList.remove('opacity-0');
+    multiStorageButton.disabled = false;
+    multiStorageButton.addEventListener('click', testMultiStorage);
 
     lcwStorageButton.classList.remove('opacity-0');
     lcwStorageButton.disabled = false;

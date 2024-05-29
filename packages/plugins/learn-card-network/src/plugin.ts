@@ -6,6 +6,8 @@ import {
     VCValidator,
     VPValidator,
     Profile,
+    ConsentFlowContractValidator,
+    ConsentFlowTermsValidator,
 } from '@learncard/types';
 import { LearnCard } from '@learncard/core';
 import { VerifyExtension } from '@learncard/vc-plugin';
@@ -127,6 +129,18 @@ export const getLearnCardNetworkPlugin = async (
 
                 return newDid;
             },
+            createManagedServiceProfile: async (_learnCard, profile) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                const newDid = await client.profile.createManagedServiceProfile.mutate(profile);
+
+                return newDid;
+            },
+            getManagedServiceProfiles: async (_learnCard, options = {}) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.profile.getManagedServiceProfiles.query(options);
+            },
             updateProfile: async (_learnCard, profile) => {
                 if (!userData) throw new Error('Please make an account first!');
 
@@ -216,10 +230,10 @@ export const getLearnCardNetworkPlugin = async (
 
                 return client.profile.connectionRequests.query();
             },
-            generateInvite: async (_learnCard, challenge) => {
-                if (!userData) throw new Error('Please make an account first!');
 
-                return client.profile.generateInvite.mutate({ challenge });
+            generateInvite: async (_learnCard, challenge, expiration) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.profile.generateInvite.mutate({ challenge, expiration });
             },
 
             blockProfile: async (_learnCard, profileId) => {
@@ -466,10 +480,89 @@ export const getLearnCardNetworkPlugin = async (
                     challenge,
                 });
             },
+
             claimBoostWithLink: async (_learnCard, boostUri, challenge) => {
                 if (!userData) throw new Error('Please make an account first!');
 
                 return client.boost.claimBoostWithLink.mutate({ boostUri, challenge });
+            },
+
+            createContract: async (_learnCard, contract) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.contracts.createConsentFlowContract.mutate(contract);
+            },
+
+            getContract: async (_learnCard, uri) => {
+                return client.contracts.getConsentFlowContract.query({ uri });
+            },
+
+            getContracts: async (_learnCard, options) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.contracts.getConsentFlowContracts.query(options);
+            },
+
+            deleteContract: async (_learnCard, uri) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.contracts.deleteConsentFlowContract.mutate({ uri });
+            },
+
+            getConsentFlowData: async (_learnCard, uri, options = {}) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.contracts.getConsentedDataForContract.query({ uri, ...options });
+            },
+
+            getAllConsentFlowData: async (_learnCard, query = {}, options = {}) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.contracts.getConsentedData.query({ query, ...options });
+            },
+
+            consentToContract: async (_learnCard, contractUri, { terms, expiresAt, oneTime }) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.contracts.consentToContract.mutate({
+                    contractUri,
+                    terms,
+                    expiresAt,
+                    oneTime,
+                });
+            },
+
+            getConsentedContracts: async (_learnCard, options) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.contracts.getConsentedContracts.query(options);
+            },
+
+            updateContractTerms: async (_learnCard, uri, { terms, expiresAt, oneTime }) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.contracts.updateConsentedContractTerms.mutate({
+                    uri,
+                    terms,
+                    expiresAt,
+                    oneTime,
+                });
+            },
+
+            withdrawConsent: async (_learnCard, uri) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.contracts.withdrawConsent.mutate({ uri });
+            },
+
+            getConsentFlowTransactions: async (_learnCard, uri, options) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.contracts.getTermsTransactionHistory.query({ uri, ...options });
+            },
+
+            verifyConsent: async (_learnCard, uri, profileId) => {
+                return client.contracts.verifyConsent.query({ uri, profileId });
             },
 
             resolveFromLCN: async (_learnCard, uri) => {
@@ -478,6 +571,8 @@ export const getLearnCardNetworkPlugin = async (
                 return UnsignedVCValidator.or(VCValidator)
                     .or(VPValidator)
                     .or(JWEValidator)
+                    .or(ConsentFlowContractValidator)
+                    .or(ConsentFlowTermsValidator)
                     .parseAsync(result);
             },
         },

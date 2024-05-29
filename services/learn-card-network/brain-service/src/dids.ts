@@ -10,6 +10,8 @@ import { TypedRequest } from '@helpers/types.helpers';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
 import { getSigningAuthoritiesForUser } from '@accesslayer/signing-authority/relationships/read';
 import { getDidDocForProfile, setDidDocForProfile } from '@cache/did-docs';
+import Profile from './models/Profile';
+import { JWK } from '@learncard/types';
 
 const encodeKey = (key: Uint8Array) => {
     const bytes = new Uint8Array(key.length + 2);
@@ -144,6 +146,7 @@ app.get(
         }
 
         let finalDoc = {
+            controller: profile.did,
             ...replacedDoc,
             keyAgreement: [
                 {
@@ -174,6 +177,49 @@ app.get(
                         ...(sa.keyAgreement || []),
                     ]);
             });
+        }
+
+        const managedRelationships = await Profile.findRelationships({
+            alias: 'managedBy',
+            where: { source: { profileId } },
+        });
+
+        if (managedRelationships.length > 0) {
+            finalDoc.controller = profile.did;
+
+            await Promise.all(
+                managedRelationships.map(async managedRelationship => {
+                    const { target } = managedRelationship;
+
+                    const targetDid = target.did;
+                    const targetKey = target.did.split(':')[2];
+
+                    const targetDidDoc = await learnCard.invoke.resolveDid(targetDid);
+                    const targetJwk = (targetDidDoc.verificationMethod?.[0] as any)
+                        .publicKeyJwk as JWK;
+
+                    const _decodedJwk = base64url.decode(`u${targetJwk.x}`);
+                    const _x25519PublicKeyBytes =
+                        sodium.crypto_sign_ed25519_pk_to_curve25519(_decodedJwk);
+
+                    const id = `${did}#${targetKey}`;
+
+                    finalDoc.verificationMethod.unshift({
+                        id,
+                        type: 'Ed25519VerificationKey2018',
+                        controller: id,
+                        publicKeyJwk: targetJwk,
+                    });
+                    finalDoc.authentication.push(id);
+                    finalDoc.assertionMethod.push(id);
+                    finalDoc.keyAgreement.push({
+                        id: `${did}#${encodeKey(_x25519PublicKeyBytes)}`,
+                        type: 'X25519KeyAgreementKey2019',
+                        controller: id,
+                        publicKeyBase58: base58btc.encode(_x25519PublicKeyBytes).slice(1),
+                    });
+                })
+            );
         }
 
         setDidDocForProfile(profileId, finalDoc);

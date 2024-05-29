@@ -10,7 +10,7 @@ export const INDEX_TTL = 60 * 60 * 24;
 export const getIndexPageCacheKey = (
     did: string,
     query: Record<string, any>,
-    paginationOptions: PaginationOptionsType,
+    paginationOptions: PaginationOptionsType & { sort: 'newestFirst' | 'oldestFirst' },
     includeAssociatedDids = true
 ): string =>
     `index:${did}:${stringify(paginationOptions)}:${includeAssociatedDids}:${stringify(query)}`;
@@ -18,7 +18,7 @@ export const getIndexPageCacheKey = (
 export const getCachedIndexPageForDid = async (
     did: string,
     query: Record<string, any>,
-    paginationOptions: PaginationOptionsType,
+    paginationOptions: PaginationOptionsType & { sort: 'newestFirst' | 'oldestFirst' },
     includeAssociatedDids = true
 ): Promise<PaginatedEncryptedCredentialRecordsType | null | undefined> => {
     const result = await cache.get(
@@ -33,7 +33,7 @@ export const getCachedIndexPageForDid = async (
 export const setCachedIndexPageForDid = async (
     did: string,
     query: Record<string, any>,
-    paginationOptions: PaginationOptionsType,
+    paginationOptions: PaginationOptionsType & { sort: 'newestFirst' | 'oldestFirst' },
     page: PaginatedEncryptedCredentialRecordsType,
     includeAssociatedDids = true
 ) => {
@@ -47,7 +47,7 @@ export const setCachedIndexPageForDid = async (
 export const deleteCachedIndexPageForDid = async (
     did: string,
     query: Record<string, any>,
-    paginationOptions: PaginationOptionsType,
+    paginationOptions: PaginationOptionsType & { sort: 'newestFirst' | 'oldestFirst' },
     includeAssociatedDids = true
 ) => {
     return cache.delete([

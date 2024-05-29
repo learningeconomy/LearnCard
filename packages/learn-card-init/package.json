@@ -1,6 +1,6 @@
 {
     "name": "@learncard/init",
-    "version": "1.2.11",
+    "version": "1.2.20",
     "description": "",
     "main": "./dist/index.js",
     "module": "./dist/init.esm.js",
@@ -64,12 +64,5 @@
         "@learncard/vc-plugin": "workspace:*",
         "@learncard/vc-templates-plugin": "workspace:*",
         "@learncard/vpqr-plugin": "workspace:*"
-    },
-    "pnpm": {
-        "overrides": {
-            "pvutils": "1.0.17",
-            "did-jwt": "5.9.0",
-            "uint8arrays": "^3.0.0"
-        }
     }
 }

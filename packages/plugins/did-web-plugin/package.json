@@ -1,6 +1,6 @@
 {
     "name": "@learncard/did-web-plugin",
-    "version": "1.0.23",
+    "version": "1.0.28",
     "description": "",
     "main": "./dist/index.js",
     "module": "./dist/did-web-plugin.esm.js",
@@ -48,12 +48,5 @@
         "@learncard/types": "workspace:*",
         "@learncard/vc-plugin": "workspace:*",
         "@learncard/vc-templates-plugin": "workspace:*"
-    },
-    "pnpm": {
-        "overrides": {
-            "pvutils": "1.0.17",
-            "did-jwt": "5.9.0",
-            "@ceramicnetwork/streamid": "2.7.0"
-        }
     }
 }

@@ -1,5 +1,31 @@
 # learn-card-core
 
+## 1.0.21
+
+### Patch Changes
+
+-   [#452](https://github.com/learningeconomy/LearnCard/pull/452) [`b5b4c9a0`](https://github.com/learningeconomy/LearnCard/commit/b5b4c9a0e360aa7fd6328c670007dbb7bac79e8b) Thanks [@Custard7](https://github.com/Custard7)! - Feat: Support Multiple VCs sent through CHAPI Store Event
+
+-   Updated dependencies [[`e70c1671`](https://github.com/learningeconomy/LearnCard/commit/e70c1671213712527d0df447ff25ba7f101f94ae)]:
+    -   @learncard/didkit-plugin@1.4.5
+    -   @learncard/core@9.2.1
+
+## 1.0.20
+
+### Patch Changes
+
+-   Updated dependencies [[`be01a1a`](https://github.com/learningeconomy/LearnCard/commit/be01a1a3d1b5dde523b1dcfb5be2a2452f26f7a7)]:
+    -   @learncard/core@9.2.0
+    -   @learncard/didkit-plugin@1.4.4
+
+## 1.0.19
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.1.4
+    -   @learncard/didkit-plugin@1.4.3
+
 ## 1.0.18
 
 ### Patch Changes

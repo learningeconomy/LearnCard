@@ -3,7 +3,9 @@ import { Profile } from './Profile';
 import { Credential } from './Credential';
 import { Presentation } from './Presentation';
 
-Profile.addRelationships({ adminOf: { model: Boost, direction: 'out', name: 'ADMIN_OF' } });
+Profile.addRelationships({
+    adminOf: { model: Boost, direction: 'out', name: 'ADMIN_OF' },
+});
 
 Credential.addRelationships({
     credentialReceived: {
@@ -11,8 +13,8 @@ Credential.addRelationships({
         direction: 'out',
         name: 'CREDENTIAL_RECEIVED',
         properties: {
-            from: { property: 'from', schema: { type: 'string' } },
-            date: { property: 'date', schema: { type: 'string' } },
+            from: { property: 'from', schema: { type: 'string', required: true } },
+            date: { property: 'date', schema: { type: 'string', required: true } },
         },
     },
     instanceOf: {
@@ -28,8 +30,8 @@ Presentation.addRelationships({
         direction: 'out',
         name: 'PRESENTATION_RECEIVED',
         properties: {
-            from: { property: 'from', schema: { type: 'string' } },
-            date: { property: 'date', schema: { type: 'string' } },
+            from: { property: 'from', schema: { type: 'string', required: true } },
+            date: { property: 'date', schema: { type: 'string', required: true } },
         },
     },
 });
@@ -39,3 +41,6 @@ export * from './Profile';
 export * from './Credential';
 export * from './Presentation';
 export * from './SigningAuthority';
+export * from './ConsentFlowTerms';
+export * from './ConsentFlowContract';
+export * from './ConsentFlowTransaction';
