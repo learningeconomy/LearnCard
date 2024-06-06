@@ -70,6 +70,7 @@ export type VCDisplayCard2Props = {
     hideQRCode?: boolean;
     qrCodeOnClick?: () => void; // exclusive to the ID display type
     showDetailsBtn?: boolean;
+    customIDDescription?: React.ReactNode;
 };
 
 export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
@@ -110,6 +111,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     hideQRCode = false,
     qrCodeOnClick,
     showDetailsBtn = false,
+    customIDDescription,
 }) => {
     const {
         title = '',
@@ -221,6 +223,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 qrCodeOnClick={qrCodeOnClick}
                 showBackButton={showBackButton}
                 showDetailsBtn={showDetailsBtn}
+                customIDDescription={customIDDescription}
             />
         );
     }

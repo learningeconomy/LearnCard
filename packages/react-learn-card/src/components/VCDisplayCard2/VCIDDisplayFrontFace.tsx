@@ -23,6 +23,7 @@ type VCIDDisplayFrontFaceProps = {
     customThumbComponent?: React.ReactNode;
     hideQRCode?: boolean;
     qrCodeOnClick?: () => void;
+    customIDDescription?: React.ReactNode;
 };
 
 const VERIFIER_STATES = {
@@ -42,6 +43,7 @@ const VCIDDisplayFrontFace: React.FC<VCIDDisplayFrontFaceProps> = ({
     customThumbComponent,
     hideQRCode = false,
     qrCodeOnClick,
+    customIDDescription,
 }) => {
     const { credentialSubject } = getInfoFromCredential(credential, 'MMM dd, yyyy', {
         uppercaseDate: false,
@@ -99,7 +101,7 @@ const VCIDDisplayFrontFace: React.FC<VCIDDisplayFrontFaceProps> = ({
             </div>
 
             <div className="w-full bg-white relative mt-[-70px] px-6 pb-4 pt-4">
-                {description && (
+                {description && !customIDDescription && (
                     <>
                         <TruncateTextBox
                             text={description}
@@ -110,6 +112,8 @@ const VCIDDisplayFrontFace: React.FC<VCIDDisplayFrontFaceProps> = ({
                         />
                     </>
                 )}
+
+                {customIDDescription && customIDDescription}
 
                 {isFront && showDetailsBtn && (
                     <button

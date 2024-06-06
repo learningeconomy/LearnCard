@@ -33,6 +33,7 @@ export type VCIDDisplayCardProps = {
     hideQRCode?: boolean;
     qrCodeOnClick?: () => void;
     showDetailsBtn?: boolean;
+    customIDDescription?: React.ReactNode;
 };
 
 export const VCIDDisplayCard: React.FC<VCIDDisplayCardProps> = ({
@@ -56,6 +57,7 @@ export const VCIDDisplayCard: React.FC<VCIDDisplayCardProps> = ({
     hideQRCode = false,
     qrCodeOnClick,
     showDetailsBtn = false,
+    customIDDescription,
 }) => {
     const [_isFront, _setIsFront] = useState<boolean>(isFrontOverride ?? true);
     const isFront = isFrontOverride ?? _isFront;
@@ -94,6 +96,7 @@ export const VCIDDisplayCard: React.FC<VCIDDisplayCardProps> = ({
                                             trustedAppRegistry={trustedAppRegistry}
                                             qrCodeOnClick={qrCodeOnClick}
                                             hideQRCode={hideQRCode}
+                                            customIDDescription={customIDDescription}
                                         />
                                     </Flipped>
                                 )}
