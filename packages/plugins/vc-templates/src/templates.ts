@@ -107,6 +107,7 @@ export const VC_TEMPLATES: { [Key in keyof VcTemplates]: (args: VcTemplates[Key]
             attachments,
             display,
             skills,
+            groupID = '',
         } = {}) => ({
             '@context': [
                 'https://www.w3.org/2018/credentials/v1',
@@ -180,6 +181,10 @@ export const VC_TEMPLATES: { [Key in keyof VcTemplates]: (args: VcTemplates[Key]
                                     },
                                 },
                             },
+                            groupID: {
+                                '@id': 'lcn:groupID',
+                                '@type': 'xsd:string',
+                            },
                         },
                     },
                 },
@@ -208,6 +213,7 @@ export const VC_TEMPLATES: { [Key in keyof VcTemplates]: (args: VcTemplates[Key]
             image: boostImage,
             attachments,
             skills,
+            groupID,
         }),
         boostID: ({
             did = 'did:example:d23dd687a7dc6787646f2eb98d0',
@@ -228,6 +234,7 @@ export const VC_TEMPLATES: { [Key in keyof VcTemplates]: (args: VcTemplates[Key]
             skills,
             display,
             boostID,
+            groupID = '',
         } = {}) => ({
             '@context': [
                 'https://www.w3.org/2018/credentials/v1',
@@ -297,6 +304,10 @@ export const VC_TEMPLATES: { [Key in keyof VcTemplates]: (args: VcTemplates[Key]
                                         '@type': 'xsd:string',
                                     },
                                 },
+                            },
+                            groupID: {
+                                '@id': 'lcn:groupID',
+                                '@type': 'xsd:string',
                             },
                             address: {
                                 '@id': 'https://purl.imsglobal.org/spec/vc/ob/vocab.html#Address',
@@ -384,5 +395,6 @@ export const VC_TEMPLATES: { [Key in keyof VcTemplates]: (args: VcTemplates[Key]
             attachments,
             skills,
             boostID,
+            groupID,
         }),
     };

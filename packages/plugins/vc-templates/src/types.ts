@@ -61,6 +61,7 @@ export type BoostTemplate = {
     display?: BoostDisplay;
     boostID?: BoostID;
     address?: AddressSpec;
+    groupID?: string;
 };
 
 /** @group VC Templates Plugin */
