@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 1.4.6
+
+### Patch Changes
+
+-   [#456](https://github.com/learningeconomy/LearnCard/pull/456) [`30aeb31`](https://github.com/learningeconomy/LearnCard/commit/30aeb31b467661d2036baa97a01e31ceca1588f8) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix new URL causing issues
+
 ## 1.4.5
 
 ### Patch Changes

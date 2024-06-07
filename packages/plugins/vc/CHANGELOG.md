@@ -1,5 +1,14 @@
 # learn-card-core
 
+## 1.1.11
+
+### Patch Changes
+
+-   [#455](https://github.com/learningeconomy/LearnCard/pull/455) [`0ffe0984`](https://github.com/learningeconomy/LearnCard/commit/0ffe0984572e813d39dfc38345fde27a1afcd1c2) Thanks [@gerardopar](https://github.com/gerardopar)! - Store groupID on VC 🥑
+
+-   Updated dependencies [[`30aeb31`](https://github.com/learningeconomy/LearnCard/commit/30aeb31b467661d2036baa97a01e31ceca1588f8)]:
+    -   @learncard/didkit-plugin@1.4.6
+
 ## 1.1.10
 
 ### Patch Changes
