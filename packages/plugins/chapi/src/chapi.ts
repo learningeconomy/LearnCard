@@ -30,7 +30,11 @@ export const getCHAPIPlugin = async (): Promise<CHAPIPlugin> => {
         };
     }
 
-    await loadOnce();
+    try {
+        await loadOnce();
+    } catch (error) {
+        console.error('Error loading CHAPI polyfill!', error);
+    }
 
     return {
         name: 'CHAPI',
