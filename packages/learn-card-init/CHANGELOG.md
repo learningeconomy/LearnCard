@@ -1,5 +1,12 @@
 # learn-card-core
 
+## 1.2.22
+
+### Patch Changes
+
+-   Updated dependencies [[`1f28c38`](https://github.com/learningeconomy/LearnCard/commit/1f28c3873ffac5d685b54b25527dd675c09f1fe7)]:
+    -   @learncard/chapi-plugin@1.0.23
+
 ## 1.2.21
 
 ### Patch Changes
