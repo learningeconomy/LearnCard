@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 1.0.23
+
+### Patch Changes
+
+-   [#458](https://github.com/learningeconomy/LearnCard/pull/458) [`1f28c38`](https://github.com/learningeconomy/LearnCard/commit/1f28c3873ffac5d685b54b25527dd675c09f1fe7) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Catch errors in init code
+
 ## 1.0.22
 
 ### Patch Changes
