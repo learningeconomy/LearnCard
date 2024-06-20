@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 1.4.7
+
+### Patch Changes
+
+-   [#461](https://github.com/learningeconomy/LearnCard/pull/461) [`9a8dbb3`](https://github.com/learningeconomy/LearnCard/commit/9a8dbb336bdda2ff3080cd1cb70f7c929d0db261) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Allow resolving Status List VCs over HTTP
+
 ## 1.4.6
 
 ### Patch Changes
