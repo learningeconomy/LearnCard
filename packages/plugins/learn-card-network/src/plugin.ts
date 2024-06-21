@@ -400,7 +400,7 @@ export const getLearnCardNetworkPlugin = async (
 
                 return client.boost.deleteBoost.mutate({ uri });
             },
-            sendBoost: async (_learnCard, profileId, boostUri, encrypt = true) => {
+            sendBoost: async (_learnCard, profileId, boostUri, options = { encrypt: true }) => {
                 if (!userData) throw new Error('Please make an account first!');
 
                 const result = await _learnCard.invoke.resolveFromLCN(boostUri);
@@ -412,7 +412,7 @@ export const getLearnCardNetworkPlugin = async (
 
                 if (!targetProfile) throw new Error('Target profile not found');
 
-                const boost = data.data;
+                let boost = data.data;
 
                 boost.issuanceDate = new Date().toISOString();
                 boost.issuer = _learnCard.id.did();
@@ -427,13 +427,16 @@ export const getLearnCardNetworkPlugin = async (
                 }
 
                 // Embed the boostURI into the boost credential for verification purposes.
-                if (boost?.type?.includes('BoostCredential')) {
-                    boost.boostId = boostUri;
+                if (boost?.type?.includes('BoostCredential')) boost.boostId = boostUri;
+
+                if (typeof options === 'object' && options.overideFn) {
+                    boost = options.overideFn(boost)
                 }
 
                 const vc = await _learnCard.invoke.issueCredential(boost);
 
-                if (!encrypt) {
+                // options is allowed to be a boolean to maintain backwards compatibility
+                if ((typeof options === 'object' && !options.encrypt) || !options) {
                     return client.boost.sendBoost.mutate({
                         profileId,
                         uri: boostUri,
@@ -575,6 +578,8 @@ export const getLearnCardNetworkPlugin = async (
                     .or(ConsentFlowTermsValidator)
                     .parseAsync(result);
             },
+
+            getLCNClient: () => client,
         },
     };
 };
