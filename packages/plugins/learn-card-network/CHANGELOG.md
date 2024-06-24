@@ -1,5 +1,15 @@
 # learn-card-core
 
+## 1.7.8
+
+### Patch Changes
+
+-   [#463](https://github.com/learningeconomy/LearnCard/pull/463) [`e45c929`](https://github.com/learningeconomy/LearnCard/commit/e45c9292ffd1944f875beed0792a55b7942b1657) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Allow overriding a boost VC before sending it
+
+-   Updated dependencies [[`e45c929`](https://github.com/learningeconomy/LearnCard/commit/e45c9292ffd1944f875beed0792a55b7942b1657), [`e45c929`](https://github.com/learningeconomy/LearnCard/commit/e45c9292ffd1944f875beed0792a55b7942b1657)]:
+    -   @learncard/network-brain-client@1.2.28
+    -   @learncard/core@9.3.0
+
 ## 1.7.7
 
 ### Patch Changes

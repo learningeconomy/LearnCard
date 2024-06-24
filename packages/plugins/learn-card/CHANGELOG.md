@@ -1,5 +1,13 @@
 # learn-card-core
 
+## 1.1.11
+
+### Patch Changes
+
+-   Updated dependencies [[`e45c929`](https://github.com/learningeconomy/LearnCard/commit/e45c9292ffd1944f875beed0792a55b7942b1657)]:
+    -   @learncard/core@9.3.0
+    -   @learncard/didkit-plugin@1.4.8
+
 ## 1.1.10
 
 ### Patch Changes
