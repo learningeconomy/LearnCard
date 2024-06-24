@@ -9,7 +9,7 @@ type Inputs = inferRouterInputs<AppRouter>;
 
 type Client = CreateTRPCProxyClient<AppRouter>;
 
-type OverriddenClient = Omit<Client, 'storage' | 'boost'> & {
+export type LCNClient = Omit<Client, 'storage' | 'boost'> & {
     storage: Client['storage'] & {
         resolve: {
             query: (args: Inputs['storage']['resolve']) => Promise<VC | UnsignedVC | VP | JWE>;
@@ -32,7 +32,7 @@ export const getClient = async (
         links: [
             httpBatchLink({ url, headers: { Authorization: `Bearer ${await didAuthFunction()}` } }),
         ],
-    }) as OverriddenClient;
+    }) as LCNClient;
 
     const getChallenges = async (
         amount = 95 + Math.round((Math.random() - 0.5) * 5)
@@ -56,7 +56,7 @@ export const getClient = async (
                 },
             }),
         ],
-    }) as OverriddenClient;
+    }) as LCNClient;
 
     return trpc;
 };

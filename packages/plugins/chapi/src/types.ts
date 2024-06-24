@@ -100,7 +100,9 @@ export type CHAPIPluginMethods = {
         | { success: true }
         | { success: false; reason: 'did not auth' | 'auth failed verification' | 'did not store' }
     >;
-    storePresentationViaChapi: (presentation: UnsignedVP | VP) => Promise<Credential | undefined>;
+    storePresentationViaChapi: (
+        presentation: UnsignedVP | VP
+    ) => Promise<Credential | undefined | void>;
 };
 
 /** @group CHAPI Plugin */
