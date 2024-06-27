@@ -851,8 +851,8 @@ importers:
         specifier: workspace:^
         version: link:../didkit
       credential-handler-polyfill:
-        specifier: ^3.0.0
-        version: 3.0.0
+        specifier: ^3.2.1
+        version: 3.2.1
       web-credential-handler:
         specifier: ^2.0.0
         version: 2.0.0
@@ -9385,8 +9385,8 @@ packages:
   create-require@1.1.1:
     resolution: {integrity: sha512-dcKFX3jn0MpIaXjisoRvexIJVEKzaq7z2rZKxf+MSr9TkdmHmsU4m2lcLojrj/FHl8mk5VxMmYA+ftRkP/3oKQ==}
 
-  credential-handler-polyfill@3.0.0:
-    resolution: {integrity: sha512-G6gSE3KULzZb4BzJiIMNCnsWbWh+zua3odr+chqT+O3WysFrVSBA0McILH/RpOYJ/pP+Sc2oPBzpfwYIwX1fEQ==}
+  credential-handler-polyfill@3.2.1:
+    resolution: {integrity: sha512-3atcMQ8urA/M5d9bGc9NkTcCP6XEXS9uPMBltjp3itaiSDmdmbGXfBRWtAhJ37+NxmCsDNxmjjL9Y3E2SiRzJw==}
 
   cron-parser@4.8.1:
     resolution: {integrity: sha512-jbokKWGcyU4gl6jAfX97E1gDpY12DJ1cLJZmoDzaAln/shZ+S3KBFBuA2Q6WeUN4gJf/8klnV1EfvhA2lK5IRQ==}
@@ -32720,7 +32720,7 @@ snapshots:
 
   create-require@1.1.1: {}
 
-  credential-handler-polyfill@3.0.0:
+  credential-handler-polyfill@3.2.1:
     dependencies:
       web-request-rpc: 2.0.3
 
@@ -47036,7 +47036,7 @@ snapshots:
 
   web-credential-handler@2.0.0:
     dependencies:
-      credential-handler-polyfill: 3.0.0
+      credential-handler-polyfill: 3.2.1
       web-request-rpc: 2.0.3
 
   web-namespaces@1.1.4: {}
