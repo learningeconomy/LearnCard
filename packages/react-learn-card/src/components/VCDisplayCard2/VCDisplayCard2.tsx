@@ -71,6 +71,7 @@ export type VCDisplayCard2Props = {
     qrCodeOnClick?: () => void; // exclusive to the ID display type
     showDetailsBtn?: boolean;
     customIDDescription?: React.ReactNode;
+    hideGradientBackground?: boolean;
 };
 
 export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
@@ -112,6 +113,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     qrCodeOnClick,
     showDetailsBtn = false,
     customIDDescription,
+    hideGradientBackground = false,
 }) => {
     const {
         title = '',
@@ -202,29 +204,32 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
         );
     } else if (credential?.display?.displayType === 'id' || categoryType === 'ID') {
         return (
-            <VCIDDisplayCard
-                credential={credential}
-                verificationItems={verificationItems}
-                getFileMetadata={getFileMetadata}
-                getVideoMetadata={getVideoMetadata}
-                onMediaAttachmentClick={onMediaAttachmentClick}
-                customThumbComponent={customThumbComponent}
-                customCriteria={customCriteria}
-                customDescription={customDescription}
-                customIssueHistoryComponent={customIssueHistoryComponent}
-                issueHistory={issueHistory}
-                enableLightbox={enableLightbox}
-                trustedAppRegistry={trustedAppRegistry}
-                customSkillsComponent={customSkillsComponent}
-                isFrontOverride={isFrontOverride}
-                setIsFrontOverride={setIsFrontOverride}
-                hideNavButtons={hideNavButtons}
-                hideQRCode={hideQRCode}
-                qrCodeOnClick={qrCodeOnClick}
-                showBackButton={showBackButton}
-                showDetailsBtn={showDetailsBtn}
-                customIDDescription={customIDDescription}
-            />
+            <div>
+                <VCIDDisplayCard
+                    credential={credential}
+                    verificationItems={verificationItems}
+                    getFileMetadata={getFileMetadata}
+                    getVideoMetadata={getVideoMetadata}
+                    onMediaAttachmentClick={onMediaAttachmentClick}
+                    customThumbComponent={customThumbComponent}
+                    customCriteria={customCriteria}
+                    customDescription={customDescription}
+                    customIssueHistoryComponent={customIssueHistoryComponent}
+                    issueHistory={issueHistory}
+                    enableLightbox={enableLightbox}
+                    trustedAppRegistry={trustedAppRegistry}
+                    customSkillsComponent={customSkillsComponent}
+                    isFrontOverride={isFrontOverride}
+                    setIsFrontOverride={setIsFrontOverride}
+                    hideNavButtons={hideNavButtons}
+                    hideQRCode={hideQRCode}
+                    qrCodeOnClick={qrCodeOnClick}
+                    showBackButton={showBackButton}
+                    showDetailsBtn={showDetailsBtn}
+                    customIDDescription={customIDDescription}
+                    hideGradientBackground={hideGradientBackground}
+                />
+            </div>
         );
     }
 

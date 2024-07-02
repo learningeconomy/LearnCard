@@ -34,6 +34,7 @@ export type VCIDDisplayCardProps = {
     qrCodeOnClick?: () => void;
     showDetailsBtn?: boolean;
     customIDDescription?: React.ReactNode;
+    hideGradientBackground?: boolean;
 };
 
 export const VCIDDisplayCard: React.FC<VCIDDisplayCardProps> = ({
@@ -58,14 +59,19 @@ export const VCIDDisplayCard: React.FC<VCIDDisplayCardProps> = ({
     qrCodeOnClick,
     showDetailsBtn = false,
     customIDDescription,
+    hideGradientBackground = false,
 }) => {
     const [_isFront, _setIsFront] = useState<boolean>(isFrontOverride ?? true);
     const isFront = isFrontOverride ?? _isFront;
     const setIsFront = setIsFrontOverride ?? _setIsFront;
 
-    const backgroundStyle = {
-        backgroundColor: 'linear-gradient(180deg, rgba(139,145,167,1) 0%, rgba(24,34,78,1) 100%)',
-        backgroundImage: 'linear-gradient(180deg, rgba(139,145,167,1) 0%, rgba(24,34,78,1) 100%)',
+    let backgroundStyle = {
+        backgroundColor: `linear-gradient(180deg, rgba(24,34,78,1) ${
+            !isFront && hideGradientBackground ? '100%' : '25%'
+        }, rgba(139,145,167,1) 100%)`,
+        backgroundImage: `linear-gradient(180deg, rgba(24,34,78,1) ${
+            !isFront && hideGradientBackground ? '100%' : '25%'
+        }, rgba(139,145,167,1) 100%)`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundAttachment: 'fixed',
