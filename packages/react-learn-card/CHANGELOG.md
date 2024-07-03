@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.6.74
+
+### Patch Changes
+
+-   [#465](https://github.com/learningeconomy/LearnCard/pull/465) [`718b3f0`](https://github.com/learningeconomy/LearnCard/commit/718b3f0cd323c010f603bf717d9d61b7a18786ff) Thanks [@gerardopar](https://github.com/gerardopar)! - add hideGradientBackground prop
+
 ## 2.6.73
 
 ### Patch Changes
