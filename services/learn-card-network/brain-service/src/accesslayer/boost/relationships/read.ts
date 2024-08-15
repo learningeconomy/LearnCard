@@ -105,6 +105,45 @@ export const getBoostRecipients = async (
         .filter(result => Boolean(result.to)) as BoostRecipientInfo[];
 };
 
+export const countBoostRecipients = async (
+    boost: BoostInstance,
+    { includeUnacceptedBoosts = true }: { includeUnacceptedBoosts?: boolean }
+): Promise<number> => {
+    const query = new QueryBuilder()
+        .match({
+            related: [
+                { identifier: 'source', model: Boost, where: { id: boost.id } },
+                {
+                    ...Credential.getRelationshipByAlias('instanceOf'),
+                    identifier: 'instanceOf',
+                    direction: 'in',
+                },
+                { identifier: 'credential', model: Credential },
+                {
+                    ...Profile.getRelationshipByAlias('credentialSent'),
+                    identifier: 'sent',
+                    direction: 'in',
+                },
+                { identifier: 'sender', model: Profile },
+            ],
+        })
+        .match({
+            optional: includeUnacceptedBoosts,
+            related: [
+                { identifier: 'credential', model: Credential },
+                {
+                    ...Credential.getRelationshipByAlias('credentialReceived'),
+                    identifier: 'received',
+                },
+                { identifier: 'recipient', model: Profile },
+            ],
+        });
+
+    const result = await query.return('COUNT(sent) AS count').run();
+
+    return Number(result.records[0]?.get('count') ?? 0);
+};
+
 export const getBoostAdmins = async (
     boost: BoostInstance,
     { limit, cursor, blacklist = [] }: { limit: number; cursor?: string; blacklist?: string[] }
