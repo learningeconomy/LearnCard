@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 1.0.26
+
+### Patch Changes
+
+-   [#460](https://github.com/learningeconomy/LearnCard/pull/460) [`3856ee4`](https://github.com/learningeconomy/LearnCard/commit/3856ee4df73635acb75a414377e58cad6c911bd5) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Bump credential-handler-polyfill version
+
 ## 1.0.25
 
 ### Patch Changes
