@@ -39,7 +39,7 @@
     "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/didkit-plugin": "workspace:^",
-        "credential-handler-polyfill": "^3.0.0",
+        "credential-handler-polyfill": "^3.2.1",
         "web-credential-handler": "^2.0.0"
     }
 }
