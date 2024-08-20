@@ -34,12 +34,12 @@ export const CertDisplayCardSkillsCount: React.FC<{
             className="flex items-center justify-center mt-8 cursor-pointer px-4 py-2 bg-white rounded-[20px] shadow-bottom"
             onClick={onClick}
         >
-            <p className="text-violet-500 text-xl flex items-center justify-center tracking-[0.75px] font-poppins font-semibold">
+            <div className="text-violet-500 text-xl flex items-center justify-center tracking-[0.75px] font-poppins font-semibold">
                 +{total} {text}{' '}
                 <div className="bg-violet-500 rounded-full flex items-center justify-center ml-2 h-[30px] w-[30px] p-1">
                     <PuzzlePiece className="text-white" fill="#fff" />
                 </div>
-            </p>
+            </div>
         </div>
     );
 };
