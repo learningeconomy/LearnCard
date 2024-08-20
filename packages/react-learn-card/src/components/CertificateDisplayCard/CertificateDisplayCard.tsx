@@ -71,8 +71,7 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
 
     return (
         <section
-            className={`w-full flex justify-center relative min-w-[220px]  ${isFront ? '' : `max-w-[400px]`
-                }`}
+            className="w-full flex justify-center relative min-w-[220px]"
             role="button"
             onClick={() => setIsFront(!isFront)}
         >
