@@ -70,11 +70,7 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
     const setIsFront = setIsFrontOverride ?? _setIsFront;
 
     return (
-        <section
-            className="w-full flex justify-center relative min-w-[220px]"
-            role="button"
-            onClick={() => setIsFront(!isFront)}
-        >
+        <section className="w-full flex justify-center relative min-w-[220px]">
             {!hideNavButtons && (
                 <div className="flex gap-[10px] font-mouse text-[30px] leading-[28px] tracking-[0.75px] relative top-[-10px] left-0 w-full">
                     {!isFront && (
