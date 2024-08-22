@@ -62,7 +62,7 @@ export const CertificateBackFace: React.FC<CertificateBackFaceProps> = ({
 
     return (
         <div
-            className={`flex flex-col gap-[15px] items-center border-[5px] border-solid border-grayscale-200 py-[30px] px-[20px] rounded-[25px] ${bgColor}`}
+            className={`flex flex-col gap-[15px] items-center border-[5px] border-solid border-grayscale-200 py-[30px] px-[20px] rounded-[25px] max-w-[440px] ${bgColor}`}
         >
             {showBackButton ? (
                 <div className="w-full">
@@ -80,11 +80,10 @@ export const CertificateBackFace: React.FC<CertificateBackFaceProps> = ({
 
             <TruncateTextBox headerText="About" text={description}>
                 <span
-                    className={`text-grayscale-600 font-poppins text-[12px] font-[600] w-full ${
-                        description
+                    className={`text-grayscale-600 font-poppins text-[12px] font-[600] w-full ${description
                             ? 'pt-[10px] border-t-[1px] border-solid border-grayscale-200'
                             : ''
-                    }`}
+                        }`}
                 >
                     Awarded on {createdAt}
                 </span>
