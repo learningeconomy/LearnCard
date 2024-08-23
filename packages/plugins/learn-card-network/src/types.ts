@@ -109,6 +109,7 @@ export type LearnCardNetworkPluginMethods = {
         skip?: number,
         includeUnacceptedBoosts?: boolean
     ) => Promise<BoostRecipientInfo[]>;
+    countBoostRecipients: (uri: string, includeUnacceptedBoosts?: boolean) => Promise<number>;
     updateBoost: (
         uri: string,
         updates: Partial<Omit<Boost, 'uri'>>,

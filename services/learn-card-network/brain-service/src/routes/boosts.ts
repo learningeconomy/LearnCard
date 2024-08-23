@@ -19,6 +19,7 @@ import {
     getBoostRecipients,
     isProfileBoostAdmin,
     getBoostsForProfile,
+    countBoostRecipients,
 } from '@accesslayer/boost/relationships/read';
 
 import { deleteStorageForUri, setStorageForUri } from '@cache/storage';
@@ -237,6 +238,28 @@ export const boostsRouter = t.router({
 
             //TODO: Should we restrict who can see the recipients of a boost? Maybe to Boost owner / people who have the boost?
             return getBoostRecipients(boost, { limit, skip, includeUnacceptedBoosts });
+        }),
+    getBoostRecipientCount: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/boost/recipients/{uri}/count',
+                tags: ['Boosts'],
+                summary: 'Get boost recipients count',
+                description: 'This endpoint counts the recipients of a particular boost',
+            },
+        })
+        .input(z.object({ uri: z.string(), includeUnacceptedBoosts: z.boolean().default(true) }))
+        .output(z.number())
+        .query(async ({ input }) => {
+            const { uri, includeUnacceptedBoosts } = input;
+
+            const boost = await getBoostByUri(uri);
+
+            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            return countBoostRecipients(boost, { includeUnacceptedBoosts });
         }),
     updateBoost: profileRoute
         .meta({

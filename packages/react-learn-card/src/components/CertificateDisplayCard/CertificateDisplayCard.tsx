@@ -70,12 +70,58 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
     const setIsFront = setIsFrontOverride ?? _setIsFront;
 
     return (
-        <section className="w-full flex justify-center relative min-w-[220px]">
+        <section className="w-full flex flex-col gap-[15px] justify-center relative min-w-[220px]">
+            <section className="mx-auto">
+                {isFront && (
+                    <CertificateFrontFace
+                        credential={credential}
+                        categoryType={categoryType}
+                        issuerOverride={issuerOverride}
+                        issueeOverride={issueeOverride}
+                        trustedAppRegistry={trustedAppRegistry}
+                        subjectImageComponent={subjectImageComponent}
+                        issuerImageComponent={issuerImageComponent}
+                        customBodyCardComponent={customBodyCardComponent}
+                        hideIssueDate={hideIssueDate}
+                        handleViewBackFace={() => setIsFront(!isFront)}
+                        isFront={isFront}
+                        showDetailsBtn={showDetailsBtn}
+                    />
+                )}
+
+                {!isFront && (
+                    <CertificateBackFace
+                        credential={credential}
+                        categoryType={categoryType}
+                        verificationItems={verificationItems}
+                        getFileMetadata={getFileMetadata}
+                        getVideoMetadata={getVideoMetadata}
+                        onMediaAttachmentClick={onMediaAttachmentClick}
+                        enableLightbox={enableLightbox}
+                        showBackButton={(showBackButton && !hideNavButtons) || showDetailsBtn}
+                        handleViewFrontFace={() => setIsFront(!isFront)}
+                    />
+                )}
+
+                {onDotsClick && (
+                    <button
+                        className="absolute right-[-20px] top-[-52px] bg-white rounded-full p-[10px] shadow-bottom"
+                        onClick={onDotsClick}
+                    >
+                        <img
+                            alt="Menu dropdown icon"
+                            className="h-[20px] w-[20px]"
+                            src={ThreeDots}
+                        />
+                    </button>
+                )}
+            </section>
+
             {!hideNavButtons && (
                 <div className="flex gap-[10px] font-mouse text-[30px] leading-[28px] tracking-[0.75px] relative top-[-10px] left-0 w-full">
                     {!isFront && (
                         <button
-                            className="bg-grayscale-900 text-white py-[15px] px-[20px] rounded-[20px] flex justify-center items-center gap-[5px] border-[3px] border-solid border-white"
+                            className="bg-grayscale-900 text-white py-[15px] px-[20px] rounded-[20px] flex mx-auto justify-center items-center gap-[5px] border-[3px] border-solid border-white"
                             onClick={() => setIsFront(!isFront)}
                         >
                             <FatArrow direction="left" /> Back
@@ -93,53 +139,13 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
 
                     {isFront && (
                         <button
-                            className="bg-grayscale-900 text-white py-[15px] px-[20px] rounded-[20px] grow flex justify-center items-center gap-[5px] border-[3px] border-solid border-white"
+                            className="bg-grayscale-900 text-white py-[15px] px-[20px] rounded-[20px] mx-auto flex justify-center items-center gap-[5px] border-[3px] border-solid border-white"
                             onClick={() => setIsFront(!isFront)}
                         >
                             Details <FatArrow direction="right" />
                         </button>
                     )}
                 </div>
-            )}
-
-            {isFront && (
-                <CertificateFrontFace
-                    credential={credential}
-                    categoryType={categoryType}
-                    issuerOverride={issuerOverride}
-                    issueeOverride={issueeOverride}
-                    trustedAppRegistry={trustedAppRegistry}
-                    subjectImageComponent={subjectImageComponent}
-                    issuerImageComponent={issuerImageComponent}
-                    customBodyCardComponent={customBodyCardComponent}
-                    hideIssueDate={hideIssueDate}
-                    handleViewBackFace={() => setIsFront(!isFront)}
-                    isFront={isFront}
-                    showDetailsBtn={showDetailsBtn}
-                />
-            )}
-
-            {!isFront && (
-                <CertificateBackFace
-                    credential={credential}
-                    categoryType={categoryType}
-                    verificationItems={verificationItems}
-                    getFileMetadata={getFileMetadata}
-                    getVideoMetadata={getVideoMetadata}
-                    onMediaAttachmentClick={onMediaAttachmentClick}
-                    enableLightbox={enableLightbox}
-                    showBackButton={(showBackButton && !hideNavButtons) || showDetailsBtn}
-                    handleViewFrontFace={() => setIsFront(!isFront)}
-                />
-            )}
-
-            {onDotsClick && (
-                <button
-                    className="absolute right-[-20px] top-[-52px] bg-white rounded-full p-[10px] shadow-bottom"
-                    onClick={onDotsClick}
-                >
-                    <img alt="Menu dropdown icon" className="h-[20px] w-[20px]" src={ThreeDots} />
-                </button>
             )}
         </section>
     );

@@ -1,5 +1,27 @@
 # @welibraryos/react-learn-card
 
+## 2.6.77
+
+### Patch Changes
+
+-   [#471](https://github.com/learningeconomy/LearnCard/pull/471) [`e7cc8fb`](https://github.com/learningeconomy/LearnCard/commit/e7cc8fb5e5b065d53ff3a99dac6f43bb8035a276) Thanks [@smurflo2](https://github.com/smurflo2)! - Move nav buttons (e.g. "Details") to bottom-center of Certificate Display
+
+-   [#471](https://github.com/learningeconomy/LearnCard/pull/471) [`e7cc8fb`](https://github.com/learningeconomy/LearnCard/commit/e7cc8fb5e5b065d53ff3a99dac6f43bb8035a276) Thanks [@smurflo2](https://github.com/smurflo2)! - [LC-246] Fix broken-looking claim certificate screen
+
+## 2.6.76
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.26
+
+## 2.6.75
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.25
+
 ## 2.6.74
 
 ### Patch Changes

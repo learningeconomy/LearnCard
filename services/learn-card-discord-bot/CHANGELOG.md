@@ -1,5 +1,19 @@
 # learn-card-discord-bot
 
+## 1.1.78
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.26
+
+## 1.1.77
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.25
+
 ## 1.1.76
 
 ### Patch Changes

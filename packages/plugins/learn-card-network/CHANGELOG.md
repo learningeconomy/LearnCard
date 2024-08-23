@@ -1,5 +1,14 @@
 # learn-card-core
 
+## 1.7.9
+
+### Patch Changes
+
+-   [#467](https://github.com/learningeconomy/LearnCard/pull/467) [`af00e42`](https://github.com/learningeconomy/LearnCard/commit/af00e4228419d4778f54af66843bb829922992ac) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add ability to count recipients of a boost
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@1.2.29
+
 ## 1.7.8
 
 ### Patch Changes
