@@ -15,7 +15,7 @@ import {
 
 import { getCredentialUri } from '@helpers/credential.helpers';
 
-import { t, didAndChallengeRoute } from '@routes';
+import { t, didAndChallengeRoute, openRoute } from '@routes';
 import { storePresentation } from '@accesslayer/presentation/create';
 import { storeCredential } from '@accesslayer/credential/create';
 import { getCredentialById } from '@accesslayer/credential/read';
@@ -71,10 +71,9 @@ export const storageRouter = t.router({
             return uri;
         }),
 
-    resolve: didAndChallengeRoute
+    resolve: openRoute
         .meta({
             openapi: {
-                protect: true,
                 method: 'GET',
                 path: '/storage/resolve/{uri}',
                 tags: ['Storage'],
