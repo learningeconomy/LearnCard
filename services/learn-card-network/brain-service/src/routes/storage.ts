@@ -75,7 +75,7 @@ export const storageRouter = t.router({
         .meta({
             openapi: {
                 method: 'GET',
-                path: '/storage/resolve/{uri}',
+                path: '/storage/resolve',
                 tags: ['Storage'],
                 summary: 'Resolves a URI to a Credential/Presentation',
                 description:
