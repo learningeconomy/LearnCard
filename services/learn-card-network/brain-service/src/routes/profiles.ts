@@ -490,6 +490,16 @@ export const profilesRouter = t.router({
         }),
 
     connectWithInvite: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/profile/{profileId}/connect/{challenge}',
+                tags: ['Profiles'],
+                summary: 'Connect using an invitation',
+                description: 'Connects with another profile using an invitation challenge',
+            },
+        })
         .input(z.object({ profileId: z.string(), challenge: z.string() }))
         .output(z.boolean())
         .mutation(async ({ ctx, input }) => {
@@ -675,8 +685,19 @@ export const profilesRouter = t.router({
         }),
 
     generateInvite: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/profile/generate-invite',
+                tags: ['Profiles'],
+                summary: 'Generate a connection invitation',
+                description:
+                    'This route creates a one-time challenge that an unknown profile can use to connect with this account',
+            },
+        })
         .input(z.object({
-            expiration: z.enum(['1s', '24h', '7d', '30d', 'never']).optional().default('30d'),
+            expiration: z.enum(['1s', '1h', '24h', '7d', '30d', 'never']).optional().default('1h'),
             challenge: z.string().optional()  // Still allow the user to pass a challenge if needed
         }).optional().default({}))
         .output(z.object({ profileId: z.string(), challenge: z.string(), expiresIn: z.number().nullable() }))
@@ -712,6 +733,9 @@ export const profilesRouter = t.router({
             switch (expiration) {
                 case '1s':
                     expiresIn = 1;
+                    break;
+                case '1h':
+                    expiresIn = 60 * 60;
                     break;
                 case '24h':
                     expiresIn = 24 * 60 * 60;
