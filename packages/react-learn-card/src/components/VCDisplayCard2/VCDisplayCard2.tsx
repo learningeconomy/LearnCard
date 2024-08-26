@@ -289,6 +289,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                                 {isFront && (
                                     <Flipped flipId="face">
                                         <VC2FrontFaceInfo
+                                            credential={credential}
                                             issuee={issuee}
                                             subjectDID={subjectDID}
                                             issuer={issuer}
@@ -299,6 +300,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                                             customThumbComponent={customThumbComponent}
                                             createdAt={createdAt ?? ''}
                                             imageUrl={imageUrl}
+                                            trustedAppRegistry={trustedAppRegistry}
                                         />
                                     </Flipped>
                                 )}
