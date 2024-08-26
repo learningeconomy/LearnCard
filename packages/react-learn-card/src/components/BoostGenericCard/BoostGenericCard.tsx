@@ -93,9 +93,9 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
                 </section>
 
                 <section className="small-generic-boost-card-footer flex flex-col justify-center items-center absolute bottom-[15px] w-full">
-                    <span className="flex items-center justify-center small-generic-boost-issuer-name line-clamp-1 text-[12px] text-grayscale-700 font-bold px-[6px]">
-                        by {issuerName}
-                    </span>
+                    <div className="flex items-center justify-center small-generic-boost-issuer-name text-[12px] text-grayscale-700 font-bold px-[6px]">
+                        <span className="line-clamp-1">by {issuerName}</span>
+                    </div>
                     <p className="small-generic-boost-date-display line-clamp-1 text-[12px] text-grayscale-700  px-[7px]">
                         {dateDisplay}
                     </p>
