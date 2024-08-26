@@ -23,6 +23,7 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
     issuerName,
     dateDisplay,
     optionsTriggerOnClick,
+    verifierBadge,
 }) => {
     const thumbClass = `bg-${TYPE_TO_WALLET_DARK_COLOR[type]}` ?? 'bg-grayscale-50';
     const defaultThumbClass = `small-boost-card-thumb flex h-[110px] w-[110px] my-[10px] mx-auto ${thumbClass} overflow-hidden flex-col justify-center items-center rounded-full ${customThumbClass}`;
@@ -98,6 +99,7 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
                     <p className="small-generic-boost-date-display line-clamp-1 text-[12px] text-grayscale-700  px-[7px]">
                         {dateDisplay}
                     </p>
+                    {verifierBadge}
                 </section>
                 {showChecked && (
                     <div className="check-btn-overlay absolute top-[5px] left-[5px]">
