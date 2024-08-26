@@ -52,6 +52,9 @@ import {
     isInviteAlreadySetForProfile,
     isInviteValidForProfile,
     setValidInviteForProfile,
+    invalidateInvite,
+    getInviteStatus,
+
 } from '@cache/invites';
 import {
     deleteAllCachedConnectionsForProfile,
@@ -487,32 +490,29 @@ export const profilesRouter = t.router({
         }),
 
     connectWithInvite: profileRoute
-        .meta({
-            openapi: {
-                protect: true,
-                method: 'POST',
-                path: '/profile/{profileId}/connect/{challenge}',
-                tags: ['Profiles'],
-                summary: 'Connect using an invitation',
-                description: 'Connects with another profile using an invitation challenge',
-            },
-        })
         .input(z.object({ profileId: z.string(), challenge: z.string() }))
         .output(z.boolean())
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
             const { profileId, challenge } = input;
 
-            if (!(await isInviteValidForProfile(profileId, challenge))) {
+            console.log(`connectWithInvite - Checking invite for profileId: ${profileId}, challenge: ${challenge}`);
+
+            const isValid = await isInviteValidForProfile(profileId, challenge);
+            console.log(`connectWithInvite - isValid: ${isValid}`);
+
+            if (!isValid) {
+                console.log('connectWithInvite - Throwing NOT_FOUND error');
                 throw new TRPCError({
                     code: 'NOT_FOUND',
-                    message: `Challenge not found for ${profileId}`,
+                    message: 'Invite not found or has expired',
                 });
             }
 
             const targetProfile = await getProfileByProfileId(profileId);
 
             if (!targetProfile) {
+                console.log('connectWithInvite - Target profile not found');
                 throw new TRPCError({
                     code: 'NOT_FOUND',
                     message: 'Profile not found. Are you sure this person exists?',
@@ -520,11 +520,13 @@ export const profilesRouter = t.router({
             }
 
             const success = await connectProfiles(profile, targetProfile, false);
+            console.log(`connectWithInvite - connectProfiles success: ${success}`);
 
             if (success) {
                 await Promise.all([
                     deleteCachedConnectionsForProfileId(profile.profileId),
                     deleteCachedConnectionsForProfileId(targetProfile.profileId),
+                    invalidateInvite(profileId, challenge),
                 ]);
             }
 
@@ -673,55 +675,63 @@ export const profilesRouter = t.router({
         }),
 
     generateInvite: profileRoute
-        .meta({
-            openapi: {
-                protect: true,
-                method: 'POST',
-                path: '/profile/generate-invite',
-                tags: ['Profiles'],
-                summary: 'Generate a connection invitation',
-                description:
-                    'This route creates a one-time challenge that an unknown profile can use to connect with this account',
-            },
-        })
-        .input(
-            z.object({
-                challenge: z.string().optional(),
-                expiration: z.enum(['24h', '7d', '30d', 'never']).default('30d'),
-            })
-        )
+        .input(z.object({
+            expiration: z.enum(['1s', '24h', '7d', '30d', 'never']).optional().default('30d'),
+            challenge: z.string().optional()  // Still allow the user to pass a challenge if needed
+        }).optional().default({}))
         .output(z.object({ profileId: z.string(), challenge: z.string(), expiresIn: z.number().nullable() }))
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const { challenge = uuid(), expiration } = input;
+            if (!profile) {
+                console.log('generateInvite: Profile not found');
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Profile not found. Please create a profile first.',
+                });
+            }
 
-            if (await isInviteAlreadySetForProfile(profile.profileId, challenge)) {
+            const { expiration = '30d', challenge: inputChallenge } = input;
+            console.log(`generateInvite: Input - expiration: ${expiration}, challenge: ${inputChallenge}`);
+
+            // Use UUID for challenge if none is provided
+            const challenge = inputChallenge || uuid();
+            console.log(`generateInvite: Using challenge: ${challenge}`);
+
+            const isAlreadySet = await isInviteAlreadySetForProfile(profile.profileId, challenge);
+            console.log(`generateInvite: Is invite already set? ${isAlreadySet}`);
+
+            if (isAlreadySet) {
+                console.log('generateInvite: Throwing CONFLICT error');
                 throw new TRPCError({
                     code: 'CONFLICT',
                     message: 'Challenge already in use!',
                 });
             }
 
-            let expirationSeconds: number | null;
-
+            let expiresIn: number | null = null;
             switch (expiration) {
+                case '1s':
+                    expiresIn = 1;
+                    break;
                 case '24h':
-                    expirationSeconds = 24 * 60 * 60;
+                    expiresIn = 24 * 60 * 60;
                     break;
                 case '7d':
-                    expirationSeconds = 7 * 24 * 60 * 60;
+                    expiresIn = 7 * 24 * 60 * 60;
                     break;
                 case '30d':
-                    expirationSeconds = 30 * 24 * 60 * 60;
+                    expiresIn = 30 * 24 * 60 * 60;
                     break;
                 case 'never':
-                    expirationSeconds = null;
+                    expiresIn = null;
                     break;
             }
 
-            await setValidInviteForProfile(profile.profileId, challenge, expirationSeconds);
+            console.log(`generateInvite: Setting invite with expiresIn: ${expiresIn}`);
+            await setValidInviteForProfile(profile.profileId, challenge, expiresIn ? expiresIn * 1000 : null);
 
-            return { profileId: profile.profileId, challenge, expiresIn: expirationSeconds };
+            console.log('generateInvite: Returning result');
+            return { profileId: profile.profileId, challenge, expiresIn };
         }),
 
     blockProfile: profileRoute
