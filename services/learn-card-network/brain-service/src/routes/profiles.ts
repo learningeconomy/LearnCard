@@ -685,17 +685,15 @@ export const profilesRouter = t.router({
             },
         })
         .input(
-            z
-                .object({
-                    challenge: z.string().optional(),
-                    expiration: z.number().default(3600 * 24 * 30),
-                })
-                .optional()
+            z.object({
+                challenge: z.string().optional(),
+                expiration: z.enum(['24h', '7d', '30d', 'never']).default('30d'),
+            })
         )
-        .output(z.object({ profileId: z.string(), challenge: z.string() }))
+        .output(z.object({ profileId: z.string(), challenge: z.string(), expiresIn: z.number().nullable() }))
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const { challenge = uuid(), expiration } = input ?? {};
+            const { challenge = uuid(), expiration } = input;
 
             if (await isInviteAlreadySetForProfile(profile.profileId, challenge)) {
                 throw new TRPCError({
@@ -704,9 +702,26 @@ export const profilesRouter = t.router({
                 });
             }
 
-            await setValidInviteForProfile(profile.profileId, challenge, expiration);
+            let expirationSeconds: number | null;
 
-            return { profileId: profile.profileId, challenge };
+            switch (expiration) {
+                case '24h':
+                    expirationSeconds = 24 * 60 * 60;
+                    break;
+                case '7d':
+                    expirationSeconds = 7 * 24 * 60 * 60;
+                    break;
+                case '30d':
+                    expirationSeconds = 30 * 24 * 60 * 60;
+                    break;
+                case 'never':
+                    expirationSeconds = null;
+                    break;
+            }
+
+            await setValidInviteForProfile(profile.profileId, challenge, expirationSeconds);
+
+            return { profileId: profile.profileId, challenge, expiresIn: expirationSeconds };
         }),
 
     blockProfile: profileRoute

@@ -4,14 +4,19 @@ export const getInviteCacheKey = (profileId: string, challenge: string): string 
     `inviteChallenge:${profileId}:${challenge}`;
 
 export const VALID = 'valid';
+export const NEVER_EXPIRE = 'never';
 
 export const isInviteValidForProfile = async (
     profileId: string,
     challenge: string,
-): Promise<typeof VALID | null | undefined> => {
+): Promise<boolean> => {
     const result = await cache.get(getInviteCacheKey(profileId, challenge));
 
-    return result === VALID ? result : undefined;
+    if (result === VALID || result === NEVER_EXPIRE) {
+        return true;
+    }
+
+    return false;
 };
 
 export const isInviteAlreadySetForProfile = async (
@@ -23,8 +28,16 @@ export const isInviteAlreadySetForProfile = async (
     return Boolean(result);
 };
 
-export const setValidInviteForProfile = async (profileId: string, challenge: string, expiration?: number) => {
-    return cache.set(getInviteCacheKey(profileId, challenge), VALID, expiration);
+export const setValidInviteForProfile = async (
+    profileId: string,
+    challenge: string,
+    expiration: number | null
+) => {
+    if (expiration === null) {
+        return cache.set(getInviteCacheKey(profileId, challenge), NEVER_EXPIRE);
+    } else {
+        return cache.set(getInviteCacheKey(profileId, challenge), VALID, expiration);
+    }
 };
 
 export const invalidateInviteForProfile = async (profileId: string, challenge: string) => {
