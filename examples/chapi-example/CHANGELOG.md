@@ -1,5 +1,80 @@
 # @learncard/chapi-example
 
+## 1.0.140
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.27
+    -   @learncard/react@2.6.78
+
+## 1.0.139
+
+### Patch Changes
+
+-   Updated dependencies [[`e7cc8fb`](https://github.com/learningeconomy/LearnCard/commit/e7cc8fb5e5b065d53ff3a99dac6f43bb8035a276), [`e7cc8fb`](https://github.com/learningeconomy/LearnCard/commit/e7cc8fb5e5b065d53ff3a99dac6f43bb8035a276)]:
+    -   @learncard/react@2.6.77
+
+## 1.0.138
+
+### Patch Changes
+
+-   Updated dependencies [[`3856ee4`](https://github.com/learningeconomy/LearnCard/commit/3856ee4df73635acb75a414377e58cad6c911bd5)]:
+    -   @learncard/chapi-plugin@1.0.26
+    -   @learncard/init@1.2.26
+    -   @learncard/react@2.6.76
+
+## 1.0.137
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.25
+    -   @learncard/react@2.6.75
+
+## 1.0.136
+
+### Patch Changes
+
+-   Updated dependencies [[`718b3f0`](https://github.com/learningeconomy/LearnCard/commit/718b3f0cd323c010f603bf717d9d61b7a18786ff)]:
+    -   @learncard/react@2.6.74
+
+## 1.0.135
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.24
+    -   @learncard/chapi-plugin@1.0.25
+    -   @learncard/react@2.6.73
+
+## 1.0.134
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.23
+    -   @learncard/chapi-plugin@1.0.24
+    -   @learncard/react@2.6.72
+
+## 1.0.133
+
+### Patch Changes
+
+-   Updated dependencies [[`1f28c38`](https://github.com/learningeconomy/LearnCard/commit/1f28c3873ffac5d685b54b25527dd675c09f1fe7)]:
+    -   @learncard/chapi-plugin@1.0.23
+    -   @learncard/init@1.2.22
+    -   @learncard/react@2.6.71
+
+## 1.0.132
+
+### Patch Changes
+
+-   Updated dependencies [[`0ffe0984`](https://github.com/learningeconomy/LearnCard/commit/0ffe0984572e813d39dfc38345fde27a1afcd1c2)]:
+    -   @learncard/react@2.6.70
+    -   @learncard/init@1.2.21
+    -   @learncard/chapi-plugin@1.0.22
+
 ## 1.0.131
 
 ### Patch Changes

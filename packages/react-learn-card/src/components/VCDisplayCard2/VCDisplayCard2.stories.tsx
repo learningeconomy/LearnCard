@@ -58,6 +58,7 @@ BoostCredentialTest.args = {
         TestVerificationItems.SUCCESS.PROOF,
         TestVerificationItems.SUCCESS.NOT_EXPIRED,
     ],
+    customIDDescription: <div className='w-full flex items-center justify-center'>Hello World!</div>,
 };
 
 export const JFFCredentialTest = Template.bind({});

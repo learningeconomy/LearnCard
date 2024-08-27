@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 9.3.0
+
+### Minor Changes
+
+-   [#463](https://github.com/learningeconomy/LearnCard/pull/463) [`e45c929`](https://github.com/learningeconomy/LearnCard/commit/e45c9292ffd1944f875beed0792a55b7942b1657) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Update to TS 5.5.2
+
 ## 9.2.1
 
 ### Patch Changes

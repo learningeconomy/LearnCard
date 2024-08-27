@@ -1,4 +1,5 @@
 import type { DID } from 'dids';
+import type { LCNClient } from '@learncard/network-brain-client';
 import {
     LCNProfile,
     UnsignedVC,
@@ -108,6 +109,7 @@ export type LearnCardNetworkPluginMethods = {
         skip?: number,
         includeUnacceptedBoosts?: boolean
     ) => Promise<BoostRecipientInfo[]>;
+    countBoostRecipients: (uri: string, includeUnacceptedBoosts?: boolean) => Promise<number>;
     updateBoost: (
         uri: string,
         updates: Partial<Omit<Boost, 'uri'>>,
@@ -120,7 +122,11 @@ export type LearnCardNetworkPluginMethods = {
     ) => Promise<PaginatedLCNProfiles>;
     addBoostAdmin: (uri: string, profileId: string) => Promise<boolean>;
     removeBoostAdmin: (uri: string, profileId: string) => Promise<boolean>;
-    sendBoost: (profileId: string, boostUri: string, encrypt?: boolean) => Promise<string>;
+    sendBoost: (
+        profileId: string,
+        boostUri: string,
+        options?: boolean | { encrypt?: boolean; overideFn?: (boost: UnsignedVC) => UnsignedVC }
+    ) => Promise<string>;
 
     registerSigningAuthority: (endpoint: string, name: string, did: string) => Promise<boolean>;
     getRegisteredSigningAuthorities: (
@@ -191,6 +197,8 @@ export type LearnCardNetworkPluginMethods = {
     resolveFromLCN: (
         uri: string
     ) => Promise<VC | UnsignedVC | VP | JWE | ConsentFlowContract | ConsentFlowTerms>;
+
+    getLCNClient: () => LCNClient;
 };
 
 /** @group LearnCardNetwork Plugin */

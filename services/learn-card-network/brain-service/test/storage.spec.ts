@@ -95,18 +95,14 @@ describe('Storage', () => {
             await Presentation.delete({ detach: true, where: {} });
         });
 
-        it('should require full auth to get a credential', async () => {
+        it('should not require full auth to get a credential', async () => {
             const unsignedVc = userA.learnCard.invoke.getTestVc(userB.learnCard.id.did());
             const vc = await userA.learnCard.invoke.issueCredential(unsignedVc);
 
             const uri = await userA.clients.fullAuth.storage.store({ item: vc });
 
-            await expect(noAuthClient.storage.resolve({ uri })).rejects.toMatchObject({
-                code: 'UNAUTHORIZED',
-            });
-            await expect(userB.clients.partialAuth.storage.resolve({ uri })).rejects.toMatchObject({
-                code: 'UNAUTHORIZED',
-            });
+            await expect(noAuthClient.storage.resolve({ uri })).resolves.not.toThrow();
+            await expect(userB.clients.partialAuth.storage.resolve({ uri })).resolves.not.toThrow();
         });
 
         it('should allow resolving a credential/presentation', async () => {

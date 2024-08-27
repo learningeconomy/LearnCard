@@ -1,5 +1,70 @@
 # @welibraryos/react-learn-card
 
+## 2.6.78
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.27
+
+## 2.6.77
+
+### Patch Changes
+
+-   [#471](https://github.com/learningeconomy/LearnCard/pull/471) [`e7cc8fb`](https://github.com/learningeconomy/LearnCard/commit/e7cc8fb5e5b065d53ff3a99dac6f43bb8035a276) Thanks [@smurflo2](https://github.com/smurflo2)! - Move nav buttons (e.g. "Details") to bottom-center of Certificate Display
+
+-   [#471](https://github.com/learningeconomy/LearnCard/pull/471) [`e7cc8fb`](https://github.com/learningeconomy/LearnCard/commit/e7cc8fb5e5b065d53ff3a99dac6f43bb8035a276) Thanks [@smurflo2](https://github.com/smurflo2)! - [LC-246] Fix broken-looking claim certificate screen
+
+## 2.6.76
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.26
+
+## 2.6.75
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.25
+
+## 2.6.74
+
+### Patch Changes
+
+-   [#465](https://github.com/learningeconomy/LearnCard/pull/465) [`718b3f0`](https://github.com/learningeconomy/LearnCard/commit/718b3f0cd323c010f603bf717d9d61b7a18786ff) Thanks [@gerardopar](https://github.com/gerardopar)! - add hideGradientBackground prop
+
+## 2.6.73
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.24
+
+## 2.6.72
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.23
+
+## 2.6.71
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.22
+
+## 2.6.70
+
+### Patch Changes
+
+-   [#455](https://github.com/learningeconomy/LearnCard/pull/455) [`0ffe0984`](https://github.com/learningeconomy/LearnCard/commit/0ffe0984572e813d39dfc38345fde27a1afcd1c2) Thanks [@gerardopar](https://github.com/gerardopar)! - Store groupID on VC 🥑
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.21
+
 ## 2.6.69
 
 ### Patch Changes
