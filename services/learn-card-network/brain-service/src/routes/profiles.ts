@@ -697,29 +697,25 @@ export const profilesRouter = t.router({
             },
         })
         .input(z.object({
-            expiration: z.enum(['1s', '1h', '24h', '7d', '30d', 'never']).optional().default('1h'),
-            challenge: z.string().optional()  // Still allow the user to pass a challenge if needed
+            expiration: z.number().optional().default(3600), // Default to 1 hour in seconds
+            challenge: z.string().optional()
         }).optional().default({}))
         .output(z.object({ profileId: z.string(), challenge: z.string(), expiresIn: z.number().nullable() }))
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
             if (!profile) {
-                console.log('generateInvite: Profile not found');
                 throw new TRPCError({
                     code: 'NOT_FOUND',
                     message: 'Profile not found. Please create a profile first.',
                 });
             }
 
-            const { expiration = '30d', challenge: inputChallenge } = input;
-            console.log(`generateInvite: Input - expiration: ${expiration}, challenge: ${inputChallenge}`);
+            const { expiration = 3600, challenge: inputChallenge } = input; // expiration now in seconds by default
 
             // Use UUID for challenge if none is provided
             const challenge = inputChallenge || uuid();
-            console.log(`generateInvite: Using challenge: ${challenge}`);
 
             const isAlreadySet = await isInviteAlreadySetForProfile(profile.profileId, challenge);
-            console.log(`generateInvite: Is invite already set? ${isAlreadySet}`);
 
             if (isAlreadySet) {
                 console.log('generateInvite: Throwing CONFLICT error');
@@ -729,32 +725,11 @@ export const profilesRouter = t.router({
                 });
             }
 
-            let expiresIn: number | null = null;
-            switch (expiration) {
-                case '1s':
-                    expiresIn = 1;
-                    break;
-                case '1h':
-                    expiresIn = 60 * 60;
-                    break;
-                case '24h':
-                    expiresIn = 24 * 60 * 60;
-                    break;
-                case '7d':
-                    expiresIn = 7 * 24 * 60 * 60;
-                    break;
-                case '30d':
-                    expiresIn = 30 * 24 * 60 * 60;
-                    break;
-                case 'never':
-                    expiresIn = null;
-                    break;
-            }
+            let expiresIn: number | null = expiration === 0 ? null : expiration;
 
-            console.log(`generateInvite: Setting invite with expiresIn: ${expiresIn}`);
+            // Set the invite with the calculated expiration time
             await setValidInviteForProfile(profile.profileId, challenge, expiresIn ? expiresIn * 1000 : null);
 
-            console.log('generateInvite: Returning result');
             return { profileId: profile.profileId, challenge, expiresIn };
         }),
 

@@ -1537,11 +1537,8 @@ describe('Profiles', () => {
                 }
             });
 
-
-
-
             it('allows setting the expiration date', async () => {
-                const result = await userA.clients.fullAuth.profile.generateInvite({ expiration: '24h' });
+                const result = await userA.clients.fullAuth.profile.generateInvite({ expiration: 24 * 60 * 60 });
                 expect(result.expiresIn).toBe(24 * 60 * 60);
             });
         });
@@ -1561,25 +1558,30 @@ describe('Profiles', () => {
             });
 
             it('does not allow users to connect with an expired challenge', async () => {
+                // Use fake timers
+                vi.useFakeTimers();
+
                 const { challenge } = await userB.clients.fullAuth.profile.generateInvite({
-                    expiration: '1s',
+                    expiration: 1000, // Expiration set to 1 second
                 });
 
-                console.log(`Test - Generated challenge: ${challenge}`);
-
-                await new Promise(resolve => setTimeout(resolve, 2000));
+                // Fast-forward time by 2 seconds to simulate expiration
+                vi.advanceTimersByTime(2000);
 
                 try {
                     const result = await userA.clients.fullAuth.profile.connectWithInvite({ profileId: 'userb', challenge });
                     console.log(`Test - Unexpected success: ${result}`);
                 } catch (error) {
-                    console.log(`Test - Caught error: ${error.message}`);
+                    console.log(`Test - Caught error: ${error}`);
                     throw error;
                 }
 
                 await expect(
                     userA.clients.fullAuth.profile.connectWithInvite({ profileId: 'userb', challenge })
                 ).rejects.toMatchObject({ code: 'NOT_FOUND', message: 'Invite not found or has expired' });
+
+                // Restore real timers after the test is done
+                vi.useRealTimers();
             });
 
             it('invalidates the invite after successful connection', async () => {
