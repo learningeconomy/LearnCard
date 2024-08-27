@@ -54,7 +54,6 @@ import {
     setValidInviteForProfile,
     invalidateInvite,
     getInviteStatus,
-
 } from '@cache/invites';
 import {
     deleteAllCachedConnectionsForProfile,
@@ -506,7 +505,9 @@ export const profilesRouter = t.router({
             const { profile } = ctx.user;
             const { profileId, challenge } = input;
 
-            console.log(`connectWithInvite - Checking invite for profileId: ${profileId}, challenge: ${challenge}`);
+            console.log(
+                `connectWithInvite - Checking invite for profileId: ${profileId}, challenge: ${challenge}`
+            );
 
             const isValid = await isInviteValidForProfile(profileId, challenge);
             console.log(`connectWithInvite - isValid: ${isValid}`);
@@ -696,11 +697,22 @@ export const profilesRouter = t.router({
                     'This route creates a one-time challenge that an unknown profile can use to connect with this account',
             },
         })
-        .input(z.object({
-            expiration: z.number().optional().default(3600), // Default to 1 hour in seconds
-            challenge: z.string().optional()
-        }).optional().default({}))
-        .output(z.object({ profileId: z.string(), challenge: z.string(), expiresIn: z.number().nullable() }))
+        .input(
+            z
+                .object({
+                    expiration: z.number().optional().default(3600), // Default to 1 hour in seconds
+                    challenge: z.string().optional(),
+                })
+                .optional()
+                .default({})
+        )
+        .output(
+            z.object({
+                profileId: z.string(),
+                challenge: z.string(),
+                expiresIn: z.number().nullable(),
+            })
+        )
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
             if (!profile) {
@@ -728,7 +740,7 @@ export const profilesRouter = t.router({
             let expiresIn: number | null = expiration === 0 ? null : expiration;
 
             // Set the invite with the calculated expiration time
-            await setValidInviteForProfile(profile.profileId, challenge, expiresIn ? expiresIn * 1000 : null);
+            await setValidInviteForProfile(profile.profileId, challenge, expiresIn ?? null);
 
             return { profileId: profile.profileId, challenge, expiresIn };
         }),

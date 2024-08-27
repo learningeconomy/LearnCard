@@ -1508,7 +1508,9 @@ describe('Profiles', () => {
             });
 
             it('uses a supplied challenge if one is provided', async () => {
-                const result = await userA.clients.fullAuth.profile.generateInvite({ challenge: 'nice' });
+                const result = await userA.clients.fullAuth.profile.generateInvite({
+                    challenge: 'nice',
+                });
                 expect(result.challenge).toEqual('nice');
             });
 
@@ -1538,7 +1540,9 @@ describe('Profiles', () => {
             });
 
             it('allows setting the expiration date', async () => {
-                const result = await userA.clients.fullAuth.profile.generateInvite({ expiration: 24 * 60 * 60 });
+                const result = await userA.clients.fullAuth.profile.generateInvite({
+                    expiration: 24 * 60 * 60,
+                });
                 expect(result.expiresIn).toBe(24 * 60 * 60);
             });
         });
@@ -1548,7 +1552,10 @@ describe('Profiles', () => {
                 const { challenge } = await userB.clients.fullAuth.profile.generateInvite();
 
                 await expect(
-                    userA.clients.fullAuth.profile.connectWithInvite({ profileId: 'userb', challenge })
+                    userA.clients.fullAuth.profile.connectWithInvite({
+                        profileId: 'userb',
+                        challenge,
+                    })
                 ).resolves.toBe(true);
 
                 const oneConnection = await userA.clients.fullAuth.profile.connections();
@@ -1560,25 +1567,50 @@ describe('Profiles', () => {
             it('does not allow users to connect with an expired challenge', async () => {
                 // Use fake timers
                 vi.useFakeTimers();
+                vi.setSystemTime(new Date(2024, 5, 19, 12, 0, 0));
 
                 const { challenge } = await userB.clients.fullAuth.profile.generateInvite({
-                    expiration: 1000, // Expiration set to 1 second
+                    expiration: 2, // Expiration set to 2 seconds
                 });
 
-                // Fast-forward time by 2 seconds to simulate expiration
-                vi.advanceTimersByTime(2000);
-
-                try {
-                    const result = await userA.clients.fullAuth.profile.connectWithInvite({ profileId: 'userb', challenge });
-                    console.log(`Test - Unexpected success: ${result}`);
-                } catch (error) {
-                    console.log(`Test - Caught error: ${error}`);
-                    throw error;
-                }
+                vi.setSystemTime(new Date(2024, 5, 19, 12, 0, 3));
 
                 await expect(
-                    userA.clients.fullAuth.profile.connectWithInvite({ profileId: 'userb', challenge })
-                ).rejects.toMatchObject({ code: 'NOT_FOUND', message: 'Invite not found or has expired' });
+                    userA.clients.fullAuth.profile.connectWithInvite({
+                        profileId: 'userb',
+                        challenge,
+                    })
+                ).rejects.toMatchObject({
+                    code: 'NOT_FOUND',
+                    message: 'Invite not found or has expired',
+                });
+
+                // Restore real timers after the test is done
+                vi.useRealTimers();
+            });
+
+            it('does allow users to connect with an unexpired challenge', async () => {
+                // Use fake timers
+                vi.useFakeTimers();
+                vi.setSystemTime(new Date(2024, 5, 19, 12, 0, 0));
+
+                const { challenge } = await userB.clients.fullAuth.profile.generateInvite({
+                    expiration: 2, // Expiration set to 2 seconds
+                });
+
+                vi.setSystemTime(new Date(2024, 5, 19, 12, 0, 1));
+
+                await expect(
+                    userA.clients.fullAuth.profile.connectWithInvite({
+                        profileId: 'userb',
+                        challenge,
+                    })
+                ).resolves.toBe(true);
+
+                const oneConnection = await userA.clients.fullAuth.profile.connections();
+
+                expect(oneConnection).toHaveLength(1);
+                expect(oneConnection[0]!.profileId).toEqual('userb');
 
                 // Restore real timers after the test is done
                 vi.useRealTimers();
@@ -1587,14 +1619,20 @@ describe('Profiles', () => {
             it('invalidates the invite after successful connection', async () => {
                 const { challenge } = await userB.clients.fullAuth.profile.generateInvite();
 
-                await userA.clients.fullAuth.profile.connectWithInvite({ profileId: 'userb', challenge });
+                await userA.clients.fullAuth.profile.connectWithInvite({
+                    profileId: 'userb',
+                    challenge,
+                });
 
                 await expect(
                     userC.clients.fullAuth.profile.connectWithInvite({
                         profileId: 'userb',
                         challenge,
                     })
-                ).rejects.toMatchObject({ code: 'NOT_FOUND', message: 'Invite not found or has expired' });
+                ).rejects.toMatchObject({
+                    code: 'NOT_FOUND',
+                    message: 'Invite not found or has expired',
+                });
             });
         });
     });
