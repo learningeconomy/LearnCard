@@ -204,9 +204,9 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                             );
                         } else {
                             innerContent = (
-                                <div className="h-full w-full">
-                                    <img className="rounded-[15px]" src={media.url} />
-                                    <Camera className="relative bottom-[30px] left-[10px] z-10" />
+                                <div className="h-full w-full flex items-center justify-center">
+                                    <img className="object-cover h-full w-full" src={media.url} />
+                                    <Camera className="absolute bottom-[10px] left-[10px] z-10" />
                                 </div>
                             );
                         }
@@ -220,7 +220,7 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                                     className="flex bg-grayscale-100 items-center rounded-[15px] w-full"
                                 >
                                     <button
-                                        className="h-[80px] w-[80px] rounded-[15px]"
+                                        className="h-[80px] w-[80px] rounded-[15px] overflow-hidden flex-shrink-0"
                                         onClick={() =>
                                             handleMediaAttachmentClick(media.url, media.type)
                                         }
