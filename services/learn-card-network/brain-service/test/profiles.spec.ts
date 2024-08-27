@@ -1530,7 +1530,6 @@ describe('Profiles', () => {
                     // Try to generate another invite with the same challenge 'nice'
                     await userA.clients.fullAuth.profile.generateInvite({ challenge: 'nice' });
                 } catch (error) {
-                    console.log('Caught error:', error); // Log the actual error object
                     expect(error).toMatchObject({
                         code: 'CONFLICT',
                         message: 'Challenge already in use!',
