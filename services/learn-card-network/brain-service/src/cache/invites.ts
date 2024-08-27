@@ -41,7 +41,7 @@ export const setValidInviteForProfile = async (
     expiration: number | null
 ) => {
     if (expiration === null) {
-        return cache.set(getInviteCacheKey(profileId, challenge), NEVER_EXPIRE);
+        return cache.set(getInviteCacheKey(profileId, challenge), NEVER_EXPIRE, 0);
     } else {
         return cache.set(getInviteCacheKey(profileId, challenge), VALID, expiration);
     }
