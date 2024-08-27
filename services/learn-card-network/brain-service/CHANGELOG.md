@@ -1,5 +1,11 @@
 # @learncard/network-brain-service
 
+## 2.0.0
+
+### Major Changes
+
+-   [#473](https://github.com/learningeconomy/LearnCard/pull/473) [`2f3aa34`](https://github.com/learningeconomy/LearnCard/commit/2f3aa34782441778f88300bf035cd66a6898ab06) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - The storage.resolve route is now an open route!
+
 ## 1.10.9
 
 ### Patch Changes
