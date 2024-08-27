@@ -1502,12 +1502,9 @@ describe('Profiles', () => {
         });
 
         describe('generateInvite', () => {
-            it('creates a new UUID challenge if none is supplied', async () => {
+            it('creates a new challenge if none is supplied', async () => {
                 const result = await userA.clients.fullAuth.profile.generateInvite();
                 expect(result.challenge).toBeTruthy();
-                expect(result.challenge).toMatch(
-                    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
-                );
             });
 
             it('uses a supplied challenge if one is provided', async () => {
