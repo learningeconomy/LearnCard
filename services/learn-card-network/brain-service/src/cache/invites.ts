@@ -61,14 +61,7 @@ export const getInviteStatus = async (
         return { isValid: false, isExpired: true, message: 'Invite not found or has expired' };
     }
 
-    if (result === NEVER_EXPIRE) {
-        return { isValid: true, isExpired: false };
-    }
-
-    if (result === VALID) {
-        // If it's VALID, it means it hasn't expired yet (due to Redis expiration)
-        return { isValid: true, isExpired: false };
-    }
+    if (result === NEVER_EXPIRE || result === VALID) return { isValid: true, isExpired: false };
 
     // This case should not happen, but we include it for completeness
     return { isValid: false, isExpired: true, message: 'Invite has expired' };
