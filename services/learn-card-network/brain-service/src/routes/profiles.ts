@@ -727,7 +727,6 @@ export const profilesRouter = t.router({
             const isAlreadySet = await isInviteAlreadySetForProfile(profile.profileId, challenge);
 
             if (isAlreadySet) {
-                console.log('generateInvite: Throwing CONFLICT error');
                 throw new TRPCError({
                     code: 'CONFLICT',
                     message: 'Challenge already in use!',
