@@ -505,9 +505,6 @@ export const profilesRouter = t.router({
             const { profile } = ctx.user;
             const { profileId, challenge } = input;
 
-            console.log(
-                `connectWithInvite - Checking invite for profileId: ${profileId}, challenge: ${challenge}`
-            );
 
             const isValid = await isInviteValidForProfile(profileId, challenge);
             console.log(`connectWithInvite - isValid: ${isValid}`);
