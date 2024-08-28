@@ -1,5 +1,17 @@
 # @learncard/network-brain-service
 
+## 2.0.1
+
+### Patch Changes
+
+-   [#474](https://github.com/learningeconomy/LearnCard/pull/474) [`5284d78`](https://github.com/learningeconomy/LearnCard/commit/5284d7845f91a8a15cfeec4506843e74dc343d44) Thanks [@cboydstun](https://github.com/cboydstun)! - Allow unlimited expiration for invite links
+
+## 2.0.0
+
+### Major Changes
+
+-   [#473](https://github.com/learningeconomy/LearnCard/pull/473) [`2f3aa34`](https://github.com/learningeconomy/LearnCard/commit/2f3aa34782441778f88300bf035cd66a6898ab06) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - The storage.resolve route is now an open route!
+
 ## 1.10.9
 
 ### Patch Changes

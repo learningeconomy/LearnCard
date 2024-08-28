@@ -77,7 +77,7 @@ export type LearnCardNetworkPluginMethods = {
     generateInvite: (
         challenge?: string,
         expiration?: number
-    ) => Promise<{ profileId: string; challenge: string }>;
+    ) => Promise<{ profileId: string; challenge: string; experiesIn?: number | null }>;
 
     blockProfile: (profileId: string) => Promise<boolean>;
     unblockProfile: (profileId: string) => Promise<boolean>;

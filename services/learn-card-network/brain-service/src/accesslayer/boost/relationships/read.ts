@@ -139,7 +139,7 @@ export const countBoostRecipients = async (
             ],
         });
 
-    const result = await query.return('COUNT(sent) AS count').run();
+    const result = await query.return('COUNT(DISTINCT sent.to) AS count').run();
 
     return Number(result.records[0]?.get('count') ?? 0);
 };
