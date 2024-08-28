@@ -513,7 +513,6 @@ export const profilesRouter = t.router({
             console.log(`connectWithInvite - isValid: ${isValid}`);
 
             if (!isValid) {
-                console.log('connectWithInvite - Throwing NOT_FOUND error');
                 throw new TRPCError({
                     code: 'NOT_FOUND',
                     message: 'Invite not found or has expired',
