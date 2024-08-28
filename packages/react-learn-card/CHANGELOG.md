@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.7.0
+
+### Minor Changes
+
+-   [#468](https://github.com/learningeconomy/LearnCard/pull/468) [`32154c01`](https://github.com/learningeconomy/LearnCard/commit/32154c01aa64ea8cfe612fd93ed1a710bb043d95) Thanks [@smurflo2](https://github.com/smurflo2)! - Make clicking anywhere on a credential 'flip' it
+
 ## 2.6.79
 
 ### Patch Changes
