@@ -56,7 +56,10 @@ const TruncateTextBox: React.FC<TruncateTextBoxProps> = ({
                         ...{' '}
                         <button
                             className="text-indigo-500 font-[700]"
-                            onClick={() => setShowFullText(true)}
+                            onClick={e => {
+                                e.stopPropagation();
+                                setShowFullText(true);
+                            }}
                         >
                             More
                         </button>
@@ -67,7 +70,10 @@ const TruncateTextBox: React.FC<TruncateTextBoxProps> = ({
                         {' '}
                         <button
                             className="text-indigo-500 font-[700]"
-                            onClick={() => setShowFullText(false)}
+                            onClick={e => {
+                                e.stopPropagation();
+                                setShowFullText(false);
+                            }}
                         >
                             Close
                         </button>

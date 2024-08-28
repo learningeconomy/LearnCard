@@ -91,7 +91,10 @@ const VCIDDisplayFrontFace: React.FC<VCIDDisplayFrontFaceProps> = ({
             <div className="w-full relative">
                 {!hideQRCode && (
                     <button
-                        onClick={() => qrCodeOnClick?.()}
+                        onClick={e => {
+                            e.stopPropagation();
+                            qrCodeOnClick?.();
+                        }}
                         className="text-grayscale-900 bg-white rounded-full p-[10px] absolute top-[-10px] right-[45%]"
                     >
                         <QRCodeIcon className="text-grayscale-900 " />

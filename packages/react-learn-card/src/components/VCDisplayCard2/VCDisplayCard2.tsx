@@ -236,7 +236,11 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     return (
         <Flipper className="w-full" flipKey={isFront}>
             <Flipped flipId="card">
-                <section className="vc-display-card font-mouse flex flex-col items-center border-solid border-[5px] border-white rounded-[30px] z-10 min-h-[800px] max-w-[400px] relative bg-white shadow-3xl">
+                <section
+                    className="vc-display-card font-mouse flex flex-col items-center border-solid border-[5px] border-white rounded-[30px] z-10 min-h-[800px] max-w-[400px] relative bg-white shadow-3xl"
+                    role="button"
+                    onClick={() => setIsFront(!isFront)}
+                >
                     <RibbonEnd
                         side="left"
                         className="absolute left-[-30px] top-[50px] z-0"
@@ -340,16 +344,16 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                                         {isFront && customFrontButton}
                                         {((isFront && !customFrontButton) ||
                                             (isFront && showDetailsBtn)) && (
-                                            <Flipped flipId="details-back-button">
-                                                <button
-                                                    type="button"
-                                                    className="vc-toggle-side-button text-white shadow-bottom bg-[#00000099] px-[30px] py-[8px] rounded-[40px] text-[28px] tracking-[0.75px] uppercase leading-[28px] mt-[40px] w-fit select-none"
-                                                    onClick={() => setIsFront(!isFront)}
-                                                >
-                                                    Details
-                                                </button>
-                                            </Flipped>
-                                        )}
+                                                <Flipped flipId="details-back-button">
+                                                    <button
+                                                        type="button"
+                                                        className="vc-toggle-side-button text-white shadow-bottom bg-[#00000099] px-[30px] py-[8px] rounded-[40px] text-[28px] tracking-[0.75px] uppercase leading-[28px] mt-[40px] w-fit select-none"
+                                                        onClick={() => setIsFront(!isFront)}
+                                                    >
+                                                        Details
+                                                    </button>
+                                                </Flipped>
+                                            )}
                                         {!isFront && (
                                             <Flipped flipId="details-back-button">
                                                 <button

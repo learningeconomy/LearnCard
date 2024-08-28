@@ -2,8 +2,8 @@ import React from 'react';
 
 import CertificateCornerIcon from './CertificateCornerIcon';
 import CertificateImageDisplay from './CertificateImageDisplay';
+import CertDisplayCardSkillsCount from './CertDisplayCardSkillsCount';
 import CertificateProfileImageDisplay from './CertificateProfileImageDisplay';
-import { VCDisplayCardSkillsCount } from '../VCDisplayCard2';
 
 import UnknownVerifierBadge from '../svgs/UnknownVerifierBadge';
 import VerifiedBadge from '../svgs/VerifiedBadge';
@@ -131,7 +131,11 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
     const issueeImageExists = issueeImage || subjectImageComponent;
 
     return (
-        <section className="relative p-[13px] mt-[55px] bg-white border-[5px] rounded-[30px] border-soid border-grayscale-200 max-w-[300px]">
+        <section
+            role="button"
+            onClick={() => handleViewBackFace?.()}
+            className="relative p-[13px] mt-[55px] bg-white border-[5px] rounded-[30px] border-soid border-grayscale-200 max-w-[300px]"
+        >
             <div className="w-[calc(100%-26px)] absolute top-[-52px]">
                 <CertificateImageDisplay
                     imageUrl={imageUrl ?? ''}
@@ -183,7 +187,7 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
                         </div>
                     )}
 
-                    <VCDisplayCardSkillsCount
+                    <CertDisplayCardSkillsCount
                         skills={credential?.skills ?? []}
                         onClick={handleViewBackFace}
                     />
