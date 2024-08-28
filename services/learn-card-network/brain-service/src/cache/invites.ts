@@ -18,7 +18,6 @@ export const isInviteValidForProfile = async (
     }
 
     const isValid = result === VALID || result === NEVER_EXPIRE;
-    console.log(`isInviteValidForProfile - isValid: ${isValid}`);
     return isValid;
 };
 
