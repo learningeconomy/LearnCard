@@ -693,7 +693,7 @@ export const profilesRouter = t.router({
         .input(
             z
                 .object({
-                    expiration: z.number().optional().default(3600), // Default to 1 hour in seconds
+                    expiration: z.number().optional().default(30 * 24 * 3600), // Default to 30 days in seconds
                     challenge: z.string().optional(),
                 })
                 .optional()
