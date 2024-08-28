@@ -529,7 +529,6 @@ export const profilesRouter = t.router({
             }
 
             const success = await connectProfiles(profile, targetProfile, false);
-            console.log(`connectWithInvite - connectProfiles success: ${success}`);
 
             if (success) {
                 await Promise.all([
