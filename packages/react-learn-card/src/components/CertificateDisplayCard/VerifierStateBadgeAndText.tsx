@@ -18,7 +18,7 @@ type VerifierStateBadgeAndTextProps = {
 
 const VerifierStateBadgeAndText: React.FC<VerifierStateBadgeAndTextProps> = ({ verifierState }) => {
     return (
-        <>
+        <div className="flex justify-center">
             {verifierState === VERIFIER_STATES.selfVerified && (
                 <span className="uppercase font-poppins text-[12px] font-[500] text-green-dark flex gap-[3px] items-center">
                     <PersonBadge />
@@ -43,7 +43,7 @@ const VerifierStateBadgeAndText: React.FC<VerifierStateBadgeAndTextProps> = ({ v
                     Untrusted Verifier
                 </span>
             )}
-        </>
+        </div>
     );
 };
 
