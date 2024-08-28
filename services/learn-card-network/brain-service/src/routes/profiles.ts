@@ -507,7 +507,6 @@ export const profilesRouter = t.router({
 
 
             const isValid = await isInviteValidForProfile(profileId, challenge);
-            console.log(`connectWithInvite - isValid: ${isValid}`);
 
             if (!isValid) {
                 throw new TRPCError({
