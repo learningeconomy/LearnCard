@@ -11,7 +11,6 @@ export const isInviteValidForProfile = async (
     challenge: string,
 ): Promise<boolean> => {
     const result = await cache.get(getInviteCacheKey(profileId, challenge));
-    console.log(`isInviteValidForProfile - result: ${result}`);
 
     // If result is null or undefined, the invite has expired or doesn't exist
     if (!result) {
