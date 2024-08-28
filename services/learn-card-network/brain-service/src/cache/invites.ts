@@ -14,7 +14,6 @@ export const isInviteValidForProfile = async (
 
     // If result is null or undefined, the invite has expired or doesn't exist
     if (!result) {
-        console.log('isInviteValidForProfile - invite not found or expired');
         return false;
     }
 
