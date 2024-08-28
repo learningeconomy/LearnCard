@@ -1527,7 +1527,6 @@ describe('Profiles', () => {
                 try {
                     // Generate the first invite with the challenge 'nice'
                     await userA.clients.fullAuth.profile.generateInvite({ challenge: 'nice' });
-                    console.log('First invite generated with challenge: "nice"');
 
                     // Try to generate another invite with the same challenge 'nice'
                     await userA.clients.fullAuth.profile.generateInvite({ challenge: 'nice' });

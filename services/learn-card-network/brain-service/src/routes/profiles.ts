@@ -53,7 +53,6 @@ import {
     isInviteValidForProfile,
     setValidInviteForProfile,
     invalidateInvite,
-    getInviteStatus,
 } from '@cache/invites';
 import {
     deleteAllCachedConnectionsForProfile,
@@ -505,7 +504,6 @@ export const profilesRouter = t.router({
             const { profile } = ctx.user;
             const { profileId, challenge } = input;
 
-
             const isValid = await isInviteValidForProfile(profileId, challenge);
 
             if (!isValid) {
@@ -693,7 +691,10 @@ export const profilesRouter = t.router({
         .input(
             z
                 .object({
-                    expiration: z.number().optional().default(30 * 24 * 3600), // Default to 30 days in seconds
+                    expiration: z
+                        .number()
+                        .optional()
+                        .default(30 * 24 * 3600), // Default to 30 days in seconds
                     challenge: z.string().optional(),
                 })
                 .optional()
