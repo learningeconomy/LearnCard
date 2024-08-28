@@ -17,3 +17,4 @@ export * from "./MediaAttachmentsBox";
 export * from "./TruncateTextBox";
 export * from "./VerificationRow";
 export * from "./VerificationsBox";
+export * from "./VerifierStateBadgeAndText";
