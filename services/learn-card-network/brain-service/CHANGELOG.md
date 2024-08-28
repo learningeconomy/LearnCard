@@ -1,5 +1,11 @@
 # @learncard/network-brain-service
 
+## 2.0.1
+
+### Patch Changes
+
+-   [#474](https://github.com/learningeconomy/LearnCard/pull/474) [`5284d78`](https://github.com/learningeconomy/LearnCard/commit/5284d7845f91a8a15cfeec4506843e74dc343d44) Thanks [@cboydstun](https://github.com/cboydstun)! - Allow unlimited expiration for invite links
+
 ## 2.0.0
 
 ### Major Changes
