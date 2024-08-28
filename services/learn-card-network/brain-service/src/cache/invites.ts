@@ -25,7 +25,6 @@ export const isInviteAlreadySetForProfile = async (
     profileId: string,
     challenge: string,
 ): Promise<boolean> => {
-    console.log(`isInviteAlreadySetForProfile: Checking for profileId: ${profileId}, challenge: ${challenge}`);
     const result = await cache.get(getInviteCacheKey(profileId, challenge));
     console.log(`isInviteAlreadySetForProfile: Result from cache: ${result}`);
 
