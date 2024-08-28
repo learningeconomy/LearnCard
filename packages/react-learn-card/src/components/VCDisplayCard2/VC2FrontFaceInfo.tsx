@@ -79,7 +79,8 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
         issuerImageComponent
     );
 
-    const issuerDid = typeof issuer === 'string' ? issuer : issuer.id;
+    const issuerDid =
+        typeof credential.issuer === 'string' ? credential.issuer : credential.issuer.id;
 
     let verifierState: VerifierState;
     if (credentialSubject?.id === issuerDid && issuerDid && issuerDid !== 'did:example:123') {
