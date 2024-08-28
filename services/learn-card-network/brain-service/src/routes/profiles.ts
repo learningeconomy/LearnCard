@@ -522,7 +522,6 @@ export const profilesRouter = t.router({
             const targetProfile = await getProfileByProfileId(profileId);
 
             if (!targetProfile) {
-                console.log('connectWithInvite - Target profile not found');
                 throw new TRPCError({
                     code: 'NOT_FOUND',
                     message: 'Profile not found. Are you sure this person exists?',
