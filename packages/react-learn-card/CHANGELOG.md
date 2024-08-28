@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.7.1
+
+### Patch Changes
+
+-   [#476](https://github.com/learningeconomy/LearnCard/pull/476) [`24372e9`](https://github.com/learningeconomy/LearnCard/commit/24372e9d85180a077ec4b06e3c6e6659b9b6b5f8) Thanks [@smurflo2](https://github.com/smurflo2)! - Add support for issuer badges (e.g. trusted/untrusted/unknown issuer)
+
 ## 2.7.0
 
 ### Minor Changes
