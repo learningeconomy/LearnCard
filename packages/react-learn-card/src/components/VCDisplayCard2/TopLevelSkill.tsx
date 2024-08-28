@@ -52,7 +52,8 @@ const TopLevelSkill: React.FC<{
             {subSkills?.length > 0 && (
                 <div className="flex items-center justify-center rounded-full bg-white mr-4 h-[40px] w-[40px]">
                     <button
-                        onClick={() => {
+                        onClick={e => {
+                            e.stopPropagation();
                             handleExpandSubSkills?.();
                         }}
                         className="text-black font-bold flex items-center justify-center text-center font-poppins"

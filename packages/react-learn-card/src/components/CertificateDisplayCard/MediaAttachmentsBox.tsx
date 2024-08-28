@@ -221,9 +221,10 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                                 >
                                     <button
                                         className="h-[80px] w-[80px] rounded-[15px]"
-                                        onClick={() =>
-                                            handleMediaAttachmentClick(media.url, media.type)
-                                        }
+                                        onClick={e => {
+                                            e.stopPropagation();
+                                            handleMediaAttachmentClick(media.url, media.type);
+                                        }}
                                     >
                                         {innerContent}
                                     </button>
@@ -276,6 +277,7 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                                                 target="_blank"
                                                 rel="noreferrer"
                                                 className="text-grayscale-700 font-[500] text-[12px] font-poppins hover:underline"
+                                                onClick={e => e.stopPropagation()}
                                             >
                                                 {fileExtension && (
                                                     <span className="uppercase">
@@ -303,6 +305,7 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                                                 target="_blank"
                                                 rel="noreferrer"
                                                 className="text-indigo-500 font-[500] text-[12px] font-poppins hover:underline"
+                                                onClick={e => e.stopPropagation()}
                                             >
                                                 {baseUrl}
                                             </a>
@@ -319,9 +322,10 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                                 <button
                                     key={index}
                                     className={className}
-                                    onClick={() =>
-                                        handleMediaAttachmentClick(docOrLink.url, docOrLink.type)
-                                    }
+                                    onClick={e => {
+                                        e.stopPropagation();
+                                        handleMediaAttachmentClick(docOrLink.url, docOrLink.type);
+                                    }}
                                 >
                                     {innerContent}
                                 </button>

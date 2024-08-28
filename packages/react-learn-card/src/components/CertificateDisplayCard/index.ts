@@ -4,6 +4,7 @@
 
 export * from "./AlignmentRow";
 export * from "./AlignmentsBox";
+export * from "./CertDisplayCardSkillsCount";
 export * from "./CertificateBackFace";
 export * from "./CertificateCornerIcon";
 export * from "./CertificateDisplayCard";

@@ -17,7 +17,13 @@ const VerificationsBox: React.FC<VerificationsBoxProps> = ({ verificationItems }
         <div className="bg-white flex flex-col items-start gap-[10px] rounded-[20px] shadow-bottom p-[15px] w-full">
             <div className="flex w-full items-center">
                 <h3 className="text-[17px] text-grayscale-900 font-poppins">Verifications</h3>
-                <button className="ml-auto" onClick={() => setShowInfo(!showInfo)}>
+                <button
+                    className="ml-auto"
+                    onClick={e => {
+                        e.stopPropagation();
+                        setShowInfo(!showInfo);
+                    }}
+                >
                     <InfoIcon color={showInfo ? '#6366F1' : undefined} />
                 </button>
             </div>

@@ -52,6 +52,7 @@ import {
     isInviteAlreadySetForProfile,
     isInviteValidForProfile,
     setValidInviteForProfile,
+    invalidateInvite,
 } from '@cache/invites';
 import {
     deleteAllCachedConnectionsForProfile,
@@ -503,10 +504,12 @@ export const profilesRouter = t.router({
             const { profile } = ctx.user;
             const { profileId, challenge } = input;
 
-            if (!(await isInviteValidForProfile(profileId, challenge))) {
+            const isValid = await isInviteValidForProfile(profileId, challenge);
+
+            if (!isValid) {
                 throw new TRPCError({
                     code: 'NOT_FOUND',
-                    message: `Challenge not found for ${profileId}`,
+                    message: 'Invite not found or has expired',
                 });
             }
 
@@ -525,6 +528,7 @@ export const profilesRouter = t.router({
                 await Promise.all([
                     deleteCachedConnectionsForProfileId(profile.profileId),
                     deleteCachedConnectionsForProfileId(targetProfile.profileId),
+                    invalidateInvite(profileId, challenge),
                 ]);
             }
 
@@ -687,26 +691,51 @@ export const profilesRouter = t.router({
         .input(
             z
                 .object({
+                    expiration: z
+                        .number()
+                        .optional()
+                        .default(30 * 24 * 3600), // Default to 30 days in seconds
                     challenge: z.string().optional(),
-                    expiration: z.number().default(3600 * 24 * 30),
                 })
                 .optional()
+                .default({})
         )
-        .output(z.object({ profileId: z.string(), challenge: z.string() }))
+        .output(
+            z.object({
+                profileId: z.string(),
+                challenge: z.string(),
+                expiresIn: z.number().nullable(),
+            })
+        )
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const { challenge = uuid(), expiration } = input ?? {};
+            if (!profile) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Profile not found. Please create a profile first.',
+                });
+            }
 
-            if (await isInviteAlreadySetForProfile(profile.profileId, challenge)) {
+            const { expiration = 3600, challenge: inputChallenge } = input; // expiration now in seconds by default
+
+            // Use UUID for challenge if none is provided
+            const challenge = inputChallenge || uuid();
+
+            const isAlreadySet = await isInviteAlreadySetForProfile(profile.profileId, challenge);
+
+            if (isAlreadySet) {
                 throw new TRPCError({
                     code: 'CONFLICT',
                     message: 'Challenge already in use!',
                 });
             }
 
-            await setValidInviteForProfile(profile.profileId, challenge, expiration);
+            let expiresIn: number | null = expiration === 0 ? null : expiration;
 
-            return { profileId: profile.profileId, challenge };
+            // Set the invite with the calculated expiration time
+            await setValidInviteForProfile(profile.profileId, challenge, expiresIn ?? null);
+
+            return { profileId: profile.profileId, challenge, expiresIn };
         }),
 
     blockProfile: profileRoute
