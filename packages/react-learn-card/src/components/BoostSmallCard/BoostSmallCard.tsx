@@ -12,6 +12,7 @@ import { getDarkBGColor } from '../../helpers/color.helpers';
 
 export const BoostSmallCard: React.FC<BoostSmallCardProps> = ({
     title = 'Title Lorem Ipsum',
+    customTitle,
     thumbImgSrc,
     customThumbClass = '',
     customHeaderClass = '',
@@ -109,11 +110,14 @@ export const BoostSmallCard: React.FC<BoostSmallCardProps> = ({
                     </section>
                 )}
 
-                <section className={defaultHeaderClass}>
-                    <p className="relative z-[100] small-boost-title text-[16px] leading-[130%] p-[0px] font-medium text-center line-clamp-2">
-                        {title}
-                    </p>
-                </section>
+                {customTitle && customTitle}
+                {!customTitle && (
+                    <section className={defaultHeaderClass}>
+                        <p className="relative z-[100] small-boost-title text-[16px] leading-[130%] p-[0px] font-medium text-center line-clamp-2">
+                            {title}
+                        </p>
+                    </section>
+                )}
 
                 <section className={defaultBodyClass}>
                     {customBodyComponent && customBodyComponent}

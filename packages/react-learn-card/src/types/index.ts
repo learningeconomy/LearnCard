@@ -301,6 +301,7 @@ export type IssueHistory = {
 
 export type BoostSmallCardProps = {
     title?: string;
+    customTitle?: React.ReactNode | string | null;
     className?: string;
     type?: WalletCategoryTypes;
     thumbImgSrc?: string;
@@ -323,6 +324,7 @@ export type BoostSmallCardProps = {
 
 export type BoostGenericCardProps = {
     title?: string;
+    customTitle?: React.ReactNode | string | null;
     className?: string;
     type?: WalletCategoryTypes;
     thumbImgSrc?: string;
@@ -335,8 +337,10 @@ export type BoostGenericCardProps = {
     innerOnClick?: () => void;
     bgImgSrc?: string;
     issuerName?: string;
+    customIssuerName?: React.ReactNode | string | null;
     optionsTriggerOnClick?: () => void;
     dateDisplay?: string;
+    customDateDisplay?: React.ReactNode | string | null;
 };
 
 export type Attachment = {

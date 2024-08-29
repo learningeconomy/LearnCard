@@ -9,6 +9,7 @@ import ThreeDots from '../../assets/images/DotsThreeOutline.svg';
 
 export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
     title,
+    customTitle,
     thumbImgSrc,
     customThumbClass = '',
     customHeaderClass = '',
@@ -21,7 +22,9 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
     innerOnClick,
     bgImgSrc,
     issuerName,
+    customIssuerName,
     dateDisplay,
+    customDateDisplay,
     optionsTriggerOnClick,
 }) => {
     const thumbClass = `bg-${TYPE_TO_WALLET_DARK_COLOR[type]}` ?? 'bg-grayscale-50';
@@ -85,19 +88,30 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
                     </section>
                 )}
 
-                <section className={`${defaultHeaderClass} items-center`}>
-                    <p className="relative z-[100] small-boost-title text-[16px] leading-[130%] px-[0px] font-medium text-center text-grayscale-900 line-clamp-2 max-w-full">
-                        {title}
-                    </p>
-                </section>
+                {!customTitle && (
+                    <section className={`${defaultHeaderClass} items-center`}>
+                        <p className="relative z-[100] small-boost-title text-[16px] leading-[130%] px-[0px] font-medium text-center text-grayscale-900 line-clamp-2 max-w-full">
+                            {title}
+                        </p>
+                    </section>
+                )}
+
+                {customTitle && customTitle}
 
                 <section className="small-generic-boost-card-footer flex flex-col justify-center items-center absolute bottom-[15px] w-full">
-                    <span className="flex items-center justify-center small-generic-boost-issuer-name line-clamp-1 text-[12px] text-grayscale-700 font-bold px-[6px]">
-                        by {issuerName}
-                    </span>
-                    <p className="small-generic-boost-date-display line-clamp-1 text-[12px] text-grayscale-700  px-[7px]">
-                        {dateDisplay}
-                    </p>
+                    {customIssuerName && customIssuerName}
+                    {!customIssuerName && (
+                        <span className="flex items-center justify-center small-generic-boost-issuer-name line-clamp-1 text-[12px] text-grayscale-700 font-bold px-[6px]">
+                            by {issuerName}
+                        </span>
+                    )}
+
+                    {customDateDisplay && customDateDisplay}
+                    {!customDateDisplay && (
+                        <p className="small-generic-boost-date-display line-clamp-1 text-[12px] text-grayscale-700  px-[7px]">
+                            {dateDisplay}
+                        </p>
+                    )}
                 </section>
                 {showChecked && (
                     <div className="check-btn-overlay absolute top-[5px] left-[5px]">
