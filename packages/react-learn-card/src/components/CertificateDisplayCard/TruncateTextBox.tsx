@@ -43,7 +43,10 @@ const TruncateTextBox: React.FC<TruncateTextBoxProps> = ({
                         ...
                         <button
                             className="text-indigo-500 text-[12px]"
-                            onClick={() => setShowFullText(true)}
+                            onClick={e => {
+                                e.stopPropagation();
+                                setShowFullText(true);
+                            }}
                         >
                             Show more
                         </button>
@@ -52,7 +55,10 @@ const TruncateTextBox: React.FC<TruncateTextBoxProps> = ({
                 {needsTruncate && showFullText && (
                     <button
                         className="text-indigo-500 text-[12px]"
-                        onClick={() => setShowFullText(false)}
+                        onClick={e => {
+                            e.stopPropagation();
+                            setShowFullText(false);
+                        }}
                     >
                         Show less
                     </button>

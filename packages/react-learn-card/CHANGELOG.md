@@ -1,5 +1,37 @@
 # @welibraryos/react-learn-card
 
+## 2.7.2
+
+### Patch Changes
+
+-   [#477](https://github.com/learningeconomy/LearnCard/pull/477) [`57898a5`](https://github.com/learningeconomy/LearnCard/commit/57898a5a810ea50583d3a9485fd98095251efc1d) Thanks [@rhen92](https://github.com/rhen92)! - [LC-235] Prevent attachment section from being crammed
+
+## 2.7.1
+
+### Patch Changes
+
+-   [#476](https://github.com/learningeconomy/LearnCard/pull/476) [`24372e9`](https://github.com/learningeconomy/LearnCard/commit/24372e9d85180a077ec4b06e3c6e6659b9b6b5f8) Thanks [@smurflo2](https://github.com/smurflo2)! - Add support for issuer badges (e.g. trusted/untrusted/unknown issuer)
+
+## 2.7.0
+
+### Minor Changes
+
+-   [#468](https://github.com/learningeconomy/LearnCard/pull/468) [`32154c01`](https://github.com/learningeconomy/LearnCard/commit/32154c01aa64ea8cfe612fd93ed1a710bb043d95) Thanks [@smurflo2](https://github.com/smurflo2)! - Make clicking anywhere on a credential 'flip' it
+
+## 2.6.79
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.28
+
+## 2.6.78
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.27
+
 ## 2.6.77
 
 ### Patch Changes

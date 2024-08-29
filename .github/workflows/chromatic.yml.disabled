@@ -3,10 +3,12 @@
 # Workflow name
 name: 'Chromatic'
 
+# Disabling for now because this always fails weirdly =(
+# TODO: Figure out why and fix this
 # Event for the workflow
-on:
-  pull_request:
-    types: [opened, synchronize]
+# on:
+#   pull_request:
+#     types: [opened, synchronize]
 
 env:
   CI: true

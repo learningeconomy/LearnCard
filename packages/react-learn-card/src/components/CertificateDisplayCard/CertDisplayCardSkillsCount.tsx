@@ -4,7 +4,8 @@ import PuzzlePiece from '../svgs/PuzzlePiece';
 
 import { categorizeSkills, getTotalCountOfSkills } from '../../helpers/credential.helpers';
 
-export const VCDisplayCardSkillsCount: React.FC<{
+// Copy of VCDisplayCardSkillsCount, necessary to avoid circular dependency
+export const CertDisplayCardSkillsCount: React.FC<{
     skills: { category: string; skill: string; subSkills: string[] }[];
     onClick?: () => void;
 }> = ({ skills, onClick }) => {
@@ -43,4 +44,4 @@ export const VCDisplayCardSkillsCount: React.FC<{
     );
 };
 
-export default VCDisplayCardSkillsCount;
+export default CertDisplayCardSkillsCount;

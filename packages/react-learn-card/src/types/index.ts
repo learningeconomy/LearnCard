@@ -341,6 +341,7 @@ export type BoostGenericCardProps = {
     optionsTriggerOnClick?: () => void;
     dateDisplay?: string;
     customDateDisplay?: React.ReactNode | string | null;
+    verifierBadge?: React.ReactNode;
 };
 
 export type Attachment = {

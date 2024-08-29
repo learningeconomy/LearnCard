@@ -62,7 +62,9 @@ export const CertificateBackFace: React.FC<CertificateBackFaceProps> = ({
 
     return (
         <div
-            className={`flex flex-col gap-[15px] items-center border-[5px] border-solid border-grayscale-200 py-[30px] px-[20px] rounded-[25px] max-w-[440px] ${bgColor}`}
+            role="button"
+            onClick={() => handleViewFrontFace?.()}
+            className={`flex flex-col gap-[15px] items-center border-[5px] border-solid border-grayscale-200 py-[30px] px-[20px] rounded-[25px] max-w-[400px] ${bgColor}`}
         >
             {showBackButton ? (
                 <div className="w-full">
