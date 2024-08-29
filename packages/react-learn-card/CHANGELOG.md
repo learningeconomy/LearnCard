@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.7.2
+
+### Patch Changes
+
+-   [#477](https://github.com/learningeconomy/LearnCard/pull/477) [`57898a5`](https://github.com/learningeconomy/LearnCard/commit/57898a5a810ea50583d3a9485fd98095251efc1d) Thanks [@rhen92](https://github.com/rhen92)! - [LC-235] Prevent attachment section from being crammed
+
 ## 2.7.1
 
 ### Patch Changes
