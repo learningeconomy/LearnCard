@@ -182,9 +182,9 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                             );
                         } else {
                             innerContent = (
-                                <div className="absolute top-0 left-0 right-0 bottom-0 h-min">
-                                    <img className="rounded-[15px]" src={media.url} />
-                                    <Camera className="relative bottom-[30px] left-[10px] z-10" />
+                                <div className="absolute top-0 left-0 right-0 bottom-0 h-full w-full flex items-center justify-center">
+                                    <img className="rounded-[15px] object-cover h-full w-full" src={media.url} />
+                                    <Camera className="absolute bottom-[10px] left-[10px] z-10" />
                                 </div>
                             );
                         }
