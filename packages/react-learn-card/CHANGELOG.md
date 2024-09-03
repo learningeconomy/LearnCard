@@ -1,5 +1,13 @@
 # @welibraryos/react-learn-card
 
+## 2.7.4
+
+### Patch Changes
+
+-   [#485](https://github.com/learningeconomy/LearnCard/pull/485) [`aec3e346`](https://github.com/learningeconomy/LearnCard/commit/aec3e346611624a106e94428a1a5d63988d04cc7) Thanks [@goblincore](https://github.com/goblincore)! - chore: Update boost generic card spacing and formatting of content
+
+-   [#487](https://github.com/learningeconomy/LearnCard/pull/487) [`68550bb`](https://github.com/learningeconomy/LearnCard/commit/68550bb7f143897841defabdd13c5c9e5e1bf553) Thanks [@smurflo2](https://github.com/smurflo2)! - Truncate issuer name to 20 characters instead of 25
+
 ## 2.7.3
 
 ### Patch Changes
