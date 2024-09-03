@@ -2,4 +2,4 @@
 '@learncard/react': patch
 ---
 
-Truncate issuer + issue names to 20 characters instead of 25
+Truncate issuer name to 20 characters instead of 25
