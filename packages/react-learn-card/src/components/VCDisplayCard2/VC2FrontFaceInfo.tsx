@@ -43,7 +43,7 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
     customThumbComponent,
     trustedAppRegistry,
 }) => {
-    const issuerName = truncateWithEllipsis(getNameFromProfile(issuer ?? ''), 25);
+    const issuerName = truncateWithEllipsis(getNameFromProfile(issuer ?? ''), 20);
     const issueeName = truncateWithEllipsis(getNameFromProfile(issuee ?? ''), 25);
     const issuerImage = getImageFromProfile(issuer ?? '');
     const issueeImage = getImageFromProfile(issuee ?? '');
