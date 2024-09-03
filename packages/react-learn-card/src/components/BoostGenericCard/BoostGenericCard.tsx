@@ -88,18 +88,17 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
                         )}
                     </section>
                 )}
+                <section className="boost-generic-info-section">
+                    {!customTitle && (
+                        <div className={`${defaultHeaderClass} items-center`}>
+                            <p className="relative z-[100] small-boost-title text-[16px] leading-[130%] px-[0px] font-medium text-center text-grayscale-900 line-clamp-2 max-w-full">
+                                {title}
+                            </p>
+                        </div>
+                    )}
 
-                {!customTitle && (
-                    <section className={`${defaultHeaderClass} items-center`}>
-                        <p className="relative z-[100] small-boost-title text-[16px] leading-[130%] px-[0px] font-medium text-center text-grayscale-900 line-clamp-2 max-w-full">
-                            {title}
-                        </p>
-                    </section>
-                )}
+                    {customTitle && customTitle}
 
-                {customTitle && customTitle}
-
-                <section className="small-generic-boost-card-footer flex flex-col justify-center items-center absolute bottom-[15px] w-full">
                     {customIssuerName && customIssuerName}
                     {!customIssuerName && (
                         <span className="flex items-center justify-center small-generic-boost-issuer-name line-clamp-1 text-[12px] text-grayscale-700 font-bold px-[6px]">
@@ -113,8 +112,9 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
                             {dateDisplay}
                         </p>
                     )}
-                    {verifierBadge}
+                    <div className="boost-verifier-badge-display">{verifierBadge}</div>
                 </section>
+
                 {showChecked && (
                     <div className="check-btn-overlay absolute top-[5px] left-[5px]">
                         <CircleCheckButton
