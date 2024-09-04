@@ -218,17 +218,32 @@ export const getLearnCardNetworkPlugin = async (
 
                 return client.profile.acceptConnectionRequest.mutate({ profileId });
             },
-            getConnections: async (_learnCard, options) => {
+            getConnections: async _learnCard => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.profile.connections.query();
+            },
+            getPaginatedConnections: async (_learnCard, options) => {
                 if (!userData) throw new Error('Please make an account first!');
 
                 return client.profile.paginatedConnections.query(options);
             },
-            getPendingConnections: async (_learnCard, options) => {
+            getPendingConnections: async _learnCard => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.profile.pendingConnections.query();
+            },
+            getPaginatedPendingConnections: async (_learnCard, options) => {
                 if (!userData) throw new Error('Please make an account first!');
 
                 return client.profile.paginatedPendingConnections.query(options);
             },
-            getConnectionRequests: async (_learnCard, options) => {
+            getConnectionRequests: async _learnCard => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.profile.connectionRequests.query();
+            },
+            getPaginatedConnectionRequests: async (_learnCard, options) => {
                 if (!userData) throw new Error('Please make an account first!');
 
                 return client.profile.paginatedConnectionRequests.query(options);
@@ -354,12 +369,33 @@ export const getLearnCardNetworkPlugin = async (
 
                 return client.boost.getBoost.query({ uri });
             },
-            getBoosts: async (_learnCard, options) => {
+            getBoosts: async _learnCard => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.boost.getBoosts.query();
+            },
+            getPaginatedBoosts: async (_learnCard, options) => {
                 if (!userData) throw new Error('Please make an account first!');
 
                 return client.boost.getPaginatedBoosts.query(options);
             },
             getBoostRecipients: async (
+                _learnCard,
+                uri,
+                limit = 25,
+                skip = undefined,
+                includeUnacceptedBoosts = true
+            ) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.boost.getBoostRecipients.query({
+                    uri,
+                    limit,
+                    skip,
+                    includeUnacceptedBoosts,
+                });
+            },
+            getPaginatedBoostRecipients: async (
                 _learnCard,
                 uri,
                 limit = 25,

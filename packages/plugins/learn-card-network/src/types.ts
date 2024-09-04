@@ -26,6 +26,7 @@ import {
     ConsentFlowTransactionsQuery,
     PaginatedConsentFlowData,
     ConsentFlowDataQuery,
+    BoostRecipientInfo,
 } from '@learncard/types';
 import { Plugin } from '@learncard/core';
 import { ProofOptions } from '@learncard/didkit-plugin';
@@ -72,9 +73,16 @@ export type LearnCardNetworkPluginMethods = {
     cancelConnectionRequest: (profileId: string) => Promise<boolean>;
     disconnectWith: (profileId: string) => Promise<boolean>;
     acceptConnectionRequest: (id: string) => Promise<boolean>;
-    getConnections: (options?: PaginationOptionsType) => Promise<PaginatedLCNProfiles>;
-    getPendingConnections: (options?: PaginationOptionsType) => Promise<PaginatedLCNProfiles>;
-    getConnectionRequests: (options?: PaginationOptionsType) => Promise<PaginatedLCNProfiles>;
+    getConnections: () => Promise<LCNProfile[]>;
+    getPaginatedConnections: (options?: PaginationOptionsType) => Promise<PaginatedLCNProfiles>;
+    getPendingConnections: () => Promise<LCNProfile[]>;
+    getPaginatedPendingConnections: (
+        options?: PaginationOptionsType
+    ) => Promise<PaginatedLCNProfiles>;
+    getConnectionRequests: () => Promise<LCNProfile[]>;
+    getPaginatedConnectionRequests: (
+        options?: PaginationOptionsType
+    ) => Promise<PaginatedLCNProfiles>;
     generateInvite: (
         challenge?: string,
         expiration?: number
@@ -103,8 +111,15 @@ export type LearnCardNetworkPluginMethods = {
         metadata?: Partial<Omit<Boost, 'uri'>>
     ) => Promise<string>;
     getBoost: (uri: string) => Promise<Boost & { boost: UnsignedVC }>;
-    getBoosts: (options?: PaginationOptionsType) => Promise<PaginatedBoostsType>;
+    getBoosts: () => Promise<{ name?: string; uri: string }[]>;
+    getPaginatedBoosts: (options?: PaginationOptionsType) => Promise<PaginatedBoostsType>;
     getBoostRecipients: (
+        uri: string,
+        limit?: number,
+        skip?: number,
+        includeUnacceptedBoosts?: boolean
+    ) => Promise<BoostRecipientInfo[]>;
+    getPaginatedBoostRecipients: (
         uri: string,
         limit?: number,
         cursor?: string,
