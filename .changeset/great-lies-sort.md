@@ -3,4 +3,4 @@
 '@learncard/network-plugin': minor
 ---
 
-Paginate connections, getConnections, connectionRequests, getBoosts, and getBoostRecipients. Also, add countBoostRecipients
+Paginate connections, getConnections, connectionRequests, getBoosts, and getBoostRecipients
