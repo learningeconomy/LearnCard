@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { getClient, getUser } from './helpers/getClient';
 import { testVp, sendPresentation } from './helpers/send';
 import { Profile, Credential, Presentation } from '@models';
@@ -110,13 +111,10 @@ describe('Presentations', () => {
     describe('receivedPresentations', () => {
         beforeEach(async () => {
             await Profile.delete({ detach: true, where: {} });
+            await Presentation.delete({ detach: true, where: {} });
 
             await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
             await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
-        });
-
-        beforeEach(async () => {
-            await Presentation.delete({ detach: true, where: {} });
         });
 
         it('should require full auth to get received presentations', async () => {
@@ -159,7 +157,7 @@ describe('Presentations', () => {
         });
 
         it('should show when the presentation was sent/received', async () => {
-            jest.useFakeTimers().setSystemTime(new Date('02-06-2023'));
+            vi.useFakeTimers().setSystemTime(new Date('02-06-2023'));
             const sent = new Date().toISOString();
 
             const uri = await userA.clients.fullAuth.presentation.sendPresentation({
@@ -167,7 +165,7 @@ describe('Presentations', () => {
                 presentation: testVp,
             });
 
-            jest.setSystemTime(new Date('02-07-2023'));
+            vi.setSystemTime(new Date('02-07-2023'));
             const received = new Date().toISOString();
 
             await userB.clients.fullAuth.presentation.acceptPresentation({ uri });
@@ -177,7 +175,7 @@ describe('Presentations', () => {
             expect(presentations[0]?.sent).toEqual(sent);
             expect(presentations[0]?.received).toEqual(received);
 
-            jest.useRealTimers();
+            vi.useRealTimers();
         });
 
         it('should allow filtering received presentations by who sent them', async () => {
@@ -208,13 +206,10 @@ describe('Presentations', () => {
     describe('sentPresentations', () => {
         beforeEach(async () => {
             await Profile.delete({ detach: true, where: {} });
+            await Presentation.delete({ detach: true, where: {} });
 
             await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
             await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
-        });
-
-        beforeEach(async () => {
-            await Presentation.delete({ detach: true, where: {} });
         });
 
         it('should require full auth to get sent presentations', async () => {
@@ -257,7 +252,7 @@ describe('Presentations', () => {
         });
 
         it('should show when the presentation was sent/received', async () => {
-            jest.useFakeTimers().setSystemTime(new Date('02-06-2023'));
+            vi.useFakeTimers().setSystemTime(new Date('02-06-2023'));
             const sent = new Date().toISOString();
 
             const uri = await userA.clients.fullAuth.presentation.sendPresentation({
@@ -265,7 +260,7 @@ describe('Presentations', () => {
                 presentation: testVp,
             });
 
-            jest.setSystemTime(new Date('02-07-2023'));
+            vi.setSystemTime(new Date('02-07-2023'));
             const received = new Date().toISOString();
 
             await userB.clients.fullAuth.presentation.acceptPresentation({ uri });
@@ -275,7 +270,7 @@ describe('Presentations', () => {
             expect(presentations[0]?.sent).toEqual(sent);
             expect(presentations[0]?.received).toEqual(received);
 
-            jest.useRealTimers();
+            vi.useRealTimers();
         });
 
         it('should allow filtering sent presentations by who they were sent to', async () => {
@@ -305,13 +300,10 @@ describe('Presentations', () => {
     describe('incomingPresentations', () => {
         beforeEach(async () => {
             await Profile.delete({ detach: true, where: {} });
+            await Presentation.delete({ detach: true, where: {} });
 
             await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
             await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
-        });
-
-        beforeEach(async () => {
-            await Presentation.delete({ detach: true, where: {} });
         });
 
         it('should require full auth to get incoming presentations', async () => {
@@ -362,7 +354,7 @@ describe('Presentations', () => {
         });
 
         it('should show when the presentation was sent', async () => {
-            jest.useFakeTimers().setSystemTime(new Date('02-06-2023'));
+            vi.useFakeTimers().setSystemTime(new Date('02-06-2023'));
             const sent = new Date().toISOString();
 
             await userA.clients.fullAuth.presentation.sendPresentation({
@@ -374,7 +366,7 @@ describe('Presentations', () => {
 
             expect(presentations[0]?.sent).toEqual(sent);
 
-            jest.useRealTimers();
+            vi.useRealTimers();
         });
 
         it('should allow filtering incoming presentations by who sent them', async () => {

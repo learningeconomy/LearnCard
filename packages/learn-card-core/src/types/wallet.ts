@@ -6,13 +6,15 @@ import {
     PluginIndexPlane,
     PluginCachePlane,
     PluginIdPlane,
+    PluginContextPlane,
     LearnCardReadPlane,
     LearnCardStorePlane,
     LearnCardIndexPlane,
     LearnCardCachePlane,
     LearnCardIdPlane,
+    LearnCardContextPlane,
 } from './planes';
-import { UnionToIntersection, MergeObjects } from './utilities';
+import { UnionToIntersection, MergeObjects, IsAnyOrNever } from './utilities';
 
 export type GenerateLearnCard<
     NewControlPlanes extends ControlPlane = never,
@@ -21,11 +23,11 @@ export type GenerateLearnCard<
     Methods extends Record<string, (...args: any[]) => any> = Record<never, never>
 > = LearnCard<
     any,
-    [ControlPlanes] extends [1 & ControlPlanes]
-        ? NewControlPlanes
-        : [NewControlPlanes] extends [1 & NewControlPlanes]
-        ? ControlPlanes
-        : ControlPlanes | NewControlPlanes,
+    IsAnyOrNever<ControlPlanes> extends true
+    ? NewControlPlanes
+    : IsAnyOrNever<NewControlPlanes> extends true
+    ? ControlPlanes
+    : ControlPlanes | NewControlPlanes,
     NewMethods & Methods
 >;
 
@@ -36,27 +38,27 @@ export type AddImplicitLearnCardArgument<
     DependentControlPlanes extends ControlPlane = never,
     DependentMethods extends Record<string, (...args: any[]) => any> = Record<never, never>
 > = {
-    [Key in keyof Functions]: <
-        T extends GenerateLearnCard<
-            ControlPlanes,
-            Methods,
-            DependentControlPlanes,
-            DependentMethods
-        >
-    >(
-        learnCard: T,
-        ...args: Parameters<Functions[Key]>
-    ) => ReturnType<Functions[Key]>;
-};
+        [Key in keyof Functions]: <
+            T extends GenerateLearnCard<
+                ControlPlanes,
+                Methods,
+                DependentControlPlanes,
+                DependentMethods
+            >
+        >(
+            learnCard: T,
+            ...args: Parameters<Functions[Key]>
+        ) => ReturnType<Functions[Key]>;
+    };
 
 /** @group Universal Wallets */
 export type GetPluginMethods<Plugins extends Plugin[]> = undefined extends Plugins[1]
     ? NonNullable<Plugins[0]['_methods']>
     : UnionToIntersection<
-          NonNullable<
-              MergeObjects<{ [Key in keyof Plugins]: NonNullable<Plugins[Key]['_methods']> }>
-          >
-      >;
+        NonNullable<
+            MergeObjects<{ [Key in keyof Plugins]: NonNullable<Plugins[Key]['_methods']> }>
+        >
+    >;
 
 /** @group Universal Wallets */
 export type Plugin<
@@ -82,63 +84,75 @@ export type Plugin<
     index?: {};
     cache?: {};
     id?: {};
-} & ([ControlPlanes] extends [1 & ControlPlanes] // Check for any/never and prevent it from requiring all planes
+    context?: {};
+} & (IsAnyOrNever<ControlPlanes> extends true
     ? {}
     : ('read' extends ControlPlanes
-          ? {
-                read: AddImplicitLearnCardArgument<
-                    PluginReadPlane,
-                    ControlPlanes,
-                    Methods,
-                    DependentControlPlanes,
-                    DependentMethods
-                >;
-            }
-          : {}) &
-          ('store' extends ControlPlanes
-              ? {
-                    store: AddImplicitLearnCardArgument<
-                        PluginStorePlane,
-                        ControlPlanes,
-                        Methods,
-                        DependentControlPlanes,
-                        DependentMethods
-                    >;
-                }
-              : {}) &
-          ('index' extends ControlPlanes
-              ? {
-                    index: AddImplicitLearnCardArgument<
-                        PluginIndexPlane,
-                        ControlPlanes,
-                        Methods,
-                        DependentControlPlanes,
-                        DependentMethods
-                    >;
-                }
-              : {}) &
-          ('cache' extends ControlPlanes
-              ? {
-                    cache: AddImplicitLearnCardArgument<
-                        PluginCachePlane,
-                        ControlPlanes,
-                        Methods,
-                        DependentControlPlanes,
-                        DependentMethods
-                    >;
-                }
-              : {}) &
-          ('id' extends ControlPlanes
-              ? {
-                    id: AddImplicitLearnCardArgument<
-                        PluginIdPlane,
-                        ControlPlanes,
-                        Methods,
-                        DependentControlPlanes,
-                        DependentMethods
-                    >;
-                }
-              : {}));
+        ? {
+            read: AddImplicitLearnCardArgument<
+                PluginReadPlane,
+                ControlPlanes,
+                Methods,
+                DependentControlPlanes,
+                DependentMethods
+            >;
+        }
+        : {}) &
+    ('store' extends ControlPlanes
+        ? {
+            store: AddImplicitLearnCardArgument<
+                PluginStorePlane,
+                ControlPlanes,
+                Methods,
+                DependentControlPlanes,
+                DependentMethods
+            >;
+        }
+        : {}) &
+    ('index' extends ControlPlanes
+        ? {
+            index: AddImplicitLearnCardArgument<
+                PluginIndexPlane,
+                ControlPlanes,
+                Methods,
+                DependentControlPlanes,
+                DependentMethods
+            >;
+        }
+        : {}) &
+    ('cache' extends ControlPlanes
+        ? {
+            cache: AddImplicitLearnCardArgument<
+                PluginCachePlane,
+                ControlPlanes,
+                Methods,
+                DependentControlPlanes,
+                DependentMethods
+            >;
+        }
+        : {}) &
+    ('id' extends ControlPlanes
+        ? {
+            id: AddImplicitLearnCardArgument<
+                PluginIdPlane,
+                ControlPlanes,
+                Methods,
+                DependentControlPlanes,
+                DependentMethods
+            >;
+        }
+        : {}) &
+    ('context' extends ControlPlanes
+        ? {
+            context: AddImplicitLearnCardArgument<
+                PluginContextPlane,
+                ControlPlanes,
+                Methods,
+                DependentControlPlanes,
+                DependentMethods
+            >;
+        }
+        : {}));
 
 /** @group Universal Wallets */
 export type LearnCard<
@@ -152,10 +166,11 @@ export type LearnCard<
         plugin: NewPlugin
     ) => Promise<LearnCard<[...Plugins, NewPlugin]>>;
     debug?: typeof console.log;
-} & ([ControlPlanes] extends [1 & ControlPlanes] // Check for any/never and prevent it from requiring all planes
+} & (IsAnyOrNever<ControlPlanes> extends true
     ? {}
     : ('read' extends ControlPlanes ? { read: LearnCardReadPlane<Plugins> } : {}) &
-          ('store' extends ControlPlanes ? { store: LearnCardStorePlane<Plugins> } : {}) &
-          ('index' extends ControlPlanes ? { index: LearnCardIndexPlane<Plugins> } : {}) &
-          ('cache' extends ControlPlanes ? { cache: LearnCardCachePlane<Plugins> } : {}) &
-          ('id' extends ControlPlanes ? { id: LearnCardIdPlane<Plugins> } : {}));
+    ('store' extends ControlPlanes ? { store: LearnCardStorePlane<Plugins> } : {}) &
+    ('index' extends ControlPlanes ? { index: LearnCardIndexPlane<Plugins> } : {}) &
+    ('cache' extends ControlPlanes ? { cache: LearnCardCachePlane<Plugins> } : {}) &
+    ('id' extends ControlPlanes ? { id: LearnCardIdPlane<Plugins> } : {}) &
+    ('context' extends ControlPlanes ? { context: LearnCardContextPlane<Plugins> } : {}));

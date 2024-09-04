@@ -16,9 +16,10 @@ import {
 import { getCredentialUri } from './credential.helpers';
 import { getLearnCard } from './learnCard.helpers';
 import { issueCredentialWithSigningAuthority } from './signingAuthority.helpers';
-import { sendNotification } from './notifications.helpers';
+import { addNotificationToQueue } from './notifications.helpers';
 import { BoostStatus } from 'types/boost';
 import { getDidWeb } from './did.helpers';
+import { deleteCachedConnectionsForProfileId } from '@cache/connections';
 
 export const getBoostUri = (id: string, domain: string): string =>
     constructUri('boost', id, domain);
@@ -266,9 +267,16 @@ export const sendBoost = async (
         }
     }
 
+    if (autoAcceptCredential && boost.dataValues.autoConnectRecipients) {
+        await Promise.all([
+            deleteCachedConnectionsForProfileId(from.profileId),
+            deleteCachedConnectionsForProfileId(to.profileId),
+        ]);
+    }
+
     if (typeof boostUri === 'string') {
         if (!skipNotification) {
-            await sendNotification({
+            await addNotificationToQueue({
                 type: LCNNotificationTypeEnumValidator.enum.BOOST_RECEIVED,
                 to: to.dataValues,
                 from: from.dataValues,

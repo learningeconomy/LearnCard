@@ -2,9 +2,23 @@ import { z } from 'zod';
 import { getDidWebLearnCard } from '@helpers/learnCard.helpers';
 import { LCNNotification } from '@learncard/types';
 import { getDidWeb } from '@helpers/did.helpers';
+import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
 
 // Timeout value in milliseconds for aborting the request
 const TIMEOUT = 6000;
+
+const sqs = new SQSClient({ apiVersion: 'latest', region: process.env.AWS_REGION });
+
+export async function addNotificationToQueue(notification: LCNNotification) {
+    if (process.env.NODE_ENV === 'test' || process.env.IS_OFFLINE) return; // Can not use SQS in test environment or locally
+
+    const command = new SendMessageCommand({
+        QueueUrl: process.env.NOTIFICATIONS_QUEUE_URL,
+        MessageBody: JSON.stringify(notification),
+    });
+
+    return sqs.send(command);
+}
 
 export async function sendNotification(notification: LCNNotification) {
     try {

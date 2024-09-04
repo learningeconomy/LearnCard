@@ -1,4 +1,4 @@
-import { getUserForDid } from '@accesslayer/user/read';
+import { getAllDidsForDid, getUserForDid } from '@accesslayer/user/read';
 import { CredentialRecords } from '.';
 import { MongoCredentialRecordType } from '@models';
 import { Filter } from 'mongodb';
@@ -6,6 +6,7 @@ import { Filter } from 'mongodb';
 export const getCredentialRecordsForDid = async (
     did: string,
     query: Filter<MongoCredentialRecordType> = {},
+    sort: 'newestFirst' | 'oldestFirst',
     cursor?: string,
     limit = 25,
     includeAssociatedDids = true
@@ -15,23 +16,21 @@ export const getCredentialRecordsForDid = async (
             return await CredentialRecords.find({
                 ...query,
                 did,
-                ...(cursor ? { cursor: { $gt: cursor } } : {}),
+                ...(cursor ? { cursor: { [sort === 'newestFirst' ? '$lt' : '$gt']: cursor } } : {}),
             })
-                .sort({ cursor: 1 })
+                .sort({ cursor: sort === 'newestFirst' ? -1 : 1 })
                 .limit(limit)
                 .toArray();
         }
 
-        const user = await getUserForDid(did);
-
-        const dids = [user?.did ?? did, ...(user?.associatedDids ?? [])];
+        const dids = await getAllDidsForDid(did);
 
         return await CredentialRecords.find({
             ...query,
             did: { $in: dids },
-            ...(cursor ? { cursor: { $gt: cursor } } : {}),
+            ...(cursor ? { cursor: { [sort === 'newestFirst' ? '$lt' : '$gt']: cursor } } : {}),
         })
-            .sort({ cursor: 1 })
+            .sort({ cursor: sort === 'newestFirst' ? -1 : 1 })
             .limit(limit)
             .toArray();
     } catch (e) {

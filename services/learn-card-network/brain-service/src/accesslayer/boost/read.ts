@@ -22,7 +22,8 @@ export const getBoostsForProfile = async (
     const _query = new QueryBuilder().match({
         related: [
             { identifier: 'source', model: Boost },
-            { ...Boost.getRelationshipByAlias('createdBy'), identifier: 'relationship' },
+            `-[relationship:${Profile.getRelationshipByAlias('adminOf').name}|${Boost.getRelationshipByAlias('createdBy').name
+            }]-`,
             { model: Profile, where: { profileId: profile.profileId } },
         ],
     });

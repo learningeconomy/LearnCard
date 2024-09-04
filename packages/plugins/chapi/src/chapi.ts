@@ -30,7 +30,11 @@ export const getCHAPIPlugin = async (): Promise<CHAPIPlugin> => {
         };
     }
 
-    await loadOnce();
+    try {
+        await loadOnce();
+    } catch (error) {
+        console.error('Error loading CHAPI polyfill!', error);
+    }
 
     return {
         name: 'CHAPI',
@@ -82,13 +86,28 @@ export const getCHAPIPlugin = async (): Promise<CHAPIPlugin> => {
 
                 const subject = (res as any).data?.proof?.verificationMethod?.split('#')[0];
 
-                if (!Array.isArray(credential.credentialSubject)) {
-                    credential.credentialSubject.id = subject;
+                let issuedCredentials = [];
+
+                // If sending multiple credentials through CHAPI
+                if (Array.isArray(credential)) {
+                    for (let x = 0; x < credential.length; x++) {
+                        const cred = credential[x];
+                        if (!Array.isArray(cred.credentialSubject)) {
+                            cred.credentialSubject.id = subject;
+                        }
+
+                        issuedCredentials.push(await _learnCard.invoke.issueCredential(cred));
+                    }
+                } else {
+                    // If sending one single credential through CHAPI
+                    if (!Array.isArray(credential.credentialSubject)) {
+                        credential.credentialSubject.id = subject;
+                    }
+                    issuedCredentials.push(await _learnCard.invoke.issueCredential(credential));
                 }
 
-                const vp = await _learnCard.invoke.getTestVp(
-                    await _learnCard.invoke.issueCredential(credential)
-                );
+                const vp = await _learnCard.invoke.getTestVp();
+                vp.verifiableCredential = issuedCredentials;
 
                 const success = await _learnCard.invoke.storePresentationViaChapi(vp);
 

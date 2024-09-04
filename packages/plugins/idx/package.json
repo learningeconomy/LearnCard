@@ -1,6 +1,6 @@
 {
     "name": "@learncard/idx-plugin",
-    "version": "1.0.3",
+    "version": "1.0.11",
     "description": "",
     "main": "./dist/index.js",
     "module": "./dist/idx-plugin.esm.js",
@@ -43,12 +43,5 @@
         "@learncard/ceramic-plugin": "workspace:^",
         "@learncard/core": "workspace:*",
         "@learncard/types": "workspace:*"
-    },
-    "pnpm": {
-        "overrides": {
-            "pvutils": "1.0.17",
-            "did-jwt": "5.9.0",
-            "@ceramicnetwork/streamid": "2.7.0"
-        }
     }
 }

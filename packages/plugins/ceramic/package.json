@@ -1,6 +1,6 @@
 {
     "name": "@learncard/ceramic-plugin",
-    "version": "1.0.3",
+    "version": "1.0.11",
     "description": "",
     "main": "./dist/index.js",
     "module": "./dist/ceramic-plugin.esm.js",
@@ -50,12 +50,5 @@
         "key-did-provider-ed25519": "^2.0.0",
         "key-did-resolver": "2.3.0",
         "lodash": "^4.17.21"
-    },
-    "pnpm": {
-        "overrides": {
-            "pvutils": "1.0.17",
-            "did-jwt": "5.9.0",
-            "@ceramicnetwork/streamid": "2.7.0"
-        }
     }
 }

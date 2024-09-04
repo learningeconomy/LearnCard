@@ -1,5 +1,251 @@
 # learn-card-discord-bot
 
+## 1.1.80
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.28
+
+## 1.1.79
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.27
+
+## 1.1.78
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.26
+
+## 1.1.77
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.25
+
+## 1.1.76
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.24
+
+## 1.1.75
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.23
+
+## 1.1.74
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.22
+
+## 1.1.73
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.21
+
+## 1.1.72
+
+### Patch Changes
+
+-   Updated dependencies [[`e70c1671`](https://github.com/learningeconomy/LearnCard/commit/e70c1671213712527d0df447ff25ba7f101f94ae), [`e70c1671`](https://github.com/learningeconomy/LearnCard/commit/e70c1671213712527d0df447ff25ba7f101f94ae), [`587736f`](https://github.com/learningeconomy/LearnCard/commit/587736fd8e562d17b9dfbfcd058572c133367c02), [`e70c1671`](https://github.com/learningeconomy/LearnCard/commit/e70c1671213712527d0df447ff25ba7f101f94ae)]:
+    -   @learncard/types@5.5.1
+    -   @learncard/init@1.2.20
+
+## 1.1.71
+
+### Patch Changes
+
+-   Updated dependencies [[`be01a1a`](https://github.com/learningeconomy/LearnCard/commit/be01a1a3d1b5dde523b1dcfb5be2a2452f26f7a7)]:
+    -   @learncard/types@5.5.0
+    -   @learncard/init@1.2.19
+
+## 1.1.70
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.18
+
+## 1.1.69
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.17
+
+## 1.1.68
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.16
+
+## 1.1.67
+
+### Patch Changes
+
+-   Updated dependencies [[`1cb031d7`](https://github.com/learningeconomy/LearnCard/commit/1cb031d7483e80f947c93e3479fe85af8ec09dbb), [`725e508c`](https://github.com/learningeconomy/LearnCard/commit/725e508c848b8c7752f44e5bf9915eebb421d766), [`725e508c`](https://github.com/learningeconomy/LearnCard/commit/725e508c848b8c7752f44e5bf9915eebb421d766)]:
+    -   @learncard/types@5.4.1
+    -   @learncard/init@1.2.15
+
+## 1.1.66
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.14
+
+## 1.1.65
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.13
+
+## 1.1.64
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.12
+
+## 1.1.63
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.11
+
+## 1.1.62
+
+### Patch Changes
+
+-   Updated dependencies [[`3438685`](https://github.com/learningeconomy/LearnCard/commit/3438685d8a0ba2ac7d7fb6d05fe817f1763e2f55)]:
+    -   @learncard/types@5.4.0
+    -   @learncard/init@1.2.10
+
+## 1.1.61
+
+### Patch Changes
+
+-   [#388](https://github.com/learningeconomy/LearnCard/pull/388) [`336876b`](https://github.com/learningeconomy/LearnCard/commit/336876b4b98e37157b8a133ed3b72801eb3d1cd8) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Emit declarationMap
+
+-   Updated dependencies [[`336876b`](https://github.com/learningeconomy/LearnCard/commit/336876b4b98e37157b8a133ed3b72801eb3d1cd8)]:
+    -   @learncard/types@5.3.4
+    -   @learncard/init@1.2.9
+
+## 1.1.60
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.8
+
+## 1.1.59
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.7
+
+## 1.1.58
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.6
+
+## 1.1.57
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.5
+
+## 1.1.56
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.4
+
+## 1.1.55
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.3
+
+## 1.1.54
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.2
+
+## 1.1.53
+
+### Patch Changes
+
+-   Updated dependencies [[`56aef2d`](https://github.com/learningeconomy/LearnCard/commit/56aef2d7830a5c66fa3b569b3c25eb3ecb6cc465)]:
+    -   @learncard/types@5.3.3
+    -   @learncard/init@1.2.1
+
+## 1.1.52
+
+### Patch Changes
+
+-   Updated dependencies [[`867d38c`](https://github.com/learningeconomy/LearnCard/commit/867d38c5f606ff73fa328a4616a8a58a8f49d0f0)]:
+    -   @learncard/init@1.2.0
+
+## 1.1.51
+
+### Patch Changes
+
+-   Updated dependencies [[`1c4e09d`](https://github.com/learningeconomy/LearnCard/commit/1c4e09d136464286959000e5ed14cdf59dba9196)]:
+    -   @learncard/init@1.1.0
+
+## 1.1.50
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.0.23
+
+## 1.1.49
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.0.22
+
+## 1.1.48
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.0.21
+
+## 1.1.47
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.0.20
+
 ## 1.1.46
 
 ### Patch Changes

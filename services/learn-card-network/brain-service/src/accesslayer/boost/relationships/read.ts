@@ -1,4 +1,4 @@
-import { Op, QueryBuilder, Where } from 'neogma';
+import { BindParam, Op, QueryBuilder, Where } from 'neogma';
 import { convertQueryResultToPropertiesObjectArray } from '@helpers/neo4j.helpers';
 import { BoostRecipientInfo } from '@learncard/types';
 import {
@@ -12,6 +12,7 @@ import {
     ProfileRelationships,
 } from '@models';
 import { getProfilesByProfileIds } from '@accesslayer/profile/read';
+import { ProfileType } from 'types/profile';
 
 export const getBoostOwner = async (boost: BoostInstance): Promise<ProfileInstance | undefined> => {
     return (await boost.findRelationships({ alias: 'createdBy' }))[0]?.target;
@@ -102,45 +103,6 @@ export const getBoostRecipients = async (
         .filter(result => Boolean(result.to)) as Array<BoostRecipientInfo & { sent: string }>;
 };
 
-export const countBoostRecipients = async (
-    boost: BoostInstance,
-    { includeUnacceptedBoosts = true }: { includeUnacceptedBoosts?: boolean }
-): Promise<number> => {
-    const query = new QueryBuilder()
-        .match({
-            related: [
-                { identifier: 'source', model: Boost, where: { id: boost.id } },
-                {
-                    ...Credential.getRelationshipByAlias('instanceOf'),
-                    identifier: 'instanceOf',
-                    direction: 'in',
-                },
-                { identifier: 'credential', model: Credential },
-                {
-                    ...Profile.getRelationshipByAlias('credentialSent'),
-                    identifier: 'sent',
-                    direction: 'in',
-                },
-                { identifier: 'sender', model: Profile },
-            ],
-        })
-        .match({
-            optional: includeUnacceptedBoosts,
-            related: [
-                { identifier: 'credential', model: Credential },
-                {
-                    ...Credential.getRelationshipByAlias('credentialReceived'),
-                    identifier: 'received',
-                },
-                { identifier: 'recipient', model: Profile },
-            ],
-        });
-
-    const result = await query.return('count(sent) AS count').run();
-
-    return Number(result.records[0]?.get('count') ?? 0);
-};
-
 /** @deprecated */
 export const getBoostRecipientsSkipLimit = async (
     boost: BoostInstance,
@@ -211,4 +173,86 @@ export const getBoostRecipientsSkipLimit = async (
             to: recipients.find(recipient => recipient.profileId === result.to),
         }))
         .filter(result => Boolean(result.to)) as BoostRecipientInfo[];
+};
+
+export const countBoostRecipients = async (
+    boost: BoostInstance,
+    { includeUnacceptedBoosts = true }: { includeUnacceptedBoosts?: boolean }
+): Promise<number> => {
+    const query = new QueryBuilder()
+        .match({
+            related: [
+                { identifier: 'source', model: Boost, where: { id: boost.id } },
+                {
+                    ...Credential.getRelationshipByAlias('instanceOf'),
+                    identifier: 'instanceOf',
+                    direction: 'in',
+                },
+                { identifier: 'credential', model: Credential },
+                {
+                    ...Profile.getRelationshipByAlias('credentialSent'),
+                    identifier: 'sent',
+                    direction: 'in',
+                },
+                { identifier: 'sender', model: Profile },
+            ],
+        })
+        .match({
+            optional: includeUnacceptedBoosts,
+            related: [
+                { identifier: 'credential', model: Credential },
+                {
+                    ...Credential.getRelationshipByAlias('credentialReceived'),
+                    identifier: 'received',
+                },
+                { identifier: 'recipient', model: Profile },
+            ],
+        });
+
+    const result = await query.return('COUNT(DISTINCT sent.to) AS count').run();
+
+    return Number(result.records[0]?.get('count') ?? 0);
+};
+
+export const getBoostAdmins = async (
+    boost: BoostInstance,
+    { limit, cursor, blacklist = [] }: { limit: number; cursor?: string; blacklist?: string[] }
+): Promise<ProfileType[]> => {
+    const _query = new QueryBuilder(new BindParam({ blacklist }))
+        .match({
+            related: [
+                { identifier: 'source', model: Boost, where: { id: boost.id } },
+                `-[:${Profile.getRelationshipByAlias('adminOf').name}|${Boost.getRelationshipByAlias('createdBy').name
+                }]-`,
+                { identifier: 'admin', model: Profile },
+            ],
+        })
+        .where('NOT admin.profileId IN $blacklist');
+
+    const query = cursor
+        ? _query.where(
+            new Where({ admin: { profileId: { [Op.gt]: cursor } } }, _query.getBindParam())
+        )
+        : _query;
+
+    const results = convertQueryResultToPropertiesObjectArray<{
+        admin: ProfileType;
+    }>(await query.return('admin').orderBy('admin.profileId').limit(limit).run());
+
+    return results.map(({ admin }) => admin);
+};
+
+export const isProfileBoostAdmin = async (profile: ProfileInstance, boost: BoostInstance) => {
+    const query = new QueryBuilder().match({
+        related: [
+            { model: Boost, where: { id: boost.id } },
+            `-[:${Profile.getRelationshipByAlias('adminOf').name}|${Boost.getRelationshipByAlias('createdBy').name
+            }]-`,
+            { identifier: 'profile', model: Profile, where: { profileId: profile.profileId } },
+        ],
+    });
+
+    const result = await query.return('count(profile) AS count').run();
+
+    return Number(result.records[0]?.get('count') ?? 0) > 0;
 };

@@ -1,6 +1,6 @@
 {
   "name": "@learncard/helpers",
-  "version": "1.0.7",
+  "version": "1.0.13",
   "description": "Shared helpers for LearnCard packages",
   "main": "./dist/index.js",
   "module": "./dist/helpers.esm.js",

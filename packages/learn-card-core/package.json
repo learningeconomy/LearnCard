@@ -1,6 +1,6 @@
 {
     "name": "@learncard/core",
-    "version": "9.0.3",
+    "version": "9.3.0",
     "description": "",
     "main": "./dist/index.js",
     "module": "./dist/core.esm.js",
@@ -38,8 +38,7 @@
         "shx": "^0.3.4",
         "sift": "^17.0.1",
         "ts-jest": "^29.0.3",
-        "tsc-alias": "^1.6.9",
-        "typescript": "^4.6.4"
+        "tsc-alias": "^1.6.9"
     },
     "types": "./dist/index.d.ts",
     "dependencies": {

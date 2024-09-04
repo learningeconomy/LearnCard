@@ -1,5 +1,343 @@
 # @learncard/network-brain-service
 
+## 2.0.1
+
+### Patch Changes
+
+-   [#474](https://github.com/learningeconomy/LearnCard/pull/474) [`5284d78`](https://github.com/learningeconomy/LearnCard/commit/5284d7845f91a8a15cfeec4506843e74dc343d44) Thanks [@cboydstun](https://github.com/cboydstun)! - Allow unlimited expiration for invite links
+
+## 2.0.0
+
+### Major Changes
+
+-   [#473](https://github.com/learningeconomy/LearnCard/pull/473) [`2f3aa34`](https://github.com/learningeconomy/LearnCard/commit/2f3aa34782441778f88300bf035cd66a6898ab06) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - The storage.resolve route is now an open route!
+
+## 1.10.9
+
+### Patch Changes
+
+-   [#467](https://github.com/learningeconomy/LearnCard/pull/467) [`af00e42`](https://github.com/learningeconomy/LearnCard/commit/af00e4228419d4778f54af66843bb829922992ac) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add ability to count recipients of a boost
+
+## 1.10.8
+
+### Patch Changes
+
+-   Updated dependencies [[`e45c929`](https://github.com/learningeconomy/LearnCard/commit/e45c9292ffd1944f875beed0792a55b7942b1657)]:
+    -   @learncard/core@9.3.0
+    -   @learncard/ceramic-plugin@1.0.11
+    -   @learncard/crypto-plugin@1.0.11
+    -   @learncard/did-web-plugin@1.0.31
+    -   @learncard/didkey-plugin@1.0.11
+    -   @learncard/didkit-plugin@1.4.8
+    -   @learncard/expiration-plugin@1.1.13
+    -   @learncard/learn-card-plugin@1.1.11
+    -   @learncard/vc-plugin@1.1.13
+    -   @learncard/vc-templates-plugin@1.0.17
+
+## 1.10.7
+
+### Patch Changes
+
+-   Updated dependencies [[`9a8dbb3`](https://github.com/learningeconomy/LearnCard/commit/9a8dbb336bdda2ff3080cd1cb70f7c929d0db261)]:
+    -   @learncard/didkit-plugin@1.4.7
+    -   @learncard/ceramic-plugin@1.0.10
+    -   @learncard/did-web-plugin@1.0.30
+    -   @learncard/learn-card-plugin@1.1.10
+    -   @learncard/vc-plugin@1.1.12
+    -   @learncard/expiration-plugin@1.1.12
+
+## 1.10.6
+
+### Patch Changes
+
+-   Updated dependencies [[`30aeb31`](https://github.com/learningeconomy/LearnCard/commit/30aeb31b467661d2036baa97a01e31ceca1588f8), [`0ffe0984`](https://github.com/learningeconomy/LearnCard/commit/0ffe0984572e813d39dfc38345fde27a1afcd1c2)]:
+    -   @learncard/didkit-plugin@1.4.6
+    -   @learncard/vc-templates-plugin@1.0.16
+    -   @learncard/vc-plugin@1.1.11
+    -   @learncard/ceramic-plugin@1.0.10
+    -   @learncard/did-web-plugin@1.0.29
+    -   @learncard/learn-card-plugin@1.1.9
+    -   @learncard/expiration-plugin@1.1.11
+
+## 1.10.5
+
+### Patch Changes
+
+-   [#451](https://github.com/learningeconomy/LearnCard/pull/451) [`e70c1671`](https://github.com/learningeconomy/LearnCard/commit/e70c1671213712527d0df447ff25ba7f101f94ae) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Allow getting all data for consented contracts
+
+-   [#451](https://github.com/learningeconomy/LearnCard/pull/451) [`e70c1671`](https://github.com/learningeconomy/LearnCard/commit/e70c1671213712527d0df447ff25ba7f101f94ae) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add more fields to LCN Profiles
+
+-   [#451](https://github.com/learningeconomy/LearnCard/pull/451) [`e70c1671`](https://github.com/learningeconomy/LearnCard/commit/e70c1671213712527d0df447ff25ba7f101f94ae) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Allow querying when getting a specific contract's data
+
+-   [#451](https://github.com/learningeconomy/LearnCard/pull/451) [`e70c1671`](https://github.com/learningeconomy/LearnCard/commit/e70c1671213712527d0df447ff25ba7f101f94ae) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Send notifications when a new Transaction is made
+
+-   [#451](https://github.com/learningeconomy/LearnCard/pull/451) [`e70c1671`](https://github.com/learningeconomy/LearnCard/commit/e70c1671213712527d0df447ff25ba7f101f94ae) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Allow managing service profiles
+
+-   [#453](https://github.com/learningeconomy/LearnCard/pull/453) [`587736f`](https://github.com/learningeconomy/LearnCard/commit/587736fd8e562d17b9dfbfcd058572c133367c02) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Granular sharing options for Contract Terms
+
+-   Updated dependencies [[`e70c1671`](https://github.com/learningeconomy/LearnCard/commit/e70c1671213712527d0df447ff25ba7f101f94ae), [`e70c1671`](https://github.com/learningeconomy/LearnCard/commit/e70c1671213712527d0df447ff25ba7f101f94ae), [`587736f`](https://github.com/learningeconomy/LearnCard/commit/587736fd8e562d17b9dfbfcd058572c133367c02), [`e70c1671`](https://github.com/learningeconomy/LearnCard/commit/e70c1671213712527d0df447ff25ba7f101f94ae)]:
+    -   @learncard/types@5.5.1
+    -   @learncard/didkit-plugin@1.4.5
+    -   @learncard/vc-plugin@1.1.10
+    -   @learncard/core@9.2.1
+    -   @learncard/helpers@1.0.13
+    -   @learncard/ceramic-plugin@1.0.10
+    -   @learncard/did-web-plugin@1.0.28
+    -   @learncard/didkey-plugin@1.0.10
+    -   @learncard/learn-card-plugin@1.1.8
+    -   @learncard/vc-templates-plugin@1.0.15
+    -   @learncard/expiration-plugin@1.1.10
+    -   @learncard/crypto-plugin@1.0.10
+
+## 1.10.4
+
+### Patch Changes
+
+-   Updated dependencies [[`be01a1a`](https://github.com/learningeconomy/LearnCard/commit/be01a1a3d1b5dde523b1dcfb5be2a2452f26f7a7)]:
+    -   @learncard/types@5.5.0
+    -   @learncard/core@9.2.0
+    -   @learncard/helpers@1.0.12
+    -   @learncard/ceramic-plugin@1.0.9
+    -   @learncard/did-web-plugin@1.0.27
+    -   @learncard/didkey-plugin@1.0.9
+    -   @learncard/didkit-plugin@1.4.4
+    -   @learncard/learn-card-plugin@1.1.7
+    -   @learncard/vc-plugin@1.1.9
+    -   @learncard/vc-templates-plugin@1.0.14
+    -   @learncard/crypto-plugin@1.0.9
+    -   @learncard/expiration-plugin@1.1.9
+
+## 1.10.3
+
+### Patch Changes
+
+-   Updated dependencies [[`b8855d3b`](https://github.com/learningeconomy/LearnCard/commit/b8855d3b4b80c4fdc5d1830a8c2ee63df022a866)]:
+    -   @learncard/vc-templates-plugin@1.0.13
+    -   @learncard/vc-plugin@1.1.8
+    -   @learncard/did-web-plugin@1.0.26
+    -   @learncard/expiration-plugin@1.1.8
+
+## 1.10.2
+
+### Patch Changes
+
+-   [#418](https://github.com/learningeconomy/LearnCard/pull/418) [`20095aa`](https://github.com/learningeconomy/LearnCard/commit/20095aa8e867b6a5c62a82f6d123366acb4fdcb0) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix withdraw events not appearing in transaction history
+
+## 1.10.1
+
+### Patch Changes
+
+-   Updated dependencies [[`4bb9472`](https://github.com/learningeconomy/LearnCard/commit/4bb94729339d638fac6883b6e40441f257429ded)]:
+    -   @learncard/vc-templates-plugin@1.0.12
+    -   @learncard/vc-plugin@1.1.7
+    -   @learncard/did-web-plugin@1.0.25
+    -   @learncard/expiration-plugin@1.1.7
+
+## 1.10.0
+
+### Minor Changes
+
+-   [#411](https://github.com/learningeconomy/LearnCard/pull/411) [`725e508c`](https://github.com/learningeconomy/LearnCard/commit/725e508c848b8c7752f44e5bf9915eebb421d766) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add ConsentFlow routes for basic CRUD operations of contracts and terms
+
+### Patch Changes
+
+-   [#411](https://github.com/learningeconomy/LearnCard/pull/411) [`725e508c`](https://github.com/learningeconomy/LearnCard/commit/725e508c848b8c7752f44e5bf9915eebb421d766) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add bio to LCN Profiles
+
+-   Updated dependencies [[`1cb031d7`](https://github.com/learningeconomy/LearnCard/commit/1cb031d7483e80f947c93e3479fe85af8ec09dbb), [`725e508c`](https://github.com/learningeconomy/LearnCard/commit/725e508c848b8c7752f44e5bf9915eebb421d766), [`725e508c`](https://github.com/learningeconomy/LearnCard/commit/725e508c848b8c7752f44e5bf9915eebb421d766)]:
+    -   @learncard/types@5.4.1
+    -   @learncard/learn-card-plugin@1.1.6
+    -   @learncard/core@9.1.4
+    -   @learncard/helpers@1.0.11
+    -   @learncard/ceramic-plugin@1.0.8
+    -   @learncard/did-web-plugin@1.0.24
+    -   @learncard/didkey-plugin@1.0.8
+    -   @learncard/didkit-plugin@1.4.3
+    -   @learncard/vc-plugin@1.1.6
+    -   @learncard/vc-templates-plugin@1.0.11
+    -   @learncard/expiration-plugin@1.1.6
+    -   @learncard/crypto-plugin@1.0.8
+
+## 1.9.0
+
+### Minor Changes
+
+-   [#409](https://github.com/learningeconomy/LearnCard/pull/409) [`aa2fac6`](https://github.com/learningeconomy/LearnCard/commit/aa2fac6cf86d662aadd4185fc36da999360620cf) Thanks [@cboydstun](https://github.com/cboydstun)! - "expiration" added to profile invite
+
+## 1.8.2
+
+### Patch Changes
+
+-   [`02e5d4d`](https://github.com/learningeconomy/LearnCard/commit/02e5d4d1b9ae37e2e1d14f004348a73a18fb733f) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Forcibly redeploy LCN
+
+## 1.8.1
+
+### Patch Changes
+
+-   [#399](https://github.com/learningeconomy/LearnCard/pull/399) [`8c6ef15`](https://github.com/learningeconomy/LearnCard/commit/8c6ef15f185af7547efb39885dba966b164797ac) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix cache error with connections
+
+## 1.8.0
+
+### Minor Changes
+
+-   [#386](https://github.com/learningeconomy/LearnCard/pull/386) [`3438685`](https://github.com/learningeconomy/LearnCard/commit/3438685d8a0ba2ac7d7fb6d05fe817f1763e2f55) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add autoConnectRecipients to Boost metadata
+
+### Patch Changes
+
+-   Updated dependencies [[`3438685`](https://github.com/learningeconomy/LearnCard/commit/3438685d8a0ba2ac7d7fb6d05fe817f1763e2f55)]:
+    -   @learncard/types@5.4.0
+    -   @learncard/core@9.1.3
+    -   @learncard/helpers@1.0.10
+    -   @learncard/ceramic-plugin@1.0.7
+    -   @learncard/did-web-plugin@1.0.23
+    -   @learncard/didkey-plugin@1.0.7
+    -   @learncard/didkit-plugin@1.4.2
+    -   @learncard/learn-card-plugin@1.1.5
+    -   @learncard/vc-plugin@1.1.5
+    -   @learncard/vc-templates-plugin@1.0.10
+    -   @learncard/expiration-plugin@1.1.5
+    -   @learncard/crypto-plugin@1.0.7
+
+## 1.7.0
+
+### Minor Changes
+
+-   [#388](https://github.com/learningeconomy/LearnCard/pull/388) [`336876b`](https://github.com/learningeconomy/LearnCard/commit/336876b4b98e37157b8a133ed3b72801eb3d1cd8) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Allow setting additional admins for Boosts
+
+### Patch Changes
+
+-   [#388](https://github.com/learningeconomy/LearnCard/pull/388) [`336876b`](https://github.com/learningeconomy/LearnCard/commit/336876b4b98e37157b8a133ed3b72801eb3d1cd8) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Emit declarationMap
+
+-   Updated dependencies [[`336876b`](https://github.com/learningeconomy/LearnCard/commit/336876b4b98e37157b8a133ed3b72801eb3d1cd8)]:
+    -   @learncard/did-web-plugin@1.0.22
+    -   @learncard/vc-templates-plugin@1.0.9
+    -   @learncard/helpers@1.0.9
+    -   @learncard/expiration-plugin@1.1.4
+    -   @learncard/learn-card-plugin@1.1.4
+    -   @learncard/types@5.3.4
+    -   @learncard/core@9.1.2
+    -   @learncard/ceramic-plugin@1.0.6
+    -   @learncard/crypto-plugin@1.0.6
+    -   @learncard/didkey-plugin@1.0.6
+    -   @learncard/didkit-plugin@1.4.1
+    -   @learncard/vc-plugin@1.1.4
+
+## 1.6.5
+
+### Patch Changes
+
+-   Updated dependencies [[`f4d07f1`](https://github.com/learningeconomy/LearnCard/commit/f4d07f1559308b3a91de67d43197073e35699163)]:
+    -   @learncard/didkit-plugin@1.4.0
+    -   @learncard/ceramic-plugin@1.0.5
+    -   @learncard/did-web-plugin@1.0.21
+    -   @learncard/learn-card-plugin@1.1.3
+    -   @learncard/vc-plugin@1.1.3
+    -   @learncard/expiration-plugin@1.1.3
+
+## 1.6.4
+
+### Patch Changes
+
+-   [`c01f006`](https://github.com/learningeconomy/LearnCard/commit/c01f006b58e054dff508355142db5be5f9459272) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Force redeploy
+
+## 1.6.3
+
+### Patch Changes
+
+-   [#380](https://github.com/learningeconomy/LearnCard/pull/380) [`9db67f82`](https://github.com/learningeconomy/LearnCard/commit/9db67f82abbbda840bad1c8b46301ff78da4e87a) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Optimize did:web routes
+
+## 1.6.2
+
+### Patch Changes
+
+-   Updated dependencies [[`e0c2e3c`](https://github.com/learningeconomy/LearnCard/commit/e0c2e3cb202697b6875c729e35326d75bbae4f65)]:
+    -   @learncard/didkit-plugin@1.3.2
+    -   @learncard/ceramic-plugin@1.0.5
+    -   @learncard/did-web-plugin@1.0.20
+    -   @learncard/learn-card-plugin@1.1.2
+    -   @learncard/vc-plugin@1.1.2
+    -   @learncard/expiration-plugin@1.1.2
+
+## 1.6.1
+
+### Patch Changes
+
+-   Updated dependencies [[`56aef2d`](https://github.com/learningeconomy/LearnCard/commit/56aef2d7830a5c66fa3b569b3c25eb3ecb6cc465)]:
+    -   @learncard/types@5.3.3
+    -   @learncard/core@9.1.1
+    -   @learncard/helpers@1.0.8
+    -   @learncard/ceramic-plugin@1.0.5
+    -   @learncard/did-web-plugin@1.0.19
+    -   @learncard/didkey-plugin@1.0.5
+    -   @learncard/didkit-plugin@1.3.1
+    -   @learncard/learn-card-plugin@1.1.1
+    -   @learncard/vc-plugin@1.1.1
+    -   @learncard/vc-templates-plugin@1.0.8
+    -   @learncard/expiration-plugin@1.1.1
+    -   @learncard/crypto-plugin@1.0.5
+
+## 1.6.0
+
+### Minor Changes
+
+-   [#340](https://github.com/learningeconomy/LearnCard/pull/340) [`867d38c`](https://github.com/learningeconomy/LearnCard/commit/867d38c5f606ff73fa328a4616a8a58a8f49d0f0) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add support for credentialSchema checks
+
+### Patch Changes
+
+-   Updated dependencies [[`867d38c`](https://github.com/learningeconomy/LearnCard/commit/867d38c5f606ff73fa328a4616a8a58a8f49d0f0)]:
+    -   @learncard/expiration-plugin@1.1.0
+    -   @learncard/learn-card-plugin@1.1.0
+    -   @learncard/didkit-plugin@1.3.0
+    -   @learncard/vc-plugin@1.1.0
+    -   @learncard/did-web-plugin@1.0.18
+    -   @learncard/ceramic-plugin@1.0.4
+
+## 1.5.8
+
+### Patch Changes
+
+-   Updated dependencies [[`1c4e09d`](https://github.com/learningeconomy/LearnCard/commit/1c4e09d136464286959000e5ed14cdf59dba9196), [`1c4e09d`](https://github.com/learningeconomy/LearnCard/commit/1c4e09d136464286959000e5ed14cdf59dba9196)]:
+    -   @learncard/core@9.1.0
+    -   @learncard/didkit-plugin@1.2.0
+    -   @learncard/ceramic-plugin@1.0.4
+    -   @learncard/crypto-plugin@1.0.4
+    -   @learncard/did-web-plugin@1.0.17
+    -   @learncard/didkey-plugin@1.0.4
+    -   @learncard/expiration-plugin@1.0.13
+    -   @learncard/learn-card-plugin@1.0.13
+    -   @learncard/vc-plugin@1.0.13
+    -   @learncard/vc-templates-plugin@1.0.7
+
+## 1.5.7
+
+### Patch Changes
+
+-   Updated dependencies [[`5e102ff`](https://github.com/learningeconomy/LearnCard/commit/5e102ff8e41d171e26d1a070e2ca6b25a202845e)]:
+    -   @learncard/didkit-plugin@1.1.2
+    -   @learncard/vc-templates-plugin@1.0.6
+    -   @learncard/vc-plugin@1.0.12
+    -   @learncard/ceramic-plugin@1.0.3
+    -   @learncard/did-web-plugin@1.0.16
+    -   @learncard/learn-card-plugin@1.0.12
+    -   @learncard/expiration-plugin@1.0.12
+
+## 1.5.6
+
+### Patch Changes
+
+-   Updated dependencies [[`1a17fd9`](https://github.com/learningeconomy/LearnCard/commit/1a17fd9e6f8f62df2814e6243a12a948203e5545)]:
+    -   @learncard/didkit-plugin@1.1.1
+    -   @learncard/ceramic-plugin@1.0.3
+    -   @learncard/did-web-plugin@1.0.15
+    -   @learncard/learn-card-plugin@1.0.11
+    -   @learncard/vc-plugin@1.0.11
+    -   @learncard/expiration-plugin@1.0.11
+
+## 1.5.5
+
+### Patch Changes
+
+-   [#360](https://github.com/learningeconomy/LearnCard/pull/360) [`d4d7de7`](https://github.com/learningeconomy/LearnCard/commit/d4d7de7ac6eedddc3bb9a8ce7b77d83a03469915) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Use a queue for notifications
+
 ## 1.5.4
 
 ### Patch Changes

@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import {
@@ -51,7 +52,16 @@ import {
     isInviteAlreadySetForProfile,
     isInviteValidForProfile,
     setValidInviteForProfile,
+    invalidateInvite,
 } from '@cache/invites';
+import {
+    deleteAllCachedConnectionsForProfile,
+    deleteCachedConnectionsForProfileId,
+    getCachedConnectionsByProfileId,
+    setCachedConnectionsForProfileId,
+} from '@cache/connections';
+import { getLearnCard } from '@helpers/learnCard.helpers';
+import { getManagedServiceProfiles } from '@accesslayer/profile/relationships/read';
 
 export const profilesRouter = t.router({
     createProfile: didAndChallengeRoute
@@ -128,6 +138,53 @@ export const profilesRouter = t.router({
             });
         }),
 
+    createManagedServiceProfile: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/profile/create-managed-service',
+                tags: ['Profiles'],
+                summary: 'Create a managed service profile',
+                description: 'Creates a managed service profile',
+            },
+        })
+        .input(LCNProfileValidator.omit({ did: true, isServiceProfile: true, isManaged: true }))
+        .output(z.string())
+        .mutation(async ({ input, ctx }) => {
+            const { profileId } = input;
+            const profileExists = await checkIfProfileExists({ profileId });
+
+            if (profileExists) {
+                throw new TRPCError({
+                    code: 'CONFLICT',
+                    message: 'Profile already exists!',
+                });
+            }
+
+            const randomSeed = crypto.randomBytes(32).toString('hex');
+
+            const spLearnCard = await getLearnCard(randomSeed);
+
+            const profile = await createProfile({
+                ...input,
+                isServiceProfile: true,
+                did: spLearnCard.id.did(),
+            });
+
+            await profile.relateTo({
+                alias: 'managedBy',
+                where: { profileId: ctx.user.profile.profileId },
+            });
+
+            if (profile) return getDidWeb(ctx.domain, profile.profileId);
+
+            throw new TRPCError({
+                code: 'INTERNAL_SERVER_ERROR',
+                message: 'An unexpected error occured, please try again later.',
+            });
+        }),
+
     getProfile: openProfileRoute
         .meta({
             openapi: {
@@ -169,6 +226,43 @@ export const profilesRouter = t.router({
                 return undefined;
             }
             return otherProfile ? updateDidForProfile(ctx.domain, otherProfile) : undefined;
+        }),
+
+    getManagedServiceProfiles: profileRoute
+        .meta({
+            openapi: {
+                method: 'GET',
+                path: '/profile/managed-services',
+                tags: ['Profiles'],
+                summary: 'Managed Service Profiles',
+                description: 'This route gets all of your managed service profiles',
+            },
+        })
+        .input(
+            PaginationOptionsValidator.extend({
+                id: z.string().optional(),
+                limit: PaginationOptionsValidator.shape.limit.default(25),
+            }).default({})
+        )
+        .output(PaginatedLCNProfilesValidator)
+        .query(async ({ ctx, input }) => {
+            const { id = '', limit, cursor } = input;
+
+            const results = await getManagedServiceProfiles(ctx.user.profile.profileId, {
+                limit: limit + 1,
+                cursor,
+                targetId: id,
+            });
+
+            const profiles = results.map(profile => updateDidForProfile(ctx.domain, profile));
+            const hasMore = results.length > limit;
+            const nextCursor = hasMore ? results.at(-2)?.profileId : undefined;
+
+            return {
+                hasMore,
+                ...(nextCursor && { cursor: nextCursor }),
+                records: profiles.slice(0, limit),
+            };
         }),
 
     searchProfiles: openRoute
@@ -256,7 +350,18 @@ export const profilesRouter = t.router({
         .mutation(async ({ input, ctx }) => {
             const { profile } = ctx.user;
 
-            const { profileId, displayName, image, email, notificationsWebhook } = input;
+            const {
+                profileId,
+                displayName,
+                shortBio,
+                bio,
+                image,
+                heroImage,
+                websiteLink,
+                type,
+                email,
+                notificationsWebhook,
+            } = input;
 
             if (profileId) {
                 const profileExists = await getProfileByProfileId(profileId);
@@ -288,9 +393,16 @@ export const profilesRouter = t.router({
 
             if (image) profile.image = image;
             if (displayName) profile.displayName = displayName;
+            if (shortBio) profile.shortBio = shortBio;
+            if (bio) profile.bio = bio;
+            if (heroImage) profile.heroImage = heroImage;
+            if (websiteLink) profile.websiteLink = websiteLink;
+            if (type) profile.type = type;
             if (notificationsWebhook) profile.notificationsWebhook = notificationsWebhook;
 
             await profile.save();
+
+            await deleteAllCachedConnectionsForProfile(profile);
 
             return true;
         }),
@@ -392,10 +504,12 @@ export const profilesRouter = t.router({
             const { profile } = ctx.user;
             const { profileId, challenge } = input;
 
-            if (!(await isInviteValidForProfile(profileId, challenge))) {
+            const isValid = await isInviteValidForProfile(profileId, challenge);
+
+            if (!isValid) {
                 throw new TRPCError({
                     code: 'NOT_FOUND',
-                    message: `Challenge not found for ${profileId}`,
+                    message: 'Invite not found or has expired',
                 });
             }
 
@@ -408,7 +522,17 @@ export const profilesRouter = t.router({
                 });
             }
 
-            return connectProfiles(profile, targetProfile, false);
+            const success = await connectProfiles(profile, targetProfile, false);
+
+            if (success) {
+                await Promise.all([
+                    deleteCachedConnectionsForProfileId(profile.profileId),
+                    deleteCachedConnectionsForProfileId(targetProfile.profileId),
+                    invalidateInvite(profileId, challenge),
+                ]);
+            }
+
+            return success;
         }),
 
     disconnectWith: profileRoute
@@ -468,7 +592,16 @@ export const profilesRouter = t.router({
                 });
             }
 
-            return connectProfiles(profile, targetProfile);
+            const success = await connectProfiles(profile, targetProfile);
+
+            if (success) {
+                await Promise.all([
+                    deleteCachedConnectionsForProfileId(profile.profileId),
+                    deleteCachedConnectionsForProfileId(targetProfile.profileId),
+                ]);
+            }
+
+            return success;
         }),
 
     connections: profileRoute
@@ -487,9 +620,21 @@ export const profilesRouter = t.router({
         .input(z.void())
         .output(LCNProfileValidator.array())
         .query(async ({ ctx }) => {
-            const connections = await getConnections(ctx.user.profile, { limit: 50 });
+            const cachedResponse = await getCachedConnectionsByProfileId(
+                ctx.user.profile.profileId
+            );
 
-            return connections.map(connection => updateDidForProfile(ctx.domain, connection));
+            if (cachedResponse) return cachedResponse;
+
+            const _connections = await getConnections(ctx.user.profile, { limit: 50 });
+
+            const connections = _connections.map(connection =>
+                updateDidForProfile(ctx.domain, connection)
+            );
+
+            await setCachedConnectionsForProfileId(ctx.user.profile.profileId, connections);
+
+            return connections;
         }),
 
     paginatedConnections: profileRoute
@@ -648,22 +793,54 @@ export const profilesRouter = t.router({
                     'This route creates a one-time challenge that an unknown profile can use to connect with this account',
             },
         })
-        .input(z.object({ challenge: z.string().optional() }).optional())
-        .output(z.object({ profileId: z.string(), challenge: z.string() }))
+        .input(
+            z
+                .object({
+                    expiration: z
+                        .number()
+                        .optional()
+                        .default(30 * 24 * 3600), // Default to 30 days in seconds
+                    challenge: z.string().optional(),
+                })
+                .optional()
+                .default({})
+        )
+        .output(
+            z.object({
+                profileId: z.string(),
+                challenge: z.string(),
+                expiresIn: z.number().nullable(),
+            })
+        )
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const { challenge = uuid() } = input ?? {};
+            if (!profile) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Profile not found. Please create a profile first.',
+                });
+            }
 
-            if (await isInviteAlreadySetForProfile(profile.profileId, challenge)) {
+            const { expiration = 3600, challenge: inputChallenge } = input; // expiration now in seconds by default
+
+            // Use UUID for challenge if none is provided
+            const challenge = inputChallenge || uuid();
+
+            const isAlreadySet = await isInviteAlreadySetForProfile(profile.profileId, challenge);
+
+            if (isAlreadySet) {
                 throw new TRPCError({
                     code: 'CONFLICT',
                     message: 'Challenge already in use!',
                 });
             }
 
-            await setValidInviteForProfile(profile.profileId, challenge);
+            let expiresIn: number | null = expiration === 0 ? null : expiration;
 
-            return { profileId: profile.profileId, challenge };
+            // Set the invite with the calculated expiration time
+            await setValidInviteForProfile(profile.profileId, challenge, expiresIn ?? null);
+
+            return { profileId: profile.profileId, challenge, expiresIn };
         }),
 
     blockProfile: profileRoute
@@ -692,7 +869,16 @@ export const profilesRouter = t.router({
                 });
             }
 
-            return blockProfile(profile, targetProfile);
+            const success = await blockProfile(profile, targetProfile);
+
+            if (success) {
+                await Promise.all([
+                    deleteCachedConnectionsForProfileId(profile.profileId),
+                    deleteCachedConnectionsForProfileId(targetProfile.profileId),
+                ]);
+            }
+
+            return success;
         }),
 
     unblockProfile: profileRoute
@@ -721,7 +907,16 @@ export const profilesRouter = t.router({
                 });
             }
 
-            return unblockProfile(profile, targetProfile);
+            const success = await unblockProfile(profile, targetProfile);
+
+            if (success) {
+                await Promise.all([
+                    deleteCachedConnectionsForProfileId(profile.profileId),
+                    deleteCachedConnectionsForProfileId(targetProfile.profileId),
+                ]);
+            }
+
+            return success;
         }),
 
     blocked: profileRoute

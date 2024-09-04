@@ -1,27 +1,29 @@
 {
     "compilerOptions": {
-        "target": "ES2020",
+        "target": "ES2022",
         "module": "ESNext",
         "declaration": true,
+        "declarationMap": true,
         "emitDeclarationOnly": true,
         "outDir": "dist",
         "strict": true,
         "esModuleInterop": true,
-        "lib": ["dom", "es2021"],
+        "lib": [
+            "dom",
+            "es2021"
+        ],
         "noLib": false,
         "rootDir": "src",
-        "baseUrl": ".",
-        "paths": {
-            "types/*": ["src/types/*"],
-            "types/wallet": ["src/types/wallet"],
-            "@wallet/*": ["src/wallet/*"],
-            "@helpers/*": ["src/wallet/helpers/*"],
-            "@didkit/*": ["src/didkit/*"]
-        },
         "skipLibCheck": true,
         "allowSyntheticDefaultImports": true,
         "moduleResolution": "node"
     },
-    "include": ["src", "test"],
-    "exclude": ["node_modules", "example"]
+    "include": [
+        "src",
+        "test"
+    ],
+    "exclude": [
+        "node_modules",
+        "example"
+    ]
 }

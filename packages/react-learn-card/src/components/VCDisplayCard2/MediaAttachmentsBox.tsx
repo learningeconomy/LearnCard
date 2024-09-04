@@ -6,21 +6,9 @@ import LinkIcon from '../svgs/LinkIcon';
 import VideoIcon from '../svgs/VideoIcon';
 import GenericDocumentIcon from '../svgs/GenericDocumentIcon';
 
-import { Attachment } from '../../types';
+import { Attachment, MediaMetadata, VideoMetadata } from '../../types';
 import { getBaseUrl } from '../../helpers/url.helpers';
 import { Lightbox, LightboxItem } from '../Lightbox';
-
-export type MediaMetadata = {
-    fileExtension?: string;
-    sizeInBytes?: number;
-    numberOfPages?: number;
-};
-
-export type VideoMetadata = {
-    title?: string;
-    videoLength?: string;
-    imageUrl?: string;
-};
 
 type MediaAttachmentsBoxProps = {
     attachments: Attachment[];
@@ -169,9 +157,8 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                                     className="absolute top-0 left-0 right-0 bottom-0 bg-cover bg-no-repeat font-poppins text-white text-[12px] font-[400] leading-[17px] flex flex-col justify-end items-start p-[10px] text-left bg-rose-600 rounded-[15px]"
                                     style={{
                                         backgroundImage: metadata?.imageUrl
-                                            ? `linear-gradient(180deg, rgba(0, 0, 0, 0) 44.20%, rgba(0, 0, 0, 0.6) 69%), url(${
-                                                  metadata?.imageUrl ?? ''
-                                              })`
+                                            ? `linear-gradient(180deg, rgba(0, 0, 0, 0) 44.20%, rgba(0, 0, 0, 0.6) 69%), url(${metadata?.imageUrl ?? ''
+                                            })`
                                             : undefined,
                                     }}
                                 >
@@ -179,9 +166,8 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                                         <VideoIcon size="60" className="m-auto" />
                                     )}
                                     <div
-                                        className={`absolute ${
-                                            iconTop ? 'top-[10px]' : 'bottom-[10px]'
-                                        } left-[10px] z-10 flex items-center gap-[5px]`}
+                                        className={`absolute ${iconTop ? 'top-[10px]' : 'bottom-[10px]'
+                                            } left-[10px] z-10 flex items-center gap-[5px]`}
                                     >
                                         {metadata?.imageUrl && <VideoIcon />}
                                         {metadata?.videoLength && (
@@ -196,9 +182,9 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                             );
                         } else {
                             innerContent = (
-                                <div className="absolute top-0 left-0 right-0 bottom-0 h-min">
-                                    <img className="rounded-[15px]" src={media.url} />
-                                    <Camera className="relative bottom-[30px] left-[10px] z-10" />
+                                <div className="absolute top-0 left-0 right-0 bottom-0 h-full w-full flex items-center justify-center">
+                                    <img className="rounded-[15px] object-cover h-full w-full" src={media.url} />
+                                    <Camera className="absolute bottom-[10px] left-[10px] z-10" />
                                 </div>
                             );
                         }
@@ -210,9 +196,10 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                                 <button
                                     key={index}
                                     className={className}
-                                    onClick={() =>
-                                        handleMediaAttachmentClick(media.url, media.type)
-                                    }
+                                    onClick={e => {
+                                        e.stopPropagation();
+                                        handleMediaAttachmentClick(media.url, media.type);
+                                    }}
                                 >
                                     {innerContent}
                                 </button>
@@ -258,6 +245,7 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                                         target="_blank"
                                         rel="noreferrer"
                                         className="text-grayscale-600 font-[600] px-[5px] hover:underline"
+                                        onClick={e => e.stopPropagation()}
                                     >
                                         {fileExtension && (
                                             <span className="uppercase">{fileExtension}</span>
@@ -278,6 +266,7 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                                         target="_blank"
                                         rel="noreferrer"
                                         className="text-indigo-500 font-[600] px-[5px] hover:underline"
+                                        onClick={e => e.stopPropagation()}
                                     >
                                         {baseUrl}
                                     </a>
@@ -292,9 +281,10 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                                 <button
                                     key={index}
                                     className={className}
-                                    onClick={() =>
-                                        handleMediaAttachmentClick(docOrLink.url, docOrLink.type)
-                                    }
+                                    onClick={e => {
+                                        e.stopPropagation();
+                                        handleMediaAttachmentClick(docOrLink.url, docOrLink.type);
+                                    }}
                                 >
                                     {innerContent}
                                 </button>

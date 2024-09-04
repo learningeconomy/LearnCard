@@ -1,6 +1,6 @@
 {
     "name": "@learncard/init",
-    "version": "1.0.19",
+    "version": "1.2.28",
     "description": "",
     "main": "./dist/index.js",
     "module": "./dist/init.esm.js",
@@ -8,7 +8,7 @@
         "dist"
     ],
     "scripts": {
-        "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.js && tsc --p tsconfig.build.json && tsc-alias",
+        "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.js && tsc --p tsconfig.build.json",
         "start": "aqu watch",
         "lint": "aqu lint",
         "lint:fix": "aqu lint --fix",
@@ -38,9 +38,7 @@
         "jimp": "^0.16.1",
         "qrcode-reader": "^1.0.4",
         "shx": "^0.3.4",
-        "ts-jest": "^29.0.3",
-        "tsc-alias": "^1.6.9",
-        "typescript": "^4.6.4"
+        "ts-jest": "^29.0.3"
     },
     "types": "./dist/index.d.ts",
     "dependencies": {
@@ -51,6 +49,7 @@
         "@learncard/didkey-plugin": "workspace:*",
         "@learncard/didkit-plugin": "workspace:*",
         "@learncard/did-web-plugin": "workspace:*",
+        "@learncard/dynamic-loader-plugin": "workspace:*",
         "@learncard/ethereum-plugin": "workspace:*",
         "@learncard/expiration-plugin": "workspace:*",
         "@learncard/helpers": "workspace:*",
@@ -63,12 +62,5 @@
         "@learncard/vc-plugin": "workspace:*",
         "@learncard/vc-templates-plugin": "workspace:*",
         "@learncard/vpqr-plugin": "workspace:*"
-    },
-    "pnpm": {
-        "overrides": {
-            "pvutils": "1.0.17",
-            "did-jwt": "5.9.0",
-            "uint8arrays": "^3.0.0"
-        }
     }
 }

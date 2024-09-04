@@ -1,4 +1,4 @@
-import { LearnCardConfig } from 'types/LearnCard';
+import { LearnCardConfig } from './LearnCard';
 import { LearnCard } from '@learncard/core';
 
 export type InitFunction<
@@ -7,7 +7,7 @@ export type InitFunction<
     ReturnValue extends LearnCard<any, any> = LearnCard<any, any>
 > = {
     args: Args &
-        (undefined extends Config ? {} : Partial<Pick<LearnCardConfig, NonNullable<Config>>>);
+    (undefined extends Config ? {} : Partial<Pick<LearnCardConfig, NonNullable<Config>>>);
     returnValue: ReturnValue;
 };
 

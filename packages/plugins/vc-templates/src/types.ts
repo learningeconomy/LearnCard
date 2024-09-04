@@ -9,6 +9,12 @@ export type BoostAttachment = {
     url?: string;
 };
 
+export type BoostSkills = {
+    category: string;
+    skill: string;
+    subskills: string[];
+};
+
 /** @group VC Templates Plugin */
 export type BoostDisplay = {
     backgroundImage?: string;
@@ -51,9 +57,11 @@ export type BoostTemplate = {
     achievementNarrative?: string;
     achievementImage?: string;
     attachments?: BoostAttachment[];
+    skills?: BoostSkills[];
     display?: BoostDisplay;
     boostID?: BoostID;
     address?: AddressSpec;
+    groupID?: string;
 };
 
 /** @group VC Templates Plugin */

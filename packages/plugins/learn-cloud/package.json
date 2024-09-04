@@ -1,6 +1,6 @@
 {
     "name": "@learncard/learn-cloud-plugin",
-    "version": "1.1.11",
+    "version": "2.0.4",
     "description": "",
     "main": "./dist/index.js",
     "module": "./dist/learn-cloud-plugin.esm.js",
@@ -47,12 +47,5 @@
         "json-stringify-deterministic": "^1.0.8",
         "lodash": "^4.17.21",
         "pbkdf2-hmac": "^1.2.1"
-    },
-    "pnpm": {
-        "overrides": {
-            "pvutils": "1.0.17",
-            "did-jwt": "5.9.0",
-            "@ceramicnetwork/streamid": "2.7.0"
-        }
     }
 }

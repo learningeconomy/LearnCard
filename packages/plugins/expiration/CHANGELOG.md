@@ -1,5 +1,138 @@
 # learn-card-core
 
+## 1.1.13
+
+### Patch Changes
+
+-   Updated dependencies [[`e45c929`](https://github.com/learningeconomy/LearnCard/commit/e45c9292ffd1944f875beed0792a55b7942b1657)]:
+    -   @learncard/core@9.3.0
+    -   @learncard/vc-plugin@1.1.13
+
+## 1.1.12
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/vc-plugin@1.1.12
+
+## 1.1.11
+
+### Patch Changes
+
+-   Updated dependencies [[`0ffe0984`](https://github.com/learningeconomy/LearnCard/commit/0ffe0984572e813d39dfc38345fde27a1afcd1c2)]:
+    -   @learncard/vc-plugin@1.1.11
+
+## 1.1.10
+
+### Patch Changes
+
+-   Updated dependencies [[`e70c1671`](https://github.com/learningeconomy/LearnCard/commit/e70c1671213712527d0df447ff25ba7f101f94ae), [`e70c1671`](https://github.com/learningeconomy/LearnCard/commit/e70c1671213712527d0df447ff25ba7f101f94ae)]:
+    -   @learncard/vc-plugin@1.1.10
+    -   @learncard/core@9.2.1
+
+## 1.1.9
+
+### Patch Changes
+
+-   Updated dependencies [[`be01a1a`](https://github.com/learningeconomy/LearnCard/commit/be01a1a3d1b5dde523b1dcfb5be2a2452f26f7a7)]:
+    -   @learncard/core@9.2.0
+    -   @learncard/vc-plugin@1.1.9
+
+## 1.1.8
+
+### Patch Changes
+
+-   Updated dependencies [[`b8855d3b`](https://github.com/learningeconomy/LearnCard/commit/b8855d3b4b80c4fdc5d1830a8c2ee63df022a866)]:
+    -   @learncard/vc-plugin@1.1.8
+
+## 1.1.7
+
+### Patch Changes
+
+-   Updated dependencies [[`4bb9472`](https://github.com/learningeconomy/LearnCard/commit/4bb94729339d638fac6883b6e40441f257429ded)]:
+    -   @learncard/vc-plugin@1.1.7
+
+## 1.1.6
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.1.4
+    -   @learncard/vc-plugin@1.1.6
+
+## 1.1.5
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.1.3
+    -   @learncard/vc-plugin@1.1.5
+
+## 1.1.4
+
+### Patch Changes
+
+-   [#388](https://github.com/learningeconomy/LearnCard/pull/388) [`336876b`](https://github.com/learningeconomy/LearnCard/commit/336876b4b98e37157b8a133ed3b72801eb3d1cd8) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Emit declarationMap
+
+-   Updated dependencies [[`336876b`](https://github.com/learningeconomy/LearnCard/commit/336876b4b98e37157b8a133ed3b72801eb3d1cd8)]:
+    -   @learncard/core@9.1.2
+    -   @learncard/vc-plugin@1.1.4
+
+## 1.1.3
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/vc-plugin@1.1.3
+
+## 1.1.2
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/vc-plugin@1.1.2
+
+## 1.1.1
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.1.1
+    -   @learncard/vc-plugin@1.1.1
+
+## 1.1.0
+
+### Minor Changes
+
+-   [#340](https://github.com/learningeconomy/LearnCard/pull/340) [`867d38c`](https://github.com/learningeconomy/LearnCard/commit/867d38c5f606ff73fa328a4616a8a58a8f49d0f0) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add support for credentialSchema checks
+
+### Patch Changes
+
+-   Updated dependencies [[`867d38c`](https://github.com/learningeconomy/LearnCard/commit/867d38c5f606ff73fa328a4616a8a58a8f49d0f0)]:
+    -   @learncard/vc-plugin@1.1.0
+
+## 1.0.13
+
+### Patch Changes
+
+-   Updated dependencies [[`1c4e09d`](https://github.com/learningeconomy/LearnCard/commit/1c4e09d136464286959000e5ed14cdf59dba9196)]:
+    -   @learncard/core@9.1.0
+    -   @learncard/vc-plugin@1.0.13
+
+## 1.0.12
+
+### Patch Changes
+
+-   Updated dependencies [[`5e102ff`](https://github.com/learningeconomy/LearnCard/commit/5e102ff8e41d171e26d1a070e2ca6b25a202845e)]:
+    -   @learncard/vc-plugin@1.0.12
+
+## 1.0.11
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/vc-plugin@1.0.11
+
 ## 1.0.10
 
 ### Patch Changes

@@ -18,6 +18,19 @@ export enum Icons {
     puzzlelight,
     award,
     keyIcon,
+
+    // new icons
+    coursesIcon,
+    socialBagesIcon,
+    achievementsIcon,
+    accomplishmentsIcon,
+    skillsIcon,
+    experiencesIcon,
+    relationshipsIcon,
+    accommodationsIcon,
+    membershipsIcon,
+    goalsIcon,
+    eventsIcon,
 }
 
 export enum LCCategoryEnum {
@@ -31,6 +44,10 @@ export enum LCCategoryEnum {
     learningHistory = 'Learning History',
     skill = 'Skill',
     membership = 'Membership',
+    event = 'Event',
+
+    accommodations = 'Accommodation',
+    accomplishments = 'Accomplishment',
 }
 
 export enum LCSubtypes {
@@ -41,15 +58,30 @@ export enum LCSubtypes {
     locked = 'locked',
 }
 
+// courses(learningHistory - ladder), social badges, achievements, accomplishments,
+// skills, experiences, relationships, accommodations
+// todo - memberships, goals
+// deprecated - ids, currency
 export enum WalletCategoryTypes {
     achievements = 'achievements',
-    ids = 'ids',
-    jobHistory = 'jobHistory',
-    currency = 'currency',
+    jobHistory = 'jobhistory',
     learningHistory = 'learningHistory',
     skills = 'skills',
     socialBadge = 'socialBadge',
+
+    // new
+    relationships = 'relationships',
+    accommodations = 'accommodations',
+    accomplishments = 'accomplishments',
+    events = 'events',
+
+    // todo
     membership = 'membership',
+    goals = 'goals',
+
+    // deprecated
+    ids = 'ids',
+    currency = 'currency',
 }
 
 export type CredentialInfo = {
@@ -269,6 +301,7 @@ export type IssueHistory = {
 
 export type BoostSmallCardProps = {
     title?: string;
+    customTitle?: React.ReactNode | string | null;
     className?: string;
     type?: WalletCategoryTypes;
     thumbImgSrc?: string;
@@ -291,6 +324,7 @@ export type BoostSmallCardProps = {
 
 export type BoostGenericCardProps = {
     title?: string;
+    customTitle?: React.ReactNode | string | null;
     className?: string;
     type?: WalletCategoryTypes;
     thumbImgSrc?: string;
@@ -303,8 +337,11 @@ export type BoostGenericCardProps = {
     innerOnClick?: () => void;
     bgImgSrc?: string;
     issuerName?: string;
+    customIssuerName?: React.ReactNode | string | null;
     optionsTriggerOnClick?: () => void;
     dateDisplay?: string;
+    customDateDisplay?: React.ReactNode | string | null;
+    verifierBadge?: React.ReactNode;
 };
 
 export type Attachment = {
@@ -317,4 +354,16 @@ export type BoostAchievementCredential = AchievementCredential & {
     display?: { backgroundImage?: string; backgroundColor?: string };
     image: string;
     attachments: Attachment[];
+};
+
+export type MediaMetadata = {
+    fileExtension?: string;
+    sizeInBytes?: number;
+    numberOfPages?: number;
+};
+
+export type VideoMetadata = {
+    title?: string;
+    videoLength?: string;
+    imageUrl?: string;
 };

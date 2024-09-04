@@ -1,8 +1,10 @@
+import { vi } from 'vitest';
 import { LCNProfileConnectionStatusEnum } from '@learncard/types';
 import { getClient, getUser } from './helpers/getClient';
 import { Profile, SigningAuthority, Credential, Boost } from '@models';
 import cache from '@cache';
 import { testVc, sendBoost, testVp, testUnsignedBoost } from './helpers/send';
+import { TRPCError } from '@trpc/server';
 
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;
@@ -151,6 +153,21 @@ describe('Profiles', () => {
                 'https://api.learncard.app/send/notifications'
             );
         });
+
+        it('should allow setting your bio', async () => {
+            await userA.clients.fullAuth.profile.createProfile({
+                profileId: 'usera',
+                displayName: 'A',
+                bio: 'I am user A',
+            });
+            await expect(
+                userB.clients.fullAuth.profile.createProfile({
+                    profileId: 'userb',
+                    displayName: 'B',
+                    bio: 'I am user B',
+                })
+            ).resolves.not.toThrow();
+        });
     });
 
     describe('createServiceProfile', () => {
@@ -256,6 +273,96 @@ describe('Profiles', () => {
         });
     });
 
+    describe('createManagedServiceProfile', () => {
+        beforeEach(async () => {
+            await Profile.delete({ detach: true, where: {} });
+        });
+
+        afterAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+        });
+
+        it('should not allow you to create a managed profile without a profile/fullAuth', async () => {
+            await expect(
+                noAuthClient.profile.createManagedServiceProfile({ profileId: 'managed-usera' })
+            ).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+            await expect(
+                userA.clients.partialAuth.profile.createManagedServiceProfile({
+                    profileId: 'managed-usera',
+                })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+            await expect(
+                userA.clients.fullAuth.profile.createManagedServiceProfile({
+                    profileId: 'managed-usera',
+                })
+            ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+        });
+
+        it('should allow you to create a managed profile', async () => {
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            await expect(
+                userA.clients.fullAuth.profile.createManagedServiceProfile({
+                    profileId: 'managed-usera',
+                })
+            ).resolves.not.toThrow();
+        });
+    });
+
+    describe('getManagedServiceProfile', () => {
+        beforeAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await userA.clients.fullAuth.profile.createProfile({
+                profileId: 'usera',
+                displayName: 'A',
+                email: 'userA@test.com',
+                bio: 'I am user A',
+            });
+            await userB.clients.fullAuth.profile.createProfile({
+                profileId: 'userb',
+                displayName: 'B',
+                email: 'userB@test.com',
+                bio: 'I am user B',
+            });
+
+            await userA.clients.fullAuth.profile.createManagedServiceProfile({
+                profileId: 'managed-usera',
+                displayName: 'Managed A',
+                email: 'managed-userA@test.com',
+                bio: 'I am managed user A',
+            });
+        });
+
+        afterAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+        });
+
+        it('should not allow you to view your managed profiles without full auth', async () => {
+            await expect(noAuthClient.profile.getManagedServiceProfiles()).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+            await expect(
+                userA.clients.partialAuth.profile.getManagedServiceProfiles()
+            ).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+        });
+
+        it('should get the current users managed profiles', async () => {
+            const userAProfiles = await userA.clients.fullAuth.profile.getManagedServiceProfiles();
+            const userBProfiles = await userB.clients.fullAuth.profile.getManagedServiceProfiles();
+
+            expect(userAProfiles.records).toHaveLength(1);
+            expect(userAProfiles.records[0]?.profileId).toEqual('managed-usera');
+            expect(userAProfiles.records[0]?.displayName).toEqual('Managed A');
+            expect(userAProfiles.records[0]?.email).toEqual('managed-userA@test.com');
+            expect(userAProfiles.records[0]?.bio).toEqual('I am managed user A');
+
+            expect(userBProfiles.records).toHaveLength(0);
+        });
+    });
+
     describe('getProfile', () => {
         beforeAll(async () => {
             await Profile.delete({ detach: true, where: {} });
@@ -263,11 +370,13 @@ describe('Profiles', () => {
                 profileId: 'usera',
                 displayName: 'A',
                 email: 'userA@test.com',
+                bio: 'I am user A',
             });
             await userB.clients.fullAuth.profile.createProfile({
                 profileId: 'userb',
                 displayName: 'B',
                 email: 'userB@test.com',
+                bio: 'I am user B',
             });
         });
 
@@ -293,9 +402,11 @@ describe('Profiles', () => {
             expect(userAProfile?.profileId).toEqual('usera');
             expect(userAProfile?.displayName).toEqual('A');
             expect(userAProfile?.email).toEqual('userA@test.com');
+            expect(userAProfile?.bio).toEqual('I am user A');
             expect(userBProfile?.profileId).toEqual('userb');
             expect(userBProfile?.displayName).toEqual('B');
             expect(userBProfile?.email).toEqual('userB@test.com');
+            expect(userBProfile?.bio).toEqual('I am user B');
         });
     });
 
@@ -306,11 +417,13 @@ describe('Profiles', () => {
                 profileId: 'usera',
                 displayName: 'A',
                 email: 'userA@test.com',
+                bio: 'I am user A',
             });
             await userB.clients.fullAuth.profile.createProfile({
                 profileId: 'userb',
                 displayName: 'B',
                 email: 'userB@test.com',
+                bio: 'I am user B',
             });
         });
 
@@ -341,9 +454,11 @@ describe('Profiles', () => {
             expect(userAProfile?.profileId).toEqual('usera');
             expect(userAProfile?.displayName).toEqual('A');
             expect(userAProfile?.email).toEqual('userA@test.com');
+            expect(userAProfile?.bio).toEqual('I am user A');
             expect(userBProfile?.profileId).toEqual('userb');
             expect(userBProfile?.displayName).toEqual('B');
             expect(userBProfile?.email).toEqual('userB@test.com');
+            expect(userBProfile?.bio).toEqual('I am user B');
         });
     });
 
@@ -992,12 +1107,17 @@ describe('Profiles', () => {
 
     describe('connections', () => {
         beforeEach(async () => {
+            await cache.node.flushall();
+            await Boost.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
             await Profile.delete({ detach: true, where: {} });
             await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
             await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
         });
 
         afterAll(async () => {
+            await Boost.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
             await Profile.delete({ detach: true, where: {} });
         });
 
@@ -1024,6 +1144,99 @@ describe('Profiles', () => {
 
             expect(oneConnection).toHaveLength(1);
             expect(oneConnection[0]!.profileId).toEqual('userb');
+        });
+
+        it('should show connections from auto-connect boosts', async () => {
+            await expect(userA.clients.fullAuth.profile.connections()).resolves.not.toThrow();
+
+            const noConnections = await userA.clients.fullAuth.profile.connections();
+
+            expect(noConnections).toHaveLength(0);
+
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                autoConnectRecipients: true,
+            });
+            const userBProfile = await userB.clients.fullAuth.profile.getProfile();
+
+            const credential = await userA.learnCard.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: userA.learnCard.id.did(),
+                credentialSubject: {
+                    ...testUnsignedBoost.credentialSubject,
+                    id: userA.learnCard.id.did(),
+                },
+                boostId: uri,
+            });
+
+            const credentialUri = await userA.clients.fullAuth.boost.sendBoost({
+                profileId: userBProfile.profileId,
+                uri,
+                credential,
+            });
+            await userB.clients.fullAuth.credential.acceptCredential({ uri: credentialUri });
+
+            const oneConnection = await userA.clients.fullAuth.profile.connections();
+
+            expect(oneConnection).toHaveLength(1);
+            expect(oneConnection[0]!.profileId).toEqual('userb');
+        });
+
+        it('should not show connections from non-auto-connect boosts', async () => {
+            await expect(userA.clients.fullAuth.profile.connections()).resolves.not.toThrow();
+
+            const noConnections = await userA.clients.fullAuth.profile.connections();
+
+            expect(noConnections).toHaveLength(0);
+
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+            const userBProfile = await userB.clients.fullAuth.profile.getProfile();
+
+            const credential = await userA.learnCard.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: userA.learnCard.id.did(),
+                credentialSubject: {
+                    ...testUnsignedBoost.credentialSubject,
+                    id: userA.learnCard.id.did(),
+                },
+                boostId: uri,
+            });
+
+            const credentialUri = await userA.clients.fullAuth.boost.sendBoost({
+                profileId: userBProfile.profileId,
+                uri,
+                credential,
+            });
+            await userB.clients.fullAuth.credential.acceptCredential({ uri: credentialUri });
+
+            const stillNoConnections = await userA.clients.fullAuth.profile.connections();
+
+            expect(stillNoConnections).toHaveLength(0);
+        });
+
+        it('should show profile updates for connections', async () => {
+            await userA.clients.fullAuth.profile.connectWith({ profileId: 'userb' });
+            await userB.clients.fullAuth.profile.acceptConnectionRequest({ profileId: 'usera' });
+
+            const userBBeforeUpdate = await userB.clients.fullAuth.profile.getProfile();
+
+            const nonUpdatedConnections = await userA.clients.fullAuth.profile.connections();
+
+            expect(nonUpdatedConnections).toHaveLength(1);
+            expect(nonUpdatedConnections[0]).toEqual(userBBeforeUpdate);
+
+            await userB.clients.fullAuth.profile.updateProfile({
+                displayName: 'something else lol',
+            });
+
+            const userBAfterUpdate = await userB.clients.fullAuth.profile.getProfile();
+            const updatedConnections = await userA.clients.fullAuth.profile.connections();
+
+            expect(userBAfterUpdate).not.toEqual(userBBeforeUpdate);
+            expect(updatedConnections).toHaveLength(1);
+            expect(updatedConnections[0]).toEqual(userBAfterUpdate);
         });
     });
 
@@ -1391,83 +1604,6 @@ describe('Profiles', () => {
         });
     });
 
-    describe('generateInvite', () => {
-        beforeEach(async () => {
-            await cache.node.flushall();
-            await Profile.delete({ detach: true, where: {} });
-            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
-            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
-        });
-
-        afterAll(async () => {
-            await cache.node.flushall();
-            await Profile.delete({ detach: true, where: {} });
-        });
-
-        it('should require full auth to generate an invite', async () => {
-            await expect(noAuthClient.profile.generateInvite()).rejects.toMatchObject({
-                code: 'UNAUTHORIZED',
-            });
-            await expect(userA.clients.partialAuth.profile.generateInvite()).rejects.toMatchObject({
-                code: 'UNAUTHORIZED',
-            });
-        });
-
-        it('allows users to generate an invitation challenge', async () => {
-            await expect(userA.clients.fullAuth.profile.generateInvite()).resolves.not.toThrow();
-        });
-
-        it('creates a new challenge if none is supplied', async () => {
-            const { challenge } = await userA.clients.fullAuth.profile.generateInvite();
-
-            expect(challenge).toBeTruthy();
-        });
-
-        it('uses a supplied challenge if none is supplied', async () => {
-            const { challenge } = await userA.clients.fullAuth.profile.generateInvite({
-                challenge: 'nice',
-            });
-
-            expect(challenge).toEqual('nice');
-        });
-
-        it('does allow using multiple challenges', async () => {
-            await userA.clients.fullAuth.profile.generateInvite({ challenge: 'c1' });
-            await expect(
-                userA.clients.fullAuth.profile.generateInvite({ challenge: 'c2' })
-            ).resolves.not.toThrow();
-            await expect(userA.clients.fullAuth.profile.generateInvite()).resolves.not.toThrow();
-        });
-
-        it('does not allow using the same challenge more than once', async () => {
-            await userA.clients.fullAuth.profile.generateInvite({ challenge: 'nice' });
-            await expect(
-                userA.clients.fullAuth.profile.generateInvite({ challenge: 'nice' })
-            ).rejects.toMatchObject({ code: 'CONFLICT' });
-        });
-
-        it('expires challenges after a while, allowing them to be used again', async () => {
-            jest.useFakeTimers().setSystemTime(new Date('02-06-2023'));
-
-            await userA.clients.fullAuth.profile.generateInvite({ challenge: 'nice' });
-
-            jest.setSystemTime(new Date('02-06-2024'));
-
-            await expect(
-                userB.clients.fullAuth.profile.connectWithInvite({
-                    challenge: 'nice',
-                    profileId: 'usera',
-                })
-            ).rejects.toMatchObject({ code: 'NOT_FOUND' });
-
-            await expect(
-                userA.clients.fullAuth.profile.generateInvite({ challenge: 'nice' })
-            ).resolves.not.toThrow();
-
-            jest.useRealTimers();
-        });
-    });
-
     describe('registerSigningAuthority', () => {
         beforeEach(async () => {
             await Profile.delete({ detach: true, where: {} });
@@ -1573,6 +1709,149 @@ describe('Profiles', () => {
                     name: 'mysa2',
                     did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
                 },
+            });
+        });
+    });
+
+    describe('Invite-related tests', () => {
+        beforeEach(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+            await userC.clients.fullAuth.profile.createProfile({ profileId: 'userc' });
+        });
+
+        describe('generateInvite', () => {
+            it('creates a new challenge if none is supplied', async () => {
+                const result = await userA.clients.fullAuth.profile.generateInvite();
+                expect(result.challenge).toBeTruthy();
+            });
+
+            it('uses a supplied challenge if one is provided', async () => {
+                const result = await userA.clients.fullAuth.profile.generateInvite({
+                    challenge: 'nice',
+                });
+                expect(result.challenge).toEqual('nice');
+            });
+
+            it('does allow using multiple challenges', async () => {
+                await expect(
+                    userA.clients.fullAuth.profile.generateInvite({ challenge: 'c1' })
+                ).resolves.not.toThrow();
+                await expect(
+                    userA.clients.fullAuth.profile.generateInvite({ challenge: 'c2' })
+                ).resolves.not.toThrow();
+            });
+
+            it('does not allow using the same challenge more than once', async () => {
+                try {
+                    // Generate the first invite with the challenge 'nice'
+                    await userA.clients.fullAuth.profile.generateInvite({ challenge: 'nice' });
+
+                    // Try to generate another invite with the same challenge 'nice'
+                    await userA.clients.fullAuth.profile.generateInvite({ challenge: 'nice' });
+                } catch (error) {
+                    expect(error).toMatchObject({
+                        code: 'CONFLICT',
+                        message: 'Challenge already in use!',
+                    });
+                }
+            });
+
+            it('allows setting the expiration date', async () => {
+                const result = await userA.clients.fullAuth.profile.generateInvite({
+                    expiration: 24 * 60 * 60,
+                });
+                expect(result.expiresIn).toBe(24 * 60 * 60);
+            });
+        });
+
+        describe('connectWithInvite', () => {
+            it('allows users to connect via invite challenge', async () => {
+                const { challenge } = await userB.clients.fullAuth.profile.generateInvite();
+
+                await expect(
+                    userA.clients.fullAuth.profile.connectWithInvite({
+                        profileId: 'userb',
+                        challenge,
+                    })
+                ).resolves.toBe(true);
+
+                const oneConnection = await userA.clients.fullAuth.profile.connections();
+
+                expect(oneConnection).toHaveLength(1);
+                expect(oneConnection[0]!.profileId).toEqual('userb');
+            });
+
+            it('does not allow users to connect with an expired challenge', async () => {
+                // Use fake timers
+                vi.useFakeTimers();
+                vi.setSystemTime(new Date(2024, 5, 19, 12, 0, 0));
+
+                const { challenge } = await userB.clients.fullAuth.profile.generateInvite({
+                    expiration: 2, // Expiration set to 2 seconds
+                });
+
+                vi.setSystemTime(new Date(2024, 5, 19, 12, 0, 3));
+
+                await expect(
+                    userA.clients.fullAuth.profile.connectWithInvite({
+                        profileId: 'userb',
+                        challenge,
+                    })
+                ).rejects.toMatchObject({
+                    code: 'NOT_FOUND',
+                    message: 'Invite not found or has expired',
+                });
+
+                // Restore real timers after the test is done
+                vi.useRealTimers();
+            });
+
+            it('does allow users to connect with an unexpired challenge', async () => {
+                // Use fake timers
+                vi.useFakeTimers();
+                vi.setSystemTime(new Date(2024, 5, 19, 12, 0, 0));
+
+                const { challenge } = await userB.clients.fullAuth.profile.generateInvite({
+                    expiration: 2, // Expiration set to 2 seconds
+                });
+
+                vi.setSystemTime(new Date(2024, 5, 19, 12, 0, 1));
+
+                await expect(
+                    userA.clients.fullAuth.profile.connectWithInvite({
+                        profileId: 'userb',
+                        challenge,
+                    })
+                ).resolves.toBe(true);
+
+                const oneConnection = await userA.clients.fullAuth.profile.connections();
+
+                expect(oneConnection).toHaveLength(1);
+                expect(oneConnection[0]!.profileId).toEqual('userb');
+
+                // Restore real timers after the test is done
+                vi.useRealTimers();
+            });
+
+            it('invalidates the invite after successful connection', async () => {
+                const { challenge } = await userB.clients.fullAuth.profile.generateInvite();
+
+                await userA.clients.fullAuth.profile.connectWithInvite({
+                    profileId: 'userb',
+                    challenge,
+                });
+
+                await expect(
+                    userC.clients.fullAuth.profile.connectWithInvite({
+                        profileId: 'userb',
+                        challenge,
+                    })
+                ).rejects.toMatchObject({
+                    code: 'NOT_FOUND',
+                    message: 'Invite not found or has expired',
+                });
             });
         });
     });

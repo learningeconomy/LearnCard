@@ -5,10 +5,10 @@ import { VC, Profile, VerificationItem } from '@learncard/types';
 import { VCDisplayCard } from '../VCDisplayCard';
 import {
     VCDisplayCard2,
-    MediaMetadata,
-    VideoMetadata,
     CredentialIconType,
 } from '../VCDisplayCard2';
+
+import { MediaMetadata, VideoMetadata } from '../../types';
 
 export type VCCardProps = {
     credential: VC;

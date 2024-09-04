@@ -1,4 +1,12 @@
-import { JWK, UnsignedVC, VC, UnsignedVP, VP, VerificationCheck } from '@learncard/types';
+import {
+    JWK,
+    UnsignedVC,
+    VC,
+    UnsignedVP,
+    VP,
+    VerificationCheck,
+    DidDocument,
+} from '@learncard/types';
 import { Plugin, LearnCard } from '@learncard/core';
 import { ProofOptions, InputMetadata } from '@learncard/didkit-plugin';
 
@@ -19,7 +27,7 @@ export type VCPluginDependentMethods = {
         presentation: VP | string,
         options?: ProofOptions
     ) => Promise<VerificationCheck>;
-    resolveDid: (did: string, inputMetadata?: InputMetadata) => Promise<Record<string, any>>;
+    resolveDid: (did: string, inputMetadata?: InputMetadata) => Promise<DidDocument>;
 };
 
 /** @group VC Plugin */
@@ -52,7 +60,12 @@ export type VCDependentLearnCard = LearnCard<any, 'id', VCPluginDependentMethods
 export type VCImplicitLearnCard = LearnCard<any, 'id', VCPluginMethods & VCPluginDependentMethods>;
 
 /** @group VC Plugin */
-export type VerifyExtension = { verifyCredential: (credential: VC) => Promise<VerificationCheck> };
+export type VerifyExtension = {
+    verifyCredential: (
+        credential: VC,
+        options?: Partial<ProofOptions>
+    ) => Promise<VerificationCheck>;
+};
 
 /** @group VC Plugin */
 export type VCPlugin = Plugin<'VC', any, VCPluginMethods, 'id', VCPluginDependentMethods>;

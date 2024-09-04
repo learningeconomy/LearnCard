@@ -11,6 +11,13 @@ plugins:
     - serverless-offline
     - serverless-domain-manager
     - serverless-certificate-creator
+    - serverless-lift
+
+constructs:
+    notifications-queue:
+        type: queue
+        worker:
+            handler: lambda.notificationsWorker
 
 custom:
     config:
@@ -20,7 +27,7 @@ custom:
         plugins: esbuildPlugins.cjs
         bundle: true
         minify: true
-        external: ['@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm']
+        external: ['@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm', 'p-limit']
         sourcemap: external
         target: 'node16'
         watch:
@@ -69,9 +76,11 @@ custom:
         apiType: http
 
 package:
+  individually: true
   patterns: 
     - '!node_modules/**'
     - 'node_modules/@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm'
+    - 'src/swagger-ui'
 
 provider:
     name: aws
@@ -98,6 +107,7 @@ provider:
             'Fn::GetAtt': [ElasticCacheCluster, RedisEndpoint.Address]
         REDIS_PORT:
             'Fn::GetAtt': [ElasticCacheCluster, RedisEndpoint.Port]
+        NOTIFICATIONS_QUEUE_URL: ${construct:notifications-queue.queueUrl}
     tracing:
         apiGateway: true
         lambda: true
@@ -129,7 +139,7 @@ functions:
             - httpApi: ANY /api/{trpc+}
 
     didWeb:
-        handler: lambda.didWebHandler
+        handler: didWebLambda.didWebHandler
         vpc:
             securityGroupIds:
                 - 'Fn::GetAtt': [ServerlessSecurityGroup, GroupId]

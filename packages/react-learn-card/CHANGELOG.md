@@ -1,5 +1,417 @@
 # @welibraryos/react-learn-card
 
+## 2.7.4
+
+### Patch Changes
+
+-   [#485](https://github.com/learningeconomy/LearnCard/pull/485) [`aec3e346`](https://github.com/learningeconomy/LearnCard/commit/aec3e346611624a106e94428a1a5d63988d04cc7) Thanks [@goblincore](https://github.com/goblincore)! - chore: Update boost generic card spacing and formatting of content
+
+-   [#487](https://github.com/learningeconomy/LearnCard/pull/487) [`68550bb`](https://github.com/learningeconomy/LearnCard/commit/68550bb7f143897841defabdd13c5c9e5e1bf553) Thanks [@smurflo2](https://github.com/smurflo2)! - Truncate issuer name to 20 characters instead of 25
+
+## 2.7.3
+
+### Patch Changes
+
+-   [#482](https://github.com/learningeconomy/LearnCard/pull/482) [`a309dd0`](https://github.com/learningeconomy/LearnCard/commit/a309dd00210a1a2b2e90a0b2ccb3187b3d9c40e5) Thanks [@gerardopar](https://github.com/gerardopar)! - Update Props
+
+## 2.7.2
+
+### Patch Changes
+
+-   [#477](https://github.com/learningeconomy/LearnCard/pull/477) [`57898a5`](https://github.com/learningeconomy/LearnCard/commit/57898a5a810ea50583d3a9485fd98095251efc1d) Thanks [@rhen92](https://github.com/rhen92)! - [LC-235] Prevent attachment section from being crammed
+
+## 2.7.1
+
+### Patch Changes
+
+-   [#476](https://github.com/learningeconomy/LearnCard/pull/476) [`24372e9`](https://github.com/learningeconomy/LearnCard/commit/24372e9d85180a077ec4b06e3c6e6659b9b6b5f8) Thanks [@smurflo2](https://github.com/smurflo2)! - Add support for issuer badges (e.g. trusted/untrusted/unknown issuer)
+
+## 2.7.0
+
+### Minor Changes
+
+-   [#468](https://github.com/learningeconomy/LearnCard/pull/468) [`32154c01`](https://github.com/learningeconomy/LearnCard/commit/32154c01aa64ea8cfe612fd93ed1a710bb043d95) Thanks [@smurflo2](https://github.com/smurflo2)! - Make clicking anywhere on a credential 'flip' it
+
+## 2.6.79
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.28
+
+## 2.6.78
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.27
+
+## 2.6.77
+
+### Patch Changes
+
+-   [#471](https://github.com/learningeconomy/LearnCard/pull/471) [`e7cc8fb`](https://github.com/learningeconomy/LearnCard/commit/e7cc8fb5e5b065d53ff3a99dac6f43bb8035a276) Thanks [@smurflo2](https://github.com/smurflo2)! - Move nav buttons (e.g. "Details") to bottom-center of Certificate Display
+
+-   [#471](https://github.com/learningeconomy/LearnCard/pull/471) [`e7cc8fb`](https://github.com/learningeconomy/LearnCard/commit/e7cc8fb5e5b065d53ff3a99dac6f43bb8035a276) Thanks [@smurflo2](https://github.com/smurflo2)! - [LC-246] Fix broken-looking claim certificate screen
+
+## 2.6.76
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.26
+
+## 2.6.75
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.25
+
+## 2.6.74
+
+### Patch Changes
+
+-   [#465](https://github.com/learningeconomy/LearnCard/pull/465) [`718b3f0`](https://github.com/learningeconomy/LearnCard/commit/718b3f0cd323c010f603bf717d9d61b7a18786ff) Thanks [@gerardopar](https://github.com/gerardopar)! - add hideGradientBackground prop
+
+## 2.6.73
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.24
+
+## 2.6.72
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.23
+
+## 2.6.71
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.22
+
+## 2.6.70
+
+### Patch Changes
+
+-   [#455](https://github.com/learningeconomy/LearnCard/pull/455) [`0ffe0984`](https://github.com/learningeconomy/LearnCard/commit/0ffe0984572e813d39dfc38345fde27a1afcd1c2) Thanks [@gerardopar](https://github.com/gerardopar)! - Store groupID on VC 🥑
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.21
+
+## 2.6.69
+
+### Patch Changes
+
+-   Updated dependencies [[`e70c1671`](https://github.com/learningeconomy/LearnCard/commit/e70c1671213712527d0df447ff25ba7f101f94ae), [`e70c1671`](https://github.com/learningeconomy/LearnCard/commit/e70c1671213712527d0df447ff25ba7f101f94ae)]:
+    -   @learncard/init@1.2.20
+
+## 2.6.68
+
+### Patch Changes
+
+-   [#449](https://github.com/learningeconomy/LearnCard/pull/449) [`2e46c23`](https://github.com/learningeconomy/LearnCard/commit/2e46c2342e092ffa49667a79cd607acc3c766081) Thanks [@gerardopar](https://github.com/gerardopar)! - Add Details button (ID, Cert) VC display types
+
+## 2.6.67
+
+### Patch Changes
+
+-   [#447](https://github.com/learningeconomy/LearnCard/pull/447) [`c0aa883`](https://github.com/learningeconomy/LearnCard/commit/c0aa883df0d94dd6bc1225b34386516158dafae1) Thanks [@gerardopar](https://github.com/gerardopar)! - Revert background changes for normal boost types
+
+## 2.6.66
+
+### Patch Changes
+
+-   [#445](https://github.com/learningeconomy/LearnCard/pull/445) [`14a65f2`](https://github.com/learningeconomy/LearnCard/commit/14a65f2e5b96263b3ace63eef48ece55f9b4ff9b) Thanks [@gerardopar](https://github.com/gerardopar)! - Wallet Page ID asset updates
+
+## 2.6.65
+
+### Patch Changes
+
+-   [#443](https://github.com/learningeconomy/LearnCard/pull/443) [`9f96918`](https://github.com/learningeconomy/LearnCard/commit/9f96918972939f6b7af9a335118d9794cb87ef58) Thanks [@gerardopar](https://github.com/gerardopar)! - Add ID VC display type
+
+## 2.6.64
+
+### Patch Changes
+
+-   [#441](https://github.com/learningeconomy/LearnCard/pull/441) [`49cfc5e2`](https://github.com/learningeconomy/LearnCard/commit/49cfc5e2b33ef553511e90b305a6420a5b31f524) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Update Icons
+
+-   [#441](https://github.com/learningeconomy/LearnCard/pull/441) [`49cfc5e2`](https://github.com/learningeconomy/LearnCard/commit/49cfc5e2b33ef553511e90b305a6420a5b31f524) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Allow hiding/overriding nav buttons in VCCard2
+
+## 2.6.63
+
+### Patch Changes
+
+-   [#439](https://github.com/learningeconomy/LearnCard/pull/439) [`283ef624`](https://github.com/learningeconomy/LearnCard/commit/283ef624cb4b1df03174d73985394a0c1f6b9be2) Thanks [@rhen92](https://github.com/rhen92)! - [LC-164] - Add credential engine support to LCA
+
+## 2.6.62
+
+### Patch Changes
+
+-   [#435](https://github.com/learningeconomy/LearnCard/pull/435) [`74faabb`](https://github.com/learningeconomy/LearnCard/commit/74faabbc1730ef6655ea35266066c5d52b8649d3) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Easier to see skills count and the scrolling thing is reverted
+
+## 2.6.61
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.19
+
+## 2.6.60
+
+### Patch Changes
+
+-   [#431](https://github.com/learningeconomy/LearnCard/pull/431) [`6a68eab`](https://github.com/learningeconomy/LearnCard/commit/6a68eabb4abc6c8196af8f154515f85114ee14e5) Thanks [@gerardopar](https://github.com/gerardopar)! - Add Skills widget to certificate view
+
+## 2.6.59
+
+### Patch Changes
+
+-   [#429](https://github.com/learningeconomy/LearnCard/pull/429) [`1649dac`](https://github.com/learningeconomy/LearnCard/commit/1649dace725a5b2515fe825e53c96d8ec4d76b6a) Thanks [@gerardopar](https://github.com/gerardopar)! - Display skills widget
+
+## 2.6.58
+
+### Patch Changes
+
+-   [#427](https://github.com/learningeconomy/LearnCard/pull/427) [`d7ab64a`](https://github.com/learningeconomy/LearnCard/commit/d7ab64a4c97da4602c86291f19e05ff64e120923) Thanks [@gerardopar](https://github.com/gerardopar)! - fix wallet id icon
+
+## 2.6.57
+
+### Patch Changes
+
+-   [#425](https://github.com/learningeconomy/LearnCard/pull/425) [`62ee53a`](https://github.com/learningeconomy/LearnCard/commit/62ee53a39a24b0b15bc3390e99d903e523b9a249) Thanks [@gerardopar](https://github.com/gerardopar)! - Quick style fixes - (boost card, vc card, wallet page icons)
+
+## 2.6.56
+
+### Patch Changes
+
+-   [#417](https://github.com/learningeconomy/LearnCard/pull/417) [`b8855d3b`](https://github.com/learningeconomy/LearnCard/commit/b8855d3b4b80c4fdc5d1830a8c2ee63df022a866) Thanks [@smurflo2](https://github.com/smurflo2)! - [LC-158] Certificate Display Card
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.18
+
+## 2.6.55
+
+### Patch Changes
+
+-   [#422](https://github.com/learningeconomy/LearnCard/pull/422) [`639f5b5`](https://github.com/learningeconomy/LearnCard/commit/639f5b5655e1126a6cef31828269a0dbbddc7b41) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Polish VCDisplayCard2
+
+## 2.6.54
+
+### Patch Changes
+
+-   [#420](https://github.com/learningeconomy/LearnCard/pull/420) [`1d13b3e`](https://github.com/learningeconomy/LearnCard/commit/1d13b3eed13644f7b1778b214e3d351bdcd05079) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Don't tile Boost BG Image
+
+## 2.6.53
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.17
+
+## 2.6.52
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.16
+
+## 2.6.51
+
+### Patch Changes
+
+-   [#412](https://github.com/learningeconomy/LearnCard/pull/412) [`1cb031d7`](https://github.com/learningeconomy/LearnCard/commit/1cb031d7483e80f947c93e3479fe85af8ec09dbb) Thanks [@cboydstun](https://github.com/cboydstun)! - quest [LC-155] Updated Boost Cards
+
+    updated wallet card squares
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.15
+
+## 2.6.50
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.14
+
+## 2.6.49
+
+### Patch Changes
+
+-   [#406](https://github.com/learningeconomy/LearnCard/pull/406) [`7d30db5`](https://github.com/learningeconomy/LearnCard/commit/7d30db5b51b842b74c6806b537e08d8f26879843) Thanks [@goblincore](https://github.com/goblincore)! - fix: [LC-25] Add alt tag to BoostGenericCard and BoostSmallCard components
+
+## 2.6.48
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.13
+
+## 2.6.47
+
+### Patch Changes
+
+-   [#403](https://github.com/learningeconomy/LearnCard/pull/403) [`f4135a3`](https://github.com/learningeconomy/LearnCard/commit/f4135a387e3865a40d7bc4005dc034b6040269db) Thanks [@goblincore](https://github.com/goblincore)! - Fix syntax error
+
+-   [#402](https://github.com/learningeconomy/LearnCard/pull/402) [`26aa86c4`](https://github.com/learningeconomy/LearnCard/commit/26aa86c4a805adc2c012922a518000349d600e8a) Thanks [@goblincore](https://github.com/goblincore)! - Fix: VCDisplayCard2 bug on iosSafari with resizing header
+
+## 2.6.46
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.12
+
+## 2.6.45
+
+### Patch Changes
+
+-   [#396](https://github.com/learningeconomy/LearnCard/pull/396) [`3b1d2687`](https://github.com/learningeconomy/LearnCard/commit/3b1d2687c035297da8b34ca2ffbd33ad49687faf) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix text resizing issues
+
+## 2.6.44
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.11
+
+## 2.6.43
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.10
+
+## 2.6.42
+
+### Patch Changes
+
+-   [#392](https://github.com/learningeconomy/LearnCard/pull/392) [`fd21c7c`](https://github.com/learningeconomy/LearnCard/commit/fd21c7c30d499805c03aa6ee0c328f969e189b87) Thanks [@gerardopar](https://github.com/gerardopar)! - VCDisplayCard updates - allow front face button customization
+
+## 2.6.41
+
+### Patch Changes
+
+-   [#388](https://github.com/learningeconomy/LearnCard/pull/388) [`336876b`](https://github.com/learningeconomy/LearnCard/commit/336876b4b98e37157b8a133ed3b72801eb3d1cd8) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Emit declarationMap
+
+-   Updated dependencies [[`336876b`](https://github.com/learningeconomy/LearnCard/commit/336876b4b98e37157b8a133ed3b72801eb3d1cd8)]:
+    -   @learncard/init@1.2.9
+
+## 2.6.40
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.8
+
+## 2.6.39
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.7
+
+## 2.6.38
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.6
+
+## 2.6.37
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.5
+
+## 2.6.36
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.4
+
+## 2.6.35
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.3
+
+## 2.6.34
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.2
+
+## 2.6.33
+
+### Patch Changes
+
+-   [#376](https://github.com/learningeconomy/LearnCard/pull/376) [`b419f1f`](https://github.com/learningeconomy/LearnCard/commit/b419f1f4eaf229f54555ee9c60495a2edfcad07e) Thanks [@gerardopar](https://github.com/gerardopar)! - add prop to display subject did
+
+## 2.6.32
+
+### Patch Changes
+
+-   [#374](https://github.com/learningeconomy/LearnCard/pull/374) [`db5fcaf`](https://github.com/learningeconomy/LearnCard/commit/db5fcaf2afaf24d3cfb3d47219ad777cdf96108d) Thanks [@gerardopar](https://github.com/gerardopar)! - VC Backface Overrides
+
+## 2.6.31
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.1
+
+## 2.6.30
+
+### Patch Changes
+
+-   Updated dependencies [[`867d38c`](https://github.com/learningeconomy/LearnCard/commit/867d38c5f606ff73fa328a4616a8a58a8f49d0f0)]:
+    -   @learncard/init@1.2.0
+
+## 2.6.29
+
+### Patch Changes
+
+-   Updated dependencies [[`1c4e09d`](https://github.com/learningeconomy/LearnCard/commit/1c4e09d136464286959000e5ed14cdf59dba9196)]:
+    -   @learncard/init@1.1.0
+
+## 2.6.28
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.0.23
+
+## 2.6.27
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.0.22
+
+## 2.6.26
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.0.21
+
+## 2.6.25
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.0.20
+
 ## 2.6.24
 
 ### Patch Changes

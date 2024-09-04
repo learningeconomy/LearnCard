@@ -6,7 +6,6 @@ import { TRPC_ERROR_CODE_HTTP_STATUS } from 'trpc-openapi/dist/adapters/node-htt
 import * as Sentry from '@sentry/serverless';
 
 import app from './src/openapi';
-import didWebApp from './src/dids';
 import { appRouter, createContext } from './src/app';
 
 Sentry.AWSLambda.init({
@@ -16,14 +15,13 @@ Sentry.AWSLambda.init({
     tracesSampleRate: 1.0,
     integrations: [
         new Sentry.Integrations.Console(),
-        new Sentry.Integrations.Http(),
+        new Sentry.Integrations.Http({ tracing: true }),
         new Sentry.Integrations.ContextLines(),
         new Sentry.Integrations.Mongo(),
     ],
 });
 
 export const swaggerUiHandler = serverlessHttp(app, { basePath: '/docs' });
-export const didWebHandler = Sentry.AWSLambda.wrapHandler(serverlessHttp(didWebApp));
 
 export const _openApiHandler = createOpenApiAwsLambdaHandler({
     router: appRouter,
@@ -71,6 +69,8 @@ export const openApiHandler = Sentry.AWSLambda.wrapHandler(
             };
         }
 
+        context.callbackWaitsForEmptyEventLoop = false;
+
         return _openApiHandler(event, context);
     }
 );
@@ -87,6 +87,8 @@ export const trpcHandler = Sentry.AWSLambda.wrapHandler(
                 },
             };
         }
+
+        context.callbackWaitsForEmptyEventLoop = false;
 
         return _trpcHandler(event, context);
     }

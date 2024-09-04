@@ -1,0 +1,88 @@
+# .github/workflows/chromatic.yml
+
+# Workflow name
+name: 'Chromatic'
+
+# Disabling for now because this always fails weirdly =(
+# TODO: Figure out why and fix this
+# Event for the workflow
+# on:
+#   pull_request:
+#     types: [opened, synchronize]
+
+env:
+  CI: true
+  NODE_OPTIONS: "--max_old_space_size=2048"
+
+# List of jobs
+jobs:
+  chromatic-deployment:
+    # Operating System
+    runs-on: ubuntu-latest
+    # Job steps
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - name: Fetch main for NX comparison
+        run: |
+          git fetch --no-tags --prune --depth=5 origin main
+
+      - name: Setup Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        id: pnpm-install
+        with:
+          version: 9
+          run_install: false
+
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        run: echo "pnpm_cache_dir=$(pnpm store path)" >> $GITHUB_OUTPUT
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ steps.pnpm-cache.outputs.pnpm_cache_dir }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Restore nx cache
+        id: restore-nx-cache
+        uses: actions/cache/restore@v3
+        with:
+          path: .nx-cache
+          key: ${{ runner.os }}-nx-cache-${{ github.workflow }}
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Get Affected List
+        id: affected
+        run: echo "AFFECTED=$(pnpm exec nx print-affected --base=origin/main --head=HEAD --select=projects)" >> $GITHUB_ENV
+
+      - name: Build @learncard/react
+        if: contains(env.AFFECTED, 'react')
+        run: pnpm exec nx build react
+
+      - name: Publish to Chromatic
+        if: contains(env.AFFECTED, 'react')
+        uses: chromaui/action@v1
+        with:
+          projectToken: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
+          exitZeroOnChanges: true # 👈 Option to prevent the workflow from failing
+          workingDir: packages/react-learn-card
+
+      - name: Save nx cache
+        uses: actions/cache/save@v3
+        with:
+          path: .nx-cache
+          key: ${{ steps.restore-nx-cache.outputs.cache-primary-key }}
