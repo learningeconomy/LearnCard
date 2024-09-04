@@ -73,12 +73,15 @@ export type LearnCardNetworkPluginMethods = {
     cancelConnectionRequest: (profileId: string) => Promise<boolean>;
     disconnectWith: (profileId: string) => Promise<boolean>;
     acceptConnectionRequest: (id: string) => Promise<boolean>;
+    /** @deprecated Use getPaginatedConnections */
     getConnections: () => Promise<LCNProfile[]>;
     getPaginatedConnections: (options?: PaginationOptionsType) => Promise<PaginatedLCNProfiles>;
+    /** @deprecated Use getPaginatedPendingConnections */
     getPendingConnections: () => Promise<LCNProfile[]>;
     getPaginatedPendingConnections: (
         options?: PaginationOptionsType
     ) => Promise<PaginatedLCNProfiles>;
+    /** @deprecated Use getPaginatedConnectionRequests */
     getConnectionRequests: () => Promise<LCNProfile[]>;
     getPaginatedConnectionRequests: (
         options?: PaginationOptionsType
@@ -111,8 +114,10 @@ export type LearnCardNetworkPluginMethods = {
         metadata?: Partial<Omit<Boost, 'uri'>>
     ) => Promise<string>;
     getBoost: (uri: string) => Promise<Boost & { boost: UnsignedVC }>;
+    /** @deprecated Use getPaginatedBoosts */
     getBoosts: () => Promise<{ name?: string; uri: string }[]>;
     getPaginatedBoosts: (options?: PaginationOptionsType) => Promise<PaginatedBoostsType>;
+    /** @deprecated Use getPaginatedBoostRecipients */
     getBoostRecipients: (
         uri: string,
         limit?: number,
