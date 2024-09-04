@@ -583,8 +583,8 @@ describe('LearnCard SDK', () => {
             const verifiablePresentation = await learnCard.invoke.vpFromQrCode(qrImageText);
             expect(verifiablePresentation).toHaveProperty('@context');
         });
-        it('should generate a base-64 QR code image and be able to decode it back into a Verifiable Presentation', done => {
-            new Promise(async (resolve, reject) => {
+        it('should generate a base-64 QR code image and be able to decode it back into a Verifiable Presentation', async () => {
+            return new Promise<void>(async (resolve, reject) => {
                 const learnCard = await getLearnCard();
 
                 const verifiablePresentation = await learnCard.invoke.issuePresentation(
@@ -605,10 +605,10 @@ describe('LearnCard SDK', () => {
                             qrImageText
                         );
                         expect(decodedVerifiablePresentation).toEqual(verifiablePresentation);
-                        done();
+                        resolve();
                     } catch (e) {
                         console.warn('Failed reading QR code!', e);
-                        done();
+                        resolve();
                     }
                 };
                 qrcode.decode(image.bitmap);
