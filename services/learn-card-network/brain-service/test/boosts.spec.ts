@@ -196,6 +196,36 @@ describe('Boosts', () => {
 
             expect(boosts.records).toHaveLength(1);
         });
+
+        it('should paginate correctly', async () => {
+            for (let index = 0; index < 10; index += 1) {
+                await userA.clients.fullAuth.boost.createBoost({
+                    credential: testVc,
+                    name: `Test ${index}`,
+                });
+            }
+
+            await expect(userA.clients.fullAuth.boost.getPaginatedBoosts()).resolves.not.toThrow();
+
+            const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts({ limit: 20 });
+
+            expect(boosts.records).toHaveLength(10);
+
+            const firstPage = await userA.clients.fullAuth.boost.getPaginatedBoosts({ limit: 5 });
+
+            expect(firstPage.records).toHaveLength(5);
+            expect(firstPage.hasMore).toBeTruthy();
+            expect(firstPage.cursor).toBeDefined();
+
+            const secondPage = await userA.clients.fullAuth.boost.getPaginatedBoosts({
+                limit: 5,
+                cursor: firstPage.cursor,
+            });
+
+            expect(secondPage.hasMore).toBeFalsy();
+
+            expect([...firstPage.records, ...secondPage.records]).toEqual(boosts.records);
+        });
     });
 
     describe('sendBoost', () => {
@@ -1226,7 +1256,8 @@ describe('Boosts', () => {
                 status: BoostStatus.enum.DRAFT,
             });
 
-            const beforeDeleteLength = (await userA.clients.fullAuth.boost.getPaginatedBoosts()).records.length;
+            const beforeDeleteLength = (await userA.clients.fullAuth.boost.getPaginatedBoosts())
+                .records.length;
             await expect(
                 userA.clients.fullAuth.boost.deleteBoost({ uri: draftBoostUri })
             ).resolves.not.toThrow();
@@ -1247,7 +1278,8 @@ describe('Boosts', () => {
                 profileId: 'userb',
             });
 
-            const beforeDeleteLength = (await userA.clients.fullAuth.boost.getPaginatedBoosts()).records.length;
+            const beforeDeleteLength = (await userA.clients.fullAuth.boost.getPaginatedBoosts())
+                .records.length;
             await expect(
                 userB.clients.fullAuth.boost.deleteBoost({ uri: draftBoostUri })
             ).resolves.not.toThrow();
@@ -1263,12 +1295,15 @@ describe('Boosts', () => {
                 status: BoostStatus.enum.DRAFT,
             });
 
-            const beforeDeleteLength = (await userA.clients.fullAuth.boost.getPaginatedBoosts()).records.length;
+            const beforeDeleteLength = (await userA.clients.fullAuth.boost.getPaginatedBoosts())
+                .records.length;
             await expect(
                 userB.clients.fullAuth.boost.deleteBoost({ uri: draftBoostUri })
             ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
 
-            expect((await userA.clients.fullAuth.boost.getPaginatedBoosts()).records).toHaveLength(beforeDeleteLength);
+            expect((await userA.clients.fullAuth.boost.getPaginatedBoosts()).records).toHaveLength(
+                beforeDeleteLength
+            );
         });
 
         it('should prevent you from deleting a published boost', async () => {
@@ -1276,9 +1311,12 @@ describe('Boosts', () => {
             const boost = boosts.records[0]!;
             const uri = boost.uri;
 
-            const beforeDeleteLength = (await userA.clients.fullAuth.boost.getPaginatedBoosts()).records.length;
+            const beforeDeleteLength = (await userA.clients.fullAuth.boost.getPaginatedBoosts())
+                .records.length;
             await expect(userA.clients.fullAuth.boost.deleteBoost({ uri })).rejects.toThrow();
-            expect((await userA.clients.fullAuth.boost.getPaginatedBoosts()).records).toHaveLength(beforeDeleteLength);
+            expect((await userA.clients.fullAuth.boost.getPaginatedBoosts()).records).toHaveLength(
+                beforeDeleteLength
+            );
         });
     });
 

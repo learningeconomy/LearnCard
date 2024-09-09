@@ -19,31 +19,39 @@ export const getBoostsForProfile = async (
     profile: ProfileInstance,
     { limit, cursor }: { limit: number; cursor?: string }
 ): Promise<Array<BoostType & { created: string }>> => {
-    const _query = new QueryBuilder().match({
-        related: [
-            { identifier: 'source', model: Boost },
-            `-[relationship:${Profile.getRelationshipByAlias('adminOf').name}|${Boost.getRelationshipByAlias('createdBy').name
-            }]-`,
-            { model: Profile, where: { profileId: profile.profileId } },
-        ],
-    });
+    const _query = new QueryBuilder()
+        .match({
+            related: [
+                { identifier: 'boost', model: Boost },
+                `-[:${Profile.getRelationshipByAlias('adminOf').name}|${Boost.getRelationshipByAlias('createdBy').name
+                }]-`,
+                { model: Profile, where: { profileId: profile.profileId } },
+            ],
+        })
+        .match({
+            related: [
+                { identifier: 'boost' },
+                `-[createdBy:${Boost.getRelationshipByAlias('createdBy').name}]-`,
+                { model: Profile },
+            ],
+        });
 
     const query = cursor
         ? _query.where(
-            new Where({ relationship: { date: { [Op.gt]: cursor } } }, _query.getBindParam())
+            new Where({ createdBy: { date: { [Op.lt]: cursor } } }, _query.getBindParam())
         )
         : _query;
 
     const results = convertQueryResultToPropertiesObjectArray<{
-        source: BoostType;
-        created: string;
+        boost: BoostType;
+        createdBy: { date: string };
     }>(
         await query
-            .return('DISTINCT source, relationship.date AS created')
-            .orderBy('relationship.date')
+            .return('DISTINCT boost, createdBy')
+            .orderBy('createdBy.date DESC')
             .limit(limit)
             .run()
     );
 
-    return results.map(result => ({ ...result.source, created: result.created }));
+    return results.map(result => ({ ...result.boost, created: result.createdBy.date }));
 };
