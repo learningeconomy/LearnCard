@@ -13,7 +13,11 @@ export const getClient = async (
 
     const challengeRequester = createTRPCProxyClient<AppRouter>({
         links: [
-            httpBatchLink({ url, headers: { Authorization: `Bearer ${await didAuthFunction()}` } }),
+            httpBatchLink({
+                url,
+                maxURLLength: 2048,
+                headers: { Authorization: `Bearer ${await didAuthFunction()}` },
+            }),
         ],
     });
 
@@ -31,6 +35,7 @@ export const getClient = async (
                 challenges = await getChallenges();
             }),
             httpBatchLink({
+                maxURLLength: 2048,
                 url,
                 headers: async () => {
                     if (challenges.length === 0) challenges.push(...(await getChallenges()));
