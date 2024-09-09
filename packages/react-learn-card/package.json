@@ -65,8 +65,7 @@
         "rollup-plugin-styles": "^4.0.0",
         "storybook": "^7.0.18",
         "style-loader": "^3.3.1",
-        "tailwindcss": "^3.0.24",
-        "typescript": "^4.5.4"
+        "tailwindcss": "^3.0.24"
     },
     "dependencies": {
         "@learncard/init": "workspace:*",

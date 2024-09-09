@@ -6,7 +6,7 @@ import { getVCTemplatesPlugin } from '@learncard/vc-templates-plugin';
 import { getCHAPIPlugin } from '@learncard/chapi-plugin';
 import { getLearnCardPlugin } from '@learncard/learn-card-plugin';
 
-import { LearnCardFromVcApi } from 'types/LearnCard';
+import { LearnCardFromVcApi } from '../types/LearnCard';
 
 /**
  * Generates a LearnCard Wallet from a 64 character seed string

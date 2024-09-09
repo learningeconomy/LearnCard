@@ -53,13 +53,23 @@ export const BoostValidator = z.object({
 });
 export type Boost = z.infer<typeof BoostValidator>;
 
+export const PaginatedBoostsValidator = PaginationResponseValidator.extend({
+    records: BoostValidator.array(),
+});
+export type PaginatedBoostsType = z.infer<typeof PaginatedBoostsValidator>;
+
 export const BoostRecipientValidator = z.object({
     to: LCNProfileValidator,
     from: z.string(),
     received: z.string().optional(),
 });
-
 export type BoostRecipientInfo = z.infer<typeof BoostRecipientValidator>;
+
+export const PaginatedBoostRecipientsValidator = PaginationResponseValidator.extend({
+    records: BoostRecipientValidator.array(),
+});
+export type PaginatedBoostRecipientsType = z.infer<typeof PaginatedBoostRecipientsValidator>;
+
 
 export const LCNBoostClaimLinkSigningAuthorityValidator = z.object({
     endpoint: z.string(),

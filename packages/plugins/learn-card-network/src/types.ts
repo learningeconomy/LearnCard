@@ -8,11 +8,12 @@ import {
     SentCredentialInfo,
     JWE,
     Boost,
-    BoostRecipientInfo,
     LCNSigningAuthorityForUserType,
     LCNBoostClaimLinkSigningAuthorityType,
     LCNBoostClaimLinkOptionsType,
     PaginationOptionsType,
+    PaginatedBoostsType,
+    PaginatedBoostRecipientsType,
     PaginatedLCNProfiles,
     ConsentFlowContract,
     ConsentFlowContractQuery,
@@ -25,8 +26,9 @@ import {
     ConsentFlowTransactionsQuery,
     PaginatedConsentFlowData,
     ConsentFlowDataQuery,
+    BoostRecipientInfo,
 } from '@learncard/types';
-import { LearnCard, Plugin } from '@learncard/core';
+import { Plugin } from '@learncard/core';
 import { ProofOptions } from '@learncard/didkit-plugin';
 import { VerifyExtension } from '@learncard/vc-plugin';
 
@@ -71,9 +73,19 @@ export type LearnCardNetworkPluginMethods = {
     cancelConnectionRequest: (profileId: string) => Promise<boolean>;
     disconnectWith: (profileId: string) => Promise<boolean>;
     acceptConnectionRequest: (id: string) => Promise<boolean>;
+    /** @deprecated Use getPaginatedConnections */
     getConnections: () => Promise<LCNProfile[]>;
+    getPaginatedConnections: (options?: PaginationOptionsType) => Promise<PaginatedLCNProfiles>;
+    /** @deprecated Use getPaginatedPendingConnections */
     getPendingConnections: () => Promise<LCNProfile[]>;
+    getPaginatedPendingConnections: (
+        options?: PaginationOptionsType
+    ) => Promise<PaginatedLCNProfiles>;
+    /** @deprecated Use getPaginatedConnectionRequests */
     getConnectionRequests: () => Promise<LCNProfile[]>;
+    getPaginatedConnectionRequests: (
+        options?: PaginationOptionsType
+    ) => Promise<PaginatedLCNProfiles>;
     generateInvite: (
         challenge?: string,
         expiration?: number
@@ -102,13 +114,22 @@ export type LearnCardNetworkPluginMethods = {
         metadata?: Partial<Omit<Boost, 'uri'>>
     ) => Promise<string>;
     getBoost: (uri: string) => Promise<Boost & { boost: UnsignedVC }>;
+    /** @deprecated Use getPaginatedBoosts */
     getBoosts: () => Promise<{ name?: string; uri: string }[]>;
+    getPaginatedBoosts: (options?: PaginationOptionsType) => Promise<PaginatedBoostsType>;
+    /** @deprecated Use getPaginatedBoostRecipients */
     getBoostRecipients: (
         uri: string,
         limit?: number,
         skip?: number,
         includeUnacceptedBoosts?: boolean
     ) => Promise<BoostRecipientInfo[]>;
+    getPaginatedBoostRecipients: (
+        uri: string,
+        limit?: number,
+        cursor?: string,
+        includeUnacceptedBoosts?: boolean
+    ) => Promise<PaginatedBoostRecipientsType>;
     countBoostRecipients: (uri: string, includeUnacceptedBoosts?: boolean) => Promise<number>;
     updateBoost: (
         uri: string,
@@ -137,7 +158,7 @@ export type LearnCardNetworkPluginMethods = {
     getRegisteredSigningAuthority: (
         endpoint: string,
         name: string
-    ) => Promise<LCNSigningAuthorityForUserType>;
+    ) => Promise<LCNSigningAuthorityForUserType | undefined>;
 
     generateClaimLink: (
         boostUri: string,

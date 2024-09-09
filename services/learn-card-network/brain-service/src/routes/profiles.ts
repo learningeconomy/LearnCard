@@ -24,7 +24,7 @@ import {
     getBlockedAndBlockedByIds,
     isRelationshipBlocked,
 } from '@helpers/connection.helpers';
-import { getDidWeb, updateDidForProfile } from '@helpers/did.helpers';
+import { getDidWeb, updateDidForProfile, updateDidForProfiles } from '@helpers/did.helpers';
 
 import { createProfile } from '@accesslayer/profile/create';
 import { deleteProfile } from '@accesslayer/profile/delete';
@@ -612,8 +612,9 @@ export const profilesRouter = t.router({
                 path: '/profile/connections',
                 tags: ['Profiles'],
                 summary: 'View connections',
+                deprecated: true,
                 description:
-                    "This route shows the current user's connections.\nWarning! This route will soon be deprecated and currently has a hard limit of returning only the first 50 connections",
+                    "This route shows the current user's connections.\nWarning! This route is deprecated and currently has a hard limit of returning only the first 50 connections. Please use paginatedConnections instead!",
             },
         })
         .input(z.void())
@@ -636,6 +637,38 @@ export const profilesRouter = t.router({
             return connections;
         }),
 
+    paginatedConnections: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/profile/connections/paginated',
+                tags: ['Profiles'],
+                summary: 'View connections',
+                description: "This route shows the current user's connections",
+            },
+        })
+        .input(
+            PaginationOptionsValidator.extend({
+                limit: PaginationOptionsValidator.shape.limit.default(25),
+            }).default({})
+        )
+        .output(PaginatedLCNProfilesValidator)
+        .query(async ({ ctx, input }) => {
+            const { limit, cursor } = input;
+
+            const records = await getConnections(ctx.user.profile, { limit: limit + 1, cursor });
+
+            const hasMore = records.length > limit;
+            const newCursor = records.at(hasMore ? -2 : -1)?.displayName;
+
+            return {
+                hasMore: records.length > limit,
+                records: updateDidForProfiles(ctx.domain, records).slice(0, limit),
+                ...(cursor && { cursor: newCursor }),
+            };
+        }),
+
     pendingConnections: profileRoute
         .meta({
             openapi: {
@@ -644,8 +677,9 @@ export const profilesRouter = t.router({
                 path: '/profile/pending-connections',
                 tags: ['Profiles'],
                 summary: 'View pending connections',
+                deprecated: true,
                 description:
-                    "This route shows the current user's pending connections.\nWarning! This route will soon be deprecated and currently has a hard limit of returning only the first 50 connections",
+                    "This route shows the current user's pending connections.\nWarning! This route is deprecated and currently has a hard limit of returning only the first 50 connections. Please use paginatedPendingConnections instead",
             },
         })
         .input(z.void())
@@ -656,6 +690,41 @@ export const profilesRouter = t.router({
             return connections.map(connection => updateDidForProfile(ctx.domain, connection));
         }),
 
+    paginatedPendingConnections: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/profile/pending-connections/paginated',
+                tags: ['Profiles'],
+                summary: 'View pending connections',
+                description: "This route shows the current user's pending connections",
+            },
+        })
+        .input(
+            PaginationOptionsValidator.extend({
+                limit: PaginationOptionsValidator.shape.limit.default(25),
+            }).default({})
+        )
+        .output(PaginatedLCNProfilesValidator)
+        .query(async ({ ctx, input }) => {
+            const { limit, cursor } = input;
+
+            const records = await getPendingConnections(ctx.user.profile, {
+                limit: limit + 1,
+                cursor,
+            });
+
+            const hasMore = records.length > limit;
+            const newCursor = records.at(hasMore ? -2 : -1)?.displayName;
+
+            return {
+                hasMore: records.length > limit,
+                records: updateDidForProfiles(ctx.domain, records).slice(0, limit),
+                ...(cursor && { cursor: newCursor }),
+            };
+        }),
+
     connectionRequests: profileRoute
         .meta({
             openapi: {
@@ -664,8 +733,9 @@ export const profilesRouter = t.router({
                 path: '/profile/connection-requests',
                 tags: ['Profiles'],
                 summary: 'View connection requests',
+                deprecated: true,
                 description:
-                    "This route shows the current user's connection requests.\nWarning! This route will soon be deprecated and currently has a hard limit of returning only the first 50 connections",
+                    "This route shows the current user's connection requests.\nWarning! This route is deprecated and currently has a hard limit of returning only the first 50 connections. Please use paginatedConnectionRequests instead",
             },
         })
         .input(z.void())
@@ -674,6 +744,41 @@ export const profilesRouter = t.router({
             const connections = await getConnectionRequests(ctx.user.profile, { limit: 50 });
 
             return connections.map(connection => updateDidForProfile(ctx.domain, connection));
+        }),
+
+    paginatedConnectionRequests: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/profile/connection-requests/paginated',
+                tags: ['Profiles'],
+                summary: 'View connection requests',
+                description: "This route shows the current user's connection requests",
+            },
+        })
+        .input(
+            PaginationOptionsValidator.extend({
+                limit: PaginationOptionsValidator.shape.limit.default(25),
+            }).default({})
+        )
+        .output(PaginatedLCNProfilesValidator)
+        .query(async ({ ctx, input }) => {
+            const { limit, cursor } = input;
+
+            const records = await getConnectionRequests(ctx.user.profile, {
+                limit: limit + 1,
+                cursor,
+            });
+
+            const hasMore = records.length > limit;
+            const newCursor = records.at(hasMore ? -2 : -1)?.displayName;
+
+            return {
+                hasMore: records.length > limit,
+                records: updateDidForProfiles(ctx.domain, records).slice(0, limit),
+                ...(cursor && { cursor: newCursor }),
+            };
         }),
 
     generateInvite: profileRoute

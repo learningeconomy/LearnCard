@@ -15,7 +15,7 @@ import {
     NetworkLearnCardFromSeed,
     DidWebLearnCardFromSeed,
     DidWebNetworkLearnCardFromSeed,
-} from 'types/LearnCard';
+} from './types/LearnCard';
 
 export * from './initializers/customLearnCard';
 export * from './initializers/emptyLearnCard';

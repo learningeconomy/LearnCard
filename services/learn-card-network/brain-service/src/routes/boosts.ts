@@ -7,18 +7,20 @@ import {
     VCValidator,
     JWEValidator,
     BoostRecipientValidator,
+    PaginatedBoostRecipientsValidator,
+    PaginatedBoostsValidator,
     PaginationOptionsValidator,
     PaginatedLCNProfilesValidator,
 } from '@learncard/types';
 
 import { t, profileRoute } from '@routes';
 
-import { getBoostByUri } from '@accesslayer/boost/read';
+import { getBoostByUri, getBoostsForProfile } from '@accesslayer/boost/read';
 import {
+    getBoostRecipientsSkipLimit,
     getBoostAdmins,
     getBoostRecipients,
     isProfileBoostAdmin,
-    getBoostsForProfile,
     countBoostRecipients,
 } from '@accesslayer/boost/relationships/read';
 
@@ -189,8 +191,9 @@ export const boostsRouter = t.router({
                 path: '/boost',
                 tags: ['Boosts'],
                 summary: 'Get boosts',
+                deprecated: true,
                 description:
-                    "This endpoint gets the current user's boosts.\nWarning! This route will soon be deprecated and currently has a hard limit of returning only the first 50 boosts",
+                    "This endpoint gets the current user's boosts.\nWarning! This route is deprecated and currently has a hard limit of returning only the first 50 boosts. Please use getPaginatedBoosts instead",
             },
         })
         .input(z.void())
@@ -202,12 +205,47 @@ export const boostsRouter = t.router({
 
             return boosts.map(boost => {
                 const { id, boost: _boost, ...remaining } = boost;
-                return {
-                    ...remaining,
-                    uri: getBoostUri(id, ctx.domain),
-                };
+                return { ...remaining, uri: getBoostUri(id, ctx.domain) };
             });
         }),
+
+    getPaginatedBoosts: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/boost/paginated',
+                tags: ['Boosts'],
+                summary: 'Get boosts',
+                description: "This endpoint gets the current user's boosts",
+            },
+        })
+        .input(
+            PaginationOptionsValidator.extend({
+                limit: PaginationOptionsValidator.shape.limit.default(25),
+            }).default({})
+        )
+        .output(PaginatedBoostsValidator)
+        .query(async ({ ctx, input }) => {
+            const { limit, cursor } = input;
+            const { profile } = ctx.user;
+
+            const records = await getBoostsForProfile(profile, { limit: limit + 1, cursor });
+
+            const hasMore = records.length > limit;
+            const newCursor = records.at(hasMore ? -2 : -1)?.created;
+
+            return {
+                hasMore,
+                records: records.map(boost => {
+                    const { id, boost: _boost, created: _created, ...remaining } = boost;
+
+                    return { ...remaining, uri: getBoostUri(id, ctx.domain) };
+                }),
+                ...(cursor && { cursor: newCursor }),
+            };
+        }),
+
     getBoostRecipients: profileRoute
         .meta({
             openapi: {
@@ -216,8 +254,9 @@ export const boostsRouter = t.router({
                 path: '/boost/recipients/{uri}',
                 tags: ['Boosts'],
                 summary: 'Get boost recipients',
+                deprecated: true,
                 description:
-                    'This endpoint gets the recipients of a particular boost.\nWarning! This route will soon be deprecated and currently has a hard limit of returning only the first 50 boosts',
+                    'This endpoint gets the recipients of a particular boost.\nWarning! This route is deprecated and currently has a hard limit of returning only the first 50 boosts. Please use getPaginatedBoostRecipients instead',
             },
         })
         .input(
@@ -237,8 +276,47 @@ export const boostsRouter = t.router({
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
             //TODO: Should we restrict who can see the recipients of a boost? Maybe to Boost owner / people who have the boost?
-            return getBoostRecipients(boost, { limit, skip, includeUnacceptedBoosts });
+            return getBoostRecipientsSkipLimit(boost, { limit, skip, includeUnacceptedBoosts });
         }),
+
+    getPaginatedBoostRecipients: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/boost/recipients/paginated/{uri}',
+                tags: ['Boosts'],
+                summary: 'Get boost recipients',
+                description: 'This endpoint gets the recipients of a particular boost',
+            },
+        })
+        .input(
+            PaginationOptionsValidator.extend({
+                limit: PaginationOptionsValidator.shape.limit.default(25),
+                uri: z.string(),
+                includeUnacceptedBoosts: z.boolean().default(true),
+            })
+        )
+        .output(PaginatedBoostRecipientsValidator)
+        .query(async ({ input }) => {
+            const { uri, limit, cursor, includeUnacceptedBoosts } = input;
+
+            const boost = await getBoostByUri(uri);
+
+            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            const records = await getBoostRecipients(boost, {
+                limit,
+                cursor,
+                includeUnacceptedBoosts,
+            });
+
+            const hasMore = records.length > limit;
+            const newCursor = records.at(hasMore ? -2 : -1)?.sent;
+
+            return { hasMore, records, ...(cursor && { cursor: newCursor }) };
+        }),
+
     getBoostRecipientCount: profileRoute
         .meta({
             openapi: {
