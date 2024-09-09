@@ -1,5 +1,16 @@
 # learn-card-core
 
+## 1.8.0
+
+### Minor Changes
+
+-   [#345](https://github.com/learningeconomy/LearnCard/pull/345) [`21bd232d`](https://github.com/learningeconomy/LearnCard/commit/21bd232df25387408d585bbbeb493056c95a7496) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Paginate connections, getConnections, connectionRequests, getBoosts, and getBoostRecipients
+
+### Patch Changes
+
+-   Updated dependencies [[`86f5b38`](https://github.com/learningeconomy/LearnCard/commit/86f5b388d7a5a0640655f4c148ff568af8cfbddd)]:
+    -   @learncard/network-brain-client@1.3.0
+
 ## 1.7.11
 
 ### Patch Changes

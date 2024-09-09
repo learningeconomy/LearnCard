@@ -1,5 +1,12 @@
 # learn-card-core
 
+## 2.0.5
+
+### Patch Changes
+
+-   Updated dependencies [[`86f5b38`](https://github.com/learningeconomy/LearnCard/commit/86f5b388d7a5a0640655f4c148ff568af8cfbddd)]:
+    -   @learncard/learn-cloud-client@1.2.0
+
 ## 2.0.4
 
 ### Patch Changes

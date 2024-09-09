@@ -1,5 +1,11 @@
 # @learncard/network-brain-service
 
+## 2.1.0
+
+### Minor Changes
+
+-   [#345](https://github.com/learningeconomy/LearnCard/pull/345) [`21bd232d`](https://github.com/learningeconomy/LearnCard/commit/21bd232df25387408d585bbbeb493056c95a7496) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Paginate connections, getConnections, connectionRequests, getBoosts, and getBoostRecipients
+
 ## 2.0.1
 
 ### Patch Changes
