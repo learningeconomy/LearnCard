@@ -27,6 +27,7 @@ export const BoostSmallCard: React.FC<BoostSmallCardProps> = ({
     customBodyClass,
     customBodyComponent,
     customThumbComponent,
+    customDraftComponent,
     innerOnClick,
     issueHistory,
     bgImgSrc,
@@ -137,9 +138,12 @@ export const BoostSmallCard: React.FC<BoostSmallCardProps> = ({
                 {customButtonComponent && customButtonComponent}
 
                 {!customButtonComponent && (
-                    <div onClick={buttonOnClick} className={defaultButtonClass}>
-                        <img className="h-[25px] mr-[7px] text-" src={AddAwardLight} />
-                        <span className="font-mouse text-[25px] tracking-wider">BOOST</span>
+                    <div className="flex w-full flex-col items-center justify-center">
+                        {customDraftComponent && customDraftComponent}
+                        <div onClick={buttonOnClick} className={defaultButtonClass}>
+                            <img className="h-[25px] mr-[7px] text-" src={AddAwardLight} />
+                            <span className="font-mouse text-[25px] tracking-wider">BOOST</span>
+                        </div>
                     </div>
                 )}
             </section>
