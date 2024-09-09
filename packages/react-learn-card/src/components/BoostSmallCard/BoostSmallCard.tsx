@@ -139,7 +139,7 @@ export const BoostSmallCard: React.FC<BoostSmallCardProps> = ({
                 {!customButtonComponent && (
                     <div onClick={buttonOnClick} className={defaultButtonClass}>
                         <img className="h-[25px] mr-[7px] text-" src={AddAwardLight} />
-                        <span className="font-mouse text-[25px] tracking-wider">BOOST!</span>
+                        <span className="font-mouse text-[25px] tracking-wider">BOOST</span>
                     </div>
                 )}
             </section>
