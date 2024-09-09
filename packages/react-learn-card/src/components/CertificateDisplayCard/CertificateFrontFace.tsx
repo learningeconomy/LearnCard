@@ -121,6 +121,8 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
     const isSelfVerified = verifierState === VERIFIER_STATES.selfVerified;
 
     const issueeImageExists = issueeImage || subjectImageComponent;
+    
+    console.log('issueeName', issueeName)
 
     return (
         <section
@@ -167,7 +169,7 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
 
                 <div className="text-[14px] text-grayscale-800 flex flex-col items-center w-full">
                     <span className="font-jacques flex gap-[5px] items-center w-full overflow-ellipsis whitespace-nowrap overflow-hidden justify-center">
-                        Awarded to {issueeName || <Line width="60" />}
+                        {issueeName === '0 person' ? 'Not yet awarded' : <>Awarded to {issueeName || <Line width="60" />}</>}
                     </span>
                     {!hideIssueDate && <span className="font-jacques">on {createdAt}</span>}
                 </div>
