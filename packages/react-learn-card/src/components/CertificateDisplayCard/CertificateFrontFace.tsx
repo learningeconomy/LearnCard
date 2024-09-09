@@ -121,8 +121,6 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
     const isSelfVerified = verifierState === VERIFIER_STATES.selfVerified;
 
     const issueeImageExists = issueeImage || subjectImageComponent;
-    
-    console.log('issueeName', issueeName)
 
     return (
         <section
