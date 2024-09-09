@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.7.5
+
+### Patch Changes
+
+-   [#488](https://github.com/learningeconomy/LearnCard/pull/488) [`8ff55be`](https://github.com/learningeconomy/LearnCard/commit/8ff55be756f17e9b0ab0ae2d60def320d425fdc5) Thanks [@rhen92](https://github.com/rhen92)! - [LC-199] Wallet description
+
 ## 2.7.4
 
 ### Patch Changes
