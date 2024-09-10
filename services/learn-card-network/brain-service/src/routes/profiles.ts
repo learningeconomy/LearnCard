@@ -24,7 +24,7 @@ import {
     getBlockedAndBlockedByIds,
     isRelationshipBlocked,
 } from '@helpers/connection.helpers';
-import { getDidWeb, updateDidForProfile } from '@helpers/did.helpers';
+import { getDidWeb, updateDidForProfile, updateDidForProfiles } from '@helpers/did.helpers';
 
 import { createProfile } from '@accesslayer/profile/create';
 import { deleteProfile } from '@accesslayer/profile/delete';
@@ -52,6 +52,7 @@ import {
     isInviteAlreadySetForProfile,
     isInviteValidForProfile,
     setValidInviteForProfile,
+    invalidateInvite,
 } from '@cache/invites';
 import {
     deleteAllCachedConnectionsForProfile,
@@ -503,10 +504,12 @@ export const profilesRouter = t.router({
             const { profile } = ctx.user;
             const { profileId, challenge } = input;
 
-            if (!(await isInviteValidForProfile(profileId, challenge))) {
+            const isValid = await isInviteValidForProfile(profileId, challenge);
+
+            if (!isValid) {
                 throw new TRPCError({
                     code: 'NOT_FOUND',
-                    message: `Challenge not found for ${profileId}`,
+                    message: 'Invite not found or has expired',
                 });
             }
 
@@ -525,6 +528,7 @@ export const profilesRouter = t.router({
                 await Promise.all([
                     deleteCachedConnectionsForProfileId(profile.profileId),
                     deleteCachedConnectionsForProfileId(targetProfile.profileId),
+                    invalidateInvite(profileId, challenge),
                 ]);
             }
 
@@ -608,8 +612,9 @@ export const profilesRouter = t.router({
                 path: '/profile/connections',
                 tags: ['Profiles'],
                 summary: 'View connections',
+                deprecated: true,
                 description:
-                    "This route shows the current user's connections.\nWarning! This route will soon be deprecated and currently has a hard limit of returning only the first 50 connections",
+                    "This route shows the current user's connections.\nWarning! This route is deprecated and currently has a hard limit of returning only the first 50 connections. Please use paginatedConnections instead!",
             },
         })
         .input(z.void())
@@ -632,6 +637,38 @@ export const profilesRouter = t.router({
             return connections;
         }),
 
+    paginatedConnections: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/profile/connections/paginated',
+                tags: ['Profiles'],
+                summary: 'View connections',
+                description: "This route shows the current user's connections",
+            },
+        })
+        .input(
+            PaginationOptionsValidator.extend({
+                limit: PaginationOptionsValidator.shape.limit.default(25),
+            }).default({})
+        )
+        .output(PaginatedLCNProfilesValidator)
+        .query(async ({ ctx, input }) => {
+            const { limit, cursor } = input;
+
+            const records = await getConnections(ctx.user.profile, { limit: limit + 1, cursor });
+
+            const hasMore = records.length > limit;
+            const newCursor = records.at(hasMore ? -2 : -1)?.displayName;
+
+            return {
+                hasMore: records.length > limit,
+                records: updateDidForProfiles(ctx.domain, records).slice(0, limit),
+                ...(newCursor && { cursor: newCursor }),
+            };
+        }),
+
     pendingConnections: profileRoute
         .meta({
             openapi: {
@@ -640,8 +677,9 @@ export const profilesRouter = t.router({
                 path: '/profile/pending-connections',
                 tags: ['Profiles'],
                 summary: 'View pending connections',
+                deprecated: true,
                 description:
-                    "This route shows the current user's pending connections.\nWarning! This route will soon be deprecated and currently has a hard limit of returning only the first 50 connections",
+                    "This route shows the current user's pending connections.\nWarning! This route is deprecated and currently has a hard limit of returning only the first 50 connections. Please use paginatedPendingConnections instead",
             },
         })
         .input(z.void())
@@ -652,6 +690,41 @@ export const profilesRouter = t.router({
             return connections.map(connection => updateDidForProfile(ctx.domain, connection));
         }),
 
+    paginatedPendingConnections: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/profile/pending-connections/paginated',
+                tags: ['Profiles'],
+                summary: 'View pending connections',
+                description: "This route shows the current user's pending connections",
+            },
+        })
+        .input(
+            PaginationOptionsValidator.extend({
+                limit: PaginationOptionsValidator.shape.limit.default(25),
+            }).default({})
+        )
+        .output(PaginatedLCNProfilesValidator)
+        .query(async ({ ctx, input }) => {
+            const { limit, cursor } = input;
+
+            const records = await getPendingConnections(ctx.user.profile, {
+                limit: limit + 1,
+                cursor,
+            });
+
+            const hasMore = records.length > limit;
+            const newCursor = records.at(hasMore ? -2 : -1)?.displayName;
+
+            return {
+                hasMore: records.length > limit,
+                records: updateDidForProfiles(ctx.domain, records).slice(0, limit),
+                ...(newCursor && { cursor: newCursor }),
+            };
+        }),
+
     connectionRequests: profileRoute
         .meta({
             openapi: {
@@ -660,8 +733,9 @@ export const profilesRouter = t.router({
                 path: '/profile/connection-requests',
                 tags: ['Profiles'],
                 summary: 'View connection requests',
+                deprecated: true,
                 description:
-                    "This route shows the current user's connection requests.\nWarning! This route will soon be deprecated and currently has a hard limit of returning only the first 50 connections",
+                    "This route shows the current user's connection requests.\nWarning! This route is deprecated and currently has a hard limit of returning only the first 50 connections. Please use paginatedConnectionRequests instead",
             },
         })
         .input(z.void())
@@ -670,6 +744,41 @@ export const profilesRouter = t.router({
             const connections = await getConnectionRequests(ctx.user.profile, { limit: 50 });
 
             return connections.map(connection => updateDidForProfile(ctx.domain, connection));
+        }),
+
+    paginatedConnectionRequests: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/profile/connection-requests/paginated',
+                tags: ['Profiles'],
+                summary: 'View connection requests',
+                description: "This route shows the current user's connection requests",
+            },
+        })
+        .input(
+            PaginationOptionsValidator.extend({
+                limit: PaginationOptionsValidator.shape.limit.default(25),
+            }).default({})
+        )
+        .output(PaginatedLCNProfilesValidator)
+        .query(async ({ ctx, input }) => {
+            const { limit, cursor } = input;
+
+            const records = await getConnectionRequests(ctx.user.profile, {
+                limit: limit + 1,
+                cursor,
+            });
+
+            const hasMore = records.length > limit;
+            const newCursor = records.at(hasMore ? -2 : -1)?.displayName;
+
+            return {
+                hasMore: records.length > limit,
+                records: updateDidForProfiles(ctx.domain, records).slice(0, limit),
+                ...(newCursor && { cursor: newCursor }),
+            };
         }),
 
     generateInvite: profileRoute
@@ -687,26 +796,51 @@ export const profilesRouter = t.router({
         .input(
             z
                 .object({
+                    expiration: z
+                        .number()
+                        .optional()
+                        .default(30 * 24 * 3600), // Default to 30 days in seconds
                     challenge: z.string().optional(),
-                    expiration: z.number().default(3600 * 24 * 30),
                 })
                 .optional()
+                .default({})
         )
-        .output(z.object({ profileId: z.string(), challenge: z.string() }))
+        .output(
+            z.object({
+                profileId: z.string(),
+                challenge: z.string(),
+                expiresIn: z.number().nullable(),
+            })
+        )
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const { challenge = uuid(), expiration } = input ?? {};
+            if (!profile) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Profile not found. Please create a profile first.',
+                });
+            }
 
-            if (await isInviteAlreadySetForProfile(profile.profileId, challenge)) {
+            const { expiration = 3600, challenge: inputChallenge } = input; // expiration now in seconds by default
+
+            // Use UUID for challenge if none is provided
+            const challenge = inputChallenge || uuid();
+
+            const isAlreadySet = await isInviteAlreadySetForProfile(profile.profileId, challenge);
+
+            if (isAlreadySet) {
                 throw new TRPCError({
                     code: 'CONFLICT',
                     message: 'Challenge already in use!',
                 });
             }
 
-            await setValidInviteForProfile(profile.profileId, challenge, expiration);
+            let expiresIn: number | null = expiration === 0 ? null : expiration;
 
-            return { profileId: profile.profileId, challenge };
+            // Set the invite with the calculated expiration time
+            await setValidInviteForProfile(profile.profileId, challenge, expiresIn ?? null);
+
+            return { profileId: profile.profileId, challenge, expiresIn };
         }),
 
     blockProfile: profileRoute

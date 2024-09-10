@@ -77,23 +77,51 @@ export const getConnections = async (
 
 export const getPendingConnections = async (
     profile: ProfileInstance,
-    { limit }: { limit: number }
-): Promise<ProfileInstance[]> => {
-    return (await profile.findRelationships({ alias: 'connectionRequested', limit })).map(
-        result => result.target
+    { limit, cursor }: { limit: number; cursor?: string }
+): Promise<ProfileType[]> => {
+    const _query = new QueryBuilder().match({
+        related: [
+            { model: Profile, where: { profileId: profile.profileId } },
+            Profile.getRelationshipByAlias('connectionRequested'),
+            { identifier: 'target', model: Profile },
+        ],
+    });
+
+    const query = cursor
+        ? _query.where(
+            new Where({ target: { displayName: { [Op.gt]: cursor } } }, _query.getBindParam())
+        )
+        : _query;
+
+    const results = convertQueryResultToPropertiesObjectArray<{ target: ProfileType }>(
+        await query.return('DISTINCT target').orderBy('target.displayName').limit(limit).run()
     );
+
+    return results.map(result => result.target);
 };
 export const getConnectionRequests = async (
     profile: ProfileInstance,
-    { limit }: { limit: number }
-): Promise<ProfileInstance[]> => {
-    return (
-        await Profile.findRelationships({
-            alias: 'connectionRequested',
-            where: { target: { profileId: profile.profileId } },
-            limit,
-        })
-    ).map(result => result.source);
+    { limit, cursor }: { limit: number; cursor?: string }
+): Promise<ProfileType[]> => {
+    const _query = new QueryBuilder().match({
+        related: [
+            { identifier: 'source', model: Profile },
+            Profile.getRelationshipByAlias('connectionRequested'),
+            { model: Profile, where: { profileId: profile.profileId } },
+        ],
+    });
+
+    const query = cursor
+        ? _query.where(
+            new Where({ source: { displayName: { [Op.gt]: cursor } } }, _query.getBindParam())
+        )
+        : _query;
+
+    const results = convertQueryResultToPropertiesObjectArray<{ source: ProfileType }>(
+        await query.return('DISTINCT source').orderBy('source.displayName').limit(limit).run()
+    );
+
+    return results.map(result => result.source);
 };
 
 /** Checks whether two profiles are already connected */

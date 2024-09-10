@@ -1,5 +1,57 @@
 # @welibraryos/react-learn-card
 
+## 2.7.6
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.29
+
+## 2.7.5
+
+### Patch Changes
+
+-   [#488](https://github.com/learningeconomy/LearnCard/pull/488) [`8ff55be`](https://github.com/learningeconomy/LearnCard/commit/8ff55be756f17e9b0ab0ae2d60def320d425fdc5) Thanks [@rhen92](https://github.com/rhen92)! - [LC-199] Wallet description
+
+## 2.7.4
+
+### Patch Changes
+
+-   [#485](https://github.com/learningeconomy/LearnCard/pull/485) [`aec3e346`](https://github.com/learningeconomy/LearnCard/commit/aec3e346611624a106e94428a1a5d63988d04cc7) Thanks [@goblincore](https://github.com/goblincore)! - chore: Update boost generic card spacing and formatting of content
+
+-   [#487](https://github.com/learningeconomy/LearnCard/pull/487) [`68550bb`](https://github.com/learningeconomy/LearnCard/commit/68550bb7f143897841defabdd13c5c9e5e1bf553) Thanks [@smurflo2](https://github.com/smurflo2)! - Truncate issuer name to 20 characters instead of 25
+
+## 2.7.3
+
+### Patch Changes
+
+-   [#482](https://github.com/learningeconomy/LearnCard/pull/482) [`a309dd0`](https://github.com/learningeconomy/LearnCard/commit/a309dd00210a1a2b2e90a0b2ccb3187b3d9c40e5) Thanks [@gerardopar](https://github.com/gerardopar)! - Update Props
+
+## 2.7.2
+
+### Patch Changes
+
+-   [#477](https://github.com/learningeconomy/LearnCard/pull/477) [`57898a5`](https://github.com/learningeconomy/LearnCard/commit/57898a5a810ea50583d3a9485fd98095251efc1d) Thanks [@rhen92](https://github.com/rhen92)! - [LC-235] Prevent attachment section from being crammed
+
+## 2.7.1
+
+### Patch Changes
+
+-   [#476](https://github.com/learningeconomy/LearnCard/pull/476) [`24372e9`](https://github.com/learningeconomy/LearnCard/commit/24372e9d85180a077ec4b06e3c6e6659b9b6b5f8) Thanks [@smurflo2](https://github.com/smurflo2)! - Add support for issuer badges (e.g. trusted/untrusted/unknown issuer)
+
+## 2.7.0
+
+### Minor Changes
+
+-   [#468](https://github.com/learningeconomy/LearnCard/pull/468) [`32154c01`](https://github.com/learningeconomy/LearnCard/commit/32154c01aa64ea8cfe612fd93ed1a710bb043d95) Thanks [@smurflo2](https://github.com/smurflo2)! - Make clicking anywhere on a credential 'flip' it
+
+## 2.6.79
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.28
+
 ## 2.6.78
 
 ### Patch Changes

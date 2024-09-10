@@ -1,5 +1,17 @@
 # @learncard/network-brain-service
 
+## 2.1.0
+
+### Minor Changes
+
+-   [#345](https://github.com/learningeconomy/LearnCard/pull/345) [`21bd232d`](https://github.com/learningeconomy/LearnCard/commit/21bd232df25387408d585bbbeb493056c95a7496) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Paginate connections, getConnections, connectionRequests, getBoosts, and getBoostRecipients
+
+## 2.0.1
+
+### Patch Changes
+
+-   [#474](https://github.com/learningeconomy/LearnCard/pull/474) [`5284d78`](https://github.com/learningeconomy/LearnCard/commit/5284d7845f91a8a15cfeec4506843e74dc343d44) Thanks [@cboydstun](https://github.com/cboydstun)! - Allow unlimited expiration for invite links
+
 ## 2.0.0
 
 ### Major Changes

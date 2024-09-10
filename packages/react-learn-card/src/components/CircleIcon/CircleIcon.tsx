@@ -77,7 +77,7 @@ export const CircleIcon: React.FC<CircleIconProps> = ({
         <div style={style} className={`rounded-full ${iconCircleClass}`}>
             <section
                 onClick={onClick}
-                className={`flex flex-row-reverse justify-center items-center rounded-full relative overflow-hidden w-16 `}
+                className={`flex flex-row-reverse justify-between items-center rounded-full relative overflow-hidden w-16 `}
                 style={{ ...style, backgroundColor: 'transparent' }}
             >
                 <CountCircle count={count} loading={loading} />

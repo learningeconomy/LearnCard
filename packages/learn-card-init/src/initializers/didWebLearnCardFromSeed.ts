@@ -15,7 +15,7 @@ import { getCHAPIPlugin } from '@learncard/chapi-plugin';
 import { getLearnCardPlugin } from '@learncard/learn-card-plugin';
 import { getDidWebPlugin } from '@learncard/did-web-plugin';
 
-import { DidWebLearnCardFromSeed } from 'types/LearnCard';
+import { DidWebLearnCardFromSeed } from '../types/LearnCard';
 import { defaultCeramicIDXArgs, defaultEthereumArgs } from '../defaults';
 
 /**

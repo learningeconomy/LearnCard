@@ -4,6 +4,7 @@
 
 export * from "./AlignmentRow";
 export * from "./AlignmentsBox";
+export * from "./CertDisplayCardSkillsCount";
 export * from "./CertificateBackFace";
 export * from "./CertificateCornerIcon";
 export * from "./CertificateDisplayCard";
@@ -16,3 +17,4 @@ export * from "./MediaAttachmentsBox";
 export * from "./TruncateTextBox";
 export * from "./VerificationRow";
 export * from "./VerificationsBox";
+export * from "./VerifierStateBadgeAndText";

@@ -1,5 +1,11 @@
 # @learncard/network-brain-client
 
+## 1.2.0
+
+### Minor Changes
+
+-   [#490](https://github.com/learningeconomy/LearnCard/pull/490) [`86f5b38`](https://github.com/learningeconomy/LearnCard/commit/86f5b388d7a5a0640655f4c148ff568af8cfbddd) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Set Max URL Length
+
 ## 1.1.35
 
 ### Patch Changes

@@ -1,38 +1,25 @@
 import { createTRPCProxyClient, CreateTRPCProxyClient, httpBatchLink } from '@trpc/client';
-import type { inferRouterInputs } from '@trpc/server';
-import type { UnsignedVC, VC, VP, JWE, Boost } from '@learncard/types';
 import type { AppRouter } from '@learncard/network-brain-service';
 
 import { callbackLink } from './callbackLink';
 
-type Inputs = inferRouterInputs<AppRouter>;
-
-type Client = CreateTRPCProxyClient<AppRouter>;
-
-export type LCNClient = Omit<Client, 'storage' | 'boost'> & {
-    storage: Client['storage'] & {
-        resolve: {
-            query: (args: Inputs['storage']['resolve']) => Promise<VC | UnsignedVC | VP | JWE>;
-        };
-    };
-    boost: Omit<Client['boost'], 'getBoost'> & {
-        getBoost: {
-            query: (args: Inputs['boost']['getBoost']) => Promise<Boost & { boost: UnsignedVC }>;
-        };
-    };
-};
+export type LCNClient = CreateTRPCProxyClient<AppRouter>;
 
 export const getClient = async (
     url: string,
     didAuthFunction: (challenge?: string) => Promise<string>
-) => {
+): Promise<LCNClient> => {
     let challenges: string[] = [];
 
     const challengeRequester = createTRPCProxyClient<AppRouter>({
         links: [
-            httpBatchLink({ url, headers: { Authorization: `Bearer ${await didAuthFunction()}` } }),
+            httpBatchLink({
+                url,
+                maxURLLength: 2048,
+                headers: { Authorization: `Bearer ${await didAuthFunction()}` },
+            }),
         ],
-    }) as LCNClient;
+    });
 
     const getChallenges = async (
         amount = 95 + Math.round((Math.random() - 0.5) * 5)
@@ -48,6 +35,7 @@ export const getClient = async (
                 challenges = await getChallenges();
             }),
             httpBatchLink({
+                maxURLLength: 2048,
                 url,
                 headers: async () => {
                     if (challenges.length === 0) challenges.push(...(await getChallenges()));
@@ -56,7 +44,7 @@ export const getClient = async (
                 },
             }),
         ],
-    }) as LCNClient;
+    });
 
     return trpc;
 };

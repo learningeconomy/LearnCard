@@ -19,7 +19,7 @@ import { LearnCardPlugin } from '@learncard/learn-card-plugin';
 import { VerifyBoostPlugin, LearnCardNetworkPlugin } from '@learncard/network-plugin';
 import { DidWebPlugin } from '@learncard/did-web-plugin';
 
-import { InitFunction, GenericInitFunction } from 'types/helpers';
+import { InitFunction, GenericInitFunction } from './helpers';
 
 /** @group LearnCard */
 export type LearnCardConfig = {

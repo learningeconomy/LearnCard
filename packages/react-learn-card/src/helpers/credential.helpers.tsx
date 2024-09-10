@@ -13,7 +13,10 @@ import { CredentialInfo, LCCategoryEnum } from '../types';
 import SocialBadgesIcon from '../components/svgs/SocialBadgesIcon';
 import PuzzlePiece from '../components/svgs/PuzzlePiece';
 import KeyIcon from '../components/svgs/KeyIcon';
-import { Briefcase, Graduation, Trophy, User } from '../components';
+import User from '../components/svgs/User';
+import Trophy from '../components/svgs/Trophy';
+import Graduation from '../components/svgs/Graduation';
+import Briefcase from '../components/svgs/Briefcase';
 import AccommodationsIcon from '../components/svgs/AccommodationsIcon';
 import AccomplishmentsIcon from '../components/svgs/AccomplishmentsIcon';
 

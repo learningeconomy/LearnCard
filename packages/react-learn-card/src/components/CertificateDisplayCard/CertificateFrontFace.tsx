@@ -2,13 +2,9 @@ import React from 'react';
 
 import CertificateCornerIcon from './CertificateCornerIcon';
 import CertificateImageDisplay from './CertificateImageDisplay';
+import CertDisplayCardSkillsCount from './CertDisplayCardSkillsCount';
 import CertificateProfileImageDisplay from './CertificateProfileImageDisplay';
-import { VCDisplayCardSkillsCount } from '../VCDisplayCard2';
 
-import UnknownVerifierBadge from '../svgs/UnknownVerifierBadge';
-import VerifiedBadge from '../svgs/VerifiedBadge';
-import PersonBadge from '../svgs/PersonBadge';
-import RedFlag from '../svgs/RedFlag';
 import Smiley from '../svgs/Smiley';
 import Line from '../svgs/Line';
 
@@ -22,14 +18,10 @@ import {
 
 import { VC, Profile } from '@learncard/types';
 import { BoostAchievementCredential, LCCategoryEnum } from '../../types';
-
-const VERIFIER_STATES = {
-    selfVerified: 'Self Verified',
-    trustedVerifier: 'Trusted Verifier',
-    unknownVerifier: 'Unknown Verifier',
-    untrustedVerifier: 'Untrusted Verifier',
-} as const;
-type VerifierState = (typeof VERIFIER_STATES)[keyof typeof VERIFIER_STATES];
+import VerifierStateBadgeAndText, {
+    VerifierState,
+    VERIFIER_STATES,
+} from './VerifierStateBadgeAndText';
 
 type CertificateFrontFaceProps = {
     isFront?: boolean;
@@ -131,7 +123,11 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
     const issueeImageExists = issueeImage || subjectImageComponent;
 
     return (
-        <section className="relative p-[13px] mt-[55px] bg-white border-[5px] rounded-[30px] border-soid border-grayscale-200 max-w-[300px]">
+        <section
+            role="button"
+            onClick={() => handleViewBackFace?.()}
+            className="relative p-[13px] mt-[55px] bg-white border-[5px] rounded-[30px] border-soid border-grayscale-200 max-w-[300px]"
+        >
             <div className="w-[calc(100%-26px)] absolute top-[-52px]">
                 <CertificateImageDisplay
                     imageUrl={imageUrl ?? ''}
@@ -171,7 +167,7 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
 
                 <div className="text-[14px] text-grayscale-800 flex flex-col items-center w-full">
                     <span className="font-jacques flex gap-[5px] items-center w-full overflow-ellipsis whitespace-nowrap overflow-hidden justify-center">
-                        Awarded to {issueeName || <Line width="60" />}
+                        {issueeName === '0 person' ? 'Not yet awarded' : <>Awarded to {issueeName || <Line width="60" />}</>}
                     </span>
                     {!hideIssueDate && <span className="font-jacques">on {createdAt}</span>}
                 </div>
@@ -183,7 +179,7 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
                         </div>
                     )}
 
-                    <VCDisplayCardSkillsCount
+                    <CertDisplayCardSkillsCount
                         skills={credential?.skills ?? []}
                         onClick={handleViewBackFace}
                     />
@@ -207,30 +203,7 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
                         {issuerName}
                     </span>
 
-                    {isSelfVerified && (
-                        <span className="uppercase font-poppins text-[12px] font-[500] text-green-dark flex gap-[3px] items-center">
-                            <PersonBadge />
-                            Self Verified
-                        </span>
-                    )}
-                    {verifierState === VERIFIER_STATES.trustedVerifier && (
-                        <span className="uppercase font-poppins text-[12px] font-[500] text-blue-light flex gap-[3px] items-center">
-                            <VerifiedBadge />
-                            Trusted Verifier
-                        </span>
-                    )}
-                    {verifierState === VERIFIER_STATES.unknownVerifier && (
-                        <span className="uppercase font-poppins text-[12px] font-[500] text-orange-500 flex gap-[3px] items-center">
-                            <UnknownVerifierBadge />
-                            Unknown Verifier
-                        </span>
-                    )}
-                    {verifierState === VERIFIER_STATES.untrustedVerifier && (
-                        <span className="uppercase font-poppins text-[12px] font-[500] text-red-mastercard flex gap-[3px] items-center">
-                            <RedFlag />
-                            Untrusted Verifier
-                        </span>
-                    )}
+                    <VerifierStateBadgeAndText verifierState={verifierState} />
                 </div>
             </div>
 

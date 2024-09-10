@@ -15,7 +15,7 @@ import { getCHAPIPlugin } from '@learncard/chapi-plugin';
 import { getVerifyBoostPlugin, getLearnCardNetworkPlugin } from '@learncard/network-plugin';
 import { getLearnCardPlugin } from '@learncard/learn-card-plugin';
 
-import { NetworkLearnCardFromSeed } from 'types/LearnCard';
+import { NetworkLearnCardFromSeed } from '../types/LearnCard';
 import { defaultCeramicIDXArgs, defaultEthereumArgs } from '../defaults';
 
 /**

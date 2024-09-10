@@ -346,7 +346,6 @@ export const contractsRouter = t.router({
             }
 
             if (!areTermsValid(terms, contractDetails.contract.contract)) {
-                console.log(terms);
                 throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid Terms for Contract' });
             }
 

@@ -8,6 +8,7 @@ import {
     Profile,
     ConsentFlowContractValidator,
     ConsentFlowTermsValidator,
+    JWE,
 } from '@learncard/types';
 import { LearnCard } from '@learncard/core';
 import { VerifyExtension } from '@learncard/vc-plugin';
@@ -78,7 +79,9 @@ export const getLearnCardNetworkPlugin = async (
                     let result = await client.storage.resolve.query({ uri: vcUri });
 
                     if ('ciphertext' in result) {
-                        result = await _learnCard.invoke.getDIDObject().decryptDagJWE(result);
+                        result = (await _learnCard.invoke
+                            .getDIDObject()
+                            .decryptDagJWE(result as JWE)) as any;
                     }
 
                     return await VCValidator.or(VPValidator).parseAsync(result);
@@ -215,20 +218,47 @@ export const getLearnCardNetworkPlugin = async (
 
                 return client.profile.acceptConnectionRequest.mutate({ profileId });
             },
-            getConnections: async () => {
+            getConnections: async _learnCard => {
+                console.warn(
+                    'The getConnections method is deprecated! Please use getPaginatedConnections instead!'
+                );
+
                 if (!userData) throw new Error('Please make an account first!');
 
                 return client.profile.connections.query();
             },
-            getPendingConnections: async () => {
+            getPaginatedConnections: async (_learnCard, options) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.profile.paginatedConnections.query(options);
+            },
+            getPendingConnections: async _learnCard => {
+                console.warn(
+                    'The getPendingConnections method is deprecated! Please use getPaginatedPendingConnections instead!'
+                );
+
                 if (!userData) throw new Error('Please make an account first!');
 
                 return client.profile.pendingConnections.query();
             },
-            getConnectionRequests: async () => {
+            getPaginatedPendingConnections: async (_learnCard, options) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.profile.paginatedPendingConnections.query(options);
+            },
+            getConnectionRequests: async _learnCard => {
+                console.warn(
+                    'The getConnectionRequests method is deprecated! Please use getPaginatedConnectionRequests instead!'
+                );
+
                 if (!userData) throw new Error('Please make an account first!');
 
                 return client.profile.connectionRequests.query();
+            },
+            getPaginatedConnectionRequests: async (_learnCard, options) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.profile.paginatedConnectionRequests.query(options);
             },
 
             generateInvite: async (_learnCard, challenge, expiration) => {
@@ -351,10 +381,19 @@ export const getLearnCardNetworkPlugin = async (
 
                 return client.boost.getBoost.query({ uri });
             },
-            getBoosts: async () => {
+            getBoosts: async _learnCard => {
+                console.warn(
+                    'The getBoosts method is deprecated! Please use getPaginatedBoosts instead!'
+                );
+
                 if (!userData) throw new Error('Please make an account first!');
 
                 return client.boost.getBoosts.query();
+            },
+            getPaginatedBoosts: async (_learnCard, options) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.boost.getPaginatedBoosts.query(options);
             },
             getBoostRecipients: async (
                 _learnCard,
@@ -363,12 +402,32 @@ export const getLearnCardNetworkPlugin = async (
                 skip = undefined,
                 includeUnacceptedBoosts = true
             ) => {
+                console.warn(
+                    'The getBoostRecipients method is deprecated! Please use getPaginatedBoostRecipients instead!'
+                );
+
                 if (!userData) throw new Error('Please make an account first!');
 
                 return client.boost.getBoostRecipients.query({
                     uri,
                     limit,
                     skip,
+                    includeUnacceptedBoosts,
+                });
+            },
+            getPaginatedBoostRecipients: async (
+                _learnCard,
+                uri,
+                limit = 25,
+                cursor = undefined,
+                includeUnacceptedBoosts = true
+            ) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.boost.getPaginatedBoostRecipients.query({
+                    uri,
+                    limit,
+                    cursor,
                     includeUnacceptedBoosts,
                 });
             },

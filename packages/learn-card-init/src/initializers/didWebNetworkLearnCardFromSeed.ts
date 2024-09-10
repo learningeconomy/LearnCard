@@ -16,7 +16,7 @@ import { getVerifyBoostPlugin, getLearnCardNetworkPlugin } from '@learncard/netw
 import { getLearnCardPlugin } from '@learncard/learn-card-plugin';
 import { getDidWebPlugin } from '@learncard/did-web-plugin';
 
-import { DidWebNetworkLearnCardFromSeed } from 'types/LearnCard';
+import { DidWebNetworkLearnCardFromSeed } from '../types/LearnCard';
 import { defaultCeramicIDXArgs, defaultEthereumArgs } from '../defaults';
 
 /**
