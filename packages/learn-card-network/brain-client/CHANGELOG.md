@@ -1,5 +1,123 @@
 # @learncard/network-brain-client
 
+## 1.3.0
+
+### Minor Changes
+
+-   [#490](https://github.com/learningeconomy/LearnCard/pull/490) [`86f5b38`](https://github.com/learningeconomy/LearnCard/commit/86f5b388d7a5a0640655f4c148ff568af8cfbddd) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Set Max URL Length
+
+### Patch Changes
+
+-   Updated dependencies [[`21bd232d`](https://github.com/learningeconomy/LearnCard/commit/21bd232df25387408d585bbbeb493056c95a7496)]:
+    -   @learncard/network-brain-service@2.1.0
+
+## 1.2.31
+
+### Patch Changes
+
+-   Updated dependencies [[`5284d78`](https://github.com/learningeconomy/LearnCard/commit/5284d7845f91a8a15cfeec4506843e74dc343d44)]:
+    -   @learncard/network-brain-service@2.0.1
+
+## 1.2.30
+
+### Patch Changes
+
+-   Updated dependencies [[`2f3aa34`](https://github.com/learningeconomy/LearnCard/commit/2f3aa34782441778f88300bf035cd66a6898ab06)]:
+    -   @learncard/network-brain-service@2.0.0
+
+## 1.2.29
+
+### Patch Changes
+
+-   Updated dependencies [[`af00e42`](https://github.com/learningeconomy/LearnCard/commit/af00e4228419d4778f54af66843bb829922992ac)]:
+    -   @learncard/network-brain-service@1.10.9
+
+## 1.2.28
+
+### Patch Changes
+
+-   [#463](https://github.com/learningeconomy/LearnCard/pull/463) [`e45c929`](https://github.com/learningeconomy/LearnCard/commit/e45c9292ffd1944f875beed0792a55b7942b1657) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Expose Client type
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-service@1.10.8
+
+## 1.2.27
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-service@1.10.7
+
+## 1.2.26
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-service@1.10.6
+
+## 1.2.25
+
+### Patch Changes
+
+-   Updated dependencies [[`e70c1671`](https://github.com/learningeconomy/LearnCard/commit/e70c1671213712527d0df447ff25ba7f101f94ae), [`e70c1671`](https://github.com/learningeconomy/LearnCard/commit/e70c1671213712527d0df447ff25ba7f101f94ae), [`e70c1671`](https://github.com/learningeconomy/LearnCard/commit/e70c1671213712527d0df447ff25ba7f101f94ae), [`e70c1671`](https://github.com/learningeconomy/LearnCard/commit/e70c1671213712527d0df447ff25ba7f101f94ae), [`e70c1671`](https://github.com/learningeconomy/LearnCard/commit/e70c1671213712527d0df447ff25ba7f101f94ae), [`587736f`](https://github.com/learningeconomy/LearnCard/commit/587736fd8e562d17b9dfbfcd058572c133367c02)]:
+    -   @learncard/network-brain-service@1.10.5
+
+## 1.2.24
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-service@1.10.4
+
+## 1.2.23
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-service@1.10.3
+
+## 1.2.22
+
+### Patch Changes
+
+-   Updated dependencies [[`20095aa`](https://github.com/learningeconomy/LearnCard/commit/20095aa8e867b6a5c62a82f6d123366acb4fdcb0)]:
+    -   @learncard/network-brain-service@1.10.2
+
+## 1.2.21
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-service@1.10.1
+
+## 1.2.20
+
+### Patch Changes
+
+-   Updated dependencies [[`725e508c`](https://github.com/learningeconomy/LearnCard/commit/725e508c848b8c7752f44e5bf9915eebb421d766), [`725e508c`](https://github.com/learningeconomy/LearnCard/commit/725e508c848b8c7752f44e5bf9915eebb421d766)]:
+    -   @learncard/network-brain-service@1.10.0
+
+## 1.2.19
+
+### Patch Changes
+
+-   Updated dependencies [[`aa2fac6`](https://github.com/learningeconomy/LearnCard/commit/aa2fac6cf86d662aadd4185fc36da999360620cf)]:
+    -   @learncard/network-brain-service@1.9.0
+
+## 1.2.18
+
+### Patch Changes
+
+-   Updated dependencies [[`02e5d4d`](https://github.com/learningeconomy/LearnCard/commit/02e5d4d1b9ae37e2e1d14f004348a73a18fb733f)]:
+    -   @learncard/network-brain-service@1.8.2
+
+## 1.2.17
+
+### Patch Changes
+
+-   Updated dependencies [[`8c6ef15`](https://github.com/learningeconomy/LearnCard/commit/8c6ef15f185af7547efb39885dba966b164797ac)]:
+    -   @learncard/network-brain-service@1.8.1
+
 ## 1.2.16
 
 ### Patch Changes

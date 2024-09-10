@@ -1,6 +1,6 @@
 {
     "name": "@learncard/chapi-plugin",
-    "version": "1.0.18",
+    "version": "1.0.26",
     "description": "",
     "main": "./dist/index.js",
     "module": "./dist/chapi-plugin.esm.js",
@@ -39,14 +39,7 @@
     "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/didkit-plugin": "workspace:^",
-        "credential-handler-polyfill": "^3.0.0",
+        "credential-handler-polyfill": "^3.2.1",
         "web-credential-handler": "^2.0.0"
-    },
-    "pnpm": {
-        "overrides": {
-            "pvutils": "1.0.17",
-            "did-jwt": "5.9.0",
-            "@ceramicnetwork/streamid": "2.7.0"
-        }
     }
 }

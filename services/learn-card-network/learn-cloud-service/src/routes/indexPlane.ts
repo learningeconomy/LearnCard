@@ -48,13 +48,14 @@ export const indexRouter = t.router({
                 limit: PaginationOptionsValidator.shape.limit.default(25),
                 query: z.record(z.any()).or(JWEValidator).optional(),
                 encrypt: z.boolean().default(true),
+                sort: z.enum(['newestFirst', 'oldestFirst']).default('newestFirst'),
                 includeAssociatedDids: z.boolean().default(true),
             }).default({})
         )
         .output(PaginatedEncryptedCredentialRecordsValidator.or(JWEValidator))
         .query(async ({ ctx, input }) => {
             const learnCard = await getLearnCard();
-            const { query: _query, encrypt, limit, cursor, includeAssociatedDids } = input;
+            const { query: _query, encrypt, limit, cursor, includeAssociatedDids, sort } = input;
             const {
                 user: { did },
             } = ctx;
@@ -68,7 +69,7 @@ export const indexRouter = t.router({
             const cachedResponse = await getCachedIndexPageForDid(
                 did,
                 query,
-                { limit, cursor },
+                { limit, cursor, sort },
                 includeAssociatedDids
             );
 
@@ -79,6 +80,7 @@ export const indexRouter = t.router({
             const rawResults = await getCredentialRecordsForDid(
                 did,
                 query,
+                sort,
                 cursor,
                 limit + 1,
                 includeAssociatedDids
@@ -108,7 +110,7 @@ export const indexRouter = t.router({
             await setCachedIndexPageForDid(
                 did,
                 query,
-                { limit, cursor },
+                { limit, cursor, sort },
                 paginationResult,
                 includeAssociatedDids
             );

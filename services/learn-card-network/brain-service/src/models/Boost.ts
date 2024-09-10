@@ -21,12 +21,12 @@ export const Boost = ModelFactory<BoostType, BoostRelationships>(
         label: 'Boost',
         schema: {
             id: { type: 'string', required: true, uniqueItems: true },
-            name: { type: 'string' },
-            type: { type: 'string' },
-            category: { type: 'string' },
-            autoConnectRecipients: { type: 'boolean' },
+            name: { type: 'string', required: false },
+            type: { type: 'string', required: false },
+            category: { type: 'string', required: false },
+            autoConnectRecipients: { type: 'boolean', required: false },
             boost: { type: 'string', required: true },
-            status: { type: 'string', enum: BoostStatus.options },
+            status: { type: 'string', enum: BoostStatus.options, required: false },
         },
         primaryKeyField: 'id',
         relationships: {
@@ -35,7 +35,7 @@ export const Boost = ModelFactory<BoostType, BoostRelationships>(
                 direction: 'out',
                 name: 'CREATED_BY',
                 properties: {
-                    date: { property: 'date', schema: { type: 'string' } },
+                    date: { property: 'date', schema: { type: 'string', required: true } },
                 },
             },
         },

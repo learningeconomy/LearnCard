@@ -152,6 +152,18 @@ export const AllFieldsCredential = {
             url: 'https://vimeo.com/406283337',
         },
     ],
+    skills: [
+        {
+            category: 'digital',
+            skill: 'softwareProficiency',
+            subskills: ['productivitySuites', 'specializedSoftware', 'designSoftware'],
+        },
+        {
+            category: 'stem',
+            skill: 'technology',
+            subskills: ['coding', 'softwareDevelopment', 'dataAnalysis'],
+        },
+    ],
 };
 
 export const AllFieldsBackgroundColorCredential = {
@@ -240,8 +252,21 @@ export const BoostCredential = {
     display: {
         backgroundColor: '#4e4e',
         backgroundImage: 'https://cdn.filestackcontent.com/wYXbETSCSOSThnZOFJLQ',
+        displayType: 'certificate',
     },
     name: 'test achievement vc',
+    skills: [
+        {
+            category: 'digital',
+            skill: 'softwareProficiency',
+            subskills: ['productivitySuites', 'specializedSoftware', 'designSoftware'],
+        },
+        {
+            category: 'stem',
+            skill: 'technology',
+            subskills: ['coding', 'softwareDevelopment', 'dataAnalysis'],
+        },
+    ],
 };
 
 export const TestVerificationItems = {

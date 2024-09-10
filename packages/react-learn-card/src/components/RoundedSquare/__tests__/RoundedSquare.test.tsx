@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import React from 'react';
 import '@testing-library/jest-dom';
 import userEvent from '@testing-library/user-event';
@@ -23,7 +24,7 @@ describe('RoundedSquare', () => {
     });
 
     it('calls onClick', async () => {
-        const handleOnClick = jest.fn();
+        const handleOnClick = vi.fn();
         const user = userEvent.setup();
 
         render(<RoundedSquare onClick={handleOnClick} />);

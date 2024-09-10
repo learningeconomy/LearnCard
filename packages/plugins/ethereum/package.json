@@ -1,6 +1,6 @@
 {
     "name": "@learncard/ethereum-plugin",
-    "version": "1.0.8",
+    "version": "1.0.12",
     "description": "",
     "main": "./dist/index.js",
     "module": "./dist/ethereum-plugin.esm.js",

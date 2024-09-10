@@ -27,7 +27,7 @@ custom:
         plugins: esbuildPlugins.cjs
         bundle: true
         minify: true
-        external: ['@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm']
+        external: ['@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm', 'p-limit']
         sourcemap: external
         target: 'node16'
         watch:
@@ -80,6 +80,7 @@ package:
   patterns: 
     - '!node_modules/**'
     - 'node_modules/@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm'
+    - 'src/swagger-ui'
 
 provider:
     name: aws

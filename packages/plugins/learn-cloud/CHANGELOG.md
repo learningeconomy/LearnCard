@@ -1,5 +1,85 @@
 # learn-card-core
 
+## 2.0.5
+
+### Patch Changes
+
+-   Updated dependencies [[`86f5b38`](https://github.com/learningeconomy/LearnCard/commit/86f5b388d7a5a0640655f4c148ff568af8cfbddd)]:
+    -   @learncard/learn-cloud-client@1.2.0
+
+## 2.0.4
+
+### Patch Changes
+
+-   Updated dependencies [[`e45c929`](https://github.com/learningeconomy/LearnCard/commit/e45c9292ffd1944f875beed0792a55b7942b1657)]:
+    -   @learncard/core@9.3.0
+    -   @learncard/didkit-plugin@1.4.8
+    -   @learncard/learn-cloud-client@1.1.35
+
+## 2.0.3
+
+### Patch Changes
+
+-   Updated dependencies [[`9a8dbb3`](https://github.com/learningeconomy/LearnCard/commit/9a8dbb336bdda2ff3080cd1cb70f7c929d0db261)]:
+    -   @learncard/didkit-plugin@1.4.7
+    -   @learncard/learn-cloud-client@1.1.34
+
+## 2.0.2
+
+### Patch Changes
+
+-   Updated dependencies [[`30aeb31`](https://github.com/learningeconomy/LearnCard/commit/30aeb31b467661d2036baa97a01e31ceca1588f8)]:
+    -   @learncard/didkit-plugin@1.4.6
+    -   @learncard/learn-cloud-client@1.1.33
+
+## 2.0.1
+
+### Patch Changes
+
+-   Updated dependencies [[`e70c1671`](https://github.com/learningeconomy/LearnCard/commit/e70c1671213712527d0df447ff25ba7f101f94ae)]:
+    -   @learncard/didkit-plugin@1.4.5
+    -   @learncard/core@9.2.1
+    -   @learncard/helpers@1.0.13
+    -   @learncard/learn-cloud-client@1.1.32
+
+## 2.0.0
+
+### Major Changes
+
+-   [#433](https://github.com/learningeconomy/LearnCard/pull/433) [`be01a1a`](https://github.com/learningeconomy/LearnCard/commit/be01a1a3d1b5dde523b1dcfb5be2a2452f26f7a7) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Change default sort order for index plane and allow changing sort order of index plane
+
+### Patch Changes
+
+-   Updated dependencies [[`be01a1a`](https://github.com/learningeconomy/LearnCard/commit/be01a1a3d1b5dde523b1dcfb5be2a2452f26f7a7)]:
+    -   @learncard/core@9.2.0
+    -   @learncard/helpers@1.0.12
+    -   @learncard/learn-cloud-client@1.1.31
+    -   @learncard/didkit-plugin@1.4.4
+
+## 1.1.30
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-client@1.1.30
+
+## 1.1.29
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-client@1.1.29
+
+## 1.1.28
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.1.4
+    -   @learncard/helpers@1.0.11
+    -   @learncard/learn-cloud-client@1.1.28
+    -   @learncard/didkit-plugin@1.4.3
+
 ## 1.1.27
 
 ### Patch Changes

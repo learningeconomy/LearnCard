@@ -20,7 +20,10 @@ const VerificationsBox: React.FC<VerificationsBoxProps> = ({ verificationItems }
             </h3>
             <button
                 className="absolute top-[17px] right-[17px]"
-                onClick={() => setShowInfo(!showInfo)}
+                onClick={e => {
+                    e.stopPropagation();
+                    setShowInfo(!showInfo);
+                }}
             >
                 <InfoIcon color={showInfo ? '#6366F1' : undefined} />
             </button>

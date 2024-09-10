@@ -540,8 +540,8 @@ describe('Index', () => {
                 encrypt: false,
             })) as PaginatedEncryptedCredentialRecordsType;
 
-            const recordA = records.records[0]!;
-            const recordB = records.records[1]!;
+            const recordA = records.records[1]!;
+            const recordB = records.records[0]!;
 
             expect(recordA.id).toEqual('testRecordA');
             expect(recordB.id).toEqual('testRecordB');
@@ -559,8 +559,8 @@ describe('Index', () => {
                 throw new Error('Check encrypt: false option in index.get');
             }
 
-            const recordAPostUpdate = newRecords.records[0]!;
-            const recordBPostUpdate = newRecords.records[1]!;
+            const recordAPostUpdate = newRecords.records[1]!;
+            const recordBPostUpdate = newRecords.records[0]!;
 
             expect(recordAPostUpdate.id).toEqual('testRecordA');
             expect(recordBPostUpdate.id).toEqual('testRecordB');
@@ -571,7 +571,7 @@ describe('Index', () => {
                 encrypt: false,
             })) as PaginatedEncryptedCredentialRecordsType;
 
-            const recordPreUpdate = records.records[0]!;
+            const recordPreUpdate = records.records[1]!;
 
             expect(recordPreUpdate.title).toEqual('Record A');
 
@@ -587,9 +587,34 @@ describe('Index', () => {
                 throw new Error('Check encrypt: false option in index.get');
             }
 
-            const recordPostUpdate = newRecords.records[0]!;
+            const recordPostUpdate = newRecords.records[1]!;
 
             expect(recordPostUpdate.title).toEqual('Different');
+        });
+
+        it('should allow changing sort order', async () => {
+            const defaultSort = (await userA.clients.fullAuth.index.get({
+                encrypt: false,
+            })) as PaginatedEncryptedCredentialRecordsType;
+
+            expect(defaultSort.records[0]?.title).toEqual('Record B');
+            expect(defaultSort.records[1]?.title).toEqual('Record A');
+
+            const oldestFirst = (await userA.clients.fullAuth.index.get({
+                encrypt: false,
+                sort: 'oldestFirst',
+            })) as PaginatedEncryptedCredentialRecordsType;
+
+            expect(oldestFirst.records[0]?.title).toEqual('Record A');
+            expect(oldestFirst.records[1]?.title).toEqual('Record B');
+
+            const newestFirst = (await userA.clients.fullAuth.index.get({
+                encrypt: false,
+                sort: 'newestFirst',
+            })) as PaginatedEncryptedCredentialRecordsType;
+
+            expect(newestFirst.records[0]?.title).toEqual('Record B');
+            expect(newestFirst.records[1]?.title).toEqual('Record A');
         });
     });
 

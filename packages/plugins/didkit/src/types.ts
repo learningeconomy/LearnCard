@@ -1,4 +1,12 @@
-import { JWK, UnsignedVC, UnsignedVP, VC, VP, VerificationCheck } from '@learncard/types';
+import {
+    JWK,
+    UnsignedVC,
+    UnsignedVP,
+    VC,
+    VP,
+    VerificationCheck,
+    DidDocument,
+} from '@learncard/types';
 import type { DIDResolutionResult } from 'dids';
 import { Plugin } from '@learncard/core';
 
@@ -60,7 +68,7 @@ export type DidkitPluginMethods = {
         options?: ProofOptions
     ) => Promise<VerificationCheck>;
     contextLoader: (url: string) => Promise<Record<string, any>>;
-    resolveDid: (did: string, inputMetadata?: InputMetadata) => Promise<Record<string, any>>;
+    resolveDid: (did: string, inputMetadata?: InputMetadata) => Promise<DidDocument>;
     didResolver: (did: string, inputMetadata?: InputMetadata) => Promise<DIDResolutionResult>;
 };
 

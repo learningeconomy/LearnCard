@@ -1,2 +1,2 @@
 export * from './init';
-export * from 'types/LearnCard';
+export * from './types/LearnCard';

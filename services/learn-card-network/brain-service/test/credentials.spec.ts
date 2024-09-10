@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { getClient, getUser } from './helpers/getClient';
 import { testVc, sendCredential } from './helpers/send';
 import { Profile, Credential } from '@models';
@@ -105,13 +106,10 @@ describe('Credentials', () => {
     describe('receivedCredentials', () => {
         beforeEach(async () => {
             await Profile.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
 
             await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
             await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
-        });
-
-        beforeEach(async () => {
-            await Credential.delete({ detach: true, where: {} });
         });
 
         it('should require full auth to get received credentials', async () => {
@@ -152,7 +150,7 @@ describe('Credentials', () => {
         });
 
         it('should show when the credential was sent/received', async () => {
-            jest.useFakeTimers().setSystemTime(new Date('02-06-2023'));
+            vi.useFakeTimers().setSystemTime(new Date('02-06-2023'));
             const sent = new Date().toISOString();
 
             const uri = await userA.clients.fullAuth.credential.sendCredential({
@@ -160,7 +158,7 @@ describe('Credentials', () => {
                 credential: testVc,
             });
 
-            jest.setSystemTime(new Date('02-07-2023'));
+            vi.setSystemTime(new Date('02-07-2023'));
             const received = new Date().toISOString();
 
             await userB.clients.fullAuth.credential.acceptCredential({ uri });
@@ -170,7 +168,7 @@ describe('Credentials', () => {
             expect(credentials[0]?.sent).toEqual(sent);
             expect(credentials[0]?.received).toEqual(received);
 
-            jest.useRealTimers();
+            vi.useRealTimers();
         });
 
         it('should allow filtering received credentials by who sent them', async () => {
@@ -201,13 +199,10 @@ describe('Credentials', () => {
     describe('sentCredentials', () => {
         beforeEach(async () => {
             await Profile.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
 
             await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
             await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
-        });
-
-        beforeEach(async () => {
-            await Credential.delete({ detach: true, where: {} });
         });
 
         it('should require full auth to get sent credentials', async () => {
@@ -248,7 +243,7 @@ describe('Credentials', () => {
         });
 
         it('should show when the credential was sent/received', async () => {
-            jest.useFakeTimers().setSystemTime(new Date('02-06-2023'));
+            vi.useFakeTimers().setSystemTime(new Date('02-06-2023'));
             const sent = new Date().toISOString();
 
             const uri = await userA.clients.fullAuth.credential.sendCredential({
@@ -256,7 +251,7 @@ describe('Credentials', () => {
                 credential: testVc,
             });
 
-            jest.setSystemTime(new Date('02-07-2023'));
+            vi.setSystemTime(new Date('02-07-2023'));
             const received = new Date().toISOString();
 
             await userB.clients.fullAuth.credential.acceptCredential({ uri });
@@ -266,7 +261,7 @@ describe('Credentials', () => {
             expect(credentials[0]?.sent).toEqual(sent);
             expect(credentials[0]?.received).toEqual(received);
 
-            jest.useRealTimers();
+            vi.useRealTimers();
         });
 
         it('should allow filtering sent credentials by who they were sent to', async () => {
@@ -295,13 +290,10 @@ describe('Credentials', () => {
     describe('incomingCredentials', () => {
         beforeEach(async () => {
             await Profile.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
 
             await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
             await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
-        });
-
-        beforeEach(async () => {
-            await Credential.delete({ detach: true, where: {} });
         });
 
         it('should require full auth to get incoming credentials', async () => {
@@ -348,7 +340,7 @@ describe('Credentials', () => {
         });
 
         it('should show when the credential was sent', async () => {
-            jest.useFakeTimers().setSystemTime(new Date('02-06-2023'));
+            vi.useFakeTimers().setSystemTime(new Date('02-06-2023'));
             const sent = new Date().toISOString();
 
             await userA.clients.fullAuth.credential.sendCredential({
@@ -360,7 +352,7 @@ describe('Credentials', () => {
 
             expect(credentials[0]?.sent).toEqual(sent);
 
-            jest.useRealTimers();
+            vi.useRealTimers();
         });
 
         it('should allow filtering incoming credentials by who sent them', async () => {

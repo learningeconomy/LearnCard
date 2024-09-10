@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import React from 'react';
 import '@testing-library/jest-dom';
 import { render, fireEvent } from '@testing-library/react';
@@ -6,7 +7,7 @@ import MiniVCThumbnail from '../MiniVCThumbnail';
 
 describe('Running Tests for MiniVCThumbnail', () => {
     test('Checks MiniVCThumbnail renders with props', () => {
-        const handleOnClick = jest.fn();
+        const handleOnClick = vi.fn();
 
         const { getByTestId, getByAltText } = render(
             <MiniVCThumbnail
@@ -36,7 +37,7 @@ describe('Running Tests for MiniVCThumbnail', () => {
     });
 
     test('Checks MiniVCThumbnail renders without props', () => {
-        const handleOnClick = jest.fn();
+        const handleOnClick = vi.fn();
 
         const { getByTestId, queryByTestId } = render(<MiniVCThumbnail />);
 

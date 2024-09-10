@@ -1,5 +1,153 @@
 # @learncard/cli
 
+## 3.3.29
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.29
+    -   @learncard/learn-cloud-plugin@2.0.5
+
+## 3.3.28
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.28
+
+## 3.3.27
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.27
+
+## 3.3.26
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.26
+
+## 3.3.25
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.25
+
+## 3.3.24
+
+### Patch Changes
+
+-   Updated dependencies [[`e45c929`](https://github.com/learningeconomy/LearnCard/commit/e45c9292ffd1944f875beed0792a55b7942b1657)]:
+    -   @learncard/core@9.3.0
+    -   @learncard/init@1.2.24
+    -   @learncard/didkit-plugin@1.4.8
+    -   @learncard/learn-cloud-plugin@2.0.4
+
+## 3.3.23
+
+### Patch Changes
+
+-   Updated dependencies [[`9a8dbb3`](https://github.com/learningeconomy/LearnCard/commit/9a8dbb336bdda2ff3080cd1cb70f7c929d0db261)]:
+    -   @learncard/didkit-plugin@1.4.7
+    -   @learncard/init@1.2.23
+    -   @learncard/learn-cloud-plugin@2.0.3
+
+## 3.3.22
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.22
+
+## 3.3.21
+
+### Patch Changes
+
+-   Updated dependencies [[`30aeb31`](https://github.com/learningeconomy/LearnCard/commit/30aeb31b467661d2036baa97a01e31ceca1588f8)]:
+    -   @learncard/didkit-plugin@1.4.6
+    -   @learncard/init@1.2.21
+    -   @learncard/learn-cloud-plugin@2.0.2
+
+## 3.3.20
+
+### Patch Changes
+
+-   Updated dependencies [[`e70c1671`](https://github.com/learningeconomy/LearnCard/commit/e70c1671213712527d0df447ff25ba7f101f94ae), [`e70c1671`](https://github.com/learningeconomy/LearnCard/commit/e70c1671213712527d0df447ff25ba7f101f94ae), [`587736f`](https://github.com/learningeconomy/LearnCard/commit/587736fd8e562d17b9dfbfcd058572c133367c02), [`e70c1671`](https://github.com/learningeconomy/LearnCard/commit/e70c1671213712527d0df447ff25ba7f101f94ae)]:
+    -   @learncard/types@5.5.1
+    -   @learncard/init@1.2.20
+    -   @learncard/didkit-plugin@1.4.5
+    -   @learncard/core@9.2.1
+    -   @learncard/learn-cloud-plugin@2.0.1
+
+## 3.3.19
+
+### Patch Changes
+
+-   Updated dependencies [[`be01a1a`](https://github.com/learningeconomy/LearnCard/commit/be01a1a3d1b5dde523b1dcfb5be2a2452f26f7a7), [`be01a1a`](https://github.com/learningeconomy/LearnCard/commit/be01a1a3d1b5dde523b1dcfb5be2a2452f26f7a7)]:
+    -   @learncard/types@5.5.0
+    -   @learncard/core@9.2.0
+    -   @learncard/learn-cloud-plugin@2.0.0
+    -   @learncard/init@1.2.19
+    -   @learncard/didkit-plugin@1.4.4
+
+## 3.3.18
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.18
+    -   @learncard/learn-cloud-plugin@1.1.30
+
+## 3.3.17
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.17
+
+## 3.3.16
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.16
+    -   @learncard/learn-cloud-plugin@1.1.29
+
+## 3.3.15
+
+### Patch Changes
+
+-   Updated dependencies [[`1cb031d7`](https://github.com/learningeconomy/LearnCard/commit/1cb031d7483e80f947c93e3479fe85af8ec09dbb), [`725e508c`](https://github.com/learningeconomy/LearnCard/commit/725e508c848b8c7752f44e5bf9915eebb421d766), [`725e508c`](https://github.com/learningeconomy/LearnCard/commit/725e508c848b8c7752f44e5bf9915eebb421d766)]:
+    -   @learncard/types@5.4.1
+    -   @learncard/core@9.1.4
+    -   @learncard/init@1.2.15
+    -   @learncard/didkit-plugin@1.4.3
+    -   @learncard/learn-cloud-plugin@1.1.28
+
+## 3.3.14
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.14
+
+## 3.3.13
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.13
+
+## 3.3.12
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.12
+
 ## 3.3.11
 
 ### Patch Changes

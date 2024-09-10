@@ -14,7 +14,7 @@ import { getVpqrPlugin } from '@learncard/vpqr-plugin';
 import { getCHAPIPlugin } from '@learncard/chapi-plugin';
 import { getLearnCardPlugin } from '@learncard/learn-card-plugin';
 
-import { LearnCardFromSeed } from 'types/LearnCard';
+import { LearnCardFromSeed } from '../types/LearnCard';
 import { defaultCeramicIDXArgs, defaultEthereumArgs } from '../defaults';
 
 /**

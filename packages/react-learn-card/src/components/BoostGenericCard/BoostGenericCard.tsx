@@ -9,6 +9,7 @@ import ThreeDots from '../../assets/images/DotsThreeOutline.svg';
 
 export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
     title,
+    customTitle,
     thumbImgSrc,
     customThumbClass = '',
     customHeaderClass = '',
@@ -21,8 +22,11 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
     innerOnClick,
     bgImgSrc,
     issuerName,
+    customIssuerName,
     dateDisplay,
+    customDateDisplay,
     optionsTriggerOnClick,
+    verifierBadge,
 }) => {
     const thumbClass = `bg-${TYPE_TO_WALLET_DARK_COLOR[type]}` ?? 'bg-grayscale-50';
     const defaultThumbClass = `small-boost-card-thumb flex h-[110px] w-[110px] my-[10px] mx-auto ${thumbClass} overflow-hidden flex-col justify-center items-center rounded-full ${customThumbClass}`;
@@ -49,6 +53,7 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
                     onClick={handleOptionsClick}
                 >
                     <img
+                        alt="Menu dropdown icon"
                         className="h-[20px] w-[20px] object-cover overflow-hidden"
                         src={ThreeDots}
                     />
@@ -56,13 +61,13 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
             )}
 
             {bgImgSrc && (
-                <section className="absolute top-[-50px] left-[0px] rounded-b-full overflow-hidden z-0">
+                <section className="absolute top-[-50px] shadow-bottom left-[0px] rounded-b-full overflow-hidden z-0 mt-3">
                     <img className="h-full w-full object-cover overflow-hidden" src={bgImgSrc} />
                 </section>
             )}
             <button
                 type="button"
-                className="boost-small-card inner-click-containe z-10"
+                className="boost-small-card inner-click-container z-10"
                 onClick={handleInnerClick}
             >
                 {customThumbComponent && customThumbComponent}
@@ -83,21 +88,33 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
                         )}
                     </section>
                 )}
+                <section className="boost-generic-info-section">
+                    {!customTitle && (
+                        <div className={`${defaultHeaderClass} items-center`}>
+                            <p className="relative z-[100] small-boost-title text-[16px] leading-[130%] px-[0px] font-medium text-center text-grayscale-900 line-clamp-2 max-w-full">
+                                {title}
+                            </p>
+                        </div>
+                    )}
 
-                <section className={defaultHeaderClass}>
-                    <p className="relative z-[100] small-boost-title text-[16px] leading-[130%] p-[0px] font-medium text-center  text-grayscale-900 line-clamp-2">
-                        {title}
-                    </p>
+                    {customTitle && customTitle}
+
+                    {customIssuerName && customIssuerName}
+                    {!customIssuerName && (
+                        <span className="flex items-center justify-center small-generic-boost-issuer-name line-clamp-1 text-[12px] text-grayscale-700 font-bold px-[6px]">
+                            by {issuerName}
+                        </span>
+                    )}
+
+                    {customDateDisplay && customDateDisplay}
+                    {!customDateDisplay && (
+                        <p className="small-generic-boost-date-display line-clamp-1 text-[12px] text-grayscale-700  px-[7px]">
+                            {dateDisplay}
+                        </p>
+                    )}
+                    <div className="boost-verifier-badge-display">{verifierBadge}</div>
                 </section>
 
-                <section className="small-generic-boost-card-footer flex flex-col justify-center items-center absolute bottom-[15px] w-full">
-                    <span className="flex items-center justify-center small-generic-boost-issuer-name line-clamp-1 text-[12px] text-grayscale-700 font-bold px-[6px]">
-                        by {issuerName}
-                    </span>
-                    <p className="small-generic-boost-date-display line-clamp-1 text-[12px] text-grayscale-700  px-[7px]">
-                        {dateDisplay}
-                    </p>
-                </section>
                 {showChecked && (
                     <div className="check-btn-overlay absolute top-[5px] left-[5px]">
                         <CircleCheckButton

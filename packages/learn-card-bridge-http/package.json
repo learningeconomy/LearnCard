@@ -1,6 +1,6 @@
 {
     "name": "@learncard/create-http-bridge",
-    "version": "1.1.74",
+    "version": "1.1.92",
     "description": "Instantly create and deploy a Learn Card Bridge HTTP API via AWS Lambda!",
     "main": "dist/index.js",
     "bin": "dist/index.js",
@@ -50,7 +50,6 @@
         "nodemon": "^2.0.16",
         "serverless-plugin-typescript": "^2.1.0",
         "shx": "^0.3.4",
-        "ts-node": "^10.8.1",
-        "typescript": "^4.7.4"
+        "ts-node": "^10.8.1"
     }
 }

@@ -372,9 +372,16 @@ export const getLearnCloudPlugin = async (
 
                 _learnCard.debug?.('LearnCloud index.getPaginated', query, paginationOptions);
 
+                const options = {
+                    ...paginationOptions,
+                    sort: ['newestFirst', 'oldestFirst'].includes(paginationOptions?.sort ?? '')
+                        ? (paginationOptions?.sort as 'newestFirst' | 'oldestFirst')
+                        : undefined,
+                };
+
                 if (!query) {
                     _learnCard.debug?.('LearnCloud index.get (no query)');
-                    const jwe = await client.index.get.query(paginationOptions);
+                    const jwe = await client.index.get.query(options);
 
                     _learnCard.debug?.('LearnCloud index.get (no query response)', jwe);
 
@@ -421,7 +428,7 @@ export const getLearnCloudPlugin = async (
                         ...unencryptedEntries,
                         ...(fields.length > 0 ? { fields: { $in: fields } } : {}),
                     }),
-                    ...paginationOptions,
+                    ...options,
                 });
 
                 _learnCard.debug?.('LearnCloud index.get (query jwe)', jwe);

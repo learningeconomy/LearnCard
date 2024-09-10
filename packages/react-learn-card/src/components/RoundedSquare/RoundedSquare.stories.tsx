@@ -17,12 +17,12 @@ export const RoundedSquareTest = Template.bind({});
 RoundedSquareTest.args = {
     title: 'Badges',
     description: 'Lorem ipsum sit dalor amet',
-    iconSrc: ICONS_TO_SOURCE[Icons.award] as string,
+    iconSrc: ICONS_TO_SOURCE[Icons.accommodationsIcon] as string,
     count: '1100',
     type: WalletCategoryTypes.socialBadge,
     onClick: () => {
         console.log('//goodbye world');
     },
     bgColor: 'bg-cyan-300',
-    iconCircleClass: 'border-2 border-cyan-300',
+    iconCircleClass: 'border-2 border-cyan-200 border-solid rounded-full',
 };
