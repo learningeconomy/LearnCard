@@ -665,7 +665,7 @@ export const profilesRouter = t.router({
             return {
                 hasMore: records.length > limit,
                 records: updateDidForProfiles(ctx.domain, records).slice(0, limit),
-                ...(cursor && { cursor: newCursor }),
+                ...(newCursor && { cursor: newCursor }),
             };
         }),
 
@@ -721,7 +721,7 @@ export const profilesRouter = t.router({
             return {
                 hasMore: records.length > limit,
                 records: updateDidForProfiles(ctx.domain, records).slice(0, limit),
-                ...(cursor && { cursor: newCursor }),
+                ...(newCursor && { cursor: newCursor }),
             };
         }),
 
@@ -777,7 +777,7 @@ export const profilesRouter = t.router({
             return {
                 hasMore: records.length > limit,
                 records: updateDidForProfiles(ctx.domain, records).slice(0, limit),
-                ...(cursor && { cursor: newCursor }),
+                ...(newCursor && { cursor: newCursor }),
             };
         }),
 

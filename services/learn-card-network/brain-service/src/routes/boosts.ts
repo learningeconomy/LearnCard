@@ -237,12 +237,14 @@ export const boostsRouter = t.router({
 
             return {
                 hasMore,
-                records: records.map(boost => {
-                    const { id, boost: _boost, created: _created, ...remaining } = boost;
+                records: records
+                    .map(boost => {
+                        const { id, boost: _boost, created: _created, ...remaining } = boost;
 
-                    return { ...remaining, uri: getBoostUri(id, ctx.domain) };
-                }),
-                ...(cursor && { cursor: newCursor }),
+                        return { ...remaining, uri: getBoostUri(id, ctx.domain) };
+                    })
+                    .slice(0, limit),
+                ...(newCursor && { cursor: newCursor }),
             };
         }),
 
@@ -306,7 +308,7 @@ export const boostsRouter = t.router({
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
             const records = await getBoostRecipients(boost, {
-                limit,
+                limit: limit + 1,
                 cursor,
                 includeUnacceptedBoosts,
             });
@@ -314,7 +316,11 @@ export const boostsRouter = t.router({
             const hasMore = records.length > limit;
             const newCursor = records.at(hasMore ? -2 : -1)?.sent;
 
-            return { hasMore, records, ...(cursor && { cursor: newCursor }) };
+            return {
+                hasMore,
+                records: records.slice(0, limit),
+                ...(newCursor && { cursor: newCursor }),
+            };
         }),
 
     getBoostRecipientCount: profileRoute
