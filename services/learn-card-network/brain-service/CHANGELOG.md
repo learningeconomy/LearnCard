@@ -1,5 +1,11 @@
 # @learncard/network-brain-service
 
+## 2.1.1
+
+### Patch Changes
+
+-   [#493](https://github.com/learningeconomy/LearnCard/pull/493) [`82843a11`](https://github.com/learningeconomy/LearnCard/commit/82843a11eebbb3f9102b8d3f101d97f54c2ac9a8) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Pagination hotfixes
+
 ## 2.1.0
 
 ### Minor Changes
