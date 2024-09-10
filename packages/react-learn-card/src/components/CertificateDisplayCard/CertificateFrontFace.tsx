@@ -167,7 +167,11 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
 
                 <div className="text-[14px] text-grayscale-800 flex flex-col items-center w-full">
                     <span className="font-jacques flex gap-[5px] items-center w-full overflow-ellipsis whitespace-nowrap overflow-hidden justify-center">
-                        {issueeName === '0 person' ? 'Not yet awarded' : <>Awarded to {issueeName || <Line width="60" />}</>}
+                        {issueeName === '0 person' ? (
+                            'Not yet awarded'
+                        ) : (
+                            <>Awarded to {issueeName || <Line width="60" />}</>
+                        )}
                     </span>
                     {!hideIssueDate && <span className="font-jacques">on {createdAt}</span>}
                 </div>
@@ -199,7 +203,7 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
                     <span className="font-jacques text-[12px] text-grayscale-800">
                         Certified by
                     </span>
-                    <span className="mb-[3px] pt-[3px] text-grayscale-900 text-[25px] leading-[90%] font-sacramento border-b-[1px] border-solid border-grayscale-200 w-full text-center overflow-ellipsis whitespace-nowrap overflow-x-hidden overflow-y-visible scrollbar-hide">
+                    <span className="mb-[3px] pt-[3px] text-grayscale-900 text-[25px] leading-[90%] font-sacramento border-b-[1px] border-solid border-grayscale-200 w-full text-center overflow-ellipsis whitespace-normal scrollbar-hide">
                         {issuerName}
                     </span>
 
