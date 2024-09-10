@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.7.8
+
+### Patch Changes
+
+-   [#496](https://github.com/learningeconomy/LearnCard/pull/496) [`0cb111c`](https://github.com/learningeconomy/LearnCard/commit/0cb111c6a1809488774d0233f704c7cc3b7ae472) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Update Signature styles in Certificate displays so that the signatures don't ellipsis and also aren't cut off at the bottom
+
 ## 2.7.7
 
 ### Patch Changes
