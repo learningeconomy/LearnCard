@@ -1,5 +1,14 @@
 # @welibraryos/react-learn-card
 
+## 2.7.7
+
+### Patch Changes
+
+-   [#492](https://github.com/learningeconomy/LearnCard/pull/492) [`f68ff86`](https://github.com/learningeconomy/LearnCard/commit/f68ff86d57a24cc9bd1d6668821c77da75e9a814) Thanks [@rhen92](https://github.com/rhen92)! - [LC-312] Change wording on CertificateFrontFace
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.30
+
 ## 2.7.6
 
 ### Patch Changes
