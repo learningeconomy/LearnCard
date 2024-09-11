@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.7.9
+
+### Patch Changes
+
+-   [#495](https://github.com/learningeconomy/LearnCard/pull/495) [`f14f9f2`](https://github.com/learningeconomy/LearnCard/commit/f14f9f2315453e322501ae45872b97fa2610d08b) Thanks [@gerardopar](https://github.com/gerardopar)! - [LC-292] - Boost Draft State Changes
+
 ## 2.7.8
 
 ### Patch Changes
