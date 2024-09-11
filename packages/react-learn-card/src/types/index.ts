@@ -313,6 +313,7 @@ export type BoostSmallCardProps = {
     customButtonComponent?: React.ReactNode;
     customThumbComponent?: React.ReactNode;
     customBodyComponent?: React.ReactNode;
+    customDraftComponent?: React.ReactNode;
     arrowOnClick?: () => void;
     buttonOnClick?: () => void;
     onCheckClick?: () => void;
