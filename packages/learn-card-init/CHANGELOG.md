@@ -1,5 +1,12 @@
 # learn-card-core
 
+## 1.2.31
+
+### Patch Changes
+
+-   Updated dependencies [[`b6dd8b6`](https://github.com/learningeconomy/LearnCard/commit/b6dd8b65e295e0fe5122658cd351e1561d541523)]:
+    -   @learncard/network-plugin@1.8.2
+
 ## 1.2.30
 
 ### Patch Changes
