@@ -145,7 +145,7 @@ export const getCategoryLightColor = (category = LCCategoryEnum.achievement) => 
 
 export const getCategoryDarkColor = (category = LCCategoryEnum.achievement) => {
     if (category === LCCategoryEnum.meritBadge) {
-        return 'sp-scouting-purple';
+        return 'sp-purple-base';
     }
 
     return `${getCategoryPrimaryColor(category)}-700`;

@@ -4,23 +4,26 @@ import IssuerSeal from '../svgs/IssuerSeal';
 type MeritBadgeProfileImageDisplayProps = {
     imageUrl?: string;
     imageComponent?: React.ReactNode;
-    isIssuer?: boolean;
+    showSeal?: boolean;
     className?: string;
+    size?: string;
 };
 
 const MeritBadgeProfileImageDisplay: React.FC<MeritBadgeProfileImageDisplayProps> = ({
     imageUrl,
-    isIssuer = false,
+    showSeal = false,
     className = '',
     imageComponent,
+    size = 'big',
 }) => {
-    const imageClassName = `h-[50px] w-[50px] rounded-full overflow-hidden ${isIssuer ? 'absolute border-[2px] border-solid border-grayscale-200' : ''
+    const imageClassName = `${size === 'big' ? 'h-[60px] w-[60px]' : 'h-[39px] w-[39px]'
+        } rounded-full overflow-hidden ${showSeal ? 'absolute border-[2px] border-solid border-grayscale-200' : ''
         }`;
     return (
         <div className={className}>
-            {isIssuer && (
+            {showSeal && (
                 <div className="bg-white rounded-full p-[5px]">
-                    <IssuerSeal />
+                    <IssuerSeal size="58" />
                 </div>
             )}
 
