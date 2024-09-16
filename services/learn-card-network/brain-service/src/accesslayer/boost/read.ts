@@ -56,10 +56,6 @@ export const getBoostsForProfile = async (
     return results.map(result => ({ ...result.boost, created: result.createdBy.date }));
 };
 
-interface ProfileInstanceWithCountBoosts extends ProfileInstance {
-    countBoosts: () => Promise<number>;
-}
-
 export const countBoostsForProfile = async (
     profile: ProfileInstance
 ): Promise<number> => {
