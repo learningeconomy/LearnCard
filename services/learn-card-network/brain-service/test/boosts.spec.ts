@@ -1649,4 +1649,70 @@ describe('Boosts', () => {
             }
         });
     });
+
+    describe('countBoosts', () => {
+        beforeEach(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+        });
+
+        afterAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+        });
+
+        it('should require full auth to count boosts', async () => {
+            await expect(noAuthClient.boost.countBoosts()).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+            await expect(userA.clients.partialAuth.boost.countBoosts()).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+        });
+
+        it('should return 0 when user has no boosts', async () => {
+            const count = await userA.clients.fullAuth.boost.countBoosts();
+            expect(count).toBe(0);
+        });
+
+        it('should count boosts created by the user', async () => {
+            await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
+            await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
+
+            const count = await userA.clients.fullAuth.boost.countBoosts();
+            expect(count).toBe(2);
+        });
+
+        it('should count boosts where user is an admin', async () => {
+            const uriA = await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
+            const uriB = await userB.clients.fullAuth.boost.createBoost({ credential: testVc });
+
+            await userB.clients.fullAuth.boost.addBoostAdmin({ uri: uriB, profileId: 'usera' });
+
+            const count = await userA.clients.fullAuth.boost.countBoosts();
+            expect(count).toBe(2);
+        });
+
+        it('should not count boosts where user is not creator or admin', async () => {
+            await userB.clients.fullAuth.boost.createBoost({ credential: testVc });
+
+            const count = await userA.clients.fullAuth.boost.countBoosts();
+            expect(count).toBe(0);
+        });
+
+        it('should count distinct boosts only', async () => {
+            const uriA = await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
+            const uriB = await userB.clients.fullAuth.boost.createBoost({ credential: testVc });
+
+            // Make userA an admin of userB's boost
+            await userB.clients.fullAuth.boost.addBoostAdmin({ uri: uriB, profileId: 'usera' });
+
+            const count = await userA.clients.fullAuth.boost.countBoosts();
+            expect(count).toBe(2); // userA should see 2 distinct boosts: one they created and one they're an admin of
+        });
+    });
 });
