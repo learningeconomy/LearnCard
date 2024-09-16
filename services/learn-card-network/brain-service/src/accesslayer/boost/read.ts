@@ -55,3 +55,32 @@ export const getBoostsForProfile = async (
 
     return results.map(result => ({ ...result.boost, created: result.createdBy.date }));
 };
+
+interface ProfileInstanceWithCountBoosts extends ProfileInstance {
+    countBoosts: () => Promise<number>;
+}
+
+export const countBoostsForProfile = async (
+    profile: ProfileInstance
+): Promise<number> => {
+    const query = new QueryBuilder()
+        .match({
+            related: [
+                { identifier: 'boost', model: Boost },
+                `-[:${Profile.getRelationshipByAlias('adminOf').name}|${Boost.getRelationshipByAlias('createdBy').name}]-`,
+                { model: Profile, where: { profileId: profile.profileId } },
+            ],
+        });
+
+    const result = await query.return('COUNT(DISTINCT boost) AS count').run();
+
+    return Number(result.records[0]?.get('count') ?? 0);
+};
+
+// Plugin method
+export const addCountBoostsMethod = (profile: ProfileInstance): ProfileInstanceWithCountBoosts => {
+    (profile as ProfileInstanceWithCountBoosts).countBoosts = async function () {
+        return countBoostsForProfile(this);
+    };
+    return profile as ProfileInstanceWithCountBoosts;
+};
