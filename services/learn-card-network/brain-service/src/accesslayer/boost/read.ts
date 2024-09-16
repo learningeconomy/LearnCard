@@ -76,11 +76,3 @@ export const countBoostsForProfile = async (
 
     return Number(result.records[0]?.get('count') ?? 0);
 };
-
-// Plugin method
-export const addCountBoostsMethod = (profile: ProfileInstance): ProfileInstanceWithCountBoosts => {
-    (profile as ProfileInstanceWithCountBoosts).countBoosts = async function () {
-        return countBoostsForProfile(this);
-    };
-    return profile as ProfileInstanceWithCountBoosts;
-};
