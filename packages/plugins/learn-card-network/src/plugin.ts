@@ -390,6 +390,11 @@ export const getLearnCardNetworkPlugin = async (
 
                 return client.boost.getBoosts.query();
             },
+            countBoosts: async _learnCard => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.boost.countBoosts.query();
+            },
             getPaginatedBoosts: async (_learnCard, options) => {
                 if (!userData) throw new Error('Please make an account first!');
 

@@ -220,6 +220,7 @@ export type LearnCardNetworkPluginMethods = {
     ) => Promise<VC | UnsignedVC | VP | JWE | ConsentFlowContract | ConsentFlowTerms>;
 
     getLCNClient: () => LCNClient;
+    countBoosts: () => Promise<number>;
 };
 
 /** @group LearnCardNetwork Plugin */
