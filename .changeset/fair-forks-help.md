@@ -1,6 +1,6 @@
 ---
-'@learncard/network-brain-service': major
-'@learncard/network-plugin': major
+'@learncard/network-brain-service': patch
+'@learncard/network-plugin': patch
 ---
 
 count boosts route
