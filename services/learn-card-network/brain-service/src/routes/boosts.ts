@@ -15,7 +15,7 @@ import {
 
 import { t, profileRoute } from '@routes';
 
-import { getBoostByUri, getBoostsForProfile } from '@accesslayer/boost/read';
+import { getBoostByUri, getBoostsForProfile, countBoostsForProfile } from '@accesslayer/boost/read';
 import {
     getBoostRecipientsSkipLimit,
     getBoostAdmins,
@@ -207,6 +207,27 @@ export const boostsRouter = t.router({
                 const { id, boost: _boost, ...remaining } = boost;
                 return { ...remaining, uri: getBoostUri(id, ctx.domain) };
             });
+        }),
+
+    countBoosts: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/boost/count',
+                tags: ['Boosts'],
+                summary: 'Count managed boosts',
+                description: "This endpoint counts the current user's managed boosts.",
+            },
+        })
+        .input(z.void())
+        .output(z.number())
+        .query(async ({ ctx }) => {
+            const { profile } = ctx.user;
+
+            const count = await countBoostsForProfile(profile);
+
+            return count;
         }),
 
     getPaginatedBoosts: profileRoute
