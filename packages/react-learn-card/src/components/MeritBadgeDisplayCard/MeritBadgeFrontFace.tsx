@@ -169,7 +169,7 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
                     </div>
                 )}
 
-                <div className="border-t-[2px] border-solid border-sp-purple-base flex flex-col py-[20px]">
+                <div className="border-t-[2px] border-solid border-sp-purple-base flex flex-col py-[20px] w-full">
                     <div className="text-[14px] text-grayscale-900 flex flex-col items-center w-full mb-[10px]">
                         <span className="font-jacques flex gap-[5px] items-center w-full overflow-ellipsis whitespace-nowrap overflow-hidden justify-center">
                             {issueeName === '0 person' ? (
