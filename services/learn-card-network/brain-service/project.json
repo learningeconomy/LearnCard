@@ -41,6 +41,18 @@
                 "script": "build"
             }
         },
+        "build:docker": {
+            "executor": "nx:run-script",
+            "inputs": [
+                "source"
+            ],
+            "dependsOn": [
+                "^build"
+            ],
+            "options": {
+                "script": "build:docker"
+            }
+        },
         "start": {
             "executor": "nx:run-script",
             "inputs": [

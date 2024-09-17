@@ -5,7 +5,7 @@ export const getTestCache = (): TestCachePlugin => {
     let index: Record<string, CredentialRecord[]> = {};
     let paginatedIndex: Record<
         string,
-        { records: CredentialRecord<Metadata>[]; hasMore: boolean; cursor?: string }
+        { records: CredentialRecord[]; hasMore: boolean; cursor?: string }
     > = {};
     let vcs: Record<string, VC | VP | undefined> = {};
 
