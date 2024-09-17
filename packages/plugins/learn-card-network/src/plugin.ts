@@ -381,19 +381,19 @@ export const getLearnCardNetworkPlugin = async (
 
                 return client.boost.getBoost.query({ uri });
             },
-            getBoosts: async _learnCard => {
+            getBoosts: async (_learnCard, query) => {
                 console.warn(
                     'The getBoosts method is deprecated! Please use getPaginatedBoosts instead!'
                 );
 
                 if (!userData) throw new Error('Please make an account first!');
 
-                return client.boost.getBoosts.query();
+                return client.boost.getBoosts.query({ query });
             },
-            countBoosts: async _learnCard => {
+            countBoosts: async (_learnCard, query) => {
                 if (!userData) throw new Error('Please make an account first!');
 
-                return client.boost.countBoosts.query();
+                return client.boost.countBoosts.query({ query });
             },
             getPaginatedBoosts: async (_learnCard, options) => {
                 if (!userData) throw new Error('Please make an account first!');

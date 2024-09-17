@@ -1,4 +1,4 @@
-import { Op, QueryBuilder, Where } from 'neogma';
+import { BindParam, QueryBuilder } from 'neogma';
 
 import { getIdFromUri } from '@helpers/uri.helpers';
 import { convertQueryResultToPropertiesObjectArray } from '@helpers/neo4j.helpers';
@@ -17,9 +17,13 @@ export const getBoostByUri = async (uri: string): Promise<BoostInstance | null> 
 
 export const getBoostsForProfile = async (
     profile: ProfileInstance,
-    { limit, cursor }: { limit: number; cursor?: string }
+    {
+        limit,
+        cursor,
+        query: matchQuery = {},
+    }: { limit: number; cursor?: string; query?: Partial<Omit<BoostType, 'id' | 'boost'>> }
 ): Promise<Array<BoostType & { created: string }>> => {
-    const _query = new QueryBuilder()
+    const _query = new QueryBuilder(new BindParam({ matchQuery, cursor }))
         .match({
             related: [
                 { identifier: 'boost', model: Boost },
@@ -34,13 +38,10 @@ export const getBoostsForProfile = async (
                 `-[createdBy:${Boost.getRelationshipByAlias('createdBy').name}]-`,
                 { model: Profile },
             ],
-        });
+        })
+        .where('all(key IN keys($matchQuery) WHERE boost[key] = $matchQuery[key])');
 
-    const query = cursor
-        ? _query.where(
-            new Where({ createdBy: { date: { [Op.lt]: cursor } } }, _query.getBindParam())
-        )
-        : _query;
+    const query = cursor ? _query.raw('AND createdBy.date < $cursor') : _query;
 
     const results = convertQueryResultToPropertiesObjectArray<{
         boost: BoostType;
@@ -57,16 +58,19 @@ export const getBoostsForProfile = async (
 };
 
 export const countBoostsForProfile = async (
-    profile: ProfileInstance
+    profile: ProfileInstance,
+    { query: matchQuery = {} }: { query?: Partial<Omit<BoostType, 'id' | 'boost'>> }
 ): Promise<number> => {
-    const query = new QueryBuilder()
+    const query = new QueryBuilder(new BindParam({ matchQuery }))
         .match({
             related: [
                 { identifier: 'boost', model: Boost },
-                `-[:${Profile.getRelationshipByAlias('adminOf').name}|${Boost.getRelationshipByAlias('createdBy').name}]-`,
+                `-[:${Profile.getRelationshipByAlias('adminOf').name}|${Boost.getRelationshipByAlias('createdBy').name
+                }]-`,
                 { model: Profile, where: { profileId: profile.profileId } },
             ],
-        });
+        })
+        .where('all(key IN keys($matchQuery) WHERE boost[key] = $matchQuery[key])');
 
     const result = await query.return('COUNT(DISTINCT boost) AS count').run();
 
