@@ -3,6 +3,9 @@ name: Docker Release
 on:
   release:
     types: [published]
+  push:
+    branches:
+      - LC-295-Docker
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
