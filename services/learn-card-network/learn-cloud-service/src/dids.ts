@@ -1,13 +1,11 @@
-import express from 'express';
-import cors from 'cors';
+import Fastify, { FastifyPluginAsync } from 'fastify';
+import fastifyCors from '@fastify/cors';
 import _sodium from 'libsodium-wrappers';
 import { base64url } from 'multiformats/bases/base64';
 import { base58btc } from 'multiformats/bases/base58';
 
 import { getLearnCard } from '@helpers/learnCard.helpers';
-import { TypedRequest } from '@helpers/types.helpers';
 import { getDidDocForProfile, setDidDocForProfile } from '@cache/did-docs';
-import { lock } from '@cache/mutex';
 
 const encodeKey = (key: Uint8Array) => {
     const bytes = new Uint8Array(key.length + 2);
@@ -17,47 +15,30 @@ const encodeKey = (key: Uint8Array) => {
     return base58btc.encode(bytes);
 };
 
-export const app = express();
+export const app = Fastify();
 
-app.use(cors());
+app.register(fastifyCors);
 
-app.options(
-    '/.well-known/did.json',
-    async (_: TypedRequest<{}, {}, { profileId: string }>, res) => {
-        res.sendStatus(200);
-        res.setHeader('Access-Control-Allow-Origin', '*');
-        res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-        res.setHeader('Access-Control-Allow-Headers', '*');
-    }
-);
+export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
+    fastify.options('/.well-known/did.json', async (_request, reply) => {
+        reply.status(200);
+        reply.header('Access-Control-Allow-Origin', '*');
+        reply.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+        reply.header('Access-Control-Allow-Headers', '*');
+        return reply.send();
+    });
 
-app.get('/.well-known/did.json', async (req: TypedRequest<{}, {}, {}>, res) => {
-    const cachedResult = await getDidDocForProfile('::root::');
+    fastify.get('/.well-known/did.json', async (request, reply) => {
+        const cachedResult = await getDidDocForProfile('::root::');
 
-    if (cachedResult) return res.json(cachedResult);
-
-    console.log('Grabbing lock...');
-    // Grab/wait for lock for generating did doc
-    const release = await lock('did');
-
-    console.log('Got the lock!');
-
-    try {
-        // Check to see if someone else grabbed the lock and generated the did doc first
-        const secondCheck = await getDidDocForProfile('::root::');
-
-        if (secondCheck) {
-            console.log('Cache hit, releasing lock...');
-            release();
-            return res.json(secondCheck);
-        }
+        if (cachedResult) return reply.send(cachedResult);
 
         await _sodium.ready;
         const sodium = _sodium;
 
         const learnCard = await getLearnCard();
 
-        const domainName: string = (req as any).requestContext.domainName;
+        const domainName = request.hostname;
         const domain =
             !domainName || process.env.IS_OFFLINE
                 ? `localhost%3A${process.env.PORT || 3000}`
@@ -89,14 +70,12 @@ app.get('/.well-known/did.json', async (req: TypedRequest<{}, {}, {}>, res) => {
             ],
         };
 
-        console.log('Successfully created did, releasing lock...');
-        setDidDocForProfile('::root::', finalDoc).finally(release);
+        setDidDocForProfile('::root::', finalDoc);
 
-        return res.json(finalDoc);
-    } catch (error) {
-        console.error('Did error! Releasing lock');
-        return release();
-    }
-});
+        return reply.send(finalDoc);
+    });
+};
+
+app.register(didFastifyPlugin);
 
 export default app;

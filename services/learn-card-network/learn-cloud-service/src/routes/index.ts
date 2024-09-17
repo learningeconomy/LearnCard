@@ -1,5 +1,6 @@
 import { initTRPC, TRPCError } from '@trpc/server';
 import { APIGatewayEvent, CreateAWSLambdaContextOptions } from '@trpc/server/adapters/aws-lambda';
+import { CreateFastifyContextOptions } from '@trpc/server/adapters/fastify';
 import { OpenApiMeta } from 'trpc-openapi';
 import jwtDecode from 'jwt-decode';
 import * as Sentry from '@sentry/serverless';
@@ -18,11 +19,12 @@ export type Context = {
 
 export const t = initTRPC.context<Context>().meta<OpenApiMeta>().create();
 
-export const createContext = async ({
-    event,
-}: CreateAWSLambdaContextOptions<APIGatewayEvent>): Promise<Context> => {
+export const createContext = async (
+    options: CreateAWSLambdaContextOptions<APIGatewayEvent> | CreateFastifyContextOptions
+): Promise<Context> => {
+    const event = 'event' in options ? options.event : options.req;
     const authHeader = event.headers.authorization;
-    const domainName = event.requestContext.domainName;
+    const domainName = 'requestContext' in event ? event.requestContext.domainName : '';
 
     const domain =
         !domainName || process.env.IS_OFFLINE
