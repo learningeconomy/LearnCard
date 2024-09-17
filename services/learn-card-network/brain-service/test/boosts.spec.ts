@@ -157,6 +157,22 @@ describe('Boosts', () => {
 
             expect(boosts).toHaveLength(1);
         });
+
+        it('should allow querying boosts', async () => {
+            await userA.clients.fullAuth.boost.createBoost({ credential: testVc, category: 'A' });
+            await userA.clients.fullAuth.boost.createBoost({ credential: testVc, category: 'B' });
+
+            await expect(
+                userA.clients.fullAuth.boost.getBoosts({ query: { category: 'A' } })
+            ).resolves.not.toThrow();
+
+            const boosts = await userA.clients.fullAuth.boost.getBoosts({
+                query: { category: 'A' },
+            });
+
+            expect(boosts).toHaveLength(1);
+            expect(boosts[0]?.category).toEqual('A');
+        });
     });
 
     describe('getPaginatedBoosts', () => {
@@ -195,6 +211,22 @@ describe('Boosts', () => {
             const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
 
             expect(boosts.records).toHaveLength(1);
+        });
+
+        it('should allow querying boosts', async () => {
+            await userA.clients.fullAuth.boost.createBoost({ credential: testVc, category: 'A' });
+            await userA.clients.fullAuth.boost.createBoost({ credential: testVc, category: 'B' });
+
+            await expect(
+                userA.clients.fullAuth.boost.getPaginatedBoosts({ query: { category: 'A' } })
+            ).resolves.not.toThrow();
+
+            const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts({
+                query: { category: 'A' },
+            });
+
+            expect(boosts.records).toHaveLength(1);
+            expect(boosts.records[0]?.category).toEqual('A');
         });
 
         it('should paginate correctly', async () => {
@@ -1713,6 +1745,21 @@ describe('Boosts', () => {
 
             const count = await userA.clients.fullAuth.boost.countBoosts();
             expect(count).toBe(2); // userA should see 2 distinct boosts: one they created and one they're an admin of
+        });
+
+        it('should allow querying boosts', async () => {
+            await userA.clients.fullAuth.boost.createBoost({ credential: testVc, category: 'A' });
+            await userA.clients.fullAuth.boost.createBoost({ credential: testVc, category: 'B' });
+
+            await expect(
+                userA.clients.fullAuth.boost.countBoosts({ query: { category: 'A' } })
+            ).resolves.not.toThrow();
+
+            const count = await userA.clients.fullAuth.boost.countBoosts({
+                query: { category: 'A' },
+            });
+
+            expect(count).toEqual(1);
         });
     });
 });
