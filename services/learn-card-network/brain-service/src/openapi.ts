@@ -1,5 +1,5 @@
 import { OpenAPIV3 } from 'openapi-types';
-import { generateOpenApiDocument } from 'trpc-openapi';
+import { generateOpenApiDocument } from 'better-trpc-openapi';
 import express from 'express';
 
 import { appRouter } from './app';

@@ -1,9 +1,9 @@
-import { createTRPCProxyClient, CreateTRPCProxyClient, httpBatchLink } from '@trpc/client';
+import { createTRPCClient, CreateTRPCClient, httpBatchLink } from '@trpc/client';
 import type { AppRouter } from '@learncard/network-brain-service';
 
 import { callbackLink } from './callbackLink';
 
-export type LCNClient = CreateTRPCProxyClient<AppRouter>;
+export type LCNClient = CreateTRPCClient<AppRouter>;
 
 export const getClient = async (
     url: string,
@@ -11,9 +11,10 @@ export const getClient = async (
 ): Promise<LCNClient> => {
     let challenges: string[] = [];
 
-    const challengeRequester = createTRPCProxyClient<AppRouter>({
+    const challengeRequester = createTRPCClient<AppRouter>({
         links: [
             httpBatchLink({
+                methodOverride: 'POST',
                 url,
                 maxURLLength: 2048,
                 headers: { Authorization: `Bearer ${await didAuthFunction()}` },
@@ -29,12 +30,13 @@ export const getClient = async (
 
     challenges = await getChallenges();
 
-    const trpc = createTRPCProxyClient<AppRouter>({
+    const trpc = createTRPCClient<AppRouter>({
         links: [
             callbackLink(async () => {
                 challenges = await getChallenges();
             }),
             httpBatchLink({
+                methodOverride: 'POST',
                 maxURLLength: 2048,
                 url,
                 headers: async () => {
