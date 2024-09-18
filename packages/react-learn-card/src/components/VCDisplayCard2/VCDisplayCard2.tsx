@@ -262,6 +262,12 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
         );
     }
 
+    // these are constants so that the real header and the hidden-for-spacing header are identical
+    const headerClassName =
+        'vc-card-header px-[20px] pb-[10px] pt-[3px] overflow-visible mt-[40px] text-center bg-white border-y-[5px] border-[#EEF2FF] w-[calc(100%_+_16px)] rounded-t-[8px] z-50';
+    const headerFitTextClassName =
+        'vc-card-header-main-title text-[#18224E] leading-[80%] text-shadow text-[32px]';
+
     return (
         <Flipper className="w-full" flipKey={isFront}>
             <Flipped flipId="card">
@@ -273,17 +279,17 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                     <RibbonEnd
                         side="left"
                         className="absolute left-[-30px] top-[50px] z-0"
-                        height={`${headerHeight + 10}`}
+                        height="100"
                     />
                     <RibbonEnd
                         side="right"
                         className="absolute right-[-30px] top-[50px] z-0"
-                        height={`${headerHeight + 10}`}
+                        height="100"
                     />
 
                     <h1
                         ref={headerRef}
-                        className="vc-card-header px-[20px] pb-[10px] pt-[3px] overflow-visible mt-[40px] absolute text-center bg-white border-y-[5px] border-[#EEF2FF] shadow-bottom w-[calc(100%_+_16px)] rounded-t-[8px] z-50"
+                        className={`${headerClassName} absolute`}
                         style={{ wordBreak: 'break-word' }}
                     >
                         {customRibbonCategoryComponent && customRibbonCategoryComponent}
@@ -296,7 +302,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                             maxFontSize={32}
                             minFontSize={20}
                             width={((headerWidth ?? 290) - 40).toString()}
-                            className="vc-card-header-main-title text-[#18224E] leading-[100%] text-shadow text-[32px]"
+                            className={headerFitTextClassName}
                         />
                     </h1>
 
@@ -310,15 +316,34 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                     )}
 
                     <div
-                        className="relative pt-[114px] vc-card-content-container flex flex-col items-center grow min-h-0 w-full rounded-t-[30px] bg-[#353E64] rounded-b-[200px]"
-                        style={{ ...backgroundStyle, paddingTop: `${headerHeight + 49}px` }}
+                        className="relative vc-card-content-container flex flex-col items-center grow min-h-0 w-full rounded-t-[30px] bg-[#353E64] rounded-b-[200px]"
+                        style={backgroundStyle}
                     >
                         {/* 
-                    div in a div here so that we can have an outer scroll container with an inner container
-                    that has a rounded bottom at the bottom of the scrollable content 
-                */}
+                            div in a div here so that we can have an outer scroll container with an inner container
+                            that has a rounded bottom at the bottom of the scrollable content 
+                        */}
                         <Flipped flipId="scroll-container">
                             <div className="vc-card-content-scroll-container w-full pt-[20px] min-h-full flex flex-col justify-start items-center rounded-t-[30px] rounded-b-[200px] scrollbar-hide pb-[50px]">
+                                {/* Hidden header element for proper spacing/sizing purposes */}
+                                <h1
+                                    className={`${headerClassName} invisible`}
+                                    style={{ wordBreak: 'break-word' }}
+                                >
+                                    {customRibbonCategoryComponent && customRibbonCategoryComponent}
+                                    {!customRibbonCategoryComponent && (
+                                        <VCDisplayCardCategoryType categoryType={categoryType} />
+                                    )}
+
+                                    <FitText
+                                        text={_title ?? ''}
+                                        maxFontSize={32}
+                                        minFontSize={20}
+                                        width={((headerWidth ?? 290) - 40).toString()}
+                                        className={headerFitTextClassName}
+                                    />
+                                </h1>
+
                                 {isFront && (
                                     <Flipped flipId="face">
                                         <VC2FrontFaceInfo
