@@ -139,6 +139,7 @@ BackgroundColorTest.args = {
 export const LongTitleTest = Template.bind({});
 LongTitleTest.args = {
     credential: LongTitleCredential,
+    showBackButton: false,
     // convertTagsToSkills: simpleConvertTagsToSkills,
     handleXClick: () => console.log('X clicked!'),
     onMediaAttachmentClick: undefined,
