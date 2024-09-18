@@ -49,11 +49,13 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
 
         if (!profile) return reply.status(404).send();
 
-        const domainName = request.hostname;
-        const domain =
+        const domainName: string = request.hostname || (request as any).requestContext.domainName;
+        const _domain =
             !domainName || process.env.IS_OFFLINE
                 ? `localhost%3A${process.env.PORT || 3000}`
-                : domainName;
+                : domainName.replace(':', '%3A');
+
+        const domain = process.env.CUSTOM_DOMAIN || _domain;
 
         const didDoc = await learnCard.invoke.resolveDid(profile.did);
         const key = profile.did.split(':')[2];
@@ -215,11 +217,13 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
 
         const learnCard = await getLearnCard();
 
-        const domainName = request.hostname;
-        const domain =
+        const domainName: string = request.hostname || (request as any).requestContext.domainName;
+        const _domain =
             !domainName || process.env.IS_OFFLINE
                 ? `localhost%3A${process.env.PORT || 3000}`
-                : domainName;
+                : domainName.replace(':', '%3A');
+
+        const domain = process.env.CUSTOM_DOMAIN || _domain;
 
         const did = learnCard.id.did();
         const didDoc = await learnCard.invoke.resolveDid(did);

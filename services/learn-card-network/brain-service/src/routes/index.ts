@@ -40,7 +40,7 @@ export const createContext = async (
     const _domain =
         !domainName || process.env.IS_OFFLINE
             ? `localhost%3A${process.env.PORT || 3000}`
-            : domainName;
+            : domainName.replace(':', '%3A');
 
     const domain = process.env.CUSTOM_DOMAIN || _domain;
 

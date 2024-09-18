@@ -38,11 +38,11 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
 
         const learnCard = await getLearnCard();
 
-        const domainName = request.hostname;
+        const domainName: string = request.hostname || (request as any).requestContext.domainName;
         const domain =
             !domainName || process.env.IS_OFFLINE
                 ? `localhost%3A${process.env.PORT || 3000}`
-                : domainName;
+                : domainName.replace(':', '%3A');
 
         const did = learnCard.id.did();
         const didDoc = await learnCard.invoke.resolveDid(did);
