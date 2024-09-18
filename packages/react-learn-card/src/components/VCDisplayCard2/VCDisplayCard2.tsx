@@ -26,6 +26,7 @@ import {
     VideoMetadata,
 } from '../../types';
 import { CertificateDisplayCard } from '../CertificateDisplayCard';
+import { MeritBadgeDisplayCard } from '../MeritBadgeDisplayCard';
 
 export type CredentialIconType = {
     image?: React.ReactNode;
@@ -175,6 +176,34 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     };
 
     const _title = titleOverride || title;
+
+    if (categoryType === LCCategoryEnum.meritBadge) {
+        return (
+            <MeritBadgeDisplayCard
+                credential={credential}
+                categoryType={categoryType}
+                issueeOverride={issuee}
+                issuerOverride={issuer}
+                verificationItems={verificationItems}
+                getFileMetadata={getFileMetadata}
+                getVideoMetadata={getVideoMetadata}
+                onMediaAttachmentClick={onMediaAttachmentClick}
+                enableLightbox={enableLightbox}
+                trustedAppRegistry={trustedAppRegistry}
+                handleXClick={handleXClick}
+                subjectImageComponent={subjectImageComponent}
+                issuerImageComponent={issuerImageComponent}
+                customBodyCardComponent={customBodyCardComponent}
+                hideIssueDate={hideIssueDate}
+                onDotsClick={onDotsClick}
+                isFrontOverride={isFrontOverride}
+                setIsFrontOverride={setIsFrontOverride}
+                hideNavButtons={hideNavButtons}
+                showBackButton={showBackButton}
+                showDetailsBtn={showDetailsBtn}
+            />
+        );
+    }
 
     if (credential?.display?.displayType === 'certificate') {
         return (

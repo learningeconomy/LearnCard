@@ -1,9 +1,9 @@
 import React from 'react';
 
-import CertificateCornerIcon from './CertificateCornerIcon';
-import CertificateImageDisplay from './CertificateImageDisplay';
-import CertDisplayCardSkillsCount from './CertDisplayCardSkillsCount';
-import CertificateProfileImageDisplay from './CertificateProfileImageDisplay';
+import MeritBadgeCornerIcon from './MeritBadgeCornerIcon';
+import MeritBadgeImageDisplay from './MeritBadgeImageDisplay';
+import MeritBadgeSkillsCount from './MeritBadgeSkillsCount';
+import MeritBadgeProfileImageDisplay from './MeritBadgeProfileImageDisplay';
 
 import Smiley from '../svgs/Smiley';
 import Line from '../svgs/Line';
@@ -21,9 +21,9 @@ import { BoostAchievementCredential, LCCategoryEnum } from '../../types';
 import VerifierStateBadgeAndText, {
     VerifierState,
     VERIFIER_STATES,
-} from './VerifierStateBadgeAndText';
+} from '../CertificateDisplayCard/VerifierStateBadgeAndText';
 
-type CertificateFrontFaceProps = {
+type MeritBadgeFrontFaceProps = {
     isFront?: boolean;
     credential: VC | BoostAchievementCredential;
     categoryType?: LCCategoryEnum;
@@ -38,7 +38,7 @@ type CertificateFrontFaceProps = {
     showDetailsBtn?: boolean;
 };
 
-export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
+export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
     isFront,
     credential,
     categoryType,
@@ -126,37 +126,41 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
         <section
             role="button"
             onClick={() => handleViewBackFace?.()}
-            className="relative p-[13px] mt-[55px] bg-white border-[5px] rounded-[30px] border-soid border-grayscale-200 max-w-[300px]"
+            className="relative p-[13px] mt-[25px] bg-white border-[5px] rounded-[30px] border-soid border-grayscale-200 max-w-[300px]"
         >
-            <div className="w-[calc(100%-26px)] absolute top-[-52px]">
-                <CertificateImageDisplay
-                    imageUrl={imageUrl ?? ''}
-                    className="mx-auto"
-                    ribbonColor={textLightColor}
-                />
+            <div className="w-[calc(100%-26px)] absolute top-[-19px]">
+                <MeritBadgeImageDisplay imageUrl={imageUrl ?? ''} className="mx-auto" />
             </div>
 
             <div
-                className={`flex flex-col gap-[15px] items-center px-[20px] pt-[55px] ${isSelfVerified ? 'pb-[20px]' : 'pb-[77px]'
-                    } border-solid border-[4px] ${borderColor} rounded-[30px]`}
+                className={`flex flex-col gap-[15px] items-center px-[20px] pt-[92px] pb-[50px] border-solid border-[4px] ${borderColor} rounded-[30px]`}
             >
-                <div className="flex flex-col gap-[5px] items-center">
-                    <div className={`${textLightColor} uppercase text-[14px] font-poppins`}>
-                        {categoryTitle}
+                <div className="flex flex-col gap-[5px]">
+                    <div className="flex flex-col items-center text-grayscale-900">
+                        <span className="text-[16px] leading-[150%] font-jacques">
+                            {issueeName || <Line width="60" />}
+                        </span>
+                        <span className="text-[14px] leading-[150%] font-jacques">
+                            has met the requirements for
+                        </span>
                     </div>
+                    <div className="flex flex-col items-center">
+                        <h1 className="text-grayscale-900 text-center text-[20px] font-jacques">
+                            {title}
+                        </h1>
 
-                    <h1 className="text-grayscale-900 text-center text-[20px] font-jacques">
-                        {title}
-                    </h1>
+                        <div className={`${textLightColor} uppercase text-[14px] font-poppins`}>
+                            {categoryTitle}
+                        </div>
+                    </div>
                 </div>
 
                 {customBodyCardComponent}
                 {issueeImageExists && !customBodyCardComponent && (
-                    <CertificateProfileImageDisplay
+                    <MeritBadgeProfileImageDisplay
                         imageUrl={issueeImage}
                         imageComponent={subjectImageComponent}
                         className={`flex justify-center items-center ${textDarkColor}`}
-                        isIssuer={isSelfVerified}
                     />
                 )}
                 {!issueeImageExists && !customBodyCardComponent && (
@@ -165,25 +169,19 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
                     </div>
                 )}
 
-                <div className="text-[14px] text-grayscale-800 flex flex-col items-center w-full">
-                    <span className="font-jacques flex gap-[5px] items-center w-full overflow-ellipsis whitespace-nowrap overflow-hidden justify-center">
-                        {issueeName === '0 person' ? (
-                            'Not yet awarded'
-                        ) : (
-                            <>Awarded to {issueeName || <Line width="60" />}</>
-                        )}
-                    </span>
-                    {!hideIssueDate && <span className="font-jacques">on {createdAt}</span>}
-                </div>
+                <div className="border-t-[2px] border-solid border-sp-purple-base flex flex-col py-[20px] w-full">
+                    <div className="text-[14px] text-grayscale-900 flex flex-col items-center w-full mb-[10px]">
+                        <span className="font-jacques flex gap-[5px] items-center w-full overflow-ellipsis whitespace-nowrap overflow-hidden justify-center">
+                            {issueeName === '0 person' ? (
+                                'Not yet awarded'
+                            ) : (
+                                <>Awarded on {createdAt} by</>
+                            )}
+                        </span>
+                    </div>
 
-                <div className="flex flex-col gap-[10px] items-center">
-                    {description && (
-                        <div className="text-center text-grayscale-700 text-[12px] font-jacques line-clamp-4">
-                            {description}
-                        </div>
-                    )}
-
-                    <CertDisplayCardSkillsCount
+                    {/* <div className="flex flex-col gap-[10px] items-center">
+                    <MeritBadgeSkillsCount
                         skills={credential?.skills ?? []}
                         onClick={handleViewBackFace}
                     />
@@ -197,42 +195,44 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
                             Details
                         </button>
                     )}
-                </div>
+                    </div> */}
 
-                <div className="flex flex-col gap-[5px] items-center w-full">
-                    <span className="font-jacques text-[12px] text-grayscale-800">
-                        Certified by
-                    </span>
-                    <span className="mb-[3px] pt-[3px] text-grayscale-900 text-[25px] leading-[90%] font-sacramento border-b-[1px] border-solid border-grayscale-200 w-full text-center overflow-ellipsis whitespace-normal scrollbar-hide">
-                        {issuerName}
-                    </span>
+                    <div className="flex flex-col gap-[5px] items-center w-full">
+                        <span className="mb-[3px] pt-[3px] text-grayscale-900 text-[25px] leading-[90%] font-sacramento border-b-[1px] border-solid border-grayscale-200 w-full text-center overflow-ellipsis whitespace-normal scrollbar-hide">
+                            {issuerName}
+                        </span>
 
-                    <VerifierStateBadgeAndText verifierState={verifierState} />
+                        {/* <div className="flex flex-col text-[12px] text-grayscale-900 items-center">
+                            <span className="font-jacques">Troop Leader, Troop 1142</span>
+                            <span className="font-jacques">Boy Scouts of America</span>
+                        </div> */}
+
+                        <VerifierStateBadgeAndText verifierState={verifierState} />
+                    </div>
                 </div>
             </div>
 
             {categoryType && (
                 <>
-                    <CertificateCornerIcon categoryType={categoryType} position="top-left" />
-                    <CertificateCornerIcon categoryType={categoryType} position="top-right" />
-                    <CertificateCornerIcon categoryType={categoryType} position="bottom-left" />
-                    <CertificateCornerIcon categoryType={categoryType} position="bottom-right" />
+                    <MeritBadgeCornerIcon categoryType={categoryType} position="top-left" />
+                    <MeritBadgeCornerIcon categoryType={categoryType} position="top-right" />
+                    <MeritBadgeCornerIcon categoryType={categoryType} position="bottom-left" />
+                    <MeritBadgeCornerIcon categoryType={categoryType} position="bottom-right" />
                 </>
             )}
 
-            {!isSelfVerified && (
-                <CertificateProfileImageDisplay
-                    imageUrl={issuerImage}
-                    imageComponent={issuerImageComponent}
-                    className={`w-[calc(100%-26px)] absolute bottom-0 flex justify-center items-center ${textDarkColor}`}
-                    isIssuer
-                />
-            )}
+            <MeritBadgeProfileImageDisplay
+                imageUrl={issuerImage}
+                imageComponent={issuerImageComponent}
+                className="w-[calc(100%-26px)] absolute bottom-0 flex justify-center items-center text-sp-purple-base"
+                size="small"
+                showSeal
+            />
 
             {/* so that tailwind will put these colors in the css */}
-            <span className="hidden border-rose-500 text-spice-500 border-spice-500 border-cyan-500 text-cyan-500 border-indigo-500"></span>
+            <span className="hidden border-rose-500 text-spice-500 border-spice-500 border-cyan-500 text-cyan-500 border-indigo-500 border-sp-purple-base"></span>
         </section>
     );
 };
 
-export default CertificateFrontFace;
+export default MeritBadgeFrontFace;
