@@ -80,11 +80,20 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - name: Get Brain Service package version
+        id: brain-service-version
+        working-directory: "./services/learn-card-network/brain-service"        
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
       - name: Extract metadata for Brain Service
         id: brain-service-meta
         uses: docker/metadata-action@v5
         with:
           images: welibrary/lcn-brain-service
+          tags: |
+            type=semver,pattern={{version}},value=v${{ steps.brain-service-version.outputs.version }}
 
       - name: Build and push Brain Service image
         id: push-brain-service
@@ -96,18 +105,20 @@ jobs:
           tags: ${{ steps.brain-service-meta.outputs.tags }}
           labels: ${{ steps.brain-service-meta.outputs.labels }}
 
-      - name: Generate artifact attestation for Brain Service
-        uses: actions/attest-build-provenance@v1
-        with:
-          subject-name: welibrary/lcn-brain-service
-          subject-digest: ${{ steps.push-brain-service.outputs.digest }}
-          push-to-registry: true
+      - name: Get LearnCloud Service package version
+        id: cloud-service-version
+        working-directory: "./services/learn-card-network/learn-cloud-service"        
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Extract metadata for Cloud Service
         id: cloud-service-meta
         uses: docker/metadata-action@v5
         with:
           images: welibrary/lcn-cloud-service
+          tags: |
+            type=semver,pattern={{version}},value=v${{ steps.cloud-service-version.outputs.version }}
 
       - name: Build and push Cloud Service image
         id: push-cloud-service
@@ -118,13 +129,6 @@ jobs:
           push: true
           tags: ${{ steps.cloud-service-meta.outputs.tags }}
           labels: ${{ steps.cloud-service-meta.outputs.labels }}
-
-      - name: Generate artifact attestation for Cloud Service
-        uses: actions/attest-build-provenance@v1
-        with:
-          subject-name: welibrary/lcn-cloud-service
-          subject-digest: ${{ steps.push-cloud-service.outputs.digest }}
-          push-to-registry: true
 
       - name: Save nx cache
         uses: actions/cache/save@v3
