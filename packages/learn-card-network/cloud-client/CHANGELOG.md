@@ -1,5 +1,11 @@
 # @learncard/network-brain-client
 
+## 1.2.1
+
+### Patch Changes
+
+-   [`93258d5`](https://github.com/learningeconomy/LearnCard/commit/93258d5af9071e6c0f6ed62c9ee0547d8bfbb7a6) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Increase URL Limit for LearnCloud (This is a temporary fix)
+
 ## 1.2.0
 
 ### Minor Changes
