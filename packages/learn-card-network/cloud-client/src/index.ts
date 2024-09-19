@@ -1,50 +1,24 @@
-import { createTRPCProxyClient, CreateTRPCProxyClient, httpBatchLink } from '@trpc/client';
-import type { inferRouterInputs } from '@trpc/server';
-import type {
-    JWE,
-    PaginatedEncryptedRecordsType,
-    PaginatedEncryptedCredentialRecordsType,
-} from '@learncard/types';
+import { createTRPCClient, CreateTRPCClient, httpBatchLink } from '@trpc/client';
 import type { AppRouter } from '@learncard/learn-cloud-service';
 
 import { callbackLink } from './callbackLink';
 
-type Inputs = inferRouterInputs<AppRouter>;
-
-type Client = CreateTRPCProxyClient<AppRouter>;
-
-type OverriddenClient = Omit<Client, 'index' | 'customStorage'> & {
-    index: Client['index'] & {
-        get: {
-            query: (
-                args: Inputs['index']['get']
-            ) => Promise<PaginatedEncryptedCredentialRecordsType | JWE>;
-        };
-    };
-    customStorage: Omit<Client['customStorage'], 'read'> & {
-        read: {
-            query: (
-                args: Inputs['customStorage']['read']
-            ) => Promise<PaginatedEncryptedRecordsType>;
-        };
-    };
-};
-
 export const getClient = async (
     url: string,
     didAuthFunction: (challenge?: string) => Promise<string>
-) => {
+): Promise<CreateTRPCClient<AppRouter>> => {
     let challenges: string[] = [];
 
-    const challengeRequester = createTRPCProxyClient<AppRouter>({
+    const challengeRequester = createTRPCClient<AppRouter>({
         links: [
             httpBatchLink({
+                methodOverride: 'POST',
                 url,
                 maxURLLength: 3072,
                 headers: { Authorization: `Bearer ${await didAuthFunction()}` },
             }),
         ],
-    }) as OverriddenClient;
+    });
 
     const getChallenges = async (
         amount = 95 + Math.round((Math.random() - 0.5) * 5)
@@ -54,12 +28,13 @@ export const getClient = async (
 
     challenges = await getChallenges();
 
-    const trpc = createTRPCProxyClient<AppRouter>({
+    const trpc = createTRPCClient<AppRouter>({
         links: [
             callbackLink(async () => {
                 challenges = await getChallenges();
             }),
             httpBatchLink({
+                methodOverride: 'POST',
                 url,
                 maxURLLength: 3072,
                 headers: async () => {
@@ -69,7 +44,7 @@ export const getClient = async (
                 },
             }),
         ],
-    }) as OverriddenClient;
+    });
 
     return trpc;
 };

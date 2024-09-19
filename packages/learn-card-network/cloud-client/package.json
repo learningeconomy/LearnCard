@@ -18,7 +18,6 @@
     },
     "dependencies": {
         "@learncard/learn-cloud-service": "workspace:*",
-        "@trpc/client": "^10.45.2",
-        "@trpc/server": "^10.45.2"
+        "@trpc/client": "11.0.0-rc.502"
     }
 }

@@ -1,3 +1,5 @@
+import http from 'node:http';
+
 import serverlessHttp from 'serverless-http';
 import type {
     Context,
@@ -7,8 +9,8 @@ import type {
 } from 'aws-lambda';
 import { LCNNotificationValidator } from '@learncard/types';
 import { awsLambdaRequestHandler } from '@trpc/server/adapters/aws-lambda';
-import { createOpenApiAwsLambdaHandler } from 'trpc-openapi';
-import { TRPC_ERROR_CODE_HTTP_STATUS } from 'trpc-openapi/dist/adapters/node-http/errors';
+import { createOpenApiHttpHandler } from 'better-trpc-openapi';
+import { TRPC_ERROR_CODE_HTTP_STATUS } from 'better-trpc-openapi/dist/adapters/node-http/errors';
 import * as Sentry from '@sentry/serverless';
 
 import app from './src/openapi';
@@ -29,19 +31,29 @@ Sentry.AWSLambda.init({
 
 export const swaggerUiHandler = serverlessHttp(app, { basePath: '/docs' });
 
-export const _openApiHandler = createOpenApiAwsLambdaHandler({
-    router: appRouter,
-    createContext,
-    onError: ({ error, ctx, path }) => {
-        error.stack = error.stack?.replace('Mr: ', '');
-        error.name = error.message;
+export const _openApiHandler = serverlessHttp(
+    http.createServer(
+        createOpenApiHttpHandler({
+            router: appRouter,
+            createContext,
+            responseMeta: undefined as any,
+            maxBodySize: undefined as any,
+            onError: ({ error, ctx, path }) => {
+                error.stack = error.stack?.replace('Mr: ', '');
+                error.name = error.message;
 
-        Sentry.captureException(error, { extra: { ctx, path } });
-        Sentry.getActiveTransaction()?.setHttpStatus(TRPC_ERROR_CODE_HTTP_STATUS[error.code]);
-    },
-});
+                Sentry.captureException(error, { extra: { ctx, path } });
+                Sentry.getActiveTransaction()?.setHttpStatus(
+                    TRPC_ERROR_CODE_HTTP_STATUS[error.code]
+                );
+            },
+        })
+    ) as any,
+    { basePath: '/api' }
+);
 
 export const _trpcHandler = awsLambdaRequestHandler({
+    allowMethodOverride: true,
     router: appRouter,
     createContext,
     onError: ({ error, ctx, path }) => {
