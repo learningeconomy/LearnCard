@@ -54,12 +54,6 @@ import {
     setValidInviteForProfile,
     invalidateInvite,
 } from '@cache/invites';
-import {
-    deleteAllCachedConnectionsForProfile,
-    deleteCachedConnectionsForProfileId,
-    getCachedConnectionsByProfileId,
-    setCachedConnectionsForProfileId,
-} from '@cache/connections';
 import { getLearnCard } from '@helpers/learnCard.helpers';
 import { getManagedServiceProfiles } from '@accesslayer/profile/relationships/read';
 
@@ -402,8 +396,6 @@ export const profilesRouter = t.router({
 
             await profile.save();
 
-            await deleteAllCachedConnectionsForProfile(profile);
-
             return true;
         }),
 
@@ -525,11 +517,7 @@ export const profilesRouter = t.router({
             const success = await connectProfiles(profile, targetProfile, false);
 
             if (success) {
-                await Promise.all([
-                    deleteCachedConnectionsForProfileId(profile.profileId),
-                    deleteCachedConnectionsForProfileId(targetProfile.profileId),
-                    invalidateInvite(profileId, challenge),
-                ]);
+                await Promise.all([invalidateInvite(profileId, challenge)]);
             }
 
             return success;
@@ -594,13 +582,6 @@ export const profilesRouter = t.router({
 
             const success = await connectProfiles(profile, targetProfile);
 
-            if (success) {
-                await Promise.all([
-                    deleteCachedConnectionsForProfileId(profile.profileId),
-                    deleteCachedConnectionsForProfileId(targetProfile.profileId),
-                ]);
-            }
-
             return success;
         }),
 
@@ -620,19 +601,11 @@ export const profilesRouter = t.router({
         .input(z.void())
         .output(LCNProfileValidator.array())
         .query(async ({ ctx }) => {
-            const cachedResponse = await getCachedConnectionsByProfileId(
-                ctx.user.profile.profileId
-            );
-
-            if (cachedResponse) return cachedResponse;
-
             const _connections = await getConnections(ctx.user.profile, { limit: 50 });
 
             const connections = _connections.map(connection =>
                 updateDidForProfile(ctx.domain, connection)
             );
-
-            await setCachedConnectionsForProfileId(ctx.user.profile.profileId, connections);
 
             return connections;
         }),
@@ -871,13 +844,6 @@ export const profilesRouter = t.router({
 
             const success = await blockProfile(profile, targetProfile);
 
-            if (success) {
-                await Promise.all([
-                    deleteCachedConnectionsForProfileId(profile.profileId),
-                    deleteCachedConnectionsForProfileId(targetProfile.profileId),
-                ]);
-            }
-
             return success;
         }),
 
@@ -908,13 +874,6 @@ export const profilesRouter = t.router({
             }
 
             const success = await unblockProfile(profile, targetProfile);
-
-            if (success) {
-                await Promise.all([
-                    deleteCachedConnectionsForProfileId(profile.profileId),
-                    deleteCachedConnectionsForProfileId(targetProfile.profileId),
-                ]);
-            }
 
             return success;
         }),
