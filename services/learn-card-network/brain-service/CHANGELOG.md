@@ -1,5 +1,11 @@
 # @learncard/network-brain-service
 
+## 2.2.1
+
+### Patch Changes
+
+-   [#510](https://github.com/learningeconomy/LearnCard/pull/510) [`ae89e68`](https://github.com/learningeconomy/LearnCard/commit/ae89e683b6ec827f81f1e16502d12526985f1f95) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Remove caching/fix pagination logic for connections
+
 ## 2.2.0
 
 ### Minor Changes
