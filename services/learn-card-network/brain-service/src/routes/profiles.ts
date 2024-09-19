@@ -633,7 +633,7 @@ export const profilesRouter = t.router({
             const records = await getConnections(ctx.user.profile, { limit: limit + 1, cursor });
 
             const hasMore = records.length > limit;
-            const newCursor = records.at(hasMore ? -2 : -1)?.displayName;
+            const newCursor = records.at(hasMore ? -2 : -1)?.profileId;
 
             return {
                 hasMore: records.length > limit,

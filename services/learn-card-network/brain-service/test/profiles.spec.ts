@@ -1287,6 +1287,51 @@ describe('Profiles', () => {
 
             expect(twoConnections.records).toHaveLength(2);
         });
+
+        it('should paginate correctly', async () => {
+            await Promise.all(
+                Array(10)
+                    .fill(0)
+                    .map(async (_zero, index) => {
+                        const client = getClient({
+                            did: `did:test:${index + 1}`,
+                            isChallengeValid: true,
+                        });
+                        await client.profile.createProfile({ profileId: `generated${index + 1}` });
+                        await userA.clients.fullAuth.profile.connectWith({
+                            profileId: `generated${index + 1}`,
+                        });
+                        await client.profile.acceptConnectionRequest({ profileId: 'usera' });
+                    })
+            );
+
+            await expect(
+                userA.clients.fullAuth.profile.paginatedConnections()
+            ).resolves.not.toThrow();
+
+            const connections = await userA.clients.fullAuth.profile.paginatedConnections({
+                limit: 20,
+            });
+
+            expect(connections.records).toHaveLength(10);
+
+            const firstPage = await userA.clients.fullAuth.profile.paginatedConnections({
+                limit: 5,
+            });
+
+            expect(firstPage.records).toHaveLength(5);
+            expect(firstPage.hasMore).toBeTruthy();
+            expect(firstPage.cursor).toBeDefined();
+
+            const secondPage = await userA.clients.fullAuth.profile.paginatedConnections({
+                limit: 5,
+                cursor: firstPage.cursor,
+            });
+
+            expect(secondPage.hasMore).toBeFalsy();
+
+            expect([...firstPage.records, ...secondPage.records]).toEqual(connections.records);
+        });
     });
 
     describe('pendingConnections', () => {
