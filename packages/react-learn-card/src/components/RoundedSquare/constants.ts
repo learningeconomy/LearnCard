@@ -33,6 +33,7 @@ export const WALLET_SUBTYPES = {
     MEMBERSHIP: 'membership',
     ACCOMPLISHMENTS: 'accomplishments',
     ACCOMMODATIONS: 'accommodations',
+    MERIT_BADGES: 'meritBadges',
 };
 
 export const TYPE_TO_IMG_SRC = {

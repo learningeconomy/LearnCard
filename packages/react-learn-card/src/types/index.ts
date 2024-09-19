@@ -48,6 +48,8 @@ export enum LCCategoryEnum {
 
     accommodations = 'Accommodation',
     accomplishments = 'Accomplishment',
+
+    meritBadge = 'Merit Badge',
 }
 
 export enum LCSubtypes {

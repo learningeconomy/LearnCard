@@ -101,8 +101,8 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
 
                     {customIssuerName && customIssuerName}
                     {!customIssuerName && (
-                        <span className="flex items-center justify-center small-generic-boost-issuer-name line-clamp-1 text-[12px] text-grayscale-700 font-bold px-[6px]">
-                            by {issuerName}
+                        <span className="flex items-center justify-center small-generic-boost-issuer-name line-clamp-1 text-[12px] text-grayscale-700 px-[6px]">
+                            by <span className="font-bold whitespace-pre"> {issuerName}</span>
                         </span>
                     )}
 

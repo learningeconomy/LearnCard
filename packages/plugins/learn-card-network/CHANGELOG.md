@@ -1,5 +1,30 @@
 # learn-card-core
 
+## 1.8.4
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@1.3.4
+
+## 1.8.3
+
+### Patch Changes
+
+-   [#503](https://github.com/learningeconomy/LearnCard/pull/503) [`c148309`](https://github.com/learningeconomy/LearnCard/commit/c148309c0dbb8d512c40a1b1f16c0e843f3e1aff) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Allow querying when getting/counting boosts
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@1.3.3
+
+## 1.8.2
+
+### Patch Changes
+
+-   [#499](https://github.com/learningeconomy/LearnCard/pull/499) [`b6dd8b6`](https://github.com/learningeconomy/LearnCard/commit/b6dd8b65e295e0fe5122658cd351e1561d541523) Thanks [@cboydstun](https://github.com/cboydstun)! - count boosts route
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@1.3.2
+
 ## 1.8.1
 
 ### Patch Changes

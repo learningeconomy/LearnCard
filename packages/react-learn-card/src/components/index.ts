@@ -20,6 +20,7 @@ export * from "./LearnCardCreditCardFrontFace/index";
 export * from "./LearnPill/index";
 export * from "./Lightbox/index";
 export * from "./Loading/index";
+export * from "./MeritBadgeDisplayCard/index";
 export * from "./MiniVCThumbnail/index";
 export * from "./Notification/index";
 export * from "./NotificationBoostCard/index";

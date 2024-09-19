@@ -19,6 +19,7 @@ import Graduation from '../components/svgs/Graduation';
 import Briefcase from '../components/svgs/Briefcase';
 import AccommodationsIcon from '../components/svgs/AccommodationsIcon';
 import AccomplishmentsIcon from '../components/svgs/AccomplishmentsIcon';
+import ScoutsPledge from '../components/svgs/ScoutsPledge';
 
 export const getImageFromImage = (image: Image): string => {
     if (typeof image === 'string') return image;
@@ -135,10 +136,18 @@ export const getCategoryPrimaryColor = (category = LCCategoryEnum.achievement) =
 };
 
 export const getCategoryLightColor = (category = LCCategoryEnum.achievement) => {
+    if (category === LCCategoryEnum.meritBadge) {
+        return 'sp-purple-base';
+    }
+
     return `${getCategoryPrimaryColor(category)}-500`;
 };
 
 export const getCategoryDarkColor = (category = LCCategoryEnum.achievement) => {
+    if (category === LCCategoryEnum.meritBadge) {
+        return 'sp-purple-base';
+    }
+
     return `${getCategoryPrimaryColor(category)}-700`;
 };
 
@@ -165,6 +174,8 @@ export const getCategoryIcon = (category = LCCategoryEnum.achievement) => {
             return <AccommodationsIcon size="21" />;
         case LCCategoryEnum.accomplishments:
             return <AccomplishmentsIcon size="21" />;
+        case LCCategoryEnum.meritBadge:
+            return <ScoutsPledge />;
         case LCCategoryEnum.currency:
         default:
             console.log('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥');
