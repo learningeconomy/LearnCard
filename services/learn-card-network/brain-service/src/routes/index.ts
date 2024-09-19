@@ -42,7 +42,7 @@ export const createContext = async (
             ? `localhost%3A${process.env.PORT || 3000}`
             : domainName.replace(/:/g, '%3A');
 
-    const domain = process.env.CUSTOM_DOMAIN || _domain;
+    const domain = process.env.DOMAIN_NAME || _domain;
 
     if (authHeader && authHeader.split(' ').length === 2) {
         const [scheme, jwt] = authHeader.split(' ');

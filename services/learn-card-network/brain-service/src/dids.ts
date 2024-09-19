@@ -55,7 +55,7 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
                 ? `localhost%3A${process.env.PORT || 3000}`
                 : domainName.replace(/:/g, '%3A');
 
-        const domain = process.env.CUSTOM_DOMAIN || _domain;
+        const domain = process.env.DOMAIN_NAME || _domain;
 
         const didDoc = await learnCard.invoke.resolveDid(profile.did);
         const key = profile.did.split(':')[2];
@@ -223,7 +223,7 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
                 ? `localhost%3A${process.env.PORT || 3000}`
                 : domainName.replace(':', '%3A');
 
-        const domain = process.env.CUSTOM_DOMAIN || _domain;
+        const domain = process.env.DOMAIN_NAME || _domain;
 
         const did = learnCard.id.did();
         const didDoc = await learnCard.invoke.resolveDid(did);
