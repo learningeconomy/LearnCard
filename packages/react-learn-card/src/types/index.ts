@@ -48,6 +48,8 @@ export enum LCCategoryEnum {
 
     accommodations = 'Accommodation',
     accomplishments = 'Accomplishment',
+
+    meritBadge = 'Merit Badge',
 }
 
 export enum LCSubtypes {
@@ -313,6 +315,7 @@ export type BoostSmallCardProps = {
     customButtonComponent?: React.ReactNode;
     customThumbComponent?: React.ReactNode;
     customBodyComponent?: React.ReactNode;
+    customDraftComponent?: React.ReactNode;
     arrowOnClick?: () => void;
     buttonOnClick?: () => void;
     onCheckClick?: () => void;

@@ -115,8 +115,11 @@ export type LearnCardNetworkPluginMethods = {
     ) => Promise<string>;
     getBoost: (uri: string) => Promise<Boost & { boost: UnsignedVC }>;
     /** @deprecated Use getPaginatedBoosts */
-    getBoosts: () => Promise<{ name?: string; uri: string }[]>;
-    getPaginatedBoosts: (options?: PaginationOptionsType) => Promise<PaginatedBoostsType>;
+    getBoosts: (query?: Partial<Omit<Boost, 'uri'>>) => Promise<{ name?: string; uri: string }[]>;
+    getPaginatedBoosts: (
+        options?: PaginationOptionsType & { query?: Partial<Omit<Boost, 'uri'>> }
+    ) => Promise<PaginatedBoostsType>;
+    countBoosts: (query?: Partial<Omit<Boost, 'uri'>>) => Promise<number>;
     /** @deprecated Use getPaginatedBoostRecipients */
     getBoostRecipients: (
         uri: string,

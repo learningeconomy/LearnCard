@@ -42,7 +42,7 @@ export const getClient = async (
         links: [
             httpBatchLink({
                 url,
-                maxURLLength: 2048,
+                maxURLLength: 3072,
                 headers: { Authorization: `Bearer ${await didAuthFunction()}` },
             }),
         ],
@@ -63,7 +63,7 @@ export const getClient = async (
             }),
             httpBatchLink({
                 url,
-                maxURLLength: 2048,
+                maxURLLength: 3072,
                 headers: async () => {
                     if (challenges.length === 0) challenges.push(...(await getChallenges()));
 

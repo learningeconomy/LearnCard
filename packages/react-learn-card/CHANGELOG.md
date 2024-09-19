@@ -1,5 +1,45 @@
 # @welibraryos/react-learn-card
 
+## 2.7.14
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.34
+
+## 2.7.13
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.33
+
+## 2.7.12
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.32
+
+## 2.7.11
+
+### Patch Changes
+
+-   [#501](https://github.com/learningeconomy/LearnCard/pull/501) [`df3e01c`](https://github.com/learningeconomy/LearnCard/commit/df3e01c99bd0dc3c697103f16628a783ea02de60) Thanks [@smurflo2](https://github.com/smurflo2)! - Add Merit Badge display
+
+## 2.7.10
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.31
+
+## 2.7.9
+
+### Patch Changes
+
+-   [#495](https://github.com/learningeconomy/LearnCard/pull/495) [`f14f9f2`](https://github.com/learningeconomy/LearnCard/commit/f14f9f2315453e322501ae45872b97fa2610d08b) Thanks [@gerardopar](https://github.com/gerardopar)! - [LC-292] - Boost Draft State Changes
+
 ## 2.7.8
 
 ### Patch Changes

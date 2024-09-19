@@ -35,6 +35,7 @@ export * from "./QRCodeIcon";
 export * from "./RedFlag";
 export * from "./RoundedCorner";
 export * from "./RoundedX";
+export * from "./ScoutsPledge";
 export * from "./ShieldChevron";
 export * from "./Smiley";
 export * from "./SocialBadgesIcon";

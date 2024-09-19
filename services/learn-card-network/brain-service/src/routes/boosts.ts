@@ -15,7 +15,7 @@ import {
 
 import { t, profileRoute } from '@routes';
 
-import { getBoostByUri, getBoostsForProfile } from '@accesslayer/boost/read';
+import { getBoostByUri, getBoostsForProfile, countBoostsForProfile } from '@accesslayer/boost/read';
 import {
     getBoostRecipientsSkipLimit,
     getBoostAdmins,
@@ -187,7 +187,7 @@ export const boostsRouter = t.router({
         .meta({
             openapi: {
                 protect: true,
-                method: 'GET',
+                method: 'POST',
                 path: '/boost',
                 tags: ['Boosts'],
                 summary: 'Get boosts',
@@ -196,12 +196,19 @@ export const boostsRouter = t.router({
                     "This endpoint gets the current user's boosts.\nWarning! This route is deprecated and currently has a hard limit of returning only the first 50 boosts. Please use getPaginatedBoosts instead",
             },
         })
-        .input(z.void())
+        .input(
+            z
+                .object({
+                    query: BoostValidator.omit({ id: true, boost: true }).partial().optional(),
+                })
+                .default({})
+        )
         .output(BoostValidator.omit({ id: true, boost: true }).extend({ uri: z.string() }).array())
-        .query(async ({ ctx }) => {
+        .query(async ({ ctx, input }) => {
+            const { query } = input;
             const { profile } = ctx.user;
 
-            const boosts = await getBoostsForProfile(profile, { limit: 50 });
+            const boosts = await getBoostsForProfile(profile, { limit: 50, query });
 
             return boosts.map(boost => {
                 const { id, boost: _boost, ...remaining } = boost;
@@ -209,11 +216,39 @@ export const boostsRouter = t.router({
             });
         }),
 
+    countBoosts: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/boost/count',
+                tags: ['Boosts'],
+                summary: 'Count managed boosts',
+                description: "This endpoint counts the current user's managed boosts.",
+            },
+        })
+        .input(
+            z
+                .object({
+                    query: BoostValidator.omit({ id: true, boost: true }).partial().optional(),
+                })
+                .default({})
+        )
+        .output(z.number())
+        .query(async ({ ctx, input }) => {
+            const { query } = input;
+            const { profile } = ctx.user;
+
+            const count = await countBoostsForProfile(profile, { query });
+
+            return count;
+        }),
+
     getPaginatedBoosts: profileRoute
         .meta({
             openapi: {
                 protect: true,
-                method: 'GET',
+                method: 'POST',
                 path: '/boost/paginated',
                 tags: ['Boosts'],
                 summary: 'Get boosts',
@@ -223,14 +258,15 @@ export const boostsRouter = t.router({
         .input(
             PaginationOptionsValidator.extend({
                 limit: PaginationOptionsValidator.shape.limit.default(25),
+                query: BoostValidator.omit({ id: true, boost: true }).partial().optional(),
             }).default({})
         )
         .output(PaginatedBoostsValidator)
         .query(async ({ ctx, input }) => {
-            const { limit, cursor } = input;
+            const { limit, cursor, query } = input;
             const { profile } = ctx.user;
 
-            const records = await getBoostsForProfile(profile, { limit: limit + 1, cursor });
+            const records = await getBoostsForProfile(profile, { limit: limit + 1, cursor, query });
 
             const hasMore = records.length > limit;
             const newCursor = records.at(hasMore ? -2 : -1)?.created;
