@@ -30,6 +30,8 @@ type OverriddenClient = Omit<Client, 'index' | 'customStorage'> & {
     };
 };
 
+export type LearnCloudClient = OverriddenClient;
+
 export const getClient = async (
     url: string,
     didAuthFunction: (challenge?: string) => Promise<string>
