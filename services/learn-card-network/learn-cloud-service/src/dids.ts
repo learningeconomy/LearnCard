@@ -42,7 +42,7 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
         const domain =
             !domainName || process.env.IS_OFFLINE
                 ? `localhost%3A${process.env.PORT || 3000}`
-                : domainName.replace(':', '%3A');
+                : domainName.replace(/:/g, '%3A');
 
         const did = learnCard.id.did();
         const didDoc = await learnCard.invoke.resolveDid(did);
