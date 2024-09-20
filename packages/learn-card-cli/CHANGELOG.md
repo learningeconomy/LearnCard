@@ -1,5 +1,16 @@
 # @learncard/cli
 
+## 3.3.35
+
+### Patch Changes
+
+-   Updated dependencies [[`39f88b0`](https://github.com/learningeconomy/LearnCard/commit/39f88b0de824fe8b6b29997a2064c4965ac042f6)]:
+    -   @learncard/types@5.5.2
+    -   @learncard/core@9.3.1
+    -   @learncard/init@1.2.35
+    -   @learncard/didkit-plugin@1.4.9
+    -   @learncard/learn-cloud-plugin@2.0.7
+
 ## 3.3.34
 
 ### Patch Changes
