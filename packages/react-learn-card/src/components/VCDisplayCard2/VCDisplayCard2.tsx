@@ -319,9 +319,16 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
 
                     <div
                         className="relative pt-[114px] vc-card-content-container flex flex-col items-center grow min-h-0 w-full rounded-t-[30px] bg-[#353E64] rounded-b-[200px]"
-                        style={backgroundStyle}
+                        // style={backgroundStyle}
                     >
-                        <div className="vc-card-content-scroll-container w-full pt-[20px] min-h-full flex flex-col justify-start items-center rounded-t-[30px] rounded-b-[200px] scrollbar-hide pb-[50px]">
+                        <Flipped inverseFlipId="card" scale>
+                            <div
+                                className="absolute top-0 left-0 w-full h-full rounded-b-[200px] rounded-t-[30px]"
+                                style={backgroundStyle}
+                            />
+                        </Flipped>
+
+                        <div className="vc-card-content-scroll-container w-full pt-[20px] min-h-full flex flex-col justify-start items-center rounded-t-[30px] rounded-b-[200px] scrollbar-hide pb-[50px] z-50">
                             {isFront && (
                                 <VC2FrontFaceInfo
                                     credential={credential}
@@ -336,7 +343,6 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                                     createdAt={createdAt ?? ''}
                                     imageUrl={imageUrl}
                                     trustedAppRegistry={trustedAppRegistry}
-                                    isFront={isFront}
                                 />
                             )}
                             {!isFront && (
