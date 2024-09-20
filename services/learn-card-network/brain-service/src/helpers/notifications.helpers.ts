@@ -7,10 +7,22 @@ import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
 // Timeout value in milliseconds for aborting the request
 const TIMEOUT = 6000;
 
-const sqs = new SQSClient({ apiVersion: 'latest', region: process.env.AWS_REGION });
+const pollUrl = process.env.NOTIFICATIONS_QUEUE_POLL_URL;
+
+const sqs = new SQSClient({
+    apiVersion: 'latest',
+    region: process.env.AWS_REGION,
+    ...(pollUrl && { endpoint: pollUrl.split('/').slice(0, -1).join('/') }),
+});
 
 export async function addNotificationToQueue(notification: LCNNotification) {
-    if (process.env.NODE_ENV === 'test' || process.env.IS_OFFLINE) return; // Can not use SQS in test environment or locally
+    if (
+        process.env.NODE_ENV === 'test' ||
+        process.env.IS_OFFLINE ||
+        !process.env.NOTIFICATIONS_QUEUE_URL
+    ) {
+        return; // Can not use SQS in test environment or locally
+    }
 
     const command = new SendMessageCommand({
         QueueUrl: process.env.NOTIFICATIONS_QUEUE_URL,

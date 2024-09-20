@@ -1,0 +1,164 @@
+# Sample Docker Compose file for running a local LCN Brain Service/LearnCloud Service
+# 
+# To use this, cd into this directory and run `docker-compose up`
+#
+# Once everything is up and running, you can connect to these local instances using the `network`
+# and `cloud` fields in `initLearnCard`
+#
+# For example, run
+#
+# ```bash`
+# npx @learncard/cli
+# ```
+#
+# Followed by
+#
+# ```javascript
+# let test = await initLearnCard({ seed: 'a', network: 'http://localhost:4000/trpc', cloud: { url: 'http://localhost:5000/trpc' } })
+# ````
+
+services:
+  # Brain Service
+  brain:
+    image: welibrary/lcn-brain-service
+    container_name: "lcn-brain-service"
+
+    # Change all the below 4000's to whatever port you'd like to run this on!
+    expose:
+      - 4000
+    ports:
+      - "4000:4000"
+
+    depends_on:
+      - neo4j
+      - redis
+      - elasticmq
+
+    networks:
+      - learn-card
+
+    # We need to attach localhost to the host's gateway in order to correctly resolve did:webs
+    extra_hosts:
+      - "localhost:host-gateway"
+
+    environment:
+      PORT: 4000
+
+      # Seed used to create the Brain Service's did
+      SEED: a
+
+      NEO4J_URI: ${NEO4J_URI:-bolt://neo4j:7687}
+      NEO4J_USERNAME: ${NEO4J_USERNAME:-neo4j}
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD:-this-is-the-password}
+
+      REDIS_URL: ${REDIS_URL:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+
+      # You do not need to provide real AWS credentials. They are only necessary because the AWS library
+      # we use to connect to ElasticMQ requires _something_ to be set
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-notARealKey}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-notARealSecretKey}
+
+      # If you don't need notifications, you do not need to set up/include ElasticMQ
+      NOTIFICATIONS_QUEUE_POLL_URL: ${NOTIFICATIONS_QUEUE_POLL_URL:-http://elasticmq:9324/notifications}
+      NOTIFICATIONS_QUEUE_URL: ${NOTIFICATIONS_QUEUE_URL:-http://elasticmq:9324/notifications}
+
+  # LearnCloud Service
+  cloud:
+    image: welibrary/lcn-cloud-service
+    container_name: "lcn-cloud-service"
+
+    # Change all the below 5000's to whatever port you'd like to run this on!
+    expose:
+      - 5000
+    ports:
+      - "5000:5000"
+
+    depends_on:
+      - mongodb
+      - redis
+
+    networks:
+      - learn-card
+
+    # We need to attach localhost to the host's gateway in order to correctly resolve did:webs
+    extra_hosts:
+      - "localhost:host-gateway"
+
+    environment:
+      PORT: 5000
+
+      # Seed used to create the Brain Service's did
+      LEARN_CLOUD_SEED: a
+
+      LEARN_CLOUD_MONGO_URI: ${LEARN_CLOUD_MONGO_URI:-mongodb://mongodb:27017?ssl=false}
+      LEARN_CLOUD_MONGO_DB_NAME: ${LEARN_CLOUD_MONGO_DB_NAME:-learn-cloud}
+
+      # We can not reuse the same Redis instance (for now) due to key collisions
+      REDIS_URL: redis2
+      REDIS_PORT: 6380
+
+  neo4j:
+    image: neo4j:latest
+    container_name: "lcn-neo4j"
+    ports:
+      - "7687:7687"
+    environment:
+      NEO4J_AUTH: neo4j/this-is-the-password
+    networks:
+      - learn-card
+
+  redis:
+    image: redis:alpine
+    container_name: "lcn-redis"
+    environment:
+      - ALLOW_EMPTY_PASSWORD=${ALLOW_EMPTY_PASSWORD:-yes}
+      - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
+    ports:
+      - "6379:${REDIS_PORT:-6379}"
+    networks:
+      - learn-card
+
+  redis2:
+    image: redis:alpine
+    container_name: "lcn-redis2"
+    environment:
+      - ALLOW_EMPTY_PASSWORD=${ALLOW_EMPTY_PASSWORD:-yes}
+      - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
+    ports:
+      - "6380:6379"
+    networks:
+      - learn-card
+
+  mongodb:
+    command: --quiet
+    container_name: "lcn-mongodb"
+    image: mongo:latest
+    environment:
+      MONGO_INITDB_DATABASE: start
+    expose:
+      - 27017
+    ports:
+      - 27017:27017
+    restart: always
+    logging:
+      driver: none
+    entrypoint: [ "/usr/bin/mongod", "--bind_ip_all"]
+    networks:
+      - learn-card
+
+  elasticmq:
+    image: softwaremill/elasticmq-native
+    container_name: "lcn-elasticmq"
+    expose:
+      - 9324
+    ports:
+      - "9324:9324"
+    networks:
+      - learn-card
+
+
+networks:
+  learn-card:
+    driver: bridge
