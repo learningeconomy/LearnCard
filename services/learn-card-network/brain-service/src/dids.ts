@@ -221,7 +221,7 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
         const _domain =
             !domainName || process.env.IS_OFFLINE
                 ? `localhost%3A${process.env.PORT || 3000}`
-                : domainName.replace(':', '%3A');
+                : domainName.replace(/:/g, '%3A');
 
         const domain = process.env.DOMAIN_NAME || _domain;
 
