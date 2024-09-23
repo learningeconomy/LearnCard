@@ -1,5 +1,17 @@
 # @welibraryos/react-learn-card
 
+## 2.7.17
+
+### Patch Changes
+
+-   [#507](https://github.com/learningeconomy/LearnCard/pull/507) [`e6ddc54`](https://github.com/learningeconomy/LearnCard/commit/e6ddc548d69d1d9b7e770e8d66f81a0d348e0678) Thanks [@smurflo2](https://github.com/smurflo2)! - [LC-250] Fix spacing for big titles in Boost display
+
+## 2.7.16
+
+### Patch Changes
+
+-   [#514](https://github.com/learningeconomy/LearnCard/pull/514) [`ac7cd5c`](https://github.com/learningeconomy/LearnCard/commit/ac7cd5ccd2ee6d572fedda50259eb751817564a2) Thanks [@gerardopar](https://github.com/gerardopar)! - [LC-309] - fix VC card warping on flip
+
 ## 2.7.15
 
 ### Patch Changes
