@@ -4,7 +4,7 @@ on:
   pull_request_target:
     types: [closed]
     branches:
-      - "changeset-release/main"
+      - main
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
@@ -17,7 +17,9 @@ env:
 jobs:
   push-to-registry:
     name: Push Docker images to Docker Hub
-    if: ${{ github.event.pull_request.merged == true }}
+    if: | 
+      github.event.pull_request.merged == true &&
+      github.head_ref == "changeset-release/main"
     runs-on: ubuntu-latest
     permissions:
       packages: write
