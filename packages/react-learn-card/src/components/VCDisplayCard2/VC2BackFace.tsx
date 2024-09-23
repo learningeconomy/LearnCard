@@ -1,5 +1,6 @@
 import React from 'react';
 import { format } from 'date-fns';
+import { Flipper, Flipped } from 'react-flip-toolkit';
 
 import MediaAttachmentsBox from './MediaAttachmentsBox';
 import TruncateTextBox from './TruncateTextBox';
@@ -80,77 +81,91 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
     */
 
     return (
-        <section className="vc-back-face flex flex-col gap-[20px] w-full px-[15px] pb-[25px]">
-            {showBackButton && (
-                <div className="w-full">
-                    <button
-                        className="vc-card-back-button rounded-full h-[50px] px-[15px] flex items-center justify-center gap-[5px] z-50 text-[30px] text-white select-none"
-                        onClick={showFrontFace}
+        <Flipped inverseFlipId="card">
+            <section className="vc-back-face flex flex-col gap-[20px] w-full px-[15px] pb-[25px]">
+                {showBackButton && (
+                    <div className="w-full">
+                        <button
+                            className="vc-card-back-button rounded-full h-[50px] px-[15px] flex items-center justify-center gap-[5px] z-50 text-[30px] text-white select-none"
+                            onClick={showFrontFace}
+                        >
+                            <LeftArrow className="text-white" size="25" />
+                            Details
+                        </button>
+                    </div>
+                )}
+
+                {customDescription && (
+                    <TruncateTextBox
+                        headerText="About"
+                        text={description}
+                        className="description-box"
                     >
-                        <LeftArrow className="text-white" size="25" />
-                        Details
-                    </button>
-                </div>
-            )}
+                        {customDescription}
+                    </TruncateTextBox>
+                )}
+                {!customDescription && (description || expiration) && (
+                    <TruncateTextBox
+                        headerText="About"
+                        text={description}
+                        className="description-box"
+                    >
+                        {expiration && (
+                            <p className="text-grayscale-800 font-poppins font-[600] text-[12px] leading-[18px] mb-0">
+                                Expire{isExpired ? 'd' : 's'} on {expiration}
+                            </p>
+                        )}
+                    </TruncateTextBox>
+                )}
 
-            {customDescription && (
-                <TruncateTextBox headerText="About" text={description} className="description-box">
-                    {customDescription}
-                </TruncateTextBox>
-            )}
-            {!customDescription && (description || expiration) && (
-                <TruncateTextBox headerText="About" text={description} className="description-box">
-                    {expiration && (
-                        <p className="text-grayscale-800 font-poppins font-[600] text-[12px] leading-[18px] mb-0">
-                            Expire{isExpired ? 'd' : 's'} on {expiration}
-                        </p>
-                    )}
-                </TruncateTextBox>
-            )}
+                {customCriteria && (
+                    <TruncateTextBox
+                        headerText="Criteria"
+                        text={description}
+                        className="description-box"
+                    >
+                        {customCriteria}
+                    </TruncateTextBox>
+                )}
+                {!customCriteria && criteria && (
+                    <TruncateTextBox
+                        headerText="Criteria"
+                        text={criteria}
+                        className="criteria-box"
+                    />
+                )}
+                {(credential.skills?.length ?? 0) > 0 &&
+                    (customSkillsComponent ? (
+                        customSkillsComponent
+                    ) : (
+                        <SkillsBox skills={credential.skills ?? []} />
+                    ))}
 
-            {customCriteria && (
-                <TruncateTextBox
-                    headerText="Criteria"
-                    text={description}
-                    className="description-box"
-                >
-                    {customCriteria}
-                </TruncateTextBox>
-            )}
-            {!customCriteria && criteria && (
-                <TruncateTextBox headerText="Criteria" text={criteria} className="criteria-box" />
-            )}
-            {(credential.skills?.length ?? 0) > 0 &&
-                (customSkillsComponent ? (
-                    customSkillsComponent
-                ) : (
-                    <SkillsBox skills={credential.skills ?? []} />
-                ))}
+                {issueHistory && issueHistory?.length > 0 && (
+                    <IssueHistoryBox
+                        issueHistory={issueHistory}
+                        customIssueHistoryComponent={customIssueHistoryComponent}
+                    />
+                )}
 
-            {issueHistory && issueHistory?.length > 0 && (
-                <IssueHistoryBox
-                    issueHistory={issueHistory}
-                    customIssueHistoryComponent={customIssueHistoryComponent}
-                />
-            )}
+                {credential.attachments && credential.attachments.length > 0 && (
+                    <MediaAttachmentsBox
+                        attachments={credential.attachments}
+                        getFileMetadata={getFileMetadata}
+                        getVideoMetadata={getVideoMetadata}
+                        onMediaAttachmentClick={onMediaAttachmentClick}
+                        enableLightbox={enableLightbox}
+                    />
+                )}
+                {/* {credential.notes && <TruncateTextBox headerText="Notes" text={credential.notes} />} */}
 
-            {credential.attachments && credential.attachments.length > 0 && (
-                <MediaAttachmentsBox
-                    attachments={credential.attachments}
-                    getFileMetadata={getFileMetadata}
-                    getVideoMetadata={getVideoMetadata}
-                    onMediaAttachmentClick={onMediaAttachmentClick}
-                    enableLightbox={enableLightbox}
-                />
-            )}
-            {/* {credential.notes && <TruncateTextBox headerText="Notes" text={credential.notes} />} */}
+                {alignment && <AlignmentsBox alignment={alignment} style="boost" />}
 
-            {alignment && <AlignmentsBox alignment={alignment} style="boost" />}
-
-            {verificationItems && verificationItems.length > 0 && (
-                <VerificationsBox verificationItems={verificationItems} />
-            )}
-        </section>
+                {verificationItems && verificationItems.length > 0 && (
+                    <VerificationsBox verificationItems={verificationItems} />
+                )}
+            </section>
+        </Flipped>
     );
 };
 

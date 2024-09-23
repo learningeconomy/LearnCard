@@ -54,22 +54,22 @@ export const getConnections = async (
             ],
         })
         .with(
-            'source, directlyConnected, receivedBoostTargets, COLLECT(DISTINCT ownedBoostTarget) AS ownedBoostTargets'
+            'directlyConnected, receivedBoostTargets, COLLECT(DISTINCT ownedBoostTarget) AS ownedBoostTargets'
         )
         .with(
-            'source, directlyConnected, receivedBoostTargets + ownedBoostTargets AS connectedViaBoost'
+            'directlyConnected + receivedBoostTargets + ownedBoostTargets AS allConnectedProfiles'
         )
-        .with('directlyConnected, directlyConnected + connectedViaBoost AS allConnectedProfiles')
-        .unwind('allConnectedProfiles AS target');
+        .unwind('allConnectedProfiles AS target')
+        .with('target');
 
     const query = cursor
         ? _query.where(
-            new Where({ target: { displayName: { [Op.gt]: cursor } } }, _query.getBindParam())
+            new Where({ target: { profileId: { [Op.gt]: cursor } } }, _query.getBindParam())
         )
         : _query;
 
     const results = convertQueryResultToPropertiesObjectArray<{ target: ProfileType }>(
-        await query.return('DISTINCT target').orderBy('target.displayName').limit(limit).run()
+        await query.return('DISTINCT target').orderBy('target.profileId').limit(limit).run()
     );
 
     return results.map(result => result.target);

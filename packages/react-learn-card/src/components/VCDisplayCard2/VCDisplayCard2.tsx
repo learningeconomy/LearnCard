@@ -276,189 +276,198 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                     role="button"
                     onClick={() => setIsFront(!isFront)}
                 >
-                    <RibbonEnd
-                        side="left"
-                        className="absolute left-[-30px] top-[50px] z-0"
-                        height="100"
-                    />
-                    <RibbonEnd
-                        side="right"
-                        className="absolute right-[-30px] top-[50px] z-0"
-                        height="100"
-                    />
-
-                    <h1
-                        ref={headerRef}
-                        className={`${headerClassName} absolute`}
-                        style={{ wordBreak: 'break-word' }}
-                    >
-                        {customRibbonCategoryComponent && customRibbonCategoryComponent}
-                        {!customRibbonCategoryComponent && (
-                            <VCDisplayCardCategoryType categoryType={categoryType} />
-                        )}
-
-                        <FitText
-                            text={_title ?? ''}
-                            maxFontSize={32}
-                            minFontSize={20}
-                            width={((headerWidth ?? 290) - 40).toString()}
-                            className={headerFitTextClassName}
+                    <Flipped inverseFlipId="card">
+                        <RibbonEnd
+                            side="left"
+                            className="absolute left-[-30px] top-[50px] z-0"
+                            height={'100'}
                         />
-                    </h1>
+                    </Flipped>
+                    <Flipped inverseFlipId="card">
+                        <RibbonEnd
+                            side="right"
+                            className="absolute right-[-30px] top-[50px] z-0"
+                            height={'100'}
+                        />
+                    </Flipped>
+
+                    <Flipped inverseFlipId="card">
+                        <h1
+                            ref={headerRef}
+                            className={`${headerClassName} absolute`}
+                            style={{ wordBreak: 'break-word' }}
+                        >
+                            {customRibbonCategoryComponent && customRibbonCategoryComponent}
+                            {!customRibbonCategoryComponent && (
+                                <VCDisplayCardCategoryType categoryType={categoryType} />
+                            )}
+
+                            <FitText
+                                text={_title ?? ''}
+                                maxFontSize={32}
+                                minFontSize={20}
+                                width={((headerWidth ?? 290) - 40).toString()}
+                                className={headerFitTextClassName}
+                            />
+                        </h1>
+                    </Flipped>
 
                     {isFront && handleXClick && (
-                        <button
-                            className="vc-card-x-button absolute top-[-25px] bg-white rounded-full h-[50px] w-[50px] flex items-center justify-center z-50"
-                            onClick={handleXClick}
-                        >
-                            <RoundedX />
-                        </button>
+                        <Flipped inverseFlipId="card">
+                            <button
+                                className="vc-card-x-button absolute top-[-25px] bg-white rounded-full h-[50px] w-[50px] flex items-center justify-center z-50"
+                                onClick={handleXClick}
+                            >
+                                <RoundedX />
+                            </button>
+                        </Flipped>
                     )}
 
                     <div
                         className="relative vc-card-content-container flex flex-col items-center grow min-h-0 w-full rounded-t-[30px] bg-[#353E64] rounded-b-[200px]"
-                        style={backgroundStyle}
+                        // style={backgroundStyle}
                     >
-                        {/* 
-                            div in a div here so that we can have an outer scroll container with an inner container
-                            that has a rounded bottom at the bottom of the scrollable content 
-                        */}
-                        <Flipped flipId="scroll-container">
-                            <div className="vc-card-content-scroll-container w-full pt-[20px] min-h-full flex flex-col justify-start items-center rounded-t-[30px] rounded-b-[200px] scrollbar-hide pb-[50px]">
-                                {/* Hidden header element for proper spacing/sizing purposes */}
-                                <h1
-                                    className={`${headerClassName} invisible`}
-                                    style={{ wordBreak: 'break-word' }}
-                                >
-                                    {customRibbonCategoryComponent && customRibbonCategoryComponent}
-                                    {!customRibbonCategoryComponent && (
-                                        <VCDisplayCardCategoryType categoryType={categoryType} />
-                                    )}
+                        <Flipped inverseFlipId="card" scale>
+                            <div
+                                className="absolute top-0 left-0 w-full h-full rounded-b-[200px] rounded-t-[30px]"
+                                style={backgroundStyle}
+                            />
+                        </Flipped>
 
-                                    <FitText
-                                        text={_title ?? ''}
-                                        maxFontSize={32}
-                                        minFontSize={20}
-                                        width={((headerWidth ?? 290) - 40).toString()}
-                                        className={headerFitTextClassName}
-                                    />
-                                </h1>
-
-                                {isFront && (
-                                    <Flipped flipId="face">
-                                        <VC2FrontFaceInfo
-                                            credential={credential}
-                                            issuee={issuee}
-                                            subjectDID={subjectDID}
-                                            issuer={issuer}
-                                            title={title}
-                                            subjectImageComponent={subjectImageComponent}
-                                            issuerImageComponent={issuerImageComponent}
-                                            customBodyCardComponent={customBodyCardComponent}
-                                            customThumbComponent={customThumbComponent}
-                                            createdAt={createdAt ?? ''}
-                                            imageUrl={imageUrl}
-                                            trustedAppRegistry={trustedAppRegistry}
-                                        />
-                                    </Flipped>
-                                )}
-                                {!isFront && (
-                                    <Flipped flipId="face">
-                                        <VC2BackFace
-                                            credential={credential}
-                                            verificationItems={verificationItems}
-                                            // convertTagsToSkills={convertTagsToSkills}
-                                            issueHistory={issueHistory}
-                                            getFileMetadata={getFileMetadata}
-                                            getVideoMetadata={getVideoMetadata}
-                                            onMediaAttachmentClick={onMediaAttachmentClick}
-                                            showBackButton={
-                                                (showBackButton && !hideNavButtons) ||
-                                                showDetailsBtn
-                                            }
-                                            showFrontFace={() => setIsFront(true)}
-                                            customDescription={customDescription}
-                                            customCriteria={customCriteria}
-                                            customIssueHistoryComponent={
-                                                customIssueHistoryComponent
-                                            }
-                                            enableLightbox={enableLightbox}
-                                            customSkillsComponent={customSkillsComponent}
-                                        />
-                                    </Flipped>
+                        <div className="vc-card-content-scroll-container w-full pt-[20px] min-h-full flex flex-col justify-start items-center rounded-t-[30px] rounded-b-[200px] scrollbar-hide pb-[50px] z-50">
+                            <h1
+                                className={`${headerClassName} invisible`}
+                                style={{ wordBreak: 'break-word' }}
+                            >
+                                {customRibbonCategoryComponent && customRibbonCategoryComponent}
+                                {!customRibbonCategoryComponent && (
+                                    <VCDisplayCardCategoryType categoryType={categoryType} />
                                 )}
 
+                                <FitText
+                                    text={_title ?? ''}
+                                    maxFontSize={32}
+                                    minFontSize={20}
+                                    width={((headerWidth ?? 290) - 40).toString()}
+                                    className={headerFitTextClassName}
+                                />
+                            </h1>
+
+                            {isFront && (
+                                <VC2FrontFaceInfo
+                                    credential={credential}
+                                    issuee={issuee}
+                                    subjectDID={subjectDID}
+                                    issuer={issuer}
+                                    title={title}
+                                    subjectImageComponent={subjectImageComponent}
+                                    issuerImageComponent={issuerImageComponent}
+                                    customBodyCardComponent={customBodyCardComponent}
+                                    customThumbComponent={customThumbComponent}
+                                    createdAt={createdAt ?? ''}
+                                    imageUrl={imageUrl}
+                                    trustedAppRegistry={trustedAppRegistry}
+                                />
+                            )}
+                            {!isFront && (
+                                <VC2BackFace
+                                    credential={credential}
+                                    verificationItems={verificationItems}
+                                    // convertTagsToSkills={convertTagsToSkills}
+                                    issueHistory={issueHistory}
+                                    getFileMetadata={getFileMetadata}
+                                    getVideoMetadata={getVideoMetadata}
+                                    onMediaAttachmentClick={onMediaAttachmentClick}
+                                    showBackButton={
+                                        (showBackButton && !hideNavButtons) || showDetailsBtn
+                                    }
+                                    showFrontFace={() => setIsFront(true)}
+                                    customDescription={customDescription}
+                                    customCriteria={customCriteria}
+                                    customIssueHistoryComponent={customIssueHistoryComponent}
+                                    enableLightbox={enableLightbox}
+                                    customSkillsComponent={customSkillsComponent}
+                                />
+                            )}
+
+                            <Flipped inverseFlipId="card">
                                 {isFront && (
                                     <VCDisplayCardSkillsCount
                                         skills={credential?.skills}
                                         onClick={() => setIsFront(!isFront)}
                                     />
                                 )}
+                            </Flipped>
 
-                                {(!hideNavButtons || showDetailsBtn) && (
-                                    <>
-                                        {isFront && customFrontButton}
-                                        {((isFront && !customFrontButton) ||
-                                            (isFront && showDetailsBtn)) && (
-                                                <Flipped flipId="details-back-button">
-                                                    <button
-                                                        type="button"
-                                                        className="vc-toggle-side-button text-white shadow-bottom bg-[#00000099] px-[30px] py-[8px] rounded-[40px] text-[28px] tracking-[0.75px] uppercase leading-[28px] mt-[40px] w-fit select-none"
-                                                        onClick={() => setIsFront(!isFront)}
-                                                    >
-                                                        Details
-                                                    </button>
-                                                </Flipped>
-                                            )}
-                                        {!isFront && (
-                                            <Flipped flipId="details-back-button">
-                                                <button
-                                                    type="button"
-                                                    className="vc-toggle-side-button text-white shadow-bottom bg-[#00000099] px-[30px] py-[8px] rounded-[40px] text-[28px] tracking-[0.75px] uppercase leading-[28px] mt-[40px] w-fit select-none"
-                                                    onClick={() => setIsFront(!isFront)}
-                                                >
-                                                    <span className="flex gap-[10px] items-center">
-                                                        <LeftArrow />
-                                                        Back
-                                                    </span>
-                                                </button>
-                                            </Flipped>
-                                        )}
-                                    </>
-                                )}
-                            </div>
-                        </Flipped>
+                            {(!hideNavButtons || showDetailsBtn) && (
+                                <>
+                                    {isFront && customFrontButton}
+                                    {((isFront && !customFrontButton) ||
+                                        (isFront && showDetailsBtn)) && (
+                                        <Flipped inverseFlipId="card">
+                                            <button
+                                                type="button"
+                                                className="vc-toggle-side-button text-white shadow-bottom bg-[#00000099] px-[30px] py-[8px] rounded-[40px] text-[28px] tracking-[0.75px] uppercase leading-[28px] mt-[40px] w-fit select-none"
+                                                onClick={() => setIsFront(!isFront)}
+                                            >
+                                                Details
+                                            </button>
+                                        </Flipped>
+                                    )}
+                                    {!isFront && (
+                                        <Flipped inverseFlipId="card">
+                                            <button
+                                                type="button"
+                                                className="vc-toggle-side-button text-white shadow-bottom bg-[#00000099] px-[30px] py-[8px] rounded-[40px] text-[28px] tracking-[0.75px] uppercase leading-[28px] mt-[40px] w-fit select-none"
+                                                onClick={() => setIsFront(!isFront)}
+                                            >
+                                                <span className="flex gap-[10px] items-center">
+                                                    <LeftArrow />
+                                                    Back
+                                                </span>
+                                            </button>
+                                        </Flipped>
+                                    )}
+                                </>
+                            )}
+                        </div>
                     </div>
                     <footer className="vc-card-footer w-full flex justify-between p-[5px] mt-[5px]">
-                        {customFooterComponent && customFooterComponent}
-                        {!customFooterComponent && (
-                            <>
-                                {worstVerificationStatus === VerificationStatusEnum.Failed ? (
-                                    <div className="w-[40px]" role="presentation" />
-                                ) : (
-                                    <VCVerificationCheckWithSpinner
-                                        spinnerSize="40px"
-                                        size={'32px'}
-                                        loading={verificationInProgress}
-                                    />
-                                )}
-                                <div className="vc-footer-text font-montserrat flex flex-col items-center justify-center text-[12px] font-[700] leading-[15px] select-none">
-                                    <span className="text-[#4F4F4F]">Verified Credential</span>
-                                    <span
-                                        className="vc-footer-status uppercase"
-                                        style={{ color: statusColor }}
+                        <Flipped inverseFlipId="card">
+                            {customFooterComponent && customFooterComponent}
+                        </Flipped>
+                        <Flipped inverseFlipId="card">
+                            {!customFooterComponent && (
+                                <>
+                                    {worstVerificationStatus === VerificationStatusEnum.Failed ? (
+                                        <div className="w-[40px]" role="presentation" />
+                                    ) : (
+                                        <VCVerificationCheckWithSpinner
+                                            spinnerSize="40px"
+                                            size={'32px'}
+                                            loading={verificationInProgress}
+                                        />
+                                    )}
+                                    <div className="vc-footer-text font-montserrat flex flex-col items-center justify-center text-[12px] font-[700] leading-[15px] select-none">
+                                        <span className="text-[#4F4F4F]">Verified Credential</span>
+                                        <span
+                                            className="vc-footer-status uppercase"
+                                            style={{ color: statusColor }}
+                                        >
+                                            {worstVerificationStatus}
+                                        </span>
+                                    </div>
+                                    <div
+                                        className="vc-footer-icon rounded-[20px] h-[40px] w-[40px] flex items-center justify-center overflow-hidden"
+                                        style={{
+                                            backgroundColor: bottomRightIcon?.color ?? '#6366F1',
+                                        }}
                                     >
-                                        {worstVerificationStatus}
-                                    </span>
-                                </div>
-                                <div
-                                    className="vc-footer-icon rounded-[20px] h-[40px] w-[40px] flex items-center justify-center overflow-hidden"
-                                    style={{ backgroundColor: bottomRightIcon?.color ?? '#6366F1' }}
-                                >
-                                    {bottomRightIcon?.image ?? <AwardRibbon />}
-                                </div>
-                            </>
-                        )}
+                                        {bottomRightIcon?.image ?? <AwardRibbon />}
+                                    </div>
+                                </>
+                            )}
+                        </Flipped>
                     </footer>
                 </section>
             </Flipped>

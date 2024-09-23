@@ -1,5 +1,25 @@
 # @welibraryos/react-learn-card
 
+## 2.7.16
+
+### Patch Changes
+
+-   [#514](https://github.com/learningeconomy/LearnCard/pull/514) [`ac7cd5c`](https://github.com/learningeconomy/LearnCard/commit/ac7cd5ccd2ee6d572fedda50259eb751817564a2) Thanks [@gerardopar](https://github.com/gerardopar)! - [LC-309] - fix VC card warping on flip
+
+## 2.7.15
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.35
+
+## 2.7.14
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.34
+
 ## 2.7.13
 
 ### Patch Changes

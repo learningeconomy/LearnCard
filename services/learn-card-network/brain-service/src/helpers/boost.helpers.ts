@@ -19,7 +19,6 @@ import { issueCredentialWithSigningAuthority } from './signingAuthority.helpers'
 import { addNotificationToQueue } from './notifications.helpers';
 import { BoostStatus } from 'types/boost';
 import { getDidWeb } from './did.helpers';
-import { deleteCachedConnectionsForProfileId } from '@cache/connections';
 
 export const getBoostUri = (id: string, domain: string): string =>
     constructUri('boost', id, domain);
@@ -265,13 +264,6 @@ export const sendBoost = async (
         if (process.env.NODE_ENV !== 'test') {
             console.log('🚀 sendBoost:boost sent uncertified', boostUri);
         }
-    }
-
-    if (autoAcceptCredential && boost.dataValues.autoConnectRecipients) {
-        await Promise.all([
-            deleteCachedConnectionsForProfileId(from.profileId),
-            deleteCachedConnectionsForProfileId(to.profileId),
-        ]);
     }
 
     if (typeof boostUri === 'string') {

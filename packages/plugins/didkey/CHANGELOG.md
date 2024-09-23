@@ -1,5 +1,13 @@
 # learn-card-core
 
+## 1.0.12
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.1
+    -   @learncard/helpers@1.0.14
+
 ## 1.0.11
 
 ### Patch Changes

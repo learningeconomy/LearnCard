@@ -1,5 +1,33 @@
 # @learncard/network-brain-service
 
+## 2.3.0
+
+### Minor Changes
+
+-   [#509](https://github.com/learningeconomy/LearnCard/pull/509) [`39f88b0`](https://github.com/learningeconomy/LearnCard/commit/39f88b0de824fe8b6b29997a2064c4965ac042f6) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add Docker support
+
+### Patch Changes
+
+-   Updated dependencies [[`39f88b0`](https://github.com/learningeconomy/LearnCard/commit/39f88b0de824fe8b6b29997a2064c4965ac042f6)]:
+    -   @learncard/types@5.5.2
+    -   @learncard/core@9.3.1
+    -   @learncard/helpers@1.0.14
+    -   @learncard/ceramic-plugin@1.0.12
+    -   @learncard/did-web-plugin@1.0.32
+    -   @learncard/didkey-plugin@1.0.12
+    -   @learncard/didkit-plugin@1.4.9
+    -   @learncard/learn-card-plugin@1.1.12
+    -   @learncard/vc-plugin@1.1.14
+    -   @learncard/vc-templates-plugin@1.0.18
+    -   @learncard/expiration-plugin@1.1.14
+    -   @learncard/crypto-plugin@1.0.12
+
+## 2.2.1
+
+### Patch Changes
+
+-   [#510](https://github.com/learningeconomy/LearnCard/pull/510) [`ae89e68`](https://github.com/learningeconomy/LearnCard/commit/ae89e683b6ec827f81f1e16502d12526985f1f95) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Remove caching/fix pagination logic for connections
+
 ## 2.2.0
 
 ### Minor Changes

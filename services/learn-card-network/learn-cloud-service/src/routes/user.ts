@@ -86,6 +86,8 @@ export const userRouter = t.router({
                 return addDidToUser(user.did, did);
             }
 
+            console.warn('Invalid DidAuthVP when trying to add did!', result, presentation);
+
             throw new TRPCError({
                 code: 'BAD_REQUEST',
                 message: 'Invalid DID-Auth VP',
