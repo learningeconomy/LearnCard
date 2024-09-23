@@ -1,5 +1,11 @@
 # @learncard/create-http-bridge
 
+## 1.1.99
+
+### Patch Changes
+
+-   [#508](https://github.com/learningeconomy/LearnCard/pull/508) [`8904bcd5`](https://github.com/learningeconomy/LearnCard/commit/8904bcd59f3ab80d865de6420fb14c14f9af1ceb) Thanks [@dependabot](https://github.com/apps/dependabot)! - ⬆️ Bump express from 4.16.4 to 4.21.0 in /packages/learn-card-bridge-http in the npm_and_yarn group across 1 directory
+
 ## 1.1.98
 
 ### Patch Changes
