@@ -1,5 +1,11 @@
 # @learncard/network-brain-service
 
+## 2.3.3
+
+### Patch Changes
+
+-   [`fcf0a07`](https://github.com/learningeconomy/LearnCard/commit/fcf0a0780e1fd3486180331e54be6c15345e8baa) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Still More CI Fixes
+
 ## 2.3.2
 
 ### Patch Changes
