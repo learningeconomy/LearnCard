@@ -19,7 +19,7 @@ import Graduation from '../components/svgs/Graduation';
 import Briefcase from '../components/svgs/Briefcase';
 import AccommodationsIcon from '../components/svgs/AccommodationsIcon';
 import AccomplishmentsIcon from '../components/svgs/AccomplishmentsIcon';
-import ScoutsPledge from '../components/svgs/ScoutsPledge';
+import ScoutsLogo from '../components/svgs/ScoutsLogo';
 
 export const getImageFromImage = (image: Image): string => {
     if (typeof image === 'string') return image;
@@ -175,7 +175,7 @@ export const getCategoryIcon = (category = LCCategoryEnum.achievement) => {
         case LCCategoryEnum.accomplishments:
             return <AccomplishmentsIcon size="21" />;
         case LCCategoryEnum.meritBadge:
-            return <ScoutsPledge />;
+            return <ScoutsLogo />;
         case LCCategoryEnum.currency:
         default:
             console.log('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥');
