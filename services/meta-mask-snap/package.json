@@ -47,7 +47,6 @@
         "node": ">=16.0.0"
     },
     "dependencies": {
-        "@learncard/core": "workspace:*",
-        "zod": "^3.20.2"
+        "@learncard/core": "workspace:*"
     }
 }

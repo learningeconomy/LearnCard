@@ -3,6 +3,7 @@ import { Filter, ObjectId } from 'mongodb';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import {
+    JWE,
     JWEValidator,
     EncryptedRecord,
     EncryptedRecordValidator,
@@ -44,7 +45,7 @@ export const customStorageRouter = t.router({
 
             let item: EncryptedRecord = (_item as any) || [];
 
-            if (isEncrypted(item)) item = await decryptObject(item);
+            if (isEncrypted(item)) item = await decryptObject(item as any);
 
             const itemSize = calculateObjectSize(item);
             const currentUsage = await getUsageForDid(ctx.user.did);
@@ -86,7 +87,7 @@ export const customStorageRouter = t.router({
 
             let items: EncryptedRecord[] = (_items as any) || [];
 
-            if (isEncrypted(items)) items = await decryptObject(items);
+            if (isEncrypted(items)) items = await decryptObject(items as any);
 
             const itemSize = calculateObjectSize(items);
             const currentUsage = await getUsageForDid(ctx.user.did);
@@ -139,7 +140,7 @@ export const customStorageRouter = t.router({
 
             let query: Record<string, any> = _query || {};
 
-            if (isEncrypted(query)) query = await decryptObject(query);
+            if (isEncrypted(query)) query = await decryptObject(query as JWE);
 
             const rawResults = await getCustomDocumentsByQuery(
                 ctx.user.did,
@@ -201,7 +202,7 @@ export const customStorageRouter = t.router({
 
             let query: MongoCustomDocumentType = (_query as any) || {};
 
-            if (isEncrypted(query)) query = await decryptObject(query);
+            if (isEncrypted(query)) query = await decryptObject(query as any);
 
             return countCustomDocumentsByQuery(ctx.user.did, query, includeAssociatedDids);
         }),
@@ -235,8 +236,8 @@ export const customStorageRouter = t.router({
             let query: MongoCustomDocumentType = (_query as any) || {};
             let update: Partial<EncryptedRecord> = (_update as any) || {};
 
-            if (isEncrypted(query)) query = await decryptObject(query);
-            if (isEncrypted(update)) update = await decryptObject(update);
+            if (isEncrypted(query)) query = await decryptObject(query as any);
+            if (isEncrypted(update)) update = await decryptObject(update as JWE);
 
             const recordsToUpdate = await getCustomDocumentsByQuery(
                 ctx.user.did,
@@ -289,7 +290,7 @@ export const customStorageRouter = t.router({
 
             let query: MongoCustomDocumentType = (_query as any) || {};
 
-            if (isEncrypted(query)) query = await decryptObject(query);
+            if (isEncrypted(query)) query = await decryptObject(query as any);
 
             return deleteCustomDocumentsByQuery(ctx.user.did, query, includeAssociatedDids);
         }),

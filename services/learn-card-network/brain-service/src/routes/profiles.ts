@@ -143,7 +143,7 @@ export const profilesRouter = t.router({
                 description: 'Creates a managed service profile',
             },
         })
-        .input(LCNProfileValidator.omit({ did: true, isServiceProfile: true, isManaged: true }))
+        .input(LCNProfileValidator.omit({ did: true, isServiceProfile: true }))
         .output(z.string())
         .mutation(async ({ input, ctx }) => {
             const { profileId } = input;

@@ -236,7 +236,11 @@ export const UnsignedAchievementCredentialValidator = UnsignedVCValidator.extend
     name: z.string().optional(),
     description: z.string().optional(),
     image: ImageValidator.optional(),
-    credentialSubject: AchievementSubjectValidator.or(AchievementSubjectValidator.array()),
+    credentialSubject: AchievementSubjectValidator.or(
+        AchievementSubjectValidator.array()
+    ) as z.ZodUnion<
+        [typeof AchievementSubjectValidator, z.ZodArray<typeof AchievementSubjectValidator>]
+    >,
     endorsement: UnsignedVCValidator.array().optional(),
     evidence: EvidenceValidator.array().optional(),
 });
