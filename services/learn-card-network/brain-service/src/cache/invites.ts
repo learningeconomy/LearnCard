@@ -8,22 +8,19 @@ export const NEVER_EXPIRE = 'never';
 
 export const isInviteValidForProfile = async (
     profileId: string,
-    challenge: string,
+    challenge: string
 ): Promise<boolean> => {
     const result = await cache.get(getInviteCacheKey(profileId, challenge));
 
     // If result is null or undefined, the invite has expired or doesn't exist
-    if (!result) {
-        return false;
-    }
+    if (!result) return false;
 
-    const isValid = result === VALID || result === NEVER_EXPIRE;
-    return isValid;
+    return result === VALID || result === NEVER_EXPIRE;
 };
 
 export const isInviteAlreadySetForProfile = async (
     profileId: string,
-    challenge: string,
+    challenge: string
 ): Promise<boolean> => {
     const result = await cache.get(getInviteCacheKey(profileId, challenge));
 
