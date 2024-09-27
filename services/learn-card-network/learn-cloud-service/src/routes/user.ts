@@ -62,7 +62,7 @@ export const userRouter = t.router({
 
                 const existing = await getUserForDid(did);
 
-                if (existing) {
+                if (existing && !existing.dids.includes(did)) {
                     // If existing user is only a very simple user with just the one did as primary
                     // and no associated dids, then it was probably made by accident prior to this call!
                     //
@@ -71,7 +71,7 @@ export const userRouter = t.router({
                     //
                     // Otherwise, we should throw an error here to prevent accidentally screwing up
                     // existing users!
-                    if (existing.did !== did || existing.associatedDids.length > 0) {
+                    if (existing.associatedDids.length > 0) {
                         throw new TRPCError({
                             code: 'CONFLICT',
                             message: 'Did is already associated with a user',
@@ -83,7 +83,7 @@ export const userRouter = t.router({
 
                 const user = await ensureUserForDid(ctx.user.did);
 
-                return addDidToUser(user.did, did);
+                return !user.dids.includes(did) && (await addDidToUser(user.did, did));
             }
 
             console.warn('Invalid DidAuthVP when trying to add did!', result, presentation);
@@ -185,7 +185,7 @@ export const userRouter = t.router({
                         ? jwtDecode<DidAuthVP>(presentation).vp.holder
                         : presentation.holder!;
 
-                const user = await getUserForDid(did);
+                const user = await getUserForDid(ctx.user.did);
 
                 if (!user) {
                     throw new TRPCError({
@@ -194,7 +194,7 @@ export const userRouter = t.router({
                     });
                 }
 
-                if (!user.associatedDids.includes(did) || user.did !== ctx.user.did) {
+                if (!user.dids.includes(did)) {
                     throw new TRPCError({
                         code: 'NOT_FOUND',
                         message: 'Did not associated with user',
