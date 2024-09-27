@@ -44,7 +44,7 @@ import {
 } from '@accesslayer/signing-authority/relationships/read';
 import { SigningAuthorityForUserValidator } from 'types/profile';
 
-import { t, openRoute, didAndChallengeRoute, openProfileRoute, profileRoute } from '@routes';
+import { t, openRoute, didAndChallengeRoute, profileRoute, didRoute } from '@routes';
 
 import { transformProfileId } from '@helpers/profile.helpers';
 import { deleteDidDocForProfile } from '@cache/did-docs';
@@ -179,7 +179,7 @@ export const profilesRouter = t.router({
             });
         }),
 
-    getProfile: openProfileRoute
+    getProfile: didRoute
         .meta({
             openapi: {
                 protect: true,
@@ -192,8 +192,10 @@ export const profilesRouter = t.router({
             },
         })
         .input(z.void())
-        .output(LCNProfileValidator)
+        .output(LCNProfileValidator.optional())
         .query(async ({ ctx }) => {
+            if (!ctx.user.profile) return undefined;
+
             return updateDidForProfile(ctx.domain, ctx.user.profile);
         }),
 
