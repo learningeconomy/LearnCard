@@ -11,7 +11,7 @@
         "build:docker": "shx rm -rf dist && node esbuild-docker.mjs",
         "start": "PORT=3000 serverless offline --httpPort 3000 --websocketPort 3001 --lambdaPort 3002 --albPort 3003 --host 127.0.0.1 --config serverless-local.yml",
         "start-p-4000": "PORT=4000 serverless offline --httpPort 4000 --websocketPort 4001 --lambdaPort 4002 --albPort 4003 --host 127.0.0.1 --config serverless-local.yml",
-        "dev": "pnpm build:docker && PORT=4000 node dist/docker-entry.js",
+        "dev": "nodemon --watch src --watch ../../../packages/plugins --watch ../../../packages/learn-card-core --watch ../../../packages/learn-card-types --watch ../../../packages/learn-card-helpers -e ts,js --ignore \"../../**/*.d.ts\" --exec \"pnpm build:docker && node dist/docker-entry.js\"",
         "serverless-deploy": "serverless deploy"
     },
     "keywords": [],
@@ -28,6 +28,7 @@
         "@types/uuid": "^9.0.0",
         "dts-bundle-generator": "^6.10.0",
         "esbuild": "^0.16.16",
+        "nodemon": "^2.0.16",
         "openapi-types": "^12.1.0",
         "serverless": "^3.26.0",
         "serverless-certificate-creator": "^1.6.0",
