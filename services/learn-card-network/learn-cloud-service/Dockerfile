@@ -3,6 +3,11 @@ FROM node:20.10.0-slim
 # Set working directory to /app
 WORKDIR /app
 
+# Sometimes we need python to build packages
+RUN apt-get update || : && apt-get install -y \
+    python3 \
+    build-essential
+
 # Install PNPM package manager
 RUN npm install -g pnpm
 

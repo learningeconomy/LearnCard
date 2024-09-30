@@ -6,6 +6,11 @@ WORKDIR /app
 # Install PNPM package manager
 RUN npm install -g pnpm
 
+# Sometimes we need python to build packages
+RUN apt-get update || : && apt-get install -y \
+    python3 \
+    build-essential
+
 # Copy everything over from the source directory to the build directory
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml nx.json tsconfig.json .npmrc ./
 COPY packages/plugins/ceramic packages/plugins/ceramic
