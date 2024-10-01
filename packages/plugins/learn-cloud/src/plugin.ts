@@ -143,10 +143,10 @@ export const getLearnCloudPlugin = async (
                 await updateLearnCard(_learnCard);
 
                 if (!query) {
-                    const jwe = await client.customStorage.read.query({
+                    const jwe: JWE = (await client.customStorage.read.query({
                         includeAssociatedDids,
                         ...paginationOptions,
-                    });
+                    })) as any;
 
                     const encryptedRecords = isEncrypted(jwe)
                         ? await decryptJWE<PaginatedEncryptedRecordsType>(_learnCard, jwe)
@@ -177,14 +177,14 @@ export const getLearnCloudPlugin = async (
                     )
                 );
 
-                const jwe = await client.customStorage.read.query({
+                const jwe: JWE = (await client.customStorage.read.query({
                     query: await generateJWE(_learnCard, learnCloudDid, {
                         ...unencryptedEntries,
                         ...(fields.length > 0 ? { fields: { $in: fields } } : {}),
                     }),
                     ...paginationOptions,
                     includeAssociatedDids,
-                });
+                })) as any;
 
                 const encryptedRecords = isEncrypted(jwe)
                     ? await decryptJWE<PaginatedEncryptedRecordsType>(_learnCard, jwe)
@@ -381,7 +381,7 @@ export const getLearnCloudPlugin = async (
 
                 if (!query) {
                     _learnCard.debug?.('LearnCloud index.get (no query)');
-                    const jwe = await client.index.get.query(options);
+                    const jwe: JWE = (await client.index.get.query(options)) as any;
 
                     _learnCard.debug?.('LearnCloud index.get (no query response)', jwe);
 
@@ -423,13 +423,13 @@ export const getLearnCloudPlugin = async (
                     unencryptedEntries
                 );
 
-                const jwe = await client.index.get.query({
+                const jwe: JWE = (await client.index.get.query({
                     query: await generateJWE(_learnCard, learnCloudDid, {
                         ...unencryptedEntries,
                         ...(fields.length > 0 ? { fields: { $in: fields } } : {}),
                     }),
                     ...options,
-                });
+                })) as any;
 
                 _learnCard.debug?.('LearnCloud index.get (query jwe)', jwe);
 

@@ -33,7 +33,9 @@ export const BoostSmallCard: React.FC<BoostSmallCardProps> = ({
     bgImgSrc,
     optionsTriggerOnClick,
 }) => {
-    const thumbClass = `bg-${TYPE_TO_WALLET_DARK_COLOR[type]}` ?? 'bg-grayscale-50';
+    const thumbClass = TYPE_TO_WALLET_DARK_COLOR[type]
+        ? `bg-${TYPE_TO_WALLET_DARK_COLOR[type]}`
+        : 'bg-grayscale-50';
     const defaultThumbClass = `small-boost-card-thumb flex h-[110px] w-[110px] my-[10px] mx-auto ${thumbClass} overflow-hidden flex-col justify-center items-center rounded-full ${customThumbClass}`;
     const imgSrc = thumbImgSrc?.trim() !== '' ? thumbImgSrc : TYPE_TO_IMG_SRC[type];
     const headerBgColor = getDarkBGColor(type);

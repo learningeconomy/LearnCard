@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import {
+    JWE,
     JWEValidator,
     EncryptedCredentialRecordValidator,
     EncryptedCredentialRecord,
@@ -63,7 +64,7 @@ export const indexRouter = t.router({
             let query: Record<string, any> = _query || {};
 
             if (isEncrypted(query)) {
-                query = await learnCard.invoke.getDIDObject().decryptDagJWE(query);
+                query = await learnCard.invoke.getDIDObject().decryptDagJWE(query as JWE);
             }
 
             const cachedResponse = await getCachedIndexPageForDid(
@@ -152,7 +153,7 @@ export const indexRouter = t.router({
             let query: Record<string, any> = _query || {};
 
             if (isEncrypted(query)) {
-                query = await learnCard.invoke.getDIDObject().decryptDagJWE(query);
+                query = await learnCard.invoke.getDIDObject().decryptDagJWE(query as JWE);
             }
 
             const count = await countCredentialRecordsForDid(did, query, includeAssociatedDids);
@@ -190,7 +191,9 @@ export const indexRouter = t.router({
             if (isEncrypted(record)) {
                 const learnCard = await getLearnCard();
 
-                record = (await learnCard.invoke.getDIDObject().decryptDagJWE(record)) as any;
+                record = (await learnCard.invoke
+                    .getDIDObject()
+                    .decryptDagJWE(record as any)) as any;
             }
 
             const success = Boolean(await createCredentialRecord(did, record));
@@ -235,7 +238,7 @@ export const indexRouter = t.router({
             const records = isEncrypted(_records)
                 ? ((await learnCard.invoke
                     .getDIDObject()
-                    .decryptDagJWE(_records)) as EncryptedCredentialRecord[])
+                    .decryptDagJWE(_records as any)) as EncryptedCredentialRecord[])
                 : _records;
 
             await createCredentialRecords(did, records);
@@ -273,7 +276,9 @@ export const indexRouter = t.router({
             if (isEncrypted(_updates)) {
                 const learnCard = await getLearnCard();
 
-                updates = (await learnCard.invoke.getDIDObject().decryptDagJWE(_updates)) as any;
+                updates = (await learnCard.invoke
+                    .getDIDObject()
+                    .decryptDagJWE(_updates as JWE)) as any;
             }
 
             const success = Boolean(await updateCredentialRecord(did, id, updates));

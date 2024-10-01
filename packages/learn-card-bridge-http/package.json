@@ -35,8 +35,7 @@
         "serverless-http": "^3.0.1",
         "serverless-plugin-warmup": "^8.1.0",
         "simple-git": "^3.9.0",
-        "use-immer": "^0.7.0",
-        "zod": "^3.20.2"
+        "use-immer": "^0.7.0"
     },
     "devDependencies": {
         "@types/aws-lambda": "^8.10.106",

@@ -1,6 +1,6 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
-import { UnsignedVCValidator, VCValidator, VPValidator, JWEValidator } from '@learncard/types';
+import { JWE, UnsignedVCValidator, VCValidator, VPValidator, JWEValidator } from '@learncard/types';
 
 import { t, didAndChallengeRoute } from '@routes';
 import { createCredential } from '@accesslayer/credential/create';
@@ -34,8 +34,8 @@ export const storageRouter = t.router({
         .mutation(async ({ ctx, input }) => {
             const { item } = input;
 
-            const jwe = isEncrypted(item)
-                ? item
+            const jwe: JWE = isEncrypted(item)
+                ? (item as any)
                 : await encryptObject(item, ctx.domain, [ctx.user.did]);
 
             const id = await createCredential(jwe);

@@ -208,7 +208,9 @@ export const decryptCredential = async (credential: VC | JWE): Promise<VC | fals
     }
     const learnCard = await getLearnCard();
     try {
-        const decrypted = (await learnCard.invoke.getDIDObject().decryptDagJWE(credential)) as VC;
+        const decrypted = (await learnCard.invoke
+            .getDIDObject()
+            .decryptDagJWE(credential as JWE)) as VC;
         return decrypted || false;
     } catch (error) {
         console.warn('Could not decrypt Boost Credential!');
