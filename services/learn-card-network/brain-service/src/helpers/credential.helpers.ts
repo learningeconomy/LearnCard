@@ -66,8 +66,8 @@ export const acceptCredential = async (profile: ProfileInstance, uri: string): P
 
     await addNotificationToQueue({
         type: LCNNotificationTypeEnumValidator.enum.BOOST_ACCEPTED,
-        to: pendingVc.source,
-        from: profile,
+        to: pendingVc.source.dataValues,
+        from: profile.dataValues,
         message: {
             title: 'Boost Accepted',
             body: `${profile.displayName} has accepted your boost!`,
