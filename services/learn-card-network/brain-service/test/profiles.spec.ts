@@ -809,9 +809,7 @@ describe('Profiles', () => {
 
         it('should allow you to delete your profile', async () => {
             await expect(userA.clients.fullAuth.profile.deleteProfile()).resolves.not.toThrow();
-            await expect(userA.clients.fullAuth.profile.getProfile()).rejects.toMatchObject({
-                code: 'NOT_FOUND',
-            });
+            expect(await userA.clients.fullAuth.profile.getProfile()).toBeUndefined();
         });
 
         it('should allow you to delete your profile with connections', async () => {
@@ -819,9 +817,7 @@ describe('Profiles', () => {
             await userB.clients.fullAuth.profile.acceptConnectionRequest({ profileId: 'usera' });
 
             await expect(userA.clients.fullAuth.profile.deleteProfile()).resolves.not.toThrow();
-            await expect(userA.clients.fullAuth.profile.getProfile()).rejects.toMatchObject({
-                code: 'NOT_FOUND',
-            });
+            expect(await userA.clients.fullAuth.profile.getProfile()).toBeUndefined();
         });
 
         it('should not show deleted profiles to other users', async () => {
