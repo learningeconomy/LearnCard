@@ -26,7 +26,7 @@ import { defaultCeramicIDXArgs, defaultEthereumArgs } from '../defaults';
 export const networkLearnCardFromSeed = async ({
     seed,
     network: _network,
-    trustedBoostRegistry,
+    trustedBoostRegistry = 'https://raw.githubusercontent.com/learningeconomy/registries/main/learncard/trusted-app-registry.json',
 
     cloud: {
         url = 'https://cloud.learncard.com/trpc',

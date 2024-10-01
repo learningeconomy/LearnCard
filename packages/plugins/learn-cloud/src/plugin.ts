@@ -1,5 +1,5 @@
 import { chunk } from 'lodash';
-import { getClient } from '@learncard/learn-cloud-client';
+import { getClient, LearnCloudClient } from '@learncard/learn-cloud-client';
 import { LearnCard } from '@learncard/core';
 import { isEncrypted } from '@learncard/helpers';
 import {
@@ -51,7 +51,15 @@ export const getLearnCloudPlugin = async (
     let client = await getLearnCloudClient(url, learnCard);
     let dids = await client.user.getDids.query();
 
+    let otherClients: Record<string, LearnCloudClient> = {};
+
     const learnCloudDid = await client.utilities.getDid.query();
+
+    const getOtherClient = async (url: string) => {
+        if (!otherClients[url]) otherClients[url] = await getLearnCloudClient(url, learnCard);
+
+        return otherClients[url]!;
+    };
 
     const updateLearnCard = async (
         _learnCard: LearnCard<any, 'id', LearnCloudPluginDependentMethods>
@@ -307,9 +315,29 @@ export const getLearnCloudPlugin = async (
 
                 if (parts.length !== 5) return undefined;
 
-                const [lc, method] = parts as [string, string, string, string, string];
+                const [lc, method, uriUrl] = parts as [string, string, string, string, string];
 
                 if (lc !== 'lc' || method !== 'cloud') return undefined;
+
+                if (uriUrl !== url) {
+                    const fullUrl = uriUrl.startsWith('http')
+                        ? uriUrl
+                        : `http${uriUrl.includes('http') ? '' : 's'}://${uriUrl}`;
+                    const otherClient = await getOtherClient(fullUrl);
+
+                    try {
+                        const result = await otherClient.storage.resolve.query({ uri: uri });
+
+                        const decryptedResult = await _learnCard.invoke
+                            .getDIDObject()
+                            .decryptDagJWE(result);
+
+                        return await VCValidator.or(VPValidator).parseAsync(decryptedResult);
+                    } catch (error) {
+                        _learnCard.debug?.(error);
+                        return undefined;
+                    }
+                }
 
                 try {
                     const result = await client.storage.resolve.query({ uri: uri });
