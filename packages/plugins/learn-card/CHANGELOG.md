@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 1.1.14
+
+### Patch Changes
+
+-   [#512](https://github.com/learningeconomy/LearnCard/pull/512) [`2eff967c27b0e92f7cf36181ef907b1144cbfb40`](https://github.com/learningeconomy/LearnCard/commit/2eff967c27b0e92f7cf36181ef907b1144cbfb40) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Better warning messages when verifying
+
 ## 1.1.13
 
 ### Patch Changes

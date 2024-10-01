@@ -1,5 +1,17 @@
 # learn-card-core
 
+## 1.2.40
+
+### Patch Changes
+
+-   [#512](https://github.com/learningeconomy/LearnCard/pull/512) [`2eff967c27b0e92f7cf36181ef907b1144cbfb40`](https://github.com/learningeconomy/LearnCard/commit/2eff967c27b0e92f7cf36181ef907b1144cbfb40) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add default trust registry URL
+
+-   Updated dependencies [[`2eff967c27b0e92f7cf36181ef907b1144cbfb40`](https://github.com/learningeconomy/LearnCard/commit/2eff967c27b0e92f7cf36181ef907b1144cbfb40), [`2eff967c27b0e92f7cf36181ef907b1144cbfb40`](https://github.com/learningeconomy/LearnCard/commit/2eff967c27b0e92f7cf36181ef907b1144cbfb40)]:
+    -   @learncard/learn-card-plugin@1.1.14
+    -   @learncard/learn-cloud-plugin@2.0.9
+    -   @learncard/did-web-plugin@1.0.34
+    -   @learncard/network-plugin@1.8.10
+
 ## 1.2.39
 
 ### Patch Changes
