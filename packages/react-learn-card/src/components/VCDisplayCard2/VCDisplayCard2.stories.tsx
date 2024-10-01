@@ -14,6 +14,7 @@ import {
     AllFieldsCredential,
     AllFieldsBackgroundColorCredential,
     BoostCredential,
+    LongTitleCredential,
 } from '../../helpers/test.helpers';
 
 export default {
@@ -58,7 +59,9 @@ BoostCredentialTest.args = {
         TestVerificationItems.SUCCESS.PROOF,
         TestVerificationItems.SUCCESS.NOT_EXPIRED,
     ],
-    customIDDescription: <div className='w-full flex items-center justify-center'>Hello World!</div>,
+    customIDDescription: (
+        <div className="w-full flex items-center justify-center">Hello World!</div>
+    ),
 };
 
 export const JFFCredentialTest = Template.bind({});
@@ -120,6 +123,23 @@ AllFieldsTest.args = {
 export const BackgroundColorTest = Template.bind({});
 BackgroundColorTest.args = {
     credential: AllFieldsBackgroundColorCredential,
+    // convertTagsToSkills: simpleConvertTagsToSkills,
+    handleXClick: () => console.log('X clicked!'),
+    onMediaAttachmentClick: undefined,
+    verificationItems: [
+        TestVerificationItems.SUCCESS.PROOF,
+        TestVerificationItems.SUCCESS.NO_EXPIRATION,
+        TestVerificationItems.FAILED.CONTEXT,
+        TestVerificationItems.FAILED.SIGNATURE,
+        TestVerificationItems.FAILED.PROOF_TYPE,
+        TestVerificationItems.FAILED.APPLICABLE_PROOF,
+    ],
+};
+
+export const LongTitleTest = Template.bind({});
+LongTitleTest.args = {
+    credential: LongTitleCredential,
+    showBackButton: false,
     // convertTagsToSkills: simpleConvertTagsToSkills,
     handleXClick: () => console.log('X clicked!'),
     onMediaAttachmentClick: undefined,

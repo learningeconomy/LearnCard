@@ -14,7 +14,7 @@ export const LCNProfileValidator = z.object({
     websiteLink: z.string().optional(),
     isServiceProfile: z.boolean().default(false).optional(),
     type: z.string().optional(),
-    notificationsWebhook: z.string().url().startsWith('https://').optional(),
+    notificationsWebhook: z.string().url().startsWith('http').optional(),
 });
 export type LCNProfile = z.infer<typeof LCNProfileValidator>;
 
@@ -69,7 +69,6 @@ export const PaginatedBoostRecipientsValidator = PaginationResponseValidator.ext
     records: BoostRecipientValidator.array(),
 });
 export type PaginatedBoostRecipientsType = z.infer<typeof PaginatedBoostRecipientsValidator>;
-
 
 export const LCNBoostClaimLinkSigningAuthorityValidator = z.object({
     endpoint: z.string(),

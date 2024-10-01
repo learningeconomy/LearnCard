@@ -1,5 +1,40 @@
 # @learncard/create-http-bridge
 
+## 1.1.102
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.38
+
+## 1.1.101
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.37
+
+## 1.1.100
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.36
+
+## 1.1.99
+
+### Patch Changes
+
+-   [#508](https://github.com/learningeconomy/LearnCard/pull/508) [`8904bcd5`](https://github.com/learningeconomy/LearnCard/commit/8904bcd59f3ab80d865de6420fb14c14f9af1ceb) Thanks [@dependabot](https://github.com/apps/dependabot)! - ⬆️ Bump express from 4.16.4 to 4.21.0 in /packages/learn-card-bridge-http in the npm_and_yarn group across 1 directory
+
+## 1.1.98
+
+### Patch Changes
+
+-   Updated dependencies [[`39f88b0`](https://github.com/learningeconomy/LearnCard/commit/39f88b0de824fe8b6b29997a2064c4965ac042f6)]:
+    -   @learncard/types@5.5.2
+    -   @learncard/init@1.2.35
+
 ## 1.1.97
 
 ### Patch Changes
