@@ -68,7 +68,11 @@ else console.log('This presentation is valid!');
 ```
 
 ### Storing/Retrieving/Publishing Credentials with LearnCloud
-Credentials can be converted back and forth to URIs, which can be stored per holder using Control Planes. URIs simplify complex processes, such as indexing and caching, over credentials stored in many different locations, such as in IPFS, device storage, or a Decentralized Web Node.
+
+To maintain co-ownership of credentials, it is best to store credentials in a public place, and then
+store references to that public place. While this is not the only way to store credentials (and is
+also definitely not a silver bullet! E.g. credentials containing private data), it is the opinion of
+this library that it should be used by default.
 
 #### Publish Credential 
 
