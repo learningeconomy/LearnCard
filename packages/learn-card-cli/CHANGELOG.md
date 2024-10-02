@@ -1,5 +1,12 @@
 # @learncard/cli
 
+## 3.3.41
+
+### Patch Changes
+
+-   Updated dependencies [[`46390f8ee3b3c1ca81bef687c8054bed8d9912d2`](https://github.com/learningeconomy/LearnCard/commit/46390f8ee3b3c1ca81bef687c8054bed8d9912d2)]:
+    -   @learncard/init@1.3.0
+
 ## 3.3.40
 
 ### Patch Changes
