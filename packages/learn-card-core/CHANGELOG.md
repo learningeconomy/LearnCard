@@ -1,5 +1,14 @@
 # learn-card-core
 
+## 9.3.2
+
+### Patch Changes
+
+-   [#524](https://github.com/learningeconomy/LearnCard/pull/524) [`035df02f21226ac1645b611e2f934c2d7e4cbd55`](https://github.com/learningeconomy/LearnCard/commit/035df02f21226ac1645b611e2f934c2d7e4cbd55) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix build issues
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.0.15
+
 ## 9.3.1
 
 ### Patch Changes

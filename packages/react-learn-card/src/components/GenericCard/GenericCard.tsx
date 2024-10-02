@@ -10,15 +10,19 @@ export const GenericCard: React.FC<GenericCardProps> = ({
     customHeaderClass = '',
     type = WalletCategoryTypes.achievements,
     className,
-    onClick = () => {},
+    onClick = () => { },
     showChecked,
     checkStatus,
     flipped,
 }) => {
-    const thumbClass = `bg-${TYPE_TO_WALLET_DARK_COLOR[type]}` ?? 'bg-grayscale-50';
+    const thumbClass = TYPE_TO_WALLET_DARK_COLOR[type]
+        ? `bg-${TYPE_TO_WALLET_DARK_COLOR[type]}`
+        : 'bg-grayscale-50';
     const defaultThumbClass = `flex h-[110px] m-auto ${thumbClass} w-[140px] overflow-hidden flex-col justify-center items-center w-full rounded-[20px] ${customThumbClass}`;
     const imgSrc = thumbImgSrc?.trim() !== '' ? thumbImgSrc : TYPE_TO_IMG_SRC[type];
-    const headerBgColor = `bg-${TYPE_TO_WALLET_DARK_COLOR[type]}` ?? 'bg-grayscale-900';
+    const headerBgColor = TYPE_TO_WALLET_DARK_COLOR[type]
+        ? `bg-${TYPE_TO_WALLET_DARK_COLOR[type]}`
+        : 'bg-grayscale-900';
     const checkBtnClass = checkStatus ? 'generic-vc-card checked' : 'generic-vc-card unchecked';
     const defaultHeaderClass = `flex generic-card-title w-full flex justify-center items-center  h-[76px] ${headerBgColor} ${customHeaderClass}`;
     const flippedClass = flipped ? 'flex-col-reverse' : 'flex-col';

@@ -1,5 +1,43 @@
 # learn-card-core
 
+## 1.2.40
+
+### Patch Changes
+
+-   [#512](https://github.com/learningeconomy/LearnCard/pull/512) [`2eff967c27b0e92f7cf36181ef907b1144cbfb40`](https://github.com/learningeconomy/LearnCard/commit/2eff967c27b0e92f7cf36181ef907b1144cbfb40) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add default trust registry URL
+
+-   Updated dependencies [[`2eff967c27b0e92f7cf36181ef907b1144cbfb40`](https://github.com/learningeconomy/LearnCard/commit/2eff967c27b0e92f7cf36181ef907b1144cbfb40), [`2eff967c27b0e92f7cf36181ef907b1144cbfb40`](https://github.com/learningeconomy/LearnCard/commit/2eff967c27b0e92f7cf36181ef907b1144cbfb40)]:
+    -   @learncard/learn-card-plugin@1.1.14
+    -   @learncard/learn-cloud-plugin@2.0.9
+    -   @learncard/did-web-plugin@1.0.34
+    -   @learncard/network-plugin@1.8.10
+
+## 1.2.39
+
+### Patch Changes
+
+-   Updated dependencies [[`035df02f21226ac1645b611e2f934c2d7e4cbd55`](https://github.com/learningeconomy/LearnCard/commit/035df02f21226ac1645b611e2f934c2d7e4cbd55)]:
+    -   @learncard/learn-cloud-plugin@2.0.8
+    -   @learncard/types@5.5.3
+    -   @learncard/core@9.3.2
+    -   @learncard/helpers@1.0.15
+    -   @learncard/ceramic-plugin@1.0.13
+    -   @learncard/chapi-plugin@1.0.28
+    -   @learncard/did-web-plugin@1.0.33
+    -   @learncard/didkey-plugin@1.0.13
+    -   @learncard/didkit-plugin@1.4.10
+    -   @learncard/idx-plugin@1.0.13
+    -   @learncard/learn-card-plugin@1.1.13
+    -   @learncard/network-plugin@1.8.9
+    -   @learncard/vc-plugin@1.1.15
+    -   @learncard/vc-api-plugin@1.0.13
+    -   @learncard/vc-templates-plugin@1.0.19
+    -   @learncard/vpqr-plugin@1.0.13
+    -   @learncard/crypto-plugin@1.0.13
+    -   @learncard/dynamic-loader-plugin@1.0.9
+    -   @learncard/ethereum-plugin@1.0.14
+    -   @learncard/expiration-plugin@1.1.15
+
 ## 1.2.38
 
 ### Patch Changes

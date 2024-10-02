@@ -14,11 +14,15 @@ export type VerifierState = (typeof VERIFIER_STATES)[keyof typeof VERIFIER_STATE
 
 type VerifierStateBadgeAndTextProps = {
     verifierState: VerifierState;
+    className?: string;
 };
 
-const VerifierStateBadgeAndText: React.FC<VerifierStateBadgeAndTextProps> = ({ verifierState }) => {
+const VerifierStateBadgeAndText: React.FC<VerifierStateBadgeAndTextProps> = ({
+    verifierState,
+    className = '',
+}) => {
     return (
-        <div className="flex justify-center">
+        <div className={`flex justify-center ${className}`}>
             {verifierState === VERIFIER_STATES.selfVerified && (
                 <span className="uppercase font-poppins text-[12px] font-[500] text-green-dark flex gap-[3px] items-center">
                     <PersonBadge />
