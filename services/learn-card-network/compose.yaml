@@ -23,7 +23,7 @@ services:
     image: welibrary/lcn-brain-service
     build:
       context: ../../
-      dockerfile: services/learn-card-network/brain-service/Dockerfile
+      dockerfile: services/learn-card-network/brain-service/Dockerfile.local
     container_name: "lcn-brain-service"
 
     # Change all the below 4000's to whatever port you'd like to run this on!
@@ -43,6 +43,9 @@ services:
     # We need to attach localhost to the host's gateway in order to correctly resolve did:webs
     extra_hosts:
       - "localhost:host-gateway"
+
+    volumes:
+      - ./brain-service/src:/app/services/learn-card-network/brain-service/src
 
     environment:
       PORT: 4000
@@ -72,7 +75,7 @@ services:
     image: welibrary/lcn-cloud-service
     build:
       context: ../../
-      dockerfile: services/learn-card-network/learn-cloud-service/Dockerfile
+      dockerfile: services/learn-card-network/learn-cloud-service/Dockerfile.local
     container_name: "lcn-cloud-service"
 
     # Change all the below 5000's to whatever port you'd like to run this on!
@@ -92,6 +95,9 @@ services:
     extra_hosts:
       - "localhost:host-gateway"
 
+    volumes:
+      - ./learn-cloud-service/src:/app/services/learn-card-network/learn-cloud-service/src
+
     environment:
       PORT: 5000
 
@@ -110,8 +116,9 @@ services:
     container_name: "lcn-neo4j"
     ports:
       - "7687:7687"
+      - "7474:7474"
     environment:
-      NEO4J_AUTH: neo4j/this-is-the-password
+      NEO4J_AUTH: none
     networks:
       - learn-card
 

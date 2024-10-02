@@ -36,4 +36,4 @@ RUN pnpm exec nx build:docker learn-cloud-service
 # Expose common ports used by server
 EXPOSE 3000
 
-CMD ["sh", "-c", "cd services/learn-card-network/learn-cloud-service && node --enable-source-maps dist/docker-entry.js"]
+CMD ["sh", "-c", "cd services/learn-card-network/learn-cloud-service && pnpm dev"]

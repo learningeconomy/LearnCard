@@ -25,15 +25,16 @@ COPY packages/plugins/learn-card packages/plugins/learn-card
 COPY packages/learn-card-types packages/learn-card-types
 COPY packages/plugins/vc packages/plugins/vc
 COPY packages/plugins/vc-templates packages/plugins/vc-templates
+COPY packages/plugins/vc-templates packages/plugins/vc-templates
 COPY tools/executors/workspace/run-command tools/executors/workspace/run-command
-COPY services/learn-card-network/learn-cloud-service services/learn-card-network/learn-cloud-service
+COPY services/learn-card-network/brain-service services/learn-card-network/brain-service
 
 # Install dependencies - Install inside container ensures parity on all machines
 RUN pnpm install --no-frozen-lockfile
 
-RUN pnpm exec nx build:docker learn-cloud-service
+RUN pnpm exec nx build:docker network-brain-service
 
 # Expose common ports used by server
 EXPOSE 3000
 
-CMD ["sh", "-c", "cd services/learn-card-network/learn-cloud-service && node --enable-source-maps dist/docker-entry.js"]
+CMD ["sh", "-c", "cd services/learn-card-network/brain-service && pnpm dev"]
