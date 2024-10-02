@@ -1,5 +1,11 @@
 # @learncard/network-brain-service
 
+## 3.0.0
+
+### Major Changes
+
+-   [#525](https://github.com/learningeconomy/LearnCard/pull/525) [`46390f8ee3b3c1ca81bef687c8054bed8d9912d2`](https://github.com/learningeconomy/LearnCard/commit/46390f8ee3b3c1ca81bef687c8054bed8d9912d2) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Do not throw an error when calling `getProfile` without a profile
+
 ## 2.3.5
 
 ### Patch Changes
