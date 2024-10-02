@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.7.23
+
+### Patch Changes
+
+-   [#523](https://github.com/learningeconomy/LearnCard/pull/523) [`bab40e44aea413976b7f5a72779522e88676e1da`](https://github.com/learningeconomy/LearnCard/commit/bab40e44aea413976b7f5a72779522e88676e1da) Thanks [@smurflo2](https://github.com/smurflo2)! - Redesign merit badge display
+
 ## 2.7.22
 
 ### Patch Changes
