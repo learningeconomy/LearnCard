@@ -10,6 +10,7 @@ import { DidAuthVP } from 'types/vp';
 import { addDidToUser, removeDidFromUser, setDidAsPrimary } from '@accesslayer/user/update';
 import { ensureUserForDid } from '@accesslayer/user/create';
 import { deleteUserByDid } from '@accesslayer/user/delete';
+import { client, mongodb } from '@mongo';
 
 export const userRouter = t.router({
     getDids: didAndChallengeRoute
@@ -25,7 +26,11 @@ export const userRouter = t.router({
         .input(z.void())
         .output(z.string().array())
         .query(async ({ ctx }) => {
-            return getAllDidsForDid(ctx.user.did);
+            const session = client.startSession();
+
+            return session.withTransaction(async () => {
+                return getAllDidsForDid(ctx.user.did, session);
+            });
         }),
 
     addDid: didAndChallengeRoute

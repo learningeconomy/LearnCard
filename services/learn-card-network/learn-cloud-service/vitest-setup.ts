@@ -1,7 +1,8 @@
-import { MongoMemoryServer } from 'mongodb-memory-server';
+import { MongoMemoryReplSet } from 'mongodb-memory-server';
 
 export default async function setup({ provide }) {
-    const db = await MongoMemoryServer.create();
+    const db = await MongoMemoryReplSet.create();
+    await db.waitUntilRunning();
     const uri = db.getUri();
 
     console.log(provide, uri, typeof uri);
