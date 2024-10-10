@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 2.0.11
+
+### Patch Changes
+
+-   [#535](https://github.com/learningeconomy/LearnCard/pull/535) [`5f52eadcdfc1c61fc8718d4e478fa86d9ac3711b`](https://github.com/learningeconomy/LearnCard/commit/5f52eadcdfc1c61fc8718d4e478fa86d9ac3711b) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix LearnCloud read.get for localhost URIs
+
 ## 2.0.10
 
 ### Patch Changes
