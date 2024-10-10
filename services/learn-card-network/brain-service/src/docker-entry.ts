@@ -91,20 +91,25 @@ if (pollUrl) {
             if (messages) {
                 await Promise.all(
                     messages.map(async message => {
-                        const _notification = JSON.parse(message.Body ?? '');
+                        try {
+                            const _notification = JSON.parse(message.Body ?? '');
 
-                        const notification = await LCNNotificationValidator.parseAsync(
-                            _notification
-                        );
+                            const notification = await LCNNotificationValidator.parseAsync(
+                                _notification
+                            );
 
-                        await sendNotification(notification);
+                            await sendNotification(notification);
 
-                        const deleteCommand = new DeleteMessageCommand({
-                            QueueUrl: pollUrl,
-                            ReceiptHandle: message.ReceiptHandle,
-                        });
+                            const deleteCommand = new DeleteMessageCommand({
+                                QueueUrl: pollUrl,
+                                ReceiptHandle: message.ReceiptHandle,
+                            });
 
-                        return sqs.send(deleteCommand);
+                            return await sqs.send(deleteCommand);
+                        } catch (error) {
+                            console.error('Invalid Notification Object', message.Body);
+                            return;
+                        }
                     })
                 );
             }

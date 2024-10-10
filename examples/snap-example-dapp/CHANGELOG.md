@@ -1,5 +1,25 @@
 # Changelog
 
+## 1.0.67
+
+### Patch Changes
+
+-   Updated dependencies [[`426ba7423b77f963985bd17e7c31843da1e16217`](https://github.com/learningeconomy/LearnCard/commit/426ba7423b77f963985bd17e7c31843da1e16217)]:
+    -   @learncard/core@9.3.3
+    -   @learncard/didkit-plugin@1.4.11
+    -   @learncard/meta-mask-snap@1.0.54
+
+## 1.0.66
+
+### Patch Changes
+
+-   [#524](https://github.com/learningeconomy/LearnCard/pull/524) [`035df02f21226ac1645b611e2f934c2d7e4cbd55`](https://github.com/learningeconomy/LearnCard/commit/035df02f21226ac1645b611e2f934c2d7e4cbd55) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix build issues
+
+-   Updated dependencies [[`035df02f21226ac1645b611e2f934c2d7e4cbd55`](https://github.com/learningeconomy/LearnCard/commit/035df02f21226ac1645b611e2f934c2d7e4cbd55)]:
+    -   @learncard/core@9.3.2
+    -   @learncard/meta-mask-snap@1.0.53
+    -   @learncard/didkit-plugin@1.4.10
+
 ## 1.0.65
 
 ### Patch Changes

@@ -126,14 +126,14 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
         <section
             role="button"
             onClick={() => handleViewBackFace?.()}
-            className="relative p-[13px] mt-[25px] bg-white border-[5px] rounded-[30px] border-soid border-grayscale-200 max-w-[300px]"
+            className="relative p-[13px] mt-[68px] bg-white border-[5px] rounded-[30px] border-soid border-grayscale-200 min-w-[295px] max-w-[300px]"
         >
-            <div className="w-[calc(100%-26px)] absolute top-[-19px]">
+            <div className="w-[calc(100%-26px)] absolute top-[-72px]">
                 <MeritBadgeImageDisplay imageUrl={imageUrl ?? ''} className="mx-auto" />
             </div>
 
             <div
-                className={`flex flex-col gap-[15px] items-center px-[20px] pt-[92px] pb-[50px] border-solid border-[4px] ${borderColor} rounded-[30px]`}
+                className={`flex flex-col gap-[15px] items-center px-[20px] pt-[92px] pb-[19px] border-solid border-[4px] ${borderColor} rounded-[30px]`}
             >
                 <div className="flex flex-col gap-[5px]">
                     <div className="flex flex-col items-center text-grayscale-900">
@@ -145,11 +145,13 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
                         </span>
                     </div>
                     <div className="flex flex-col items-center">
-                        <h1 className="text-grayscale-900 text-center text-[20px] font-jacques">
+                        <h1 className="text-grayscale-900 text-center text-[25px] font-jacques">
                             {title}
                         </h1>
 
-                        <div className={`${textLightColor} uppercase text-[14px] font-poppins`}>
+                        <div
+                            className={`${textLightColor} uppercase text-[14px] font-notoSans font-[600]`}
+                        >
                             {categoryTitle}
                         </div>
                     </div>
@@ -169,7 +171,7 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
                     </div>
                 )}
 
-                <div className="border-t-[2px] border-solid border-sp-purple-base flex flex-col py-[20px] w-full">
+                <div className="flex flex-col w-full">
                     <div className="text-[14px] text-grayscale-900 flex flex-col items-center w-full mb-[10px]">
                         <span className="font-jacques flex gap-[5px] items-center w-full overflow-ellipsis whitespace-nowrap overflow-hidden justify-center">
                             {issueeName === '0 person' ? (
@@ -206,10 +208,16 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
                             <span className="font-jacques">Troop Leader, Troop 1142</span>
                             <span className="font-jacques">Boy Scouts of America</span>
                         </div> */}
-
-                        <VerifierStateBadgeAndText verifierState={verifierState} />
                     </div>
                 </div>
+
+                <MeritBadgeProfileImageDisplay
+                    imageUrl={issuerImage}
+                    imageComponent={issuerImageComponent}
+                    className="w-[calc(100%-26px)] flex justify-center items-center text-sp-purple-base"
+                    size="small"
+                    showSeal
+                />
             </div>
 
             {categoryType && (
@@ -221,13 +229,12 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
                 </>
             )}
 
-            <MeritBadgeProfileImageDisplay
-                imageUrl={issuerImage}
-                imageComponent={issuerImageComponent}
-                className="w-[calc(100%-26px)] absolute bottom-0 flex justify-center items-center text-sp-purple-base"
-                size="small"
-                showSeal
-            />
+            <div className="absolute bottom-0 w-[calc(100%-26px)] flex justify-center">
+                <VerifierStateBadgeAndText
+                    verifierState={verifierState}
+                    className="bg-white px-[5px] pb-[5px]"
+                />
+            </div>
 
             {/* so that tailwind will put these colors in the css */}
             <span className="hidden border-rose-500 text-spice-500 border-spice-500 border-cyan-500 text-cyan-500 border-indigo-500 border-sp-purple-base"></span>
