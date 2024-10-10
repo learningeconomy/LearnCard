@@ -87,7 +87,7 @@ export const Lightbox: React.FC<LightboxProps> = ({ items, currentUrl, setCurren
         <>
             {createPortal(
                 <div
-                    className="absolute top-0 left-0 w-screen h-screen bg-[rgba(0,0,0,0.9)] text-white flex justify-center items-center z-[999999]"
+                    className="absolute lc-lightbox top-0 left-0 w-screen h-screen bg-[rgba(0,0,0,0.9)] text-white flex justify-center items-center z-[9999999]"
                     onClick={e => {
                         if (e.target !== innerRef.current) {
                             setCurrentUrl(undefined);
