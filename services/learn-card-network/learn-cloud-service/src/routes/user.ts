@@ -47,7 +47,9 @@ export const userRouter = t.router({
 
             const result = await learnCard.invoke.verifyPresentation(
                 presentation,
-                typeof presentation === 'string' ? { proofFormat: 'jwt' } : {}
+                typeof presentation === 'string'
+                    ? { proofFormat: 'jwt', proofPurpose: 'authentication' }
+                    : { proofPurpose: 'authentication' }
             );
 
             if (
