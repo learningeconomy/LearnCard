@@ -319,7 +319,7 @@ export const getLearnCloudPlugin = async (
 
                 if (lc !== 'lc' || method !== 'cloud') return undefined;
 
-                if (uriUrl !== url) {
+                if (uriUrl.replace(/https?/, '') !== url.replace(/https?/, '').replace(':', '%3A')) {
                     const fullUrl = uriUrl.startsWith('http')
                         ? uriUrl
                         : `http${uriUrl.includes('http') ? '' : 's'}://${uriUrl}`;
