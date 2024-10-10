@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 2.0.12
+
+### Patch Changes
+
+-   [`39dc287408d1ebc5393a97155674c8a47c79e7a7`](https://github.com/learningeconomy/LearnCard/commit/39dc287408d1ebc5393a97155674c8a47c79e7a7) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Continue fix from before
+
 ## 2.0.11
 
 ### Patch Changes
