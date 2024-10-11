@@ -1,4 +1,4 @@
-import { ProfileInstance, BoostInstance, Profile } from '@models';
+import { ProfileInstance, BoostInstance, Profile, Boost } from '@models';
 
 export const removeProfileAsBoostAdmin = async (
     profile: ProfileInstance,
@@ -8,4 +8,16 @@ export const removeProfileAsBoostAdmin = async (
         alias: 'adminOf',
         where: { source: { profileId: profile.profileId }, target: { id: boost.id } },
     });
+};
+
+export const removeBoostAsParent = async (
+    parentBoost: BoostInstance,
+    childBoost: BoostInstance
+): Promise<boolean> => {
+    return Boolean(
+        await Boost.deleteRelationships({
+            alias: 'parentOf',
+            where: { source: { id: parentBoost.id }, target: { id: childBoost.id } },
+        })
+    );
 };

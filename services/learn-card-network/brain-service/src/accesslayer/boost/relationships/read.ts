@@ -256,3 +256,28 @@ export const isProfileBoostAdmin = async (profile: ProfileInstance, boost: Boost
 
     return Number(result.records[0]?.get('count') ?? 0) > 0;
 };
+
+export const isBoostParent = async (
+    parentBoost: BoostInstance,
+    childBoost: BoostInstance,
+    {
+        numberOfGenerations = 1,
+        direction = 'out',
+    }: { numberOfGenerations?: number; direction?: 'out' | 'in' | 'none' } = {}
+): Promise<boolean> => {
+    const query = new QueryBuilder().match({
+        related: [
+            { model: Boost, where: { id: parentBoost.id }, identifier: 'parent' },
+            {
+                ...Boost.getRelationshipByAlias('parentOf'),
+                maxHops: numberOfGenerations,
+                direction,
+            },
+            { model: Boost, where: { id: childBoost.id } },
+        ],
+    });
+
+    const result = await query.return('count(parent) AS count').run();
+
+    return Number(result.records[0]?.get('count') ?? 0) > 0;
+};

@@ -28,3 +28,10 @@ export const setProfileAsBoostAdmin = async (
         where: { id: boost.id },
     });
 };
+
+export const setBoostAsParent = async (
+    parentBoost: BoostInstance,
+    childBoost: BoostInstance
+): Promise<boolean> => {
+    return Boolean(await parentBoost.relateTo({ alias: 'parentOf', where: { id: childBoost.id } }));
+};
