@@ -2,9 +2,10 @@ import React from 'react';
 
 type MeritBadgeRibbonProps = {
     className?: string;
+    image: string;
 };
 
-const MeritBadgeRibbon: React.FC<MeritBadgeRibbonProps> = ({ className = '' }) => {
+const MeritBadgeRibbon: React.FC<MeritBadgeRibbonProps> = ({ className = '', image }) => {
     return (
         <svg
             width="207"
@@ -48,6 +49,19 @@ const MeritBadgeRibbon: React.FC<MeritBadgeRibbonProps> = ({ className = '' }) =
                     fill="url(#pattern0_10755_290433)"
                 />
             </g>
+
+            <clipPath id="circleClip">
+                <circle cx="103.5" cy="84" r="75" />
+            </clipPath>
+            <image
+                xlinkHref={image}
+                x="28.5"
+                y="9"
+                width="150"
+                height="150"
+                clipPath="url(#circleClip)"
+            />
+
             <defs>
                 <filter
                     id="filter0_d_10755_290433"
