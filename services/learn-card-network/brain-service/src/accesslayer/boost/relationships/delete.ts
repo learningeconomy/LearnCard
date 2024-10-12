@@ -1,12 +1,12 @@
-import { ProfileInstance, BoostInstance, Profile, Boost } from '@models';
+import { ProfileInstance, BoostInstance, Boost } from '@models';
 
 export const removeProfileAsBoostAdmin = async (
     profile: ProfileInstance,
     boost: BoostInstance
 ): Promise<void> => {
-    await Profile.deleteRelationships({
-        alias: 'adminOf',
-        where: { source: { profileId: profile.profileId }, target: { id: boost.id } },
+    await Boost.deleteRelationships({
+        alias: 'hasPermissions',
+        where: { target: { profileId: profile.profileId }, source: { id: boost.id } },
     });
 };
 

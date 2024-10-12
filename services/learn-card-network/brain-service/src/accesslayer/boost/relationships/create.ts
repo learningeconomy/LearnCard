@@ -23,9 +23,22 @@ export const setProfileAsBoostAdmin = async (
     profile: ProfileInstance,
     boost: BoostInstance
 ): Promise<void> => {
-    await profile.relateTo({
-        alias: 'adminOf',
-        where: { id: boost.id },
+    await boost.relateTo({
+        alias: 'hasPermissions',
+        where: { profileId: profile.profileId },
+        properties: {
+            role: 'admin',
+            canEdit: true,
+            canIssue: true,
+            canRevoke: true,
+            canManagePermissions: true,
+            canIssueChildren: '*',
+            canCreateChildren: '*',
+            canEditChildren: '*',
+            canRevokeChildren: '*',
+            canManageChildrenPermissions: '*',
+            canViewAnalytics: true,
+        },
     });
 };
 

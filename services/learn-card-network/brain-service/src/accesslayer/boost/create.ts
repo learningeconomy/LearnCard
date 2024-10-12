@@ -30,5 +30,23 @@ export const createBoost = async (
                 relationshipProperties: { date: new Date().toISOString() },
             },
         },
+        hasPermissions: {
+            where: {
+                params: { profileId: creator.profileId },
+                relationshipProperties: {
+                    role: 'creator',
+                    canEdit: true,
+                    canIssue: true,
+                    canRevoke: true,
+                    canManagePermissions: true,
+                    canIssueChildren: '*',
+                    canCreateChildren: '*',
+                    canEditChildren: '*',
+                    canRevokeChildren: '*',
+                    canManageChildrenPermissions: '*',
+                    canViewAnalytics: true,
+                },
+            },
+        },
     });
 };

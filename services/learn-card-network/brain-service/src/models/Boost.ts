@@ -71,7 +71,7 @@ export const Boost = ModelFactory<BoostType, BoostRelationships>(
             },
             parentOf: { model: 'self', direction: 'out', name: 'PARENT_OF' },
             hasPermissions: {
-                model: 'self',
+                model: Profile,
                 direction: 'in',
                 name: 'HAS_PERMISSIONS',
                 properties: {

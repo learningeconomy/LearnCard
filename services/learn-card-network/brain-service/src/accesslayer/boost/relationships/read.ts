@@ -222,8 +222,7 @@ export const getBoostAdmins = async (
         .match({
             related: [
                 { identifier: 'source', model: Boost, where: { id: boost.id } },
-                `-[:${Profile.getRelationshipByAlias('adminOf').name}|${Boost.getRelationshipByAlias('createdBy').name
-                }]-`,
+                Boost.getRelationshipByAlias('hasPermissions'),
                 { identifier: 'admin', model: Profile },
             ],
         })
@@ -246,8 +245,7 @@ export const isProfileBoostAdmin = async (profile: ProfileInstance, boost: Boost
     const query = new QueryBuilder().match({
         related: [
             { model: Boost, where: { id: boost.id } },
-            `-[:${Profile.getRelationshipByAlias('adminOf').name}|${Boost.getRelationshipByAlias('createdBy').name
-            }]-`,
+            Boost.getRelationshipByAlias('hasPermissions'),
             { identifier: 'profile', model: Profile, where: { profileId: profile.profileId } },
         ],
     });

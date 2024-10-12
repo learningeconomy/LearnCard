@@ -3,8 +3,6 @@ import { Profile } from './Profile';
 import { Credential } from './Credential';
 import { Presentation } from './Presentation';
 
-Profile.addRelationships({ adminOf: { model: Boost, direction: 'out', name: 'ADMIN_OF' } });
-
 Credential.addRelationships({
     credentialReceived: {
         model: Profile,
