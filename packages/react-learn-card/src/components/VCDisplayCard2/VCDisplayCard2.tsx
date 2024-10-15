@@ -179,7 +179,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
 
     if (
         categoryType === LCCategoryEnum.meritBadge ||
-        credential?.display?.displayType === 'badge 2'
+        credential?.display?.displayType === 'award'
     ) {
         return (
             <MeritBadgeDisplayCard
