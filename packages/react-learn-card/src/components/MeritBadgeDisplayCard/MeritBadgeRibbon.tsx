@@ -19,7 +19,7 @@ const MeritBadgeRibbon: React.FC<MeritBadgeRibbonProps> = ({ className = '', ima
                 <circle cx="102.988" cy="83" r="81.5" fill="white" stroke="white" strokeWidth="3" />
                 <path
                     d="M3.94446 50C3.41654 50 2.92748 50.2775 2.65674 50.7307C2.38599 51.1839 2.37343 51.7461 2.62365 52.211L19.4659 83.5L2.62365 114.789C2.37343 115.254 2.386 115.816 2.65674 116.269C2.92748 116.722 3.41654 117 3.94446 117L203.056 117C203.583 117 204.073 116.722 204.343 116.269C204.614 115.816 204.627 115.254 204.376 114.789L187.534 83.5L204.376 52.211C204.627 51.7461 204.614 51.1839 204.343 50.7307C204.073 50.2775 203.583 50 203.056 50L3.94446 50Z"
-                    fill="#622599"
+                    fill="currentColor"
                     stroke="white"
                     strokeWidth="3"
                     strokeLinejoin="round"
@@ -38,7 +38,7 @@ const MeritBadgeRibbon: React.FC<MeritBadgeRibbonProps> = ({ className = '', ima
                     width="156.6"
                     height="156.6"
                     rx="78.2999"
-                    stroke="#622599"
+                    stroke="currentColor"
                     strokeWidth="3"
                 />
                 <rect

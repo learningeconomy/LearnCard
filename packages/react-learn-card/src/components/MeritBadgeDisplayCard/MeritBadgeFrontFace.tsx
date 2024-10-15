@@ -129,7 +129,10 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
             className="relative p-[13px] mt-[68px] bg-white border-[5px] rounded-[30px] border-soid border-grayscale-200 min-w-[295px] max-w-[300px]"
         >
             <div className="w-[calc(100%-26px)] absolute top-[-72px]">
-                <MeritBadgeImageDisplay imageUrl={imageUrl ?? ''} className="mx-auto" />
+                <MeritBadgeImageDisplay
+                    imageUrl={imageUrl ?? ''}
+                    className={`mx-auto ${textLightColor}`}
+                />
             </div>
 
             <div
@@ -214,7 +217,7 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
                 <MeritBadgeProfileImageDisplay
                     imageUrl={issuerImage}
                     imageComponent={issuerImageComponent}
-                    className="w-[calc(100%-26px)] flex justify-center items-center text-sp-purple-base"
+                    className={`w-[calc(100%-26px)] flex justify-center items-center ${textLightColor}`}
                     size="small"
                     showSeal
                 />
