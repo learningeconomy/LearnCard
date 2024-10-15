@@ -1,5 +1,23 @@
 # @learncard/network-brain-service
 
+## 2.1.3
+
+### Patch Changes
+
+-   [#531](https://github.com/learningeconomy/LearnCard/pull/531) [`a6bb3fa7cc8cfc80b0d14b9c59c776ee0ec5ddeb`](https://github.com/learningeconomy/LearnCard/commit/a6bb3fa7cc8cfc80b0d14b9c59c776ee0ec5ddeb) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Use transaction for getDids
+
+-   Updated dependencies [[`426ba7423b77f963985bd17e7c31843da1e16217`](https://github.com/learningeconomy/LearnCard/commit/426ba7423b77f963985bd17e7c31843da1e16217)]:
+    -   @learncard/core@9.3.3
+    -   @learncard/ceramic-plugin@1.0.14
+    -   @learncard/crypto-plugin@1.0.14
+    -   @learncard/did-web-plugin@1.0.35
+    -   @learncard/didkey-plugin@1.0.14
+    -   @learncard/didkit-plugin@1.4.11
+    -   @learncard/expiration-plugin@1.1.16
+    -   @learncard/learn-card-plugin@1.1.15
+    -   @learncard/vc-plugin@1.1.16
+    -   @learncard/vc-templates-plugin@1.0.20
+
 ## 2.1.2
 
 ### Patch Changes

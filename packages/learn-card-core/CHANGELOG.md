@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 9.3.3
+
+### Patch Changes
+
+-   [#530](https://github.com/learningeconomy/LearnCard/pull/530) [`426ba7423b77f963985bd17e7c31843da1e16217`](https://github.com/learningeconomy/LearnCard/commit/426ba7423b77f963985bd17e7c31843da1e16217) Thanks [@gerardopar](https://github.com/gerardopar)! - Update LearnCard core readme
+
 ## 9.3.2
 
 ### Patch Changes

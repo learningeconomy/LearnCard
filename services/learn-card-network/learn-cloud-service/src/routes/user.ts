@@ -10,7 +10,7 @@ import { DidAuthVP } from 'types/vp';
 import { addDidToUser, removeDidFromUser, setDidAsPrimary } from '@accesslayer/user/update';
 import { ensureUserForDid } from '@accesslayer/user/create';
 import { deleteUserByDid } from '@accesslayer/user/delete';
-import { client, mongodb } from '@mongo';
+import { client } from '@mongo';
 
 export const userRouter = t.router({
     getDids: didAndChallengeRoute
