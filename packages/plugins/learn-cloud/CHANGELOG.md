@@ -1,5 +1,15 @@
 # learn-card-core
 
+## 2.0.13
+
+### Patch Changes
+
+-   [`f239bcc897815df00fe893d51836241f76df66ec`](https://github.com/learningeconomy/LearnCard/commit/f239bcc897815df00fe893d51836241f76df66ec) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Critical fix for LearnCloud resolving URIs in other LearnClouds/localhost
+
+-   Updated dependencies [[`26bb535d573d30dfe27555bc0b53b22499425ada`](https://github.com/learningeconomy/LearnCard/commit/26bb535d573d30dfe27555bc0b53b22499425ada)]:
+    -   @learncard/didkit-plugin@1.4.12
+    -   @learncard/learn-cloud-client@1.2.6
+
 ## 2.0.12
 
 ### Patch Changes
