@@ -11,7 +11,6 @@ import {
 import { getCredentialSentToProfile } from '@accesslayer/credential/relationships/read';
 import { constructUri, getUriParts } from './uri.helpers';
 import { addNotificationToQueue } from './notifications.helpers';
-import { deleteCachedConnectionsForProfileId } from '@cache/connections';
 
 export const getCredentialUri = (id: string, domain: string): string =>
     constructUri('credential', id, domain);
@@ -65,15 +64,10 @@ export const acceptCredential = async (profile: ProfileInstance, uri: string): P
 
     await createReceivedCredentialRelationship(profile, pendingVc.source, pendingVc.target);
 
-    await Promise.all([
-        deleteCachedConnectionsForProfileId(profile.profileId),
-        deleteCachedConnectionsForProfileId(pendingVc.source.profileId),
-    ]);
-
     await addNotificationToQueue({
         type: LCNNotificationTypeEnumValidator.enum.BOOST_ACCEPTED,
-        to: pendingVc.source,
-        from: profile,
+        to: pendingVc.source.dataValues,
+        from: profile.dataValues,
         message: {
             title: 'Boost Accepted',
             body: `${profile.displayName} has accepted your boost!`,

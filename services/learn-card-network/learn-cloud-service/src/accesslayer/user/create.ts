@@ -1,13 +1,15 @@
+import { ClientSession } from 'mongodb';
+
 import { MongoUserType } from '@models';
 import { Users } from '.';
 import { getUserForDid } from './read';
 import { getCachedUserForDid, setCachedUserForDid } from '@cache/user';
 
-export const createUser = async (did: string): Promise<string | false> => {
+export const createUser = async (did: string, session?: ClientSession): Promise<string | false> => {
     try {
         const newUser = { did, associatedDids: [], dids: [did] };
 
-        const id = (await Users.insertOne(newUser)).insertedId.toString();
+        const id = (await Users.insertOne(newUser, { session })).insertedId.toString();
 
         if (id) await setCachedUserForDid(did, newUser);
 
@@ -18,12 +20,15 @@ export const createUser = async (did: string): Promise<string | false> => {
     }
 };
 
-export const ensureUserForDid = async (did: string): Promise<MongoUserType> => {
+export const ensureUserForDid = async (
+    did: string,
+    session?: ClientSession
+): Promise<MongoUserType> => {
     const cachedResponse = await getCachedUserForDid(did);
 
     if (cachedResponse) return cachedResponse;
 
-    const user = await getUserForDid(did);
+    const user = await getUserForDid(did, session);
 
     if (user) {
         await setCachedUserForDid(did, user);
@@ -31,9 +36,9 @@ export const ensureUserForDid = async (did: string): Promise<MongoUserType> => {
         return user;
     }
 
-    await createUser(did);
+    await createUser(did, session);
 
-    const newUser = await getUserForDid(did);
+    const newUser = await getUserForDid(did, session);
 
     if (!newUser) throw new Error('Something went wrong creating the user!');
 

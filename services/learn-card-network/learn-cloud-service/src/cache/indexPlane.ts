@@ -1,3 +1,5 @@
+import { ClientSession } from 'mongodb';
+
 import stringify from 'json-stringify-deterministic';
 
 import cache from '@cache';
@@ -55,14 +57,18 @@ export const deleteCachedIndexPageForDid = async (
     ]);
 };
 
-export const flushIndexCacheForDid = async (did: string, includeAssociatedDids = true) => {
+export const flushIndexCacheForDid = async (
+    did: string,
+    includeAssociatedDids = true,
+    session?: ClientSession
+) => {
     if (!includeAssociatedDids) {
         const keys = await cache.keys(`index:${did}:*`);
 
         return cache.delete(keys);
     }
 
-    const dids = await getAllDidsForDid(did);
+    const dids = await getAllDidsForDid(did, session);
 
     const results = await Promise.all(
         dids.map(async _did => {

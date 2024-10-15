@@ -1,5 +1,75 @@
 # learn-card-core
 
+## 2.0.1
+
+### Patch Changes
+
+-   Updated dependencies [[`426ba7423b77f963985bd17e7c31843da1e16217`](https://github.com/learningeconomy/LearnCard/commit/426ba7423b77f963985bd17e7c31843da1e16217)]:
+    -   @learncard/core@9.3.3
+    -   @learncard/network-brain-client@2.0.1
+
+## 2.0.0
+
+### Major Changes
+
+-   [#525](https://github.com/learningeconomy/LearnCard/pull/525) [`46390f8ee3b3c1ca81bef687c8054bed8d9912d2`](https://github.com/learningeconomy/LearnCard/commit/46390f8ee3b3c1ca81bef687c8054bed8d9912d2) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Do not throw an error when calling `getProfile` without a profile
+
+### Patch Changes
+
+-   Updated dependencies [[`46390f8ee3b3c1ca81bef687c8054bed8d9912d2`](https://github.com/learningeconomy/LearnCard/commit/46390f8ee3b3c1ca81bef687c8054bed8d9912d2)]:
+    -   @learncard/network-brain-client@2.0.0
+
+## 1.8.10
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@1.3.10
+
+## 1.8.9
+
+### Patch Changes
+
+-   Updated dependencies [[`035df02f21226ac1645b611e2f934c2d7e4cbd55`](https://github.com/learningeconomy/LearnCard/commit/035df02f21226ac1645b611e2f934c2d7e4cbd55)]:
+    -   @learncard/core@9.3.2
+    -   @learncard/network-brain-client@1.3.9
+
+## 1.8.8
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@1.3.8
+
+## 1.8.7
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@1.3.7
+
+## 1.8.6
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@1.3.6
+
+## 1.8.5
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.1
+    -   @learncard/network-brain-client@1.3.5
+
+## 1.8.4
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@1.3.4
+
 ## 1.8.3
 
 ### Patch Changes

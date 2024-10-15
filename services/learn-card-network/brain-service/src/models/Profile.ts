@@ -53,11 +53,7 @@ export const Profile = ModelFactory<ProfileType, ProfileRelationships>(
             websiteLink: { type: 'string', required: false },
             isServiceProfile: { type: 'boolean', required: false },
             type: { type: 'string', required: false },
-            notificationsWebhook: {
-                type: 'string',
-                required: false,
-                format: 'url',
-            },
+            notificationsWebhook: { type: 'string', required: false },
         },
         relationships: {
             connectionRequested: { model: 'self', direction: 'out', name: 'CONNECTION_REQUESTED' },

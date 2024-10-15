@@ -66,10 +66,12 @@ export const VCIDDisplayCard: React.FC<VCIDDisplayCardProps> = ({
     const setIsFront = setIsFrontOverride ?? _setIsFront;
 
     let backgroundStyle = {
-        backgroundColor: `linear-gradient(180deg, rgba(24,34,78,1) ${!isFront && hideGradientBackground ? '100%' : '25%'
-            }, rgba(139,145,167,1) 100%)`,
-        backgroundImage: `linear-gradient(180deg, rgba(24,34,78,1) ${!isFront && hideGradientBackground ? '100%' : '25%'
-            }, rgba(139,145,167,1) 100%)`,
+        backgroundColor: `linear-gradient(180deg, rgba(24,34,78,1) ${
+            !isFront && hideGradientBackground ? '100%' : '25%'
+        }, rgba(139,145,167,1) 100%)`,
+        backgroundImage: `linear-gradient(180deg, rgba(24,34,78,1) ${
+            !isFront && hideGradientBackground ? '100%' : '25%'
+        }, rgba(139,145,167,1) 100%)`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundAttachment: 'fixed',
@@ -79,8 +81,9 @@ export const VCIDDisplayCard: React.FC<VCIDDisplayCardProps> = ({
         <Flipper className="w-full" flipKey={isFront}>
             <Flipped flipId="card">
                 <section
-                    className={`vc-display-card font-mouse flex flex-col items-center border-solid border-white rounded-[30px] z-10 max-w-[400px] relative bg-white shadow-3xl ${isFront ? '' : 'min-h-[800px]'
-                        }`}
+                    className={`vc-display-card font-mouse flex flex-col items-center border-solid border-white rounded-[30px] z-10 max-w-[400px] relative bg-white shadow-3xl ${
+                        isFront ? '' : 'min-h-[800px]'
+                    }`}
                 >
                     <div
                         className="relative vc-card-content-container flex flex-col items-center grow min-h-0 w-full rounded-t-[30px] rounded-b-[30px] overflow-hidden"
@@ -88,49 +91,40 @@ export const VCIDDisplayCard: React.FC<VCIDDisplayCardProps> = ({
                         role="button"
                         onClick={() => setIsFront(!isFront)}
                     >
-                        <Flipped flipId="scroll-container">
-                            <div className="vc-card-content-scroll-container w-full min-h-full flex flex-col justify-start items-center rounded-t-[30px] rounded-b-[30px]  scrollbar-hide pt-[20px]">
-                                {isFront && (
-                                    <Flipped flipId="face">
-                                        <VCIDDisplayFrontFace
-                                            isFront={_isFront}
-                                            setIsFront={setIsFront}
-                                            showDetailsBtn={showDetailsBtn}
-                                            customThumbComponent={customThumbComponent}
-                                            credential={credential}
-                                            trustedAppRegistry={trustedAppRegistry}
-                                            qrCodeOnClick={qrCodeOnClick}
-                                            hideQRCode={hideQRCode}
-                                            customIDDescription={customIDDescription}
-                                        />
-                                    </Flipped>
-                                )}
-                                {!isFront && (
-                                    <Flipped flipId="face">
-                                        <VC2BackFace
-                                            credential={credential}
-                                            verificationItems={verificationItems}
-                                            issueHistory={issueHistory}
-                                            getFileMetadata={getFileMetadata}
-                                            getVideoMetadata={getVideoMetadata}
-                                            onMediaAttachmentClick={onMediaAttachmentClick}
-                                            showBackButton={
-                                                (showBackButton && !hideNavButtons) ||
-                                                showDetailsBtn
-                                            }
-                                            showFrontFace={() => setIsFront(true)}
-                                            customDescription={customDescription}
-                                            customCriteria={customCriteria}
-                                            customIssueHistoryComponent={
-                                                customIssueHistoryComponent
-                                            }
-                                            enableLightbox={enableLightbox}
-                                            customSkillsComponent={customSkillsComponent}
-                                        />
-                                    </Flipped>
-                                )}
-                            </div>
-                        </Flipped>
+                        <div className="vc-card-content-scroll-container w-full min-h-full flex flex-col justify-start items-center rounded-t-[30px] rounded-b-[30px]  scrollbar-hide pt-[20px]">
+                            {isFront && (
+                                <VCIDDisplayFrontFace
+                                    isFront={_isFront}
+                                    setIsFront={setIsFront}
+                                    showDetailsBtn={showDetailsBtn}
+                                    customThumbComponent={customThumbComponent}
+                                    credential={credential}
+                                    trustedAppRegistry={trustedAppRegistry}
+                                    qrCodeOnClick={qrCodeOnClick}
+                                    hideQRCode={hideQRCode}
+                                    customIDDescription={customIDDescription}
+                                />
+                            )}
+                            {!isFront && (
+                                <VC2BackFace
+                                    credential={credential}
+                                    verificationItems={verificationItems}
+                                    issueHistory={issueHistory}
+                                    getFileMetadata={getFileMetadata}
+                                    getVideoMetadata={getVideoMetadata}
+                                    onMediaAttachmentClick={onMediaAttachmentClick}
+                                    showBackButton={
+                                        (showBackButton && !hideNavButtons) || showDetailsBtn
+                                    }
+                                    showFrontFace={() => setIsFront(true)}
+                                    customDescription={customDescription}
+                                    customCriteria={customCriteria}
+                                    customIssueHistoryComponent={customIssueHistoryComponent}
+                                    enableLightbox={enableLightbox}
+                                    customSkillsComponent={customSkillsComponent}
+                                />
+                            )}
+                        </div>
                     </div>
                 </section>
             </Flipped>

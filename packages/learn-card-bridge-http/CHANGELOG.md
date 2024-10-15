@@ -1,5 +1,92 @@
 # @learncard/create-http-bridge
 
+## 1.1.108
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.3
+
+## 1.1.107
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.2
+
+## 1.1.106
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.1
+
+## 1.1.105
+
+### Patch Changes
+
+-   Updated dependencies [[`46390f8ee3b3c1ca81bef687c8054bed8d9912d2`](https://github.com/learningeconomy/LearnCard/commit/46390f8ee3b3c1ca81bef687c8054bed8d9912d2)]:
+    -   @learncard/init@1.3.0
+
+## 1.1.104
+
+### Patch Changes
+
+-   Updated dependencies [[`2eff967c27b0e92f7cf36181ef907b1144cbfb40`](https://github.com/learningeconomy/LearnCard/commit/2eff967c27b0e92f7cf36181ef907b1144cbfb40)]:
+    -   @learncard/init@1.2.40
+
+## 1.1.103
+
+### Patch Changes
+
+-   [#524](https://github.com/learningeconomy/LearnCard/pull/524) [`035df02f21226ac1645b611e2f934c2d7e4cbd55`](https://github.com/learningeconomy/LearnCard/commit/035df02f21226ac1645b611e2f934c2d7e4cbd55) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix build issues
+
+-   Updated dependencies [[`035df02f21226ac1645b611e2f934c2d7e4cbd55`](https://github.com/learningeconomy/LearnCard/commit/035df02f21226ac1645b611e2f934c2d7e4cbd55)]:
+    -   @learncard/types@5.5.3
+    -   @learncard/init@1.2.39
+
+## 1.1.102
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.38
+
+## 1.1.101
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.37
+
+## 1.1.100
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.36
+
+## 1.1.99
+
+### Patch Changes
+
+-   [#508](https://github.com/learningeconomy/LearnCard/pull/508) [`8904bcd5`](https://github.com/learningeconomy/LearnCard/commit/8904bcd59f3ab80d865de6420fb14c14f9af1ceb) Thanks [@dependabot](https://github.com/apps/dependabot)! - ⬆️ Bump express from 4.16.4 to 4.21.0 in /packages/learn-card-bridge-http in the npm_and_yarn group across 1 directory
+
+## 1.1.98
+
+### Patch Changes
+
+-   Updated dependencies [[`39f88b0`](https://github.com/learningeconomy/LearnCard/commit/39f88b0de824fe8b6b29997a2064c4965ac042f6)]:
+    -   @learncard/types@5.5.2
+    -   @learncard/init@1.2.35
+
+## 1.1.97
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.34
+
 ## 1.1.96
 
 ### Patch Changes

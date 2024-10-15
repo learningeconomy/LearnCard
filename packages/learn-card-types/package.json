@@ -1,6 +1,6 @@
 {
     "name": "@learncard/types",
-    "version": "5.5.1",
+    "version": "5.5.3",
     "description": "Shared types for learn card",
     "main": "./dist/index.js",
     "module": "./dist/types.esm.js",
@@ -50,8 +50,5 @@
         "np": "^7.6.1",
         "size-limit": "^7.0.8"
     },
-    "types": "./dist/index.d.ts",
-    "dependencies": {
-        "zod": "^3.20.2"
-    }
+    "types": "./dist/index.d.ts"
 }

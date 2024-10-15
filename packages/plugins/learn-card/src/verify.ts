@@ -23,6 +23,14 @@ const transformErrorMessage = (error: string, credential: VC): string => {
     return error;
 };
 
+const transformWarningCheck = (warning: string, _credential: VC): string => {
+    if (warning.includes('Boost Authenticity')) return 'Boost Authenticity';
+
+    const prefix = warning.split(' warning')[0];
+
+    return prefix || warning;
+};
+
 const transformCheckMessage = (check: string, credential: VC): string => {
     return (
         {
@@ -72,7 +80,7 @@ export const verifyCredential = (
         rawVerificationCheck.warnings.forEach(warning => {
             verificationItems.push({
                 status: VerificationStatusEnum.Error,
-                check: 'hmm',
+                check: transformWarningCheck(warning, credential),
                 message: warning,
             });
         });

@@ -1,5 +1,17 @@
 # learn-card-types
 
+## 5.5.3
+
+### Patch Changes
+
+-   [#524](https://github.com/learningeconomy/LearnCard/pull/524) [`035df02f21226ac1645b611e2f934c2d7e4cbd55`](https://github.com/learningeconomy/LearnCard/commit/035df02f21226ac1645b611e2f934c2d7e4cbd55) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix build issues
+
+## 5.5.2
+
+### Patch Changes
+
+-   [#509](https://github.com/learningeconomy/LearnCard/pull/509) [`39f88b0`](https://github.com/learningeconomy/LearnCard/commit/39f88b0de824fe8b6b29997a2064c4965ac042f6) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Allow webhooks that don't use https
+
 ## 5.5.1
 
 ### Patch Changes

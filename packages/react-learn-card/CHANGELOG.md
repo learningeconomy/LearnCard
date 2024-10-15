@@ -1,5 +1,102 @@
 # @welibraryos/react-learn-card
 
+## 2.7.27
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.3
+
+## 2.7.26
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.2
+
+## 2.7.25
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.1
+
+## 2.7.24
+
+### Patch Changes
+
+-   Updated dependencies [[`46390f8ee3b3c1ca81bef687c8054bed8d9912d2`](https://github.com/learningeconomy/LearnCard/commit/46390f8ee3b3c1ca81bef687c8054bed8d9912d2)]:
+    -   @learncard/init@1.3.0
+
+## 2.7.23
+
+### Patch Changes
+
+-   [#523](https://github.com/learningeconomy/LearnCard/pull/523) [`bab40e44aea413976b7f5a72779522e88676e1da`](https://github.com/learningeconomy/LearnCard/commit/bab40e44aea413976b7f5a72779522e88676e1da) Thanks [@smurflo2](https://github.com/smurflo2)! - Redesign merit badge display
+
+## 2.7.22
+
+### Patch Changes
+
+-   Updated dependencies [[`2eff967c27b0e92f7cf36181ef907b1144cbfb40`](https://github.com/learningeconomy/LearnCard/commit/2eff967c27b0e92f7cf36181ef907b1144cbfb40)]:
+    -   @learncard/init@1.2.40
+
+## 2.7.21
+
+### Patch Changes
+
+-   [#524](https://github.com/learningeconomy/LearnCard/pull/524) [`035df02f21226ac1645b611e2f934c2d7e4cbd55`](https://github.com/learningeconomy/LearnCard/commit/035df02f21226ac1645b611e2f934c2d7e4cbd55) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix build issues
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.39
+
+## 2.7.20
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.38
+
+## 2.7.19
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.37
+
+## 2.7.18
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.36
+
+## 2.7.17
+
+### Patch Changes
+
+-   [#507](https://github.com/learningeconomy/LearnCard/pull/507) [`e6ddc54`](https://github.com/learningeconomy/LearnCard/commit/e6ddc548d69d1d9b7e770e8d66f81a0d348e0678) Thanks [@smurflo2](https://github.com/smurflo2)! - [LC-250] Fix spacing for big titles in Boost display
+
+## 2.7.16
+
+### Patch Changes
+
+-   [#514](https://github.com/learningeconomy/LearnCard/pull/514) [`ac7cd5c`](https://github.com/learningeconomy/LearnCard/commit/ac7cd5ccd2ee6d572fedda50259eb751817564a2) Thanks [@gerardopar](https://github.com/gerardopar)! - [LC-309] - fix VC card warping on flip
+
+## 2.7.15
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.35
+
+## 2.7.14
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.34
+
 ## 2.7.13
 
 ### Patch Changes

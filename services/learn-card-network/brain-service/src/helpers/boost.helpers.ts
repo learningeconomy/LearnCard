@@ -19,7 +19,6 @@ import { issueCredentialWithSigningAuthority } from './signingAuthority.helpers'
 import { addNotificationToQueue } from './notifications.helpers';
 import { BoostStatus } from 'types/boost';
 import { getDidWeb } from './did.helpers';
-import { deleteCachedConnectionsForProfileId } from '@cache/connections';
 
 export const getBoostUri = (id: string, domain: string): string =>
     constructUri('boost', id, domain);
@@ -209,7 +208,9 @@ export const decryptCredential = async (credential: VC | JWE): Promise<VC | fals
     }
     const learnCard = await getLearnCard();
     try {
-        const decrypted = (await learnCard.invoke.getDIDObject().decryptDagJWE(credential)) as VC;
+        const decrypted = (await learnCard.invoke
+            .getDIDObject()
+            .decryptDagJWE(credential as JWE)) as VC;
         return decrypted || false;
     } catch (error) {
         console.warn('Could not decrypt Boost Credential!');
@@ -265,13 +266,6 @@ export const sendBoost = async (
         if (process.env.NODE_ENV !== 'test') {
             console.log('🚀 sendBoost:boost sent uncertified', boostUri);
         }
-    }
-
-    if (autoAcceptCredential && boost.dataValues.autoConnectRecipients) {
-        await Promise.all([
-            deleteCachedConnectionsForProfileId(from.profileId),
-            deleteCachedConnectionsForProfileId(to.profileId),
-        ]);
     }
 
     if (typeof boostUri === 'string') {

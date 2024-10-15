@@ -44,7 +44,7 @@ import {
 } from '@accesslayer/signing-authority/relationships/read';
 import { SigningAuthorityForUserValidator } from 'types/profile';
 
-import { t, openRoute, didAndChallengeRoute, openProfileRoute, profileRoute } from '@routes';
+import { t, openRoute, didAndChallengeRoute, profileRoute, didRoute } from '@routes';
 
 import { transformProfileId } from '@helpers/profile.helpers';
 import { deleteDidDocForProfile } from '@cache/did-docs';
@@ -54,12 +54,6 @@ import {
     setValidInviteForProfile,
     invalidateInvite,
 } from '@cache/invites';
-import {
-    deleteAllCachedConnectionsForProfile,
-    deleteCachedConnectionsForProfileId,
-    getCachedConnectionsByProfileId,
-    setCachedConnectionsForProfileId,
-} from '@cache/connections';
 import { getLearnCard } from '@helpers/learnCard.helpers';
 import { getManagedServiceProfiles } from '@accesslayer/profile/relationships/read';
 
@@ -149,7 +143,7 @@ export const profilesRouter = t.router({
                 description: 'Creates a managed service profile',
             },
         })
-        .input(LCNProfileValidator.omit({ did: true, isServiceProfile: true, isManaged: true }))
+        .input(LCNProfileValidator.omit({ did: true, isServiceProfile: true }))
         .output(z.string())
         .mutation(async ({ input, ctx }) => {
             const { profileId } = input;
@@ -185,7 +179,7 @@ export const profilesRouter = t.router({
             });
         }),
 
-    getProfile: openProfileRoute
+    getProfile: didRoute
         .meta({
             openapi: {
                 protect: true,
@@ -198,8 +192,10 @@ export const profilesRouter = t.router({
             },
         })
         .input(z.void())
-        .output(LCNProfileValidator)
+        .output(LCNProfileValidator.optional())
         .query(async ({ ctx }) => {
+            if (!ctx.user.profile) return undefined;
+
             return updateDidForProfile(ctx.domain, ctx.user.profile);
         }),
 
@@ -402,8 +398,6 @@ export const profilesRouter = t.router({
 
             await profile.save();
 
-            await deleteAllCachedConnectionsForProfile(profile);
-
             return true;
         }),
 
@@ -525,11 +519,7 @@ export const profilesRouter = t.router({
             const success = await connectProfiles(profile, targetProfile, false);
 
             if (success) {
-                await Promise.all([
-                    deleteCachedConnectionsForProfileId(profile.profileId),
-                    deleteCachedConnectionsForProfileId(targetProfile.profileId),
-                    invalidateInvite(profileId, challenge),
-                ]);
+                await Promise.all([invalidateInvite(profileId, challenge)]);
             }
 
             return success;
@@ -594,13 +584,6 @@ export const profilesRouter = t.router({
 
             const success = await connectProfiles(profile, targetProfile);
 
-            if (success) {
-                await Promise.all([
-                    deleteCachedConnectionsForProfileId(profile.profileId),
-                    deleteCachedConnectionsForProfileId(targetProfile.profileId),
-                ]);
-            }
-
             return success;
         }),
 
@@ -620,19 +603,11 @@ export const profilesRouter = t.router({
         .input(z.void())
         .output(LCNProfileValidator.array())
         .query(async ({ ctx }) => {
-            const cachedResponse = await getCachedConnectionsByProfileId(
-                ctx.user.profile.profileId
-            );
-
-            if (cachedResponse) return cachedResponse;
-
             const _connections = await getConnections(ctx.user.profile, { limit: 50 });
 
             const connections = _connections.map(connection =>
                 updateDidForProfile(ctx.domain, connection)
             );
-
-            await setCachedConnectionsForProfileId(ctx.user.profile.profileId, connections);
 
             return connections;
         }),
@@ -660,7 +635,7 @@ export const profilesRouter = t.router({
             const records = await getConnections(ctx.user.profile, { limit: limit + 1, cursor });
 
             const hasMore = records.length > limit;
-            const newCursor = records.at(hasMore ? -2 : -1)?.displayName;
+            const newCursor = records.at(hasMore ? -2 : -1)?.profileId;
 
             return {
                 hasMore: records.length > limit,
@@ -871,13 +846,6 @@ export const profilesRouter = t.router({
 
             const success = await blockProfile(profile, targetProfile);
 
-            if (success) {
-                await Promise.all([
-                    deleteCachedConnectionsForProfileId(profile.profileId),
-                    deleteCachedConnectionsForProfileId(targetProfile.profileId),
-                ]);
-            }
-
             return success;
         }),
 
@@ -908,13 +876,6 @@ export const profilesRouter = t.router({
             }
 
             const success = await unblockProfile(profile, targetProfile);
-
-            if (success) {
-                await Promise.all([
-                    deleteCachedConnectionsForProfileId(profile.profileId),
-                    deleteCachedConnectionsForProfileId(targetProfile.profileId),
-                ]);
-            }
 
             return success;
         }),

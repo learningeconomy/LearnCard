@@ -1,5 +1,101 @@
 # @learncard/network-brain-service
 
+## 3.0.1
+
+### Patch Changes
+
+-   Updated dependencies [[`426ba7423b77f963985bd17e7c31843da1e16217`](https://github.com/learningeconomy/LearnCard/commit/426ba7423b77f963985bd17e7c31843da1e16217)]:
+    -   @learncard/core@9.3.3
+    -   @learncard/ceramic-plugin@1.0.14
+    -   @learncard/crypto-plugin@1.0.14
+    -   @learncard/did-web-plugin@1.0.35
+    -   @learncard/didkey-plugin@1.0.14
+    -   @learncard/didkit-plugin@1.4.11
+    -   @learncard/expiration-plugin@1.1.16
+    -   @learncard/learn-card-plugin@1.1.15
+    -   @learncard/vc-plugin@1.1.16
+    -   @learncard/vc-templates-plugin@1.0.20
+
+## 3.0.0
+
+### Major Changes
+
+-   [#525](https://github.com/learningeconomy/LearnCard/pull/525) [`46390f8ee3b3c1ca81bef687c8054bed8d9912d2`](https://github.com/learningeconomy/LearnCard/commit/46390f8ee3b3c1ca81bef687c8054bed8d9912d2) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Do not throw an error when calling `getProfile` without a profile
+
+## 2.3.5
+
+### Patch Changes
+
+-   Updated dependencies [[`2eff967c27b0e92f7cf36181ef907b1144cbfb40`](https://github.com/learningeconomy/LearnCard/commit/2eff967c27b0e92f7cf36181ef907b1144cbfb40)]:
+    -   @learncard/learn-card-plugin@1.1.14
+    -   @learncard/did-web-plugin@1.0.34
+
+## 2.3.4
+
+### Patch Changes
+
+-   [#524](https://github.com/learningeconomy/LearnCard/pull/524) [`035df02f21226ac1645b611e2f934c2d7e4cbd55`](https://github.com/learningeconomy/LearnCard/commit/035df02f21226ac1645b611e2f934c2d7e4cbd55) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix build issues
+
+-   Updated dependencies [[`035df02f21226ac1645b611e2f934c2d7e4cbd55`](https://github.com/learningeconomy/LearnCard/commit/035df02f21226ac1645b611e2f934c2d7e4cbd55)]:
+    -   @learncard/types@5.5.3
+    -   @learncard/core@9.3.2
+    -   @learncard/helpers@1.0.15
+    -   @learncard/ceramic-plugin@1.0.13
+    -   @learncard/did-web-plugin@1.0.33
+    -   @learncard/didkey-plugin@1.0.13
+    -   @learncard/didkit-plugin@1.4.10
+    -   @learncard/learn-card-plugin@1.1.13
+    -   @learncard/vc-plugin@1.1.15
+    -   @learncard/vc-templates-plugin@1.0.19
+    -   @learncard/crypto-plugin@1.0.13
+    -   @learncard/expiration-plugin@1.1.15
+
+## 2.3.3
+
+### Patch Changes
+
+-   [`fcf0a07`](https://github.com/learningeconomy/LearnCard/commit/fcf0a0780e1fd3486180331e54be6c15345e8baa) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Still More CI Fixes
+
+## 2.3.2
+
+### Patch Changes
+
+-   [`b6a35f4`](https://github.com/learningeconomy/LearnCard/commit/b6a35f4ab5652e5d6eaf3fa10d3cf9c6ad98ab51) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - More CI
+
+## 2.3.1
+
+### Patch Changes
+
+-   [`d2b5968`](https://github.com/learningeconomy/LearnCard/commit/d2b5968005eece3708b8b8537c081ea5b9575ed3) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Update CI
+
+## 2.3.0
+
+### Minor Changes
+
+-   [#509](https://github.com/learningeconomy/LearnCard/pull/509) [`39f88b0`](https://github.com/learningeconomy/LearnCard/commit/39f88b0de824fe8b6b29997a2064c4965ac042f6) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add Docker support
+
+### Patch Changes
+
+-   Updated dependencies [[`39f88b0`](https://github.com/learningeconomy/LearnCard/commit/39f88b0de824fe8b6b29997a2064c4965ac042f6)]:
+    -   @learncard/types@5.5.2
+    -   @learncard/core@9.3.1
+    -   @learncard/helpers@1.0.14
+    -   @learncard/ceramic-plugin@1.0.12
+    -   @learncard/did-web-plugin@1.0.32
+    -   @learncard/didkey-plugin@1.0.12
+    -   @learncard/didkit-plugin@1.4.9
+    -   @learncard/learn-card-plugin@1.1.12
+    -   @learncard/vc-plugin@1.1.14
+    -   @learncard/vc-templates-plugin@1.0.18
+    -   @learncard/expiration-plugin@1.1.14
+    -   @learncard/crypto-plugin@1.0.12
+
+## 2.2.1
+
+### Patch Changes
+
+-   [#510](https://github.com/learningeconomy/LearnCard/pull/510) [`ae89e68`](https://github.com/learningeconomy/LearnCard/commit/ae89e683b6ec827f81f1e16502d12526985f1f95) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Remove caching/fix pagination logic for connections
+
 ## 2.2.0
 
 ### Minor Changes

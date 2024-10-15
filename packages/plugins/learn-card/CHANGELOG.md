@@ -1,5 +1,37 @@
 # learn-card-core
 
+## 1.1.15
+
+### Patch Changes
+
+-   Updated dependencies [[`426ba7423b77f963985bd17e7c31843da1e16217`](https://github.com/learningeconomy/LearnCard/commit/426ba7423b77f963985bd17e7c31843da1e16217)]:
+    -   @learncard/core@9.3.3
+    -   @learncard/didkit-plugin@1.4.11
+
+## 1.1.14
+
+### Patch Changes
+
+-   [#512](https://github.com/learningeconomy/LearnCard/pull/512) [`2eff967c27b0e92f7cf36181ef907b1144cbfb40`](https://github.com/learningeconomy/LearnCard/commit/2eff967c27b0e92f7cf36181ef907b1144cbfb40) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Better warning messages when verifying
+
+## 1.1.13
+
+### Patch Changes
+
+-   Updated dependencies [[`035df02f21226ac1645b611e2f934c2d7e4cbd55`](https://github.com/learningeconomy/LearnCard/commit/035df02f21226ac1645b611e2f934c2d7e4cbd55)]:
+    -   @learncard/types@5.5.3
+    -   @learncard/core@9.3.2
+    -   @learncard/didkit-plugin@1.4.10
+
+## 1.1.12
+
+### Patch Changes
+
+-   Updated dependencies [[`39f88b0`](https://github.com/learningeconomy/LearnCard/commit/39f88b0de824fe8b6b29997a2064c4965ac042f6)]:
+    -   @learncard/types@5.5.2
+    -   @learncard/core@9.3.1
+    -   @learncard/didkit-plugin@1.4.9
+
 ## 1.1.11
 
 ### Patch Changes
