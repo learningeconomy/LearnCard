@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.7.29
+
+### Patch Changes
+
+-   [#539](https://github.com/learningeconomy/LearnCard/pull/539) [`6b9ef5e76cd9a48a1b7275afbeba8340427bfbb0`](https://github.com/learningeconomy/LearnCard/commit/6b9ef5e76cd9a48a1b7275afbeba8340427bfbb0) Thanks [@smurflo2](https://github.com/smurflo2)! - Show Merit Badge display for credential if displayType === 'award'
+
 ## 2.7.28
 
 ### Patch Changes
