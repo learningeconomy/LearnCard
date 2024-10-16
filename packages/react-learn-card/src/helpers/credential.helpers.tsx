@@ -151,31 +151,31 @@ export const getCategoryDarkColor = (category = LCCategoryEnum.achievement) => {
     return `${getCategoryPrimaryColor(category)}-700`;
 };
 
-export const getCategoryIcon = (category = LCCategoryEnum.achievement) => {
+export const getCategoryIcon = (category = LCCategoryEnum.achievement, size: string = '21') => {
     switch (category) {
         case LCCategoryEnum.socialBadge:
-            return <SocialBadgesIcon />;
+            return <SocialBadgesIcon size={size} />;
         case LCCategoryEnum.skill:
-            return <PuzzlePiece />;
+            return <PuzzlePiece size={size} />;
         case LCCategoryEnum.achievement:
-            return <Trophy size="21" />;
+            return <Trophy size={size} />;
         case LCCategoryEnum.course:
         case LCCategoryEnum.learningHistory:
-            return <Graduation size="21" />;
+            return <Graduation size={size} />;
         case LCCategoryEnum.job:
         case LCCategoryEnum.workHistory:
-            return <Briefcase size="21" />;
+            return <Briefcase size={size} />;
         case LCCategoryEnum.id:
-            return <User size="21" />;
+            return <User size={size} />;
         case LCCategoryEnum.membership:
-            return <KeyIcon size="21" />;
+            return <KeyIcon size={size} />;
         case LCCategoryEnum.currency:
         case LCCategoryEnum.accommodations:
-            return <AccommodationsIcon size="21" />;
+            return <AccommodationsIcon size={size} />;
         case LCCategoryEnum.accomplishments:
-            return <AccomplishmentsIcon size="21" />;
+            return <AccomplishmentsIcon size={size} />;
         case LCCategoryEnum.meritBadge:
-            return <ScoutsLogo />;
+            return <ScoutsLogo size={size} />;
         case LCCategoryEnum.currency:
         default:
             console.log('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥');
