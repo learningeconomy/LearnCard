@@ -10,7 +10,7 @@ type MeritBadgeCornerIconProps = {
 
 const MeritBadgeCornerIcon: React.FC<MeritBadgeCornerIconProps> = ({ categoryType, position }) => {
     const credentialPrimaryColor = getCategoryLightColor(categoryType);
-    const credentialIcon = getCategoryIcon(categoryType);
+    const credentialIcon = getCategoryIcon(categoryType, '25');
 
     let iconPositionClassName, cornerPositionClassName;
     switch (position) {

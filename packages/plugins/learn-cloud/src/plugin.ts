@@ -309,28 +309,57 @@ export const getLearnCloudPlugin = async (
         },
         read: {
             get: async (_learnCard, uri) => {
+                learnCard.debug?.('LearnCloud read.get', uri);
+
                 if (!uri) return undefined;
 
                 const parts = uri.split(':');
+
+                learnCard.debug?.('LearnCloud read.get parts:', parts);
 
                 if (parts.length !== 5) return undefined;
 
                 const [lc, method, uriUrl] = parts as [string, string, string, string, string];
 
-                if (lc !== 'lc' || method !== 'cloud') return undefined;
+                if (lc !== 'lc' || method !== 'cloud') {
+                    learnCard.debug?.('LearnCloud read.get not cloud URI!', { lc, method });
 
-                if (uriUrl.replace(/https?:\/\//g, '') !== url.replace(/https?:\\/g, '').replace(/:/g, '%3A')) {
-                    const fullUrl = uriUrl.startsWith('http')
-                        ? uriUrl
-                        : `http${uriUrl.includes('http') ? '' : 's'}://${uriUrl}`;
+                    return undefined;
+                }
+
+                if (
+                    uriUrl.replace(/https?:\/\//g, '') !==
+                    url.replace(/https?:\/\//g, '').replace(/:/g, '%3A')
+                ) {
+                    const fullUrl = (
+                        uriUrl.startsWith('http')
+                            ? uriUrl
+                            : `http${uriUrl.includes('http') || uriUrl.includes('localhost') ? '' : 's'
+                            }://${uriUrl}`
+                    ).replaceAll('%3A', ':');
+
+                    learnCard.debug?.('LearnCloud read.get different LearnCloud!', {
+                        uriUrl,
+                        url,
+                        fullUrl,
+                        comparison: {
+                            a: uriUrl.replace(/https?:\/\//g, ''),
+                            b: url.replace(/https?:\/\//g, '').replace(/:/g, '%3A'),
+                        },
+                    });
+
                     const otherClient = await getOtherClient(fullUrl);
 
                     try {
                         const result = await otherClient.storage.resolve.query({ uri: uri });
 
+                        learnCard.debug?.('LearnCloud read.get result', result);
+
                         const decryptedResult = await _learnCard.invoke
                             .getDIDObject()
                             .decryptDagJWE(result);
+
+                        learnCard.debug?.('LearnCloud read.get decryptedResult', decryptedResult);
 
                         return await VCValidator.or(VPValidator).parseAsync(decryptedResult);
                     } catch (error) {
@@ -342,9 +371,13 @@ export const getLearnCloudPlugin = async (
                 try {
                     const result = await client.storage.resolve.query({ uri: uri });
 
+                    learnCard.debug?.('LearnCloud read.get result', result);
+
                     const decryptedResult = await _learnCard.invoke
                         .getDIDObject()
                         .decryptDagJWE(result);
+
+                    learnCard.debug?.('LearnCloud read.get decryptedResult', decryptedResult);
 
                     return await VCValidator.or(VPValidator).parseAsync(decryptedResult);
                 } catch (error) {
