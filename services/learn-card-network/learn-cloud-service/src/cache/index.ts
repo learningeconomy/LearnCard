@@ -5,11 +5,11 @@ import MemoryRedis, { Redis as RedisMockType } from 'ioredis-mock';
 
 let ioredisInstance: Redis;
 
-const simpleScan = async (redis: Redis, pattern: string): Promise<string[]> => {
+const simpleScan = async (redis: Redis, pattern: string, count: number = 10): Promise<string[]> => {
     try {
         return await new Promise<string[]>(res => {
             const results: string[] = [];
-            const stream = redis.scanStream({ match: pattern });
+            const stream = redis.scanStream({ match: pattern, count });
 
             stream.on('data', keys => {
                 const dedupedKeys = keys.filter((key: string) => !results.includes(key));
@@ -71,7 +71,7 @@ export type Cache = {
     mget: (keys: RedisKey[], resetTTL?: boolean, ttl?: number) => Promise<(string | null)[]>;
 
     /** Returns an array of keys matching a pattern */
-    keys: (pattern: string) => Promise<RedisKey[]>;
+    keys: (pattern: string, count?: number) => Promise<RedisKey[]>;
 
     /** Forcibly evicts a key or keys from the cache */
     delete: (keys: RedisKey[]) => Promise<number | undefined>;
@@ -184,10 +184,10 @@ export const getCache = (): Cache => {
 
             return Array(keys.length).fill(null);
         },
-        keys: async pattern => {
+        keys: async (pattern, count) => {
             try {
-                if (cache?.redis) return await simpleScan(cache.redis, pattern);
-                if (cache?.node) return await simpleScan(cache.node, pattern);
+                if (cache?.redis) return await simpleScan(cache.redis, pattern, count);
+                if (cache?.node) return await simpleScan(cache.node, pattern, count);
             } catch (error) {
                 console.error('Cache keys error', error);
             }

@@ -63,7 +63,7 @@ export const flushIndexCacheForDid = async (
     session?: ClientSession
 ) => {
     if (!includeAssociatedDids) {
-        const keys = await cache.keys(`index:${did}:*`);
+        const keys = await cache.keys(`index:${did}:*`, 5000);
 
         return cache.delete(keys);
     }
@@ -73,7 +73,7 @@ export const flushIndexCacheForDid = async (
     const results = await Promise.all(
         dids.map(async _did => {
             console.log("JOTI: RETRIEVING KEYS:", `index:${_did}:*`)
-            const keys = await cache.keys(`index:${_did}:*`);
+            const keys = await cache.keys(`index:${_did}:*`, 5000);
             console.log("JOTI: DELETING KEYS:", keys?.length, keys)
             return cache.delete(keys);
         })
