@@ -181,31 +181,41 @@ export const indexRouter = t.router({
         )
         .output(z.boolean())
         .mutation(async ({ ctx, input }) => {
+            console.log("JOTI: Add to Index Plane", input, ctx);
             const { record: _record } = input;
             const {
                 user: { did },
             } = ctx;
 
+            console.log("JOTI: USER DID", did);
+
             let record: EncryptedCredentialRecord = _record as any;
 
             if (isEncrypted(record)) {
+                console.log("JOTI: Encrypted TRUE");
                 const learnCard = await getLearnCard();
 
+                console.log("JOTI: learncard init TRUE");
                 record = (await learnCard.invoke
                     .getDIDObject()
                     .decryptDagJWE(record as any)) as any;
+                console.log("JOTI: Decrypted Record", record);
             }
 
             const success = Boolean(await createCredentialRecord(did, record));
+            console.log("JOTI: created record", success);
 
             await flushIndexCacheForDid(did);
+            console.log("JOTI: flushed index cache for did", did);
 
             if (!success) {
+                console.log("JOTI: failure");
                 throw new TRPCError({
                     code: 'INTERNAL_SERVER_ERROR',
                     message: 'Could not create record',
                 });
             }
+            console.log("JOTI: success!");
 
             return true;
         }),
