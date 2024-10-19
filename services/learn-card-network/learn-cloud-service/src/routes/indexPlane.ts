@@ -207,7 +207,7 @@ export const indexRouter = t.router({
             const success = Boolean(await createCredentialRecord(did, record));
             console.log("JOTI: created record", success);
 
-            const flushTimeout = 15000; // 5 seconds timeout
+            const flushTimeout = 23000; // 5 seconds timeout
             try {
               const timeoutPromise = setTimeout(flushTimeout, 'Timeout');
               const flushPromise = flushIndexCacheForDid(did);
