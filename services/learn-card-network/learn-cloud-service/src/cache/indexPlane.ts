@@ -67,17 +67,12 @@ export const flushIndexCacheForDid = async (
 
         return cache.delete(keys);
     }
-    console.log("JOTI: Flush Index Cach for DID", did);
     const dids = await getAllDidsForDid(did, session);
-    console.log("JOTI: Got DIDS", dids);
     const results = await Promise.all(
         dids.map(async _did => {
-            console.log("JOTI: RETRIEVING KEYS:", `index:${_did}:*`)
             const keys = await cache.keys(`index:${_did}:*`, 5000);
-            console.log("JOTI: DELETING KEYS:", keys?.length, keys)
             return cache.delete(keys);
         })
     );
-    console.log("JOTI: FLUSHED KEYS: ", results);
     return results.reduce<number>((total, current) => total + (current ?? 0), 0);
 };

@@ -183,29 +183,22 @@ export const indexRouter = t.router({
         )
         .output(z.boolean())
         .mutation(async ({ ctx, input }) => {
-            console.log("JOTI: Add to Index Plane", input, ctx);
             const { record: _record } = input;
             const {
                 user: { did },
             } = ctx;
 
-            console.log("JOTI: USER DID", did);
-
             let record: EncryptedCredentialRecord = _record as any;
 
             if (isEncrypted(record)) {
-                console.log("JOTI: Encrypted TRUE");
                 const learnCard = await getLearnCard();
 
-                console.log("JOTI: learncard init TRUE");
                 record = (await learnCard.invoke
                     .getDIDObject()
                     .decryptDagJWE(record as any)) as any;
-                console.log("JOTI: Decrypted Record", record);
             }
 
             const success = Boolean(await createCredentialRecord(did, record));
-            console.log("JOTI: created record", success);
 
             const flushTimeout = 23000; // 5 seconds timeout
             try {
@@ -215,22 +208,18 @@ export const indexRouter = t.router({
               const flushResult = await Promise.race([flushPromise, timeoutPromise]);
               
               if (flushResult === 'Timeout') {
-                console.log(`JOTI: flushIndexCacheForDid timed out after ${flushTimeout}ms`);
-              } else {
-                console.log("JOTI: flushed index cache for did", did);
-              }
+                console.error(`flushIndexCacheForDid timed out after ${flushTimeout}ms`, did);
+              } 
             } catch (error) {
               console.error("Error flushing index cache:", error);
             }
 
             if (!success) {
-                console.log("JOTI: failure");
                 throw new TRPCError({
                     code: 'INTERNAL_SERVER_ERROR',
                     message: 'Could not create record',
                 });
             }
-            console.log("JOTI: success!");
 
             return true;
         }),
