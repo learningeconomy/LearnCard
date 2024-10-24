@@ -1,10 +1,10 @@
 import React from 'react';
 
-type CircleCheckmarkProps = {
+type RedXCircleProps = {
     className?: string;
 };
 
-const CircleCheckmark: React.FC<CircleCheckmarkProps> = ({ className = '' }) => {
+const RedXCircle: React.FC<RedXCircleProps> = ({ className = '' }) => {
     return (
         <svg
             width="20"
@@ -22,4 +22,4 @@ const CircleCheckmark: React.FC<CircleCheckmarkProps> = ({ className = '' }) => 
     );
 };
 
-export default CircleCheckmark;
+export default RedXCircle;

@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { VerificationItem, VerificationStatusEnum } from '@learncard/types';
-import { getColorForVerificationStatus } from '../../helpers/credential.helpers';
 
 import InfoBox from './InfoBox';
 import InfoIcon from '../svgs/InfoIcon';
-import AcuteCheckmark from '../svgs/AcuteCheckmark';
-import ExclamationPoint from '../svgs/ExclamationPoint';
-import X from '../svgs/X';
-import { capitalize } from '../../helpers/string.helpers';
+import RedXCircle from '../svgs/RedXCircle';
+import WarningCircle from '../svgs/WarningCircle';
 import CircleCheckmark from '../svgs/CircleCheckmark';
+
+import { capitalize } from '../../helpers/string.helpers';
+import { getColorForVerificationStatus } from '../../helpers/credential.helpers';
 
 type VerificationRowProps = {
     verification: VerificationItem;
@@ -23,9 +23,9 @@ const VerificationRow: React.FC<VerificationRowProps> = ({ verification }) => {
             case VerificationStatusEnum.Success:
                 return <CircleCheckmark />;
             case VerificationStatusEnum.Error:
-                return <ExclamationPoint />;
+                return <WarningCircle />;
             case VerificationStatusEnum.Failed:
-                return <X />;
+                return <RedXCircle />;
         }
     };
 
