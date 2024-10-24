@@ -10,6 +10,7 @@ export * from "./AwardRibbon";
 export * from "./Briefcase";
 export * from "./Camera";
 export * from "./Checkmark";
+export * from "./CircleCheckmark";
 export * from "./CircleWithText";
 export * from "./Coins";
 export * from "./DownRightArrow";

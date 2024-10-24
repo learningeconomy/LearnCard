@@ -8,6 +8,7 @@ module.exports = {
             boxShadow: {
                 bottom: '0px 4px 0px rgba(0, 0, 0, 0.25)',
                 '3xl': '0px 0px 8px rgba(0, 0, 0, 0.25)',
+                'bottom-2-4': '0px 2px 4px 0px rgba(0, 0, 0, 0.25)',
             },
             textShadow: {
                 DEFAULT: '1px 2px 0px rgb(0 0 0 / 35%)',
@@ -84,6 +85,7 @@ module.exports = {
                 },
                 blue: {
                     light: '#026BFF',
+                    ocean: '#0094B4'
                 },
                 green: {
                     dark: '#05B65D',
@@ -101,6 +103,7 @@ module.exports = {
                 poppins: ['Poppins'],
                 jacques: ['Jacques Francois'],
                 sacramento: ['Sacramento'],
+                notoSans: ['Noto Sans', 'Poppins'],
             },
         },
     },
