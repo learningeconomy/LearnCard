@@ -1,12 +1,10 @@
 import React from 'react';
 import { format } from 'date-fns';
 
-import MediaAttachmentsBox from './MediaAttachmentsBox';
 import TruncateTextBox from './TruncateTextBox';
 import IssueHistoryBox from './IssueHistoryBox';
 import { VC, VerificationItem } from '@learncard/types';
 import VerificationsBox from './VerificationsBox';
-import AlignmentsBox from '../CertificateDisplayCard/AlignmentsBox';
 import {
     BoostAchievementCredential,
     IssueHistory,
@@ -32,14 +30,8 @@ type TroopIdDetailsProps = {
 export const TroopIdDetails: React.FC<TroopIdDetailsProps> = ({
     credential,
     verificationItems,
-    getFileMetadata,
-    getVideoMetadata,
-    onMediaAttachmentClick,
     issueHistory,
-    customDescription,
-    customCriteria,
     customIssueHistoryComponent,
-    enableLightbox,
 }) => {
     const expiration = credential.expirationDate
         ? format(new Date(credential.expirationDate), 'MMM dd, yyyy')
@@ -90,38 +82,16 @@ export const TroopIdDetails: React.FC<TroopIdDetailsProps> = ({
                 </TruncateTextBox>
             )}
 
-            <TruncateTextBox subHeaderText="History" text="TODO..." />
-
-            <TruncateTextBox subHeaderText="Permissions" text="TODO..." />
-
-            {/* criteria && (
-                    <TruncateTextBox
-                        headerText="Criteria"
-                        text={criteria}
-                        className="criteria-box"
-                    />
-                ) */}
-
-            {issueHistory && issueHistory?.length > 0 && (
+            {issueHistory && issueHistory?.length > 0 ? (
                 <IssueHistoryBox
                     issueHistory={issueHistory}
                     customIssueHistoryComponent={customIssueHistoryComponent}
                 />
+            ) : (
+                <TruncateTextBox subHeaderText="History" text="Has not been issued" />
             )}
 
-            {/* credential.attachments && credential.attachments.length > 0 && (
-                    <MediaAttachmentsBox
-                        attachments={credential.attachments}
-                        getFileMetadata={getFileMetadata}
-                        getVideoMetadata={getVideoMetadata}
-                        onMediaAttachmentClick={onMediaAttachmentClick}
-                        enableLightbox={enableLightbox}
-                    />
-                ) */}
-
-            {/* {credential.notes && <TruncateTextBox headerText="Notes" text={credential.notes} />} */}
-
-            {/* alignment && <AlignmentsBox alignment={alignment} style="boost" /> */}
+            {/* <TruncateTextBox subHeaderText="Permissions" text="TODO..." /> */}
 
             {verificationItems && verificationItems.length > 0 && (
                 <VerificationsBox verificationItems={verificationItems} />
