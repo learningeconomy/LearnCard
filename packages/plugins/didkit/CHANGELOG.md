@@ -1,5 +1,18 @@
 # learn-card-core
 
+## 1.4.12
+
+### Patch Changes
+
+-   [#538](https://github.com/learningeconomy/LearnCard/pull/538) [`26bb535d573d30dfe27555bc0b53b22499425ada`](https://github.com/learningeconomy/LearnCard/commit/26bb535d573d30dfe27555bc0b53b22499425ada) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Do not filter out proofs with a created date in the future
+
+## 1.4.11
+
+### Patch Changes
+
+-   Updated dependencies [[`426ba7423b77f963985bd17e7c31843da1e16217`](https://github.com/learningeconomy/LearnCard/commit/426ba7423b77f963985bd17e7c31843da1e16217)]:
+    -   @learncard/core@9.3.3
+
 ## 1.4.10
 
 ### Patch Changes

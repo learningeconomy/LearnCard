@@ -5,11 +5,22 @@ import MemoryRedis, { Redis as RedisMockType } from 'ioredis-mock';
 
 let ioredisInstance: Redis;
 
-const simpleScan = async (redis: Redis, pattern: string): Promise<string[]> => {
+export type Pipeline = {
+    hset: (key: RedisKey, field: string, value: RedisValue) => Pipeline;
+    expire: (key: RedisKey, seconds: number) => Pipeline;
+    delete: (key: RedisKey) => Pipeline;
+    exec: () => Promise<[Error | null, any][] | null>;
+};
+
+const simpleScan = async (
+    redis: Redis,
+    pattern: string,
+    count: number = 100
+): Promise<string[]> => {
     try {
         return await new Promise<string[]>(res => {
             const results: string[] = [];
-            const stream = redis.scanStream({ match: pattern });
+            const stream = redis.scanStream({ match: pattern, count });
 
             stream.on('data', keys => {
                 const dedupedKeys = keys.filter((key: string) => !results.includes(key));
@@ -71,13 +82,25 @@ export type Cache = {
     mget: (keys: RedisKey[], resetTTL?: boolean, ttl?: number) => Promise<(string | null)[]>;
 
     /** Returns an array of keys matching a pattern */
-    keys: (pattern: string) => Promise<RedisKey[]>;
+    keys: (pattern: string, count?: number) => Promise<RedisKey[]>;
 
     /** Forcibly evicts a key or keys from the cache */
     delete: (keys: RedisKey[]) => Promise<number | undefined>;
 
     /** Gets TTL of a key **/
     ttl: (key: RedisKey) => Promise<number | undefined>;
+
+    /** Sets field in the hash stored at key to value */
+    hset: (key: RedisKey, field: string, value: RedisValue) => Promise<number>;
+
+    /** Retrieves the value associated with field in the hash stored at key */
+    hget: (key: RedisKey, field: string) => Promise<string | null>;
+
+    /** Sets a timeout on key */
+    expire: (key: RedisKey, seconds: number) => Promise<number>;
+
+    /** Creates a Pipeline instance */
+    pipeline: () => Pipeline;
 };
 
 /** Evict all keys after one hour by default */
@@ -184,10 +207,10 @@ export const getCache = (): Cache => {
 
             return Array(keys.length).fill(null);
         },
-        keys: async pattern => {
+        keys: async (pattern, count) => {
             try {
-                if (cache?.redis) return await simpleScan(cache.redis, pattern);
-                if (cache?.node) return await simpleScan(cache.node, pattern);
+                if (cache?.redis) return await simpleScan(cache.redis, pattern, count);
+                if (cache?.node) return await simpleScan(cache.node, pattern, count);
             } catch (error) {
                 console.error('Cache keys error', error);
             }
@@ -215,6 +238,59 @@ export const getCache = (): Cache => {
             }
 
             return undefined;
+        },
+        hset: async (key, field, value) => {
+            try {
+                if (cache?.redis) return await cache.redis.hset(key, field, value);
+                if (cache?.node) return await cache.node.hset(key, field, value);
+            } catch (e) {
+                console.error('Cache hset error', e);
+            }
+            return 0;
+        },
+
+        hget: async (key, field) => {
+            try {
+                if (cache?.redis) return await cache.redis.hget(key, field);
+                if (cache?.node) return await cache.node.hget(key, field);
+            } catch (e) {
+                console.error('Cache hget error', e);
+            }
+            return null;
+        },
+
+        expire: async (key, seconds) => {
+            try {
+                if (cache?.redis) return await cache.redis.expire(key, seconds);
+                if (cache?.node) return await cache.node.expire(key, seconds);
+            } catch (e) {
+                console.error('Cache expire error', e);
+            }
+            return 0;
+        },
+
+        pipeline: () => {
+            const commands: any[] = [];
+            const pipeline: Pipeline = {
+                hset: (key, field, value) => {
+                    commands.push(['hset', key, field, value]);
+                    return pipeline;
+                },
+                expire: (key, seconds) => {
+                    commands.push(['expire', key, seconds]);
+                    return pipeline;
+                },
+                delete: key => {
+                    commands.push(['del', key]);
+                    return pipeline;
+                },
+                exec: async () => {
+                    if (cache?.redis) return await cache.redis.pipeline(commands).exec();
+                    if (cache?.node) return await cache.node.pipeline(commands).exec();
+                    return commands.map(() => [null, null]);
+                },
+            };
+            return pipeline;
         },
     };
 

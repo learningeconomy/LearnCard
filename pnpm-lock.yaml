@@ -2453,8 +2453,8 @@ packages:
     resolution: {integrity: sha512-l+g6HKKwfuz9oJi/CKs4Kb4FiC5WrWUHi/7k4QLba+xtSiK9G/Sjmka8TobLf2JbV12C+X+SMXZTO/GMCwSeEQ==}
     engines: {node: '>=16.0.0'}
 
-  '@aws-sdk/client-lambda@3.679.0':
-    resolution: {integrity: sha512-CSJ7FF1RSgABJRf9mRaH4JGUvfMKv42zO8hHsr/GLd7HL9uTTZ2iRQ7Hpx7TRLWo/Ju7WIyZbbImNLtQ9lpVeQ==}
+  '@aws-sdk/client-lambda@3.680.0':
+    resolution: {integrity: sha512-oABfvrJTVvlVnCEi6lMtxlC/ta5wxu79bB2ZACe/0AxFZrXgr+gscrUtSm1iNye5+6oeYvQPD7b+ft6UwFrSlw==}
     engines: {node: '>=16.0.0'}
 
   '@aws-sdk/client-s3@3.679.0':
@@ -8288,8 +8288,8 @@ packages:
   avvio@8.4.0:
     resolution: {integrity: sha512-CDSwaxINFy59iNwhYnkvALBwZiTydGkOecZyPkqBpABYR1KqGEsET0VOOYDwtleZSUIdeY36DC2bSZ24CO1igA==}
 
-  aws-cdk-lib@2.164.0:
-    resolution: {integrity: sha512-BfiQ4hhOw1+y1fqn67UwrmSsjKVIy3BPTQV9etkoFnCofltYpIrPVrLem39TVF+mto1d+xMJ6vEHPzsm2lx1eg==}
+  aws-cdk-lib@2.164.1:
+    resolution: {integrity: sha512-jNvVmfZJbZoAYU94b5dzTlF2z6JXJ204NgcYY5haOa6mq3m2bzdYPXnPtB5kpAX3oBi++yoRdmLhqgckdEhUZA==}
     engines: {node: '>= 14.15.0'}
     peerDependencies:
       constructs: ^10.0.0
@@ -10253,8 +10253,8 @@ packages:
     engines: {node: '>=0.10.0'}
     hasBin: true
 
-  electron-to-chromium@1.5.45:
-    resolution: {integrity: sha512-vOzZS6uZwhhbkZbcRyiy99Wg+pYFV5hk+5YaECvx0+Z31NR3Tt5zS6dze2OepT6PCTzVzT0dIJItti+uAW5zmw==}
+  electron-to-chromium@1.5.46:
+    resolution: {integrity: sha512-1XDk0Z8/YRgB2t5GeEg8DPK592DLjVmd/5uwAu6c/S4Z0CUwV/RwYqe5GWxQqcoN3bJ5U7hYMiMRPZzpCzSBhQ==}
 
   elegant-spinner@1.0.1:
     resolution: {integrity: sha512-B+ZM+RXvRqQaAmkMlO/oSe5nMUOaUnyfGYCEHoR8wrXsZR2mA0XVibsxV1bvTwxdRWah1PkQqso2EzhILGHtEQ==}
@@ -19968,9 +19968,9 @@ snapshots:
 
   '@aws-cdk/asset-node-proxy-agent-v6@2.1.0': {}
 
-  '@aws-cdk/aws-apigatewayv2-alpha@2.21.1-alpha.0(aws-cdk-lib@2.164.0(constructs@10.2.20))(constructs@10.2.20)':
+  '@aws-cdk/aws-apigatewayv2-alpha@2.21.1-alpha.0(aws-cdk-lib@2.164.1(constructs@10.2.20))(constructs@10.2.20)':
     dependencies:
-      aws-cdk-lib: 2.164.0(constructs@10.2.20)
+      aws-cdk-lib: 2.164.1(constructs@10.2.20)
       constructs: 10.2.20
 
   '@aws-cdk/cloud-assembly-schema@38.0.1': {}
@@ -20306,7 +20306,7 @@ snapshots:
     transitivePeerDependencies:
       - aws-crt
 
-  '@aws-sdk/client-lambda@3.679.0':
+  '@aws-sdk/client-lambda@3.680.0':
     dependencies:
       '@aws-crypto/sha256-browser': 5.2.0
       '@aws-crypto/sha256-js': 5.2.0
@@ -29816,7 +29816,7 @@ snapshots:
       '@fastify/error': 3.4.1
       fastq: 1.17.1
 
-  aws-cdk-lib@2.164.0(constructs@10.2.20):
+  aws-cdk-lib@2.164.1(constructs@10.2.20):
     dependencies:
       '@aws-cdk/asset-awscli-v1': 2.2.208
       '@aws-cdk/asset-kubectl-v20': 2.1.3
@@ -30459,7 +30459,7 @@ snapshots:
   browserslist@4.24.2:
     dependencies:
       caniuse-lite: 1.0.30001669
-      electron-to-chromium: 1.5.45
+      electron-to-chromium: 1.5.46
       node-releases: 2.0.18
       update-browserslist-db: 1.1.1(browserslist@4.24.2)
 
@@ -32235,7 +32235,7 @@ snapshots:
     dependencies:
       jake: 10.9.2
 
-  electron-to-chromium@1.5.45: {}
+  electron-to-chromium@1.5.46: {}
 
   elegant-spinner@1.0.1: {}
 
@@ -34843,7 +34843,7 @@ snapshots:
   https-proxy-agent@7.0.5:
     dependencies:
       agent-base: 7.1.1
-      debug: 4.3.4
+      debug: 4.3.7(supports-color@8.1.1)
     transitivePeerDependencies:
       - supports-color
 
@@ -41845,8 +41845,8 @@ snapshots:
 
   serverless-lift@1.30.3(serverless@3.39.0):
     dependencies:
-      '@aws-cdk/aws-apigatewayv2-alpha': 2.21.1-alpha.0(aws-cdk-lib@2.164.0(constructs@10.2.20))(constructs@10.2.20)
-      aws-cdk-lib: 2.164.0(constructs@10.2.20)
+      '@aws-cdk/aws-apigatewayv2-alpha': 2.21.1-alpha.0(aws-cdk-lib@2.164.1(constructs@10.2.20))(constructs@10.2.20)
+      aws-cdk-lib: 2.164.1(constructs@10.2.20)
       chalk: 4.1.2
       change-case: 4.1.2
       cidr-split: 0.1.2
@@ -41864,7 +41864,7 @@ snapshots:
 
   serverless-offline@12.0.4(serverless@3.39.0):
     dependencies:
-      '@aws-sdk/client-lambda': 3.679.0
+      '@aws-sdk/client-lambda': 3.680.0
       '@hapi/boom': 10.0.1
       '@hapi/h2o2': 10.0.4
       '@hapi/hapi': 21.3.12
@@ -41914,7 +41914,7 @@ snapshots:
       '@aws-sdk/client-cognito-identity-provider': 3.679.0
       '@aws-sdk/client-eventbridge': 3.679.0
       '@aws-sdk/client-iam': 3.679.0
-      '@aws-sdk/client-lambda': 3.679.0
+      '@aws-sdk/client-lambda': 3.680.0
       '@aws-sdk/client-s3': 3.679.0
       '@serverless/dashboard-plugin': 7.2.3(supports-color@8.1.1)
       '@serverless/platform-client': 4.5.1(supports-color@8.1.1)

@@ -177,7 +177,10 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
 
     const _title = titleOverride || title;
 
-    if (categoryType === LCCategoryEnum.meritBadge) {
+    if (
+        categoryType === LCCategoryEnum.meritBadge ||
+        credential?.display?.displayType === 'award'
+    ) {
         return (
             <MeritBadgeDisplayCard
                 credential={credential}
@@ -266,7 +269,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     const headerClassName =
         'vc-card-header px-[20px] pb-[10px] pt-[3px] overflow-visible mt-[40px] text-center bg-white border-y-[5px] border-[#EEF2FF] w-[calc(100%_+_16px)] rounded-t-[8px] z-50';
     const headerFitTextClassName =
-        'vc-card-header-main-title text-[#18224E] leading-[80%] text-shadow text-[32px]';
+        'vc-card-header-main-title text-[#18224E] leading-[80%] text-[32px]';
 
     return (
         <Flipper className="w-full" flipKey={isFront}>
@@ -280,14 +283,14 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                         <RibbonEnd
                             side="left"
                             className="absolute left-[-30px] top-[50px] z-0"
-                            height={'100'}
+                            height={'75'}
                         />
                     </Flipped>
                     <Flipped inverseFlipId="card">
                         <RibbonEnd
                             side="right"
                             className="absolute right-[-30px] top-[50px] z-0"
-                            height={'100'}
+                            height={'75'}
                         />
                     </Flipped>
 
@@ -323,10 +326,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                         </Flipped>
                     )}
 
-                    <div
-                        className="relative vc-card-content-container flex flex-col items-center grow min-h-0 w-full rounded-t-[30px] bg-[#353E64] rounded-b-[200px]"
-                        // style={backgroundStyle}
-                    >
+                    <div className="relative vc-card-content-container flex flex-col items-center grow min-h-0 w-full rounded-t-[30px] bg-[#353E64] rounded-b-[200px]">
                         <Flipped inverseFlipId="card" scale>
                             <div
                                 className="absolute top-0 left-0 w-full h-full rounded-b-[200px] rounded-t-[30px]"
@@ -404,16 +404,16 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                                     {isFront && customFrontButton}
                                     {((isFront && !customFrontButton) ||
                                         (isFront && showDetailsBtn)) && (
-                                        <Flipped inverseFlipId="card">
-                                            <button
-                                                type="button"
-                                                className="vc-toggle-side-button text-white shadow-bottom bg-[#00000099] px-[30px] py-[8px] rounded-[40px] text-[28px] tracking-[0.75px] uppercase leading-[28px] mt-[40px] w-fit select-none"
-                                                onClick={() => setIsFront(!isFront)}
-                                            >
-                                                Details
-                                            </button>
-                                        </Flipped>
-                                    )}
+                                            <Flipped inverseFlipId="card">
+                                                <button
+                                                    type="button"
+                                                    className="vc-toggle-side-button text-white shadow-bottom bg-[#00000099] px-[30px] py-[8px] rounded-[40px] text-[28px] tracking-[0.75px] uppercase leading-[28px] mt-[40px] w-fit select-none"
+                                                    onClick={() => setIsFront(!isFront)}
+                                                >
+                                                    Details
+                                                </button>
+                                            </Flipped>
+                                        )}
                                     {!isFront && (
                                         <Flipped inverseFlipId="card">
                                             <button

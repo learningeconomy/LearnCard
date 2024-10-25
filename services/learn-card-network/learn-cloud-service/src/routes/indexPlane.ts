@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import { setTimeout } from 'timers/promises';
+
 import {
     JWE,
     JWEValidator,
@@ -198,7 +200,19 @@ export const indexRouter = t.router({
 
             const success = Boolean(await createCredentialRecord(did, record));
 
-            await flushIndexCacheForDid(did);
+            const flushTimeout = 23000; // 5 seconds timeout
+            try {
+              const timeoutPromise = setTimeout(flushTimeout, 'Timeout');
+              const flushPromise = flushIndexCacheForDid(did);
+              
+              const flushResult = await Promise.race([flushPromise, timeoutPromise]);
+              
+              if (flushResult === 'Timeout') {
+                console.error(`flushIndexCacheForDid timed out after ${flushTimeout}ms`, did);
+              } 
+            } catch (error) {
+              console.error("Error flushing index cache:", error);
+            }
 
             if (!success) {
                 throw new TRPCError({

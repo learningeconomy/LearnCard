@@ -1,5 +1,52 @@
 # @welibraryos/react-learn-card
 
+## 2.7.31
+
+### Patch Changes
+
+-   [#544](https://github.com/learningeconomy/LearnCard/pull/544) [`287836291b5b37a2922be73f1414d7bca6ff2a39`](https://github.com/learningeconomy/LearnCard/commit/287836291b5b37a2922be73f1414d7bca6ff2a39) Thanks [@goblincore](https://github.com/goblincore)! - fix: [LC-393] Change ribbon size and replace backpack graphic
+
+## 2.7.30
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.5
+
+## 2.7.29
+
+### Patch Changes
+
+-   [#539](https://github.com/learningeconomy/LearnCard/pull/539) [`6b9ef5e76cd9a48a1b7275afbeba8340427bfbb0`](https://github.com/learningeconomy/LearnCard/commit/6b9ef5e76cd9a48a1b7275afbeba8340427bfbb0) Thanks [@smurflo2](https://github.com/smurflo2)! - Show Merit Badge display for credential if displayType === 'award'
+
+## 2.7.28
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.4
+
+## 2.7.27
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.3
+
+## 2.7.26
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.2
+
+## 2.7.25
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.1
+
 ## 2.7.24
 
 ### Patch Changes

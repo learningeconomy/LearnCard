@@ -44,7 +44,7 @@ const TopLevelSkill: React.FC<{
                     <p className="font-poppins text-left text-violet-800 font-semibold text-xs">
                         {_category?.title}
                     </p>
-                    <p className="text-black font-poppins text-left text-base font-normal">
+                    <p className="text-black font-poppins text-left text-xs font-normal">
                         {title}
                     </p>
                 </div>
