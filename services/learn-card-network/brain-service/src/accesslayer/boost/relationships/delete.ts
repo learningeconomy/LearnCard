@@ -5,7 +5,7 @@ export const removeProfileAsBoostAdmin = async (
     boost: BoostInstance
 ): Promise<void> => {
     await Boost.deleteRelationships({
-        alias: 'hasPermissions',
+        alias: 'hasRole',
         where: { target: { profileId: profile.profileId }, source: { id: boost.id } },
     });
 };

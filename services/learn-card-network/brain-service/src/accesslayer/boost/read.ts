@@ -33,7 +33,7 @@ export const getBoostsForProfile = async (
         .match({
             related: [
                 { identifier: 'boost', model: Boost },
-                Boost.getRelationshipByAlias('hasPermissions'),
+                Boost.getRelationshipByAlias('hasRole'),
                 { model: Profile, where: { profileId: profile.profileId } },
             ],
         })
@@ -70,7 +70,7 @@ export const countBoostsForProfile = async (
         .match({
             related: [
                 { identifier: 'boost', model: Boost },
-                Boost.getRelationshipByAlias('hasPermissions'),
+                Boost.getRelationshipByAlias('hasRole'),
                 { model: Profile, where: { profileId: profile.profileId } },
             ],
         })

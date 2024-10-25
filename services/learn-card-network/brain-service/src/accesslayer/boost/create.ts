@@ -5,6 +5,7 @@ import { Boost, BoostInstance, ProfileInstance } from '@models';
 import { BoostStatus, BoostType } from 'types/boost';
 import { convertCredentialToBoostTemplateJSON } from '@helpers/boost.helpers';
 import { getDidWeb } from '@helpers/did.helpers';
+import { getCreatorRole } from '@accesslayer/role/read';
 
 export const createBoost = async (
     credential: UnsignedVC | VC,
@@ -13,6 +14,8 @@ export const createBoost = async (
     domain: string
 ): Promise<BoostInstance> => {
     const id = uuid();
+
+    const role = await getCreatorRole(); // Ensure creator role exists
 
     const { status = BoostStatus.enum.LIVE } = metadata;
 
@@ -30,22 +33,10 @@ export const createBoost = async (
                 relationshipProperties: { date: new Date().toISOString() },
             },
         },
-        hasPermissions: {
+        hasRole: {
             where: {
                 params: { profileId: creator.profileId },
-                relationshipProperties: {
-                    role: 'creator',
-                    canEdit: true,
-                    canIssue: true,
-                    canRevoke: true,
-                    canManagePermissions: true,
-                    canIssueChildren: '*',
-                    canCreateChildren: '*',
-                    canEditChildren: '*',
-                    canRevokeChildren: '*',
-                    canManageChildrenPermissions: '*',
-                    canViewAnalytics: true,
-                },
+                relationshipProperties: { roleId: role.id },
             },
         },
     });

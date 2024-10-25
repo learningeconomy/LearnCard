@@ -7,10 +7,12 @@ import {
     VCValidator,
     JWEValidator,
     BoostRecipientValidator,
+    BoostPermissionsValidator,
     PaginatedBoostRecipientsValidator,
     PaginatedBoostsValidator,
     PaginationOptionsValidator,
     PaginatedLCNProfilesValidator,
+    BoostPermissions,
 } from '@learncard/types';
 
 import { t, profileRoute } from '@routes';
@@ -32,6 +34,12 @@ import {
     isProfileBoostAdmin,
     countBoostRecipients,
     isBoostParent,
+    getBoostPermissions,
+    canManageBoostPermissions,
+    canProfileIssueBoost,
+    canProfileViewBoost,
+    canProfileEditBoost,
+    canProfileCreateChildBoost,
 } from '@accesslayer/boost/relationships/read';
 
 import { deleteStorageForUri, setStorageForUri } from '@cache/storage';
@@ -44,7 +52,7 @@ import {
     isDraftBoost,
     convertCredentialToBoostTemplateJSON,
 } from '@helpers/boost.helpers';
-import { BoostValidator, BoostGenerateClaimLinkInput } from 'types/boost';
+import { BoostValidator, BoostGenerateClaimLinkInput, BoostStatus } from 'types/boost';
 import { deleteBoost } from '@accesslayer/boost/delete';
 import { createBoost } from '@accesslayer/boost/create';
 import { getBoostOwner } from '@accesslayer/boost/relationships/read';
@@ -59,12 +67,18 @@ import {
 } from '@cache/claim-links';
 import { getBlockedAndBlockedByIds, isRelationshipBlocked } from '@helpers/connection.helpers';
 import { getDidWeb } from '@helpers/did.helpers';
-import { setBoostAsParent, setProfileAsBoostAdmin } from '@accesslayer/boost/relationships/create';
+import {
+    giveProfileEmptyPermissions,
+    setBoostAsParent,
+    setProfileAsBoostAdmin,
+} from '@accesslayer/boost/relationships/create';
 import {
     removeBoostAsParent,
     removeProfileAsBoostAdmin,
 } from '@accesslayer/boost/relationships/delete';
 import { getIdFromUri } from '@helpers/uri.helpers';
+import { updateBoostPermissions } from '@accesslayer/boost/relationships/update';
+import { EMPTY_PERMISSIONS, QUERYABLE_PERMISSIONS } from 'src/constants/permissions';
 
 export const boostsRouter = t.router({
     sendBoost: profileRoute
@@ -108,10 +122,10 @@ export const boostsRouter = t.router({
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
-            if (!(await isProfileBoostAdmin(profile, boost))) {
+            if (!(await canProfileIssueBoost(profile, boost))) {
                 throw new TRPCError({
                     code: 'UNAUTHORIZED',
-                    message: 'Profile does not own boost',
+                    message: 'Profile does not have permissions to issue boost',
                 });
             }
 
@@ -158,6 +172,58 @@ export const boostsRouter = t.router({
             return getBoostUri(boost.id, ctx.domain);
         }),
 
+    createChildBoost: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/boost/create/child/{parentUri}',
+                tags: ['Boosts'],
+                summary: 'Creates a boost',
+                description: 'This route creates a boost',
+            },
+        })
+        .input(
+            z.object({
+                parentUri: z.string(),
+                boost: BoostValidator.partial()
+                    .omit({ id: true, boost: true })
+                    .extend({ credential: VCValidator.or(UnsignedVCValidator) }),
+            })
+        )
+        .output(z.string())
+        .mutation(async ({ input, ctx }) => {
+            const { profile } = ctx.user;
+            const {
+                parentUri,
+                boost: { credential, ...metadata },
+            } = input;
+
+            const parentBoost = await getBoostByUri(parentUri);
+
+            if (!parentBoost) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find parent boost' });
+            }
+
+            if (
+                !(await canProfileCreateChildBoost(profile, parentBoost, {
+                    status: BoostStatus.enum.LIVE,
+                    ...metadata,
+                }))
+            ) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile does not own parent boost',
+                });
+            }
+
+            const childBoost = await createBoost(credential, profile, metadata, ctx.domain);
+
+            await setBoostAsParent(parentBoost, childBoost);
+
+            return getBoostUri(childBoost.id, ctx.domain);
+        }),
+
     getBoost: profileRoute
         .meta({
             openapi: {
@@ -185,10 +251,10 @@ export const boostsRouter = t.router({
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
-            if (!(await isProfileBoostAdmin(profile, boost))) {
+            if (!(await canProfileViewBoost(profile, boost))) {
                 throw new TRPCError({
                     code: 'UNAUTHORIZED',
-                    message: 'Profile does not own boost',
+                    message: 'Profile does not have permission to view this boost',
                 });
             }
 
@@ -584,7 +650,7 @@ export const boostsRouter = t.router({
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
-            if (!(await isProfileBoostAdmin(profile, boost))) {
+            if (!(await canProfileEditBoost(profile, boost))) {
                 throw new TRPCError({
                     code: 'UNAUTHORIZED',
                     message: 'Profile does not own boost',
@@ -673,12 +739,7 @@ export const boostsRouter = t.router({
                 description: 'This route adds a new admin for a boost',
             },
         })
-        .input(
-            z.object({
-                uri: z.string(),
-                profileId: z.string(),
-            })
-        )
+        .input(z.object({ uri: z.string(), profileId: z.string() }))
         .output(z.boolean())
         .mutation(async ({ input, ctx }) => {
             const { profile } = ctx.user;
@@ -757,10 +818,10 @@ export const boostsRouter = t.router({
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
-            if (!(await isProfileBoostAdmin(profile, boost))) {
+            if (!(await canManageBoostPermissions(boost, profile))) {
                 throw new TRPCError({
                     code: 'UNAUTHORIZED',
-                    message: 'Profile does not have admin rights over boost',
+                    message: 'Profile can not manage permissions for boost',
                 });
             }
 
@@ -774,6 +835,243 @@ export const boostsRouter = t.router({
             await removeProfileAsBoostAdmin(targetProfile, boost);
 
             return true;
+        }),
+
+    getBoostPermissions: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/boost/permissions/{uri}',
+                tags: ['Boosts'],
+                summary: 'Get boost permissions',
+                description: 'This endpoint gets permission metadata about a boost',
+            },
+        })
+        .input(z.object({ uri: z.string() }))
+        .output(BoostPermissionsValidator)
+        .query(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+
+            const { uri } = input;
+
+            const boost = await getBoostByUri(uri);
+
+            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            const permissions = await getBoostPermissions(boost, profile);
+
+            if (!permissions) return EMPTY_PERMISSIONS;
+
+            return permissions;
+        }),
+
+    getOtherBoostPermissions: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/boost/permissions/{uri}/{profileId}',
+                tags: ['Boosts'],
+                summary: 'Get boost permissions for someone else',
+                description:
+                    'This endpoint gets permission metadata about a boost for someone else',
+            },
+        })
+        .input(z.object({ uri: z.string(), profileId: z.string() }))
+        .output(BoostPermissionsValidator)
+        .query(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { uri, profileId } = input;
+
+            const boost = await getBoostByUri(uri);
+
+            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            if (!(await canManageBoostPermissions(boost, profile))) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile does not have rights to get permissions',
+                });
+            }
+
+            const otherProfile = await getProfileByProfileId(profileId);
+
+            if (!otherProfile) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Could not find target profile',
+                });
+            }
+
+            const permissions = await getBoostPermissions(boost, otherProfile);
+
+            if (!permissions) return EMPTY_PERMISSIONS;
+
+            return permissions;
+        }),
+
+    updateBoostPermissions: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/boost/permissions/{uri}',
+                tags: ['Boosts'],
+                summary: 'Update boost permissions',
+                description:
+                    'This endpoint updates permission metadata about a boost for the current user',
+            },
+        })
+        .input(
+            z.object({
+                uri: z.string(),
+                updates: BoostPermissionsValidator.omit({ role: true }).partial(),
+            })
+        )
+        .output(z.boolean())
+        .query(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { uri, updates } = input;
+
+            const boost = await getBoostByUri(uri);
+
+            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            if (await isProfileBoostOwner(profile, boost)) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message:
+                        'Cannot update boost creators permissions (this could break permissions!)',
+                });
+            }
+
+            const permissions = await getBoostPermissions(boost, profile);
+
+            if (!permissions || !permissions.canManagePermissions) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile does not have rights to manage permissions',
+                });
+            }
+
+            const newPermissions = Object.entries(updates).reduce<Partial<BoostPermissions>>(
+                (newPermissionsObject, [permission, value]) => {
+                    if (typeof value !== undefined) {
+                        if (!(permissions as any)[permission]) {
+                            throw new TRPCError({
+                                code: 'UNAUTHORIZED',
+                                message: `Profile does not have rights to manage ${permission}`,
+                            });
+                        }
+
+                        if (QUERYABLE_PERMISSIONS.includes(permission) && value && value !== '*') {
+                            try {
+                                JSON.parse(value as string);
+                            } catch (error) {
+                                throw new TRPCError({
+                                    code: 'BAD_REQUEST',
+                                    message: `Invalid value for ${permission}`,
+                                });
+                            }
+                        }
+
+                        (newPermissionsObject as any)[permission] = value;
+                    }
+                    return newPermissionsObject;
+                },
+                {}
+            );
+
+            return updateBoostPermissions(profile, boost, newPermissions);
+        }),
+
+    updateOtherBoostPermissions: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/boost/permissions/{uri}/{profileId}',
+                tags: ['Boosts'],
+                summary: "Update other profile's boost permissions",
+                description:
+                    'This endpoint updates permission metadata about a boost for another user',
+            },
+        })
+        .input(
+            z.object({
+                uri: z.string(),
+                profileId: z.string(),
+                updates: BoostPermissionsValidator.omit({ role: true }).partial(),
+            })
+        )
+        .output(z.boolean())
+        .query(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { uri, updates, profileId } = input;
+
+            const boost = await getBoostByUri(uri);
+
+            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            const permissions = await getBoostPermissions(boost, profile);
+
+            if (!permissions || !permissions.canManagePermissions) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile does not have rights to manage permissions',
+                });
+            }
+
+            const otherProfile = await getProfileByProfileId(profileId);
+
+            if (!otherProfile) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Could not find target profile',
+                });
+            }
+
+            if (await isProfileBoostOwner(otherProfile, boost)) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Cannot update boost creators permissions',
+                });
+            }
+
+            const currentPermissions = await getBoostPermissions(boost, otherProfile);
+
+            if (!currentPermissions) await giveProfileEmptyPermissions(otherProfile, boost);
+
+            const newPermissions = Object.entries(updates).reduce<Partial<BoostPermissions>>(
+                (newPermissionsObject, [permission, value]) => {
+                    if (typeof value !== undefined) {
+                        if (!(permissions as any)[permission]) {
+                            throw new TRPCError({
+                                code: 'UNAUTHORIZED',
+                                message: `Profile does not have rights to manage ${permission}`,
+                            });
+                        }
+
+                        if (QUERYABLE_PERMISSIONS.includes(permission) && value && value !== '*') {
+                            try {
+                                JSON.parse(value as string);
+                            } catch (error) {
+                                throw new TRPCError({
+                                    code: 'BAD_REQUEST',
+                                    message: `Invalid value for ${permission}`,
+                                });
+                            }
+                        }
+
+                        (newPermissionsObject as any)[permission] = value;
+                    }
+                    return newPermissionsObject;
+                },
+                {}
+            );
+
+            return updateBoostPermissions(otherProfile, boost, newPermissions);
         }),
 
     deleteBoost: profileRoute
@@ -968,10 +1266,10 @@ export const boostsRouter = t.router({
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find child boost' });
             }
 
-            if (!(await isProfileBoostAdmin(profile, parentBoost))) {
+            if (!(await canProfileCreateChildBoost(profile, parentBoost, childBoost.dataValues))) {
                 throw new TRPCError({
                     code: 'UNAUTHORIZED',
-                    message: 'Profile does not own parent boost',
+                    message: 'Profile can not create children for parent',
                 });
             }
 
@@ -1002,7 +1300,7 @@ export const boostsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/boost/reove-parent',
+                path: '/boost/remove-parent',
                 tags: ['Boosts'],
                 summary: 'Remove Boost Parent',
                 description: 'This endpoint removes a parent/child relationship between two boosts',

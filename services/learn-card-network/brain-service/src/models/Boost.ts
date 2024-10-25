@@ -1,4 +1,5 @@
 import { ModelFactory, ModelRelatedNodesI, NeogmaInstance } from 'neogma';
+import { BoostPermissions } from '@learncard/types';
 
 import { neogma } from '@instance';
 
@@ -13,35 +14,11 @@ export type BoostRelationships = {
         { date: string }
     >;
     parentOf: ModelRelatedNodesI<typeof Boost, BoostInstance>;
-    hasPermissions: ModelRelatedNodesI<
+    hasRole: ModelRelatedNodesI<
         typeof Profile,
         ProfileInstance,
-        {
-            role: string;
-            canEdit: boolean;
-            canIssue: boolean;
-            canRevoke: boolean;
-            canManagePermissions: boolean;
-            canIssueChildren: string;
-            canCreateChildren: string;
-            canEditChildren: string;
-            canRevokeChildren: string;
-            canManageChildrenPermissions: string;
-            canViewAnalytics: boolean;
-        },
-        {
-            role: string;
-            canEdit: boolean;
-            canIssue: boolean;
-            canRevoke: boolean;
-            canManagePermissions: boolean;
-            canIssueChildren: string;
-            canCreateChildren: string;
-            canEditChildren: string;
-            canRevokeChildren: string;
-            canManageChildrenPermissions: string;
-            canViewAnalytics: boolean;
-        }
+        Partial<BoostPermissions> & { roleId: string },
+        Partial<BoostPermissions> & { roleId: string }
     >;
 };
 
@@ -70,11 +47,12 @@ export const Boost = ModelFactory<BoostType, BoostRelationships>(
                 },
             },
             parentOf: { model: 'self', direction: 'out', name: 'PARENT_OF' },
-            hasPermissions: {
+            hasRole: {
                 model: Profile,
                 direction: 'in',
-                name: 'HAS_PERMISSIONS',
+                name: 'HAS_ROLE',
                 properties: {
+                    roleId: { property: 'roleId', schema: { type: 'string', required: true } },
                     role: { property: 'role', schema: { type: 'string', required: false } },
                     canEdit: { property: 'canEdit', schema: { type: 'boolean', required: false } },
                     canIssue: {
