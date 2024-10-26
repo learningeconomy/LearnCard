@@ -510,7 +510,11 @@ export const getBoostPermissions = async (boost: BoostInstance, profile: Profile
                     direction: 'none',
                 },
                 { identifier: 'parentBoost', model: Boost },
-                { ...Boost.getRelationshipByAlias('parentOf'), direction: 'out' },
+                {
+                    ...Boost.getRelationshipByAlias('parentOf'),
+                    direction: 'out',
+                    maxHops: Infinity,
+                },
                 { identifier: 'targetBoost' },
             ],
         })

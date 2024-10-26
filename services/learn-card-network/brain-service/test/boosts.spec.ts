@@ -2842,6 +2842,43 @@ describe('Boosts', () => {
 
             expect(permissions).toEqual(emptyRole);
         });
+
+        it('should respect parent and grandparent overrides', async () => {
+            const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+            });
+            const parentUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: grandParentUri,
+                boost: { credential: testVc },
+            });
+            const grandChildUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc },
+            });
+
+            await userA.clients.fullAuth.boost.addBoostAdmin({
+                profileId: 'userb',
+                uri: grandParentUri,
+            });
+
+            const grandParentPermissions = await userB.clients.fullAuth.boost.getBoostPermissions({
+                uri: grandParentUri,
+            });
+
+            expect(grandParentPermissions.canEditChildren).toEqual('*');
+
+            const parentPermissions = await userB.clients.fullAuth.boost.getBoostPermissions({
+                uri: parentUri,
+            });
+
+            expect(parentPermissions.canEdit).toBeTruthy();
+
+            const grandChildPermissions = await userB.clients.fullAuth.boost.getBoostPermissions({
+                uri: grandChildUri,
+            });
+
+            expect(grandChildPermissions.canEdit).toBeTruthy();
+        });
     });
 
     describe('getOtherBoostPermissions', () => {
@@ -2930,6 +2967,46 @@ describe('Boosts', () => {
                     profileId: 'usera',
                 })
             ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        });
+
+        it('should respect parent and grandparent overrides', async () => {
+            const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+            });
+            const parentUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: grandParentUri,
+                boost: { credential: testVc },
+            });
+            const grandChildUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc },
+            });
+
+            await userA.clients.fullAuth.boost.addBoostAdmin({
+                profileId: 'userb',
+                uri: grandParentUri,
+            });
+
+            const grandParentPermissions = await userA.clients.fullAuth.boost.getOtherBoostPermissions({
+                profileId: 'userb',
+                uri: grandParentUri,
+            });
+
+            expect(grandParentPermissions.canEditChildren).toEqual('*');
+
+            const parentPermissions = await userA.clients.fullAuth.boost.getOtherBoostPermissions({
+                profileId: 'userb',
+                uri: parentUri,
+            });
+
+            expect(parentPermissions.canEdit).toBeTruthy();
+
+            const grandChildPermissions = await userA.clients.fullAuth.boost.getOtherBoostPermissions({
+                profileId: 'userb',
+                uri: grandChildUri,
+            });
+
+            expect(grandChildPermissions.canEdit).toBeTruthy();
         });
     });
 
