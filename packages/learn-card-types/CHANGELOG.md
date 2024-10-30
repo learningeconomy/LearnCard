@@ -1,5 +1,11 @@
 # learn-card-types
 
+## 5.5.4
+
+### Patch Changes
+
+-   [#546](https://github.com/learningeconomy/LearnCard/pull/546) [`859ed5791aecc5d8dec6496347d5ade8fbe0fc5f`](https://github.com/learningeconomy/LearnCard/commit/859ed5791aecc5d8dec6496347d5ade8fbe0fc5f) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add BoostPermissions type
+
 ## 5.5.3
 
 ### Patch Changes

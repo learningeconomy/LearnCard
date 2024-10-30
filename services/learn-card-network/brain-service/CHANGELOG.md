@@ -1,5 +1,27 @@
 # @learncard/network-brain-service
 
+## 3.1.0
+
+### Minor Changes
+
+-   [#546](https://github.com/learningeconomy/LearnCard/pull/546) [`859ed5791aecc5d8dec6496347d5ade8fbe0fc5f`](https://github.com/learningeconomy/LearnCard/commit/859ed5791aecc5d8dec6496347d5ade8fbe0fc5f) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add the concept of parent/child boosts, as well as a permissions overhaul for boosts
+
+### Patch Changes
+
+-   Updated dependencies [[`859ed5791aecc5d8dec6496347d5ade8fbe0fc5f`](https://github.com/learningeconomy/LearnCard/commit/859ed5791aecc5d8dec6496347d5ade8fbe0fc5f)]:
+    -   @learncard/types@5.5.4
+    -   @learncard/core@9.3.4
+    -   @learncard/helpers@1.0.16
+    -   @learncard/ceramic-plugin@1.0.15
+    -   @learncard/did-web-plugin@1.0.37
+    -   @learncard/didkey-plugin@1.0.15
+    -   @learncard/didkit-plugin@1.4.13
+    -   @learncard/learn-card-plugin@1.1.17
+    -   @learncard/vc-plugin@1.1.18
+    -   @learncard/vc-templates-plugin@1.0.21
+    -   @learncard/expiration-plugin@1.1.18
+    -   @learncard/crypto-plugin@1.0.15
+
 ## 3.0.2
 
 ### Patch Changes
