@@ -1,4 +1,5 @@
 import { ModelFactory, ModelRelatedNodesI, NeogmaInstance } from 'neogma';
+import { BoostPermissions } from '@learncard/types';
 
 import { neogma } from '@instance';
 
@@ -11,6 +12,13 @@ export type BoostRelationships = {
         ProfileInstance,
         { date: string },
         { date: string }
+    >;
+    parentOf: ModelRelatedNodesI<typeof Boost, BoostInstance>;
+    hasRole: ModelRelatedNodesI<
+        typeof Profile,
+        ProfileInstance,
+        Partial<BoostPermissions> & { roleId: string },
+        Partial<BoostPermissions> & { roleId: string }
     >;
 };
 
@@ -36,6 +44,53 @@ export const Boost = ModelFactory<BoostType, BoostRelationships>(
                 name: 'CREATED_BY',
                 properties: {
                     date: { property: 'date', schema: { type: 'string', required: true } },
+                },
+            },
+            parentOf: { model: 'self', direction: 'out', name: 'PARENT_OF' },
+            hasRole: {
+                model: Profile,
+                direction: 'in',
+                name: 'HAS_ROLE',
+                properties: {
+                    roleId: { property: 'roleId', schema: { type: 'string', required: true } },
+                    role: { property: 'role', schema: { type: 'string', required: false } },
+                    canEdit: { property: 'canEdit', schema: { type: 'boolean', required: false } },
+                    canIssue: {
+                        property: 'canIssue',
+                        schema: { type: 'boolean', required: false },
+                    },
+                    canRevoke: {
+                        property: 'canRevoke',
+                        schema: { type: 'boolean', required: false },
+                    },
+                    canManagePermissions: {
+                        property: 'canManagePermissions',
+                        schema: { type: 'boolean', required: false },
+                    },
+                    canIssueChildren: {
+                        property: 'canIssueChildren',
+                        schema: { type: 'string', required: false },
+                    },
+                    canCreateChildren: {
+                        property: 'canCreateChildren',
+                        schema: { type: 'string', required: false },
+                    },
+                    canEditChildren: {
+                        property: 'canEditChildren',
+                        schema: { type: 'string', required: false },
+                    },
+                    canRevokeChildren: {
+                        property: 'canRevokeChildren',
+                        schema: { type: 'string', required: false },
+                    },
+                    canManageChildrenPermissions: {
+                        property: 'canManageChildrenPermissions',
+                        schema: { type: 'string', required: false },
+                    },
+                    canViewAnalytics: {
+                        property: 'canViewAnalytics',
+                        schema: { type: 'boolean', required: false },
+                    },
                 },
             },
         },

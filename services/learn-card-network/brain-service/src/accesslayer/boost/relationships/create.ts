@@ -1,3 +1,4 @@
+import { getAdminRole, getEmptyRole } from '@accesslayer/role/read';
 import { CredentialInstance, ProfileInstance, BoostInstance } from '@models';
 
 export const createBoostInstanceOfRelationship = async (
@@ -23,8 +24,29 @@ export const setProfileAsBoostAdmin = async (
     profile: ProfileInstance,
     boost: BoostInstance
 ): Promise<void> => {
-    await profile.relateTo({
-        alias: 'adminOf',
-        where: { id: boost.id },
+    const role = await getAdminRole(); // Ensure admin role exists
+    await boost.relateTo({
+        alias: 'hasRole',
+        where: { profileId: profile.profileId },
+        properties: { roleId: role.id },
     });
+};
+
+export const giveProfileEmptyPermissions = async (
+    profile: ProfileInstance,
+    boost: BoostInstance
+): Promise<void> => {
+    const role = await getEmptyRole(); // Ensure empty role exists
+    await boost.relateTo({
+        alias: 'hasRole',
+        where: { profileId: profile.profileId },
+        properties: { roleId: role.id },
+    });
+};
+
+export const setBoostAsParent = async (
+    parentBoost: BoostInstance,
+    childBoost: BoostInstance
+): Promise<boolean> => {
+    return Boolean(await parentBoost.relateTo({ alias: 'parentOf', where: { id: childBoost.id } }));
 };

@@ -1,5 +1,25 @@
 # @welibraryos/react-learn-card
 
+## 2.7.32
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.6
+
+## 2.7.31
+
+### Patch Changes
+
+-   [#544](https://github.com/learningeconomy/LearnCard/pull/544) [`287836291b5b37a2922be73f1414d7bca6ff2a39`](https://github.com/learningeconomy/LearnCard/commit/287836291b5b37a2922be73f1414d7bca6ff2a39) Thanks [@goblincore](https://github.com/goblincore)! - fix: [LC-393] Change ribbon size and replace backpack graphic
+
+## 2.7.30
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.5
+
 ## 2.7.29
 
 ### Patch Changes

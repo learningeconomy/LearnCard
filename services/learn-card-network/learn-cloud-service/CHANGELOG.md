@@ -1,5 +1,29 @@
 # @learncard/network-brain-service
 
+## 2.1.6
+
+### Patch Changes
+
+-   Updated dependencies [[`859ed5791aecc5d8dec6496347d5ade8fbe0fc5f`](https://github.com/learningeconomy/LearnCard/commit/859ed5791aecc5d8dec6496347d5ade8fbe0fc5f)]:
+    -   @learncard/types@5.5.4
+    -   @learncard/core@9.3.4
+    -   @learncard/helpers@1.0.16
+    -   @learncard/ceramic-plugin@1.0.15
+    -   @learncard/did-web-plugin@1.0.37
+    -   @learncard/didkey-plugin@1.0.15
+    -   @learncard/didkit-plugin@1.4.13
+    -   @learncard/learn-card-plugin@1.1.17
+    -   @learncard/vc-plugin@1.1.18
+    -   @learncard/vc-templates-plugin@1.0.21
+    -   @learncard/expiration-plugin@1.1.18
+    -   @learncard/crypto-plugin@1.0.15
+
+## 2.1.5
+
+### Patch Changes
+
+-   [#542](https://github.com/learningeconomy/LearnCard/pull/542) [`033626bacb6e86b1ded18dbf44199a9dfe0c02ca`](https://github.com/learningeconomy/LearnCard/commit/033626bacb6e86b1ded18dbf44199a9dfe0c02ca) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Use a Redis hash for the Index Plane caching
+
 ## 2.1.4
 
 ### Patch Changes

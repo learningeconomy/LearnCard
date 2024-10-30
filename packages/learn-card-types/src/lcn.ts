@@ -85,6 +85,21 @@ export const LCNBoostClaimLinkOptionsValidator = z.object({
 });
 export type LCNBoostClaimLinkOptionsType = z.infer<typeof LCNBoostClaimLinkOptionsValidator>;
 
+export const BoostPermissionsValidator = z.object({
+    role: z.string(),
+    canEdit: z.boolean(),
+    canIssue: z.boolean(),
+    canRevoke: z.boolean(),
+    canManagePermissions: z.boolean(),
+    canIssueChildren: z.string(),
+    canCreateChildren: z.string(),
+    canEditChildren: z.string(),
+    canRevokeChildren: z.string(),
+    canManageChildrenPermissions: z.string(),
+    canViewAnalytics: z.boolean(),
+});
+export type BoostPermissions = z.infer<typeof BoostPermissionsValidator>;
+
 export const LCNSigningAuthorityValidator = z.object({
     endpoint: z.string(),
 });
