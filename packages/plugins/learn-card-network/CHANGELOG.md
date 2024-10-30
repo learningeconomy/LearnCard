@@ -1,5 +1,17 @@
 # learn-card-core
 
+## 2.1.0
+
+### Minor Changes
+
+-   [#546](https://github.com/learningeconomy/LearnCard/pull/546) [`859ed5791aecc5d8dec6496347d5ade8fbe0fc5f`](https://github.com/learningeconomy/LearnCard/commit/859ed5791aecc5d8dec6496347d5ade8fbe0fc5f) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add the concept of parent/child boosts, as well as a permissions overhaul for boosts
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.0.3
+    -   @learncard/core@9.3.4
+
 ## 2.0.2
 
 ### Patch Changes
