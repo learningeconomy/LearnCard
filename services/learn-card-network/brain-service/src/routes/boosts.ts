@@ -653,7 +653,7 @@ export const boostsRouter = t.router({
             if (!(await canProfileEditBoost(profile, boost))) {
                 throw new TRPCError({
                     code: 'UNAUTHORIZED',
-                    message: 'Profile does not own boost',
+                    message: 'Profile does not have permission to edit this boost',
                 });
             }
 
