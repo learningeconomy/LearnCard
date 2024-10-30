@@ -5,6 +5,7 @@ import { Boost, BoostInstance, ProfileInstance } from '@models';
 import { BoostStatus, BoostType } from 'types/boost';
 import { convertCredentialToBoostTemplateJSON } from '@helpers/boost.helpers';
 import { getDidWeb } from '@helpers/did.helpers';
+import { getCreatorRole } from '@accesslayer/role/read';
 
 export const createBoost = async (
     credential: UnsignedVC | VC,
@@ -13,6 +14,8 @@ export const createBoost = async (
     domain: string
 ): Promise<BoostInstance> => {
     const id = uuid();
+
+    const role = await getCreatorRole(); // Ensure creator role exists
 
     const { status = BoostStatus.enum.LIVE } = metadata;
 
@@ -28,6 +31,12 @@ export const createBoost = async (
             where: {
                 params: { profileId: creator.profileId },
                 relationshipProperties: { date: new Date().toISOString() },
+            },
+        },
+        hasRole: {
+            where: {
+                params: { profileId: creator.profileId },
+                relationshipProperties: { roleId: role.id },
             },
         },
     });

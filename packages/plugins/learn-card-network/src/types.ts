@@ -27,6 +27,7 @@ import {
     PaginatedConsentFlowData,
     ConsentFlowDataQuery,
     BoostRecipientInfo,
+    BoostPermissions,
 } from '@learncard/types';
 import { Plugin } from '@learncard/core';
 import { ProofOptions } from '@learncard/didkit-plugin';
@@ -113,6 +114,11 @@ export type LearnCardNetworkPluginMethods = {
         credential: VC | UnsignedVC,
         metadata?: Partial<Omit<Boost, 'uri'>>
     ) => Promise<string>;
+    createChildBoost: (
+        parentUri: string,
+        credential: VC | UnsignedVC,
+        metadata?: Partial<Omit<Boost, 'uri'>>
+    ) => Promise<string>;
     getBoost: (uri: string) => Promise<Boost & { boost: UnsignedVC }>;
     /** @deprecated Use getPaginatedBoosts */
     getBoosts: (query?: Partial<Omit<Boost, 'uri'>>) => Promise<{ name?: string; uri: string }[]>;
@@ -120,6 +126,30 @@ export type LearnCardNetworkPluginMethods = {
         options?: PaginationOptionsType & { query?: Partial<Omit<Boost, 'uri'>> }
     ) => Promise<PaginatedBoostsType>;
     countBoosts: (query?: Partial<Omit<Boost, 'uri'>>) => Promise<number>;
+    getBoostChildren: (
+        uri: string,
+        options?: PaginationOptionsType & {
+            query?: Partial<Omit<Boost, 'uri'>>;
+            numberOfGenerations?: number;
+        }
+    ) => Promise<PaginatedBoostsType>;
+    countBoostChildren: (
+        uri: string,
+        options?: { query?: Partial<Omit<Boost, 'uri'>>; numberOfGenerations?: number }
+    ) => Promise<number>;
+    getBoostParents: (
+        uri: string,
+        options?: PaginationOptionsType & {
+            query?: Partial<Omit<Boost, 'uri'>>;
+            numberOfGenerations?: number;
+        }
+    ) => Promise<PaginatedBoostsType>;
+    countBoostParents: (
+        uri: string,
+        options?: { query?: Partial<Omit<Boost, 'uri'>>; numberOfGenerations?: number }
+    ) => Promise<number>;
+    makeBoostParent: (uris: { parentUri: string; childUri: string }) => Promise<boolean>;
+    removeBoostParent: (uris: { parentUri: string; childUri: string }) => Promise<boolean>;
     /** @deprecated Use getPaginatedBoostRecipients */
     getBoostRecipients: (
         uri: string,
@@ -144,6 +174,12 @@ export type LearnCardNetworkPluginMethods = {
         uri: string,
         options?: Partial<PaginationOptionsType> & { includeSelf?: boolean }
     ) => Promise<PaginatedLCNProfiles>;
+    getBoostPermissions: (uri: string, profileId?: string) => Promise<BoostPermissions>;
+    updateBoostPermissions: (
+        uri: string,
+        updates: Omit<BoostPermissions, 'role'>,
+        profileId?: string
+    ) => Promise<boolean>;
     addBoostAdmin: (uri: string, profileId: string) => Promise<boolean>;
     removeBoostAdmin: (uri: string, profileId: string) => Promise<boolean>;
     sendBoost: (

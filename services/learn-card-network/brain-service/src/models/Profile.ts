@@ -8,14 +8,12 @@ import { SigningAuthority } from './SigningAuthority';
 import { transformProfileId } from '@helpers/profile.helpers';
 import { ProfileType } from 'types/profile';
 import { SigningAuthorityInstance } from './SigningAuthority';
-import { Boost, BoostInstance } from './Boost';
 
 export type ProfileRelationships = {
     connectionRequested: ModelRelatedNodesI<typeof Profile, ProfileInstance>;
     connectedWith: ModelRelatedNodesI<typeof Profile, ProfileInstance>;
     blocked: ModelRelatedNodesI<typeof Profile, ProfileInstance>;
     managedBy: ModelRelatedNodesI<typeof Profile, ProfileInstance>;
-    adminOf: ModelRelatedNodesI<typeof Boost, BoostInstance>;
     credentialSent: ModelRelatedNodesI<
         typeof Credential,
         CredentialInstance,

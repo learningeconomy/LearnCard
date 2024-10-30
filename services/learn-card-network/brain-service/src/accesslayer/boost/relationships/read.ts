@@ -1,6 +1,7 @@
+import sift from 'sift';
 import { BindParam, Op, QueryBuilder, Where } from 'neogma';
 import { convertQueryResultToPropertiesObjectArray } from '@helpers/neo4j.helpers';
-import { BoostRecipientInfo } from '@learncard/types';
+import { BoostRecipientInfo, BoostPermissions } from '@learncard/types';
 import {
     Boost,
     BoostInstance,
@@ -13,6 +14,13 @@ import {
 } from '@models';
 import { getProfilesByProfileIds } from '@accesslayer/profile/read';
 import { ProfileType } from 'types/profile';
+import { BoostType } from 'types/boost';
+import { ADMIN_ROLE_ID, CREATOR_ROLE_ID } from 'src/constants/roles';
+import {
+    CHILD_TO_NON_CHILD_PERMISSION,
+    EMPTY_PERMISSIONS,
+    QUERYABLE_PERMISSIONS,
+} from 'src/constants/permissions';
 
 export const getBoostOwner = async (boost: BoostInstance): Promise<ProfileInstance | undefined> => {
     return (await boost.findRelationships({ alias: 'createdBy' }))[0]?.target;
@@ -218,22 +226,19 @@ export const getBoostAdmins = async (
     boost: BoostInstance,
     { limit, cursor, blacklist = [] }: { limit: number; cursor?: string; blacklist?: string[] }
 ): Promise<ProfileType[]> => {
-    const _query = new QueryBuilder(new BindParam({ blacklist }))
+    const _query = new QueryBuilder(new BindParam({ blacklist, cursor }))
         .match({
             related: [
                 { identifier: 'source', model: Boost, where: { id: boost.id } },
-                `-[:${Profile.getRelationshipByAlias('adminOf').name}|${Boost.getRelationshipByAlias('createdBy').name
-                }]-`,
+                { ...Boost.getRelationshipByAlias('hasRole'), identifier: 'hasRole' },
                 { identifier: 'admin', model: Profile },
             ],
         })
-        .where('NOT admin.profileId IN $blacklist');
+        .where(
+            `(hasRole.roleId = "${ADMIN_ROLE_ID}" OR hasRole.roleId = "${CREATOR_ROLE_ID}") AND NOT admin.profileId IN $blacklist`
+        );
 
-    const query = cursor
-        ? _query.where(
-            new Where({ admin: { profileId: { [Op.gt]: cursor } } }, _query.getBindParam())
-        )
-        : _query;
+    const query = cursor ? _query.raw('AND admin.profileId > $cursor') : _query;
 
     const results = convertQueryResultToPropertiesObjectArray<{
         admin: ProfileType;
@@ -243,16 +248,383 @@ export const getBoostAdmins = async (
 };
 
 export const isProfileBoostAdmin = async (profile: ProfileInstance, boost: BoostInstance) => {
+    const query = new QueryBuilder()
+        .match({
+            related: [
+                { model: Boost, where: { id: boost.id } },
+                { ...Boost.getRelationshipByAlias('hasRole'), identifier: 'hasRole' },
+                { identifier: 'profile', model: Profile, where: { profileId: profile.profileId } },
+            ],
+        })
+        .where(`hasRole.roleId = "${ADMIN_ROLE_ID}" OR hasRole.roleId = "${CREATOR_ROLE_ID}"`);
+
+    const result = await query.return('count(profile) AS count').run();
+
+    return Number(result.records[0]?.get('count') ?? 0) > 0;
+};
+
+export const canProfileViewBoost = async (profile: ProfileInstance, boost: BoostInstance) => {
     const query = new QueryBuilder().match({
         related: [
             { model: Boost, where: { id: boost.id } },
-            `-[:${Profile.getRelationshipByAlias('adminOf').name}|${Boost.getRelationshipByAlias('createdBy').name
-            }]-`,
+            Boost.getRelationshipByAlias('hasRole'),
             { identifier: 'profile', model: Profile, where: { profileId: profile.profileId } },
         ],
     });
 
     const result = await query.return('count(profile) AS count').run();
+
+    return Number(result.records[0]?.get('count') ?? 0) > 0;
+};
+
+export const canProfileCreateChildBoost = async (
+    profile: ProfileInstance,
+    parentBoost: BoostInstance,
+    childBoost: Omit<BoostType, 'boost' | 'id'>
+) => {
+    const query = new QueryBuilder()
+        .match({ model: Boost, where: { id: parentBoost.id }, identifier: 'targetBoost' })
+        .match({ model: Profile, where: { profileId: profile.profileId }, identifier: 'profile' })
+        .match({
+            optional: true,
+            related: [
+                { identifier: 'targetBoost' },
+                { ...Boost.getRelationshipByAlias('hasRole'), identifier: 'hasRole' },
+                { identifier: 'profile' },
+            ],
+        })
+        .match({ optional: true, literal: '(role:Role {id: hasRole.roleId})' })
+        .match({
+            optional: true,
+            related: [
+                { identifier: 'profile' },
+                {
+                    ...Boost.getRelationshipByAlias('hasRole'),
+                    identifier: 'parentHasRole',
+                    direction: 'none',
+                },
+                { identifier: 'parentBoost', model: Boost },
+                {
+                    ...Boost.getRelationshipByAlias('parentOf'),
+                    direction: 'out',
+                    maxHops: Infinity,
+                },
+                { identifier: 'targetBoost' },
+            ],
+        })
+        .match({ optional: true, literal: '(parentRole:Role {id: parentHasRole.roleId})' });
+
+    const result = await query
+        .return(
+            `
+            COALESCE(hasRole.canCreateChildren, role.canCreateChildren) AS canCreateChildren,
+            COALESCE(parentHasRole.canCreateChildren, parentRole.canCreateChildren) AS parentCanCreateChildren
+`
+        )
+        .run();
+
+    return result.records.some(record => {
+        if (!record) return false;
+
+        const canCreateChildren = record.get('canCreateChildren');
+        const parentCanCreateChildren = record.get('parentCanCreateChildren');
+
+        if (parentCanCreateChildren === '*' || canCreateChildren === '*') return true;
+
+        if (
+            canCreateChildren &&
+            canCreateChildren !== '{}' &&
+            sift(JSON.parse(canCreateChildren))(childBoost)
+        ) {
+            return true;
+        }
+
+        try {
+            if (!parentCanCreateChildren || parentCanCreateChildren === '{}') return false;
+
+            if (parentCanCreateChildren && typeof parentCanCreateChildren === 'string') {
+                return sift(JSON.parse(parentCanCreateChildren))(childBoost);
+            }
+        } catch (error) {
+            console.error('Error trying to parse canCreateChildren query!', error);
+        }
+
+        return false;
+    });
+};
+
+export const canProfileEditBoost = async (profile: ProfileInstance, boost: BoostInstance) => {
+    const query = new QueryBuilder()
+        .match({ model: Boost, where: { id: boost.id }, identifier: 'targetBoost' })
+        .match({ model: Profile, where: { profileId: profile.profileId }, identifier: 'profile' })
+        .match({
+            optional: true,
+            related: [
+                { identifier: 'targetBoost' },
+                { ...Boost.getRelationshipByAlias('hasRole'), identifier: 'hasRole' },
+                { identifier: 'profile' },
+            ],
+        })
+        .match({ optional: true, literal: '(role:Role {id: hasRole.roleId})' })
+        .match({
+            optional: true,
+            related: [
+                { identifier: 'profile' },
+                {
+                    ...Boost.getRelationshipByAlias('hasRole'),
+                    identifier: 'parentHasRole',
+                    direction: 'none',
+                },
+                { identifier: 'parentBoost', model: Boost },
+                {
+                    ...Boost.getRelationshipByAlias('parentOf'),
+                    direction: 'out',
+                    maxHops: Infinity,
+                },
+                { identifier: 'targetBoost' },
+            ],
+        })
+        .match({ optional: true, literal: '(parentRole:Role {id: parentHasRole.roleId})' });
+
+    const result = await query
+        .return(
+            `
+            COALESCE(hasRole.canEdit, role.canEdit) AS directCanEdit,
+            COALESCE(parentHasRole.canEditChildren, parentRole.canEditChildren) AS parentCanEditChildren
+`
+        )
+        .run();
+
+    return result.records.some(record => {
+        if (!record) return false;
+
+        const directCanEdit = record.get('directCanEdit');
+        const parentEditChildren = record.get('parentCanEditChildren');
+
+        if (!parentEditChildren || parentEditChildren === '{}') return Boolean(directCanEdit);
+
+        if (parentEditChildren === '*') return true;
+
+        try {
+            if (parentEditChildren && typeof parentEditChildren === 'string') {
+                return (
+                    sift(JSON.parse(parentEditChildren))(boost.dataValues) || Boolean(directCanEdit)
+                );
+            }
+        } catch (error) {
+            console.error('Error trying to parse canEditChildren query!', error);
+        }
+
+        return Boolean(directCanEdit);
+    });
+};
+
+export const canProfileIssueBoost = async (profile: ProfileInstance, boost: BoostInstance) => {
+    const query = new QueryBuilder()
+        .match({ model: Boost, where: { id: boost.id }, identifier: 'targetBoost' })
+        .match({ model: Profile, where: { profileId: profile.profileId }, identifier: 'profile' })
+        .match({
+            optional: true,
+            related: [
+                { identifier: 'targetBoost' },
+                { ...Boost.getRelationshipByAlias('hasRole'), identifier: 'hasRole' },
+                { identifier: 'profile' },
+            ],
+        })
+        .match({ optional: true, literal: '(role:Role {id: hasRole.roleId})' })
+        .match({
+            optional: true,
+            related: [
+                { identifier: 'profile' },
+                {
+                    ...Boost.getRelationshipByAlias('hasRole'),
+                    identifier: 'parentHasRole',
+                    direction: 'none',
+                },
+                { identifier: 'parentBoost', model: Boost },
+                {
+                    ...Boost.getRelationshipByAlias('parentOf'),
+                    direction: 'out',
+                    maxHops: Infinity,
+                },
+                { identifier: 'targetBoost' },
+            ],
+        })
+        .match({ optional: true, literal: '(parentRole:Role {id: parentHasRole.roleId})' });
+
+    const result = await query
+        .return(
+            `
+            COALESCE(hasRole.canIssue, role.canIssue) AS directCanIssue,
+            COALESCE(parentHasRole.canIssueChildren, parentRole.canIssueChildren) AS parentCanIssueChildren
+`
+        )
+        .run();
+
+    return result.records.some(record => {
+        if (!record) return false;
+
+        const directCanIssue = record.get('directCanIssue');
+        const parentCanIssueChildren = record.get('parentCanIssueChildren');
+
+        if (!parentCanIssueChildren || parentCanIssueChildren === '{}')
+            return Boolean(directCanIssue);
+
+        if (parentCanIssueChildren === '*') return true;
+
+        try {
+            if (parentCanIssueChildren && typeof parentCanIssueChildren === 'string') {
+                return (
+                    sift(JSON.parse(parentCanIssueChildren))(boost.dataValues) ||
+                    Boolean(directCanIssue)
+                );
+            }
+        } catch (error) {
+            console.error('Error trying to parse canIssueChildren query!', error);
+        }
+
+        return Boolean(directCanIssue);
+    });
+};
+
+export const getBoostPermissions = async (boost: BoostInstance, profile: ProfileInstance) => {
+    const query = new QueryBuilder()
+        .match({ model: Boost, where: { id: boost.id }, identifier: 'targetBoost' })
+        .match({ model: Profile, where: { profileId: profile.profileId }, identifier: 'profile' })
+        .match({
+            optional: true,
+            related: [
+                { identifier: 'targetBoost' },
+                { ...Boost.getRelationshipByAlias('hasRole'), identifier: 'hasRole' },
+                { identifier: 'profile', where: { profileId: profile.profileId } },
+            ],
+        })
+        .match({ optional: true, literal: '(role:Role {id: hasRole.roleId})' })
+        .match({
+            optional: true,
+            related: [
+                { identifier: 'profile' },
+                {
+                    ...Boost.getRelationshipByAlias('hasRole'),
+                    identifier: 'parentHasRole',
+                    direction: 'none',
+                },
+                { identifier: 'parentBoost', model: Boost },
+                {
+                    ...Boost.getRelationshipByAlias('parentOf'),
+                    direction: 'out',
+                    maxHops: Infinity,
+                },
+                { identifier: 'targetBoost' },
+            ],
+        })
+        .match({ optional: true, literal: '(parentRole:Role {id: parentHasRole.roleId})' });
+
+    const result = convertQueryResultToPropertiesObjectArray<{
+        role: BoostPermissions;
+        hasRole: BoostPermissions & { roleId: string };
+        parentRole: BoostPermissions;
+        parentHasRole: BoostPermissions & { roleId: string };
+    }>(await query.return('role, hasRole, parentRole, parentHasRole').run());
+
+    const directPermissions = { ...EMPTY_PERMISSIONS, ...result[0]?.role, ...result[0]?.hasRole };
+
+    return result.reduce((permissions, { parentRole, parentHasRole }) => {
+        const computedParentPermissions = { ...parentRole, ...parentHasRole };
+
+        Object.entries(computedParentPermissions).forEach(([permission, value]) => {
+            if (permission === 'role') return;
+
+            if (QUERYABLE_PERMISSIONS.includes(permission)) {
+                const nonChildPermission = CHILD_TO_NON_CHILD_PERMISSION[permission];
+
+                const currentPermission = (permissions as any)[permission];
+
+                if (value === '*' && nonChildPermission) {
+                    (permissions as any)[nonChildPermission] = true;
+                }
+
+                if (currentPermission === '*' || !value || value === '{}') return;
+
+                if (
+                    value !== '*' &&
+                    nonChildPermission &&
+                    !(permissions as any)[nonChildPermission]
+                ) {
+                    (permissions as any)[nonChildPermission] = sift(JSON.parse(value as any))(
+                        boost
+                    );
+                }
+
+                if (value === '*') (permissions as any)[permission] = '*';
+                else if (!currentPermission || currentPermission === '{}') {
+                    (permissions as any)[permission] = value;
+                } else {
+                    const parsedPermission = JSON.parse(currentPermission);
+
+                    if (Object.keys(parsedPermission).length === 1 && '$or' in parsedPermission) {
+                        (permissions as any)[permission] = JSON.stringify({
+                            $or: [...parsedPermission['$or'], value],
+                        });
+                    } else {
+                        (permissions as any)[permission] = JSON.stringify({
+                            $or: [parsedPermission, value],
+                        });
+                    }
+                }
+
+                return;
+            }
+        });
+
+        return permissions;
+    }, directPermissions);
+};
+
+export const canManageBoostPermissions = async (
+    boost: BoostInstance,
+    profile: ProfileInstance
+): Promise<boolean> => {
+    const query = new QueryBuilder()
+        .match({
+            related: [
+                { model: Boost, where: { id: boost.id } },
+                { ...Boost.getRelationshipByAlias('hasRole'), identifier: 'hasRole' },
+                { identifier: 'profile', model: Profile, where: { profileId: profile.profileId } },
+            ],
+        })
+        .match('(role:Role {id: hasRole.roleId})');
+
+    const result = await query
+        .return(
+            'COALESCE(hasRole.canManagePermissions, role.canManagePermissions) AS canManagePermissions'
+        )
+        .run();
+
+    return Boolean(result.records[0]?.get('canManagePermissions'));
+};
+
+export const isBoostParent = async (
+    parentBoost: BoostInstance,
+    childBoost: BoostInstance,
+    {
+        numberOfGenerations = 1,
+        direction = 'out',
+    }: { numberOfGenerations?: number; direction?: 'out' | 'in' | 'none' } = {}
+): Promise<boolean> => {
+    const query = new QueryBuilder().match({
+        related: [
+            { model: Boost, where: { id: parentBoost.id }, identifier: 'parent' },
+            {
+                ...Boost.getRelationshipByAlias('parentOf'),
+                maxHops: numberOfGenerations,
+                direction,
+            },
+            { model: Boost, where: { id: childBoost.id } },
+        ],
+    });
+
+    const result = await query.return('count(parent) AS count').run();
 
     return Number(result.records[0]?.get('count') ?? 0) > 0;
 };

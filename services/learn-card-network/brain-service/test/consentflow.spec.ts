@@ -361,7 +361,7 @@ describe('Consent Flow Contracts', () => {
                 Array(12)
                     .fill(0)
                     .map(async (_, index) => {
-                        const client = await getClient({
+                        const client = getClient({
                             did: `did:test:${index + 1}`,
                             isChallengeValid: true,
                         });
