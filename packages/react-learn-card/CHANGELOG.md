@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.7.34
+
+### Patch Changes
+
+-   [#551](https://github.com/learningeconomy/LearnCard/pull/551) [`92d47059935e4e04f8132dee3c8dcf2db96488ac`](https://github.com/learningeconomy/LearnCard/commit/92d47059935e4e04f8132dee3c8dcf2db96488ac) Thanks [@rhen92](https://github.com/rhen92)! - [Lc-627] Give credentials more room
+
 ## 2.7.33
 
 ### Patch Changes
