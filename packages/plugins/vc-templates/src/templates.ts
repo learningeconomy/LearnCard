@@ -353,6 +353,35 @@ export const VC_TEMPLATES: { [Key in keyof VcTemplates]: (args: VcTemplates[Key]
                                         '@id': 'lcn:boostIDIssuerName',
                                         '@type': 'xsd:string',
                                     },
+
+                                    fadeBackgroundImage: {
+                                        '@id': 'lcn:boostIDFadeBackgroundImage',
+                                        '@type': 'xsd:boolean',
+                                    },
+                                    repeatBackgroundImage: {
+                                        '@id': 'lcn:boostIDRepeatBackgroundImage',
+                                        '@type': 'xsd:boolean',
+                                    },
+                                    idThumbnail: {
+                                        '@id': 'lcn:boostIDThumbnail',
+                                        '@type': 'xsd:string',
+                                    },
+                                    accentFontColor: {
+                                        '@id': 'lcn:boostIDFontColor',
+                                        '@type': 'xsd:string',
+                                    },
+                                    idBackgroundColor: {
+                                        '@id': 'lcn:boostIDBackgroundColor',
+                                        '@type': 'xsd:string',
+                                    },
+                                    repeatIdBackgroundImage: {
+                                        '@id': 'lcn:boostIDRepeatIdBackgroundImage',
+                                        '@type': 'xsd:boolean',
+                                    },
+                                    idDescription: {
+                                        '@id': 'lcn:boostIDDescription',
+                                        '@type': 'xsd:string',
+                                    },
                                 },
                             },
                         },
