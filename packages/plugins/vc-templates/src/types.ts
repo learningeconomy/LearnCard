@@ -29,6 +29,16 @@ export type BoostID = {
     issuerThumbnail?: string;
     showIssuerThumbnail?: boolean;
     IDIssuerName?: string;
+
+    // troops 2.0
+    fadeBackgroundImage?: boolean;
+    repeatBackgroundImage?: boolean;
+
+    idThumbnail?: string;
+    accentFontColor?: string;
+    idBackgroundColor?: string;
+    repeatIdBackgroundImage: boolean;
+    idDescription?: string;
 };
 
 export type AddressSpec = {
