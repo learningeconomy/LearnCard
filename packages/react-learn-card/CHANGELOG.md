@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.7.35
+
+### Patch Changes
+
+-   [#553](https://github.com/learningeconomy/LearnCard/pull/553) [`01bb2e55ce182975663f2c43ec79d05aa9e61919`](https://github.com/learningeconomy/LearnCard/commit/01bb2e55ce182975663f2c43ec79d05aa9e61919) Thanks [@goblincore](https://github.com/goblincore)! - Fix icon position and remove bad graphics files
+
 ## 2.7.34
 
 ### Patch Changes
