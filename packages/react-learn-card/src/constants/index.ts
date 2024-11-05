@@ -3,7 +3,7 @@ import idsGraphic from '../assets/images/walletids.webp';
 import idPurple from '../assets/images/id-purple.png';
 import learningHistoryGraphic from '../assets/images/backpack.png';
 import skillsGraphic from '../assets/images/walletskills.webp';
-import achievementsGraphic from '../assets/images/walletTrophy.svg';
+import achievementsGraphic from '../assets/images/walletTrophy.png';
 import socialBadge from '../assets/images/social-badge-2.svg';
 import experienceMountain from '../assets/images/experience-mountain.svg';
 import goalsTarget from '../assets/images/goals-target.svg';
