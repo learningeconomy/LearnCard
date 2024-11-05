@@ -217,10 +217,10 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                             return (
                                 <div
                                     key={index}
-                                    className="flex bg-grayscale-100 items-center rounded-[15px] w-full"
+                                    className="flex media-attachment-box bg-grayscale-100 items-center rounded-[15px] w-full"
                                 >
                                     <button
-                                        className="h-[80px] w-[80px] rounded-[15px] overflow-hidden flex-shrink-0"
+                                        className="relative h-[80px] w-[80px] rounded-[15px] overflow-hidden flex-shrink-0"
                                         onClick={e => {
                                             e.stopPropagation();
                                             handleMediaAttachmentClick(media.url, media.type);
