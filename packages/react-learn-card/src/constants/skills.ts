@@ -1,12 +1,12 @@
-import Athletics from '../assets/images/athletics.svg';
-import Business from '../assets/images/business.svg';
-import Creative from '../assets/images/creative.svg';
-import Digital from '../assets/images/digital.svg';
-import Durable from '../assets/images/durable.svg';
-import Medical from '../assets/images/medical.svg';
-import Social from '../assets/images/social.svg';
-import Stem from '../assets/images/stem.svg';
-import Trade from '../assets/images/trade.svg';
+import Athletics from '../assets/images/athletics.png';
+import Business from '../assets/images/business.png';
+import Creative from '../assets/images/creative.png';
+import Digital from '../assets/images/digital.png';
+import Durable from '../assets/images/durable.png';
+import Medical from '../assets/images/medical.png';
+import Social from '../assets/images/social.png';
+import Stem from '../assets/images/stem.png';
+import Trade from '../assets/images/trade.png';
 
 export enum BoostCMSSKillsCategoryEnum {
     Durable = 'durable',

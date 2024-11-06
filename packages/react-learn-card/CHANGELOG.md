@@ -1,5 +1,31 @@
 # @welibraryos/react-learn-card
 
+## 2.7.36
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.8
+
+## 2.7.35
+
+### Patch Changes
+
+-   [#553](https://github.com/learningeconomy/LearnCard/pull/553) [`01bb2e55ce182975663f2c43ec79d05aa9e61919`](https://github.com/learningeconomy/LearnCard/commit/01bb2e55ce182975663f2c43ec79d05aa9e61919) Thanks [@goblincore](https://github.com/goblincore)! - Fix icon position and remove bad graphics files
+
+## 2.7.34
+
+### Patch Changes
+
+-   [#551](https://github.com/learningeconomy/LearnCard/pull/551) [`92d47059935e4e04f8132dee3c8dcf2db96488ac`](https://github.com/learningeconomy/LearnCard/commit/92d47059935e4e04f8132dee3c8dcf2db96488ac) Thanks [@rhen92](https://github.com/rhen92)! - [Lc-627] Give credentials more room
+
+## 2.7.33
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.7
+
 ## 2.7.32
 
 ### Patch Changes

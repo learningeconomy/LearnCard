@@ -1,5 +1,22 @@
 # learn-card-core
 
+## 2.1.2
+
+### Patch Changes
+
+-   [#555](https://github.com/learningeconomy/LearnCard/pull/555) [`c01a127b8633658d64f0610690c69965339aced2`](https://github.com/learningeconomy/LearnCard/commit/c01a127b8633658d64f0610690c69965339aced2) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add $in to boost queries
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.0.5
+    -   @learncard/core@9.3.5
+
+## 2.1.1
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.0.4
+
 ## 2.1.0
 
 ### Minor Changes

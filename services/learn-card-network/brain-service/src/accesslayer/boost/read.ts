@@ -4,6 +4,7 @@ import { getIdFromUri } from '@helpers/uri.helpers';
 import { convertQueryResultToPropertiesObjectArray } from '@helpers/neo4j.helpers';
 import { Boost, Profile, BoostInstance, ProfileInstance } from '@models';
 import { BoostType } from 'types/boost';
+import { BoostQuery } from '@learncard/types';
 
 export const getBoostById = async (id: string): Promise<BoostInstance | null> => {
     return Boost.findOne({ where: { id } });
@@ -27,7 +28,7 @@ export const getBoostsForProfile = async (
         limit,
         cursor,
         query: matchQuery = {},
-    }: { limit: number; cursor?: string; query?: Partial<Omit<BoostType, 'id' | 'boost'>> }
+    }: { limit: number; cursor?: string; query?: BoostQuery }
 ): Promise<Array<BoostType & { created: string }>> => {
     const _query = new QueryBuilder(new BindParam({ matchQuery, cursor }))
         .match({
@@ -43,8 +44,16 @@ export const getBoostsForProfile = async (
                 `-[createdBy:${Boost.getRelationshipByAlias('createdBy').name}]-`,
                 { model: Profile },
             ],
-        })
-        .where('all(key IN keys($matchQuery) WHERE boost[key] = $matchQuery[key])');
+        }).where(`
+all(key IN keys($matchQuery) 
+    WHERE CASE 
+        WHEN $matchQuery[key] IS TYPED MAP 
+            AND $matchQuery[key]['$in'] IS NOT NULL
+        THEN boost[key] IN $matchQuery[key]['$in']
+        ELSE boost[key] = $matchQuery[key]
+    END
+)
+`);
 
     const query = cursor ? _query.raw('AND createdBy.date < $cursor') : _query;
 
@@ -64,17 +73,24 @@ export const getBoostsForProfile = async (
 
 export const countBoostsForProfile = async (
     profile: ProfileInstance,
-    { query: matchQuery = {} }: { query?: Partial<Omit<BoostType, 'id' | 'boost'>> }
+    { query: matchQuery = {} }: { query?: BoostQuery }
 ): Promise<number> => {
-    const query = new QueryBuilder(new BindParam({ matchQuery }))
-        .match({
-            related: [
-                { identifier: 'boost', model: Boost },
-                Boost.getRelationshipByAlias('hasRole'),
-                { model: Profile, where: { profileId: profile.profileId } },
-            ],
-        })
-        .where('all(key IN keys($matchQuery) WHERE boost[key] = $matchQuery[key])');
+    const query = new QueryBuilder(new BindParam({ matchQuery })).match({
+        related: [
+            { identifier: 'boost', model: Boost },
+            Boost.getRelationshipByAlias('hasRole'),
+            { model: Profile, where: { profileId: profile.profileId } },
+        ],
+    }).where(`
+all(key IN keys($matchQuery) 
+    WHERE CASE 
+        WHEN $matchQuery[key] IS TYPED MAP 
+            AND $matchQuery[key]['$in'] IS NOT NULL
+        THEN boost[key] IN $matchQuery[key]['$in']
+        ELSE boost[key] = $matchQuery[key]
+    END
+)
+`);
 
     const result = await query.return('COUNT(DISTINCT boost) AS count').run();
 
@@ -91,7 +107,7 @@ export const getChildrenBoosts = async (
     }: {
         limit: number;
         cursor?: string;
-        query?: Partial<Omit<BoostType, 'id' | 'boost'>>;
+        query?: BoostQuery;
         numberOfGenerations?: number;
     }
 ): Promise<Array<BoostType & { created: string }>> => {
@@ -112,8 +128,16 @@ export const getChildrenBoosts = async (
                 `-[createdBy:${Boost.getRelationshipByAlias('createdBy').name}]-`,
                 { model: Profile },
             ],
-        })
-        .where('all(key IN keys($matchQuery) WHERE boost[key] = $matchQuery[key])');
+        }).where(`
+all(key IN keys($matchQuery) 
+    WHERE CASE 
+        WHEN $matchQuery[key] IS TYPED MAP 
+            AND $matchQuery[key]['$in'] IS NOT NULL
+        THEN boost[key] IN $matchQuery[key]['$in']
+        ELSE boost[key] = $matchQuery[key]
+    END
+)
+`);
 
     const query = cursor ? _query.raw('AND createdBy.date < $cursor') : _query;
 
@@ -136,20 +160,27 @@ export const countBoostChildren = async (
     {
         query: matchQuery = {},
         numberOfGenerations = 1,
-    }: { query?: Partial<Omit<BoostType, 'id' | 'boost'>>; numberOfGenerations?: number }
+    }: { query?: BoostQuery; numberOfGenerations?: number }
 ): Promise<number> => {
-    const query = new QueryBuilder(new BindParam({ matchQuery }))
-        .match({
-            related: [
-                { model: Boost, where: { id: boost.id } },
-                {
-                    ...Boost.getRelationshipByAlias('parentOf'),
-                    maxHops: numberOfGenerations,
-                },
-                { identifier: 'boost', model: Boost },
-            ],
-        })
-        .where('all(key IN keys($matchQuery) WHERE boost[key] = $matchQuery[key])');
+    const query = new QueryBuilder(new BindParam({ matchQuery })).match({
+        related: [
+            { model: Boost, where: { id: boost.id } },
+            {
+                ...Boost.getRelationshipByAlias('parentOf'),
+                maxHops: numberOfGenerations,
+            },
+            { identifier: 'boost', model: Boost },
+        ],
+    }).where(`
+all(key IN keys($matchQuery) 
+    WHERE CASE 
+        WHEN $matchQuery[key] IS TYPED MAP 
+            AND $matchQuery[key]['$in'] IS NOT NULL
+        THEN boost[key] IN $matchQuery[key]['$in']
+        ELSE boost[key] = $matchQuery[key]
+    END
+)
+`);
 
     const result = await query.return('COUNT(DISTINCT boost) AS count').run();
 
@@ -166,7 +197,7 @@ export const getParentBoosts = async (
     }: {
         limit: number;
         cursor?: string;
-        query?: Partial<Omit<BoostType, 'id' | 'boost'>>;
+        query?: BoostQuery;
         numberOfGenerations?: number;
     }
 ): Promise<Array<BoostType & { created: string }>> => {
@@ -187,8 +218,16 @@ export const getParentBoosts = async (
                 `-[createdBy:${Boost.getRelationshipByAlias('createdBy').name}]-`,
                 { model: Profile },
             ],
-        })
-        .where('all(key IN keys($matchQuery) WHERE boost[key] = $matchQuery[key])');
+        }).where(`
+all(key IN keys($matchQuery) 
+    WHERE CASE 
+        WHEN $matchQuery[key] IS TYPED MAP 
+            AND $matchQuery[key]['$in'] IS NOT NULL
+        THEN boost[key] IN $matchQuery[key]['$in']
+        ELSE boost[key] = $matchQuery[key]
+    END
+)
+`);
 
     const query = cursor ? _query.raw('AND createdBy.date < $cursor') : _query;
 
@@ -211,20 +250,27 @@ export const countBoostParents = async (
     {
         query: matchQuery = {},
         numberOfGenerations = 1,
-    }: { query?: Partial<Omit<BoostType, 'id' | 'boost'>>; numberOfGenerations?: number }
+    }: { query?: BoostQuery; numberOfGenerations?: number }
 ): Promise<number> => {
-    const query = new QueryBuilder(new BindParam({ matchQuery }))
-        .match({
-            related: [
-                { identifier: 'boost', model: Boost },
-                {
-                    ...Boost.getRelationshipByAlias('parentOf'),
-                    maxHops: numberOfGenerations,
-                },
-                { model: Boost, where: { id: boost.id } },
-            ],
-        })
-        .where('all(key IN keys($matchQuery) WHERE boost[key] = $matchQuery[key])');
+    const query = new QueryBuilder(new BindParam({ matchQuery })).match({
+        related: [
+            { identifier: 'boost', model: Boost },
+            {
+                ...Boost.getRelationshipByAlias('parentOf'),
+                maxHops: numberOfGenerations,
+            },
+            { model: Boost, where: { id: boost.id } },
+        ],
+    }).where(`
+all(key IN keys($matchQuery) 
+    WHERE CASE 
+        WHEN $matchQuery[key] IS TYPED MAP 
+            AND $matchQuery[key]['$in'] IS NOT NULL
+        THEN boost[key] IN $matchQuery[key]['$in']
+        ELSE boost[key] = $matchQuery[key]
+    END
+)
+`);
 
     const result = await query.return('COUNT(DISTINCT boost) AS count').run();
 

@@ -174,6 +174,24 @@ describe('Boosts', () => {
             expect(boosts).toHaveLength(1);
             expect(boosts[0]?.category).toEqual('A');
         });
+
+        it('should allow querying with $in', async () => {
+            await userA.clients.fullAuth.boost.createBoost({ credential: testVc, category: 'A' });
+            await userA.clients.fullAuth.boost.createBoost({ credential: testVc, category: 'B' });
+            await userA.clients.fullAuth.boost.createBoost({ credential: testVc, category: 'C' });
+
+            await expect(
+                userA.clients.fullAuth.boost.getBoosts({ query: { category: { $in: ['A', 'B'] } } })
+            ).resolves.not.toThrow();
+
+            const boosts = await userA.clients.fullAuth.boost.getBoosts({
+                query: { category: { $in: ['A', 'B'] } },
+            });
+
+            expect(boosts).toHaveLength(2);
+            expect(boosts[0]?.category).not.toEqual('C');
+            expect(boosts[1]?.category).not.toEqual('C');
+        });
     });
 
     describe('getPaginatedBoosts', () => {
@@ -228,6 +246,26 @@ describe('Boosts', () => {
 
             expect(boosts.records).toHaveLength(1);
             expect(boosts.records[0]?.category).toEqual('A');
+        });
+
+        it('should allow querying with $in', async () => {
+            await userA.clients.fullAuth.boost.createBoost({ credential: testVc, category: 'A' });
+            await userA.clients.fullAuth.boost.createBoost({ credential: testVc, category: 'B' });
+            await userA.clients.fullAuth.boost.createBoost({ credential: testVc, category: 'C' });
+
+            await expect(
+                userA.clients.fullAuth.boost.getPaginatedBoosts({
+                    query: { category: { $in: ['A', 'B'] } },
+                })
+            ).resolves.not.toThrow();
+
+            const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts({
+                query: { category: { $in: ['A', 'B'] } },
+            });
+
+            expect(boosts.records).toHaveLength(2);
+            expect(boosts.records[0]?.category).not.toEqual('C');
+            expect(boosts.records[1]?.category).not.toEqual('C');
         });
 
         it('should paginate correctly', async () => {
@@ -1813,6 +1851,24 @@ describe('Boosts', () => {
 
             expect(count).toEqual(1);
         });
+
+        it('should allow querying with $in', async () => {
+            await userA.clients.fullAuth.boost.createBoost({ credential: testVc, category: 'A' });
+            await userA.clients.fullAuth.boost.createBoost({ credential: testVc, category: 'B' });
+            await userA.clients.fullAuth.boost.createBoost({ credential: testVc, category: 'C' });
+
+            await expect(
+                userA.clients.fullAuth.boost.countBoosts({
+                    query: { category: { $in: ['A', 'B'] } },
+                })
+            ).resolves.not.toThrow();
+
+            const count = await userA.clients.fullAuth.boost.countBoosts({
+                query: { category: { $in: ['A', 'B'] } },
+            });
+
+            expect(count).toEqual(2);
+        });
     });
 
     describe('createChildBoost', () => {
@@ -2125,6 +2181,40 @@ describe('Boosts', () => {
             expect(boosts.records[0]?.category).toEqual('A');
         });
 
+        it('should allow querying with $in', async () => {
+            const parentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+            });
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc, category: 'A' },
+            });
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc, category: 'B' },
+            });
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc, category: 'C' },
+            });
+
+            await expect(
+                userA.clients.fullAuth.boost.getBoostChildren({
+                    uri: parentUri,
+                    query: { category: { $in: ['A', 'B'] } },
+                })
+            ).resolves.not.toThrow();
+
+            const boosts = await userA.clients.fullAuth.boost.getBoostChildren({
+                uri: parentUri,
+                query: { category: { $in: ['A', 'B'] } },
+            });
+
+            expect(boosts.records).toHaveLength(2);
+            expect(boosts.records[0]?.category).not.toEqual('C');
+            expect(boosts.records[1]?.category).not.toEqual('C');
+        });
+
         it('should paginate correctly', async () => {
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
                 credential: testVc,
@@ -2318,6 +2408,38 @@ describe('Boosts', () => {
 
             expect(count).toEqual(1);
         });
+
+        it('should allow querying with $in', async () => {
+            const parentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+            });
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc, category: 'A' },
+            });
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc, category: 'B' },
+            });
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc, category: 'C' },
+            });
+
+            await expect(
+                userA.clients.fullAuth.boost.countBoostChildren({
+                    uri: parentUri,
+                    query: { category: { $in: ['A', 'B'] } },
+                })
+            ).resolves.not.toThrow();
+
+            const count = await userA.clients.fullAuth.boost.countBoostChildren({
+                uri: parentUri,
+                query: { category: { $in: ['A', 'B'] } },
+            });
+
+            expect(count).toEqual(2);
+        });
     });
 
     describe('getBoostParents', () => {
@@ -2474,6 +2596,44 @@ describe('Boosts', () => {
 
             expect(boosts.records).toHaveLength(1);
             expect(boosts.records[0]?.category).toEqual('A');
+        });
+
+        it('should allow querying with $in', async () => {
+            const parent1Uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+                category: 'A',
+            });
+            const parent2Uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+                category: 'B',
+            });
+            const parent3Uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+                category: 'C',
+            });
+            const childUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+            });
+
+            await userA.clients.fullAuth.boost.makeBoostParent({ parentUri: parent1Uri, childUri });
+            await userA.clients.fullAuth.boost.makeBoostParent({ parentUri: parent2Uri, childUri });
+            await userA.clients.fullAuth.boost.makeBoostParent({ parentUri: parent3Uri, childUri });
+
+            await expect(
+                userA.clients.fullAuth.boost.getBoostParents({
+                    uri: childUri,
+                    query: { category: { $in: ['A', 'B'] } },
+                })
+            ).resolves.not.toThrow();
+
+            const boosts = await userA.clients.fullAuth.boost.getBoostParents({
+                uri: childUri,
+                query: { category: { $in: ['A', 'B'] } },
+            });
+
+            expect(boosts.records).toHaveLength(2);
+            expect(boosts.records[0]?.category).not.toEqual('C');
+            expect(boosts.records[1]?.category).not.toEqual('C');
         });
 
         it('should paginate correctly', async () => {
@@ -2668,6 +2828,42 @@ describe('Boosts', () => {
             });
 
             expect(count).toEqual(1);
+        });
+
+        it('should allow querying with $in', async () => {
+            const parent1Uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+                category: 'A',
+            });
+            const parent2Uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+                category: 'B',
+            });
+            const parent3Uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+                category: 'C',
+            });
+            const childUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+            });
+
+            await userA.clients.fullAuth.boost.makeBoostParent({ parentUri: parent1Uri, childUri });
+            await userA.clients.fullAuth.boost.makeBoostParent({ parentUri: parent2Uri, childUri });
+            await userA.clients.fullAuth.boost.makeBoostParent({ parentUri: parent3Uri, childUri });
+
+            await expect(
+                userA.clients.fullAuth.boost.countBoostParents({
+                    uri: childUri,
+                    query: { category: { $in: ['A', 'B'] } },
+                })
+            ).resolves.not.toThrow();
+
+            const count = await userA.clients.fullAuth.boost.countBoostParents({
+                uri: childUri,
+                query: { category: { $in: ['A', 'B'] } },
+            });
+
+            expect(count).toEqual(2);
         });
     });
 
@@ -2987,10 +3183,11 @@ describe('Boosts', () => {
                 uri: grandParentUri,
             });
 
-            const grandParentPermissions = await userA.clients.fullAuth.boost.getOtherBoostPermissions({
-                profileId: 'userb',
-                uri: grandParentUri,
-            });
+            const grandParentPermissions =
+                await userA.clients.fullAuth.boost.getOtherBoostPermissions({
+                    profileId: 'userb',
+                    uri: grandParentUri,
+                });
 
             expect(grandParentPermissions.canEditChildren).toEqual('*');
 
@@ -3001,10 +3198,11 @@ describe('Boosts', () => {
 
             expect(parentPermissions.canEdit).toBeTruthy();
 
-            const grandChildPermissions = await userA.clients.fullAuth.boost.getOtherBoostPermissions({
-                profileId: 'userb',
-                uri: grandChildUri,
-            });
+            const grandChildPermissions =
+                await userA.clients.fullAuth.boost.getOtherBoostPermissions({
+                    profileId: 'userb',
+                    uri: grandChildUri,
+                });
 
             expect(grandChildPermissions.canEdit).toBeTruthy();
         });

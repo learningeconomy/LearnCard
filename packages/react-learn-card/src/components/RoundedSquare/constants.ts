@@ -1,9 +1,9 @@
 import coinsGraphic from '../../assets/images/walletcurrency.webp';
 import idsGraphic from '../../assets/images/walletids.webp';
 import jobhistoryGraphic from '../../assets/images/walletjobhistory.webp';
-import learningHistoryGraphic from '../../assets/images/walletlearninghistory.webp';
+import learningHistoryGraphic from '../../assets/images/backpack.png';
 import skillsGraphic from '../../assets/images/walletskills.webp';
-import achievementsGraphic from '../../assets/images/walletTrophy.webp';
+import achievementsGraphic from '../../assets/images/walletTrophy.png';
 import badgeGraphic from '../../assets/images/social-badge-2.svg';
 import membershipGraphic from '../../assets/images/membership-graphic.png';
 

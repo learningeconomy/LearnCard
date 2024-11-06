@@ -53,6 +53,18 @@ export const BoostValidator = z.object({
 });
 export type Boost = z.infer<typeof BoostValidator>;
 
+export const BoostQueryValidator = z
+    .object({
+        uri: z.string().or(z.object({ $in: z.string().array() })),
+        name: z.string().or(z.object({ $in: z.string().array() })),
+        type: z.string().or(z.object({ $in: z.string().array() })),
+        category: z.string().or(z.object({ $in: z.string().array() })),
+        status: LCNBoostStatus.or(z.object({ $in: LCNBoostStatus.array() })),
+        autoConnectRecipients: z.boolean(),
+    })
+    .partial();
+export type BoostQuery = z.infer<typeof BoostQueryValidator>;
+
 export const PaginatedBoostsValidator = PaginationResponseValidator.extend({
     records: BoostValidator.array(),
 });
