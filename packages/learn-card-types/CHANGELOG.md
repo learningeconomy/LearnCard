@@ -1,5 +1,11 @@
 # learn-card-types
 
+## 5.5.5
+
+### Patch Changes
+
+-   [#555](https://github.com/learningeconomy/LearnCard/pull/555) [`c01a127b8633658d64f0610690c69965339aced2`](https://github.com/learningeconomy/LearnCard/commit/c01a127b8633658d64f0610690c69965339aced2) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add $in to boost queries
+
 ## 5.5.4
 
 ### Patch Changes
