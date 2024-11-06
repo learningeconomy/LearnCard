@@ -13,6 +13,7 @@ import {
     PaginationOptionsValidator,
     PaginatedLCNProfilesValidator,
     BoostPermissions,
+    BoostQueryValidator,
 } from '@learncard/types';
 
 import { t, profileRoute } from '@routes';
@@ -276,13 +277,7 @@ export const boostsRouter = t.router({
                     "This endpoint gets the current user's boosts.\nWarning! This route is deprecated and currently has a hard limit of returning only the first 50 boosts. Please use getPaginatedBoosts instead",
             },
         })
-        .input(
-            z
-                .object({
-                    query: BoostValidator.omit({ id: true, boost: true }).partial().optional(),
-                })
-                .default({})
-        )
+        .input(z.object({ query: BoostQueryValidator.optional() }).default({}))
         .output(BoostValidator.omit({ id: true, boost: true }).extend({ uri: z.string() }).array())
         .query(async ({ ctx, input }) => {
             const { query } = input;
@@ -307,13 +302,7 @@ export const boostsRouter = t.router({
                 description: "This endpoint counts the current user's managed boosts.",
             },
         })
-        .input(
-            z
-                .object({
-                    query: BoostValidator.omit({ id: true, boost: true }).partial().optional(),
-                })
-                .default({})
-        )
+        .input(z.object({ query: BoostQueryValidator.optional() }).default({}))
         .output(z.number())
         .query(async ({ ctx, input }) => {
             const { query } = input;
@@ -338,7 +327,7 @@ export const boostsRouter = t.router({
         .input(
             PaginationOptionsValidator.extend({
                 limit: PaginationOptionsValidator.shape.limit.default(25),
-                query: BoostValidator.omit({ id: true, boost: true }).partial().optional(),
+                query: BoostQueryValidator.optional(),
             }).default({})
         )
         .output(PaginatedBoostsValidator)
@@ -477,7 +466,7 @@ export const boostsRouter = t.router({
             PaginationOptionsValidator.extend({
                 limit: PaginationOptionsValidator.shape.limit.default(25),
                 uri: z.string(),
-                query: BoostValidator.omit({ id: true, boost: true }).partial().optional(),
+                query: BoostQueryValidator.optional(),
                 numberOfGenerations: z.number().default(1),
             })
         )
@@ -526,7 +515,7 @@ export const boostsRouter = t.router({
         .input(
             z.object({
                 uri: z.string(),
-                query: BoostValidator.omit({ id: true, boost: true }).partial().optional(),
+                query: BoostQueryValidator.optional(),
                 numberOfGenerations: z.number().default(1),
             })
         )
@@ -556,7 +545,7 @@ export const boostsRouter = t.router({
             PaginationOptionsValidator.extend({
                 limit: PaginationOptionsValidator.shape.limit.default(25),
                 uri: z.string(),
-                query: BoostValidator.omit({ id: true, boost: true }).partial().optional(),
+                query: BoostQueryValidator.optional(),
                 numberOfGenerations: z.number().default(1),
             })
         )
@@ -605,7 +594,7 @@ export const boostsRouter = t.router({
         .input(
             z.object({
                 uri: z.string(),
-                query: BoostValidator.omit({ id: true, boost: true }).partial().optional(),
+                query: BoostQueryValidator.optional(),
                 numberOfGenerations: z.number().default(1),
             })
         )
