@@ -4,6 +4,8 @@ import { TYPE_TO_IMG_SRC, TYPE_TO_WALLET_DARK_COLOR } from '../../constants';
 import { CircleCheckButton } from '../CircleCheckButton';
 import ThreeDots from '../../assets/images/DotsThreeOutline.svg';
 
+import { CertDisplayCardSkillsCount } from '../CertificateDisplayCard';
+
 export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
     title,
     customTitle,
@@ -24,6 +26,8 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
     customDateDisplay,
     optionsTriggerOnClick,
     verifierBadge,
+    credential,
+    isInSkillsModal,
 }) => {
     const thumbClass = TYPE_TO_WALLET_DARK_COLOR[type]
         ? `bg-${TYPE_TO_WALLET_DARK_COLOR[type]}`
@@ -112,6 +116,14 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
                         </p>
                     )}
                     <div className="boost-verifier-badge-display">{verifierBadge}</div>
+                    {isInSkillsModal && 
+                        <CertDisplayCardSkillsCount
+                            skills={credential?.skills ?? []}
+                            onClick={handleInnerClick}
+                            className={'boost-generic'}
+                            isInSkillsModal={isInSkillsModal}
+                        />
+                    }
                 </section>
 
                 {showChecked && (
