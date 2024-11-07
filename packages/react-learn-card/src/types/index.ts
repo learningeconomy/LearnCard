@@ -3,6 +3,7 @@ import {
     AchievementCredential,
     Profile,
     CredentialSubject,
+    VC,
 } from '@learncard/types';
 import React, { ReactNode } from 'react';
 
@@ -345,6 +346,8 @@ export type BoostGenericCardProps = {
     dateDisplay?: string;
     customDateDisplay?: React.ReactNode | string | null;
     verifierBadge?: React.ReactNode;
+    credential?: VC;
+    isInSkillsModal?: boolean;
 };
 
 export type Attachment = {
