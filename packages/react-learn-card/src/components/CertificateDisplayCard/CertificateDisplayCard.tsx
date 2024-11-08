@@ -23,7 +23,7 @@ type CertificateDisplayCardProps = {
     customBodyCardComponent?: React.ReactNode;
     hideIssueDate?: boolean;
     customSkillsComponent?: React.ReactNode;
-
+    customBackfaceComponent?: React.ReactNode;
     getFileMetadata?: (url: string) => MediaMetadata;
     getVideoMetadata?: (url: string) => VideoMetadata;
     onMediaAttachmentClick?: (url: string, type: 'photo' | 'document' | 'video' | 'link') => void;
@@ -50,12 +50,10 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
     trustedAppRegistry,
     hideIssueDate,
     customSkillsComponent,
-
     getFileMetadata,
     getVideoMetadata,
     onMediaAttachmentClick,
     enableLightbox,
-
     handleXClick,
     onDotsClick,
     isFrontOverride,
@@ -63,15 +61,15 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
     hideNavButtons,
     showBackButton = false,
     showDetailsBtn = false,
+    customBackfaceComponent,
 }) => {
     const [_isFront, _setIsFront] = useState(isFrontOverride ?? true);
-
     const isFront = isFrontOverride ?? _isFront;
     const setIsFront = setIsFrontOverride ?? _setIsFront;
 
     return (
         <section className="w-full flex flex-col gap-[15px] justify-center relative min-w-[220px]">
-            <section className="sm:mx-0 md:mx-auto">
+            <section className="certificate-wrapper flex justify-center">
                 {isFront && (
                     <CertificateFrontFace
                         credential={credential}
@@ -89,7 +87,7 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
                     />
                 )}
 
-                {!isFront && (
+                {!isFront && !customBackfaceComponent && (
                     <CertificateBackFace
                         credential={credential}
                         categoryType={categoryType}
@@ -102,6 +100,8 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
                         handleViewFrontFace={() => setIsFront(!isFront)}
                     />
                 )}
+
+                {!isFront && customBackfaceComponent && { customBackfaceComponent }}
 
                 {onDotsClick && (
                     <button

@@ -20,7 +20,7 @@ type CertificateBackFaceProps = {
     categoryType?: LCCategoryEnum;
     verificationItems: VerificationItem[];
     customSkillsComponent?: React.ReactNode;
-
+    transparentBg?: boolean;
     getFileMetadata?: (url: string) => MediaMetadata;
     getVideoMetadata?: (url: string) => VideoMetadata;
     onMediaAttachmentClick?: (url: string, type: 'photo' | 'document' | 'video' | 'link') => void;
@@ -34,7 +34,7 @@ export const CertificateBackFace: React.FC<CertificateBackFaceProps> = ({
     categoryType,
     verificationItems,
     customSkillsComponent,
-
+    transparentBg = true,
     getFileMetadata,
     getVideoMetadata,
     onMediaAttachmentClick,
@@ -60,32 +60,21 @@ export const CertificateBackFace: React.FC<CertificateBackFaceProps> = ({
         bgColor = 'bg-lime-700';
     }
 
+    if (transparentBg) bgColor = 'bg-transparent';
+
     return (
         <div
             role="button"
             onClick={() => handleViewFrontFace?.()}
-            className={`flex flex-col gap-[15px] items-center border-[5px] border-solid border-grayscale-200 py-[30px] px-[20px] rounded-[25px] max-w-[400px] ${bgColor}`}
+            className={`certificate-back-face w-full max-w-[500px] flex flex-col gap-[15px] items-center  py-[30px] px-[20px] rounded-[25px] ${bgColor}`}
         >
-            {showBackButton ? (
-                <div className="w-full">
-                    <button
-                        className="vc-card-back-button rounded-full h-[50px] px-[15px] flex items-center justify-center gap-[5px] z-50 text-[30px] text-white select-none"
-                        onClick={() => handleViewFrontFace?.()}
-                    >
-                        <LeftArrow className="text-white" size="25" />
-                        Details
-                    </button>
-                </div>
-            ) : (
-                <h1 className="text-white text-center text-[22px] font-jacques">Details</h1>
-            )}
-
             <TruncateTextBox headerText="About" text={description}>
                 <span
-                    className={`text-grayscale-600 font-poppins text-[12px] font-[600] w-full ${description
+                    className={`text-grayscale-600 font-poppins text-[12px] font-[600] w-full ${
+                        description
                             ? 'pt-[10px] border-t-[1px] border-solid border-grayscale-200'
                             : ''
-                        }`}
+                    }`}
                 >
                     Awarded on {createdAt}
                 </span>
