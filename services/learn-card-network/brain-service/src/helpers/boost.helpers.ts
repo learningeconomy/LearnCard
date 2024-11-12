@@ -239,10 +239,12 @@ export const sendBoost = async (
             await Promise.all([
                 createBoostInstanceOfRelationship(credentialInstance, boost),
                 createSentCredentialRelationship(from, to, credentialInstance),
-                ...(autoAcceptCredential ? [setDefaultClaimedRole(to, credentialInstance)] : []),
+                ...(autoAcceptCredential
+                    ? [createReceivedCredentialRelationship(to, from, credentialInstance)]
+                    : []),
             ]);
 
-            await setDefaultClaimedRole(to, credentialInstance);
+            if (autoAcceptCredential) await setDefaultClaimedRole(to, credentialInstance);
 
             boostUri = getCredentialUri(credentialInstance.id, domain);
             if (process.env.NODE_ENV !== 'test') {
@@ -263,7 +265,7 @@ export const sendBoost = async (
                 : []),
         ]);
 
-        await setDefaultClaimedRole(to, credentialInstance);
+        if (autoAcceptCredential) await setDefaultClaimedRole(to, credentialInstance);
 
         boostUri = getCredentialUri(credentialInstance.id, domain);
         if (process.env.NODE_ENV !== 'test') {
