@@ -12,6 +12,7 @@ import { createBoostInstanceOfRelationship } from '@accesslayer/boost/relationsh
 import {
     createSentCredentialRelationship,
     createReceivedCredentialRelationship,
+    setDefaultClaimedRole,
 } from '@accesslayer/credential/relationships/create';
 import { getCredentialUri } from './credential.helpers';
 import { getLearnCard } from './learnCard.helpers';
@@ -238,10 +239,10 @@ export const sendBoost = async (
             await Promise.all([
                 createBoostInstanceOfRelationship(credentialInstance, boost),
                 createSentCredentialRelationship(from, to, credentialInstance),
-                ...(autoAcceptCredential
-                    ? [createReceivedCredentialRelationship(to, from, credentialInstance)]
-                    : []),
+                ...(autoAcceptCredential ? [setDefaultClaimedRole(to, credentialInstance)] : []),
             ]);
+
+            await setDefaultClaimedRole(to, credentialInstance);
 
             boostUri = getCredentialUri(credentialInstance.id, domain);
             if (process.env.NODE_ENV !== 'test') {
@@ -261,6 +262,8 @@ export const sendBoost = async (
                 ? [createReceivedCredentialRelationship(to, from, credentialInstance)]
                 : []),
         ]);
+
+        await setDefaultClaimedRole(to, credentialInstance);
 
         boostUri = getCredentialUri(credentialInstance.id, domain);
         if (process.env.NODE_ENV !== 'test') {
