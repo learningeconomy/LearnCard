@@ -40,6 +40,21 @@ export const SentCredentialInfoValidator = z.object({
 });
 export type SentCredentialInfo = z.infer<typeof SentCredentialInfoValidator>;
 
+export const BoostPermissionsValidator = z.object({
+    role: z.string(),
+    canEdit: z.boolean(),
+    canIssue: z.boolean(),
+    canRevoke: z.boolean(),
+    canManagePermissions: z.boolean(),
+    canIssueChildren: z.string(),
+    canCreateChildren: z.string(),
+    canEditChildren: z.string(),
+    canRevokeChildren: z.string(),
+    canManageChildrenPermissions: z.string(),
+    canViewAnalytics: z.boolean(),
+});
+export type BoostPermissions = z.infer<typeof BoostPermissionsValidator>;
+
 export const LCNBoostStatus = z.enum(['DRAFT', 'LIVE']);
 export type LCNBoostStatusEnum = z.infer<typeof LCNBoostStatus>;
 
@@ -50,6 +65,7 @@ export const BoostValidator = z.object({
     category: z.string().optional(),
     status: LCNBoostStatus.optional(),
     autoConnectRecipients: z.boolean().optional(),
+    claimPermissions: BoostPermissionsValidator.optional(),
 });
 export type Boost = z.infer<typeof BoostValidator>;
 
@@ -84,21 +100,6 @@ export const LCNBoostClaimLinkOptionsValidator = z.object({
     totalUses: z.number().optional(),
 });
 export type LCNBoostClaimLinkOptionsType = z.infer<typeof LCNBoostClaimLinkOptionsValidator>;
-
-export const BoostPermissionsValidator = z.object({
-    role: z.string(),
-    canEdit: z.boolean(),
-    canIssue: z.boolean(),
-    canRevoke: z.boolean(),
-    canManagePermissions: z.boolean(),
-    canIssueChildren: z.string(),
-    canCreateChildren: z.string(),
-    canEditChildren: z.string(),
-    canRevokeChildren: z.string(),
-    canManageChildrenPermissions: z.string(),
-    canViewAnalytics: z.boolean(),
-});
-export type BoostPermissions = z.infer<typeof BoostPermissionsValidator>;
 
 export const LCNSigningAuthorityValidator = z.object({
     endpoint: z.string(),

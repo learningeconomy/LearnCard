@@ -1,4 +1,5 @@
 import { getUser } from './helpers/getClient';
+import { adminRole, emptyRole } from './helpers/permissions';
 import { testUnsignedBoost, testVc } from './helpers/send';
 import { Profile, Boost } from '@models';
 
@@ -3387,6 +3388,113 @@ describe('Permissions', () => {
             });
 
             expect(newPermissions.canViewAnalytics).toBeFalsy();
+        });
+    });
+
+    describe('Default Roles', () => {
+        beforeEach(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+            await userC.clients.fullAuth.profile.createProfile({ profileId: 'userc' });
+        });
+
+        afterAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+        });
+
+        it('should allow you to set default roles when claiming', async () => {
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                claimPermissions: adminRole,
+            });
+
+            const credential = await userB.learnCard.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: userB.learnCard.id.did(),
+                credentialSubject: {
+                    ...testUnsignedBoost.credentialSubject,
+                    id: userA.learnCard.id.did(),
+                },
+                boostId: uri,
+            });
+
+            const permissions = await userA.clients.fullAuth.boost.getOtherBoostPermissions({
+                profileId: 'userb',
+                uri,
+            });
+
+            expect(permissions).toEqual(emptyRole);
+
+            const sentUri = await userA.clients.fullAuth.boost.sendBoost({
+                credential,
+                profileId: 'userb',
+                uri,
+            });
+
+            await userB.clients.fullAuth.credential.acceptCredential({ uri: sentUri });
+
+            const newPermissions = await userA.clients.fullAuth.boost.getOtherBoostPermissions({
+                profileId: 'userb',
+                uri,
+            });
+
+            expect(newPermissions).toEqual(adminRole);
+        });
+
+        it('should allow any combination of permissions', async () => {
+            const role = {
+                role: 'nice',
+                canEdit: true,
+                canIssue: false,
+                canRevoke: true,
+                canManagePermissions: false,
+                canIssueChildren: '*',
+                canCreateChildren: '',
+                canEditChildren: '*',
+                canRevokeChildren: '',
+                canManageChildrenPermissions: '*',
+                canViewAnalytics: false,
+            };
+
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                claimPermissions: role,
+            });
+
+            const credential = await userB.learnCard.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: userB.learnCard.id.did(),
+                credentialSubject: {
+                    ...testUnsignedBoost.credentialSubject,
+                    id: userA.learnCard.id.did(),
+                },
+                boostId: uri,
+            });
+
+            const permissions = await userA.clients.fullAuth.boost.getOtherBoostPermissions({
+                profileId: 'userb',
+                uri,
+            });
+
+            expect(permissions).toEqual(emptyRole);
+
+            const sentUri = await userA.clients.fullAuth.boost.sendBoost({
+                credential,
+                profileId: 'userb',
+                uri,
+            });
+
+            await userB.clients.fullAuth.credential.acceptCredential({ uri: sentUri });
+
+            const newPermissions = await userA.clients.fullAuth.boost.getOtherBoostPermissions({
+                profileId: 'userb',
+                uri,
+            });
+
+            expect(newPermissions).toEqual(role);
         });
     });
 });
