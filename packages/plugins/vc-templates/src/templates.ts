@@ -139,6 +139,14 @@ export const VC_TEMPLATES: { [Key in keyof VcTemplates]: (args: VcTemplates[Key]
                                         '@id': 'lcn:boostDisplayType',
                                         '@type': 'xsd:string',
                                     },
+                                    fadeBackgroundImage: {
+                                        '@id': 'lcn:boostFadeBackgroundImage',
+                                        '@type': 'xsd:boolean',
+                                    },
+                                    repeatBackgroundImage: {
+                                        '@id': 'lcn:boostRepeatBackgroundImage',
+                                        '@type': 'xsd:boolean',
+                                    },
                                 },
                             },
                             attachments: {
@@ -266,6 +274,14 @@ export const VC_TEMPLATES: { [Key in keyof VcTemplates]: (args: VcTemplates[Key]
                                         '@id': 'lcn:boostDisplayType',
                                         '@type': 'xsd:string',
                                     },
+                                    fadeBackgroundImage: {
+                                        '@id': 'lcn:boostFadeBackgroundImage',
+                                        '@type': 'xsd:boolean',
+                                    },
+                                    repeatBackgroundImage: {
+                                        '@id': 'lcn:boostRepeatBackgroundImage',
+                                        '@type': 'xsd:boolean',
+                                    },
                                 },
                             },
                             attachments: {
@@ -354,14 +370,6 @@ export const VC_TEMPLATES: { [Key in keyof VcTemplates]: (args: VcTemplates[Key]
                                         '@type': 'xsd:string',
                                     },
 
-                                    fadeBackgroundImage: {
-                                        '@id': 'lcn:boostIDFadeBackgroundImage',
-                                        '@type': 'xsd:boolean',
-                                    },
-                                    repeatBackgroundImage: {
-                                        '@id': 'lcn:boostIDRepeatBackgroundImage',
-                                        '@type': 'xsd:boolean',
-                                    },
                                     idThumbnail: {
                                         '@id': 'lcn:boostIDThumbnail',
                                         '@type': 'xsd:string',
