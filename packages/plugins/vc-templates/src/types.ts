@@ -19,6 +19,10 @@ export type BoostSkills = {
 export type BoostDisplay = {
     backgroundImage?: string;
     backgroundColor?: string;
+
+    // troops 2.0
+    fadeBackgroundImage?: boolean;
+    repeatBackgroundImage?: boolean;
 };
 
 export type BoostID = {
@@ -29,10 +33,6 @@ export type BoostID = {
     issuerThumbnail?: string;
     showIssuerThumbnail?: boolean;
     IDIssuerName?: string;
-
-    // troops 2.0
-    fadeBackgroundImage?: boolean;
-    repeatBackgroundImage?: boolean;
 
     idThumbnail?: string;
     accentFontColor?: string;
