@@ -1,5 +1,15 @@
 # learn-card-core
 
+## 1.3.9
+
+### Patch Changes
+
+-   Updated dependencies [[`3ff3a312189d4bbec35c30586c28c041eae472d1`](https://github.com/learningeconomy/LearnCard/commit/3ff3a312189d4bbec35c30586c28c041eae472d1)]:
+    -   @learncard/vc-templates-plugin@1.0.24
+    -   @learncard/did-web-plugin@1.0.40
+    -   @learncard/learn-cloud-plugin@2.0.18
+    -   @learncard/network-plugin@2.1.3
+
 ## 1.3.8
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 1.0.24
+
+### Patch Changes
+
+-   [#560](https://github.com/learningeconomy/LearnCard/pull/560) [`3ff3a312189d4bbec35c30586c28c041eae472d1`](https://github.com/learningeconomy/LearnCard/commit/3ff3a312189d4bbec35c30586c28c041eae472d1) Thanks [@gerardopar](https://github.com/gerardopar)! - fix where top level styles are being stored
+
 ## 1.0.23
 
 ### Patch Changes
