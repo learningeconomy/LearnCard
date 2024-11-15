@@ -61,6 +61,7 @@
         "@trpc/client": "^10.45.2",
         "@trpc/server": "^10.45.2",
         "@types/lodash": "^4.14.191",
+        "@xapi/xapi": "^3.0.0",
         "bson": "^4.7.2",
         "cors": "^2.8.5",
         "dotenv": "^16.0.3",
