@@ -58,7 +58,7 @@ importers:
         version: 7.37.2(eslint@8.57.1)
       jest:
         specifier: ^29.5.0
-        version: 29.7.0(@types/node@17.0.45)(ts-node@10.9.2(@types/node@17.0.45)(typescript@5.6.2))
+        version: 29.7.0(@types/node@18.19.59)(ts-node@10.9.2(@types/node@18.19.59)(typescript@5.6.2))
       jest-environment-jsdom:
         specifier: ^29.5.0
         version: 29.7.0
@@ -76,16 +76,16 @@ importers:
         version: 0.5.5
       ts-jest:
         specifier: ^29.0.5
-        version: 29.2.5(@babel/core@7.26.0)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.26.0))(esbuild@0.21.5)(jest@29.7.0(@types/node@17.0.45)(ts-node@10.9.2(@types/node@17.0.45)(typescript@5.6.2)))(typescript@5.6.2)
+        version: 29.2.5(@babel/core@7.26.0)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.26.0))(esbuild@0.21.5)(jest@29.7.0(@types/node@18.19.59)(ts-node@10.9.2(@types/node@18.19.59)(typescript@5.6.2)))(typescript@5.6.2)
       tslib:
         specifier: ^2.5.0
         version: 2.8.0
       vite-tsconfig-paths:
         specifier: ^4.3.2
-        version: 4.3.2(typescript@5.6.2)(vite@5.4.10(@types/node@17.0.45)(less@4.2.0)(terser@5.36.0))
+        version: 4.3.2(typescript@5.6.2)(vite@5.4.10(@types/node@18.19.59)(less@4.2.0)(terser@5.36.0))
       vitest:
         specifier: ^1.4.0
-        version: 1.6.0(@types/node@17.0.45)(happy-dom@14.12.3)(jsdom@20.0.3)(less@4.2.0)(terser@5.36.0)
+        version: 1.6.0(@types/node@18.19.59)(happy-dom@14.12.3)(jsdom@20.0.3)(less@4.2.0)(terser@5.36.0)
 
   docs:
     dependencies:
@@ -726,7 +726,7 @@ importers:
         version: 17.0.45
       aqu:
         specifier: 0.4.3
-        version: 0.4.3(@babel/core@7.26.0)(@jest/transform@29.7.0)(@jest/types@29.6.3)(@types/node@17.0.45)(babel-jest@29.7.0(@babel/core@7.26.0))(ts-node@10.9.2(@types/node@17.0.45)(typescript@5.6.2))
+        version: 0.4.3(@babel/core@7.26.0)(@jest/transform@29.7.0)(@jest/types@29.6.3)(@types/node@17.0.45)(babel-jest@29.7.0(@babel/core@7.26.0))(ts-node@10.9.2(@types/node@18.19.59)(typescript@5.6.2))
       esbuild:
         specifier: ^0.17.17
         version: 0.17.19
@@ -2161,7 +2161,7 @@ importers:
         version: 10.0.0(eslint-config-prettier@8.10.0(eslint@8.57.1))(eslint-plugin-import@2.31.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.6.2))(eslint-import-resolver-typescript@2.7.1(eslint-plugin-import@2.31.0)(eslint@8.57.1))(eslint@8.57.1))(eslint-plugin-jsdoc@39.9.1(eslint@8.57.1))(eslint-plugin-prettier@4.2.1(eslint-config-prettier@8.10.0(eslint@8.57.1))(eslint@8.57.1)(prettier@2.8.8))(eslint@8.57.1)(prettier@2.8.8)
       '@metamask/eslint-config-jest':
         specifier: ^10.0.0
-        version: 10.0.0(@metamask/eslint-config@10.0.0(eslint-config-prettier@8.10.0(eslint@8.57.1))(eslint-plugin-import@2.31.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.6.2))(eslint-import-resolver-typescript@2.7.1(eslint-plugin-import@2.31.0)(eslint@8.57.1))(eslint@8.57.1))(eslint-plugin-jsdoc@39.9.1(eslint@8.57.1))(eslint-plugin-prettier@4.2.1(eslint-config-prettier@8.10.0(eslint@8.57.1))(eslint@8.57.1)(prettier@2.8.8))(eslint@8.57.1)(prettier@2.8.8))(eslint-plugin-jest@26.9.0(@typescript-eslint/eslint-plugin@5.62.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.6.2))(eslint@8.57.1)(typescript@5.6.2))(eslint@8.57.1)(jest@29.7.0(@types/node@17.0.45)(ts-node@10.9.2(@types/node@17.0.45)(typescript@5.6.2)))(typescript@5.6.2))(eslint@8.57.1)
+        version: 10.0.0(@metamask/eslint-config@10.0.0(eslint-config-prettier@8.10.0(eslint@8.57.1))(eslint-plugin-import@2.31.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.6.2))(eslint-import-resolver-typescript@2.7.1(eslint-plugin-import@2.31.0)(eslint@8.57.1))(eslint@8.57.1))(eslint-plugin-jsdoc@39.9.1(eslint@8.57.1))(eslint-plugin-prettier@4.2.1(eslint-config-prettier@8.10.0(eslint@8.57.1))(eslint@8.57.1)(prettier@2.8.8))(eslint@8.57.1)(prettier@2.8.8))(eslint-plugin-jest@26.9.0(@typescript-eslint/eslint-plugin@5.62.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.6.2))(eslint@8.57.1)(typescript@5.6.2))(eslint@8.57.1)(jest@29.7.0(@types/node@18.19.59)(ts-node@10.9.2(@types/node@18.19.59)(typescript@5.6.2)))(typescript@5.6.2))(eslint@8.57.1)
       '@metamask/eslint-config-nodejs':
         specifier: ^8.0.0
         version: 8.0.0(@metamask/eslint-config@10.0.0(eslint-config-prettier@8.10.0(eslint@8.57.1))(eslint-plugin-import@2.31.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.6.2))(eslint-import-resolver-typescript@2.7.1(eslint-plugin-import@2.31.0)(eslint@8.57.1))(eslint@8.57.1))(eslint-plugin-jsdoc@39.9.1(eslint@8.57.1))(eslint-plugin-prettier@4.2.1(eslint-config-prettier@8.10.0(eslint@8.57.1))(eslint@8.57.1)(prettier@2.8.8))(eslint@8.57.1)(prettier@2.8.8))(eslint-plugin-node@11.1.0(eslint@8.57.1))(eslint@8.57.1)
@@ -2205,8 +2205,11 @@ importers:
   tests/e2e:
     dependencies:
       '@learncard/init':
-        specifier: ^1.3.9
-        version: 1.3.9(@aws-sdk/credential-providers@3.679.0(@aws-sdk/client-sso-oidc@3.679.0(@aws-sdk/client-sts@3.679.0)))(@types/express@4.17.21)(@types/ioredis-mock@8.2.5)(@types/node@18.19.59)(serverless@3.39.0)(socks@2.8.3)(zod@3.20.2)
+        specifier: workspace:*
+        version: link:../../packages/learn-card-init
+      '@learncard/types':
+        specifier: workspace:*
+        version: link:../../packages/learn-card-types
       '@xapi/xapi':
         specifier: ^3.0.0
         version: 3.0.0
@@ -5275,81 +5278,6 @@ packages:
 
   '@kwsites/promise-deferred@1.1.1':
     resolution: {integrity: sha512-GaHYm+c0O9MjZRu0ongGBRbinu8gVAMd2UZjji6jVmqKtZluZnptXGWhz1E8j8D2HJ3f/yMxKAUC0b+57wncIw==}
-
-  '@learncard/ceramic-plugin@1.0.16':
-    resolution: {integrity: sha512-MSOpueqxe33oFd0BVbZJsGG3hYzP3WovApwc1e0Mbh/FAuF0tc+J8B/gKiqr6qT3PDgSNI336i0EHstWC38SbA==}
-
-  '@learncard/chapi-plugin@1.0.32':
-    resolution: {integrity: sha512-EgR6AkS37edB0TmzY4yUiBD4a/+MFvAun8famHYP/eM+TsoMk40SHXVZ1vH4Zj2TjAcOPbU/gW/i8KE2+LIu1w==}
-
-  '@learncard/core@9.3.5':
-    resolution: {integrity: sha512-DQXk+jOhXbFU8wabqcsGvPzmh1hBo7vsfW270WF9sj3Do4RVkNckioYkIhkRJE1YoNbp8BJu72LYVrHmZmKUVw==}
-
-  '@learncard/crypto-plugin@1.0.16':
-    resolution: {integrity: sha512-yQTha4klbN5jwCMOPG21sv+/EQ/9lWBvHqFJ5nNfns9V1dVY7ojlZK2fw66me0P5vR0K537fgpUGYpH8Qo0xug==}
-
-  '@learncard/did-web-plugin@1.0.40':
-    resolution: {integrity: sha512-wsYcMfowgNQ4vemeWJHy5dtrIk6SV+MRu9IwF5X7cXk9tLfijwb3KJXY702F7OCMlmjXLzkmoeQ33VulHSVDIw==}
-
-  '@learncard/didkey-plugin@1.0.16':
-    resolution: {integrity: sha512-EFKKsDrOsBgpaw3SjNtudSOCDrXQMo9RY48EQzBT0Wm6JFUnMLo2EMwkn39+bRDCDValxDayg74KSsZ0fENR8A==}
-
-  '@learncard/didkit-plugin@1.4.14':
-    resolution: {integrity: sha512-cNOkFPeif0xyNgXbOI46wAUgh/DtvdShll+GZah5+qXhCBK50A6u5QzmaFsvH5AwQANoGVxMpQmV46z+rZensw==}
-
-  '@learncard/dynamic-loader-plugin@1.0.12':
-    resolution: {integrity: sha512-/Py98trK+uTkmwdxV1yjcBoJOPxUwno6rgJrxBzer86Osi9Fx0n4bDjEkZO6/W5A3m97QU28YAwj7ccJ3vNH7g==}
-
-  '@learncard/ethereum-plugin@1.0.17':
-    resolution: {integrity: sha512-jg5MqoYqK+buWRnFNVGbSJI4ffL3Zh1Pl7sR0y0FshrN215D7GI0LyXpgCi5Ga8DgiGINY2VGUYo58fNRoaZXQ==}
-
-  '@learncard/expiration-plugin@1.1.19':
-    resolution: {integrity: sha512-9vTVo17+1uF9VISLR9NdkHMtqXRewALQ4cCznLon0sbP+mHKvIDxwfCKNXhTI0fvQajgUfaAy+2oywAGfi1adw==}
-
-  '@learncard/helpers@1.0.17':
-    resolution: {integrity: sha512-ay1jrKpPzxnE2TM5QhiT3YD9k7pS2fuw/eBGz93ZgtM1ZYEwEDd2gC+HKeqt2sxj7ady6lWlPEfvFqu4YOqRdA==}
-
-  '@learncard/idx-plugin@1.0.16':
-    resolution: {integrity: sha512-QvXR65hUp6J+MhfgvmuWHXH0KuaNfio5M4nFOXgTOAQ+HjcE9JQtD+DJf5gVl/jYe+G3MopybixkhvLfzWkjzg==}
-
-  '@learncard/init@1.3.9':
-    resolution: {integrity: sha512-R223815L/Ge/r+vZHWIxOU9wHWC4KXdwv2W7UVbXLQ2GkQVctIXSc6C9CXXB3SS2cvooHmdsw8xc7SuKayAZxA==}
-
-  '@learncard/learn-card-plugin@1.1.18':
-    resolution: {integrity: sha512-KHI8wsTl6CGbHySZAwShL3sGRrh3MkbbqM6n4FZ5ao+r2HulqHpdw8tURlvkFChd8RpX+yy8jlLLaxmlDxniEg==}
-
-  '@learncard/learn-cloud-client@1.2.11':
-    resolution: {integrity: sha512-liocbgXqOImDbmtFdPZ/Isnu8tHmPUzDNBOypX87hkg3GJyGJ1v7hj3pBNc1Vl1vR7wFFrn1sCj3yvFb/JcEmA==}
-
-  '@learncard/learn-cloud-plugin@2.0.18':
-    resolution: {integrity: sha512-V5zbHEHtuS66S/FOJzXYJvG/AlRpmmiirjTjxsUdx6bxjl3g7n541T6g0DmM03k0rwIJzXdOoCDQ00dATstlSg==}
-
-  '@learncard/learn-cloud-service@2.1.9':
-    resolution: {integrity: sha512-u1dBjd6JYi7vOSma8NFThQKL2cnJ/Jk1lQ1w2vN4ePv94WNgOf1vzckX/n1ed2qN72u22RFRFyrqK+OmNr60dw==}
-
-  '@learncard/network-brain-client@2.0.6':
-    resolution: {integrity: sha512-q/bIQgcYXwlCeT5Jb3cRWdc3wJIhbVxg1W/55vThS95juti7eeRt3jTO8Mhxdr8UGwkgLw+W4jpQ2M4yZUAQew==}
-
-  '@learncard/network-brain-service@3.1.3':
-    resolution: {integrity: sha512-km2ifpTyfF/2iCiabB0SQa3L6xM+WHttOvwU1rRxwg7Pxcv+iBXiw5GnVpMz1UlZ47nlamh/KSDPmQnLZwM0Mg==}
-
-  '@learncard/network-plugin@2.1.3':
-    resolution: {integrity: sha512-nRbuBaKsJ89m6aEXfbJwFv23iEBnGcd1TUSC9KtGvpnk1v6jx+lnIIbMMejxBe3aSBMae9jG4U4PrszUZ/l2hg==}
-
-  '@learncard/types@5.5.5':
-    resolution: {integrity: sha512-9lr9HGmJy/7c4+RRVnQbfdJcJ63aoY6CWwwQVuVLPt0QUR0CtwEYwhMXvY+0ANddWATarZgjs+nx0k7r7nIGtA==}
-
-  '@learncard/vc-api-plugin@1.0.16':
-    resolution: {integrity: sha512-CvtcytDvtvtVGzi0ieF1q3YYbFP1lnvM7zJIg4HXTwi3sShj+KXJ7RrVsIx+vj350tEG8HHpREWc2ejLJGw5ug==}
-
-  '@learncard/vc-plugin@1.1.19':
-    resolution: {integrity: sha512-fx/RcF01O/EAszBVPdgkxswtxkOi8xYfLu8lrMXwFXqhN8tUKa6XCMPmtg7nmeWlGFohjYBjfnh7Hkzaxo6uaA==}
-
-  '@learncard/vc-templates-plugin@1.0.24':
-    resolution: {integrity: sha512-rKwVjZWB5IMSyaXeulsPmpo6p4z8Ce0Qy7o1USWFAhldLj+T4x5DaAmIBVBrabwsKnp6xXgouSMGOkbrLTfRXQ==}
-
-  '@learncard/vpqr-plugin@1.0.16':
-    resolution: {integrity: sha512-7AXDHZwrtJJrKImJj9K2fbY6/eVOY9KvwjwQMSEI4yyN97e+UolcprI+rmWgxC7AvMhVRRZ2OKQyGP4YN0LamQ==}
 
   '@leichtgewicht/ip-codec@2.0.5':
     resolution: {integrity: sha512-Vo+PSpZG2/fmgmiNzYK9qWRh8h/CHrwD0mo1h1DzL4yzHNSfWYujGTYsWGreD000gcgmZ7K4Ys6Tx9TxtsKdDw==}
@@ -25506,443 +25434,6 @@ snapshots:
 
   '@kwsites/promise-deferred@1.1.1': {}
 
-  '@learncard/ceramic-plugin@1.0.16':
-    dependencies:
-      '@ceramicnetwork/common': 2.13.0
-      '@ceramicnetwork/http-client': 2.7.0
-      '@ceramicnetwork/stream-tile': 2.9.0
-      '@glazed/tile-loader': 0.2.1
-      '@learncard/core': 9.3.5
-      '@learncard/types': 5.5.5
-      did-jwt: 5.9.0
-      dids: 3.4.0
-      hex-lite: 1.5.0
-      key-did-provider-ed25519: 2.0.1
-      key-did-resolver: 2.3.0
-      lodash: 4.17.21
-    transitivePeerDependencies:
-      - encoding
-      - expo
-      - react-native
-
-  '@learncard/chapi-plugin@1.0.32':
-    dependencies:
-      '@learncard/core': 9.3.5
-      '@learncard/didkit-plugin': 1.4.14
-      credential-handler-polyfill: 3.2.1
-      web-credential-handler: 2.0.2
-    transitivePeerDependencies:
-      - encoding
-      - expo
-      - react-native
-
-  '@learncard/core@9.3.5':
-    dependencies:
-      '@learncard/helpers': 1.0.17
-      abort-controller: 3.0.0
-      core-js: 3.38.1
-      cross-fetch: 3.1.8
-      isomorphic-fetch: 3.0.0
-      isomorphic-webcrypto: 2.3.8(expo@51.0.38(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0)))(react-native@0.76.0(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0))(react@18.3.1))
-    transitivePeerDependencies:
-      - encoding
-      - expo
-      - react-native
-
-  '@learncard/crypto-plugin@1.0.16':
-    dependencies:
-      '@learncard/core': 9.3.5
-      isomorphic-webcrypto: 2.3.8(expo@51.0.38(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0)))(react-native@0.76.0(@babel/core@7.26.0)(@babel/preset-env@7.26.0(@babel/core@7.26.0))(react@18.3.1))
-    transitivePeerDependencies:
-      - encoding
-      - expo
-      - react-native
-
-  '@learncard/did-web-plugin@1.0.40':
-    dependencies:
-      '@learncard/ceramic-plugin': 1.0.16
-      '@learncard/core': 9.3.5
-      '@learncard/didkey-plugin': 1.0.16
-      '@learncard/didkit-plugin': 1.4.14
-      '@learncard/expiration-plugin': 1.1.19
-      '@learncard/helpers': 1.0.17
-      '@learncard/learn-card-plugin': 1.1.18
-      '@learncard/types': 5.5.5
-      '@learncard/vc-plugin': 1.1.19
-      '@learncard/vc-templates-plugin': 1.0.24
-    transitivePeerDependencies:
-      - encoding
-      - expo
-      - react-native
-
-  '@learncard/didkey-plugin@1.0.16':
-    dependencies:
-      '@learncard/core': 9.3.5
-      '@learncard/helpers': 1.0.17
-      hex-lite: 1.5.0
-    transitivePeerDependencies:
-      - encoding
-      - expo
-      - react-native
-
-  '@learncard/didkit-plugin@1.4.14':
-    dependencies:
-      '@learncard/core': 9.3.5
-      '@learncard/types': 5.5.5
-    transitivePeerDependencies:
-      - encoding
-      - expo
-      - react-native
-
-  '@learncard/dynamic-loader-plugin@1.0.12':
-    dependencies:
-      '@learncard/core': 9.3.5
-    transitivePeerDependencies:
-      - encoding
-      - expo
-      - react-native
-
-  '@learncard/ethereum-plugin@1.0.17':
-    dependencies:
-      '@learncard/core': 9.3.5
-      '@uniswap/default-token-list': 4.1.0
-      ethers: 5.7.2
-    transitivePeerDependencies:
-      - bufferutil
-      - encoding
-      - expo
-      - react-native
-      - utf-8-validate
-
-  '@learncard/expiration-plugin@1.1.19':
-    dependencies:
-      '@learncard/core': 9.3.5
-      '@learncard/vc-plugin': 1.1.19
-      why-is-node-running: 2.3.0
-    transitivePeerDependencies:
-      - encoding
-      - expo
-      - react-native
-
-  '@learncard/helpers@1.0.17':
-    dependencies:
-      '@learncard/types': 5.5.5
-
-  '@learncard/idx-plugin@1.0.16':
-    dependencies:
-      '@ceramicnetwork/http-client': 2.7.0
-      '@ceramicnetwork/streamid': 2.7.0
-      '@glazed/did-datastore': 0.3.2
-      '@learncard/ceramic-plugin': 1.0.16
-      '@learncard/core': 9.3.5
-      '@learncard/types': 5.5.5
-    transitivePeerDependencies:
-      - encoding
-      - expo
-      - react-native
-
-  '@learncard/init@1.3.9(@aws-sdk/credential-providers@3.679.0(@aws-sdk/client-sso-oidc@3.679.0(@aws-sdk/client-sts@3.679.0)))(@types/express@4.17.21)(@types/ioredis-mock@8.2.5)(@types/node@18.19.59)(serverless@3.39.0)(socks@2.8.3)(zod@3.20.2)':
-    dependencies:
-      '@learncard/ceramic-plugin': 1.0.16
-      '@learncard/chapi-plugin': 1.0.32
-      '@learncard/core': 9.3.5
-      '@learncard/crypto-plugin': 1.0.16
-      '@learncard/did-web-plugin': 1.0.40
-      '@learncard/didkey-plugin': 1.0.16
-      '@learncard/didkit-plugin': 1.4.14
-      '@learncard/dynamic-loader-plugin': 1.0.12
-      '@learncard/ethereum-plugin': 1.0.17
-      '@learncard/expiration-plugin': 1.1.19
-      '@learncard/helpers': 1.0.17
-      '@learncard/idx-plugin': 1.0.16
-      '@learncard/learn-card-plugin': 1.1.18
-      '@learncard/learn-cloud-plugin': 2.0.18(@aws-sdk/credential-providers@3.679.0(@aws-sdk/client-sso-oidc@3.679.0(@aws-sdk/client-sts@3.679.0)))(@types/express@4.17.21)(@types/ioredis-mock@8.2.5)(@types/node@18.19.59)(serverless@3.39.0)(socks@2.8.3)(zod@3.20.2)
-      '@learncard/network-plugin': 2.1.3(@types/express@4.17.21)(@types/ioredis-mock@8.2.5)(@types/node@18.19.59)(serverless@3.39.0)(zod@3.20.2)
-      '@learncard/types': 5.5.5
-      '@learncard/vc-api-plugin': 1.0.16
-      '@learncard/vc-plugin': 1.1.19
-      '@learncard/vc-templates-plugin': 1.0.24
-      '@learncard/vpqr-plugin': 1.0.16
-    transitivePeerDependencies:
-      - '@aws-sdk/credential-providers'
-      - '@mongodb-js/zstd'
-      - '@types/express'
-      - '@types/ioredis-mock'
-      - '@types/node'
-      - aws-crt
-      - bufferutil
-      - encoding
-      - expo
-      - gcp-metadata
-      - kerberos
-      - mongodb-client-encryption
-      - react-native
-      - serverless
-      - snappy
-      - socks
-      - supports-color
-      - utf-8-validate
-      - zod
-
-  '@learncard/learn-card-plugin@1.1.18':
-    dependencies:
-      '@learncard/core': 9.3.5
-      '@learncard/didkit-plugin': 1.4.14
-      '@learncard/types': 5.5.5
-      date-fns: 2.30.0
-    transitivePeerDependencies:
-      - encoding
-      - expo
-      - react-native
-
-  '@learncard/learn-cloud-client@1.2.11(@aws-sdk/credential-providers@3.679.0(@aws-sdk/client-sso-oidc@3.679.0(@aws-sdk/client-sts@3.679.0)))(@types/express@4.17.21)(@types/ioredis-mock@8.2.5)(@types/node@18.19.59)(serverless@3.39.0)(socks@2.8.3)(zod@3.20.2)':
-    dependencies:
-      '@learncard/learn-cloud-service': 2.1.9(@aws-sdk/credential-providers@3.679.0(@aws-sdk/client-sso-oidc@3.679.0(@aws-sdk/client-sts@3.679.0)))(@types/express@4.17.21)(@types/ioredis-mock@8.2.5)(@types/node@18.19.59)(serverless@3.39.0)(socks@2.8.3)(zod@3.20.2)
-      '@trpc/client': 10.45.2(@trpc/server@10.45.2)
-      '@trpc/server': 10.45.2
-    transitivePeerDependencies:
-      - '@aws-sdk/credential-providers'
-      - '@mongodb-js/zstd'
-      - '@types/express'
-      - '@types/ioredis-mock'
-      - '@types/node'
-      - aws-crt
-      - bufferutil
-      - encoding
-      - expo
-      - gcp-metadata
-      - kerberos
-      - mongodb-client-encryption
-      - react-native
-      - serverless
-      - snappy
-      - socks
-      - supports-color
-      - utf-8-validate
-      - zod
-
-  '@learncard/learn-cloud-plugin@2.0.18(@aws-sdk/credential-providers@3.679.0(@aws-sdk/client-sso-oidc@3.679.0(@aws-sdk/client-sts@3.679.0)))(@types/express@4.17.21)(@types/ioredis-mock@8.2.5)(@types/node@18.19.59)(serverless@3.39.0)(socks@2.8.3)(zod@3.20.2)':
-    dependencies:
-      '@learncard/core': 9.3.5
-      '@learncard/didkit-plugin': 1.4.14
-      '@learncard/helpers': 1.0.17
-      '@learncard/learn-cloud-client': 1.2.11(@aws-sdk/credential-providers@3.679.0(@aws-sdk/client-sso-oidc@3.679.0(@aws-sdk/client-sts@3.679.0)))(@types/express@4.17.21)(@types/ioredis-mock@8.2.5)(@types/node@18.19.59)(serverless@3.39.0)(socks@2.8.3)(zod@3.20.2)
-      json-stringify-deterministic: 1.0.12
-      lodash: 4.17.21
-      pbkdf2-hmac: 1.2.1
-    transitivePeerDependencies:
-      - '@aws-sdk/credential-providers'
-      - '@mongodb-js/zstd'
-      - '@types/express'
-      - '@types/ioredis-mock'
-      - '@types/node'
-      - aws-crt
-      - bufferutil
-      - encoding
-      - expo
-      - gcp-metadata
-      - kerberos
-      - mongodb-client-encryption
-      - react-native
-      - serverless
-      - snappy
-      - socks
-      - supports-color
-      - utf-8-validate
-      - zod
-
-  '@learncard/learn-cloud-service@2.1.9(@aws-sdk/credential-providers@3.679.0(@aws-sdk/client-sso-oidc@3.679.0(@aws-sdk/client-sts@3.679.0)))(@types/express@4.17.21)(@types/ioredis-mock@8.2.5)(@types/node@18.19.59)(serverless@3.39.0)(socks@2.8.3)(zod@3.20.2)':
-    dependencies:
-      '@fastify/cors': 9.0.1
-      '@fastify/static': 7.0.4
-      '@learncard/ceramic-plugin': 1.0.16
-      '@learncard/core': 9.3.5
-      '@learncard/crypto-plugin': 1.0.16
-      '@learncard/did-web-plugin': 1.0.40
-      '@learncard/didkey-plugin': 1.0.16
-      '@learncard/didkit-plugin': 1.4.14
-      '@learncard/expiration-plugin': 1.1.19
-      '@learncard/helpers': 1.0.17
-      '@learncard/learn-card-plugin': 1.1.18
-      '@learncard/types': 5.5.5
-      '@learncard/vc-plugin': 1.1.19
-      '@learncard/vc-templates-plugin': 1.0.24
-      '@sentry/esbuild-plugin': 2.22.6
-      '@sentry/serverless': 7.114.0
-      '@trpc/client': 10.45.2(@trpc/server@10.45.2)
-      '@trpc/server': 10.45.2
-      '@types/lodash': 4.17.12
-      bson: 4.7.2
-      cors: 2.8.5
-      dotenv: 16.4.5
-      express: 4.21.1
-      fastify: 4.28.1
-      ioredis: 5.4.1
-      ioredis-mock: 8.9.0(@types/ioredis-mock@8.2.5)(ioredis@5.4.1)
-      json-stringify-deterministic: 1.0.12
-      jwt-decode: 3.1.2
-      libsodium-wrappers: 0.7.15
-      lodash: 4.17.21
-      mongodb: 6.10.0(@aws-sdk/credential-providers@3.679.0(@aws-sdk/client-sso-oidc@3.679.0(@aws-sdk/client-sts@3.679.0)))(socks@2.8.3)
-      multiformats: 11.0.2
-      neo4j-driver: 4.4.11
-      neogma: 1.14.1
-      serverless-offline: 12.0.4(serverless@3.39.0)
-      simple-redis-mutex: 1.4.0(ioredis@5.4.1)
-      trpc-openapi: 1.2.0(@trpc/server@10.45.2)(@types/express@4.17.21)(@types/node@18.19.59)(zod@3.20.2)
-      uuid: 9.0.1
-    transitivePeerDependencies:
-      - '@aws-sdk/credential-providers'
-      - '@mongodb-js/zstd'
-      - '@types/express'
-      - '@types/ioredis-mock'
-      - '@types/node'
-      - aws-crt
-      - bufferutil
-      - encoding
-      - expo
-      - gcp-metadata
-      - kerberos
-      - mongodb-client-encryption
-      - react-native
-      - serverless
-      - snappy
-      - socks
-      - supports-color
-      - utf-8-validate
-      - zod
-
-  '@learncard/network-brain-client@2.0.6(@types/express@4.17.21)(@types/ioredis-mock@8.2.5)(@types/node@18.19.59)(serverless@3.39.0)(zod@3.20.2)':
-    dependencies:
-      '@learncard/network-brain-service': 3.1.3(@types/express@4.17.21)(@types/ioredis-mock@8.2.5)(@types/node@18.19.59)(serverless@3.39.0)(zod@3.20.2)
-      '@trpc/client': 10.45.2(@trpc/server@10.45.2)
-      '@trpc/server': 10.45.2
-    transitivePeerDependencies:
-      - '@types/express'
-      - '@types/ioredis-mock'
-      - '@types/node'
-      - aws-crt
-      - bufferutil
-      - encoding
-      - expo
-      - react-native
-      - serverless
-      - supports-color
-      - utf-8-validate
-      - zod
-
-  '@learncard/network-brain-service@3.1.3(@types/express@4.17.21)(@types/ioredis-mock@8.2.5)(@types/node@18.19.59)(serverless@3.39.0)(zod@3.20.2)':
-    dependencies:
-      '@aws-sdk/client-sqs': 3.679.0
-      '@fastify/cors': 9.0.1
-      '@fastify/static': 7.0.4
-      '@fastify/swagger': 8.15.0
-      '@fastify/swagger-ui': 4.2.0
-      '@learncard/ceramic-plugin': 1.0.16
-      '@learncard/core': 9.3.5
-      '@learncard/crypto-plugin': 1.0.16
-      '@learncard/did-web-plugin': 1.0.40
-      '@learncard/didkey-plugin': 1.0.16
-      '@learncard/didkit-plugin': 1.4.14
-      '@learncard/expiration-plugin': 1.1.19
-      '@learncard/helpers': 1.0.17
-      '@learncard/learn-card-plugin': 1.1.18
-      '@learncard/types': 5.5.5
-      '@learncard/vc-plugin': 1.1.19
-      '@learncard/vc-templates-plugin': 1.0.24
-      '@sentry/esbuild-plugin': 2.22.6
-      '@sentry/serverless': 7.114.0
-      '@trpc/server': 10.45.2
-      '@types/lodash': 4.17.12
-      cors: 2.8.5
-      dotenv: 16.4.5
-      express: 4.21.1
-      fastify: 4.28.1
-      fastify-plugin: 4.5.1
-      ioredis: 5.4.1
-      ioredis-mock: 8.9.0(@types/ioredis-mock@8.2.5)(ioredis@5.4.1)
-      jwt-decode: 3.1.2
-      libsodium-wrappers: 0.7.15
-      lodash: 4.17.21
-      multiformats: 11.0.2
-      neo4j-driver: 5.26.0
-      neogma: 1.14.1
-      serverless-offline: 12.0.4(serverless@3.39.0)
-      sift: 17.1.3
-      trpc-openapi: 1.2.0(@trpc/server@10.45.2)(@types/express@4.17.21)(@types/node@18.19.59)(zod@3.20.2)
-      uuid: 9.0.1
-    transitivePeerDependencies:
-      - '@types/express'
-      - '@types/ioredis-mock'
-      - '@types/node'
-      - aws-crt
-      - bufferutil
-      - encoding
-      - expo
-      - react-native
-      - serverless
-      - supports-color
-      - utf-8-validate
-      - zod
-
-  '@learncard/network-plugin@2.1.3(@types/express@4.17.21)(@types/ioredis-mock@8.2.5)(@types/node@18.19.59)(serverless@3.39.0)(zod@3.20.2)':
-    dependencies:
-      '@learncard/core': 9.3.5
-      '@learncard/network-brain-client': 2.0.6(@types/express@4.17.21)(@types/ioredis-mock@8.2.5)(@types/node@18.19.59)(serverless@3.39.0)(zod@3.20.2)
-    transitivePeerDependencies:
-      - '@types/express'
-      - '@types/ioredis-mock'
-      - '@types/node'
-      - aws-crt
-      - bufferutil
-      - encoding
-      - expo
-      - react-native
-      - serverless
-      - supports-color
-      - utf-8-validate
-      - zod
-
-  '@learncard/types@5.5.5': {}
-
-  '@learncard/vc-api-plugin@1.0.16':
-    dependencies:
-      '@learncard/core': 9.3.5
-      '@learncard/types': 5.5.5
-    transitivePeerDependencies:
-      - encoding
-      - expo
-      - react-native
-
-  '@learncard/vc-plugin@1.1.19':
-    dependencies:
-      '@learncard/core': 9.3.5
-      '@learncard/didkit-plugin': 1.4.14
-      '@learncard/types': 5.5.5
-    transitivePeerDependencies:
-      - encoding
-      - expo
-      - react-native
-
-  '@learncard/vc-templates-plugin@1.0.24':
-    dependencies:
-      '@learncard/core': 9.3.5
-      '@learncard/types': 5.5.5
-    transitivePeerDependencies:
-      - encoding
-      - expo
-      - react-native
-
-  '@learncard/vpqr-plugin@1.0.16':
-    dependencies:
-      '@digitalbazaar/vpqr': 3.0.0
-      '@learncard/core': 9.3.5
-      '@learncard/types': 5.5.5
-    transitivePeerDependencies:
-      - encoding
-      - expo
-      - react-native
-
   '@leichtgewicht/ip-codec@2.0.5': {}
 
   '@ljharb/has-package-exports-patterns@0.0.2': {}
@@ -26010,11 +25501,11 @@ snapshots:
 
   '@metamask/detect-provider@1.2.0': {}
 
-  '@metamask/eslint-config-jest@10.0.0(@metamask/eslint-config@10.0.0(eslint-config-prettier@8.10.0(eslint@8.57.1))(eslint-plugin-import@2.31.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.6.2))(eslint-import-resolver-typescript@2.7.1(eslint-plugin-import@2.31.0)(eslint@8.57.1))(eslint@8.57.1))(eslint-plugin-jsdoc@39.9.1(eslint@8.57.1))(eslint-plugin-prettier@4.2.1(eslint-config-prettier@8.10.0(eslint@8.57.1))(eslint@8.57.1)(prettier@2.8.8))(eslint@8.57.1)(prettier@2.8.8))(eslint-plugin-jest@26.9.0(@typescript-eslint/eslint-plugin@5.62.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.6.2))(eslint@8.57.1)(typescript@5.6.2))(eslint@8.57.1)(jest@29.7.0(@types/node@17.0.45)(ts-node@10.9.2(@types/node@17.0.45)(typescript@5.6.2)))(typescript@5.6.2))(eslint@8.57.1)':
+  '@metamask/eslint-config-jest@10.0.0(@metamask/eslint-config@10.0.0(eslint-config-prettier@8.10.0(eslint@8.57.1))(eslint-plugin-import@2.31.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.6.2))(eslint-import-resolver-typescript@2.7.1(eslint-plugin-import@2.31.0)(eslint@8.57.1))(eslint@8.57.1))(eslint-plugin-jsdoc@39.9.1(eslint@8.57.1))(eslint-plugin-prettier@4.2.1(eslint-config-prettier@8.10.0(eslint@8.57.1))(eslint@8.57.1)(prettier@2.8.8))(eslint@8.57.1)(prettier@2.8.8))(eslint-plugin-jest@26.9.0(@typescript-eslint/eslint-plugin@5.62.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.6.2))(eslint@8.57.1)(typescript@5.6.2))(eslint@8.57.1)(jest@29.7.0(@types/node@18.19.59)(ts-node@10.9.2(@types/node@18.19.59)(typescript@5.6.2)))(typescript@5.6.2))(eslint@8.57.1)':
     dependencies:
       '@metamask/eslint-config': 10.0.0(eslint-config-prettier@8.10.0(eslint@8.57.1))(eslint-plugin-import@2.31.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.6.2))(eslint-import-resolver-typescript@2.7.1(eslint-plugin-import@2.31.0)(eslint@8.57.1))(eslint@8.57.1))(eslint-plugin-jsdoc@39.9.1(eslint@8.57.1))(eslint-plugin-prettier@4.2.1(eslint-config-prettier@8.10.0(eslint@8.57.1))(eslint@8.57.1)(prettier@2.8.8))(eslint@8.57.1)(prettier@2.8.8)
       eslint: 8.57.1
-      eslint-plugin-jest: 26.9.0(@typescript-eslint/eslint-plugin@5.62.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.6.2))(eslint@8.57.1)(typescript@5.6.2))(eslint@8.57.1)(jest@29.7.0(@types/node@17.0.45)(ts-node@10.9.2(@types/node@17.0.45)(typescript@5.6.2)))(typescript@5.6.2)
+      eslint-plugin-jest: 26.9.0(@typescript-eslint/eslint-plugin@5.62.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.6.2))(eslint@8.57.1)(typescript@5.6.2))(eslint@8.57.1)(jest@29.7.0(@types/node@18.19.59)(ts-node@10.9.2(@types/node@18.19.59)(typescript@5.6.2)))(typescript@5.6.2)
 
   '@metamask/eslint-config-nodejs@8.0.0(@metamask/eslint-config@10.0.0(eslint-config-prettier@8.10.0(eslint@8.57.1))(eslint-plugin-import@2.31.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.6.2))(eslint-import-resolver-typescript@2.7.1(eslint-plugin-import@2.31.0)(eslint@8.57.1))(eslint@8.57.1))(eslint-plugin-jsdoc@39.9.1(eslint@8.57.1))(eslint-plugin-prettier@4.2.1(eslint-config-prettier@8.10.0(eslint@8.57.1))(eslint@8.57.1)(prettier@2.8.8))(eslint@8.57.1)(prettier@2.8.8))(eslint-plugin-node@11.1.0(eslint@8.57.1))(eslint@8.57.1)':
     dependencies:
@@ -29935,6 +29426,48 @@ snapshots:
       - supports-color
       - ts-node
 
+  aqu@0.4.3(@babel/core@7.26.0)(@jest/transform@29.7.0)(@jest/types@29.6.3)(@types/node@17.0.45)(babel-jest@29.7.0(@babel/core@7.26.0))(ts-node@10.9.2(@types/node@18.19.59)(typescript@5.6.2)):
+    dependencies:
+      '@babel/preset-env': 7.26.0(@babel/core@7.26.0)
+      '@babel/preset-react': 7.25.9(@babel/core@7.26.0)
+      '@esbuild-plugins/node-resolve': 0.1.4(esbuild@0.15.18)
+      '@typescript-eslint/eslint-plugin': 5.62.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.6.2))(eslint@8.57.1)(typescript@5.6.2)
+      '@typescript-eslint/parser': 5.62.0(eslint@8.57.1)(typescript@5.6.2)
+      chalk: 4.1.2
+      chokidar: 3.6.0
+      commander: 9.5.0
+      dts-bundle-generator: 6.13.0
+      esbuild: 0.15.18
+      eslint: 8.57.1
+      eslint-config-prettier: 8.10.0(eslint@8.57.1)
+      eslint-plugin-prettier: 4.2.1(eslint-config-prettier@8.10.0(eslint@8.57.1))(eslint@8.57.1)(prettier@2.8.8)
+      eslint-plugin-simple-import-sort: 8.0.0(eslint@8.57.1)
+      execa: 4.1.0
+      fs-extra: 10.1.0
+      github-username: 6.0.0
+      inquirer: 7.3.3
+      jest: 29.7.0(@types/node@17.0.45)(ts-node@10.9.2(@types/node@18.19.59)(typescript@5.6.2))
+      jest-watch-typeahead: 2.2.2(jest@29.7.0(@types/node@18.19.59)(ts-node@10.9.2(@types/node@18.19.59)(typescript@5.6.2)))
+      lodash: 4.17.21
+      ora: 5.4.1
+      prettier: 2.8.8
+      rimraf: 3.0.2
+      ts-jest: 29.2.5(@babel/core@7.26.0)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.26.0))(esbuild@0.15.18)(jest@29.7.0(@types/node@18.19.59)(ts-node@10.9.2(@types/node@18.19.59)(typescript@5.6.2)))(typescript@5.6.2)
+      typescript: 5.6.2
+      webpack-merge: 5.10.0
+      yup: 0.32.11
+    transitivePeerDependencies:
+      - '@babel/core'
+      - '@jest/transform'
+      - '@jest/types'
+      - '@types/node'
+      - babel-jest
+      - babel-plugin-macros
+      - encoding
+      - node-notifier
+      - supports-color
+      - ts-node
+
   aqu@0.4.3(@babel/core@7.26.0)(@jest/transform@29.7.0)(@jest/types@29.6.3)(@types/node@18.19.59)(babel-jest@29.7.0(@babel/core@7.26.0))(ts-node@10.9.2(@types/node@18.19.59)(typescript@5.6.2)):
     dependencies:
       '@babel/preset-env': 7.26.0(@babel/core@7.26.0)
@@ -32032,6 +31565,21 @@ snapshots:
       - supports-color
       - ts-node
 
+  create-jest@29.7.0(@types/node@17.0.45)(ts-node@10.9.2(@types/node@18.19.59)(typescript@5.6.2)):
+    dependencies:
+      '@jest/types': 29.6.3
+      chalk: 4.1.2
+      exit: 0.1.2
+      graceful-fs: 4.2.11
+      jest-config: 29.7.0(@types/node@17.0.45)(ts-node@10.9.2(@types/node@18.19.59)(typescript@5.6.2))
+      jest-util: 29.7.0
+      prompts: 2.4.2
+    transitivePeerDependencies:
+      - '@types/node'
+      - babel-plugin-macros
+      - supports-color
+      - ts-node
+
   create-jest@29.7.0(@types/node@18.19.59)(ts-node@10.9.2(@types/node@18.19.59)(typescript@5.6.2)):
     dependencies:
       '@jest/types': 29.6.3
@@ -33534,13 +33082,13 @@ snapshots:
       - eslint-import-resolver-webpack
       - supports-color
 
-  eslint-plugin-jest@26.9.0(@typescript-eslint/eslint-plugin@5.62.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.6.2))(eslint@8.57.1)(typescript@5.6.2))(eslint@8.57.1)(jest@29.7.0(@types/node@17.0.45)(ts-node@10.9.2(@types/node@17.0.45)(typescript@5.6.2)))(typescript@5.6.2):
+  eslint-plugin-jest@26.9.0(@typescript-eslint/eslint-plugin@5.62.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.6.2))(eslint@8.57.1)(typescript@5.6.2))(eslint@8.57.1)(jest@29.7.0(@types/node@18.19.59)(ts-node@10.9.2(@types/node@18.19.59)(typescript@5.6.2)))(typescript@5.6.2):
     dependencies:
       '@typescript-eslint/utils': 5.62.0(eslint@8.57.1)(typescript@5.6.2)
       eslint: 8.57.1
     optionalDependencies:
       '@typescript-eslint/eslint-plugin': 5.62.0(@typescript-eslint/parser@5.62.0(eslint@8.57.1)(typescript@5.6.2))(eslint@8.57.1)(typescript@5.6.2)
-      jest: 29.7.0(@types/node@17.0.45)(ts-node@10.9.2(@types/node@17.0.45)(typescript@5.6.2))
+      jest: 29.7.0(@types/node@18.19.59)(ts-node@10.9.2(@types/node@18.19.59)(typescript@5.6.2))
     transitivePeerDependencies:
       - supports-color
       - typescript
@@ -36352,6 +35900,25 @@ snapshots:
       - supports-color
       - ts-node
 
+  jest-cli@29.7.0(@types/node@17.0.45)(ts-node@10.9.2(@types/node@18.19.59)(typescript@5.6.2)):
+    dependencies:
+      '@jest/core': 29.7.0(ts-node@10.9.2(@types/node@18.19.59)(typescript@5.6.2))
+      '@jest/test-result': 29.7.0
+      '@jest/types': 29.6.3
+      chalk: 4.1.2
+      create-jest: 29.7.0(@types/node@17.0.45)(ts-node@10.9.2(@types/node@18.19.59)(typescript@5.6.2))
+      exit: 0.1.2
+      import-local: 3.2.0
+      jest-config: 29.7.0(@types/node@17.0.45)(ts-node@10.9.2(@types/node@18.19.59)(typescript@5.6.2))
+      jest-util: 29.7.0
+      jest-validate: 29.7.0
+      yargs: 17.7.2
+    transitivePeerDependencies:
+      - '@types/node'
+      - babel-plugin-macros
+      - supports-color
+      - ts-node
+
   jest-cli@29.7.0(@types/node@18.19.59)(ts-node@10.9.2(@types/node@18.19.59)(typescript@5.6.2)):
     dependencies:
       '@jest/core': 29.7.0(ts-node@10.9.2(@types/node@18.19.59)(typescript@5.6.2))
@@ -37093,6 +36660,18 @@ snapshots:
       '@jest/types': 29.6.3
       import-local: 3.2.0
       jest-cli: 29.7.0(@types/node@17.0.45)(ts-node@10.9.2(@types/node@17.0.45)(typescript@5.6.2))
+    transitivePeerDependencies:
+      - '@types/node'
+      - babel-plugin-macros
+      - supports-color
+      - ts-node
+
+  jest@29.7.0(@types/node@17.0.45)(ts-node@10.9.2(@types/node@18.19.59)(typescript@5.6.2)):
+    dependencies:
+      '@jest/core': 29.7.0(ts-node@10.9.2(@types/node@18.19.59)(typescript@5.6.2))
+      '@jest/types': 29.6.3
+      import-local: 3.2.0
+      jest-cli: 29.7.0(@types/node@17.0.45)(ts-node@10.9.2(@types/node@18.19.59)(typescript@5.6.2))
     transitivePeerDependencies:
       - '@types/node'
       - babel-plugin-macros
@@ -44012,12 +43591,12 @@ snapshots:
       babel-jest: 29.7.0(@babel/core@7.26.0)
       esbuild: 0.15.18
 
-  ts-jest@29.2.5(@babel/core@7.26.0)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.26.0))(esbuild@0.21.5)(jest@29.7.0(@types/node@17.0.45)(ts-node@10.9.2(@types/node@17.0.45)(typescript@5.6.2)))(typescript@5.6.2):
+  ts-jest@29.2.5(@babel/core@7.26.0)(@jest/transform@29.7.0)(@jest/types@29.6.3)(babel-jest@29.7.0(@babel/core@7.26.0))(esbuild@0.21.5)(jest@29.7.0(@types/node@18.19.59)(ts-node@10.9.2(@types/node@18.19.59)(typescript@5.6.2)))(typescript@5.6.2):
     dependencies:
       bs-logger: 0.2.6
       ejs: 3.1.10
       fast-json-stable-stringify: 2.1.0
-      jest: 29.7.0(@types/node@17.0.45)(ts-node@10.9.2(@types/node@17.0.45)(typescript@5.6.2))
+      jest: 29.7.0(@types/node@18.19.59)(ts-node@10.9.2(@types/node@18.19.59)(typescript@5.6.2))
       jest-util: 29.7.0
       json5: 2.2.3
       lodash.memoize: 4.1.2
@@ -44796,13 +44375,13 @@ snapshots:
       '@types/unist': 3.0.3
       vfile-message: 4.0.2
 
-  vite-node@1.6.0(@types/node@17.0.45)(less@4.2.0)(terser@5.36.0):
+  vite-node@1.6.0(@types/node@18.19.59)(less@4.2.0)(terser@5.36.0):
     dependencies:
       cac: 6.7.14
       debug: 4.3.7(supports-color@8.1.1)
       pathe: 1.1.2
       picocolors: 1.1.1
-      vite: 5.4.10(@types/node@17.0.45)(less@4.2.0)(terser@5.36.0)
+      vite: 5.4.10(@types/node@18.19.59)(less@4.2.0)(terser@5.36.0)
     transitivePeerDependencies:
       - '@types/node'
       - less
@@ -44814,13 +44393,13 @@ snapshots:
       - supports-color
       - terser
 
-  vite-tsconfig-paths@4.3.2(typescript@5.6.2)(vite@5.4.10(@types/node@17.0.45)(less@4.2.0)(terser@5.36.0)):
+  vite-tsconfig-paths@4.3.2(typescript@5.6.2)(vite@5.4.10(@types/node@18.19.59)(less@4.2.0)(terser@5.36.0)):
     dependencies:
       debug: 4.3.7(supports-color@8.1.1)
       globrex: 0.1.2
       tsconfck: 3.1.4(typescript@5.6.2)
     optionalDependencies:
-      vite: 5.4.10(@types/node@17.0.45)(less@4.2.0)(terser@5.36.0)
+      vite: 5.4.10(@types/node@18.19.59)(less@4.2.0)(terser@5.36.0)
     transitivePeerDependencies:
       - supports-color
       - typescript
@@ -44848,17 +44427,6 @@ snapshots:
       less: 4.2.0
       terser: 5.36.0
 
-  vite@5.4.10(@types/node@17.0.45)(less@4.2.0)(terser@5.36.0):
-    dependencies:
-      esbuild: 0.21.5
-      postcss: 8.4.47
-      rollup: 4.24.0
-    optionalDependencies:
-      '@types/node': 17.0.45
-      fsevents: 2.3.3
-      less: 4.2.0
-      terser: 5.36.0
-
   vite@5.4.10(@types/node@18.19.59)(less@4.2.0)(terser@5.36.0):
     dependencies:
       esbuild: 0.21.5
@@ -44878,7 +44446,7 @@ snapshots:
     optionalDependencies:
       vite: 5.4.10(@types/node@18.19.59)(less@4.2.0)(terser@5.36.0)
 
-  vitest@1.6.0(@types/node@17.0.45)(happy-dom@14.12.3)(jsdom@20.0.3)(less@4.2.0)(terser@5.36.0):
+  vitest@1.6.0(@types/node@18.19.59)(happy-dom@14.12.3)(jsdom@20.0.3)(less@4.2.0)(terser@5.36.0):
     dependencies:
       '@vitest/expect': 1.6.0
       '@vitest/runner': 1.6.0
@@ -44897,11 +44465,11 @@ snapshots:
       strip-literal: 2.1.0
       tinybench: 2.9.0
       tinypool: 0.8.4
-      vite: 5.4.10(@types/node@17.0.45)(less@4.2.0)(terser@5.36.0)
-      vite-node: 1.6.0(@types/node@17.0.45)(less@4.2.0)(terser@5.36.0)
+      vite: 5.4.10(@types/node@18.19.59)(less@4.2.0)(terser@5.36.0)
+      vite-node: 1.6.0(@types/node@18.19.59)(less@4.2.0)(terser@5.36.0)
       why-is-node-running: 2.3.0
     optionalDependencies:
-      '@types/node': 17.0.45
+      '@types/node': 18.19.59
       happy-dom: 14.12.3
       jsdom: 20.0.3
     transitivePeerDependencies:

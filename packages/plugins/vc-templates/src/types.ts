@@ -89,6 +89,12 @@ export type VcTemplates = {
     jff2: { did?: string; subject?: string; issuanceDate?: string };
     boost: BoostTemplate;
     boostID: BoostTemplate;
+    delegate: {
+        did?: string;
+        subject?: string;
+        issuanceDate?: string;
+        access?: ('read' | 'write')[];
+    };
 };
 
 /** @group VC Templates Plugin */

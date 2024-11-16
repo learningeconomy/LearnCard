@@ -1,3 +1,5 @@
+import type { UnsignedVP } from '@learncard/types';
+
 import type { Statement } from '@xapi/xapi';
 import jwtDecode from 'jwt-decode';
 import Fastify, { FastifyPluginAsync } from 'fastify';
@@ -12,11 +14,7 @@ const xapiPassword = process.env.XAPI_PASSWORD;
 
 export type DidAuthVP = {
     iss: string;
-    vp: {
-        '@context': ['https://www.w3.org/2018/credentials/v1'];
-        type: ['VerifiablePresentation'];
-        holder: string;
-    };
+    vp: UnsignedVP;
     nonce?: string;
 };
 
@@ -25,7 +23,7 @@ export const app = Fastify();
 app.register(fastifyCors);
 
 export const xapiFastifyPlugin: FastifyPluginAsync = async fastify => {
-    fastify.all<{ Querystring?: { agent: string }; Body?: Statement }>(
+    fastify.all<{ Querystring?: { agent?: string; method?: string }; Body?: Statement }>(
         '/xapi/*',
         async (request, reply) => {
             if (!endpoint || endpoint === 'false') return reply.status(500).send();
@@ -53,19 +51,56 @@ export const xapiFastifyPlugin: FastifyPluginAsync = async fastify => {
 
                 const did = decodedJwt.vp.holder;
 
-                if (request.body) {
+                const targetDid: string | undefined =
+                    request.body && 'account' in request.body.actor
+                        ? request.body.actor.account?.name
+                        : JSON.parse(request.query?.agent ?? '{}')?.account?.name;
+
+                if (!targetDid) return reply.status(400).send();
+
+                const delegateCredential = Array.isArray(decodedJwt.vp.verifiableCredential)
+                    ? decodedJwt.vp.verifiableCredential[0]
+                    : decodedJwt.vp.verifiableCredential;
+
+                if (delegateCredential) {
+                    const delegationVerification = await learnCard.invoke.verifyCredential(
+                        delegateCredential
+                    );
+
                     if (
-                        !('account' in request.body?.actor) ||
-                        !(await areDidsEqual(request.body.actor.account?.name ?? '', did))
+                        delegationVerification.warnings.length > 0 ||
+                        delegationVerification.errors.length > 0 ||
+                        !delegationVerification.checks.includes('proof')
                     ) {
-                        return reply.status('account' in request.body?.actor ? 401 : 400).send();
+                        return reply.status(401).send();
+                    }
+
+                    const delegateIssuer =
+                        typeof delegateCredential.issuer === 'string'
+                            ? delegateCredential.issuer
+                            : delegateCredential.issuer.id ?? '';
+
+                    if (!(await areDidsEqual(delegateIssuer, targetDid))) {
+                        return reply.status(401).send();
+                    }
+
+                    const isReadRequest =
+                        request.method === 'GET' ||
+                        (request.method === 'POST' && request.query?.method === 'GET');
+
+                    if (
+                        isReadRequest &&
+                        !delegateCredential.permissions?.statementAccess?.includes('read')
+                    ) {
+                        return reply.status(401).send();
+                    } else if (
+                        !isReadRequest &&
+                        !delegateCredential.permissions?.statementAccess?.includes('write')
+                    ) {
+                        return reply.status(401).send();
                     }
                 } else {
-                    if (!request.query?.agent) return reply.status(400).send();
-
-                    const agent = JSON.parse(request.query.agent);
-
-                    if (!(await areDidsEqual(agent.account?.name ?? '', did))) {
+                    if (!(await areDidsEqual(targetDid, did ?? ''))) {
                         return reply.status(401).send();
                     }
                 }

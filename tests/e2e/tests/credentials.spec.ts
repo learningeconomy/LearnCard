@@ -29,7 +29,7 @@ describe('Credentials', () => {
         const unsignedVc = a.invoke.getTestVc(b.id.did());
         const vc = await a.invoke.issueCredential(unsignedVc);
 
-        const uri = await a.invoke.sendCredential('userb', vc);
+        const uri = await a.invoke.sendCredential('testb', vc);
 
         const incomingCreds = await b.invoke.getIncomingCredentials();
 

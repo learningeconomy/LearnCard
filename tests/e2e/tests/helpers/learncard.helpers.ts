@@ -9,11 +9,11 @@ export const getLearnCard = (seed = 'a'.repeat(64)) => {
 };
 
 export const USERS = {
-    a: { seed: 'a'.repeat(64), profileId: 'usera', displayName: 'User A' },
-    b: { seed: 'b'.repeat(64), profileId: 'userb', displayName: 'User B' },
-    c: { seed: 'c'.repeat(64), profileId: 'userc', displayName: 'User C' },
-    d: { seed: 'd'.repeat(64), profileId: 'userd', displayName: 'User D' },
-    e: { seed: 'e'.repeat(64), profileId: 'usere', displayName: 'User E' },
+    a: { seed: 'a'.repeat(64), profileId: 'testa', displayName: 'User A' },
+    b: { seed: 'b'.repeat(64), profileId: 'testb', displayName: 'User B' },
+    c: { seed: 'c'.repeat(64), profileId: 'testc', displayName: 'User C' },
+    d: { seed: 'd'.repeat(64), profileId: 'testd', displayName: 'User D' },
+    e: { seed: 'e'.repeat(64), profileId: 'teste', displayName: 'User E' },
 } as const satisfies Record<string, { seed: string; profileId: string; displayName: string }>;
 
 export const getLearnCardForUser = async (userKey: keyof typeof USERS) => {
@@ -21,12 +21,14 @@ export const getLearnCardForUser = async (userKey: keyof typeof USERS) => {
 
     const learnCard = await getLearnCard(user.seed);
 
-    await learnCard.invoke.createProfile({
-        profileId: user.profileId,
-        displayName: user.displayName,
-        bio: '',
-        shortBio: '',
-    });
+    try {
+        await learnCard.invoke.createProfile({
+            profileId: user.profileId,
+            displayName: user.displayName,
+            bio: '',
+            shortBio: '',
+        });
+    } catch (error) { }
 
     return learnCard;
 };

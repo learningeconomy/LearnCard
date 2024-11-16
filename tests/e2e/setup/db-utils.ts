@@ -41,7 +41,11 @@ export async function clearDatabases() {
             (async () => {
                 const session = neo4jDriver.session();
                 try {
-                    await session.run('MATCH (n) DETACH DELETE n');
+                    await session.run(
+                        'MATCH (n) WHERE n.profileId IS NULL OR NOT n.profileId STARTS WITH "test" DETACH DELETE n'
+                    );
+
+                    await session.run('MATCH ()-[r]-() DELETE r');
                 } finally {
                     await session.close();
                 }
