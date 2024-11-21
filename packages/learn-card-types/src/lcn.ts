@@ -58,7 +58,10 @@ export const BoostQueryValidator = z
         uri: z.string().or(z.object({ $in: z.string().array() })),
         name: z.string().or(z.object({ $in: z.string().array() })),
         type: z.string().or(z.object({ $in: z.string().array() })),
-        category: z.string().or(z.object({ $in: z.string().array() })),
+        category: z
+            .string()
+            .or(z.object({ $in: z.string().array() }))
+            .or(z.object({ $regex: z.instanceof(RegExp) })),
         status: LCNBoostStatus.or(z.object({ $in: LCNBoostStatus.array() })),
         autoConnectRecipients: z.boolean(),
     })

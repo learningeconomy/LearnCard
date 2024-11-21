@@ -1,10 +1,14 @@
 import { BindParam, Op, QueryBuilder } from 'neogma';
 
 import { getIdFromUri } from '@helpers/uri.helpers';
-import { convertQueryResultToPropertiesObjectArray } from '@helpers/neo4j.helpers';
+import {
+    convertObjectRegExpToNeo4j,
+    convertQueryResultToPropertiesObjectArray,
+} from '@helpers/neo4j.helpers';
 import { Boost, Profile, BoostInstance, ProfileInstance } from '@models';
 import { BoostType } from 'types/boost';
 import { BoostQuery } from '@learncard/types';
+import { MATCH_QUERY_WHERE } from 'src/constants/neo4j';
 
 export const getBoostById = async (id: string): Promise<BoostInstance | null> => {
     return Boost.findOne({ where: { id } });
@@ -30,7 +34,9 @@ export const getBoostsForProfile = async (
         query: matchQuery = {},
     }: { limit: number; cursor?: string; query?: BoostQuery }
 ): Promise<Array<BoostType & { created: string }>> => {
-    const _query = new QueryBuilder(new BindParam({ matchQuery, cursor }))
+    const _query = new QueryBuilder(
+        new BindParam({ matchQuery: convertObjectRegExpToNeo4j(matchQuery), cursor })
+    )
         .match({
             related: [
                 { identifier: 'boost', model: Boost },
@@ -44,16 +50,8 @@ export const getBoostsForProfile = async (
                 `-[createdBy:${Boost.getRelationshipByAlias('createdBy').name}]-`,
                 { model: Profile },
             ],
-        }).where(`
-all(key IN keys($matchQuery) 
-    WHERE CASE 
-        WHEN $matchQuery[key] IS TYPED MAP 
-            AND $matchQuery[key]['$in'] IS NOT NULL
-        THEN boost[key] IN $matchQuery[key]['$in']
-        ELSE boost[key] = $matchQuery[key]
-    END
-)
-`);
+        })
+        .where(MATCH_QUERY_WHERE);
 
     const query = cursor ? _query.raw('AND createdBy.date < $cursor') : _query;
 
@@ -75,22 +73,17 @@ export const countBoostsForProfile = async (
     profile: ProfileInstance,
     { query: matchQuery = {} }: { query?: BoostQuery }
 ): Promise<number> => {
-    const query = new QueryBuilder(new BindParam({ matchQuery })).match({
-        related: [
-            { identifier: 'boost', model: Boost },
-            Boost.getRelationshipByAlias('hasRole'),
-            { model: Profile, where: { profileId: profile.profileId } },
-        ],
-    }).where(`
-all(key IN keys($matchQuery) 
-    WHERE CASE 
-        WHEN $matchQuery[key] IS TYPED MAP 
-            AND $matchQuery[key]['$in'] IS NOT NULL
-        THEN boost[key] IN $matchQuery[key]['$in']
-        ELSE boost[key] = $matchQuery[key]
-    END
-)
-`);
+    const query = new QueryBuilder(
+        new BindParam({ matchQuery: convertObjectRegExpToNeo4j(matchQuery) })
+    )
+        .match({
+            related: [
+                { identifier: 'boost', model: Boost },
+                Boost.getRelationshipByAlias('hasRole'),
+                { model: Profile, where: { profileId: profile.profileId } },
+            ],
+        })
+        .where(MATCH_QUERY_WHERE);
 
     const result = await query.return('COUNT(DISTINCT boost) AS count').run();
 
@@ -111,7 +104,9 @@ export const getChildrenBoosts = async (
         numberOfGenerations?: number;
     }
 ): Promise<Array<BoostType & { created: string }>> => {
-    const _query = new QueryBuilder(new BindParam({ matchQuery, cursor }))
+    const _query = new QueryBuilder(
+        new BindParam({ matchQuery: convertObjectRegExpToNeo4j(matchQuery), cursor })
+    )
         .match({
             related: [
                 { model: Boost, where: { id: boost.id } },
@@ -128,16 +123,8 @@ export const getChildrenBoosts = async (
                 `-[createdBy:${Boost.getRelationshipByAlias('createdBy').name}]-`,
                 { model: Profile },
             ],
-        }).where(`
-all(key IN keys($matchQuery) 
-    WHERE CASE 
-        WHEN $matchQuery[key] IS TYPED MAP 
-            AND $matchQuery[key]['$in'] IS NOT NULL
-        THEN boost[key] IN $matchQuery[key]['$in']
-        ELSE boost[key] = $matchQuery[key]
-    END
-)
-`);
+        })
+        .where(MATCH_QUERY_WHERE);
 
     const query = cursor ? _query.raw('AND createdBy.date < $cursor') : _query;
 
@@ -162,25 +149,20 @@ export const countBoostChildren = async (
         numberOfGenerations = 1,
     }: { query?: BoostQuery; numberOfGenerations?: number }
 ): Promise<number> => {
-    const query = new QueryBuilder(new BindParam({ matchQuery })).match({
-        related: [
-            { model: Boost, where: { id: boost.id } },
-            {
-                ...Boost.getRelationshipByAlias('parentOf'),
-                maxHops: numberOfGenerations,
-            },
-            { identifier: 'boost', model: Boost },
-        ],
-    }).where(`
-all(key IN keys($matchQuery) 
-    WHERE CASE 
-        WHEN $matchQuery[key] IS TYPED MAP 
-            AND $matchQuery[key]['$in'] IS NOT NULL
-        THEN boost[key] IN $matchQuery[key]['$in']
-        ELSE boost[key] = $matchQuery[key]
-    END
-)
-`);
+    const query = new QueryBuilder(
+        new BindParam({ matchQuery: convertObjectRegExpToNeo4j(matchQuery) })
+    )
+        .match({
+            related: [
+                { model: Boost, where: { id: boost.id } },
+                {
+                    ...Boost.getRelationshipByAlias('parentOf'),
+                    maxHops: numberOfGenerations,
+                },
+                { identifier: 'boost', model: Boost },
+            ],
+        })
+        .where(MATCH_QUERY_WHERE);
 
     const result = await query.return('COUNT(DISTINCT boost) AS count').run();
 
@@ -201,7 +183,9 @@ export const getParentBoosts = async (
         numberOfGenerations?: number;
     }
 ): Promise<Array<BoostType & { created: string }>> => {
-    const _query = new QueryBuilder(new BindParam({ matchQuery, cursor }))
+    const _query = new QueryBuilder(
+        new BindParam({ matchQuery: convertObjectRegExpToNeo4j(matchQuery), cursor })
+    )
         .match({
             related: [
                 { identifier: 'boost', model: Boost },
@@ -218,16 +202,8 @@ export const getParentBoosts = async (
                 `-[createdBy:${Boost.getRelationshipByAlias('createdBy').name}]-`,
                 { model: Profile },
             ],
-        }).where(`
-all(key IN keys($matchQuery) 
-    WHERE CASE 
-        WHEN $matchQuery[key] IS TYPED MAP 
-            AND $matchQuery[key]['$in'] IS NOT NULL
-        THEN boost[key] IN $matchQuery[key]['$in']
-        ELSE boost[key] = $matchQuery[key]
-    END
-)
-`);
+        })
+        .where(MATCH_QUERY_WHERE);
 
     const query = cursor ? _query.raw('AND createdBy.date < $cursor') : _query;
 
@@ -252,25 +228,20 @@ export const countBoostParents = async (
         numberOfGenerations = 1,
     }: { query?: BoostQuery; numberOfGenerations?: number }
 ): Promise<number> => {
-    const query = new QueryBuilder(new BindParam({ matchQuery })).match({
-        related: [
-            { identifier: 'boost', model: Boost },
-            {
-                ...Boost.getRelationshipByAlias('parentOf'),
-                maxHops: numberOfGenerations,
-            },
-            { model: Boost, where: { id: boost.id } },
-        ],
-    }).where(`
-all(key IN keys($matchQuery) 
-    WHERE CASE 
-        WHEN $matchQuery[key] IS TYPED MAP 
-            AND $matchQuery[key]['$in'] IS NOT NULL
-        THEN boost[key] IN $matchQuery[key]['$in']
-        ELSE boost[key] = $matchQuery[key]
-    END
-)
-`);
+    const query = new QueryBuilder(
+        new BindParam({ matchQuery: convertObjectRegExpToNeo4j(matchQuery) })
+    )
+        .match({
+            related: [
+                { identifier: 'boost', model: Boost },
+                {
+                    ...Boost.getRelationshipByAlias('parentOf'),
+                    maxHops: numberOfGenerations,
+                },
+                { model: Boost, where: { id: boost.id } },
+            ],
+        })
+        .where(MATCH_QUERY_WHERE);
 
     const result = await query.return('COUNT(DISTINCT boost) AS count').run();
 

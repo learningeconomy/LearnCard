@@ -192,6 +192,27 @@ describe('Boosts', () => {
             expect(boosts[0]?.category).not.toEqual('C');
             expect(boosts[1]?.category).not.toEqual('C');
         });
+
+        it('should allow querying with $regex', async () => {
+            await userA.clients.fullAuth.boost.createBoost({ credential: testVc, category: 'All' });
+            await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+                category: 'allo',
+            });
+            await userA.clients.fullAuth.boost.createBoost({ credential: testVc, category: 'C' });
+
+            await expect(
+                userA.clients.fullAuth.boost.getBoosts({ query: { category: { $regex: /all/i } } })
+            ).resolves.not.toThrow();
+
+            const boosts = await userA.clients.fullAuth.boost.getBoosts({
+                query: { category: { $regex: /all/i } },
+            });
+
+            expect(boosts).toHaveLength(2);
+            expect(boosts[0]?.category).not.toEqual('C');
+            expect(boosts[1]?.category).not.toEqual('C');
+        });
     });
 
     describe('getPaginatedBoosts', () => {
@@ -261,6 +282,29 @@ describe('Boosts', () => {
 
             const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts({
                 query: { category: { $in: ['A', 'B'] } },
+            });
+
+            expect(boosts.records).toHaveLength(2);
+            expect(boosts.records[0]?.category).not.toEqual('C');
+            expect(boosts.records[1]?.category).not.toEqual('C');
+        });
+
+        it('should allow querying with $regex', async () => {
+            await userA.clients.fullAuth.boost.createBoost({ credential: testVc, category: 'All' });
+            await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+                category: 'allo',
+            });
+            await userA.clients.fullAuth.boost.createBoost({ credential: testVc, category: 'C' });
+
+            await expect(
+                userA.clients.fullAuth.boost.getPaginatedBoosts({
+                    query: { category: { $regex: /all/i } },
+                })
+            ).resolves.not.toThrow();
+
+            const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts({
+                query: { category: { $regex: /all/i } },
             });
 
             expect(boosts.records).toHaveLength(2);
@@ -1869,6 +1913,27 @@ describe('Boosts', () => {
 
             expect(count).toEqual(2);
         });
+
+        it('should allow querying with $regex', async () => {
+            await userA.clients.fullAuth.boost.createBoost({ credential: testVc, category: 'All' });
+            await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+                category: 'allo',
+            });
+            await userA.clients.fullAuth.boost.createBoost({ credential: testVc, category: 'C' });
+
+            await expect(
+                userA.clients.fullAuth.boost.countBoosts({
+                    query: { category: { $regex: /all/i } },
+                })
+            ).resolves.not.toThrow();
+
+            const count = await userA.clients.fullAuth.boost.countBoosts({
+                query: { category: { $regex: /all/i } },
+            });
+
+            expect(count).toEqual(2);
+        });
     });
 
     describe('createChildBoost', () => {
@@ -2215,6 +2280,40 @@ describe('Boosts', () => {
             expect(boosts.records[1]?.category).not.toEqual('C');
         });
 
+        it('should allow querying with $regex', async () => {
+            const parentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+            });
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc, category: 'All' },
+            });
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc, category: 'allo' },
+            });
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc, category: 'C' },
+            });
+
+            await expect(
+                userA.clients.fullAuth.boost.getBoostChildren({
+                    uri: parentUri,
+                    query: { category: { $regex: /all/i } },
+                })
+            ).resolves.not.toThrow();
+
+            const boosts = await userA.clients.fullAuth.boost.getBoostChildren({
+                uri: parentUri,
+                query: { category: { $regex: /all/i } },
+            });
+
+            expect(boosts.records).toHaveLength(2);
+            expect(boosts.records[0]?.category).not.toEqual('C');
+            expect(boosts.records[1]?.category).not.toEqual('C');
+        });
+
         it('should paginate correctly', async () => {
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
                 credential: testVc,
@@ -2440,6 +2539,38 @@ describe('Boosts', () => {
 
             expect(count).toEqual(2);
         });
+
+        it('should allow querying with $regex', async () => {
+            const parentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+            });
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc, category: 'All' },
+            });
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc, category: 'allo' },
+            });
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc, category: 'C' },
+            });
+
+            await expect(
+                userA.clients.fullAuth.boost.countBoostChildren({
+                    uri: parentUri,
+                    query: { category: { $regex: /all/i } },
+                })
+            ).resolves.not.toThrow();
+
+            const count = await userA.clients.fullAuth.boost.countBoostChildren({
+                uri: parentUri,
+                query: { category: { $regex: /all/i } },
+            });
+
+            expect(count).toEqual(2);
+        });
     });
 
     describe('getBoostParents', () => {
@@ -2629,6 +2760,44 @@ describe('Boosts', () => {
             const boosts = await userA.clients.fullAuth.boost.getBoostParents({
                 uri: childUri,
                 query: { category: { $in: ['A', 'B'] } },
+            });
+
+            expect(boosts.records).toHaveLength(2);
+            expect(boosts.records[0]?.category).not.toEqual('C');
+            expect(boosts.records[1]?.category).not.toEqual('C');
+        });
+
+        it('should allow querying with $regex', async () => {
+            const parent1Uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+                category: 'All',
+            });
+            const parent2Uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+                category: 'allo',
+            });
+            const parent3Uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+                category: 'C',
+            });
+            const childUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+            });
+
+            await userA.clients.fullAuth.boost.makeBoostParent({ parentUri: parent1Uri, childUri });
+            await userA.clients.fullAuth.boost.makeBoostParent({ parentUri: parent2Uri, childUri });
+            await userA.clients.fullAuth.boost.makeBoostParent({ parentUri: parent3Uri, childUri });
+
+            await expect(
+                userA.clients.fullAuth.boost.getBoostParents({
+                    uri: childUri,
+                    query: { category: { $regex: /all/i } },
+                })
+            ).resolves.not.toThrow();
+
+            const boosts = await userA.clients.fullAuth.boost.getBoostParents({
+                uri: childUri,
+                query: { category: { $regex: /all/i } },
             });
 
             expect(boosts.records).toHaveLength(2);
@@ -2861,6 +3030,42 @@ describe('Boosts', () => {
             const count = await userA.clients.fullAuth.boost.countBoostParents({
                 uri: childUri,
                 query: { category: { $in: ['A', 'B'] } },
+            });
+
+            expect(count).toEqual(2);
+        });
+
+        it('should allow querying with $regex', async () => {
+            const parent1Uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+                category: 'All',
+            });
+            const parent2Uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+                category: 'allo',
+            });
+            const parent3Uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+                category: 'C',
+            });
+            const childUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+            });
+
+            await userA.clients.fullAuth.boost.makeBoostParent({ parentUri: parent1Uri, childUri });
+            await userA.clients.fullAuth.boost.makeBoostParent({ parentUri: parent2Uri, childUri });
+            await userA.clients.fullAuth.boost.makeBoostParent({ parentUri: parent3Uri, childUri });
+
+            await expect(
+                userA.clients.fullAuth.boost.countBoostParents({
+                    uri: childUri,
+                    query: { category: { $regex: /all/i } },
+                })
+            ).resolves.not.toThrow();
+
+            const count = await userA.clients.fullAuth.boost.countBoostParents({
+                uri: childUri,
+                query: { category: { $regex: /all/i } },
             });
 
             expect(count).toEqual(2);
