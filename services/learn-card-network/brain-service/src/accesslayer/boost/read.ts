@@ -169,6 +169,78 @@ export const countBoostChildren = async (
     return Number(result.records[0]?.get('count') ?? 0);
 };
 
+export const getSiblingBoosts = async (
+    boost: BoostInstance,
+    {
+        limit,
+        cursor,
+        query: matchQuery = {},
+    }: {
+        limit: number;
+        cursor?: string;
+        query?: BoostQuery;
+    }
+): Promise<Array<BoostType & { created: string }>> => {
+    const _query = new QueryBuilder(
+        new BindParam({ matchQuery: convertObjectRegExpToNeo4j(matchQuery), cursor })
+    )
+        .match({
+            related: [
+                { model: Boost, where: { id: boost.id } },
+                { ...Boost.getRelationshipByAlias('parentOf'), direction: 'in' },
+                { model: Boost },
+                { ...Boost.getRelationshipByAlias('parentOf') },
+                { identifier: 'boost', model: Boost },
+            ],
+        })
+        .match({
+            related: [
+                { identifier: 'boost' },
+                `-[createdBy:${Boost.getRelationshipByAlias('createdBy').name}]-`,
+                { model: Profile },
+            ],
+        })
+        .where(MATCH_QUERY_WHERE);
+
+    const query = cursor ? _query.raw('AND createdBy.date < $cursor') : _query;
+
+    const results = convertQueryResultToPropertiesObjectArray<{
+        boost: BoostType;
+        createdBy: { date: string };
+    }>(
+        await query
+            .return('DISTINCT boost, createdBy')
+            .orderBy('createdBy.date DESC')
+            .limit(limit)
+            .run()
+    );
+
+    return results.map(result => ({ ...result.boost, created: result.createdBy.date }));
+};
+
+export const countBoostSiblings = async (
+    boost: BoostInstance,
+    { query: matchQuery = {} }: { query?: BoostQuery }
+): Promise<number> => {
+    const query = new QueryBuilder(
+        new BindParam({ matchQuery: convertObjectRegExpToNeo4j(matchQuery) })
+    )
+        .match({
+            related: [
+                { model: Boost, where: { id: boost.id } },
+                { ...Boost.getRelationshipByAlias('parentOf'), direction: 'in' },
+                { model: Boost },
+                { ...Boost.getRelationshipByAlias('parentOf') },
+                { identifier: 'boost', model: Boost },
+            ],
+        })
+        .where(MATCH_QUERY_WHERE);
+
+    const result = await query.return('COUNT(DISTINCT boost) AS count').run();
+
+    return Number(result.records[0]?.get('count') ?? 0);
+};
+
 export const getParentBoosts = async (
     boost: BoostInstance,
     {

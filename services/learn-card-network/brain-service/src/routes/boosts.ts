@@ -27,6 +27,8 @@ import {
     countBoostChildren,
     getParentBoosts,
     countBoostParents,
+    getSiblingBoosts,
+    countBoostSiblings,
 } from '@accesslayer/boost/read';
 import {
     getBoostRecipientsSkipLimit,
@@ -528,6 +530,78 @@ export const boostsRouter = t.router({
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
             return countBoostChildren(boost, { query, numberOfGenerations });
+        }),
+
+    getBoostSiblings: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/boost/siblings/{uri}',
+                tags: ['Boosts'],
+                summary: 'Get boost siblings',
+                description: 'This endpoint gets the siblings of a particular boost',
+            },
+        })
+        .input(
+            PaginationOptionsValidator.extend({
+                limit: PaginationOptionsValidator.shape.limit.default(25),
+                uri: z.string(),
+                query: BoostQueryValidator.optional(),
+            })
+        )
+        .output(PaginatedBoostsValidator)
+        .query(async ({ input, ctx }) => {
+            const { uri, limit, cursor, query } = input;
+
+            const boost = await getBoostByUri(uri);
+
+            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            const records = await getSiblingBoosts(boost, { limit: limit + 1, cursor, query });
+
+            const hasMore = records.length > limit;
+            const newCursor = records.at(hasMore ? -2 : -1)?.created;
+
+            return {
+                hasMore,
+                records: records
+                    .map(boost => {
+                        const { id, boost: _boost, created: _created, ...remaining } = boost;
+
+                        return { ...remaining, uri: getBoostUri(id, ctx.domain) };
+                    })
+                    .slice(0, limit),
+                ...(newCursor && { cursor: newCursor }),
+            };
+        }),
+
+    countBoostSiblings: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/boost/siblings/{uri}/count',
+                tags: ['Boosts'],
+                summary: 'Count boost siblings',
+                description: 'This endpoint counts the siblings of a particular boost',
+            },
+        })
+        .input(
+            z.object({
+                uri: z.string(),
+                query: BoostQueryValidator.optional(),
+            })
+        )
+        .output(z.number())
+        .query(async ({ input }) => {
+            const { uri, query } = input;
+
+            const boost = await getBoostByUri(uri);
+
+            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            return countBoostSiblings(boost, { query });
         }),
 
     getBoostParents: profileRoute
