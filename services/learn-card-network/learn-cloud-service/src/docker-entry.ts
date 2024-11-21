@@ -9,6 +9,7 @@ import { appRouter, type AppRouter, createContext } from './app';
 import { openApiDocument } from './openapi';
 import { didFastifyPlugin } from './dids';
 import { xapiFastifyPlugin } from './xapi';
+import { oidcFastifyPlugin } from './oidc';
 
 const server = Fastify({ maxParamLength: 5000 });
 
@@ -44,6 +45,7 @@ server.register(fastifyStatic, {
 
 server.register(didFastifyPlugin);
 server.register(xapiFastifyPlugin);
+server.register(oidcFastifyPlugin);
 
 (async () => {
     try {

@@ -159,6 +159,21 @@ functions:
         url:
             cors: true
 
+    oidc:
+        handler: oidcLambda.oidcHandler
+        vpc:
+            securityGroupIds:
+                - 'Fn::GetAtt': [ServerlessSecurityGroup, GroupId]
+            subnetIds:
+                - Ref: PrivateSubnetA
+        events:
+            - httpApi: ANY /oidc/{params+}
+            - httpApi: GET /.well-known/openid-configuration
+            - httpApi: OPTIONS /.well-known/openid-configuration
+
+        url:
+            cors: true
+
     swagger:
         handler: lambda.swaggerUiHandler
         events:

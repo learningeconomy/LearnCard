@@ -4,6 +4,8 @@ export const areDidsEqual = async (did1: string, did2: string) => {
     try {
         if (did1 === did2) return true;
 
+        if (!did1.startsWith('did') || !did2.startsWith('did')) return false;
+
         const lc = await getEmptyLearnCard();
 
         const [resolvedDid1, resolvedDid2] = await Promise.all([
@@ -17,7 +19,7 @@ export const areDidsEqual = async (did1: string, did2: string) => {
             );
         });
     } catch (error) {
-        console.error('Are dids equal error', error);
+        console.error('Are dids equal error', error, did1, did2);
         return false;
     }
 };

@@ -1,4 +1,5 @@
-import { AUTHOR_EXTENSION, XAPI_ENDPOINT } from '../constants/xapi';
+import { some } from 'async';
+import { XAPI_ENDPOINT } from '../constants/xapi';
 import { areDidsEqual } from '@helpers/did.helpers';
 
 export const verifyVoidStatement = async (
@@ -18,6 +19,8 @@ export const verifyVoidStatement = async (
 
     return (
         (await areDidsEqual(targetDid, statement?.actor?.account?.name ?? '')) &&
-        (await areDidsEqual(did, statement?.context?.extensions?.[AUTHOR_EXTENSION] ?? ''))
+        (await some(statement?.authority?.member ?? [], async member =>
+            areDidsEqual(did, (member as any)?.account?.name ?? '')
+        ))
     );
 };

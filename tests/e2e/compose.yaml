@@ -60,7 +60,6 @@ services:
     depends_on:
       - mongodb
       - redis
-      - lrs
 
     networks:
       - learn-card
@@ -85,6 +84,9 @@ services:
       XAPI_ENDPOINT: http://lrs:8080/xapi
       XAPI_USERNAME: test-api-key
       XAPI_PASSWORD: test-api-secret
+
+      SERVER_URL: http://cloud:4100
+      JWT_SIGNING_KEY: test
 
   neo4j:
     image: neo4j:latest
@@ -169,10 +171,13 @@ services:
       - /lrsql/bin/run_postgres.sh
     networks:
       - learn-card
+    extra_hosts:
+      - "localhost:host-gateway"
     ports:
       - "8080:8080"
     depends_on:
       - postgres
+      - cloud
     environment:
       LRSQL_API_KEY_DEFAULT: test-api-key
       LRSQL_API_SECRET_DEFAULT: test-api-secret
@@ -182,6 +187,11 @@ services:
       LRSQL_DB_NAME: lrsql_db
       LRSQL_DB_USER: lrsql_user
       LRSQL_DB_PASSWORD: lrsql_password
+
+      LRSQL_OIDC_ISSUER: http://cloud:4100
+      LRSQL_OIDC_AUDIENCE: http://lrs:8080/xapi
+      LRSQL_OIDC_SCOPE_PREFIX: "lrs:"
+
       # If Postgres is too slow to start, increase this
       LRSQL_POOL_INITIALIZATION_FAIL_TIMEOUT: 10000
       LRSQL_ALLOW_ALL_ORIGINS: true
