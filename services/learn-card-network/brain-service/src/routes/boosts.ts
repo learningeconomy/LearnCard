@@ -29,6 +29,8 @@ import {
     countBoostParents,
     getSiblingBoosts,
     countBoostSiblings,
+    getFamilialBoosts,
+    countFamilialBoosts,
 } from '@accesslayer/boost/read';
 import {
     getBoostRecipientsSkipLimit,
@@ -602,6 +604,90 @@ export const boostsRouter = t.router({
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
             return countBoostSiblings(boost, { query });
+        }),
+
+    getFamilialBoosts: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/boost/family/{uri}',
+                tags: ['Boosts'],
+                summary: 'Get familial boosts',
+                description:
+                    'This endpoint gets the parents, children, and siblings of a particular boost',
+            },
+        })
+        .input(
+            PaginationOptionsValidator.extend({
+                limit: PaginationOptionsValidator.shape.limit.default(25),
+                uri: z.string(),
+                query: BoostQueryValidator.optional(),
+                parentGenerations: z.number().default(1),
+                childGenerations: z.number().default(1),
+            })
+        )
+        .output(PaginatedBoostsValidator)
+        .query(async ({ input, ctx }) => {
+            const { uri, limit, cursor, query, parentGenerations, childGenerations } = input;
+
+            const boost = await getBoostByUri(uri);
+
+            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            const records = await getFamilialBoosts(boost, {
+                limit: limit + 1,
+                cursor,
+                query,
+                parentGenerations,
+                childGenerations,
+            });
+
+            const hasMore = records.length > limit;
+            const newCursor = records.at(hasMore ? -2 : -1)?.created;
+
+            return {
+                hasMore,
+                records: records
+                    .map(boost => {
+                        const { id, boost: _boost, created: _created, ...remaining } = boost;
+
+                        return { ...remaining, uri: getBoostUri(id, ctx.domain) };
+                    })
+                    .slice(0, limit),
+                ...(newCursor && { cursor: newCursor }),
+            };
+        }),
+
+    countFamilialBoosts: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/boost/family/{uri}/count',
+                tags: ['Boosts'],
+                summary: 'Count familial boosts',
+                description:
+                    'This endpoint counts the parents, children, and siblings of a particular boost',
+            },
+        })
+        .input(
+            z.object({
+                uri: z.string(),
+                query: BoostQueryValidator.optional(),
+                parentGenerations: z.number().default(1),
+                childGenerations: z.number().default(1),
+            })
+        )
+        .output(z.number())
+        .query(async ({ input }) => {
+            const { uri, query, parentGenerations, childGenerations } = input;
+
+            const boost = await getBoostByUri(uri);
+
+            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            return countFamilialBoosts(boost, { query, parentGenerations, childGenerations });
         }),
 
     getBoostParents: profileRoute

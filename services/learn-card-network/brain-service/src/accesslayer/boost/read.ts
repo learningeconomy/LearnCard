@@ -241,6 +241,100 @@ export const countBoostSiblings = async (
     return Number(result.records[0]?.get('count') ?? 0);
 };
 
+export const getFamilialBoosts = async (
+    boost: BoostInstance,
+    {
+        limit,
+        cursor,
+        query: matchQuery = {},
+        parentGenerations = 1,
+        childGenerations = 1,
+    }: {
+        limit: number;
+        cursor?: string;
+        query?: BoostQuery;
+        parentGenerations?: number;
+        childGenerations?: number;
+    }
+): Promise<Array<BoostType & { created: string }>> => {
+    // Theoretically these should never _not_ be a number, but because we are interpolating them into
+    // the cypher string, it's good to sanitize them anyways
+    if (typeof parentGenerations !== 'number' || typeof childGenerations !== 'number') {
+        throw new Error(
+            `Attempted Injection attack! parentGenerations: ${parentGenerations}, childGenerations: ${childGenerations}`
+        );
+    }
+
+    const _query = new QueryBuilder(
+        new BindParam({ matchQuery: convertObjectRegExpToNeo4j(matchQuery), cursor })
+    )
+        .match({ model: Boost, where: { id: boost.id }, identifier: 'start' })
+        .match({ model: Boost, identifier: 'boost' })
+        .where(
+            `
+((start)<-[:PARENT_OF*1..${Number.isFinite(parentGenerations) ? parentGenerations : ''}]-(boost) OR 
+(start)-[:PARENT_OF*1..${Number.isFinite(childGenerations) ? childGenerations : ''}]->(boost) OR 
+(start)<-[:PARENT_OF]-(:Boost)-[:PARENT_OF]->(boost) AND boost <> start)
+AND ${MATCH_QUERY_WHERE}`
+        )
+        .match({
+            related: [
+                { identifier: 'boost' },
+                { ...Boost.getRelationshipByAlias('createdBy'), identifier: 'createdBy' },
+                { model: Profile },
+            ],
+        });
+
+    const query = cursor ? _query.where('createdBy.date < $cursor') : _query;
+
+    const results = convertQueryResultToPropertiesObjectArray<{
+        boost: BoostType;
+        createdBy: { date: string };
+    }>(
+        await query
+            .return('DISTINCT boost, createdBy')
+            .orderBy('createdBy.date DESC')
+            .limit(limit)
+            .run()
+    );
+
+    return results.map(result => ({ ...result.boost, created: result.createdBy.date }));
+};
+
+export const countFamilialBoosts = async (
+    boost: BoostInstance,
+    {
+        query: matchQuery = {},
+        parentGenerations = 1,
+        childGenerations = 1,
+    }: { query?: BoostQuery; parentGenerations?: number; childGenerations?: number }
+): Promise<number> => {
+    // Theoretically these should never _not_ be a number, but because we are interpolating them into
+    // the cypher string, it's good to sanitize them anyways
+    if (typeof parentGenerations !== 'number' || typeof childGenerations !== 'number') {
+        throw new Error(
+            `Attempted Injection attack! parentGenerations: ${parentGenerations}, childGenerations: ${childGenerations}`
+        );
+    }
+
+    const query = new QueryBuilder(
+        new BindParam({ matchQuery: convertObjectRegExpToNeo4j(matchQuery) })
+    )
+        .match({ model: Boost, where: { id: boost.id }, identifier: 'start' })
+        .match({ model: Boost, identifier: 'boost' })
+        .where(
+            `
+((start)<-[:PARENT_OF*1..${Number.isFinite(parentGenerations) ? parentGenerations : ''}]-(boost) OR 
+(start)-[:PARENT_OF*1..${Number.isFinite(childGenerations) ? childGenerations : ''}]->(boost) OR 
+(start)<-[:PARENT_OF]-(:Boost)-[:PARENT_OF]->(boost) AND boost <> start)
+AND ${MATCH_QUERY_WHERE}`
+        );
+
+    const result = await query.return('COUNT(DISTINCT boost) AS count').run();
+
+    return Number(result.records[0]?.get('count') ?? 0);
+};
+
 export const getParentBoosts = async (
     boost: BoostInstance,
     {

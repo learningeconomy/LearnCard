@@ -3077,6 +3077,926 @@ describe('Boosts', () => {
         });
     });
 
+    describe('getFamilialBoosts', () => {
+        beforeEach(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+        });
+
+        afterAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+        });
+
+        it('should require full auth to get familial boosts', async () => {
+            const parentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+            });
+            const childUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc },
+            });
+
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: childUri,
+                boost: { credential: testVc },
+            });
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc },
+            });
+
+            await expect(
+                noAuthClient.boost.getFamilialBoosts({ uri: childUri })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+            await expect(
+                userA.clients.partialAuth.boost.getFamilialBoosts({ uri: childUri })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        });
+
+        it('should allow getting familial boosts', async () => {
+            const parentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+                category: 'A',
+            });
+            const childUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc, category: 'B' },
+            });
+
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: childUri,
+                boost: { credential: testVc, category: 'C' },
+            });
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc, category: 'D' },
+            });
+
+            await expect(
+                userA.clients.fullAuth.boost.getFamilialBoosts({ uri: childUri })
+            ).resolves.not.toThrow();
+
+            const boosts = await userA.clients.fullAuth.boost.getFamilialBoosts({ uri: childUri });
+
+            expect(boosts.records).toHaveLength(3);
+            expect(boosts.records[0]?.category).not.toEqual('B');
+            expect(boosts.records[1]?.category).not.toEqual('B');
+            expect(boosts.records[2]?.category).not.toEqual('B');
+        });
+
+        it('should return children', async () => {
+            const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+                category: 'A',
+            });
+            const parentUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: grandParentUri,
+                boost: {
+                    credential: testVc,
+                },
+            });
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: {
+                    credential: testVc,
+                    category: 'B',
+                },
+            });
+
+            const boosts = await userA.clients.fullAuth.boost.getFamilialBoosts({ uri: parentUri });
+
+            expect(boosts.records).toHaveLength(2);
+            expect(boosts.records.some(boost => boost.category === 'B')).toBeTruthy();
+        });
+
+        it('should return parents', async () => {
+            const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+                category: 'A',
+            });
+            const parentUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: grandParentUri,
+                boost: { credential: testVc },
+            });
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc, category: 'B' },
+            });
+
+            const boosts = await userA.clients.fullAuth.boost.getFamilialBoosts({ uri: parentUri });
+
+            expect(boosts.records).toHaveLength(2);
+            expect(boosts.records.some(boost => boost.category === 'A')).toBeTruthy();
+        });
+
+        it('should return siblings', async () => {
+            const parentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+            });
+            const childUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc, category: 'A' },
+            });
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc, category: 'B' },
+            });
+
+            const boosts = await userA.clients.fullAuth.boost.getFamilialBoosts({ uri: childUri });
+
+            expect(boosts.records).toHaveLength(2);
+            expect(boosts.records.some(boost => boost.category === 'B')).toBeTruthy();
+        });
+
+        it('should not return grandparents', async () => {
+            const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+                category: 'A',
+            });
+            const parentUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: grandParentUri,
+                boost: { credential: testVc, category: 'B' },
+            });
+            const childUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc },
+            });
+
+            const boosts = await userA.clients.fullAuth.boost.getFamilialBoosts({ uri: childUri });
+
+            expect(boosts.records).toHaveLength(1);
+            expect(boosts.records[0]?.category).toEqual('B');
+        });
+
+        it('should allow returning grandparents', async () => {
+            const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+                category: 'A',
+            });
+            const parentUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: grandParentUri,
+                boost: { credential: testVc, category: 'B' },
+            });
+            const childUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc },
+            });
+
+            const boosts = await userA.clients.fullAuth.boost.getFamilialBoosts({
+                uri: childUri,
+                parentGenerations: Infinity,
+            });
+
+            expect(boosts.records).toHaveLength(2);
+        });
+
+        it('should not return grandchildren', async () => {
+            const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+            });
+            const parentUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: grandParentUri,
+                boost: { credential: testVc, category: 'A' },
+            });
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc, category: 'B' },
+            });
+
+            const boosts = await userA.clients.fullAuth.boost.getFamilialBoosts({
+                uri: grandParentUri,
+            });
+
+            expect(boosts.records).toHaveLength(1);
+            expect(boosts.records[0]?.category).toEqual('A');
+        });
+
+        it('should allow returning grandchildren', async () => {
+            const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+            });
+            const parentUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: grandParentUri,
+                boost: { credential: testVc, category: 'A' },
+            });
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc, category: 'B' },
+            });
+
+            const boosts = await userA.clients.fullAuth.boost.getFamilialBoosts({
+                uri: grandParentUri,
+                childGenerations: Infinity,
+            });
+
+            expect(boosts.records).toHaveLength(2);
+        });
+
+        it('should allow different numbers of generations for children/parents', async () => {
+            const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+                name: 'My Grandpa',
+            });
+            const parentUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: grandParentUri,
+                boost: { credential: testVc, name: 'My Dad' },
+            });
+            const middleUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc, name: 'Me' },
+            });
+
+            const childUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: middleUri,
+                boost: { credential: testVc, name: 'My Son' },
+            });
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: childUri,
+                boost: { credential: testVc, name: 'My Grandson' },
+            });
+
+            const boosts = await userA.clients.fullAuth.boost.getFamilialBoosts({
+                uri: middleUri,
+                childGenerations: 2,
+                parentGenerations: 1
+            });
+
+            expect(boosts.records).toHaveLength(3);
+            expect(boosts.records.some(boost => boost.name === 'My Grandpa')).toBeFalsy();
+            expect(boosts.records.some(boost => boost.name === 'My Dad')).toBeTruthy();
+            expect(boosts.records.some(boost => boost.name === 'My Son')).toBeTruthy();
+            expect(boosts.records.some(boost => boost.name === 'My Grandson')).toBeTruthy();
+        });
+
+        it('should not return cousins', async () => {
+            const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+                category: 'A',
+            });
+            const parentUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: grandParentUri,
+                boost: { credential: testVc },
+            });
+            const childUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc, category: 'A' },
+            });
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc, category: 'B' },
+            });
+
+            const parent2Uri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: grandParentUri,
+                boost: { credential: testVc },
+            });
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: parent2Uri,
+                boost: { credential: testVc, category: 'C' },
+            });
+
+            const boosts = await userA.clients.fullAuth.boost.getFamilialBoosts({ uri: childUri });
+
+            expect(boosts.records).toHaveLength(2);
+            expect(boosts.records.some(boost => boost.category === 'C')).toBeFalsy();
+            expect(boosts.records.some(boost => boost.category === 'B')).toBeTruthy();
+        });
+
+        it('should return siblings from multiple parents', async () => {
+            const parentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+            });
+            const childUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc, category: 'A' },
+            });
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc, category: 'B' },
+            });
+
+            const parent2Uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+            });
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: parent2Uri,
+                boost: { credential: testVc, category: 'C' },
+            });
+
+            await userA.clients.fullAuth.boost.makeBoostParent({ parentUri: parent2Uri, childUri });
+
+            const boosts = await userA.clients.fullAuth.boost.getFamilialBoosts({ uri: childUri });
+
+            expect(boosts.records).toHaveLength(4);
+        });
+
+        it('should allow querying familial boosts', async () => {
+            const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+                name: 'My Grandpa',
+            });
+            const parentUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: grandParentUri,
+                boost: { credential: testVc, name: 'My Dad' },
+            });
+            const middleUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc, name: 'Me' },
+            });
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc, name: 'My Brother' },
+            });
+
+            const childUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: middleUri,
+                boost: { credential: testVc, name: 'My Son' },
+            });
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: childUri,
+                boost: { credential: testVc, name: 'My Grandson' },
+            });
+
+            const boosts = await userA.clients.fullAuth.boost.getFamilialBoosts({
+                uri: middleUri,
+                query: { name: 'My Son' },
+            });
+
+            expect(boosts.records).toHaveLength(1);
+            expect(boosts.records[0]?.name).toEqual('My Son');
+        });
+
+        it('should allow querying with $in', async () => {
+            const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+                name: 'My Grandpa',
+            });
+            const parentUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: grandParentUri,
+                boost: { credential: testVc, name: 'My Dad' },
+            });
+            const middleUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc, name: 'Me' },
+            });
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc, name: 'My Brother' },
+            });
+
+            const childUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: middleUri,
+                boost: { credential: testVc, name: 'My Son' },
+            });
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: childUri,
+                boost: { credential: testVc, name: 'My Grandson' },
+            });
+
+            const boosts = await userA.clients.fullAuth.boost.getFamilialBoosts({
+                uri: middleUri,
+                query: { name: { $in: ['My Dad', 'My Brother'] } },
+            });
+
+            expect(boosts.records).toHaveLength(2);
+            expect(boosts.records.some(boost => boost.name === 'My Dad')).toBeTruthy();
+            expect(boosts.records.some(boost => boost.name === 'My Brother')).toBeTruthy();
+        });
+
+        it('should allow querying with $regex', async () => {
+            const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+                name: 'My Grandpa',
+            });
+            const parentUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: grandParentUri,
+                boost: { credential: testVc, name: 'My Dad' },
+            });
+            const middleUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc, name: 'Me' },
+            });
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc, name: 'My Brother' },
+            });
+
+            const childUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: middleUri,
+                boost: { credential: testVc, name: 'My Son' },
+            });
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: childUri,
+                boost: { credential: testVc, name: 'My Grandson' },
+            });
+
+            const boosts = await userA.clients.fullAuth.boost.getFamilialBoosts({
+                uri: middleUri,
+                parentGenerations: Infinity,
+                childGenerations: Infinity,
+                query: { name: { $regex: /son/i } },
+            });
+
+            expect(boosts.records).toHaveLength(2);
+            expect(boosts.records.some(boost => boost.name === 'My Son')).toBeTruthy();
+            expect(boosts.records.some(boost => boost.name === 'My Grandson')).toBeTruthy();
+        });
+
+        it('should paginate correctly', async () => {
+            const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+                name: 'My Grandpa',
+            });
+            const grandParent2Uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+                name: 'My Grandma',
+            });
+            const parentUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: grandParentUri,
+                boost: { credential: testVc, name: 'My Dad' },
+            });
+
+            await userA.clients.fullAuth.boost.makeBoostParent({ parentUri: grandParent2Uri, childUri: parentUri })
+
+            const middleUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc, name: 'Me' },
+            });
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc, name: 'My Brother' },
+            });
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc, name: 'My Sister' },
+            });
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc, name: 'My Other Brother' },
+            });
+
+            const childUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: middleUri,
+                boost: { credential: testVc, name: 'My Son' },
+            });
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: middleUri,
+                boost: { credential: testVc, name: 'My Daughter' },
+            });
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: childUri,
+                boost: { credential: testVc, name: 'My Grandson' },
+            });
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: childUri,
+                boost: { credential: testVc, name: 'My Granddaughter' },
+            });
+
+            const boosts = await userA.clients.fullAuth.boost.getFamilialBoosts({
+                uri: middleUri,
+                parentGenerations: Infinity,
+                childGenerations: Infinity,
+                limit: 20,
+            });
+
+            expect(boosts.records).toHaveLength(10);
+
+            const firstPage = await userA.clients.fullAuth.boost.getFamilialBoosts({
+                uri: middleUri,
+                parentGenerations: Infinity,
+                childGenerations: Infinity,
+                limit: 5,
+            });
+
+            expect(firstPage.records).toHaveLength(5);
+            expect(firstPage.hasMore).toBeTruthy();
+            expect(firstPage.cursor).toBeDefined();
+
+            const secondPage = await userA.clients.fullAuth.boost.getFamilialBoosts({
+                uri: middleUri,
+                parentGenerations: Infinity,
+                childGenerations: Infinity,
+                limit: 5,
+                cursor: firstPage.cursor,
+            });
+
+            expect(secondPage.hasMore).toBeFalsy();
+
+            expect([...firstPage.records, ...secondPage.records]).toEqual(boosts.records);
+        });
+    });
+
+    describe('countFamilialBoosts', () => {
+        beforeEach(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+        });
+
+        afterAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+        });
+
+        it('should require full auth to count familial boosts', async () => {
+            const parentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+            });
+            const childUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc },
+            });
+
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: childUri,
+                boost: { credential: testVc },
+            });
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc },
+            });
+
+            await expect(
+                noAuthClient.boost.countFamilialBoosts({ uri: childUri })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+            await expect(
+                userA.clients.partialAuth.boost.countFamilialBoosts({ uri: childUri })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        });
+
+        it('should allow counting familial boosts', async () => {
+            const parentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+                category: 'A',
+            });
+            const childUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc, category: 'B' },
+            });
+
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: childUri,
+                boost: { credential: testVc, category: 'C' },
+            });
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc, category: 'D' },
+            });
+
+            await expect(
+                userA.clients.fullAuth.boost.countFamilialBoosts({ uri: childUri })
+            ).resolves.not.toThrow();
+
+            const count = await userA.clients.fullAuth.boost.countFamilialBoosts({ uri: childUri });
+
+            expect(count).toEqual(3);
+        });
+
+        it('should count children', async () => {
+            const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+                category: 'A',
+            });
+            const parentUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: grandParentUri,
+                boost: {
+                    credential: testVc,
+                },
+            });
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: {
+                    credential: testVc,
+                    category: 'B',
+                },
+            });
+
+            const count = await userA.clients.fullAuth.boost.countFamilialBoosts({ uri: parentUri });
+
+            expect(count).toEqual(2);
+        });
+
+        it('should count parents', async () => {
+            const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+                category: 'A',
+            });
+            const parentUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: grandParentUri,
+                boost: { credential: testVc },
+            });
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc, category: 'B' },
+            });
+
+            const count = await userA.clients.fullAuth.boost.countFamilialBoosts({ uri: parentUri });
+
+            expect(count).toEqual(2);
+        });
+
+        it('should count siblings', async () => {
+            const parentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+            });
+            const childUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc, category: 'A' },
+            });
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc, category: 'B' },
+            });
+
+            const count = await userA.clients.fullAuth.boost.countFamilialBoosts({ uri: childUri });
+
+            expect(count).toEqual(2);
+        });
+
+        it('should not count grandparents', async () => {
+            const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+                category: 'A',
+            });
+            const parentUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: grandParentUri,
+                boost: { credential: testVc, category: 'B' },
+            });
+            const childUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc },
+            });
+
+            const count = await userA.clients.fullAuth.boost.countFamilialBoosts({ uri: childUri });
+
+            expect(count).toEqual(1);
+        });
+
+        it('should allow counting grandparents', async () => {
+            const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+                category: 'A',
+            });
+            const parentUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: grandParentUri,
+                boost: { credential: testVc, category: 'B' },
+            });
+            const childUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc },
+            });
+
+            const count = await userA.clients.fullAuth.boost.countFamilialBoosts({
+                uri: childUri,
+                parentGenerations: Infinity,
+            });
+
+            expect(count).toEqual(2);
+        });
+
+        it('should not count grandchildren', async () => {
+            const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+            });
+            const parentUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: grandParentUri,
+                boost: { credential: testVc, category: 'A' },
+            });
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc, category: 'B' },
+            });
+
+            const count = await userA.clients.fullAuth.boost.countFamilialBoosts({
+                uri: grandParentUri,
+            });
+
+            expect(count).toEqual(1);
+        });
+
+        it('should allow counting grandchildren', async () => {
+            const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+            });
+            const parentUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: grandParentUri,
+                boost: { credential: testVc, category: 'A' },
+            });
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc, category: 'B' },
+            });
+
+            const count = await userA.clients.fullAuth.boost.countFamilialBoosts({
+                uri: grandParentUri,
+                childGenerations: Infinity,
+            });
+
+            expect(count).toEqual(2);
+        });
+
+        it('should allow different numbers of generations for children/parents', async () => {
+            const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+                name: 'My Grandpa',
+            });
+            const parentUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: grandParentUri,
+                boost: { credential: testVc, name: 'My Dad' },
+            });
+            const middleUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc, name: 'Me' },
+            });
+
+            const childUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: middleUri,
+                boost: { credential: testVc, name: 'My Son' },
+            });
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: childUri,
+                boost: { credential: testVc, name: 'My Grandson' },
+            });
+
+            const count = await userA.clients.fullAuth.boost.countFamilialBoosts({
+                uri: middleUri,
+                childGenerations: 2,
+                parentGenerations: 1
+            });
+
+            expect(count).toEqual(3);
+        });
+
+        it('should not count cousins', async () => {
+            const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+                category: 'A',
+            });
+            const parentUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: grandParentUri,
+                boost: { credential: testVc },
+            });
+            const childUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc, category: 'A' },
+            });
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc, category: 'B' },
+            });
+
+            const parent2Uri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: grandParentUri,
+                boost: { credential: testVc },
+            });
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: parent2Uri,
+                boost: { credential: testVc, category: 'C' },
+            });
+
+            const count = await userA.clients.fullAuth.boost.countFamilialBoosts({ uri: childUri });
+
+            expect(count).toEqual(2);
+        });
+
+        it('should count siblings from multiple parents', async () => {
+            const parentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+            });
+            const childUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc, category: 'A' },
+            });
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc, category: 'B' },
+            });
+
+            const parent2Uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+            });
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: parent2Uri,
+                boost: { credential: testVc, category: 'C' },
+            });
+
+            await userA.clients.fullAuth.boost.makeBoostParent({ parentUri: parent2Uri, childUri });
+
+            const count = await userA.clients.fullAuth.boost.countFamilialBoosts({ uri: childUri });
+
+            expect(count).toEqual(4);
+        });
+
+        it('should allow querying familial boosts', async () => {
+            const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+                name: 'My Grandpa',
+            });
+            const parentUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: grandParentUri,
+                boost: { credential: testVc, name: 'My Dad' },
+            });
+            const middleUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc, name: 'Me' },
+            });
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc, name: 'My Brother' },
+            });
+
+            const childUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: middleUri,
+                boost: { credential: testVc, name: 'My Son' },
+            });
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: childUri,
+                boost: { credential: testVc, name: 'My Grandson' },
+            });
+
+            const count = await userA.clients.fullAuth.boost.countFamilialBoosts({
+                uri: middleUri,
+                query: { name: 'My Son' },
+            });
+
+            expect(count).toEqual(1);
+        });
+
+        it('should allow querying with $in', async () => {
+            const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+                name: 'My Grandpa',
+            });
+            const parentUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: grandParentUri,
+                boost: { credential: testVc, name: 'My Dad' },
+            });
+            const middleUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc, name: 'Me' },
+            });
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc, name: 'My Brother' },
+            });
+
+            const childUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: middleUri,
+                boost: { credential: testVc, name: 'My Son' },
+            });
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: childUri,
+                boost: { credential: testVc, name: 'My Grandson' },
+            });
+
+            const count = await userA.clients.fullAuth.boost.countFamilialBoosts({
+                uri: middleUri,
+                query: { name: { $in: ['My Dad', 'My Brother'] } },
+            });
+
+            expect(count).toEqual(2);
+        });
+
+        it('should allow querying with $regex', async () => {
+            const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+                name: 'My Grandpa',
+            });
+            const parentUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: grandParentUri,
+                boost: { credential: testVc, name: 'My Dad' },
+            });
+            const middleUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc, name: 'Me' },
+            });
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc, name: 'My Brother' },
+            });
+
+            const childUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: middleUri,
+                boost: { credential: testVc, name: 'My Son' },
+            });
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: childUri,
+                boost: { credential: testVc, name: 'My Grandson' },
+            });
+
+            const count = await userA.clients.fullAuth.boost.countFamilialBoosts({
+                uri: middleUri,
+                parentGenerations: Infinity,
+                childGenerations: Infinity,
+                query: { name: { $regex: /son/i } },
+            });
+
+            expect(count).toEqual(2);
+        });
+    });
+
     describe('getBoostParents', () => {
         beforeEach(async () => {
             await Profile.delete({ detach: true, where: {} });
