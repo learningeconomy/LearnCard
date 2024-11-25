@@ -5,6 +5,7 @@ import { neogma } from '@instance';
 
 import { Profile, ProfileInstance } from './Profile';
 import { FlatBoostType, BoostStatus } from 'types/boost';
+import { Role, RoleInstance } from './Role';
 
 export type BoostRelationships = {
     createdBy: ModelRelatedNodesI<
@@ -20,6 +21,7 @@ export type BoostRelationships = {
         Partial<BoostPermissions> & { roleId: string },
         Partial<BoostPermissions> & { roleId: string }
     >;
+    claimRole: ModelRelatedNodesI<typeof Role, RoleInstance>;
 };
 
 export type BoostInstance = NeogmaInstance<FlatBoostType, BoostRelationships>;
@@ -93,6 +95,7 @@ export const Boost = ModelFactory<FlatBoostType, BoostRelationships>(
                     },
                 },
             },
+            claimRole: { model: Role, direction: 'out', name: 'CLAIM_ROLE' },
         },
     },
     neogma

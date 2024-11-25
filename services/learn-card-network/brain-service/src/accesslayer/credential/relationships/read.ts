@@ -5,10 +5,10 @@ export const getCredentialSentToProfile = async (
     to: ProfileInstance
 ): Promise<
     | {
-          source: ProfileInstance;
-          relationship: ProfileRelationships['credentialSent']['RelationshipProperties'];
-          target: CredentialInstance;
-      }
+        source: ProfileInstance;
+        relationship: ProfileRelationships['credentialSent']['RelationshipProperties'];
+        target: CredentialInstance;
+    }
     | undefined
 > => {
     return (
@@ -25,11 +25,6 @@ export const getCredentialOwner = async (
     const id = credential.id;
 
     return (
-        await Profile.findRelationships({
-            alias: 'credentialSent',
-            where: {
-                target: { id },
-            },
-        })
+        await Profile.findRelationships({ alias: 'credentialSent', where: { target: { id } } })
     )[0]?.source;
 };

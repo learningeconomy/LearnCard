@@ -362,7 +362,7 @@ describe('Boosts', () => {
             const uri = await userA.clients.fullAuth.boost.createBoost({
                 credential: testUnsignedBoost,
             });
-            const userBProfile = await userB.clients.fullAuth.profile.getProfile();
+            const userBProfile = (await userB.clients.fullAuth.profile.getProfile())!;
 
             const credential = await userA.learnCard.invoke.issueCredential({
                 ...testUnsignedBoost,
@@ -405,7 +405,7 @@ describe('Boosts', () => {
             const uri = await userA.clients.fullAuth.boost.createBoost({
                 credential: testUnsignedBoost,
             });
-            const userBProfile = await userB.clients.fullAuth.profile.getProfile();
+            const userBProfile = (await userB.clients.fullAuth.profile.getProfile())!;
 
             const credential = await userA.learnCard.invoke.issueCredential({
                 ...testUnsignedBoost,
@@ -433,7 +433,7 @@ describe('Boosts', () => {
 
             await userA.clients.fullAuth.boost.addBoostAdmin({ uri, profileId: 'userb' });
 
-            const userCProfile = await userC.clients.fullAuth.profile.getProfile();
+            const userCProfile = (await userC.clients.fullAuth.profile.getProfile())!;
 
             const credential = await userB.learnCard.invoke.issueCredential({
                 ...testUnsignedBoost,
@@ -459,7 +459,7 @@ describe('Boosts', () => {
                 credential: testUnsignedBoost,
             });
 
-            const userCProfile = await userC.clients.fullAuth.profile.getProfile();
+            const userCProfile = (await userC.clients.fullAuth.profile.getProfile())!;
 
             const credential = await userB.learnCard.invoke.issueCredential({
                 ...testUnsignedBoost,
@@ -484,8 +484,8 @@ describe('Boosts', () => {
             const uri = await userA.clients.fullAuth.boost.createBoost({
                 credential: testUnsignedBoost,
             });
-            const userAProfile = await userA.clients.fullAuth.profile.getProfile();
-            const userBProfile = await userB.clients.fullAuth.profile.getProfile();
+            const userAProfile = (await userA.clients.fullAuth.profile.getProfile())!;
+            const userBProfile = (await userB.clients.fullAuth.profile.getProfile())!;
 
             const credential = await userA.learnCard.invoke.issueCredential({
                 ...testUnsignedBoost,

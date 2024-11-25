@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { v4 as uuid } from 'uuid';
 
 import {
+    BoostValidator as ConsumerBoostValidator,
     UnsignedVCValidator,
     VCValidator,
     JWEValidator,
@@ -85,6 +86,7 @@ import { getIdFromUri } from '@helpers/uri.helpers';
 import { updateBoostPermissions } from '@accesslayer/boost/relationships/update';
 import { EMPTY_PERMISSIONS, QUERYABLE_PERMISSIONS } from 'src/constants/permissions';
 import { updateBoost } from '@accesslayer/boost/update';
+import { addClaimPermissionsForBoost } from '@accesslayer/role/relationships/create';
 
 export const boostsRouter = t.router({
     sendBoost: profileRoute
@@ -164,16 +166,26 @@ export const boostsRouter = t.router({
             },
         })
         .input(
-            BoostValidator.partial()
-                .omit({ id: true, boost: true })
-                .extend({ credential: VCValidator.or(UnsignedVCValidator) })
+            ConsumerBoostValidator.partial()
+                .omit({ uri: true, claimPermissions: true })
+                .extend({
+                    credential: VCValidator.or(UnsignedVCValidator),
+                    claimPermissions: BoostPermissionsValidator.partial().optional(),
+                })
         )
         .output(z.string())
         .mutation(async ({ input, ctx }) => {
             const { profile } = ctx.user;
-            const { credential, ...metadata } = input;
+            const { credential, claimPermissions, ...metadata } = input;
 
             const boost = await createBoost(credential, profile, metadata, ctx.domain);
+
+            if (claimPermissions) {
+                await addClaimPermissionsForBoost(boost, {
+                    ...EMPTY_PERMISSIONS,
+                    ...claimPermissions,
+                });
+            }
 
             return getBoostUri(boost.id, ctx.domain);
         }),
@@ -192,9 +204,12 @@ export const boostsRouter = t.router({
         .input(
             z.object({
                 parentUri: z.string(),
-                boost: BoostValidator.partial()
-                    .omit({ id: true, boost: true })
-                    .extend({ credential: VCValidator.or(UnsignedVCValidator) }),
+                boost: ConsumerBoostValidator.partial()
+                    .omit({ uri: true, claimPermissions: true })
+                    .extend({
+                        credential: VCValidator.or(UnsignedVCValidator),
+                        claimPermissions: BoostPermissionsValidator.partial().optional(),
+                    }),
             })
         )
         .output(z.string())
@@ -202,7 +217,7 @@ export const boostsRouter = t.router({
             const { profile } = ctx.user;
             const {
                 parentUri,
-                boost: { credential, ...metadata },
+                boost: { credential, claimPermissions, ...metadata },
             } = input;
 
             const parentBoost = await getBoostByUri(parentUri);
@@ -226,6 +241,13 @@ export const boostsRouter = t.router({
             const childBoost = await createBoost(credential, profile, metadata, ctx.domain);
 
             await setBoostAsParent(parentBoost, childBoost);
+
+            if (claimPermissions) {
+                await addClaimPermissionsForBoost(childBoost, {
+                    ...EMPTY_PERMISSIONS,
+                    ...claimPermissions,
+                });
+            }
 
             return getBoostUri(childBoost.id, ctx.domain);
         }),
