@@ -1,5 +1,11 @@
 # learn-card-types
 
+## 5.5.6
+
+### Patch Changes
+
+-   [#559](https://github.com/learningeconomy/LearnCard/pull/559) [`0b0a2c630d66f422f02f385fba8328767621e8bf`](https://github.com/learningeconomy/LearnCard/commit/0b0a2c630d66f422f02f385fba8328767621e8bf) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add default permissions you can receive when claiming a boost
+
 ## 5.5.5
 
 ### Patch Changes
