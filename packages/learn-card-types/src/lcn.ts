@@ -50,27 +50,22 @@ export const BoostValidator = z.object({
     category: z.string().optional(),
     status: LCNBoostStatus.optional(),
     autoConnectRecipients: z.boolean().optional(),
+    meta: z.record(z.any()).optional(),
 });
 export type Boost = z.infer<typeof BoostValidator>;
 
+export const StringQuery = z
+    .string()
+    .or(z.object({ $in: z.string().array() }))
+    .or(z.object({ $regex: z.instanceof(RegExp) }));
+
 export const BoostQueryValidator = z
     .object({
-        uri: z
-            .string()
-            .or(z.object({ $in: z.string().array() }))
-            .or(z.object({ $regex: z.instanceof(RegExp) })),
-        name: z
-            .string()
-            .or(z.object({ $in: z.string().array() }))
-            .or(z.object({ $regex: z.instanceof(RegExp) })),
-        type: z
-            .string()
-            .or(z.object({ $in: z.string().array() }))
-            .or(z.object({ $regex: z.instanceof(RegExp) })),
-        category: z
-            .string()
-            .or(z.object({ $in: z.string().array() }))
-            .or(z.object({ $regex: z.instanceof(RegExp) })),
+        uri: StringQuery,
+        name: StringQuery,
+        type: StringQuery,
+        category: StringQuery,
+        meta: z.record(StringQuery),
         status: LCNBoostStatus.or(z.object({ $in: LCNBoostStatus.array() })),
         autoConnectRecipients: z.boolean(),
     })

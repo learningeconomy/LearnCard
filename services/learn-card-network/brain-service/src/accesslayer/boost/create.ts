@@ -1,3 +1,4 @@
+import { QueryBuilder, BindParam } from 'neogma';
 import { UnsignedVC, VC } from '@learncard/types';
 import { v4 as uuid } from 'uuid';
 
@@ -6,6 +7,8 @@ import { BoostStatus, BoostType } from 'types/boost';
 import { convertCredentialToBoostTemplateJSON } from '@helpers/boost.helpers';
 import { getDidWeb } from '@helpers/did.helpers';
 import { getCreatorRole } from '@accesslayer/role/read';
+import { flattenObject } from '@helpers/objects.helpers';
+import { getBoostById } from './read';
 
 export const createBoost = async (
     credential: UnsignedVC | VC,
@@ -19,25 +22,38 @@ export const createBoost = async (
 
     const { status = BoostStatus.enum.LIVE } = metadata;
 
-    return Boost.createOne({
-        id,
-        boost: convertCredentialToBoostTemplateJSON(
-            credential,
-            getDidWeb(domain, creator.profileId)
-        ),
-        status,
-        ...metadata,
-        createdBy: {
-            where: {
-                params: { profileId: creator.profileId },
-                relationshipProperties: { date: new Date().toISOString() },
+    const query = new QueryBuilder(
+        new BindParam({
+            params: {
+                id,
+                boost: convertCredentialToBoostTemplateJSON(
+                    credential,
+                    getDidWeb(domain, creator.profileId)
+                ),
+                status,
+                ...(flattenObject(metadata) as any),
             },
-        },
-        hasRole: {
-            where: {
-                params: { profileId: creator.profileId },
-                relationshipProperties: { roleId: role.id },
-            },
-        },
-    });
+        })
+    )
+        .create({ model: Boost, identifier: 'boost' })
+        .set('boost += $params');
+
+    await query.run();
+
+    const boost = (await getBoostById(id))!;
+
+    await Promise.all([
+        boost.relateTo({
+            alias: 'createdBy',
+            properties: { date: new Date().toISOString() },
+            where: { profileId: creator.profileId },
+        }),
+        boost.relateTo({
+            alias: 'hasRole',
+            properties: { roleId: role.id },
+            where: { profileId: creator.profileId },
+        }),
+    ]);
+
+    return boost;
 };

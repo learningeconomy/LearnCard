@@ -4,7 +4,7 @@ import { BoostPermissions } from '@learncard/types';
 import { neogma } from '@instance';
 
 import { Profile, ProfileInstance } from './Profile';
-import { BoostType, BoostStatus } from 'types/boost';
+import { FlatBoostType, BoostStatus } from 'types/boost';
 
 export type BoostRelationships = {
     createdBy: ModelRelatedNodesI<
@@ -22,9 +22,9 @@ export type BoostRelationships = {
     >;
 };
 
-export type BoostInstance = NeogmaInstance<BoostType, BoostRelationships>;
+export type BoostInstance = NeogmaInstance<FlatBoostType, BoostRelationships>;
 
-export const Boost = ModelFactory<BoostType, BoostRelationships>(
+export const Boost = ModelFactory<FlatBoostType, BoostRelationships>(
     {
         label: 'Boost',
         schema: {

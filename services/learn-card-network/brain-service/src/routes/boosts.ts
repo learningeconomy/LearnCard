@@ -57,7 +57,7 @@ import {
     isDraftBoost,
     convertCredentialToBoostTemplateJSON,
 } from '@helpers/boost.helpers';
-import { BoostValidator, BoostGenerateClaimLinkInput, BoostStatus } from 'types/boost';
+import { BoostValidator, BoostGenerateClaimLinkInput, BoostStatus, BoostType } from 'types/boost';
 import { deleteBoost } from '@accesslayer/boost/delete';
 import { createBoost } from '@accesslayer/boost/create';
 import { getBoostOwner } from '@accesslayer/boost/relationships/read';
@@ -84,6 +84,7 @@ import {
 import { getIdFromUri } from '@helpers/uri.helpers';
 import { updateBoostPermissions } from '@accesslayer/boost/relationships/update';
 import { EMPTY_PERMISSIONS, QUERYABLE_PERMISSIONS } from 'src/constants/permissions';
+import { updateBoost } from '@accesslayer/boost/update';
 
 export const boostsRouter = t.router({
     sendBoost: profileRoute
@@ -793,7 +794,7 @@ export const boostsRouter = t.router({
             const { profile } = ctx.user;
 
             const { uri, updates } = input;
-            const { name, type, category, status, credential } = updates;
+            const { name, type, category, status, credential, meta } = updates;
 
             const boost = await getBoostByUri(uri);
 
@@ -806,29 +807,34 @@ export const boostsRouter = t.router({
                 });
             }
 
-            if (!isDraftBoost(boost)) {
+            const actualUpdates: Partial<BoostType> = {};
+
+            if (meta) actualUpdates.meta = meta;
+
+            if (isDraftBoost(boost)) {
+                if (name) actualUpdates.name = name;
+                if (category) actualUpdates.category = category;
+                if (type) actualUpdates.type = type;
+                if (status) actualUpdates.status = status;
+                if (credential) {
+                    actualUpdates.boost = convertCredentialToBoostTemplateJSON(
+                        credential,
+                        getDidWeb(ctx.domain, profile.profileId)
+                    );
+                }
+            } else if (!meta) {
                 throw new TRPCError({
                     code: 'FORBIDDEN',
                     message:
-                        'Published Boosts can not be updated. Only Draft Boosts can be updated.',
+                        'Published Boosts can only have their meta updated. Draft Boosts can update any field.',
                 });
             }
 
-            if (name) boost.name = name;
-            if (category) boost.category = category;
-            if (type) boost.type = type;
-            if (status) boost.status = status;
-            if (credential) {
-                boost.boost = convertCredentialToBoostTemplateJSON(
-                    credential,
-                    getDidWeb(ctx.domain, profile.profileId)
-                );
-            }
+            const result = await updateBoost(boost, actualUpdates);
 
-            await boost.save();
-            await setStorageForUri(uri, JSON.parse(boost.boost));
+            if (actualUpdates.boost) await setStorageForUri(uri, JSON.parse(actualUpdates.boost));
 
-            return true;
+            return result;
         }),
 
     getBoostAdmins: profileRoute

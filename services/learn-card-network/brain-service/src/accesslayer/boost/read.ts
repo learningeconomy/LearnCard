@@ -9,6 +9,7 @@ import { Boost, Profile, BoostInstance, ProfileInstance } from '@models';
 import { BoostType } from 'types/boost';
 import { BoostQuery } from '@learncard/types';
 import { MATCH_QUERY_WHERE } from 'src/constants/neo4j';
+import { inflateObject } from '@helpers/objects.helpers';
 
 export const getBoostById = async (id: string): Promise<BoostInstance | null> => {
     return Boost.findOne({ where: { id } });
@@ -66,7 +67,10 @@ export const getBoostsForProfile = async (
             .run()
     );
 
-    return results.map(result => ({ ...result.boost, created: result.createdBy.date }));
+    return results.map(result => ({
+        ...inflateObject(result.boost as any),
+        created: result.createdBy.date,
+    }));
 };
 
 export const countBoostsForProfile = async (
@@ -139,7 +143,10 @@ export const getChildrenBoosts = async (
             .run()
     );
 
-    return results.map(result => ({ ...result.boost, created: result.createdBy.date }));
+    return results.map(result => ({
+        ...inflateObject(result.boost as any),
+        created: result.createdBy.date,
+    }));
 };
 
 export const countBoostChildren = async (
@@ -215,7 +222,10 @@ export const getSiblingBoosts = async (
             .run()
     );
 
-    return results.map(result => ({ ...result.boost, created: result.createdBy.date }));
+    return results.map(result => ({
+        ...inflateObject(result.boost as any),
+        created: result.createdBy.date,
+    }));
 };
 
 export const countBoostSiblings = async (
@@ -298,7 +308,10 @@ AND ${MATCH_QUERY_WHERE}`
             .run()
     );
 
-    return results.map(result => ({ ...result.boost, created: result.createdBy.date }));
+    return results.map(result => ({
+        ...inflateObject(result.boost as any),
+        created: result.createdBy.date,
+    }));
 };
 
 export const countFamilialBoosts = async (
@@ -384,7 +397,10 @@ export const getParentBoosts = async (
             .run()
     );
 
-    return results.map(result => ({ ...result.boost, created: result.createdBy.date }));
+    return results.map(result => ({
+        ...inflateObject(result.boost as any),
+        created: result.createdBy.date,
+    }));
 };
 
 export const countBoostParents = async (

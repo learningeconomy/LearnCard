@@ -1001,6 +1001,98 @@ describe('Boosts', () => {
             ).not.toMatchObject(beforeUpdateBoostCredential);
         });
 
+        it("should allow you to update a draft boost's meta", async () => {
+            await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+                status: BoostStatus.enum.DRAFT,
+                meta: { nice: 'lol' }
+            });
+            const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
+            const boost = boosts.records[0]!;
+            const uri = boost.uri;
+
+            expect(boost.status).toBe(BoostStatus.enum.DRAFT);
+            expect(boost.meta).toEqual({ nice: 'lol' })
+
+            await expect(
+                userA.clients.fullAuth.boost.updateBoost({ uri, updates: { meta: { nice: 'nice!' } } })
+            ).resolves.not.toThrow();
+
+            const newBoosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
+            const newBoost = newBoosts.records[0]!;
+
+            expect(newBoost.meta).toEqual({ nice: 'nice!' })
+        });
+
+        it("should allow you to update a published boost's meta", async () => {
+            await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+                status: BoostStatus.enum.LIVE,
+                meta: { nice: 'lol' }
+            });
+            const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
+            const boost = boosts.records[0]!;
+            const uri = boost.uri;
+
+            expect(boost.status).toBe(BoostStatus.enum.LIVE);
+            expect(boost.meta).toEqual({ nice: 'lol' })
+
+            await expect(
+                userA.clients.fullAuth.boost.updateBoost({ uri, updates: { meta: { nice: 'nice!' } } })
+            ).resolves.not.toThrow();
+
+            const newBoosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
+            const newBoost = newBoosts.records[0]!;
+
+            expect(newBoost.meta).toEqual({ nice: 'nice!' })
+        });
+
+        it("should not remove existing meta keys", async () => {
+            await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+                status: BoostStatus.enum.DRAFT,
+                meta: { nice: 'lol' }
+            });
+            const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
+            const boost = boosts.records[0]!;
+            const uri = boost.uri;
+
+            expect(boost.status).toBe(BoostStatus.enum.DRAFT);
+            expect(boost.meta).toEqual({ nice: 'lol' })
+
+            await expect(
+                userA.clients.fullAuth.boost.updateBoost({ uri, updates: { meta: { neat: 'lol' } } })
+            ).resolves.not.toThrow();
+
+            const newBoosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
+            const newBoost = newBoosts.records[0]!;
+
+            expect(newBoost.meta).toEqual({ nice: 'lol', neat: 'lol' })
+        });
+
+        it("should allow you to update a draft boost's meta key with null to remove it", async () => {
+            await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+                status: BoostStatus.enum.DRAFT,
+                meta: { nice: 'lol' }
+            });
+            const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
+            const boost = boosts.records[0]!;
+            const uri = boost.uri;
+
+            expect(boost.status).toBe(BoostStatus.enum.DRAFT);
+            expect(boost.meta).toEqual({ nice: 'lol' })
+
+            await expect(
+                userA.clients.fullAuth.boost.updateBoost({ uri, updates: { meta: { nice: null, neat: 'lol' } } })
+            ).resolves.not.toThrow();
+
+            const newBoosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
+            const newBoost = newBoosts.records[0]!;
+
+            expect(newBoost.meta).toEqual({ neat: 'lol' })
+        });
+
         it('should allow admins to update boost credential', async () => {
             const uri = await userA.clients.fullAuth.boost.createBoost({
                 credential: testVc,
