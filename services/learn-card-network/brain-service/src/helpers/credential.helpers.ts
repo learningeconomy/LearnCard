@@ -7,6 +7,7 @@ import { storeCredential } from '@accesslayer/credential/create';
 import {
     createReceivedCredentialRelationship,
     createSentCredentialRelationship,
+    setDefaultClaimedRole,
 } from '@accesslayer/credential/relationships/create';
 import { getCredentialSentToProfile } from '@accesslayer/credential/relationships/read';
 import { constructUri, getUriParts } from './uri.helpers';
@@ -63,6 +64,8 @@ export const acceptCredential = async (profile: ProfileInstance, uri: string): P
     }
 
     await createReceivedCredentialRelationship(profile, pendingVc.source, pendingVc.target);
+
+    await setDefaultClaimedRole(profile, pendingVc.target);
 
     await addNotificationToQueue({
         type: LCNNotificationTypeEnumValidator.enum.BOOST_ACCEPTED,

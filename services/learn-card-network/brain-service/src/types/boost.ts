@@ -12,7 +12,7 @@ import {
 export const BoostStatus = LCNBoostStatus;
 export type BoostStatusEnum = LCNBoostStatusEnum;
 
-export const BoostValidator = _BoostValidator.omit({ uri: true }).extend({
+export const BoostValidator = _BoostValidator.omit({ uri: true, claimPermissions: true }).extend({
     id: z.string(),
     boost: z.string(),
 });
