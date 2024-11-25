@@ -129,14 +129,31 @@ export type LearnCardNetworkPluginMethods = {
     countBoosts: (query?: BoostQuery) => Promise<number>;
     getBoostChildren: (
         uri: string,
-        options?: PaginationOptionsType & {
-            query?: BoostQuery;
-            numberOfGenerations?: number;
-        }
+        options?: PaginationOptionsType & { query?: BoostQuery; numberOfGenerations?: number; }
     ) => Promise<PaginatedBoostsType>;
     countBoostChildren: (
         uri: string,
         options?: { query?: BoostQuery; numberOfGenerations?: number }
+    ) => Promise<number>;
+    getBoostSiblings: (
+        uri: string,
+        options?: PaginationOptionsType & { query?: BoostQuery; }
+    ) => Promise<PaginatedBoostsType>;
+    countBoostSiblings: (
+        uri: string,
+        options?: { query?: BoostQuery }
+    ) => Promise<number>;
+    getFamilialBoosts: (
+        uri: string,
+        options?: PaginationOptionsType & {
+            query?: BoostQuery;
+            parentGenerations?: number;
+            childGenerations?: number;
+        }
+    ) => Promise<PaginatedBoostsType>;
+    countFamilialBoosts: (
+        uri: string,
+        options?: { query?: BoostQuery; parentGenerations?: number; childGenerations?: number }
     ) => Promise<number>;
     getBoostParents: (
         uri: string,
