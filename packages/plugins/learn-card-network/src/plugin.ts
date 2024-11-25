@@ -418,6 +418,26 @@ export const getLearnCardNetworkPlugin = async (
 
                 return client.boost.countBoostChildren.query({ uri, ...options });
             },
+            getBoostSiblings: async (_learnCard, uri, options) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.boost.getBoostSiblings.query({ uri, ...options });
+            },
+            countBoostSiblings: async (_learnCard, uri, options) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.boost.countBoostSiblings.query({ uri, ...options });
+            },
+            getFamilialBoosts: async (_learnCard, uri, options) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.boost.getFamilialBoosts.query({ uri, ...options });
+            },
+            countFamilialBoosts: async (_learnCard, uri, options) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.boost.countFamilialBoosts.query({ uri, ...options });
+            },
             getBoostParents: async (_learnCard, uri, options) => {
                 if (!userData) throw new Error('Please make an account first!');
 
