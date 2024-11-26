@@ -335,6 +335,39 @@ export const VC_TEMPLATES: { [Key in keyof VcTemplates]: (args: VcTemplates[Key]
                                         },
                                     },
                                 },
+                                familyTitles: {
+                                    '@id': 'lcn:familyTitles',
+                                    '@context': {
+                                        guardians: {
+                                            '@id': 'lcn:guardians',
+                                            '@container': '@set',
+                                            '@context': {
+                                                plural: {
+                                                    '@id': 'lcn:plural',
+                                                    '@type': 'xsd:string',
+                                                },
+                                                singular: {
+                                                    '@id': 'lcn:singular',
+                                                    '@type': 'xsd:string',
+                                                },
+                                            },
+                                        },
+                                        dependents: {
+                                            '@id': 'lcn:dependents',
+                                            '@container': '@set',
+                                            '@context': {
+                                                plural: {
+                                                    '@id': 'lcn:plural',
+                                                    '@type': 'xsd:string',
+                                                },
+                                                singular: {
+                                                    '@id': 'lcn:singular',
+                                                    '@type': 'xsd:string',
+                                                },
+                                            },
+                                        },
+                                    },
+                                },
                             },
                             attachments: {
                                 '@id': 'lcn:boostAttachments',
