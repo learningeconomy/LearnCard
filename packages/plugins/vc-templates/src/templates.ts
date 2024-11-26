@@ -106,6 +106,7 @@ export const VC_TEMPLATES: { [Key in keyof VcTemplates]: (args: VcTemplates[Key]
             achievementImage = '',
             attachments,
             display,
+            familyTitles,
             skills,
             groupID = '',
         } = {}) => ({
@@ -277,6 +278,7 @@ export const VC_TEMPLATES: { [Key in keyof VcTemplates]: (args: VcTemplates[Key]
                 },
             },
             display,
+            familyTitles,
             image: boostImage,
             attachments,
             skills,
@@ -300,6 +302,7 @@ export const VC_TEMPLATES: { [Key in keyof VcTemplates]: (args: VcTemplates[Key]
             attachments,
             skills,
             display,
+            familyTitles,
             boostID,
             groupID = '',
         } = {}) => ({
@@ -546,6 +549,7 @@ export const VC_TEMPLATES: { [Key in keyof VcTemplates]: (args: VcTemplates[Key]
                   }
                 : {}),
             display,
+            familyTitles,
             image: boostImage,
             attachments,
             skills,
