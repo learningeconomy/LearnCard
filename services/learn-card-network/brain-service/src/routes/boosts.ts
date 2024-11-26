@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { v4 as uuid } from 'uuid';
 
 import {
+    BoostValidator as ConsumerBoostValidator,
     UnsignedVCValidator,
     VCValidator,
     JWEValidator,
@@ -13,6 +14,7 @@ import {
     PaginationOptionsValidator,
     PaginatedLCNProfilesValidator,
     BoostPermissions,
+    BoostQueryValidator,
 } from '@learncard/types';
 
 import { t, profileRoute } from '@routes';
@@ -26,6 +28,10 @@ import {
     countBoostChildren,
     getParentBoosts,
     countBoostParents,
+    getSiblingBoosts,
+    countBoostSiblings,
+    getFamilialBoosts,
+    countFamilialBoosts,
 } from '@accesslayer/boost/read';
 import {
     getBoostRecipientsSkipLimit,
@@ -52,7 +58,7 @@ import {
     isDraftBoost,
     convertCredentialToBoostTemplateJSON,
 } from '@helpers/boost.helpers';
-import { BoostValidator, BoostGenerateClaimLinkInput, BoostStatus } from 'types/boost';
+import { BoostValidator, BoostGenerateClaimLinkInput, BoostStatus, BoostType } from 'types/boost';
 import { deleteBoost } from '@accesslayer/boost/delete';
 import { createBoost } from '@accesslayer/boost/create';
 import { getBoostOwner } from '@accesslayer/boost/relationships/read';
@@ -79,6 +85,8 @@ import {
 import { getIdFromUri } from '@helpers/uri.helpers';
 import { updateBoostPermissions } from '@accesslayer/boost/relationships/update';
 import { EMPTY_PERMISSIONS, QUERYABLE_PERMISSIONS } from 'src/constants/permissions';
+import { updateBoost } from '@accesslayer/boost/update';
+import { addClaimPermissionsForBoost } from '@accesslayer/role/relationships/create';
 
 export const boostsRouter = t.router({
     sendBoost: profileRoute
@@ -158,16 +166,26 @@ export const boostsRouter = t.router({
             },
         })
         .input(
-            BoostValidator.partial()
-                .omit({ id: true, boost: true })
-                .extend({ credential: VCValidator.or(UnsignedVCValidator) })
+            ConsumerBoostValidator.partial()
+                .omit({ uri: true, claimPermissions: true })
+                .extend({
+                    credential: VCValidator.or(UnsignedVCValidator),
+                    claimPermissions: BoostPermissionsValidator.partial().optional(),
+                })
         )
         .output(z.string())
         .mutation(async ({ input, ctx }) => {
             const { profile } = ctx.user;
-            const { credential, ...metadata } = input;
+            const { credential, claimPermissions, ...metadata } = input;
 
             const boost = await createBoost(credential, profile, metadata, ctx.domain);
+
+            if (claimPermissions) {
+                await addClaimPermissionsForBoost(boost, {
+                    ...EMPTY_PERMISSIONS,
+                    ...claimPermissions,
+                });
+            }
 
             return getBoostUri(boost.id, ctx.domain);
         }),
@@ -186,9 +204,12 @@ export const boostsRouter = t.router({
         .input(
             z.object({
                 parentUri: z.string(),
-                boost: BoostValidator.partial()
-                    .omit({ id: true, boost: true })
-                    .extend({ credential: VCValidator.or(UnsignedVCValidator) }),
+                boost: ConsumerBoostValidator.partial()
+                    .omit({ uri: true, claimPermissions: true })
+                    .extend({
+                        credential: VCValidator.or(UnsignedVCValidator),
+                        claimPermissions: BoostPermissionsValidator.partial().optional(),
+                    }),
             })
         )
         .output(z.string())
@@ -196,7 +217,7 @@ export const boostsRouter = t.router({
             const { profile } = ctx.user;
             const {
                 parentUri,
-                boost: { credential, ...metadata },
+                boost: { credential, claimPermissions, ...metadata },
             } = input;
 
             const parentBoost = await getBoostByUri(parentUri);
@@ -220,6 +241,13 @@ export const boostsRouter = t.router({
             const childBoost = await createBoost(credential, profile, metadata, ctx.domain);
 
             await setBoostAsParent(parentBoost, childBoost);
+
+            if (claimPermissions) {
+                await addClaimPermissionsForBoost(childBoost, {
+                    ...EMPTY_PERMISSIONS,
+                    ...claimPermissions,
+                });
+            }
 
             return getBoostUri(childBoost.id, ctx.domain);
         }),
@@ -276,13 +304,7 @@ export const boostsRouter = t.router({
                     "This endpoint gets the current user's boosts.\nWarning! This route is deprecated and currently has a hard limit of returning only the first 50 boosts. Please use getPaginatedBoosts instead",
             },
         })
-        .input(
-            z
-                .object({
-                    query: BoostValidator.omit({ id: true, boost: true }).partial().optional(),
-                })
-                .default({})
-        )
+        .input(z.object({ query: BoostQueryValidator.optional() }).default({}))
         .output(BoostValidator.omit({ id: true, boost: true }).extend({ uri: z.string() }).array())
         .query(async ({ ctx, input }) => {
             const { query } = input;
@@ -307,13 +329,7 @@ export const boostsRouter = t.router({
                 description: "This endpoint counts the current user's managed boosts.",
             },
         })
-        .input(
-            z
-                .object({
-                    query: BoostValidator.omit({ id: true, boost: true }).partial().optional(),
-                })
-                .default({})
-        )
+        .input(z.object({ query: BoostQueryValidator.optional() }).default({}))
         .output(z.number())
         .query(async ({ ctx, input }) => {
             const { query } = input;
@@ -338,7 +354,7 @@ export const boostsRouter = t.router({
         .input(
             PaginationOptionsValidator.extend({
                 limit: PaginationOptionsValidator.shape.limit.default(25),
-                query: BoostValidator.omit({ id: true, boost: true }).partial().optional(),
+                query: BoostQueryValidator.optional(),
             }).default({})
         )
         .output(PaginatedBoostsValidator)
@@ -477,7 +493,7 @@ export const boostsRouter = t.router({
             PaginationOptionsValidator.extend({
                 limit: PaginationOptionsValidator.shape.limit.default(25),
                 uri: z.string(),
-                query: BoostValidator.omit({ id: true, boost: true }).partial().optional(),
+                query: BoostQueryValidator.optional(),
                 numberOfGenerations: z.number().default(1),
             })
         )
@@ -526,7 +542,7 @@ export const boostsRouter = t.router({
         .input(
             z.object({
                 uri: z.string(),
-                query: BoostValidator.omit({ id: true, boost: true }).partial().optional(),
+                query: BoostQueryValidator.optional(),
                 numberOfGenerations: z.number().default(1),
             })
         )
@@ -539,6 +555,162 @@ export const boostsRouter = t.router({
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
             return countBoostChildren(boost, { query, numberOfGenerations });
+        }),
+
+    getBoostSiblings: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/boost/siblings/{uri}',
+                tags: ['Boosts'],
+                summary: 'Get boost siblings',
+                description: 'This endpoint gets the siblings of a particular boost',
+            },
+        })
+        .input(
+            PaginationOptionsValidator.extend({
+                limit: PaginationOptionsValidator.shape.limit.default(25),
+                uri: z.string(),
+                query: BoostQueryValidator.optional(),
+            })
+        )
+        .output(PaginatedBoostsValidator)
+        .query(async ({ input, ctx }) => {
+            const { uri, limit, cursor, query } = input;
+
+            const boost = await getBoostByUri(uri);
+
+            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            const records = await getSiblingBoosts(boost, { limit: limit + 1, cursor, query });
+
+            const hasMore = records.length > limit;
+            const newCursor = records.at(hasMore ? -2 : -1)?.created;
+
+            return {
+                hasMore,
+                records: records
+                    .map(boost => {
+                        const { id, boost: _boost, created: _created, ...remaining } = boost;
+
+                        return { ...remaining, uri: getBoostUri(id, ctx.domain) };
+                    })
+                    .slice(0, limit),
+                ...(newCursor && { cursor: newCursor }),
+            };
+        }),
+
+    countBoostSiblings: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/boost/siblings/{uri}/count',
+                tags: ['Boosts'],
+                summary: 'Count boost siblings',
+                description: 'This endpoint counts the siblings of a particular boost',
+            },
+        })
+        .input(
+            z.object({
+                uri: z.string(),
+                query: BoostQueryValidator.optional(),
+            })
+        )
+        .output(z.number())
+        .query(async ({ input }) => {
+            const { uri, query } = input;
+
+            const boost = await getBoostByUri(uri);
+
+            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            return countBoostSiblings(boost, { query });
+        }),
+
+    getFamilialBoosts: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/boost/family/{uri}',
+                tags: ['Boosts'],
+                summary: 'Get familial boosts',
+                description:
+                    'This endpoint gets the parents, children, and siblings of a particular boost',
+            },
+        })
+        .input(
+            PaginationOptionsValidator.extend({
+                limit: PaginationOptionsValidator.shape.limit.default(25),
+                uri: z.string(),
+                query: BoostQueryValidator.optional(),
+                parentGenerations: z.number().default(1),
+                childGenerations: z.number().default(1),
+            })
+        )
+        .output(PaginatedBoostsValidator)
+        .query(async ({ input, ctx }) => {
+            const { uri, limit, cursor, query, parentGenerations, childGenerations } = input;
+
+            const boost = await getBoostByUri(uri);
+
+            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            const records = await getFamilialBoosts(boost, {
+                limit: limit + 1,
+                cursor,
+                query,
+                parentGenerations,
+                childGenerations,
+            });
+
+            const hasMore = records.length > limit;
+            const newCursor = records.at(hasMore ? -2 : -1)?.created;
+
+            return {
+                hasMore,
+                records: records
+                    .map(boost => {
+                        const { id, boost: _boost, created: _created, ...remaining } = boost;
+
+                        return { ...remaining, uri: getBoostUri(id, ctx.domain) };
+                    })
+                    .slice(0, limit),
+                ...(newCursor && { cursor: newCursor }),
+            };
+        }),
+
+    countFamilialBoosts: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/boost/family/{uri}/count',
+                tags: ['Boosts'],
+                summary: 'Count familial boosts',
+                description:
+                    'This endpoint counts the parents, children, and siblings of a particular boost',
+            },
+        })
+        .input(
+            z.object({
+                uri: z.string(),
+                query: BoostQueryValidator.optional(),
+                parentGenerations: z.number().default(1),
+                childGenerations: z.number().default(1),
+            })
+        )
+        .output(z.number())
+        .query(async ({ input }) => {
+            const { uri, query, parentGenerations, childGenerations } = input;
+
+            const boost = await getBoostByUri(uri);
+
+            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            return countFamilialBoosts(boost, { query, parentGenerations, childGenerations });
         }),
 
     getBoostParents: profileRoute
@@ -556,7 +728,7 @@ export const boostsRouter = t.router({
             PaginationOptionsValidator.extend({
                 limit: PaginationOptionsValidator.shape.limit.default(25),
                 uri: z.string(),
-                query: BoostValidator.omit({ id: true, boost: true }).partial().optional(),
+                query: BoostQueryValidator.optional(),
                 numberOfGenerations: z.number().default(1),
             })
         )
@@ -605,7 +777,7 @@ export const boostsRouter = t.router({
         .input(
             z.object({
                 uri: z.string(),
-                query: BoostValidator.omit({ id: true, boost: true }).partial().optional(),
+                query: BoostQueryValidator.optional(),
                 numberOfGenerations: z.number().default(1),
             })
         )
@@ -644,7 +816,7 @@ export const boostsRouter = t.router({
             const { profile } = ctx.user;
 
             const { uri, updates } = input;
-            const { name, type, category, status, credential } = updates;
+            const { name, type, category, status, credential, meta } = updates;
 
             const boost = await getBoostByUri(uri);
 
@@ -657,29 +829,34 @@ export const boostsRouter = t.router({
                 });
             }
 
-            if (!isDraftBoost(boost)) {
+            const actualUpdates: Partial<BoostType> = {};
+
+            if (meta) actualUpdates.meta = meta;
+
+            if (isDraftBoost(boost)) {
+                if (name) actualUpdates.name = name;
+                if (category) actualUpdates.category = category;
+                if (type) actualUpdates.type = type;
+                if (status) actualUpdates.status = status;
+                if (credential) {
+                    actualUpdates.boost = convertCredentialToBoostTemplateJSON(
+                        credential,
+                        getDidWeb(ctx.domain, profile.profileId)
+                    );
+                }
+            } else if (!meta) {
                 throw new TRPCError({
                     code: 'FORBIDDEN',
                     message:
-                        'Published Boosts can not be updated. Only Draft Boosts can be updated.',
+                        'Published Boosts can only have their meta updated. Draft Boosts can update any field.',
                 });
             }
 
-            if (name) boost.name = name;
-            if (category) boost.category = category;
-            if (type) boost.type = type;
-            if (status) boost.status = status;
-            if (credential) {
-                boost.boost = convertCredentialToBoostTemplateJSON(
-                    credential,
-                    getDidWeb(ctx.domain, profile.profileId)
-                );
-            }
+            const result = await updateBoost(boost, actualUpdates);
 
-            await boost.save();
-            await setStorageForUri(uri, JSON.parse(boost.boost));
+            if (actualUpdates.boost) await setStorageForUri(uri, JSON.parse(actualUpdates.boost));
 
-            return true;
+            return result;
         }),
 
     getBoostAdmins: profileRoute

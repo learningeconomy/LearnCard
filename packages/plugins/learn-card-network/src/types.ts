@@ -28,6 +28,7 @@ import {
     ConsentFlowDataQuery,
     BoostRecipientInfo,
     BoostPermissions,
+    BoostQuery,
 } from '@learncard/types';
 import { Plugin } from '@learncard/core';
 import { ProofOptions } from '@learncard/didkit-plugin';
@@ -121,32 +122,49 @@ export type LearnCardNetworkPluginMethods = {
     ) => Promise<string>;
     getBoost: (uri: string) => Promise<Boost & { boost: UnsignedVC }>;
     /** @deprecated Use getPaginatedBoosts */
-    getBoosts: (query?: Partial<Omit<Boost, 'uri'>>) => Promise<{ name?: string; uri: string }[]>;
+    getBoosts: (query?: BoostQuery) => Promise<{ name?: string; uri: string }[]>;
     getPaginatedBoosts: (
-        options?: PaginationOptionsType & { query?: Partial<Omit<Boost, 'uri'>> }
+        options?: PaginationOptionsType & { query?: BoostQuery }
     ) => Promise<PaginatedBoostsType>;
-    countBoosts: (query?: Partial<Omit<Boost, 'uri'>>) => Promise<number>;
+    countBoosts: (query?: BoostQuery) => Promise<number>;
     getBoostChildren: (
         uri: string,
-        options?: PaginationOptionsType & {
-            query?: Partial<Omit<Boost, 'uri'>>;
-            numberOfGenerations?: number;
-        }
+        options?: PaginationOptionsType & { query?: BoostQuery; numberOfGenerations?: number; }
     ) => Promise<PaginatedBoostsType>;
     countBoostChildren: (
         uri: string,
-        options?: { query?: Partial<Omit<Boost, 'uri'>>; numberOfGenerations?: number }
+        options?: { query?: BoostQuery; numberOfGenerations?: number }
+    ) => Promise<number>;
+    getBoostSiblings: (
+        uri: string,
+        options?: PaginationOptionsType & { query?: BoostQuery; }
+    ) => Promise<PaginatedBoostsType>;
+    countBoostSiblings: (
+        uri: string,
+        options?: { query?: BoostQuery }
+    ) => Promise<number>;
+    getFamilialBoosts: (
+        uri: string,
+        options?: PaginationOptionsType & {
+            query?: BoostQuery;
+            parentGenerations?: number;
+            childGenerations?: number;
+        }
+    ) => Promise<PaginatedBoostsType>;
+    countFamilialBoosts: (
+        uri: string,
+        options?: { query?: BoostQuery; parentGenerations?: number; childGenerations?: number }
     ) => Promise<number>;
     getBoostParents: (
         uri: string,
         options?: PaginationOptionsType & {
-            query?: Partial<Omit<Boost, 'uri'>>;
+            query?: BoostQuery;
             numberOfGenerations?: number;
         }
     ) => Promise<PaginatedBoostsType>;
     countBoostParents: (
         uri: string,
-        options?: { query?: Partial<Omit<Boost, 'uri'>>; numberOfGenerations?: number }
+        options?: { query?: BoostQuery; numberOfGenerations?: number }
     ) => Promise<number>;
     makeBoostParent: (uris: { parentUri: string; childUri: string }) => Promise<boolean>;
     removeBoostParent: (uris: { parentUri: string; childUri: string }) => Promise<boolean>;

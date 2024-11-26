@@ -1,5 +1,79 @@
 # @learncard/network-brain-service
 
+## 3.1.5
+
+### Patch Changes
+
+-   [#564](https://github.com/learningeconomy/LearnCard/pull/564) [`6981bceed48ff00edcc94124f5ca0461f3b00a2d`](https://github.com/learningeconomy/LearnCard/commit/6981bceed48ff00edcc94124f5ca0461f3b00a2d) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add getFamilialBoosts and countFamilialBoosts
+
+-   [#564](https://github.com/learningeconomy/LearnCard/pull/564) [`6981bceed48ff00edcc94124f5ca0461f3b00a2d`](https://github.com/learningeconomy/LearnCard/commit/6981bceed48ff00edcc94124f5ca0461f3b00a2d) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Allow $regex in boost queries
+
+-   [#564](https://github.com/learningeconomy/LearnCard/pull/564) [`6981bceed48ff00edcc94124f5ca0461f3b00a2d`](https://github.com/learningeconomy/LearnCard/commit/6981bceed48ff00edcc94124f5ca0461f3b00a2d) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add getSiblingBoosts and countSiblingBoosts
+
+-   [#564](https://github.com/learningeconomy/LearnCard/pull/564) [`6981bceed48ff00edcc94124f5ca0461f3b00a2d`](https://github.com/learningeconomy/LearnCard/commit/6981bceed48ff00edcc94124f5ca0461f3b00a2d) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add meta field to Boosts that can be updated even after the Boost has been published
+
+-   Updated dependencies [[`6981bceed48ff00edcc94124f5ca0461f3b00a2d`](https://github.com/learningeconomy/LearnCard/commit/6981bceed48ff00edcc94124f5ca0461f3b00a2d), [`6981bceed48ff00edcc94124f5ca0461f3b00a2d`](https://github.com/learningeconomy/LearnCard/commit/6981bceed48ff00edcc94124f5ca0461f3b00a2d)]:
+    -   @learncard/types@5.5.7
+    -   @learncard/core@9.3.7
+    -   @learncard/helpers@1.0.19
+    -   @learncard/ceramic-plugin@1.0.18
+    -   @learncard/did-web-plugin@1.0.42
+    -   @learncard/didkey-plugin@1.0.18
+    -   @learncard/didkit-plugin@1.4.16
+    -   @learncard/learn-card-plugin@1.1.20
+    -   @learncard/vc-plugin@1.1.21
+    -   @learncard/vc-templates-plugin@1.0.26
+    -   @learncard/expiration-plugin@1.1.21
+    -   @learncard/crypto-plugin@1.0.18
+
+## 3.1.4
+
+### Patch Changes
+
+-   [#559](https://github.com/learningeconomy/LearnCard/pull/559) [`0b0a2c630d66f422f02f385fba8328767621e8bf`](https://github.com/learningeconomy/LearnCard/commit/0b0a2c630d66f422f02f385fba8328767621e8bf) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add default permissions you can receive when claiming a boost
+
+-   Updated dependencies [[`0b0a2c630d66f422f02f385fba8328767621e8bf`](https://github.com/learningeconomy/LearnCard/commit/0b0a2c630d66f422f02f385fba8328767621e8bf)]:
+    -   @learncard/types@5.5.6
+    -   @learncard/core@9.3.6
+    -   @learncard/helpers@1.0.18
+    -   @learncard/ceramic-plugin@1.0.17
+    -   @learncard/did-web-plugin@1.0.41
+    -   @learncard/didkey-plugin@1.0.17
+    -   @learncard/didkit-plugin@1.4.15
+    -   @learncard/learn-card-plugin@1.1.19
+    -   @learncard/vc-plugin@1.1.20
+    -   @learncard/vc-templates-plugin@1.0.25
+    -   @learncard/expiration-plugin@1.1.20
+    -   @learncard/crypto-plugin@1.0.17
+
+## 3.1.3
+
+### Patch Changes
+
+-   Updated dependencies [[`3ff3a312189d4bbec35c30586c28c041eae472d1`](https://github.com/learningeconomy/LearnCard/commit/3ff3a312189d4bbec35c30586c28c041eae472d1)]:
+    -   @learncard/vc-templates-plugin@1.0.24
+    -   @learncard/did-web-plugin@1.0.40
+
+## 3.1.2
+
+### Patch Changes
+
+-   [#555](https://github.com/learningeconomy/LearnCard/pull/555) [`c01a127b8633658d64f0610690c69965339aced2`](https://github.com/learningeconomy/LearnCard/commit/c01a127b8633658d64f0610690c69965339aced2) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add $in to boost queries
+
+-   Updated dependencies [[`c01a127b8633658d64f0610690c69965339aced2`](https://github.com/learningeconomy/LearnCard/commit/c01a127b8633658d64f0610690c69965339aced2)]:
+    -   @learncard/types@5.5.5
+    -   @learncard/core@9.3.5
+    -   @learncard/helpers@1.0.17
+    -   @learncard/ceramic-plugin@1.0.16
+    -   @learncard/did-web-plugin@1.0.39
+    -   @learncard/didkey-plugin@1.0.16
+    -   @learncard/didkit-plugin@1.4.14
+    -   @learncard/learn-card-plugin@1.1.18
+    -   @learncard/vc-plugin@1.1.19
+    -   @learncard/vc-templates-plugin@1.0.23
+    -   @learncard/expiration-plugin@1.1.19
+    -   @learncard/crypto-plugin@1.0.16
+
 ## 3.1.1
 
 ### Patch Changes
