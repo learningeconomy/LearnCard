@@ -263,6 +263,23 @@ export const isProfileBoostAdmin = async (profile: ProfileInstance, boost: Boost
     return Number(result.records[0]?.get('count') ?? 0) > 0;
 };
 
+export const doesProfileHaveRoleForBoost = async (
+    profile: ProfileInstance,
+    boost: BoostInstance
+) => {
+    const query = new QueryBuilder().match({
+        related: [
+            { model: Boost, where: { id: boost.id } },
+            Boost.getRelationshipByAlias('hasRole'),
+            { identifier: 'profile', model: Profile, where: { profileId: profile.profileId } },
+        ],
+    });
+
+    const result = await query.return('count(profile) AS count').run();
+
+    return Number(result.records[0]?.get('count') ?? 0) > 0;
+};
+
 export const canProfileViewBoost = async (profile: ProfileInstance, boost: BoostInstance) => {
     const query = new QueryBuilder().match({
         related: [
