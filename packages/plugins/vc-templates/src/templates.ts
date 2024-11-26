@@ -147,6 +147,32 @@ export const VC_TEMPLATES: { [Key in keyof VcTemplates]: (args: VcTemplates[Key]
                                         '@id': 'lcn:boostRepeatBackgroundImage',
                                         '@type': 'xsd:boolean',
                                     },
+                                    emoji: {
+                                        '@id': 'lcn:boostEmoji',
+                                        '@context': {
+                                            activeSkinTone: {
+                                                '@id': 'lcn:boostEmojiActiveSkinTone',
+                                                '@type': 'xsd:string',
+                                            },
+                                            unified: {
+                                                '@id': 'lcn:boostEmojiUnified',
+                                                '@type': 'xsd:string',
+                                            },
+                                            unifiedWithoutSkinTone: {
+                                                '@id': 'lcn:boostEmojiUnifiedWithoutSkinTone',
+                                                '@type': 'xsd:string',
+                                            },
+                                            names: {
+                                                '@id': 'lcn:boostEmojiNames',
+                                                '@container': '@set',
+                                                '@type': 'xsd:string',
+                                            },
+                                            imageUrl: {
+                                                '@id': 'lcn:boostEmojiImageUrl',
+                                                '@type': 'xsd:string',
+                                            },
+                                        },
+                                    },
                                 },
                             },
                             attachments: {
@@ -281,6 +307,32 @@ export const VC_TEMPLATES: { [Key in keyof VcTemplates]: (args: VcTemplates[Key]
                                     repeatBackgroundImage: {
                                         '@id': 'lcn:boostRepeatBackgroundImage',
                                         '@type': 'xsd:boolean',
+                                    },
+                                    emoji: {
+                                        '@id': 'lcn:boostEmoji',
+                                        '@context': {
+                                            activeSkinTone: {
+                                                '@id': 'lcn:boostEmojiActiveSkinTone',
+                                                '@type': 'xsd:string',
+                                            },
+                                            unified: {
+                                                '@id': 'lcn:boostEmojiUnified',
+                                                '@type': 'xsd:string',
+                                            },
+                                            unifiedWithoutSkinTone: {
+                                                '@id': 'lcn:boostEmojiUnifiedWithoutSkinTone',
+                                                '@type': 'xsd:string',
+                                            },
+                                            names: {
+                                                '@id': 'lcn:boostEmojiNames',
+                                                '@container': '@set',
+                                                '@type': 'xsd:string',
+                                            },
+                                            imageUrl: {
+                                                '@id': 'lcn:boostEmojiImageUrl',
+                                                '@type': 'xsd:string',
+                                            },
+                                        },
                                     },
                                 },
                             },
