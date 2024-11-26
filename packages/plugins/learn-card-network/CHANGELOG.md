@@ -1,5 +1,36 @@
 # learn-card-core
 
+## 2.1.5
+
+### Patch Changes
+
+-   [#564](https://github.com/learningeconomy/LearnCard/pull/564) [`6981bceed48ff00edcc94124f5ca0461f3b00a2d`](https://github.com/learningeconomy/LearnCard/commit/6981bceed48ff00edcc94124f5ca0461f3b00a2d) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add getFamilialBoosts and countFamilialBoosts
+
+-   [#564](https://github.com/learningeconomy/LearnCard/pull/564) [`6981bceed48ff00edcc94124f5ca0461f3b00a2d`](https://github.com/learningeconomy/LearnCard/commit/6981bceed48ff00edcc94124f5ca0461f3b00a2d) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Allow $regex in boost queries
+
+-   [#564](https://github.com/learningeconomy/LearnCard/pull/564) [`6981bceed48ff00edcc94124f5ca0461f3b00a2d`](https://github.com/learningeconomy/LearnCard/commit/6981bceed48ff00edcc94124f5ca0461f3b00a2d) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add getSiblingBoosts and countSiblingBoosts
+
+-   [#564](https://github.com/learningeconomy/LearnCard/pull/564) [`6981bceed48ff00edcc94124f5ca0461f3b00a2d`](https://github.com/learningeconomy/LearnCard/commit/6981bceed48ff00edcc94124f5ca0461f3b00a2d) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add meta field to Boosts that can be updated even after the Boost has been published
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.0.8
+    -   @learncard/core@9.3.7
+
+## 2.1.4
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.0.7
+    -   @learncard/core@9.3.6
+
+## 2.1.3
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.0.6
+
 ## 2.1.2
 
 ### Patch Changes

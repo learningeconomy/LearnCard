@@ -12,6 +12,7 @@ import { createBoostInstanceOfRelationship } from '@accesslayer/boost/relationsh
 import {
     createSentCredentialRelationship,
     createReceivedCredentialRelationship,
+    setDefaultClaimedRole,
 } from '@accesslayer/credential/relationships/create';
 import { getCredentialUri } from './credential.helpers';
 import { getLearnCard } from './learnCard.helpers';
@@ -243,6 +244,8 @@ export const sendBoost = async (
                     : []),
             ]);
 
+            if (autoAcceptCredential) await setDefaultClaimedRole(to, credentialInstance);
+
             boostUri = getCredentialUri(credentialInstance.id, domain);
             if (process.env.NODE_ENV !== 'test') {
                 console.log('🚀 sendBoost:boost certified', boostUri);
@@ -261,6 +264,8 @@ export const sendBoost = async (
                 ? [createReceivedCredentialRelationship(to, from, credentialInstance)]
                 : []),
         ]);
+
+        if (autoAcceptCredential) await setDefaultClaimedRole(to, credentialInstance);
 
         boostUri = getCredentialUri(credentialInstance.id, domain);
         if (process.env.NODE_ENV !== 'test') {

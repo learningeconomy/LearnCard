@@ -1,6 +1,7 @@
 import { getUser } from './helpers/getClient';
+import { adminRole, emptyRole } from './helpers/permissions';
 import { testUnsignedBoost, testVc } from './helpers/send';
-import { Profile, Boost } from '@models';
+import { Profile, Boost, Credential, SigningAuthority } from '@models';
 
 let userA: Awaited<ReturnType<typeof getUser>>;
 let userB: Awaited<ReturnType<typeof getUser>>;
@@ -3387,6 +3388,172 @@ describe('Permissions', () => {
             });
 
             expect(newPermissions.canViewAnalytics).toBeFalsy();
+        });
+    });
+
+    describe('Default Roles', () => {
+        beforeEach(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+            await SigningAuthority.delete({ detach: true, where: {} });
+
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+
+            await userA.clients.fullAuth.profile.registerSigningAuthority({
+                endpoint: 'http://localhost:5000/api',
+                name: 'mysa',
+                did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
+            });
+        });
+
+        afterAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await Profile.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+            await SigningAuthority.delete({ detach: true, where: {} });
+        });
+
+        it('should allow you to set default roles when claiming', async () => {
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                claimPermissions: adminRole,
+            });
+
+            const credential = await userB.learnCard.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: userB.learnCard.id.did(),
+                credentialSubject: {
+                    ...testUnsignedBoost.credentialSubject,
+                    id: userA.learnCard.id.did(),
+                },
+                boostId: uri,
+            });
+
+            const permissions = await userA.clients.fullAuth.boost.getOtherBoostPermissions({
+                profileId: 'userb',
+                uri,
+            });
+
+            expect(permissions).toEqual(emptyRole);
+
+            const sentUri = await userA.clients.fullAuth.boost.sendBoost({
+                credential,
+                profileId: 'userb',
+                uri,
+            });
+
+            await userB.clients.fullAuth.credential.acceptCredential({ uri: sentUri });
+
+            const newPermissions = await userA.clients.fullAuth.boost.getOtherBoostPermissions({
+                profileId: 'userb',
+                uri,
+            });
+
+            expect(newPermissions).toEqual(adminRole);
+        });
+
+        it('should allow any combination of permissions', async () => {
+            const role = {
+                role: 'nice',
+                canEdit: true,
+                canIssue: false,
+                canRevoke: true,
+                canManagePermissions: false,
+                canIssueChildren: '*',
+                canCreateChildren: '',
+                canEditChildren: '*',
+                canRevokeChildren: '',
+                canManageChildrenPermissions: '*',
+                canViewAnalytics: false,
+            };
+
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                claimPermissions: role,
+            });
+
+            const credential = await userB.learnCard.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: userB.learnCard.id.did(),
+                credentialSubject: {
+                    ...testUnsignedBoost.credentialSubject,
+                    id: userA.learnCard.id.did(),
+                },
+                boostId: uri,
+            });
+
+            const permissions = await userA.clients.fullAuth.boost.getOtherBoostPermissions({
+                profileId: 'userb',
+                uri,
+            });
+
+            expect(permissions).toEqual(emptyRole);
+
+            const sentUri = await userA.clients.fullAuth.boost.sendBoost({
+                credential,
+                profileId: 'userb',
+                uri,
+            });
+
+            await userB.clients.fullAuth.credential.acceptCredential({ uri: sentUri });
+
+            const newPermissions = await userA.clients.fullAuth.boost.getOtherBoostPermissions({
+                profileId: 'userb',
+                uri,
+            });
+
+            expect(newPermissions).toEqual(role);
+        });
+
+        it('should work with claim links', async () => {
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                claimPermissions: adminRole,
+            });
+
+            const sa = await userA.clients.fullAuth.profile.signingAuthority({
+                endpoint: 'http://localhost:5000/api',
+                name: 'mysa',
+            });
+            if (sa) {
+                const claimLinkSA = {
+                    endpoint: sa.signingAuthority.endpoint,
+                    name: sa.relationship.name,
+                };
+                const challenge = 'mychallenge';
+
+                await expect(
+                    userA.clients.fullAuth.boost.generateClaimLink({
+                        boostUri: uri,
+                        challenge,
+                        claimLinkSA,
+                    })
+                ).resolves.toMatchObject({
+                    boostUri: uri,
+                    challenge,
+                });
+
+                const permissions = await userA.clients.fullAuth.boost.getOtherBoostPermissions({
+                    profileId: 'userb',
+                    uri,
+                });
+
+                expect(permissions).toEqual(emptyRole);
+
+                await userB.clients.fullAuth.boost.claimBoostWithLink({ boostUri: uri, challenge });
+
+                const newPermissions = await userA.clients.fullAuth.boost.getOtherBoostPermissions({
+                    profileId: 'userb',
+                    uri,
+                });
+
+                expect(newPermissions).toEqual(adminRole);
+            } else {
+                expect(sa).toBeDefined();
+            }
         });
     });
 });

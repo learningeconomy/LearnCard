@@ -1,5 +1,32 @@
 # @welibraryos/react-learn-card
 
+## 2.7.40
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.11
+
+## 2.7.39
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.10
+
+## 2.7.38
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.9
+
+## 2.7.37
+
+### Patch Changes
+
+-   [#557](https://github.com/learningeconomy/LearnCard/pull/557) [`3cd4737a68e9dced7a5af207571c2fb0767f8326`](https://github.com/learningeconomy/LearnCard/commit/3cd4737a68e9dced7a5af207571c2fb0767f8326) Thanks [@rhen92](https://github.com/rhen92)! - [LC-549] Polish Skills Modal
+
 ## 2.7.36
 
 ### Patch Changes
