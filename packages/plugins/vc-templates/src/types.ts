@@ -19,6 +19,29 @@ export type BoostSkills = {
 export type BoostDisplay = {
     backgroundImage?: string;
     backgroundColor?: string;
+
+    fadeBackgroundImage?: boolean;
+    repeatBackgroundImage?: boolean;
+
+    emoji: BoostEmoji;
+};
+
+export type BoostFamilyTitleOption = {
+    plural: string;
+    singular: string;
+};
+
+export type BoostFamilyTitles = {
+    guardians: BoostFamilyTitleOption[];
+    dependents: BoostFamilyTitleOption[];
+};
+
+export type BoostEmoji = {
+    activeSkinTone: string;
+    unified: string;
+    unifiedWithoutSkinTone: string;
+    names: string[];
+    imageUrl: string;
 };
 
 export type BoostID = {
@@ -29,10 +52,6 @@ export type BoostID = {
     issuerThumbnail?: string;
     showIssuerThumbnail?: boolean;
     IDIssuerName?: string;
-
-    // troops 2.0
-    fadeBackgroundImage?: boolean;
-    repeatBackgroundImage?: boolean;
 
     idThumbnail?: string;
     accentFontColor?: string;
@@ -69,6 +88,7 @@ export type BoostTemplate = {
     attachments?: BoostAttachment[];
     skills?: BoostSkills[];
     display?: BoostDisplay;
+    familyTitles?: BoostFamilyTitles;
     boostID?: BoostID;
     address?: AddressSpec;
     groupID?: string;
