@@ -281,15 +281,24 @@ export const doesProfileHaveRoleForBoost = async (
 };
 
 export const canProfileViewBoost = async (profile: ProfileInstance, boost: BoostInstance) => {
-    const query = new QueryBuilder().match({
-        related: [
-            { model: Boost, where: { id: boost.id } },
-            Boost.getRelationshipByAlias('hasRole'),
-            { identifier: 'profile', model: Profile, where: { profileId: profile.profileId } },
-        ],
-    });
-
-    const result = await query.return('count(profile) AS count').run();
+    const query = new QueryBuilder()
+        .match({ model: Boost, identifier: 'target', where: { id: boost.id } })
+        .with('target')
+        .match({
+            optional: true,
+            related: [
+                { identifier: 'parents', model: Boost },
+                { ...Boost.getRelationshipByAlias('parentOf'), maxHops: Infinity },
+                { identifier: 'target' },
+            ],
+        })
+        .with('COLLECT(parents) + COLLECT(target) AS boosts')
+        .match({ identifier: 'profile', model: Profile, where: { profileId: profile.profileId } })
+        .where(
+            `ANY(boost IN boosts WHERE EXISTS((profile)-[:${Boost.getRelationshipByAlias('hasRole').name
+            }]-(boost)))`
+        );
+    const result = await query.return('count(profile) AS count, boosts').run();
 
     return Number(result.records[0]?.get('count') ?? 0) > 0;
 };

@@ -109,6 +109,17 @@ describe('Boosts', () => {
                 code: 'UNAUTHORIZED',
             });
         });
+
+        it('should allow admins of parent boosts to get boosts', async () => {
+            const parentUri = await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
+            const uri = await userA.clients.fullAuth.boost.createChildBoost({ parentUri, boost: { credential: testVc } });
+
+            await userA.clients.fullAuth.boost.addBoostAdmin({ uri: parentUri, profileId: 'userb' });
+
+            const boost = await userB.clients.fullAuth.boost.getBoost({ uri });
+
+            expect(boost).toBeDefined();
+        });
     });
 
     describe('getBoosts', () => {
