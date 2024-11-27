@@ -3,6 +3,7 @@
     "private": true,
     "type": "module",
     "scripts": {
+        "test": "echo \"Skipping E2E tests in CI. Run test:e2e if you'd like to actually run this!\"",
         "test:e2e": "vitest",
         "logs": "docker compose logs -f"
     },
