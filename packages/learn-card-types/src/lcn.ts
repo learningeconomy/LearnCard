@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { PaginationResponseValidator } from './mongo';
+import { StringQuery } from './queries';
 
 export const LCNProfileValidator = z.object({
     profileId: z.string().min(3).max(40),
@@ -69,11 +70,6 @@ export const BoostValidator = z.object({
     claimPermissions: BoostPermissionsValidator.optional(),
 });
 export type Boost = z.infer<typeof BoostValidator>;
-
-export const StringQuery = z
-    .string()
-    .or(z.object({ $in: z.string().array() }))
-    .or(z.object({ $regex: z.instanceof(RegExp) }));
 
 export const BoostQueryValidator = z
     .object({
