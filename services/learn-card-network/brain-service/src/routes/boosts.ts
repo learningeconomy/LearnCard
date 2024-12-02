@@ -1322,10 +1322,10 @@ export const boostsRouter = t.router({
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
-            if (!(await isProfileBoostAdmin(profile, boost))) {
+            if (!(await canProfileIssueBoost(profile, boost))) {
                 throw new TRPCError({
                     code: 'UNAUTHORIZED',
-                    message: 'Profile does not own boost',
+                    message: 'Profile does not have permissions to issue boost',
                 });
             }
 
