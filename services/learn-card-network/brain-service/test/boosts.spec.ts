@@ -120,6 +120,17 @@ describe('Boosts', () => {
 
             expect(boost).toBeDefined();
         });
+
+        it('should include default claim permissions', async () => {
+            const uri = await userA.clients.fullAuth.boost.createBoost({ credential: testVc, claimPermissions: adminRole });
+
+            await expect(userA.clients.fullAuth.boost.getBoost({ uri })).resolves.not.toThrow();
+
+            const boost = await userA.clients.fullAuth.boost.getBoost({ uri });
+
+            expect(boost).toBeDefined();
+            expect(boost.claimPermissions).toEqual(adminRole)
+        });
     });
 
     describe('getBoosts', () => {

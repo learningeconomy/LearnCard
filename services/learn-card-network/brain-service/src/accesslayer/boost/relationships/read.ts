@@ -11,16 +11,20 @@ import {
     CredentialInstance,
     CredentialRelationships,
     ProfileRelationships,
+    Role,
 } from '@models';
 import { getProfilesByProfileIds } from '@accesslayer/profile/read';
 import { ProfileType } from 'types/profile';
-import { BoostType } from 'types/boost';
+import { BoostType, BoostWithClaimPermissionsType } from 'types/boost';
 import { ADMIN_ROLE_ID, CREATOR_ROLE_ID } from 'src/constants/roles';
 import {
     CHILD_TO_NON_CHILD_PERMISSION,
     EMPTY_PERMISSIONS,
     QUERYABLE_PERMISSIONS,
 } from 'src/constants/permissions';
+import { getIdFromUri } from '@helpers/uri.helpers';
+import { Role as RoleType } from 'types/role';
+import { inflateObject } from '@helpers/objects.helpers';
 
 export const getBoostOwner = async (boost: BoostInstance): Promise<ProfileInstance | undefined> => {
     return (await boost.findRelationships({ alias: 'createdBy' }))[0]?.target;
@@ -35,6 +39,36 @@ export const getCredentialInstancesOfBoost = async (
             where: { target: { id: boost.id } },
         })
     ).map(relationship => relationship.source);
+};
+
+export const getBoostByUriWithDefaultClaimPermissions = async (
+    uri: string
+): Promise<BoostWithClaimPermissionsType | null> => {
+    const id = getIdFromUri(uri);
+
+    const rawResults = await new QueryBuilder()
+        .match({ identifier: 'boost', model: Boost, where: { id } })
+        .match({
+            optional: true,
+            related: [
+                { identifier: 'boost' },
+                Boost.getRelationshipByAlias('claimRole'),
+                { model: Role, identifier: 'role' },
+            ],
+        })
+        .return('boost, role')
+        .limit(1)
+        .run();
+
+    const results = convertQueryResultToPropertiesObjectArray<{ boost: BoostType; role: RoleType }>(
+        rawResults
+    );
+
+    if (results.length === 0) return null;
+
+    const [result] = results;
+
+    return { ...inflateObject<BoostType>(result!.boost as any), claimPermissions: result!.role };
 };
 
 /**
@@ -280,7 +314,10 @@ export const doesProfileHaveRoleForBoost = async (
     return Number(result.records[0]?.get('count') ?? 0) > 0;
 };
 
-export const canProfileViewBoost = async (profile: ProfileInstance, boost: BoostInstance) => {
+export const canProfileViewBoost = async (
+    profile: ProfileInstance,
+    boost: BoostInstance | BoostType
+) => {
     const query = new QueryBuilder()
         .match({ model: Boost, identifier: 'target', where: { id: boost.id } })
         .with('target')

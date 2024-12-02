@@ -46,6 +46,7 @@ import {
     canProfileViewBoost,
     canProfileEditBoost,
     canProfileCreateChildBoost,
+    getBoostByUriWithDefaultClaimPermissions,
 } from '@accesslayer/boost/relationships/read';
 
 import { deleteStorageForUri, setStorageForUri } from '@cache/storage';
@@ -58,7 +59,13 @@ import {
     isDraftBoost,
     convertCredentialToBoostTemplateJSON,
 } from '@helpers/boost.helpers';
-import { BoostValidator, BoostGenerateClaimLinkInput, BoostStatus, BoostType } from 'types/boost';
+import {
+    BoostValidator,
+    BoostGenerateClaimLinkInput,
+    BoostStatus,
+    BoostType,
+    BoostWithClaimPermissionsValidator,
+} from 'types/boost';
 import { deleteBoost } from '@accesslayer/boost/delete';
 import { createBoost } from '@accesslayer/boost/create';
 import { getBoostOwner } from '@accesslayer/boost/relationships/read';
@@ -265,7 +272,7 @@ export const boostsRouter = t.router({
         })
         .input(z.object({ uri: z.string() }))
         .output(
-            BoostValidator.omit({ id: true, boost: true }).extend({
+            BoostWithClaimPermissionsValidator.omit({ id: true, boost: true }).extend({
                 uri: z.string(),
                 boost: UnsignedVCValidator,
             })
@@ -275,7 +282,7 @@ export const boostsRouter = t.router({
 
             const { uri } = input;
 
-            const boost = await getBoostByUri(uri);
+            const boost = await getBoostByUriWithDefaultClaimPermissions(uri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
@@ -286,7 +293,7 @@ export const boostsRouter = t.router({
                 });
             }
 
-            const { id, boost: _boost, ...remaining } = boost.dataValues;
+            const { id, boost: _boost, ...remaining } = boost;
 
             return { ...remaining, boost: JSON.parse(_boost), uri: getBoostUri(id, ctx.domain) };
         }),
