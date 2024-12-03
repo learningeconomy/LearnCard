@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 1.0.27
+
+### Patch Changes
+
+-   [#567](https://github.com/learningeconomy/LearnCard/pull/567) [`9afd9e515d1cefeac03f76fb13556e6288abbc35`](https://github.com/learningeconomy/LearnCard/commit/9afd9e515d1cefeac03f76fb13556e6288abbc35) Thanks [@gerardopar](https://github.com/gerardopar)! - Extend Boost Template definitions
+
 ## 1.0.26
 
 ### Patch Changes
