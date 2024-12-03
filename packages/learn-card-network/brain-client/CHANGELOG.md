@@ -1,5 +1,18 @@
 # @learncard/network-brain-client
 
+## 2.0.11
+
+### Patch Changes
+
+-   [#569](https://github.com/learningeconomy/LearnCard/pull/569) [`72e9661ffe0c9f9e3c312ecba2b6441d61941a4a`](https://github.com/learningeconomy/LearnCard/commit/72e9661ffe0c9f9e3c312ecba2b6441d61941a4a) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - - Don't give default claim role if profile already has a role
+    -   Allow profiles who can resolve parents to resolve children
+    -   Return default claim permissions from `getBoost`
+    -   Fix `generateClaimLink` permissions check
+    -   Actually allow `$regex` to work via `superjson` with tRPC, regex strings with HTTP API
+    -   Allow querying boost recipients
+-   Updated dependencies [[`72e9661ffe0c9f9e3c312ecba2b6441d61941a4a`](https://github.com/learningeconomy/LearnCard/commit/72e9661ffe0c9f9e3c312ecba2b6441d61941a4a)]:
+    -   @learncard/network-brain-service@3.1.8
+
 ## 2.0.10
 
 ### Patch Changes

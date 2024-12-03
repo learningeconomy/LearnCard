@@ -1,5 +1,12 @@
 # @learncard/helpers
 
+## 1.0.20
+
+### Patch Changes
+
+- Updated dependencies [[`72e9661ffe0c9f9e3c312ecba2b6441d61941a4a`](https://github.com/learningeconomy/LearnCard/commit/72e9661ffe0c9f9e3c312ecba2b6441d61941a4a)]:
+  - @learncard/types@5.5.8
+
 ## 1.0.19
 
 ### Patch Changes
