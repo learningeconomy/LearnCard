@@ -1,7 +1,11 @@
 import sift from 'sift';
-import { BindParam, Op, QueryBuilder, Where } from 'neogma';
-import { convertQueryResultToPropertiesObjectArray } from '@helpers/neo4j.helpers';
-import { BoostRecipientInfo, BoostPermissions } from '@learncard/types';
+import { BindParam, QueryBuilder } from 'neogma';
+import {
+    convertObjectRegExpToNeo4j,
+    convertQueryResultToPropertiesObjectArray,
+    getMatchQueryWhere,
+} from '@helpers/neo4j.helpers';
+import { BoostRecipientInfo, BoostPermissions, LCNProfileQuery } from '@learncard/types';
 import {
     Boost,
     BoostInstance,
@@ -81,13 +85,18 @@ export const getBoostRecipients = async (
         limit,
         cursor,
         includeUnacceptedBoosts = true,
+        query: matchQuery = {},
     }: {
         limit: number;
         cursor?: string;
         includeUnacceptedBoosts?: boolean;
+        query?: LCNProfileQuery;
     }
 ): Promise<Array<BoostRecipientInfo & { sent: string }>> => {
-    const _query = new QueryBuilder()
+    console.log({ matchQuery });
+    const _query = new QueryBuilder(
+        new BindParam({ matchQuery: convertObjectRegExpToNeo4j(matchQuery), cursor })
+    )
         .match({
             related: [
                 { identifier: 'source', model: Boost, where: { id: boost.id } },
@@ -105,6 +114,8 @@ export const getBoostRecipients = async (
                 { identifier: 'sender', model: Profile },
             ],
         })
+        .match({ model: Profile, identifier: 'recipient' })
+        .where('recipient.profileId = sent.to')
         .match({
             optional: includeUnacceptedBoosts,
             related: [
@@ -113,20 +124,26 @@ export const getBoostRecipients = async (
                     ...Credential.getRelationshipByAlias('credentialReceived'),
                     identifier: 'received',
                 },
-                { identifier: 'recipient', model: Profile },
+                { identifier: 'recipient' },
             ],
-        });
+        })
+        .with('sender, sent, received, recipient')
+        .where(getMatchQueryWhere('recipient'));
 
-    const query = cursor
-        ? _query.where(new Where({ sent: { date: { [Op.gt]: cursor } } }, _query.getBindParam()))
-        : _query;
+    const query = cursor ? _query.raw('AND sent.date > $cursor') : _query;
 
     const results = convertQueryResultToPropertiesObjectArray<{
         sender: ProfileInstance;
         sent: ProfileRelationships['credentialSent']['RelationshipProperties'];
         recipient?: ProfileInstance;
         received?: CredentialRelationships['credentialReceived']['RelationshipProperties'];
-    }>(await query.return('sender, sent, received').orderBy('sent.date').limit(limit).run());
+    }>(
+        await query
+            .return('sender, sent, received, recipient')
+            .orderBy('sent.date')
+            .limit(limit)
+            .run()
+    );
 
     const resultsWithIds = results.map(({ sender, sent, received }) => ({
         sent: sent.date,

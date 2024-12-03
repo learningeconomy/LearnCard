@@ -19,6 +19,20 @@ export const LCNProfileValidator = z.object({
 });
 export type LCNProfile = z.infer<typeof LCNProfileValidator>;
 
+export const LCNProfileQueryValidator = z
+    .object({
+        profileId: StringQuery,
+        displayName: StringQuery,
+        shortBio: StringQuery,
+        bio: StringQuery,
+        email: StringQuery,
+        websiteLink: StringQuery,
+        isServiceProfile: z.boolean(),
+        type: StringQuery,
+    })
+    .partial();
+export type LCNProfileQuery = z.infer<typeof LCNProfileQueryValidator>;
+
 export const PaginatedLCNProfilesValidator = PaginationResponseValidator.extend({
     records: LCNProfileValidator.array(),
 });

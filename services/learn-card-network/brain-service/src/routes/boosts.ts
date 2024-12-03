@@ -15,6 +15,7 @@ import {
     PaginatedLCNProfilesValidator,
     BoostPermissions,
     BoostQueryValidator,
+    LCNProfileQueryValidator,
 } from '@learncard/types';
 
 import { t, profileRoute } from '@routes';
@@ -436,11 +437,12 @@ export const boostsRouter = t.router({
                 limit: PaginationOptionsValidator.shape.limit.default(25),
                 uri: z.string(),
                 includeUnacceptedBoosts: z.boolean().default(true),
+                query: LCNProfileQueryValidator.optional(),
             })
         )
         .output(PaginatedBoostRecipientsValidator)
         .query(async ({ input }) => {
-            const { uri, limit, cursor, includeUnacceptedBoosts } = input;
+            const { uri, limit, cursor, includeUnacceptedBoosts, query } = input;
 
             const boost = await getBoostByUri(uri);
 
@@ -450,6 +452,7 @@ export const boostsRouter = t.router({
                 limit: limit + 1,
                 cursor,
                 includeUnacceptedBoosts,
+                query,
             });
 
             const hasMore = records.length > limit;
