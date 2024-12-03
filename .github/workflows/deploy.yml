@@ -32,6 +32,7 @@ env:
   SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
   SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
   SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+  XAPI_ENDPOINT: ${{ secrets.XAPI_ENDPOINT }}
 
 jobs:
   deploy:

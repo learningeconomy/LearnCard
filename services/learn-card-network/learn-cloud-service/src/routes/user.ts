@@ -62,7 +62,7 @@ export const userRouter = t.router({
             ) {
                 const did =
                     typeof presentation === 'string'
-                        ? jwtDecode<DidAuthVP>(presentation).vp.holder
+                        ? jwtDecode<DidAuthVP>(presentation).vp.holder!
                         : presentation.holder!;
 
                 const existing = await getUserForDid(did);
@@ -128,7 +128,7 @@ export const userRouter = t.router({
             ) {
                 const did =
                     typeof presentation === 'string'
-                        ? jwtDecode<DidAuthVP>(presentation).vp.holder
+                        ? jwtDecode<DidAuthVP>(presentation).vp.holder!
                         : presentation.holder!;
 
                 const existing = await getUserForDid(did);
@@ -187,7 +187,7 @@ export const userRouter = t.router({
             ) {
                 const did =
                     typeof presentation === 'string'
-                        ? jwtDecode<DidAuthVP>(presentation).vp.holder
+                        ? jwtDecode<DidAuthVP>(presentation).vp.holder!
                         : presentation.holder!;
 
                 const user = await getUserForDid(ctx.user.did);

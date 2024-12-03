@@ -1,5 +1,25 @@
 # learn-card-core
 
+## 1.0.29
+
+### Patch Changes
+
+-   Updated dependencies [[`72e9661ffe0c9f9e3c312ecba2b6441d61941a4a`](https://github.com/learningeconomy/LearnCard/commit/72e9661ffe0c9f9e3c312ecba2b6441d61941a4a)]:
+    -   @learncard/types@5.5.8
+    -   @learncard/core@9.3.8
+
+## 1.0.28
+
+### Patch Changes
+
+-   [#566](https://github.com/learningeconomy/LearnCard/pull/566) [`df13a7de5f31fabd842884a3e7c0706746c60da1`](https://github.com/learningeconomy/LearnCard/commit/df13a7de5f31fabd842884a3e7c0706746c60da1) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Delegate Credentials
+
+## 1.0.27
+
+### Patch Changes
+
+-   [#567](https://github.com/learningeconomy/LearnCard/pull/567) [`9afd9e515d1cefeac03f76fb13556e6288abbc35`](https://github.com/learningeconomy/LearnCard/commit/9afd9e515d1cefeac03f76fb13556e6288abbc35) Thanks [@gerardopar](https://github.com/gerardopar)! - Extend Boost Template definitions
+
 ## 1.0.26
 
 ### Patch Changes

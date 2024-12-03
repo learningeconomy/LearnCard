@@ -1,5 +1,19 @@
 import { QueryResult } from 'neo4j-driver';
 
+export const getMatchQueryWhere = (identifierToFilter: string, matchQueryKey = 'matchQuery') => `
+all(key IN keys($${matchQueryKey}) 
+    WHERE CASE 
+        WHEN $${matchQueryKey}[key] IS TYPED MAP 
+            AND $${matchQueryKey}[key]['$in'] IS NOT NULL
+        THEN ${identifierToFilter}[key] IN $${matchQueryKey}[key]['$in']
+        WHEN $${matchQueryKey}[key] IS TYPED MAP 
+            AND $${matchQueryKey}[key]['$regex'] IS NOT NULL
+        THEN ${identifierToFilter}[key] =~ $${matchQueryKey}[key]['$regex']
+        ELSE ${identifierToFilter}[key] = $${matchQueryKey}[key]
+    END
+)
+`;
+
 export const convertQueryResultToPropertiesObjectArray = <Properties extends Record<string, any>>(
     results: QueryResult
 ): Properties[] => {

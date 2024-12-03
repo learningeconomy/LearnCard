@@ -1,5 +1,45 @@
 # @learncard/network-brain-service
 
+## 3.1.8
+
+### Patch Changes
+
+-   [#569](https://github.com/learningeconomy/LearnCard/pull/569) [`72e9661ffe0c9f9e3c312ecba2b6441d61941a4a`](https://github.com/learningeconomy/LearnCard/commit/72e9661ffe0c9f9e3c312ecba2b6441d61941a4a) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - - Don't give default claim role if profile already has a role
+    -   Allow profiles who can resolve parents to resolve children
+    -   Return default claim permissions from `getBoost`
+    -   Fix `generateClaimLink` permissions check
+    -   Actually allow `$regex` to work via `superjson` with tRPC, regex strings with HTTP API
+    -   Allow querying boost recipients
+-   Updated dependencies [[`72e9661ffe0c9f9e3c312ecba2b6441d61941a4a`](https://github.com/learningeconomy/LearnCard/commit/72e9661ffe0c9f9e3c312ecba2b6441d61941a4a)]:
+    -   @learncard/types@5.5.8
+    -   @learncard/core@9.3.8
+    -   @learncard/helpers@1.0.20
+    -   @learncard/ceramic-plugin@1.0.19
+    -   @learncard/did-web-plugin@1.0.45
+    -   @learncard/didkey-plugin@1.0.19
+    -   @learncard/didkit-plugin@1.4.17
+    -   @learncard/learn-card-plugin@1.1.21
+    -   @learncard/vc-plugin@1.1.22
+    -   @learncard/vc-templates-plugin@1.0.29
+    -   @learncard/expiration-plugin@1.1.22
+    -   @learncard/crypto-plugin@1.0.19
+
+## 3.1.7
+
+### Patch Changes
+
+-   Updated dependencies [[`df13a7de5f31fabd842884a3e7c0706746c60da1`](https://github.com/learningeconomy/LearnCard/commit/df13a7de5f31fabd842884a3e7c0706746c60da1)]:
+    -   @learncard/vc-templates-plugin@1.0.28
+    -   @learncard/did-web-plugin@1.0.44
+
+## 3.1.6
+
+### Patch Changes
+
+-   Updated dependencies [[`9afd9e515d1cefeac03f76fb13556e6288abbc35`](https://github.com/learningeconomy/LearnCard/commit/9afd9e515d1cefeac03f76fb13556e6288abbc35)]:
+    -   @learncard/vc-templates-plugin@1.0.27
+    -   @learncard/did-web-plugin@1.0.43
+
 ## 3.1.5
 
 ### Patch Changes

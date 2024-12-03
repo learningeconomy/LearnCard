@@ -1,5 +1,43 @@
 # @learncard/network-brain-service
 
+## 2.2.1
+
+### Patch Changes
+
+-   Updated dependencies [[`72e9661ffe0c9f9e3c312ecba2b6441d61941a4a`](https://github.com/learningeconomy/LearnCard/commit/72e9661ffe0c9f9e3c312ecba2b6441d61941a4a)]:
+    -   @learncard/types@5.5.8
+    -   @learncard/core@9.3.8
+    -   @learncard/helpers@1.0.20
+    -   @learncard/ceramic-plugin@1.0.19
+    -   @learncard/did-web-plugin@1.0.45
+    -   @learncard/didkey-plugin@1.0.19
+    -   @learncard/didkit-plugin@1.4.17
+    -   @learncard/learn-card-plugin@1.1.21
+    -   @learncard/vc-plugin@1.1.22
+    -   @learncard/vc-templates-plugin@1.0.29
+    -   @learncard/expiration-plugin@1.1.22
+    -   @learncard/crypto-plugin@1.0.19
+
+## 2.2.0
+
+### Minor Changes
+
+-   [#566](https://github.com/learningeconomy/LearnCard/pull/566) [`df13a7de5f31fabd842884a3e7c0706746c60da1`](https://github.com/learningeconomy/LearnCard/commit/df13a7de5f31fabd842884a3e7c0706746c60da1) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - XAPI Support
+
+### Patch Changes
+
+-   Updated dependencies [[`df13a7de5f31fabd842884a3e7c0706746c60da1`](https://github.com/learningeconomy/LearnCard/commit/df13a7de5f31fabd842884a3e7c0706746c60da1)]:
+    -   @learncard/vc-templates-plugin@1.0.28
+    -   @learncard/did-web-plugin@1.0.44
+
+## 2.1.12
+
+### Patch Changes
+
+-   Updated dependencies [[`9afd9e515d1cefeac03f76fb13556e6288abbc35`](https://github.com/learningeconomy/LearnCard/commit/9afd9e515d1cefeac03f76fb13556e6288abbc35)]:
+    -   @learncard/vc-templates-plugin@1.0.27
+    -   @learncard/did-web-plugin@1.0.43
+
 ## 2.1.11
 
 ### Patch Changes
