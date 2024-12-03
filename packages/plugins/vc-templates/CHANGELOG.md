@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 1.0.28
+
+### Patch Changes
+
+-   [#566](https://github.com/learningeconomy/LearnCard/pull/566) [`df13a7de5f31fabd842884a3e7c0706746c60da1`](https://github.com/learningeconomy/LearnCard/commit/df13a7de5f31fabd842884a3e7c0706746c60da1) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Delegate Credentials
+
 ## 1.0.27
 
 ### Patch Changes
