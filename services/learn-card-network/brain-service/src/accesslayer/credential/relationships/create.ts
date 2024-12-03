@@ -46,10 +46,6 @@ export const setDefaultClaimedRole = async (
         })
         .with('boost, role')
         .match({ model: Profile, where: { profileId: profile.profileId }, identifier: 'profile' })
-        .where(
-            `NOT EXISTS { MATCH (profile)-[:${Boost.getRelationshipByAlias('hasRole').name
-            }]-(boost)}`
-        )
         .create({
             related: [
                 { identifier: 'profile' },

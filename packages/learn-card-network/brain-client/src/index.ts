@@ -1,4 +1,3 @@
-import superjson from 'superjson';
 import { createTRPCProxyClient, CreateTRPCProxyClient, httpBatchLink } from '@trpc/client';
 import type { AppRouter } from '@learncard/network-brain-service';
 
@@ -13,7 +12,6 @@ export const getClient = async (
     let challenges: string[] = [];
 
     const challengeRequester = createTRPCProxyClient<AppRouter>({
-        transformer: superjson,
         links: [
             httpBatchLink({
                 url,
@@ -32,7 +30,6 @@ export const getClient = async (
     challenges = await getChallenges();
 
     const trpc = createTRPCProxyClient<AppRouter>({
-        transformer: superjson,
         links: [
             callbackLink(async () => {
                 challenges = await getChallenges();

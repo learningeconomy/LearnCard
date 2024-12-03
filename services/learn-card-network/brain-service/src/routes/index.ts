@@ -1,4 +1,3 @@
-import superjson from 'superjson';
 import { initTRPC, TRPCError } from '@trpc/server';
 import { APIGatewayEvent, CreateAWSLambdaContextOptions } from '@trpc/server/adapters/aws-lambda';
 import { CreateFastifyContextOptions } from '@trpc/server/adapters/fastify';
@@ -29,7 +28,7 @@ export type Context = {
     domain: string;
 };
 
-export const t = initTRPC.context<Context>().meta<OpenApiMeta>().create({ transformer: superjson });
+export const t = initTRPC.context<Context>().meta<OpenApiMeta>().create();
 
 export const createContext = async (
     options: CreateAWSLambdaContextOptions<APIGatewayEvent> | CreateFastifyContextOptions
