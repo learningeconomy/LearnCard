@@ -1,7 +1,7 @@
 ---
 '@learncard/network-brain-service': patch
 '@learncard/network-brain-client': patch
-'@learncard/network-brain-plugin': patch
+'@learncard/network-plugin': patch
 '@learncard/types': patch
 ---
 
