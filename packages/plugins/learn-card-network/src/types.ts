@@ -29,6 +29,7 @@ import {
     BoostRecipientInfo,
     BoostPermissions,
     BoostQuery,
+    LCNProfileQuery,
 } from '@learncard/types';
 import { Plugin } from '@learncard/core';
 import { ProofOptions } from '@learncard/didkit-plugin';
@@ -129,7 +130,7 @@ export type LearnCardNetworkPluginMethods = {
     countBoosts: (query?: BoostQuery) => Promise<number>;
     getBoostChildren: (
         uri: string,
-        options?: PaginationOptionsType & { query?: BoostQuery; numberOfGenerations?: number; }
+        options?: PaginationOptionsType & { query?: BoostQuery; numberOfGenerations?: number }
     ) => Promise<PaginatedBoostsType>;
     countBoostChildren: (
         uri: string,
@@ -137,12 +138,9 @@ export type LearnCardNetworkPluginMethods = {
     ) => Promise<number>;
     getBoostSiblings: (
         uri: string,
-        options?: PaginationOptionsType & { query?: BoostQuery; }
+        options?: PaginationOptionsType & { query?: BoostQuery }
     ) => Promise<PaginatedBoostsType>;
-    countBoostSiblings: (
-        uri: string,
-        options?: { query?: BoostQuery }
-    ) => Promise<number>;
+    countBoostSiblings: (uri: string, options?: { query?: BoostQuery }) => Promise<number>;
     getFamilialBoosts: (
         uri: string,
         options?: PaginationOptionsType & {
@@ -179,7 +177,8 @@ export type LearnCardNetworkPluginMethods = {
         uri: string,
         limit?: number,
         cursor?: string,
-        includeUnacceptedBoosts?: boolean
+        includeUnacceptedBoosts?: boolean,
+        query?: LCNProfileQuery
     ) => Promise<PaginatedBoostRecipientsType>;
     countBoostRecipients: (uri: string, includeUnacceptedBoosts?: boolean) => Promise<number>;
     updateBoost: (
