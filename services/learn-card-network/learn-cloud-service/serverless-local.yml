@@ -92,6 +92,18 @@ functions:
         url:
             cors: true
 
+    xapi:
+        handler: xApiLambda.xApiHandler
+        vpc:
+            securityGroupIds:
+                - 'Fn::GetAtt': [ServerlessSecurityGroup, GroupId]
+            subnetIds:
+                - Ref: PrivateSubnetA
+        events:
+            - httpApi: ANY /xapi/{params+}
+        url:
+            cors: true
+
     swagger:
         handler: lambda.swaggerUiHandler
         events:

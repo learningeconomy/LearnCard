@@ -19,7 +19,7 @@ export const getVCTemplatesPlugin = (): VCTemplatePlugin => {
                 const defaults = {
                     did,
                     subject: 'did:example:d23dd687a7dc6787646f2eb98d0',
-                    issuanceDate: '2020-08-19T21:41:50Z',
+                    issuanceDate: new Date().toISOString(),
                 };
 
                 const { type = 'basic', ...functionArgs } = args;

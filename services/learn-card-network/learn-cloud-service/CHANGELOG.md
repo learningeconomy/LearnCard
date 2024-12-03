@@ -1,5 +1,17 @@
 # @learncard/network-brain-service
 
+## 2.2.0
+
+### Minor Changes
+
+-   [#566](https://github.com/learningeconomy/LearnCard/pull/566) [`df13a7de5f31fabd842884a3e7c0706746c60da1`](https://github.com/learningeconomy/LearnCard/commit/df13a7de5f31fabd842884a3e7c0706746c60da1) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - XAPI Support
+
+### Patch Changes
+
+-   Updated dependencies [[`df13a7de5f31fabd842884a3e7c0706746c60da1`](https://github.com/learningeconomy/LearnCard/commit/df13a7de5f31fabd842884a3e7c0706746c60da1)]:
+    -   @learncard/vc-templates-plugin@1.0.28
+    -   @learncard/did-web-plugin@1.0.44
+
 ## 2.1.12
 
 ### Patch Changes

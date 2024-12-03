@@ -1,5 +1,12 @@
 # did-web-plugin
 
+## 1.0.44
+
+### Patch Changes
+
+-   Updated dependencies [[`df13a7de5f31fabd842884a3e7c0706746c60da1`](https://github.com/learningeconomy/LearnCard/commit/df13a7de5f31fabd842884a3e7c0706746c60da1)]:
+    -   @learncard/vc-templates-plugin@1.0.28
+
 ## 1.0.43
 
 ### Patch Changes
