@@ -425,7 +425,7 @@ export const boostsRouter = t.router({
         .meta({
             openapi: {
                 protect: true,
-                method: 'GET',
+                method: 'POST',
                 path: '/boost/recipients/paginated/{uri}',
                 tags: ['Boosts'],
                 summary: 'Get boost recipients',
