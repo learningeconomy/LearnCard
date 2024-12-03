@@ -1,0 +1,35 @@
+{
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
+    "name": "e2e",
+    "sourceRoot": "tests/e2e/tests",
+    "projectType": "application",
+    "root": "tests/e2e",
+    "tags": [],
+    "implicitDependencies": [
+        "init",
+        "nx-run-command"
+    ],
+    "namedInputs": {
+        "tests": [
+            "{projectRoot}/tests/**/*"
+        ]
+    },
+    "targets": {
+        "test": {
+            "executor": "./tools/executors/workspace:run-command",
+            "dependsOn": [
+                "^build"
+            ],
+            "options": {
+                "command": "pnpm test",
+                "cwd": "{root}/tests/e2e"
+            }
+        },
+        "build": {
+            "executor": "nx:noop",
+            "dependsOn": [
+                "^build"
+            ]
+        }
+    }
+}
