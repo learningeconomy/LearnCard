@@ -106,6 +106,7 @@ export const VC_TEMPLATES: { [Key in keyof VcTemplates]: (args: VcTemplates[Key]
         achievementImage = '',
         attachments,
         display,
+        familyTitles,
         skills,
         groupID = '',
     } = {}) => ({
@@ -146,6 +147,65 @@ export const VC_TEMPLATES: { [Key in keyof VcTemplates]: (args: VcTemplates[Key]
                                 repeatBackgroundImage: {
                                     '@id': 'lcn:boostRepeatBackgroundImage',
                                     '@type': 'xsd:boolean',
+                                },
+                                emoji: {
+                                    '@id': 'lcn:boostEmoji',
+                                    '@context': {
+                                        activeSkinTone: {
+                                            '@id': 'lcn:boostEmojiActiveSkinTone',
+                                            '@type': 'xsd:string',
+                                        },
+                                        unified: {
+                                            '@id': 'lcn:boostEmojiUnified',
+                                            '@type': 'xsd:string',
+                                        },
+                                        unifiedWithoutSkinTone: {
+                                            '@id': 'lcn:boostEmojiUnifiedWithoutSkinTone',
+                                            '@type': 'xsd:string',
+                                        },
+                                        names: {
+                                            '@id': 'lcn:boostEmojiNames',
+                                            '@container': '@set',
+                                            '@type': 'xsd:string',
+                                        },
+                                        imageUrl: {
+                                            '@id': 'lcn:boostEmojiImageUrl',
+                                            '@type': 'xsd:string',
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                        familyTitles: {
+                            '@id': 'lcn:familyTitles',
+                            '@context': {
+                                guardians: {
+                                    '@id': 'lcn:guardians',
+                                    '@container': '@set',
+                                    '@context': {
+                                        plural: {
+                                            '@id': 'lcn:plural',
+                                            '@type': 'xsd:string',
+                                        },
+                                        singular: {
+                                            '@id': 'lcn:singular',
+                                            '@type': 'xsd:string',
+                                        },
+                                    },
+                                },
+                                dependents: {
+                                    '@id': 'lcn:dependents',
+                                    '@container': '@set',
+                                    '@context': {
+                                        plural: {
+                                            '@id': 'lcn:plural',
+                                            '@type': 'xsd:string',
+                                        },
+                                        singular: {
+                                            '@id': 'lcn:singular',
+                                            '@type': 'xsd:string',
+                                        },
+                                    },
                                 },
                             },
                         },
@@ -218,6 +278,7 @@ export const VC_TEMPLATES: { [Key in keyof VcTemplates]: (args: VcTemplates[Key]
             },
         },
         display,
+        familyTitles,
         image: boostImage,
         attachments,
         skills,
@@ -241,6 +302,7 @@ export const VC_TEMPLATES: { [Key in keyof VcTemplates]: (args: VcTemplates[Key]
         attachments,
         skills,
         display,
+        familyTitles,
         boostID,
         groupID = '',
     } = {}) => ({
@@ -281,6 +343,65 @@ export const VC_TEMPLATES: { [Key in keyof VcTemplates]: (args: VcTemplates[Key]
                                 repeatBackgroundImage: {
                                     '@id': 'lcn:boostRepeatBackgroundImage',
                                     '@type': 'xsd:boolean',
+                                },
+                                emoji: {
+                                    '@id': 'lcn:boostEmoji',
+                                    '@context': {
+                                        activeSkinTone: {
+                                            '@id': 'lcn:boostEmojiActiveSkinTone',
+                                            '@type': 'xsd:string',
+                                        },
+                                        unified: {
+                                            '@id': 'lcn:boostEmojiUnified',
+                                            '@type': 'xsd:string',
+                                        },
+                                        unifiedWithoutSkinTone: {
+                                            '@id': 'lcn:boostEmojiUnifiedWithoutSkinTone',
+                                            '@type': 'xsd:string',
+                                        },
+                                        names: {
+                                            '@id': 'lcn:boostEmojiNames',
+                                            '@container': '@set',
+                                            '@type': 'xsd:string',
+                                        },
+                                        imageUrl: {
+                                            '@id': 'lcn:boostEmojiImageUrl',
+                                            '@type': 'xsd:string',
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                        familyTitles: {
+                            '@id': 'lcn:familyTitles',
+                            '@context': {
+                                guardians: {
+                                    '@id': 'lcn:guardians',
+                                    '@container': '@set',
+                                    '@context': {
+                                        plural: {
+                                            '@id': 'lcn:plural',
+                                            '@type': 'xsd:string',
+                                        },
+                                        singular: {
+                                            '@id': 'lcn:singular',
+                                            '@type': 'xsd:string',
+                                        },
+                                    },
+                                },
+                                dependents: {
+                                    '@id': 'lcn:dependents',
+                                    '@container': '@set',
+                                    '@context': {
+                                        plural: {
+                                            '@id': 'lcn:plural',
+                                            '@type': 'xsd:string',
+                                        },
+                                        singular: {
+                                            '@id': 'lcn:singular',
+                                            '@type': 'xsd:string',
+                                        },
+                                    },
                                 },
                             },
                         },
@@ -427,6 +548,7 @@ export const VC_TEMPLATES: { [Key in keyof VcTemplates]: (args: VcTemplates[Key]
             }
             : {}),
         display,
+        familyTitles,
         image: boostImage,
         attachments,
         skills,
