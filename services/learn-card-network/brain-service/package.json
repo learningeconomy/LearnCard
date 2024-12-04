@@ -76,6 +76,7 @@
         "neogma": "^1.13.0",
         "serverless-offline": "^12.0.4",
         "sift": "^17.0.1",
+        "superjson": "^2.2.1",
         "trpc-openapi": "^1.2.0",
         "uuid": "^9.0.0"
     }

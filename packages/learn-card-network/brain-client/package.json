@@ -19,6 +19,7 @@
     "dependencies": {
         "@learncard/network-brain-service": "workspace:*",
         "@trpc/client": "^10.45.2",
-        "@trpc/server": "^10.45.2"
+        "@trpc/server": "^10.45.2",
+        "superjson": "^2.2.1"
     }
 }
