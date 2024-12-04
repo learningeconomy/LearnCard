@@ -1,10 +1,11 @@
-import superjson from 'superjson';
 import { initTRPC, TRPCError } from '@trpc/server';
 import { APIGatewayEvent, CreateAWSLambdaContextOptions } from '@trpc/server/adapters/aws-lambda';
 import { CreateFastifyContextOptions } from '@trpc/server/adapters/fastify';
 import { OpenApiMeta } from 'trpc-openapi';
 import jwtDecode from 'jwt-decode';
 import * as Sentry from '@sentry/serverless';
+
+import { RegExpTransformer } from '@learncard/helpers';
 
 import { getProfileByDid } from '@accesslayer/profile/read';
 import { getEmptyLearnCard } from '@helpers/learnCard.helpers';
@@ -29,7 +30,10 @@ export type Context = {
     domain: string;
 };
 
-export const t = initTRPC.context<Context>().meta<OpenApiMeta>().create({ transformer: superjson });
+export const t = initTRPC
+    .context<Context>()
+    .meta<OpenApiMeta>()
+    .create({ transformer: RegExpTransformer });
 
 export const createContext = async (
     options: CreateAWSLambdaContextOptions<APIGatewayEvent> | CreateFastifyContextOptions
