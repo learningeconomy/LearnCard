@@ -13,7 +13,10 @@ export const getClient = async (
     let challenges: string[] = [];
 
     const challengeRequester = createTRPCProxyClient<AppRouter>({
-        transformer: RegExpTransformer,
+        transformer: {
+            input: RegExpTransformer,
+            output: { serialize: o => o, deserialize: o => o },
+        },
         links: [
             httpBatchLink({
                 url,
@@ -32,7 +35,10 @@ export const getClient = async (
     challenges = await getChallenges();
 
     const trpc = createTRPCProxyClient<AppRouter>({
-        transformer: RegExpTransformer,
+        transformer: {
+            input: RegExpTransformer,
+            output: { serialize: o => o, deserialize: o => o },
+        },
         links: [
             callbackLink(async () => {
                 challenges = await getChallenges();

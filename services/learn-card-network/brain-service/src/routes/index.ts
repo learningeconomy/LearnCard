@@ -33,7 +33,12 @@ export type Context = {
 export const t = initTRPC
     .context<Context>()
     .meta<OpenApiMeta>()
-    .create({ transformer: RegExpTransformer });
+    .create({
+        transformer: {
+            input: RegExpTransformer,
+            output: { serialize: o => o, deserialize: o => o },
+        },
+    });
 
 export const createContext = async (
     options: CreateAWSLambdaContextOptions<APIGatewayEvent> | CreateFastifyContextOptions
