@@ -15,6 +15,7 @@ import {
     PaginatedLCNProfilesValidator,
     BoostPermissions,
     BoostQueryValidator,
+    LCNProfileQueryValidator,
 } from '@learncard/types';
 
 import { t, profileRoute } from '@routes';
@@ -46,6 +47,7 @@ import {
     canProfileViewBoost,
     canProfileEditBoost,
     canProfileCreateChildBoost,
+    getBoostByUriWithDefaultClaimPermissions,
 } from '@accesslayer/boost/relationships/read';
 
 import { deleteStorageForUri, setStorageForUri } from '@cache/storage';
@@ -58,7 +60,13 @@ import {
     isDraftBoost,
     convertCredentialToBoostTemplateJSON,
 } from '@helpers/boost.helpers';
-import { BoostValidator, BoostGenerateClaimLinkInput, BoostStatus, BoostType } from 'types/boost';
+import {
+    BoostValidator,
+    BoostGenerateClaimLinkInput,
+    BoostStatus,
+    BoostType,
+    BoostWithClaimPermissionsValidator,
+} from 'types/boost';
 import { deleteBoost } from '@accesslayer/boost/delete';
 import { createBoost } from '@accesslayer/boost/create';
 import { getBoostOwner } from '@accesslayer/boost/relationships/read';
@@ -265,7 +273,7 @@ export const boostsRouter = t.router({
         })
         .input(z.object({ uri: z.string() }))
         .output(
-            BoostValidator.omit({ id: true, boost: true }).extend({
+            BoostWithClaimPermissionsValidator.omit({ id: true, boost: true }).extend({
                 uri: z.string(),
                 boost: UnsignedVCValidator,
             })
@@ -275,7 +283,7 @@ export const boostsRouter = t.router({
 
             const { uri } = input;
 
-            const boost = await getBoostByUri(uri);
+            const boost = await getBoostByUriWithDefaultClaimPermissions(uri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
@@ -286,7 +294,7 @@ export const boostsRouter = t.router({
                 });
             }
 
-            const { id, boost: _boost, ...remaining } = boost.dataValues;
+            const { id, boost: _boost, ...remaining } = boost;
 
             return { ...remaining, boost: JSON.parse(_boost), uri: getBoostUri(id, ctx.domain) };
         }),
@@ -402,7 +410,8 @@ export const boostsRouter = t.router({
             })
         )
         .output(BoostRecipientValidator.array())
-        .query(async ({ input }) => {
+        .query(async ({ input, ctx }) => {
+            const { domain } = ctx;
             const { uri, limit, skip, includeUnacceptedBoosts } = input;
 
             const boost = await getBoostByUri(uri);
@@ -410,7 +419,12 @@ export const boostsRouter = t.router({
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
             //TODO: Should we restrict who can see the recipients of a boost? Maybe to Boost owner / people who have the boost?
-            return getBoostRecipientsSkipLimit(boost, { limit, skip, includeUnacceptedBoosts });
+            return getBoostRecipientsSkipLimit(boost, {
+                limit,
+                skip,
+                includeUnacceptedBoosts,
+                domain,
+            });
         }),
 
     getPaginatedBoostRecipients: profileRoute
@@ -429,11 +443,13 @@ export const boostsRouter = t.router({
                 limit: PaginationOptionsValidator.shape.limit.default(25),
                 uri: z.string(),
                 includeUnacceptedBoosts: z.boolean().default(true),
+                query: LCNProfileQueryValidator.optional(),
             })
         )
         .output(PaginatedBoostRecipientsValidator)
-        .query(async ({ input }) => {
-            const { uri, limit, cursor, includeUnacceptedBoosts } = input;
+        .query(async ({ input, ctx }) => {
+            const { domain } = ctx;
+            const { uri, limit, cursor, includeUnacceptedBoosts, query } = input;
 
             const boost = await getBoostByUri(uri);
 
@@ -443,6 +459,8 @@ export const boostsRouter = t.router({
                 limit: limit + 1,
                 cursor,
                 includeUnacceptedBoosts,
+                query,
+                domain,
             });
 
             const hasMore = records.length > limit;
@@ -1315,10 +1333,10 @@ export const boostsRouter = t.router({
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
-            if (!(await isProfileBoostAdmin(profile, boost))) {
+            if (!(await canProfileIssueBoost(profile, boost))) {
                 throw new TRPCError({
                     code: 'UNAUTHORIZED',
-                    message: 'Profile does not own boost',
+                    message: 'Profile does not have permissions to issue boost',
                 });
             }
 

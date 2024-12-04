@@ -4,11 +4,11 @@ import { getIdFromUri } from '@helpers/uri.helpers';
 import {
     convertObjectRegExpToNeo4j,
     convertQueryResultToPropertiesObjectArray,
+    getMatchQueryWhere,
 } from '@helpers/neo4j.helpers';
 import { Boost, Profile, BoostInstance, ProfileInstance } from '@models';
 import { BoostType } from 'types/boost';
 import { BoostQuery } from '@learncard/types';
-import { MATCH_QUERY_WHERE } from 'src/constants/neo4j';
 import { inflateObject } from '@helpers/objects.helpers';
 
 export const getBoostById = async (id: string): Promise<BoostInstance | null> => {
@@ -52,7 +52,7 @@ export const getBoostsForProfile = async (
                 { model: Profile },
             ],
         })
-        .where(MATCH_QUERY_WHERE);
+        .where(getMatchQueryWhere('boost'));
 
     const query = cursor ? _query.raw('AND createdBy.date < $cursor') : _query;
 
@@ -87,7 +87,7 @@ export const countBoostsForProfile = async (
                 { model: Profile, where: { profileId: profile.profileId } },
             ],
         })
-        .where(MATCH_QUERY_WHERE);
+        .where(getMatchQueryWhere('boost'));
 
     const result = await query.return('COUNT(DISTINCT boost) AS count').run();
 
@@ -128,7 +128,7 @@ export const getChildrenBoosts = async (
                 { model: Profile },
             ],
         })
-        .where(MATCH_QUERY_WHERE);
+        .where(getMatchQueryWhere('boost'));
 
     const query = cursor ? _query.raw('AND createdBy.date < $cursor') : _query;
 
@@ -169,7 +169,7 @@ export const countBoostChildren = async (
                 { identifier: 'boost', model: Boost },
             ],
         })
-        .where(MATCH_QUERY_WHERE);
+        .where(getMatchQueryWhere('boost'));
 
     const result = await query.return('COUNT(DISTINCT boost) AS count').run();
 
@@ -207,7 +207,7 @@ export const getSiblingBoosts = async (
                 { model: Profile },
             ],
         })
-        .where(MATCH_QUERY_WHERE);
+        .where(getMatchQueryWhere('boost'));
 
     const query = cursor ? _query.raw('AND createdBy.date < $cursor') : _query;
 
@@ -244,7 +244,7 @@ export const countBoostSiblings = async (
                 { identifier: 'boost', model: Boost },
             ],
         })
-        .where(MATCH_QUERY_WHERE);
+        .where(getMatchQueryWhere('boost'));
 
     const result = await query.return('COUNT(DISTINCT boost) AS count').run();
 
@@ -285,7 +285,7 @@ export const getFamilialBoosts = async (
 ((start)<-[:PARENT_OF*1..${Number.isFinite(parentGenerations) ? parentGenerations : ''}]-(boost) OR 
 (start)-[:PARENT_OF*1..${Number.isFinite(childGenerations) ? childGenerations : ''}]->(boost) OR 
 (start)<-[:PARENT_OF]-(:Boost)-[:PARENT_OF]->(boost) AND boost <> start)
-AND ${MATCH_QUERY_WHERE}`
+AND ${getMatchQueryWhere('boost')}`
         )
         .match({
             related: [
@@ -340,7 +340,7 @@ export const countFamilialBoosts = async (
 ((start)<-[:PARENT_OF*1..${Number.isFinite(parentGenerations) ? parentGenerations : ''}]-(boost) OR 
 (start)-[:PARENT_OF*1..${Number.isFinite(childGenerations) ? childGenerations : ''}]->(boost) OR 
 (start)<-[:PARENT_OF]-(:Boost)-[:PARENT_OF]->(boost) AND boost <> start)
-AND ${MATCH_QUERY_WHERE}`
+AND ${getMatchQueryWhere('boost')}`
         );
 
     const result = await query.return('COUNT(DISTINCT boost) AS count').run();
@@ -382,7 +382,7 @@ export const getParentBoosts = async (
                 { model: Profile },
             ],
         })
-        .where(MATCH_QUERY_WHERE);
+        .where(getMatchQueryWhere('boost'));
 
     const query = cursor ? _query.raw('AND createdBy.date < $cursor') : _query;
 
@@ -423,7 +423,7 @@ export const countBoostParents = async (
                 { model: Boost, where: { id: boost.id } },
             ],
         })
-        .where(MATCH_QUERY_WHERE);
+        .where(getMatchQueryWhere('boost'));
 
     const result = await query.return('COUNT(DISTINCT boost) AS count').run();
 
