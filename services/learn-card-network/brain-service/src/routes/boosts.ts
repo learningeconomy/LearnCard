@@ -410,7 +410,8 @@ export const boostsRouter = t.router({
             })
         )
         .output(BoostRecipientValidator.array())
-        .query(async ({ input }) => {
+        .query(async ({ input, ctx }) => {
+            const { domain } = ctx;
             const { uri, limit, skip, includeUnacceptedBoosts } = input;
 
             const boost = await getBoostByUri(uri);
@@ -418,7 +419,12 @@ export const boostsRouter = t.router({
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
             //TODO: Should we restrict who can see the recipients of a boost? Maybe to Boost owner / people who have the boost?
-            return getBoostRecipientsSkipLimit(boost, { limit, skip, includeUnacceptedBoosts });
+            return getBoostRecipientsSkipLimit(boost, {
+                limit,
+                skip,
+                includeUnacceptedBoosts,
+                domain,
+            });
         }),
 
     getPaginatedBoostRecipients: profileRoute
@@ -441,7 +447,8 @@ export const boostsRouter = t.router({
             })
         )
         .output(PaginatedBoostRecipientsValidator)
-        .query(async ({ input }) => {
+        .query(async ({ input, ctx }) => {
+            const { domain } = ctx;
             const { uri, limit, cursor, includeUnacceptedBoosts, query } = input;
 
             const boost = await getBoostByUri(uri);
@@ -453,6 +460,7 @@ export const boostsRouter = t.router({
                 cursor,
                 includeUnacceptedBoosts,
                 query,
+                domain,
             });
 
             const hasMore = records.length > limit;
