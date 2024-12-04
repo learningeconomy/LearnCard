@@ -5,8 +5,6 @@ import { OpenApiMeta } from 'trpc-openapi';
 import jwtDecode from 'jwt-decode';
 import * as Sentry from '@sentry/serverless';
 
-import { RegExpTransformer } from '@learncard/helpers';
-
 import { getProfileByDid } from '@accesslayer/profile/read';
 import { getEmptyLearnCard } from '@helpers/learnCard.helpers';
 import { invalidateChallengeForDid, isChallengeValidForDid } from '@cache/challenges';
@@ -30,10 +28,7 @@ export type Context = {
     domain: string;
 };
 
-export const t = initTRPC
-    .context<Context>()
-    .meta<OpenApiMeta>()
-    .create({ transformer: RegExpTransformer });
+export const t = initTRPC.context<Context>().meta<OpenApiMeta>().create();
 
 export const createContext = async (
     options: CreateAWSLambdaContextOptions<APIGatewayEvent> | CreateFastifyContextOptions

@@ -1,7 +1,6 @@
 import { z } from 'zod';
 
 import { PaginationResponseValidator } from './mongo';
-import { StringQuery } from './queries';
 
 export const LCNProfileValidator = z.object({
     profileId: z.string().min(3).max(40),
@@ -18,20 +17,6 @@ export const LCNProfileValidator = z.object({
     notificationsWebhook: z.string().url().startsWith('http').optional(),
 });
 export type LCNProfile = z.infer<typeof LCNProfileValidator>;
-
-export const LCNProfileQueryValidator = z
-    .object({
-        profileId: StringQuery,
-        displayName: StringQuery,
-        shortBio: StringQuery,
-        bio: StringQuery,
-        email: StringQuery,
-        websiteLink: StringQuery,
-        isServiceProfile: z.boolean(),
-        type: StringQuery,
-    })
-    .partial();
-export type LCNProfileQuery = z.infer<typeof LCNProfileQueryValidator>;
 
 export const PaginatedLCNProfilesValidator = PaginationResponseValidator.extend({
     records: LCNProfileValidator.array(),
@@ -85,6 +70,11 @@ export const BoostValidator = z.object({
 });
 export type Boost = z.infer<typeof BoostValidator>;
 
+export const StringQuery = z
+    .string()
+    .or(z.object({ $in: z.string().array() }))
+    .or(z.object({ $regex: z.instanceof(RegExp) }));
+
 export const BoostQueryValidator = z
     .object({
         uri: StringQuery,
@@ -107,7 +97,6 @@ export const BoostRecipientValidator = z.object({
     to: LCNProfileValidator,
     from: z.string(),
     received: z.string().optional(),
-    uri: z.string().optional(),
 });
 export type BoostRecipientInfo = z.infer<typeof BoostRecipientValidator>;
 
