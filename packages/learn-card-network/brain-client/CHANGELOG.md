@@ -1,5 +1,14 @@
 # @learncard/network-brain-client
 
+## 2.1.1
+
+### Patch Changes
+
+-   [`33237e836c52df41b491e570c437943a30189216`](https://github.com/learningeconomy/LearnCard/commit/33237e836c52df41b491e570c437943a30189216) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix backwards compat for real
+
+-   Updated dependencies [[`33237e836c52df41b491e570c437943a30189216`](https://github.com/learningeconomy/LearnCard/commit/33237e836c52df41b491e570c437943a30189216)]:
+    -   @learncard/network-brain-service@3.2.1
+
 ## 2.1.0
 
 ### Minor Changes
