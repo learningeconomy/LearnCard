@@ -1,5 +1,26 @@
 # @learncard/network-brain-service
 
+## 3.2.0
+
+### Minor Changes
+
+-   [#573](https://github.com/learningeconomy/LearnCard/pull/573) [`5abe7679d8c0a71952112b686ca9fdf66d0d50c0`](https://github.com/learningeconomy/LearnCard/commit/5abe7679d8c0a71952112b686ca9fdf66d0d50c0) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix backwards compat
+
+### Patch Changes
+
+-   Updated dependencies [[`5abe7679d8c0a71952112b686ca9fdf66d0d50c0`](https://github.com/learningeconomy/LearnCard/commit/5abe7679d8c0a71952112b686ca9fdf66d0d50c0)]:
+    -   @learncard/helpers@1.1.0
+    -   @learncard/core@9.3.9
+    -   @learncard/did-web-plugin@1.0.46
+    -   @learncard/didkey-plugin@1.0.20
+    -   @learncard/ceramic-plugin@1.0.20
+    -   @learncard/crypto-plugin@1.0.20
+    -   @learncard/didkit-plugin@1.4.18
+    -   @learncard/expiration-plugin@1.1.23
+    -   @learncard/learn-card-plugin@1.1.22
+    -   @learncard/vc-plugin@1.1.23
+    -   @learncard/vc-templates-plugin@1.0.30
+
 ## 3.1.8
 
 ### Patch Changes

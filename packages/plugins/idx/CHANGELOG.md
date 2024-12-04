@@ -1,5 +1,13 @@
 # learn-card-core
 
+## 1.0.20
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.9
+    -   @learncard/ceramic-plugin@1.0.20
+
 ## 1.0.19
 
 ### Patch Changes
