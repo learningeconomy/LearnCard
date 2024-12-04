@@ -109,6 +109,28 @@ describe('Boosts', () => {
                 code: 'UNAUTHORIZED',
             });
         });
+
+        it('should allow admins of parent boosts to get boosts', async () => {
+            const parentUri = await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
+            const uri = await userA.clients.fullAuth.boost.createChildBoost({ parentUri, boost: { credential: testVc } });
+
+            await userA.clients.fullAuth.boost.addBoostAdmin({ uri: parentUri, profileId: 'userb' });
+
+            const boost = await userB.clients.fullAuth.boost.getBoost({ uri });
+
+            expect(boost).toBeDefined();
+        });
+
+        it('should include default claim permissions', async () => {
+            const uri = await userA.clients.fullAuth.boost.createBoost({ credential: testVc, claimPermissions: adminRole });
+
+            await expect(userA.clients.fullAuth.boost.getBoost({ uri })).resolves.not.toThrow();
+
+            const boost = await userA.clients.fullAuth.boost.getBoost({ uri });
+
+            expect(boost).toBeDefined();
+            expect(boost.claimPermissions).toEqual(adminRole)
+        });
     });
 
     describe('getBoosts', () => {
@@ -614,6 +636,7 @@ describe('Boosts', () => {
             await Profile.delete({ detach: true, where: {} });
             await Credential.delete({ detach: true, where: {} });
             await Boost.delete({ detach: true, where: {} });
+
             await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
             await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
         });
@@ -709,6 +732,88 @@ describe('Boosts', () => {
                     })
                 ).records
             ).toHaveLength(0);
+        });
+
+        it("should allow querying recipients", async () => {
+            await userC.clients.fullAuth.profile.createProfile({ profileId: 'userc', displayName: 'Johnny Appleseed' });
+            await userD.clients.fullAuth.profile.createProfile({ profileId: 'userd', displayName: 'Jack Appleseed' });
+
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            expect(
+                (await userA.clients.fullAuth.boost.getPaginatedBoostRecipients({ uri, query: { profileId: 'userb' } })).records
+            ).toHaveLength(0);
+
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB },
+                uri,
+                false
+            );
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userc', user: userC },
+                uri,
+                false
+            );
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userd', user: userD },
+                uri,
+                false
+            );
+
+            expect(
+                (
+                    await userA.clients.fullAuth.boost.getPaginatedBoostRecipients({
+                        uri,
+                        query: { profileId: 'userb' }
+                    })
+                ).records
+            ).toHaveLength(1);
+            expect(
+                (
+                    await userA.clients.fullAuth.boost.getPaginatedBoostRecipients({
+                        uri,
+                        query: { profileId: { $regex: /user/i } }
+                    })
+                ).records
+            ).toHaveLength(3);
+            expect(
+                (
+                    await userA.clients.fullAuth.boost.getPaginatedBoostRecipients({
+                        uri,
+                        query: { profileId: { $in: ['userb', 'userc'] } }
+                    })
+                ).records
+            ).toHaveLength(2);
+
+            expect(
+                (
+                    await userA.clients.fullAuth.boost.getPaginatedBoostRecipients({
+                        uri,
+                        query: { displayName: 'Johnny Appleseed' }
+                    })
+                ).records
+            ).toHaveLength(1);
+            expect(
+                (
+                    await userA.clients.fullAuth.boost.getPaginatedBoostRecipients({
+                        uri,
+                        query: { displayName: { $regex: /apple/i } }
+                    })
+                ).records
+            ).toHaveLength(2);
+            expect(
+                (
+                    await userA.clients.fullAuth.boost.getPaginatedBoostRecipients({
+                        uri,
+                        query: { displayName: { $in: ['Johnny Appleseed', 'N/A'] } }
+                    })
+                ).records
+            ).toHaveLength(1);
         });
     });
 

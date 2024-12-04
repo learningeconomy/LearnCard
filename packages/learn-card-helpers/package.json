@@ -41,6 +41,7 @@
   },
   "types": "./dist/helpers.d.ts",
   "dependencies": {
-    "@learncard/types": "workspace:*"
+    "@learncard/types": "workspace:*",
+    "@trpc/server": "^10.45.2"
   }
 }

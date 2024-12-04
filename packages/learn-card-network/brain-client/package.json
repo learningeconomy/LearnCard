@@ -12,6 +12,7 @@
     "author": "Learning Economy Foundation (www.learningeconomy.io)",
     "license": "MIT",
     "devDependencies": {
+        "@learncard/helpers": "workspace:*",
         "@learncard/types": "workspace:*",
         "dts-bundle-generator": "^6.10.0",
         "esbuild": "^0.16.16"
