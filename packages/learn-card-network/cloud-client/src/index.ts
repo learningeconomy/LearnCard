@@ -54,7 +54,7 @@ export const getClient = async (
         return challengeRequester.utilities.getChallenges.query({ amount });
     };
 
-    challenges = await getChallenges();
+    getChallenges().then(result => (challenges = result));
 
     const trpc = createTRPCProxyClient<AppRouter>({
         links: [
