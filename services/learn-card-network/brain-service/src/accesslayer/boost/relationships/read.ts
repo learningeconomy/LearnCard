@@ -29,6 +29,7 @@ import {
 import { getIdFromUri } from '@helpers/uri.helpers';
 import { Role as RoleType } from 'types/role';
 import { inflateObject } from '@helpers/objects.helpers';
+import { getCredentialUri } from '@helpers/credential.helpers';
 
 export const getBoostOwner = async (boost: BoostInstance): Promise<ProfileInstance | undefined> => {
     return (await boost.findRelationships({ alias: 'createdBy' }))[0]?.target;
@@ -86,11 +87,13 @@ export const getBoostRecipients = async (
         cursor,
         includeUnacceptedBoosts = true,
         query: matchQuery = {},
+        domain,
     }: {
         limit: number;
         cursor?: string;
         includeUnacceptedBoosts?: boolean;
         query?: LCNProfileQuery;
+        domain: string;
     }
 ): Promise<Array<BoostRecipientInfo & { sent: string }>> => {
     console.log({ matchQuery });
@@ -127,7 +130,7 @@ export const getBoostRecipients = async (
                 { identifier: 'recipient' },
             ],
         })
-        .with('sender, sent, received, recipient')
+        .with('sender, sent, received, recipient, credential')
         .where(getMatchQueryWhere('recipient'));
 
     const query = cursor ? _query.raw('AND sent.date > $cursor') : _query;
@@ -137,19 +140,21 @@ export const getBoostRecipients = async (
         sent: ProfileRelationships['credentialSent']['RelationshipProperties'];
         recipient?: ProfileInstance;
         received?: CredentialRelationships['credentialReceived']['RelationshipProperties'];
+        credential?: CredentialInstance;
     }>(
         await query
-            .return('sender, sent, received, recipient')
+            .return('sender, sent, received, recipient, credential')
             .orderBy('sent.date')
             .limit(limit)
             .run()
     );
 
-    const resultsWithIds = results.map(({ sender, sent, received }) => ({
+    const resultsWithIds = results.map(({ sender, sent, received, credential }) => ({
         sent: sent.date,
         to: sent.to,
         from: sender.profileId,
         received: received?.date,
+        ...(credential && { uri: getCredentialUri(credential.id, domain) }),
     }));
 
     const recipients = await getProfilesByProfileIds(resultsWithIds.map(result => result.to));
@@ -169,10 +174,12 @@ export const getBoostRecipientsSkipLimit = async (
         limit,
         skip,
         includeUnacceptedBoosts = true,
+        domain,
     }: {
         limit: number;
         skip?: number;
         includeUnacceptedBoosts?: boolean;
+        domain: string;
     }
 ): Promise<BoostRecipientInfo[]> => {
     const query = new QueryBuilder()
@@ -210,18 +217,20 @@ export const getBoostRecipientsSkipLimit = async (
         sent: ProfileRelationships['credentialSent']['RelationshipProperties'];
         recipient?: ProfileInstance;
         received?: CredentialRelationships['credentialReceived']['RelationshipProperties'];
+        credential?: CredentialInstance;
     }>(
         await query
-            .return('sender, sent, received')
+            .return('sender, sent, received, credential')
             .limit(limit)
             .skip(skip ?? 0)
             .run()
     );
 
-    const resultsWithIds = results.map(({ sender, sent, received }) => ({
+    const resultsWithIds = results.map(({ sender, sent, received, credential }) => ({
         to: sent.to,
         from: sender.profileId,
         received: received?.date,
+        ...(credential && { uri: getCredentialUri(credential.id, domain) }),
     }));
 
     const recipients = await getProfilesByProfileIds(resultsWithIds.map(result => result.to));

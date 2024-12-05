@@ -107,6 +107,7 @@ export const BoostRecipientValidator = z.object({
     to: LCNProfileValidator,
     from: z.string(),
     received: z.string().optional(),
+    uri: z.string().optional(),
 });
 export type BoostRecipientInfo = z.infer<typeof BoostRecipientValidator>;
 
