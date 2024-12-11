@@ -4,7 +4,6 @@ import {
     CredentialInstance,
     CredentialRelationships,
     Profile,
-    ProfileInstance,
     ProfileRelationships,
 } from '@models';
 import { SentCredentialInfo } from '@learncard/types';
@@ -28,14 +27,8 @@ export const getCredentialByUri = async (uri: string): Promise<CredentialInstanc
 
 export const getReceivedCredentialsForProfile = async (
     domain: string,
-    profile: ProfileInstance,
-    {
-        limit,
-        from,
-    }: {
-        limit: number;
-        from?: string[];
-    }
+    profile: ProfileType,
+    { limit, from }: { limit: number; from?: string[] }
 ): Promise<SentCredentialInfo[]> => {
     const matchQuery = new QueryBuilder().match({
         related: [
@@ -57,8 +50,8 @@ export const getReceivedCredentialsForProfile = async (
     const query =
         from && from.length > 0
             ? matchQuery.where(
-                  new Where({ source: { profileId: { [Op.in]: from } } }, matchQuery.getBindParam())
-              )
+                new Where({ source: { profileId: { [Op.in]: from } } }, matchQuery.getBindParam())
+            )
             : matchQuery;
 
     const results = convertQueryResultToPropertiesObjectArray<{
@@ -78,14 +71,8 @@ export const getReceivedCredentialsForProfile = async (
 
 export const getSentCredentialsForProfile = async (
     domain: string,
-    profile: ProfileInstance,
-    {
-        limit,
-        to,
-    }: {
-        limit: number;
-        to?: string[];
-    }
+    profile: ProfileType,
+    { limit, to }: { limit: number; to?: string[] }
 ): Promise<SentCredentialInfo[]> => {
     const matchQuery = new QueryBuilder().match({
         related: [
@@ -102,8 +89,8 @@ export const getSentCredentialsForProfile = async (
     const whereQuery =
         to && to.length > 0
             ? matchQuery.where(
-                  new Where({ sent: { to: { [Op.in]: to } } }, matchQuery.getBindParam())
-              )
+                new Where({ sent: { to: { [Op.in]: to } } }, matchQuery.getBindParam())
+            )
             : matchQuery;
 
     const query = whereQuery.match({
@@ -136,14 +123,8 @@ export const getSentCredentialsForProfile = async (
 
 export const getIncomingCredentialsForProfile = async (
     domain: string,
-    profile: ProfileInstance,
-    {
-        limit,
-        from,
-    }: {
-        limit: number;
-        from?: string[];
-    }
+    profile: ProfileType,
+    { limit, from }: { limit: number; from?: string[] }
 ): Promise<SentCredentialInfo[]> => {
     const whereFrom =
         from && from.length > 0
@@ -169,8 +150,7 @@ export const getIncomingCredentialsForProfile = async (
             })
             // Don't return credentials that have been accepted
             .where(
-                `NOT (credential)-[:CREDENTIAL_RECEIVED]->()${
-                    whereFrom ? `AND ${whereFrom.getStatement('text')}` : ''
+                `NOT (credential)-[:CREDENTIAL_RECEIVED]->()${whereFrom ? `AND ${whereFrom.getStatement('text')}` : ''
                 }`
             )
             .return('source, relationship, credential')

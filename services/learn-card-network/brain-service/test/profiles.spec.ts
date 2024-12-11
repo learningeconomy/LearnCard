@@ -4,7 +4,6 @@ import { getClient, getUser } from './helpers/getClient';
 import { Profile, SigningAuthority, Credential, Boost } from '@models';
 import cache from '@cache';
 import { testVc, sendBoost, testVp, testUnsignedBoost } from './helpers/send';
-import { TRPCError } from '@trpc/server';
 
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;
@@ -167,6 +166,17 @@ describe('Profiles', () => {
                     bio: 'I am user B',
                 })
             ).resolves.not.toThrow();
+        });
+
+        it('should allow setting display info', async () => {
+            await userA.clients.fullAuth.profile.createProfile({
+                profileId: 'usera',
+                displayName: 'A',
+                display: { fontColor: '#000' },
+            });
+            const profile = await userA.clients.fullAuth.profile.getProfile();
+
+            expect(profile?.display?.fontColor).toEqual('#000');
         });
     });
 
@@ -784,6 +794,20 @@ describe('Profiles', () => {
             expect(userAResult?.notificationsWebhook).toEqual(
                 'https://api.learncard.app/send/notifications/updated'
             );
+        });
+
+        it('should allow updating your display information', async () => {
+            await expect(
+                userA.clients.fullAuth.profile.updateProfile({
+                    display: {
+                        accentColor: '#fff',
+                    },
+                })
+            ).resolves.not.toThrow();
+
+            const userAResult = await userA.clients.fullAuth.profile.getProfile();
+
+            expect(userAResult?.display?.accentColor).toEqual('#fff');
         });
     });
 
@@ -1500,7 +1524,10 @@ describe('Profiles', () => {
             await Credential.delete({ detach: true, where: {} });
             await Boost.delete({ detach: true, where: {} });
             await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
-            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+            await userB.clients.fullAuth.profile.createProfile({
+                profileId: 'userb',
+                display: { fontColor: '#fff' },
+            });
         });
 
         afterAll(async () => {

@@ -1,5 +1,6 @@
 import { getAdminRole, getEmptyRole } from '@accesslayer/role/read';
-import { CredentialInstance, ProfileInstance, BoostInstance } from '@models';
+import { CredentialInstance, BoostInstance } from '@models';
+import { ProfileType } from 'types/profile';
 
 export const createBoostInstanceOfRelationship = async (
     credential: CredentialInstance,
@@ -9,8 +10,8 @@ export const createBoostInstanceOfRelationship = async (
 };
 
 export const createReceivedCredentialRelationship = async (
-    to: ProfileInstance,
-    from: ProfileInstance,
+    to: ProfileType,
+    from: ProfileType,
     credential: CredentialInstance
 ): Promise<void> => {
     await credential.relateTo({
@@ -21,7 +22,7 @@ export const createReceivedCredentialRelationship = async (
 };
 
 export const setProfileAsBoostAdmin = async (
-    profile: ProfileInstance,
+    profile: ProfileType,
     boost: BoostInstance
 ): Promise<void> => {
     const role = await getAdminRole(); // Ensure admin role exists
@@ -33,7 +34,7 @@ export const setProfileAsBoostAdmin = async (
 };
 
 export const giveProfileEmptyPermissions = async (
-    profile: ProfileInstance,
+    profile: ProfileType,
     boost: BoostInstance
 ): Promise<void> => {
     const role = await getEmptyRole(); // Ensure empty role exists

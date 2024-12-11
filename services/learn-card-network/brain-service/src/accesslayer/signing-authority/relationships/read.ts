@@ -1,12 +1,13 @@
-import { ProfileInstance } from '@models';
-import { SigningAuthorityForUserType } from 'types/profile';
+import { Profile } from '@models';
+import { ProfileType, SigningAuthorityForUserType } from 'types/profile';
 
 export const getSigningAuthoritiesForUser = async (
-    user: ProfileInstance
+    user: ProfileType
 ): Promise<SigningAuthorityForUserType[]> => {
     return (
-        await user.findRelationships({
+        await Profile.findRelationships({
             alias: 'usesSigningAuthority',
+            where: { source: { profileId: user.profileId } },
         })
     ).map(relationship => {
         return {
@@ -17,14 +18,15 @@ export const getSigningAuthoritiesForUser = async (
 };
 
 export const getSigningAuthorityForUserByName = async (
-    user: ProfileInstance,
+    user: ProfileType,
     endpoint: string,
     name: string
 ): Promise<SigningAuthorityForUserType | undefined> => {
     return (
-        await user.findRelationships({
+        await Profile.findRelationships({
             alias: 'usesSigningAuthority',
             where: {
+                source: { profileId: user.profileId },
                 relationship: { name },
                 target: { endpoint },
             },

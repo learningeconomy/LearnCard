@@ -2,10 +2,10 @@ import isEqual from 'lodash/isEqual';
 import { v4 as uuidv4 } from 'uuid';
 import { VC, JWE, UnsignedVC, LCNNotificationTypeEnumValidator } from '@learncard/types';
 import { isEncrypted } from '@learncard/helpers';
-import { SigningAuthorityForUserType } from 'types/profile';
+import { ProfileType, SigningAuthorityForUserType } from 'types/profile';
 
 import { getBoostOwner } from '@accesslayer/boost/relationships/read';
-import { BoostInstance, ProfileInstance } from '@models';
+import { BoostInstance } from '@models';
 import { constructUri } from './uri.helpers';
 import { storeCredential } from '@accesslayer/credential/create';
 import { createBoostInstanceOfRelationship } from '@accesslayer/boost/relationships/create';
@@ -25,7 +25,7 @@ export const getBoostUri = (id: string, domain: string): string =>
     constructUri('boost', id, domain);
 
 export const isProfileBoostOwner = async (
-    profile: ProfileInstance,
+    profile: ProfileType,
     boost: BoostInstance
 ): Promise<boolean> => {
     const owner = await getBoostOwner(boost);
@@ -220,8 +220,8 @@ export const decryptCredential = async (credential: VC | JWE): Promise<VC | fals
 };
 
 export const sendBoost = async (
-    from: ProfileInstance,
-    to: ProfileInstance,
+    from: ProfileType,
+    to: ProfileType,
     boost: BoostInstance,
     credential: VC | JWE,
     domain: string,
@@ -277,8 +277,8 @@ export const sendBoost = async (
         if (!skipNotification) {
             await addNotificationToQueue({
                 type: LCNNotificationTypeEnumValidator.enum.BOOST_RECEIVED,
-                to: to.dataValues,
-                from: from.dataValues,
+                to: to,
+                from: from,
                 message: {
                     title: 'Boost Received',
                     body: `${from.displayName} has boosted you!`,
@@ -346,8 +346,8 @@ export const constructCertifiedBoostCredential = async (
 export const issueClaimLinkBoost = async (
     boost: BoostInstance,
     domain: string,
-    from: ProfileInstance,
-    to: ProfileInstance,
+    from: ProfileType,
+    to: ProfileType,
     signingAuthorityForUser: SigningAuthorityForUserType
 ): Promise<string> => {
     const boostCredential = JSON.parse(boost.dataValues?.boost) as UnsignedVC | VC;

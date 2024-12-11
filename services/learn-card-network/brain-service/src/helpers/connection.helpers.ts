@@ -1,13 +1,14 @@
 import { Op, QueryBuilder, Where } from 'neogma';
 import { LCNProfileConnectionStatusEnum, LCNNotificationTypeEnumValidator } from '@learncard/types';
 import { TRPCError } from '@trpc/server';
-import { Boost, Profile, Credential, ProfileInstance } from '@models';
+import { Boost, Profile, Credential } from '@models';
 import { convertQueryResultToPropertiesObjectArray } from '@helpers/neo4j.helpers';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
-import { ProfileType } from 'types/profile';
+import { FlatProfileType, ProfileType } from 'types/profile';
+import { inflateObject } from './objects.helpers';
 
 export const getConnections = async (
-    profile: ProfileInstance,
+    profile: ProfileType,
     { limit, cursor }: { limit: number; cursor?: string }
 ): Promise<ProfileType[]> => {
     const _query = new QueryBuilder()
@@ -68,15 +69,15 @@ export const getConnections = async (
         )
         : _query;
 
-    const results = convertQueryResultToPropertiesObjectArray<{ target: ProfileType }>(
+    const results = convertQueryResultToPropertiesObjectArray<{ target: FlatProfileType }>(
         await query.return('DISTINCT target').orderBy('target.profileId').limit(limit).run()
     );
 
-    return results.map(result => result.target);
+    return results.map(result => inflateObject(result.target as any));
 };
 
 export const getPendingConnections = async (
-    profile: ProfileInstance,
+    profile: ProfileType,
     { limit, cursor }: { limit: number; cursor?: string }
 ): Promise<ProfileType[]> => {
     const _query = new QueryBuilder().match({
@@ -93,14 +94,14 @@ export const getPendingConnections = async (
         )
         : _query;
 
-    const results = convertQueryResultToPropertiesObjectArray<{ target: ProfileType }>(
+    const results = convertQueryResultToPropertiesObjectArray<{ target: FlatProfileType }>(
         await query.return('DISTINCT target').orderBy('target.displayName').limit(limit).run()
     );
 
-    return results.map(result => result.target);
+    return results.map(result => inflateObject(result.target as any));
 };
 export const getConnectionRequests = async (
-    profile: ProfileInstance,
+    profile: ProfileType,
     { limit, cursor }: { limit: number; cursor?: string }
 ): Promise<ProfileType[]> => {
     const _query = new QueryBuilder().match({
@@ -117,26 +118,32 @@ export const getConnectionRequests = async (
         )
         : _query;
 
-    const results = convertQueryResultToPropertiesObjectArray<{ source: ProfileType }>(
+    const results = convertQueryResultToPropertiesObjectArray<{ source: FlatProfileType }>(
         await query.return('DISTINCT source').orderBy('source.displayName').limit(limit).run()
     );
 
-    return results.map(result => result.source);
+    return results.map(result => inflateObject(result.source as any));
 };
 
 /** Checks whether two profiles are already connected */
 export const areProfilesConnected = async (
-    source: ProfileInstance,
-    target: ProfileInstance
+    source: ProfileType,
+    target: ProfileType
 ): Promise<boolean> => {
     const [sourceConnectedToTarget, targetConnectedToSource] = await Promise.all([
-        source.findRelationships({
+        Profile.findRelationships({
             alias: 'connectedWith',
-            where: { relationship: {}, target: { profileId: target.profileId } },
+            where: {
+                source: { profileId: source.profileId },
+                target: { profileId: target.profileId },
+            },
         }),
-        target.findRelationships({
+        Profile.findRelationships({
             alias: 'connectedWith',
-            where: { relationship: {}, target: { profileId: source.profileId } },
+            where: {
+                source: { profileId: target.profileId },
+                target: { profileId: source.profileId },
+            },
         }),
     ]);
 
@@ -145,8 +152,8 @@ export const areProfilesConnected = async (
 
 /** Connects two profiles */
 export const connectProfiles = async (
-    source: ProfileInstance,
-    target: ProfileInstance,
+    source: ProfileType,
+    target: ProfileType,
     validate = true
 ): Promise<boolean> => {
     if (validate) {
@@ -159,9 +166,13 @@ export const connectProfiles = async (
 
         const pendingRequestFromTarget =
             (
-                await target.findRelationships({
+                await Profile.findRelationships({
                     alias: 'connectionRequested',
-                    where: { relationship: {}, target: { profileId: source.profileId } },
+                    where: {
+                        source: { profileId: target.profileId },
+                        relationship: {},
+                        target: { profileId: source.profileId },
+                    },
                 })
             ).length > 0;
 
@@ -189,14 +200,26 @@ export const connectProfiles = async (
                 target: { profileId: source.profileId },
             },
         }),
-        source.relateTo({ alias: 'connectedWith', where: { profileId: target.profileId } }),
-        target.relateTo({ alias: 'connectedWith', where: { profileId: source.profileId } }),
+        Profile.relateTo({
+            alias: 'connectedWith',
+            where: {
+                source: { profileId: source.profileId },
+                target: { profileId: target.profileId },
+            },
+        }),
+        Profile.relateTo({
+            alias: 'connectedWith',
+            where: {
+                source: { profileId: target.profileId },
+                target: { profileId: source.profileId },
+            },
+        }),
     ]);
 
     await addNotificationToQueue({
         type: LCNNotificationTypeEnumValidator.enum.CONNECTION_ACCEPTED,
-        to: target.dataValues,
-        from: source.dataValues,
+        to: target,
+        from: source,
         message: {
             title: 'Connection Accepted',
             body: `${source.displayName} has accepted your connection request!`,
@@ -208,8 +231,8 @@ export const connectProfiles = async (
 
 /** Disconnects two profiles */
 export const disconnectProfiles = async (
-    source: ProfileInstance,
-    target: ProfileInstance,
+    source: ProfileType,
+    target: ProfileType,
     validate = true
 ): Promise<boolean> => {
     if (validate && !(await areProfilesConnected(source, target))) {
@@ -248,14 +271,18 @@ export const disconnectProfiles = async (
  * connected
  */
 export const requestConnection = async (
-    source: ProfileInstance,
-    target: ProfileInstance
+    source: ProfileType,
+    target: ProfileType
 ): Promise<boolean> => {
     const pendingRequestFromTarget =
         (
-            await target.findRelationships({
+            await Profile.findRelationships({
                 alias: 'connectionRequested',
-                where: { relationship: {}, target: { profileId: source.profileId } },
+                where: {
+                    source: { profileId: target.profileId },
+                    relationship: {},
+                    target: { profileId: source.profileId },
+                },
             })
         ).length > 0;
 
@@ -263,9 +290,13 @@ export const requestConnection = async (
 
     const pendingRequestToTarget =
         (
-            await source.findRelationships({
+            await Profile.findRelationships({
                 alias: 'connectionRequested',
-                where: { relationship: {}, target: { profileId: target.profileId } },
+                where: {
+                    source: { profileId: source.profileId },
+                    relationship: {},
+                    target: { profileId: target.profileId },
+                },
             })
         ).length > 0;
 
@@ -283,12 +314,15 @@ export const requestConnection = async (
         });
     }
 
-    await source.relateTo({ alias: 'connectionRequested', where: { profileId: target.profileId } });
+    await Profile.relateTo({
+        alias: 'connectionRequested',
+        where: { source: { profileId: source.profileId }, target: { profileId: target.profileId } },
+    });
 
     await addNotificationToQueue({
         type: LCNNotificationTypeEnumValidator.enum.CONNECTION_REQUEST,
-        to: target.dataValues,
-        from: source.dataValues,
+        to: target,
+        from: source,
         message: {
             title: 'New Connection Request',
             body: `${source.displayName} has sent you a connection request!`,
@@ -307,14 +341,18 @@ export const requestConnection = async (
  * connected
  */
 export const cancelConnectionRequest = async (
-    source: ProfileInstance,
-    target: ProfileInstance
+    source: ProfileType,
+    target: ProfileType
 ): Promise<boolean> => {
     const pendingRequestToTarget =
         (
-            await source.findRelationships({
+            await Profile.findRelationships({
                 alias: 'connectionRequested',
-                where: { relationship: {}, target: { profileId: target.profileId } },
+                where: {
+                    source: { profileId: source.profileId },
+                    relationship: {},
+                    target: { profileId: target.profileId },
+                },
             })
         ).length > 0;
 
@@ -340,8 +378,8 @@ export const cancelConnectionRequest = async (
  * @returns a value from the enum, LCNProfileConnectionStatusEnum
  */
 export const getConnectionStatus = async (
-    source: ProfileInstance,
-    target: ProfileInstance
+    source: ProfileType,
+    target: ProfileType
 ): Promise<LCNProfileConnectionStatusEnum> => {
     const [
         sourceConnectedToTarget,
@@ -349,22 +387,38 @@ export const getConnectionStatus = async (
         sourceRequestedTarget,
         targetRequestedSource,
     ] = await Promise.all([
-        source.findRelationships({
+        Profile.findRelationships({
             alias: 'connectedWith',
-            where: { relationship: {}, target: { profileId: target.profileId } },
+            where: {
+                source: { profileId: source.profileId },
+                relationship: {},
+                target: { profileId: target.profileId },
+            },
         }),
-        target.findRelationships({
+        Profile.findRelationships({
             alias: 'connectedWith',
-            where: { relationship: {}, target: { profileId: source.profileId } },
+            where: {
+                source: { profileId: target.profileId },
+                relationship: {},
+                target: { profileId: source.profileId },
+            },
         }),
 
-        source.findRelationships({
+        Profile.findRelationships({
             alias: 'connectionRequested',
-            where: { relationship: {}, target: { profileId: target.profileId } },
+            where: {
+                source: { profileId: source.profileId },
+                relationship: {},
+                target: { profileId: target.profileId },
+            },
         }),
-        target.findRelationships({
+        Profile.findRelationships({
             alias: 'connectionRequested',
-            where: { relationship: {}, target: { profileId: source.profileId } },
+            where: {
+                source: { profileId: target.profileId },
+                relationship: {},
+                target: { profileId: source.profileId },
+            },
         }),
     ]);
 
@@ -380,14 +434,18 @@ export const getConnectionStatus = async (
 
 /** Checks if target is blocked by source */
 export const isProfileBlocked = async (
-    source: ProfileInstance,
-    target: ProfileInstance
+    source: ProfileType,
+    target: ProfileType
 ): Promise<boolean> => {
     return (
         (
-            await source.findRelationships({
+            await Profile.findRelationships({
                 alias: 'blocked',
-                where: { relationship: {}, target: { profileId: target.profileId } },
+                where: {
+                    source: { profileId: source.profileId },
+                    relationship: {},
+                    target: { profileId: target.profileId },
+                },
             })
         ).length > 0
     );
@@ -395,18 +453,26 @@ export const isProfileBlocked = async (
 
 /** Checks if source or target are blocking each other */
 export const isRelationshipBlocked = async (
-    source?: ProfileInstance | null,
-    target?: ProfileInstance | null
+    source?: ProfileType | null,
+    target?: ProfileType | null
 ): Promise<boolean> => {
     if (!target || !source) return false;
     const [sourceBlockedTarget, targetBlockedSource] = await Promise.all([
-        source.findRelationships({
+        Profile.findRelationships({
             alias: 'blocked',
-            where: { relationship: {}, target: { profileId: target.profileId } },
+            where: {
+                source: { profileId: source.profileId },
+                relationship: {},
+                target: { profileId: target.profileId },
+            },
         }),
-        target.findRelationships({
+        Profile.findRelationships({
             alias: 'blocked',
-            where: { relationship: {}, target: { profileId: source.profileId } },
+            where: {
+                source: { profileId: target.profileId },
+                relationship: {},
+                target: { profileId: source.profileId },
+            },
         }),
     ]);
 
@@ -414,10 +480,7 @@ export const isRelationshipBlocked = async (
 };
 
 /** Blocks a profile */
-export const blockProfile = async (
-    source: ProfileInstance,
-    target: ProfileInstance
-): Promise<boolean> => {
+export const blockProfile = async (source: ProfileType, target: ProfileType): Promise<boolean> => {
     await Promise.all([
         Profile.deleteRelationships({
             alias: 'connectedWith',
@@ -447,7 +510,13 @@ export const blockProfile = async (
                 target: { profileId: source.profileId },
             },
         }),
-        source.relateTo({ alias: 'blocked', where: { profileId: target.profileId } }),
+        Profile.relateTo({
+            alias: 'blocked',
+            where: {
+                source: { profileId: source.profileId },
+                target: { profileId: target.profileId },
+            },
+        }),
     ]);
 
     return true;
@@ -455,8 +524,8 @@ export const blockProfile = async (
 
 /** Unblocks a profile */
 export const unblockProfile = async (
-    source: ProfileInstance,
-    target: ProfileInstance,
+    source: ProfileType,
+    target: ProfileType,
     validate = true
 ): Promise<boolean> => {
     if (validate && !(await isProfileBlocked(source, target))) {
@@ -477,30 +546,44 @@ export const unblockProfile = async (
     return true;
 };
 
-export const getBlockedProfiles = async (profile: ProfileInstance): Promise<ProfileInstance[]> => {
-    return (await profile.findRelationships({ alias: 'blocked' })).map(result => result.target);
+export const getBlockedProfiles = async (profile: ProfileType): Promise<ProfileType[]> => {
+    const result = convertQueryResultToPropertiesObjectArray<{ target: FlatProfileType }>(
+        await new QueryBuilder()
+            .match({
+                related: [
+                    { model: Profile, where: { profileId: profile.profileId } },
+                    Profile.getRelationshipByAlias('blocked'),
+                    { model: Profile, identifier: 'target' },
+                ],
+            })
+            .return('target')
+            .run()
+    );
+
+    return result.map(({ target }) => inflateObject(target as any));
 };
 
 export const getBlockedAndBlockedByRelationships = async (
-    profile: ProfileInstance
-): Promise<ProfileInstance[]> => {
-    const [blocked, blockedBy] = await Promise.all([
-        profile.findRelationships({ alias: 'blocked' }),
-        Profile.findRelationships({
-            alias: 'blocked',
-            where: { target: { profileId: profile.profileId } },
-        }),
-    ]);
+    profile: ProfileType
+): Promise<ProfileType[]> => {
+    const result = convertQueryResultToPropertiesObjectArray<{ target: FlatProfileType }>(
+        await new QueryBuilder()
+            .match({
+                related: [
+                    { model: Profile, where: { profileId: profile.profileId } },
+                    { ...Profile.getRelationshipByAlias('blocked'), direction: 'none' },
+                    { model: Profile, identifier: 'target' },
+                ],
+            })
+            .return('target')
+            .run()
+    );
 
-    return [...blocked, ...blockedBy].reduce<ProfileInstance[]>((profiles, relationship) => {
-        profiles.push(relationship.target, relationship.source);
-
-        return profiles;
-    }, []);
+    return result.map(({ target }) => inflateObject(target as any));
 };
 
-export const getBlockedAndBlockedByIds = async (profile: ProfileInstance): Promise<string[]> => {
+export const getBlockedAndBlockedByIds = async (profile: ProfileType): Promise<string[]> => {
     return (await getBlockedAndBlockedByRelationships(profile))
-        .map(p => p.dataValues.profileId)
+        .map(p => p.profileId)
         .filter(profileId => profileId !== profile.profileId);
 };

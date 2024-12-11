@@ -6,10 +6,11 @@ import {
     convertQueryResultToPropertiesObjectArray,
     getMatchQueryWhere,
 } from '@helpers/neo4j.helpers';
-import { Boost, Profile, BoostInstance, ProfileInstance } from '@models';
+import { Boost, Profile, BoostInstance } from '@models';
 import { BoostType } from 'types/boost';
 import { BoostQuery } from '@learncard/types';
 import { inflateObject } from '@helpers/objects.helpers';
+import { ProfileType } from 'types/profile';
 
 export const getBoostById = async (id: string): Promise<BoostInstance | null> => {
     return Boost.findOne({ where: { id } });
@@ -28,7 +29,7 @@ export const getBoostsByUri = async (uris: string[]): Promise<BoostInstance[]> =
 };
 
 export const getBoostsForProfile = async (
-    profile: ProfileInstance,
+    profile: ProfileType,
     {
         limit,
         cursor,
@@ -74,7 +75,7 @@ export const getBoostsForProfile = async (
 };
 
 export const countBoostsForProfile = async (
-    profile: ProfileInstance,
+    profile: ProfileType,
     { query: matchQuery = {} }: { query?: BoostQuery }
 ): Promise<number> => {
     const query = new QueryBuilder(

@@ -1,7 +1,8 @@
-import { ProfileInstance, BoostInstance, Boost } from '@models';
+import { BoostInstance, Boost } from '@models';
+import { ProfileType } from 'types/profile';
 
 export const removeProfileAsBoostAdmin = async (
-    profile: ProfileInstance,
+    profile: ProfileType,
     boost: BoostInstance
 ): Promise<void> => {
     await Boost.deleteRelationships({

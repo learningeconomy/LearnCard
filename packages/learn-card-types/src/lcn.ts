@@ -3,6 +3,21 @@ import { z } from 'zod';
 import { PaginationResponseValidator } from './mongo';
 import { StringQuery } from './queries';
 
+export const LCNProfileDisplayValidator = z.object({
+    backgroundColor: z.string().optional(),
+    backgroundImage: z.string().optional(),
+    fadeBackgroundImage: z.boolean().optional(),
+    repeatBackgroundImage: z.boolean().optional(),
+    fontColor: z.string().optional(),
+    accentColor: z.string().optional(),
+    accentFontColor: z.string().optional(),
+    idBackgroundImage: z.string().optional(),
+    fadeIdBackgroundImage: z.boolean().optional(),
+    idBackgroundColor: z.string().optional(),
+    repeatIdBackgroundImage: z.boolean().optional(),
+});
+export type LCNProfileDisplay = z.infer<typeof LCNProfileDisplayValidator>;
+
 export const LCNProfileValidator = z.object({
     profileId: z.string().min(3).max(40),
     displayName: z.string().default(''),
@@ -16,6 +31,7 @@ export const LCNProfileValidator = z.object({
     isServiceProfile: z.boolean().default(false).optional(),
     type: z.string().optional(),
     notificationsWebhook: z.string().url().startsWith('http').optional(),
+    display: LCNProfileDisplayValidator.optional(),
 });
 export type LCNProfile = z.infer<typeof LCNProfileValidator>;
 

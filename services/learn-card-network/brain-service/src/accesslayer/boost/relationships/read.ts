@@ -10,7 +10,6 @@ import {
     Boost,
     BoostInstance,
     Profile,
-    ProfileInstance,
     Credential,
     CredentialInstance,
     CredentialRelationships,
@@ -18,7 +17,7 @@ import {
     Role,
 } from '@models';
 import { getProfilesByProfileIds } from '@accesslayer/profile/read';
-import { ProfileType } from 'types/profile';
+import { FlatProfileType, ProfileType } from 'types/profile';
 import { BoostType, BoostWithClaimPermissionsType } from 'types/boost';
 import { ADMIN_ROLE_ID, CREATOR_ROLE_ID } from 'src/constants/roles';
 import {
@@ -31,8 +30,12 @@ import { Role as RoleType } from 'types/role';
 import { inflateObject } from '@helpers/objects.helpers';
 import { getCredentialUri } from '@helpers/credential.helpers';
 
-export const getBoostOwner = async (boost: BoostInstance): Promise<ProfileInstance | undefined> => {
-    return (await boost.findRelationships({ alias: 'createdBy' }))[0]?.target;
+export const getBoostOwner = async (boost: BoostInstance): Promise<ProfileType | undefined> => {
+    const profile = (await boost.findRelationships({ alias: 'createdBy' }))[0]?.target;
+
+    if (!profile) return undefined;
+
+    return inflateObject<ProfileType>(profile.dataValues as any);
 };
 
 export const getCredentialInstancesOfBoost = async (
@@ -136,9 +139,9 @@ export const getBoostRecipients = async (
     const query = cursor ? _query.raw('AND sent.date > $cursor') : _query;
 
     const results = convertQueryResultToPropertiesObjectArray<{
-        sender: ProfileInstance;
+        sender: FlatProfileType;
         sent: ProfileRelationships['credentialSent']['RelationshipProperties'];
-        recipient?: ProfileInstance;
+        recipient?: FlatProfileType;
         received?: CredentialRelationships['credentialReceived']['RelationshipProperties'];
         credential?: CredentialInstance;
     }>(
@@ -213,9 +216,9 @@ export const getBoostRecipientsSkipLimit = async (
         });
 
     const results = convertQueryResultToPropertiesObjectArray<{
-        sender: ProfileInstance;
+        sender: FlatProfileType;
         sent: ProfileRelationships['credentialSent']['RelationshipProperties'];
-        recipient?: ProfileInstance;
+        recipient?: FlatProfileType;
         received?: CredentialRelationships['credentialReceived']['RelationshipProperties'];
         credential?: CredentialInstance;
     }>(
@@ -307,7 +310,7 @@ export const getBoostAdmins = async (
     return results.map(({ admin }) => admin);
 };
 
-export const isProfileBoostAdmin = async (profile: ProfileInstance, boost: BoostInstance) => {
+export const isProfileBoostAdmin = async (profile: ProfileType, boost: BoostInstance) => {
     const query = new QueryBuilder()
         .match({
             related: [
@@ -323,10 +326,7 @@ export const isProfileBoostAdmin = async (profile: ProfileInstance, boost: Boost
     return Number(result.records[0]?.get('count') ?? 0) > 0;
 };
 
-export const doesProfileHaveRoleForBoost = async (
-    profile: ProfileInstance,
-    boost: BoostInstance
-) => {
+export const doesProfileHaveRoleForBoost = async (profile: ProfileType, boost: BoostInstance) => {
     const query = new QueryBuilder().match({
         related: [
             { model: Boost, where: { id: boost.id } },
@@ -341,7 +341,7 @@ export const doesProfileHaveRoleForBoost = async (
 };
 
 export const canProfileViewBoost = async (
-    profile: ProfileInstance,
+    profile: ProfileType,
     boost: BoostInstance | BoostType
 ) => {
     const query = new QueryBuilder()
@@ -367,7 +367,7 @@ export const canProfileViewBoost = async (
 };
 
 export const canProfileCreateChildBoost = async (
-    profile: ProfileInstance,
+    profile: ProfileType,
     parentBoost: BoostInstance,
     childBoost: Omit<BoostType, 'boost' | 'id'>
 ) => {
@@ -442,7 +442,7 @@ export const canProfileCreateChildBoost = async (
     });
 };
 
-export const canProfileEditBoost = async (profile: ProfileInstance, boost: BoostInstance) => {
+export const canProfileEditBoost = async (profile: ProfileType, boost: BoostInstance) => {
     const query = new QueryBuilder()
         .match({ model: Boost, where: { id: boost.id }, identifier: 'targetBoost' })
         .match({ model: Profile, where: { profileId: profile.profileId }, identifier: 'profile' })
@@ -508,7 +508,7 @@ export const canProfileEditBoost = async (profile: ProfileInstance, boost: Boost
     });
 };
 
-export const canProfileIssueBoost = async (profile: ProfileInstance, boost: BoostInstance) => {
+export const canProfileIssueBoost = async (profile: ProfileType, boost: BoostInstance) => {
     const query = new QueryBuilder()
         .match({ model: Boost, where: { id: boost.id }, identifier: 'targetBoost' })
         .match({ model: Profile, where: { profileId: profile.profileId }, identifier: 'profile' })
@@ -576,7 +576,7 @@ export const canProfileIssueBoost = async (profile: ProfileInstance, boost: Boos
     });
 };
 
-export const getBoostPermissions = async (boost: BoostInstance, profile: ProfileInstance) => {
+export const getBoostPermissions = async (boost: BoostInstance, profile: ProfileType) => {
     const query = new QueryBuilder()
         .match({ model: Boost, where: { id: boost.id }, identifier: 'targetBoost' })
         .match({ model: Profile, where: { profileId: profile.profileId }, identifier: 'profile' })
@@ -672,7 +672,7 @@ export const getBoostPermissions = async (boost: BoostInstance, profile: Profile
 
 export const canManageBoostPermissions = async (
     boost: BoostInstance,
-    profile: ProfileInstance
+    profile: ProfileType
 ): Promise<boolean> => {
     const query = new QueryBuilder()
         .match({

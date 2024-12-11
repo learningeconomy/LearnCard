@@ -42,7 +42,7 @@ import {
     getSigningAuthoritiesForUser,
     getSigningAuthorityForUserByName,
 } from '@accesslayer/signing-authority/relationships/read';
-import { SigningAuthorityForUserValidator } from 'types/profile';
+import { ProfileType, SigningAuthorityForUserValidator } from 'types/profile';
 
 import { t, openRoute, didAndChallengeRoute, profileRoute, didRoute } from '@routes';
 
@@ -56,6 +56,8 @@ import {
 } from '@cache/invites';
 import { getLearnCard } from '@helpers/learnCard.helpers';
 import { getManagedServiceProfiles } from '@accesslayer/profile/relationships/read';
+import { createProfileManagedByRelationship } from '@accesslayer/profile/relationships/create';
+import { updateProfile } from '@accesslayer/profile/update';
 
 export const profilesRouter = t.router({
     createProfile: didAndChallengeRoute
@@ -166,17 +168,16 @@ export const profilesRouter = t.router({
                 did: spLearnCard.id.did(),
             });
 
-            await profile.relateTo({
-                alias: 'managedBy',
-                where: { profileId: ctx.user.profile.profileId },
-            });
+            if (!profile) {
+                throw new TRPCError({
+                    code: 'INTERNAL_SERVER_ERROR',
+                    message: 'An unexpected error occured, please try again later.',
+                });
+            }
 
-            if (profile) return getDidWeb(ctx.domain, profile.profileId);
+            await createProfileManagedByRelationship(ctx.user.profile, profile);
 
-            throw new TRPCError({
-                code: 'INTERNAL_SERVER_ERROR',
-                message: 'An unexpected error occured, please try again later.',
-            });
+            return getDidWeb(ctx.domain, profile.profileId);
         }),
 
     getProfile: didRoute
@@ -357,7 +358,10 @@ export const profilesRouter = t.router({
                 type,
                 email,
                 notificationsWebhook,
+                display,
             } = input;
+
+            const actualUpdates: Partial<ProfileType> = {};
 
             if (profileId) {
                 const profileExists = await getProfileByProfileId(profileId);
@@ -371,7 +375,7 @@ export const profilesRouter = t.router({
 
                 await deleteDidDocForProfile(profileId);
 
-                profile.profileId = transformProfileId(profileId);
+                actualUpdates.profileId = transformProfileId(profileId);
             }
 
             if (email) {
@@ -384,21 +388,20 @@ export const profilesRouter = t.router({
                     });
                 }
 
-                profile.email = email;
+                actualUpdates.email = email;
             }
 
-            if (image) profile.image = image;
-            if (displayName) profile.displayName = displayName;
-            if (shortBio) profile.shortBio = shortBio;
-            if (bio) profile.bio = bio;
-            if (heroImage) profile.heroImage = heroImage;
-            if (websiteLink) profile.websiteLink = websiteLink;
-            if (type) profile.type = type;
-            if (notificationsWebhook) profile.notificationsWebhook = notificationsWebhook;
+            if (image) actualUpdates.image = image;
+            if (displayName) actualUpdates.displayName = displayName;
+            if (shortBio) actualUpdates.shortBio = shortBio;
+            if (bio) actualUpdates.bio = bio;
+            if (heroImage) actualUpdates.heroImage = heroImage;
+            if (websiteLink) actualUpdates.websiteLink = websiteLink;
+            if (type) actualUpdates.type = type;
+            if (notificationsWebhook) actualUpdates.notificationsWebhook = notificationsWebhook;
+            if (display) actualUpdates.display = display;
 
-            await profile.save();
-
-            return true;
+            return updateProfile(profile, actualUpdates);
         }),
 
     deleteProfile: profileRoute
@@ -895,6 +898,8 @@ export const profilesRouter = t.router({
         .output(LCNProfileValidator.array())
         .query(async ({ ctx }) => {
             const blocked = await getBlockedProfiles(ctx.user.profile);
+
+            console.log({ blocked });
 
             return blocked.map(blockedProfile => updateDidForProfile(ctx.domain, blockedProfile));
         }),

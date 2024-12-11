@@ -1,14 +1,25 @@
 import { QueryBuilder, BindParam, QueryRunner } from 'neogma';
-import { Profile, ProfileInstance } from '@models';
-import { ProfileType } from 'types/profile';
+import { Profile } from '@models';
+import { ProfileType, FlatProfileType } from 'types/profile';
 import { transformProfileId } from '@helpers/profile.helpers';
+import { inflateObject } from '@helpers/objects.helpers';
 
-export const getProfileByProfileId = async (profileId: string): Promise<ProfileInstance | null> => {
-    return Profile.findOne({ where: { profileId: transformProfileId(profileId) } });
-};
+export const getProfileByProfileId = async (profileId: string): Promise<ProfileType | null> => {
+    const result = await new QueryBuilder()
+        .match({
+            model: Profile,
+            identifier: 'profile',
+            where: { profileId: transformProfileId(profileId) },
+        })
+        .return('profile')
+        .limit(1)
+        .run();
 
-export const getProfilesByProfileId = async (profileId: string): Promise<ProfileInstance[]> => {
-    return Profile.findMany({ where: { profileId: transformProfileId(profileId) } });
+    const profile = result.records[0]?.get('profile').properties;
+
+    if (!profile) return null;
+
+    return inflateObject<ProfileType>(profile as any);
 };
 
 export const getProfilesByProfileIds = async (profileIds: string[]): Promise<ProfileType[]> => {
@@ -20,23 +31,39 @@ export const getProfilesByProfileIds = async (profileIds: string[]): Promise<Pro
         .return('profile')
         .run();
 
-    return QueryRunner.getResultProperties<ProfileType>(result, 'profile');
+    return (
+        QueryRunner.getResultProperties<FlatProfileType[]>(result, 'profile')?.map(profile =>
+            inflateObject(profile as any)
+        ) ?? []
+    );
 };
 
-export const getProfileByDid = async (did: string): Promise<ProfileInstance | null> => {
-    return Profile.findOne({ where: { did } });
+export const getProfileByDid = async (did: string): Promise<ProfileType | null> => {
+    const result = await new QueryBuilder()
+        .match({ model: Profile, identifier: 'profile', where: { did } })
+        .return('profile')
+        .limit(1)
+        .run();
+
+    const profile = result.records[0]?.get('profile').properties;
+
+    if (!profile) return null;
+
+    return inflateObject<ProfileType>(profile as any);
 };
 
-export const getProfilesByDid = async (did: string): Promise<ProfileInstance[]> => {
-    return Profile.findMany({ where: { did } });
-};
+export const getProfileByEmail = async (email: string): Promise<ProfileType | null> => {
+    const result = await new QueryBuilder()
+        .match({ model: Profile, identifier: 'profile', where: { email } })
+        .return('profile')
+        .limit(1)
+        .run();
 
-export const getProfileByEmail = async (email: string): Promise<ProfileInstance | null> => {
-    return Profile.findOne({ where: { email } });
-};
+    const profile = result.records[0]?.get('profile').properties;
 
-export const getProfilesByEmail = async (email: string): Promise<ProfileInstance[]> => {
-    return Profile.findMany({ where: { email } });
+    if (!profile) return null;
+
+    return inflateObject<ProfileType>(profile as any);
 };
 
 export const checkIfProfileExists = async ({
@@ -84,5 +111,9 @@ export const searchProfiles = async (
         .limit(limit)
         .run();
 
-    return QueryRunner.getResultProperties<ProfileType>(result, 'profile');
+    return (
+        QueryRunner.getResultProperties<FlatProfileType[]>(result, 'profile')?.map(profile =>
+            inflateObject(profile as any)
+        ) ?? []
+    );
 };

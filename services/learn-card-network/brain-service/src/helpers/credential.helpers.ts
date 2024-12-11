@@ -1,8 +1,6 @@
 import { TRPCError } from '@trpc/server';
 import { UnsignedVC, VC, JWE, LCNNotificationTypeEnumValidator } from '@learncard/types';
 
-import { ProfileInstance } from '@models';
-
 import { storeCredential } from '@accesslayer/credential/create';
 import {
     createReceivedCredentialRelationship,
@@ -12,13 +10,14 @@ import {
 import { getCredentialSentToProfile } from '@accesslayer/credential/relationships/read';
 import { constructUri, getUriParts } from './uri.helpers';
 import { addNotificationToQueue } from './notifications.helpers';
+import { ProfileType } from 'types/profile';
 
 export const getCredentialUri = (id: string, domain: string): string =>
     constructUri('credential', id, domain);
 
 export const sendCredential = async (
-    from: ProfileInstance,
-    to: ProfileInstance,
+    from: ProfileType,
+    to: ProfileType,
     credential: VC | UnsignedVC | JWE,
     domain: string
 ): Promise<string> => {
@@ -30,15 +29,13 @@ export const sendCredential = async (
 
     await addNotificationToQueue({
         type: LCNNotificationTypeEnumValidator.enum.CREDENTIAL_RECEIVED,
-        to: to.dataValues,
-        from: from.dataValues,
+        to,
+        from,
         message: {
             title: 'Credential Received',
             body: `${from.displayName} has sent you a credential`,
         },
-        data: {
-            vcUris: [uri],
-        },
+        data: { vcUris: [uri] },
     });
 
     return uri;
@@ -47,7 +44,7 @@ export const sendCredential = async (
 /**
  * Accepts a VC
  */
-export const acceptCredential = async (profile: ProfileInstance, uri: string): Promise<boolean> => {
+export const acceptCredential = async (profile: ProfileType, uri: string): Promise<boolean> => {
     const { id, type } = getUriParts(uri);
 
     if (type !== 'credential') {
@@ -69,15 +66,13 @@ export const acceptCredential = async (profile: ProfileInstance, uri: string): P
 
     await addNotificationToQueue({
         type: LCNNotificationTypeEnumValidator.enum.BOOST_ACCEPTED,
-        to: pendingVc.source.dataValues,
-        from: profile.dataValues,
+        to: pendingVc.source,
+        from: profile,
         message: {
             title: 'Boost Accepted',
             body: `${profile.displayName} has accepted your boost!`,
         },
-        data: {
-            vcUris: [uri],
-        },
+        data: { vcUris: [uri] },
     });
 
     return true;

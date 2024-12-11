@@ -1,13 +1,7 @@
 import { QueryBuilder, BindParam } from 'neogma';
 import mapValues from 'lodash/mapValues';
 import { convertQueryResultToPropertiesObjectArray } from '@helpers/neo4j.helpers';
-import {
-    Profile,
-    ProfileInstance,
-    ConsentFlowContract,
-    ConsentFlowTerms,
-    ConsentFlowTransaction,
-} from '@models';
+import { Profile, ConsentFlowContract, ConsentFlowTerms, ConsentFlowTransaction } from '@models';
 import {
     DbTermsType,
     FlatDbTermsType,
@@ -27,9 +21,10 @@ import {
 import { getIdFromUri } from '@helpers/uri.helpers';
 import { flattenObject, inflateObject } from '@helpers/objects.helpers';
 import { convertDataQueryToNeo4jQuery } from '@helpers/contract.helpers';
+import { ProfileType } from 'types/profile';
 
 export const isProfileConsentFlowContractAdmin = async (
-    profile: ProfileInstance,
+    profile: ProfileType,
     contract: DbContractType
 ): Promise<boolean> => {
     const query = new QueryBuilder().match({
@@ -46,7 +41,7 @@ export const isProfileConsentFlowContractAdmin = async (
 };
 
 export const hasProfileConsentedToContract = async (
-    profile: ProfileInstance | string,
+    profile: ProfileType | string,
     contract: DbContractType
 ): Promise<boolean> => {
     const query = new QueryBuilder().match({
@@ -97,7 +92,7 @@ export const getContractDetailsByUri = async (
 };
 
 export const getContractTermsForProfile = async (
-    profile: ProfileInstance | string,
+    profile: ProfileType | string,
     contract: DbContractType
 ): Promise<DbTermsType | null> => {
     const result = convertQueryResultToPropertiesObjectArray<{
@@ -157,11 +152,11 @@ export const getContractTermsById = async (
 
     return result.length > 0
         ? {
-              consenter: result[0]!.consenter,
-              terms: inflateObject(result[0]!.terms),
-              contract: inflateObject(result[0]!.contract),
-              contractOwner: result[0]!.contractOwner,
-          }
+            consenter: result[0]!.consenter,
+            terms: inflateObject(result[0]!.terms),
+            contract: inflateObject(result[0]!.contract),
+            contractOwner: result[0]!.contractOwner,
+        }
         : null;
 };
 
@@ -177,7 +172,7 @@ export const getContractTermsByUri = async (
 };
 
 export const getConsentFlowContractsForProfile = async (
-    profile: ProfileInstance,
+    profile: ProfileType,
     {
         query: matchQuery = {},
         limit,
@@ -209,7 +204,7 @@ export const getConsentFlowContractsForProfile = async (
 };
 
 export const getConsentedContractsForProfile = async (
-    profile: ProfileInstance,
+    profile: ProfileType,
     {
         query: matchQuery = {},
         limit,

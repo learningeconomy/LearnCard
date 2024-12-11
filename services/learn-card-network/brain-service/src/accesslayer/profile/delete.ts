@@ -1,5 +1,6 @@
-import { ProfileInstance } from '@models';
+import { Profile } from '@models';
+import { ProfileType } from 'types/profile';
 
-export const deleteProfile = async (profile: ProfileInstance): Promise<void> => {
-    await profile.delete({ detach: true });
+export const deleteProfile = async (profile: ProfileType): Promise<void> => {
+    await Profile.delete({ detach: true, where: { profileId: profile.profileId } });
 };
