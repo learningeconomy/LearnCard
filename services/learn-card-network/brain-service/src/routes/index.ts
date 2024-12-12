@@ -10,7 +10,7 @@ import { RegExpTransformer } from '@learncard/helpers';
 import { getProfileByDid } from '@accesslayer/profile/read';
 import { getEmptyLearnCard } from '@helpers/learnCard.helpers';
 import { invalidateChallengeForDid, isChallengeValidForDid } from '@cache/challenges';
-import { ProfileInstance } from '@models';
+import { ProfileType } from 'types/profile';
 
 export type DidAuthVP = {
     iss: string;
@@ -112,7 +112,7 @@ export const didRoute = openRoute.use(async ({ ctx, next }) => {
 
         if (!didDoc.controller) {
             return next({
-                ctx: { ...ctx, user: { ...ctx.user, profile: null as ProfileInstance | null } },
+                ctx: { ...ctx, user: { ...ctx.user, profile: null as ProfileType | null } },
             });
         }
 

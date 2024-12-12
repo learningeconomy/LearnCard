@@ -1,7 +1,8 @@
 import { Op, QueryBuilder, Where } from 'neogma';
 import { convertQueryResultToPropertiesObjectArray } from '@helpers/neo4j.helpers';
 import { Profile } from '@models';
-import { ProfileType } from 'types/profile';
+import { FlatProfileType, ProfileType } from 'types/profile';
+import { inflateObject } from '@helpers/objects.helpers';
 
 export const getManagedServiceProfiles = async (
     profileId: string,
@@ -26,8 +27,8 @@ export const getManagedServiceProfiles = async (
         : _query;
 
     const results = convertQueryResultToPropertiesObjectArray<{
-        managed: ProfileType;
+        managed: FlatProfileType;
     }>(await query.return('managed').orderBy('managed.profileId').limit(limit).run());
 
-    return results.map(({ managed }) => managed);
+    return results.map(({ managed }) => inflateObject(managed as any));
 };

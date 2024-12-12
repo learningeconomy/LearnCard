@@ -2,17 +2,18 @@ import { QueryBuilder, BindParam } from 'neogma';
 import { UnsignedVC, VC } from '@learncard/types';
 import { v4 as uuid } from 'uuid';
 
-import { Boost, BoostInstance, ProfileInstance } from '@models';
+import { Boost, BoostInstance } from '@models';
 import { BoostStatus, BoostType } from 'types/boost';
 import { convertCredentialToBoostTemplateJSON } from '@helpers/boost.helpers';
 import { getDidWeb } from '@helpers/did.helpers';
 import { getCreatorRole } from '@accesslayer/role/read';
 import { flattenObject } from '@helpers/objects.helpers';
 import { getBoostById } from './read';
+import { ProfileType } from 'types/profile';
 
 export const createBoost = async (
     credential: UnsignedVC | VC,
-    creator: ProfileInstance,
+    creator: ProfileType,
     metadata: Omit<BoostType, 'id' | 'boost'> = {},
     domain: string
 ): Promise<BoostInstance> => {

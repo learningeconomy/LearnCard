@@ -1,5 +1,25 @@
 # @learncard/network-brain-service
 
+## 3.2.2
+
+### Patch Changes
+
+-   [#578](https://github.com/learningeconomy/LearnCard/pull/578) [`20d4585c3a2bc8c5eb4b0a628eb215be829000fa`](https://github.com/learningeconomy/LearnCard/commit/20d4585c3a2bc8c5eb4b0a628eb215be829000fa) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add display field to profiles
+
+-   Updated dependencies [[`20d4585c3a2bc8c5eb4b0a628eb215be829000fa`](https://github.com/learningeconomy/LearnCard/commit/20d4585c3a2bc8c5eb4b0a628eb215be829000fa)]:
+    -   @learncard/types@5.5.9
+    -   @learncard/core@9.3.10
+    -   @learncard/helpers@1.1.1
+    -   @learncard/ceramic-plugin@1.0.21
+    -   @learncard/did-web-plugin@1.0.47
+    -   @learncard/didkey-plugin@1.0.21
+    -   @learncard/didkit-plugin@1.4.19
+    -   @learncard/learn-card-plugin@1.1.23
+    -   @learncard/vc-plugin@1.1.24
+    -   @learncard/vc-templates-plugin@1.0.31
+    -   @learncard/expiration-plugin@1.1.24
+    -   @learncard/crypto-plugin@1.0.21
+
 ## 3.2.1
 
 ### Patch Changes

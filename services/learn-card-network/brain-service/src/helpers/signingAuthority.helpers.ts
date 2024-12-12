@@ -1,8 +1,7 @@
 import dotenv from 'dotenv';
 import { getDidWebLearnCard, getLearnCard } from '@helpers/learnCard.helpers';
 import { UnsignedVC, VCValidator, JWEValidator, VC, JWE } from '@learncard/types';
-import { SigningAuthorityForUserType } from 'types/profile';
-import { ProfileInstance } from '@models';
+import { ProfileType, SigningAuthorityForUserType } from 'types/profile';
 import { getDidWeb } from '@helpers/did.helpers';
 
 dotenv.config();
@@ -18,7 +17,7 @@ const _mockIssueCredentialWithSigningAuthority = async (credential: UnsignedVC) 
 };
 
 export async function issueCredentialWithSigningAuthority(
-    owner: ProfileInstance,
+    owner: ProfileType,
     credential: UnsignedVC,
     signingAuthorityForUser: SigningAuthorityForUserType,
     encrypt: boolean = true

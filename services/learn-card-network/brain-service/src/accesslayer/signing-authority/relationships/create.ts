@@ -1,14 +1,18 @@
-import { SigningAuthorityInstance, ProfileInstance } from '@models';
+import { SigningAuthorityInstance, Profile } from '@models';
+import { ProfileType } from 'types/profile';
 
 export const createUseSigningAuthorityRelationship = async (
-    user: ProfileInstance,
+    user: ProfileType,
     signingAuthority: SigningAuthorityInstance,
     name: string,
     did: string
 ): Promise<void> => {
-    await user.relateTo({
+    await Profile.relateTo({
         alias: 'usesSigningAuthority',
-        where: { endpoint: signingAuthority.endpoint },
+        where: {
+            source: { profileId: user.profileId },
+            target: { endpoint: signingAuthority.endpoint },
+        },
         properties: { name, did },
     });
 };
