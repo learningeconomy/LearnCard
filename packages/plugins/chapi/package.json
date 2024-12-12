@@ -1,6 +1,6 @@
 {
     "name": "@learncard/chapi-plugin",
-    "version": "1.0.36",
+    "version": "1.0.37",
     "description": "",
     "main": "./dist/index.js",
     "module": "./dist/chapi-plugin.esm.js",
