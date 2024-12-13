@@ -185,7 +185,7 @@ export type LearnCardNetworkPluginMethods = {
     updateBoost: (
         uri: string,
         updates: Partial<Omit<Boost, 'uri'>>,
-        credential: UnsignedVC | VC
+        credential?: UnsignedVC | VC
     ) => Promise<boolean>;
     deleteBoost: (uri: string) => Promise<boolean>;
     getBoostAdmins: (

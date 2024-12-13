@@ -131,6 +131,17 @@ describe('Boosts', () => {
             expect(boost).toBeDefined();
             expect(boost.claimPermissions).toEqual(adminRole)
         });
+
+        it('should include meta', async () => {
+            const uri = await userA.clients.fullAuth.boost.createBoost({ credential: testVc, meta: { test: 'lol' } });
+
+            await expect(userA.clients.fullAuth.boost.getBoost({ uri })).resolves.not.toThrow();
+
+            const boost = await userA.clients.fullAuth.boost.getBoost({ uri });
+
+            expect(boost).toBeDefined();
+            expect(boost.meta).toEqual({ test: 'lol' })
+        });
     });
 
     describe('getBoosts', () => {
@@ -234,6 +245,15 @@ describe('Boosts', () => {
             expect(boosts).toHaveLength(2);
             expect(boosts[0]?.category).not.toEqual('C');
             expect(boosts[1]?.category).not.toEqual('C');
+        });
+
+        it('should include meta', async () => {
+            await userA.clients.fullAuth.boost.createBoost({ credential: testVc, meta: { test: 'lol' } });
+
+            const boosts = await userA.clients.fullAuth.boost.getBoosts();
+
+            expect(boosts).toHaveLength(1);
+            expect(boosts[0]?.meta).toEqual({ test: 'lol' })
         });
     });
 
@@ -362,6 +382,15 @@ describe('Boosts', () => {
             expect(secondPage.hasMore).toBeFalsy();
 
             expect([...firstPage.records, ...secondPage.records]).toEqual(boosts.records);
+        });
+
+        it('should include meta', async () => {
+            await userA.clients.fullAuth.boost.createBoost({ credential: testVc, meta: { test: 'lol' } });
+
+            const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
+
+            expect(boosts.records).toHaveLength(1);
+            expect(boosts.records[0]?.meta).toEqual({ test: 'lol' })
         });
     });
 
@@ -2051,7 +2080,7 @@ describe('Boosts', () => {
         });
 
         it('should count boosts where user is an admin', async () => {
-            const uriA = await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
+            await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
             const uriB = await userB.clients.fullAuth.boost.createBoost({ credential: testVc });
 
             await userB.clients.fullAuth.boost.addBoostAdmin({ uri: uriB, profileId: 'usera' });
@@ -2068,7 +2097,7 @@ describe('Boosts', () => {
         });
 
         it('should count distinct boosts only', async () => {
-            const uriA = await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
+            await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
             const uriB = await userB.clients.fullAuth.boost.createBoost({ credential: testVc });
 
             // Make userA an admin of userB's boost
@@ -2552,6 +2581,22 @@ describe('Boosts', () => {
             expect(secondPage.hasMore).toBeFalsy();
 
             expect([...firstPage.records, ...secondPage.records]).toEqual(boosts.records);
+        });
+
+        it('should include meta', async () => {
+            const parentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+            });
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc, category: 'B', meta: { nice: 'lol' } },
+            });
+
+            const boosts = await userA.clients.fullAuth.boost.getBoostChildren({ uri: parentUri });
+
+            expect(boosts.records).toHaveLength(1);
+            expect(boosts.records[0]?.category).toEqual('B');
+            expect(boosts.records[0]?.meta).toEqual({ nice: 'lol' });
         });
     });
 
@@ -3047,6 +3092,26 @@ describe('Boosts', () => {
             expect(secondPage.hasMore).toBeFalsy();
 
             expect([...firstPage.records, ...secondPage.records]).toEqual(boosts.records);
+        });
+
+        it('should include meta', async () => {
+            const parentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+            });
+            const childUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc, category: 'A' },
+            });
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc, category: 'B', meta: { nice: 'lol' } },
+            });
+
+            const boosts = await userA.clients.fullAuth.boost.getBoostSiblings({ uri: childUri });
+
+            expect(boosts.records).toHaveLength(1);
+            expect(boosts.records[0]?.category).toEqual('B');
+            expect(boosts.records[0]?.meta).toEqual({ nice: 'lol' });
         });
     });
 
@@ -3783,6 +3848,31 @@ describe('Boosts', () => {
 
             expect([...firstPage.records, ...secondPage.records]).toEqual(boosts.records);
         });
+
+        it('should include meta', async () => {
+            const parentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+                category: 'A',
+                meta: { nice: 'lol' }
+            });
+            const childUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc, category: 'B' },
+            });
+
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: childUri,
+                boost: { credential: testVc, category: 'C', meta: { nice: 'lol' } },
+            });
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc, category: 'D', meta: { nice: 'lol' } },
+            });
+
+            const boosts = await userA.clients.fullAuth.boost.getFamilialBoosts({ uri: childUri });
+
+            expect(boosts.records[0]?.meta).toEqual({ nice: 'lol' });
+        });
     });
 
     describe('countFamilialBoosts', () => {
@@ -4468,6 +4558,25 @@ describe('Boosts', () => {
             expect(secondPage.hasMore).toBeFalsy();
 
             expect([...firstPage.records, ...secondPage.records]).toEqual(boosts.records);
+        });
+
+        it('should include meta', async () => {
+            const parentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+                category: 'B',
+                meta: { nice: 'lol' }
+            });
+            const childUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+            });
+
+            await userA.clients.fullAuth.boost.makeBoostParent({ parentUri, childUri });
+
+            const boosts = await userA.clients.fullAuth.boost.getBoostParents({ uri: childUri });
+
+            expect(boosts.records).toHaveLength(1);
+            expect(boosts.records[0]?.category).toEqual('B');
+            expect(boosts.records[0]?.meta).toEqual({ nice: 'lol' });
         });
     });
 

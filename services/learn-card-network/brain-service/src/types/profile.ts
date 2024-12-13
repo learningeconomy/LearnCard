@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import {
     LCNProfile,
     LCNProfileValidator,
@@ -9,6 +10,9 @@ import {
 
 export const ProfileValidator = LCNProfileValidator;
 export type ProfileType = LCNProfile;
+
+export const FlatProfileValidator = ProfileValidator.omit({ display: true }).catchall(z.any());
+export type FlatProfileType = z.infer<typeof FlatProfileValidator>;
 
 export const SigningAuthorityValidator = LCNSigningAuthorityValidator;
 export type SigningAuthorityType = LCNSigningAuthorityType;

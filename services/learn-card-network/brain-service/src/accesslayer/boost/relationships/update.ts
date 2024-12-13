@@ -1,8 +1,9 @@
 import { BoostPermissions } from '@learncard/types';
-import { BoostInstance, ProfileInstance } from '@models';
+import { BoostInstance } from '@models';
+import { ProfileType } from 'types/profile';
 
 export const updateBoostPermissions = async (
-    profile: ProfileInstance,
+    profile: ProfileType,
     boost: BoostInstance,
     permissions: Partial<BoostPermissions>
 ): Promise<boolean> => {

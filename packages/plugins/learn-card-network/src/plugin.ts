@@ -506,7 +506,7 @@ export const getLearnCardNetworkPlugin = async (
 
                 return client.boost.updateBoost.mutate({
                     uri,
-                    updates: { credential, ...updates },
+                    updates: { ...(credential && { credential }), ...updates },
                 });
             },
             getBoostAdmins: async (_learnCard, uri, options = {}) => {
