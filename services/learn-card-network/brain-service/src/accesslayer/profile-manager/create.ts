@@ -6,11 +6,12 @@ import { LCNProfile } from '@learncard/types';
 
 import { getLearnCard } from '@helpers/learnCard.helpers';
 import { createProfile } from '@accesslayer/profile/create';
-import { ProfileManager, ProfileManagerInstance, ProfileInstance } from '@models';
+import { ProfileManager, ProfileManagerInstance } from '@models';
+import { ProfileType } from 'types/profile';
 
 export const createProfileManager = async (
     input: Omit<LCNProfile, 'profileId' | 'did'>
-): Promise<{ manager: ProfileManagerInstance; profile: ProfileInstance }> => {
+): Promise<{ manager: ProfileManagerInstance; profile: ProfileType }> => {
     const id = uuid();
 
     const manager = await ProfileManager.createOne({ id });
