@@ -62,6 +62,7 @@ export * from './Boost';
 export * from './Profile';
 export * from './Credential';
 export * from './Presentation';
+export * from './ProfileManager';
 export * from './SigningAuthority';
 export * from './ConsentFlowTerms';
 export * from './ConsentFlowContract';

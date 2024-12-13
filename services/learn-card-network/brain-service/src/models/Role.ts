@@ -22,6 +22,7 @@ export const Role = ModelFactory<RoleType, RoleRelationships>(
             canEditChildren: { type: 'string', required: false },
             canRevokeChildren: { type: 'string', required: false },
             canManageChildrenPermissions: { type: 'string', required: false },
+            canManageChildrenProfiles: { type: 'string', required: false },
             canViewAnalytics: { type: 'boolean', required: false },
         },
         primaryKeyField: 'id',
