@@ -1,8 +1,6 @@
 import { TRPCError } from '@trpc/server';
 import { VP, JWE, LCNNotificationTypeEnumValidator } from '@learncard/types';
 
-import { ProfileInstance } from '@models';
-
 import { storePresentation } from '@accesslayer/presentation/create';
 import {
     createReceivedPresentationRelationship,
@@ -11,13 +9,14 @@ import {
 import { getPresentationSentToProfile } from '@accesslayer/presentation/relationships/read';
 import { constructUri, getUriParts } from './uri.helpers';
 import { addNotificationToQueue } from './notifications.helpers';
+import { ProfileType } from 'types/profile';
 
 export const getPresentationUri = (id: string, domain: string): string =>
     constructUri('presentation', id, domain);
 
 export const sendPresentation = async (
-    from: ProfileInstance,
-    to: ProfileInstance,
+    from: ProfileType,
+    to: ProfileType,
     presentation: VP | JWE,
     domain: string
 ): Promise<string> => {
@@ -29,15 +28,13 @@ export const sendPresentation = async (
 
     await addNotificationToQueue({
         type: LCNNotificationTypeEnumValidator.enum.PRESENTATION_RECEIVED,
-        to: to.dataValues,
-        from: from.dataValues,
+        to,
+        from,
         message: {
             title: 'Presentation Received',
             body: `${from.displayName} has sent you a presentation!`,
         },
-        data: {
-            vpUris: [uri],
-        },
+        data: { vpUris: [uri] },
     });
 
     return uri;
@@ -46,10 +43,7 @@ export const sendPresentation = async (
 /**
  * Accepts a VP
  */
-export const acceptPresentation = async (
-    profile: ProfileInstance,
-    uri: string
-): Promise<boolean> => {
+export const acceptPresentation = async (profile: ProfileType, uri: string): Promise<boolean> => {
     const { id, type } = getUriParts(uri);
 
     if (type !== 'presentation') {

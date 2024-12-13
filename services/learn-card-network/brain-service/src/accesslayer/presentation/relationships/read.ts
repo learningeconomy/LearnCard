@@ -1,35 +1,43 @@
-import { PresentationInstance, Profile, ProfileRelationships, ProfileInstance } from '@models';
+import { inflateObject } from '@helpers/objects.helpers';
+import { PresentationInstance, Profile, ProfileRelationships } from '@models';
+import { ProfileType } from 'types/profile';
 
 export const getPresentationSentToProfile = async (
     id: string,
-    to: ProfileInstance
+    to: ProfileType
 ): Promise<
     | {
-          source: ProfileInstance;
-          relationship: ProfileRelationships['presentationSent']['RelationshipProperties'];
-          target: PresentationInstance;
-      }
+        source: ProfileType;
+        relationship: ProfileRelationships['presentationSent']['RelationshipProperties'];
+        target: PresentationInstance;
+    }
     | undefined
 > => {
-    return (
+    const data = (
         await Profile.findRelationships({
             alias: 'presentationSent',
             where: { relationship: { to: to.profileId }, target: { id } },
         })
     )[0];
+
+    if (!data) return undefined;
+
+    return { ...data, source: inflateObject(data.source.dataValues as any) };
 };
 
 export const getPresentationOwner = async (
     presentation: PresentationInstance
-): Promise<ProfileInstance | undefined> => {
+): Promise<ProfileType | undefined> => {
     const id = presentation.id;
 
-    return (
+    const owner = (
         await Profile.findRelationships({
             alias: 'presentationSent',
-            where: {
-                target: { id },
-            },
+            where: { target: { id } },
         })
     )[0]?.source;
+
+    if (!owner) return undefined;
+
+    return inflateObject<ProfileType>(owner.dataValues as any);
 };

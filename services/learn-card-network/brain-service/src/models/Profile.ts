@@ -6,7 +6,7 @@ import { Credential, CredentialInstance } from './Credential';
 import { Presentation, PresentationInstance } from './Presentation';
 import { SigningAuthority } from './SigningAuthority';
 import { transformProfileId } from '@helpers/profile.helpers';
-import { ProfileType } from 'types/profile';
+import { FlatProfileType } from 'types/profile';
 import { SigningAuthorityInstance } from './SigningAuthority';
 
 export type ProfileRelationships = {
@@ -34,9 +34,9 @@ export type ProfileRelationships = {
     >;
 };
 
-export type ProfileInstance = NeogmaInstance<ProfileType, ProfileRelationships>;
+export type ProfileInstance = NeogmaInstance<FlatProfileType, ProfileRelationships>;
 
-export const Profile = ModelFactory<ProfileType, ProfileRelationships>(
+export const Profile = ModelFactory<FlatProfileType, ProfileRelationships>(
     {
         label: 'Profile',
         schema: {

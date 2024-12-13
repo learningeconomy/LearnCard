@@ -1,20 +1,21 @@
-import { PresentationInstance, ProfileInstance } from '@models';
+import { PresentationInstance, Profile } from '@models';
+import { ProfileType } from 'types/profile';
 
 export const createSentPresentationRelationship = async (
-    from: ProfileInstance,
-    to: ProfileInstance,
+    from: ProfileType,
+    to: ProfileType,
     presentation: PresentationInstance
 ): Promise<void> => {
-    await from.relateTo({
+    await Profile.relateTo({
         alias: 'presentationSent',
-        where: { id: presentation.id },
+        where: { source: { profileId: from.profileId }, target: { id: presentation.id } },
         properties: { to: to.profileId, date: new Date().toISOString() },
     });
 };
 
 export const createReceivedPresentationRelationship = async (
-    to: ProfileInstance,
-    from: ProfileInstance,
+    to: ProfileType,
+    from: ProfileType,
     presentation: PresentationInstance
 ): Promise<void> => {
     await presentation.relateTo({

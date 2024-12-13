@@ -1,22 +1,23 @@
 import { QueryBuilder } from 'neogma';
 
-import { CredentialInstance, Credential, ProfileInstance, Boost, Role, Profile } from '@models';
+import { CredentialInstance, Credential, Boost, Role, Profile } from '@models';
+import { ProfileType } from 'types/profile';
 
 export const createSentCredentialRelationship = async (
-    from: ProfileInstance,
-    to: ProfileInstance,
+    from: ProfileType,
+    to: ProfileType,
     credential: CredentialInstance
 ): Promise<void> => {
-    await from.relateTo({
+    await Profile.relateTo({
         alias: 'credentialSent',
-        where: { id: credential.id },
+        where: { source: { profileId: from.profileId }, target: { id: credential.id } },
         properties: { to: to.profileId, date: new Date().toISOString() },
     });
 };
 
 export const createReceivedCredentialRelationship = async (
-    to: ProfileInstance,
-    from: ProfileInstance,
+    to: ProfileType,
+    from: ProfileType,
     credential: CredentialInstance
 ): Promise<void> => {
     await credential.relateTo({
@@ -27,7 +28,7 @@ export const createReceivedCredentialRelationship = async (
 };
 
 export const setDefaultClaimedRole = async (
-    profile: ProfileInstance,
+    profile: ProfileType,
     credential: CredentialInstance
 ): Promise<void> => {
     await new QueryBuilder()

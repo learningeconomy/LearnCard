@@ -1,5 +1,20 @@
 # learn-card-discord-bot
 
+## 1.1.111
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.18
+
+## 1.1.110
+
+### Patch Changes
+
+-   Updated dependencies [[`20d4585c3a2bc8c5eb4b0a628eb215be829000fa`](https://github.com/learningeconomy/LearnCard/commit/20d4585c3a2bc8c5eb4b0a628eb215be829000fa)]:
+    -   @learncard/types@5.5.9
+    -   @learncard/init@1.3.17
+
 ## 1.1.109
 
 ### Patch Changes
