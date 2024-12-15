@@ -5,7 +5,7 @@ import { neogma } from '@instance';
 import { Profile, ProfileInstance } from './Profile';
 import { Boost, BoostInstance } from './Boost';
 
-import { ProfileManager as ProfileManagerType } from 'types/profile-manager';
+import { ProfileManagerType } from 'types/profile-manager';
 
 export type ProfileManagerRelationships = {
     manages: ModelRelatedNodesI<typeof Profile, ProfileInstance>;
@@ -23,6 +23,12 @@ export const ProfileManager = ModelFactory<ProfileManagerType, ProfileManagerRel
         label: 'ProfileManager',
         schema: {
             id: { type: 'string', required: true, uniqueItems: true },
+            displayName: { type: 'string', required: false },
+            shortBio: { type: 'string', required: false },
+            bio: { type: 'string', required: false },
+            email: { type: 'string', required: false, uniqueItems: true },
+            image: { type: 'string', required: false },
+            heroImage: { type: 'string', required: false },
             alternateIds: { type: 'array', required: false },
         },
         primaryKeyField: 'id',

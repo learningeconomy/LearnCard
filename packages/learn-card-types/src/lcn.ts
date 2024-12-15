@@ -62,6 +62,18 @@ export const LCNProfileConnectionStatusEnum = z.enum([
 ]);
 export type LCNProfileConnectionStatusEnum = z.infer<typeof LCNProfileConnectionStatusEnum>;
 
+export const LCNProfileManagerValidator = z.object({
+    id: z.string(),
+    displayName: z.string().default('').optional(),
+    shortBio: z.string().default('').optional(),
+    bio: z.string().default('').optional(),
+    email: z.string().optional(),
+    image: z.string().optional(),
+    heroImage: z.string().optional(),
+    alternateIds: z.string().array().default([]).optional(),
+});
+export type LCNProfileManager = z.infer<typeof LCNProfileManagerValidator>;
+
 export const SentCredentialInfoValidator = z.object({
     uri: z.string(),
     to: z.string(),

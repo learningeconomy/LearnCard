@@ -1,10 +1,11 @@
 import { initLearnCard } from '@learncard/init';
 
-export const getLearnCard = (seed = 'a'.repeat(64)) => {
+export const getLearnCard = (seed = 'a'.repeat(64), managedDid?: string) => {
     return initLearnCard({
         seed,
         network: 'http://localhost:4000/trpc',
         cloud: { url: 'http://localhost:4100/trpc' },
+        ...(managedDid && { didWeb: managedDid }),
     });
 };
 
@@ -31,4 +32,13 @@ export const getLearnCardForUser = async (userKey: keyof typeof USERS) => {
     } catch (error) { }
 
     return learnCard;
+};
+
+export const getManagedLearnCardForUser = async (
+    userKey: keyof typeof USERS,
+    managedDid: string
+) => {
+    const user = USERS[userKey];
+
+    return getLearnCard(user.seed, managedDid);
 };

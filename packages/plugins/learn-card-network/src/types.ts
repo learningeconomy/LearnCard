@@ -2,6 +2,7 @@ import type { DID } from 'dids';
 import type { LCNClient } from '@learncard/network-brain-client';
 import {
     LCNProfile,
+    LCNProfileManager,
     UnsignedVC,
     VC,
     VP,
@@ -51,6 +52,8 @@ export type LearnCardNetworkPluginMethods = {
     createServiceProfile: (
         profile: Omit<LCNProfile, 'did' | 'isServiceProfile'>
     ) => Promise<string>;
+    createManagedProfile: (profile: Omit<LCNProfile, 'did'>) => Promise<string>;
+    createProfileManager: (profile: Omit<LCNProfileManager, 'id'>) => Promise<string>;
     createManagedServiceProfile: (
         profile: Omit<LCNProfile, 'did' | 'isServiceProfile'>
     ) => Promise<string>;

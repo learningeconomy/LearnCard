@@ -24,12 +24,7 @@ import {
     getBlockedAndBlockedByIds,
     isRelationshipBlocked,
 } from '@helpers/connection.helpers';
-import {
-    getDidWeb,
-    getManagedDidWeb,
-    updateDidForProfile,
-    updateDidForProfiles,
-} from '@helpers/did.helpers';
+import { getDidWeb, updateDidForProfile, updateDidForProfiles } from '@helpers/did.helpers';
 
 import { createProfile } from '@accesslayer/profile/create';
 import { deleteProfile } from '@accesslayer/profile/delete';
@@ -61,7 +56,6 @@ import {
 } from '@cache/invites';
 import { getLearnCard } from '@helpers/learnCard.helpers';
 import { getManagedServiceProfiles } from '@accesslayer/profile/relationships/read';
-import { createProfileManager } from '@accesslayer/profile-manager/create';
 import { createProfileManagedByRelationship } from '@accesslayer/profile/relationships/create';
 import { updateProfile } from '@accesslayer/profile/update';
 
@@ -133,35 +127,6 @@ export const profilesRouter = t.router({
             });
 
             if (profile) return getDidWeb(ctx.domain, profile.profileId);
-
-            throw new TRPCError({
-                code: 'INTERNAL_SERVER_ERROR',
-                message: 'An unexpected error occured, please try again later.',
-            });
-        }),
-
-    createManagedProfile: profileRoute
-        .meta({
-            openapi: {
-                protect: true,
-                method: 'POST',
-                path: '/profile/create-managed-profile',
-                tags: ['Profiles'],
-                summary: 'Create a managed profile',
-                description: 'Creates a managed profile',
-            },
-        })
-        .input(LCNProfileValidator.omit({ did: true, profileId: true }))
-        .output(z.string())
-        .mutation(async ({ input, ctx }) => {
-            const { profile, manager } = await createProfileManager(input);
-
-            await manager.relateTo({
-                alias: 'administratedBy',
-                where: { profileId: ctx.user.profile.profileId },
-            });
-
-            if (profile) return getManagedDidWeb(ctx.domain, manager.id);
 
             throw new TRPCError({
                 code: 'INTERNAL_SERVER_ERROR',

@@ -1,7 +1,5 @@
 import { z } from 'zod';
+import { LCNProfileManagerValidator } from '@learncard/types';
 
-export const ProfileManagerValidator = z.object({
-    id: z.string(),
-    alternateIds: z.string().array().optional(),
-});
-export type ProfileManager = z.infer<typeof ProfileManagerValidator>;
+export const ProfileManagerValidator = LCNProfileManagerValidator;
+export type ProfileManagerType = z.infer<typeof ProfileManagerValidator>;
