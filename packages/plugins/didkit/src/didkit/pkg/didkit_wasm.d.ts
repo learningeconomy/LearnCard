@@ -5,6 +5,10 @@
  */
 export function getVersion(): string;
 /**
+ * @returns {Promise<any>}
+ */
+export function clearCache(): Promise<any>;
+/**
  * @param {string} did
  * @param {string} input_metadata
  * @returns {Promise<any>}
@@ -195,6 +199,7 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 export interface InitOutput {
   readonly memory: WebAssembly.Memory;
   readonly getVersion: (a: number) => void;
+  readonly clearCache: () => number;
   readonly didResolver: (a: number, b: number, c: number, d: number) => number;
   readonly resolveDID: (a: number, b: number, c: number, d: number) => number;
   readonly generateEd25519Key: (a: number) => void;

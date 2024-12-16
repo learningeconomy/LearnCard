@@ -899,8 +899,6 @@ export const profilesRouter = t.router({
         .query(async ({ ctx }) => {
             const blocked = await getBlockedProfiles(ctx.user.profile);
 
-            console.log({ blocked });
-
             return blocked.map(blockedProfile => updateDidForProfile(ctx.domain, blockedProfile));
         }),
 

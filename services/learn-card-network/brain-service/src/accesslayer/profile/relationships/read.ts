@@ -1,6 +1,6 @@
 import { Op, QueryBuilder, Where } from 'neogma';
 import { convertQueryResultToPropertiesObjectArray } from '@helpers/neo4j.helpers';
-import { Profile, ProfileManager } from '@models';
+import { Boost, Profile, ProfileManager } from '@models';
 import { FlatProfileType, ProfileType } from 'types/profile';
 import { inflateObject } from '@helpers/objects.helpers';
 
@@ -54,9 +54,36 @@ export const getProfilesThatManageAProfile = async (profileId: string): Promise<
                     { model: Profile, identifier: 'manager' },
                 ],
             })
-            .return('COALESCE(manager, directManager) AS manager')
+            .match({
+                optional: true,
+                related: [
+                    { model: Profile, where: { profileId } },
+                    { ...ProfileManager.getRelationshipByAlias('manages'), direction: 'in' },
+                    { model: ProfileManager },
+                    ProfileManager.getRelationshipByAlias('childOf'),
+                    { model: Boost },
+                    { ...Boost.getRelationshipByAlias('hasRole'), identifier: 'hasRole' },
+                    { identifier: 'implicitManager', model: Profile },
+                ],
+            })
+            .match({ optional: true, literal: '(role:Role {id: hasRole.roleId})' })
+            .with(
+                'manager, directManager, implicitManager, COALESCE(hasRole.canManageChildrenProfiles, role.canManageChildrenProfiles) AS canManageChildrenProfiles'
+            )
+            .where(
+                `
+(implicitManager IS NULL AND manager IS NOT NULL) OR 
+implicitManager = manager OR 
+(implicitManager IS NULL AND directManager IS NOT NULL) OR 
+implicitManager = directManager OR 
+(implicitManager IS NOT NULL AND canManageChildrenProfiles = true)
+`
+            )
+            .return('DISTINCT COALESCE(implicitManager, directManager, manager) AS manager')
             .run()
     );
 
-    return results.map(({ manager }) => inflateObject(manager as any));
+    return results
+        .map(({ manager }) => manager && (inflateObject as any)(manager as any))
+        .filter(Boolean);
 };

@@ -13,6 +13,7 @@ import { ProfileManagerValidator } from 'types/profile-manager';
 import { getLearnCard } from '@helpers/learnCard.helpers';
 import { createProfile } from '@accesslayer/profile/create';
 import { createManagesRelationship } from '@accesslayer/profile-manager/relationships/create';
+import { getBoostByUri } from '@accesslayer/boost/read';
 
 export const profileManagersRouter = t.router({
     createProfileManager: profileRoute
@@ -35,6 +36,48 @@ export const profileManagersRouter = t.router({
                 alias: 'administratedBy',
                 where: { profileId: ctx.user.profile.profileId },
             });
+
+            if (manager) return getManagedDidWeb(ctx.domain, manager.id);
+
+            throw new TRPCError({
+                code: 'INTERNAL_SERVER_ERROR',
+                message: 'An unexpected error occured, please try again later.',
+            });
+        }),
+
+    createChildProfileManager: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/profile-manager/create-child',
+                tags: ['Profile Managers'],
+                summary: 'Create a profile manager that is a child of a Boost',
+                description: 'Creates a profile manager that is a child of a Boost',
+            },
+        })
+        .input(
+            z.object({ parentUri: z.string(), profile: ProfileManagerValidator.omit({ id: true }) })
+        )
+        .output(z.string())
+        .mutation(async ({ ctx, input }) => {
+            const { parentUri, profile } = input;
+
+            const parentBoost = await getBoostByUri(parentUri);
+
+            if (!parentBoost) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find parent boost' });
+            }
+
+            const manager = await createProfileManager(profile);
+
+            await Promise.all([
+                manager.relateTo({ alias: 'childOf', where: { id: parentBoost.id } }),
+                manager.relateTo({
+                    alias: 'administratedBy',
+                    where: { profileId: ctx.user.profile.profileId },
+                }),
+            ]);
 
             if (manager) return getManagedDidWeb(ctx.domain, manager.id);
 

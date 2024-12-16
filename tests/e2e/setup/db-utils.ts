@@ -2,6 +2,7 @@ import Redis from 'ioredis';
 import { MongoClient } from 'mongodb';
 import neo4j from 'neo4j-driver';
 import { Client } from 'pg';
+import { getLearnCard } from '../tests/helpers/learncard.helpers';
 
 const redis1 = new Redis();
 const redis2 = new Redis({ port: 6380 });
@@ -24,11 +25,21 @@ export async function clearDatabases() {
 
         // Run all clear operations concurrently
         await Promise.all([
-            // Redis operations
+            // Clear Redises
             redis1.flushall(),
             redis2.flushall(),
 
-            // MongoDB operation
+            // Clear Didkit Cache in services
+            fetch('http://localhost:4000/test/clear-cache'),
+            fetch('http://localhost:4100/test/clear-cache'),
+
+            // Clear Local Didkit Cache
+            (async () => {
+                const learnCard = await getLearnCard();
+                await learnCard.invoke.clearDidWebCache();
+            })(),
+
+            // Clear Mongodb
             (async () => {
                 const db = mongoClient.db('test');
                 const collections = await db.listCollections().toArray();
@@ -37,21 +48,19 @@ export async function clearDatabases() {
                 );
             })(),
 
-            // Neo4j operation
+            // Clear Neo4j
             (async () => {
                 const session = neo4jDriver.session();
                 try {
-                    await session.run(
-                        'MATCH (n) WHERE n.profileId IS NULL OR NOT n.profileId STARTS WITH "test" DETACH DELETE n'
-                    );
+                    await session.run('MATCH (n) DETACH DELETE n');
 
-                    await session.run('MATCH ()-[r]-() DELETE r');
+                    await session.run('CALL db.clearQueryCaches()');
                 } finally {
                     await session.close();
                 }
             })(),
 
-            // Postgres operation
+            // Clear Postgres
             (async () => {
                 // Get all tables in public schema
                 const result = await pgClient.query(`

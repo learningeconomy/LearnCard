@@ -2,6 +2,7 @@
 /* eslint-disable */
 export const memory: WebAssembly.Memory;
 export function getVersion(a: number): void;
+export function clearCache(): number;
 export function didResolver(a: number, b: number, c: number, d: number): number;
 export function resolveDID(a: number, b: number, c: number, d: number): number;
 export function generateEd25519Key(a: number): void;

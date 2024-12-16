@@ -11,6 +11,7 @@ export const CREATOR_PERMISSIONS: BoostPermissions = {
     canEditChildren: '*',
     canRevokeChildren: '*',
     canManageChildrenPermissions: '*',
+    canManageChildrenProfiles: true,
     canViewAnalytics: true,
 };
 
@@ -25,6 +26,7 @@ export const ADMIN_PERMISSIONS: BoostPermissions = {
     canEditChildren: '*',
     canRevokeChildren: '*',
     canManageChildrenPermissions: '*',
+    canManageChildrenProfiles: true,
     canViewAnalytics: true,
 };
 
@@ -39,6 +41,7 @@ export const EMPTY_PERMISSIONS: BoostPermissions = {
     canEditChildren: '',
     canRevokeChildren: '',
     canManageChildrenPermissions: '',
+    canManageChildrenProfiles: false,
     canViewAnalytics: false,
 };
 

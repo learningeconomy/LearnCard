@@ -54,6 +54,7 @@ export type LearnCardNetworkPluginMethods = {
     ) => Promise<string>;
     createManagedProfile: (profile: Omit<LCNProfile, 'did'>) => Promise<string>;
     createProfileManager: (profile: Omit<LCNProfileManager, 'id'>) => Promise<string>;
+    createChildProfileManager: (parentUri: string, profile: Omit<LCNProfileManager, 'id'>) => Promise<string>;
     createManagedServiceProfile: (
         profile: Omit<LCNProfile, 'did' | 'isServiceProfile'>
     ) => Promise<string>;
@@ -197,7 +198,7 @@ export type LearnCardNetworkPluginMethods = {
     getBoostPermissions: (uri: string, profileId?: string) => Promise<BoostPermissions>;
     updateBoostPermissions: (
         uri: string,
-        updates: Omit<BoostPermissions, 'role'>,
+        updates: Partial<Omit<BoostPermissions, 'role'>>,
         profileId?: string
     ) => Promise<boolean>;
     addBoostAdmin: (uri: string, profileId: string) => Promise<boolean>;

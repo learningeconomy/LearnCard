@@ -144,6 +144,16 @@ export const getLearnCardNetworkPlugin = async (
 
                 return newDid;
             },
+            createChildProfileManager: async (_learnCard, parentUri, profile) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                const newDid = await client.profileManager.createChildProfileManager.mutate({
+                    parentUri,
+                    profile
+                });
+
+                return newDid;
+            },
             createManagedServiceProfile: async (_learnCard, profile) => {
                 if (!userData) throw new Error('Please make an account first!');
 

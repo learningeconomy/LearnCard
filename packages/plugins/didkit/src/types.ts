@@ -70,6 +70,7 @@ export type DidkitPluginMethods = {
     contextLoader: (url: string) => Promise<Record<string, any>>;
     resolveDid: (did: string, inputMetadata?: InputMetadata) => Promise<DidDocument>;
     didResolver: (did: string, inputMetadata?: InputMetadata) => Promise<DIDResolutionResult>;
+    clearDidWebCache: () => Promise<void>;
 };
 
 /** @group DIDKit Plugin */

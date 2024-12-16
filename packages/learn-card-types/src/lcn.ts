@@ -94,7 +94,7 @@ export const BoostPermissionsValidator = z.object({
     canEditChildren: z.string(),
     canRevokeChildren: z.string(),
     canManageChildrenPermissions: z.string(),
-    canManageChildrenProfiles: z.string().default('').optional(),
+    canManageChildrenProfiles: z.boolean().default(false).optional(),
     canViewAnalytics: z.boolean(),
 });
 export type BoostPermissions = z.infer<typeof BoostPermissionsValidator>;

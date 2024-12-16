@@ -15,8 +15,8 @@ import {
     setDidDocForProfileManager,
 } from '@cache/did-docs';
 import { DidDocument, JWK } from '@learncard/types';
-import { ProfileManager } from '@models';
 import { getProfilesThatManageAProfile } from '@accesslayer/profile/relationships/read';
+import { getProfilesThatAdministrateAProfileManager } from '@accesslayer/profile-manager/relationships/read';
 
 const encodeKey = (key: Uint8Array) => {
     const bytes = new Uint8Array(key.length + 2);
@@ -124,8 +124,8 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
         }
 
         let finalDoc = {
-            controller: profile.did,
             ...replacedDoc,
+            controller: profile.did,
             keyAgreement: [
                 {
                     id: `${did}#${encodeKey(x25519PublicKeyBytes)}`,
@@ -161,8 +161,6 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
             const managers = await getProfilesThatManageAProfile(profileId);
 
             if (managers.length > 0) {
-                finalDoc.controller = profile.did;
-
                 await Promise.all(
                     managers.map(async manager => {
                         const targetDid = manager.did;
@@ -254,21 +252,13 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
             assertionMethod: [],
         };
 
-        const administratedRelationships = await ProfileManager.findRelationships({
-            alias: 'administratedBy',
-            where: { source: { id } },
-        });
+        const administrators = await getProfilesThatAdministrateAProfileManager(id);
 
-        // TODO implicit administration via Boost
-        const allControllingRelationships = [...administratedRelationships];
-
-        if (allControllingRelationships.length > 0) {
+        if (administrators.length > 0) {
             await Promise.all(
-                allControllingRelationships.map(async managedRelationship => {
-                    const { target } = managedRelationship;
-
-                    const targetDid = target.did;
-                    const targetKey = target.did.split(':')[2];
+                administrators.map(async administrator => {
+                    const targetDid = administrator.did;
+                    const targetKey = administrator.did.split(':')[2];
 
                     const targetDidDoc = await learnCard.invoke.resolveDid(targetDid);
                     const targetJwk = (targetDidDoc.verificationMethod?.[0] as any)
@@ -358,6 +348,16 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
         setDidDocForProfile('::root::', finalDoc);
 
         return reply.send(finalDoc);
+    });
+
+    fastify.get('/test/clear-cache', async (_request, reply) => {
+        if (!process.env.IS_OFFLINE) return reply.status(403).send();
+
+        const learnCard = await getEmptyLearnCard();
+
+        await learnCard.invoke.clearDidWebCache();
+
+        return reply.status(200).send();
     });
 };
 

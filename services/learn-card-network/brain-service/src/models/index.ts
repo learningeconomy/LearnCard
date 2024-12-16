@@ -44,6 +44,9 @@ Presentation.addRelationships({
         ),
         neogma.queryRunner.run('CREATE INDEX boost_id_idx IF NOT EXISTS FOR (b:Boost) ON (b.id)'),
         neogma.queryRunner.run(
+            'CREATE INDEX profilemanager_id_idx IF NOT EXISTS FOR (p:ProfileManager) ON (p.id)'
+        ),
+        neogma.queryRunner.run(
             'CREATE TEXT INDEX profileId_text_idx IF NOT EXISTS FOR (n:Profile) ON (n.profileId)'
         ),
         neogma.queryRunner.run(
