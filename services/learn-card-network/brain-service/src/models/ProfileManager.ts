@@ -27,7 +27,7 @@ export const ProfileManager = ModelFactory<ProfileManagerType, ProfileManagerRel
             displayName: { type: 'string', required: false },
             shortBio: { type: 'string', required: false },
             bio: { type: 'string', required: false },
-            email: { type: 'string', required: false, uniqueItems: true },
+            email: { type: 'string', required: false },
             image: { type: 'string', required: false },
             heroImage: { type: 'string', required: false },
         },

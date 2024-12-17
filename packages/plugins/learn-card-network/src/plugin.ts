@@ -187,6 +187,9 @@ export const getLearnCardNetworkPlugin = async (
 
                 return false;
             },
+            updateProfileManagerProfile: async (_learnCard, manager) => {
+                return client.profileManager.updateProfileManager.mutate(manager);
+            },
             deleteProfile: async () => {
                 if (!userData) throw new Error('Account does not exist!');
 
@@ -204,6 +207,11 @@ export const getLearnCardNetworkPlugin = async (
                 if (!profileId) return client.profile.getProfile.query();
 
                 return client.profile.getOtherProfile.query({ profileId });
+            },
+            getProfileManagerProfile: async (_learnCard, id) => {
+                if (!id) return client.profileManager.getProfileManager.query();
+
+                return client.profileManager.getOtherProfileManager.query({ id });
             },
             searchProfiles: async (
                 _learnCard,

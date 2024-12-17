@@ -237,4 +237,20 @@ describe('Identity', () => {
         expect(queriedProfiles.records).toHaveLength(1);
         expect(queriedProfiles.records[0]?.did).toEqual(managedDid);
     });
+
+    test('Profile Managers can update themselves', async () => {
+        const managerDid = await a.invoke.createProfileManager({ displayName: 'Manager Test!' });
+
+        const managerLc = await getManagedLearnCardForUser('a', managerDid);
+
+        const managerProfile = await managerLc.invoke.getProfileManagerProfile();
+
+        expect(managerProfile?.displayName).toEqual('Manager Test!');
+
+        await managerLc.invoke.updateProfileManagerProfile({ displayName: 'Nice!' });
+
+        const updatedManagerProfile = await managerLc.invoke.getProfileManagerProfile();
+
+        expect(updatedManagerProfile?.displayName).toEqual('Nice!');
+    });
 });

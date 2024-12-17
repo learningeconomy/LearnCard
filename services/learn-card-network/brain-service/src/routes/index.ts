@@ -171,7 +171,7 @@ export const profileRoute = didAndChallengeRoute.use(async ({ ctx, next }) => {
     return next({ ctx: { ...ctx, user: { ...ctx.user, profile } } });
 });
 
-export const profileManagerRoute = openRoute.use(async ({ ctx, next }) => {
+export const openProfileManagerRoute = openRoute.use(async ({ ctx, next }) => {
     if (!ctx.user?.did) throw new TRPCError({ code: 'UNAUTHORIZED' });
 
     const didParts = ctx.user.did.split(':');
@@ -194,14 +194,20 @@ export const profileManagerRoute = openRoute.use(async ({ ctx, next }) => {
 
     const manager = await getProfileManagerById(id);
 
+    if (manager) Sentry.setUser({ id: manager.id, username: manager.displayName });
+
+    return next({ ctx: { ...ctx, user: { ...ctx.user, manager } } });
+});
+
+export const profileManagerRoute = openProfileManagerRoute.use(async ({ ctx, next }) => {
+    const { manager } = ctx.user;
+
     if (!manager) {
         throw new TRPCError({
             code: 'NOT_FOUND',
             message: 'Profile Manager not found. Please make a profile manager!',
         });
     }
-
-    Sentry.setUser({ id: manager.id, username: manager.displayName });
 
     return next({ ctx: { ...ctx, user: { ...ctx.user, manager } } });
 });

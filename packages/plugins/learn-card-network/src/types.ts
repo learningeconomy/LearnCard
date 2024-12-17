@@ -55,7 +55,7 @@ export type LearnCardNetworkPluginMethods = {
         profile: Omit<LCNProfile, 'did' | 'isServiceProfile'>
     ) => Promise<string>;
     createManagedProfile: (profile: Omit<LCNProfile, 'did'>) => Promise<string>;
-    createProfileManager: (profile: Omit<LCNProfileManager, 'id'>) => Promise<string>;
+    createProfileManager: (profile: Omit<LCNProfileManager, 'id' | 'created'>) => Promise<string>;
     createChildProfileManager: (parentUri: string, profile: Omit<LCNProfileManager, 'id' | 'created'>) => Promise<string>;
     createManagedServiceProfile: (
         profile: Omit<LCNProfile, 'did' | 'isServiceProfile'>
@@ -72,8 +72,12 @@ export type LearnCardNetworkPluginMethods = {
     updateProfile: (
         profile: Partial<Omit<LCNProfile, 'did' | 'isServiceProfile'>>
     ) => Promise<boolean>;
+    updateProfileManagerProfile: (
+        manager: Partial<Omit<LCNProfileManager, 'id' | 'created'>>
+    ) => Promise<boolean>;
     deleteProfile: () => Promise<boolean>;
     getProfile: (profileId?: string) => Promise<LCNProfile | undefined>;
+    getProfileManagerProfile: (id?: string) => Promise<LCNProfileManager | undefined>;
     searchProfiles: (
         profileId?: string,
         options?: {
