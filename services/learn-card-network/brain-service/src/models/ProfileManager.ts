@@ -23,13 +23,13 @@ export const ProfileManager = ModelFactory<ProfileManagerType, ProfileManagerRel
         label: 'ProfileManager',
         schema: {
             id: { type: 'string', required: true, uniqueItems: true },
+            created: { type: 'string', required: true },
             displayName: { type: 'string', required: false },
             shortBio: { type: 'string', required: false },
             bio: { type: 'string', required: false },
             email: { type: 'string', required: false, uniqueItems: true },
             image: { type: 'string', required: false },
             heroImage: { type: 'string', required: false },
-            alternateIds: { type: 'array', required: false },
         },
         primaryKeyField: 'id',
         relationships: {

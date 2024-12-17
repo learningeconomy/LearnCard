@@ -55,9 +55,13 @@ import {
     invalidateInvite,
 } from '@cache/invites';
 import { getLearnCard } from '@helpers/learnCard.helpers';
-import { getManagedServiceProfiles } from '@accesslayer/profile/relationships/read';
+import {
+    getManagedServiceProfiles,
+    getProfilesThatAProfileManages,
+} from '@accesslayer/profile/relationships/read';
 import { createProfileManagedByRelationship } from '@accesslayer/profile/relationships/create';
 import { updateProfile } from '@accesslayer/profile/update';
+import { LCNProfileQueryValidator } from '@learncard/types';
 
 export const profilesRouter = t.router({
     createProfile: didAndChallengeRoute
@@ -223,6 +227,44 @@ export const profilesRouter = t.router({
                 return undefined;
             }
             return otherProfile ? updateDidForProfile(ctx.domain, otherProfile) : undefined;
+        }),
+
+    getAvailableProfiles: profileRoute
+        .meta({
+            openapi: {
+                method: 'POST',
+                path: '/profile/available-profiles',
+                tags: ['Profiles'],
+                summary: 'Available Profiles',
+                description:
+                    'This route gets all of your available profiles. That is, profiles you directly or indirectly manage',
+            },
+        })
+        .input(
+            PaginationOptionsValidator.extend({
+                limit: PaginationOptionsValidator.shape.limit.default(25),
+                query: LCNProfileQueryValidator.optional(),
+            }).default({})
+        )
+        .output(PaginatedLCNProfilesValidator)
+        .query(async ({ ctx, input }) => {
+            const { query, limit, cursor } = input;
+
+            const results = await getProfilesThatAProfileManages(ctx.user.profile.profileId, {
+                limit: limit + 1,
+                cursor,
+                query,
+            });
+
+            const profiles = results.map(profile => updateDidForProfile(ctx.domain, profile));
+            const hasMore = results.length > limit;
+            const nextCursor = hasMore ? results.at(-2)?.profileId : undefined;
+
+            return {
+                hasMore,
+                ...(nextCursor && { cursor: nextCursor }),
+                records: profiles.slice(0, limit),
+            };
         }),
 
     getManagedServiceProfiles: profileRoute

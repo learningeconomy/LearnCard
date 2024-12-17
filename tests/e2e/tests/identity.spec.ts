@@ -139,4 +139,102 @@ describe('Identity', () => {
 
         await expect(getManagedLearnCardForUser('b', managedDid)).rejects.toThrow();
     });
+
+    test('Admins of boosts with children profile managers can query for them', async () => {
+        const uri = await a.invoke.createBoost(testUnsignedBoost);
+
+        await a.invoke.addBoostAdmin(uri, USERS.b.profileId);
+
+        const managerDid = await a.invoke.createChildProfileManager(uri, {
+            displayName: 'Manager Test!',
+        });
+
+        await a.invoke.createChildProfileManager(uri, {
+            displayName: 'Something different!',
+        });
+
+        const managers = await b.invoke.getBoostChildrenProfileManagers(uri);
+
+        expect(managers.records).toHaveLength(2);
+
+        const queriedManagers = await b.invoke.getBoostChildrenProfileManagers(uri, {
+            query: { displayName: { $regex: /manager test/i } },
+        });
+
+        expect(queriedManagers.records).toHaveLength(1);
+        expect(queriedManagers.records[0]?.displayName).toEqual('Manager Test!');
+        expect(queriedManagers.records[0]?.did).toEqual(managerDid);
+    });
+
+    test('Admins of boosts with children profiles can query for them', async () => {
+        const uri = await a.invoke.createBoost(testUnsignedBoost);
+
+        await a.invoke.addBoostAdmin(uri, USERS.b.profileId);
+
+        const managerDid = await a.invoke.createChildProfileManager(uri, {
+            displayName: 'Manager Test!',
+        });
+
+        const managerLc = await getManagedLearnCardForUser('b', managerDid);
+
+        const managedDid = await managerLc.invoke.createManagedProfile({
+            profileId: 'managed',
+            displayName: 'Managed Profile Test!',
+            bio: '',
+            shortBio: '',
+        });
+        await managerLc.invoke.createManagedProfile({
+            profileId: 'other',
+            displayName: 'Other Managed Profile Test!',
+            bio: '',
+            shortBio: '',
+        });
+
+        const profiles = await managerLc.invoke.getManagedProfiles();
+
+        expect(profiles.records).toHaveLength(2);
+
+        const queriedProfiles = await managerLc.invoke.getManagedProfiles({
+            query: { profileId: { $regex: /manag/i } },
+        });
+
+        expect(queriedProfiles.records).toHaveLength(1);
+        expect(queriedProfiles.records[0]?.did).toEqual(managedDid);
+    });
+
+    test('Profiles can query for what profiles are available to them', async () => {
+        const uri = await a.invoke.createBoost(testUnsignedBoost);
+
+        await a.invoke.addBoostAdmin(uri, USERS.b.profileId);
+
+        const managerDid = await a.invoke.createChildProfileManager(uri, {
+            displayName: 'Manager Test!',
+        });
+
+        const managerLc = await getManagedLearnCardForUser('b', managerDid);
+
+        const managedDid = await managerLc.invoke.createManagedProfile({
+            profileId: 'managed',
+            displayName: 'Managed Profile Test!',
+            bio: '',
+            shortBio: '',
+        });
+        await managerLc.invoke.createManagedProfile({
+            profileId: 'other',
+            displayName: 'Other Managed Profile Test!',
+            bio: '',
+            shortBio: '',
+        });
+
+        const profiles = await a.invoke.getAvailableProfiles();
+
+        expect(profiles.records).toHaveLength(2);
+
+        const queriedProfiles = await a.invoke.getAvailableProfiles({
+            query: { profileId: { $regex: /manag/i } },
+        });
+
+        expect(queriedProfiles.records).toHaveLength(1);
+        expect(queriedProfiles.records[0]?.did).toEqual(managedDid);
+    });
 });

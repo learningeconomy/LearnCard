@@ -31,6 +31,8 @@ import {
     BoostPermissions,
     BoostQuery,
     LCNProfileQuery,
+    LCNProfileManagerQuery,
+    PaginatedLCNProfileManagers,
 } from '@learncard/types';
 import { Plugin } from '@learncard/core';
 import { ProofOptions } from '@learncard/didkit-plugin';
@@ -54,10 +56,16 @@ export type LearnCardNetworkPluginMethods = {
     ) => Promise<string>;
     createManagedProfile: (profile: Omit<LCNProfile, 'did'>) => Promise<string>;
     createProfileManager: (profile: Omit<LCNProfileManager, 'id'>) => Promise<string>;
-    createChildProfileManager: (parentUri: string, profile: Omit<LCNProfileManager, 'id'>) => Promise<string>;
+    createChildProfileManager: (parentUri: string, profile: Omit<LCNProfileManager, 'id' | 'created'>) => Promise<string>;
     createManagedServiceProfile: (
         profile: Omit<LCNProfile, 'did' | 'isServiceProfile'>
     ) => Promise<string>;
+    getAvailableProfiles: (
+        options?: Partial<PaginationOptionsType> & { query?: LCNProfileQuery }
+    ) => Promise<PaginatedLCNProfiles>;
+    getManagedProfiles: (
+        options?: Partial<PaginationOptionsType> & { query?: LCNProfileQuery }
+    ) => Promise<PaginatedLCNProfiles>;
     getManagedServiceProfiles: (
         options: Partial<PaginationOptionsType> & { id?: string }
     ) => Promise<PaginatedLCNProfiles>;
@@ -185,6 +193,10 @@ export type LearnCardNetworkPluginMethods = {
         query?: LCNProfileQuery
     ) => Promise<PaginatedBoostRecipientsType>;
     countBoostRecipients: (uri: string, includeUnacceptedBoosts?: boolean) => Promise<number>;
+    getBoostChildrenProfileManagers: (
+        uri: string,
+        options?: Partial<PaginationOptionsType> & { query?: LCNProfileManagerQuery; }
+    ) => Promise<PaginatedLCNProfileManagers>;
     updateBoost: (
         uri: string,
         updates: Partial<Omit<Boost, 'uri'>>,

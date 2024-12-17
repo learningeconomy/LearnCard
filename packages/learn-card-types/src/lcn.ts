@@ -64,15 +64,31 @@ export type LCNProfileConnectionStatusEnum = z.infer<typeof LCNProfileConnection
 
 export const LCNProfileManagerValidator = z.object({
     id: z.string(),
+    created: z.string(),
     displayName: z.string().default('').optional(),
     shortBio: z.string().default('').optional(),
     bio: z.string().default('').optional(),
     email: z.string().optional(),
     image: z.string().optional(),
     heroImage: z.string().optional(),
-    alternateIds: z.string().array().default([]).optional(),
 });
 export type LCNProfileManager = z.infer<typeof LCNProfileManagerValidator>;
+
+export const PaginatedLCNProfileManagersValidator = PaginationResponseValidator.extend({
+    records: LCNProfileManagerValidator.extend({ did: z.string() }).array(),
+});
+export type PaginatedLCNProfileManagers = z.infer<typeof PaginatedLCNProfileManagersValidator>;
+
+export const LCNProfileManagerQueryValidator = z
+    .object({
+        id: StringQuery,
+        displayName: StringQuery,
+        shortBio: StringQuery,
+        bio: StringQuery,
+        email: StringQuery,
+    })
+    .partial();
+export type LCNProfileManagerQuery = z.infer<typeof LCNProfileManagerQueryValidator>;
 
 export const SentCredentialInfoValidator = z.object({
     uri: z.string(),

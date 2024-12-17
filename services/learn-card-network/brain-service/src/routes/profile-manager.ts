@@ -2,10 +2,15 @@ import crypto from 'crypto';
 
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
-import { LCNProfileValidator } from '@learncard/types';
+import {
+    LCNProfileQueryValidator,
+    LCNProfileValidator,
+    PaginatedLCNProfilesValidator,
+    PaginationOptionsValidator,
+} from '@learncard/types';
 
 import { t, profileRoute, profileManagerRoute } from '@routes';
-import { getDidWeb, getManagedDidWeb } from '@helpers/did.helpers';
+import { getDidWeb, getManagedDidWeb, updateDidForProfile } from '@helpers/did.helpers';
 import { createProfileManager } from '@accesslayer/profile-manager/create';
 import { checkIfProfileExists } from '@accesslayer/profile/read';
 
@@ -14,6 +19,7 @@ import { getLearnCard } from '@helpers/learnCard.helpers';
 import { createProfile } from '@accesslayer/profile/create';
 import { createManagesRelationship } from '@accesslayer/profile-manager/relationships/create';
 import { getBoostByUri } from '@accesslayer/boost/read';
+import { getManagedProfiles } from '@accesslayer/profile-manager/relationships/read';
 
 export const profileManagersRouter = t.router({
     createProfileManager: profileRoute
@@ -27,7 +33,7 @@ export const profileManagersRouter = t.router({
                 description: 'Creates a profile manager',
             },
         })
-        .input(ProfileManagerValidator.omit({ id: true }))
+        .input(ProfileManagerValidator.omit({ id: true, created: true }))
         .output(z.string())
         .mutation(async ({ ctx, input }) => {
             const manager = await createProfileManager(input);
@@ -57,7 +63,10 @@ export const profileManagersRouter = t.router({
             },
         })
         .input(
-            z.object({ parentUri: z.string(), profile: ProfileManagerValidator.omit({ id: true }) })
+            z.object({
+                parentUri: z.string(),
+                profile: ProfileManagerValidator.omit({ id: true, created: true }),
+            })
         )
         .output(z.string())
         .mutation(async ({ ctx, input }) => {
@@ -127,5 +136,41 @@ export const profileManagersRouter = t.router({
 
             return getDidWeb(ctx.domain, profile.profileId);
         }),
+
+    getManagedProfiles: profileManagerRoute
+        .meta({
+            openapi: {
+                method: 'POST',
+                path: '/profile/managed-profiles',
+                tags: ['Profiles', 'Profile Managers'],
+                summary: 'Managed Profiles',
+                description: 'This route gets all of your managed profiles',
+            },
+        })
+        .input(
+            PaginationOptionsValidator.extend({
+                limit: PaginationOptionsValidator.shape.limit.default(25),
+                query: LCNProfileQueryValidator.optional(),
+            }).default({})
+        )
+        .output(PaginatedLCNProfilesValidator)
+        .query(async ({ ctx, input }) => {
+            const { query, limit, cursor } = input;
+
+            const results = await getManagedProfiles(ctx.user.manager, {
+                limit: limit + 1,
+                cursor,
+                query,
+            });
+
+            const profiles = results.map(profile => updateDidForProfile(ctx.domain, profile));
+            const hasMore = results.length > limit;
+            const nextCursor = hasMore ? results.at(-2)?.profileId : undefined;
+
+            return {
+                hasMore,
+                ...(nextCursor && { cursor: nextCursor }),
+                records: profiles.slice(0, limit),
+            };
+        }),
 });
-export type ProfileManagersRouter = typeof profileManagersRouter;

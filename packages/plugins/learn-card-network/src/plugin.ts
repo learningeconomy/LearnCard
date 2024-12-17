@@ -161,6 +161,14 @@ export const getLearnCardNetworkPlugin = async (
 
                 return newDid;
             },
+            getAvailableProfiles: async (_learnCard, options = {}) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.profile.getAvailableProfiles.query(options);
+            },
+            getManagedProfiles: async (_learnCard, options = {}) => {
+                return client.profileManager.getManagedProfiles.query(options);
+            },
             getManagedServiceProfiles: async (_learnCard, options = {}) => {
                 if (!userData) throw new Error('Please make an account first!');
 
@@ -522,6 +530,11 @@ export const getLearnCardNetworkPlugin = async (
                 if (!userData) throw new Error('Please make an account first!');
 
                 return client.boost.getBoostRecipientCount.query({ uri, includeUnacceptedBoosts });
+            },
+            getBoostChildrenProfileManagers: async (_learnCard, uri, options) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.boost.getChildrenProfileManagers.query({ uri, ...options });
             },
             updateBoost: async (_learnCard, uri, updates, credential) => {
                 if (!userData) throw new Error('Please make an account first!');
