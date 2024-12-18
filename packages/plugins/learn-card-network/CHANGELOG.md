@@ -1,5 +1,16 @@
 # learn-card-core
 
+## 2.3.0
+
+### Minor Changes
+
+-   [#577](https://github.com/learningeconomy/LearnCard/pull/577) [`afd8472f65b27383f426e630e021a65d237e9044`](https://github.com/learningeconomy/LearnCard/commit/afd8472f65b27383f426e630e021a65d237e9044) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Don't await network calls during init
+
+### Patch Changes
+
+-   Updated dependencies [[`afd8472f65b27383f426e630e021a65d237e9044`](https://github.com/learningeconomy/LearnCard/commit/afd8472f65b27383f426e630e021a65d237e9044)]:
+    -   @learncard/network-brain-client@2.2.0
+
 ## 2.2.3
 
 ### Patch Changes
