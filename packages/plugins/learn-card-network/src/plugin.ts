@@ -28,7 +28,7 @@ export const getLearnCardNetworkPlugin = async (
     learnCard: LearnCard<any, 'id', LearnCardNetworkPluginDependentMethods>,
     url: string
 ): Promise<LearnCardNetworkPlugin> => {
-    const existingDid = learnCard.id.did();
+    let did = learnCard.id.did();
 
     learnCard?.debug?.('Adding LearnCardNetwork Plugin');
     const client = await getClient(url, async challenge => {
@@ -41,13 +41,11 @@ export const getLearnCardNetworkPlugin = async (
 
     let userData: LCNProfile | undefined;
 
-    try {
-        userData = await client.profile.getProfile.query();
-    } catch (error) {
-        learnCard.debug?.('No profile!', error);
-    }
+    const initialQuery = client.profile.getProfile.query().then(result => {
+        userData = result;
 
-    let did = userData?.did || existingDid;
+        if (userData?.did) did = userData.did;
+    });
 
     return {
         name: 'LearnCard Network',
@@ -204,6 +202,8 @@ export const getLearnCardNetworkPlugin = async (
                 return false;
             },
             getProfile: async (_learnCard, profileId) => {
+                await initialQuery;
+
                 if (!profileId) return client.profile.getProfile.query();
 
                 return client.profile.getOtherProfile.query({ profileId });
@@ -531,7 +531,7 @@ export const getLearnCardNetworkPlugin = async (
                     limit,
                     cursor,
                     includeUnacceptedBoosts,
-                    query
+                    query,
                 });
             },
             countBoostRecipients: async (_learnCard, uri, includeUnacceptedBoosts = true) => {
