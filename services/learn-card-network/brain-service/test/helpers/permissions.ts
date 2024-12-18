@@ -1,4 +1,6 @@
-export const creatorRole = {
+import { BoostPermissions } from '@learncard/types';
+
+export const creatorRole: BoostPermissions = {
     role: 'creator',
     canEdit: true,
     canIssue: true,
@@ -9,10 +11,11 @@ export const creatorRole = {
     canEditChildren: '*',
     canRevokeChildren: '*',
     canManageChildrenPermissions: '*',
+    canManageChildrenProfiles: true,
     canViewAnalytics: true,
 };
 
-export const adminRole = {
+export const adminRole: BoostPermissions = {
     role: 'admin',
     canEdit: true,
     canIssue: true,
@@ -23,10 +26,11 @@ export const adminRole = {
     canEditChildren: '*',
     canRevokeChildren: '*',
     canManageChildrenPermissions: '*',
+    canManageChildrenProfiles: true,
     canViewAnalytics: true,
 };
 
-export const emptyRole = {
+export const emptyRole: BoostPermissions = {
     role: 'empty',
     canEdit: false,
     canIssue: false,
@@ -37,5 +41,6 @@ export const emptyRole = {
     canEditChildren: '',
     canRevokeChildren: '',
     canManageChildrenPermissions: '',
+    canManageChildrenProfiles: false,
     canViewAnalytics: false,
 };
