@@ -37,7 +37,6 @@ import { VerifyExtension } from '@learncard/vc-plugin';
 
 /** @group LearnCardNetwork Plugin */
 export type LearnCardNetworkPluginDependentMethods = {
-    __init__?: () => Promise<void>;
     getDIDObject: () => DID;
     getDidAuthVp: (options?: ProofOptions) => Promise<VP | string>;
     issueCredential: (
