@@ -111,6 +111,57 @@ describe('Identity', () => {
         expect(managedProfile?.displayName).toEqual('Managed Profile Test!');
     });
 
+    test('Did web cache should update when profiles can/cant administrate', async () => {
+        const uri = await a.invoke.createBoost(testUnsignedBoost);
+
+        const managerDid = await a.invoke.createChildProfileManager(uri, {
+            displayName: 'Manager Test!',
+        });
+
+        await expect(getManagedLearnCardForUser('b', managerDid)).rejects.toThrow();
+
+        await a.invoke.addBoostAdmin(uri, USERS.b.profileId);
+
+        await expect(getManagedLearnCardForUser('b', managerDid)).resolves.not.toThrow();
+
+        await a.invoke.removeBoostAdmin(uri, USERS.b.profileId);
+
+        await expect(getManagedLearnCardForUser('b', managerDid)).rejects.toThrow();
+
+        await a.invoke.addBoostAdmin(uri, USERS.b.profileId);
+
+        const managerLc = await getManagedLearnCardForUser('b', managerDid);
+
+        const managedDid = await managerLc.invoke.createManagedProfile({
+            profileId: 'managed',
+            displayName: 'Managed Profile Test!',
+            bio: '',
+            shortBio: '',
+        });
+
+        await a.invoke.removeBoostAdmin(uri, USERS.b.profileId);
+
+        await expect(getManagedLearnCardForUser('b', managedDid)).rejects.toThrow();
+
+        await a.invoke.addBoostAdmin(uri, USERS.b.profileId);
+
+        await expect(getManagedLearnCardForUser('b', managedDid)).resolves.not.toThrow();
+
+        await a.invoke.removeBoostAdmin(uri, USERS.b.profileId);
+
+        await expect(getManagedLearnCardForUser('b', managedDid)).rejects.toThrow();
+
+        await a.invoke.addBoostAdmin(uri, USERS.b.profileId);
+
+        const managedLc = await getManagedLearnCardForUser('b', managedDid);
+
+        expect(managedLc.id.did()).toEqual(managedDid);
+
+        const managedProfile = await managedLc.invoke.getProfile();
+
+        expect(managedProfile?.displayName).toEqual('Managed Profile Test!');
+    });
+
     test('Admins of boosts with children profile managers that have had their permissions removed can not assume their identites', async () => {
         const uri = await a.invoke.createBoost(testUnsignedBoost);
 

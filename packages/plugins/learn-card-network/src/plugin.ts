@@ -569,17 +569,29 @@ export const getLearnCardNetworkPlugin = async (
 
                 if (!profileId) return client.boost.updateBoostPermissions.query({ uri, updates });
 
-                return client.boost.updateOtherBoostPermissions.query({ uri, profileId, updates });
+                const result = await client.boost.updateOtherBoostPermissions.query({ uri, profileId, updates });
+
+                if (result) await _learnCard.invoke.clearDidWebCache?.();
+
+                return result;
             },
             addBoostAdmin: async (_learnCard, uri, profileId) => {
                 if (!userData) throw new Error('Please make an account first!');
 
-                return client.boost.addBoostAdmin.mutate({ uri, profileId });
+                const result = await client.boost.addBoostAdmin.mutate({ uri, profileId });
+
+                if (result) await _learnCard.invoke.clearDidWebCache?.();
+
+                return result;
             },
             removeBoostAdmin: async (_learnCard, uri, profileId) => {
                 if (!userData) throw new Error('Please make an account first!');
 
-                return client.boost.removeBoostAdmin.mutate({ uri, profileId });
+                const result = await client.boost.removeBoostAdmin.mutate({ uri, profileId });
+
+                if (result) await _learnCard.invoke.clearDidWebCache?.();
+
+                return result;
             },
             deleteBoost: async (_learnCard, uri) => {
                 if (!userData) throw new Error('Please make an account first!');

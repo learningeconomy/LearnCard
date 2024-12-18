@@ -46,6 +46,7 @@ export type LearnCardNetworkPluginDependentMethods = {
         credential: UnsignedVC,
         signingOptions?: Partial<ProofOptions>
     ) => Promise<VC>;
+    clearDidWebCache?: () => Promise<void>;
 };
 
 /** @group LearnCardNetwork Plugin */
