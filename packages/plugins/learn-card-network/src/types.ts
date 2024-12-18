@@ -33,6 +33,7 @@ import {
     LCNProfileQuery,
     LCNProfileManagerQuery,
     PaginatedLCNProfileManagers,
+    PaginatedLCNProfilesAndManagers,
 } from '@learncard/types';
 import { Plugin } from '@learncard/core';
 import { ProofOptions } from '@learncard/didkit-plugin';
@@ -63,7 +64,7 @@ export type LearnCardNetworkPluginMethods = {
     ) => Promise<string>;
     getAvailableProfiles: (
         options?: Partial<PaginationOptionsType> & { query?: LCNProfileQuery }
-    ) => Promise<PaginatedLCNProfiles>;
+    ) => Promise<PaginatedLCNProfilesAndManagers>;
     getManagedProfiles: (
         options?: Partial<PaginationOptionsType> & { query?: LCNProfileQuery }
     ) => Promise<PaginatedLCNProfiles>;

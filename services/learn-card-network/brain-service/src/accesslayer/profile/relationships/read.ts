@@ -8,6 +8,7 @@ import { Boost, Profile, ProfileManager } from '@models';
 import { FlatProfileType, ProfileType } from 'types/profile';
 import { inflateObject } from '@helpers/objects.helpers';
 import { LCNProfileQuery } from '@learncard/types';
+import { ProfileManagerType } from 'types/profile-manager';
 
 export const getManagedServiceProfiles = async (
     profileId: string,
@@ -100,7 +101,7 @@ export const getProfilesThatAProfileManages = async (
         cursor,
         query: matchQuery = {},
     }: { limit: number; cursor?: string; query?: LCNProfileQuery }
-): Promise<ProfileType[]> => {
+): Promise<{ profile: ProfileType; manager?: ProfileManagerType }[]> => {
     const _query = new QueryBuilder(
         new BindParam({ matchQuery: convertObjectRegExpToNeo4j(matchQuery), cursor })
     )
@@ -117,7 +118,7 @@ export const getProfilesThatAProfileManages = async (
             related: [
                 { identifier: 'managed', model: Profile },
                 { ...ProfileManager.getRelationshipByAlias('manages'), direction: 'in' },
-                { model: ProfileManager },
+                { model: ProfileManager, identifier: 'manager' },
                 ProfileManager.getRelationshipByAlias('administratedBy'),
                 { model: Profile, where: { profileId } },
             ],
@@ -127,7 +128,7 @@ export const getProfilesThatAProfileManages = async (
             related: [
                 { model: Profile, identifier: 'implicitlyManaged' },
                 { ...ProfileManager.getRelationshipByAlias('manages'), direction: 'in' },
-                { model: ProfileManager },
+                { model: ProfileManager, identifier: 'implicitManager' },
                 ProfileManager.getRelationshipByAlias('childOf'),
                 { model: Boost },
                 { ...Boost.getRelationshipByAlias('hasRole'), identifier: 'hasRole' },
@@ -136,7 +137,7 @@ export const getProfilesThatAProfileManages = async (
         })
         .match({ optional: true, literal: '(role:Role {id: hasRole.roleId})' })
         .with(
-            'managed, directlyManaged, implicitlyManaged, COALESCE(hasRole.canManageChildrenProfiles, role.canManageChildrenProfiles) AS canManageChildrenProfiles'
+            'managed, directlyManaged, implicitlyManaged, manager, implicitManager, COALESCE(hasRole.canManageChildrenProfiles, role.canManageChildrenProfiles) AS canManageChildrenProfiles'
         )
         .where(
             `
@@ -147,14 +148,20 @@ implicitlyManaged = directlyManaged OR
 (implicitlyManaged IS NOT NULL AND canManageChildrenProfiles = true)
 `
         )
-        .with('DISTINCT COALESCE(implicitlyManaged, directlyManaged, managed) AS managed')
+        .with(
+            'DISTINCT COALESCE(implicitlyManaged, directlyManaged, managed) AS managed, COALESCE(implicitManager, manager) AS manager'
+        )
         .where(getMatchQueryWhere('managed'));
 
     const query = cursor ? _query.raw('AND managed.profileId > $cursor') : _query;
 
     const results = convertQueryResultToPropertiesObjectArray<{
         managed: FlatProfileType;
-    }>(await query.return('managed').orderBy('managed.profileId').limit(limit).run());
+        manager?: ProfileManagerType;
+    }>(await query.return('managed, manager').orderBy('managed.profileId').limit(limit).run());
 
-    return results.map(({ managed }) => inflateObject(managed as any));
+    return results.map(({ managed, manager }) => ({
+        profile: inflateObject(managed as any),
+        manager,
+    }));
 };

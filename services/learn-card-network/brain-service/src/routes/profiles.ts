@@ -5,6 +5,7 @@ import {
     LCNProfileValidator,
     LCNProfileConnectionStatusEnum,
     PaginatedLCNProfilesValidator,
+    PaginatedLCNProfilesAndManagersValidator,
     PaginationOptionsValidator,
 } from '@learncard/types';
 import { v4 as uuid } from 'uuid';
@@ -24,7 +25,12 @@ import {
     getBlockedAndBlockedByIds,
     isRelationshipBlocked,
 } from '@helpers/connection.helpers';
-import { getDidWeb, updateDidForProfile, updateDidForProfiles } from '@helpers/did.helpers';
+import {
+    getDidWeb,
+    getManagedDidWeb,
+    updateDidForProfile,
+    updateDidForProfiles,
+} from '@helpers/did.helpers';
 
 import { createProfile } from '@accesslayer/profile/create';
 import { deleteProfile } from '@accesslayer/profile/delete';
@@ -246,7 +252,7 @@ export const profilesRouter = t.router({
                 query: LCNProfileQueryValidator.optional(),
             }).default({})
         )
-        .output(PaginatedLCNProfilesValidator)
+        .output(PaginatedLCNProfilesAndManagersValidator)
         .query(async ({ ctx, input }) => {
             const { query, limit, cursor } = input;
 
@@ -256,9 +262,17 @@ export const profilesRouter = t.router({
                 query,
             });
 
-            const profiles = results.map(profile => updateDidForProfile(ctx.domain, profile));
+            const profiles = results.map(result => ({
+                profile: updateDidForProfile(ctx.domain, result.profile),
+                ...(result.manager && {
+                    manager: {
+                        ...result.manager,
+                        did: getManagedDidWeb(ctx.domain, result.manager.id),
+                    },
+                }),
+            }));
             const hasMore = results.length > limit;
-            const nextCursor = hasMore ? results.at(-2)?.profileId : undefined;
+            const nextCursor = hasMore ? results.at(-2)?.profile.profileId : undefined;
 
             return {
                 hasMore,

@@ -286,7 +286,68 @@ describe('Identity', () => {
         });
 
         expect(queriedProfiles.records).toHaveLength(1);
-        expect(queriedProfiles.records[0]?.did).toEqual(managedDid);
+        expect(queriedProfiles.records[0]?.profile.did).toEqual(managedDid);
+        expect(queriedProfiles.records[0]?.manager?.did).toEqual(managerDid);
+    });
+
+    test('Profile Manager relationship always makes sense when getting available profiles', async () => {
+        const uri = await a.invoke.createBoost(testUnsignedBoost);
+
+        await a.invoke.addBoostAdmin(uri, USERS.b.profileId);
+
+        const manager1Did = await a.invoke.createChildProfileManager(uri, {
+            displayName: 'Manager Test!',
+        });
+
+        const manager1Lc = await getManagedLearnCardForUser('b', manager1Did);
+
+        const managed1Did = await manager1Lc.invoke.createManagedProfile({
+            profileId: 'managed',
+            displayName: 'Managed Profile Test!',
+            bio: '',
+            shortBio: '',
+        });
+        const managed2Did = await manager1Lc.invoke.createManagedProfile({
+            profileId: 'other',
+            displayName: 'Other Managed Profile Test!',
+            bio: '',
+            shortBio: '',
+        });
+
+        const manager2Did = await b.invoke.createChildProfileManager(uri, {
+            displayName: 'Manager Test 2!',
+        });
+
+        const manager2Lc = await getManagedLearnCardForUser('b', manager2Did);
+
+        const managed3Did = await manager2Lc.invoke.createManagedProfile({
+            profileId: 'managed2',
+            displayName: 'Managed Profile Test!',
+            bio: '',
+            shortBio: '',
+        });
+        const managed4Did = await manager2Lc.invoke.createManagedProfile({
+            profileId: 'other2',
+            displayName: 'Other Managed Profile Test!',
+            bio: '',
+            shortBio: '',
+        });
+
+        const profiles = await a.invoke.getAvailableProfiles();
+
+        expect(profiles.records).toHaveLength(4);
+
+        expect(profiles.records[0].profile.did).toEqual(managed1Did);
+        expect(profiles.records[0].manager?.did).toEqual(manager1Did);
+
+        expect(profiles.records[1].profile.did).toEqual(managed3Did);
+        expect(profiles.records[1].manager?.did).toEqual(manager2Did);
+
+        expect(profiles.records[2].profile.did).toEqual(managed2Did);
+        expect(profiles.records[2].manager?.did).toEqual(manager1Did);
+
+        expect(profiles.records[3].profile.did).toEqual(managed4Did);
+        expect(profiles.records[3].manager?.did).toEqual(manager2Did);
     });
 
     test('Profile Managers can update themselves', async () => {

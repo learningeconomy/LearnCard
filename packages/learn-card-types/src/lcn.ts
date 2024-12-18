@@ -90,6 +90,18 @@ export const LCNProfileManagerQueryValidator = z
     .partial();
 export type LCNProfileManagerQuery = z.infer<typeof LCNProfileManagerQueryValidator>;
 
+export const PaginatedLCNProfilesAndManagersValidator = PaginationResponseValidator.extend({
+    records: z
+        .object({
+            profile: LCNProfileValidator,
+            manager: LCNProfileManagerValidator.extend({ did: z.string() }).optional(),
+        })
+        .array(),
+});
+export type PaginatedLCNProfilesAndManagers = z.infer<
+    typeof PaginatedLCNProfilesAndManagersValidator
+>;
+
 export const SentCredentialInfoValidator = z.object({
     uri: z.string(),
     to: z.string(),
