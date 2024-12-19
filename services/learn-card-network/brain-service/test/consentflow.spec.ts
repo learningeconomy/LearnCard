@@ -118,6 +118,25 @@ describe('Consent Flow Contracts', () => {
             expect(contract.description).toEqual(contractData.description);
         });
 
+        it('should allow setting and retrieving the needsGuardianConsent flag for a contract', async () => {
+            const contractData = {
+                name: 'Test Contract',
+                description: 'This is for testing lol',
+                needsGuardianConsent: true,
+                contract: minimalContract,
+            };
+
+            const contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract(
+                contractData
+            );
+
+            const contract = await userA.clients.fullAuth.contracts.getConsentFlowContract({
+                uri: contractUri,
+            });
+
+            expect(contract.needsGuardianConsent).toEqual(contractData.needsGuardianConsent);
+        });
+
         it('should allow setting and retrieving the reason for accessing for a contract', async () => {
             const contractData = {
                 name: 'Test Contract',
