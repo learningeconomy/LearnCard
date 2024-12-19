@@ -47,7 +47,6 @@ import {
     getBoostPermissions,
     canManageBoostPermissions,
     canProfileIssueBoost,
-    canProfileViewBoost,
     canProfileEditBoost,
     canProfileCreateChildBoost,
     getBoostByUriWithDefaultClaimPermissions,
@@ -282,8 +281,6 @@ export const boostsRouter = t.router({
             })
         )
         .query(async ({ ctx, input }) => {
-            const { profile } = ctx.user;
-
             const { uri } = input;
 
             const boost = await getBoostByUriWithDefaultClaimPermissions(uri);

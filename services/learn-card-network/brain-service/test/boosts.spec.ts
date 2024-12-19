@@ -105,9 +105,7 @@ describe('Boosts', () => {
 
             await expect(userA.clients.fullAuth.boost.getBoost({ uri })).resolves.not.toThrow();
 
-            const boost = await userB.clients.fullAuth.boost.getBoost({ uri });
-
-            expect(boost).toBeDefined();
+            await expect(userB.clients.fullAuth.boost.getBoost({ uri })).resolves.not.toThrow();
         });
 
         it('should allow admins of parent boosts to get boosts', async () => {
