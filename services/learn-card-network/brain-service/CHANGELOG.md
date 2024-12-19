@@ -1,5 +1,29 @@
 # @learncard/network-brain-service
 
+## 3.3.0
+
+### Minor Changes
+
+-   [#582](https://github.com/learningeconomy/LearnCard/pull/582) [`611e911f6f1388e5d34bc893c53aef36d28ae65e`](https://github.com/learningeconomy/LearnCard/commit/611e911f6f1388e5d34bc893c53aef36d28ae65e) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add support for Profile Managers for more sophisticated identity management
+
+### Patch Changes
+
+-   [#582](https://github.com/learningeconomy/LearnCard/pull/582) [`611e911f6f1388e5d34bc893c53aef36d28ae65e`](https://github.com/learningeconomy/LearnCard/commit/611e911f6f1388e5d34bc893c53aef36d28ae65e) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add test endpoints for clearing the did web cache
+
+-   Updated dependencies [[`611e911f6f1388e5d34bc893c53aef36d28ae65e`](https://github.com/learningeconomy/LearnCard/commit/611e911f6f1388e5d34bc893c53aef36d28ae65e), [`611e911f6f1388e5d34bc893c53aef36d28ae65e`](https://github.com/learningeconomy/LearnCard/commit/611e911f6f1388e5d34bc893c53aef36d28ae65e)]:
+    -   @learncard/didkit-plugin@1.4.20
+    -   @learncard/types@5.6.0
+    -   @learncard/ceramic-plugin@1.0.22
+    -   @learncard/did-web-plugin@1.0.48
+    -   @learncard/learn-card-plugin@1.1.24
+    -   @learncard/vc-plugin@1.1.25
+    -   @learncard/core@9.3.11
+    -   @learncard/helpers@1.1.2
+    -   @learncard/didkey-plugin@1.0.22
+    -   @learncard/vc-templates-plugin@1.0.32
+    -   @learncard/expiration-plugin@1.1.25
+    -   @learncard/crypto-plugin@1.0.22
+
 ## 3.2.2
 
 ### Patch Changes
