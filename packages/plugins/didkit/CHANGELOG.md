@@ -1,5 +1,15 @@
 # learn-card-core
 
+## 1.4.20
+
+### Patch Changes
+
+-   [#582](https://github.com/learningeconomy/LearnCard/pull/582) [`611e911f6f1388e5d34bc893c53aef36d28ae65e`](https://github.com/learningeconomy/LearnCard/commit/611e911f6f1388e5d34bc893c53aef36d28ae65e) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add ability to clear the did web cache
+
+-   Updated dependencies [[`611e911f6f1388e5d34bc893c53aef36d28ae65e`](https://github.com/learningeconomy/LearnCard/commit/611e911f6f1388e5d34bc893c53aef36d28ae65e)]:
+    -   @learncard/types@5.6.0
+    -   @learncard/core@9.3.11
+
 ## 1.4.19
 
 ### Patch Changes
