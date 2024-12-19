@@ -1,5 +1,6 @@
+import { deleteDidDocForProfile, deleteDidDocForProfileManager } from '@cache/did-docs';
 import { BoostPermissions } from '@learncard/types';
-import { BoostInstance } from '@models';
+import { BoostInstance, ProfileManager } from '@models';
 import { ProfileType } from 'types/profile';
 
 export const updateBoostPermissions = async (
@@ -13,4 +14,32 @@ export const updateBoostPermissions = async (
     });
 
     return result.summary.counters.updates().propertiesSet > 0;
+};
+
+export const clearDidWebCacheForChildProfileManagers = async (boostId: string): Promise<void> => {
+    const childProfileManagers = await ProfileManager.findRelationships({
+        alias: 'childOf',
+        where: { target: { id: boostId } },
+    });
+
+    if (childProfileManagers.length > 0) {
+        await Promise.all(
+            childProfileManagers.map(async ({ source: manager }) => {
+                await deleteDidDocForProfileManager(manager.id);
+
+                const profiles = await ProfileManager.findRelationships({
+                    alias: 'manages',
+                    where: { source: { id: manager.id } },
+                });
+
+                if (profiles.length > 0) {
+                    await Promise.all(
+                        profiles.map(async ({ target: profile }) => {
+                            await deleteDidDocForProfile(profile.profileId);
+                        })
+                    );
+                }
+            })
+        );
+    }
 };

@@ -8,6 +8,7 @@
         "logs": "docker compose logs -f"
     },
     "dependencies": {
+        "@learncard/didkit-plugin": "workspace:*",
         "@learncard/init": "workspace:*",
         "@learncard/types": "workspace:*",
         "@xapi/xapi": "^3.0.0",

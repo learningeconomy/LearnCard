@@ -12,6 +12,7 @@ import init, {
     contextLoader,
     resolveDID,
     didResolver,
+    clearCache
 } from './didkit/index';
 import { getDocumentMap } from './helpers';
 
@@ -146,6 +147,10 @@ export const getDidKitPlugin = async (
 
             didResolver: async (_learnCard, did, inputMetadata = {}) =>
                 JSON.parse(await didResolver(did, JSON.stringify(inputMetadata))),
+
+            clearDidWebCache: async () => {
+                await clearCache();
+            }
         },
     };
 };

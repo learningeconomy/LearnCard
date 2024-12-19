@@ -1,3 +1,4 @@
+import { BoostPermissions } from '@learncard/types';
 import { getUser } from './helpers/getClient';
 import { adminRole, emptyRole } from './helpers/permissions';
 import { testUnsignedBoost, testVc } from './helpers/send';
@@ -3456,7 +3457,7 @@ describe('Permissions', () => {
         });
 
         it('should allow any combination of permissions', async () => {
-            const role = {
+            const role: BoostPermissions = {
                 role: 'nice',
                 canEdit: true,
                 canIssue: false,
@@ -3467,6 +3468,7 @@ describe('Permissions', () => {
                 canEditChildren: '*',
                 canRevokeChildren: '',
                 canManageChildrenPermissions: '*',
+                canManageChildrenProfiles: false,
                 canViewAnalytics: false,
             };
 

@@ -1,10 +1,19 @@
+import { readFile } from 'fs/promises';
+
 import { initLearnCard } from '@learncard/init';
 
-export const getLearnCard = (seed = 'a'.repeat(64)) => {
+const didkit = readFile(
+    require.resolve('@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm')
+);
+
+export const getLearnCard = (seed = 'a'.repeat(64), managedDid?: string, debug = false) => {
     return initLearnCard({
         seed,
+        didkit,
         network: 'http://localhost:4000/trpc',
         cloud: { url: 'http://localhost:4100/trpc' },
+        ...(managedDid && { didWeb: managedDid }),
+        ...(debug && { debug: console.log }),
     });
 };
 
@@ -28,7 +37,19 @@ export const getLearnCardForUser = async (userKey: keyof typeof USERS) => {
             bio: '',
             shortBio: '',
         });
-    } catch (error) { }
+    } catch (error) {
+        console.error(error);
+    }
 
     return learnCard;
+};
+
+export const getManagedLearnCardForUser = async (
+    userKey: keyof typeof USERS,
+    managedDid: string,
+    debug = false
+) => {
+    const user = USERS[userKey];
+
+    return getLearnCard(user.seed, managedDid, debug);
 };

@@ -89,6 +89,10 @@ export const Boost = ModelFactory<FlatBoostType, BoostRelationships>(
                         property: 'canManageChildrenPermissions',
                         schema: { type: 'string', required: false },
                     },
+                    canManageChildrenProfiles: {
+                        property: 'canManageChildrenProfiles',
+                        schema: { type: 'boolean', required: false },
+                    },
                     canViewAnalytics: {
                         property: 'canViewAnalytics',
                         schema: { type: 'boolean', required: false },

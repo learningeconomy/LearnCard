@@ -11,6 +11,7 @@ import { getProfileByDid } from '@accesslayer/profile/read';
 import { getEmptyLearnCard } from '@helpers/learnCard.helpers';
 import { invalidateChallengeForDid, isChallengeValidForDid } from '@cache/challenges';
 import { ProfileType } from 'types/profile';
+import { getProfileManagerById } from '@accesslayer/profile-manager/read';
 
 export type DidAuthVP = {
     iss: string;
@@ -97,7 +98,10 @@ export const openRoute = t.procedure
     });
 
 export const didRoute = openRoute.use(async ({ ctx, next }) => {
-    if (!ctx.user?.did) throw new TRPCError({ code: 'UNAUTHORIZED' });
+    if (!ctx.user?.did) {
+        console.log(ctx.user);
+        throw new TRPCError({ code: 'UNAUTHORIZED' });
+    }
 
     const didParts = ctx.user.did.split(':');
 
@@ -106,9 +110,18 @@ export const didRoute = openRoute.use(async ({ ctx, next }) => {
     // User authenticated with their did:web. Resolve it and use their controller did to find their
     // profile
     if (didParts[1] === 'web' && didParts[2] === ctx.domain) {
+        if (didParts[3] === 'manager') {
+            return next({
+                ctx: { ...ctx, user: { ...ctx.user, profile: null as ProfileType | null } },
+            });
+        }
+
         const learnCard = await getEmptyLearnCard();
 
-        const didDoc = await learnCard.invoke.resolveDid(did);
+        const didDoc = await learnCard.invoke.resolveDid(
+            did,
+            process.env.IS_OFFLINE ? { noCache: true } : undefined
+        );
 
         if (!didDoc.controller) {
             return next({
@@ -156,4 +169,45 @@ export const profileRoute = didAndChallengeRoute.use(async ({ ctx, next }) => {
     }
 
     return next({ ctx: { ...ctx, user: { ...ctx.user, profile } } });
+});
+
+export const openProfileManagerRoute = openRoute.use(async ({ ctx, next }) => {
+    if (!ctx.user?.did) throw new TRPCError({ code: 'UNAUTHORIZED' });
+
+    const didParts = ctx.user.did.split(':');
+
+    if (
+        didParts.length !== 5 ||
+        didParts[1] !== 'web' ||
+        didParts[2] !== ctx.domain ||
+        didParts[3] !== 'manager'
+    ) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Please make this request using a Profile Manager did',
+        });
+    }
+
+    const id = didParts[4];
+
+    if (!id) throw new TRPCError({ code: 'BAD_REQUEST', message: 'Could not get manager id' });
+
+    const manager = await getProfileManagerById(id);
+
+    if (manager) Sentry.setUser({ id: manager.id, username: manager.displayName });
+
+    return next({ ctx: { ...ctx, user: { ...ctx.user, manager } } });
+});
+
+export const profileManagerRoute = openProfileManagerRoute.use(async ({ ctx, next }) => {
+    const { manager } = ctx.user;
+
+    if (!manager) {
+        throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Profile Manager not found. Please make a profile manager!',
+        });
+    }
+
+    return next({ ctx: { ...ctx, user: { ...ctx.user, manager } } });
 });

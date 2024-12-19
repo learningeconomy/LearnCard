@@ -4,7 +4,7 @@ import _sodium from 'libsodium-wrappers';
 import { base64url } from 'multiformats/bases/base64';
 import { base58btc } from 'multiformats/bases/base58';
 
-import { getLearnCard } from '@helpers/learnCard.helpers';
+import { getEmptyLearnCard, getLearnCard } from '@helpers/learnCard.helpers';
 import { getDidDocForProfile, setDidDocForProfile } from '@cache/did-docs';
 
 const encodeKey = (key: Uint8Array) => {
@@ -73,6 +73,16 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
         setDidDocForProfile('::root::', finalDoc);
 
         return reply.send(finalDoc);
+    });
+
+    fastify.get('/test/clear-cache', async (_request, reply) => {
+        if (!process.env.IS_OFFLINE) return reply.status(403).send();
+
+        const learnCard = await getEmptyLearnCard();
+
+        await learnCard.invoke.clearDidWebCache();
+
+        return reply.status(200).send();
     });
 };
 
