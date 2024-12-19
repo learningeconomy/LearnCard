@@ -100,14 +100,12 @@ describe('Boosts', () => {
             expect(boost).toBeDefined();
         });
 
-        it('should not allow non-admins to get boosts', async () => {
+        it('should allow non-admins to get boosts', async () => {
             const uri = await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
 
             await expect(userA.clients.fullAuth.boost.getBoost({ uri })).resolves.not.toThrow();
 
-            await expect(userB.clients.fullAuth.boost.getBoost({ uri })).rejects.toMatchObject({
-                code: 'UNAUTHORIZED',
-            });
+            await expect(userB.clients.fullAuth.boost.getBoost({ uri })).resolves.not.toThrow();
         });
 
         it('should allow admins of parent boosts to get boosts', async () => {
