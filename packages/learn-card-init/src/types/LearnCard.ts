@@ -23,7 +23,12 @@ import { InitFunction, GenericInitFunction } from './helpers';
 
 /** @group LearnCard */
 export type LearnCardConfig = {
-    cloud?: { url?: string; unencryptedFields?: string[]; unencryptedCustomFields?: string[] };
+    cloud?: {
+        url?: string;
+        unencryptedFields?: string[];
+        unencryptedCustomFields?: string[];
+        automaticallyAssociateDids?: boolean;
+    };
     ceramicIdx: CeramicArgs & IDXArgs;
     didkit: InitInput | Promise<InitInput>;
     allowRemoteContexts?: boolean;
