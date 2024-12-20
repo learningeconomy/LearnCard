@@ -1,5 +1,11 @@
 # learn-card-types
 
+## 5.6.2
+
+### Patch Changes
+
+-   [#592](https://github.com/learningeconomy/LearnCard/pull/592) [`7d4e9dc7683bb8fa75fb6e239f59e620d3237846`](https://github.com/learningeconomy/LearnCard/commit/7d4e9dc7683bb8fa75fb6e239f59e620d3237846) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add isPrivate to profiles to prevent them from surfacing in search
+
 ## 5.6.1
 
 ### Patch Changes
