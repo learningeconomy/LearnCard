@@ -29,6 +29,7 @@ export const learnCardFromSeed = async ({
         url = 'https://cloud.learncard.com/trpc',
         unencryptedFields = [],
         unencryptedCustomFields = [],
+        automaticallyAssociateDids = true,
     } = {},
     ceramicIdx = defaultCeramicIDXArgs,
     didkit,
@@ -53,7 +54,7 @@ export const learnCardFromSeed = async ({
     const ceramicLc = await templateLc.addPlugin(await getCeramicPlugin(templateLc, ceramicIdx));
 
     const cloudLc = await ceramicLc.addPlugin(
-        await getLearnCloudPlugin(ceramicLc, url, unencryptedFields, unencryptedCustomFields)
+        await getLearnCloudPlugin(ceramicLc, url, unencryptedFields, unencryptedCustomFields, automaticallyAssociateDids)
     );
 
     const idxLc = await cloudLc.addPlugin(await getIDXPlugin(cloudLc, ceramicIdx));

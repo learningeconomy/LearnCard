@@ -42,7 +42,8 @@ export const getLearnCloudPlugin = async (
     initialLearnCard: LearnCard<any, 'id', LearnCloudPluginDependentMethods>,
     url: string,
     unencryptedFields: string[] = [],
-    unencryptedCustomFields: string[] = []
+    unencryptedCustomFields: string[] = [],
+    automaticallyAssociateDids = true,
 ): Promise<LearnCloudPlugin> => {
     let learnCard = initialLearnCard;
 
@@ -71,7 +72,7 @@ export const getLearnCloudPlugin = async (
         const newDid = _learnCard.id.did();
 
         if (oldDid !== newDid) {
-            if (!dids.includes(newDid)) {
+            if (!dids.includes(newDid) && automaticallyAssociateDids) {
                 const presentation = await _learnCard.invoke.getDidAuthVp();
 
                 await client.user.addDid.mutate({ presentation });
