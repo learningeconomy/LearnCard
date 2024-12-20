@@ -1,5 +1,14 @@
 # learn-card-core
 
+## 1.3.22
+
+### Patch Changes
+
+-   [#589](https://github.com/learningeconomy/LearnCard/pull/589) [`24706505149561d7de8cf76250607f4ca7459858`](https://github.com/learningeconomy/LearnCard/commit/24706505149561d7de8cf76250607f4ca7459858) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Allow not automatically associating dids in LearnCloud
+
+-   Updated dependencies [[`24706505149561d7de8cf76250607f4ca7459858`](https://github.com/learningeconomy/LearnCard/commit/24706505149561d7de8cf76250607f4ca7459858)]:
+    -   @learncard/learn-cloud-plugin@2.1.2
+
 ## 1.3.21
 
 ### Patch Changes
