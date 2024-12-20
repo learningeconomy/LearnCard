@@ -627,6 +627,23 @@ describe('Profiles', () => {
             expect(results[0]?.isServiceProfile).toBeTruthy();
         });
 
+        it('should not include private profiles', async () => {
+            const userD = await getUser('d'.repeat(64));
+
+            await userD.clients.fullAuth.profile.createProfile({
+                profileId: 'userd',
+                displayName: 'DName',
+                email: 'userD@test.com',
+                isPrivate: true,
+            });
+
+            const results = await userA.clients.fullAuth.profile.searchProfiles({
+                input: 'userd',
+            });
+
+            expect(results).toHaveLength(0);
+        });
+
         it('should omit the connection status if includeConnectionStatus is false', async () => {
             const resultsNotConnected = await userA.clients.fullAuth.profile.searchProfiles({
                 input: 'user',
