@@ -45,6 +45,7 @@ export const Profile = ModelFactory<FlatProfileType, ProfileRelationships>(
             shortBio: { type: 'string', required: false },
             bio: { type: 'string', required: false },
             did: { type: 'string', required: true, uniqueItems: true },
+            isPrivate: { type: 'boolean', required: false },
             email: { type: 'string', required: false, uniqueItems: true },
             image: { type: 'string', required: false },
             heroImage: { type: 'string', required: false },

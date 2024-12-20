@@ -24,6 +24,7 @@ export const LCNProfileValidator = z.object({
     shortBio: z.string().default(''),
     bio: z.string().default(''),
     did: z.string(),
+    isPrivate: z.boolean().optional(),
     email: z.string().optional(),
     image: z.string().optional(),
     heroImage: z.string().optional(),

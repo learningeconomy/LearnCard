@@ -408,6 +408,7 @@ export const profilesRouter = t.router({
                 displayName,
                 shortBio,
                 bio,
+                isPrivate,
                 image,
                 heroImage,
                 websiteLink,
@@ -450,6 +451,7 @@ export const profilesRouter = t.router({
             if (image) actualUpdates.image = image;
             if (displayName) actualUpdates.displayName = displayName;
             if (shortBio) actualUpdates.shortBio = shortBio;
+            if (isPrivate) actualUpdates.isPrivate = isPrivate;
             if (bio) actualUpdates.bio = bio;
             if (heroImage) actualUpdates.heroImage = heroImage;
             if (websiteLink) actualUpdates.websiteLink = websiteLink;
