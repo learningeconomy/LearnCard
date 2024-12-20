@@ -1,5 +1,25 @@
 # @learncard/network-brain-service
 
+## 3.3.2
+
+### Patch Changes
+
+-   [#587](https://github.com/learningeconomy/LearnCard/pull/587) [`ebb2d3e69d14d97dc2691a45d0820bbf4a46be71`](https://github.com/learningeconomy/LearnCard/commit/ebb2d3e69d14d97dc2691a45d0820bbf4a46be71) Thanks [@smurflo2](https://github.com/smurflo2)! - [LC-735] Add needsGuardianConsent flag for ConsentFlow contracts
+
+-   Updated dependencies [[`ebb2d3e69d14d97dc2691a45d0820bbf4a46be71`](https://github.com/learningeconomy/LearnCard/commit/ebb2d3e69d14d97dc2691a45d0820bbf4a46be71)]:
+    -   @learncard/types@5.6.1
+    -   @learncard/core@9.3.12
+    -   @learncard/helpers@1.1.3
+    -   @learncard/ceramic-plugin@1.0.23
+    -   @learncard/did-web-plugin@1.0.49
+    -   @learncard/didkey-plugin@1.0.23
+    -   @learncard/didkit-plugin@1.4.21
+    -   @learncard/learn-card-plugin@1.1.25
+    -   @learncard/vc-plugin@1.1.26
+    -   @learncard/vc-templates-plugin@1.0.33
+    -   @learncard/expiration-plugin@1.1.26
+    -   @learncard/crypto-plugin@1.0.23
+
 ## 3.3.1
 
 ### Patch Changes

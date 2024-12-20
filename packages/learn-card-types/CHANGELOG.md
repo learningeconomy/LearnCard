@@ -1,5 +1,11 @@
 # learn-card-types
 
+## 5.6.1
+
+### Patch Changes
+
+-   [#587](https://github.com/learningeconomy/LearnCard/pull/587) [`ebb2d3e69d14d97dc2691a45d0820bbf4a46be71`](https://github.com/learningeconomy/LearnCard/commit/ebb2d3e69d14d97dc2691a45d0820bbf4a46be71) Thanks [@smurflo2](https://github.com/smurflo2)! - [LC-735] Add needsGuardianConsent flag for ConsentFlow contracts
+
 ## 5.6.0
 
 ### Minor Changes
