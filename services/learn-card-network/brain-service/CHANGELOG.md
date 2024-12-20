@@ -1,5 +1,11 @@
 # @learncard/network-brain-service
 
+## 3.3.1
+
+### Patch Changes
+
+-   [#586](https://github.com/learningeconomy/LearnCard/pull/586) [`455f5e8b29de55ee56fbe25c7290775fa537a9c1`](https://github.com/learningeconomy/LearnCard/commit/455f5e8b29de55ee56fbe25c7290775fa537a9c1) Thanks [@smurflo2](https://github.com/smurflo2)! - Remove can profile view boost check from getBoost
+
 ## 3.3.0
 
 ### Minor Changes
