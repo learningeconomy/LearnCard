@@ -2,6 +2,7 @@ import { QueryBuilder } from 'neogma';
 
 import { CredentialInstance, Credential, Boost, Role, Profile } from '@models';
 import { ProfileType } from 'types/profile';
+import { clearDidWebCacheForChildProfileManagers } from '@accesslayer/boost/relationships/update';
 
 export const createSentCredentialRelationship = async (
     from: ProfileType,
@@ -59,4 +60,12 @@ export const setDefaultClaimedRole = async (
             ],
         })
         .run();
+
+    try {
+        const vc = JSON.parse(credential.credential);
+
+        if (vc.boostId) await clearDidWebCacheForChildProfileManagers(vc.boostId);
+    } catch (error) {
+        console.error('Invalid credential JSON?', error);
+    }
 };
