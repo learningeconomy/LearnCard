@@ -826,6 +826,16 @@ describe('Profiles', () => {
 
             expect(userAResult?.display?.accentColor).toEqual('#fff');
         });
+
+        it('should allow updating isPrivate', async () => {
+            await expect(
+                userA.clients.fullAuth.profile.updateProfile({ isPrivate: true })
+            ).resolves.not.toThrow();
+
+            const userAResult = await userA.clients.fullAuth.profile.getProfile();
+
+            expect(userAResult?.isPrivate).toBeTruthy();
+        });
     });
 
     describe('deleteProfile', () => {
