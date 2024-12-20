@@ -1,5 +1,25 @@
 # @learncard/network-brain-service
 
+## 3.3.3
+
+### Patch Changes
+
+-   [#592](https://github.com/learningeconomy/LearnCard/pull/592) [`7d4e9dc7683bb8fa75fb6e239f59e620d3237846`](https://github.com/learningeconomy/LearnCard/commit/7d4e9dc7683bb8fa75fb6e239f59e620d3237846) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add isPrivate to profiles to prevent them from surfacing in search
+
+-   Updated dependencies [[`7d4e9dc7683bb8fa75fb6e239f59e620d3237846`](https://github.com/learningeconomy/LearnCard/commit/7d4e9dc7683bb8fa75fb6e239f59e620d3237846)]:
+    -   @learncard/types@5.6.2
+    -   @learncard/core@9.3.13
+    -   @learncard/helpers@1.1.4
+    -   @learncard/ceramic-plugin@1.0.24
+    -   @learncard/did-web-plugin@1.0.50
+    -   @learncard/didkey-plugin@1.0.24
+    -   @learncard/didkit-plugin@1.4.22
+    -   @learncard/learn-card-plugin@1.1.26
+    -   @learncard/vc-plugin@1.1.27
+    -   @learncard/vc-templates-plugin@1.0.34
+    -   @learncard/expiration-plugin@1.1.27
+    -   @learncard/crypto-plugin@1.0.24
+
 ## 3.3.2
 
 ### Patch Changes
