@@ -47,7 +47,6 @@ import {
     getBoostPermissions,
     canManageBoostPermissions,
     canProfileIssueBoost,
-    canProfileViewBoost,
     canProfileEditBoost,
     canProfileCreateChildBoost,
     getBoostByUriWithDefaultClaimPermissions,
@@ -282,20 +281,11 @@ export const boostsRouter = t.router({
             })
         )
         .query(async ({ ctx, input }) => {
-            const { profile } = ctx.user;
-
             const { uri } = input;
 
             const boost = await getBoostByUriWithDefaultClaimPermissions(uri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
-
-            if (!(await canProfileViewBoost(profile, boost))) {
-                throw new TRPCError({
-                    code: 'UNAUTHORIZED',
-                    message: 'Profile does not have permission to view this boost',
-                });
-            }
 
             const { id, boost: _boost, ...remaining } = boost;
 
