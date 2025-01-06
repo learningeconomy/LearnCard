@@ -9,25 +9,31 @@
 // Be warned though, these types are completely ridiculous!
 
 /**
- * Flattens a deeply nested object into an object with dot-separated keys.
+ * Flattens a deeply nested object into an object with dot-separated keys, handling arrays.
  * @param obj The object to flatten.
  * @returns The flattened object.
  */
-export function flattenObject<T extends Record<string, any>>(obj: T): FlattenObject<T> {
+export function flattenObject<T extends any>(obj: T): FlattenObject<T> {
     const result: Record<string, any> = {};
 
     function flattenHelper(currentObj: any, prefix = '') {
-        for (const key in currentObj) {
-            const newKey = prefix ? `${prefix}.${key}` : key;
-
-            if (
-                typeof currentObj[key] === 'object' &&
-                currentObj[key] !== null &&
-                !Array.isArray(currentObj[key])
-            ) {
+        if (Array.isArray(currentObj)) {
+            currentObj.forEach((item, index) => {
+                const arrayKey = prefix ? `${prefix}.${index}` : `${index}`;
+                if (item !== null && typeof item === 'object') {
+                    flattenHelper(item, arrayKey);
+                } else {
+                    result[arrayKey] = item;
+                }
+            });
+        } else if (currentObj !== null && typeof currentObj === 'object') {
+            for (const key in currentObj) {
+                const newKey = prefix ? `${prefix}.${key}` : key;
                 flattenHelper(currentObj[key], newKey);
-            } else {
-                result[newKey] = currentObj[key];
+            }
+        } else {
+            if (prefix !== '') {
+                result[prefix] = currentObj;
             }
         }
     }
@@ -38,102 +44,98 @@ export function flattenObject<T extends Record<string, any>>(obj: T): FlattenObj
 }
 
 /**
- * "Inflates" a flattened object back into a deeply nested structure.
+ * "Inflates" a flattened object back into a deeply nested structure, handling arrays.
  * @param obj The flattened object.
  * @returns The nested object.
  */
 export function inflateObject<T extends Record<string, any>>(obj: FlattenObject<T>): T {
-    const result: Record<string, any> = {};
+    let result: any = {};
 
     for (const key in obj) {
         const keys = key.split('.');
         let current = result;
 
-        while (keys.length > 1) {
-            const subKey = keys.shift()!;
-            if (!current[subKey]) {
-                current[subKey] = {};
-            }
-            current = current[subKey] as Record<string, any>;
-        }
+        for (let i = 0; i < keys.length; i++) {
+            const subKey = keys[i];
+            const isLast = i === keys.length - 1;
 
-        current[keys[0]!] = obj[key as keyof typeof obj];
+            const index = Number(subKey);
+            if (!isNaN(index) && Number.isInteger(index)) {
+                // subKey is an array index
+                if (!Array.isArray(current)) {
+                    current = [];
+                    // Assign to parent
+                    const parent = getParent(result, keys.slice(0, i));
+                    if (parent != null) {
+                        parent[keys[i - 1]!] = current;
+                    } else {
+                        // At the root
+                        result = current;
+                    }
+                }
+                if (isLast) {
+                    current[index] = obj[key];
+                } else {
+                    if (current[index] == null) {
+                        current[index] = {};
+                    }
+                    current = current[index];
+                }
+            } else {
+                // subKey is an object key
+                if (Array.isArray(current)) {
+                    // Cannot have object key in an array
+                    throw new Error(`Invalid structure at key ${key}`);
+                }
+                if (!(subKey in current)) {
+                    current[subKey] = {};
+                }
+                if (isLast) {
+                    current[subKey] = obj[key];
+                } else {
+                    current = current[subKey];
+                }
+            }
+        }
     }
 
-    return result as T;
+    return result;
 }
 
-type FlattenObjectKeys<T extends Record<string, unknown>, Key = keyof T> = Key extends string
-    ? T[Key] extends Record<string, unknown>
-    ? `${Key}.${FlattenObjectKeys<T[Key]>}`
-    : `${Key}`
-    : never;
-
-type IsTuple<T> = T extends Array<any>
-    ? T['length'] extends number
-    ? number extends T['length']
-    ? false
-    : true
-    : true
-    : false;
-
-type IsEmptyTuple<T extends Array<any>> = T['length'] extends 0 ? true : false;
+function getParent(obj: any, keys: string[]): any {
+    let current = obj;
+    for (let i = 0; i < keys.length - 1; i++) {
+        const key = keys[i];
+        const index = Number(key);
+        if (!isNaN(index) && Number.isInteger(index)) {
+            current = current[index];
+        } else {
+            current = current[key];
+        }
+    }
+    return current;
+}
 
 /**
- * If Cache is empty return Prop without dot,
- * to avoid ".user"
+ * Type definition for FlattenObject that handles arrays and objects recursively.
+ * Due to TypeScript limitations, this may not capture all scenarios perfectly.
  */
-type HandleDot<Cache extends string, Prop extends string | number> = Cache extends ''
-    ? `${Prop}`
-    : `${Cache}.${Prop}`;
+export type FlattenObject<T> = T extends Array<infer U>
+    ? FlattenArray<U>
+    : T extends object
+    ? FlattenObjectHelper<T>
+    : T;
 
-/**
- * Simple iteration through object properties
- */
-type HandleObject<Obj, Cache extends string> = {
-    [Prop in keyof Obj]:  // concat previous Cacha and Prop
-    | HandleDot<Cache, Prop & string>
-    // with next Cache and Prop
-    | Path<Obj[Prop], HandleDot<Cache, Prop & string>>;
-}[keyof Obj];
+type FlattenObjectHelper<T, Prefix extends string = ''> = {
+    [K in keyof T]: T[K] extends Array<infer U>
+    ? FlattenArray<U, `${Prefix}${Prefix extends '' ? '' : '.'}${K & string}`>
+    : T[K] extends object
+    ? FlattenObjectHelper<T[K], `${Prefix}${Prefix extends '' ? '' : '.'}${K & string}`>
+    : { [P in `${Prefix}${Prefix extends '' ? '' : '.'}${K & string}`]: T[K] };
+}[keyof T];
 
-type Path<Obj, Cache extends string = ''> = Obj extends PropertyKey
-    ? // return Cache
-    Cache
-    : // if Obj is Array (can be array, tuple, empty tuple)
-    Obj extends Array<unknown>
-    ? // and is tuple
-    IsTuple<Obj> extends true
-    ? // and tuple is empty
-    IsEmptyTuple<Obj> extends true
-    ? // call recursively Path with `-1` as an allowed index
-    Path<PropertyKey, HandleDot<Cache, -1>>
-    : // if tuple is not empty we can handle it as regular object
-    HandleObject<Obj, Cache>
-    : // if Obj is regular  array call Path with union of all elements
-    Path<Obj[number], HandleDot<Cache, number>>
-    : // if Obj is neither Array nor Tuple nor Primitive - treat is as object
-    HandleObject<Obj, Cache>;
-
-type Acc = Record<string, any>;
-
-type ReducerCallback<Accumulator extends Acc, El extends string> = El extends keyof Accumulator
-    ? Accumulator[El]
-    : El extends '-1'
-    ? never
-    : Accumulator;
-
-type Reducer<Keys extends string, Accumulator extends Acc = {}> =
-    // Key destructure
-    Keys extends `${infer Prop}.${infer Rest}`
-    ? // call Reducer with callback, just like in JS
-    Reducer<Rest, ReducerCallback<Accumulator, Prop>>
-    : // this is the last part of path because no dot
-    Keys extends `${infer Last}`
-    ? // call reducer with last part
-    ReducerCallback<Accumulator, Last>
-    : never;
-
-export type FlattenObject<T extends Record<string, any>> = {
-    [Prop in FlattenObjectKeys<T>]: Reducer<Prop, T>;
-};
+type FlattenArray<T, Prefix extends string = ''> = T extends object
+    ? {
+        [Index in number]: FlattenObjectHelper<T, `${Prefix}.${Index & string}`>;
+    }[number]
+    : { [P in `${Prefix}.${number}`]: T };

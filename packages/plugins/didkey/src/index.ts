@@ -1,6 +1,6 @@
 import { toUint8Array } from 'hex-lite';
 import { isHex } from '@learncard/helpers';
-import { JWK } from '@learncard/types';
+import { JWKWithPrivateKey } from '@learncard/types';
 import { LearnCard } from '@learncard/core';
 
 import { getAlgorithmForDidMethod } from './helpers';
@@ -38,7 +38,7 @@ export const getDidKeyPlugin = async <DidMethod extends string>(
     const seedBytes = toUint8Array(seed);
 
     const memoizedDids: Partial<Record<DidMethod, string>> = {};
-    const keyPairs: Record<Algorithm, JWK> = {
+    const keyPairs: Record<Algorithm, JWKWithPrivateKey> = {
         ed25519: learnCard.invoke.generateEd25519KeyFromBytes(seedBytes),
         secp256k1: learnCard.invoke.generateSecp256k1KeyFromBytes(seedBytes),
     };

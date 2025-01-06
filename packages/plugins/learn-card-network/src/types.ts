@@ -34,6 +34,7 @@ import {
     LCNProfileManagerQuery,
     PaginatedLCNProfileManagers,
     PaginatedLCNProfilesAndManagers,
+    DidDocument,
 } from '@learncard/types';
 import { Plugin } from '@learncard/core';
 import { ProofOptions } from '@learncard/didkit-plugin';
@@ -58,7 +59,10 @@ export type LearnCardNetworkPluginMethods = {
     ) => Promise<string>;
     createManagedProfile: (profile: Omit<LCNProfile, 'did'>) => Promise<string>;
     createProfileManager: (profile: Omit<LCNProfileManager, 'id' | 'created'>) => Promise<string>;
-    createChildProfileManager: (parentUri: string, profile: Omit<LCNProfileManager, 'id' | 'created'>) => Promise<string>;
+    createChildProfileManager: (
+        parentUri: string,
+        profile: Omit<LCNProfileManager, 'id' | 'created'>
+    ) => Promise<string>;
     createManagedServiceProfile: (
         profile: Omit<LCNProfile, 'did' | 'isServiceProfile'>
     ) => Promise<string>;
@@ -201,7 +205,7 @@ export type LearnCardNetworkPluginMethods = {
     countBoostRecipients: (uri: string, includeUnacceptedBoosts?: boolean) => Promise<number>;
     getBoostChildrenProfileManagers: (
         uri: string,
-        options?: Partial<PaginationOptionsType> & { query?: LCNProfileManagerQuery; }
+        options?: Partial<PaginationOptionsType> & { query?: LCNProfileManagerQuery }
     ) => Promise<PaginatedLCNProfileManagers>;
     updateBoost: (
         uri: string,
@@ -292,6 +296,12 @@ export type LearnCardNetworkPluginMethods = {
         options?: Partial<PaginationOptionsType> & { query?: ConsentFlowTransactionsQuery }
     ) => Promise<PaginatedConsentFlowTransactions>;
     verifyConsent: (uri: string, profileId: string) => Promise<boolean>;
+
+    addDidMetadata: (metadata: Partial<DidDocument>) => Promise<boolean>;
+    getDidMetadata: (id: string) => Promise<Partial<DidDocument> | undefined>;
+    getMyDidMetadata: () => Promise<Array<Partial<DidDocument> & { id: string }>>;
+    updateDidMetadata: (id: string, updates: Partial<DidDocument>) => Promise<boolean>;
+    deleteDidMetadata: (id: string) => Promise<boolean>;
 
     resolveFromLCN: (
         uri: string

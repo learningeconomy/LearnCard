@@ -1,5 +1,5 @@
 import {
-    JWK,
+    JWKWithPrivateKey,
     UnsignedVC,
     UnsignedVP,
     VC,
@@ -51,17 +51,21 @@ export type InputMetadata = {
 
 /** @group DIDKit Plugin */
 export type DidkitPluginMethods = {
-    generateEd25519KeyFromBytes: (bytes: Uint8Array) => JWK;
-    generateSecp256k1KeyFromBytes: (bytes: Uint8Array) => JWK;
-    keyToDid: (type: DidMethod, keypair: JWK) => string;
-    keyToVerificationMethod: (type: string, keypair: JWK) => Promise<string>;
+    generateEd25519KeyFromBytes: (bytes: Uint8Array) => JWKWithPrivateKey;
+    generateSecp256k1KeyFromBytes: (bytes: Uint8Array) => JWKWithPrivateKey;
+    keyToDid: (type: DidMethod, keypair: JWKWithPrivateKey) => string;
+    keyToVerificationMethod: (type: string, keypair: JWKWithPrivateKey) => Promise<string>;
     didToVerificationMethod: (did: string) => Promise<string>;
-    issueCredential: (credential: UnsignedVC, options: ProofOptions, keypair: JWK) => Promise<VC>;
+    issueCredential: (
+        credential: UnsignedVC,
+        options: ProofOptions,
+        keypair: JWKWithPrivateKey
+    ) => Promise<VC>;
     verifyCredential: (credential: VC, options?: ProofOptions) => Promise<VerificationCheck>;
     issuePresentation: (
         presentation: UnsignedVP,
         options: ProofOptions,
-        keypair: JWK
+        keypair: JWKWithPrivateKey
     ) => Promise<VP>;
     verifyPresentation: (
         presentation: VP | string,

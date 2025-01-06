@@ -1,11 +1,11 @@
 import {
-    JWK,
     UnsignedVC,
     VC,
     UnsignedVP,
     VP,
     VerificationCheck,
     DidDocument,
+    JWKWithPrivateKey,
 } from '@learncard/types';
 import { Plugin, LearnCard } from '@learncard/core';
 import { ProofOptions, InputMetadata } from '@learncard/didkit-plugin';
@@ -13,15 +13,19 @@ import { ProofOptions, InputMetadata } from '@learncard/didkit-plugin';
 /** @group VC Plugin */
 export type VCPluginDependentMethods = {
     getSubjectDid: (type: 'key') => string;
-    getSubjectKeypair: () => JWK;
-    keyToVerificationMethod: (type: string, keypair: JWK) => Promise<string>;
+    getSubjectKeypair: () => JWKWithPrivateKey;
+    keyToVerificationMethod: (type: string, keypair: JWKWithPrivateKey) => Promise<string>;
     didToVerificationMethod: (did: string) => Promise<string>;
-    issueCredential: (credential: UnsignedVC, options: ProofOptions, keypair: JWK) => Promise<VC>;
+    issueCredential: (
+        credential: UnsignedVC,
+        options: ProofOptions,
+        keypair: JWKWithPrivateKey
+    ) => Promise<VC>;
     verifyCredential: (credential: VC, options?: ProofOptions) => Promise<VerificationCheck>;
     issuePresentation: (
         presentation: UnsignedVP,
         options: ProofOptions,
-        keypair: JWK
+        keypair: JWKWithPrivateKey
     ) => Promise<VP>;
     verifyPresentation: (
         presentation: VP | string,

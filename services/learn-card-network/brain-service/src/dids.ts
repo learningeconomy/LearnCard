@@ -17,6 +17,8 @@ import {
 import { DidDocument, JWK } from '@learncard/types';
 import { getProfilesThatManageAProfile } from '@accesslayer/profile/relationships/read';
 import { getProfilesThatAdministrateAProfileManager } from '@accesslayer/profile-manager/relationships/read';
+import { getDidMetadataForProfile } from '@accesslayer/did-metadata/relationships/read';
+import { merge, omit } from 'lodash';
 
 const encodeKey = (key: Uint8Array) => {
     const bytes = new Uint8Array(key.length + 2);
@@ -196,6 +198,12 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
         } catch (error) {
             console.error(error);
         }
+
+        const extraMetadata = await getDidMetadataForProfile(profileId);
+
+        extraMetadata.forEach(metadata => {
+            finalDoc = merge(finalDoc, omit(metadata, 'id'));
+        });
 
         setDidDocForProfile(profileId, finalDoc);
 
