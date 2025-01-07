@@ -1,19 +1,9 @@
-// WARNING: Here be dragons
-// To deal with Neo4j's weirdness about nested objects, if we want to query objects with
-// deeply nested fields, we need to flatten them.
-//
-// It turns out that it's _really_ hard to get TypeScript to understand this, but really hard does
-// not mean impossible, so this file contains types and utility functions to both flatten and
-// inflate objects!
-//
-// Be warned though, these types are completely ridiculous!
-
 /**
  * Flattens a deeply nested object into an object with dot-separated keys, handling arrays.
  * @param obj The object to flatten.
  * @returns The flattened object.
  */
-export function flattenObject<T extends any>(obj: T): FlattenObject<T> {
+export function flattenObject<T>(obj: T): FlattenObject<T> {
     const result: Record<string, any> = {};
 
     function flattenHelper(currentObj: any, prefix = '') {
@@ -48,7 +38,7 @@ export function flattenObject<T extends any>(obj: T): FlattenObject<T> {
  * @param obj The flattened object.
  * @returns The nested object.
  */
-export function inflateObject<T extends Record<string, any>>(obj: FlattenObject<T>): T {
+export function inflateObject<T>(obj: FlattenObject<T>): T {
     let result: any = {};
 
     for (const key in obj) {
@@ -56,7 +46,7 @@ export function inflateObject<T extends Record<string, any>>(obj: FlattenObject<
         let current = result;
 
         for (let i = 0; i < keys.length; i++) {
-            const subKey = keys[i];
+            const subKey = keys[i]!;
             const isLast = i === keys.length - 1;
 
             const index = Number(subKey);
@@ -99,13 +89,13 @@ export function inflateObject<T extends Record<string, any>>(obj: FlattenObject<
         }
     }
 
-    return result;
+    return result as T;
 }
 
 function getParent(obj: any, keys: string[]): any {
     let current = obj;
     for (let i = 0; i < keys.length - 1; i++) {
-        const key = keys[i];
+        const key = keys[i]!;
         const index = Number(key);
         if (!isNaN(index) && Number.isInteger(index)) {
             current = current[index];
@@ -117,25 +107,25 @@ function getParent(obj: any, keys: string[]): any {
 }
 
 /**
- * Type definition for FlattenObject that handles arrays and objects recursively.
- * Due to TypeScript limitations, this may not capture all scenarios perfectly.
+ * Helper type to combine key prefixes.
  */
-export type FlattenObject<T> = T extends Array<infer U>
-    ? FlattenArray<U>
-    : T extends object
-    ? FlattenObjectHelper<T>
-    : T;
+type AddPrefix<Prefix extends string, Key extends string | number | symbol> = Prefix extends ''
+    ? `${Key & string}`
+    : `${Prefix}.${Key & string}`;
 
-type FlattenObjectHelper<T, Prefix extends string = ''> = {
-    [K in keyof T]: T[K] extends Array<infer U>
-    ? FlattenArray<U, `${Prefix}${Prefix extends '' ? '' : '.'}${K & string}`>
-    : T[K] extends object
-    ? FlattenObjectHelper<T[K], `${Prefix}${Prefix extends '' ? '' : '.'}${K & string}`>
-    : { [P in `${Prefix}${Prefix extends '' ? '' : '.'}${K & string}`]: T[K] };
-}[keyof T];
+/**
+ * Type definition for FlattenObject<T> that recursively flattens an object type into dot-separated keys.
+ */
+export type FlattenObject<T> = _Flatten<T> extends infer O ? { [K in keyof O]: O[K] } : never;
 
-type FlattenArray<T, Prefix extends string = ''> = T extends object
+type _Flatten<T, Prefix extends string = ''> = T extends Array<unknown>
     ? {
-        [Index in number]: FlattenObjectHelper<T, `${Prefix}.${Index & string}`>;
+        [K in keyof T]: _Flatten<T[K], AddPrefix<Prefix, K & string>>;
     }[number]
-    : { [P in `${Prefix}.${number}`]: T };
+    : T extends object
+    ? {
+        [K in keyof T]: _Flatten<T[K], AddPrefix<Prefix, K & string>>;
+    }[keyof T]
+    : {
+        [P in Prefix]: T;
+    };

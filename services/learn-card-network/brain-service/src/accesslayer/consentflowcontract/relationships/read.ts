@@ -310,7 +310,7 @@ export const getConsentedDataForContract = async (
 ): Promise<ConsentFlowContractData[]> => {
     const _dbQuery = new QueryBuilder(
         new BindParam({
-            params: flattenObject({ terms: convertDataQueryToNeo4jQuery(query) }),
+            params: flattenObject({ terms: flattenObject(convertDataQueryToNeo4jQuery(query)) }),
             cursor,
         })
     ).match({
