@@ -3,19 +3,22 @@
  * @param obj The object to flatten.
  * @returns The flattened object.
  */
-export function flattenObject<T>(obj: T): FlattenObject<T> {
+export function flattenObject<T extends Record<string, any>>(obj: T): FlattenObject<T> {
     const result: Record<string, any> = {};
 
     function flattenHelper(currentObj: any, prefix = '') {
         if (Array.isArray(currentObj)) {
-            currentObj.forEach((item, index) => {
-                const arrayKey = prefix ? `${prefix}.${index}` : `${index}`;
-                if (item !== null && typeof item === 'object') {
-                    flattenHelper(item, arrayKey);
-                } else {
-                    result[arrayKey] = item;
-                }
-            });
+            if (currentObj.length === 0) result[prefix] = currentObj;
+            else {
+                currentObj.forEach((item, index) => {
+                    const arrayKey = prefix ? `${prefix}.${index}` : `${index}`;
+                    if (item !== null && typeof item === 'object') {
+                        flattenHelper(item, arrayKey);
+                    } else {
+                        result[arrayKey] = item;
+                    }
+                });
+            }
         } else if (currentObj !== null && typeof currentObj === 'object') {
             for (const key in currentObj) {
                 const newKey = prefix ? `${prefix}.${key}` : key;
@@ -38,7 +41,9 @@ export function flattenObject<T>(obj: T): FlattenObject<T> {
  * @param obj The flattened object.
  * @returns The nested object.
  */
-export function inflateObject<T>(obj: FlattenObject<T>): T {
+export function inflateObject<T extends Record<string, any>>(
+    obj: T
+): any extends T ? any : InflateObject<T> {
     let result: any = {};
 
     for (const key in obj) {
@@ -89,7 +94,7 @@ export function inflateObject<T>(obj: FlattenObject<T>): T {
         }
     }
 
-    return result as T;
+    return result as InflateObject<T>;
 }
 
 function getParent(obj: any, keys: string[]): any {
@@ -106,26 +111,67 @@ function getParent(obj: any, keys: string[]): any {
     return current;
 }
 
-/**
- * Helper type to combine key prefixes.
- */
-type AddPrefix<Prefix extends string, Key extends string | number | symbol> = Prefix extends ''
-    ? `${Key & string}`
-    : `${Prefix}.${Key & string}`;
+type Primitive = string | number | boolean;
 
-/**
- * Type definition for FlattenObject<T> that recursively flattens an object type into dot-separated keys.
- */
-export type FlattenObject<T> = _Flatten<T> extends infer O ? { [K in keyof O]: O[K] } : never;
+export type FlattenObject<T, K extends string = ''> = T extends Primitive
+    ? K extends ''
+    ? {}
+    : undefined extends T
+    ? { [P in K]?: T }
+    : { [P in K]: T }
+    : T extends any[]
+    ? number extends T['length']
+    ? FlattenObject<{
+        [I in T[number]as `${K}${K extends '' ? '' : '.'}${number}`]: T[number];
+    }>
+    : MergeObjects<
+        UnionToIntersection<
+            {
+                [I in keyof T]: FlattenObject<
+                    T[I],
+                    `${K}${K extends '' ? '' : '.'}${I & string}`
+                >;
+            }[number]
+        >
+    >
+    : T extends Record<string, any>
+    ? UnionToIntersection<
+        MergeObjects<
+            {
+                [P in keyof T & string]: FlattenObject<
+                    T[P],
+                    `${K}${K extends '' ? '' : '.'}${P}`
+                >;
+            }[keyof T & string]
+        >
+    >
+    : {};
 
-type _Flatten<T, Prefix extends string = ''> = T extends Array<unknown>
-    ? {
-        [K in keyof T]: _Flatten<T[K], AddPrefix<Prefix, K & string>>;
-    }[number]
-    : T extends object
-    ? {
-        [K in keyof T]: _Flatten<T[K], AddPrefix<Prefix, K & string>>;
-    }[keyof T]
-    : {
-        [P in Prefix]: T;
-    };
+// Rest of the types remain the same...
+type UnflattenPath<K extends string, V> = K extends `${infer First}.${infer Rest}`
+    ? { [P in First]: UnflattenPath<Rest, V> }
+    : { [P in K]: V };
+
+type MergeObjects<T> = {
+    [K in keyof T]: T[K] extends object
+    ? MergeObjects<T[K]>
+    : T[K] extends string
+    ? string
+    : T[K] extends number
+    ? number
+    : T[K] extends boolean
+    ? boolean
+    : T[K];
+};
+
+export type InflateObject<T extends Record<string, any>> = MergeObjects<
+    UnionToIntersection<
+        {
+            [K in keyof T]: UnflattenPath<K & string, T[K]>;
+        }[keyof T]
+    >
+>;
+
+type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (k: infer I) => void
+    ? I
+    : never;

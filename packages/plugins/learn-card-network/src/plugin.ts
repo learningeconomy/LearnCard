@@ -773,7 +773,11 @@ export const getLearnCardNetworkPlugin = async (
             addDidMetadata: async (_learnCard, metadata) => {
                 if (!userData) throw new Error('Please make an account first!');
 
-                return client.didMetadata.addDidMetadata.mutate(metadata);
+                const result = await client.didMetadata.addDidMetadata.mutate(metadata);
+
+                if (result) await _learnCard.invoke.clearDidWebCache?.();
+
+                return result;
             },
 
             getDidMetadata: async (_learnCard, id) => {
@@ -791,13 +795,21 @@ export const getLearnCardNetworkPlugin = async (
             updateDidMetadata: async (_learnCard, id, updates) => {
                 if (!userData) throw new Error('Please make an account first!');
 
-                return client.didMetadata.updateDidMetadata.mutate({ id, updates });
+                const result = await client.didMetadata.updateDidMetadata.mutate({ id, updates });
+
+                if (result) await _learnCard.invoke.clearDidWebCache?.();
+
+                return result;
             },
 
             deleteDidMetadata: async (_learnCard, id) => {
                 if (!userData) throw new Error('Please make an account first!');
 
-                return client.didMetadata.deleteDidMetadata.mutate({ id });
+                const result = await client.didMetadata.deleteDidMetadata.mutate({ id });
+
+                if (result) await _learnCard.invoke.clearDidWebCache?.();
+
+                return result;
             },
 
             resolveFromLCN: async (_learnCard, uri) => {

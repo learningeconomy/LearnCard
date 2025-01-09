@@ -8,12 +8,9 @@ import { BindParam, QueryBuilder } from 'neogma';
 import { DidMetadataType } from 'types/did-metadata';
 
 export const createDidMetadata = async (input: Partial<DidDocument>): Promise<DidMetadataType> => {
-    const what = (flattenObject as any)({ ...input, id: uuid() });
-
-    console.log({ what, input });
-    console.log((inflateObject as any)(what));
-
-    const result = await new QueryBuilder(new BindParam({ params: what }))
+    const result = await new QueryBuilder(
+        new BindParam({ params: (flattenObject as any)({ ...input, id: uuid() }) })
+    )
         .create({ model: DidMetadata, identifier: 'didMetadata' })
         .set('didMetadata += $params')
         .return('didMetadata')

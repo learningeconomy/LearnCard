@@ -1,5 +1,3 @@
-import { merge, omit } from 'lodash';
-
 import { QueryBuilder, BindParam } from 'neogma';
 import { flattenObject } from '@helpers/objects.helpers';
 import { DidMetadata } from '@models';
@@ -12,10 +10,11 @@ export const updateDidMetadata = async (
     metadata: DidMetadataType,
     updates: Partial<DidDocument>
 ) => {
-    const newUpdates = (flattenObject as any)(merge(omit(metadata, 'id'), updates));
+    const newUpdates = (flattenObject as any)({ ...metadata, ...updates });
 
     const query = new QueryBuilder(new BindParam({ params: newUpdates }))
         .match({ model: DidMetadata, where: { id: metadata.id }, identifier: 'metadata' })
+        .set('metadata = {}')
         .set('metadata += $params');
 
     const result = await query.run();
