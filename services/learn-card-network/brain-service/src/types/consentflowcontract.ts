@@ -14,6 +14,7 @@ export const DbContractValidator = z.object({
     description: z.string().optional(),
     reasonForAccessing: z.string().optional(),
     needsGuardianConsent: z.boolean().optional(),
+    redirectUrl: z.string().optional(),
     image: z.string().optional(),
     contract: ConsentFlowContractValidator,
     createdAt: z.string(),
