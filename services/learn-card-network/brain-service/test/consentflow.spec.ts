@@ -137,6 +137,25 @@ describe('Consent Flow Contracts', () => {
             expect(contract.needsGuardianConsent).toEqual(contractData.needsGuardianConsent);
         });
 
+        it('should allow setting and retrieving the redirectUrl field for a contract', async () => {
+            const contractData = {
+                name: 'Test Contract',
+                description: 'This is for testing lol',
+                redirectUrl: 'https://redirectMe.com',
+                contract: minimalContract,
+            };
+
+            const contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract(
+                contractData
+            );
+
+            const contract = await userA.clients.fullAuth.contracts.getConsentFlowContract({
+                uri: contractUri,
+            });
+
+            expect(contract.redirectUrl).toEqual(contractData.redirectUrl);
+        });
+
         it('should allow setting and retrieving the reason for accessing for a contract', async () => {
             const contractData = {
                 name: 'Test Contract',
