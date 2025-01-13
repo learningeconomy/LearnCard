@@ -1,5 +1,11 @@
 # learn-card-types
 
+## 5.6.3
+
+### Patch Changes
+
+-   [#594](https://github.com/learningeconomy/LearnCard/pull/594) [`86bdf08214003e1db051f5a0e93c3a57e282db62`](https://github.com/learningeconomy/LearnCard/commit/86bdf08214003e1db051f5a0e93c3a57e282db62) Thanks [@smurflo2](https://github.com/smurflo2)! - Add redirectUrl field for ConsentFlow contracts
+
 ## 5.6.2
 
 ### Patch Changes
