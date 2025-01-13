@@ -1,6 +1,6 @@
 {
     "name": "@learncard/network-brain-service",
-    "version": "3.3.3",
+    "version": "3.3.4",
     "description": "",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
