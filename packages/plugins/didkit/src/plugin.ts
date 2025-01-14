@@ -12,7 +12,11 @@ import init, {
     contextLoader,
     resolveDID,
     didResolver,
-    clearCache
+    createJwe,
+    decryptJwe,
+    createDagJwe,
+    decryptDagJwe,
+    clearCache,
 } from './didkit/index';
 import { getDocumentMap } from './helpers';
 
@@ -148,9 +152,27 @@ export const getDidKitPlugin = async (
             didResolver: async (_learnCard, did, inputMetadata = {}) =>
                 JSON.parse(await didResolver(did, JSON.stringify(inputMetadata))),
 
+            createJwe: async (_learnCard, cleartext, recipients) =>
+                JSON.parse(await createJwe(cleartext, recipients)),
+
+            decryptJwe: async (_learnCard, jwe, jwks) =>
+                decryptJwe(
+                    JSON.stringify(jwe),
+                    jwks.map(jwk => JSON.stringify(jwk))
+                ),
+
+            createDagJwe: async (_learnCard, cleartext, recipients) =>
+                JSON.parse(await createDagJwe(cleartext as any, recipients)),
+
+            decryptDagJwe: async (_learnCard, jwe, jwks) =>
+                await decryptDagJwe(
+                    JSON.stringify(jwe),
+                    jwks.map(jwk => JSON.stringify(jwk))
+                ),
+
             clearDidWebCache: async () => {
                 await clearCache();
-            }
+            },
         },
     };
 };

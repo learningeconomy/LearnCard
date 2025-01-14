@@ -1,4 +1,5 @@
 import {
+    JWE,
     JWKWithPrivateKey,
     UnsignedVC,
     UnsignedVP,
@@ -74,6 +75,10 @@ export type DidkitPluginMethods = {
     contextLoader: (url: string) => Promise<Record<string, any>>;
     resolveDid: (did: string, inputMetadata?: InputMetadata) => Promise<DidDocument>;
     didResolver: (did: string, inputMetadata?: InputMetadata) => Promise<DIDResolutionResult>;
+    createJwe: (cleartext: string, recipients: string[]) => Promise<JWE>;
+    decryptJwe: (jwe: JWE, jwks: JWKWithPrivateKey[]) => Promise<string>;
+    createDagJwe: <T>(cleartext: T, recipients: string[]) => Promise<JWE>;
+    decryptDagJwe: <T>(jwe: JWE, jwks: JWKWithPrivateKey[]) => Promise<T>;
     clearDidWebCache: () => Promise<void>;
 };
 
