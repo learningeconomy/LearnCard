@@ -58,17 +58,7 @@ export const getDidKitPlugin = async (
                 JSON.parse(generateSecp256k1KeyFromBytes(bytes)),
 
             keyToDid: (_learnCard, type, keypair) => {
-                const memoizedDid = memoizedDids[type];
-
-                if (!memoizedDid) {
-                    const did = keyToDID(type, JSON.stringify(keypair));
-
-                    memoizedDids[type] = did;
-
-                    return did;
-                }
-
-                return memoizedDid;
+                return keyToDID(type, JSON.stringify(keypair));
             },
 
             keyToVerificationMethod: async (_learnCard, type, keypair) =>

@@ -45,14 +45,29 @@ program
         globalThis.emptyLearnCard = emptyLearnCard;
         globalThis.learnCardFromSeed = learnCardFromSeed;
         globalThis.initLearnCard = initLearnCard;
-        globalThis.learnCard = await initLearnCard({
-            seed,
-            network: true,
-            allowRemoteContexts: true,
+
+        const learnCard = await initLearnCard({
+            seed: 'a',
+            network: 'http://localhost:4000/trpc',
+            cloud: { url: 'http://localhost:4100/trpc' },
             didkit: fs.readFile(
                 require.resolve('@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm')
             ),
         });
+        const customJwk = learnCard.invoke.generateEd25519KeyFromBytes(new Uint8Array(32));
+        const customDidKey = learnCard.invoke.keyToDid('key', customJwk);
+        const customDidDoc = await learnCard.invoke.resolveDid(customDidKey);
+
+        try {
+            await learnCard.invoke.createProfile({ profileId: 'ugh' });
+        } catch (error) { }
+
+        await learnCard.invoke.addDidMetadata({
+            verificationMethod: customDidDoc.verificationMethod,
+            keyAgreement: customDidDoc.keyAgreement,
+        });
+
+        globalThis.learnCard = learnCard;
         globalThis.types = types;
         globalThis.getTestCache = getTestCache;
 
