@@ -8,10 +8,10 @@ export function generateEd25519Key(): string;
 export function generateEd25519KeyFromBytes(bytes: Uint8Array): string;
 export function generateSecp256k1Key(): string;
 export function generateSecp256k1KeyFromBytes(bytes: Uint8Array): string;
-export function createJwe(cleartext: string, recipients: (string)[]): Promise<any>;
-export function decryptJwe(jwe: string, jwks: (string)[]): Promise<any>;
-export function createDagJwe(cleartext: any, recipients: (string)[]): Promise<any>;
-export function decryptDagJwe(jwe: string, jwks: (string)[]): Promise<any>;
+export function createJwe(cleartext: string, recipients: string[]): Promise<any>;
+export function decryptJwe(jwe: string, jwks: string[]): Promise<any>;
+export function createDagJwe(cleartext: any, recipients: string[]): Promise<any>;
+export function decryptDagJwe(jwe: string, jwks: string[]): Promise<any>;
 export function keyToDID(method_pattern: string, jwk: string): string;
 export function keyToVerificationMethod(method_pattern: string, jwk: string): Promise<any>;
 export function didToVerificationMethod(did: string): Promise<any>;
@@ -85,8 +85,8 @@ export interface InitOutput {
   readonly __wbindgen_export_5: WebAssembly.Table;
   readonly __wbindgen_free: (a: number, b: number, c: number) => void;
   readonly __externref_table_dealloc: (a: number) => void;
-  readonly closure4106_externref_shim: (a: number, b: number, c: any) => void;
-  readonly closure4514_externref_shim: (a: number, b: number, c: any, d: any) => void;
+  readonly closure4125_externref_shim: (a: number, b: number, c: any) => void;
+  readonly closure4526_externref_shim: (a: number, b: number, c: any, d: any) => void;
   readonly __wbindgen_start: () => void;
 }
 
