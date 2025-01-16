@@ -1,6 +1,7 @@
-import type { DID } from 'dids';
 import type { Filter } from '@learncard/learn-cloud-service';
 import {
+    JWE,
+    JWKWithPrivateKey,
     UnsignedVC,
     VC,
     VP,
@@ -12,7 +13,8 @@ import type { ProofOptions } from '@learncard/didkit-plugin';
 
 /** @group LearnCloud Plugin */
 export type LearnCloudPluginDependentMethods = {
-    getDIDObject: () => DID;
+    createDagJwe: <T>(cleartext: T, recipients?: string[]) => Promise<JWE>;
+    decryptDagJwe: <T>(jwe: JWE, jwks?: JWKWithPrivateKey[]) => Promise<T>;
     getDidAuthVp: (options?: ProofOptions) => Promise<VP | string>;
     issueCredential: (
         credential: UnsignedVC,

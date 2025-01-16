@@ -1398,9 +1398,6 @@ importers:
       aqu:
         specifier: 0.4.3
         version: 0.4.3(@babel/core@7.26.0)(@jest/transform@29.7.0)(@jest/types@29.6.3)(@types/node@17.0.45)(babel-jest@29.7.0(@babel/core@7.26.0))(ts-node@10.9.2(@types/node@17.0.45)(typescript@5.6.2))
-      dids:
-        specifier: ^3.2.0
-        version: 3.4.0
       esbuild:
         specifier: ^0.14.38
         version: 0.14.54
