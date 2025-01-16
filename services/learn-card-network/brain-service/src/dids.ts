@@ -73,11 +73,6 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
             JSON.stringify(didDoc).replaceAll(profile.did, did).replaceAll(`#${key}`, '#owner')
         );
 
-        const jwk = replacedDoc.verificationMethod[0].publicKeyJwk;
-
-        const decodedJwk = base64url.decode(`u${jwk.x}`);
-        const x25519PublicKeyBytes = sodium.crypto_sign_ed25519_pk_to_curve25519(decodedJwk);
-
         let saDocs: Record<string, any>[] = [];
         try {
             console.log('Signing authorities get');
@@ -97,27 +92,9 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
                                 .replaceAll(`#${_key}`, `#${sa.relationship.name}`)
                         );
 
-                        const _jwk = _replacedDoc.verificationMethod[0].publicKeyJwk;
-
-                        const _decodedJwk = base64url.decode(`u${_jwk.x}`);
-                        const _x25519PublicKeyBytes =
-                            sodium.crypto_sign_ed25519_pk_to_curve25519(_decodedJwk);
-
                         _replacedDoc.verificationMethod[0].controller += `#${sa.relationship.name}`;
 
-                        return {
-                            ..._replacedDoc,
-                            keyAgreement: [
-                                {
-                                    id: `${did}#${encodeKey(_x25519PublicKeyBytes)}`,
-                                    type: 'X25519KeyAgreementKey2019',
-                                    controller: _replacedDoc.verificationMethod[0].controller,
-                                    publicKeyBase58: base58btc
-                                        .encode(_x25519PublicKeyBytes)
-                                        .slice(1),
-                                },
-                            ],
-                        };
+                        return _replacedDoc;
                     })
                 );
             }
@@ -125,18 +102,7 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
             console.error(e);
         }
 
-        let finalDoc = {
-            ...replacedDoc,
-            controller: profile.did,
-            keyAgreement: [
-                {
-                    id: `${did}#${encodeKey(x25519PublicKeyBytes)}`,
-                    type: 'X25519KeyAgreementKey2019',
-                    controller: did,
-                    publicKeyBase58: base58btc.encode(x25519PublicKeyBytes).slice(1),
-                },
-            ],
-        };
+        let finalDoc = { ...replacedDoc, controller: profile.did };
 
         if (saDocs) {
             saDocs.map(sa => {
