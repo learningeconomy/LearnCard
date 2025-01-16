@@ -18,6 +18,7 @@ import { VCAPIPlugin } from '@learncard/vc-api-plugin';
 import { LearnCardPlugin } from '@learncard/learn-card-plugin';
 import { VerifyBoostPlugin, LearnCardNetworkPlugin } from '@learncard/network-plugin';
 import { DidWebPlugin } from '@learncard/did-web-plugin';
+import { EncryptionPluginType } from '@learncard/encryption-plugin';
 
 import { InitFunction, GenericInitFunction } from './helpers';
 
@@ -63,6 +64,7 @@ export type LearnCardFromSeed = InitFunction<
             CryptoPluginType,
             DIDKitPlugin,
             DidKeyPlugin<DidMethod>,
+            EncryptionPluginType,
             VCPlugin,
             VCTemplatePlugin,
             CeramicPlugin,
@@ -87,6 +89,7 @@ export type NetworkLearnCardFromSeed = InitFunction<
             CryptoPluginType,
             DIDKitPlugin,
             DidKeyPlugin<DidMethod>,
+            EncryptionPluginType,
             VCPlugin,
             VCTemplatePlugin,
             CeramicPlugin,
@@ -113,6 +116,7 @@ export type DidWebLearnCardFromSeed = InitFunction<
             CryptoPluginType,
             DIDKitPlugin,
             DidKeyPlugin<DidMethod>,
+            EncryptionPluginType,
             VCPlugin,
             VCTemplatePlugin,
             CeramicPlugin,
@@ -138,6 +142,7 @@ export type DidWebNetworkLearnCardFromSeed = InitFunction<
             CryptoPluginType,
             DIDKitPlugin,
             DidKeyPlugin<DidMethod>,
+            EncryptionPluginType,
             VCPlugin,
             VCTemplatePlugin,
             CeramicPlugin,

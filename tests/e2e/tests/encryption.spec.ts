@@ -15,9 +15,9 @@ describe('Encryption', () => {
 
     test('Users can encrypt and decrypt VCs', async () => {
         const vc = await a.invoke.issueCredential(a.invoke.getTestVc(b.id.did()));
-        const jwe = await a.invoke.createDagJwe(vc, [a.id.did(), b.id.did()]);
+        const jwe = await a.invoke.createDagJwe(vc, [b.id.did()]);
 
-        expect(await b.invoke.decryptDagJwe(jwe, [b.id.keypair()])).toEqual(vc);
-        expect(await a.invoke.decryptDagJwe(jwe, [a.id.keypair()])).toEqual(vc);
+        expect(await b.invoke.decryptDagJwe(jwe)).toEqual(vc);
+        expect(await a.invoke.decryptDagJwe(jwe)).toEqual(vc);
     });
 });
