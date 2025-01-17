@@ -1,4 +1,3 @@
-import { FlattenObject } from '@helpers/objects.helpers';
 import {
     ConsentFlowContractValidator,
     ConsentFlowTermsValidator,
@@ -23,7 +22,7 @@ export const DbContractValidator = z.object({
 });
 
 export type DbContractType = z.infer<typeof DbContractValidator>;
-export type FlatDbContractType = FlattenObject<DbContractType>;
+export type FlatDbContractType = DbContractType & { contract: any };
 
 export const DbTransactionValidator = z.object({
     id: z.string(),
@@ -35,7 +34,7 @@ export const DbTransactionValidator = z.object({
 });
 
 export type DbTransactionType = z.infer<typeof DbTransactionValidator>;
-export type FlatDbTransactionType = FlattenObject<DbTransactionType>;
+export type FlatDbTransactionType = DbTransactionType & { terms: any };
 
 export const DbTermsValidator = z.object({
     id: z.string(),
@@ -48,4 +47,4 @@ export const DbTermsValidator = z.object({
 });
 
 export type DbTermsType = z.infer<typeof DbTermsValidator>;
-export type FlatDbTermsType = FlattenObject<DbTermsType>;
+export type FlatDbTermsType = DbTermsType & { terms: any };

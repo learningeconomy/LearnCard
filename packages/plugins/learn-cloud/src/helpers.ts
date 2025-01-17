@@ -34,14 +34,14 @@ export const generateJWE = async (
     learnCloudDid: string,
     item: any
 ): Promise<JWE> => {
-    return learnCard.invoke.getDIDObject().createDagJWE(item, [learnCard.id.did(), learnCloudDid]);
+    return learnCard.invoke.createDagJwe(item, [learnCloudDid]);
 };
 
 export const decryptJWE = async <T>(
     learnCard: LearnCloudDependentLearnCard,
     jwe: JWE
 ): Promise<T> => {
-    return learnCard.invoke.getDIDObject().decryptDagJWE(jwe) as any;
+    return learnCard.invoke.decryptDagJwe<T>(jwe);
 };
 
 export const generateEncryptedFieldsArray = async (
@@ -71,9 +71,7 @@ export const generateEncryptedRecord = async (
     record: Record<string, any>,
     unencryptedFields: string[] = []
 ): Promise<EncryptedRecord> => {
-    const encryptedRecord = await learnCard.invoke
-        .getDIDObject()
-        .createDagJWE(record, [learnCard.id.did()]);
+    const encryptedRecord = await learnCard.invoke.createDagJwe(record);
 
     const fields = await generateEncryptedFieldsArray(learnCard, record, unencryptedFields);
 

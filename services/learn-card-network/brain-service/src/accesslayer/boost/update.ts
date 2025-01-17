@@ -4,10 +4,10 @@ import { Boost, BoostInstance } from '@models';
 import { BoostType } from 'types/boost';
 
 export const updateBoost = async (boost: BoostInstance, updates: Partial<BoostType>) => {
-    const currentMeta = inflateObject<BoostType>(boost.getDataValues() as any).meta;
+    const currentMeta = (inflateObject as any)(boost.getDataValues() as any).meta;
     const newMeta = { ...(currentMeta || {}), ...(updates.meta || {}) };
 
-    const newUpdates = flattenObject<Partial<BoostType>>({
+    const newUpdates = (flattenObject as any)({
         ...updates,
         ...(currentMeta && { meta: newMeta }),
     });

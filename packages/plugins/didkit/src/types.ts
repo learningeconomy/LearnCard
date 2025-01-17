@@ -1,5 +1,6 @@
 import {
-    JWK,
+    JWE,
+    JWKWithPrivateKey,
     UnsignedVC,
     UnsignedVP,
     VC,
@@ -51,17 +52,21 @@ export type InputMetadata = {
 
 /** @group DIDKit Plugin */
 export type DidkitPluginMethods = {
-    generateEd25519KeyFromBytes: (bytes: Uint8Array) => JWK;
-    generateSecp256k1KeyFromBytes: (bytes: Uint8Array) => JWK;
-    keyToDid: (type: DidMethod, keypair: JWK) => string;
-    keyToVerificationMethod: (type: string, keypair: JWK) => Promise<string>;
+    generateEd25519KeyFromBytes: (bytes: Uint8Array) => JWKWithPrivateKey;
+    generateSecp256k1KeyFromBytes: (bytes: Uint8Array) => JWKWithPrivateKey;
+    keyToDid: (type: DidMethod, keypair: JWKWithPrivateKey) => string;
+    keyToVerificationMethod: (type: string, keypair: JWKWithPrivateKey) => Promise<string>;
     didToVerificationMethod: (did: string) => Promise<string>;
-    issueCredential: (credential: UnsignedVC, options: ProofOptions, keypair: JWK) => Promise<VC>;
+    issueCredential: (
+        credential: UnsignedVC,
+        options: ProofOptions,
+        keypair: JWKWithPrivateKey
+    ) => Promise<VC>;
     verifyCredential: (credential: VC, options?: ProofOptions) => Promise<VerificationCheck>;
     issuePresentation: (
         presentation: UnsignedVP,
         options: ProofOptions,
-        keypair: JWK
+        keypair: JWKWithPrivateKey
     ) => Promise<VP>;
     verifyPresentation: (
         presentation: VP | string,
@@ -70,6 +75,10 @@ export type DidkitPluginMethods = {
     contextLoader: (url: string) => Promise<Record<string, any>>;
     resolveDid: (did: string, inputMetadata?: InputMetadata) => Promise<DidDocument>;
     didResolver: (did: string, inputMetadata?: InputMetadata) => Promise<DIDResolutionResult>;
+    createJwe: (cleartext: string, recipients: string[]) => Promise<JWE>;
+    decryptJwe: (jwe: JWE, jwks: JWKWithPrivateKey[]) => Promise<string>;
+    createDagJwe: <T>(cleartext: T, recipients: string[]) => Promise<JWE>;
+    decryptDagJwe: <T>(jwe: JWE, jwks: JWKWithPrivateKey[]) => Promise<T>;
     clearDidWebCache: () => Promise<void>;
 };
 

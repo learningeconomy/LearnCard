@@ -104,7 +104,6 @@ export const trpcHandler = Sentry.AWSLambda.wrapHandler(
 
 export const notificationsWorker: SQSHandler = Sentry.AWSLambda.wrapHandler(
     async (event, context) => {
-        console.log('lolwat');
         await Promise.all(
             event.Records.map(async record => {
                 try {

@@ -70,7 +70,7 @@ export const getBoostsForProfile = async (
     );
 
     return results.map(result => ({
-        ...inflateObject(result.boost as any),
+        ...(inflateObject as any)(result.boost as any),
         created: result.createdBy.date,
     }));
 };
@@ -146,7 +146,7 @@ export const getChildrenBoosts = async (
     );
 
     return results.map(result => ({
-        ...inflateObject(result.boost as any),
+        ...(inflateObject as any)(result.boost as any),
         created: result.createdBy.date,
     }));
 };
@@ -225,7 +225,7 @@ export const getSiblingBoosts = async (
     );
 
     return results.map(result => ({
-        ...inflateObject(result.boost as any),
+        ...(inflateObject as any)(result.boost as any),
         created: result.createdBy.date,
     }));
 };
@@ -311,7 +311,7 @@ AND ${getMatchQueryWhere('boost')}`
     );
 
     return results.map(result => ({
-        ...inflateObject(result.boost as any),
+        ...(inflateObject as any)(result.boost as any),
         created: result.createdBy.date,
     }));
 };
@@ -400,7 +400,7 @@ export const getParentBoosts = async (
     );
 
     return results.map(result => ({
-        ...inflateObject(result.boost as any),
+        ...(inflateObject as any)(result.boost as any),
         created: result.createdBy.date,
     }));
 };

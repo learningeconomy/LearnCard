@@ -43,7 +43,7 @@ export const getLearnCloudPlugin = async (
     url: string,
     unencryptedFields: string[] = [],
     unencryptedCustomFields: string[] = [],
-    automaticallyAssociateDids = true,
+    automaticallyAssociateDids = true
 ): Promise<LearnCloudPlugin> => {
     let learnCard = initialLearnCard;
 
@@ -297,9 +297,7 @@ export const getLearnCloudPlugin = async (
                         if (!result) return null;
 
                         try {
-                            const decryptedResult = await _learnCard.invoke
-                                .getDIDObject()
-                                .decryptDagJWE(result);
+                            const decryptedResult = await _learnCard.invoke.decryptDagJwe(result);
 
                             return await VCValidator.or(VPValidator).parseAsync(decryptedResult);
                         } catch (error) {
@@ -359,9 +357,7 @@ export const getLearnCloudPlugin = async (
 
                         learnCard.debug?.('LearnCloud read.get result', result);
 
-                        const decryptedResult = await _learnCard.invoke
-                            .getDIDObject()
-                            .decryptDagJWE(result);
+                        const decryptedResult = await _learnCard.invoke.decryptDagJwe(result);
 
                         learnCard.debug?.('LearnCloud read.get decryptedResult', decryptedResult);
 
@@ -377,9 +373,7 @@ export const getLearnCloudPlugin = async (
 
                     learnCard.debug?.('LearnCloud read.get result', result);
 
-                    const decryptedResult = await _learnCard.invoke
-                        .getDIDObject()
-                        .decryptDagJWE(result);
+                    const decryptedResult = await _learnCard.invoke.decryptDagJwe(result);
 
                     learnCard.debug?.('LearnCloud read.get decryptedResult', decryptedResult);
 
@@ -403,9 +397,10 @@ export const getLearnCloudPlugin = async (
             ) => {
                 _learnCard.debug?.("learnCard.store['LearnCard Network'].upload");
 
-                const jwe = await _learnCard.invoke
-                    .getDIDObject()
-                    .createDagJWE(credential, [_learnCard.id.did(), ...recipients]);
+                const jwe = await _learnCard.invoke.createDagJwe(credential, [
+                    _learnCard.id.did(),
+                    ...recipients,
+                ]);
 
                 return client.storage.store.mutate({ item: jwe });
             },

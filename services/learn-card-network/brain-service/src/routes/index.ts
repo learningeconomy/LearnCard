@@ -99,7 +99,6 @@ export const openRoute = t.procedure
 
 export const didRoute = openRoute.use(async ({ ctx, next }) => {
     if (!ctx.user?.did) {
-        console.log(ctx.user);
         throw new TRPCError({ code: 'UNAUTHORIZED' });
     }
 

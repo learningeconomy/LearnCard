@@ -56,7 +56,7 @@ export const convertDataQueryToNeo4jQuery = (_query: ConsentFlowDataQuery) => {
 
     Object.keys(query.credentials?.categories ?? {}).forEach(category => {
         query.credentials!.categories![category] = {
-            shared: query.credentials!.categories![category],
+            shared: [query.credentials!.categories![category]],
         } as any;
     });
 

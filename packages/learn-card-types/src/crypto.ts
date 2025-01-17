@@ -6,9 +6,12 @@ export const JWKValidator = z.object({
     x: z.string(),
     y: z.string().optional(),
     n: z.string().optional(),
-    d: z.string(),
+    d: z.string().optional(),
 });
 export type JWK = z.infer<typeof JWKValidator>;
+
+export const JWKWithPrivateKeyValidator = JWKValidator.omit({ d: true }).extend({ d: z.string() });
+export type JWKWithPrivateKey = z.infer<typeof JWKWithPrivateKeyValidator>;
 
 export const JWERecipientHeaderValidator = z.object({
     alg: z.string(),

@@ -290,7 +290,7 @@ all(key IN keys($params) WHERE
         terms: FlatDbTermsType;
     }>(await dbQuery.return('DISTINCT terms').orderBy('terms.updatedAt DESC').limit(limit).run());
 
-    const terms = results.map(result => inflateObject<DbTermsType>(result.terms));
+    const terms = results.map(result => inflateObject<any>(result.terms));
 
     return terms.map(term => ({
         date: term.updatedAt!,
@@ -310,7 +310,7 @@ export const getConsentedDataForContract = async (
 ): Promise<ConsentFlowContractData[]> => {
     const _dbQuery = new QueryBuilder(
         new BindParam({
-            params: flattenObject({ terms: convertDataQueryToNeo4jQuery(query) }),
+            params: flattenObject({ terms: flattenObject(convertDataQueryToNeo4jQuery(query)) }),
             cursor,
         })
     ).match({
@@ -338,7 +338,7 @@ all(key IN keys($params) WHERE
         terms: FlatDbTermsType;
     }>(await dbQuery.return('DISTINCT terms').orderBy('terms.updatedAt DESC').limit(limit).run());
 
-    const terms = results.map(result => inflateObject<DbTermsType>(result.terms));
+    const terms = results.map(result => inflateObject<any>(result.terms));
 
     return terms.map(term => ({
         date: term.updatedAt!,
