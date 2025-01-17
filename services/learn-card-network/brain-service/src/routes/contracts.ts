@@ -61,6 +61,7 @@ export const contractsRouter = t.router({
                 description: z.string().optional(),
                 reasonForAccessing: z.string().optional(),
                 needsGuardianConsent: z.boolean().optional(),
+                redirectUrl: z.string().optional(),
                 image: z.string().optional(),
                 expiresAt: z.string().optional(),
             })
@@ -74,6 +75,7 @@ export const contractsRouter = t.router({
                 description,
                 reasonForAccessing,
                 needsGuardianConsent,
+                redirectUrl,
                 image,
                 expiresAt,
             } = input;
@@ -86,6 +88,7 @@ export const contractsRouter = t.router({
                 description,
                 reasonForAccessing,
                 needsGuardianConsent,
+                redirectUrl,
                 image,
                 expiresAt,
             });
@@ -126,6 +129,7 @@ export const contractsRouter = t.router({
                 description: result.contract.description,
                 reasonForAccessing: result.contract.reasonForAccessing,
                 needsGuardianConsent: result.contract.needsGuardianConsent,
+                redirectUrl: result.contract.redirectUrl,
                 image: result.contract.image,
                 createdAt: result.contract.createdAt,
                 updatedAt: result.contract.updatedAt,
@@ -176,6 +180,7 @@ export const contractsRouter = t.router({
                     description: contract.description,
                     reasonForAccessing: contract.reasonForAccessing,
                     needsGuardianConsent: contract.needsGuardianConsent,
+                    redirectUrl: contract.redirectUrl,
                     image: contract.image,
                     createdAt: contract.createdAt,
                     updatedAt: contract.updatedAt,
@@ -423,6 +428,7 @@ export const contractsRouter = t.router({
                         description: record.contract.description,
                         reasonForAccessing: record.contract.reasonForAccessing,
                         needsGuardianConsent: record.contract.needsGuardianConsent,
+                        redirectUrl: record.contract.redirectUrl,
                         image: record.contract.image,
                         createdAt: record.contract.createdAt,
                         updatedAt: record.contract.updatedAt,
