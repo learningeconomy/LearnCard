@@ -1,5 +1,15 @@
 # learn-card-core
 
+## 2.4.5
+
+### Patch Changes
+
+-   [#596](https://github.com/learningeconomy/LearnCard/pull/596) [`a4eead401a62a872be046e28b0d27b2d980ced3a`](https://github.com/learningeconomy/LearnCard/commit/a4eead401a62a872be046e28b0d27b2d980ced3a) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Allow adding custom metadata to your did
+
+-   Updated dependencies [[`a4eead401a62a872be046e28b0d27b2d980ced3a`](https://github.com/learningeconomy/LearnCard/commit/a4eead401a62a872be046e28b0d27b2d980ced3a)]:
+    -   @learncard/core@9.3.15
+    -   @learncard/network-brain-client@2.2.6
+
 ## 2.4.4
 
 ### Patch Changes

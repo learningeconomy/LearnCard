@@ -1,5 +1,17 @@
 # learn-card-core
 
+## 1.5.0
+
+### Minor Changes
+
+-   [#596](https://github.com/learningeconomy/LearnCard/pull/596) [`a4eead401a62a872be046e28b0d27b2d980ced3a`](https://github.com/learningeconomy/LearnCard/commit/a4eead401a62a872be046e28b0d27b2d980ced3a) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add encryption/decryption methods
+
+### Patch Changes
+
+-   Updated dependencies [[`a4eead401a62a872be046e28b0d27b2d980ced3a`](https://github.com/learningeconomy/LearnCard/commit/a4eead401a62a872be046e28b0d27b2d980ced3a), [`a4eead401a62a872be046e28b0d27b2d980ced3a`](https://github.com/learningeconomy/LearnCard/commit/a4eead401a62a872be046e28b0d27b2d980ced3a)]:
+    -   @learncard/core@9.3.15
+    -   @learncard/types@5.6.4
+
 ## 1.4.23
 
 ### Patch Changes

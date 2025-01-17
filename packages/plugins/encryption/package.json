@@ -1,6 +1,6 @@
 {
     "name": "@learncard/encryption-plugin",
-    "version": "0.0.1",
+    "version": "1.0.0",
     "description": "",
     "main": "./dist/index.js",
     "module": "./dist/encryption-plugin.esm.js",

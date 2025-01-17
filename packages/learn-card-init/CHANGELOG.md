@@ -1,5 +1,34 @@
 # learn-card-core
 
+## 1.3.26
+
+### Patch Changes
+
+-   [#596](https://github.com/learningeconomy/LearnCard/pull/596) [`a4eead401a62a872be046e28b0d27b2d980ced3a`](https://github.com/learningeconomy/LearnCard/commit/a4eead401a62a872be046e28b0d27b2d980ced3a) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Use Encryption plugin
+
+-   Updated dependencies [[`a4eead401a62a872be046e28b0d27b2d980ced3a`](https://github.com/learningeconomy/LearnCard/commit/a4eead401a62a872be046e28b0d27b2d980ced3a), [`a4eead401a62a872be046e28b0d27b2d980ced3a`](https://github.com/learningeconomy/LearnCard/commit/a4eead401a62a872be046e28b0d27b2d980ced3a), [`a4eead401a62a872be046e28b0d27b2d980ced3a`](https://github.com/learningeconomy/LearnCard/commit/a4eead401a62a872be046e28b0d27b2d980ced3a), [`a4eead401a62a872be046e28b0d27b2d980ced3a`](https://github.com/learningeconomy/LearnCard/commit/a4eead401a62a872be046e28b0d27b2d980ced3a), [`a4eead401a62a872be046e28b0d27b2d980ced3a`](https://github.com/learningeconomy/LearnCard/commit/a4eead401a62a872be046e28b0d27b2d980ced3a), [`a4eead401a62a872be046e28b0d27b2d980ced3a`](https://github.com/learningeconomy/LearnCard/commit/a4eead401a62a872be046e28b0d27b2d980ced3a), [`a4eead401a62a872be046e28b0d27b2d980ced3a`](https://github.com/learningeconomy/LearnCard/commit/a4eead401a62a872be046e28b0d27b2d980ced3a), [`a4eead401a62a872be046e28b0d27b2d980ced3a`](https://github.com/learningeconomy/LearnCard/commit/a4eead401a62a872be046e28b0d27b2d980ced3a)]:
+    -   @learncard/network-plugin@2.4.5
+    -   @learncard/core@9.3.15
+    -   @learncard/vc-plugin@1.1.29
+    -   @learncard/encryption-plugin@1.0.0
+    -   @learncard/didkey-plugin@1.0.26
+    -   @learncard/didkit-plugin@1.5.0
+    -   @learncard/types@5.6.4
+    -   @learncard/learn-cloud-plugin@2.1.6
+    -   @learncard/ceramic-plugin@1.0.26
+    -   @learncard/chapi-plugin@1.0.42
+    -   @learncard/crypto-plugin@1.0.26
+    -   @learncard/did-web-plugin@1.0.52
+    -   @learncard/dynamic-loader-plugin@1.0.22
+    -   @learncard/ethereum-plugin@1.0.27
+    -   @learncard/expiration-plugin@1.1.29
+    -   @learncard/idx-plugin@1.0.26
+    -   @learncard/learn-card-plugin@1.1.28
+    -   @learncard/vc-api-plugin@1.0.26
+    -   @learncard/vc-templates-plugin@1.0.36
+    -   @learncard/vpqr-plugin@1.0.26
+    -   @learncard/helpers@1.1.6
+
 ## 1.3.25
 
 ### Patch Changes

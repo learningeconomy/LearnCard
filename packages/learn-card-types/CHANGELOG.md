@@ -1,5 +1,11 @@
 # learn-card-types
 
+## 5.6.4
+
+### Patch Changes
+
+-   [#596](https://github.com/learningeconomy/LearnCard/pull/596) [`a4eead401a62a872be046e28b0d27b2d980ced3a`](https://github.com/learningeconomy/LearnCard/commit/a4eead401a62a872be046e28b0d27b2d980ced3a) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add JWKWithPrivateKey type
+
 ## 5.6.3
 
 ### Patch Changes

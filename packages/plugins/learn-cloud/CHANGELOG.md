@@ -1,5 +1,17 @@
 # learn-card-core
 
+## 2.1.6
+
+### Patch Changes
+
+-   [#596](https://github.com/learningeconomy/LearnCard/pull/596) [`a4eead401a62a872be046e28b0d27b2d980ced3a`](https://github.com/learningeconomy/LearnCard/commit/a4eead401a62a872be046e28b0d27b2d980ced3a) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Use didkit for encryption/decryption
+
+-   Updated dependencies [[`a4eead401a62a872be046e28b0d27b2d980ced3a`](https://github.com/learningeconomy/LearnCard/commit/a4eead401a62a872be046e28b0d27b2d980ced3a), [`a4eead401a62a872be046e28b0d27b2d980ced3a`](https://github.com/learningeconomy/LearnCard/commit/a4eead401a62a872be046e28b0d27b2d980ced3a)]:
+    -   @learncard/core@9.3.15
+    -   @learncard/didkit-plugin@1.5.0
+    -   @learncard/helpers@1.1.6
+    -   @learncard/learn-cloud-client@1.3.5
+
 ## 2.1.5
 
 ### Patch Changes
