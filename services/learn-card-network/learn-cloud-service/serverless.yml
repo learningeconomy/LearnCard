@@ -79,7 +79,7 @@ package:
 
 provider:
     name: aws
-    runtime: nodejs22.x
+    runtime: nodejs20.x
     memorySize: 4096
     timeout: 29
     stage: ${opt:stage, "dev"}
