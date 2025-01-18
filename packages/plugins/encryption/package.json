@@ -1,5 +1,6 @@
 {
     "name": "@learncard/encryption-plugin",
+    "private": false,
     "version": "1.0.0",
     "description": "",
     "main": "./dist/index.js",
