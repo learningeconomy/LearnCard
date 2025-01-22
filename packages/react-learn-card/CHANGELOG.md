@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.7.56
+
+### Patch Changes
+
+-   [`74f7b7bd762501d0591f84d3c7ef6dc91e8ef30f`](https://github.com/learningeconomy/LearnCard/commit/74f7b7bd762501d0591f84d3c7ef6dc91e8ef30f) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Don't crash from bad skills
+
 ## 2.7.55
 
 ### Patch Changes
