@@ -21,6 +21,7 @@ export type LearnCloudPluginDependentMethods = {
         signingOptions?: Partial<ProofOptions>
     ) => Promise<VC>;
     crypto: () => Crypto;
+    hash?: (message: string, algorithm?: string) => Promise<string | undefined>;
 };
 
 /** @group LearnCloud Plugin */

@@ -11,7 +11,6 @@ import {
 
 import { t, didAndChallengeRoute } from '@routes';
 import { isEncrypted } from '@learncard/helpers';
-import { getLearnCard } from '@helpers/learnCard.helpers';
 import {
     countCredentialRecordsForDid,
     getCredentialRecordsForDid,
@@ -26,7 +25,7 @@ import {
     deleteCredentialRecordById,
     deleteCredentialRecordsForDid,
 } from '@accesslayer/credential-record/delete';
-import { encryptObject } from '@helpers/encryption.helpers';
+import { decryptObject, encryptObject } from '@helpers/encryption.helpers';
 import { PaginationOptionsValidator } from 'types/mongo';
 import {
     flushIndexCacheForDid,
@@ -57,7 +56,6 @@ export const indexRouter = t.router({
         )
         .output(PaginatedEncryptedCredentialRecordsValidator.or(JWEValidator))
         .query(async ({ ctx, input }) => {
-            const learnCard = await getLearnCard();
             const { query: _query, encrypt, limit, cursor, includeAssociatedDids, sort } = input;
             const {
                 user: { did },
@@ -65,9 +63,7 @@ export const indexRouter = t.router({
 
             let query: Record<string, any> = _query || {};
 
-            if (isEncrypted(query)) {
-                query = await learnCard.invoke.getDIDObject().decryptDagJWE(query as JWE);
-            }
+            if (isEncrypted(query)) query = await decryptObject(query as JWE);
 
             const cachedResponse = await getCachedIndexPageForDid(
                 did,
@@ -146,7 +142,6 @@ export const indexRouter = t.router({
         )
         .output(z.number().int().positive().or(JWEValidator))
         .query(async ({ ctx, input }) => {
-            const learnCard = await getLearnCard();
             const { query: _query, encrypt, includeAssociatedDids } = input;
             const {
                 user: { did },
@@ -154,9 +149,7 @@ export const indexRouter = t.router({
 
             let query: Record<string, any> = _query || {};
 
-            if (isEncrypted(query)) {
-                query = await learnCard.invoke.getDIDObject().decryptDagJWE(query as JWE);
-            }
+            if (isEncrypted(query)) query = await decryptObject(query as JWE);
 
             const count = await countCredentialRecordsForDid(did, query, includeAssociatedDids);
 
@@ -190,28 +183,22 @@ export const indexRouter = t.router({
 
             let record: EncryptedCredentialRecord = _record as any;
 
-            if (isEncrypted(record)) {
-                const learnCard = await getLearnCard();
-
-                record = (await learnCard.invoke
-                    .getDIDObject()
-                    .decryptDagJWE(record as any)) as any;
-            }
+            if (isEncrypted(record)) record = await decryptObject(record as any);
 
             const success = Boolean(await createCredentialRecord(did, record));
 
             const flushTimeout = 23000; // 5 seconds timeout
             try {
-              const timeoutPromise = setTimeout(flushTimeout, 'Timeout');
-              const flushPromise = flushIndexCacheForDid(did);
-              
-              const flushResult = await Promise.race([flushPromise, timeoutPromise]);
-              
-              if (flushResult === 'Timeout') {
-                console.error(`flushIndexCacheForDid timed out after ${flushTimeout}ms`, did);
-              } 
+                const timeoutPromise = setTimeout(flushTimeout, 'Timeout');
+                const flushPromise = flushIndexCacheForDid(did);
+
+                const flushResult = await Promise.race([flushPromise, timeoutPromise]);
+
+                if (flushResult === 'Timeout') {
+                    console.error(`flushIndexCacheForDid timed out after ${flushTimeout}ms`, did);
+                }
             } catch (error) {
-              console.error("Error flushing index cache:", error);
+                console.error('Error flushing index cache:', error);
             }
 
             if (!success) {
@@ -243,16 +230,13 @@ export const indexRouter = t.router({
         )
         .output(z.boolean())
         .mutation(async ({ ctx, input }) => {
-            const learnCard = await getLearnCard();
             const { records: _records } = input;
             const {
                 user: { did },
             } = ctx;
 
             const records = isEncrypted(_records)
-                ? ((await learnCard.invoke
-                    .getDIDObject()
-                    .decryptDagJWE(_records as any)) as EncryptedCredentialRecord[])
+                ? await decryptObject<EncryptedCredentialRecord[]>(_records as JWE)
                 : _records;
 
             await createCredentialRecords(did, records);
@@ -288,11 +272,7 @@ export const indexRouter = t.router({
             let updates: EncryptedCredentialRecord = _updates as any;
 
             if (isEncrypted(_updates)) {
-                const learnCard = await getLearnCard();
-
-                updates = (await learnCard.invoke
-                    .getDIDObject()
-                    .decryptDagJWE(_updates as JWE)) as any;
+                updates = await decryptObject(_updates as JWE);
             }
 
             const success = Boolean(await updateCredentialRecord(did, id, updates));
