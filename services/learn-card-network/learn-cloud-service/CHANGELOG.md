@@ -1,5 +1,11 @@
 # @learncard/network-brain-service
 
+## 2.2.9
+
+### Patch Changes
+
+-   [#599](https://github.com/learningeconomy/LearnCard/pull/599) [`d3762894ecca08a5c36ffb12aaff52f6248dea5c`](https://github.com/learningeconomy/LearnCard/commit/d3762894ecca08a5c36ffb12aaff52f6248dea5c) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Use didkit for encryption/decryption
+
 ## 2.2.8
 
 ### Patch Changes
