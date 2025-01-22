@@ -9,9 +9,10 @@ export const encryptObject = async (
 ): Promise<JWE> => {
     const learnCard = await getLearnCard();
 
-    return learnCard.invoke
-        .getDIDObject()
-        .createDagJWE(object, [isTest ? learnCard.id.did() : `did:web:${domain}`, ...recipients]);
+    return learnCard.invoke.createDagJwe(object, [
+        isTest ? learnCard.id.did() : `did:web:${domain}`,
+        ...recipients,
+    ]);
 };
 
 export const decryptObject = async <Output extends Record<string, any>>(
@@ -19,5 +20,5 @@ export const decryptObject = async <Output extends Record<string, any>>(
 ): Promise<Output> => {
     const learnCard = await getLearnCard();
 
-    return learnCard.invoke.getDIDObject().decryptDagJWE(jwe) as any;
+    return learnCard.invoke.decryptDagJwe(jwe, [learnCard.id.keypair()]);
 };

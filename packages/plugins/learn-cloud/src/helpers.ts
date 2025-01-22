@@ -8,6 +8,10 @@ export const hash = async (
     learnCard: LearnCloudDependentLearnCard,
     message: string
 ): Promise<string> => {
+    const lcHash = await learnCard.invoke.hash?.(message, 'PBKDF2-HMAC-SHA256');
+
+    if (lcHash) return lcHash;
+
     const crypto = learnCard.invoke.crypto();
 
     const uint8Message = new TextEncoder().encode(message);
