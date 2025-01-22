@@ -1,5 +1,14 @@
 # learn-card-core
 
+## 2.1.7
+
+### Patch Changes
+
+-   [#599](https://github.com/learningeconomy/LearnCard/pull/599) [`d3762894ecca08a5c36ffb12aaff52f6248dea5c`](https://github.com/learningeconomy/LearnCard/commit/d3762894ecca08a5c36ffb12aaff52f6248dea5c) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Allow using a `hash` plugin method for LearnCloud entries
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-client@1.3.6
+
 ## 2.1.6
 
 ### Patch Changes
