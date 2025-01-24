@@ -1,5 +1,11 @@
 # @learncard/network-brain-service
 
+## 2.2.10
+
+### Patch Changes
+
+-   [`2f0a61fd93ac575b79c559e9232e878625d3bf47`](https://github.com/learningeconomy/LearnCard/commit/2f0a61fd93ac575b79c559e9232e878625d3bf47) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Use the delegate credential's subject id in xapi proxy
+
 ## 2.2.9
 
 ### Patch Changes
