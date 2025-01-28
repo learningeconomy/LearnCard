@@ -6,11 +6,12 @@ import {
     convertQueryResultToPropertiesObjectArray,
     getMatchQueryWhere,
 } from '@helpers/neo4j.helpers';
-import { Boost, Profile, BoostInstance } from '@models';
+import { Boost, Profile, BoostInstance, ProfileManager } from '@models';
 import { BoostType } from 'types/boost';
-import { BoostQuery } from '@learncard/types';
+import { BoostQuery, LCNProfileManager, LCNProfileManagerQuery } from '@learncard/types';
 import { inflateObject } from '@helpers/objects.helpers';
 import { ProfileType } from 'types/profile';
+import { ProfileManagerType } from 'types/profile-manager';
 
 export const getBoostById = async (id: string): Promise<BoostInstance | null> => {
     return Boost.findOne({ where: { id } });
@@ -69,7 +70,7 @@ export const getBoostsForProfile = async (
     );
 
     return results.map(result => ({
-        ...inflateObject(result.boost as any),
+        ...(inflateObject as any)(result.boost as any),
         created: result.createdBy.date,
     }));
 };
@@ -145,7 +146,7 @@ export const getChildrenBoosts = async (
     );
 
     return results.map(result => ({
-        ...inflateObject(result.boost as any),
+        ...(inflateObject as any)(result.boost as any),
         created: result.createdBy.date,
     }));
 };
@@ -224,7 +225,7 @@ export const getSiblingBoosts = async (
     );
 
     return results.map(result => ({
-        ...inflateObject(result.boost as any),
+        ...(inflateObject as any)(result.boost as any),
         created: result.createdBy.date,
     }));
 };
@@ -310,7 +311,7 @@ AND ${getMatchQueryWhere('boost')}`
     );
 
     return results.map(result => ({
-        ...inflateObject(result.boost as any),
+        ...(inflateObject as any)(result.boost as any),
         created: result.createdBy.date,
     }));
 };
@@ -399,7 +400,7 @@ export const getParentBoosts = async (
     );
 
     return results.map(result => ({
-        ...inflateObject(result.boost as any),
+        ...(inflateObject as any)(result.boost as any),
         created: result.createdBy.date,
     }));
 };
@@ -429,4 +430,37 @@ export const countBoostParents = async (
     const result = await query.return('COUNT(DISTINCT boost) AS count').run();
 
     return Number(result.records[0]?.get('count') ?? 0);
+};
+
+export const getChildrenProfileManagers = async (
+    boost: BoostInstance,
+    {
+        limit,
+        cursor,
+        query: matchQuery = {},
+    }: {
+        limit: number;
+        cursor?: string;
+        query?: LCNProfileManagerQuery;
+    }
+): Promise<Array<LCNProfileManager>> => {
+    const _query = new QueryBuilder(
+        new BindParam({ matchQuery: convertObjectRegExpToNeo4j(matchQuery), cursor })
+    )
+        .match({
+            related: [
+                { identifier: 'manager', model: ProfileManager },
+                ProfileManager.getRelationshipByAlias('childOf'),
+                { model: Boost, where: { id: boost.id } },
+            ],
+        })
+        .where(getMatchQueryWhere('manager'));
+
+    const query = cursor ? _query.raw('AND manager.created < $cursor') : _query;
+
+    const results = convertQueryResultToPropertiesObjectArray<{
+        manager: ProfileManagerType;
+    }>(await query.return('DISTINCT manager').orderBy('manager.created DESC').limit(limit).run());
+
+    return results.map(result => result.manager);
 };

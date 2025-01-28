@@ -28,7 +28,7 @@ export const getLearnCardNetworkPlugin = async (
     learnCard: LearnCard<any, 'id', LearnCardNetworkPluginDependentMethods>,
     url: string
 ): Promise<LearnCardNetworkPlugin> => {
-    const existingDid = learnCard.id.did();
+    let did = learnCard.id.did();
 
     learnCard?.debug?.('Adding LearnCardNetwork Plugin');
     const client = await getClient(url, async challenge => {
@@ -41,13 +41,11 @@ export const getLearnCardNetworkPlugin = async (
 
     let userData: LCNProfile | undefined;
 
-    try {
-        userData = await client.profile.getProfile.query();
-    } catch (error) {
-        learnCard.debug?.('No profile!', error);
-    }
+    const initialQuery = client.profile.getProfile.query().then(result => {
+        userData = result;
 
-    let did = userData?.did || existingDid;
+        if (userData?.did) did = userData.did;
+    });
 
     return {
         name: 'LearnCard Network',
@@ -132,12 +130,42 @@ export const getLearnCardNetworkPlugin = async (
 
                 return newDid;
             },
+            createManagedProfile: async (_learnCard, profile) => {
+                const newDid = await client.profileManager.createManagedProfile.mutate(profile);
+
+                return newDid;
+            },
+            createProfileManager: async (_learnCard, profile) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                const newDid = await client.profileManager.createProfileManager.mutate(profile);
+
+                return newDid;
+            },
+            createChildProfileManager: async (_learnCard, parentUri, profile) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                const newDid = await client.profileManager.createChildProfileManager.mutate({
+                    parentUri,
+                    profile,
+                });
+
+                return newDid;
+            },
             createManagedServiceProfile: async (_learnCard, profile) => {
                 if (!userData) throw new Error('Please make an account first!');
 
                 const newDid = await client.profile.createManagedServiceProfile.mutate(profile);
 
                 return newDid;
+            },
+            getAvailableProfiles: async (_learnCard, options = {}) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.profile.getAvailableProfiles.query(options);
+            },
+            getManagedProfiles: async (_learnCard, options = {}) => {
+                return client.profileManager.getManagedProfiles.query(options);
             },
             getManagedServiceProfiles: async (_learnCard, options = {}) => {
                 if (!userData) throw new Error('Please make an account first!');
@@ -157,6 +185,9 @@ export const getLearnCardNetworkPlugin = async (
 
                 return false;
             },
+            updateProfileManagerProfile: async (_learnCard, manager) => {
+                return client.profileManager.updateProfileManager.mutate(manager);
+            },
             deleteProfile: async () => {
                 if (!userData) throw new Error('Account does not exist!');
 
@@ -171,9 +202,16 @@ export const getLearnCardNetworkPlugin = async (
                 return false;
             },
             getProfile: async (_learnCard, profileId) => {
+                await initialQuery;
+
                 if (!profileId) return client.profile.getProfile.query();
 
                 return client.profile.getOtherProfile.query({ profileId });
+            },
+            getProfileManagerProfile: async (_learnCard, id) => {
+                if (!id) return client.profileManager.getProfileManager.query();
+
+                return client.profileManager.getOtherProfileManager.query({ id });
             },
             searchProfiles: async (
                 _learnCard,
@@ -493,7 +531,7 @@ export const getLearnCardNetworkPlugin = async (
                     limit,
                     cursor,
                     includeUnacceptedBoosts,
-                    query
+                    query,
                 });
             },
             countBoostRecipients: async (_learnCard, uri, includeUnacceptedBoosts = true) => {
@@ -501,12 +539,17 @@ export const getLearnCardNetworkPlugin = async (
 
                 return client.boost.getBoostRecipientCount.query({ uri, includeUnacceptedBoosts });
             },
+            getBoostChildrenProfileManagers: async (_learnCard, uri, options) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.boost.getChildrenProfileManagers.query({ uri, ...options });
+            },
             updateBoost: async (_learnCard, uri, updates, credential) => {
                 if (!userData) throw new Error('Please make an account first!');
 
                 return client.boost.updateBoost.mutate({
                     uri,
-                    updates: { credential, ...updates },
+                    updates: { ...(credential && { credential }), ...updates },
                 });
             },
             getBoostAdmins: async (_learnCard, uri, options = {}) => {
@@ -526,17 +569,33 @@ export const getLearnCardNetworkPlugin = async (
 
                 if (!profileId) return client.boost.updateBoostPermissions.query({ uri, updates });
 
-                return client.boost.updateOtherBoostPermissions.query({ uri, profileId, updates });
+                const result = await client.boost.updateOtherBoostPermissions.query({
+                    uri,
+                    profileId,
+                    updates,
+                });
+
+                if (result) await _learnCard.invoke.clearDidWebCache?.();
+
+                return result;
             },
             addBoostAdmin: async (_learnCard, uri, profileId) => {
                 if (!userData) throw new Error('Please make an account first!');
 
-                return client.boost.addBoostAdmin.mutate({ uri, profileId });
+                const result = await client.boost.addBoostAdmin.mutate({ uri, profileId });
+
+                if (result) await _learnCard.invoke.clearDidWebCache?.();
+
+                return result;
             },
             removeBoostAdmin: async (_learnCard, uri, profileId) => {
                 if (!userData) throw new Error('Please make an account first!');
 
-                return client.boost.removeBoostAdmin.mutate({ uri, profileId });
+                const result = await client.boost.removeBoostAdmin.mutate({ uri, profileId });
+
+                if (result) await _learnCard.invoke.clearDidWebCache?.();
+
+                return result;
             },
             deleteBoost: async (_learnCard, uri) => {
                 if (!userData) throw new Error('Please make an account first!');
@@ -709,6 +768,48 @@ export const getLearnCardNetworkPlugin = async (
 
             verifyConsent: async (_learnCard, uri, profileId) => {
                 return client.contracts.verifyConsent.query({ uri, profileId });
+            },
+
+            addDidMetadata: async (_learnCard, metadata) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                const result = await client.didMetadata.addDidMetadata.mutate(metadata);
+
+                if (result) await _learnCard.invoke.clearDidWebCache?.();
+
+                return result;
+            },
+
+            getDidMetadata: async (_learnCard, id) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.didMetadata.getDidMetadata.query({ id });
+            },
+
+            getMyDidMetadata: async () => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.didMetadata.getMyDidMetadata.query();
+            },
+
+            updateDidMetadata: async (_learnCard, id, updates) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                const result = await client.didMetadata.updateDidMetadata.mutate({ id, updates });
+
+                if (result) await _learnCard.invoke.clearDidWebCache?.();
+
+                return result;
+            },
+
+            deleteDidMetadata: async (_learnCard, id) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                const result = await client.didMetadata.deleteDidMetadata.mutate({ id });
+
+                if (result) await _learnCard.invoke.clearDidWebCache?.();
+
+                return result;
             },
 
             resolveFromLCN: async (_learnCard, uri) => {

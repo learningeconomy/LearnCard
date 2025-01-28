@@ -1,5 +1,88 @@
 # @welibraryos/react-learn-card
 
+## 2.7.58
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.28
+
+## 2.7.57
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.27
+
+## 2.7.56
+
+### Patch Changes
+
+-   [`74f7b7bd762501d0591f84d3c7ef6dc91e8ef30f`](https://github.com/learningeconomy/LearnCard/commit/74f7b7bd762501d0591f84d3c7ef6dc91e8ef30f) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Don't crash from bad skills
+
+## 2.7.55
+
+### Patch Changes
+
+-   Updated dependencies [[`a4eead401a62a872be046e28b0d27b2d980ced3a`](https://github.com/learningeconomy/LearnCard/commit/a4eead401a62a872be046e28b0d27b2d980ced3a)]:
+    -   @learncard/init@1.3.26
+
+## 2.7.54
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.25
+
+## 2.7.53
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.24
+
+## 2.7.52
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.23
+
+## 2.7.51
+
+### Patch Changes
+
+-   Updated dependencies [[`24706505149561d7de8cf76250607f4ca7459858`](https://github.com/learningeconomy/LearnCard/commit/24706505149561d7de8cf76250607f4ca7459858)]:
+    -   @learncard/init@1.3.22
+
+## 2.7.50
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.21
+
+## 2.7.49
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.20
+
+## 2.7.48
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.19
+
+## 2.7.47
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.18
+
 ## 2.7.46
 
 ### Patch Changes

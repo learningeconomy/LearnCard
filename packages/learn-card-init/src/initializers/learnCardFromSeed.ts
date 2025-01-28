@@ -3,6 +3,7 @@ import { DynamicLoaderPlugin } from '@learncard/dynamic-loader-plugin';
 import { CryptoPlugin } from '@learncard/crypto-plugin';
 import { DidMethod, getDidKitPlugin } from '@learncard/didkit-plugin';
 import { getDidKeyPlugin } from '@learncard/didkey-plugin';
+import { getEncryptionPlugin } from '@learncard/encryption-plugin';
 import { getVCPlugin } from '@learncard/vc-plugin';
 import { getVCTemplatesPlugin } from '@learncard/vc-templates-plugin';
 import { getCeramicPlugin } from '@learncard/ceramic-plugin';
@@ -29,6 +30,7 @@ export const learnCardFromSeed = async ({
         url = 'https://cloud.learncard.com/trpc',
         unencryptedFields = [],
         unencryptedCustomFields = [],
+        automaticallyAssociateDids = true,
     } = {},
     ceramicIdx = defaultCeramicIDXArgs,
     didkit,
@@ -46,14 +48,22 @@ export const learnCardFromSeed = async ({
         await getDidKeyPlugin<DidMethod>(didkitLc, seed, 'key')
     );
 
-    const didkeyAndVCLc = await didkeyLc.addPlugin(getVCPlugin(didkeyLc));
+    const encryptionLc = await didkeyLc.addPlugin(await getEncryptionPlugin(didkeyLc));
 
-    const templateLc = await didkeyAndVCLc.addPlugin(getVCTemplatesPlugin());
+    const vcLc = await encryptionLc.addPlugin(getVCPlugin(encryptionLc));
+
+    const templateLc = await vcLc.addPlugin(getVCTemplatesPlugin());
 
     const ceramicLc = await templateLc.addPlugin(await getCeramicPlugin(templateLc, ceramicIdx));
 
     const cloudLc = await ceramicLc.addPlugin(
-        await getLearnCloudPlugin(ceramicLc, url, unencryptedFields, unencryptedCustomFields)
+        await getLearnCloudPlugin(
+            ceramicLc,
+            url,
+            unencryptedFields,
+            unencryptedCustomFields,
+            automaticallyAssociateDids
+        )
     );
 
     const idxLc = await cloudLc.addPlugin(await getIDXPlugin(cloudLc, ceramicIdx));

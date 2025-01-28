@@ -16,6 +16,8 @@ import {
     BoostPermissions,
     BoostQueryValidator,
     LCNProfileQueryValidator,
+    LCNProfileManagerQueryValidator,
+    PaginatedLCNProfileManagersValidator,
 } from '@learncard/types';
 
 import { t, profileRoute } from '@routes';
@@ -33,6 +35,7 @@ import {
     countBoostSiblings,
     getFamilialBoosts,
     countFamilialBoosts,
+    getChildrenProfileManagers,
 } from '@accesslayer/boost/read';
 import {
     getBoostRecipientsSkipLimit,
@@ -44,7 +47,6 @@ import {
     getBoostPermissions,
     canManageBoostPermissions,
     canProfileIssueBoost,
-    canProfileViewBoost,
     canProfileEditBoost,
     canProfileCreateChildBoost,
     getBoostByUriWithDefaultClaimPermissions,
@@ -80,7 +82,7 @@ import {
     useClaimLinkForBoost,
 } from '@cache/claim-links';
 import { getBlockedAndBlockedByIds, isRelationshipBlocked } from '@helpers/connection.helpers';
-import { getDidWeb } from '@helpers/did.helpers';
+import { getDidWeb, getManagedDidWeb } from '@helpers/did.helpers';
 import {
     giveProfileEmptyPermissions,
     setBoostAsParent,
@@ -279,20 +281,11 @@ export const boostsRouter = t.router({
             })
         )
         .query(async ({ ctx, input }) => {
-            const { profile } = ctx.user;
-
             const { uri } = input;
 
             const boost = await getBoostByUriWithDefaultClaimPermissions(uri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
-
-            if (!(await canProfileViewBoost(profile, boost))) {
-                throw new TRPCError({
-                    code: 'UNAUTHORIZED',
-                    message: 'Profile does not have permission to view this boost',
-                });
-            }
 
             const { id, boost: _boost, ...remaining } = boost;
 
@@ -494,6 +487,50 @@ export const boostsRouter = t.router({
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
             return countBoostRecipients(boost, { includeUnacceptedBoosts });
+        }),
+
+    getChildrenProfileManagers: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/boost/children-profile-managers/{uri}',
+                tags: ['Boosts', 'Profile Managers'],
+                summary: 'Get Profile Managers that are a child of a boost',
+                description: 'Get Profile Managers that are a child of a boost',
+            },
+        })
+        .input(
+            PaginationOptionsValidator.extend({
+                limit: PaginationOptionsValidator.shape.limit.default(25),
+                uri: z.string(),
+                query: LCNProfileManagerQueryValidator.optional(),
+            })
+        )
+        .output(PaginatedLCNProfileManagersValidator)
+        .query(async ({ input, ctx }) => {
+            const { uri, limit, cursor, query } = input;
+
+            const boost = await getBoostByUri(uri);
+
+            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            const records = await getChildrenProfileManagers(boost, {
+                limit: limit + 1,
+                cursor,
+                query,
+            });
+
+            const hasMore = records.length > limit;
+            const newCursor = records.at(hasMore ? -2 : -1)?.created;
+
+            return {
+                hasMore,
+                records: records
+                    .map(record => ({ ...record, did: getManagedDidWeb(ctx.domain, record.id) }))
+                    .slice(0, limit),
+                ...(newCursor && { cursor: newCursor }),
+            };
         }),
 
     getBoostChildren: profileRoute

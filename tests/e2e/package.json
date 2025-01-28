@@ -8,10 +8,12 @@
         "logs": "docker compose logs -f"
     },
     "dependencies": {
+        "@learncard/didkit-plugin": "workspace:*",
         "@learncard/init": "workspace:*",
         "@learncard/types": "workspace:*",
         "@xapi/xapi": "^3.0.0",
         "execa": "^9.5.1",
+        "hex-lite": "^1.5.0",
         "ioredis": "^5.2.2",
         "mongodb": "^6.2.0",
         "neo4j-driver": "^5.18.0",

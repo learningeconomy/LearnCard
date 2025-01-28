@@ -60,14 +60,25 @@ export const contractsRouter = t.router({
                 subtitle: z.string().optional(),
                 description: z.string().optional(),
                 reasonForAccessing: z.string().optional(),
+                needsGuardianConsent: z.boolean().optional(),
+                redirectUrl: z.string().optional(),
                 image: z.string().optional(),
                 expiresAt: z.string().optional(),
             })
         )
         .output(z.string())
         .mutation(async ({ input, ctx }) => {
-            const { contract, name, subtitle, description, reasonForAccessing, image, expiresAt } =
-                input;
+            const {
+                contract,
+                name,
+                subtitle,
+                description,
+                reasonForAccessing,
+                needsGuardianConsent,
+                redirectUrl,
+                image,
+                expiresAt,
+            } = input;
 
             // Create ConsentFlow instance
             const createdContract = await createConsentFlowContract({
@@ -76,6 +87,8 @@ export const contractsRouter = t.router({
                 subtitle,
                 description,
                 reasonForAccessing,
+                needsGuardianConsent,
+                redirectUrl,
                 image,
                 expiresAt,
             });
@@ -115,6 +128,8 @@ export const contractsRouter = t.router({
                 subtitle: result.contract.subtitle,
                 description: result.contract.description,
                 reasonForAccessing: result.contract.reasonForAccessing,
+                needsGuardianConsent: result.contract.needsGuardianConsent,
+                redirectUrl: result.contract.redirectUrl,
                 image: result.contract.image,
                 createdAt: result.contract.createdAt,
                 updatedAt: result.contract.updatedAt,
@@ -164,6 +179,8 @@ export const contractsRouter = t.router({
                     subtitle: contract.subtitle,
                     description: contract.description,
                     reasonForAccessing: contract.reasonForAccessing,
+                    needsGuardianConsent: contract.needsGuardianConsent,
+                    redirectUrl: contract.redirectUrl,
                     image: contract.image,
                     createdAt: contract.createdAt,
                     updatedAt: contract.updatedAt,
@@ -410,6 +427,8 @@ export const contractsRouter = t.router({
                         subtitle: record.contract.subtitle,
                         description: record.contract.description,
                         reasonForAccessing: record.contract.reasonForAccessing,
+                        needsGuardianConsent: record.contract.needsGuardianConsent,
+                        redirectUrl: record.contract.redirectUrl,
                         image: record.contract.image,
                         createdAt: record.contract.createdAt,
                         updatedAt: record.contract.updatedAt,

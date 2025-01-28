@@ -1,5 +1,42 @@
 # learn-card-core
 
+## 9.3.15
+
+### Patch Changes
+
+-   [#596](https://github.com/learningeconomy/LearnCard/pull/596) [`a4eead401a62a872be046e28b0d27b2d980ced3a`](https://github.com/learningeconomy/LearnCard/commit/a4eead401a62a872be046e28b0d27b2d980ced3a) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Specify that id.keypair() should return a JWK _with_ a private key
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.1.6
+
+## 9.3.14
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.1.5
+
+## 9.3.13
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.1.4
+
+## 9.3.12
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.1.3
+
+## 9.3.11
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.1.2
+
 ## 9.3.10
 
 ### Patch Changes

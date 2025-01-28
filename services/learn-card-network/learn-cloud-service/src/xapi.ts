@@ -37,7 +37,7 @@ export const xapiFastifyPlugin: FastifyPluginAsync = async fastify => {
             }
 
             const decodedJwt = jwtDecode<DidAuthVP>(vp);
-            const did = decodedJwt.vp.holder;
+            let did = decodedJwt.vp.holder;
 
             if (!did) return reply.status(400).send();
 
@@ -62,6 +62,28 @@ export const xapiFastifyPlugin: FastifyPluginAsync = async fastify => {
                 ) {
                     return reply.status(401).send();
                 }
+
+                const delegateIssuer =
+                    typeof delegateCredential.issuer === 'string'
+                        ? delegateCredential.issuer
+                        : delegateCredential.issuer.id;
+
+                const delegateSubject = Array.isArray(delegateCredential.credentialSubject)
+                    ? delegateCredential.credentialSubject[0]?.id
+                    : delegateCredential.credentialSubject.id;
+
+                if (!delegateIssuer || !delegateSubject) {
+                    return reply.status(401).send();
+                }
+
+                if (
+                    !(await areDidsEqual(did, delegateSubject)) &&
+                    !(await areDidsEqual(did, delegateIssuer))
+                ) {
+                    return reply.status(401).send();
+                }
+
+                did = delegateSubject;
             } else {
                 if (!(await areDidsEqual(targetDid, did ?? ''))) return reply.status(401).send();
             }

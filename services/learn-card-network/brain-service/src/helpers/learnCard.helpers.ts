@@ -49,8 +49,10 @@ let emptyLearnCard: EmptyLearnCard;
 let learnCards: Record<string, SeedLearnCard> = {};
 let didWebLearnCard: DidWebLearnCard;
 
+const IS_OFFLINE = process.env.IS_OFFLINE;
+
 export const getEmptyLearnCard = async (): Promise<EmptyLearnCard> => {
-    if (!emptyLearnCard) {
+    if (!emptyLearnCard || IS_OFFLINE) {
         const cryptoLc = await (await generateLearnCard()).addPlugin(CryptoPlugin);
 
         const didkitLc = await cryptoLc.addPlugin(await getDidKitPlugin(await didkit));
@@ -68,7 +70,7 @@ export const getEmptyLearnCard = async (): Promise<EmptyLearnCard> => {
 export const getLearnCard = async (seed = process.env.SEED): Promise<SeedLearnCard> => {
     if (!seed) throw new Error('No seed set!');
 
-    if (!learnCards[seed]) {
+    if (!learnCards[seed] || IS_OFFLINE) {
         const cryptoLc = await (await generateLearnCard()).addPlugin(CryptoPlugin);
 
         const didkitLc = await cryptoLc.addPlugin(await getDidKitPlugin(await didkit));
@@ -104,7 +106,7 @@ export const getDidWebLearnCard = async (): Promise<DidWebLearnCard> => {
 
     if (!seed) throw new Error('No seed set!');
 
-    if (!didWebLearnCard) {
+    if (!didWebLearnCard || IS_OFFLINE) {
         const cryptoLc = await (await generateLearnCard()).addPlugin(CryptoPlugin);
 
         const didkitLc = await cryptoLc.addPlugin(await getDidKitPlugin(await didkit));

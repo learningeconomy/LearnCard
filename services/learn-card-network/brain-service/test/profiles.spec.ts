@@ -627,6 +627,23 @@ describe('Profiles', () => {
             expect(results[0]?.isServiceProfile).toBeTruthy();
         });
 
+        it('should not include private profiles', async () => {
+            const userD = await getUser('d'.repeat(64));
+
+            await userD.clients.fullAuth.profile.createProfile({
+                profileId: 'userd',
+                displayName: 'DName',
+                email: 'userD@test.com',
+                isPrivate: true,
+            });
+
+            const results = await userA.clients.fullAuth.profile.searchProfiles({
+                input: 'userd',
+            });
+
+            expect(results).toHaveLength(0);
+        });
+
         it('should omit the connection status if includeConnectionStatus is false', async () => {
             const resultsNotConnected = await userA.clients.fullAuth.profile.searchProfiles({
                 input: 'user',
@@ -808,6 +825,16 @@ describe('Profiles', () => {
             const userAResult = await userA.clients.fullAuth.profile.getProfile();
 
             expect(userAResult?.display?.accentColor).toEqual('#fff');
+        });
+
+        it('should allow updating isPrivate', async () => {
+            await expect(
+                userA.clients.fullAuth.profile.updateProfile({ isPrivate: true })
+            ).resolves.not.toThrow();
+
+            const userAResult = await userA.clients.fullAuth.profile.getProfile();
+
+            expect(userAResult?.isPrivate).toBeTruthy();
         });
     });
 

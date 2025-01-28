@@ -45,6 +45,7 @@ program
         globalThis.emptyLearnCard = emptyLearnCard;
         globalThis.learnCardFromSeed = learnCardFromSeed;
         globalThis.initLearnCard = initLearnCard;
+
         globalThis.learnCard = await initLearnCard({
             seed,
             network: true,

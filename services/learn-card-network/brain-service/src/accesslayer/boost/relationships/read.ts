@@ -76,7 +76,10 @@ export const getBoostByUriWithDefaultClaimPermissions = async (
 
     const [result] = results;
 
-    return { ...inflateObject<BoostType>(result!.boost as any), claimPermissions: result!.role };
+    return {
+        ...(inflateObject as any)(result!.boost as any),
+        claimPermissions: result!.role,
+    };
 };
 
 /**
@@ -99,7 +102,6 @@ export const getBoostRecipients = async (
         domain: string;
     }
 ): Promise<Array<BoostRecipientInfo & { sent: string }>> => {
-    console.log({ matchQuery });
     const _query = new QueryBuilder(
         new BindParam({ matchQuery: convertObjectRegExpToNeo4j(matchQuery), cursor })
     )

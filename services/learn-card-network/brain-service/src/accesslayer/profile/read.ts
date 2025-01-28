@@ -101,10 +101,15 @@ export const searchProfiles = async (
     )
         .match({ identifier: 'profile', model: Profile })
         .where(
-            `(profile.profileId CONTAINS $input OR profile.displayName =~ $inputRegex)${includeServiceProfiles
+            `
+(profile.profileId CONTAINS $input OR profile.displayName =~ $inputRegex) AND 
+(profile.isPrivate IS NULL OR profile.isPrivate = false)
+${includeServiceProfiles
                 ? ''
                 : ' AND (profile.isServiceProfile IS NULL OR profile.isServiceProfile = false)'
-            }${blacklist.length > 0 ? ' AND NOT profile.profileId IN $blacklist' : ''}`
+            }
+${blacklist.length > 0 ? ' AND NOT profile.profileId IN $blacklist' : ''}
+`
         )
         .return('profile')
         .orderBy('profile.displayName')

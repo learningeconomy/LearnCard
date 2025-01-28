@@ -1,5 +1,104 @@
 # @learncard/snap-chapi-example
 
+## 1.0.202
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/react@2.7.58
+
+## 1.0.201
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/react@2.7.57
+
+## 1.0.200
+
+### Patch Changes
+
+-   Updated dependencies [[`74f7b7bd762501d0591f84d3c7ef6dc91e8ef30f`](https://github.com/learningeconomy/LearnCard/commit/74f7b7bd762501d0591f84d3c7ef6dc91e8ef30f)]:
+    -   @learncard/react@2.7.56
+
+## 1.0.199
+
+### Patch Changes
+
+-   Updated dependencies [[`a4eead401a62a872be046e28b0d27b2d980ced3a`](https://github.com/learningeconomy/LearnCard/commit/a4eead401a62a872be046e28b0d27b2d980ced3a)]:
+    -   @learncard/core@9.3.15
+    -   @learncard/meta-mask-snap@1.0.66
+    -   @learncard/react@2.7.55
+    -   @learncard/helpers@1.1.6
+
+## 1.0.198
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.14
+    -   @learncard/helpers@1.1.5
+    -   @learncard/react@2.7.54
+    -   @learncard/meta-mask-snap@1.0.65
+
+## 1.0.197
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.13
+    -   @learncard/helpers@1.1.4
+    -   @learncard/react@2.7.53
+    -   @learncard/meta-mask-snap@1.0.64
+
+## 1.0.196
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.12
+    -   @learncard/helpers@1.1.3
+    -   @learncard/react@2.7.52
+    -   @learncard/meta-mask-snap@1.0.63
+
+## 1.0.195
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/react@2.7.51
+
+## 1.0.194
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/react@2.7.50
+
+## 1.0.193
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.11
+    -   @learncard/helpers@1.1.2
+    -   @learncard/react@2.7.49
+    -   @learncard/meta-mask-snap@1.0.62
+
+## 1.0.192
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/react@2.7.48
+
+## 1.0.191
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/react@2.7.47
+
 ## 1.0.190
 
 ### Patch Changes

@@ -24,6 +24,7 @@ export const LCNProfileValidator = z.object({
     shortBio: z.string().default(''),
     bio: z.string().default(''),
     did: z.string(),
+    isPrivate: z.boolean().optional(),
     email: z.string().optional(),
     image: z.string().optional(),
     heroImage: z.string().optional(),
@@ -62,6 +63,46 @@ export const LCNProfileConnectionStatusEnum = z.enum([
 ]);
 export type LCNProfileConnectionStatusEnum = z.infer<typeof LCNProfileConnectionStatusEnum>;
 
+export const LCNProfileManagerValidator = z.object({
+    id: z.string(),
+    created: z.string(),
+    displayName: z.string().default('').optional(),
+    shortBio: z.string().default('').optional(),
+    bio: z.string().default('').optional(),
+    email: z.string().optional(),
+    image: z.string().optional(),
+    heroImage: z.string().optional(),
+});
+export type LCNProfileManager = z.infer<typeof LCNProfileManagerValidator>;
+
+export const PaginatedLCNProfileManagersValidator = PaginationResponseValidator.extend({
+    records: LCNProfileManagerValidator.extend({ did: z.string() }).array(),
+});
+export type PaginatedLCNProfileManagers = z.infer<typeof PaginatedLCNProfileManagersValidator>;
+
+export const LCNProfileManagerQueryValidator = z
+    .object({
+        id: StringQuery,
+        displayName: StringQuery,
+        shortBio: StringQuery,
+        bio: StringQuery,
+        email: StringQuery,
+    })
+    .partial();
+export type LCNProfileManagerQuery = z.infer<typeof LCNProfileManagerQueryValidator>;
+
+export const PaginatedLCNProfilesAndManagersValidator = PaginationResponseValidator.extend({
+    records: z
+        .object({
+            profile: LCNProfileValidator,
+            manager: LCNProfileManagerValidator.extend({ did: z.string() }).optional(),
+        })
+        .array(),
+});
+export type PaginatedLCNProfilesAndManagers = z.infer<
+    typeof PaginatedLCNProfilesAndManagersValidator
+>;
+
 export const SentCredentialInfoValidator = z.object({
     uri: z.string(),
     to: z.string(),
@@ -82,6 +123,7 @@ export const BoostPermissionsValidator = z.object({
     canEditChildren: z.string(),
     canRevokeChildren: z.string(),
     canManageChildrenPermissions: z.string(),
+    canManageChildrenProfiles: z.boolean().default(false).optional(),
     canViewAnalytics: z.boolean(),
 });
 export type BoostPermissions = z.infer<typeof BoostPermissionsValidator>;
@@ -201,6 +243,8 @@ export const ConsentFlowContractDetailsValidator = z.object({
     reasonForAccessing: z.string().optional(),
     image: z.string().optional(),
     uri: z.string(),
+    needsGuardianConsent: z.boolean().optional(),
+    redirectUrl: z.string().optional(),
     createdAt: z.string(),
     updatedAt: z.string(),
     expiresAt: z.string().optional(),

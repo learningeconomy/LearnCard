@@ -1,5 +1,6 @@
 import { BoostInstance, Boost } from '@models';
 import { ProfileType } from 'types/profile';
+import { clearDidWebCacheForChildProfileManagers } from './update';
 
 export const removeProfileAsBoostAdmin = async (
     profile: ProfileType,
@@ -9,6 +10,8 @@ export const removeProfileAsBoostAdmin = async (
         alias: 'hasRole',
         where: { target: { profileId: profile.profileId }, source: { id: boost.id } },
     });
+
+    await clearDidWebCacheForChildProfileManagers(boost.id);
 };
 
 export const removeBoostAsParent = async (

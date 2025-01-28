@@ -1,6 +1,7 @@
 import { getAdminRole, getEmptyRole } from '@accesslayer/role/read';
 import { CredentialInstance, BoostInstance } from '@models';
 import { ProfileType } from 'types/profile';
+import { clearDidWebCacheForChildProfileManagers } from './update';
 
 export const createBoostInstanceOfRelationship = async (
     credential: CredentialInstance,
@@ -31,6 +32,8 @@ export const setProfileAsBoostAdmin = async (
         where: { profileId: profile.profileId },
         properties: { roleId: role.id },
     });
+
+    await clearDidWebCacheForChildProfileManagers(boost.id);
 };
 
 export const giveProfileEmptyPermissions = async (

@@ -32,7 +32,7 @@ export const createBoost = async (
                     getDidWeb(domain, creator.profileId)
                 ),
                 status,
-                ...(flattenObject(metadata) as any),
+                ...((flattenObject as any)(metadata) as any),
             },
         })
     )

@@ -5,6 +5,7 @@ import {
     LCNProfileValidator,
     LCNProfileConnectionStatusEnum,
     PaginatedLCNProfilesValidator,
+    PaginatedLCNProfilesAndManagersValidator,
     PaginationOptionsValidator,
 } from '@learncard/types';
 import { v4 as uuid } from 'uuid';
@@ -24,7 +25,12 @@ import {
     getBlockedAndBlockedByIds,
     isRelationshipBlocked,
 } from '@helpers/connection.helpers';
-import { getDidWeb, updateDidForProfile, updateDidForProfiles } from '@helpers/did.helpers';
+import {
+    getDidWeb,
+    getManagedDidWeb,
+    updateDidForProfile,
+    updateDidForProfiles,
+} from '@helpers/did.helpers';
 
 import { createProfile } from '@accesslayer/profile/create';
 import { deleteProfile } from '@accesslayer/profile/delete';
@@ -55,9 +61,13 @@ import {
     invalidateInvite,
 } from '@cache/invites';
 import { getLearnCard } from '@helpers/learnCard.helpers';
-import { getManagedServiceProfiles } from '@accesslayer/profile/relationships/read';
+import {
+    getManagedServiceProfiles,
+    getProfilesThatAProfileManages,
+} from '@accesslayer/profile/relationships/read';
 import { createProfileManagedByRelationship } from '@accesslayer/profile/relationships/create';
 import { updateProfile } from '@accesslayer/profile/update';
+import { LCNProfileQueryValidator } from '@learncard/types';
 
 export const profilesRouter = t.router({
     createProfile: didAndChallengeRoute
@@ -225,6 +235,52 @@ export const profilesRouter = t.router({
             return otherProfile ? updateDidForProfile(ctx.domain, otherProfile) : undefined;
         }),
 
+    getAvailableProfiles: profileRoute
+        .meta({
+            openapi: {
+                method: 'POST',
+                path: '/profile/available-profiles',
+                tags: ['Profiles'],
+                summary: 'Available Profiles',
+                description:
+                    'This route gets all of your available profiles. That is, profiles you directly or indirectly manage',
+            },
+        })
+        .input(
+            PaginationOptionsValidator.extend({
+                limit: PaginationOptionsValidator.shape.limit.default(25),
+                query: LCNProfileQueryValidator.optional(),
+            }).default({})
+        )
+        .output(PaginatedLCNProfilesAndManagersValidator)
+        .query(async ({ ctx, input }) => {
+            const { query, limit, cursor } = input;
+
+            const results = await getProfilesThatAProfileManages(ctx.user.profile.profileId, {
+                limit: limit + 1,
+                cursor,
+                query,
+            });
+
+            const profiles = results.map(result => ({
+                profile: updateDidForProfile(ctx.domain, result.profile),
+                ...(result.manager && {
+                    manager: {
+                        ...result.manager,
+                        did: getManagedDidWeb(ctx.domain, result.manager.id),
+                    },
+                }),
+            }));
+            const hasMore = results.length > limit;
+            const nextCursor = hasMore ? results.at(-2)?.profile.profileId : undefined;
+
+            return {
+                hasMore,
+                ...(nextCursor && { cursor: nextCursor }),
+                records: profiles.slice(0, limit),
+            };
+        }),
+
     getManagedServiceProfiles: profileRoute
         .meta({
             openapi: {
@@ -352,6 +408,7 @@ export const profilesRouter = t.router({
                 displayName,
                 shortBio,
                 bio,
+                isPrivate,
                 image,
                 heroImage,
                 websiteLink,
@@ -394,6 +451,7 @@ export const profilesRouter = t.router({
             if (image) actualUpdates.image = image;
             if (displayName) actualUpdates.displayName = displayName;
             if (shortBio) actualUpdates.shortBio = shortBio;
+            if (isPrivate) actualUpdates.isPrivate = isPrivate;
             if (bio) actualUpdates.bio = bio;
             if (heroImage) actualUpdates.heroImage = heroImage;
             if (websiteLink) actualUpdates.websiteLink = websiteLink;
@@ -898,8 +956,6 @@ export const profilesRouter = t.router({
         .output(LCNProfileValidator.array())
         .query(async ({ ctx }) => {
             const blocked = await getBlockedProfiles(ctx.user.profile);
-
-            console.log({ blocked });
 
             return blocked.map(blockedProfile => updateDidForProfile(ctx.domain, blockedProfile));
         }),

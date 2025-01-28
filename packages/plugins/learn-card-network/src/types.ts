@@ -2,6 +2,7 @@ import type { DID } from 'dids';
 import type { LCNClient } from '@learncard/network-brain-client';
 import {
     LCNProfile,
+    LCNProfileManager,
     UnsignedVC,
     VC,
     VP,
@@ -30,6 +31,10 @@ import {
     BoostPermissions,
     BoostQuery,
     LCNProfileQuery,
+    LCNProfileManagerQuery,
+    PaginatedLCNProfileManagers,
+    PaginatedLCNProfilesAndManagers,
+    DidDocument,
 } from '@learncard/types';
 import { Plugin } from '@learncard/core';
 import { ProofOptions } from '@learncard/didkit-plugin';
@@ -43,6 +48,7 @@ export type LearnCardNetworkPluginDependentMethods = {
         credential: UnsignedVC,
         signingOptions?: Partial<ProofOptions>
     ) => Promise<VC>;
+    clearDidWebCache?: () => Promise<void>;
 };
 
 /** @group LearnCardNetwork Plugin */
@@ -51,17 +57,33 @@ export type LearnCardNetworkPluginMethods = {
     createServiceProfile: (
         profile: Omit<LCNProfile, 'did' | 'isServiceProfile'>
     ) => Promise<string>;
+    createManagedProfile: (profile: Omit<LCNProfile, 'did'>) => Promise<string>;
+    createProfileManager: (profile: Omit<LCNProfileManager, 'id' | 'created'>) => Promise<string>;
+    createChildProfileManager: (
+        parentUri: string,
+        profile: Omit<LCNProfileManager, 'id' | 'created'>
+    ) => Promise<string>;
     createManagedServiceProfile: (
         profile: Omit<LCNProfile, 'did' | 'isServiceProfile'>
     ) => Promise<string>;
+    getAvailableProfiles: (
+        options?: Partial<PaginationOptionsType> & { query?: LCNProfileQuery }
+    ) => Promise<PaginatedLCNProfilesAndManagers>;
+    getManagedProfiles: (
+        options?: Partial<PaginationOptionsType> & { query?: LCNProfileQuery }
+    ) => Promise<PaginatedLCNProfiles>;
     getManagedServiceProfiles: (
         options: Partial<PaginationOptionsType> & { id?: string }
     ) => Promise<PaginatedLCNProfiles>;
     updateProfile: (
         profile: Partial<Omit<LCNProfile, 'did' | 'isServiceProfile'>>
     ) => Promise<boolean>;
+    updateProfileManagerProfile: (
+        manager: Partial<Omit<LCNProfileManager, 'id' | 'created'>>
+    ) => Promise<boolean>;
     deleteProfile: () => Promise<boolean>;
     getProfile: (profileId?: string) => Promise<LCNProfile | undefined>;
+    getProfileManagerProfile: (id?: string) => Promise<LCNProfileManager | undefined>;
     searchProfiles: (
         profileId?: string,
         options?: {
@@ -181,10 +203,14 @@ export type LearnCardNetworkPluginMethods = {
         query?: LCNProfileQuery
     ) => Promise<PaginatedBoostRecipientsType>;
     countBoostRecipients: (uri: string, includeUnacceptedBoosts?: boolean) => Promise<number>;
+    getBoostChildrenProfileManagers: (
+        uri: string,
+        options?: Partial<PaginationOptionsType> & { query?: LCNProfileManagerQuery }
+    ) => Promise<PaginatedLCNProfileManagers>;
     updateBoost: (
         uri: string,
         updates: Partial<Omit<Boost, 'uri'>>,
-        credential: UnsignedVC | VC
+        credential?: UnsignedVC | VC
     ) => Promise<boolean>;
     deleteBoost: (uri: string) => Promise<boolean>;
     getBoostAdmins: (
@@ -194,7 +220,7 @@ export type LearnCardNetworkPluginMethods = {
     getBoostPermissions: (uri: string, profileId?: string) => Promise<BoostPermissions>;
     updateBoostPermissions: (
         uri: string,
-        updates: Omit<BoostPermissions, 'role'>,
+        updates: Partial<Omit<BoostPermissions, 'role'>>,
         profileId?: string
     ) => Promise<boolean>;
     addBoostAdmin: (uri: string, profileId: string) => Promise<boolean>;
@@ -270,6 +296,12 @@ export type LearnCardNetworkPluginMethods = {
         options?: Partial<PaginationOptionsType> & { query?: ConsentFlowTransactionsQuery }
     ) => Promise<PaginatedConsentFlowTransactions>;
     verifyConsent: (uri: string, profileId: string) => Promise<boolean>;
+
+    addDidMetadata: (metadata: Partial<DidDocument>) => Promise<boolean>;
+    getDidMetadata: (id: string) => Promise<Partial<DidDocument> | undefined>;
+    getMyDidMetadata: () => Promise<Array<Partial<DidDocument> & { id: string }>>;
+    updateDidMetadata: (id: string, updates: Partial<DidDocument>) => Promise<boolean>;
+    deleteDidMetadata: (id: string) => Promise<boolean>;
 
     resolveFromLCN: (
         uri: string
