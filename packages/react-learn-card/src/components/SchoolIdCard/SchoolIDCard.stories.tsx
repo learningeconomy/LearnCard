@@ -2,8 +2,6 @@ import React from 'react';
 import { Story, Meta } from '@storybook/react';
 
 import MotlowBuckCardBG from '../../assets/images/motlow-buckcard-bg.svg';
-import DefaultFace from '../../assets/images/default-f.svg';
-
 import SchoolIDCard from './SchoolIDCard';
 import { SchoolIDCardProps } from './types';
 

@@ -6,12 +6,12 @@ import skillsGraphic from '../assets/images/walletskills.webp';
 import achievementsGraphic from '../assets/images/walletTrophy.png';
 import socialBadge from '../assets/images/social-badge-2.png';
 import experienceMountain from '../assets/images/experience-mountain.png';
-import goalsTarget from '../assets/images/goals-target.svg';
+import goalsTarget from '../assets/images/goals-target.png';
 import apple from '../assets/images/apple.png';
 import relationshipCats from '../assets/images/relationships-cats.png';
 import membershipKey from '../assets/images/membership-key.svg';
 import accommodationHands from '../assets/images/Accommodation-Hands.png';
-import eventsGraphic from '../assets/images/eventsGraphic.svg';
+import eventsGraphic from '../assets/images/eventsGraphic.png';
 
 import MiniTrophyIcon from '../assets/images/minitrophycolored.svg';
 import MiniGradIcon from '../assets/images/minigradcapcolored.svg';
