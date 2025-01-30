@@ -9,7 +9,7 @@ import membershipGraphic from '../../assets/images/membership-graphic.png';
 
 import apple from '../../assets/images/apple.png';
 import accommodationHands from '../../assets/images/Accommodation-Hands.png';
-import experienceMountain from '../../assets/images/experience-mountain.svg';
+import experienceMountain from '../../assets/images/experience-mountain.png';
 
 import MiniTrophyIcon from '../../assets/images/minitrophycolored.svg';
 import MiniGradIcon from '../../assets/images/minigradcapcolored.svg';
