@@ -4,7 +4,7 @@ import jobhistoryGraphic from '../../assets/images/walletjobhistory.webp';
 import learningHistoryGraphic from '../../assets/images/backpack.png';
 import skillsGraphic from '../../assets/images/walletskills.webp';
 import achievementsGraphic from '../../assets/images/walletTrophy.png';
-import badgeGraphic from '../../assets/images/social-badge-2.svg';
+import badgeGraphic from '../../assets/images/social-badge-2.png';
 import membershipGraphic from '../../assets/images/membership-graphic.png';
 
 import apple from '../../assets/images/apple.png';
