@@ -812,6 +812,24 @@ export const getLearnCardNetworkPlugin = async (
                 return result;
             },
 
+            createClaimHook: async (_learnCard, hook) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.claimHook.createClaimHook.mutate({ hook });
+            },
+
+            getClaimHooksForBoost: async (_learnCard, options) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.claimHook.getClaimHooksForBoost.query(options);
+            },
+
+            deleteClaimHook: async (_learnCard, id) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.claimHook.deleteClaimHook.mutate({ id });
+            },
+
             resolveFromLCN: async (_learnCard, uri) => {
                 const result = await client.storage.resolve.query({ uri });
 

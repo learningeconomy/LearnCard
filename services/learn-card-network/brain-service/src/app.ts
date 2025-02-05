@@ -1,5 +1,6 @@
 import { t } from '@routes';
 import { boostsRouter } from '@routes/boosts';
+import { claimHooksRouter } from '@routes/claim-hooks';
 import { profilesRouter } from '@routes/profiles';
 import { profileManagersRouter } from '@routes/profile-manager';
 import { credentialsRouter } from '@routes/credentials';
@@ -13,6 +14,7 @@ export { createContext } from '@routes';
 
 export const appRouter = t.router({
     boost: boostsRouter,
+    claimHook: claimHooksRouter,
     profile: profilesRouter,
     profileManager: profileManagersRouter,
     credential: credentialsRouter,

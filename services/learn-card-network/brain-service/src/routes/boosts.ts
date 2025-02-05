@@ -83,11 +83,7 @@ import {
 } from '@cache/claim-links';
 import { getBlockedAndBlockedByIds, isRelationshipBlocked } from '@helpers/connection.helpers';
 import { getDidWeb, getManagedDidWeb } from '@helpers/did.helpers';
-import {
-    giveProfileEmptyPermissions,
-    setBoostAsParent,
-    setProfileAsBoostAdmin,
-} from '@accesslayer/boost/relationships/create';
+import { setBoostAsParent, setProfileAsBoostAdmin } from '@accesslayer/boost/relationships/create';
 import {
     removeBoostAsParent,
     removeProfileAsBoostAdmin,
@@ -1271,9 +1267,8 @@ export const boostsRouter = t.router({
                 });
             }
 
-            const currentPermissions = await getBoostPermissions(boost, otherProfile);
-
-            if (!currentPermissions) await giveProfileEmptyPermissions(otherProfile, boost);
+            // Ensure that there is at least an empty permissions relationship
+            await getBoostPermissions(boost, otherProfile, true);
 
             const newPermissions = Object.entries(updates).reduce<Partial<BoostPermissions>>(
                 (newPermissionsObject, [permission, value]) => {
@@ -1580,4 +1575,5 @@ export const boostsRouter = t.router({
             return removeBoostAsParent(parentBoost, childBoost);
         }),
 });
+
 export type BoostsRouter = typeof boostsRouter;
