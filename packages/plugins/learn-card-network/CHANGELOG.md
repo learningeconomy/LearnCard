@@ -1,5 +1,15 @@
 # learn-card-core
 
+## 2.4.6
+
+### Patch Changes
+
+-   [#604](https://github.com/learningeconomy/LearnCard/pull/604) [`6f0c776840addd052a9df844fefdcb3186c7678d`](https://github.com/learningeconomy/LearnCard/commit/6f0c776840addd052a9df844fefdcb3186c7678d) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add lightweight claim hooks
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.2.7
+    -   @learncard/core@9.3.16
+
 ## 2.4.5
 
 ### Patch Changes

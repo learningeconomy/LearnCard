@@ -1,5 +1,25 @@
 # @learncard/network-brain-service
 
+## 3.3.6
+
+### Patch Changes
+
+-   [#604](https://github.com/learningeconomy/LearnCard/pull/604) [`6f0c776840addd052a9df844fefdcb3186c7678d`](https://github.com/learningeconomy/LearnCard/commit/6f0c776840addd052a9df844fefdcb3186c7678d) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add lightweight claim hooks
+
+-   Updated dependencies [[`6f0c776840addd052a9df844fefdcb3186c7678d`](https://github.com/learningeconomy/LearnCard/commit/6f0c776840addd052a9df844fefdcb3186c7678d)]:
+    -   @learncard/types@5.6.5
+    -   @learncard/core@9.3.16
+    -   @learncard/helpers@1.1.7
+    -   @learncard/ceramic-plugin@1.0.27
+    -   @learncard/did-web-plugin@1.0.53
+    -   @learncard/didkey-plugin@1.0.27
+    -   @learncard/didkit-plugin@1.5.1
+    -   @learncard/learn-card-plugin@1.1.29
+    -   @learncard/vc-plugin@1.1.30
+    -   @learncard/vc-templates-plugin@1.0.37
+    -   @learncard/expiration-plugin@1.1.30
+    -   @learncard/crypto-plugin@1.0.27
+
 ## 3.3.5
 
 ### Patch Changes
