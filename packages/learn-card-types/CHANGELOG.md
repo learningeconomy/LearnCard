@@ -1,5 +1,11 @@
 # learn-card-types
 
+## 5.6.5
+
+### Patch Changes
+
+-   [#604](https://github.com/learningeconomy/LearnCard/pull/604) [`6f0c776840addd052a9df844fefdcb3186c7678d`](https://github.com/learningeconomy/LearnCard/commit/6f0c776840addd052a9df844fefdcb3186c7678d) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add lightweight claim hooks
+
 ## 5.6.4
 
 ### Patch Changes

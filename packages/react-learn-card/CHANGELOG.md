@@ -1,5 +1,14 @@
 # @welibraryos/react-learn-card
 
+## 2.7.59
+
+### Patch Changes
+
+-   [#602](https://github.com/learningeconomy/LearnCard/pull/602) [`c5ffa5a053742368765e557591e40d0a37a5c7e8`](https://github.com/learningeconomy/LearnCard/commit/c5ffa5a053742368765e557591e40d0a37a5c7e8) Thanks [@goblincore](https://github.com/goblincore)! - chore: clean up react-learn-card assets
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.29
+
 ## 2.7.58
 
 ### Patch Changes
