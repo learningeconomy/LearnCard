@@ -9,8 +9,11 @@ import {
     EMPTY_PERMISSIONS,
 } from 'src/constants/permissions';
 
-export const createRole = async (role: BoostPermissions): Promise<RoleInstance> => {
+export const createRole = async (_role: Partial<BoostPermissions>): Promise<RoleInstance> => {
     const id = uuid();
+
+    // Default any unsent fields to empty and random UUID for role name if none supplied
+    const role = { ...EMPTY_PERMISSIONS, role: uuid(), ..._role };
 
     return Role.createOne({ id, ...role });
 };
