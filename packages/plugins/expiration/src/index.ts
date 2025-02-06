@@ -19,6 +19,10 @@ export const expirationPlugin = (
 
             if (credential.expirationDate && new Date() > new Date(credential.expirationDate)) {
                 verificationCheck.errors.push('expiration error: Credential is expired');
+            } else if (credential.validFrom && new Date() < new Date(credential.validFrom)) {
+                verificationCheck.errors.push('expiration error: Credential is not valid yet');
+            } else if (credential.validUntil && new Date() > new Date(credential.validUntil)) {
+                verificationCheck.errors.push('expiration error: Credential is no longer valid');
             } else {
                 verificationCheck.checks.push('expiration');
             }

@@ -222,7 +222,7 @@ export type AchievementSubject = z.infer<typeof AchievementSubjectValidator>;
 export const EvidenceValidator = z
     .object({
         id: z.string().optional(),
-        type: z.string().array().nonempty(),
+        type: z.string().or(z.string().array().nonempty()),
         narrative: z.string().optional(),
         name: z.string().optional(),
         description: z.string().optional(),
