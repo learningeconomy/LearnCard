@@ -3,6 +3,7 @@ import { describe, test, expect } from 'vitest';
 import { NetworkLearnCardFromSeed } from '@learncard/init';
 
 import { getLearnCardForUser } from './helpers/learncard.helpers';
+import { UnsignedVC } from '@learncard/types';
 
 let a: NetworkLearnCardFromSeed['returnValue'];
 let b: NetworkLearnCardFromSeed['returnValue'];
@@ -17,6 +18,26 @@ describe('Credentials', () => {
         const c = await getLearnCardForUser('c');
 
         const unsignedVc = a.invoke.getTestVc(b.id.did());
+        const vc = await a.invoke.issueCredential(unsignedVc);
+
+        const verification = await c.invoke.verifyCredential(vc);
+
+        expect(verification.warnings).toHaveLength(0);
+        expect(verification.errors).toHaveLength(0);
+    });
+
+    test('Users can issue VC 2.0 credentials that others can verify', async () => {
+        const c = await getLearnCardForUser('c');
+
+        const unsignedVc: UnsignedVC = {
+            '@context': ['https://www.w3.org/ns/credentials/v2'],
+            id: 'http://university.example/credentials/3732',
+            type: ['VerifiableCredential', 'ExampleDegreeCredential'],
+            issuer: a.id.did(),
+            validFrom: new Date().toISOString(),
+            validUntil: new Date(Date.now() + 3_600_000).toISOString(),
+            credentialSubject: { id: b.id.did() },
+        };
         const vc = await a.invoke.issueCredential(unsignedVc);
 
         const verification = await c.invoke.verifyCredential(vc);
