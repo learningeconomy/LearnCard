@@ -122,6 +122,9 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
 
     const issueeImageExists = issueeImage || subjectImageComponent;
 
+    const displayType = credential?.credentialSubject?.achievement?.achievementType;
+    const formattedDisplayType = displayType?.replace(/^ext:/, '')?.replace(/([a-z])([A-Z])/g, '$1 $2') || '';
+
     return (
         <section
             role="button"
@@ -141,13 +144,18 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
                     } border-solid border-[4px] ${borderColor} rounded-[30px]`}
             >
                 <div className="flex flex-col gap-[5px] items-center">
-                    <div className={`${textLightColor} uppercase text-[14px] font-poppins`}>
+                    {/* <div className={`${textLightColor} uppercase text-[14px] font-poppins`}>
                         {categoryTitle}
-                    </div>
+                    </div> */}
 
                     <h1 className="text-grayscale-900 text-center text-[20px] font-jacques">
                         {title}
                     </h1>
+                    <div
+                        className={`${textLightColor} uppercase text-[14px] font-notoSans font-[600]`}
+                    >
+                        {formattedDisplayType}
+                    </div>
                 </div>
 
                 {customBodyCardComponent}
@@ -208,6 +216,11 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
                     </span>
 
                     <VerifierStateBadgeAndText verifierState={verifierState} />
+                </div>
+                <div
+                    className={`${textLightColor} uppercase text-[14px] font-notoSans font-[600]`}
+                >
+                    {categoryTitle}
                 </div>
             </div>
 
