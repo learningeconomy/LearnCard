@@ -144,10 +144,6 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
                     } border-solid border-[4px] ${borderColor} rounded-[30px]`}
             >
                 <div className="flex flex-col gap-[5px] items-center">
-                    {/* <div className={`${textLightColor} uppercase text-[14px] font-poppins`}>
-                        {categoryTitle}
-                    </div> */}
-
                     <h1 className="text-grayscale-900 text-center text-[20px] font-jacques">
                         {title}
                     </h1>
