@@ -97,6 +97,9 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
     const issuerImage = getImageFromProfile(issuer ?? '');
     const issueeImage = getImageFromProfile(issuee ?? '');
 
+    const displayType = credential?.credentialSubject?.achievement?.achievementType;
+    const formattedDisplayType = displayType?.replace(/^ext:/, '')?.replace(/([a-z])([A-Z])/g, '$1 $2') || '';
+    
     const issuerDid =
         typeof credential.issuer === 'string' ? credential.issuer : credential.issuer.id;
 
@@ -155,7 +158,7 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
                         <div
                             className={`${textLightColor} uppercase text-[14px] font-notoSans font-[600]`}
                         >
-                            {categoryTitle}
+                            {formattedDisplayType}
                         </div>
                     </div>
                 </div>
@@ -221,6 +224,11 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
                     size="small"
                     showSeal
                 />
+                <div
+                    className={`${textLightColor} uppercase text-[14px] font-notoSans font-[600]`}
+                >
+                    {categoryTitle}
+                </div>
             </div>
 
             {categoryType && (

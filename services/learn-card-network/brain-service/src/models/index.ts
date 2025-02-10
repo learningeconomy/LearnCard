@@ -63,6 +63,7 @@ Presentation.addRelationships({
 export * from './Role';
 export * from './Boost';
 export * from './Profile';
+export * from './ClaimHook';
 export * from './Credential';
 export * from './Presentation';
 export * from './ProfileManager';

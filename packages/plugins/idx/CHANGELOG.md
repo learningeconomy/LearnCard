@@ -1,5 +1,14 @@
 # learn-card-core
 
+## 1.0.27
+
+### Patch Changes
+
+-   Updated dependencies [[`6f0c776840addd052a9df844fefdcb3186c7678d`](https://github.com/learningeconomy/LearnCard/commit/6f0c776840addd052a9df844fefdcb3186c7678d)]:
+    -   @learncard/types@5.6.5
+    -   @learncard/core@9.3.16
+    -   @learncard/ceramic-plugin@1.0.27
+
 ## 1.0.26
 
 ### Patch Changes

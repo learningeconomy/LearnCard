@@ -11,6 +11,7 @@ import { getCredentialSentToProfile } from '@accesslayer/credential/relationship
 import { constructUri, getUriParts } from './uri.helpers';
 import { addNotificationToQueue } from './notifications.helpers';
 import { ProfileType } from 'types/profile';
+import { processClaimHooks } from './claim-hooks.helpers';
 
 export const getCredentialUri = (id: string, domain: string): string =>
     constructUri('credential', id, domain);
@@ -61,6 +62,8 @@ export const acceptCredential = async (profile: ProfileType, uri: string): Promi
     }
 
     await createReceivedCredentialRelationship(profile, pendingVc.source, pendingVc.target);
+
+    await processClaimHooks(profile, pendingVc.target);
 
     await setDefaultClaimedRole(profile, pendingVc.target);
 

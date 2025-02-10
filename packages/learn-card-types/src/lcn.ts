@@ -128,6 +128,61 @@ export const BoostPermissionsValidator = z.object({
 });
 export type BoostPermissions = z.infer<typeof BoostPermissionsValidator>;
 
+export const BoostPermissionsQueryValidator = z
+    .object({
+        role: StringQuery,
+        canEdit: z.boolean(),
+        canIssue: z.boolean(),
+        canRevoke: z.boolean(),
+        canManagePermissions: z.boolean(),
+        canIssueChildren: StringQuery,
+        canCreateChildren: StringQuery,
+        canEditChildren: StringQuery,
+        canRevokeChildren: StringQuery,
+        canManageChildrenPermissions: StringQuery,
+        canManageChildrenProfiles: z.boolean(),
+        canViewAnalytics: z.boolean(),
+    })
+    .partial();
+export type BoostPermissionsQuery = z.infer<typeof BoostPermissionsQueryValidator>;
+
+export const ClaimHookTypeValidator = z.enum(['GRANT_PERMISSIONS']);
+export type ClaimHookType = z.infer<typeof ClaimHookTypeValidator>;
+
+export const ClaimHookValidator = z.discriminatedUnion('type', [
+    z.object({
+        type: z.literal(ClaimHookTypeValidator.Values.GRANT_PERMISSIONS),
+        data: z.object({
+            claimUri: z.string(),
+            targetUri: z.string(),
+            permissions: BoostPermissionsValidator.partial(),
+        }),
+    }),
+]);
+export type ClaimHook = z.infer<typeof ClaimHookValidator>;
+
+export const ClaimHookQueryValidator = z
+    .object({
+        type: StringQuery,
+        data: z.object({
+            claimUri: StringQuery,
+            targetUri: StringQuery,
+            permissions: BoostPermissionsQueryValidator,
+        }),
+    })
+    .deepPartial();
+export type ClaimHookQuery = z.infer<typeof ClaimHookQueryValidator>;
+
+export const FullClaimHookValidator = z
+    .object({ id: z.string(), createdAt: z.string(), updatedAt: z.string() })
+    .and(ClaimHookValidator);
+export type FullClaimHook = z.infer<typeof FullClaimHookValidator>;
+
+export const PaginatedClaimHooksValidator = PaginationResponseValidator.extend({
+    records: FullClaimHookValidator.array(),
+});
+export type PaginatedClaimHooksType = z.infer<typeof PaginatedClaimHooksValidator>;
+
 export const LCNBoostStatus = z.enum(['DRAFT', 'LIVE']);
 export type LCNBoostStatusEnum = z.infer<typeof LCNBoostStatus>;
 

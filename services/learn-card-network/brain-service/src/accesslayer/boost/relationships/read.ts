@@ -29,6 +29,7 @@ import { getIdFromUri } from '@helpers/uri.helpers';
 import { Role as RoleType } from 'types/role';
 import { inflateObject } from '@helpers/objects.helpers';
 import { getCredentialUri } from '@helpers/credential.helpers';
+import { giveProfileEmptyPermissions } from './create';
 
 export const getBoostOwner = async (boost: BoostInstance): Promise<ProfileType | undefined> => {
     const profile = (await boost.findRelationships({ alias: 'createdBy' }))[0]?.target;
@@ -578,7 +579,11 @@ export const canProfileIssueBoost = async (profile: ProfileType, boost: BoostIns
     });
 };
 
-export const getBoostPermissions = async (boost: BoostInstance, profile: ProfileType) => {
+export const getBoostPermissions = async (
+    boost: BoostInstance,
+    profile: ProfileType,
+    ensure = false
+) => {
     const query = new QueryBuilder()
         .match({ model: Boost, where: { id: boost.id }, identifier: 'targetBoost' })
         .match({ model: Profile, where: { profileId: profile.profileId }, identifier: 'profile' })
@@ -618,7 +623,61 @@ export const getBoostPermissions = async (boost: BoostInstance, profile: Profile
         parentHasRole: BoostPermissions & { roleId: string };
     }>(await query.return('role, hasRole, parentRole, parentHasRole').run());
 
-    const directPermissions = { ...EMPTY_PERMISSIONS, ...result[0]?.role, ...result[0]?.hasRole };
+    if (
+        ensure &&
+        (result.length === 0 ||
+            (result.length === 1 &&
+                !result[0]?.role &&
+                !result[0]?.hasRole &&
+                !result[0]?.parentRole &&
+                !result[0]?.parentHasRole))
+    )
+        await giveProfileEmptyPermissions(profile, boost);
+
+    const directPermissions = result.reduce(
+        (permissions, { role, hasRole }) => {
+            const computedPermissions = { ...role, ...hasRole };
+
+            Object.entries(computedPermissions).forEach(([permission, value]) => {
+                if (permission === 'role') {
+                    if (typeof value === 'string' && value !== 'empty') permissions.role = value;
+
+                    return;
+                }
+
+                if (QUERYABLE_PERMISSIONS.includes(permission)) {
+                    const currentPermission = (permissions as any)[permission];
+
+                    if (currentPermission === '*') return;
+
+                    if (value === '*') (permissions as any)[permission] = '*';
+                    else if (!currentPermission || currentPermission === '{}') {
+                        (permissions as any)[permission] = value;
+                    } else {
+                        const parsedPermission = JSON.parse(currentPermission);
+
+                        if (
+                            Object.keys(parsedPermission).length === 1 &&
+                            '$or' in parsedPermission
+                        ) {
+                            (permissions as any)[permission] = JSON.stringify({
+                                $or: [...parsedPermission['$or'], value],
+                            });
+                        } else {
+                            (permissions as any)[permission] = JSON.stringify({
+                                $or: [parsedPermission, value],
+                            });
+                        }
+                    }
+                } else {
+                    (permissions as any)[permission] ||= value;
+                }
+            });
+
+            return permissions;
+        },
+        { ...EMPTY_PERMISSIONS }
+    );
 
     return result.reduce((permissions, { parentRole, parentHasRole }) => {
         const computedParentPermissions = { ...parentRole, ...parentHasRole };
@@ -692,7 +751,7 @@ export const canManageBoostPermissions = async (
         )
         .run();
 
-    return Boolean(result.records[0]?.get('canManagePermissions'));
+    return result.records.some(record => Boolean(record?.get('canManagePermissions')));
 };
 
 export const isBoostParent = async (

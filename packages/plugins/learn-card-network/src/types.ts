@@ -35,6 +35,9 @@ import {
     PaginatedLCNProfileManagers,
     PaginatedLCNProfilesAndManagers,
     DidDocument,
+    ClaimHook,
+    ClaimHookQuery,
+    PaginatedClaimHooksType,
 } from '@learncard/types';
 import { Plugin } from '@learncard/core';
 import { ProofOptions } from '@learncard/didkit-plugin';
@@ -302,6 +305,12 @@ export type LearnCardNetworkPluginMethods = {
     getMyDidMetadata: () => Promise<Array<Partial<DidDocument> & { id: string }>>;
     updateDidMetadata: (id: string, updates: Partial<DidDocument>) => Promise<boolean>;
     deleteDidMetadata: (id: string) => Promise<boolean>;
+
+    createClaimHook: (hook: ClaimHook) => Promise<string>;
+    getClaimHooksForBoost: (
+        options: Partial<PaginationOptionsType> & { uri: string; query?: ClaimHookQuery }
+    ) => Promise<PaginatedClaimHooksType>;
+    deleteClaimHook: (id: string) => Promise<boolean>;
 
     resolveFromLCN: (
         uri: string
