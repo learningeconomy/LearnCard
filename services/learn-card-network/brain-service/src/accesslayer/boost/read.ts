@@ -261,12 +261,14 @@ export const getFamilialBoosts = async (
         query: matchQuery = {},
         parentGenerations = 1,
         childGenerations = 1,
+        includeExtendedFamily = false,
     }: {
         limit: number;
         cursor?: string;
         query?: BoostQuery;
         parentGenerations?: number;
         childGenerations?: number;
+        includeExtendedFamily?: boolean;
     }
 ): Promise<Array<BoostType & { created: string }>> => {
     // Theoretically these should never _not_ be a number, but because we are interpolating them into
@@ -286,7 +288,13 @@ export const getFamilialBoosts = async (
             `
 ((start)<-[:PARENT_OF*1..${Number.isFinite(parentGenerations) ? parentGenerations : ''}]-(boost) OR 
 (start)-[:PARENT_OF*1..${Number.isFinite(childGenerations) ? childGenerations : ''}]->(boost) OR 
-(start)<-[:PARENT_OF]-(:Boost)-[:PARENT_OF]->(boost) AND boost <> start)
+(start)<-[:PARENT_OF${includeExtendedFamily
+                ? `*1..${Number.isFinite(parentGenerations) ? parentGenerations : ''}`
+                : ''
+            }]-(:Boost)-[:PARENT_OF${includeExtendedFamily
+                ? `*1..${Number.isFinite(childGenerations) ? childGenerations : ''}`
+                : ''
+            }]->(boost) AND boost <> start)
 AND ${getMatchQueryWhere('boost')}`
         )
         .match({
@@ -322,7 +330,13 @@ export const countFamilialBoosts = async (
         query: matchQuery = {},
         parentGenerations = 1,
         childGenerations = 1,
-    }: { query?: BoostQuery; parentGenerations?: number; childGenerations?: number }
+        includeExtendedFamily = false,
+    }: {
+        query?: BoostQuery;
+        parentGenerations?: number;
+        childGenerations?: number;
+        includeExtendedFamily?: boolean;
+    }
 ): Promise<number> => {
     // Theoretically these should never _not_ be a number, but because we are interpolating them into
     // the cypher string, it's good to sanitize them anyways
@@ -341,7 +355,13 @@ export const countFamilialBoosts = async (
             `
 ((start)<-[:PARENT_OF*1..${Number.isFinite(parentGenerations) ? parentGenerations : ''}]-(boost) OR 
 (start)-[:PARENT_OF*1..${Number.isFinite(childGenerations) ? childGenerations : ''}]->(boost) OR 
-(start)<-[:PARENT_OF]-(:Boost)-[:PARENT_OF]->(boost) AND boost <> start)
+(start)<-[:PARENT_OF${includeExtendedFamily
+                ? `*1..${Number.isFinite(parentGenerations) ? parentGenerations : ''}`
+                : ''
+            }]-(:Boost)-[:PARENT_OF${includeExtendedFamily
+                ? `*1..${Number.isFinite(childGenerations) ? childGenerations : ''}`
+                : ''
+            }]->(boost) AND boost <> start)
 AND ${getMatchQueryWhere('boost')}`
         );
 
