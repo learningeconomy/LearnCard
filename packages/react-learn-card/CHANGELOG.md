@@ -1,5 +1,14 @@
 # @welibraryos/react-learn-card
 
+## 2.7.60
+
+### Patch Changes
+
+-   [#607](https://github.com/learningeconomy/LearnCard/pull/607) [`0929f10633d3f86db0aca3f3c982f5cdf2c02a0c`](https://github.com/learningeconomy/LearnCard/commit/0929f10633d3f86db0aca3f3c982f5cdf2c02a0c) Thanks [@rhen92](https://github.com/rhen92)! - [LC-758] Add type and category to CertificateFrontFace and MeritBadgeFrontFace
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.30
+
 ## 2.7.59
 
 ### Patch Changes

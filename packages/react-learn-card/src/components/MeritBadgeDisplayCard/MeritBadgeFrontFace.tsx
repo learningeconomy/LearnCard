@@ -153,7 +153,6 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
                         <h1 className="text-grayscale-900 text-center text-[25px] font-jacques">
                             {title}
                         </h1>
-
                         <div
                             className={`${textLightColor} uppercase text-[14px] font-notoSans font-[600]`}
                         >
