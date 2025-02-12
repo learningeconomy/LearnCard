@@ -36,6 +36,7 @@ type CertificateDisplayCardProps = {
     hideNavButtons?: boolean;
     showBackButton?: boolean;
     showDetailsBtn?: boolean;
+    formattedDisplayType?: string;
 };
 
 export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
@@ -63,6 +64,7 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
     hideNavButtons,
     showBackButton = false,
     showDetailsBtn = false,
+    formattedDisplayType,
 }) => {
     const [_isFront, _setIsFront] = useState(isFrontOverride ?? true);
 
@@ -86,6 +88,7 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
                         handleViewBackFace={() => setIsFront(!isFront)}
                         isFront={isFront}
                         showDetailsBtn={showDetailsBtn}
+                        formattedDisplayType={formattedDisplayType}
                     />
                 )}
 

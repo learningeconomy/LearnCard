@@ -73,6 +73,7 @@ export type VCDisplayCard2Props = {
     showDetailsBtn?: boolean;
     customIDDescription?: React.ReactNode;
     hideGradientBackground?: boolean;
+    formattedDisplayType?: string;
 };
 
 export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
@@ -115,6 +116,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     showDetailsBtn = false,
     customIDDescription,
     hideGradientBackground = false,
+    formattedDisplayType,
 }) => {
     const {
         title = '',
@@ -204,6 +206,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 hideNavButtons={hideNavButtons}
                 showBackButton={showBackButton}
                 showDetailsBtn={showDetailsBtn}
+                formattedDisplayType={formattedDisplayType}
             />
         );
     }
@@ -232,6 +235,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 hideNavButtons={hideNavButtons}
                 showBackButton={showBackButton}
                 showDetailsBtn={showDetailsBtn}
+                formattedDisplayType={formattedDisplayType}
             />
         );
     } else if (credential?.display?.displayType === 'id' || categoryType === 'ID') {
