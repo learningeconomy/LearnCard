@@ -36,6 +36,7 @@ type MeritBadgeDisplayCardProps = {
     hideNavButtons?: boolean;
     showBackButton?: boolean;
     showDetailsBtn?: boolean;
+    formattedDisplayType?: string;
 };
 
 export const MeritBadgeDisplayCard: React.FC<MeritBadgeDisplayCardProps> = ({
@@ -63,6 +64,7 @@ export const MeritBadgeDisplayCard: React.FC<MeritBadgeDisplayCardProps> = ({
     hideNavButtons,
     showBackButton = false,
     showDetailsBtn = false,
+    formattedDisplayType,
 }) => {
     const [_isFront, _setIsFront] = useState(isFrontOverride ?? true);
 
@@ -86,6 +88,7 @@ export const MeritBadgeDisplayCard: React.FC<MeritBadgeDisplayCardProps> = ({
                         handleViewBackFace={() => setIsFront(!isFront)}
                         isFront={isFront}
                         showDetailsBtn={showDetailsBtn}
+                        formattedDisplayType={formattedDisplayType}
                     />
                 )}
 
