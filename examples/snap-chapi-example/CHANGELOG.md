@@ -1,5 +1,12 @@
 # @learncard/snap-chapi-example
 
+## 1.0.204
+
+### Patch Changes
+
+-   Updated dependencies [[`0929f10633d3f86db0aca3f3c982f5cdf2c02a0c`](https://github.com/learningeconomy/LearnCard/commit/0929f10633d3f86db0aca3f3c982f5cdf2c02a0c)]:
+    -   @learncard/react@2.7.60
+
 ## 1.0.203
 
 ### Patch Changes
