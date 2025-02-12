@@ -109,10 +109,18 @@ describe('Boosts', () => {
         });
 
         it('should allow admins of parent boosts to get boosts', async () => {
-            const parentUri = await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
-            const uri = await userA.clients.fullAuth.boost.createChildBoost({ parentUri, boost: { credential: testVc } });
+            const parentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+            });
+            const uri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc },
+            });
 
-            await userA.clients.fullAuth.boost.addBoostAdmin({ uri: parentUri, profileId: 'userb' });
+            await userA.clients.fullAuth.boost.addBoostAdmin({
+                uri: parentUri,
+                profileId: 'userb',
+            });
 
             const boost = await userB.clients.fullAuth.boost.getBoost({ uri });
 
@@ -120,25 +128,31 @@ describe('Boosts', () => {
         });
 
         it('should include default claim permissions', async () => {
-            const uri = await userA.clients.fullAuth.boost.createBoost({ credential: testVc, claimPermissions: adminRole });
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+                claimPermissions: adminRole,
+            });
 
             await expect(userA.clients.fullAuth.boost.getBoost({ uri })).resolves.not.toThrow();
 
             const boost = await userA.clients.fullAuth.boost.getBoost({ uri });
 
             expect(boost).toBeDefined();
-            expect(boost.claimPermissions).toEqual(adminRole)
+            expect(boost.claimPermissions).toEqual(adminRole);
         });
 
         it('should include meta', async () => {
-            const uri = await userA.clients.fullAuth.boost.createBoost({ credential: testVc, meta: { test: 'lol' } });
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+                meta: { test: 'lol' },
+            });
 
             await expect(userA.clients.fullAuth.boost.getBoost({ uri })).resolves.not.toThrow();
 
             const boost = await userA.clients.fullAuth.boost.getBoost({ uri });
 
             expect(boost).toBeDefined();
-            expect(boost.meta).toEqual({ test: 'lol' })
+            expect(boost.meta).toEqual({ test: 'lol' });
         });
     });
 
@@ -246,12 +260,15 @@ describe('Boosts', () => {
         });
 
         it('should include meta', async () => {
-            await userA.clients.fullAuth.boost.createBoost({ credential: testVc, meta: { test: 'lol' } });
+            await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+                meta: { test: 'lol' },
+            });
 
             const boosts = await userA.clients.fullAuth.boost.getBoosts();
 
             expect(boosts).toHaveLength(1);
-            expect(boosts[0]?.meta).toEqual({ test: 'lol' })
+            expect(boosts[0]?.meta).toEqual({ test: 'lol' });
         });
     });
 
@@ -383,12 +400,15 @@ describe('Boosts', () => {
         });
 
         it('should include meta', async () => {
-            await userA.clients.fullAuth.boost.createBoost({ credential: testVc, meta: { test: 'lol' } });
+            await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+                meta: { test: 'lol' },
+            });
 
             const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
 
             expect(boosts.records).toHaveLength(1);
-            expect(boosts.records[0]?.meta).toEqual({ test: 'lol' })
+            expect(boosts.records[0]?.meta).toEqual({ test: 'lol' });
         });
     });
 
@@ -761,16 +781,27 @@ describe('Boosts', () => {
             ).toHaveLength(0);
         });
 
-        it("should allow querying recipients", async () => {
-            await userC.clients.fullAuth.profile.createProfile({ profileId: 'userc', displayName: 'Johnny Appleseed' });
-            await userD.clients.fullAuth.profile.createProfile({ profileId: 'userd', displayName: 'Jack Appleseed' });
+        it('should allow querying recipients', async () => {
+            await userC.clients.fullAuth.profile.createProfile({
+                profileId: 'userc',
+                displayName: 'Johnny Appleseed',
+            });
+            await userD.clients.fullAuth.profile.createProfile({
+                profileId: 'userd',
+                displayName: 'Jack Appleseed',
+            });
 
             const uri = await userA.clients.fullAuth.boost.createBoost({
                 credential: testUnsignedBoost,
             });
 
             expect(
-                (await userA.clients.fullAuth.boost.getPaginatedBoostRecipients({ uri, query: { profileId: 'userb' } })).records
+                (
+                    await userA.clients.fullAuth.boost.getPaginatedBoostRecipients({
+                        uri,
+                        query: { profileId: 'userb' },
+                    })
+                ).records
             ).toHaveLength(0);
 
             await sendBoost(
@@ -796,7 +827,7 @@ describe('Boosts', () => {
                 (
                     await userA.clients.fullAuth.boost.getPaginatedBoostRecipients({
                         uri,
-                        query: { profileId: 'userb' }
+                        query: { profileId: 'userb' },
                     })
                 ).records
             ).toHaveLength(1);
@@ -804,7 +835,7 @@ describe('Boosts', () => {
                 (
                     await userA.clients.fullAuth.boost.getPaginatedBoostRecipients({
                         uri,
-                        query: { profileId: { $regex: /user/i } }
+                        query: { profileId: { $regex: /user/i } },
                     })
                 ).records
             ).toHaveLength(3);
@@ -812,7 +843,7 @@ describe('Boosts', () => {
                 (
                     await userA.clients.fullAuth.boost.getPaginatedBoostRecipients({
                         uri,
-                        query: { profileId: { $in: ['userb', 'userc'] } }
+                        query: { profileId: { $in: ['userb', 'userc'] } },
                     })
                 ).records
             ).toHaveLength(2);
@@ -821,7 +852,7 @@ describe('Boosts', () => {
                 (
                     await userA.clients.fullAuth.boost.getPaginatedBoostRecipients({
                         uri,
-                        query: { displayName: 'Johnny Appleseed' }
+                        query: { displayName: 'Johnny Appleseed' },
                     })
                 ).records
             ).toHaveLength(1);
@@ -829,7 +860,7 @@ describe('Boosts', () => {
                 (
                     await userA.clients.fullAuth.boost.getPaginatedBoostRecipients({
                         uri,
-                        query: { displayName: { $regex: /apple/i } }
+                        query: { displayName: { $regex: /apple/i } },
                     })
                 ).records
             ).toHaveLength(2);
@@ -837,7 +868,7 @@ describe('Boosts', () => {
                 (
                     await userA.clients.fullAuth.boost.getPaginatedBoostRecipients({
                         uri,
-                        query: { displayName: { $in: ['Johnny Appleseed', 'N/A'] } }
+                        query: { displayName: { $in: ['Johnny Appleseed', 'N/A'] } },
                     })
                 ).records
             ).toHaveLength(1);
@@ -1137,92 +1168,104 @@ describe('Boosts', () => {
             await userA.clients.fullAuth.boost.createBoost({
                 credential: testVc,
                 status: BoostStatus.enum.DRAFT,
-                meta: { nice: 'lol' }
+                meta: { nice: 'lol' },
             });
             const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
             const boost = boosts.records[0]!;
             const uri = boost.uri;
 
             expect(boost.status).toBe(BoostStatus.enum.DRAFT);
-            expect(boost.meta).toEqual({ nice: 'lol' })
+            expect(boost.meta).toEqual({ nice: 'lol' });
 
             await expect(
-                userA.clients.fullAuth.boost.updateBoost({ uri, updates: { meta: { nice: 'nice!' } } })
+                userA.clients.fullAuth.boost.updateBoost({
+                    uri,
+                    updates: { meta: { nice: 'nice!' } },
+                })
             ).resolves.not.toThrow();
 
             const newBoosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
             const newBoost = newBoosts.records[0]!;
 
-            expect(newBoost.meta).toEqual({ nice: 'nice!' })
+            expect(newBoost.meta).toEqual({ nice: 'nice!' });
         });
 
         it("should allow you to update a published boost's meta", async () => {
             await userA.clients.fullAuth.boost.createBoost({
                 credential: testVc,
                 status: BoostStatus.enum.LIVE,
-                meta: { nice: 'lol' }
+                meta: { nice: 'lol' },
             });
             const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
             const boost = boosts.records[0]!;
             const uri = boost.uri;
 
             expect(boost.status).toBe(BoostStatus.enum.LIVE);
-            expect(boost.meta).toEqual({ nice: 'lol' })
+            expect(boost.meta).toEqual({ nice: 'lol' });
 
             await expect(
-                userA.clients.fullAuth.boost.updateBoost({ uri, updates: { meta: { nice: 'nice!' } } })
+                userA.clients.fullAuth.boost.updateBoost({
+                    uri,
+                    updates: { meta: { nice: 'nice!' } },
+                })
             ).resolves.not.toThrow();
 
             const newBoosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
             const newBoost = newBoosts.records[0]!;
 
-            expect(newBoost.meta).toEqual({ nice: 'nice!' })
+            expect(newBoost.meta).toEqual({ nice: 'nice!' });
         });
 
-        it("should not remove existing meta keys", async () => {
+        it('should not remove existing meta keys', async () => {
             await userA.clients.fullAuth.boost.createBoost({
                 credential: testVc,
                 status: BoostStatus.enum.DRAFT,
-                meta: { nice: 'lol' }
+                meta: { nice: 'lol' },
             });
             const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
             const boost = boosts.records[0]!;
             const uri = boost.uri;
 
             expect(boost.status).toBe(BoostStatus.enum.DRAFT);
-            expect(boost.meta).toEqual({ nice: 'lol' })
+            expect(boost.meta).toEqual({ nice: 'lol' });
 
             await expect(
-                userA.clients.fullAuth.boost.updateBoost({ uri, updates: { meta: { neat: 'lol' } } })
+                userA.clients.fullAuth.boost.updateBoost({
+                    uri,
+                    updates: { meta: { neat: 'lol' } },
+                })
             ).resolves.not.toThrow();
 
             const newBoosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
             const newBoost = newBoosts.records[0]!;
 
-            expect(newBoost.meta).toEqual({ nice: 'lol', neat: 'lol' })
+            expect(newBoost.meta).toEqual({ nice: 'lol', neat: 'lol' });
         });
 
         it("should allow you to update a draft boost's meta key with null to remove it", async () => {
             await userA.clients.fullAuth.boost.createBoost({
                 credential: testVc,
                 status: BoostStatus.enum.DRAFT,
-                meta: { nice: 'lol' }
+                meta: { nice: 'lol' },
             });
             const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
             const boost = boosts.records[0]!;
             const uri = boost.uri;
 
             expect(boost.status).toBe(BoostStatus.enum.DRAFT);
-            expect(boost.meta).toEqual({ nice: 'lol' })
+            expect(boost.meta).toEqual({ nice: 'lol' });
 
             await expect(
-                userA.clients.fullAuth.boost.updateBoost({ uri, updates: { meta: { nice: null, neat: 'lol' } } })
+                userA.clients.fullAuth.boost.updateBoost({
+                    uri,
+                    updates: { meta: { nice: null, neat: 'lol' } },
+                })
             ).resolves.not.toThrow();
 
             const newBoosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
             const newBoost = newBoosts.records[0]!;
 
-            expect(newBoost.meta).toEqual({ neat: 'lol' })
+            expect(newBoost.meta).toEqual({ neat: 'lol' });
         });
 
         it('should allow admins to update boost credential', async () => {
@@ -3580,7 +3623,7 @@ describe('Boosts', () => {
             const boosts = await userA.clients.fullAuth.boost.getFamilialBoosts({
                 uri: middleUri,
                 childGenerations: 2,
-                parentGenerations: 1
+                parentGenerations: 1,
             });
 
             expect(boosts.records).toHaveLength(3);
@@ -3617,11 +3660,53 @@ describe('Boosts', () => {
                 boost: { credential: testVc, category: 'C' },
             });
 
-            const boosts = await userA.clients.fullAuth.boost.getFamilialBoosts({ uri: childUri });
+            const boosts = await userA.clients.fullAuth.boost.getFamilialBoosts({
+                uri: childUri,
+                parentGenerations: Infinity,
+                childGenerations: Infinity,
+            });
 
-            expect(boosts.records).toHaveLength(2);
+            expect(boosts.records).toHaveLength(3);
             expect(boosts.records.some(boost => boost.category === 'C')).toBeFalsy();
             expect(boosts.records.some(boost => boost.category === 'B')).toBeTruthy();
+        });
+
+        it('should allow returning cousins', async () => {
+            const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+                category: 'A',
+            });
+            const parentUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: grandParentUri,
+                boost: { credential: testVc },
+            });
+            const childUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc, category: 'A' },
+            });
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc, category: 'B' },
+            });
+
+            const parent2Uri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: grandParentUri,
+                boost: { credential: testVc },
+            });
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: parent2Uri,
+                boost: { credential: testVc, category: 'C' },
+            });
+
+            const boosts = await userA.clients.fullAuth.boost.getFamilialBoosts({
+                uri: childUri,
+                parentGenerations: Infinity,
+                childGenerations: Infinity,
+                includeExtendedFamily: true,
+            });
+
+            expect(boosts.records).toHaveLength(5);
+            expect(boosts.records.some(boost => boost.category === 'C')).toBeTruthy();
         });
 
         it('should return siblings from multiple parents', async () => {
@@ -3778,7 +3863,10 @@ describe('Boosts', () => {
                 boost: { credential: testVc, name: 'My Dad' },
             });
 
-            await userA.clients.fullAuth.boost.makeBoostParent({ parentUri: grandParent2Uri, childUri: parentUri })
+            await userA.clients.fullAuth.boost.makeBoostParent({
+                parentUri: grandParent2Uri,
+                childUri: parentUri,
+            });
 
             const middleUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
@@ -3851,7 +3939,7 @@ describe('Boosts', () => {
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
                 credential: testVc,
                 category: 'A',
-                meta: { nice: 'lol' }
+                meta: { nice: 'lol' },
             });
             const childUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
@@ -3958,7 +4046,9 @@ describe('Boosts', () => {
                 },
             });
 
-            const count = await userA.clients.fullAuth.boost.countFamilialBoosts({ uri: parentUri });
+            const count = await userA.clients.fullAuth.boost.countFamilialBoosts({
+                uri: parentUri,
+            });
 
             expect(count).toEqual(2);
         });
@@ -3977,7 +4067,9 @@ describe('Boosts', () => {
                 boost: { credential: testVc, category: 'B' },
             });
 
-            const count = await userA.clients.fullAuth.boost.countFamilialBoosts({ uri: parentUri });
+            const count = await userA.clients.fullAuth.boost.countFamilialBoosts({
+                uri: parentUri,
+            });
 
             expect(count).toEqual(2);
         });
@@ -4108,7 +4200,7 @@ describe('Boosts', () => {
             const count = await userA.clients.fullAuth.boost.countFamilialBoosts({
                 uri: middleUri,
                 childGenerations: 2,
-                parentGenerations: 1
+                parentGenerations: 1,
             });
 
             expect(count).toEqual(3);
@@ -4141,9 +4233,50 @@ describe('Boosts', () => {
                 boost: { credential: testVc, category: 'C' },
             });
 
-            const count = await userA.clients.fullAuth.boost.countFamilialBoosts({ uri: childUri });
+            const count = await userA.clients.fullAuth.boost.countFamilialBoosts({
+                uri: childUri,
+                parentGenerations: Infinity,
+                childGenerations: Infinity,
+            });
 
-            expect(count).toEqual(2);
+            expect(count).toEqual(3);
+        });
+
+        it('should allow counting cousins', async () => {
+            const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testVc,
+                category: 'A',
+            });
+            const parentUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: grandParentUri,
+                boost: { credential: testVc },
+            });
+            const childUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc, category: 'A' },
+            });
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testVc, category: 'B' },
+            });
+
+            const parent2Uri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: grandParentUri,
+                boost: { credential: testVc },
+            });
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: parent2Uri,
+                boost: { credential: testVc, category: 'C' },
+            });
+
+            const count = await userA.clients.fullAuth.boost.countFamilialBoosts({
+                uri: childUri,
+                parentGenerations: Infinity,
+                childGenerations: Infinity,
+                includeExtendedFamily: true,
+            });
+
+            expect(count).toEqual(5);
         });
 
         it('should count siblings from multiple parents', async () => {
@@ -4562,7 +4695,7 @@ describe('Boosts', () => {
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
                 credential: testVc,
                 category: 'B',
-                meta: { nice: 'lol' }
+                meta: { nice: 'lol' },
             });
             const childUri = await userA.clients.fullAuth.boost.createBoost({
                 credential: testVc,

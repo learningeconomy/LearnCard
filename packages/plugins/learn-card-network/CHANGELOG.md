@@ -1,5 +1,14 @@
 # learn-card-core
 
+## 2.4.7
+
+### Patch Changes
+
+-   [#608](https://github.com/learningeconomy/LearnCard/pull/608) [`e04e2d80b0aa64a8a6424a9224d503626674b283`](https://github.com/learningeconomy/LearnCard/commit/e04e2d80b0aa64a8a6424a9224d503626674b283) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add support for uncles and cousins and nephews in getFamilialBoosts/countFamilialBoosts via includeExtendedFamily flag
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.2.8
+
 ## 2.4.6
 
 ### Patch Changes

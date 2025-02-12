@@ -699,11 +699,20 @@ export const boostsRouter = t.router({
                 query: BoostQueryValidator.optional(),
                 parentGenerations: z.number().default(1),
                 childGenerations: z.number().default(1),
+                includeExtendedFamily: z.boolean().default(false),
             })
         )
         .output(PaginatedBoostsValidator)
         .query(async ({ input, ctx }) => {
-            const { uri, limit, cursor, query, parentGenerations, childGenerations } = input;
+            const {
+                uri,
+                limit,
+                cursor,
+                query,
+                parentGenerations,
+                childGenerations,
+                includeExtendedFamily,
+            } = input;
 
             const boost = await getBoostByUri(uri);
 
@@ -715,6 +724,7 @@ export const boostsRouter = t.router({
                 query,
                 parentGenerations,
                 childGenerations,
+                includeExtendedFamily,
             });
 
             const hasMore = records.length > limit;
@@ -751,17 +761,24 @@ export const boostsRouter = t.router({
                 query: BoostQueryValidator.optional(),
                 parentGenerations: z.number().default(1),
                 childGenerations: z.number().default(1),
+                includeExtendedFamily: z.boolean().default(false),
             })
         )
         .output(z.number())
         .query(async ({ input }) => {
-            const { uri, query, parentGenerations, childGenerations } = input;
+            const { uri, query, parentGenerations, childGenerations, includeExtendedFamily } =
+                input;
 
             const boost = await getBoostByUri(uri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
-            return countFamilialBoosts(boost, { query, parentGenerations, childGenerations });
+            return countFamilialBoosts(boost, {
+                query,
+                parentGenerations,
+                childGenerations,
+                includeExtendedFamily,
+            });
         }),
 
     getBoostParents: profileRoute

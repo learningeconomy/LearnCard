@@ -172,11 +172,17 @@ export type LearnCardNetworkPluginMethods = {
             query?: BoostQuery;
             parentGenerations?: number;
             childGenerations?: number;
+            includeExtendedFamily?: boolean;
         }
     ) => Promise<PaginatedBoostsType>;
     countFamilialBoosts: (
         uri: string,
-        options?: { query?: BoostQuery; parentGenerations?: number; childGenerations?: number }
+        options?: {
+            query?: BoostQuery;
+            parentGenerations?: number;
+            childGenerations?: number;
+            includeExtendedFamily?: boolean;
+        }
     ) => Promise<number>;
     getBoostParents: (
         uri: string,
