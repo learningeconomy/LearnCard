@@ -1,5 +1,11 @@
 # @learncard/network-brain-service
 
+## 2.2.12
+
+### Patch Changes
+
+-   [#612](https://github.com/learningeconomy/LearnCard/pull/612) [`b9beeb4bd8abfecb9811b1d80a0b7c9aa6386114`](https://github.com/learningeconomy/LearnCard/commit/b9beeb4bd8abfecb9811b1d80a0b7c9aa6386114) Thanks [@Custard7](https://github.com/Custard7)! - Fix: Add Server Error Messages for xAPI
+
 ## 2.2.11
 
 ### Patch Changes
