@@ -16,7 +16,7 @@ import { generateToken } from '@helpers/auth.helpers';
 export const xapiFastifyPlugin: FastifyPluginAsync = async fastify => {
     fastify.all<XAPIRequest>('/xapi/*', async (request, reply) => {
         try {
-            if (!XAPI_ENDPOINT || XAPI_ENDPOINT === 'false') return reply.status(500).send();
+            if (!XAPI_ENDPOINT || XAPI_ENDPOINT === 'false') return reply.status(500).send('xAPI Unavailable.');
 
             const vp = request.headers['x-vp'];
             if (typeof vp !== 'string') {
@@ -33,20 +33,20 @@ export const xapiFastifyPlugin: FastifyPluginAsync = async fastify => {
                 result.errors.length > 0 ||
                 !result.checks.includes('JWS')
             ) {
-                return reply.status(401).send();
+                return reply.status(401).send('Invalid JWT in X-VP Header');
             }
 
             const decodedJwt = jwtDecode<DidAuthVP>(vp);
             let did = decodedJwt.vp.holder;
 
-            if (!did) return reply.status(400).send();
+            if (!did) return reply.status(400).send('No valid holder DID Found in X-VP JWT');
 
             const targetDid =
                 request.body && 'account' in request.body.actor
                     ? request.body.actor.account?.name
                     : JSON.parse(request.query?.agent ?? '{}')?.account?.name;
 
-            if (!targetDid) return reply.status(400).send();
+            if (!targetDid) return reply.status(400).send('No valid target DID found in xAPI request (actor.account.name)');
 
             const delegateCredential = Array.isArray(decodedJwt.vp.verifiableCredential)
                 ? decodedJwt.vp.verifiableCredential[0]
@@ -60,7 +60,7 @@ export const xapiFastifyPlugin: FastifyPluginAsync = async fastify => {
                 if (
                     !(await verifyDelegateCredential(delegateCredential, targetDid, isReadRequest))
                 ) {
-                    return reply.status(401).send();
+                    return reply.status(401).send('Invalid Delegate Credential');
                 }
 
                 const delegateIssuer =
@@ -73,19 +73,19 @@ export const xapiFastifyPlugin: FastifyPluginAsync = async fastify => {
                     : delegateCredential.credentialSubject.id;
 
                 if (!delegateIssuer || !delegateSubject) {
-                    return reply.status(401).send();
+                    return reply.status(401).send('Delegate Credential missing valid issuer or subject DID.');
                 }
 
                 if (
                     !(await areDidsEqual(did, delegateSubject)) &&
                     !(await areDidsEqual(did, delegateIssuer))
                 ) {
-                    return reply.status(401).send();
+                    return reply.status(401).send('Holder DID in JWT does not match either Delegate Subject or Delegate Issuer');
                 }
 
                 did = delegateSubject;
             } else {
-                if (!(await areDidsEqual(targetDid, did ?? ''))) return reply.status(401).send();
+                if (!(await areDidsEqual(targetDid, did ?? ''))) return reply.status(401).send('Actor DID does not match JWT DID.');
             }
 
             const targetPath = request.url.replace('/xapi', '');
@@ -96,10 +96,10 @@ export const xapiFastifyPlugin: FastifyPluginAsync = async fastify => {
             if (targetPath === '/statements' && request.body?.verb?.id === XAPI.Verbs.VOIDED.id) {
                 const statementId = (request.body?.object as any)?.id;
 
-                if (!statementId) return reply.status(400).send();
+                if (!statementId) return reply.status(400).send('Missing valid statement ID in xAPI Voided Statement.');
 
                 if (!(await verifyVoidStatement(targetDid, did ?? '', statementId, auth))) {
-                    return reply.status(401).send();
+                    return reply.status(401).send('Voided Statement Invalid');
                 }
             }
 
@@ -117,7 +117,7 @@ export const xapiFastifyPlugin: FastifyPluginAsync = async fastify => {
             return response.text();
         } catch (error) {
             console.error(error);
-            return reply.status(500).send();
+            return reply.status(500).send('The server could not process that xAPI request.');
         }
     });
 };
