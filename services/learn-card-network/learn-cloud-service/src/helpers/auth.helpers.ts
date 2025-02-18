@@ -1,64 +1,110 @@
+// crypto.helpers.ts
 import crypto from 'crypto';
-
 import jwt from 'jsonwebtoken';
-
-import { isTest } from './test.helpers';
-import { generateDeterministicRSAKeyPair, KeyPair } from './crypto.helpers';
 import { XAPI_ENDPOINT } from '../constants/xapi';
-import { getRsaInfo, setRsaInfo } from '@cache/rsa';
 
-const seed = isTest ? 'a'.repeat(64) : process.env.LEARN_CLOUD_SEED;
+interface KeyPair {
+    privateKey: string;
+    publicKey: string;
+    keyId: string;
+}
 
-let keyInfo: { keypair: KeyPair; kid: string };
+let cachedKeyPair: KeyPair | null = null;
 
-const getKeyInfo = async () => {
-    if (!keyInfo) {
-        const cachedKeyInfo = await getRsaInfo();
+/**
+ * Get RSA keypair from environment variables
+ * Falls back to generating a new keypair if not in environment
+ * (not deterministic, but only used as fallback in development)
+ */
+export function getKeyPair(): KeyPair {
+    if (cachedKeyPair) {
+        return cachedKeyPair;
+    }
 
-        if (cachedKeyInfo) keyInfo = cachedKeyInfo;
-        else {
-            const keypair = generateDeterministicRSAKeyPair(Buffer.from(seed ?? '', 'hex'));
+    // Try to get keys from environment
+    const privateKey = process.env.RSA_PRIVATE_KEY?.replace(/\\n/g, '\n');
+    const publicKey = process.env.RSA_PUBLIC_KEY?.replace(/\\n/g, '\n');
 
-            keyInfo = {
-                keypair,
-                kid: crypto
-                    .createHash('sha256')
-                    .update(keypair.publicKey)
-                    .digest('hex')
-                    .slice(0, 16),
-            };
+    // If we have valid keys in env, use them
+    if (privateKey && publicKey) {
+        try {
+            // Verify keys are valid
+            crypto.createPrivateKey(privateKey);
+            crypto.createPublicKey(publicKey);
 
-            setRsaInfo(keyInfo);
+            const keyId = crypto.createHash('sha256').update(publicKey).digest('hex').slice(0, 16);
+
+            cachedKeyPair = { privateKey, publicKey, keyId };
+            return cachedKeyPair;
+        } catch (error) {
+            console.warn('Invalid RSA keys in environment variables:', error);
+            // Fall through to generating new keys
         }
     }
 
-    return keyInfo;
-};
+    // Generate new keypair (only for development/testing)
+    console.warn('Generating new RSA keypair (for development only)');
+    const { privateKey: newPrivateKey, publicKey: newPublicKey } = crypto.generateKeyPairSync(
+        'rsa',
+        {
+            modulusLength: 2048,
+            publicKeyEncoding: {
+                type: 'spki',
+                format: 'pem',
+            },
+            privateKeyEncoding: {
+                type: 'pkcs8',
+                format: 'pem',
+            },
+        }
+    );
+
+    const keyId = crypto.createHash('sha256').update(newPublicKey).digest('hex').slice(0, 16);
+
+    cachedKeyPair = {
+        privateKey: newPrivateKey,
+        publicKey: newPublicKey,
+        keyId,
+    };
+
+    // Output keys so they can be set as environment variables
+    console.log('\nAdd these to your environment variables:');
+    console.log(`RSA_PRIVATE_KEY=${newPrivateKey.replace(/\n/g, '\\n')}`);
+    console.log(`RSA_PUBLIC_KEY=${newPublicKey.replace(/\n/g, '\\n')}\n`);
+
+    return cachedKeyPair;
+}
 
 const ISSUER = process.env.SERVER_URL || 'http://localhost:4100';
 
-export const generateToken = async (did: string, scope = 'lrs:all'): Promise<string> => {
-    const {
-        keypair: { privateKey },
-        kid,
-    } = await getKeyInfo();
+export const generateToken = (did: string, scope = 'lrs:all'): string => {
+    const { privateKey, keyId } = getKeyPair();
 
-    const token = jwt.sign({ iss: ISSUER, sub: did, aud: XAPI_ENDPOINT, scope, did }, privateKey, {
-        expiresIn: '1h',
-        algorithm: 'RS256',
-        keyid: kid,
-    });
-
-    return token;
+    return jwt.sign(
+        {
+            iss: ISSUER,
+            sub: did,
+            aud: XAPI_ENDPOINT,
+            scope,
+            did,
+        },
+        privateKey,
+        {
+            expiresIn: '1h',
+            algorithm: 'RS256',
+            keyid: keyId,
+        }
+    );
 };
 
-export const generateJwk = async () => {
-    const {
-        keypair: { publicKey },
-        kid,
-    } = await getKeyInfo();
-
+export const generateJwk = () => {
+    const { publicKey, keyId } = getKeyPair();
     const keyComponents = crypto.createPublicKey(publicKey).export({ format: 'jwk' });
 
-    return { ...keyComponents, use: 'sig', kid, alg: 'RS256' };
+    return {
+        ...keyComponents,
+        use: 'sig',
+        kid: keyId,
+        alg: 'RS256',
+    };
 };

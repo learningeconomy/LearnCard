@@ -93,6 +93,8 @@ provider:
         XAPI_ENDPOINT: ${env:XAPI_ENDPOINT, "false"}
         XAPI_USERNAME: ${env:XAPI_USERNAME, "false"}
         XAPI_PASSWORD: ${env:XAPI_PASSWORD, "false"}
+        RSA_PRIVATE_KEY: ${env:RSA_PRIVATE_KEY, "false"}
+        RSA_PUBLIC_KEY: ${env:RSA_PUBLIC_KEY, "false"}
         SERVER_URL: ${env:SERVER_URL, "https://cloud.learncard.com"}
         JWT_SIGNING_KEY: ${env:JWT_SIGNING_KEY, ""}
         SENTRY_DSN: ${env:SENTRY_DSN}
