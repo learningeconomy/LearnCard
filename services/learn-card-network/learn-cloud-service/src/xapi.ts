@@ -16,7 +16,8 @@ import { generateToken } from '@helpers/auth.helpers';
 export const xapiFastifyPlugin: FastifyPluginAsync = async fastify => {
     fastify.all<XAPIRequest>('/xapi/*', async (request, reply) => {
         try {
-            if (!XAPI_ENDPOINT || XAPI_ENDPOINT === 'false') return reply.status(500).send('xAPI Unavailable.');
+            if (!XAPI_ENDPOINT || XAPI_ENDPOINT === 'false')
+                return reply.status(500).send('xAPI Unavailable.');
 
             const vp = request.headers['x-vp'];
             if (typeof vp !== 'string') {
@@ -46,7 +47,10 @@ export const xapiFastifyPlugin: FastifyPluginAsync = async fastify => {
                     ? request.body.actor.account?.name
                     : JSON.parse(request.query?.agent ?? '{}')?.account?.name;
 
-            if (!targetDid) return reply.status(400).send('No valid target DID found in xAPI request (actor.account.name)');
+            if (!targetDid)
+                return reply
+                    .status(400)
+                    .send('No valid target DID found in xAPI request (actor.account.name)');
 
             const delegateCredential = Array.isArray(decodedJwt.vp.verifiableCredential)
                 ? decodedJwt.vp.verifiableCredential[0]
@@ -73,30 +77,40 @@ export const xapiFastifyPlugin: FastifyPluginAsync = async fastify => {
                     : delegateCredential.credentialSubject.id;
 
                 if (!delegateIssuer || !delegateSubject) {
-                    return reply.status(401).send('Delegate Credential missing valid issuer or subject DID.');
+                    return reply
+                        .status(401)
+                        .send('Delegate Credential missing valid issuer or subject DID.');
                 }
 
                 if (
                     !(await areDidsEqual(did, delegateSubject)) &&
                     !(await areDidsEqual(did, delegateIssuer))
                 ) {
-                    return reply.status(401).send('Holder DID in JWT does not match either Delegate Subject or Delegate Issuer');
+                    return reply
+                        .status(401)
+                        .send(
+                            'Holder DID in JWT does not match either Delegate Subject or Delegate Issuer'
+                        );
                 }
 
                 did = delegateSubject;
             } else {
-                if (!(await areDidsEqual(targetDid, did ?? ''))) return reply.status(401).send('Actor DID does not match JWT DID.');
+                if (!(await areDidsEqual(targetDid, did ?? '')))
+                    return reply.status(401).send('Actor DID does not match JWT DID.');
             }
 
             const targetPath = request.url.replace('/xapi', '');
             const targetUrl = new URL(`${XAPI_ENDPOINT}${targetPath}`);
-            const auth = `Bearer ${generateToken(did)}`;
+            const auth = `Bearer ${await generateToken(did)}`;
 
             // Handle void statements
             if (targetPath === '/statements' && request.body?.verb?.id === XAPI.Verbs.VOIDED.id) {
                 const statementId = (request.body?.object as any)?.id;
 
-                if (!statementId) return reply.status(400).send('Missing valid statement ID in xAPI Voided Statement.');
+                if (!statementId)
+                    return reply
+                        .status(400)
+                        .send('Missing valid statement ID in xAPI Voided Statement.');
 
                 if (!(await verifyVoidStatement(targetDid, did ?? '', statementId, auth))) {
                     return reply.status(401).send('Voided Statement Invalid');
