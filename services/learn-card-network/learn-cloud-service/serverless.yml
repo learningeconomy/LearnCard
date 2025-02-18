@@ -91,6 +91,10 @@ provider:
         LEARN_CLOUD_MONGO_URI: ${env:LEARN_CLOUD_MONGO_URI}
         LEARN_CLOUD_MONGO_DB_NAME: ${env:LEARN_CLOUD_MONGO_DB_NAME}
         XAPI_ENDPOINT: ${env:XAPI_ENDPOINT, "false"}
+        XAPI_USERNAME: ${env:XAPI_USERNAME, "false"}
+        XAPI_PASSWORD: ${env:XAPI_PASSWORD, "false"}
+        SERVER_URL: ${env:SERVER_URL, "https://cloud.learncard.com"}
+        JWT_SIGNING_KEY: ${env:JWT_SIGNING_KEY, ""}
         SENTRY_DSN: ${env:SENTRY_DSN}
         SENTRY_ENV: ${env:LEARN_CLOUD_SENTRY_ENV}
         SENTRY_AUTH_TOKEN: ${env:SENTRY_AUTH_TOKEN}
