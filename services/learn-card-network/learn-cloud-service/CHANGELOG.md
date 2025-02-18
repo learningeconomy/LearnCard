@@ -1,5 +1,11 @@
 # @learncard/network-brain-service
 
+## 2.2.13
+
+### Patch Changes
+
+-   [#613](https://github.com/learningeconomy/LearnCard/pull/613) [`60090c28bbd2af3b659e0e6a6f648cb1ddf5efaa`](https://github.com/learningeconomy/LearnCard/commit/60090c28bbd2af3b659e0e6a6f648cb1ddf5efaa) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix OIDC key id changing all the time
+
 ## 2.2.12
 
 ### Patch Changes
