@@ -122,7 +122,7 @@ import Credentials from '@components/Credentials';
         const vc = await testWallet.invoke.issueCredential(
             testWallet.invoke.newCredential({ type: 'jff2' })
         );
-        const uri = await wallet.store.Ceramic.upload(vc); // Have to use "normal" wallet for now...
+        const uri = await wallet.store.LearnCloud.upload(vc); // Have to use "normal" wallet for now...
 
         const challenge = window.crypto.randomUUID();
 
