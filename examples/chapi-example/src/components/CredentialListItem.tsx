@@ -25,7 +25,7 @@ const CredentialListItem: React.FC<CredentialListItemProps> = ({ credential: idx
         if (!wallet) return;
 
         if (confirm('Are you sure you want to delete this credential?')) {
-            await wallet.index.IDX.remove(idxCredential.id);
+            await wallet.index.LearnCloud.remove(idxCredential.id);
             window.location.reload();
         }
     };

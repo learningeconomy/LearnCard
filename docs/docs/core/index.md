@@ -75,34 +75,49 @@ if (result.errors.length > 0) console.error('This presentation is not valid!', r
 else console.log('This presentation is valid!');
 ```
 
-### Storing/Retrieving/Sending Credentials
-
-#### Ceramic/IDX
+### Storing/Retrieving/Publishing Credentials with LearnCloud
 
 To maintain co-ownership of credentials, it is best to store credentials in a public place, and then
 store references to that public place. While this is not the only way to store credentials (and is
 also definitely not a silver bullet! E.g. credentials containing private data), it is the opinion of
-this library that it should be used by default. As a result, instantiating a wallet, will 
-automatically connect you to WeLibrary's ceramic node, and allow you to publish and retrieve 
-credentials there using IDX.
+this library that it should be used by default.
 
-#### Publish Credential
+#### Publish Credential 
 
-After signing a VC, you may choose to publish that credential to Ceramic. Doing so will return a
+After signing a VC, you may choose to publish that credential to LearnCloud. Doing so will return a
 stream ID, which you may share to the recipient. That stream ID can then be used to resolve the 
 issued credential. This means both the issuer and recipient may store the _stream ID_ instead of the
 credential itself.
 
 ```js
-const uri = await wallet.store.Ceramic.upload(vc);
+
+// Issuer
+
+const holderDid = 'did:key:z6MknqnHBn4Rx64gH4Dy1qjmaHjxFjaNG1WioKvQuXKhEKL5'
+const uvc = learnCard.invoke.newCredential({ subject: holderDid });
+const vc = await learnCard.invoke.issueCredential(uvc);
+const uri = await learnCard.store.LearnCloud.upload(vc);
+
+// Holder
+
+const credential = await learnCard.read.get(uri);
+const result = await learnCard.invoke.verifyCredential(credential);
+
+if (result.errors.length == 0) {
+    await learnCard.index.LearnCloud.add({ uri, id: 'test' });
+}
+
 ```
 
-#### Reading From Ceramic
+#### Reading From LearnCloud
 
-To resolve a VC from a URI, simply use the `read` Control Plane!:
 
 ```js
-const vcFromCeramic = await wallet.read.get(uri);
+
+const records = await learnCard.index.LearnCloud.get();
+const record = records.find(({ id }) => id === 'test');
+const storedCredential = await learnCard.read.get(record.uri);
+
 ```
 
 #### Adding a Credential to a Wallet
@@ -111,10 +126,10 @@ After receiving a streamID, you can _persist_ that streamID by calling `addCrede
 the credential a bespoke title
 
 ```js
-await wallet.index.IDX.add({ uri, id: 'Test VC' });
+await wallet.index.LearnCloud.add({ uri, id: 'Test VC' });
 ```
 
-This will add the streamId, which can be used to resolve the verifiable credential to IDX using the
+This will add the streamId, which can be used to resolve the verifiable credential using the
 wallet's secret key. You can think of this as acting like the wallet's personal storage.
 
 #### Getting a credential from the Wallet
