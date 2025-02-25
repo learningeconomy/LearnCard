@@ -602,7 +602,12 @@ export const getLearnCardNetworkPlugin = async (
 
                 return client.boost.deleteBoost.mutate({ uri });
             },
-            sendBoost: async (_learnCard, profileId, boostUri, options = { encrypt: true }) => {
+            sendBoost: async (
+                _learnCard,
+                profileId,
+                boostUri,
+                options = { encrypt: true, skipNotification: false }
+            ) => {
                 if (!userData) throw new Error('Please make an account first!');
 
                 const result = await _learnCard.invoke.resolveFromLCN(boostUri);
@@ -643,6 +648,10 @@ export const getLearnCardNetworkPlugin = async (
                         profileId,
                         uri: boostUri,
                         credential: vc,
+                        options: {
+                            skipNotification:
+                                typeof options === 'object' && options.skipNotification,
+                        },
                     });
                 }
 
@@ -652,7 +661,14 @@ export const getLearnCardNetworkPlugin = async (
                     .getDIDObject()
                     .createDagJWE(vc, [userData.did, targetProfile.did, lcnDid]);
 
-                return client.boost.sendBoost.mutate({ profileId, uri: boostUri, credential });
+                return client.boost.sendBoost.mutate({
+                    profileId,
+                    uri: boostUri,
+                    credential,
+                    options: {
+                        skipNotification: typeof options === 'object' && options.skipNotification,
+                    },
+                });
             },
 
             registerSigningAuthority: async (_learnCard, endpoint, name, _did) => {

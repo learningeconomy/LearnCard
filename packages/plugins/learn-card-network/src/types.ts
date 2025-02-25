@@ -237,7 +237,13 @@ export type LearnCardNetworkPluginMethods = {
     sendBoost: (
         profileId: string,
         boostUri: string,
-        options?: boolean | { encrypt?: boolean; overideFn?: (boost: UnsignedVC) => UnsignedVC }
+        options?:
+            | boolean
+            | {
+                  encrypt?: boolean;
+                  overideFn?: (boost: UnsignedVC) => UnsignedVC;
+                  skipNotification?: boolean;
+              }
     ) => Promise<string>;
 
     registerSigningAuthority: (endpoint: string, name: string, did: string) => Promise<boolean>;
