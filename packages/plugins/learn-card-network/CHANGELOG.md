@@ -1,5 +1,15 @@
 # learn-card-core
 
+## 2.4.8
+
+### Patch Changes
+
+-   [#616](https://github.com/learningeconomy/LearnCard/pull/616) [`a84aaf7362410b23101cea193f181535e6313f1b`](https://github.com/learningeconomy/LearnCard/commit/a84aaf7362410b23101cea193f181535e6313f1b) Thanks [@gerardopar](https://github.com/gerardopar)! - LC-815 - Skip Notification
+
+-   Updated dependencies [[`d01d1369124d537f37ead6f8e3101cc47fff5208`](https://github.com/learningeconomy/LearnCard/commit/d01d1369124d537f37ead6f8e3101cc47fff5208)]:
+    -   @learncard/core@9.3.17
+    -   @learncard/network-brain-client@2.2.9
+
 ## 2.4.7
 
 ### Patch Changes

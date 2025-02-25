@@ -1,5 +1,16 @@
 # @learncard/chapi-example
 
+## 1.0.204
+
+### Patch Changes
+
+-   [#615](https://github.com/learningeconomy/LearnCard/pull/615) [`d01d1369124d537f37ead6f8e3101cc47fff5208`](https://github.com/learningeconomy/LearnCard/commit/d01d1369124d537f37ead6f8e3101cc47fff5208) Thanks [@Custard7](https://github.com/Custard7)! - Docs: update Ceramic/IDX references to LearnCloud
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.32
+    -   @learncard/chapi-plugin@1.0.44
+    -   @learncard/react@2.7.62
+
 ## 1.0.203
 
 ### Patch Changes
