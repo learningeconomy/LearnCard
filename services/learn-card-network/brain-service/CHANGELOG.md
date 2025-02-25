@@ -1,5 +1,23 @@
 # @learncard/network-brain-service
 
+## 3.3.8
+
+### Patch Changes
+
+-   [#616](https://github.com/learningeconomy/LearnCard/pull/616) [`a84aaf7362410b23101cea193f181535e6313f1b`](https://github.com/learningeconomy/LearnCard/commit/a84aaf7362410b23101cea193f181535e6313f1b) Thanks [@gerardopar](https://github.com/gerardopar)! - LC-815 - Skip Notification
+
+-   Updated dependencies [[`d01d1369124d537f37ead6f8e3101cc47fff5208`](https://github.com/learningeconomy/LearnCard/commit/d01d1369124d537f37ead6f8e3101cc47fff5208)]:
+    -   @learncard/core@9.3.17
+    -   @learncard/ceramic-plugin@1.0.28
+    -   @learncard/crypto-plugin@1.0.28
+    -   @learncard/did-web-plugin@1.0.54
+    -   @learncard/didkey-plugin@1.0.28
+    -   @learncard/didkit-plugin@1.5.2
+    -   @learncard/expiration-plugin@1.1.31
+    -   @learncard/learn-card-plugin@1.1.30
+    -   @learncard/vc-plugin@1.1.31
+    -   @learncard/vc-templates-plugin@1.0.38
+
 ## 3.3.7
 
 ### Patch Changes

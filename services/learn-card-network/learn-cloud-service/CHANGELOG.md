@@ -1,5 +1,23 @@
 # @learncard/network-brain-service
 
+## 2.2.13
+
+### Patch Changes
+
+-   [#613](https://github.com/learningeconomy/LearnCard/pull/613) [`60090c28bbd2af3b659e0e6a6f648cb1ddf5efaa`](https://github.com/learningeconomy/LearnCard/commit/60090c28bbd2af3b659e0e6a6f648cb1ddf5efaa) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix OIDC key id changing all the time
+
+-   Updated dependencies [[`d01d1369124d537f37ead6f8e3101cc47fff5208`](https://github.com/learningeconomy/LearnCard/commit/d01d1369124d537f37ead6f8e3101cc47fff5208)]:
+    -   @learncard/core@9.3.17
+    -   @learncard/ceramic-plugin@1.0.28
+    -   @learncard/crypto-plugin@1.0.28
+    -   @learncard/did-web-plugin@1.0.54
+    -   @learncard/didkey-plugin@1.0.28
+    -   @learncard/didkit-plugin@1.5.2
+    -   @learncard/expiration-plugin@1.1.31
+    -   @learncard/learn-card-plugin@1.1.30
+    -   @learncard/vc-plugin@1.1.31
+    -   @learncard/vc-templates-plugin@1.0.38
+
 ## 2.2.12
 
 ### Patch Changes
