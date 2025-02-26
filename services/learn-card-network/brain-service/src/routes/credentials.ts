@@ -71,13 +71,22 @@ export const credentialsRouter = t.router({
                 description: 'This endpoint accepts a credential',
             },
         })
-        .input(z.object({ uri: z.string() }))
+        .input(
+            z.object({
+                uri: z.string(),
+                options: z
+                    .object({
+                        skipNotification: z.boolean().default(false).optional(),
+                    })
+                    .optional(),
+            })
+        )
         .output(z.boolean())
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
             const { uri } = input;
 
-            return acceptCredential(profile, uri);
+            return acceptCredential(profile, uri, input?.options ?? {});
         }),
 
     receivedCredentials: profileRoute
