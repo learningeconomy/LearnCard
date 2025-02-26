@@ -1,5 +1,11 @@
 # @learncard/network-brain-service
 
+## 3.3.9
+
+### Patch Changes
+
+-   [#617](https://github.com/learningeconomy/LearnCard/pull/617) [`774e4752bd7a1ceeea31ba2a882fefba2ae5493f`](https://github.com/learningeconomy/LearnCard/commit/774e4752bd7a1ceeea31ba2a882fefba2ae5493f) Thanks [@gerardopar](https://github.com/gerardopar)! - LC-786 - Suppress Notification on AcceptCredential
+
 ## 3.3.8
 
 ### Patch Changes
