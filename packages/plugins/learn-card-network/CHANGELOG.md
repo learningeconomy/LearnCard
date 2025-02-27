@@ -1,5 +1,14 @@
 # learn-card-core
 
+## 2.4.9
+
+### Patch Changes
+
+-   [#617](https://github.com/learningeconomy/LearnCard/pull/617) [`774e4752bd7a1ceeea31ba2a882fefba2ae5493f`](https://github.com/learningeconomy/LearnCard/commit/774e4752bd7a1ceeea31ba2a882fefba2ae5493f) Thanks [@gerardopar](https://github.com/gerardopar)! - LC-786 - Suppress Notification on AcceptCredential
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.2.10
+
 ## 2.4.8
 
 ### Patch Changes
