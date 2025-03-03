@@ -1,6 +1,6 @@
 {
     "name": "@learncard/learn-cloud-plugin",
-    "version": "2.1.11",
+    "version": "2.1.12",
     "description": "",
     "main": "./dist/index.js",
     "module": "./dist/learn-cloud-plugin.esm.js",
