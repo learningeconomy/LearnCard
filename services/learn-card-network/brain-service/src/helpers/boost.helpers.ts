@@ -9,12 +9,8 @@ import { BoostInstance } from '@models';
 import { constructUri } from './uri.helpers';
 import { storeCredential } from '@accesslayer/credential/create';
 import { createBoostInstanceOfRelationship } from '@accesslayer/boost/relationships/create';
-import {
-    createSentCredentialRelationship,
-    createReceivedCredentialRelationship,
-    setDefaultClaimedRole,
-} from '@accesslayer/credential/relationships/create';
-import { getCredentialUri } from './credential.helpers';
+import { createSentCredentialRelationship } from '@accesslayer/credential/relationships/create';
+import { acceptCredential, getCredentialUri } from './credential.helpers';
 import { getLearnCard } from './learnCard.helpers';
 import { issueCredentialWithSigningAuthority } from './signingAuthority.helpers';
 import { addNotificationToQueue } from './notifications.helpers';
@@ -239,12 +235,13 @@ export const sendBoost = async (
             await Promise.all([
                 createBoostInstanceOfRelationship(credentialInstance, boost),
                 createSentCredentialRelationship(from, to, credentialInstance),
-                ...(autoAcceptCredential
-                    ? [createReceivedCredentialRelationship(to, from, credentialInstance)]
-                    : []),
             ]);
 
-            if (autoAcceptCredential) await setDefaultClaimedRole(to, credentialInstance);
+            if (autoAcceptCredential) {
+                await acceptCredential(to, getCredentialUri(credentialInstance.id, domain), {
+                    skipNotification,
+                });
+            }
 
             boostUri = getCredentialUri(credentialInstance.id, domain);
             if (process.env.NODE_ENV !== 'test') {
@@ -260,12 +257,13 @@ export const sendBoost = async (
         await Promise.all([
             createBoostInstanceOfRelationship(credentialInstance, boost),
             createSentCredentialRelationship(from, to, credentialInstance),
-            ...(autoAcceptCredential
-                ? [createReceivedCredentialRelationship(to, from, credentialInstance)]
-                : []),
         ]);
 
-        if (autoAcceptCredential) await setDefaultClaimedRole(to, credentialInstance);
+        if (autoAcceptCredential) {
+            await acceptCredential(to, getCredentialUri(credentialInstance.id, domain), {
+                skipNotification,
+            });
+        }
 
         boostUri = getCredentialUri(credentialInstance.id, domain);
         if (process.env.NODE_ENV !== 'test') {
