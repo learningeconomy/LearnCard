@@ -1,5 +1,11 @@
 # @learncard/network-brain-service
 
+## 3.3.11
+
+### Patch Changes
+
+-   [#621](https://github.com/learningeconomy/LearnCard/pull/621) [`0d21074775d74738bdca77df49585cd50a364fa5`](https://github.com/learningeconomy/LearnCard/commit/0d21074775d74738bdca77df49585cd50a364fa5) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix Claim Hook processing when claiming a boost via a link
+
 ## 3.3.10
 
 ### Patch Changes
