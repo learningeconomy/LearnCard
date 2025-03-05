@@ -112,9 +112,19 @@ export const CredentialSchemaValidator = z
 export type CredentialSchema = z.infer<typeof CredentialSchemaValidator>;
 
 export const RefreshServiceValidator = z
-    .object({ id: z.string(), type: z.string() })
+    .object({ id: z.string().optional(), type: z.string() })
     .catchall(z.any());
 export type RefreshService = z.infer<typeof RefreshServiceValidator>;
+
+export const TermsOfUseValidator = z
+    .object({ type: z.string(), id: z.string().optional() })
+    .catchall(z.any());
+export type TermsOfUse = z.infer<typeof TermsOfUseValidator>;
+
+export const VC2EvidenceValidator = z
+    .object({ type: z.string().or(z.string().array().nonempty()), id: z.string().optional() })
+    .catchall(z.any());
+export type VC2Evidence = z.infer<typeof VC2EvidenceValidator>;
 
 export const UnsignedVCValidator = z
     .object({
@@ -122,12 +132,27 @@ export const UnsignedVCValidator = z
         id: z.string().optional(),
         type: z.string().array().nonempty(),
         issuer: ProfileValidator,
-        issuanceDate: z.string(),
-        expirationDate: z.string().optional(),
         credentialSubject: CredentialSubjectValidator.or(CredentialSubjectValidator.array()),
-        credentialStatus: CredentialStatusValidator.optional(),
-        credentialSchema: CredentialSchemaValidator.array().optional(),
-        refreshService: RefreshServiceValidator.optional(),
+        refreshService: RefreshServiceValidator.or(RefreshServiceValidator.array()).optional(),
+        credentialSchema: CredentialSchemaValidator.or(
+            CredentialSchemaValidator.array()
+        ).optional(),
+
+        // V1
+        issuanceDate: z.string().optional(),
+        expirationDate: z.string().optional(),
+        credentialStatus: CredentialStatusValidator.or(
+            CredentialStatusValidator.array()
+        ).optional(),
+
+        // V2
+        name: z.string().optional(),
+        description: z.string().optional(),
+        validFrom: z.string().optional(),
+        validUntil: z.string().optional(),
+        status: CredentialStatusValidator.or(CredentialStatusValidator.array()).optional(),
+        termsOfUse: TermsOfUseValidator.or(TermsOfUseValidator.array()).optional(),
+        evidence: VC2EvidenceValidator.or(VC2EvidenceValidator.array()).optional(),
     })
     .catchall(z.any());
 export type UnsignedVC = z.infer<typeof UnsignedVCValidator>;
