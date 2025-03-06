@@ -434,6 +434,7 @@ export const ConsentFlowTransactionActionValidator = z.enum([
     'update',
     'sync',
     'withdraw',
+    'write',
 ]);
 export type ConsentFlowTransactionAction = z.infer<typeof ConsentFlowTransactionActionValidator>;
 

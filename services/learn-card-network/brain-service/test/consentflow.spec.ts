@@ -1,4 +1,4 @@
-import { vi, describe, beforeAll, beforeEach, it, expect } from 'vitest';
+import { vi, describe, beforeAll, beforeEach, afterEach, it, expect } from 'vitest';
 import {
     promiscuousTerms,
     minimalContract,
@@ -12,7 +12,15 @@ import {
     normalNoTerms,
 } from './helpers/contract';
 import { getClient, getUser } from './helpers/getClient';
-import { Profile, ConsentFlowContract, ConsentFlowTransaction, ConsentFlowTerms } from '@models';
+import {
+    Profile,
+    ConsentFlowContract,
+    ConsentFlowTransaction,
+    ConsentFlowTerms,
+    Boost,
+    Credential,
+} from '@models';
+import { testUnsignedBoost } from './helpers/send';
 
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;
@@ -1449,6 +1457,201 @@ describe('Consent Flow Contracts', () => {
                     profileId: 'userb',
                 })
             ).toBeFalsy();
+        });
+    });
+
+    describe('writeCredentialToContract', () => {
+        let contractUri: string;
+        let termsUri: string;
+
+        beforeEach(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await ConsentFlowContract.delete({ detach: true, where: {} });
+            await ConsentFlowTerms.delete({ detach: true, where: {} });
+            await ConsentFlowTransaction.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+
+            // Create a contract that allows writing Achievement credentials
+            contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract({
+                contract: normalContract,
+                name: 'Credential Writing Test Contract',
+                description: 'A contract that allows writing credentials',
+            });
+
+            // User B consents to the contract with terms that allow Achievement category
+            termsUri = await userB.clients.fullAuth.contracts.consentToContract({
+                contractUri,
+                terms: normalFullTerms,
+            });
+        });
+
+        afterEach(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await ConsentFlowContract.delete({ detach: true, where: {} });
+            await ConsentFlowTerms.delete({ detach: true, where: {} });
+            await ConsentFlowTransaction.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+        });
+
+        it('should not allow writing credentials without full auth', async () => {
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            const credential = await userA.learnCard.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: userA.learnCard.id.did(),
+                credentialSubject: {
+                    ...testUnsignedBoost.credentialSubject,
+                    id: userB.learnCard.id.did(),
+                },
+                boostId: boostUri,
+            });
+
+            await expect(
+                noAuthClient.contracts.writeCredentialToContract({
+                    did: userB.learnCard.id.did(),
+                    contractUri,
+                    boostUri,
+                    credential,
+                })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+
+            await expect(
+                userA.clients.partialAuth.contracts.writeCredentialToContract({
+                    did: userB.learnCard.id.did(),
+                    contractUri,
+                    boostUri,
+                    credential,
+                })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        });
+
+        it('should allow writing a credential to a user who has consented to the contract', async () => {
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            const credential = await userA.learnCard.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: userA.learnCard.id.did(),
+                credentialSubject: {
+                    ...testUnsignedBoost.credentialSubject,
+                    id: userB.learnCard.id.did(),
+                },
+                boostId: boostUri,
+            });
+
+            const credentialUri = await userA.clients.fullAuth.contracts.writeCredentialToContract({
+                did: userB.learnCard.id.did(),
+                contractUri,
+                boostUri,
+                credential,
+            });
+
+            expect(credentialUri).toBeDefined();
+            expect(typeof credentialUri).toBe('string');
+        });
+
+        it('should not allow writing credentials with a category not allowed in the contract terms', async () => {
+            // Create a new contract that only allows ID category credentials
+            const idOnlyContractUri =
+                await userA.clients.fullAuth.contracts.createConsentFlowContract({
+                    contract: normalContract,
+                    name: 'ID Only Contract',
+                });
+
+            await userB.clients.fullAuth.contracts.consentToContract({
+                contractUri: idOnlyContractUri,
+                terms: normalIDOnlyTerms, // This only allows ID category
+            });
+
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'Achievement',
+            });
+
+            const credential = await userA.learnCard.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: userA.learnCard.id.did(),
+                credentialSubject: {
+                    ...testUnsignedBoost.credentialSubject,
+                    id: userB.learnCard.id.did(),
+                },
+                boostId: boostUri,
+            });
+
+            // Should fail because the boost is Achievement category but terms only allow ID
+            await expect(
+                userA.clients.fullAuth.contracts.writeCredentialToContract({
+                    did: userB.learnCard.id.did(),
+                    contractUri: idOnlyContractUri,
+                    boostUri,
+                    credential,
+                })
+            ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+        });
+
+        it('should fail if user has not consented to contract', async () => {
+            await userC.clients.fullAuth.profile.createProfile({ profileId: 'userc' });
+
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            const credential = await userA.learnCard.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: userA.learnCard.id.did(),
+                credentialSubject: {
+                    ...testUnsignedBoost.credentialSubject,
+                    id: userC.learnCard.id.did(),
+                },
+                boostId: boostUri,
+            });
+
+            // Should fail because userC hasn't consented to the contract
+            await expect(
+                userA.clients.fullAuth.contracts.writeCredentialToContract({
+                    did: userC.learnCard.id.did(),
+                    contractUri,
+                    boostUri,
+                    credential,
+                })
+            ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+        });
+
+        it('should fail if user has withdrawn consent', async () => {
+            // First withdraw consent
+            await userB.clients.fullAuth.contracts.withdrawConsent({ uri: termsUri });
+
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            const credential = await userA.learnCard.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: userA.learnCard.id.did(),
+                credentialSubject: {
+                    ...testUnsignedBoost.credentialSubject,
+                    id: userB.learnCard.id.did(),
+                },
+                boostId: boostUri,
+            });
+
+            // Should fail because userB has withdrawn consent
+            await expect(
+                userA.clients.fullAuth.contracts.writeCredentialToContract({
+                    did: userB.learnCard.id.did(),
+                    contractUri,
+                    boostUri,
+                    credential,
+                })
+            ).rejects.toMatchObject({ code: 'FORBIDDEN' });
         });
     });
 });

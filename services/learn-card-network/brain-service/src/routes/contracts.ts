@@ -40,6 +40,11 @@ import {
     consentToContract,
     setCreatorForContract,
 } from '@accesslayer/consentflowcontract/relationships/create';
+import { getProfileByDid } from '@accesslayer/profile/read';
+import { sendBoost, isDraftBoost } from '@helpers/boost.helpers';
+import { isRelationshipBlocked } from '@helpers/connection.helpers';
+import { getBoostByUri } from '@accesslayer/boost/read';
+import { canProfileIssueBoost } from '@accesslayer/boost/relationships/read';
 
 export const contractsRouter = t.router({
     createConsentFlowContract: profileRoute
@@ -322,6 +327,124 @@ export const contractsRouter = t.router({
                 cursor: nextCursor,
                 records: data,
             };
+        }),
+
+    writeCredentialToContract: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/consent-flow-contract/write/{contractUri}/{did}',
+                tags: ['Consent Flow Contracts'],
+                summary: 'Writes a boost credential to a did that has consented to a contract',
+                description: 'Writes a boost credential to a did that has consented to a contract',
+            },
+        })
+        .input(
+            z.object({
+                did: z.string(),
+                contractUri: z.string(),
+                boostUri: z.string(),
+                credential: VCValidator.or(JWEValidator),
+            })
+        )
+        .output(z.string())
+        .mutation(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { domain } = ctx;
+            const { did, contractUri, boostUri, credential } = input;
+
+            // Get the other profile by DID
+            const otherProfile = await getProfileByDid(did);
+            if (!otherProfile) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Profile not found. Are you sure this person exists?',
+                });
+            }
+
+            // Check if relationship is blocked
+            const isBlocked = await isRelationshipBlocked(profile, otherProfile);
+            if (isBlocked) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'Profile not found. Are you sure this person exists?',
+                });
+            }
+
+            // Get contract details
+            const contractDetails = await getContractDetailsByUri(contractUri);
+            if (!contractDetails) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Could not find contract',
+                });
+            }
+
+            // Verify if the other profile has consented to the contract
+            if (!(await hasProfileConsentedToContract(otherProfile, contractDetails.contract))) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'Target profile has not consented to this contract',
+                });
+            }
+
+            // Get the boost and verify permissions (similar to sendBoost)
+            const boost = await getBoostByUri(boostUri);
+            if (!boost) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Could not find boost',
+                });
+            }
+
+            // Verify the user has permission to issue this boost
+            if (!(await canProfileIssueBoost(profile, boost))) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile does not have permissions to issue boost',
+                });
+            }
+
+            if (isDraftBoost(boost)) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'Draft Boosts can not be sent. Only Published Boosts can be sent.',
+                });
+            }
+
+            // Check if this boost category is allowed in the contract's terms
+            const terms = await getContractTermsForProfile(otherProfile, contractDetails.contract);
+            if (!terms) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'Target profile has not consented to this contract',
+                });
+            }
+
+            // Check if the boost category is included in the contract terms
+            const boostCategory = boost.category;
+            if (boostCategory) {
+                const categoryAllowed = terms.terms.write?.credentials?.categories?.[boostCategory];
+                if (!categoryAllowed) {
+                    throw new TRPCError({
+                        code: 'FORBIDDEN',
+                        message: `Target profile has not consented to receive boosts in the ${boostCategory} category`,
+                    });
+                }
+            }
+
+            // Use the sendBoost helper to issue the credential with contract relationship
+            return sendBoost(
+                profile,
+                otherProfile,
+                boost,
+                credential,
+                domain,
+                profile.profileId === otherProfile.profileId,
+                false, // autoAcceptCredential
+                terms
+            );
         }),
 
     consentToContract: profileRoute

@@ -280,6 +280,13 @@ export type LearnCardNetworkPluginMethods = {
         query?: ConsentFlowDataQuery,
         options?: Partial<PaginationOptionsType>
     ) => Promise<PaginatedConsentFlowData>;
+    writeCredentialToContract: (
+        did: string,
+        contractUri: string,
+        credential: VC | JWE,
+        boostUri: string
+    ) => Promise<string>;
+
     consentToContract: (
         uri: string,
         terms: {
