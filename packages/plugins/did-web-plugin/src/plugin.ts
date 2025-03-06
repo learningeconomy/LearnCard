@@ -1,6 +1,6 @@
 import { LearnCard } from '@learncard/core';
 
-import { DidWebPluginDependentMethods, DidWebPluginMethods, DidWebPlugin } from './types';
+import { DidWebPluginDependentMethods, DidWebPlugin } from './types';
 export * from './types';
 
 /**
@@ -10,8 +10,6 @@ export const getDidWebPlugin = async (
     learnCard: LearnCard<any, 'id', DidWebPluginDependentMethods>,
     didWeb: string
 ): Promise<DidWebPlugin> => {
-    const existingDid = learnCard.id.did();
-
     learnCard?.debug?.('Adding DID Web Plugin');
     if (!didWeb.includes('did:web:')) {
         throw new Error('Must provide a valid did:web DID into constructor.');
