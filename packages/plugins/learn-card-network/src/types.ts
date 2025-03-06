@@ -38,6 +38,9 @@ import {
     ClaimHook,
     ClaimHookQuery,
     PaginatedClaimHooksType,
+    ConsentFlowDataForDidQuery,
+    PaginatedConsentFlowDataForDid,
+    PaginatedContractCredentials,
 } from '@learncard/types';
 import { Plugin } from '@learncard/core';
 import { ProofOptions } from '@learncard/didkit-plugin';
@@ -276,6 +279,10 @@ export type LearnCardNetworkPluginMethods = {
         uri: string,
         options?: Partial<PaginationOptionsType> & { query?: ConsentFlowDataQuery }
     ) => Promise<PaginatedConsentFlowData>;
+    getConsentFlowDataForDid: (
+        did: string,
+        options?: Partial<PaginationOptionsType> & { query?: ConsentFlowDataForDidQuery }
+    ) => Promise<PaginatedConsentFlowDataForDid>;
     getAllConsentFlowData: (
         query?: ConsentFlowDataQuery,
         options?: Partial<PaginationOptionsType>
@@ -311,6 +318,14 @@ export type LearnCardNetworkPluginMethods = {
         uri: string,
         options?: Partial<PaginationOptionsType> & { query?: ConsentFlowTransactionsQuery }
     ) => Promise<PaginatedConsentFlowTransactions>;
+    getCredentialsForContract: (
+        termsUri: string,
+        options?: Partial<PaginationOptionsType> & { includeReceived?: boolean }
+    ) => Promise<PaginatedContractCredentials>;
+    getConsentFlowCredentials: (
+        options?: Partial<PaginationOptionsType> & { includeReceived?: boolean }
+    ) => Promise<PaginatedContractCredentials>;
+
     verifyConsent: (uri: string, profileId: string) => Promise<boolean>;
 
     addDidMetadata: (metadata: Partial<DidDocument>) => Promise<boolean>;

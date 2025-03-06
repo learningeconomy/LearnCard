@@ -25,11 +25,13 @@ import { testUnsignedBoost } from './helpers/send';
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;
 let userB: Awaited<ReturnType<typeof getUser>>;
+let userC: Awaited<ReturnType<typeof getUser>>;
 
 describe('Consent Flow Contracts', () => {
     beforeAll(async () => {
         userA = await getUser();
         userB = await getUser('b'.repeat(64));
+        userC = await getUser('c'.repeat(64));
     });
 
     describe('createConsentFlowContract', () => {
@@ -607,6 +609,224 @@ describe('Consent Flow Contracts', () => {
         });
     });
 
+    describe('getConsentedDataForDid', () => {
+        let contractUri: string;
+        let userBDid: string;
+
+        beforeEach(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await ConsentFlowContract.delete({ detach: true, where: {} });
+            await ConsentFlowTerms.delete({ detach: true, where: {} });
+            await ConsentFlowTransaction.delete({ detach: true, where: {} });
+
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+            await userC.clients.fullAuth.profile.createProfile({ profileId: 'userc' });
+
+            const userBProfile = await userB.clients.fullAuth.profile.getProfile();
+            userBDid = userBProfile!.did;
+
+            contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract({
+                contract: normalContract,
+                name: 'Test Contract',
+            });
+
+            await userB.clients.fullAuth.contracts.consentToContract({
+                contractUri,
+                terms: normalFullTerms,
+            });
+
+            await userC.clients.fullAuth.contracts.consentToContract({
+                contractUri,
+                terms: normalAchievementOnlyTerms,
+            });
+        });
+
+        afterAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await ConsentFlowContract.delete({ detach: true, where: {} });
+            await ConsentFlowTerms.delete({ detach: true, where: {} });
+            await ConsentFlowTransaction.delete({ detach: true, where: {} });
+        });
+
+        it('should not allow you to get data without full auth', async () => {
+            await expect(
+                noAuthClient.contracts.getConsentedDataForDid({ did: userBDid })
+            ).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+
+            await expect(
+                userA.clients.partialAuth.contracts.getConsentedDataForDid({ did: userBDid })
+            ).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+        });
+
+        it('should allow fetching consented data for a specific did', async () => {
+            await expect(
+                userA.clients.fullAuth.contracts.getConsentedDataForDid({ did: userBDid })
+            ).resolves.not.toThrow();
+
+            const data = await userA.clients.fullAuth.contracts.getConsentedDataForDid({
+                did: userBDid,
+            });
+
+            expect(data.records).toHaveLength(1);
+            expect(data.records[0]?.credentials).toHaveLength(4);
+            expect(data.records[0]?.personal).toEqual(normalFullTerms.read.personal);
+            expect(data.records[0]?.contractUri).toEqual(contractUri);
+        });
+
+        it('should error for non-existent did', async () => {
+            const nonExistentDid = 'did:test:nonexistent';
+
+            await expect(
+                userA.clients.fullAuth.contracts.getConsentedDataForDid({ did: nonExistentDid })
+            ).rejects.toMatchObject({
+                code: 'NOT_FOUND',
+            });
+        });
+
+        it('should allow pagination', async () => {
+            const additionalContracts = await Promise.all(
+                Array(5)
+                    .fill(0)
+                    .map(async (_, index) =>
+                        userA.clients.fullAuth.contracts.createConsentFlowContract({
+                            contract: normalContract,
+                            name: `Pagination Test Contract ${index}`,
+                        })
+                    )
+            );
+
+            for (const contractUri of additionalContracts) {
+                await userB.clients.fullAuth.contracts.consentToContract({
+                    contractUri,
+                    terms: normalFullTerms,
+                });
+            }
+
+            const firstPage = await userA.clients.fullAuth.contracts.getConsentedDataForDid({
+                did: userBDid,
+                limit: 3,
+            });
+
+            expect(firstPage.records).toHaveLength(3);
+            expect(firstPage.hasMore).toBeTruthy();
+            expect(firstPage.cursor).toBeDefined();
+
+            const secondPage = await userA.clients.fullAuth.contracts.getConsentedDataForDid({
+                did: userBDid,
+                limit: 3,
+                cursor: firstPage.cursor,
+            });
+
+            expect(secondPage.records).toHaveLength(3);
+            expect(secondPage.hasMore).toBeFalsy();
+
+            const allData = await userA.clients.fullAuth.contracts.getConsentedDataForDid({
+                did: userBDid,
+                limit: 10,
+            });
+
+            expect(allData.records).toHaveLength(6);
+            expect([...firstPage.records, ...secondPage.records]).toEqual(allData.records);
+        });
+
+        describe('query filtering', () => {
+            beforeEach(async () => {
+                await ConsentFlowContract.delete({ detach: true, where: {} });
+                await ConsentFlowTerms.delete({ detach: true, where: {} });
+
+                contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract({
+                    contract: normalContract,
+                    name: 'Query Test Contract',
+                });
+
+                await userB.clients.fullAuth.contracts.consentToContract({
+                    contractUri,
+                    terms: normalFullTerms,
+                });
+
+                const idOnlyContractUri =
+                    await userA.clients.fullAuth.contracts.createConsentFlowContract({
+                        contract: normalContract,
+                        name: 'ID Only Contract',
+                    });
+
+                await userB.clients.fullAuth.contracts.consentToContract({
+                    contractUri: idOnlyContractUri,
+                    terms: normalIDOnlyTerms,
+                });
+
+                const achievementOnlyContractUri =
+                    await userA.clients.fullAuth.contracts.createConsentFlowContract({
+                        contract: normalContract,
+                        name: 'Achievement Only Contract',
+                    });
+
+                await userB.clients.fullAuth.contracts.consentToContract({
+                    contractUri: achievementOnlyContractUri,
+                    terms: normalAchievementOnlyTerms,
+                });
+            });
+
+            it('should allow filtering by credential categories', async () => {
+                const idData = await userA.clients.fullAuth.contracts.getConsentedDataForDid({
+                    did: userBDid,
+                    query: { credentials: { categories: { ID: true } } },
+                });
+
+                expect(idData.records.length).toEqual(2);
+                expect(
+                    idData.records.every(record =>
+                        record.credentials.every(cred => cred.category === 'ID')
+                    )
+                ).toBeTruthy();
+
+                const achievementData =
+                    await userA.clients.fullAuth.contracts.getConsentedDataForDid({
+                        did: userBDid,
+                        query: { credentials: { categories: { Achievement: true } } },
+                    });
+
+                expect(achievementData.records.length).toEqual(2);
+                expect(
+                    achievementData.records.every(record =>
+                        record.credentials.every(cred => cred.category === 'Achievement')
+                    )
+                ).toBeTruthy();
+            });
+
+            it('should allow filtering by combined credential categories', async () => {
+                const combinedData = await userA.clients.fullAuth.contracts.getConsentedDataForDid({
+                    did: userBDid,
+                    query: { credentials: { categories: { ID: true, Achievement: true } } },
+                });
+
+                // Should only return the data from the contract with full terms
+                expect(combinedData.records.length).toBe(1);
+            });
+
+            it('should allow negation filters for credential categories', async () => {
+                const noAchievementData =
+                    await userA.clients.fullAuth.contracts.getConsentedDataForDid({
+                        did: userBDid,
+                        query: { credentials: { categories: { Achievement: false } } },
+                    });
+
+                // Should include ID-only contract
+                expect(noAchievementData.records.length).toEqual(1);
+                expect(
+                    noAchievementData.records.every(
+                        record => !record.credentials.some(cred => cred.category === 'Achievement')
+                    )
+                ).toBeTruthy();
+            });
+        });
+    });
+
     describe('getConsentedData', () => {
         let uri: string;
 
@@ -957,7 +1177,7 @@ describe('Consent Flow Contracts', () => {
             expect(newContracts.records).toHaveLength(1);
             expect(newContracts.records[0]!.uri).toEqual(termsUri);
             expect(newContracts.records[0]!.contract.owner.did).toEqual(
-                (await userA.clients.fullAuth.profile.getProfile()).did
+                (await userA.clients.fullAuth.profile.getProfile())?.did
             );
             expect(newContracts.records[0]!.terms).toEqual(minimalTerms);
         });
@@ -1128,6 +1348,72 @@ describe('Consent Flow Contracts', () => {
                 })
             ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
         });
+
+        it('should allow you to update terms by sharing more credentials', async () => {
+            const normalContractUri =
+                await userA.clients.fullAuth.contracts.createConsentFlowContract({
+                    contract: normalContract,
+                    name: 'b',
+                });
+
+            const oldTerms = {
+                ...normalFullTerms,
+                read: {
+                    ...normalFullTerms.read,
+                    credentials: {
+                        ...normalFullTerms.read.credentials,
+                        categories: {
+                            ...normalFullTerms.read.credentials.categories,
+                            Achievement: {
+                                ...normalFullTerms.read.credentials.categories.Achievement,
+                                shared: [],
+                            },
+                        },
+                    },
+                },
+            };
+
+            const normalTermsUri = await userB.clients.fullAuth.contracts.consentToContract({
+                contractUri: normalContractUri,
+                terms: oldTerms,
+            });
+
+            const newTerms = {
+                ...normalFullTerms,
+                read: {
+                    ...normalFullTerms.read,
+                    credentials: {
+                        ...normalFullTerms.read.credentials,
+                        categories: {
+                            ...normalFullTerms.read.credentials.categories,
+                            Achievement: {
+                                ...normalFullTerms.read.credentials.categories.Achievement,
+                                shared: [
+                                    ...normalFullTerms.read.credentials.categories.Achievement
+                                        ?.shared!,
+                                    'another!',
+                                ],
+                            },
+                        },
+                    },
+                },
+            };
+
+            await expect(
+                userB.clients.fullAuth.contracts.updateConsentedContractTerms({
+                    terms: newTerms,
+                    uri: normalTermsUri,
+                })
+            ).resolves.not.toThrow();
+
+            const contracts = await userB.clients.fullAuth.contracts.getConsentedContracts();
+
+            const terms = contracts.records.find(
+                record => record.contract.uri === normalContractUri
+            )?.terms;
+
+            expect(terms).toEqual(newTerms);
+        });
     });
 
     describe('withdrawConsent', () => {
@@ -1236,6 +1522,38 @@ describe('Consent Flow Contracts', () => {
             expect(transactions.records).toHaveLength(1);
             expect(transactions.records[0]!.action).toEqual('consent');
             expect(transactions.records[0]!.terms).toEqual(minimalTerms);
+        });
+
+        it('should include credential URI of write transactions', async () => {
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            const credential = await userA.learnCard.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: userA.learnCard.id.did(),
+                credentialSubject: {
+                    ...testUnsignedBoost.credentialSubject,
+                    id: userB.learnCard.id.did(),
+                },
+                boostId: boostUri,
+            });
+            const credentialUri = await userA.clients.fullAuth.contracts.writeCredentialToContract({
+                did: userB.learnCard.id.did(),
+                contractUri,
+                boostUri,
+                credential,
+            });
+
+            const transactions = await userB.clients.fullAuth.contracts.getTermsTransactionHistory({
+                uri: termsUri,
+            });
+
+            expect(transactions.records).toHaveLength(2);
+            expect(transactions.records[1]!.action).toEqual('consent');
+            expect(transactions.records[1]!.terms).toEqual(minimalTerms);
+            expect(transactions.records[0]!.action).toEqual('write');
+            expect(transactions.records[0]!.uris).toEqual([credentialUri]);
         });
 
         it('should return withdraw events', async () => {
@@ -1652,6 +1970,681 @@ describe('Consent Flow Contracts', () => {
                     credential,
                 })
             ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+        });
+    });
+
+    describe('getCredentialsForContract', () => {
+        let contractUri: string;
+        let termsUri: string;
+        let credentialUri: string;
+
+        beforeEach(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await ConsentFlowContract.delete({ detach: true, where: {} });
+            await ConsentFlowTerms.delete({ detach: true, where: {} });
+            await ConsentFlowTransaction.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+
+            // Create a contract that allows writing Achievement credentials
+            contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract({
+                contract: normalContract,
+                name: 'Credential Writing Test Contract',
+                description: 'A contract that allows writing credentials',
+            });
+
+            // User B consents to the contract with terms that allow Achievement category
+            termsUri = await userB.clients.fullAuth.contracts.consentToContract({
+                contractUri,
+                terms: normalFullTerms,
+            });
+
+            // Create a boost and issue credential
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'Achievement',
+            });
+
+            const credential = await userA.learnCard.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: userA.learnCard.id.did(),
+                credentialSubject: {
+                    ...testUnsignedBoost.credentialSubject,
+                    id: userB.learnCard.id.did(),
+                },
+                boostId: boostUri,
+            });
+
+            credentialUri = await userA.clients.fullAuth.contracts.writeCredentialToContract({
+                did: userB.learnCard.id.did(),
+                contractUri,
+                boostUri,
+                credential,
+            });
+        });
+
+        afterEach(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await ConsentFlowContract.delete({ detach: true, where: {} });
+            await ConsentFlowTerms.delete({ detach: true, where: {} });
+            await ConsentFlowTransaction.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+        });
+
+        it('should not allow retrieving credentials without full auth', async () => {
+            await expect(
+                noAuthClient.contracts.getCredentialsForContract({
+                    termsUri,
+                })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+
+            await expect(
+                userB.clients.partialAuth.contracts.getCredentialsForContract({
+                    termsUri,
+                })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        });
+
+        it('should allow retrieving credentials issued via a contract', async () => {
+            const result = await userB.clients.fullAuth.contracts.getCredentialsForContract({
+                termsUri,
+            });
+
+            expect(result.records).toHaveLength(1);
+            expect(result.records[0]?.category).toBe('Achievement');
+            expect(result.records[0]?.credentialUri).toBeDefined();
+            expect(result.records[0]?.boostUri).toBeDefined();
+        });
+
+        it("should not allow accessing credentials from another user's contract", async () => {
+            await expect(
+                userA.clients.fullAuth.contracts.getCredentialsForContract({
+                    termsUri,
+                })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        });
+
+        it('should support pagination', async () => {
+            // Add multiple additional credentials
+            for (let i = 0; i < 5; i++) {
+                const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                    credential: testUnsignedBoost,
+                });
+
+                const credential = await userA.learnCard.invoke.issueCredential({
+                    ...testUnsignedBoost,
+                    issuer: userA.learnCard.id.did(),
+                    credentialSubject: {
+                        ...testUnsignedBoost.credentialSubject,
+                        id: userB.learnCard.id.did(),
+                    },
+                    boostId: boostUri,
+                });
+
+                await userA.clients.fullAuth.contracts.writeCredentialToContract({
+                    did: userB.learnCard.id.did(),
+                    contractUri,
+                    boostUri,
+                    credential,
+                });
+            }
+
+            // Total of 6 credentials now (1 original + 5 new ones)
+            const allResults = await userB.clients.fullAuth.contracts.getCredentialsForContract({
+                termsUri,
+                limit: 10,
+            });
+            expect(allResults.records).toHaveLength(6);
+
+            // Test first page
+            const firstPage = await userB.clients.fullAuth.contracts.getCredentialsForContract({
+                termsUri,
+                limit: 3,
+            });
+            expect(firstPage.records).toHaveLength(3);
+            expect(firstPage.hasMore).toBeTruthy();
+
+            // Test second page
+            const secondPage = await userB.clients.fullAuth.contracts.getCredentialsForContract({
+                termsUri,
+                limit: 3,
+                cursor: firstPage.cursor,
+            });
+            expect(secondPage.records).toHaveLength(3);
+            expect(secondPage.hasMore).toBeFalsy();
+
+            // Combined pages should equal all results
+            expect([...firstPage.records, ...secondPage.records].length).toEqual(
+                allResults.records.length
+            );
+        });
+
+        it('should respect the includeReceived parameter', async () => {
+            // Accept the first credential
+            await userB.clients.fullAuth.credential.acceptCredential({ uri: credentialUri });
+
+            // Add another credential that won't be accepted
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            const credential = await userA.learnCard.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: userA.learnCard.id.did(),
+                credentialSubject: {
+                    ...testUnsignedBoost.credentialSubject,
+                    id: userB.learnCard.id.did(),
+                },
+                boostId: boostUri,
+            });
+
+            await userA.clients.fullAuth.contracts.writeCredentialToContract({
+                did: userB.learnCard.id.did(),
+                contractUri,
+                boostUri,
+                credential,
+            });
+
+            // Should find all credentials
+            const allResults = await userB.clients.fullAuth.contracts.getCredentialsForContract({
+                termsUri,
+                includeReceived: true,
+            });
+            expect(allResults.records).toHaveLength(2);
+
+            // Should only find credentials that haven't been received
+            const nonReceivedResults =
+                await userB.clients.fullAuth.contracts.getCredentialsForContract({
+                    termsUri,
+                    includeReceived: false,
+                });
+            expect(nonReceivedResults.records).toHaveLength(1);
+        });
+
+        it('should support complex pagination with various page sizes', async () => {
+            // Add many credentials with different metadata to test with
+            const totalCredentials = 15;
+
+            for (let i = 0; i < totalCredentials; i++) {
+                const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                    credential: testUnsignedBoost,
+                    category: i % 3 === 0 ? 'Achievement' : 'ID', // Mix of categories
+                    name: `Test Credential ${i}`,
+                });
+
+                const credential = await userA.learnCard.invoke.issueCredential({
+                    ...testUnsignedBoost,
+                    issuer: userA.learnCard.id.did(),
+                    credentialSubject: {
+                        ...testUnsignedBoost.credentialSubject,
+                        id: userB.learnCard.id.did(),
+                    },
+                    boostId: boostUri,
+                });
+
+                const credentialUri =
+                    await userA.clients.fullAuth.contracts.writeCredentialToContract({
+                        did: userB.learnCard.id.did(),
+                        contractUri,
+                        boostUri,
+                        credential,
+                    });
+
+                // Accept some credentials to test filtering
+                if (i % 2 === 0) {
+                    await userB.clients.fullAuth.credential.acceptCredential({
+                        uri: credentialUri,
+                    });
+                }
+            }
+
+            // Total of 16 credentials now (1 original + 15 new ones)
+            const allResults = await userB.clients.fullAuth.contracts.getCredentialsForContract({
+                termsUri,
+                limit: 20,
+            });
+            expect(allResults.records).toHaveLength(totalCredentials + 1); // +1 for the original credential
+
+            // Test different page sizes to ensure proper handling
+
+            // Page size 4
+            const firstPageSmall = await userB.clients.fullAuth.contracts.getCredentialsForContract(
+                {
+                    termsUri,
+                    limit: 4,
+                }
+            );
+            expect(firstPageSmall.records).toHaveLength(4);
+            expect(firstPageSmall.hasMore).toBeTruthy();
+
+            const secondPageSmall =
+                await userB.clients.fullAuth.contracts.getCredentialsForContract({
+                    termsUri,
+                    limit: 4,
+                    cursor: firstPageSmall.cursor,
+                });
+            expect(secondPageSmall.records).toHaveLength(4);
+            expect(secondPageSmall.hasMore).toBeTruthy();
+
+            // Page size 7 (odd page size)
+            const firstPageMedium =
+                await userB.clients.fullAuth.contracts.getCredentialsForContract({
+                    termsUri,
+                    limit: 7,
+                });
+            expect(firstPageMedium.records).toHaveLength(7);
+            expect(firstPageMedium.hasMore).toBeTruthy();
+
+            const secondPageMedium =
+                await userB.clients.fullAuth.contracts.getCredentialsForContract({
+                    termsUri,
+                    limit: 7,
+                    cursor: firstPageMedium.cursor,
+                });
+            expect(secondPageMedium.records).toHaveLength(7);
+            expect(secondPageMedium.hasMore).toBeTruthy();
+
+            // Get the last page with remaining items (should be fewer than the page size)
+            const thirdPageMedium =
+                await userB.clients.fullAuth.contracts.getCredentialsForContract({
+                    termsUri,
+                    limit: 7,
+                    cursor: secondPageMedium.cursor,
+                });
+            expect(thirdPageMedium.records).toHaveLength(totalCredentials + 1 - 14); // +1 original, -14 from previous pages
+            expect(thirdPageMedium.hasMore).toBeFalsy();
+
+            // Verify combined pages contain all records
+            const combinedRecords = [
+                ...firstPageMedium.records,
+                ...secondPageMedium.records,
+                ...thirdPageMedium.records,
+            ];
+            expect(combinedRecords.length).toEqual(allResults.records.length);
+        });
+
+        it('should handle edge cases with uneven page divisions', async () => {
+            // Create 10 credentials for pagination testing
+            for (let i = 0; i < 9; i++) {
+                const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                    credential: testUnsignedBoost,
+                });
+
+                const credential = await userA.learnCard.invoke.issueCredential({
+                    ...testUnsignedBoost,
+                    issuer: userA.learnCard.id.did(),
+                    credentialSubject: {
+                        ...testUnsignedBoost.credentialSubject,
+                        id: userB.learnCard.id.did(),
+                    },
+                    boostId: boostUri,
+                });
+
+                await userA.clients.fullAuth.contracts.writeCredentialToContract({
+                    did: userB.learnCard.id.did(),
+                    contractUri,
+                    boostUri,
+                    credential,
+                });
+            }
+
+            // Total of 10 credentials (1 original + 9 new ones)
+            // Test with page size 3, which doesn't divide evenly into 10
+            const firstPage = await userB.clients.fullAuth.contracts.getCredentialsForContract({
+                termsUri,
+                limit: 3,
+            });
+            expect(firstPage.records).toHaveLength(3);
+            expect(firstPage.hasMore).toBeTruthy();
+
+            const secondPage = await userB.clients.fullAuth.contracts.getCredentialsForContract({
+                termsUri,
+                limit: 3,
+                cursor: firstPage.cursor,
+            });
+            expect(secondPage.records).toHaveLength(3);
+            expect(secondPage.hasMore).toBeTruthy();
+
+            const thirdPage = await userB.clients.fullAuth.contracts.getCredentialsForContract({
+                termsUri,
+                limit: 3,
+                cursor: secondPage.cursor,
+            });
+            expect(thirdPage.records).toHaveLength(3);
+            expect(thirdPage.hasMore).toBeTruthy();
+
+            // Fourth page should have just 1 remaining item
+            const fourthPage = await userB.clients.fullAuth.contracts.getCredentialsForContract({
+                termsUri,
+                limit: 3,
+                cursor: thirdPage.cursor,
+            });
+            expect(fourthPage.records).toHaveLength(1);
+            expect(fourthPage.hasMore).toBeFalsy();
+
+            // All pages combined should equal the total
+            expect(
+                firstPage.records.length +
+                secondPage.records.length +
+                thirdPage.records.length +
+                fourthPage.records.length
+            ).toBe(10);
+
+            const all = await userB.clients.fullAuth.contracts.getCredentialsForContract({
+                termsUri,
+                limit: 11,
+            });
+
+            expect(all.records).toEqual([
+                ...firstPage.records,
+                ...secondPage.records,
+                ...thirdPage.records,
+                ...fourthPage.records,
+            ]);
+        });
+
+        it('should maintain cursor consistency across requests', async () => {
+            // Add a set of credentials
+            for (let i = 0; i < 10; i++) {
+                const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                    credential: testUnsignedBoost,
+                });
+
+                const credential = await userA.learnCard.invoke.issueCredential({
+                    ...testUnsignedBoost,
+                    issuer: userA.learnCard.id.did(),
+                    credentialSubject: {
+                        ...testUnsignedBoost.credentialSubject,
+                        id: userB.learnCard.id.did(),
+                    },
+                    boostId: boostUri,
+                });
+
+                await userA.clients.fullAuth.contracts.writeCredentialToContract({
+                    did: userB.learnCard.id.did(),
+                    contractUri,
+                    boostUri,
+                    credential,
+                });
+            }
+
+            // Get the first page twice with the same parameters
+            const firstPageA = await userB.clients.fullAuth.contracts.getCredentialsForContract({
+                termsUri,
+                limit: 4,
+            });
+
+            const firstPageB = await userB.clients.fullAuth.contracts.getCredentialsForContract({
+                termsUri,
+                limit: 4,
+            });
+
+            // Cursors should be the same for identical queries
+            expect(firstPageA.cursor).toEqual(firstPageB.cursor);
+
+            // Records should be the same for identical queries
+            expect(firstPageA.records).toEqual(firstPageB.records);
+
+            // Get second pages using both cursors - they should return identical results
+            const secondPageA = await userB.clients.fullAuth.contracts.getCredentialsForContract({
+                termsUri,
+                limit: 4,
+                cursor: firstPageA.cursor,
+            });
+
+            const secondPageB = await userB.clients.fullAuth.contracts.getCredentialsForContract({
+                termsUri,
+                limit: 4,
+                cursor: firstPageB.cursor,
+            });
+
+            // Results should be identical
+            expect(secondPageA.records).toEqual(secondPageB.records);
+            expect(secondPageA.cursor).toEqual(secondPageB.cursor);
+        });
+    });
+
+    describe('getAllCredentialsForTerms', () => {
+        let contractUri1: string;
+        let contractUri2: string;
+
+        beforeEach(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await ConsentFlowContract.delete({ detach: true, where: {} });
+            await ConsentFlowTerms.delete({ detach: true, where: {} });
+            await ConsentFlowTransaction.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+            await userC.clients.fullAuth.profile.createProfile({ profileId: 'userc' });
+
+            // Create first contract
+            contractUri1 = await userA.clients.fullAuth.contracts.createConsentFlowContract({
+                contract: normalContract,
+                name: 'First Contract',
+                description: 'First contract for testing',
+            });
+
+            // Create second contract
+            contractUri2 = await userA.clients.fullAuth.contracts.createConsentFlowContract({
+                contract: normalContract,
+                name: 'Second Contract',
+                description: 'Second contract for testing',
+            });
+
+            // User B consents to both contracts
+            await userB.clients.fullAuth.contracts.consentToContract({
+                contractUri: contractUri1,
+                terms: normalFullTerms,
+            });
+
+            await userB.clients.fullAuth.contracts.consentToContract({
+                contractUri: contractUri2,
+                terms: normalFullTerms,
+            });
+
+            // Create and issue one credential for each contract
+            const boost1 = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'Achievement',
+                name: 'First Achievement',
+            });
+
+            const credential1 = await userA.learnCard.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: userA.learnCard.id.did(),
+                credentialSubject: {
+                    ...testUnsignedBoost.credentialSubject,
+                    id: userB.learnCard.id.did(),
+                },
+                boostId: boost1,
+            });
+
+            await userA.clients.fullAuth.contracts.writeCredentialToContract({
+                did: userB.learnCard.id.did(),
+                contractUri: contractUri1,
+                boostUri: boost1,
+                credential: credential1,
+            });
+
+            const boost2 = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'ID',
+                name: 'First ID',
+            });
+
+            const credential2 = await userA.learnCard.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: userA.learnCard.id.did(),
+                credentialSubject: {
+                    ...testUnsignedBoost.credentialSubject,
+                    id: userB.learnCard.id.did(),
+                },
+                boostId: boost2,
+            });
+
+            await userA.clients.fullAuth.contracts.writeCredentialToContract({
+                did: userB.learnCard.id.did(),
+                contractUri: contractUri2,
+                boostUri: boost2,
+                credential: credential2,
+            });
+        });
+
+        afterEach(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await ConsentFlowContract.delete({ detach: true, where: {} });
+            await ConsentFlowTerms.delete({ detach: true, where: {} });
+            await ConsentFlowTransaction.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+        });
+
+        it('should not allow retrieving credentials without full auth', async () => {
+            await expect(noAuthClient.contracts.getAllCredentialsForTerms()).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+
+            await expect(
+                userB.clients.partialAuth.contracts.getAllCredentialsForTerms()
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        });
+
+        it('should allow retrieving all credentials written to a profile across all terms', async () => {
+            const result = await userB.clients.fullAuth.contracts.getAllCredentialsForTerms();
+
+            expect(result.records).toHaveLength(2);
+            expect(result.records.some(record => record.category === 'Achievement')).toBeTruthy();
+            expect(result.records.some(record => record.category === 'ID')).toBeTruthy();
+
+            // All records should include the term URI they came from
+            expect(result.records.every(record => record.termsUri)).toBeTruthy();
+            expect(result.records.every(record => record.date)).toBeTruthy();
+        });
+
+        it('should return empty array for profiles with no contract terms', async () => {
+            // User C has no consented contracts
+            const result = await userC.clients.fullAuth.contracts.getAllCredentialsForTerms();
+            expect(result.records).toHaveLength(0);
+        });
+
+        it('should support pagination across multiple contracts', async () => {
+            // Add more credentials to both contracts
+            for (let i = 0; i < 5; i++) {
+                // Add to first contract
+                const boost1 = await userA.clients.fullAuth.boost.createBoost({
+                    credential: testUnsignedBoost,
+                    category: 'Achievement',
+                    name: `Achievement ${i}`,
+                });
+
+                const credential1 = await userA.learnCard.invoke.issueCredential({
+                    ...testUnsignedBoost,
+                    issuer: userA.learnCard.id.did(),
+                    credentialSubject: {
+                        ...testUnsignedBoost.credentialSubject,
+                        id: userB.learnCard.id.did(),
+                    },
+                    boostId: boost1,
+                });
+
+                await userA.clients.fullAuth.contracts.writeCredentialToContract({
+                    did: userB.learnCard.id.did(),
+                    contractUri: contractUri1,
+                    boostUri: boost1,
+                    credential: credential1,
+                });
+
+                // Add to second contract
+                const boost2 = await userA.clients.fullAuth.boost.createBoost({
+                    credential: testUnsignedBoost,
+                    category: 'ID',
+                    name: `ID ${i}`,
+                });
+
+                const credential2 = await userA.learnCard.invoke.issueCredential({
+                    ...testUnsignedBoost,
+                    issuer: userA.learnCard.id.did(),
+                    credentialSubject: {
+                        ...testUnsignedBoost.credentialSubject,
+                        id: userB.learnCard.id.did(),
+                    },
+                    boostId: boost2,
+                });
+
+                await userA.clients.fullAuth.contracts.writeCredentialToContract({
+                    did: userB.learnCard.id.did(),
+                    contractUri: contractUri2,
+                    boostUri: boost2,
+                    credential: credential2,
+                });
+            }
+
+            // Total of 12 credentials now (2 original + 10 new ones)
+            const allResults = await userB.clients.fullAuth.contracts.getAllCredentialsForTerms({
+                limit: 15,
+            });
+            expect(allResults.records).toHaveLength(12);
+
+            // Test first page
+            const firstPage = await userB.clients.fullAuth.contracts.getAllCredentialsForTerms({
+                limit: 5,
+            });
+            expect(firstPage.records).toHaveLength(5);
+            expect(firstPage.hasMore).toBeTruthy();
+
+            // Test second page
+            const secondPage = await userB.clients.fullAuth.contracts.getAllCredentialsForTerms({
+                limit: 5,
+                cursor: firstPage.cursor,
+            });
+            expect(secondPage.records).toHaveLength(5);
+            expect(secondPage.hasMore).toBeTruthy();
+
+            // Test third page
+            const thirdPage = await userB.clients.fullAuth.contracts.getAllCredentialsForTerms({
+                limit: 5,
+                cursor: secondPage.cursor,
+            });
+            expect(thirdPage.records).toHaveLength(2);
+            expect(thirdPage.hasMore).toBeFalsy();
+
+            // Combined pages should equal all results
+            expect(
+                [...firstPage.records, ...secondPage.records, ...thirdPage.records].length
+            ).toEqual(allResults.records.length);
+        });
+
+        it('should respect the includeReceived parameter', async () => {
+            // Get all credentials
+            const allResults = await userB.clients.fullAuth.contracts.getAllCredentialsForTerms({
+                includeReceived: true,
+            });
+            expect(allResults.records).toHaveLength(2);
+
+            // Accept one credential
+            await userB.clients.fullAuth.credential.acceptCredential({
+                uri: allResults.records[0]!.credentialUri,
+            });
+
+            // Should get all credentials with includeReceived=true
+            const withReceived = await userB.clients.fullAuth.contracts.getAllCredentialsForTerms({
+                includeReceived: true,
+            });
+            expect(withReceived.records).toHaveLength(2);
+
+            // Should filter out received credentials with includeReceived=false
+            const withoutReceived =
+                await userB.clients.fullAuth.contracts.getAllCredentialsForTerms({
+                    includeReceived: false,
+                });
+            expect(withoutReceived.records).toHaveLength(1);
         });
     });
 });

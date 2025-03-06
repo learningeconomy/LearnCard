@@ -15,11 +15,17 @@ import {
     PaginatedConsentFlowTransactionsValidator,
     PaginatedConsentFlowDataValidator,
     ConsentFlowDataQueryValidator,
+    ConsentFlowDataForDidQueryValidator,
+    PaginatedConsentFlowDataForDidValidator,
+    PaginatedContractCredentialsValidator,
+    VCValidator,
+    JWEValidator,
 } from '@learncard/types';
 import { createConsentFlowContract } from '@accesslayer/consentflowcontract/create';
 import {
     getConsentFlowContractsForProfile,
     getConsentedContractsForProfile,
+    getConsentedDataBetweenProfiles,
     getConsentedDataForContract,
     getConsentedDataForProfile,
     getContractDetailsByUri,
@@ -45,6 +51,12 @@ import { sendBoost, isDraftBoost } from '@helpers/boost.helpers';
 import { isRelationshipBlocked } from '@helpers/connection.helpers';
 import { getBoostByUri } from '@accesslayer/boost/read';
 import { canProfileIssueBoost } from '@accesslayer/boost/relationships/read';
+import {
+    getCredentialsForContractTerms,
+    getAllCredentialsForProfileTerms,
+} from '@accesslayer/credential/relationships/read';
+import { getCredentialUri } from '@helpers/credential.helpers';
+import { getSigningAuthorityForUserByName } from '@accesslayer/signing-authority/relationships/read';
 
 export const contractsRouter = t.router({
     createConsentFlowContract: profileRoute
@@ -274,6 +286,57 @@ export const contractsRouter = t.router({
                 limit: limit + 1,
                 cursor,
             });
+
+            const data = results.slice(0, limit);
+
+            const hasMore = results.length > limit;
+            const nextCursor = data.at(-1)?.date;
+
+            return {
+                hasMore,
+                cursor: nextCursor,
+                records: data,
+            };
+        }),
+
+    getConsentedDataForDid: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/consent-flow-contract/data/{did}',
+                tags: ['Consent Flow Contracts'],
+                summary: 'Get the data that has been consented by a did',
+                description: 'This route grabs all the data that has been consented by a did',
+            },
+        })
+        .input(
+            PaginationOptionsValidator.extend({
+                did: z.string(),
+                query: ConsentFlowDataForDidQueryValidator.default({}),
+                limit: PaginationOptionsValidator.shape.limit.default(25),
+            })
+        )
+        .output(PaginatedConsentFlowDataForDidValidator)
+        .query(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+
+            const { did, query, limit, cursor } = input;
+
+            const otherProfile = await getProfileByDid(did);
+
+            if (!otherProfile) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Could not find profile for did',
+                });
+            }
+
+            const results = await getConsentedDataBetweenProfiles(
+                profile.profileId,
+                otherProfile.profileId,
+                { query, limit: limit + 1, cursor, domain: ctx.domain }
+            );
 
             const data = results.slice(0, limit);
 
@@ -722,7 +785,16 @@ export const contractsRouter = t.router({
             return {
                 hasMore,
                 cursor: nextCursor,
-                records: transactions,
+                records: transactions.map(transaction => {
+                    const { credentials, ...rest } = transaction;
+
+                    return {
+                        ...rest,
+                        uris: credentials.map(credential =>
+                            getCredentialUri(credential.id, ctx.domain)
+                        ),
+                    };
+                }),
             };
         }),
 
@@ -759,6 +831,121 @@ export const contractsRouter = t.router({
             if (terms.expiresAt && new Date() > new Date(terms.expiresAt)) return false;
 
             return true;
+        }),
+
+    getCredentialsForContract: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/consent-flow-contract/{termsUri}/credentials',
+                tags: ['Consent Flow Contracts'],
+                summary: 'Get credentials issued via a contract',
+                description: 'Gets all credentials that were issued via a contract',
+            },
+        })
+        .input(
+            PaginationOptionsValidator.extend({
+                termsUri: z.string(),
+                includeReceived: z.boolean().default(true),
+                limit: PaginationOptionsValidator.shape.limit.default(25),
+            })
+        )
+        .output(PaginatedContractCredentialsValidator)
+        .query(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { domain } = ctx;
+            const { termsUri, includeReceived, limit, cursor } = input;
+
+            // Verify the terms exist and belong to this profile
+            const terms = await getContractTermsByUri(termsUri);
+            if (!terms) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Could not find contract terms',
+                });
+            }
+
+            if (terms.consenter.profileId !== profile.profileId) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile does not own these terms',
+                });
+            }
+
+            const termsId = getIdFromUri(termsUri);
+
+            const results = await getCredentialsForContractTerms(termsId, {
+                limit: limit + 1,
+                cursor,
+                includeReceived,
+                profileId: profile.profileId,
+            });
+
+            const credentials = results.slice(0, limit);
+            const hasMore = results.length > limit;
+            const nextCursor = credentials.at(-1)?.date;
+
+            // Format the results with proper URIs
+            return {
+                hasMore,
+                cursor: nextCursor,
+                records: credentials.map(cred => ({
+                    ...cred,
+                    termsUri,
+                    contractUri: constructUri('contract', terms.contract.id, domain),
+                    credentialUri: constructUri('credential', cred.credentialUri, domain),
+                    boostUri: constructUri('boost', cred.boostUri, domain),
+                })),
+            };
+        }),
+
+    getAllCredentialsForTerms: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/consent-flow-contracts/credentials',
+                tags: ['Consent Flow Contracts'],
+                summary: 'Get all credentials written to any terms',
+                description:
+                    'Gets all credentials that were written to any terms owned by this profile',
+            },
+        })
+        .input(
+            PaginationOptionsValidator.extend({
+                includeReceived: z.boolean().default(false),
+                limit: PaginationOptionsValidator.shape.limit.default(25),
+            }).default({})
+        )
+        .output(PaginatedContractCredentialsValidator)
+        .query(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { domain } = ctx;
+            const { includeReceived, limit, cursor } = input;
+
+            const results = await getAllCredentialsForProfileTerms(profile.profileId, {
+                limit: limit + 1,
+                cursor,
+                includeReceived,
+            });
+
+            const credentials = results.slice(0, limit);
+            const hasMore = results.length > limit;
+            const nextCursor = credentials.at(-1)?.date;
+
+            // Format the results with proper URIs
+            return {
+                hasMore,
+                cursor: nextCursor,
+                records: credentials.map(cred => ({
+                    ...cred,
+                    contractUri: constructUri('contract', cred.contract.id, domain),
+                    credentialUri: constructUri('credential', cred.credential.id, domain),
+                    boostUri: constructUri('boost', cred.boost.id, domain),
+                    termsUri: constructUri('terms', cred.terms.id, domain),
+                })),
+            };
         }),
 });
 export type ContractsRouter = typeof contractsRouter;

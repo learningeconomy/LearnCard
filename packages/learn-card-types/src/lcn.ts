@@ -324,6 +324,21 @@ export const PaginatedConsentFlowDataValidator = PaginationResponseValidator.ext
 });
 export type PaginatedConsentFlowData = z.infer<typeof PaginatedConsentFlowDataValidator>;
 
+export const ConsentFlowContractDataForDidValidator = z.object({
+    credentials: z.object({ category: z.string(), uri: z.string() }).array(),
+    personal: z.record(z.string()).default({}),
+    date: z.string(),
+    contractUri: z.string(),
+});
+export type ConsentFlowContractDataForDid = z.infer<typeof ConsentFlowContractDataForDidValidator>;
+
+export const PaginatedConsentFlowDataForDidValidator = PaginationResponseValidator.extend({
+    records: ConsentFlowContractDataForDidValidator.array(),
+});
+export type PaginatedConsentFlowDataForDid = z.infer<
+    typeof PaginatedConsentFlowDataForDidValidator
+>;
+
 export const ConsentFlowTermValidator = z.object({
     sharing: z.boolean().optional(),
     shared: z.string().array().optional(),
@@ -405,6 +420,14 @@ export const ConsentFlowDataQueryValidator = z.object({
 export type ConsentFlowDataQuery = z.infer<typeof ConsentFlowDataQueryValidator>;
 export type ConsentFlowDataQueryInput = z.input<typeof ConsentFlowDataQueryValidator>;
 
+export const ConsentFlowDataForDidQueryValidator = z.object({
+    credentials: z.object({ categories: z.record(z.boolean()).optional() }).optional(),
+    personal: z.record(z.boolean()).optional(),
+    id: StringQuery.optional(),
+});
+export type ConsentFlowDataForDidQuery = z.infer<typeof ConsentFlowDataForDidQueryValidator>;
+export type ConsentFlowDataForDidQueryInput = z.input<typeof ConsentFlowDataForDidQueryValidator>;
+
 export const ConsentFlowTermsQueryValidator = z.object({
     read: z
         .object({
@@ -467,6 +490,7 @@ export const ConsentFlowTransactionValidator = z.object({
     id: z.string(),
     action: ConsentFlowTransactionActionValidator,
     date: z.string(),
+    uris: z.string().array().optional(),
 });
 export type ConsentFlowTransaction = z.infer<typeof ConsentFlowTransactionValidator>;
 
@@ -476,6 +500,21 @@ export const PaginatedConsentFlowTransactionsValidator = PaginationResponseValid
 export type PaginatedConsentFlowTransactions = z.infer<
     typeof PaginatedConsentFlowTransactionsValidator
 >;
+
+export const ContractCredentialValidator = z.object({
+    credentialUri: z.string(),
+    termsUri: z.string(),
+    contractUri: z.string(),
+    boostUri: z.string(),
+    category: z.string().optional(),
+    date: z.string(),
+});
+export type ContractCredential = z.infer<typeof ContractCredentialValidator>;
+
+export const PaginatedContractCredentialsValidator = PaginationResponseValidator.extend({
+    records: ContractCredentialValidator.array(),
+});
+export type PaginatedContractCredentials = z.infer<typeof PaginatedContractCredentialsValidator>;
 
 export const LCNNotificationTypeEnumValidator = z.enum([
     'CONNECTION_REQUEST',
