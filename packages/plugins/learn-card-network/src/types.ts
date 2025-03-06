@@ -41,6 +41,7 @@ import {
     ConsentFlowDataForDidQuery,
     PaginatedConsentFlowDataForDid,
     PaginatedContractCredentials,
+    AutoBoostConfig,
 } from '@learncard/types';
 import { Plugin } from '@learncard/core';
 import { ProofOptions } from '@learncard/didkit-plugin';
@@ -269,6 +270,7 @@ export type LearnCardNetworkPluginMethods = {
         description?: string;
         image?: string;
         expiresAt?: string;
+        autoboosts?: AutoBoostConfig[];
     }) => Promise<string>;
     getContract: (uri: string) => Promise<ConsentFlowContractDetails>;
     getContracts: (

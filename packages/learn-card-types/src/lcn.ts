@@ -264,6 +264,15 @@ export const LCNSigningAuthorityForUserValidator = z.object({
 });
 export type LCNSigningAuthorityForUserType = z.infer<typeof LCNSigningAuthorityForUserValidator>;
 
+export const AutoBoostConfigValidator = z.object({
+    boostUri: z.string(),
+    signingAuthority: z.object({
+        endpoint: z.string(),
+        name: z.string(),
+    }),
+});
+export type AutoBoostConfig = z.infer<typeof AutoBoostConfigValidator>;
+
 export const ConsentFlowTermsStatusValidator = z.enum(['live', 'stale', 'withdrawn']);
 export type ConsentFlowTermsStatus = z.infer<typeof ConsentFlowTermsStatusValidator>;
 

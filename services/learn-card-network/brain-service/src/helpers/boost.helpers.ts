@@ -395,6 +395,7 @@ export const issueClaimLinkBoost = async (
         from,
         boostCredential,
         signingAuthorityForUser,
+        domain,
         false
     );
     // TODO: encrypt vc?

@@ -38,6 +38,8 @@ describe('Consent Flow Contracts', () => {
         beforeEach(async () => {
             await Profile.delete({ detach: true, where: {} });
             await ConsentFlowContract.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
             await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
             await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
         });
@@ -45,6 +47,8 @@ describe('Consent Flow Contracts', () => {
         afterAll(async () => {
             await Profile.delete({ detach: true, where: {} });
             await ConsentFlowContract.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
         });
 
         it('should not allow you to create a contract without full auth', async () => {
@@ -71,6 +75,51 @@ describe('Consent Flow Contracts', () => {
                     name: 'a',
                 })
             ).resolves.not.toThrow();
+        });
+
+        it('should allow creating a contract with an auto-boost', async () => {
+            await userA.clients.fullAuth.profile.registerSigningAuthority({
+                endpoint: 'http://localhost:5000/api',
+                name: 'mysa',
+                did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
+            });
+
+            const sa = await userA.clients.fullAuth.profile.signingAuthority({
+                endpoint: 'http://localhost:5000/api',
+                name: 'mysa',
+            });
+
+            const signingAuthority = {
+                endpoint: sa!.signingAuthority.endpoint,
+                name: sa!.relationship.name,
+            };
+
+            // Create a boost first
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'Achievement',
+                name: 'Auto Boost Test',
+            });
+
+            // Create a contract with a single auto-boost
+            const contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract({
+                contract: minimalContract,
+                name: 'Auto Boost Contract',
+                autoboosts: [{
+                    boostUri,
+                    signingAuthority,
+                }],
+            });
+
+            expect(contractUri).toBeDefined();
+
+            // Verify the contract was created
+            const contract = await userA.clients.fullAuth.contracts.getConsentFlowContract({
+                uri: contractUri,
+            });
+
+            expect(contract).toBeDefined();
+            expect(contract.name).toEqual('Auto Boost Contract');
         });
 
         it('should become resolveable after creation', async () => {
@@ -1041,6 +1090,8 @@ describe('Consent Flow Contracts', () => {
             await ConsentFlowContract.delete({ detach: true, where: {} });
             await ConsentFlowTerms.delete({ detach: true, where: {} });
             await ConsentFlowTransaction.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
             await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
             await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
 
@@ -1055,6 +1106,8 @@ describe('Consent Flow Contracts', () => {
             await ConsentFlowContract.delete({ detach: true, where: {} });
             await ConsentFlowTerms.delete({ detach: true, where: {} });
             await ConsentFlowTransaction.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
         });
 
         it('should not allow you to consent to contracts without full auth', async () => {
@@ -1122,6 +1175,315 @@ describe('Consent Flow Contracts', () => {
                     contractUri: uri,
                 })
             ).rejects.toMatchObject({ code: 'CONFLICT' });
+        });
+
+        it('should auto-issue boosts when consenting to a contract with auto-boosts', async () => {
+            await userA.clients.fullAuth.profile.registerSigningAuthority({
+                endpoint: 'http://localhost:5000/api',
+                name: 'mysa',
+                did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
+            });
+
+            const sa = await userA.clients.fullAuth.profile.signingAuthority({
+                endpoint: 'http://localhost:5000/api',
+                name: 'mysa',
+            });
+
+            const signingAuthority = {
+                endpoint: sa!.signingAuthority.endpoint,
+                name: sa!.relationship.name,
+            };
+
+            // Create a boost
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'Achievement',
+                name: 'Auto-issued Boost',
+            });
+
+            // Create a contract with the auto-boost
+            const contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract({
+                contract: normalContract,
+                name: 'Auto Boost Contract',
+                autoboosts: [{
+                    boostUri,
+                    signingAuthority,
+                }],
+            });
+
+            // Consent to the contract
+            const termsUri = await userB.clients.fullAuth.contracts.consentToContract({
+                contractUri,
+                terms: normalFullTerms,
+            });
+
+            // Check that a credential was automatically issued
+            const result = await userB.clients.fullAuth.contracts.getCredentialsForContract({
+                termsUri,
+            });
+
+            // Should have one auto-issued credential
+            expect(result.records).toHaveLength(1);
+            expect(result.records[0]?.boostUri).toContain(boostUri.split(':').pop());
+
+            // Check that the transaction history includes an auto-boost transaction
+            const transactions = await userB.clients.fullAuth.contracts.getTermsTransactionHistory({
+                uri: termsUri,
+            });
+
+            // Should have at least 2 transactions (consent + auto-boost)
+            expect(transactions.records.length).toBeGreaterThanOrEqual(2);
+
+            // At least one transaction should be an auto-boost transaction
+            const hasAutoBoostTx = transactions.records.some(tx => tx.action === 'write');
+            expect(hasAutoBoostTx).toBeTruthy();
+        });
+
+        it('should auto-issue boosts when reconsenting to a contract with auto-boosts', async () => {
+            await userA.clients.fullAuth.profile.registerSigningAuthority({
+                endpoint: 'http://localhost:5000/api',
+                name: 'mysa',
+                did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
+            });
+
+            const sa = await userA.clients.fullAuth.profile.signingAuthority({
+                endpoint: 'http://localhost:5000/api',
+                name: 'mysa',
+            });
+
+            const signingAuthority = {
+                endpoint: sa!.signingAuthority.endpoint,
+                name: sa!.relationship.name,
+            };
+
+            // Create a boost
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'Achievement',
+                name: 'Auto-issued Boost for Reconsent',
+            });
+
+            // Create a contract without auto-boost
+            const contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract({
+                contract: normalContract,
+                name: 'Contract for Reconsent Test',
+            });
+
+            // Consent to the contract
+            await userB.clients.fullAuth.contracts.consentToContract({
+                contractUri,
+                terms: normalFullTerms,
+            });
+
+            // Add auto-boost to the contract
+            await userA.clients.fullAuth.contracts.deleteConsentFlowContract({ uri: contractUri });
+
+            const newContractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract(
+                {
+                    contract: normalContract,
+                    name: 'Contract for Reconsent Test',
+                    autoboosts: [{
+                        boostUri,
+                        signingAuthority,
+                    }],
+                }
+            );
+
+            // Reconsent to the contract
+            await userB.clients.fullAuth.contracts.consentToContract({
+                contractUri: newContractUri,
+                terms: normalFullTerms,
+            });
+
+            // Check the credentials for the new terms
+            const consentedContracts =
+                await userB.clients.fullAuth.contracts.getConsentedContracts();
+            const newTermsUri = consentedContracts.records.find(
+                r => r.contract.uri === newContractUri
+            )?.uri;
+
+            // Should have a new terms URI
+            expect(newTermsUri).toBeDefined();
+
+            if (newTermsUri) {
+                const result = await userB.clients.fullAuth.contracts.getCredentialsForContract({
+                    termsUri: newTermsUri,
+                });
+
+                // Should have one auto-issued credential
+                expect(result.records).toHaveLength(1);
+                expect(result.records[0]?.boostUri).toContain(boostUri.split(':').pop());
+            }
+        });
+
+        it('should auto-issue boosts when updating terms for a contract with auto-boosts', async () => {
+            await userA.clients.fullAuth.profile.registerSigningAuthority({
+                endpoint: 'http://localhost:5000/api',
+                name: 'mysa',
+                did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
+            });
+
+            const sa = await userA.clients.fullAuth.profile.signingAuthority({
+                endpoint: 'http://localhost:5000/api',
+                name: 'mysa',
+            });
+
+            const signingAuthority = {
+                endpoint: sa!.signingAuthority.endpoint,
+                name: sa!.relationship.name,
+            };
+
+            // Create a boost
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'Achievement',
+                name: 'Auto-issued Boost for Update',
+            });
+
+            // Create a contract with auto-boost
+            const contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract({
+                contract: normalContract,
+                name: 'Contract for Update Test',
+                autoboosts: [{
+                    boostUri,
+                    signingAuthority,
+                }],
+            });
+
+            // Consent to the contract
+            const termsUri = await userB.clients.fullAuth.contracts.consentToContract({
+                contractUri,
+                terms: normalFullTerms,
+            });
+
+            // Initial credentials
+            const initialResult = await userB.clients.fullAuth.contracts.getCredentialsForContract({
+                termsUri,
+            });
+
+            const initialCount = initialResult.records.length;
+
+            // Update the terms
+            await userB.clients.fullAuth.contracts.updateConsentedContractTerms({
+                uri: termsUri,
+                terms: {
+                    ...normalFullTerms,
+                    read: {
+                        ...normalFullTerms.read,
+                        personal: { name: 'Updated Name' },
+                    },
+                },
+            });
+
+            // Check that another credential was automatically issued
+            const updatedResult = await userB.clients.fullAuth.contracts.getCredentialsForContract({
+                termsUri,
+            });
+
+            // Should have one more credential than before
+            expect(updatedResult.records.length).toBeGreaterThan(initialCount);
+
+            // The latest credential should be from the same boost
+            expect(updatedResult.records[0]?.boostUri).toContain(boostUri.split(':').pop());
+
+            // Check transaction history
+            const transactions = await userB.clients.fullAuth.contracts.getTermsTransactionHistory({
+                uri: termsUri,
+            });
+
+            // Should have at least 3 transactions now (consent + auto-boost + update + auto-boost)
+            expect(transactions.records.length).toBeGreaterThanOrEqual(4);
+
+            // Should have at least two auto-boost transactions
+            const autoBoostTxCount = transactions.records.filter(
+                tx => tx.action === 'write'
+            ).length;
+            expect(autoBoostTxCount).toBeGreaterThanOrEqual(2);
+        });
+
+        it('should support multiple auto-boosts per contract', async () => {
+            await userA.clients.fullAuth.profile.registerSigningAuthority({
+                endpoint: 'http://localhost:5000/api',
+                name: 'mysa',
+                did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
+            });
+
+            const sa = await userA.clients.fullAuth.profile.signingAuthority({
+                endpoint: 'http://localhost:5000/api',
+                name: 'mysa',
+            });
+
+            const signingAuthority = {
+                endpoint: sa!.signingAuthority.endpoint,
+                name: sa!.relationship.name,
+            };
+
+            // Create multiple boosts
+            const boostUri1 = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'Achievement',
+                name: 'Multi-Boost Test 1',
+            });
+
+            const boostUri2 = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'ID',
+                name: 'Multi-Boost Test 2',
+            });
+
+            const boostUri3 = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'Achievement',
+                name: 'Multi-Boost Test 3',
+            });
+
+            // Create a contract with multiple auto-boosts
+            const contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract({
+                contract: normalContract,
+                name: 'Multi-AutoBoost Contract',
+                autoboosts: [
+                    { boostUri: boostUri1, signingAuthority },
+                    { boostUri: boostUri2, signingAuthority },
+                    { boostUri: boostUri3, signingAuthority },
+                ],
+            });
+
+            // Consent to the contract
+            const termsUri = await userB.clients.fullAuth.contracts.consentToContract({
+                contractUri,
+                terms: normalFullTerms,
+            });
+
+            // Check that the credentials were automatically issued
+            const result = await userB.clients.fullAuth.contracts.getCredentialsForContract({
+                termsUri,
+            });
+
+            // Should have three auto-issued credentials
+            expect(result.records).toHaveLength(3);
+            
+            // Each boost should be represented in the credentials
+            const boostIds = [boostUri1, boostUri2, boostUri3].map(uri => uri.split(':').pop());
+            const credentialBoostIds = result.records.map(record => {
+                const parts = record.boostUri.split(':');
+                return parts[parts.length - 1];
+            });
+            
+            for (const boostId of boostIds) {
+                expect(credentialBoostIds).toContain(boostId);
+            }
+
+            // Check transaction history
+            const transactions = await userB.clients.fullAuth.contracts.getTermsTransactionHistory({
+                uri: termsUri,
+            });
+
+            // Should have at least 4 transactions (1 consent + 3 auto-boosts)
+            expect(transactions.records.length).toBeGreaterThanOrEqual(4);
+
+            // Should have at least three auto-boost transactions
+            const autoBoostTxCount = transactions.records.filter(tx => tx.action === 'write').length;
+            expect(autoBoostTxCount).toBeGreaterThanOrEqual(3);
         });
     });
 

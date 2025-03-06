@@ -20,6 +20,7 @@ import {
     PaginatedContractCredentialsValidator,
     VCValidator,
     JWEValidator,
+    AutoBoostConfigValidator,
 } from '@learncard/types';
 import { createConsentFlowContract } from '@accesslayer/consentflowcontract/create';
 import {
@@ -44,6 +45,7 @@ import { updateDidForProfile } from '@helpers/did.helpers';
 import { updateTerms, withdrawTerms } from '@accesslayer/consentflowcontract/relationships/update';
 import {
     consentToContract,
+    setAutoBoostForContract,
     setCreatorForContract,
 } from '@accesslayer/consentflowcontract/relationships/create';
 import { getProfileByDid } from '@accesslayer/profile/read';
@@ -81,6 +83,7 @@ export const contractsRouter = t.router({
                 redirectUrl: z.string().optional(),
                 image: z.string().optional(),
                 expiresAt: z.string().optional(),
+                autoboosts: z.array(AutoBoostConfigValidator).optional(),
             })
         )
         .output(z.string())
@@ -95,6 +98,7 @@ export const contractsRouter = t.router({
                 redirectUrl,
                 image,
                 expiresAt,
+                autoboosts,
             } = input;
 
             // Create ConsentFlow instance
@@ -112,6 +116,52 @@ export const contractsRouter = t.router({
 
             // Get profile by profileId
             await setCreatorForContract(createdContract, ctx.user.profile);
+
+            if (autoboosts && autoboosts.length > 0) {
+                for (const autoboost of autoboosts) {
+                    const { boostUri, signingAuthority } = autoboost;
+
+                    const boost = await getBoostByUri(boostUri);
+
+                    if (!boost) {
+                        throw new TRPCError({
+                            code: 'NOT_FOUND',
+                            message: `Could not find boost: ${boostUri}`,
+                        });
+                    }
+
+                    if (!(await canProfileIssueBoost(ctx.user.profile, boost))) {
+                        throw new TRPCError({
+                            code: 'UNAUTHORIZED',
+                            message: `Profile does not have permissions to issue boost: ${boostUri}`,
+                        });
+                    }
+
+                    if (isDraftBoost(boost)) {
+                        throw new TRPCError({
+                            code: 'FORBIDDEN',
+                            message:
+                                'Can not generate claim links for Draft Boosts. Claim links can only be generated for Published Boosts.',
+                        });
+                    }
+
+                    // Verify the signing authority exists for this user
+                    const signingAuthorityExists = await getSigningAuthorityForUserByName(
+                        ctx.user.profile,
+                        signingAuthority.endpoint,
+                        signingAuthority.name
+                    );
+
+                    if (!signingAuthorityExists) {
+                        throw new TRPCError({
+                            code: 'BAD_REQUEST',
+                            message: `Signing authority "${signingAuthority.name}" at endpoint "${signingAuthority.endpoint}" not found for this profile`,
+                        });
+                    }
+
+                    await setAutoBoostForContract(createdContract, boost, signingAuthority);
+                }
+            }
 
             return constructUri('contract', createdContract.id, ctx.domain);
         }),
@@ -552,7 +602,12 @@ export const contractsRouter = t.router({
                 throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid Terms for Contract' });
             }
 
-            await consentToContract(profile, contractDetails, { terms, expiresAt, oneTime });
+            await consentToContract(
+                profile,
+                contractDetails,
+                { terms, expiresAt, oneTime },
+                ctx.domain
+            );
 
             const relationship = await getContractTermsForProfile(
                 profile,
@@ -683,7 +738,7 @@ export const contractsRouter = t.router({
             }
 
             await Promise.all([
-                updateTerms(relationship, { terms, expiresAt, oneTime }),
+                updateTerms(relationship, { terms, expiresAt, oneTime }, ctx.domain),
                 deleteStorageForUri(uri),
             ]);
 

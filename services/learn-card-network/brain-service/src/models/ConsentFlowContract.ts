@@ -3,9 +3,16 @@ import { Profile, ProfileInstance } from './Profile';
 import { neogma } from '@instance';
 
 import { FlatDbContractType } from 'types/consentflowcontract';
+import Boost, { BoostInstance } from './Boost';
 
 export type ConsentFlowRelationships = {
     createdBy: ModelRelatedNodesI<typeof Profile, ProfileInstance>;
+    autoReceive: ModelRelatedNodesI<
+        typeof Boost,
+        BoostInstance,
+        { signingAuthorityEndpoint: string; signingAuthorityName: string },
+        { signingAuthorityEndpoint: string; signingAuthorityName: string }
+    >;
 };
 
 export type ConsentFlowInstance = NeogmaInstance<FlatDbContractType, ConsentFlowRelationships>;
@@ -26,7 +33,24 @@ export const ConsentFlowContract = ModelFactory<FlatDbContractType, ConsentFlowR
             updatedAt: { type: 'string', required: true },
             expiresAt: { type: 'string', required: false },
         } as any,
-        relationships: { createdBy: { model: Profile, direction: 'out', name: 'CREATED_BY' } },
+        relationships: {
+            createdBy: { model: Profile, direction: 'out', name: 'CREATED_BY' },
+            autoReceive: {
+                model: Boost,
+                direction: 'out',
+                name: 'AUTO_RECEIVE',
+                properties: {
+                    signingAuthorityEndpoint: {
+                        property: 'signingAuthorityEndpoint',
+                        schema: { type: 'string', required: true },
+                    },
+                    signingAuthorityName: {
+                        property: 'signingAuthorityName',
+                        schema: { type: 'string', required: true },
+                    },
+                },
+            },
+        },
         primaryKeyField: 'id',
     },
     neogma
