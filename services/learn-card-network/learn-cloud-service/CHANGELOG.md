@@ -1,5 +1,47 @@
 # @learncard/network-brain-service
 
+## 2.2.14
+
+### Patch Changes
+
+-   Updated dependencies [[`65d3a6ca9161d227d57a2caaf0c63241e21dc360`](https://github.com/learningeconomy/LearnCard/commit/65d3a6ca9161d227d57a2caaf0c63241e21dc360)]:
+    -   @learncard/types@5.6.6
+    -   @learncard/core@9.3.18
+    -   @learncard/helpers@1.1.8
+    -   @learncard/ceramic-plugin@1.0.29
+    -   @learncard/did-web-plugin@1.0.55
+    -   @learncard/didkey-plugin@1.0.29
+    -   @learncard/didkit-plugin@1.5.3
+    -   @learncard/learn-card-plugin@1.1.31
+    -   @learncard/vc-plugin@1.1.32
+    -   @learncard/vc-templates-plugin@1.0.39
+    -   @learncard/expiration-plugin@1.1.32
+    -   @learncard/crypto-plugin@1.0.29
+
+## 2.2.13
+
+### Patch Changes
+
+-   [#613](https://github.com/learningeconomy/LearnCard/pull/613) [`60090c28bbd2af3b659e0e6a6f648cb1ddf5efaa`](https://github.com/learningeconomy/LearnCard/commit/60090c28bbd2af3b659e0e6a6f648cb1ddf5efaa) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix OIDC key id changing all the time
+
+-   Updated dependencies [[`d01d1369124d537f37ead6f8e3101cc47fff5208`](https://github.com/learningeconomy/LearnCard/commit/d01d1369124d537f37ead6f8e3101cc47fff5208)]:
+    -   @learncard/core@9.3.17
+    -   @learncard/ceramic-plugin@1.0.28
+    -   @learncard/crypto-plugin@1.0.28
+    -   @learncard/did-web-plugin@1.0.54
+    -   @learncard/didkey-plugin@1.0.28
+    -   @learncard/didkit-plugin@1.5.2
+    -   @learncard/expiration-plugin@1.1.31
+    -   @learncard/learn-card-plugin@1.1.30
+    -   @learncard/vc-plugin@1.1.31
+    -   @learncard/vc-templates-plugin@1.0.38
+
+## 2.2.12
+
+### Patch Changes
+
+-   [#612](https://github.com/learningeconomy/LearnCard/pull/612) [`b9beeb4bd8abfecb9811b1d80a0b7c9aa6386114`](https://github.com/learningeconomy/LearnCard/commit/b9beeb4bd8abfecb9811b1d80a0b7c9aa6386114) Thanks [@Custard7](https://github.com/Custard7)! - Fix: Add Server Error Messages for xAPI
+
 ## 2.2.11
 
 ### Patch Changes

@@ -76,9 +76,9 @@ this library that it should be used by default.
 
 #### Publish Credential 
 
-After signing a VC, you may choose to publish that credential to Ceramic. Doing so will return a
-stream ID, which you may share to the recipient. That stream ID can then be used to resolve the 
-issued credential. This means both the issuer and recipient may store the _stream ID_ instead of the
+After signing a VC, you may choose to publish that credential to LearnCloud. Doing so will return a
+URI, which you may share to the recipient. That URI can then be used to resolve the 
+issued credential. This means both the issuer and recipient may store the _URI_ instead of the
 credential itself.
 
 ```js
@@ -121,7 +121,7 @@ the credential a bespoke title
 await wallet.index.LearnCloud.add({ uri, id: 'Test VC' });
 ```
 
-This will add the streamId, which can be used to resolve the verifiable credential to IDX using the
+This will add the URI, which can be used to resolve the verifiable credential using the
 wallet's secret key. You can think of this as acting like the wallet's personal storage.
 
 #### Getting a credential from the Wallet

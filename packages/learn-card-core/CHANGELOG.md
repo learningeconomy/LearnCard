@@ -1,5 +1,18 @@
 # learn-card-core
 
+## 9.3.18
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.1.8
+
+## 9.3.17
+
+### Patch Changes
+
+-   [#615](https://github.com/learningeconomy/LearnCard/pull/615) [`d01d1369124d537f37ead6f8e3101cc47fff5208`](https://github.com/learningeconomy/LearnCard/commit/d01d1369124d537f37ead6f8e3101cc47fff5208) Thanks [@Custard7](https://github.com/Custard7)! - Docs: update Ceramic/IDX references to LearnCloud
+
 ## 9.3.16
 
 ### Patch Changes

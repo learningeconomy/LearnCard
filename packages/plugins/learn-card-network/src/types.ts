@@ -128,7 +128,12 @@ export type LearnCardNetworkPluginMethods = {
     getBlockedProfiles: () => Promise<LCNProfile[]>;
 
     sendCredential: (profileId: string, vc: UnsignedVC | VC, encrypt?: boolean) => Promise<string>;
-    acceptCredential: (uri: string) => Promise<boolean>;
+    acceptCredential: (
+        uri: string,
+        options?: {
+            skipNotification?: boolean;
+        }
+    ) => Promise<boolean>;
     getReceivedCredentials: (from?: string) => Promise<SentCredentialInfo[]>;
     getSentCredentials: (to?: string) => Promise<SentCredentialInfo[]>;
     getIncomingCredentials: (from?: string) => Promise<SentCredentialInfo[]>;
@@ -241,7 +246,13 @@ export type LearnCardNetworkPluginMethods = {
     sendBoost: (
         profileId: string,
         boostUri: string,
-        options?: boolean | { encrypt?: boolean; overideFn?: (boost: UnsignedVC) => UnsignedVC }
+        options?:
+            | boolean
+            | {
+                  encrypt?: boolean;
+                  overideFn?: (boost: UnsignedVC) => UnsignedVC;
+                  skipNotification?: boolean;
+              }
     ) => Promise<string>;
 
     registerSigningAuthority: (endpoint: string, name: string, did: string) => Promise<boolean>;

@@ -1,5 +1,60 @@
 # @learncard/network-brain-service
 
+## 3.3.11
+
+### Patch Changes
+
+-   [#621](https://github.com/learningeconomy/LearnCard/pull/621) [`0d21074775d74738bdca77df49585cd50a364fa5`](https://github.com/learningeconomy/LearnCard/commit/0d21074775d74738bdca77df49585cd50a364fa5) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix Claim Hook processing when claiming a boost via a link
+
+## 3.3.10
+
+### Patch Changes
+
+-   [#619](https://github.com/learningeconomy/LearnCard/pull/619) [`65d3a6ca9161d227d57a2caaf0c63241e21dc360`](https://github.com/learningeconomy/LearnCard/commit/65d3a6ca9161d227d57a2caaf0c63241e21dc360) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add ADD_ADMIN Claim Hook type that automatically grants admin privileges when claiming a boost. This enables:
+
+    -   Automatic admin role assignment for target boosts when claiming a source boost
+    -   Requires admin permissions on both source and target boosts to create hook
+    -   Cascading deletion when either boost is removed
+    -   Validation of admin permissions hierarchy during hook creation
+
+-   Updated dependencies [[`65d3a6ca9161d227d57a2caaf0c63241e21dc360`](https://github.com/learningeconomy/LearnCard/commit/65d3a6ca9161d227d57a2caaf0c63241e21dc360)]:
+    -   @learncard/types@5.6.6
+    -   @learncard/core@9.3.18
+    -   @learncard/helpers@1.1.8
+    -   @learncard/ceramic-plugin@1.0.29
+    -   @learncard/did-web-plugin@1.0.55
+    -   @learncard/didkey-plugin@1.0.29
+    -   @learncard/didkit-plugin@1.5.3
+    -   @learncard/learn-card-plugin@1.1.31
+    -   @learncard/vc-plugin@1.1.32
+    -   @learncard/vc-templates-plugin@1.0.39
+    -   @learncard/expiration-plugin@1.1.32
+    -   @learncard/crypto-plugin@1.0.29
+
+## 3.3.9
+
+### Patch Changes
+
+-   [#617](https://github.com/learningeconomy/LearnCard/pull/617) [`774e4752bd7a1ceeea31ba2a882fefba2ae5493f`](https://github.com/learningeconomy/LearnCard/commit/774e4752bd7a1ceeea31ba2a882fefba2ae5493f) Thanks [@gerardopar](https://github.com/gerardopar)! - LC-786 - Suppress Notification on AcceptCredential
+
+## 3.3.8
+
+### Patch Changes
+
+-   [#616](https://github.com/learningeconomy/LearnCard/pull/616) [`a84aaf7362410b23101cea193f181535e6313f1b`](https://github.com/learningeconomy/LearnCard/commit/a84aaf7362410b23101cea193f181535e6313f1b) Thanks [@gerardopar](https://github.com/gerardopar)! - LC-815 - Skip Notification
+
+-   Updated dependencies [[`d01d1369124d537f37ead6f8e3101cc47fff5208`](https://github.com/learningeconomy/LearnCard/commit/d01d1369124d537f37ead6f8e3101cc47fff5208)]:
+    -   @learncard/core@9.3.17
+    -   @learncard/ceramic-plugin@1.0.28
+    -   @learncard/crypto-plugin@1.0.28
+    -   @learncard/did-web-plugin@1.0.54
+    -   @learncard/didkey-plugin@1.0.28
+    -   @learncard/didkit-plugin@1.5.2
+    -   @learncard/expiration-plugin@1.1.31
+    -   @learncard/learn-card-plugin@1.1.30
+    -   @learncard/vc-plugin@1.1.31
+    -   @learncard/vc-templates-plugin@1.0.38
+
 ## 3.3.7
 
 ### Patch Changes

@@ -11,11 +11,9 @@ import { storeCredential } from '@accesslayer/credential/create';
 import { createBoostInstanceOfRelationship } from '@accesslayer/boost/relationships/create';
 import {
     createSentCredentialRelationship,
-    createReceivedCredentialRelationship,
-    setDefaultClaimedRole,
     createCredentialIssuedViaContractRelationship,
 } from '@accesslayer/credential/relationships/create';
-import { getCredentialUri } from './credential.helpers';
+import { acceptCredential, getCredentialUri } from './credential.helpers';
 import { getLearnCard } from './learnCard.helpers';
 import { issueCredentialWithSigningAuthority } from './signingAuthority.helpers';
 import { addNotificationToQueue } from './notifications.helpers';
@@ -242,11 +240,7 @@ export const sendBoost = async (
             const tasks = [
                 createBoostInstanceOfRelationship(credentialInstance, boost),
                 createSentCredentialRelationship(from, to, credentialInstance),
-                ...(autoAcceptCredential
-                    ? [createReceivedCredentialRelationship(to, from, credentialInstance)]
-                    : []),
             ];
-
             // If this credential is being issued via a contract, create that relationship
             if (contractTerms) {
                 tasks.push(
@@ -256,7 +250,11 @@ export const sendBoost = async (
 
             await Promise.all(tasks);
 
-            if (autoAcceptCredential) await setDefaultClaimedRole(to, credentialInstance);
+            if (autoAcceptCredential) {
+                await acceptCredential(to, getCredentialUri(credentialInstance.id, domain), {
+                    skipNotification,
+                });
+            }
 
             boostUri = getCredentialUri(credentialInstance.id, domain);
             if (process.env.NODE_ENV !== 'test') {
@@ -272,12 +270,8 @@ export const sendBoost = async (
         const tasks = [
             createBoostInstanceOfRelationship(credentialInstance, boost),
             createSentCredentialRelationship(from, to, credentialInstance),
-            ...(autoAcceptCredential
-                ? [createReceivedCredentialRelationship(to, from, credentialInstance)]
-                : []),
         ];
 
-        // If this credential is being issued via a contract, create that relationship
         if (contractTerms) {
             tasks.push(
                 createCredentialIssuedViaContractRelationship(credentialInstance, contractTerms)
@@ -286,7 +280,11 @@ export const sendBoost = async (
 
         await Promise.all(tasks);
 
-        if (autoAcceptCredential) await setDefaultClaimedRole(to, credentialInstance);
+        if (autoAcceptCredential) {
+            await acceptCredential(to, getCredentialUri(credentialInstance.id, domain), {
+                skipNotification,
+            });
+        }
 
         boostUri = getCredentialUri(credentialInstance.id, domain);
         if (process.env.NODE_ENV !== 'test') {

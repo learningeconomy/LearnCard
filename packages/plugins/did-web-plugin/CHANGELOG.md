@@ -1,5 +1,35 @@
 # did-web-plugin
 
+## 1.0.55
+
+### Patch Changes
+
+-   Updated dependencies [[`65d3a6ca9161d227d57a2caaf0c63241e21dc360`](https://github.com/learningeconomy/LearnCard/commit/65d3a6ca9161d227d57a2caaf0c63241e21dc360)]:
+    -   @learncard/types@5.6.6
+    -   @learncard/core@9.3.18
+    -   @learncard/helpers@1.1.8
+    -   @learncard/ceramic-plugin@1.0.29
+    -   @learncard/didkey-plugin@1.0.29
+    -   @learncard/didkit-plugin@1.5.3
+    -   @learncard/learn-card-plugin@1.1.31
+    -   @learncard/vc-plugin@1.1.32
+    -   @learncard/vc-templates-plugin@1.0.39
+    -   @learncard/expiration-plugin@1.1.32
+
+## 1.0.54
+
+### Patch Changes
+
+-   Updated dependencies [[`d01d1369124d537f37ead6f8e3101cc47fff5208`](https://github.com/learningeconomy/LearnCard/commit/d01d1369124d537f37ead6f8e3101cc47fff5208)]:
+    -   @learncard/core@9.3.17
+    -   @learncard/ceramic-plugin@1.0.28
+    -   @learncard/didkey-plugin@1.0.28
+    -   @learncard/didkit-plugin@1.5.2
+    -   @learncard/expiration-plugin@1.1.31
+    -   @learncard/learn-card-plugin@1.1.30
+    -   @learncard/vc-plugin@1.1.31
+    -   @learncard/vc-templates-plugin@1.0.38
+
 ## 1.0.53
 
 ### Patch Changes

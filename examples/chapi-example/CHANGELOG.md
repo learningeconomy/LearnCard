@@ -1,5 +1,51 @@
 # @learncard/chapi-example
 
+## 1.0.207
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.35
+    -   @learncard/react@2.7.65
+
+## 1.0.206
+
+### Patch Changes
+
+-   Updated dependencies [[`65d3a6ca9161d227d57a2caaf0c63241e21dc360`](https://github.com/learningeconomy/LearnCard/commit/65d3a6ca9161d227d57a2caaf0c63241e21dc360)]:
+    -   @learncard/types@5.6.6
+    -   @learncard/helpers@1.1.8
+    -   @learncard/init@1.3.34
+    -   @learncard/chapi-plugin@1.0.45
+    -   @learncard/react@2.7.64
+
+## 1.0.205
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.33
+    -   @learncard/react@2.7.63
+
+## 1.0.204
+
+### Patch Changes
+
+-   [#615](https://github.com/learningeconomy/LearnCard/pull/615) [`d01d1369124d537f37ead6f8e3101cc47fff5208`](https://github.com/learningeconomy/LearnCard/commit/d01d1369124d537f37ead6f8e3101cc47fff5208) Thanks [@Custard7](https://github.com/Custard7)! - Docs: update Ceramic/IDX references to LearnCloud
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.32
+    -   @learncard/chapi-plugin@1.0.44
+    -   @learncard/react@2.7.62
+
+## 1.0.203
+
+### Patch Changes
+
+-   Updated dependencies [[`399b1d877fbf9db8852385740ee12bb007cc7e6c`](https://github.com/learningeconomy/LearnCard/commit/399b1d877fbf9db8852385740ee12bb007cc7e6c)]:
+    -   @learncard/react@2.7.61
+    -   @learncard/init@1.3.31
+
 ## 1.0.202
 
 ### Patch Changes
