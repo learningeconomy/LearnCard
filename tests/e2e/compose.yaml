@@ -17,6 +17,8 @@ services:
         condition: service_started
       elasticmq:
         condition: service_started
+      signing:
+        condition: service_started
 
     networks:
       - learn-card
@@ -61,7 +63,7 @@ services:
 
     depends_on:
       - mongodb
-      - redis
+      - redis2
 
     networks:
       - learn-card
@@ -75,7 +77,7 @@ services:
     environment:
       PORT: 4100
 
-      LEARN_CLOUD_SEED: a
+      LEARN_CLOUD_SEED: b
 
       LEARN_CLOUD_MONGO_URI: ${LEARN_CLOUD_MONGO_URI:-mongodb://mongodb:27017?ssl=false&replicaSet=rs0}
       LEARN_CLOUD_MONGO_DB_NAME: ${LEARN_CLOUD_MONGO_DB_NAME:-learn-cloud}
@@ -89,6 +91,44 @@ services:
 
       SERVER_URL: http://cloud:4100
       JWT_SIGNING_KEY: test
+
+  signing:
+    image: welibrary/simple-signing-service
+    build:
+      context: ../../
+      dockerfile: services/learn-card-network/simple-signing-service/Dockerfile.local
+
+    expose:
+      - 4200
+    ports:
+      - "4200:4200"
+
+    depends_on:
+      - mongodb
+      - redis3
+
+    networks:
+      - learn-card
+
+    extra_hosts:
+      - "localhost:host-gateway"
+
+    volumes:
+      - ../../services/learn-card-network/simple-signing-service/src:/app/services/learn-card-network/simple-signing-service/src
+
+    environment:
+      PORT: 4200
+
+      IS_OFFLINE: true
+
+      SEED: c
+      AUTHORIZED_DIDS: did:web:localhost%3A4000
+
+      MONGO_URI: ${MONGO_URI:-mongodb://mongodb:27017?ssl=false&replicaSet=rs0}
+      MONGO_DB_NAME: ${MONGO_DB_NAME:-simple-signing}
+
+      REDIS_HOST: redis3
+      REDIS_PORT: 6379
 
   neo4j:
     image: neo4j:latest
@@ -123,6 +163,16 @@ services:
       - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
     ports:
       - "6380:6379"
+    networks:
+      - learn-card
+
+  redis3:
+    image: redis:alpine
+    environment:
+      - ALLOW_EMPTY_PASSWORD=${ALLOW_EMPTY_PASSWORD:-yes}
+      - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
+    ports:
+      - "6381:6379"
     networks:
       - learn-card
 

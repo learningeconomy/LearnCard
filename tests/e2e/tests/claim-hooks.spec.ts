@@ -1,13 +1,11 @@
 import { describe, test, expect } from 'vitest';
 
-import { NetworkLearnCardFromSeed } from '@learncard/init';
-
-import { getLearnCardForUser, USERS } from './helpers/learncard.helpers';
+import { getLearnCardForUser, LearnCard, USERS } from './helpers/learncard.helpers';
 import { testUnsignedBoost } from './helpers/credential.helpers';
 
-let a: NetworkLearnCardFromSeed['returnValue'];
-let b: NetworkLearnCardFromSeed['returnValue'];
-let c: NetworkLearnCardFromSeed['returnValue'];
+let a: LearnCard;
+let b: LearnCard;
+let c: LearnCard;
 
 describe('Claim Hooks', () => {
     let claimUri: string;
