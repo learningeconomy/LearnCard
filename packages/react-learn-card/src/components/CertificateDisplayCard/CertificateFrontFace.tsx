@@ -231,7 +231,7 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
 
             {!isSelfVerified && (
                 <CertificateProfileImageDisplay
-                    imageUrl={issuerImage}
+                    imageUrl={issuerImage || credential?.issuer?.image}
                     imageComponent={issuerImageComponent}
                     className={`w-[calc(100%-26px)] absolute bottom-0 flex justify-center items-center ${textDarkColor}`}
                     isIssuer
