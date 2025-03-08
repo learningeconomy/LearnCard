@@ -1,7 +1,17 @@
 import { QueryBuilder, BindParam } from 'neogma';
 import mapValues from 'lodash/mapValues';
-import { convertQueryResultToPropertiesObjectArray } from '@helpers/neo4j.helpers';
-import { Profile, ConsentFlowContract, ConsentFlowTerms, ConsentFlowTransaction } from '@models';
+import {
+    convertObjectRegExpToNeo4j,
+    convertQueryResultToPropertiesObjectArray,
+    getMatchQueryWhere,
+} from '@helpers/neo4j.helpers';
+import {
+    Profile,
+    ConsentFlowContract,
+    ConsentFlowTerms,
+    ConsentFlowTransaction,
+    Credential,
+} from '@models';
 import {
     DbTermsType,
     FlatDbTermsType,
@@ -12,16 +22,19 @@ import {
 } from 'types/consentflowcontract';
 import {
     ConsentFlowContractData,
+    ConsentFlowContractDataForDid,
     ConsentFlowContractQuery,
+    ConsentFlowDataForDidQuery,
     ConsentFlowDataQuery,
     ConsentFlowTermsQuery,
     ConsentFlowTransactionsQuery,
     LCNProfile,
 } from '@learncard/types';
-import { getIdFromUri } from '@helpers/uri.helpers';
+import { constructUri, getIdFromUri } from '@helpers/uri.helpers';
 import { flattenObject, inflateObject } from '@helpers/objects.helpers';
-import { convertDataQueryToNeo4jQuery } from '@helpers/contract.helpers';
+import { convertDataQueryToNeo4jQuery, shouldIncludeCategory } from '@helpers/contract.helpers';
 import { ProfileType } from 'types/profile';
+import { CredentialType } from 'types/credential';
 
 export const isProfileConsentFlowContractAdmin = async (
     profile: ProfileType,
@@ -352,6 +365,90 @@ all(key IN keys($params) WHERE
     }));
 };
 
+export const getConsentedDataBetweenProfiles = async (
+    ownerProfileId: string,
+    consenterProfileId: string,
+    {
+        query = {},
+        limit,
+        cursor,
+        domain,
+    }: { query?: ConsentFlowDataForDidQuery; limit: number; cursor?: string; domain: string }
+): Promise<ConsentFlowContractDataForDid[]> => {
+    const { id, ...params } = query;
+    const _dbQuery = new QueryBuilder(
+        new BindParam({
+            params: flattenObject({ terms: flattenObject(convertDataQueryToNeo4jQuery(params)) }),
+            contractQuery: id ? convertObjectRegExpToNeo4j({ id }) : {},
+            cursor,
+        })
+    ).match({
+        related: [
+            { model: Profile, where: { profileId: consenterProfileId } },
+            ConsentFlowTerms.getRelationshipByAlias('createdBy'),
+            { identifier: 'terms', model: ConsentFlowTerms },
+            ConsentFlowTerms.getRelationshipByAlias('consentsTo'),
+            { model: ConsentFlowContract, identifier: 'contract' },
+            ConsentFlowContract.getRelationshipByAlias('createdBy'),
+            { model: Profile, where: { profileId: ownerProfileId } },
+        ],
+        // The following is custom Cypher logic that has the following behavior:
+        // If query key is true, ensure all resulting terms have that key
+        // If query key is false, ensure no resulting terms have that key
+        // If query key is not present, return all terms whether they have it or not
+    }).where(`
+all(key IN keys($params) WHERE 
+    CASE $params[key]
+        WHEN true THEN terms[key] IS NOT NULL AND terms[key] <> []
+        WHEN false THEN terms[key] IS NULL OR terms[key] = []
+    END
+)
+AND ${getMatchQueryWhere('contract', 'contractQuery')}
+`);
+
+    const dbQuery = cursor ? _dbQuery.raw(' AND terms.updatedAt < $cursor') : _dbQuery;
+
+    const results = convertQueryResultToPropertiesObjectArray<{
+        terms: FlatDbTermsType;
+        contract: FlatDbContractType;
+    }>(
+        await dbQuery
+            .return('DISTINCT terms, contract')
+            .orderBy('terms.updatedAt DESC')
+            .limit(limit)
+            .run()
+    );
+
+    const inflatedResults = results.map(result => ({
+        term: inflateObject<any>(result.terms) as DbTermsType,
+        contract: inflateObject<any>(result.contract) as DbContractType,
+    }));
+
+    return inflatedResults.map(({ term, contract }) => ({
+        date: term.updatedAt!,
+        contractUri: constructUri('contract', contract.id, domain),
+        credentials: Object.entries(term.terms.read.credentials.categories)
+            .flatMap(([category, { shared, sharing, shareUntil }]) => {
+                if (
+                    !sharing ||
+                    (shareUntil && new Date(shareUntil) < new Date()) ||
+                    !shouldIncludeCategory(params.credentials?.categories, category)
+                ) {
+                    return false as any as { category: string; uri: string };
+                }
+
+                return (
+                    shared?.map(uri => ({
+                        category: category,
+                        uri,
+                    })) ?? []
+                );
+            })
+            .filter(Boolean),
+        personal: term.terms.read.personal,
+    }));
+};
+
 export const getTransactionsForTerms = async (
     termsId: string,
     {
@@ -359,8 +456,8 @@ export const getTransactionsForTerms = async (
         limit,
         cursor,
     }: { query?: ConsentFlowTransactionsQuery; limit: number; cursor?: string }
-): Promise<DbTransactionType[]> => {
-    const _query = new QueryBuilder(new BindParam({ params: flattenObject(matchQuery), cursor }))
+): Promise<(DbTransactionType & { credentials: CredentialType[] })[]> => {
+    const query = new QueryBuilder(new BindParam({ params: flattenObject(matchQuery), cursor }))
         .match({
             related: [
                 { identifier: 'transaction', model: ConsentFlowTransaction },
@@ -368,19 +465,34 @@ export const getTransactionsForTerms = async (
                 { model: ConsentFlowTerms, where: { id: termsId } },
             ],
         })
-        .where('all(key IN keys($params) WHERE transaction[key] = $params[key])');
-
-    const query = cursor ? _query.raw('AND transaction.date < $cursor') : _query;
+        .where(
+            `${getMatchQueryWhere('transaction', 'params')}${cursor ? 'AND transaction.date < $cursor' : ''
+            }`
+        )
+        .with('transaction')
+        .match({
+            optional: true,
+            related: [
+                { identifier: 'transaction' },
+                { ...Credential.getRelationshipByAlias('issuedViaTransaction'), direction: 'in' },
+                { model: Credential, identifier: 'credentials' },
+            ],
+        })
+        .with('transaction, collect(credentials) as credentials');
 
     const results = convertQueryResultToPropertiesObjectArray<{
         transaction: FlatDbTransactionType;
+        credentials: CredentialType[];
     }>(
         await query
-            .return('DISTINCT transaction')
+            .return('DISTINCT transaction, [node in credentials | properties(node)] AS credentials')
             .orderBy('transaction.date DESC')
             .limit(limit)
             .run()
     );
 
-    return results.map(result => inflateObject(result.transaction));
+    return results.map(result => ({
+        ...inflateObject(result.transaction),
+        credentials: result.credentials ?? [],
+    }));
 };

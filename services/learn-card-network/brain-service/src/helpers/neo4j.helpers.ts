@@ -20,11 +20,16 @@ export const convertQueryResultToPropertiesObjectArray = <Properties extends Rec
     return results.records.map(result => {
         const resultObject = result.toObject();
 
-        return Object.fromEntries<Properties>(
-            Object.entries(resultObject).map(([key, value]) => [key, value?.properties]) as [
-                keyof Properties,
-                Properties[keyof Properties]
-            ][]
+        return Object.fromEntries(
+            Object.entries(resultObject).map(([key, value]) => {
+                // Handle both primitives and Neo4j objects with properties
+                const extractedValue =
+                    value && typeof value === 'object' && 'properties' in value
+                        ? value.properties
+                        : value;
+
+                return [key, extractedValue ?? undefined];
+            })
         ) as Properties;
     });
 };

@@ -20,6 +20,7 @@ export async function issueCredentialWithSigningAuthority(
     owner: ProfileType,
     credential: UnsignedVC,
     signingAuthorityForUser: SigningAuthorityForUserType,
+    domain: string,
     encrypt: boolean = true
 ): Promise<VC | JWE> {
     try {
@@ -45,10 +46,7 @@ export async function issueCredentialWithSigningAuthority(
 
         if (!IS_TEST_ENVIRONMENT) console.log('Issuer Endpoint: ', issuerEndpoint);
 
-        const ownerDid = getDidWeb(
-            process.env.DOMAIN_NAME ?? 'network.learncard.com',
-            owner.profileId
-        );
+        const ownerDid = getDidWeb(domain ?? 'network.learncard.com', owner.profileId);
 
         const encryption = encrypt ? { recipients: [learnCard.id.did()] } : undefined;
 

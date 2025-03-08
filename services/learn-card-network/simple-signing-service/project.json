@@ -1,0 +1,62 @@
+{
+    "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+    "name": "simple-signing-service",
+    "sourceRoot": "services/learn-card-network/simple-signing-service/src",
+    "projectType": "application",
+    "root": "services/learn-card-network/simple-signing-service",
+    "tags": [],
+    "implicitDependencies": [
+        "nx-run-command"
+    ],
+    "namedInputs": {
+        "source": [
+            "{projectRoot}/src/**/*"
+        ],
+        "tests": [
+            "{projectRoot}/test/**/*"
+        ],
+        "dist": [
+            "{projectRoot}/dist/**/*"
+        ]
+    },
+    "targets": {
+        "build": {
+            "executor": "nx:run-script",
+            "inputs": [
+                "source"
+            ],
+            "options": {
+                "script": "build"
+            }
+        },
+        "build:docker": {
+            "executor": "nx:run-script",
+            "inputs": [
+                "source"
+            ],
+            "dependsOn": [
+                "^build"
+            ],
+            "options": {
+                "script": "build:docker"
+            }
+        },
+        "test": {
+            "executor": "nx:run-script",
+            "inputs": [
+                "source",
+                "tests"
+            ],
+            "options": {
+                "script": "test"
+            }
+        },
+        "test:watch": {
+            "executor": "./tools/executors/workspace:run-command",
+            "options": {
+                "command": "pnpm test:watch",
+                "cwd": "{root}/services/learn-card-network/simple-signing-service"
+            }
+        }
+    }
+}

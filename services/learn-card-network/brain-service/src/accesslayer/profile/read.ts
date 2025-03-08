@@ -39,8 +39,14 @@ export const getProfilesByProfileIds = async (profileIds: string[]): Promise<Pro
 };
 
 export const getProfileByDid = async (did: string): Promise<ProfileType | null> => {
+    const isNetworkProfile = did.startsWith('did:web');
+
     const result = await new QueryBuilder()
-        .match({ model: Profile, identifier: 'profile', where: { did } })
+        .match({
+            model: Profile,
+            identifier: 'profile',
+            where: isNetworkProfile ? { profileId: did.split(':').at(-1)! } : { did },
+        })
         .return('profile')
         .limit(1)
         .run();

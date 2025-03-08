@@ -4,6 +4,7 @@ import { Boost } from './Boost';
 import { Profile } from './Profile';
 import { Credential } from './Credential';
 import { Presentation } from './Presentation';
+import { ConsentFlowTransaction } from './ConsentFlowTransaction';
 
 Credential.addRelationships({
     credentialReceived: {
@@ -19,6 +20,11 @@ Credential.addRelationships({
         model: Boost,
         direction: 'out',
         name: 'INSTANCE_OF',
+    },
+    issuedViaTransaction: {
+        model: ConsentFlowTransaction,
+        direction: 'out',
+        name: 'ISSUED_VIA_TRANSACTION',
     },
 });
 

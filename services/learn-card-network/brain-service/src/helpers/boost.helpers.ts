@@ -9,13 +9,17 @@ import { BoostInstance } from '@models';
 import { constructUri } from './uri.helpers';
 import { storeCredential } from '@accesslayer/credential/create';
 import { createBoostInstanceOfRelationship } from '@accesslayer/boost/relationships/create';
-import { createSentCredentialRelationship } from '@accesslayer/credential/relationships/create';
+import {
+    createSentCredentialRelationship,
+    createCredentialIssuedViaContractRelationship,
+} from '@accesslayer/credential/relationships/create';
 import { acceptCredential, getCredentialUri } from './credential.helpers';
 import { getLearnCard } from './learnCard.helpers';
 import { issueCredentialWithSigningAuthority } from './signingAuthority.helpers';
 import { addNotificationToQueue } from './notifications.helpers';
 import { BoostStatus } from 'types/boost';
 import { getDidWeb } from './did.helpers';
+import { DbTermsType } from 'types/consentflowcontract';
 
 export const getBoostUri = (id: string, domain: string): string =>
     constructUri('boost', id, domain);
@@ -222,7 +226,8 @@ export const sendBoost = async (
     credential: VC | JWE,
     domain: string,
     skipNotification: boolean = false,
-    autoAcceptCredential: boolean = false
+    autoAcceptCredential: boolean = false,
+    contractTerms?: DbTermsType
 ): Promise<string> => {
     const decryptedCredential = await decryptCredential(credential);
     let boostUri: string | undefined;
@@ -232,10 +237,18 @@ export const sendBoost = async (
         if (certifiedBoost) {
             const credentialInstance = await storeCredential(certifiedBoost);
 
-            await Promise.all([
+            const tasks = [
                 createBoostInstanceOfRelationship(credentialInstance, boost),
                 createSentCredentialRelationship(from, to, credentialInstance),
-            ]);
+            ];
+            // If this credential is being issued via a contract, create that relationship
+            if (contractTerms) {
+                tasks.push(
+                    createCredentialIssuedViaContractRelationship(credentialInstance, contractTerms)
+                );
+            }
+
+            await Promise.all(tasks);
 
             if (autoAcceptCredential) {
                 await acceptCredential(to, getCredentialUri(credentialInstance.id, domain), {
@@ -254,10 +267,18 @@ export const sendBoost = async (
         // TODO: Should we warn them if they send a credential that can't be decrypted?
         const credentialInstance = await storeCredential(credential);
 
-        await Promise.all([
+        const tasks = [
             createBoostInstanceOfRelationship(credentialInstance, boost),
             createSentCredentialRelationship(from, to, credentialInstance),
-        ]);
+        ];
+
+        if (contractTerms) {
+            tasks.push(
+                createCredentialIssuedViaContractRelationship(credentialInstance, contractTerms)
+            );
+        }
+
+        await Promise.all(tasks);
 
         if (autoAcceptCredential) {
             await acceptCredential(to, getCredentialUri(credentialInstance.id, domain), {
@@ -372,6 +393,7 @@ export const issueClaimLinkBoost = async (
         from,
         boostCredential,
         signingAuthorityForUser,
+        domain,
         false
     );
     // TODO: encrypt vc?

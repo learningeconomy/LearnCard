@@ -1,16 +1,15 @@
 import { describe, test, expect } from 'vitest';
 
-import { NetworkLearnCardFromSeed } from '@learncard/init';
-
 import {
     getLearnCardForUser,
     getManagedLearnCardForUser,
+    LearnCard,
     USERS,
 } from './helpers/learncard.helpers';
 import { testUnsignedBoost } from './helpers/credential.helpers';
 
-let a: NetworkLearnCardFromSeed['returnValue'];
-let b: NetworkLearnCardFromSeed['returnValue'];
+let a: LearnCard;
+let b: LearnCard;
 
 describe('Identity', () => {
     beforeEach(async () => {

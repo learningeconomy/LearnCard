@@ -1,14 +1,13 @@
 import { describe, test, expect } from 'vitest';
 
 import XAPI, { type Statement, type Agent } from '@xapi/xapi';
-import { NetworkLearnCardFromSeed } from '@learncard/init';
 
-import { getLearnCardForUser } from './helpers/learncard.helpers';
+import { getLearnCardForUser, LearnCard } from './helpers/learncard.helpers';
 
 const endpoint = 'http://localhost:4100/xapi';
 
-let a: NetworkLearnCardFromSeed['returnValue'];
-let b: NetworkLearnCardFromSeed['returnValue'];
+let a: LearnCard;
+let b: LearnCard;
 
 describe('XAPI Wrapper', () => {
     beforeEach(async () => {
