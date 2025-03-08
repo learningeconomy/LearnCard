@@ -215,6 +215,25 @@ describe('Consent Flow Contracts', () => {
             expect(contract.redirectUrl).toEqual(contractData.redirectUrl);
         });
 
+        it('should allow setting and retrieving the frontDoorCredUri field for a contract', async () => {
+            const contractData = {
+                name: 'Test Contract',
+                description: 'This is for testing lol',
+                contract: minimalContract,
+                frontDoorCredUri: 'abc123'
+            };
+
+            const contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract(
+                contractData
+            );
+
+            const contract = await userA.clients.fullAuth.contracts.getConsentFlowContract({
+                uri: contractUri,
+            });
+
+            expect(contract.frontDoorCredUri).toEqual(contractData.frontDoorCredUri);
+        });
+
         it('should allow setting and retrieving the reason for accessing for a contract', async () => {
             const contractData = {
                 name: 'Test Contract',
@@ -1461,14 +1480,14 @@ describe('Consent Flow Contracts', () => {
 
             // Should have three auto-issued credentials
             expect(result.records).toHaveLength(3);
-            
+
             // Each boost should be represented in the credentials
             const boostIds = [boostUri1, boostUri2, boostUri3].map(uri => uri.split(':').pop());
             const credentialBoostIds = result.records.map(record => {
                 const parts = record.boostUri.split(':');
                 return parts[parts.length - 1];
             });
-            
+
             for (const boostId of boostIds) {
                 expect(credentialBoostIds).toContain(boostId);
             }
