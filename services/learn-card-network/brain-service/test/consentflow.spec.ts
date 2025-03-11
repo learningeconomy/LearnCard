@@ -215,12 +215,12 @@ describe('Consent Flow Contracts', () => {
             expect(contract.redirectUrl).toEqual(contractData.redirectUrl);
         });
 
-        it('should allow setting and retrieving the frontDoorCredUri field for a contract', async () => {
+        it('should allow setting and retrieving the frontDoorBoostUri field for a contract', async () => {
             const contractData = {
                 name: 'Test Contract',
                 description: 'This is for testing lol',
                 contract: minimalContract,
-                frontDoorCredUri: 'abc123'
+                frontDoorBoostUri: 'abc123'
             };
 
             const contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract(
@@ -231,7 +231,7 @@ describe('Consent Flow Contracts', () => {
                 uri: contractUri,
             });
 
-            expect(contract.frontDoorCredUri).toEqual(contractData.frontDoorCredUri);
+            expect(contract.frontDoorBoostUri).toEqual(contractData.frontDoorBoostUri);
         });
 
         it('should allow setting and retrieving the reason for accessing for a contract', async () => {
