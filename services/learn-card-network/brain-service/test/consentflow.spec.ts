@@ -219,8 +219,8 @@ describe('Consent Flow Contracts', () => {
             const contractData = {
                 name: 'Test Contract',
                 description: 'This is for testing lol',
-                contract: minimalContract,
-                frontDoorBoostUri: 'abc123'
+                frontDoorBoostUri: 'abc123',
+                contract: minimalContract
             };
 
             const contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract(

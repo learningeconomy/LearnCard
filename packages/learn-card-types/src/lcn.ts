@@ -313,6 +313,7 @@ export const ConsentFlowContractDetailsValidator = z.object({
     uri: z.string(),
     needsGuardianConsent: z.boolean().optional(),
     redirectUrl: z.string().optional(),
+    frontDoorBoostUri: z.string().optional(),
     createdAt: z.string(),
     updatedAt: z.string(),
     expiresAt: z.string().optional(),
