@@ -1,5 +1,14 @@
 # @welibraryos/react-learn-card
 
+## 2.7.66
+
+### Patch Changes
+
+-   [#624](https://github.com/learningeconomy/LearnCard/pull/624) [`b91c3a7275e23caaeb327019851d7893681d1c0f`](https://github.com/learningeconomy/LearnCard/commit/b91c3a7275e23caaeb327019851d7893681d1c0f) Thanks [@rhen92](https://github.com/rhen92)! - [LC-819] Fix missing achievement image on Certificate Views
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.36
+
 ## 2.7.65
 
 ### Patch Changes

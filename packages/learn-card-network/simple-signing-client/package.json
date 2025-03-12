@@ -1,6 +1,6 @@
 {
     "name": "@learncard/simple-signing-client",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "private": true,
     "description": "",
     "main": "dist/index.js",
@@ -14,7 +14,7 @@
     "license": "MIT",
     "devDependencies": {
         "@esbuild-plugins/node-resolve": "^0.1.4",
-        "@learncard/types": "5.6.0",
+        "@learncard/types": "5.6.7",
         "dts-bundle-generator": "^6.10.0",
         "esbuild": "^0.16.16",
         "rimraf": "^3.0.2",
