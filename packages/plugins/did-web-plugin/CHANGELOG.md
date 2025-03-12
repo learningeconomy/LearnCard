@@ -1,5 +1,14 @@
 # did-web-plugin
 
+## 1.0.56
+
+### Patch Changes
+
+-   [#623](https://github.com/learningeconomy/LearnCard/pull/623) [`160b2f67bd119de64d26d4b16ef7ae718e34a897`](https://github.com/learningeconomy/LearnCard/commit/160b2f67bd119de64d26d4b16ef7ae718e34a897) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Refactor to simplify deps
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.19
+
 ## 1.0.55
 
 ### Patch Changes
