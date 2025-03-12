@@ -14,7 +14,7 @@
     "license": "MIT",
     "devDependencies": {
         "@esbuild-plugins/node-resolve": "^0.1.4",
-        "@learncard/types": "5.6.7",
+        "@learncard/types": "workspace:*",
         "dts-bundle-generator": "^6.10.0",
         "esbuild": "^0.16.16",
         "rimraf": "^3.0.2",
