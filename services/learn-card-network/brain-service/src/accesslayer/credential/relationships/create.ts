@@ -1,8 +1,18 @@
 import { QueryBuilder } from 'neogma';
+import { v4 as uuid } from 'uuid';
 
-import { CredentialInstance, Credential, Boost, Role, Profile } from '@models';
+import {
+    CredentialInstance,
+    Credential,
+    Boost,
+    Role,
+    Profile,
+    ConsentFlowTerms,
+    ConsentFlowTransaction,
+} from '@models';
 import { ProfileType } from 'types/profile';
 import { clearDidWebCacheForChildProfileManagers } from '@accesslayer/boost/relationships/update';
+import { DbTermsType } from 'types/consentflowcontract';
 
 export const createSentCredentialRelationship = async (
     from: ProfileType,
@@ -68,4 +78,51 @@ export const setDefaultClaimedRole = async (
     } catch (error) {
         console.error('Invalid credential JSON?', error);
     }
+};
+
+/**
+ * Creates a transaction for a credential being issued via a contract's write permission
+ * and links the credential to that transaction (which is linked to the terms)
+ */
+export const createCredentialIssuedViaContractRelationship = async (
+    credential: CredentialInstance,
+    terms: DbTermsType
+): Promise<void> => {
+    const currentDate = new Date().toISOString();
+    const transactionId = uuid();
+
+    await new QueryBuilder()
+        .match({
+            model: ConsentFlowTerms,
+            where: { id: terms.id },
+            identifier: 'terms',
+        })
+        .create({
+            related: [
+                {
+                    model: ConsentFlowTransaction,
+                    identifier: 'transaction',
+                    properties: { id: transactionId, action: 'write', date: currentDate },
+                },
+                ConsentFlowTransaction.getRelationshipByAlias('isFor'),
+                { identifier: 'terms' },
+            ],
+        })
+        .with('transaction')
+        .match({
+            model: Credential,
+            where: { id: credential.id },
+            identifier: 'credential',
+        })
+        .create({
+            related: [
+                { identifier: 'credential' },
+                {
+                    ...Credential.getRelationshipByAlias('issuedViaTransaction'),
+                    properties: { date: currentDate },
+                },
+                { identifier: 'transaction' },
+            ],
+        })
+        .run();
 };

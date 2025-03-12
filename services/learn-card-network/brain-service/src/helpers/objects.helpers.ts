@@ -86,7 +86,17 @@ export function inflateObject<T extends Record<string, any>>(
                     current[subKey] = {};
                 }
                 if (isLast) {
-                    current[subKey] = obj[key];
+                    // If current[subKey] already exists as an array, and the new value is an empty array,
+                    // then don’t overwrite it.
+                    if (
+                        Array.isArray(current[subKey]) &&
+                        Array.isArray(obj[key]) &&
+                        obj[key].length === 0
+                    ) {
+                        // leave the existing array intact
+                    } else {
+                        current[subKey] = obj[key];
+                    }
                 } else {
                     current = current[subKey];
                 }

@@ -15,11 +15,18 @@ import {
     PaginatedConsentFlowTransactionsValidator,
     PaginatedConsentFlowDataValidator,
     ConsentFlowDataQueryValidator,
+    ConsentFlowDataForDidQueryValidator,
+    PaginatedConsentFlowDataForDidValidator,
+    PaginatedContractCredentialsValidator,
+    VCValidator,
+    JWEValidator,
+    AutoBoostConfigValidator,
 } from '@learncard/types';
 import { createConsentFlowContract } from '@accesslayer/consentflowcontract/create';
 import {
     getConsentFlowContractsForProfile,
     getConsentedContractsForProfile,
+    getConsentedDataBetweenProfiles,
     getConsentedDataForContract,
     getConsentedDataForProfile,
     getContractDetailsByUri,
@@ -38,8 +45,20 @@ import { updateDidForProfile } from '@helpers/did.helpers';
 import { updateTerms, withdrawTerms } from '@accesslayer/consentflowcontract/relationships/update';
 import {
     consentToContract,
+    setAutoBoostForContract,
     setCreatorForContract,
 } from '@accesslayer/consentflowcontract/relationships/create';
+import { getProfileByDid } from '@accesslayer/profile/read';
+import { sendBoost, isDraftBoost } from '@helpers/boost.helpers';
+import { isRelationshipBlocked } from '@helpers/connection.helpers';
+import { getBoostByUri } from '@accesslayer/boost/read';
+import { canProfileIssueBoost } from '@accesslayer/boost/relationships/read';
+import {
+    getCredentialsForContractTerms,
+    getAllCredentialsForProfileTerms,
+} from '@accesslayer/credential/relationships/read';
+import { getCredentialUri } from '@helpers/credential.helpers';
+import { getSigningAuthorityForUserByName } from '@accesslayer/signing-authority/relationships/read';
 
 export const contractsRouter = t.router({
     createConsentFlowContract: profileRoute
@@ -62,8 +81,10 @@ export const contractsRouter = t.router({
                 reasonForAccessing: z.string().optional(),
                 needsGuardianConsent: z.boolean().optional(),
                 redirectUrl: z.string().optional(),
+                frontDoorBoostUri: z.string().optional(),
                 image: z.string().optional(),
                 expiresAt: z.string().optional(),
+                autoboosts: z.array(AutoBoostConfigValidator).optional(),
             })
         )
         .output(z.string())
@@ -76,8 +97,10 @@ export const contractsRouter = t.router({
                 reasonForAccessing,
                 needsGuardianConsent,
                 redirectUrl,
+                frontDoorBoostUri,
                 image,
                 expiresAt,
+                autoboosts,
             } = input;
 
             // Create ConsentFlow instance
@@ -89,12 +112,59 @@ export const contractsRouter = t.router({
                 reasonForAccessing,
                 needsGuardianConsent,
                 redirectUrl,
+                frontDoorBoostUri,
                 image,
                 expiresAt,
             });
 
             // Get profile by profileId
             await setCreatorForContract(createdContract, ctx.user.profile);
+
+            if (autoboosts && autoboosts.length > 0) {
+                for (const autoboost of autoboosts) {
+                    const { boostUri, signingAuthority } = autoboost;
+
+                    const boost = await getBoostByUri(boostUri);
+
+                    if (!boost) {
+                        throw new TRPCError({
+                            code: 'NOT_FOUND',
+                            message: `Could not find boost: ${boostUri}`,
+                        });
+                    }
+
+                    if (!(await canProfileIssueBoost(ctx.user.profile, boost))) {
+                        throw new TRPCError({
+                            code: 'UNAUTHORIZED',
+                            message: `Profile does not have permissions to issue boost: ${boostUri}`,
+                        });
+                    }
+
+                    if (isDraftBoost(boost)) {
+                        throw new TRPCError({
+                            code: 'FORBIDDEN',
+                            message:
+                                'Can not generate claim links for Draft Boosts. Claim links can only be generated for Published Boosts.',
+                        });
+                    }
+
+                    // Verify the signing authority exists for this user
+                    const signingAuthorityExists = await getSigningAuthorityForUserByName(
+                        ctx.user.profile,
+                        signingAuthority.endpoint,
+                        signingAuthority.name
+                    );
+
+                    if (!signingAuthorityExists) {
+                        throw new TRPCError({
+                            code: 'BAD_REQUEST',
+                            message: `Signing authority "${signingAuthority.name}" at endpoint "${signingAuthority.endpoint}" not found for this profile`,
+                        });
+                    }
+
+                    await setAutoBoostForContract(createdContract, boost, signingAuthority);
+                }
+            }
 
             return constructUri('contract', createdContract.id, ctx.domain);
         }),
@@ -130,6 +200,7 @@ export const contractsRouter = t.router({
                 reasonForAccessing: result.contract.reasonForAccessing,
                 needsGuardianConsent: result.contract.needsGuardianConsent,
                 redirectUrl: result.contract.redirectUrl,
+                frontDoorBoostUri: result.contract.frontDoorBoostUri,
                 image: result.contract.image,
                 createdAt: result.contract.createdAt,
                 updatedAt: result.contract.updatedAt,
@@ -181,6 +252,7 @@ export const contractsRouter = t.router({
                     reasonForAccessing: contract.reasonForAccessing,
                     needsGuardianConsent: contract.needsGuardianConsent,
                     redirectUrl: contract.redirectUrl,
+                    frontDoorBoostUri: contract.frontDoorBoostUri,
                     image: contract.image,
                     createdAt: contract.createdAt,
                     updatedAt: contract.updatedAt,
@@ -282,6 +354,57 @@ export const contractsRouter = t.router({
             };
         }),
 
+    getConsentedDataForDid: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/consent-flow-contract/data/{did}',
+                tags: ['Consent Flow Contracts'],
+                summary: 'Get the data that has been consented by a did',
+                description: 'This route grabs all the data that has been consented by a did',
+            },
+        })
+        .input(
+            PaginationOptionsValidator.extend({
+                did: z.string(),
+                query: ConsentFlowDataForDidQueryValidator.default({}),
+                limit: PaginationOptionsValidator.shape.limit.default(25),
+            })
+        )
+        .output(PaginatedConsentFlowDataForDidValidator)
+        .query(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+
+            const { did, query, limit, cursor } = input;
+
+            const otherProfile = await getProfileByDid(did);
+
+            if (!otherProfile) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Could not find profile for did',
+                });
+            }
+
+            const results = await getConsentedDataBetweenProfiles(
+                profile.profileId,
+                otherProfile.profileId,
+                { query, limit: limit + 1, cursor, domain: ctx.domain }
+            );
+
+            const data = results.slice(0, limit);
+
+            const hasMore = results.length > limit;
+            const nextCursor = data.at(-1)?.date;
+
+            return {
+                hasMore,
+                cursor: nextCursor,
+                records: data,
+            };
+        }),
+
     getConsentedData: profileRoute
         .meta({
             openapi: {
@@ -322,6 +445,124 @@ export const contractsRouter = t.router({
                 cursor: nextCursor,
                 records: data,
             };
+        }),
+
+    writeCredentialToContract: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/consent-flow-contract/write/{contractUri}/{did}',
+                tags: ['Consent Flow Contracts'],
+                summary: 'Writes a boost credential to a did that has consented to a contract',
+                description: 'Writes a boost credential to a did that has consented to a contract',
+            },
+        })
+        .input(
+            z.object({
+                did: z.string(),
+                contractUri: z.string(),
+                boostUri: z.string(),
+                credential: VCValidator.or(JWEValidator),
+            })
+        )
+        .output(z.string())
+        .mutation(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { domain } = ctx;
+            const { did, contractUri, boostUri, credential } = input;
+
+            // Get the other profile by DID
+            const otherProfile = await getProfileByDid(did);
+            if (!otherProfile) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Profile not found. Are you sure this person exists?',
+                });
+            }
+
+            // Check if relationship is blocked
+            const isBlocked = await isRelationshipBlocked(profile, otherProfile);
+            if (isBlocked) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'Profile not found. Are you sure this person exists?',
+                });
+            }
+
+            // Get contract details
+            const contractDetails = await getContractDetailsByUri(contractUri);
+            if (!contractDetails) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Could not find contract',
+                });
+            }
+
+            // Verify if the other profile has consented to the contract
+            if (!(await hasProfileConsentedToContract(otherProfile, contractDetails.contract))) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'Target profile has not consented to this contract',
+                });
+            }
+
+            // Get the boost and verify permissions (similar to sendBoost)
+            const boost = await getBoostByUri(boostUri);
+            if (!boost) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Could not find boost',
+                });
+            }
+
+            // Verify the user has permission to issue this boost
+            if (!(await canProfileIssueBoost(profile, boost))) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile does not have permissions to issue boost',
+                });
+            }
+
+            if (isDraftBoost(boost)) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'Draft Boosts can not be sent. Only Published Boosts can be sent.',
+                });
+            }
+
+            // Check if this boost category is allowed in the contract's terms
+            const terms = await getContractTermsForProfile(otherProfile, contractDetails.contract);
+            if (!terms) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'Target profile has not consented to this contract',
+                });
+            }
+
+            // Check if the boost category is included in the contract terms
+            const boostCategory = boost.category;
+            if (boostCategory) {
+                const categoryAllowed = terms.terms.write?.credentials?.categories?.[boostCategory];
+                if (!categoryAllowed) {
+                    throw new TRPCError({
+                        code: 'FORBIDDEN',
+                        message: `Target profile has not consented to receive boosts in the ${boostCategory} category`,
+                    });
+                }
+            }
+
+            // Use the sendBoost helper to issue the credential with contract relationship
+            return sendBoost(
+                profile,
+                otherProfile,
+                boost,
+                credential,
+                domain,
+                profile.profileId === otherProfile.profileId,
+                false, // autoAcceptCredential
+                terms
+            );
         }),
 
     consentToContract: profileRoute
@@ -366,7 +607,12 @@ export const contractsRouter = t.router({
                 throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid Terms for Contract' });
             }
 
-            await consentToContract(profile, contractDetails, { terms, expiresAt, oneTime });
+            await consentToContract(
+                profile,
+                contractDetails,
+                { terms, expiresAt, oneTime },
+                ctx.domain
+            );
 
             const relationship = await getContractTermsForProfile(
                 profile,
@@ -429,6 +675,7 @@ export const contractsRouter = t.router({
                         reasonForAccessing: record.contract.reasonForAccessing,
                         needsGuardianConsent: record.contract.needsGuardianConsent,
                         redirectUrl: record.contract.redirectUrl,
+                        frontDoorBoostUri: record.contract.frontDoorBoostUri,
                         image: record.contract.image,
                         createdAt: record.contract.createdAt,
                         updatedAt: record.contract.updatedAt,
@@ -497,7 +744,7 @@ export const contractsRouter = t.router({
             }
 
             await Promise.all([
-                updateTerms(relationship, { terms, expiresAt, oneTime }),
+                updateTerms(relationship, { terms, expiresAt, oneTime }, ctx.domain),
                 deleteStorageForUri(uri),
             ]);
 
@@ -599,7 +846,16 @@ export const contractsRouter = t.router({
             return {
                 hasMore,
                 cursor: nextCursor,
-                records: transactions,
+                records: transactions.map(transaction => {
+                    const { credentials, ...rest } = transaction;
+
+                    return {
+                        ...rest,
+                        uris: credentials.map(credential =>
+                            getCredentialUri(credential.id, ctx.domain)
+                        ),
+                    };
+                }),
             };
         }),
 
@@ -636,6 +892,121 @@ export const contractsRouter = t.router({
             if (terms.expiresAt && new Date() > new Date(terms.expiresAt)) return false;
 
             return true;
+        }),
+
+    getCredentialsForContract: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/consent-flow-contract/{termsUri}/credentials',
+                tags: ['Consent Flow Contracts'],
+                summary: 'Get credentials issued via a contract',
+                description: 'Gets all credentials that were issued via a contract',
+            },
+        })
+        .input(
+            PaginationOptionsValidator.extend({
+                termsUri: z.string(),
+                includeReceived: z.boolean().default(true),
+                limit: PaginationOptionsValidator.shape.limit.default(25),
+            })
+        )
+        .output(PaginatedContractCredentialsValidator)
+        .query(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { domain } = ctx;
+            const { termsUri, includeReceived, limit, cursor } = input;
+
+            // Verify the terms exist and belong to this profile
+            const terms = await getContractTermsByUri(termsUri);
+            if (!terms) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Could not find contract terms',
+                });
+            }
+
+            if (terms.consenter.profileId !== profile.profileId) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile does not own these terms',
+                });
+            }
+
+            const termsId = getIdFromUri(termsUri);
+
+            const results = await getCredentialsForContractTerms(termsId, {
+                limit: limit + 1,
+                cursor,
+                includeReceived,
+                profileId: profile.profileId,
+            });
+
+            const credentials = results.slice(0, limit);
+            const hasMore = results.length > limit;
+            const nextCursor = credentials.at(-1)?.date;
+
+            // Format the results with proper URIs
+            return {
+                hasMore,
+                cursor: nextCursor,
+                records: credentials.map(cred => ({
+                    ...cred,
+                    termsUri,
+                    contractUri: constructUri('contract', terms.contract.id, domain),
+                    credentialUri: constructUri('credential', cred.credentialUri, domain),
+                    boostUri: constructUri('boost', cred.boostUri, domain),
+                })),
+            };
+        }),
+
+    getAllCredentialsForTerms: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/consent-flow-contracts/credentials',
+                tags: ['Consent Flow Contracts'],
+                summary: 'Get all credentials written to any terms',
+                description:
+                    'Gets all credentials that were written to any terms owned by this profile',
+            },
+        })
+        .input(
+            PaginationOptionsValidator.extend({
+                includeReceived: z.boolean().default(false),
+                limit: PaginationOptionsValidator.shape.limit.default(25),
+            }).default({})
+        )
+        .output(PaginatedContractCredentialsValidator)
+        .query(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { domain } = ctx;
+            const { includeReceived, limit, cursor } = input;
+
+            const results = await getAllCredentialsForProfileTerms(profile.profileId, {
+                limit: limit + 1,
+                cursor,
+                includeReceived,
+            });
+
+            const credentials = results.slice(0, limit);
+            const hasMore = results.length > limit;
+            const nextCursor = credentials.at(-1)?.date;
+
+            // Format the results with proper URIs
+            return {
+                hasMore,
+                cursor: nextCursor,
+                records: credentials.map(cred => ({
+                    ...cred,
+                    contractUri: constructUri('contract', cred.contract.id, domain),
+                    credentialUri: constructUri('credential', cred.credential.id, domain),
+                    boostUri: constructUri('boost', cred.boost.id, domain),
+                    termsUri: constructUri('terms', cred.terms.id, domain),
+                })),
+            };
         }),
 });
 export type ContractsRouter = typeof contractsRouter;

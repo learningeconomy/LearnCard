@@ -32,6 +32,7 @@ export async function clearDatabases() {
             // Clear Didkit Cache in services
             fetch('http://localhost:4000/test/clear-cache'),
             fetch('http://localhost:4100/test/clear-cache'),
+            fetch('http://localhost:4200/test/clear-cache'),
 
             // Clear Local Didkit Cache
             (async () => {
@@ -41,7 +42,14 @@ export async function clearDatabases() {
 
             // Clear Mongodb
             (async () => {
-                const db = mongoClient.db('test');
+                const db = mongoClient.db('learn-cloud');
+                const collections = await db.listCollections().toArray();
+                await Promise.all(
+                    collections.map(collection => db.collection(collection.name).deleteMany({}))
+                );
+            })(),
+            (async () => {
+                const db = mongoClient.db('simple-signing');
                 const collections = await db.listCollections().toArray();
                 await Promise.all(
                     collections.map(collection => db.collection(collection.name).deleteMany({}))

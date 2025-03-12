@@ -736,10 +736,33 @@ export const getLearnCardNetworkPlugin = async (
                 return client.contracts.getConsentedDataForContract.query({ uri, ...options });
             },
 
+            getConsentFlowDataForDid: async (_learnCard, did, options = {}) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.contracts.getConsentedDataForDid.query({ did, ...options });
+            },
+
             getAllConsentFlowData: async (_learnCard, query = {}, options = {}) => {
                 if (!userData) throw new Error('Please make an account first!');
 
                 return client.contracts.getConsentedData.query({ query, ...options });
+            },
+
+            writeCredentialToContract: async (
+                _learnCard,
+                did,
+                contractUri,
+                credential,
+                boostUri
+            ) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.contracts.writeCredentialToContract.mutate({
+                    did,
+                    contractUri,
+                    credential,
+                    boostUri,
+                });
             },
 
             consentToContract: async (_learnCard, contractUri, { terms, expiresAt, oneTime }) => {
@@ -780,6 +803,18 @@ export const getLearnCardNetworkPlugin = async (
                 if (!userData) throw new Error('Please make an account first!');
 
                 return client.contracts.getTermsTransactionHistory.query({ uri, ...options });
+            },
+
+            getCredentialsForContract: async (_learnCard, termsUri, options = {}) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.contracts.getCredentialsForContract.query({ termsUri, ...options });
+            },
+
+            getConsentFlowCredentials: async (_learnCard, options = {}) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.contracts.getAllCredentialsForTerms.query(options);
             },
 
             verifyConsent: async (_learnCard, uri, profileId) => {
