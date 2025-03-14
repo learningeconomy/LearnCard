@@ -1,5 +1,11 @@
 # @learncard/network-brain-service
 
+## 3.3.13
+
+### Patch Changes
+
+-   [#626](https://github.com/learningeconomy/LearnCard/pull/626) [`163977b54c2520ca741efd7d2154133e5de00763`](https://github.com/learningeconomy/LearnCard/commit/163977b54c2520ca741efd7d2154133e5de00763) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix AutoBoost notification/auto-accept logic and refactor sendBoost
+
 ## 3.3.12
 
 ### Patch Changes
