@@ -232,16 +232,16 @@ export const consentToContract = async (
                     .run();
 
                 // Send the boost to the consenter
-                await sendBoost(
-                    contractOwner,
-                    consenter,
-                    boost.target,
-                    vc,
+                await sendBoost({
+                    from: contractOwner,
+                    to: consenter,
+                    boost: boost.target,
+                    credential: vc,
                     domain,
-                    false,
-                    true,
-                    inflateObject(termsResult.records[0]?.get('terms').properties)
-                );
+                    skipNotification: true,
+                    autoAcceptCredential: false,
+                    contractTerms: inflateObject(termsResult.records[0]?.get('terms').properties),
+                });
             } catch (error) {
                 console.error('Error processing auto-boost:', error);
             }

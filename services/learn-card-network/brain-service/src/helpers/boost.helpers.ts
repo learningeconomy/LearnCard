@@ -219,16 +219,25 @@ export const decryptCredential = async (credential: VC | JWE): Promise<VC | fals
     }
 };
 
-export const sendBoost = async (
-    from: ProfileType,
-    to: ProfileType,
-    boost: BoostInstance,
-    credential: VC | JWE,
-    domain: string,
-    skipNotification: boolean = false,
-    autoAcceptCredential: boolean = false,
-    contractTerms?: DbTermsType
-): Promise<string> => {
+export const sendBoost = async ({
+    from,
+    to,
+    boost,
+    credential,
+    domain,
+    skipNotification = false,
+    autoAcceptCredential = false,
+    contractTerms,
+}: {
+    from: ProfileType;
+    to: ProfileType;
+    boost: BoostInstance;
+    credential: VC | JWE;
+    domain: string;
+    skipNotification?: boolean;
+    autoAcceptCredential?: boolean;
+    contractTerms?: DbTermsType;
+}): Promise<string> => {
     const decryptedCredential = await decryptCredential(credential);
     let boostUri: string | undefined;
     if (decryptedCredential) {
@@ -404,5 +413,13 @@ export const issueClaimLinkBoost = async (
     //     .getDIDObject()
     //     .createDagJWE(vc, [userData.did, targetProfile.did, lcnDid]);
 
-    return sendBoost(from, to, boost, vc, domain, true, true);
+    return sendBoost({
+        from,
+        to,
+        boost,
+        credential: vc,
+        domain,
+        skipNotification: true,
+        autoAcceptCredential: true,
+    });
 };

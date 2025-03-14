@@ -158,14 +158,14 @@ export const boostsRouter = t.router({
             let skipNotification = profile.profileId === targetProfile.profileId;
             if (options?.skipNotification) skipNotification = options?.skipNotification;
 
-            return sendBoost(
-                profile,
-                targetProfile,
+            return sendBoost({
+                from: profile,
+                to: targetProfile,
                 boost,
                 credential,
-                ctx.domain,
-                skipNotification
-            );
+                domain: ctx.domain,
+                skipNotification,
+            });
         }),
 
     createBoost: profileRoute

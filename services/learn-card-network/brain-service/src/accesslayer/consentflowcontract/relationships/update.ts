@@ -162,16 +162,16 @@ export const reconsentTerms = async (
                     .run();
 
                 // Send the boost to the consenter
-                await sendBoost(
-                    relationship.contractOwner,
-                    relationship.consenter,
-                    boostRel.target,
-                    vc,
+                await sendBoost({
+                    from: relationship.contractOwner,
+                    to: relationship.consenter,
+                    boost: boostRel.target,
+                    credential: vc,
                     domain,
-                    false,
-                    true,
-                    relationship.terms
-                );
+                    skipNotification: true,
+                    autoAcceptCredential: false,
+                    contractTerms: relationship.terms,
+                });
             } catch (error) {
                 console.error('Error processing auto-boost:', error);
             }
@@ -334,16 +334,16 @@ export const updateTerms = async (
                     .run();
 
                 // Send the boost to the consenter
-                await sendBoost(
-                    relationship.contractOwner,
-                    relationship.consenter,
-                    boost.target,
-                    vc,
+                await sendBoost({
+                    from: relationship.contractOwner,
+                    to: relationship.consenter,
+                    boost: boost.target,
+                    credential: vc,
                     domain,
-                    false,
-                    true,
-                    relationship.terms
-                );
+                    skipNotification: false,
+                    autoAcceptCredential: true,
+                    contractTerms: relationship.terms,
+                });
             } catch (error) {
                 console.error('Error processing auto-boost:', error);
             }

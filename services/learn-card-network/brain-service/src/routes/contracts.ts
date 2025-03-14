@@ -553,16 +553,16 @@ export const contractsRouter = t.router({
             }
 
             // Use the sendBoost helper to issue the credential with contract relationship
-            return sendBoost(
-                profile,
-                otherProfile,
+            return sendBoost({
+                from: profile,
+                to: otherProfile,
                 boost,
                 credential,
                 domain,
-                profile.profileId === otherProfile.profileId,
-                false, // autoAcceptCredential
-                terms
-            );
+                skipNotification: true,
+                autoAcceptCredential: false,
+                contractTerms: terms,
+            });
         }),
 
     consentToContract: profileRoute
