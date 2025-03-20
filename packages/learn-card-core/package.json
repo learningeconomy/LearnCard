@@ -1,6 +1,6 @@
 {
     "name": "@learncard/core",
-    "version": "9.3.16",
+    "version": "9.3.19",
     "description": "",
     "main": "./dist/index.js",
     "module": "./dist/core.esm.js",

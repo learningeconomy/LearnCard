@@ -24,3 +24,4 @@ node_modules
 *.sw?
 
 .nx-cache/
+.aider*

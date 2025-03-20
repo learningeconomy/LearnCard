@@ -25,7 +25,7 @@ import VerifierStateBadgeAndText, {
 
 type CertificateFrontFaceProps = {
     isFront?: boolean;
-    credential: VC | BoostAchievementCredential;
+    credential: VC | BoostAchievementCredential | any;
     categoryType?: LCCategoryEnum;
     issuerOverride?: Profile;
     issueeOverride?: Profile;
@@ -36,6 +36,7 @@ type CertificateFrontFaceProps = {
     hideIssueDate?: boolean;
     handleViewBackFace?: () => void;
     showDetailsBtn?: boolean;
+    formattedDisplayType?: string;
 };
 
 export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
@@ -51,6 +52,7 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
     hideIssueDate,
     handleViewBackFace,
     showDetailsBtn = false,
+    formattedDisplayType,
 }) => {
     const {
         title = '',
@@ -137,17 +139,19 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
             </div>
 
             <div
-                className={`flex flex-col gap-[15px] items-center px-[20px] pt-[55px] ${isSelfVerified ? 'pb-[20px]' : 'pb-[77px]'
-                    } border-solid border-[4px] ${borderColor} rounded-[30px]`}
+                className={`flex flex-col gap-[15px] items-center px-[20px] pt-[55px] ${
+                    isSelfVerified ? 'pb-[20px]' : 'pb-[77px]'
+                } border-solid border-[4px] ${borderColor} rounded-[30px]`}
             >
                 <div className="flex flex-col gap-[5px] items-center">
-                    <div className={`${textLightColor} uppercase text-[14px] font-poppins`}>
-                        {categoryTitle}
-                    </div>
-
                     <h1 className="text-grayscale-900 text-center text-[20px] font-jacques">
                         {title}
                     </h1>
+                    <div
+                        className={`${textLightColor} uppercase text-[14px] font-notoSans font-[600]`}
+                    >
+                        {formattedDisplayType}
+                    </div>
                 </div>
 
                 {customBodyCardComponent}
@@ -209,6 +213,11 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
 
                     <VerifierStateBadgeAndText verifierState={verifierState} />
                 </div>
+                <div
+                    className={`${textLightColor} uppercase text-[14px] font-notoSans font-[600]`}
+                >
+                    {categoryTitle}
+                </div>
             </div>
 
             {categoryType && (
@@ -222,7 +231,7 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
 
             {!isSelfVerified && (
                 <CertificateProfileImageDisplay
-                    imageUrl={issuerImage}
+                    imageUrl={issuerImage || credential?.issuer?.image}
                     imageComponent={issuerImageComponent}
                     className={`w-[calc(100%-26px)] absolute bottom-0 flex justify-center items-center ${textDarkColor}`}
                     isIssuer

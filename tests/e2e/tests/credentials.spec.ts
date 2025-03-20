@@ -1,7 +1,5 @@
 import { describe, test, expect } from 'vitest';
 
-import { NetworkLearnCardFromSeed } from '@learncard/init';
-
 import { getLearnCardForUser } from './helpers/learncard.helpers';
 import { UnsignedVC } from '@learncard/types';
 

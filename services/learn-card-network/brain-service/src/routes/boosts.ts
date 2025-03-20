@@ -111,12 +111,17 @@ export const boostsRouter = t.router({
                 profileId: z.string(),
                 uri: z.string(),
                 credential: VCValidator.or(JWEValidator),
+                options: z
+                    .object({
+                        skipNotification: z.boolean().default(false).optional(),
+                    })
+                    .optional(),
             })
         )
         .output(z.string())
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const { profileId, credential, uri } = input;
+            const { profileId, credential, uri, options } = input;
 
             if (process.env.NODE_ENV !== 'test') {
                 console.log('🚀 BEGIN - Send Boost', JSON.stringify(input));
@@ -150,14 +155,17 @@ export const boostsRouter = t.router({
                 });
             }
 
-            return sendBoost(
-                profile,
-                targetProfile,
+            let skipNotification = profile.profileId === targetProfile.profileId;
+            if (options?.skipNotification) skipNotification = options?.skipNotification;
+
+            return sendBoost({
+                from: profile,
+                to: targetProfile,
                 boost,
                 credential,
-                ctx.domain,
-                profile.profileId === targetProfile.profileId
-            );
+                domain: ctx.domain,
+                skipNotification,
+            });
         }),
 
     createBoost: profileRoute
@@ -699,11 +707,20 @@ export const boostsRouter = t.router({
                 query: BoostQueryValidator.optional(),
                 parentGenerations: z.number().default(1),
                 childGenerations: z.number().default(1),
+                includeExtendedFamily: z.boolean().default(false),
             })
         )
         .output(PaginatedBoostsValidator)
         .query(async ({ input, ctx }) => {
-            const { uri, limit, cursor, query, parentGenerations, childGenerations } = input;
+            const {
+                uri,
+                limit,
+                cursor,
+                query,
+                parentGenerations,
+                childGenerations,
+                includeExtendedFamily,
+            } = input;
 
             const boost = await getBoostByUri(uri);
 
@@ -715,6 +732,7 @@ export const boostsRouter = t.router({
                 query,
                 parentGenerations,
                 childGenerations,
+                includeExtendedFamily,
             });
 
             const hasMore = records.length > limit;
@@ -751,17 +769,24 @@ export const boostsRouter = t.router({
                 query: BoostQueryValidator.optional(),
                 parentGenerations: z.number().default(1),
                 childGenerations: z.number().default(1),
+                includeExtendedFamily: z.boolean().default(false),
             })
         )
         .output(z.number())
         .query(async ({ input }) => {
-            const { uri, query, parentGenerations, childGenerations } = input;
+            const { uri, query, parentGenerations, childGenerations, includeExtendedFamily } =
+                input;
 
             const boost = await getBoostByUri(uri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
-            return countFamilialBoosts(boost, { query, parentGenerations, childGenerations });
+            return countFamilialBoosts(boost, {
+                query,
+                parentGenerations,
+                childGenerations,
+                includeExtendedFamily,
+            });
         }),
 
     getBoostParents: profileRoute

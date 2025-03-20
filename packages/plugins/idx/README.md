@@ -1,12 +1,14 @@
 [<img src="https://user-images.githubusercontent.com/2185016/190510561-294db809-09fd-4771-9749-6c0e0f4144fd.png" width="215"/>](https://learncard.com)
 
-# @learncard/core
+# @learncard/idx-plugin
 
-[![npm version](https://img.shields.io/npm/v/@learncard/core)](https://www.npmjs.com/package/@learncard/core)
-[![npm downloads](https://img.shields.io/npm/dw/@learncard/core)](https://www.npmjs.com/package/@learncard/core)
-[![vulnerabilities](https://img.shields.io/snyk/vulnerabilities/npm/@learncard/core)](https://www.npmjs.com/package/@learncard/core)
+[![npm version](https://img.shields.io/npm/v/@learncard/idx-plugin)](https://www.npmjs.com/package/@learncard/idx-plugin)
+[![npm downloads](https://img.shields.io/npm/dw/@learncard/idx-plugin)](https://www.npmjs.com/package/@learncard/idx-plugin)
+[![vulnerabilities](https://img.shields.io/snyk/vulnerabilities/npm/@learncard/idx-plugin)](https://www.npmjs.com/package/@learncard/idx-plugin)
 
-The LearnCard Core is a pluggable, open-source, universal digital wallet to enable any individual or organization to seamlessly **issue, earn, store, share, and spend currency and credentials** built for the future of education and work.
+**Note: This plugin is deprecated. Please use LearnCloud plugin instead.**
+
+The IDX Plugin provides Ceramic's Identity Index (IDX) integration for LearnCard, allowing for decentralized index storage of credential references.
 
 ## Documentation
 All LearnCard documentation can be found at:

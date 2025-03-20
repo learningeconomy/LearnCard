@@ -4,6 +4,7 @@ import { neogma } from '@instance';
 
 import { Profile, ProfileInstance } from './Profile';
 import { Boost, BoostInstance } from './Boost';
+import { ConsentFlowTransaction, ConsentFlowTransactionInstance } from './ConsentFlowTransaction';
 import { CredentialType } from 'types/credential';
 
 export type CredentialRelationships = {
@@ -14,6 +15,12 @@ export type CredentialRelationships = {
         { from: string; date: string }
     >;
     instanceOf: ModelRelatedNodesI<typeof Boost, BoostInstance>;
+    issuedViaTransaction: ModelRelatedNodesI<
+        typeof ConsentFlowTransaction,
+        ConsentFlowTransactionInstance,
+        { date: string },
+        { date: string }
+    >;
 };
 
 export type CredentialInstance = NeogmaInstance<CredentialType, CredentialRelationships>;

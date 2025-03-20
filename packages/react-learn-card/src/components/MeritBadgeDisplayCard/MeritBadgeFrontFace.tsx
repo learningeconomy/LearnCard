@@ -36,6 +36,7 @@ type MeritBadgeFrontFaceProps = {
     hideIssueDate?: boolean;
     handleViewBackFace?: () => void;
     showDetailsBtn?: boolean;
+    formattedDisplayType?: string;
 };
 
 export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
@@ -51,6 +52,7 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
     hideIssueDate,
     handleViewBackFace,
     showDetailsBtn = false,
+    formattedDisplayType,
 }) => {
     const {
         title = '',
@@ -151,11 +153,10 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
                         <h1 className="text-grayscale-900 text-center text-[25px] font-jacques">
                             {title}
                         </h1>
-
                         <div
                             className={`${textLightColor} uppercase text-[14px] font-notoSans font-[600]`}
                         >
-                            {categoryTitle}
+                            {formattedDisplayType}
                         </div>
                     </div>
                 </div>
@@ -221,6 +222,11 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
                     size="small"
                     showSeal
                 />
+                <div
+                    className={`${textLightColor} uppercase text-[14px] font-notoSans font-[600]`}
+                >
+                    {categoryTitle}
+                </div>
             </div>
 
             {categoryType && (

@@ -38,6 +38,10 @@ import {
     ClaimHook,
     ClaimHookQuery,
     PaginatedClaimHooksType,
+    ConsentFlowDataForDidQuery,
+    PaginatedConsentFlowDataForDid,
+    PaginatedContractCredentials,
+    AutoBoostConfig,
 } from '@learncard/types';
 import { Plugin } from '@learncard/core';
 import { ProofOptions } from '@learncard/didkit-plugin';
@@ -124,7 +128,12 @@ export type LearnCardNetworkPluginMethods = {
     getBlockedProfiles: () => Promise<LCNProfile[]>;
 
     sendCredential: (profileId: string, vc: UnsignedVC | VC, encrypt?: boolean) => Promise<string>;
-    acceptCredential: (uri: string) => Promise<boolean>;
+    acceptCredential: (
+        uri: string,
+        options?: {
+            skipNotification?: boolean;
+        }
+    ) => Promise<boolean>;
     getReceivedCredentials: (from?: string) => Promise<SentCredentialInfo[]>;
     getSentCredentials: (to?: string) => Promise<SentCredentialInfo[]>;
     getIncomingCredentials: (from?: string) => Promise<SentCredentialInfo[]>;
@@ -172,11 +181,17 @@ export type LearnCardNetworkPluginMethods = {
             query?: BoostQuery;
             parentGenerations?: number;
             childGenerations?: number;
+            includeExtendedFamily?: boolean;
         }
     ) => Promise<PaginatedBoostsType>;
     countFamilialBoosts: (
         uri: string,
-        options?: { query?: BoostQuery; parentGenerations?: number; childGenerations?: number }
+        options?: {
+            query?: BoostQuery;
+            parentGenerations?: number;
+            childGenerations?: number;
+            includeExtendedFamily?: boolean;
+        }
     ) => Promise<number>;
     getBoostParents: (
         uri: string,
@@ -231,7 +246,13 @@ export type LearnCardNetworkPluginMethods = {
     sendBoost: (
         profileId: string,
         boostUri: string,
-        options?: boolean | { encrypt?: boolean; overideFn?: (boost: UnsignedVC) => UnsignedVC }
+        options?:
+            | boolean
+            | {
+                  encrypt?: boolean;
+                  overideFn?: (boost: UnsignedVC) => UnsignedVC;
+                  skipNotification?: boolean;
+              }
     ) => Promise<string>;
 
     registerSigningAuthority: (endpoint: string, name: string, did: string) => Promise<boolean>;
@@ -260,6 +281,7 @@ export type LearnCardNetworkPluginMethods = {
         description?: string;
         image?: string;
         expiresAt?: string;
+        autoboosts?: AutoBoostConfig[];
     }) => Promise<string>;
     getContract: (uri: string) => Promise<ConsentFlowContractDetails>;
     getContracts: (
@@ -270,10 +292,21 @@ export type LearnCardNetworkPluginMethods = {
         uri: string,
         options?: Partial<PaginationOptionsType> & { query?: ConsentFlowDataQuery }
     ) => Promise<PaginatedConsentFlowData>;
+    getConsentFlowDataForDid: (
+        did: string,
+        options?: Partial<PaginationOptionsType> & { query?: ConsentFlowDataForDidQuery }
+    ) => Promise<PaginatedConsentFlowDataForDid>;
     getAllConsentFlowData: (
         query?: ConsentFlowDataQuery,
         options?: Partial<PaginationOptionsType>
     ) => Promise<PaginatedConsentFlowData>;
+    writeCredentialToContract: (
+        did: string,
+        contractUri: string,
+        credential: VC | JWE,
+        boostUri: string
+    ) => Promise<string>;
+
     consentToContract: (
         uri: string,
         terms: {
@@ -298,6 +331,14 @@ export type LearnCardNetworkPluginMethods = {
         uri: string,
         options?: Partial<PaginationOptionsType> & { query?: ConsentFlowTransactionsQuery }
     ) => Promise<PaginatedConsentFlowTransactions>;
+    getCredentialsForContract: (
+        termsUri: string,
+        options?: Partial<PaginationOptionsType> & { includeReceived?: boolean }
+    ) => Promise<PaginatedContractCredentials>;
+    getConsentFlowCredentials: (
+        options?: Partial<PaginationOptionsType> & { includeReceived?: boolean }
+    ) => Promise<PaginatedContractCredentials>;
+
     verifyConsent: (uri: string, profileId: string) => Promise<boolean>;
 
     addDidMetadata: (metadata: Partial<DidDocument>) => Promise<boolean>;

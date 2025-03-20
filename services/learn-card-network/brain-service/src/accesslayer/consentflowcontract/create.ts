@@ -15,6 +15,7 @@ export const createConsentFlowContract = async ({
     reasonForAccessing = '',
     needsGuardianConsent = false,
     redirectUrl = '',
+    frontDoorBoostUri = '',
     image = '',
     expiresAt,
 }: {
@@ -25,6 +26,7 @@ export const createConsentFlowContract = async ({
     reasonForAccessing?: string;
     needsGuardianConsent?: boolean;
     redirectUrl?: string;
+    frontDoorBoostUri?: string;
     image?: string;
     expiresAt?: string;
 }): Promise<DbContractType> => {
@@ -40,6 +42,7 @@ export const createConsentFlowContract = async ({
                 reasonForAccessing,
                 needsGuardianConsent,
                 redirectUrl,
+                frontDoorBoostUri,
                 image,
                 contract,
                 createdAt: new Date().toISOString(),

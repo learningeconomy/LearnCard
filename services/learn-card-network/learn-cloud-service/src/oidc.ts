@@ -24,7 +24,7 @@ export const oidcFastifyPlugin: FastifyPluginAsync = async fastify => {
 
     fastify.get('/oidc/jwks', async (_request, reply) => {
         // For HS256, we don't need to expose the key
-        return reply.send({ keys: [generateJwk()] });
+        return reply.send({ keys: [await generateJwk()] });
     });
 };
 
