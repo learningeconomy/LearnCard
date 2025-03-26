@@ -1,5 +1,11 @@
 # @learncard/network-brain-service
 
+## 3.3.14
+
+### Patch Changes
+
+-   [`b3418d22ef9773def153efb6f1cf7d548e1b3011`](https://github.com/learningeconomy/LearnCard/commit/b3418d22ef9773def153efb6f1cf7d548e1b3011) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix critical error on new Neo4j version
+
 ## 3.3.13
 
 ### Patch Changes
