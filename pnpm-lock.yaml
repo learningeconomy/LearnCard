@@ -1929,8 +1929,8 @@ importers:
         specifier: workspace:*
         version: link:../../../packages/plugins/vc-templates
       '@sentry/esbuild-plugin':
-        specifier: ^2.16.0
-        version: 2.22.6
+        specifier: 2.16.0
+        version: 2.16.0
       '@sentry/serverless':
         specifier: ^7.61.0
         version: 7.114.0
@@ -6621,8 +6621,16 @@ packages:
     resolution: {integrity: sha512-dOuvfJN7G+3YqLlUY4HIjyWHaRP8vbOgF+OsE5w2l7ZEn1rMAaUbPntAR8AF9GBA6j2zWNoSo8e7GjbJxVofSg==}
     engines: {node: '>=8'}
 
+  '@sentry/babel-plugin-component-annotate@2.16.0':
+    resolution: {integrity: sha512-+uy1qPkA5MSNgJ0L9ur/vNTydfdHwHnBX2RQ+0thsvkqf90fU788YjkkXwUiBBNuqNyI69JiOW6frixAWy7oUg==}
+    engines: {node: '>= 14'}
+
   '@sentry/babel-plugin-component-annotate@2.22.6':
     resolution: {integrity: sha512-V2g1Y1I5eSe7dtUVMBvAJr8BaLRr4CLrgNgtPaZyMT4Rnps82SrZ5zqmEkLXPumlXhLUWR6qzoMNN2u+RXVXfQ==}
+    engines: {node: '>= 14'}
+
+  '@sentry/bundler-plugin-core@2.16.0':
+    resolution: {integrity: sha512-dhgIZsIR3L9KnE2OO5JJm6hPtStAjEPYKQsZzxRr69uVhd9xAvfXeXr0afKVNVEcIDksas6yMgHqwQ2wOXFIAg==}
     engines: {node: '>= 14'}
 
   '@sentry/bundler-plugin-core@2.22.6':
@@ -6678,6 +6686,10 @@ packages:
   '@sentry/core@7.114.0':
     resolution: {integrity: sha512-YnanVlmulkjgZiVZ9BfY9k6I082n+C+LbZo52MTvx3FY6RE5iyiPMpaOh67oXEZRWcYQEGm+bKruRxLVP6RlbA==}
     engines: {node: '>=8'}
+
+  '@sentry/esbuild-plugin@2.16.0':
+    resolution: {integrity: sha512-bpKLDh4FFFo2Py2KFYevBt2zl80vkDnNs5/WPRJQAqFLYa9dE4YeG8JG6hTVT9TWWp/cXt7PP0LirrRivOuUAQ==}
+    engines: {node: '>= 14'}
 
   '@sentry/esbuild-plugin@2.22.6':
     resolution: {integrity: sha512-yyp4lbO6189PhhH7VYITCQY9cmd5Mr5akIzENXUYGsea6uPRPxpgqpydsbrpn6us8qGA8MVE6q/ZmlkgQwcj4g==}
@@ -26985,7 +26997,23 @@ snapshots:
       '@sentry/types': 7.114.0
       '@sentry/utils': 7.114.0
 
+  '@sentry/babel-plugin-component-annotate@2.16.0': {}
+
   '@sentry/babel-plugin-component-annotate@2.22.6': {}
+
+  '@sentry/bundler-plugin-core@2.16.0':
+    dependencies:
+      '@babel/core': 7.26.0
+      '@sentry/babel-plugin-component-annotate': 2.16.0
+      '@sentry/cli': 2.38.2
+      dotenv: 16.4.5
+      find-up: 5.0.0
+      glob: 9.3.5
+      magic-string: 0.27.0
+      unplugin: 1.0.1
+    transitivePeerDependencies:
+      - encoding
+      - supports-color
 
   '@sentry/bundler-plugin-core@2.22.6':
     dependencies:
@@ -27045,6 +27073,15 @@ snapshots:
     dependencies:
       '@sentry/types': 7.114.0
       '@sentry/utils': 7.114.0
+
+  '@sentry/esbuild-plugin@2.16.0':
+    dependencies:
+      '@sentry/bundler-plugin-core': 2.16.0
+      unplugin: 1.0.1
+      uuid: 9.0.1
+    transitivePeerDependencies:
+      - encoding
+      - supports-color
 
   '@sentry/esbuild-plugin@2.22.6':
     dependencies:
