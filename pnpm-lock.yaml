@@ -1981,7 +1981,7 @@ importers:
         version: 1.14.1
       serverless-offline:
         specifier: ^12.0.4
-        version: 12.0.4(serverless@3.39.0)
+        version: 12.0.4(serverless@3.26.0)
       sift:
         specifier: ^17.0.1
         version: 17.1.3
@@ -2029,23 +2029,23 @@ importers:
         specifier: ^12.1.0
         version: 12.1.3
       serverless:
-        specifier: ^3.26.0
-        version: 3.39.0
+        specifier: 3.26.0
+        version: 3.26.0
       serverless-certificate-creator:
-        specifier: ^1.6.0
+        specifier: 1.6.0
         version: 1.6.0
       serverless-domain-manager:
-        specifier: ^6.3.1
-        version: 6.4.4
+        specifier: 6.3.1
+        version: 6.3.1
       serverless-esbuild:
-        specifier: ^1.45.1
-        version: 1.54.5(esbuild@0.16.17)
+        specifier: 1.45.1
+        version: 1.45.1(esbuild@0.16.17)
       serverless-http:
-        specifier: ^3.2.0
+        specifier: 3.2.0
         version: 3.2.0
       serverless-lift:
-        specifier: ^1.27.0
-        version: 1.30.3(serverless@3.39.0)
+        specifier: 1.27.0
+        version: 1.27.0(serverless@3.26.0)
       shx:
         specifier: ^0.3.4
         version: 0.3.4
@@ -6703,6 +6703,10 @@ packages:
     resolution: {integrity: sha512-319N90McVpupQ6vws4+tfCy/03AdtsU0MurIE4+W5cubHME08HtiEWlfacvAxX+yuKFhvdsO4K4BB/dj54ideg==}
     engines: {node: '>=8'}
 
+  '@serverless/dashboard-plugin@6.4.0':
+    resolution: {integrity: sha512-2yJQym94sXZhEFbcOVRMJgJ4a2H9Qly94UeUesPwf8bfWCxtiB4l5rxLnCB2aLTuUf/djcuD5/VrNPY1pRU7DA==}
+    engines: {node: '>=12.0'}
+
   '@serverless/dashboard-plugin@7.2.3':
     resolution: {integrity: sha512-Vu4TKJLEQ5F8ZipfCvd8A/LMIdH8kNGe448sX9mT4/Z0JVUaYmMc3BwkQ+zkNIh3QdBKAhocGn45TYjHV6uPWQ==}
     engines: {node: '>=12.0'}
@@ -10537,6 +10541,10 @@ packages:
     resolution: {integrity: sha512-zIHwmZPRshsCdpMDyVsqGmgyP0yT8GAgXUnkdAoJisxvf33k7yO6OuoKmcTGuXPWSsm8Oh88nZicRLA9Y0rUeA==}
     engines: {node: '>=12'}
 
+  dotenv-expand@9.0.0:
+    resolution: {integrity: sha512-uW8Hrhp5ammm9x7kBLR6jDfujgaDarNA02tprvZdyrJ7MpdzD1KyrIHG4l+YoC2fJ2UcdFdNWNWIjt+sexBHJw==}
+    engines: {node: '>=12'}
+
   dotenv@10.0.0:
     resolution: {integrity: sha512-rlBi9d8jpv9Sf1klPjNfFAuWDjKLwTIJJ/VxtoTwIR6hnZxcEOQCZg2oIL3MWBYw5GpUDKOEnND7LXTbIpQ03Q==}
     engines: {node: '>=10'}
@@ -11861,6 +11869,9 @@ packages:
   forwarded@0.2.0:
     resolution: {integrity: sha512-buRG0fpBtRHSTCOASe6hD258tEubFoRLb4ZNA6NxMVHNw2gOcwHo9wyablzMzOA5z9xA9L1KNjk/Nt6MT9aYow==}
     engines: {node: '>= 0.6'}
+
+  fp-ts@2.16.9:
+    resolution: {integrity: sha512-+I2+FnVB+tVaxcYyQkHUq7ZdKScaBlX53A41mxQtpIccsfyv8PzdzP7fzp2AY832T4aoK6UZ5WRX/ebGd8uZuQ==}
 
   fraction.js@4.3.7:
     resolution: {integrity: sha512-ZsDfxO51wGAXREY55a7la9LScWpwv9RxIrYABrlvOFBlH/ShPnrtsXeuUIfXKKOVicNxQ+o8JTbJvjS4M89yew==}
@@ -17666,9 +17677,23 @@ packages:
   serverless-certificate-creator@1.6.0:
     resolution: {integrity: sha512-OPryqkkSG39nOIsgmxbcj89o9l+mcB50XraMRB28wyYBAaxHog4Cyq7Vydn5TCvfHwPJjVRvl/sLeFHzRXN4+w==}
 
+  serverless-domain-manager@6.3.1:
+    resolution: {integrity: sha512-Cn90C/QBGSfcf7oAnDOdh2DuCj7RxmqwPjZFnL/gzOdyDtahBNuaha6wXXiLm85ejzAJQj1gDvAX4N0ye2dxXA==}
+    engines: {node: '>=14'}
+
   serverless-domain-manager@6.4.4:
     resolution: {integrity: sha512-TrEjJgEY7sLbutWckfOAunduXUsQ/QkiGZwqfpvHttIDnkED10gQM1CJUj2K4UE+ih+QN3rKuHnc6Y6U5OnR0w==}
     engines: {node: '>=14'}
+
+  serverless-esbuild@1.45.1:
+    resolution: {integrity: sha512-vPb9R7MoecOv8kdI41BLvYuB5vxBDNKQfGacIuJbmMO25uQHEgyLk27ryb+8XAxmMpb5FuI6/eUZmCK2kRQZZA==}
+    engines: {node: '>=14.18.0'}
+    peerDependencies:
+      esbuild: '>=0.8 <0.18'
+      esbuild-node-externals: ^1.0.0
+    peerDependenciesMeta:
+      esbuild-node-externals:
+        optional: true
 
   serverless-esbuild@1.54.5:
     resolution: {integrity: sha512-zORFzVshsf7Z4NCJmmZxR92LGxISFJ7G1ERmPX/u3SBlAjbfj1NQEH4uraMGnwra6XDuDpXq6CleR9845SEmJg==}
@@ -17684,11 +17709,11 @@ packages:
     resolution: {integrity: sha512-QvSyZXljRLIGqwcJ4xsKJXwkZnAVkse1OajepxfjkBXV0BMvRS5R546Z4kCBI8IygDzkQY0foNPC/rnipaE9pQ==}
     engines: {node: '>=12.0'}
 
-  serverless-lift@1.30.3:
-    resolution: {integrity: sha512-iNxcaqZ2LQbDSsd5B6ys0iOGCN7bX7xtrRl4M0FRKpKzMkvvk/ZL8Tnf5uYPbkiYTs9qh8Egw2DoNsEJP5Ugag==}
-    engines: {node: '>=14.15.0'}
+  serverless-lift@1.27.0:
+    resolution: {integrity: sha512-NcTzXF16ULN69gH9xhx/1rQ+8VqideDRt3id1txjDdSTx+PXAr4kviaYqa7b532eFd2XEA2Jx7UlrEbzGdptUQ==}
+    engines: {node: '>=14.15.0 <21'}
     peerDependencies:
-      serverless: ^2.36.0 || ^3 || ^4
+      serverless: ^2.36.0 || ^3
 
   serverless-offline@12.0.4:
     resolution: {integrity: sha512-G256wDHI12vE0CJ0uTJMBlfnaN7o7td4GgClvQtuedt/n7vKoUfN0och+LybD6YVGsR5h1xpYjPPPLy2QFqWaA==}
@@ -17705,6 +17730,11 @@ packages:
 
   serverless-plugin-warmup@8.3.0:
     resolution: {integrity: sha512-FBPPfY6CFdg/BAbvR+UrgHUFNgkUsQxXApSUVwoBqoaLH7amc2aCUYxYncJaD+kRLHTD4WKB0VC7QuyfUPJ+XQ==}
+
+  serverless@3.26.0:
+    resolution: {integrity: sha512-drVr4akkQwm2Pj7ZN9boh5PoI2nKvlXmy+Cb8Hh1Zv8ybsf47ZUQE6t7dakGA4irYf4SQCbVc72nKqISfarMCQ==}
+    engines: {node: '>=12.0'}
+    hasBin: true
 
   serverless@3.39.0:
     resolution: {integrity: sha512-FHI3fhe4TRS8+ez/KA7HmO3lt3fAynO+N1pCCzYRThMWG0J8RWCI0BI+K0mw9+sEV+QpBCpZRZbuGyUaTsaQew==}
@@ -27055,6 +27085,35 @@ snapshots:
     dependencies:
       '@sentry/types': 7.114.0
 
+  '@serverless/dashboard-plugin@6.4.0(supports-color@8.1.1)':
+    dependencies:
+      '@serverless/event-mocks': 1.1.1
+      '@serverless/platform-client': 4.5.1(supports-color@8.1.1)
+      '@serverless/utils': 6.15.0
+      child-process-ext: 3.0.2
+      chokidar: 3.6.0
+      flat: 5.0.2
+      fs-extra: 9.1.0
+      js-yaml: 4.1.0
+      jszip: 3.10.1
+      lodash: 4.17.21
+      memoizee: 0.4.17
+      ncjsm: 4.3.2
+      node-dir: 0.1.17
+      node-fetch: 2.7.0
+      open: 7.4.2
+      semver: 7.6.3
+      simple-git: 3.27.0(supports-color@8.1.1)
+      type: 2.7.3
+      uuid: 8.3.2
+      yamljs: 0.3.0
+    transitivePeerDependencies:
+      - bufferutil
+      - debug
+      - encoding
+      - supports-color
+      - utf-8-validate
+
   '@serverless/dashboard-plugin@7.2.3(supports-color@8.1.1)':
     dependencies:
       '@aws-sdk/client-cloudformation': 3.693.0
@@ -32613,6 +32672,8 @@ snapshots:
       dotenv: 16.4.5
     optional: true
 
+  dotenv-expand@9.0.0: {}
+
   dotenv@10.0.0: {}
 
   dotenv@16.4.5: {}
@@ -34340,6 +34401,8 @@ snapshots:
       qs: 6.13.1
 
   forwarded@0.2.0: {}
+
+  fp-ts@2.16.9: {}
 
   fraction.js@4.3.7: {}
 
@@ -42393,9 +42456,30 @@ snapshots:
       semver: 7.6.3
       yamljs: 0.3.0
 
+  serverless-domain-manager@6.3.1:
+    dependencies:
+      aws-sdk: 2.1692.0
+
   serverless-domain-manager@6.4.4:
     dependencies:
       aws-sdk: 2.1692.0
+
+  serverless-esbuild@1.45.1(esbuild@0.16.17):
+    dependencies:
+      acorn: 8.14.0
+      acorn-walk: 8.3.4
+      anymatch: 3.1.3
+      archiver: 5.3.2
+      bestzip: 2.2.1
+      chokidar: 3.6.0
+      esbuild: 0.16.17
+      execa: 5.1.1
+      fp-ts: 2.16.9
+      fs-extra: 11.2.0
+      globby: 11.1.0
+      p-map: 4.0.0
+      ramda: 0.28.0
+      semver: 7.6.3
 
   serverless-esbuild@1.54.5(esbuild@0.16.17):
     dependencies:
@@ -42445,7 +42529,7 @@ snapshots:
 
   serverless-http@3.2.0: {}
 
-  serverless-lift@1.30.3(serverless@3.39.0):
+  serverless-lift@1.27.0(serverless@3.26.0):
     dependencies:
       '@aws-cdk/aws-apigatewayv2-alpha': 2.21.1-alpha.0(aws-cdk-lib@2.167.1(constructs@10.2.20))(constructs@10.2.20)
       aws-cdk-lib: 2.167.1(constructs@10.2.20)
@@ -42459,10 +42543,46 @@ snapshots:
       mime-types: 2.1.35
       ora: 5.4.1
       pascal-case: 3.1.2
-      serverless: 3.39.0
+      serverless: 3.26.0
       stripe: 8.222.0
       toml: 3.0.0
       traverse: 0.6.10
+
+  serverless-offline@12.0.4(serverless@3.26.0):
+    dependencies:
+      '@aws-sdk/client-lambda': 3.693.0
+      '@hapi/boom': 10.0.1
+      '@hapi/h2o2': 10.0.4
+      '@hapi/hapi': 21.3.12
+      '@serverless/utils': 6.15.0
+      array-unflat-js: 0.1.3
+      boxen: 7.1.1
+      chalk: 5.3.0
+      desm: 1.3.1
+      execa: 6.1.0
+      fs-extra: 11.2.0
+      is-wsl: 2.2.0
+      java-invoke-local: 0.0.6
+      jose: 4.15.9
+      js-string-escape: 1.0.1
+      jsonpath-plus: 7.2.0
+      jsonschema: 1.4.1
+      jszip: 3.10.1
+      luxon: 3.5.0
+      node-fetch: 3.3.2
+      node-schedule: 2.1.1
+      object.hasown: 1.1.4
+      p-memoize: 7.1.1
+      p-retry: 5.1.2
+      serverless: 3.26.0
+      velocityjs: 2.0.6
+      ws: 8.18.0
+    transitivePeerDependencies:
+      - aws-crt
+      - bufferutil
+      - encoding
+      - supports-color
+      - utf-8-validate
 
   serverless-offline@12.0.4(serverless@3.39.0):
     dependencies:
@@ -42509,6 +42629,67 @@ snapshots:
       typescript: 5.6.2
 
   serverless-plugin-warmup@8.3.0: {}
+
+  serverless@3.26.0:
+    dependencies:
+      '@serverless/dashboard-plugin': 6.4.0(supports-color@8.1.1)
+      '@serverless/platform-client': 4.5.1(supports-color@8.1.1)
+      '@serverless/utils': 6.15.0
+      ajv: 8.17.1
+      ajv-formats: 2.1.1(ajv@8.17.1)
+      archiver: 5.3.2
+      aws-sdk: 2.1692.0
+      bluebird: 3.7.2
+      cachedir: 2.4.0
+      chalk: 4.1.2
+      child-process-ext: 2.1.1
+      ci-info: 3.9.0
+      cli-progress-footer: 2.3.3
+      d: 1.0.2
+      dayjs: 1.11.13
+      decompress: 4.2.1
+      dotenv: 16.4.5
+      dotenv-expand: 9.0.0
+      essentials: 1.2.0
+      ext: 1.7.0
+      fastest-levenshtein: 1.0.16
+      filesize: 10.1.6
+      fs-extra: 10.1.0
+      get-stdin: 8.0.0
+      globby: 11.1.0
+      got: 11.8.6
+      graceful-fs: 4.2.11
+      https-proxy-agent: 5.0.1(supports-color@8.1.1)
+      is-docker: 2.2.1
+      js-yaml: 4.1.0
+      json-cycle: 1.5.0
+      json-refs: 3.0.15(supports-color@8.1.1)
+      lodash: 4.17.21
+      memoizee: 0.4.17
+      micromatch: 4.0.8
+      node-fetch: 2.7.0
+      npm-registry-utilities: 1.0.0
+      object-hash: 3.0.0
+      open: 8.4.2
+      path2: 0.1.0
+      process-utils: 4.0.0
+      promise-queue: 2.2.5
+      require-from-string: 2.0.2
+      semver: 7.6.3
+      signal-exit: 3.0.7
+      strip-ansi: 6.0.1
+      supports-color: 8.1.1
+      tar: 6.2.1
+      timers-ext: 0.1.8
+      type: 2.7.3
+      untildify: 4.0.0
+      uuid: 9.0.1
+      yaml-ast-parser: 0.0.43
+    transitivePeerDependencies:
+      - bufferutil
+      - debug
+      - encoding
+      - utf-8-validate
 
   serverless@3.39.0:
     dependencies:
