@@ -11,7 +11,14 @@ import { ExpirationPlugin, expirationPlugin } from '@learncard/expiration-plugin
 import { LearnCardPlugin, getLearnCardPlugin } from '@learncard/learn-card-plugin';
 import { getDidWebPlugin, DidWebPlugin } from '@learncard/did-web-plugin';
 
-const didkit = readFile(require.resolve('@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm'));
+// Initialize didkit lazily to avoid top-level await issues
+let didkitPromise: Promise<Buffer> | null = null;
+const getDidkitWasm = () => {
+    if (!didkitPromise) {
+        didkitPromise = readFile(require.resolve('@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm'));
+    }
+    return didkitPromise;
+};
 
 export type EmptyLearnCard = LearnCard<
     [CryptoPluginType, DIDKitPlugin, ExpirationPlugin, VCTemplatePlugin, LearnCardPlugin]
@@ -55,7 +62,7 @@ export const getEmptyLearnCard = async (): Promise<EmptyLearnCard> => {
     if (!emptyLearnCard || IS_OFFLINE) {
         const cryptoLc = await (await generateLearnCard()).addPlugin(CryptoPlugin);
 
-        const didkitLc = await cryptoLc.addPlugin(await getDidKitPlugin(await didkit));
+        const didkitLc = await cryptoLc.addPlugin(await getDidKitPlugin(await getDidkitWasm()));
 
         const expirationLc = await didkitLc.addPlugin(expirationPlugin(didkitLc));
 
@@ -73,7 +80,7 @@ export const getLearnCard = async (seed = process.env.SEED): Promise<SeedLearnCa
     if (!learnCards[seed] || IS_OFFLINE) {
         const cryptoLc = await (await generateLearnCard()).addPlugin(CryptoPlugin);
 
-        const didkitLc = await cryptoLc.addPlugin(await getDidKitPlugin(await didkit));
+        const didkitLc = await cryptoLc.addPlugin(await getDidKitPlugin(await getDidkitWasm()));
 
         const didkeyLc = await didkitLc.addPlugin(
             await getDidKeyPlugin<DidMethod>(didkitLc, seed, 'key')
@@ -109,7 +116,7 @@ export const getDidWebLearnCard = async (): Promise<DidWebLearnCard> => {
     if (!didWebLearnCard || IS_OFFLINE) {
         const cryptoLc = await (await generateLearnCard()).addPlugin(CryptoPlugin);
 
-        const didkitLc = await cryptoLc.addPlugin(await getDidKitPlugin(await didkit));
+        const didkitLc = await cryptoLc.addPlugin(await getDidKitPlugin(await getDidkitWasm()));
 
         const didkeyLc = await didkitLc.addPlugin(
             await getDidKeyPlugin<DidMethod>(didkitLc, seed, 'key')

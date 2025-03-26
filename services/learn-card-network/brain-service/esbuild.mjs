@@ -11,7 +11,7 @@ const finalBuildObj = {
     bundle: true,
     format: 'cjs',
     outdir: 'dist',
-    target: 'node18',
+    target: 'node20',
     external: ['@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm', 'p-limit'],
     plugins,
     minify: true,
