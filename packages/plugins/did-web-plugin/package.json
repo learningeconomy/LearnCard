@@ -1,6 +1,6 @@
 {
     "name": "@learncard/did-web-plugin",
-    "version": "1.0.53",
+    "version": "1.0.56",
     "description": "",
     "main": "./dist/index.js",
     "module": "./dist/did-web-plugin.esm.js",
@@ -9,7 +9,7 @@
     ],
     "scripts": {
         "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.js && tsc --p tsconfig.json",
-        "test": "jest",
+        "test": "jest --passWithNoTests",
         "test:watch": "jest --watch",
         "test:coverage": "jest --silent --ci --coverage --coverageReporters=\"text\" --coverageReporters=\"text-summary\""
     },
@@ -38,15 +38,6 @@
     },
     "types": "./dist/index.d.ts",
     "dependencies": {
-        "@learncard/ceramic-plugin": "workspace:*",
-        "@learncard/core": "workspace:*",
-        "@learncard/didkey-plugin": "workspace:*",
-        "@learncard/didkit-plugin": "workspace:^",
-        "@learncard/expiration-plugin": "workspace:*",
-        "@learncard/helpers": "workspace:*",
-        "@learncard/learn-card-plugin": "workspace:*",
-        "@learncard/types": "workspace:*",
-        "@learncard/vc-plugin": "workspace:*",
-        "@learncard/vc-templates-plugin": "workspace:*"
+        "@learncard/core": "workspace:*"
     }
 }

@@ -1,5 +1,81 @@
 # learn-card-core
 
+## 2.4.15
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.2.16
+
+## 2.4.14
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.2.15
+
+## 2.4.13
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.2.14
+
+## 2.4.12
+
+### Patch Changes
+
+-   [#623](https://github.com/learningeconomy/LearnCard/pull/623) [`160b2f67bd119de64d26d4b16ef7ae718e34a897`](https://github.com/learningeconomy/LearnCard/commit/160b2f67bd119de64d26d4b16ef7ae718e34a897) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add credential writing capability to consent flow contracts, enabling third parties to issue credentials to profiles that have consented to a contract with appropriate write permissions
+
+-   [#623](https://github.com/learningeconomy/LearnCard/pull/623) [`160b2f67bd119de64d26d4b16ef7ae718e34a897`](https://github.com/learningeconomy/LearnCard/commit/160b2f67bd119de64d26d4b16ef7ae718e34a897) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Allow viewing written credentials for a contract
+
+-   [#623](https://github.com/learningeconomy/LearnCard/pull/623) [`160b2f67bd119de64d26d4b16ef7ae718e34a897`](https://github.com/learningeconomy/LearnCard/commit/160b2f67bd119de64d26d4b16ef7ae718e34a897) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add Auto-Boosts, which are boosts that are automatically issued once someone consents to a contract
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.2.13
+    -   @learncard/core@9.3.19
+
+## 2.4.11
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.2.12
+
+## 2.4.10
+
+### Patch Changes
+
+-   [#619](https://github.com/learningeconomy/LearnCard/pull/619) [`65d3a6ca9161d227d57a2caaf0c63241e21dc360`](https://github.com/learningeconomy/LearnCard/commit/65d3a6ca9161d227d57a2caaf0c63241e21dc360) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add ADD_ADMIN Claim Hook type that automatically grants admin privileges when claiming a boost. This enables:
+
+    -   Automatic admin role assignment for target boosts when claiming a source boost
+    -   Requires admin permissions on both source and target boosts to create hook
+    -   Cascading deletion when either boost is removed
+    -   Validation of admin permissions hierarchy during hook creation
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.2.11
+    -   @learncard/core@9.3.18
+
+## 2.4.9
+
+### Patch Changes
+
+-   [#617](https://github.com/learningeconomy/LearnCard/pull/617) [`774e4752bd7a1ceeea31ba2a882fefba2ae5493f`](https://github.com/learningeconomy/LearnCard/commit/774e4752bd7a1ceeea31ba2a882fefba2ae5493f) Thanks [@gerardopar](https://github.com/gerardopar)! - LC-786 - Suppress Notification on AcceptCredential
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.2.10
+
+## 2.4.8
+
+### Patch Changes
+
+-   [#616](https://github.com/learningeconomy/LearnCard/pull/616) [`a84aaf7362410b23101cea193f181535e6313f1b`](https://github.com/learningeconomy/LearnCard/commit/a84aaf7362410b23101cea193f181535e6313f1b) Thanks [@gerardopar](https://github.com/gerardopar)! - LC-815 - Skip Notification
+
+-   Updated dependencies [[`d01d1369124d537f37ead6f8e3101cc47fff5208`](https://github.com/learningeconomy/LearnCard/commit/d01d1369124d537f37ead6f8e3101cc47fff5208)]:
+    -   @learncard/core@9.3.17
+    -   @learncard/network-brain-client@2.2.9
+
 ## 2.4.7
 
 ### Patch Changes

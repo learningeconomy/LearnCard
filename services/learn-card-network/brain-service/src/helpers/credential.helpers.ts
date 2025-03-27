@@ -45,7 +45,11 @@ export const sendCredential = async (
 /**
  * Accepts a VC
  */
-export const acceptCredential = async (profile: ProfileType, uri: string): Promise<boolean> => {
+export const acceptCredential = async (
+    profile: ProfileType,
+    uri: string,
+    options: { skipNotification?: boolean } = { skipNotification: false }
+): Promise<boolean> => {
     const { id, type } = getUriParts(uri);
 
     if (type !== 'credential') {
@@ -67,16 +71,18 @@ export const acceptCredential = async (profile: ProfileType, uri: string): Promi
 
     await setDefaultClaimedRole(profile, pendingVc.target);
 
-    await addNotificationToQueue({
-        type: LCNNotificationTypeEnumValidator.enum.BOOST_ACCEPTED,
-        to: pendingVc.source,
-        from: profile,
-        message: {
-            title: 'Boost Accepted',
-            body: `${profile.displayName} has accepted your boost!`,
-        },
-        data: { vcUris: [uri] },
-    });
+    if (!options?.skipNotification) {
+        await addNotificationToQueue({
+            type: LCNNotificationTypeEnumValidator.enum.BOOST_ACCEPTED,
+            to: pendingVc.source,
+            from: profile,
+            message: {
+                title: 'Boost Accepted',
+                body: `${profile.displayName} has accepted your boost!`,
+            },
+            data: { vcUris: [uri] },
+        });
+    }
 
     return true;
 };

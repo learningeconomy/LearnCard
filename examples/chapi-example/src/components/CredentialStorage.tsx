@@ -45,9 +45,9 @@ const CredentialStorage: React.FC = () => {
     const accept = async () => {
         const wallet = await getWallet();
 
-        const uri = await wallet.store.Ceramic.upload(credential);
+        const uri = await wallet.store.LearnCloud.upload(credential);
 
-        await wallet.index.IDX.add({ id: title, uri });
+        await wallet.index.LearnCloud.add({ id: title, uri });
 
         event.respondWith(
             Promise.resolve({ dataType: 'VerifiablePresentation', data: presentation })

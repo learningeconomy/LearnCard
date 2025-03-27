@@ -1,5 +1,72 @@
 # @welibraryos/react-learn-card
 
+## 2.7.69
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.39
+
+## 2.7.68
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.38
+
+## 2.7.67
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.37
+
+## 2.7.66
+
+### Patch Changes
+
+-   [#624](https://github.com/learningeconomy/LearnCard/pull/624) [`b91c3a7275e23caaeb327019851d7893681d1c0f`](https://github.com/learningeconomy/LearnCard/commit/b91c3a7275e23caaeb327019851d7893681d1c0f) Thanks [@rhen92](https://github.com/rhen92)! - [LC-819] Fix missing achievement image on Certificate Views
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.36
+
+## 2.7.65
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.35
+
+## 2.7.64
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.34
+
+## 2.7.63
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.33
+
+## 2.7.62
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.32
+
+## 2.7.61
+
+### Patch Changes
+
+-   [#610](https://github.com/learningeconomy/LearnCard/pull/610) [`399b1d877fbf9db8852385740ee12bb007cc7e6c`](https://github.com/learningeconomy/LearnCard/commit/399b1d877fbf9db8852385740ee12bb007cc7e6c) Thanks [@rhen92](https://github.com/rhen92)! - [LC-758] Fix full view for certs and awards
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.31
+
 ## 2.7.60
 
 ### Patch Changes

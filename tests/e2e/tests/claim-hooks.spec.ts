@@ -1,13 +1,11 @@
 import { describe, test, expect } from 'vitest';
 
-import { NetworkLearnCardFromSeed } from '@learncard/init';
-
-import { getLearnCardForUser, USERS } from './helpers/learncard.helpers';
+import { getLearnCardForUser, LearnCard, USERS } from './helpers/learncard.helpers';
 import { testUnsignedBoost } from './helpers/credential.helpers';
 
-let a: NetworkLearnCardFromSeed['returnValue'];
-let b: NetworkLearnCardFromSeed['returnValue'];
-let c: NetworkLearnCardFromSeed['returnValue'];
+let a: LearnCard;
+let b: LearnCard;
+let c: LearnCard;
 
 describe('Claim Hooks', () => {
     let claimUri: string;
@@ -22,49 +20,114 @@ describe('Claim Hooks', () => {
         targetUri = await a.invoke.createBoost(testUnsignedBoost);
     });
 
-    test('Users can create claim hooks that automatically update permissions for different boosts', async () => {
-        await a.invoke.createClaimHook({
-            type: 'GRANT_PERMISSIONS',
-            data: {
-                claimUri,
-                targetUri,
-                permissions: { canIssue: true },
-            },
+    describe('GRANT_PERMISSIONS', () => {
+        test('Users can create claim hooks that automatically update permissions for different boosts', async () => {
+            await a.invoke.createClaimHook({
+                type: 'GRANT_PERMISSIONS',
+                data: {
+                    claimUri,
+                    targetUri,
+                    permissions: { canIssue: true },
+                },
+            });
+
+            const oldPermissions = await b.invoke.getBoostPermissions(targetUri);
+
+            expect(oldPermissions.canIssue).toBeFalsy();
+
+            const sentUri = await a.invoke.sendBoost(USERS.b.profileId, claimUri);
+            await b.invoke.acceptCredential(sentUri);
+
+            const newPermissions = await b.invoke.getBoostPermissions(targetUri);
+
+            expect(newPermissions.canIssue).toBeTruthy();
         });
 
-        const oldPermissions = await b.invoke.getBoostPermissions(targetUri);
+        test("Claim Hooks stop updating permissions after they're deleted", async () => {
+            const claimHookUri = await a.invoke.createClaimHook({
+                type: 'GRANT_PERMISSIONS',
+                data: {
+                    claimUri,
+                    targetUri,
+                    permissions: { canIssue: true },
+                },
+            });
 
-        expect(oldPermissions.canIssue).toBeFalsy();
+            const oldPermissions = await b.invoke.getBoostPermissions(targetUri);
 
-        const sentUri = await a.invoke.sendBoost(USERS.b.profileId, claimUri);
-        await b.invoke.acceptCredential(sentUri);
+            expect(oldPermissions.canIssue).toBeFalsy();
 
-        const newPermissions = await b.invoke.getBoostPermissions(targetUri);
+            await a.invoke.deleteClaimHook(claimHookUri);
 
-        expect(newPermissions.canIssue).toBeTruthy();
+            const sentUri = await a.invoke.sendBoost(USERS.b.profileId, claimUri);
+            await b.invoke.acceptCredential(sentUri);
+
+            const newPermissions = await b.invoke.getBoostPermissions(targetUri);
+
+            expect(newPermissions.canIssue).toBeFalsy();
+        });
     });
 
-    test("Claim Hooks stop updating permissions after they're deleted", async () => {
-        const claimHookUri = await a.invoke.createClaimHook({
-            type: 'GRANT_PERMISSIONS',
-            data: {
-                claimUri,
-                targetUri,
-                permissions: { canIssue: true },
-            },
+    describe('ADD_ADMIN', () => {
+        test('Users can create claim hooks that automatically add admins for different boosts', async () => {
+            await a.invoke.createClaimHook({
+                type: 'ADD_ADMIN',
+                data: { claimUri, targetUri },
+            });
+
+            const oldPermissions = await b.invoke.getBoostPermissions(targetUri);
+
+            expect(oldPermissions.canIssue).toBeFalsy();
+
+            const oldAdmins = await a.invoke.getBoostAdmins(targetUri);
+            expect(oldAdmins.records).toHaveLength(1);
+            expect(
+                oldAdmins.records.some(admin => admin.profileId === USERS.b.profileId)
+            ).toBeFalsy();
+
+            const sentUri = await a.invoke.sendBoost(USERS.b.profileId, claimUri);
+            await b.invoke.acceptCredential(sentUri);
+
+            const newPermissions = await b.invoke.getBoostPermissions(targetUri);
+
+            expect(newPermissions.canIssue).toBeTruthy();
+            expect(newPermissions.role).toEqual('admin');
+
+            const admins = await a.invoke.getBoostAdmins(targetUri);
+
+            expect(admins.records).toHaveLength(2);
+            expect(
+                admins.records.some(admin => admin.profileId === USERS.b.profileId)
+            ).toBeTruthy();
         });
 
-        const oldPermissions = await b.invoke.getBoostPermissions(targetUri);
+        test("Claim Hooks stop adding admins after they're deleted", async () => {
+            const claimHookUri = await a.invoke.createClaimHook({
+                type: 'ADD_ADMIN',
+                data: { claimUri, targetUri },
+            });
 
-        expect(oldPermissions.canIssue).toBeFalsy();
+            const oldPermissions = await b.invoke.getBoostPermissions(targetUri);
+            expect(oldPermissions.canIssue).toBeFalsy();
 
-        await a.invoke.deleteClaimHook(claimHookUri);
+            const oldAdmins = await a.invoke.getBoostAdmins(targetUri);
+            expect(oldAdmins.records).toHaveLength(1);
+            expect(
+                oldAdmins.records.some(admin => admin.profileId === USERS.b.profileId)
+            ).toBeFalsy();
 
-        const sentUri = await a.invoke.sendBoost(USERS.b.profileId, claimUri);
-        await b.invoke.acceptCredential(sentUri);
+            await a.invoke.deleteClaimHook(claimHookUri);
 
-        const newPermissions = await b.invoke.getBoostPermissions(targetUri);
+            const sentUri = await a.invoke.sendBoost(USERS.b.profileId, claimUri);
+            await b.invoke.acceptCredential(sentUri);
 
-        expect(newPermissions.canIssue).toBeFalsy();
+            const newPermissions = await b.invoke.getBoostPermissions(targetUri);
+
+            expect(newPermissions.canIssue).toBeFalsy();
+
+            const admins = await a.invoke.getBoostAdmins(targetUri);
+            expect(admins.records).toHaveLength(1);
+            expect(admins.records.some(admin => admin.profileId === USERS.b.profileId)).toBeFalsy();
+        });
     });
 });

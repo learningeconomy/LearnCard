@@ -41,7 +41,8 @@ const Test = () => {
     
     useEffect(() => {
         const getVc = async () => {
-            const wallet = await initLearnCard({ seed: 'a' }); // Bad practice! You should be generating keys...
+            // Generate a valid seed - must be 64 characters
+            const wallet = await initLearnCard({ seed: 'a'.repeat(64) });
             const uvc = wallet.invoke.getTestVc();
             setVc(await wallet.invoke.issueCredential(uvc));
         };

@@ -4,11 +4,13 @@ export const getMatchQueryWhere = (identifierToFilter: string, matchQueryKey = '
 all(key IN keys($${matchQueryKey}) 
     WHERE CASE 
         WHEN $${matchQueryKey}[key] IS TYPED MAP 
-            AND $${matchQueryKey}[key]['$in'] IS NOT NULL
-        THEN ${identifierToFilter}[key] IN $${matchQueryKey}[key]['$in']
-        WHEN $${matchQueryKey}[key] IS TYPED MAP 
-            AND $${matchQueryKey}[key]['$regex'] IS NOT NULL
-        THEN ${identifierToFilter}[key] =~ $${matchQueryKey}[key]['$regex']
+        THEN
+            CASE
+                WHEN $${matchQueryKey}[key]['$in'] IS NOT NULL
+                THEN ${identifierToFilter}[key] IN $${matchQueryKey}[key]['$in']
+                WHEN $${matchQueryKey}[key]['$regex'] IS NOT NULL
+                THEN ${identifierToFilter}[key] =~ $${matchQueryKey}[key]['$regex']
+            END
         ELSE ${identifierToFilter}[key] = $${matchQueryKey}[key]
     END
 )
@@ -20,11 +22,16 @@ export const convertQueryResultToPropertiesObjectArray = <Properties extends Rec
     return results.records.map(result => {
         const resultObject = result.toObject();
 
-        return Object.fromEntries<Properties>(
-            Object.entries(resultObject).map(([key, value]) => [key, value?.properties]) as [
-                keyof Properties,
-                Properties[keyof Properties]
-            ][]
+        return Object.fromEntries(
+            Object.entries(resultObject).map(([key, value]) => {
+                // Handle both primitives and Neo4j objects with properties
+                const extractedValue =
+                    value && typeof value === 'object' && 'properties' in value
+                        ? value.properties
+                        : value;
+
+                return [key, extractedValue ?? undefined];
+            })
         ) as Properties;
     });
 };

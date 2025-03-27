@@ -7,6 +7,7 @@
     "tags": [],
     "implicitDependencies": [
         "init",
+        "simple-signing-plugin",
         "nx-run-command"
     ],
     "namedInputs": {
@@ -22,6 +23,16 @@
             ],
             "options": {
                 "command": "pnpm test",
+                "cwd": "{root}/tests/e2e"
+            }
+        },
+        "test:e2e": {
+            "executor": "./tools/executors/workspace:run-command",
+            "dependsOn": [
+                "^build"
+            ],
+            "options": {
+                "command": "pnpm test:e2e",
                 "cwd": "{root}/tests/e2e"
             }
         },

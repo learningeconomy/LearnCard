@@ -1,5 +1,26 @@
 # learn-card-types
 
+## 5.6.7
+
+### Patch Changes
+
+-   [#623](https://github.com/learningeconomy/LearnCard/pull/623) [`160b2f67bd119de64d26d4b16ef7ae718e34a897`](https://github.com/learningeconomy/LearnCard/commit/160b2f67bd119de64d26d4b16ef7ae718e34a897) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add credential writing capability to consent flow contracts, enabling third parties to issue credentials to profiles that have consented to a contract with appropriate write permissions
+
+-   [#623](https://github.com/learningeconomy/LearnCard/pull/623) [`160b2f67bd119de64d26d4b16ef7ae718e34a897`](https://github.com/learningeconomy/LearnCard/commit/160b2f67bd119de64d26d4b16ef7ae718e34a897) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Allow viewing written credentials for a contract
+
+-   [#623](https://github.com/learningeconomy/LearnCard/pull/623) [`160b2f67bd119de64d26d4b16ef7ae718e34a897`](https://github.com/learningeconomy/LearnCard/commit/160b2f67bd119de64d26d4b16ef7ae718e34a897) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add Auto-Boosts, which are boosts that are automatically issued once someone consents to a contract
+
+## 5.6.6
+
+### Patch Changes
+
+-   [#619](https://github.com/learningeconomy/LearnCard/pull/619) [`65d3a6ca9161d227d57a2caaf0c63241e21dc360`](https://github.com/learningeconomy/LearnCard/commit/65d3a6ca9161d227d57a2caaf0c63241e21dc360) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add ADD_ADMIN Claim Hook type that automatically grants admin privileges when claiming a boost. This enables:
+
+    -   Automatic admin role assignment for target boosts when claiming a source boost
+    -   Requires admin permissions on both source and target boosts to create hook
+    -   Cascading deletion when either boost is removed
+    -   Validation of admin permissions hierarchy during hook creation
+
 ## 5.6.5
 
 ### Patch Changes

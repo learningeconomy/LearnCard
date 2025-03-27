@@ -1,11 +1,9 @@
 import { describe, test, expect } from 'vitest';
 
-import { NetworkLearnCardFromSeed } from '@learncard/init';
+import { getLearnCardForUser, LearnCard } from './helpers/learncard.helpers';
 
-import { getLearnCardForUser } from './helpers/learncard.helpers';
-
-let a: NetworkLearnCardFromSeed['returnValue'];
-let b: NetworkLearnCardFromSeed['returnValue'];
+let a: LearnCard;
+let b: LearnCard;
 
 describe('Dids', () => {
     beforeEach(async () => {
