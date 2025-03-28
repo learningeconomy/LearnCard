@@ -92,7 +92,9 @@ export interface LtiJwtPayload {
     [key: string]: any;
 }
 
-export interface FastifyLtiRequest {
+import { RouteGenericInterface } from 'fastify';
+
+export interface FastifyLtiRequest extends RouteGenericInterface {
     query: {
         state?: string;
         id_token?: string;

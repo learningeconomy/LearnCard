@@ -2,7 +2,7 @@ import Fastify, { FastifyPluginAsync } from 'fastify';
 import fastifyCors from '@fastify/cors';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
-import { getKeyPair } from '@helpers/auth.helpers';
+// Using getKeyPair in generateLtiJwks from lti.helpers.ts
 import {
     generateLtiJwks,
     registerPlatform,
@@ -73,7 +73,7 @@ export const ltiFastifyPlugin: FastifyPluginAsync = async fastify => {
     });
 
     // Handle OIDC login flow
-    fastify.get<FastifyLtiRequest>('/lti/login', async (request, reply) => {
+    fastify.get<FastifyLtiRequest>('/lti/login', async (request: any, reply: any) => {
         try {
             // 1. Validate required parameters for OpenID Connect launch
             const { 
@@ -100,7 +100,7 @@ export const ltiFastifyPlugin: FastifyPluginAsync = async fastify => {
             const nonce = crypto.randomBytes(16).toString('hex');
 
             // 4. Store state for later validation
-            const stateId = await createState({
+            await createState({
                 state,
                 nonce,
                 platform_id: platform._id,
@@ -136,7 +136,9 @@ export const ltiFastifyPlugin: FastifyPluginAsync = async fastify => {
     });
 
     // Handle launch requests (both resource and deep linking)
-    fastify.post<FastifyLtiRequest>(['/lti/launch', '/lti/deep-linking'], async (request, reply) => {
+    // Handle multiple route paths for both launch and deep linking
+    ['/lti/launch', '/lti/deep-linking'].forEach(path => {
+        fastify.post<FastifyLtiRequest>(path, async (request: any, reply: any) => {
         try {
             // 1. Validate the state and id_token parameters
             const { state, id_token } = request.body || {};
@@ -162,13 +164,14 @@ export const ltiFastifyPlugin: FastifyPluginAsync = async fastify => {
             }
 
             // 4. Fetch platform's JWKS to validate the token
-            const jwksResponse = await fetch(platform.key_set_url);
-            const jwks = await jwksResponse.json();
+            // Fetch platform's JWKS to validate the token
+            await fetch(platform.key_set_url);
+            // TODO: Implement token validation using JWK from platform
 
             // 5. Find the key used to sign the token
             // This is a simplified example - in production you'd want to use a JWKS library
             // such as jwks-rsa to handle this properly
-            const keys = jwks.keys || [];
+            // Verify the token using keys from jwks.keys
             
             // 6. Verify the token
             let payload: LtiJwtPayload;
@@ -239,7 +242,8 @@ export const ltiFastifyPlugin: FastifyPluginAsync = async fastify => {
                     // 2. Issue a credential for the LTI context if appropriate
                     
                     // For demo purposes:
-                    const learnCard = await getEmptyLearnCard();
+                    // Initialize LearnCard for potential credential issuance
+                    await getEmptyLearnCard();
                     // You could use LearnCard to issue a credential here
                 }
                 
@@ -271,6 +275,7 @@ export const ltiFastifyPlugin: FastifyPluginAsync = async fastify => {
             console.error('LTI launch error:', error);
             return reply.status(500).send('Error processing LTI launch');
         }
+        });
     });
 
     // API endpoint to register a platform (would normally be protected)
@@ -281,7 +286,7 @@ export const ltiFastifyPlugin: FastifyPluginAsync = async fastify => {
             // Validate required fields
             const requiredFields = ['issuer', 'client_id', 'auth_login_url', 'auth_token_url', 'key_set_url'];
             for (const field of requiredFields) {
-                if (!platformData[field]) {
+                if (!(platformData as any)[field]) {
                     return reply.status(400).send(`Missing required field: ${field}`);
                 }
             }
@@ -292,7 +297,7 @@ export const ltiFastifyPlugin: FastifyPluginAsync = async fastify => {
             return reply.status(200).send({
                 success: true,
                 message: 'Platform registered successfully',
-                platformId: result.upsertedId || platformData.issuer
+                platformId: result.upsertedId || (platformData as any).issuer
             });
         } catch (error) {
             console.error('Platform registration error:', error);
@@ -303,7 +308,7 @@ export const ltiFastifyPlugin: FastifyPluginAsync = async fastify => {
     // API endpoint for credential issuance via LTI
     fastify.post('/lti/issue-credential', async (request, reply) => {
         try {
-            const { sessionId, credentialData } = request.body;
+            const { sessionId, credentialData } = request.body as { sessionId: string; credentialData: any };
             
             if (!sessionId || !credentialData) {
                 return reply.status(400).send('Missing sessionId or credentialData');
@@ -322,7 +327,8 @@ export const ltiFastifyPlugin: FastifyPluginAsync = async fastify => {
             }
             
             // Initialize LearnCard
-            const learnCard = await getEmptyLearnCard();
+            // Initialize LearnCard for credential issuance
+            await getEmptyLearnCard();
             
             // Prepare the credential
             const unsignedCredential = {

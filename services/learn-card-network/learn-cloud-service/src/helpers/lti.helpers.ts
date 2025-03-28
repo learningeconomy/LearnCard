@@ -34,7 +34,7 @@ export const getDatabase = async () => {
  * Generate a JWKS for the LTI provider
  */
 export const generateLtiJwks = () => {
-    const { publicKey, keyId } = getKeyPair();
+    const { publicKey } = getKeyPair();
     const keyComponents = crypto.createPublicKey(publicKey).export({ format: 'jwk' });
 
     return {
