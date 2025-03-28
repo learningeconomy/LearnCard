@@ -1,5 +1,11 @@
 # @learncard/network-brain-service
 
+## 3.3.16
+
+### Patch Changes
+
+-   [#633](https://github.com/learningeconomy/LearnCard/pull/633) [`9b9b2556b1749f50982a75c291be58a8cb9979f5`](https://github.com/learningeconomy/LearnCard/commit/9b9b2556b1749f50982a75c291be58a8cb9979f5) Thanks [@gerardopar](https://github.com/gerardopar)! - LC-823 - Allow deleting live boosts + Prevent deleting boosts with children
+
 ## 3.3.15
 
 ### Patch Changes
