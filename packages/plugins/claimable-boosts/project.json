@@ -1,0 +1,23 @@
+{
+    "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+    "name": "claimable-boosts-plugin",
+    "sourceRoot": "packages/plugins/claimable-boosts/src",
+    "projectType": "library",
+    "root": "packages/plugins/claimable-boosts",
+    "tags": [],
+    "implicitDependencies": ["types", "core"],
+    "namedInputs": {
+        "scripts": ["{projectRoot}/scripts/**/*"],
+        "source": ["{projectRoot}/src/**/*"],
+        "dist": ["{projectRoot}/dist/**/*"]
+    },
+    "targets": {
+        "build": {
+            "executor": "nx:run-script",
+            "inputs": ["source", "scripts"],
+            "options": {
+                "script": "build"
+            }
+        }
+    }
+}
