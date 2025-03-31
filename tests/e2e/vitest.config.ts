@@ -9,6 +9,7 @@ export default defineConfig({
         setupFiles: ['./setup/test-setup.ts'],
         teardownTimeout: 120_000,
         exclude: [
+            'isomorphic/**',
             '**/node_modules/**',
             '**/dist/**',
             '**/cypress/**',
