@@ -1,5 +1,12 @@
 # did-web-plugin
 
+## 1.0.57
+
+### Patch Changes
+
+-   Updated dependencies [[`a945a7086a0848b04f9f2c8b1588e9e3826edeff`](https://github.com/learningeconomy/LearnCard/commit/a945a7086a0848b04f9f2c8b1588e9e3826edeff)]:
+    -   @learncard/core@9.3.20
+
 ## 1.0.56
 
 ### Patch Changes
