@@ -7,7 +7,6 @@
     "tags": [],
     "implicitDependencies": [
         "core",
-        "ceramic-plugin",
         "crypto-plugin",
         "did-web-plugin",
         "didkey-plugin",

@@ -1,7 +1,6 @@
 import { generateLearnCard, LearnCard } from '@learncard/core';
 import { getDidKitPlugin, DIDKitPlugin, DidMethod } from '@learncard/didkit-plugin';
 import { getDidKeyPlugin, DidKeyPlugin } from '@learncard/didkey-plugin';
-import { getCeramicPlugin, CeramicPlugin } from '@learncard/ceramic-plugin';
 import { getVCPlugin, VCPlugin } from '@learncard/vc-plugin';
 
 import { getLearnCardNetworkPlugin, LearnCardNetworkPlugin } from '../';
@@ -11,7 +10,7 @@ let learnCards: Record<
     string,
     {
         learnCard: LearnCard<
-            [DIDKitPlugin, DidKeyPlugin<DidMethod>, CeramicPlugin, VCPlugin, LearnCardNetworkPlugin]
+            [DIDKitPlugin, DidKeyPlugin<DidMethod>, VCPlugin, LearnCardNetworkPlugin]
         >;
     }
 > = {};
@@ -22,10 +21,7 @@ const getLearnCard = async (seed = 'a'.repeat(64)) => {
         const didkeyCard = await didkitCard.addPlugin(
             await getDidKeyPlugin(didkitCard, seed, 'key' as DidMethod)
         );
-        const ceramicCard = await didkeyCard.addPlugin(
-            await getCeramicPlugin(didkeyCard, {} as any)
-        );
-        const vcCard = await ceramicCard.addPlugin(getVCPlugin(ceramicCard));
+        const vcCard = await didkeyCard.addPlugin(getVCPlugin(didkeyCard));
         const learnCard = await vcCard.addPlugin(
             await getLearnCardNetworkPlugin(vcCard, 'https://network.learncard.com/trpc')
         );

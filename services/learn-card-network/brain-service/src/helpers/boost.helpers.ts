@@ -209,9 +209,9 @@ export const decryptCredential = async (credential: VC | JWE): Promise<VC | fals
     }
     const learnCard = await getLearnCard();
     try {
-        const decrypted = (await learnCard.invoke
-            .getDIDObject()
-            .decryptDagJWE(credential as JWE)) as VC;
+        const decrypted = await learnCard.invoke.decryptDagJwe<VC>(credential as JWE, [
+            learnCard.id.keypair(),
+        ]);
         return decrypted || false;
     } catch (error) {
         console.warn('Could not decrypt Boost Credential!');
@@ -410,8 +410,7 @@ export const issueClaimLinkBoost = async (
     // const lcnDid = await client.utilities.getDid.query();
 
     // const credential = await _learnCard.invoke
-    //     .getDIDObject()
-    //     .createDagJWE(vc, [userData.did, targetProfile.did, lcnDid]);
+    //     .createDagJwe(vc, [userData.did, targetProfile.did, lcnDid]);
 
     return sendBoost({
         from,

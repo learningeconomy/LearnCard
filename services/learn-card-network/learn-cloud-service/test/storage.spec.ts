@@ -71,12 +71,14 @@ describe('Storage', () => {
             const unsignedVp = await userA.learnCard.invoke.newPresentation(vc);
             const vp = await userA.learnCard.invoke.issuePresentation(unsignedVp);
 
-            const encryptedVc = await userA.learnCard.invoke
-                .getDIDObject()
-                .createDagJWE(vc, [userA.learnCard.id.did(), userB.learnCard.id.did()]);
-            const encryptedVp = await userA.learnCard.invoke
-                .getDIDObject()
-                .createDagJWE(vp, [userA.learnCard.id.did(), userB.learnCard.id.did()]);
+            const encryptedVc = await userA.learnCard.invoke.createDagJwe(vc, [
+                userA.learnCard.id.did(),
+                userB.learnCard.id.did(),
+            ]);
+            const encryptedVp = await userA.learnCard.invoke.createDagJwe(vp, [
+                userA.learnCard.id.did(),
+                userB.learnCard.id.did(),
+            ]);
 
             await expect(
                 userA.clients.fullAuth.storage.store({ item: encryptedVc })
@@ -130,12 +132,8 @@ describe('Storage', () => {
             const resolvedCredential = await vcPromise;
             const resolvedPresentation = await vpPromise;
 
-            expect(
-                await userA.learnCard.invoke.getDIDObject().decryptDagJWE(resolvedCredential)
-            ).toEqual(vc);
-            expect(
-                await userA.learnCard.invoke.getDIDObject().decryptDagJWE(resolvedPresentation)
-            ).toEqual(vp);
+            expect(await userA.learnCard.invoke.decryptDagJwe(resolvedCredential)).toEqual(vc);
+            expect(await userA.learnCard.invoke.decryptDagJwe(resolvedPresentation)).toEqual(vp);
         });
 
         it('should allow resolving an encrypted credential/presentation', async () => {
@@ -144,12 +142,14 @@ describe('Storage', () => {
             const unsignedVp = await userA.learnCard.invoke.newPresentation(vc);
             const vp = await userA.learnCard.invoke.issuePresentation(unsignedVp);
 
-            const encryptedVc = await userA.learnCard.invoke
-                .getDIDObject()
-                .createDagJWE(vc, [userA.learnCard.id.did(), userB.learnCard.id.did()]);
-            const encryptedVp = await userA.learnCard.invoke
-                .getDIDObject()
-                .createDagJWE(vp, [userA.learnCard.id.did(), userB.learnCard.id.did()]);
+            const encryptedVc = await userA.learnCard.invoke.createDagJwe(vc, [
+                userA.learnCard.id.did(),
+                userB.learnCard.id.did(),
+            ]);
+            const encryptedVp = await userA.learnCard.invoke.createDagJwe(vp, [
+                userA.learnCard.id.did(),
+                userB.learnCard.id.did(),
+            ]);
 
             const vcUri = await userA.clients.fullAuth.storage.store({ item: encryptedVc });
             const vpUri = await userA.clients.fullAuth.storage.store({ item: encryptedVp });
@@ -166,12 +166,8 @@ describe('Storage', () => {
             expect(resolvedCredential).toEqual(encryptedVc);
             expect(resolvedPresentation).toEqual(encryptedVp);
 
-            expect(
-                await userB.learnCard.invoke.getDIDObject().decryptDagJWE(resolvedCredential)
-            ).toEqual(vc);
-            expect(
-                await userB.learnCard.invoke.getDIDObject().decryptDagJWE(resolvedPresentation)
-            ).toEqual(vp);
+            expect(await userB.learnCard.invoke.decryptDagJwe(resolvedCredential)).toEqual(vc);
+            expect(await userB.learnCard.invoke.decryptDagJwe(resolvedPresentation)).toEqual(vp);
         });
     });
 
@@ -235,14 +231,12 @@ describe('Storage', () => {
             expect(both[0]).not.toBeNull();
             expect(both[1]).not.toBeNull();
 
-            expect(
-                await userA.learnCard.invoke.getDIDObject().decryptDagJWE(resolvedCredential[0]!)
-            ).toEqual(vc);
-            expect(
-                await userA.learnCard.invoke.getDIDObject().decryptDagJWE(resolvedPresentation[0]!)
-            ).toEqual(vp);
-            expect(await userA.learnCard.invoke.getDIDObject().decryptDagJWE(both[0]!)).toEqual(vc);
-            expect(await userA.learnCard.invoke.getDIDObject().decryptDagJWE(both[1]!)).toEqual(vp);
+            expect(await userA.learnCard.invoke.decryptDagJwe(resolvedCredential[0]!)).toEqual(vc);
+            expect(await userA.learnCard.invoke.decryptDagJwe(resolvedPresentation[0]!)).toEqual(
+                vp
+            );
+            expect(await userA.learnCard.invoke.decryptDagJwe(both[0]!)).toEqual(vc);
+            expect(await userA.learnCard.invoke.decryptDagJwe(both[1]!)).toEqual(vp);
         });
 
         it('should return null for invalid URIs', async () => {
@@ -265,12 +259,8 @@ describe('Storage', () => {
             expect(resolvedUris[2]).toBeNull();
             expect(resolvedUris[3]).not.toBeNull();
 
-            expect(
-                await userA.learnCard.invoke.getDIDObject().decryptDagJWE(resolvedUris[1]!)
-            ).toEqual(vc);
-            expect(
-                await userA.learnCard.invoke.getDIDObject().decryptDagJWE(resolvedUris[3]!)
-            ).toEqual(vp);
+            expect(await userA.learnCard.invoke.decryptDagJwe(resolvedUris[1]!)).toEqual(vc);
+            expect(await userA.learnCard.invoke.decryptDagJwe(resolvedUris[3]!)).toEqual(vp);
         });
     });
 });
