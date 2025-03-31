@@ -2055,6 +2055,9 @@ importers:
       '@learncard/didkit-plugin':
         specifier: workspace:^
         version: link:../../../packages/plugins/didkit
+      '@learncard/encryption-plugin':
+        specifier: workspace:*
+        version: link:../../../packages/plugins/encryption
       '@learncard/expiration-plugin':
         specifier: workspace:*
         version: link:../../../packages/plugins/expiration
