@@ -1,6 +1,7 @@
 import { describe, test, expect } from 'vitest';
 
 import { getLearnCardForUser, LearnCard, USERS } from './helpers/learncard.helpers';
+import { testUnsignedBoost } from './helpers/credential.helpers';
 
 let a: LearnCard;
 let b: LearnCard;
@@ -12,10 +13,8 @@ describe('Boosts', () => {
     });
 
     test('Users can create and send boosts', async () => {
-        const unsignedVc = a.invoke.getTestVc(b.id.did());
-
         // Create a boost
-        const boostUri = await a.invoke.createBoost(unsignedVc);
+        const boostUri = await a.invoke.createBoost(testUnsignedBoost);
         expect(boostUri).toBeDefined();
 
         // Get the boost
@@ -36,10 +35,8 @@ describe('Boosts', () => {
     });
 
     test('Users can delete a published boost', async () => {
-        const unsignedVc = a.invoke.getTestVc(b.id.did());
-
         // Create a boost
-        const boostUri = await a.invoke.createBoost(unsignedVc);
+        const boostUri = await a.invoke.createBoost(testUnsignedBoost);
         expect(boostUri).toBeDefined();
 
         // Get all boosts before deletion
@@ -66,14 +63,12 @@ describe('Boosts', () => {
     });
 
     test('Users cannot delete a published boost with children', async () => {
-        const unsignedVc = a.invoke.getTestVc(b.id.did());
-
         // Create a parent boost
-        const parentBoostUri = await a.invoke.createBoost(unsignedVc);
+        const parentBoostUri = await a.invoke.createBoost(testUnsignedBoost);
         expect(parentBoostUri).toBeDefined();
 
         // Create a child boost
-        const childBoostUri = await a.invoke.createChildBoost(parentBoostUri, unsignedVc);
+        const childBoostUri = await a.invoke.createChildBoost(parentBoostUri, testUnsignedBoost);
         expect(childBoostUri).toBeDefined();
 
         // Get all boosts before deletion attempt
@@ -104,13 +99,11 @@ describe('Boosts', () => {
     });
 
     test('Users can verify parent-child relationships between boosts', async () => {
-        const unsignedVc = a.invoke.getTestVc(b.id.did());
-
         // Create a parent boost
-        const parentBoostUri = await a.invoke.createBoost(unsignedVc);
+        const parentBoostUri = await a.invoke.createBoost(testUnsignedBoost);
 
         // Create a child boost
-        const childBoostUri = await a.invoke.createChildBoost(parentBoostUri, unsignedVc);
+        const childBoostUri = await a.invoke.createChildBoost(parentBoostUri, testUnsignedBoost);
 
         // Get the child boost's parents
         const parents = await a.invoke.getBoostParents(childBoostUri);
@@ -124,13 +117,11 @@ describe('Boosts', () => {
     });
 
     test('Users can delete a child boost without affecting the parent', async () => {
-        const unsignedVc = a.invoke.getTestVc(b.id.did());
-
         // Create a parent boost
-        const parentBoostUri = await a.invoke.createBoost(unsignedVc);
+        const parentBoostUri = await a.invoke.createBoost(testUnsignedBoost);
 
         // Create a child boost
-        const childBoostUri = await a.invoke.createChildBoost(parentBoostUri, unsignedVc);
+        const childBoostUri = await a.invoke.createChildBoost(parentBoostUri, testUnsignedBoost);
 
         // Get all boosts before deletion
         const boostsBefore = await a.invoke.getPaginatedBoosts();
