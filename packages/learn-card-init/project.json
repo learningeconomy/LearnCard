@@ -24,9 +24,7 @@
         "vc-plugin",
         "vc-api-plugin",
         "vc-templates-plugin",
-        "vpqr-plugin",
-        "claimable-boosts-plugin",
-        "simple-signing-plugin"
+        "vpqr-plugin"
     ],
     "namedInputs": {
         "source": ["{projectRoot}/src/**/*"],

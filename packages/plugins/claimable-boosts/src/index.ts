@@ -28,7 +28,7 @@ export const getClaimableBoostsPlugin = (
                 boostURI: string,
                 options?: LCNBoostClaimLinkOptionsType
             ) => {
-                console.log('Generating boost claim link...', boostURI, options);
+                _learnCard.debug?.('Generating boost claim link...', boostURI, options);
                 return _generateBoostClaimLink(_learnCard, boostURI, options);
             },
         },
@@ -42,11 +42,11 @@ const _generateBoostClaimLink = async (
 ): Promise<string> => {
     try {
         const rsas = await _learnCard.invoke.getRegisteredSigningAuthorities();
-        console.log('Registered Signing Authorities', rsas);
+        _learnCard.debug?.('Registered Signing Authorities', rsas);
 
         if (rsas?.length > 0) {
             const rsa = rsas[0];
-            console.log('Using Existing Signing Authority', rsa);
+            _learnCard.debug?.('Using Existing Signing Authority', rsa);
 
             // generate claim link with existing rsa
             const _boostClaimLink = await _learnCard.invoke.generateClaimLink(
@@ -67,8 +67,8 @@ const _generateBoostClaimLink = async (
 
         // find existing signing authority
         const signingAuthorities = await _learnCard.invoke.getSigningAuthorities();
-        console.log('Existing Signing Authorities', signingAuthorities);
-        
+        _learnCard.debug?.('Existing Signing Authorities', signingAuthorities);
+
         let sa: SigningAuthorityType | undefined;
         if (signingAuthorities && Array.isArray(signingAuthorities)) {
             sa = signingAuthorities.find(
@@ -80,7 +80,7 @@ const _generateBoostClaimLink = async (
         if (!sa) {
             // create signing authority
             const newSa = await _learnCard.invoke.createSigningAuthority(DEFAULT_RELATIONSHIP_NAME);
-            console.log('Creating New Signing Authority', newSa);
+            _learnCard.debug?.('Creating New Signing Authority', newSa);
             if (!newSa) {
                 throw new Error('Failed to create signing authority');
             }
@@ -99,7 +99,7 @@ const _generateBoostClaimLink = async (
             sa?.did || ''
         );
 
-        console.log('Registering Signing Authority with Network', sa);
+        _learnCard.debug?.('Registering Signing Authority with Network', sa);
 
         if (!rsa) {
             throw new Error('Failed to register signing authority');
@@ -113,7 +113,7 @@ const _generateBoostClaimLink = async (
             },
             options
         );
-        console.log('Generating Claim Link', _boostClaimLink);
+        _learnCard.debug?.('Generating Claim Link', _boostClaimLink);
 
         if (!_boostClaimLink) {
             throw new Error('Failed to generate claim link');
@@ -121,7 +121,7 @@ const _generateBoostClaimLink = async (
 
         return `https://learncard.app/claim/boost?claim=true&boostUri=${_boostClaimLink.boostUri}&challenge=${_boostClaimLink.challenge}`;
     } catch (error) {
-        console.error('Error generateBoostClaimLink:', error);
+        _learnCard.debug?.('Error generateBoostClaimLink:', error);
         throw new Error('Failed to generate boost claim link: ' + (error as Error).message);
     }
 };

@@ -10,8 +10,6 @@ import figlet from 'figlet';
 import { program } from 'commander';
 
 import { generateRandomSeed } from './random';
-import { getClaimableBoostsPlugin } from '@learncard/claimable-boosts-plugin';
-import { getSimpleSigningPlugin } from '@learncard/simple-signing-plugin';
 
 import packageJson from '../package.json';
 
@@ -56,13 +54,7 @@ program
                 require.resolve('@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm')
             ),
         });
-        globalThis.signingLearnCard = (await globalThis.learnCard.addPlugin(
-            await getSimpleSigningPlugin(globalThis.learnCard, 'https://api.learncard.app/trpc')
-        )) as any;
 
-        globalThis.claimableLearnCard = await globalThis.signingLearnCard.addPlugin(
-            await getClaimableBoostsPlugin(globalThis.signingLearnCard)
-        );
         globalThis.types = types;
         globalThis.getTestCache = getTestCache;
 

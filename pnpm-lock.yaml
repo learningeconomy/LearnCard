@@ -418,9 +418,6 @@ importers:
 
   packages/learn-card-cli:
     dependencies:
-      '@learncard/claimable-boosts-plugin':
-        specifier: workspace:*
-        version: link:../plugins/claimable-boosts
       '@learncard/core':
         specifier: workspace:*
         version: link:../learn-card-core
