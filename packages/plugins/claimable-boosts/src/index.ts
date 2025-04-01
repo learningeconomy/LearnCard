@@ -1,4 +1,10 @@
-import { ClaimableBoostsPlugin, ClaimableBoostsPluginDependentMethods } from './types';
+import { LCNBoostClaimLinkOptionsType } from '@learncard/types';
+import {
+    ClaimableBoostsPlugin,
+    ClaimableBoostsPluginDependentMethods,
+    SigningAuthorityType,
+} from './types';
+
 import { LearnCard } from '@learncard/core';
 
 export * from './types';
@@ -17,9 +23,13 @@ export const getClaimableBoostsPlugin = (
         description:
             'Simple claimable boost creation plugin that handles signing authority management.',
         methods: {
-            generateBoostClaimLink: async (_learnCard, boostURI) => {
-                console.log('Generating boost claim link...', boostURI);
-                return _generateBoostClaimLink(_learnCard, boostURI);
+            generateBoostClaimLink: async (
+                _learnCard: LearnCard<any, any, ClaimableBoostsPluginDependentMethods>,
+                boostURI: string,
+                options?: LCNBoostClaimLinkOptionsType
+            ) => {
+                console.log('Generating boost claim link...', boostURI, options);
+                return _generateBoostClaimLink(_learnCard, boostURI, options);
             },
         },
     };
@@ -27,7 +37,8 @@ export const getClaimableBoostsPlugin = (
 
 const _generateBoostClaimLink = async (
     _learnCard: LearnCard<any, any, ClaimableBoostsPluginDependentMethods>,
-    boostURI: string
+    boostURI: string,
+    options?: LCNBoostClaimLinkOptionsType
 ): Promise<string> => {
     try {
         const rsas = await _learnCard.invoke.getRegisteredSigningAuthorities();
@@ -38,10 +49,14 @@ const _generateBoostClaimLink = async (
             console.log('Using Existing Signing Authority', rsa);
 
             // generate claim link with existing rsa
-            const _boostClaimLink = await _learnCard.invoke.generateClaimLink(boostURI, {
-                name: rsa.relationship?.name || '',
-                endpoint: rsa.signingAuthority?.endpoint || '',
-            });
+            const _boostClaimLink = await _learnCard.invoke.generateClaimLink(
+                boostURI,
+                {
+                    name: rsa?.relationship?.name || '',
+                    endpoint: rsa?.signingAuthority?.endpoint || '',
+                },
+                options
+            );
 
             if (!_boostClaimLink) {
                 throw new Error('Failed to generate claim link');
@@ -51,11 +66,16 @@ const _generateBoostClaimLink = async (
         }
 
         // find existing signing authority
-        const signingAuthorities = await _learnCard.invoke.getRegisteredSigningAuthorities();
+        const signingAuthorities = await _learnCard.invoke.getSigningAuthorities();
         console.log('Existing Signing Authorities', signingAuthorities);
-        let sa = signingAuthorities.find(
-            signingAuthority => signingAuthority.relationship?.name === DEFAULT_RELATIONSHIP_NAME
-        );
+        
+        let sa: SigningAuthorityType | undefined;
+        if (signingAuthorities && Array.isArray(signingAuthorities)) {
+            sa = signingAuthorities.find(
+                (signingAuthority: SigningAuthorityType) =>
+                    signingAuthority.name === DEFAULT_RELATIONSHIP_NAME
+            );
+        }
 
         if (!sa) {
             // create signing authority
@@ -65,29 +85,34 @@ const _generateBoostClaimLink = async (
                 throw new Error('Failed to create signing authority');
             }
             sa = {
-                relationship: { name: DEFAULT_RELATIONSHIP_NAME },
-                signingAuthority: { endpoint: newSa.endpoint },
+                ownerDid: newSa.ownerDid,
+                name: DEFAULT_RELATIONSHIP_NAME,
+                endpoint: newSa.endpoint,
+                did: newSa.did,
             };
         }
 
         // register signing authority
         const rsa = await _learnCard.invoke.registerSigningAuthority(
-            sa.signingAuthority?.endpoint || '',
-            sa.relationship?.name || '',
-            '' // TODO: Get DID from somewhere
+            sa?.endpoint || '',
+            sa?.name || '',
+            sa?.did || ''
         );
 
-        console.log('Registering Signing Authority', sa);
+        console.log('Registering Signing Authority with Network', sa);
 
         if (!rsa) {
             throw new Error('Failed to register signing authority');
         }
 
-        const _boostClaimLink = await _learnCard.invoke.generateClaimLink(boostURI, {
-            name: sa.relationship?.name || '',
-            endpoint: sa.signingAuthority?.endpoint || '',
-        });
-
+        const _boostClaimLink = await _learnCard.invoke.generateClaimLink(
+            boostURI,
+            {
+                name: sa?.name || '',
+                endpoint: sa?.endpoint || '',
+            },
+            options
+        );
         console.log('Generating Claim Link', _boostClaimLink);
 
         if (!_boostClaimLink) {

@@ -1,27 +1,40 @@
+import { z } from 'zod';
 import { Plugin } from '@learncard/core';
-import { LCNSigningAuthorityType } from '@learncard/types';
+import { LCNBoostClaimLinkOptionsType } from '@learncard/types';
+import { LCNSigningAuthorityForUserType } from '@learncard/types';
+
+export const SigningAuthorityValidator = z.object({
+    _id: z.string().optional(),
+    ownerDid: z.string(),
+    name: z.string(),
+    did: z.string().optional(),
+    endpoint: z.string().optional(),
+});
+
+export type SigningAuthorityType = z.infer<typeof SigningAuthorityValidator>;
 
 /** @group Claimable Boosts Plugin */
 export type ClaimableBoostsPluginMethods = {
-    generateBoostClaimLink: (boostURI: string) => Promise<string>;
+    generateBoostClaimLink: (
+        boostURI: string,
+        options?: LCNBoostClaimLinkOptionsType
+    ) => Promise<string>;
 };
 
 /** @group Claimable Boosts Plugin */
 export type ClaimableBoostsPluginDependentMethods = {
-    getRegisteredSigningAuthorities: () => Promise<
-        Array<{
-            relationship?: { name: string };
-            signingAuthority?: { endpoint: string };
-        }>
-    >;
-    createSigningAuthority: (name: string) => Promise<LCNSigningAuthorityType | false>;
+    createSigningAuthority: (name: string) => Promise<SigningAuthorityType | false>;
+    getSigningAuthorities: () => Promise<SigningAuthorityType[] | false>;
+    getRegisteredSigningAuthorities: () => Promise<LCNSigningAuthorityForUserType[]>;
     registerSigningAuthority: (endpoint: string, name: string, did: string) => Promise<boolean>;
     generateClaimLink: (
         boostUri: string,
-        options: {
+        claimLinkSA: {
             name: string;
             endpoint: string;
-        }
+        },
+        options?: LCNBoostClaimLinkOptionsType,
+        challenge?: string
     ) => Promise<{
         boostUri: string;
         challenge: string;
