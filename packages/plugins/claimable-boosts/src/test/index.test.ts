@@ -51,6 +51,6 @@ describe('Claimable Boosts Plugin', () => {
         expect(mockGenerateClaimLink).toHaveBeenCalledWith('test-boost-uri', {
             name: 'test-name',
             endpoint: 'test-endpoint'
-        });
+        }, undefined);
     });
 });
