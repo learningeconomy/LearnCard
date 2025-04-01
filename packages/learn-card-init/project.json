@@ -9,7 +9,6 @@
         "types",
         "helpers",
         "nx-run-command",
-        "ceramic-plugin",
         "chapi-plugin",
         "crypto-plugin",
         "didkey-plugin",

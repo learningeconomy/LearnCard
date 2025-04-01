@@ -6,9 +6,7 @@ import { getDidKeyPlugin } from '@learncard/didkey-plugin';
 import { getEncryptionPlugin } from '@learncard/encryption-plugin';
 import { getVCPlugin } from '@learncard/vc-plugin';
 import { getVCTemplatesPlugin } from '@learncard/vc-templates-plugin';
-import { getCeramicPlugin } from '@learncard/ceramic-plugin';
 import { getLearnCloudPlugin } from '@learncard/learn-cloud-plugin';
-import { getIDXPlugin } from '@learncard/idx-plugin';
 import { expirationPlugin } from '@learncard/expiration-plugin';
 import { getEthereumPlugin } from '@learncard/ethereum-plugin';
 import { getVpqrPlugin } from '@learncard/vpqr-plugin';
@@ -18,7 +16,7 @@ import { getLearnCardPlugin } from '@learncard/learn-card-plugin';
 import { getDidWebPlugin } from '@learncard/did-web-plugin';
 
 import { DidWebNetworkLearnCardFromSeed } from '../types/LearnCard';
-import { defaultCeramicIDXArgs, defaultEthereumArgs } from '../defaults';
+import { defaultEthereumArgs } from '../defaults';
 
 /**
  * Generates a Network LearnCard Wallet with a custom did:web did from a 64 character seed string
@@ -37,7 +35,6 @@ export const didWebNetworkLearnCardFromSeed = async ({
         unencryptedCustomFields = [],
         automaticallyAssociateDids = true,
     } = {},
-    ceramicIdx = defaultCeramicIDXArgs,
     didkit,
     allowRemoteContexts = false,
     ethereumConfig = defaultEthereumArgs,
@@ -63,11 +60,9 @@ export const didWebNetworkLearnCardFromSeed = async ({
 
     const templateLc = await vcLc.addPlugin(getVCTemplatesPlugin());
 
-    const ceramicLc = await templateLc.addPlugin(await getCeramicPlugin(templateLc, ceramicIdx));
-
-    const cloudLc = await ceramicLc.addPlugin(
+    const cloudLc = await templateLc.addPlugin(
         await getLearnCloudPlugin(
-            ceramicLc,
+            templateLc,
             url,
             unencryptedFields,
             unencryptedCustomFields,
@@ -75,9 +70,7 @@ export const didWebNetworkLearnCardFromSeed = async ({
         )
     );
 
-    const idxLc = await cloudLc.addPlugin(await getIDXPlugin(cloudLc, ceramicIdx));
-
-    const expirationLc = await idxLc.addPlugin(expirationPlugin(idxLc));
+    const expirationLc = await cloudLc.addPlugin(expirationPlugin(cloudLc));
 
     const ethLc = await expirationLc.addPlugin(getEthereumPlugin(expirationLc, ethereumConfig));
 

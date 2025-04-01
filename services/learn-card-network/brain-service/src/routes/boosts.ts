@@ -1355,11 +1355,14 @@ export const boostsRouter = t.router({
                 });
             }
 
-            if (!isDraftBoost(boost)) {
+            const childCount = await countBoostChildren(boost, {
+                query: {},
+                numberOfGenerations: 1,
+            });
+            if (childCount > 0) {
                 throw new TRPCError({
                     code: 'FORBIDDEN',
-                    message:
-                        'Published Boosts can not be deleted. Only Draft Boosts can be deleted.',
+                    message: 'Cannot delete boost with children',
                 });
             }
 

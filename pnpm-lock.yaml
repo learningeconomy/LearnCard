@@ -485,12 +485,6 @@ importers:
       core-js:
         specifier: ^3.25.5
         version: 3.41.0
-      cross-fetch:
-        specifier: ^3.1.5
-        version: 3.2.0
-      isomorphic-fetch:
-        specifier: ^3.0.0
-        version: 3.0.0
       isomorphic-webcrypto:
         specifier: ^2.3.8
         version: 2.3.8(expo@52.0.41(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(react-native@0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(react@18.3.1))(react@18.3.1))(react-native@0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(react@18.3.1))
@@ -577,9 +571,6 @@ importers:
 
   packages/learn-card-init:
     dependencies:
-      '@learncard/ceramic-plugin':
-        specifier: workspace:*
-        version: link:../plugins/ceramic
       '@learncard/chapi-plugin':
         specifier: workspace:*
         version: link:../plugins/chapi
@@ -613,9 +604,6 @@ importers:
       '@learncard/helpers':
         specifier: workspace:*
         version: link:../learn-card-helpers
-      '@learncard/idx-plugin':
-        specifier: workspace:*
-        version: link:../plugins/idx
       '@learncard/learn-card-plugin':
         specifier: workspace:*
         version: link:../plugins/learn-card
@@ -1360,9 +1348,6 @@ importers:
         specifier: workspace:*
         version: link:../../learn-card-network/brain-client
     devDependencies:
-      '@learncard/ceramic-plugin':
-        specifier: workspace:^
-        version: link:../ceramic
       '@learncard/didkey-plugin':
         specifier: workspace:^
         version: link:../didkey
@@ -1384,9 +1369,6 @@ importers:
       aqu:
         specifier: 0.4.3
         version: 0.4.3(@babel/core@7.26.10)(@jest/transform@29.7.0)(@jest/types@29.6.3)(@types/node@17.0.45)(babel-jest@29.7.0(@babel/core@7.26.10))(ts-node@10.9.2(@types/node@17.0.45)(typescript@5.6.2))
-      dids:
-        specifier: ^3.2.0
-        version: 3.4.0
       esbuild:
         specifier: ^0.14.38
         version: 0.14.54
@@ -1472,9 +1454,6 @@ importers:
       '@learncard/simple-signing-client':
         specifier: workspace:*
         version: link:../../learn-card-network/simple-signing-client
-      isomorphic-fetch:
-        specifier: ^3.0.0
-        version: 3.0.0
       isomorphic-webcrypto:
         specifier: ^2.3.8
         version: 2.3.8(expo@52.0.41(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(react-native@0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(react@18.3.1))(react@18.3.1))(react-native@0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(react@18.3.1))
@@ -1935,9 +1914,6 @@ importers:
       '@fastify/swagger-ui':
         specifier: ^4.1.0
         version: 4.2.0
-      '@learncard/ceramic-plugin':
-        specifier: workspace:*
-        version: link:../../../packages/plugins/ceramic
       '@learncard/core':
         specifier: workspace:*
         version: link:../../../packages/learn-card-core
@@ -1953,6 +1929,9 @@ importers:
       '@learncard/didkit-plugin':
         specifier: workspace:^
         version: link:../../../packages/plugins/didkit
+      '@learncard/encryption-plugin':
+        specifier: workspace:*
+        version: link:../../../packages/plugins/encryption
       '@learncard/expiration-plugin':
         specifier: workspace:*
         version: link:../../../packages/plugins/expiration
@@ -2104,9 +2083,6 @@ importers:
       '@fastify/static':
         specifier: ^7.0.4
         version: 7.0.4
-      '@learncard/ceramic-plugin':
-        specifier: workspace:*
-        version: link:../../../packages/plugins/ceramic
       '@learncard/core':
         specifier: workspace:*
         version: link:../../../packages/learn-card-core
@@ -2122,6 +2098,9 @@ importers:
       '@learncard/didkit-plugin':
         specifier: workspace:^
         version: link:../../../packages/plugins/didkit
+      '@learncard/encryption-plugin':
+        specifier: workspace:*
+        version: link:../../../packages/plugins/encryption
       '@learncard/expiration-plugin':
         specifier: workspace:*
         version: link:../../../packages/plugins/expiration
@@ -13579,9 +13558,6 @@ packages:
   isobject@3.0.1:
     resolution: {integrity: sha512-WhB9zCku7EGTj/HQQRz5aUQEUeoQZH2bWcltRErOpymJ4boYE6wL9Tbr23krRPSZ+C5zqNSrSw+Cc7sZZ4b7vg==}
     engines: {node: '>=0.10.0'}
-
-  isomorphic-fetch@3.0.0:
-    resolution: {integrity: sha512-qvUtwJ3j6qwsF3jLxkZ72qCgjMysPzDfeV240JHiGZsANBYd+EEuu35v7dfrJ9Up0Ak07D7GGSkGhCHTqg/5wA==}
 
   isomorphic-timers-promises@1.0.1:
     resolution: {integrity: sha512-u4sej9B1LPSxTGKB/HiuzvEQnXH0ECYkSVQU39koSwmFAxhlEAFl9RdTvLv4TOTQUgBS5O3O5fwUxk6byBZ+IQ==}
@@ -36766,13 +36742,6 @@ snapshots:
 
   isobject@3.0.1: {}
 
-  isomorphic-fetch@3.0.0:
-    dependencies:
-      node-fetch: 2.7.0
-      whatwg-fetch: 3.6.20
-    transitivePeerDependencies:
-      - encoding
-
   isomorphic-timers-promises@1.0.1: {}
 
   isomorphic-webcrypto@2.3.8(expo@52.0.41(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(react-native@0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(react@18.3.1))(react@18.3.1))(react-native@0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(react@18.3.1)):
@@ -46366,7 +46335,8 @@ snapshots:
     dependencies:
       iconv-lite: 0.6.3
 
-  whatwg-fetch@3.6.20: {}
+  whatwg-fetch@3.6.20:
+    optional: true
 
   whatwg-mimetype@3.0.0: {}
 

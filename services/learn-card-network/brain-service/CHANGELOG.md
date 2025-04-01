@@ -1,5 +1,29 @@
 # @learncard/network-brain-service
 
+## 3.3.17
+
+### Patch Changes
+
+-   [#635](https://github.com/learningeconomy/LearnCard/pull/635) [`a945a7086a0848b04f9f2c8b1588e9e3826edeff`](https://github.com/learningeconomy/LearnCard/commit/a945a7086a0848b04f9f2c8b1588e9e3826edeff) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Remove dependency on ceramic
+
+-   Updated dependencies [[`a945a7086a0848b04f9f2c8b1588e9e3826edeff`](https://github.com/learningeconomy/LearnCard/commit/a945a7086a0848b04f9f2c8b1588e9e3826edeff)]:
+    -   @learncard/core@9.3.20
+    -   @learncard/crypto-plugin@1.0.31
+    -   @learncard/did-web-plugin@1.0.57
+    -   @learncard/didkey-plugin@1.0.31
+    -   @learncard/didkit-plugin@1.5.6
+    -   @learncard/encryption-plugin@1.0.5
+    -   @learncard/expiration-plugin@1.1.35
+    -   @learncard/learn-card-plugin@1.1.34
+    -   @learncard/vc-plugin@1.1.35
+    -   @learncard/vc-templates-plugin@1.0.41
+
+## 3.3.16
+
+### Patch Changes
+
+-   [#633](https://github.com/learningeconomy/LearnCard/pull/633) [`9b9b2556b1749f50982a75c291be58a8cb9979f5`](https://github.com/learningeconomy/LearnCard/commit/9b9b2556b1749f50982a75c291be58a8cb9979f5) Thanks [@gerardopar](https://github.com/gerardopar)! - LC-823 - Allow deleting live boosts + Prevent deleting boosts with children
+
 ## 3.3.15
 
 ### Patch Changes

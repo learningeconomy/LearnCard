@@ -1,6 +1,6 @@
 {
     "name": "@learncard/simple-signing-plugin",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "private": true,
     "description": "",
     "main": "./dist/index.js",
@@ -39,7 +39,6 @@
     "types": "./dist/index.d.ts",
     "dependencies": {
         "@learncard/simple-signing-client": "workspace:*",
-        "isomorphic-fetch": "^3.0.0",
         "isomorphic-webcrypto": "^2.3.8",
         "zod": "^3.21.4"
     }

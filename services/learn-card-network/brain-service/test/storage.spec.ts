@@ -60,12 +60,14 @@ describe('Storage', () => {
             const unsignedVp = await userA.learnCard.invoke.newPresentation(vc);
             const vp = await userA.learnCard.invoke.issuePresentation(unsignedVp);
 
-            const encryptedVc = await userA.learnCard.invoke
-                .getDIDObject()
-                .createDagJWE(vc, [userA.learnCard.id.did(), userB.learnCard.id.did()]);
-            const encryptedVp = await userA.learnCard.invoke
-                .getDIDObject()
-                .createDagJWE(vp, [userA.learnCard.id.did(), userB.learnCard.id.did()]);
+            const encryptedVc = await userA.learnCard.invoke.createDagJwe(vc, [
+                userA.learnCard.id.did(),
+                userB.learnCard.id.did(),
+            ]);
+            const encryptedVp = await userA.learnCard.invoke.createDagJwe(vp, [
+                userA.learnCard.id.did(),
+                userB.learnCard.id.did(),
+            ]);
 
             await expect(
                 userA.clients.fullAuth.storage.store({ item: encryptedVc })
@@ -133,12 +135,14 @@ describe('Storage', () => {
             const unsignedVp = await userA.learnCard.invoke.newPresentation(vc);
             const vp = await userA.learnCard.invoke.issuePresentation(unsignedVp);
 
-            const encryptedVc = await userA.learnCard.invoke
-                .getDIDObject()
-                .createDagJWE(vc, [userA.learnCard.id.did(), userB.learnCard.id.did()]);
-            const encryptedVp = await userA.learnCard.invoke
-                .getDIDObject()
-                .createDagJWE(vp, [userA.learnCard.id.did(), userB.learnCard.id.did()]);
+            const encryptedVc = await userA.learnCard.invoke.createDagJwe(vc, [
+                userA.learnCard.id.did(),
+                userB.learnCard.id.did(),
+            ]);
+            const encryptedVp = await userA.learnCard.invoke.createDagJwe(vp, [
+                userA.learnCard.id.did(),
+                userB.learnCard.id.did(),
+            ]);
 
             const vcUri = await userA.clients.fullAuth.storage.store({ item: encryptedVc });
             const vpUri = await userA.clients.fullAuth.storage.store({
@@ -158,14 +162,12 @@ describe('Storage', () => {
             expect(resolvedCredential).toEqual(encryptedVc);
             expect(resolvedPresentation).toEqual(encryptedVp);
 
-            expect(
-                await userB.learnCard.invoke.getDIDObject().decryptDagJWE(resolvedCredential as JWE)
-            ).toEqual(vc);
-            expect(
-                await userB.learnCard.invoke
-                    .getDIDObject()
-                    .decryptDagJWE(resolvedPresentation as JWE)
-            ).toEqual(vp);
+            expect(await userB.learnCard.invoke.decryptDagJwe(resolvedCredential as JWE)).toEqual(
+                vc
+            );
+            expect(await userB.learnCard.invoke.decryptDagJwe(resolvedPresentation as JWE)).toEqual(
+                vp
+            );
         });
 
         it('should allow resolving a consent flow contract', async () => {

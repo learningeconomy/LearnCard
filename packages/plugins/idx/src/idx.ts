@@ -12,13 +12,14 @@ import {
     IDXArgs,
     BackwardsCompatCredentialsListValidator,
 } from './types';
+import { DEFAULT_IDX_ARGS } from './defaults';
 
 /**
  * @group Plugins
  */
 export const getIDXPlugin = async (
     learnCard: LearnCard<any, 'read', IDXPluginDependentMethods>,
-    { modelData, credentialAlias }: IDXArgs
+    { modelData, credentialAlias }: IDXArgs = DEFAULT_IDX_ARGS
 ): Promise<IDXPlugin> => {
     const ceramic = learnCard.invoke.getCeramicClient();
 

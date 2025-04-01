@@ -55,9 +55,10 @@ describe('Presentations', () => {
         });
 
         it('should allow sending an encrypted preesentation', async () => {
-            const encryptedVp = await userA.learnCard.invoke
-                .getDIDObject()
-                .createDagJWE(testVp, [userA.learnCard.id.did(), userB.learnCard.id.did()]);
+            const encryptedVp = await userA.learnCard.invoke.createDagJwe(testVp, [
+                userA.learnCard.id.did(),
+                userB.learnCard.id.did(),
+            ]);
 
             await expect(
                 userA.clients.fullAuth.presentation.sendPresentation({
