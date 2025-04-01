@@ -3,6 +3,8 @@ import { LearnCard } from '@learncard/core';
 
 export * from './types';
 
+const DEFAULT_RELATIONSHIP_NAME = 'lca-sa';
+
 /**
  * @group Plugins
  */
@@ -52,18 +54,18 @@ const _generateBoostClaimLink = async (
         const signingAuthorities = await _learnCard.invoke.getRegisteredSigningAuthorities();
         console.log('Existing Signing Authorities', signingAuthorities);
         let sa = signingAuthorities.find(
-            signingAuthority => signingAuthority.relationship?.name === 'lca-sa'
+            signingAuthority => signingAuthority.relationship?.name === DEFAULT_RELATIONSHIP_NAME
         );
 
         if (!sa) {
             // create signing authority
-            const newSa = await _learnCard.invoke.createSigningAuthority('lca-sa');
+            const newSa = await _learnCard.invoke.createSigningAuthority(DEFAULT_RELATIONSHIP_NAME);
             console.log('Creating New Signing Authority', newSa);
             if (!newSa) {
                 throw new Error('Failed to create signing authority');
             }
             sa = {
-                relationship: { name: newSa.name },
+                relationship: { name: DEFAULT_RELATIONSHIP_NAME },
                 signingAuthority: { endpoint: newSa.endpoint },
             };
         }
