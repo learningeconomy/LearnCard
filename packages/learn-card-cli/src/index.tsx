@@ -54,7 +54,6 @@ program
                 require.resolve('@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm')
             ),
         });
-
         globalThis.types = types;
         globalThis.getTestCache = getTestCache;
 
