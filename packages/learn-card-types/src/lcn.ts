@@ -317,6 +317,7 @@ export const ConsentFlowContractDetailsValidator = z.object({
     createdAt: z.string(),
     updatedAt: z.string(),
     expiresAt: z.string().optional(),
+    autoBoosts: z.string().array().optional(),
 });
 export type ConsentFlowContractDetails = z.infer<typeof ConsentFlowContractDetailsValidator>;
 export type ConsentFlowContractDetailsInput = z.input<typeof ConsentFlowContractDetailsValidator>;
