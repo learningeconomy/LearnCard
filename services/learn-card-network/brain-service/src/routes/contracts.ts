@@ -24,6 +24,7 @@ import {
 } from '@learncard/types';
 import { createConsentFlowContract } from '@accesslayer/consentflowcontract/create';
 import {
+    getAutoBoostsForContract,
     getConsentFlowContractsForProfile,
     getConsentedContractsForProfile,
     getConsentedDataBetweenProfiles,
@@ -191,6 +192,8 @@ export const contractsRouter = t.router({
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find contract' });
             }
 
+            const autoboosts = await getAutoBoostsForContract(result.contract.id, ctx.domain);
+
             return {
                 owner: updateDidForProfile(ctx.domain, result.contractOwner),
                 contract: result.contract.contract,
@@ -206,6 +209,7 @@ export const contractsRouter = t.router({
                 updatedAt: result.contract.updatedAt,
                 uri: constructUri('contract', result.contract.id, ctx.domain),
                 ...(result.contract.expiresAt ? { expiresAt: result.contract.expiresAt } : {}),
+                autoBoosts: autoboosts,
             };
         }),
 
@@ -235,16 +239,17 @@ export const contractsRouter = t.router({
                 query,
                 limit: limit + 1,
                 cursor,
+                domain: ctx.domain,
             });
             const contracts = results.slice(0, limit);
 
             const hasMore = results.length > limit;
-            const nextCursor = contracts.at(-1)?.updatedAt;
+            const nextCursor = contracts.at(-1)?.contract.updatedAt;
 
             return {
                 hasMore,
                 cursor: nextCursor,
-                records: contracts.map(contract => ({
+                records: contracts.map(({ contract, autoBoosts }) => ({
                     contract: contract.contract,
                     name: contract.name,
                     subtitle: contract.subtitle,
@@ -258,6 +263,7 @@ export const contractsRouter = t.router({
                     updatedAt: contract.updatedAt,
                     uri: constructUri('contract', contract.id, ctx.domain),
                     ...(contract.expiresAt ? { expiresAt: contract.expiresAt } : {}),
+                    autoBoosts,
                 })),
             };
         }),
@@ -656,6 +662,7 @@ export const contractsRouter = t.router({
                 query,
                 limit: limit + 1,
                 cursor,
+                domain: ctx.domain,
             });
 
             const contracts = results.slice(0, limit);
@@ -684,6 +691,7 @@ export const contractsRouter = t.router({
                         ...(record.contract.expiresAt
                             ? { expiresAt: record.contract.expiresAt }
                             : {}),
+                        autoBoosts: record.autoBoosts,
                     },
                     uri: constructUri('terms', record.terms.id, ctx.domain),
                     terms: record.terms.terms,
