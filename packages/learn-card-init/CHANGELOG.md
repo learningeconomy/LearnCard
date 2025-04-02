@@ -1,5 +1,77 @@
 # learn-card-core
 
+## 2.0.0
+
+### Major Changes
+
+-   [#635](https://github.com/learningeconomy/LearnCard/pull/635) [`a945a7086a0848b04f9f2c8b1588e9e3826edeff`](https://github.com/learningeconomy/LearnCard/commit/a945a7086a0848b04f9f2c8b1588e9e3826edeff) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - [Breaking] Do not include Ceramic Plugin by default
+
+    [Migration]
+
+    -   If all you were using the ceramic plugin for was encryption, you may now use the methods exposed directly by the encryption plugin instead:
+
+    ```ts
+    // Old
+    const jwe = await learnCard.invoke.getDIDObject().createDagJWE({ content });
+    const unencrypted = await learnCard.invoke.getDIDObject().decryptDagJWE(jwe);
+
+    // New
+    const jwe = await learnCard.invoke.createDagJwe({ content });
+    const unencrypted = await learnCard.invoke.decryptDagJwe(jwe);
+    ```
+
+    -   If you _need_ the ceramic plugin, install it via the `@learncard/ceramic` package, then add it to
+        your wallet
+
+    ```ts
+    import { initLearnCard } from '@learncard/init';
+    import { getCeramicPlugin } from '@learncard/ceramic-plugin';
+
+    const withoutPlugin = await initLearnCard({ seed: 'a' });
+    const withPlugin = await withoutPlugin.addPlugin(await getCeramicPlugin(withoutPlugin));
+    ```
+
+    -   Similarly, if you need the IDX plugin, install it via the `@learncard/idx-plugin` package, then add it to
+        your wallet after adding the ceramic plugin
+
+    ```ts
+    import { initLearnCard } from '@learncard/init';
+    import { getCeramicPlugin } from '@learncard/ceramic-plugin';
+    import { getIDXPlugin } from '@learncard/idx-plugin';
+
+    const withoutPlugins = await initLearnCard({ seed: 'a' });
+    const withCeramicPlugin = await withoutPlugin.addPlugin(await getCeramicPlugin(withoutPlugin));
+    const withIdxPlugin = await withCeramicPlugin.addPlugin(await getIDXPlugin(withCeramicPlugin));
+    ```
+
+### Patch Changes
+
+-   Updated dependencies [[`a945a7086a0848b04f9f2c8b1588e9e3826edeff`](https://github.com/learningeconomy/LearnCard/commit/a945a7086a0848b04f9f2c8b1588e9e3826edeff), [`a945a7086a0848b04f9f2c8b1588e9e3826edeff`](https://github.com/learningeconomy/LearnCard/commit/a945a7086a0848b04f9f2c8b1588e9e3826edeff)]:
+    -   @learncard/core@9.3.20
+    -   @learncard/network-plugin@2.4.17
+    -   @learncard/chapi-plugin@1.0.48
+    -   @learncard/crypto-plugin@1.0.31
+    -   @learncard/did-web-plugin@1.0.57
+    -   @learncard/didkey-plugin@1.0.31
+    -   @learncard/didkit-plugin@1.5.6
+    -   @learncard/dynamic-loader-plugin@1.0.27
+    -   @learncard/encryption-plugin@1.0.5
+    -   @learncard/ethereum-plugin@1.0.32
+    -   @learncard/expiration-plugin@1.1.35
+    -   @learncard/learn-card-plugin@1.1.34
+    -   @learncard/learn-cloud-plugin@2.1.15
+    -   @learncard/vc-plugin@1.1.35
+    -   @learncard/vc-api-plugin@1.0.31
+    -   @learncard/vc-templates-plugin@1.0.41
+    -   @learncard/vpqr-plugin@1.0.31
+
+## 1.3.40
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-plugin@2.4.16
+
 ## 1.3.39
 
 ### Patch Changes

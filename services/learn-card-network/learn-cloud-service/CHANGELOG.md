@@ -1,5 +1,23 @@
 # @learncard/network-brain-service
 
+## 2.2.17
+
+### Patch Changes
+
+-   [#635](https://github.com/learningeconomy/LearnCard/pull/635) [`a945a7086a0848b04f9f2c8b1588e9e3826edeff`](https://github.com/learningeconomy/LearnCard/commit/a945a7086a0848b04f9f2c8b1588e9e3826edeff) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Remove dependency on ceramic
+
+-   Updated dependencies [[`a945a7086a0848b04f9f2c8b1588e9e3826edeff`](https://github.com/learningeconomy/LearnCard/commit/a945a7086a0848b04f9f2c8b1588e9e3826edeff)]:
+    -   @learncard/core@9.3.20
+    -   @learncard/crypto-plugin@1.0.31
+    -   @learncard/did-web-plugin@1.0.57
+    -   @learncard/didkey-plugin@1.0.31
+    -   @learncard/didkit-plugin@1.5.6
+    -   @learncard/encryption-plugin@1.0.5
+    -   @learncard/expiration-plugin@1.1.35
+    -   @learncard/learn-card-plugin@1.1.34
+    -   @learncard/vc-plugin@1.1.35
+    -   @learncard/vc-templates-plugin@1.0.41
+
 ## 2.2.16
 
 ### Patch Changes

@@ -1,6 +1,6 @@
 {
     "name": "@learncard/init",
-    "version": "1.3.39",
+    "version": "2.0.0",
     "description": "",
     "main": "./dist/index.js",
     "module": "./dist/init.esm.js",
@@ -40,7 +40,6 @@
     },
     "types": "./dist/index.d.ts",
     "dependencies": {
-        "@learncard/ceramic-plugin": "workspace:*",
         "@learncard/chapi-plugin": "workspace:*",
         "@learncard/core": "workspace:*",
         "@learncard/crypto-plugin": "workspace:*",
@@ -52,7 +51,6 @@
         "@learncard/ethereum-plugin": "workspace:*",
         "@learncard/expiration-plugin": "workspace:*",
         "@learncard/helpers": "workspace:*",
-        "@learncard/idx-plugin": "workspace:*",
         "@learncard/learn-card-plugin": "workspace:*",
         "@learncard/learn-cloud-plugin": "workspace:*",
         "@learncard/network-plugin": "workspace:^",

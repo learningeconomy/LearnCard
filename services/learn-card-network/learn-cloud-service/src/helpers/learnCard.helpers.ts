@@ -3,10 +3,10 @@ import { readFile } from 'node:fs/promises';
 import { generateLearnCard, LearnCard } from '@learncard/core';
 import { CryptoPlugin, CryptoPluginType } from '@learncard/crypto-plugin';
 import { DIDKitPlugin, DidMethod, getDidKitPlugin } from '@learncard/didkit-plugin';
+import { EncryptionPluginType, getEncryptionPlugin } from '@learncard/encryption-plugin';
 import { DidKeyPlugin, getDidKeyPlugin } from '@learncard/didkey-plugin';
 import { VCPlugin, getVCPlugin } from '@learncard/vc-plugin';
 import { VCTemplatePlugin, getVCTemplatesPlugin } from '@learncard/vc-templates-plugin';
-import { CeramicPlugin, getCeramicPlugin } from '@learncard/ceramic-plugin';
 import { ExpirationPlugin, expirationPlugin } from '@learncard/expiration-plugin';
 import { LearnCardPlugin, getLearnCardPlugin } from '@learncard/learn-card-plugin';
 import { isTest } from './test.helpers';
@@ -22,9 +22,9 @@ export type SeedLearnCard = LearnCard<
         CryptoPluginType,
         DIDKitPlugin,
         DidKeyPlugin<DidMethod>,
+        EncryptionPluginType,
         VCPlugin,
         VCTemplatePlugin,
-        CeramicPlugin,
         ExpirationPlugin,
         LearnCardPlugin
     ]
@@ -64,13 +64,13 @@ export const getLearnCard = async (
             await getDidKeyPlugin<DidMethod>(didkitLc, seed, 'key')
         );
 
-        const didkeyAndVCLc = await didkeyLc.addPlugin(getVCPlugin(didkeyLc));
+        const encryptionLc = await didkeyLc.addPlugin(await getEncryptionPlugin(didkeyLc));
 
-        const templateLc = await didkeyAndVCLc.addPlugin(getVCTemplatesPlugin());
+        const vcLc = await encryptionLc.addPlugin(getVCPlugin(encryptionLc));
 
-        const ceramicLc = await templateLc.addPlugin(await getCeramicPlugin(templateLc, {} as any));
+        const templateLc = await vcLc.addPlugin(getVCTemplatesPlugin());
 
-        const expirationLc = await ceramicLc.addPlugin(expirationPlugin(ceramicLc));
+        const expirationLc = await templateLc.addPlugin(expirationPlugin(templateLc));
 
         learnCards[seed] = await expirationLc.addPlugin(getLearnCardPlugin(expirationLc));
     }

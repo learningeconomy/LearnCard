@@ -1,4 +1,3 @@
-import type { DID } from 'dids';
 import type { LCNClient } from '@learncard/network-brain-client';
 import {
     LCNProfile,
@@ -49,13 +48,14 @@ import { VerifyExtension } from '@learncard/vc-plugin';
 
 /** @group LearnCardNetwork Plugin */
 export type LearnCardNetworkPluginDependentMethods = {
-    getDIDObject: () => DID;
     getDidAuthVp: (options?: ProofOptions) => Promise<VP | string>;
     issueCredential: (
         credential: UnsignedVC,
         signingOptions?: Partial<ProofOptions>
     ) => Promise<VC>;
     clearDidWebCache?: () => Promise<void>;
+    createDagJwe: (cleartext: any, recipients: string[]) => Promise<JWE>;
+    decryptDagJwe: (jwe: JWE, jwks: any[]) => Promise<any>;
 };
 
 /** @group LearnCardNetwork Plugin */
@@ -249,10 +249,10 @@ export type LearnCardNetworkPluginMethods = {
         options?:
             | boolean
             | {
-                  encrypt?: boolean;
-                  overideFn?: (boost: UnsignedVC) => UnsignedVC;
-                  skipNotification?: boolean;
-              }
+                encrypt?: boolean;
+                overideFn?: (boost: UnsignedVC) => UnsignedVC;
+                skipNotification?: boolean;
+            }
     ) => Promise<string>;
 
     registerSigningAuthority: (endpoint: string, name: string, did: string) => Promise<boolean>;
