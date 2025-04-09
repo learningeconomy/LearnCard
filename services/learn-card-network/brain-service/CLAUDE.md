@@ -31,8 +31,8 @@ ConsentFlow is a consent management system where:
 - **Profiles** can create and consent to **Contracts**
 - **Contracts** define data access requirements (read/write permissions)
 - **Terms** record a profile's consent to a contract
-- **Transactions** record actions taken against Terms (consent, withdraw, etc.)
-- **Credentials** can be issued through contract consent
+- **Transactions** record actions taken against Terms (consent, withdraw, update, sync)
+- **Credentials** can be issued through contract consent or synced by users from their existing credentials
 
 ### Relationship Flow
 1. Profile → Contract: Profiles create contracts defining data requirements
@@ -40,6 +40,14 @@ ConsentFlow is a consent management system where:
 3. Transaction → Terms: Transactions record actions against Terms
 4. Credential → Transaction → Terms: Credentials issued via contract are linked to a transaction
 5. Contract → Boost: Contracts can define AutoBoosts that are automatically issued when a user consents
+6. Sync → Terms: Users can sync existing credentials to specific categories in their terms
+
+### Transaction Types
+- **Consent Transaction**: Created when a user initially consents to a contract
+- **Update Transaction**: Created when a user updates their terms
+- **Withdraw Transaction**: Created when a user withdraws consent
+- **Sync Transaction**: Created when a user syncs credentials to specific categories
+- **Write Transaction**: Created when credentials are issued through a contract (usually via auto-boosts)
 
 ### Neo4j & Neogma Integration
 - Neo4j is used as the graph database for storing entities and relationships
@@ -119,3 +127,29 @@ ConsentFlow is a consent management system where:
 - The contract owner MUST have the specified signing authority configured for each autoboost to work correctly
 - If a specified signing authority doesn't exist, that specific autoboost will be skipped with an error message
 - Multiple autoboosts can use the same signing authority or different ones
+
+### Credential Syncing
+- Users can sync their existing credentials to a contract they've consented to
+- Syncing uses the `syncCredentialsToContract` API endpoint
+- The sync process:
+  1. User identifies which credentials to share in which categories
+  2. User calls `syncCredentialsToContract` with `termsUri` and a map of categories to credential URIs:
+     ```typescript
+     {
+       termsUri: "terms:abc123",
+       categories: {
+         "Achievement": ["credential:123", "credential:456"],
+         "Education": ["credential:789"]
+       }
+     }
+     ```
+  3. System performs validation:
+     - Verifies the terms exist and belong to the requesting user
+     - Ensures terms are still live (not withdrawn or expired)
+     - Confirms all categories exist in the contract definition
+  4. System creates a 'sync' transaction with the categorized credentials
+  5. System updates the terms by adding the synced credentials to the shared arrays for each category
+  6. Contract owner receives a notification about the sync action
+- The transaction and terms data use the same structure format for categories
+- All synced credentials are added to the existing shared arrays (if any) for each category
+- Duplicate credential URIs are automatically deduplicated

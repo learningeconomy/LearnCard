@@ -2,7 +2,12 @@ import { describe, it, expect } from 'vitest';
 import { getLearnCardForUser, LearnCard, USERS } from './helpers/learncard.helpers';
 import { testUnsignedBoost } from './helpers/credential.helpers';
 
-import { minimalContract, normalFullTerms, normalContract } from './helpers/contract.helpers';
+import {
+    minimalContract,
+    normalFullTerms,
+    normalContract,
+    normalNoTerms,
+} from './helpers/contract.helpers';
 import { VC } from '@learncard/types';
 
 let a: LearnCard;
@@ -405,6 +410,244 @@ describe('ConsentFlow E2E Tests', () => {
             // At least one transaction should be a write action (auto-boost)
             const hasWriteAction = transactions.records.some(tx => tx.action === 'write');
             expect(hasWriteAction).toBe(true);
+        });
+    });
+
+    describe('Credential Syncing', () => {
+        let contractUri: string;
+        let termsUri: string;
+
+        beforeEach(async () => {
+            // Create a contract with Achievement and ID categories
+            contractUri = await a.invoke.createContract({
+                contract: normalContract,
+                name: 'Sync Test Contract',
+                description: 'A contract for testing credential syncing',
+            });
+
+            // User B consents to the contract with no shared credentials initially
+            termsUri = await b.invoke.consentToContract(contractUri, {
+                terms: normalNoTerms,
+            });
+        });
+
+        it('should allow syncing credentials to a contract in a single category', async () => {
+            const testCredentials = ['credential:abc123', 'credential:def456'];
+
+            // Sync credentials to the Achievement category
+            const syncResult = await b.invoke.syncCredentialsToContract(termsUri, {
+                Achievement: testCredentials,
+            });
+
+            expect(syncResult).toBe(true);
+
+            // Verify the credentials were synced by checking the terms
+            const contracts = await b.invoke.getConsentedContracts();
+            const updatedTerms = contracts.records.find(record => record.uri === termsUri)!;
+
+            // Check that the Achievement category contains our synced credentials
+            expect(updatedTerms.terms.read.credentials.categories.Achievement?.shared).toEqual(
+                expect.arrayContaining(testCredentials)
+            );
+        });
+
+        it('should allow syncing credentials to a contract in multiple categories', async () => {
+            const achievementCredentials = ['credential:abc123', 'credential:def456'];
+            const idCredentials = ['credential:id789', 'credential:id012'];
+
+            // Sync credentials to multiple categories
+            const syncResult = await b.invoke.syncCredentialsToContract(termsUri, {
+                Achievement: achievementCredentials,
+                ID: idCredentials,
+            });
+
+            expect(syncResult).toBe(true);
+
+            // Verify the credentials were synced by checking the terms
+            const contracts = await b.invoke.getConsentedContracts();
+            const updatedTerms = contracts.records.find(record => record.uri === termsUri)!;
+
+            // Check that both categories contain our synced credentials
+            expect(updatedTerms.terms.read.credentials.categories.Achievement?.shared).toEqual(
+                expect.arrayContaining(achievementCredentials)
+            );
+            expect(updatedTerms.terms.read.credentials.categories.ID?.shared).toEqual(
+                expect.arrayContaining(idCredentials)
+            );
+        });
+
+        it('should add new synced credentials to existing shared credentials', async () => {
+            // First sync some credentials
+            const initialCredentials = ['credential:initial1', 'credential:initial2'];
+            await b.invoke.syncCredentialsToContract(termsUri, {
+                Achievement: initialCredentials,
+            });
+
+            // Then sync additional credentials
+            const additionalCredentials = ['credential:additional1', 'credential:additional2'];
+            await b.invoke.syncCredentialsToContract(termsUri, {
+                Achievement: additionalCredentials,
+            });
+
+            // Verify all credentials were combined
+            const contracts = await b.invoke.getConsentedContracts();
+            const updatedTerms = contracts.records.find(record => record.uri === termsUri)!;
+
+            // Should contain both initial and additional credentials
+            const expectedCombined = [...initialCredentials, ...additionalCredentials];
+            expect(updatedTerms.terms.read.credentials.categories.Achievement?.shared).toHaveLength(
+                expectedCombined.length
+            );
+            expect(updatedTerms.terms.read.credentials.categories.Achievement?.shared).toEqual(
+                expect.arrayContaining(expectedCombined)
+            );
+        });
+
+        it('should create transactions with the correct action and terms data', async () => {
+            const achievementCredentials = ['credential:ach1', 'credential:ach2'];
+            const idCredentials = ['credential:id1', 'credential:id2'];
+
+            // Sync credentials to multiple categories
+            await b.invoke.syncCredentialsToContract(termsUri, {
+                Achievement: achievementCredentials,
+                ID: idCredentials,
+            });
+
+            // Check transaction history
+            const transactions = await b.invoke.getConsentFlowTransactions(termsUri);
+
+            // Should have at least 2 transactions (consent + sync)
+            expect(transactions.records.length).toBeGreaterThanOrEqual(2);
+
+            // Find the sync transaction
+            const syncTransaction = transactions.records.find(tx => tx.action === 'sync');
+            expect(syncTransaction).toBeDefined();
+
+            // Verify sync transaction has the correct structure
+            expect(syncTransaction?.terms?.read?.credentials?.categories).toBeDefined();
+
+            // Check achievement category
+            const achievementCategory =
+                syncTransaction?.terms?.read?.credentials?.categories?.Achievement;
+            expect(achievementCategory).toBeDefined();
+            expect(achievementCategory?.shared).toEqual(
+                expect.arrayContaining(achievementCredentials)
+            );
+
+            // Check ID category
+            const idCategory = syncTransaction?.terms?.read?.credentials?.categories?.ID;
+            expect(idCategory).toBeDefined();
+            expect(idCategory?.shared).toEqual(expect.arrayContaining(idCredentials));
+        });
+
+        it('should reject sync requests for categories not in the contract', async () => {
+            // Try to sync to a non-existent category
+            await expect(
+                b.invoke.syncCredentialsToContract(termsUri, {
+                    NonExistentCategory: ['credential:123'],
+                })
+            ).rejects.toThrow();
+        });
+
+        it('should reject sync requests for terms that do not belong to the user', async () => {
+            // User C tries to sync credentials to User B's terms
+            await expect(
+                c.invoke.syncCredentialsToContract(termsUri, {
+                    Achievement: ['credential:123'],
+                })
+            ).rejects.toThrow();
+        });
+
+        it('should reject sync requests for withdrawn terms', async () => {
+            // Withdraw consent
+            await b.invoke.withdrawConsent(termsUri);
+
+            // Try to sync to withdrawn terms
+            await expect(
+                b.invoke.syncCredentialsToContract(termsUri, {
+                    Achievement: ['credential:123'],
+                })
+            ).rejects.toThrow();
+        });
+
+        it('should deduplicate credentials when syncing', async () => {
+            const credentials = ['credential:123', 'credential:456', 'credential:123']; // Duplicate intentional
+
+            // Sync credentials with a duplicate
+            await b.invoke.syncCredentialsToContract(termsUri, {
+                Achievement: credentials,
+            });
+
+            // Verify deduplication
+            const contracts = await b.invoke.getConsentedContracts();
+            const updatedTerms = contracts.records.find(record => record.uri === termsUri)!;
+
+            // Should only have 2 unique credentials
+            expect(updatedTerms.terms.read.credentials.categories.Achievement?.shared).toHaveLength(
+                2
+            );
+            expect(updatedTerms.terms.read.credentials.categories.Achievement?.shared).toContain(
+                'credential:123'
+            );
+            expect(updatedTerms.terms.read.credentials.categories.Achievement?.shared).toContain(
+                'credential:456'
+            );
+        });
+
+        it('should allow contract owner to access synced credentials', async () => {
+            const testCredentials = ['credential:abc123', 'credential:def456'];
+
+            // User B syncs credentials
+            await b.invoke.syncCredentialsToContract(termsUri, {
+                Achievement: testCredentials,
+            });
+
+            // User A (contract owner) fetches consented data
+            const consentedData = await a.invoke.getConsentFlowDataForDid(b.id.did(), {
+                query: { id: contractUri.split(':').at(-1) },
+            });
+
+            // Should have data from User B
+            expect(consentedData.records.length).toEqual(1);
+
+            const userBData = consentedData.records[0]!;
+
+            // Verify the credentials are accessible to the contract owner
+            expect(
+                testCredentials.every(uri => userBData.credentials.find(cred => cred.uri === uri))
+            ).toBeTruthy();
+        });
+
+        it('should update consent data when syncing additional credentials', async () => {
+            // First sync
+            const firstBatch = ['credential:first1', 'credential:first2'];
+            await b.invoke.syncCredentialsToContract(termsUri, {
+                Achievement: firstBatch,
+            });
+
+            // User A checks consented data
+            let consentedData = await a.invoke.getConsentFlowData(contractUri);
+            let userBData = consentedData.records[0]!;
+
+            expect(userBData.credentials.categories.Achievement).toEqual(
+                expect.arrayContaining(firstBatch)
+            );
+
+            // Second sync
+            const secondBatch = ['credential:second1', 'credential:second2'];
+            await b.invoke.syncCredentialsToContract(termsUri, {
+                Achievement: secondBatch,
+            });
+
+            // User A checks updated consented data
+            consentedData = await a.invoke.getConsentFlowData(contractUri);
+            userBData = consentedData.records[0]!;
+
+            // Should contain both batches of credentials
+            const allCredentials = [...firstBatch, ...secondBatch];
+            expect(userBData.credentials.categories.Achievement).toEqual(
+                expect.arrayContaining(allCredentials)
+            );
         });
     });
 });

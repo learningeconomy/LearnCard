@@ -821,6 +821,15 @@ export const getLearnCardNetworkPlugin = async (
                 return client.contracts.verifyConsent.query({ uri, profileId });
             },
 
+            syncCredentialsToContract: async (_learnCard, termsUri, categories) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.contracts.syncCredentialsToContract.mutate({
+                    termsUri,
+                    categories,
+                });
+            },
+
             addDidMetadata: async (_learnCard, metadata) => {
                 if (!userData) throw new Error('Please make an account first!');
 

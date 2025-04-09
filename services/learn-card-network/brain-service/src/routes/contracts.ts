@@ -42,7 +42,11 @@ import { deleteStorageForUri } from '@cache/storage';
 import { deleteConsentFlowContract } from '@accesslayer/consentflowcontract/delete';
 import { areTermsValid } from '@helpers/contract.helpers';
 import { updateDidForProfile } from '@helpers/did.helpers';
-import { updateTerms, withdrawTerms } from '@accesslayer/consentflowcontract/relationships/update';
+import {
+    syncCredentialsToContract,
+    updateTerms,
+    withdrawTerms,
+} from '@accesslayer/consentflowcontract/relationships/update';
 import {
     consentToContract,
     setAutoBoostForContract,
@@ -892,6 +896,101 @@ export const contractsRouter = t.router({
             if (terms.expiresAt && new Date() > new Date(terms.expiresAt)) return false;
 
             return true;
+        }),
+
+    syncCredentialsToContract: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/consent-flow-contract/sync/{termsUri}',
+                tags: ['Consent Flow Contracts'],
+                summary: 'Sync credentials to a contract',
+                description: 'Syncs credentials to a contract that the profile has consented to',
+            },
+        })
+        .input(
+            z.object({
+                termsUri: z.string(),
+                categories: z.record(z.string().array()),
+            })
+        )
+        .output(z.boolean())
+        .mutation(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { termsUri, categories } = input;
+
+            // Verify the terms exist and belong to this profile
+            const relationship = await getContractTermsByUri(termsUri);
+
+            if (!relationship) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Could not find contract terms',
+                });
+            }
+
+            if (relationship.consenter.profileId !== profile.profileId) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile does not own these terms',
+                });
+            }
+
+            // Check if the terms are still live
+            if (relationship.terms.status !== 'live') {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'Cannot sync credentials to withdrawn or stale terms',
+                });
+            }
+
+            // Check if the terms have expired
+            if (
+                relationship.terms.expiresAt &&
+                new Date() > new Date(relationship.terms.expiresAt)
+            ) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'Cannot sync credentials to expired terms',
+                });
+            }
+
+            // Verify all categories exist in the contract
+            const contractCategories = relationship.contract.contract.read?.credentials?.categories;
+            if (!contractCategories) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Contract does not define any credential categories',
+                });
+            }
+
+            // Check each category exists in the contract
+            for (const category of Object.keys(categories)) {
+                if (!contractCategories[category]) {
+                    throw new TRPCError({
+                        code: 'BAD_REQUEST',
+                        message: `Category "${category}" is not defined in the contract`,
+                    });
+                }
+            }
+
+            // Ensure there are credentials to sync
+            const totalCredentials = Object.values(categories).reduce(
+                (total, uris) => total + uris.length,
+                0
+            );
+            if (totalCredentials === 0) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'No credentials provided to sync',
+                });
+            }
+
+            // Sync the credentials
+            const result = await syncCredentialsToContract(relationship, categories);
+
+            return result;
         }),
 
     getCredentialsForContract: profileRoute

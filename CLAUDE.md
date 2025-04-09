@@ -103,8 +103,15 @@ ConsentFlow is a consent management system that allows users to create and manag
 - **Profiles**: Create and consent to contracts
 - **Contracts**: Define data access requirements (read/write permissions)
 - **Terms**: Record a profile's consent to a contract
-- **Transactions**: Record actions against Terms (consent, withdraw, update)
-- **Credentials**: Can be issued through contracts with auto-boosts
+- **Transactions**: Record actions against Terms (consent, withdraw, update, sync)
+- **Credentials**: Can be issued through contracts with auto-boosts or synced by consenters
+
+### Transaction Types
+- **Consent**: Initial consent to a contract
+- **Update**: Modification of existing terms
+- **Withdraw**: Revocation of consent
+- **Sync**: Adding existing credentials to a contract in specific categories
+- **Write**: Recording credentials issued by contract owner
 
 ### Data Flow Between Packages
 1. **LearnCard Network Plugin** (`packages/plugins/learn-card-network/`) provides the API for interacting with consent flow
@@ -114,5 +121,6 @@ ConsentFlow is a consent management system that allows users to create and manag
 The workflow typically involves:
 1. Creating a contract with specific data requirements
 2. Users consenting to the contract with their own terms
-3. Recording transactions for consent actions
+3. Recording transactions for consent actions (consent, update, withdraw, sync)
 4. Optionally issuing credentials via auto-boosts when a user consents
+5. Users syncing existing credentials to the contract in specified categories

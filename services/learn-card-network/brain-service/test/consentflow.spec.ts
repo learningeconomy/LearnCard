@@ -105,10 +105,12 @@ describe('Consent Flow Contracts', () => {
             const contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract({
                 contract: minimalContract,
                 name: 'Auto Boost Contract',
-                autoboosts: [{
-                    boostUri,
-                    signingAuthority,
-                }],
+                autoboosts: [
+                    {
+                        boostUri,
+                        signingAuthority,
+                    },
+                ],
             });
 
             expect(contractUri).toBeDefined();
@@ -220,7 +222,7 @@ describe('Consent Flow Contracts', () => {
                 name: 'Test Contract',
                 description: 'This is for testing lol',
                 frontDoorBoostUri: 'abc123',
-                contract: minimalContract
+                contract: minimalContract,
             };
 
             const contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract(
@@ -1224,10 +1226,12 @@ describe('Consent Flow Contracts', () => {
             const contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract({
                 contract: normalContract,
                 name: 'Auto Boost Contract',
-                autoboosts: [{
-                    boostUri,
-                    signingAuthority,
-                }],
+                autoboosts: [
+                    {
+                        boostUri,
+                        signingAuthority,
+                    },
+                ],
             });
 
             // Consent to the contract
@@ -1301,10 +1305,12 @@ describe('Consent Flow Contracts', () => {
                 {
                     contract: normalContract,
                     name: 'Contract for Reconsent Test',
-                    autoboosts: [{
-                        boostUri,
-                        signingAuthority,
-                    }],
+                    autoboosts: [
+                        {
+                            boostUri,
+                            signingAuthority,
+                        },
+                    ],
                 }
             );
 
@@ -1363,10 +1369,12 @@ describe('Consent Flow Contracts', () => {
             const contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract({
                 contract: normalContract,
                 name: 'Contract for Update Test',
-                autoboosts: [{
-                    boostUri,
-                    signingAuthority,
-                }],
+                autoboosts: [
+                    {
+                        boostUri,
+                        signingAuthority,
+                    },
+                ],
             });
 
             // Consent to the contract
@@ -1501,7 +1509,9 @@ describe('Consent Flow Contracts', () => {
             expect(transactions.records.length).toBeGreaterThanOrEqual(4);
 
             // Should have at least three auto-boost transactions
-            const autoBoostTxCount = transactions.records.filter(tx => tx.action === 'write').length;
+            const autoBoostTxCount = transactions.records.filter(
+                tx => tx.action === 'write'
+            ).length;
             expect(autoBoostTxCount).toBeGreaterThanOrEqual(3);
         });
     });
@@ -2786,6 +2796,261 @@ describe('Consent Flow Contracts', () => {
             // Results should be identical
             expect(secondPageA.records).toEqual(secondPageB.records);
             expect(secondPageA.cursor).toEqual(secondPageB.cursor);
+        });
+    });
+
+    describe('syncCredentialsToContract', () => {
+        let contractUri: string;
+        let termsUri: string;
+
+        beforeEach(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await ConsentFlowContract.delete({ detach: true, where: {} });
+            await ConsentFlowTerms.delete({ detach: true, where: {} });
+            await ConsentFlowTransaction.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+
+            // Create profiles for testing
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+
+            // Create a contract with Achievement and ID categories
+            contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract({
+                contract: normalContract,
+                name: 'Sync Test Contract',
+            });
+
+            // User B consents to the contract
+            termsUri = await userB.clients.fullAuth.contracts.consentToContract({
+                contractUri,
+                terms: normalNoTerms, // Start with no shared credentials
+            });
+        });
+
+        afterEach(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await ConsentFlowContract.delete({ detach: true, where: {} });
+            await ConsentFlowTerms.delete({ detach: true, where: {} });
+            await ConsentFlowTransaction.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+        });
+
+        it('should not allow syncing credentials without full auth', async () => {
+            await expect(
+                noAuthClient.contracts.syncCredentialsToContract({
+                    termsUri,
+                    categories: {
+                        Achievement: ['credential:123'],
+                    },
+                })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+
+            await expect(
+                userB.clients.partialAuth.contracts.syncCredentialsToContract({
+                    termsUri,
+                    categories: {
+                        Achievement: ['credential:123'],
+                    },
+                })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        });
+
+        it('should allow syncing credentials to a contract in a single category', async () => {
+            const testCredentials = ['credential:abc123', 'credential:def456'];
+
+            await expect(
+                userB.clients.fullAuth.contracts.syncCredentialsToContract({
+                    termsUri,
+                    categories: {
+                        Achievement: testCredentials,
+                    },
+                })
+            ).resolves.toBeTruthy();
+
+            // Verify the credentials were synced by checking the terms
+            const contracts = await userB.clients.fullAuth.contracts.getConsentedContracts();
+            expect(contracts.records).toHaveLength(1);
+
+            const updatedTerms = contracts.records[0]!;
+            expect(updatedTerms.terms.read.credentials.categories.Achievement?.shared).toEqual(
+                testCredentials
+            );
+        });
+
+        it('should allow syncing credentials to a contract in multiple categories', async () => {
+            const achievementCredentials = ['credential:abc123', 'credential:def456'];
+            const idCredentials = ['credential:id789', 'credential:id012'];
+
+            await expect(
+                userB.clients.fullAuth.contracts.syncCredentialsToContract({
+                    termsUri,
+                    categories: {
+                        Achievement: achievementCredentials,
+                        ID: idCredentials,
+                    },
+                })
+            ).resolves.toBeTruthy();
+
+            // Verify the credentials were synced by checking the terms
+            const contracts = await userB.clients.fullAuth.contracts.getConsentedContracts();
+            expect(contracts.records).toHaveLength(1);
+
+            const updatedTerms = contracts.records[0]!;
+            expect(updatedTerms.terms.read.credentials.categories.Achievement?.shared).toEqual(
+                achievementCredentials
+            );
+            expect(updatedTerms.terms.read.credentials.categories.ID?.shared).toEqual(
+                idCredentials
+            );
+        });
+
+        it('should add new synced credentials to existing shared credentials', async () => {
+            // First sync some credentials
+            const initialCredentials = ['credential:initial1', 'credential:initial2'];
+            await userB.clients.fullAuth.contracts.syncCredentialsToContract({
+                termsUri,
+                categories: {
+                    Achievement: initialCredentials,
+                },
+            });
+
+            // Then sync additional credentials
+            const additionalCredentials = ['credential:additional1', 'credential:additional2'];
+            await userB.clients.fullAuth.contracts.syncCredentialsToContract({
+                termsUri,
+                categories: {
+                    Achievement: additionalCredentials,
+                },
+            });
+
+            // Verify all credentials were combined
+            const contracts = await userB.clients.fullAuth.contracts.getConsentedContracts();
+            const updatedTerms = contracts.records[0]!;
+
+            // Should contain both initial and additional credentials
+            const expectedCombined = [...initialCredentials, ...additionalCredentials];
+            expect(updatedTerms.terms.read.credentials.categories.Achievement?.shared).toHaveLength(
+                expectedCombined.length
+            );
+            expect(updatedTerms.terms.read.credentials.categories.Achievement?.shared).toEqual(
+                expect.arrayContaining(expectedCombined)
+            );
+        });
+
+        it('should create transactions with the correct action and terms data', async () => {
+            const achievementCredentials = ['credential:ach1', 'credential:ach2'];
+            const idCredentials = ['credential:id1', 'credential:id2'];
+
+            await userB.clients.fullAuth.contracts.syncCredentialsToContract({
+                termsUri,
+                categories: {
+                    Achievement: achievementCredentials,
+                    ID: idCredentials,
+                },
+            });
+
+            // Check transaction history
+            const transactions = await userB.clients.fullAuth.contracts.getTermsTransactionHistory({
+                uri: termsUri,
+            });
+
+            // Should have at least 2 transactions (consent + sync)
+            expect(transactions.records.length).toBeGreaterThanOrEqual(2);
+
+            // Find the sync transaction
+            const syncTransaction = transactions.records.find(tx => tx.action === 'sync');
+            expect(syncTransaction).toBeDefined();
+
+            // Verify sync transaction has the correct structure
+            expect(syncTransaction?.terms?.read?.credentials?.categories).toBeDefined();
+
+            // Check achievement category
+            const achievementCategory =
+                syncTransaction?.terms?.read?.credentials?.categories?.Achievement;
+            expect(achievementCategory).toBeDefined();
+            expect(achievementCategory?.shared).toEqual(
+                expect.arrayContaining(achievementCredentials)
+            );
+
+            // Check ID category
+            const idCategory = syncTransaction?.terms?.read?.credentials?.categories?.ID;
+            expect(idCategory).toBeDefined();
+            expect(idCategory?.shared).toEqual(expect.arrayContaining(idCredentials));
+        });
+
+        it('should reject sync requests for categories not in the contract', async () => {
+            await expect(
+                userB.clients.fullAuth.contracts.syncCredentialsToContract({
+                    termsUri,
+                    categories: {
+                        NonExistentCategory: ['credential:123'],
+                    },
+                })
+            ).rejects.toMatchObject({
+                code: 'BAD_REQUEST',
+                message: expect.stringContaining('NonExistentCategory'),
+            });
+        });
+
+        it('should reject sync requests for terms that do not belong to the user', async () => {
+            await userC.clients.fullAuth.profile.createProfile({ profileId: 'userc' });
+
+            await expect(
+                userC.clients.fullAuth.contracts.syncCredentialsToContract({
+                    termsUri,
+                    categories: {
+                        Achievement: ['credential:123'],
+                    },
+                })
+            ).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+                message: expect.stringContaining('Profile does not own'),
+            });
+        });
+
+        it('should reject sync requests for withdrawn terms', async () => {
+            // Withdraw consent
+            await userB.clients.fullAuth.contracts.withdrawConsent({ uri: termsUri });
+
+            await expect(
+                userB.clients.fullAuth.contracts.syncCredentialsToContract({
+                    termsUri,
+                    categories: {
+                        Achievement: ['credential:123'],
+                    },
+                })
+            ).rejects.toMatchObject({
+                code: 'FORBIDDEN',
+                message: expect.stringContaining('withdrawn'),
+            });
+        });
+
+        it('should deduplicate credentials when syncing', async () => {
+            const credentials = ['credential:123', 'credential:456', 'credential:123']; // Duplicate intentional
+
+            await userB.clients.fullAuth.contracts.syncCredentialsToContract({
+                termsUri,
+                categories: {
+                    Achievement: credentials,
+                },
+            });
+
+            // Verify deduplication
+            const contracts = await userB.clients.fullAuth.contracts.getConsentedContracts();
+            const updatedTerms = contracts.records[0]!;
+
+            // Should only have 2 unique credentials
+            expect(updatedTerms.terms.read.credentials.categories.Achievement?.shared).toHaveLength(
+                2
+            );
+            expect(updatedTerms.terms.read.credentials.categories.Achievement?.shared).toContain(
+                'credential:123'
+            );
+            expect(updatedTerms.terms.read.credentials.categories.Achievement?.shared).toContain(
+                'credential:456'
+            );
         });
     });
 
