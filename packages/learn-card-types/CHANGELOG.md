@@ -1,5 +1,11 @@
 # learn-card-types
 
+## 5.6.8
+
+### Patch Changes
+
+-   [#638](https://github.com/learningeconomy/LearnCard/pull/638) [`66b77d32cb7219ff50959762368bbbf549f8468b`](https://github.com/learningeconomy/LearnCard/commit/66b77d32cb7219ff50959762368bbbf549f8468b) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Include autoboosts as part of contract details
+
 ## 5.6.7
 
 ### Patch Changes
