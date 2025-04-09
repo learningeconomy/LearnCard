@@ -1,5 +1,18 @@
 # learn-card-core
 
+## 1.5.6
+
+### Patch Changes
+
+-   Updated dependencies [[`a945a7086a0848b04f9f2c8b1588e9e3826edeff`](https://github.com/learningeconomy/LearnCard/commit/a945a7086a0848b04f9f2c8b1588e9e3826edeff)]:
+    -   @learncard/core@9.3.20
+
+## 1.5.5
+
+### Patch Changes
+
+-   [`099f06d92d77a43fe953c0d63767355ff050ef56`](https://github.com/learningeconomy/LearnCard/commit/099f06d92d77a43fe953c0d63767355ff050ef56) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Bizarre wasm fix
+
 ## 1.5.4
 
 ### Patch Changes

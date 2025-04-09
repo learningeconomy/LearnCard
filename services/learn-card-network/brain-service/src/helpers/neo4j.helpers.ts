@@ -4,11 +4,13 @@ export const getMatchQueryWhere = (identifierToFilter: string, matchQueryKey = '
 all(key IN keys($${matchQueryKey}) 
     WHERE CASE 
         WHEN $${matchQueryKey}[key] IS TYPED MAP 
-            AND $${matchQueryKey}[key]['$in'] IS NOT NULL
-        THEN ${identifierToFilter}[key] IN $${matchQueryKey}[key]['$in']
-        WHEN $${matchQueryKey}[key] IS TYPED MAP 
-            AND $${matchQueryKey}[key]['$regex'] IS NOT NULL
-        THEN ${identifierToFilter}[key] =~ $${matchQueryKey}[key]['$regex']
+        THEN
+            CASE
+                WHEN $${matchQueryKey}[key]['$in'] IS NOT NULL
+                THEN ${identifierToFilter}[key] IN $${matchQueryKey}[key]['$in']
+                WHEN $${matchQueryKey}[key]['$regex'] IS NOT NULL
+                THEN ${identifierToFilter}[key] =~ $${matchQueryKey}[key]['$regex']
+            END
         ELSE ${identifierToFilter}[key] = $${matchQueryKey}[key]
     END
 )

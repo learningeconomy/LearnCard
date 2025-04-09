@@ -50,9 +50,10 @@ describe('Credentials', () => {
         });
 
         it('should allow sending an encrypted credential', async () => {
-            const encryptedVc = await userA.learnCard.invoke
-                .getDIDObject()
-                .createDagJWE(testVc, [userA.learnCard.id.did(), userB.learnCard.id.did()]);
+            const encryptedVc = await userA.learnCard.invoke.createDagJwe(testVc, [
+                userA.learnCard.id.did(),
+                userB.learnCard.id.did(),
+            ]);
 
             await expect(
                 userA.clients.fullAuth.credential.sendCredential({

@@ -68,9 +68,9 @@ describe('Index', () => {
             const recordsPromise = userA.clients.fullAuth.index.get();
             await expect(recordsPromise).resolves.not.toThrow();
 
-            const unencryptedRecords = await userA.learnCard.invoke
-                .getDIDObject()
-                .decryptDagJWE((await recordsPromise) as JWE);
+            const unencryptedRecords = await userA.learnCard.invoke.decryptDagJwe(
+                (await recordsPromise) as JWE
+            );
 
             expect(unencryptedRecords.records).toHaveLength(2);
         });
@@ -81,9 +81,9 @@ describe('Index', () => {
             const recordsPromise = userA.clients.fullAuth.index.get();
             await expect(recordsPromise).resolves.not.toThrow();
 
-            const unencryptedRecords = await userA.learnCard.invoke
-                .getDIDObject()
-                .decryptDagJWE((await recordsPromise) as JWE);
+            const unencryptedRecords = await userA.learnCard.invoke.decryptDagJwe(
+                (await recordsPromise) as JWE
+            );
 
             expect(unencryptedRecords.records).toHaveLength(0);
         });
@@ -92,9 +92,7 @@ describe('Index', () => {
             const encryptedRecords = await userA.clients.fullAuth.index.get({
                 query: { fields: { $in: ['recordA'] } },
             });
-            const records = await userA.learnCard.invoke
-                .getDIDObject()
-                .decryptDagJWE(encryptedRecords as JWE);
+            const records = await userA.learnCard.invoke.decryptDagJwe(encryptedRecords as JWE);
 
             expect(records.records).toHaveLength(1);
             expect(records.records[0]).toEqual(testRecordA);
@@ -104,9 +102,7 @@ describe('Index', () => {
             const encryptedRecords = await userA.clients.fullAuth.index.get({
                 query: { fields: { $in: ['record'] } },
             });
-            const records = await userA.learnCard.invoke
-                .getDIDObject()
-                .decryptDagJWE(encryptedRecords as JWE);
+            const records = await userA.learnCard.invoke.decryptDagJwe(encryptedRecords as JWE);
 
             expect(records.records).toHaveLength(2);
         });
@@ -115,9 +111,7 @@ describe('Index', () => {
             const encryptedRecords = await userA.clients.fullAuth.index.get({
                 query: { title: 'Record A' },
             });
-            const records = await userA.learnCard.invoke
-                .getDIDObject()
-                .decryptDagJWE(encryptedRecords as JWE);
+            const records = await userA.learnCard.invoke.decryptDagJwe(encryptedRecords as JWE);
 
             expect(records.records).toHaveLength(1);
             expect(records.records[0]).toEqual(testRecordA);
@@ -213,9 +207,9 @@ describe('Index', () => {
             const countPromise = userA.clients.fullAuth.index.count();
             await expect(countPromise).resolves.not.toThrow();
 
-            const unencryptedCount = await userA.learnCard.invoke
-                .getDIDObject()
-                .decryptDagJWE((await countPromise) as JWE);
+            const unencryptedCount = Number(
+                await userA.learnCard.invoke.decryptDagJwe((await countPromise) as JWE)
+            );
 
             expect(unencryptedCount).toEqual(2);
         });
@@ -226,9 +220,9 @@ describe('Index', () => {
             const countPromise = userA.clients.fullAuth.index.count();
             await expect(countPromise).resolves.not.toThrow();
 
-            const unencryptedCount = await userA.learnCard.invoke
-                .getDIDObject()
-                .decryptDagJWE((await countPromise) as JWE);
+            const unencryptedCount = Number(
+                await userA.learnCard.invoke.decryptDagJwe((await countPromise) as JWE)
+            );
 
             expect(unencryptedCount).toEqual(0);
         });
@@ -237,9 +231,7 @@ describe('Index', () => {
             const encryptedCount = await userA.clients.fullAuth.index.count({
                 query: { fields: { $in: ['recordA'] } },
             });
-            const count = await userA.learnCard.invoke
-                .getDIDObject()
-                .decryptDagJWE(encryptedCount as JWE);
+            const count = Number(await userA.learnCard.invoke.decryptDagJwe(encryptedCount as JWE));
 
             expect(count).toEqual(1);
         });
@@ -248,9 +240,7 @@ describe('Index', () => {
             const encryptedCount = await userA.clients.fullAuth.index.count({
                 query: { fields: { $in: ['record'] } },
             });
-            const count = await userA.learnCard.invoke
-                .getDIDObject()
-                .decryptDagJWE(encryptedCount as JWE);
+            const count = Number(await userA.learnCard.invoke.decryptDagJwe(encryptedCount as JWE));
 
             expect(count).toEqual(2);
         });
@@ -259,9 +249,7 @@ describe('Index', () => {
             const encryptedCount = await userA.clients.fullAuth.index.count({
                 query: { title: 'Record A' },
             });
-            const count = await userA.learnCard.invoke
-                .getDIDObject()
-                .decryptDagJWE(encryptedCount as JWE);
+            const count = Number(await userA.learnCard.invoke.decryptDagJwe(encryptedCount as JWE));
 
             expect(count).toEqual(1);
         });

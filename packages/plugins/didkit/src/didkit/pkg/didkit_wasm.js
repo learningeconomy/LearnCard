@@ -822,7 +822,7 @@ const __wbindgen_enum_RequestCredentials = ["omit", "same-origin", "include"];
 const __wbindgen_enum_RequestMode = ["same-origin", "no-cors", "cors", "navigate"];
 
 async function __wbg_load(module, imports) {
-    if (typeof Response === 'function' && module instanceof Response) {
+    if (typeof Response === 'function' && Object.prototype.toString.call(module) === '[object Response]') {
         if (typeof WebAssembly.instantiateStreaming === 'function') {
             try {
                 return await WebAssembly.instantiateStreaming(module, imports);

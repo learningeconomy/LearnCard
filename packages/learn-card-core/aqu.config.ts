@@ -15,7 +15,6 @@ const buildOptions: BuildOptions = {
         'process',
         'abortcontroller-polyfill',
         'abort-controller',
-        'isomorphic-fetch',
         'isomorphic-webcrypto',
         'cross-fetch',
         'ethers',

@@ -77,9 +77,9 @@ export const getLearnCardNetworkPlugin = async (
                     let result = await client.storage.resolve.query({ uri: vcUri });
 
                     if ('ciphertext' in result) {
-                        result = (await _learnCard.invoke
-                            .getDIDObject()
-                            .decryptDagJWE(result as JWE)) as any;
+                        result = await _learnCard.invoke.decryptDagJwe(result as JWE, [
+                            _learnCard.id.keypair(),
+                        ]);
                     }
 
                     return await VCValidator.or(VPValidator).parseAsync(result);
@@ -102,9 +102,10 @@ export const getLearnCardNetworkPlugin = async (
             ) => {
                 _learnCard.debug?.("learnCard.store['LearnCard Network'].upload");
 
-                const jwe = await _learnCard.invoke
-                    .getDIDObject()
-                    .createDagJWE(credential, [_learnCard.id.did(), ...recipients]);
+                const jwe = await _learnCard.invoke.createDagJwe(credential, [
+                    _learnCard.id.did(),
+                    ...recipients,
+                ]);
 
                 return client.storage.store.mutate({ item: jwe });
             },
@@ -331,9 +332,10 @@ export const getLearnCardNetworkPlugin = async (
 
                 if (!target) throw new Error('Could not find target account');
 
-                const credential = await _learnCard.invoke
-                    .getDIDObject()
-                    .createDagJWE(vc, [userData.did, target.did]);
+                const credential = await _learnCard.invoke.createDagJwe(vc, [
+                    userData.did,
+                    target.did,
+                ]);
 
                 return client.credential.sendCredential.mutate({ profileId, credential });
             },
@@ -377,9 +379,10 @@ export const getLearnCardNetworkPlugin = async (
 
                 if (!target) throw new Error('Could not find target account');
 
-                const presentation = await _learnCard.invoke
-                    .getDIDObject()
-                    .createDagJWE(vp, [userData.did, target.did]);
+                const presentation = await _learnCard.invoke.createDagJwe(vp, [
+                    userData.did,
+                    target.did,
+                ]);
 
                 return client.presentation.sendPresentation.mutate({ profileId, presentation });
             },
@@ -657,9 +660,11 @@ export const getLearnCardNetworkPlugin = async (
 
                 const lcnDid = await client.utilities.getDid.query();
 
-                const credential = await _learnCard.invoke
-                    .getDIDObject()
-                    .createDagJWE(vc, [userData.did, targetProfile.did, lcnDid]);
+                const credential = await _learnCard.invoke.createDagJwe(vc, [
+                    userData.did,
+                    targetProfile.did,
+                    lcnDid,
+                ]);
 
                 return client.boost.sendBoost.mutate({
                     profileId,
