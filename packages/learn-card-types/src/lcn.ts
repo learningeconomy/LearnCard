@@ -571,12 +571,15 @@ export const LCNNotificationValidator = z.object({
 
 export type LCNNotification = z.infer<typeof LCNNotificationValidator>;
 
+export const AUTH_GRANT_AUDIENCE_DOMAIN_PREFIX = 'auth-grant:';
+
 export const AuthGrantValidator = z.object({
     id: z.string(),
     name: z.string(),
     description: z.string().optional(),
     challenge: z
         .string()
+        .startsWith(AUTH_GRANT_AUDIENCE_DOMAIN_PREFIX)
         .min(10, { message: 'Challenge is too short' })
         .max(100, { message: 'Challenge is too long' }),
     status: z.enum(['revoked', 'active'], {
@@ -612,5 +615,3 @@ export const AuthGrantQueryValidator = z
     .partial();
 
 export type AuthGrantQuery = z.infer<typeof AuthGrantQueryValidator>;
-
-export const AUTH_GRANT_AUDIENCE_DOMAIN_PREFIX = 'auth-grant:';
