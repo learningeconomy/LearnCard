@@ -226,11 +226,11 @@ export const authGrantsRouter = t.router({
                 protect: true,
                 method: 'DELETE',
                 path: '/auth-grant/{id}',
-                tags: ['AuthGrants', 'authGrants:write'],
+                tags: ['AuthGrants', 'authGrants:delete'],
                 summary: 'Delete AuthGrant',
                 description: 'Delete AuthGrant',
             },
-            requiredScope: 'authGrants:write',
+            requiredScope: 'authGrants:delete',
         })
         .input(z.object({ id: z.string() }))
         .output(z.boolean())

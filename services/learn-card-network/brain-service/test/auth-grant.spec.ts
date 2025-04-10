@@ -8,6 +8,7 @@ let userB: Awaited<ReturnType<typeof getUser>>;
 let userC: Awaited<ReturnType<typeof getUser>>;
 let scopedUserRead: Awaited<ReturnType<typeof getUser>>;
 let scopedUserWrite: Awaited<ReturnType<typeof getUser>>;
+let scopedUserDelete: Awaited<ReturnType<typeof getUser>>;
 
 describe('Auth Grants', () => {
     beforeAll(async () => {
@@ -16,6 +17,7 @@ describe('Auth Grants', () => {
         userC = await getUser('c'.repeat(64));
         scopedUserRead = await getUser('d'.repeat(64), '*:read profile:*');
         scopedUserWrite = await getUser('e'.repeat(64), '*:write profile:*');
+        scopedUserDelete = await getUser('f'.repeat(64), '*:write *:delete profile:*');
     });
 
     describe('addAuthGrant', () => {
@@ -335,12 +337,12 @@ describe('Auth Grants', () => {
             ).rejects.toThrow();
         });
 
-        it('should allow you to delete an auth grant for a scoped user profile with write scope', async () => {
-            await scopedUserWrite.clients.fullAuth.profile.createServiceProfile({
-                profileId: 'usere',
+        it('should allow you to delete an auth grant for a scoped user profile with delete scope', async () => {
+            await scopedUserDelete.clients.fullAuth.profile.createServiceProfile({
+                profileId: 'userf',
             });
 
-            const authGrantId = await scopedUserWrite.clients.fullAuth.authGrants.addAuthGrant({
+            const authGrantId = await scopedUserDelete.clients.fullAuth.authGrants.addAuthGrant({
                 name: 'test',
             });
 
