@@ -1,6 +1,6 @@
-import { AUTH_GRANT_READ_ONLY_SCOPE, AUTH_GRANT_REVOKED_STATUS } from 'src/constants/auth-grant';
 import { getClient, getUser } from './helpers/getClient';
 import { Profile, AuthGrant } from '@models';
+import { AuthGrantStatusValidator, AUTH_GRANT_AUDIENCE_DOMAIN_PREFIX } from '@learncard/types';
 
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;
@@ -82,6 +82,10 @@ describe('Auth Grants', () => {
             expect(
                 (await userA.clients.fullAuth.authGrants.getAuthGrant({ id: authGrantId }))?.name
             ).toEqual('test');
+            expect(
+                (await userA.clients.fullAuth.authGrants.getAuthGrant({ id: authGrantId }))
+                    ?.challenge
+            ).toInclude(AUTH_GRANT_AUDIENCE_DOMAIN_PREFIX);
         });
 
         it('should not allow you to get an auth grant for a another users profile', async () => {
@@ -444,7 +448,7 @@ describe('Auth Grants', () => {
                 id: authGrantId,
             });
 
-            expect((authGrant as any).status).toEqual(AUTH_GRANT_REVOKED_STATUS);
+            expect((authGrant as any).status).toEqual(AuthGrantStatusValidator.Values.revoked);
         });
 
         it("should not allow you to revoke someone else's auth grant", async () => {

@@ -1,7 +1,7 @@
 import { QueryBuilder, BindParam } from 'neogma';
 import { flattenObject } from '@helpers/objects.helpers';
 import { AuthGrant } from '@models';
-import { AuthGrantType } from 'types/auth-grant';
+import { AuthGrantType } from '@learncard/types';
 
 export const updateAuthGrant = async (
     authGrant: AuthGrantType,

@@ -3,7 +3,7 @@ import { ModelFactory, ModelRelatedNodesI, NeogmaInstance } from 'neogma';
 import { neogma } from '@instance';
 
 import { Profile, ProfileInstance } from './Profile';
-import { FlatAuthGrantType } from 'types/auth-grant';
+import { FlatAuthGrantType } from '@learncard/types';
 
 export type AuthGrantRelationships = {
     authorizesAuthGrant: ModelRelatedNodesI<typeof Profile, ProfileInstance>;

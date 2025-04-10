@@ -41,6 +41,8 @@ import {
     PaginatedConsentFlowDataForDid,
     PaginatedContractCredentials,
     AutoBoostConfig,
+    AuthGrantType,
+    AuthGrantQuery,
 } from '@learncard/types';
 import { Plugin } from '@learncard/core';
 import { ProofOptions } from '@learncard/didkit-plugin';
@@ -249,10 +251,10 @@ export type LearnCardNetworkPluginMethods = {
         options?:
             | boolean
             | {
-                encrypt?: boolean;
-                overideFn?: (boost: UnsignedVC) => UnsignedVC;
-                skipNotification?: boolean;
-            }
+                  encrypt?: boolean;
+                  overideFn?: (boost: UnsignedVC) => UnsignedVC;
+                  skipNotification?: boolean;
+              }
     ) => Promise<string>;
 
     registerSigningAuthority: (endpoint: string, name: string, did: string) => Promise<boolean>;
@@ -353,6 +355,15 @@ export type LearnCardNetworkPluginMethods = {
     ) => Promise<PaginatedClaimHooksType>;
     deleteClaimHook: (id: string) => Promise<boolean>;
 
+    addAuthGrant: (authGrant: Partial<AuthGrantType>) => Promise<string>;
+    getAuthGrant: (id: string) => Promise<Partial<AuthGrantType> | undefined>;
+    getAuthGrants: (
+        options?: Partial<PaginationOptionsType> & { query?: AuthGrantQuery }
+    ) => Promise<Partial<AuthGrantType>[] | undefined>;
+    deleteAuthGrant: (id: string) => Promise<boolean>;
+    updateAuthGrant: (id: string, updates: Partial<AuthGrantType>) => Promise<boolean>;
+    revokeAuthGrant: (id: string) => Promise<boolean>;
+    getAPITokenForAuthGrant: (id: string) => Promise<string>;
     resolveFromLCN: (
         uri: string
     ) => Promise<VC | UnsignedVC | VP | JWE | ConsentFlowContract | ConsentFlowTerms>;

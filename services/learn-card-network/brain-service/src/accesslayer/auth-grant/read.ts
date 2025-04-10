@@ -1,14 +1,15 @@
 import { BindParam, QueryBuilder } from 'neogma';
 import { AuthGrant, Profile } from '@models';
-import { AuthGrantQuery, AuthGrantType } from 'types/auth-grant';
+import { AuthGrantQuery, AuthGrantType, AuthGrantStatusValidator } from '@learncard/types';
 import { ProfileType } from 'types/profile';
 import { inflateObject } from '@helpers/objects.helpers';
+import { getProfileIdFromDid } from '@helpers/did.helpers';
 import {
     convertObjectRegExpToNeo4j,
     getMatchQueryWhere,
     convertQueryResultToPropertiesObjectArray,
 } from '@helpers/neo4j.helpers';
-import { AUTH_GRANT_READ_ONLY_SCOPE, AUTH_GRANT_ACTIVE_STATUS } from 'src/constants/auth-grant';
+import { AUTH_GRANT_NO_ACCESS_SCOPE } from 'src/constants/auth-grant';
 
 export const getAuthGrantById = async (id: string): Promise<AuthGrantType | null> => {
     const result = await new QueryBuilder()
@@ -94,19 +95,23 @@ export const isAuthGrantChallengeValidForDID = async (
     challenge: string,
     did: string
 ): Promise<{ isChallengeValid: boolean; scope: string }> => {
+    // TODO: Ideally, this transformation isn't required and we could use DID directly.
+    const profileId = getProfileIdFromDid(did);
+    if (!profileId) return { isChallengeValid: false, scope: AUTH_GRANT_NO_ACCESS_SCOPE };
+
     const currentTime = new Date().toISOString();
     const result = await new QueryBuilder()
         .match({
             model: AuthGrant,
             identifier: 'authGrant',
-            where: { challenge, status: AUTH_GRANT_ACTIVE_STATUS },
+            where: { challenge, status: AuthGrantStatusValidator.Values.active },
         })
-        .raw(`WHERE authGrant.expiresAt >= '${currentTime}'`)
+        .raw(`WHERE (authGrant.expiresAt IS NULL OR authGrant.expiresAt >= '${currentTime}')`)
         .match({
             related: [
                 { identifier: 'authGrant' },
                 AuthGrant.getRelationshipByAlias('authorizesAuthGrant'),
-                { model: Profile, where: { did } },
+                { model: Profile, where: { profileId } },
             ],
         })
         .return('authGrant')
@@ -116,6 +121,6 @@ export const isAuthGrantChallengeValidForDID = async (
     const authGrant = result.records[0]?.get('authGrant').properties;
     return {
         isChallengeValid: result.records.length > 0,
-        scope: authGrant?.scope || AUTH_GRANT_READ_ONLY_SCOPE,
+        scope: authGrant?.scope || AUTH_GRANT_NO_ACCESS_SCOPE,
     };
 };

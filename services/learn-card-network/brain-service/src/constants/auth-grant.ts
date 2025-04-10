@@ -1,6 +1,3 @@
-export const AUTH_GRANT_AUDIENCE_DOMAIN_PREFIX = 'auth-grant:';
-export const AUTH_GRANT_ACTIVE_STATUS = 'active';
-export const AUTH_GRANT_REVOKED_STATUS = 'revoked';
 export const AUTH_GRANT_DEFAULT_SCOPE = 'read:all';
 
 /**

@@ -1,23 +1,24 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
-import { t, profileRoute, scopedProfileRoute } from '@routes';
+import { t, scopedProfileRoute } from '@routes';
 import { createAuthGrant } from '@accesslayer/auth-grant/create';
 import {
     getAuthGrantById,
     getAuthGrantsForProfile,
     isAuthGrantAssociatedWithProfile,
 } from '@accesslayer/auth-grant/read';
-import { AuthGrantQueryValidator, AuthGrantValidator } from 'types/auth-grant';
+import {
+    AuthGrantQueryValidator,
+    AuthGrantValidator,
+    AuthGrantStatusValidator,
+    AUTH_GRANT_AUDIENCE_DOMAIN_PREFIX,
+} from '@learncard/types';
 import { updateAuthGrant } from '@accesslayer/auth-grant/update';
 import { deleteAuthGrant } from '@accesslayer/auth-grant/delete';
 import { associateAuthGrantWithProfile } from '@accesslayer/auth-grant/relationships/create';
 import { v4 as uuid } from 'uuid';
-import {
-    AUTH_GRANT_READ_ONLY_SCOPE,
-    AUTH_GRANT_ACTIVE_STATUS,
-    AUTH_GRANT_REVOKED_STATUS,
-} from 'src/constants/auth-grant';
+import { AUTH_GRANT_READ_ONLY_SCOPE } from 'src/constants/auth-grant';
 
 export const authGrantsRouter = t.router({
     addAuthGrant: scopedProfileRoute
@@ -45,10 +46,10 @@ export const authGrantsRouter = t.router({
             try {
                 const authGrant = await createAuthGrant({
                     scope: AUTH_GRANT_READ_ONLY_SCOPE,
-                    status: AUTH_GRANT_ACTIVE_STATUS,
+                    status: AuthGrantStatusValidator.Values.active,
                     ...input,
                     createdAt: new Date().toISOString(),
-                    challenge: uuid(),
+                    challenge: `${AUTH_GRANT_AUDIENCE_DOMAIN_PREFIX}${uuid()}`,
                 });
 
                 await associateAuthGrantWithProfile(authGrant.id, ctx.user.profile.profileId);
@@ -215,7 +216,7 @@ export const authGrantsRouter = t.router({
                 });
             }
 
-            await updateAuthGrant(authGrant, { status: AUTH_GRANT_REVOKED_STATUS });
+            await updateAuthGrant(authGrant, { status: AuthGrantStatusValidator.Values.revoked });
 
             return true;
         }),
@@ -257,7 +258,7 @@ export const authGrantsRouter = t.router({
                 });
             }
 
-            if (authGrant.status !== AUTH_GRANT_REVOKED_STATUS) {
+            if (authGrant.status !== AuthGrantStatusValidator.Values.revoked) {
                 throw new TRPCError({
                     code: 'UNAUTHORIZED',
                     message:

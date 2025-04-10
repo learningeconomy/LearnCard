@@ -4,6 +4,7 @@ import { CreateFastifyContextOptions } from '@trpc/server/adapters/fastify';
 import { OpenApiMeta } from 'trpc-openapi';
 import jwtDecode from 'jwt-decode';
 import * as Sentry from '@sentry/serverless';
+import { AUTH_GRANT_AUDIENCE_DOMAIN_PREFIX } from '@learncard/types';
 
 import { RegExpTransformer } from '@learncard/helpers';
 
@@ -24,7 +25,6 @@ export type DidAuthVP = {
         holder: string;
     };
     nonce?: string;
-    aud?: string;
 };
 
 export type Context = {
@@ -81,7 +81,6 @@ export const createContext = async (
 
                 const did = decodedJwt.vp.holder;
                 const challenge = decodedJwt.nonce;
-                const audience = decodedJwt.aud;
 
                 if (!challenge)
                     return {
@@ -91,9 +90,10 @@ export const createContext = async (
 
                 let isChallengeValid = false;
                 let scope = AUTH_GRANT_FULL_ACCESS_SCOPE;
-                if (audience?.includes('auth-grant:')) {
+                if (challenge?.includes(AUTH_GRANT_AUDIENCE_DOMAIN_PREFIX)) {
                     const { isChallengeValid: _isChallengeValid, scope: _scope } =
                         await isAuthGrantChallengeValidForDID(challenge, did);
+
                     isChallengeValid = _isChallengeValid;
                     scope = _scope;
                 } else {

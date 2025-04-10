@@ -1,7 +1,6 @@
 import { z } from 'zod';
 
-import { AUTH_GRANT_ACTIVE_STATUS, AUTH_GRANT_REVOKED_STATUS } from 'src/constants/auth-grant';
-import { StringQuery } from '@learncard/types';
+import { StringQuery, AuthGrantStatusValidator } from '@learncard/types';
 
 export const AuthGrantValidator = z.object({
     id: z.string(),
@@ -35,7 +34,10 @@ export const AuthGrantQueryValidator = z
         id: StringQuery,
         name: StringQuery,
         description: StringQuery,
-        status: z.enum([AUTH_GRANT_REVOKED_STATUS, AUTH_GRANT_ACTIVE_STATUS]),
+        status: z.enum([
+            AuthGrantStatusValidator.Values.revoked,
+            AuthGrantStatusValidator.Values.active,
+        ]),
     })
     .partial();
 export type AuthGrantQuery = z.infer<typeof AuthGrantQueryValidator>;
