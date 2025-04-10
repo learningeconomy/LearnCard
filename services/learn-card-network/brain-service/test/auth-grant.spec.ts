@@ -87,7 +87,7 @@ describe('Auth Grants', () => {
             expect(
                 (await userA.clients.fullAuth.authGrants.getAuthGrant({ id: authGrantId }))
                     ?.challenge
-            ).toInclude(AUTH_GRANT_AUDIENCE_DOMAIN_PREFIX);
+            ).to.include(AUTH_GRANT_AUDIENCE_DOMAIN_PREFIX);
         });
 
         it('should not allow you to get an auth grant for a another users profile', async () => {
