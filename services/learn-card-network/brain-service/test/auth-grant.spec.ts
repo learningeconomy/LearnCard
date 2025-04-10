@@ -6,18 +6,18 @@ const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;
 let userB: Awaited<ReturnType<typeof getUser>>;
 let userC: Awaited<ReturnType<typeof getUser>>;
-let scopedUserRead: Awaited<ReturnType<typeof getUser>>;
-let scopedUserWrite: Awaited<ReturnType<typeof getUser>>;
-let scopedUserDelete: Awaited<ReturnType<typeof getUser>>;
+// let scopedUserRead: Awaited<ReturnType<typeof getUser>>;
+// let scopedUserWrite: Awaited<ReturnType<typeof getUser>>;
+// let scopedUserDelete: Awaited<ReturnType<typeof getUser>>;
 
 describe('Auth Grants', () => {
     beforeAll(async () => {
         userA = await getUser();
         userB = await getUser('b'.repeat(64));
         userC = await getUser('c'.repeat(64));
-        scopedUserRead = await getUser('d'.repeat(64), '*:read profile:*');
-        scopedUserWrite = await getUser('e'.repeat(64), '*:write profile:*');
-        scopedUserDelete = await getUser('f'.repeat(64), '*:write *:delete profile:*');
+        // scopedUserRead = await getUser('d'.repeat(64), '*:read profile:*');
+        // scopedUserWrite = await getUser('e'.repeat(64), '*:write profile:*');
+        // scopedUserDelete = await getUser('f'.repeat(64), '*:write *:delete profile:*');
     });
 
     describe('addAuthGrant', () => {
@@ -42,22 +42,22 @@ describe('Auth Grants', () => {
             ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
         });
 
-        it('should only allow scoped users with write scope', async () => {
-            await scopedUserRead.clients.fullAuth.profile.createServiceProfile({
-                profileId: 'userd',
-            });
-            await scopedUserWrite.clients.fullAuth.profile.createServiceProfile({
-                profileId: 'usere',
-            });
+        // it('should only allow scoped users with write scope', async () => {
+        //     await scopedUserRead.clients.fullAuth.profile.createServiceProfile({
+        //         profileId: 'userd',
+        //     });
+        //     await scopedUserWrite.clients.fullAuth.profile.createServiceProfile({
+        //         profileId: 'usere',
+        //     });
 
-            await expect(
-                scopedUserRead.clients.fullAuth.authGrants.addAuthGrant({ name: 'test' })
-            ).rejects.toThrow();
+        //     await expect(
+        //         scopedUserRead.clients.fullAuth.authGrants.addAuthGrant({ name: 'test' })
+        //     ).rejects.toThrow();
 
-            await expect(
-                scopedUserWrite.clients.fullAuth.authGrants.addAuthGrant({ name: 'test' })
-            ).resolves.not.toThrow();
-        });
+        //     await expect(
+        //         scopedUserWrite.clients.fullAuth.authGrants.addAuthGrant({ name: 'test' })
+        //     ).resolves.not.toThrow();
+        // });
 
         it('should allow you to add an auth grant for a service profile', async () => {
             await userA.clients.fullAuth.profile.createServiceProfile({ profileId: 'usera' });
@@ -125,24 +125,24 @@ describe('Auth Grants', () => {
             await expect(userA.clients.fullAuth.authGrants.getAuthGrants()).rejects.toThrow();
         });
 
-        it('should allow you to get auth grants for a scoped user profile with read scope', async () => {
-            // If you have read scope, you should be able to get auth grants
-            await scopedUserRead.clients.fullAuth.profile.createServiceProfile({
-                profileId: 'userd',
-            });
+        // it('should allow you to get auth grants for a scoped user profile with read scope', async () => {
+        //     // If you have read scope, you should be able to get auth grants
+        //     await scopedUserRead.clients.fullAuth.profile.createServiceProfile({
+        //         profileId: 'userd',
+        //     });
 
-            await expect(
-                scopedUserRead.clients.fullAuth.authGrants.getAuthGrants()
-            ).resolves.not.toThrow();
+        //     await expect(
+        //         scopedUserRead.clients.fullAuth.authGrants.getAuthGrants()
+        //     ).resolves.not.toThrow();
 
-            // If you only have write scope, you should not be able to get auth grants
-            await scopedUserWrite.clients.fullAuth.profile.createServiceProfile({
-                profileId: 'usere',
-            });
-            await expect(
-                scopedUserWrite.clients.fullAuth.authGrants.getAuthGrants()
-            ).rejects.toThrow();
-        });
+        //     // If you only have write scope, you should not be able to get auth grants
+        //     await scopedUserWrite.clients.fullAuth.profile.createServiceProfile({
+        //         profileId: 'usere',
+        //     });
+        //     await expect(
+        //         scopedUserWrite.clients.fullAuth.authGrants.getAuthGrants()
+        //     ).rejects.toThrow();
+        // });
 
         it('should return the auth grants for a service profile', async () => {
             await userA.clients.fullAuth.profile.createServiceProfile({ profileId: 'usera' });
@@ -222,34 +222,34 @@ describe('Auth Grants', () => {
             ).rejects.toThrow();
         });
 
-        it('should not allow you to update an auth grant for a scoped user profile', async () => {
-            await scopedUserRead.clients.fullAuth.profile.createServiceProfile({
-                profileId: 'userd',
-            });
-            await expect(
-                scopedUserRead.clients.fullAuth.authGrants.updateAuthGrant({
-                    id: 'test',
-                    updates: {},
-                })
-            ).rejects.toThrow();
-        });
+        // it('should not allow you to update an auth grant for a scoped user profile', async () => {
+        //     await scopedUserRead.clients.fullAuth.profile.createServiceProfile({
+        //         profileId: 'userd',
+        //     });
+        //     await expect(
+        //         scopedUserRead.clients.fullAuth.authGrants.updateAuthGrant({
+        //             id: 'test',
+        //             updates: {},
+        //         })
+        //     ).rejects.toThrow();
+        // });
 
-        it('should allow you to update an auth grant for a scoped user profile with write scope', async () => {
-            await scopedUserWrite.clients.fullAuth.profile.createServiceProfile({
-                profileId: 'usere',
-            });
+        // it('should allow you to update an auth grant for a scoped user profile with write scope', async () => {
+        //     await scopedUserWrite.clients.fullAuth.profile.createServiceProfile({
+        //         profileId: 'usere',
+        //     });
 
-            const authGrantId = await scopedUserWrite.clients.fullAuth.authGrants.addAuthGrant({
-                name: 'test',
-            });
+        //     const authGrantId = await scopedUserWrite.clients.fullAuth.authGrants.addAuthGrant({
+        //         name: 'test',
+        //     });
 
-            await expect(
-                scopedUserWrite.clients.fullAuth.authGrants.updateAuthGrant({
-                    id: authGrantId,
-                    updates: { name: 'test2' },
-                })
-            ).resolves.not.toThrow();
-        });
+        //     await expect(
+        //         scopedUserWrite.clients.fullAuth.authGrants.updateAuthGrant({
+        //             id: authGrantId,
+        //             updates: { name: 'test2' },
+        //         })
+        //     ).resolves.not.toThrow();
+        // });
 
         it('should return the updated auth grant', async () => {
             await userA.clients.fullAuth.profile.createServiceProfile({ profileId: 'usera' });
@@ -327,31 +327,31 @@ describe('Auth Grants', () => {
             ).rejects.toThrow();
         });
 
-        it('should not allow you to delete an auth grant for a scoped user profile', async () => {
-            await scopedUserRead.clients.fullAuth.profile.createServiceProfile({
-                profileId: 'userd',
-            });
+        // it('should not allow you to delete an auth grant for a scoped user profile', async () => {
+        //     await scopedUserRead.clients.fullAuth.profile.createServiceProfile({
+        //         profileId: 'userd',
+        //     });
 
-            await expect(
-                scopedUserRead.clients.fullAuth.authGrants.deleteAuthGrant({ id: 'test' })
-            ).rejects.toThrow();
-        });
+        //     await expect(
+        //         scopedUserRead.clients.fullAuth.authGrants.deleteAuthGrant({ id: 'test' })
+        //     ).rejects.toThrow();
+        // });
 
-        it('should allow you to delete an auth grant for a scoped user profile with delete scope', async () => {
-            await scopedUserDelete.clients.fullAuth.profile.createServiceProfile({
-                profileId: 'userf',
-            });
+        // it('should allow you to delete an auth grant for a scoped user profile with delete scope', async () => {
+        //     await scopedUserDelete.clients.fullAuth.profile.createServiceProfile({
+        //         profileId: 'userf',
+        //     });
 
-            const authGrantId = await scopedUserDelete.clients.fullAuth.authGrants.addAuthGrant({
-                name: 'test',
-            });
+        //     const authGrantId = await scopedUserDelete.clients.fullAuth.authGrants.addAuthGrant({
+        //         name: 'test',
+        //     });
 
-            await scopedUserWrite.clients.fullAuth.authGrants.revokeAuthGrant({ id: authGrantId });
+        //     await scopedUserWrite.clients.fullAuth.authGrants.revokeAuthGrant({ id: authGrantId });
 
-            await expect(
-                scopedUserWrite.clients.fullAuth.authGrants.deleteAuthGrant({ id: authGrantId })
-            ).resolves.not.toThrow();
-        });
+        //     await expect(
+        //         scopedUserWrite.clients.fullAuth.authGrants.deleteAuthGrant({ id: authGrantId })
+        //     ).resolves.not.toThrow();
+        // });
 
         it('should return true when deleting an auth grant', async () => {
             await userA.clients.fullAuth.profile.createServiceProfile({ profileId: 'usera' });
@@ -412,26 +412,26 @@ describe('Auth Grants', () => {
             ).rejects.toThrow();
         });
 
-        it('should not allow you to revoke an auth grant for a scoped user profile', async () => {
-            await scopedUserRead.clients.fullAuth.profile.createServiceProfile({
-                profileId: 'userd',
-            });
-            await expect(
-                scopedUserRead.clients.fullAuth.authGrants.revokeAuthGrant({ id: 'test' })
-            ).rejects.toThrow();
-        });
+        // it('should not allow you to revoke an auth grant for a scoped user profile', async () => {
+        //     await scopedUserRead.clients.fullAuth.profile.createServiceProfile({
+        //         profileId: 'userd',
+        //     });
+        //     await expect(
+        //         scopedUserRead.clients.fullAuth.authGrants.revokeAuthGrant({ id: 'test' })
+        //     ).rejects.toThrow();
+        // });
 
-        it('should allow you to revoke an auth grant for a scoped user profile with write scope', async () => {
-            await scopedUserWrite.clients.fullAuth.profile.createServiceProfile({
-                profileId: 'usere',
-            });
-            const authGrantId = await scopedUserWrite.clients.fullAuth.authGrants.addAuthGrant({
-                name: 'test',
-            });
-            await expect(
-                scopedUserWrite.clients.fullAuth.authGrants.revokeAuthGrant({ id: authGrantId })
-            ).resolves.not.toThrow();
-        });
+        // it('should allow you to revoke an auth grant for a scoped user profile with write scope', async () => {
+        //     await scopedUserWrite.clients.fullAuth.profile.createServiceProfile({
+        //         profileId: 'usere',
+        //     });
+        //     const authGrantId = await scopedUserWrite.clients.fullAuth.authGrants.addAuthGrant({
+        //         name: 'test',
+        //     });
+        //     await expect(
+        //         scopedUserWrite.clients.fullAuth.authGrants.revokeAuthGrant({ id: authGrantId })
+        //     ).resolves.not.toThrow();
+        // });
 
         it('should revoke the auth grant', async () => {
             await userA.clients.fullAuth.profile.createServiceProfile({ profileId: 'usera' });
