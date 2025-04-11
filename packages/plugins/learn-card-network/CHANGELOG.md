@@ -1,5 +1,23 @@
 # learn-card-core
 
+## 2.4.19
+
+### Patch Changes
+
+-   [#641](https://github.com/learningeconomy/LearnCard/pull/641) [`833ef629a073fd4d202eaebceb0fb48615daa0c9`](https://github.com/learningeconomy/LearnCard/commit/833ef629a073fd4d202eaebceb0fb48615daa0c9) Thanks [@Custard7](https://github.com/Custard7)! - Feat: Add AuthGrant support
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.22
+    -   @learncard/network-brain-client@2.2.20
+
+## 2.4.18
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.2.19
+    -   @learncard/core@9.3.21
+
 ## 2.4.17
 
 ### Patch Changes
