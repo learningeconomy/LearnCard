@@ -1,0 +1,14 @@
+# Netlify _headers file
+
+# Target JSON-LD files within the /contexts/ path
+/contexts/**/**.jsonld
+  # Set the correct Content-Type for JSON-LD
+  Content-Type: application/ld+json
+  # Allow requests from any origin (most common for public contexts)
+  # Replace * with specific domains if needed: https://your-main-site.com
+  Access-Control-Allow-Origin: *
+
+# Target plain .json files for contexts:
+/contexts/**/**.json
+  Content-Type: application/json  
+  Access-Control-Allow-Origin: *
