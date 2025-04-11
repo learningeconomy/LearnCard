@@ -1,5 +1,25 @@
 # @learncard/network-brain-service
 
+## 3.3.19
+
+### Patch Changes
+
+-   [#641](https://github.com/learningeconomy/LearnCard/pull/641) [`833ef629a073fd4d202eaebceb0fb48615daa0c9`](https://github.com/learningeconomy/LearnCard/commit/833ef629a073fd4d202eaebceb0fb48615daa0c9) Thanks [@Custard7](https://github.com/Custard7)! - Feat: Add AuthGrant support
+
+-   Updated dependencies [[`833ef629a073fd4d202eaebceb0fb48615daa0c9`](https://github.com/learningeconomy/LearnCard/commit/833ef629a073fd4d202eaebceb0fb48615daa0c9)]:
+    -   @learncard/types@5.6.9
+    -   @learncard/core@9.3.22
+    -   @learncard/helpers@1.1.11
+    -   @learncard/did-web-plugin@1.0.59
+    -   @learncard/didkey-plugin@1.0.33
+    -   @learncard/didkit-plugin@1.5.8
+    -   @learncard/encryption-plugin@1.0.7
+    -   @learncard/learn-card-plugin@1.1.36
+    -   @learncard/vc-plugin@1.1.37
+    -   @learncard/vc-templates-plugin@1.0.43
+    -   @learncard/expiration-plugin@1.1.37
+    -   @learncard/crypto-plugin@1.0.33
+
 ## 3.3.18
 
 ### Patch Changes

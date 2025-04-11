@@ -1,6 +1,6 @@
 {
     "name": "@learncard/claimable-boosts-plugin",
-    "version": "1.0.31",
+    "version": "1.0.32",
     "description": "",
     "main": "./dist/index.js",
     "module": "./dist/claimable-boosts-plugin.esm.js",
