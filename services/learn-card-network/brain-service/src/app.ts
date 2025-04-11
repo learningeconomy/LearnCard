@@ -9,6 +9,7 @@ import { storageRouter } from '@routes/storage';
 import { utilitiesRouter } from '@routes/utilities';
 import { contractsRouter } from '@routes/contracts';
 import { didMetadataRouter } from '@routes/did-metadata';
+import { authGrantsRouter } from '@routes/auth-grants';
 
 export { createContext } from '@routes';
 
@@ -23,6 +24,7 @@ export const appRouter = t.router({
     utilities: utilitiesRouter,
     contracts: contractsRouter,
     didMetadata: didMetadataRouter,
+    authGrants: authGrantsRouter,
 });
 
 export type AppRouter = typeof appRouter;

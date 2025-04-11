@@ -4,6 +4,7 @@ import { CreateFastifyContextOptions } from '@trpc/server/adapters/fastify';
 import { OpenApiMeta } from 'trpc-openapi';
 import jwtDecode from 'jwt-decode';
 import * as Sentry from '@sentry/serverless';
+import { AUTH_GRANT_AUDIENCE_DOMAIN_PREFIX } from '@learncard/types';
 
 import { RegExpTransformer } from '@learncard/helpers';
 
@@ -12,6 +13,9 @@ import { getEmptyLearnCard } from '@helpers/learnCard.helpers';
 import { invalidateChallengeForDid, isChallengeValidForDid } from '@cache/challenges';
 import { ProfileType } from 'types/profile';
 import { getProfileManagerById } from '@accesslayer/profile-manager/read';
+import { isAuthGrantChallengeValidForDID } from '@accesslayer/auth-grant/read';
+import { AUTH_GRANT_FULL_ACCESS_SCOPE, AUTH_GRANT_NO_ACCESS_SCOPE } from 'src/constants/auth-grant';
+import { userHasRequiredScopes } from '@helpers/auth-grant.helpers';
 
 export type DidAuthVP = {
     iss: string;
@@ -27,13 +31,18 @@ export type Context = {
     user?: {
         did: string;
         isChallengeValid: boolean;
+        scope?: string;
     };
     domain: string;
 };
 
+export type RequiredScope = { requiredScope?: string };
+
+export type RouteMetadata = OpenApiMeta & RequiredScope;
+
 export const t = initTRPC
     .context<Context>()
-    .meta<OpenApiMeta>()
+    .meta<RouteMetadata>()
     .create({
         transformer: {
             input: RegExpTransformer,
@@ -73,14 +82,30 @@ export const createContext = async (
                 const did = decodedJwt.vp.holder;
                 const challenge = decodedJwt.nonce;
 
-                if (!challenge) return { user: { did, isChallengeValid: false }, domain };
+                if (!challenge)
+                    return {
+                        user: { did, isChallengeValid: false, scope: AUTH_GRANT_NO_ACCESS_SCOPE },
+                        domain,
+                    };
 
-                const cacheResponse = await isChallengeValidForDid(did, challenge);
-                await invalidateChallengeForDid(did, challenge);
+                let isChallengeValid = false;
+                let scope = AUTH_GRANT_FULL_ACCESS_SCOPE;
+                if (challenge?.includes(AUTH_GRANT_AUDIENCE_DOMAIN_PREFIX)) {
+                    const { isChallengeValid: _isChallengeValid, scope: _scope } =
+                        await isAuthGrantChallengeValidForDID(challenge, did);
+
+                    isChallengeValid = _isChallengeValid;
+                    scope = _scope;
+                } else {
+                    const cacheResponse = await isChallengeValidForDid(did, challenge);
+                    await invalidateChallengeForDid(did, challenge);
+                    isChallengeValid = Boolean(cacheResponse);
+                    scope = AUTH_GRANT_FULL_ACCESS_SCOPE;
+                }
 
                 Sentry.setUser({ id: did });
 
-                return { user: { did, isChallengeValid: Boolean(cacheResponse) }, domain };
+                return { user: { did, isChallengeValid, scope }, domain };
             }
         }
     }
@@ -144,6 +169,25 @@ export const didAndChallengeRoute = didRoute.use(({ ctx, next }) => {
     return next({ ctx: { ...ctx, user: ctx.user } });
 });
 
+export const scopedRoute = didAndChallengeRoute.use(({ ctx, next, meta }) => {
+    if (!meta?.requiredScope) {
+        return next({ ctx });
+    }
+
+    const userScope = ctx.user?.scope || AUTH_GRANT_NO_ACCESS_SCOPE;
+
+    const hasRequiredScope = userHasRequiredScopes(userScope, meta.requiredScope);
+
+    if (!hasRequiredScope) {
+        throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: `This operation requires ${meta.requiredScope} scope`,
+        });
+    }
+
+    return next({ ctx });
+});
+
 export const openProfileRoute = didRoute.use(async ({ ctx, next }) => {
     const { profile } = ctx.user;
 
@@ -168,6 +212,25 @@ export const profileRoute = didAndChallengeRoute.use(async ({ ctx, next }) => {
     }
 
     return next({ ctx: { ...ctx, user: { ...ctx.user, profile } } });
+});
+
+export const scopedProfileRoute = profileRoute.use(({ ctx, next, meta }) => {
+    if (!meta?.requiredScope) {
+        return next({ ctx });
+    }
+
+    const userScope = ctx.user?.scope || AUTH_GRANT_NO_ACCESS_SCOPE;
+
+    const hasRequiredScope = userHasRequiredScopes(userScope, meta.requiredScope);
+
+    if (!hasRequiredScope) {
+        throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: `This operation requires ${meta.requiredScope} scope`,
+        });
+    }
+
+    return next({ ctx });
 });
 
 export const openProfileManagerRoute = openRoute.use(async ({ ctx, next }) => {

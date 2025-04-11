@@ -9,6 +9,7 @@ import {
     ConsentFlowContractValidator,
     ConsentFlowTermsValidator,
     JWE,
+    AUTH_GRANT_AUDIENCE_DOMAIN_PREFIX,
 } from '@learncard/types';
 import { LearnCard } from '@learncard/core';
 import { VerifyExtension } from '@learncard/vc-plugin';
@@ -884,6 +885,57 @@ export const getLearnCardNetworkPlugin = async (
                 if (!userData) throw new Error('Please make an account first!');
 
                 return client.claimHook.deleteClaimHook.mutate({ id });
+            },
+
+            addAuthGrant: async (_learnCard, authGrant) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.authGrants.addAuthGrant.mutate(authGrant);
+            },
+            revokeAuthGrant: async (_learnCard, id) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.authGrants.revokeAuthGrant.mutate({ id });
+            },
+            deleteAuthGrant: async (_learnCard, id) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.authGrants.deleteAuthGrant.mutate({ id });
+            },
+            updateAuthGrant: async (_learnCard, id, updates) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.authGrants.updateAuthGrant.mutate({ id, updates });
+            },
+            getAuthGrant: async (_learnCard, id) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.authGrants.getAuthGrant.query({ id });
+            },
+            getAuthGrants: async (_learnCard, options) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.authGrants.getAuthGrants.query(options);
+            },
+            getAPITokenForAuthGrant: async (_learnCard, id) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                const authGrant = await client.authGrants.getAuthGrant.query({ id });
+                if (!authGrant) throw new Error('Auth grant not found');
+                if (authGrant.status !== 'active') throw new Error('Auth grant is not active');
+                if (!authGrant.challenge) throw new Error('Auth grant has no challenge');
+                if (!authGrant.scope) throw new Error('Auth grant has no scope');
+                if (authGrant.expiresAt && new Date(authGrant.expiresAt) < new Date())
+                    throw new Error('Auth grant is expired');
+
+                const apiToken = (await _learnCard.invoke.getDidAuthVp({
+                    challenge: authGrant.challenge,
+                    proofFormat: 'jwt',
+                })) as string;
+
+                if (!apiToken) throw new Error('Failed to get API Token for auth grant');
+
+                return apiToken;
             },
 
             resolveFromLCN: async (_learnCard, uri) => {
