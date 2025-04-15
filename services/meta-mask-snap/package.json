@@ -1,6 +1,6 @@
 {
     "name": "@learncard/meta-mask-snap",
-    "version": "1.0.71",
+    "version": "1.0.73",
     "description": "The official LearnCard MetaMask Snap",
     "private": true,
     "repository": {

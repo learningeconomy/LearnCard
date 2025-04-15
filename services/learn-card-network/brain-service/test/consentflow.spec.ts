@@ -390,6 +390,104 @@ describe('Consent Flow Contracts', () => {
 
             expect([...firstPage.records, ...secondPage.records]).toEqual(contracts.records);
         });
+
+        it('should include auto-boosts', async () => {
+            await userA.clients.fullAuth.profile.registerSigningAuthority({
+                endpoint: 'http://localhost:5000/api',
+                name: 'mysa',
+                did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
+            });
+
+            const sa = await userA.clients.fullAuth.profile.signingAuthority({
+                endpoint: 'http://localhost:5000/api',
+                name: 'mysa',
+            });
+
+            const signingAuthority = {
+                endpoint: sa!.signingAuthority.endpoint,
+                name: sa!.relationship.name,
+            };
+
+            // Create a boost
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'Achievement',
+                name: 'Auto-issued Boost',
+            });
+
+            // Create a contract with the auto-boost
+            const contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract({
+                contract: minimalContract,
+                name: 'Auto Boost Contract',
+                autoboosts: [{ boostUri, signingAuthority }],
+            });
+
+            const newContracts = await userA.clients.fullAuth.contracts.getConsentFlowContracts();
+
+            expect(newContracts.records).toHaveLength(1);
+            expect(newContracts.records[0]!.contract).toEqual(minimalContract);
+            expect(newContracts.records[0]!.autoBoosts).toBeTruthy();
+            expect(newContracts.records[0]!.autoBoosts).toHaveLength(1);
+            expect(newContracts.records[0]!.autoBoosts![0]).toEqual(boostUri);
+        });
+
+        it('should include all auto-boosts', async () => {
+            await userA.clients.fullAuth.profile.registerSigningAuthority({
+                endpoint: 'http://localhost:5000/api',
+                name: 'mysa',
+                did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
+            });
+
+            const sa = await userA.clients.fullAuth.profile.signingAuthority({
+                endpoint: 'http://localhost:5000/api',
+                name: 'mysa',
+            });
+
+            const signingAuthority = {
+                endpoint: sa!.signingAuthority.endpoint,
+                name: sa!.relationship.name,
+            };
+
+            // Create a boost
+            const boostUri1 = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'Achievement',
+                name: 'Auto-issued Boost',
+            });
+            const boostUri2 = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'Achievement',
+                name: 'Auto-issued Boost',
+            });
+            const boostUri3 = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'Achievement',
+                name: 'Auto-issued Boost',
+            });
+
+            // Create a contract with the auto-boost
+            const contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract({
+                contract: minimalContract,
+                name: 'Auto Boost Contract',
+                autoboosts: [
+                    { boostUri: boostUri1, signingAuthority },
+                    { boostUri: boostUri2, signingAuthority },
+                    { boostUri: boostUri3, signingAuthority },
+                ],
+            });
+
+            const newContracts = await userA.clients.fullAuth.contracts.getConsentFlowContracts();
+
+            expect(newContracts.records).toHaveLength(1);
+            expect(newContracts.records[0]!.contract).toEqual(minimalContract);
+            expect(newContracts.records[0]!.autoBoosts).toBeTruthy();
+            expect(newContracts.records[0]!.autoBoosts).toHaveLength(3);
+            expect(
+                [boostUri1, boostUri2, boostUri3].every(uri =>
+                    newContracts.records[0]!.autoBoosts!.includes(uri)
+                )
+            ).toBeTruthy();
+        });
     });
 
     describe('deleteConsentFlowContract', () => {
@@ -1658,6 +1756,114 @@ describe('Consent Flow Contracts', () => {
 
             expect([...firstPage.records, ...secondPage.records]).toEqual(contracts.records);
         });
+
+        it('should include auto-boosts', async () => {
+            await userA.clients.fullAuth.profile.registerSigningAuthority({
+                endpoint: 'http://localhost:5000/api',
+                name: 'mysa',
+                did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
+            });
+
+            const sa = await userA.clients.fullAuth.profile.signingAuthority({
+                endpoint: 'http://localhost:5000/api',
+                name: 'mysa',
+            });
+
+            const signingAuthority = {
+                endpoint: sa!.signingAuthority.endpoint,
+                name: sa!.relationship.name,
+            };
+
+            // Create a boost
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'Achievement',
+                name: 'Auto-issued Boost',
+            });
+
+            // Create a contract with the auto-boost
+            const contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract({
+                contract: minimalContract,
+                name: 'Auto Boost Contract',
+                autoboosts: [{ boostUri, signingAuthority }],
+            });
+
+            const termsUri = await userB.clients.fullAuth.contracts.consentToContract({
+                terms: minimalTerms,
+                contractUri,
+            });
+
+            const newContracts = await userB.clients.fullAuth.contracts.getConsentedContracts();
+
+            expect(newContracts.records).toHaveLength(1);
+            expect(newContracts.records[0]!.contract.contract).toEqual(minimalContract);
+            expect(newContracts.records[0]!.contract.autoBoosts).toBeTruthy();
+            expect(newContracts.records[0]!.contract.autoBoosts).toHaveLength(1);
+            expect(newContracts.records[0]!.contract.autoBoosts![0]).toEqual(boostUri);
+        });
+
+        it('should include all auto-boosts', async () => {
+            await userA.clients.fullAuth.profile.registerSigningAuthority({
+                endpoint: 'http://localhost:5000/api',
+                name: 'mysa',
+                did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
+            });
+
+            const sa = await userA.clients.fullAuth.profile.signingAuthority({
+                endpoint: 'http://localhost:5000/api',
+                name: 'mysa',
+            });
+
+            const signingAuthority = {
+                endpoint: sa!.signingAuthority.endpoint,
+                name: sa!.relationship.name,
+            };
+
+            // Create a boost
+            const boostUri1 = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'Achievement',
+                name: 'Auto-issued Boost',
+            });
+            const boostUri2 = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'Achievement',
+                name: 'Auto-issued Boost',
+            });
+            const boostUri3 = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'Achievement',
+                name: 'Auto-issued Boost',
+            });
+
+            // Create a contract with the auto-boost
+            const contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract({
+                contract: minimalContract,
+                name: 'Auto Boost Contract',
+                autoboosts: [
+                    { boostUri: boostUri1, signingAuthority },
+                    { boostUri: boostUri2, signingAuthority },
+                    { boostUri: boostUri3, signingAuthority },
+                ],
+            });
+
+            const termsUri = await userB.clients.fullAuth.contracts.consentToContract({
+                terms: minimalTerms,
+                contractUri,
+            });
+
+            const newContracts = await userB.clients.fullAuth.contracts.getConsentedContracts();
+
+            expect(newContracts.records).toHaveLength(1);
+            expect(newContracts.records[0]!.contract.contract).toEqual(minimalContract);
+            expect(newContracts.records[0]!.contract.autoBoosts).toBeTruthy();
+            expect(newContracts.records[0]!.contract.autoBoosts).toHaveLength(3);
+            expect(
+                [boostUri1, boostUri2, boostUri3].every(uri =>
+                    newContracts.records[0]!.contract.autoBoosts!.includes(uri)
+                )
+            ).toBeTruthy();
+        });
     });
 
     describe('updateConsentedContractTerms', () => {
@@ -2142,7 +2348,10 @@ describe('Consent Flow Contracts', () => {
 
         it('should stop verifying when terms expire', async () => {
             const newContractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract(
-                { contract: minimalContract, name: 'b' }
+                {
+                    contract: minimalContract,
+                    name: 'b',
+                }
             );
 
             await userB.clients.fullAuth.contracts.consentToContract({

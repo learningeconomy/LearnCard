@@ -1,0 +1,219 @@
+{
+    "@context": {
+        "id": "@id",
+        "type": "@type",
+        "lcn": "https://docs.learncard.com/definitions#",
+        "cred": "https://www.w3.org/2018/credentials#",
+        "xsd": "https://www.w3.org/2001/XMLSchema#",
+        "BoostCredential": {
+            "@context": {
+                "address": {
+                    "@id": "https://purl.imsglobal.org/spec/vc/ob/vocab.html#Address"
+                },
+                "attachments": {
+                    "@container": "@set",
+                    "@context": {
+                        "title": {
+                            "@id": "lcn:boostAttachmentTitle",
+                            "@type": "xsd:string"
+                        },
+                        "type": {
+                            "@id": "lcn:boostAttachmentType",
+                            "@type": "xsd:string"
+                        },
+                        "url": {
+                            "@id": "lcn:boostAttachmentUrl",
+                            "@type": "xsd:string"
+                        }
+                    },
+                    "@id": "lcn:boostAttachments"
+                },
+                "boostId": {
+                    "@id": "lcn:boostId",
+                    "@type": "xsd:string"
+                },
+                "display": {
+                    "@context": {
+                        "backgroundColor": {
+                            "@id": "lcn:boostBackgroundColor",
+                            "@type": "xsd:string"
+                        },
+                        "backgroundImage": {
+                            "@id": "lcn:boostBackgroundImage",
+                            "@type": "xsd:string"
+                        },
+                        "displayType": {
+                            "@id": "lcn:boostDisplayType",
+                            "@type": "xsd:string"
+                        },
+                        "emoji": {
+                            "@context": {
+                                "activeSkinTone": {
+                                    "@id": "lcn:boostEmojiActiveSkinTone",
+                                    "@type": "xsd:string"
+                                },
+                                "imageUrl": {
+                                    "@id": "lcn:boostEmojiImageUrl",
+                                    "@type": "xsd:string"
+                                },
+                                "names": {
+                                    "@container": "@set",
+                                    "@id": "lcn:boostEmojiNames",
+                                    "@type": "xsd:string"
+                                },
+                                "unified": {
+                                    "@id": "lcn:boostEmojiUnified",
+                                    "@type": "xsd:string"
+                                },
+                                "unifiedWithoutSkinTone": {
+                                    "@id": "lcn:boostEmojiUnifiedWithoutSkinTone",
+                                    "@type": "xsd:string"
+                                }
+                            },
+                            "@id": "lcn:boostEmoji"
+                        },
+                        "fadeBackgroundImage": {
+                            "@id": "lcn:boostFadeBackgroundImage",
+                            "@type": "xsd:boolean"
+                        },
+                        "repeatBackgroundImage": {
+                            "@id": "lcn:boostRepeatBackgroundImage",
+                            "@type": "xsd:boolean"
+                        }
+                    },
+                    "@id": "lcn:boostDisplay"
+                },
+                "familyTitles": {
+                    "@context": {
+                        "dependents": {
+                            "@container": "@set",
+                            "@context": {
+                                "plural": {
+                                    "@id": "lcn:plural",
+                                    "@type": "xsd:string"
+                                },
+                                "singular": {
+                                    "@id": "lcn:singular",
+                                    "@type": "xsd:string"
+                                }
+                            },
+                            "@id": "lcn:dependents"
+                        },
+                        "guardians": {
+                            "@container": "@set",
+                            "@context": {
+                                "plural": {
+                                    "@id": "lcn:plural",
+                                    "@type": "xsd:string"
+                                },
+                                "singular": {
+                                    "@id": "lcn:singular",
+                                    "@type": "xsd:string"
+                                }
+                            },
+                            "@id": "lcn:guardians"
+                        }
+                    },
+                    "@id": "lcn:familyTitles"
+                },
+                "groupID": {
+                    "@id": "lcn:groupID",
+                    "@type": "xsd:string"
+                },
+                "skills": {
+                    "@container": "@set",
+                    "@context": {
+                        "category": {
+                            "@id": "lcn:boostSkillCategory",
+                            "@type": "xsd:string"
+                        },
+                        "skill": {
+                            "@id": "lcn:boostSkill",
+                            "@type": "xsd:string"
+                        },
+                        "subskills": {
+                            "@container": "@set",
+                            "@id": "lcn:boostSubskills",
+                            "@type": "xsd:string"
+                        }
+                    },
+                    "@id": "lcn:boostSkills"
+                }
+            },
+            "@id": "lcn:boostCredential"
+        },
+        "BoostID": {
+            "@id": "lcn:boostID",
+            "@context": {
+                "boostID": {
+                    "@id": "lcn:boostIDField",
+                    "@context": {
+                        "fontColor": {
+                            "@id": "lcn:boostIDFontColor",
+                            "@type": "xsd:string"
+                        },
+                        "accentColor": {
+                            "@id": "lcn:boostIDAccentColor",
+                            "@type": "xsd:string"
+                        },
+                        "backgroundImage": {
+                            "@id": "lcn:boostIDBackgroundImage",
+                            "@type": "xsd:string"
+                        },
+                        "dimBackgroundImage": {
+                            "@id": "lcn:boostIDDimBackgroundImage",
+                            "@type": "xsd:boolean"
+                        },
+                        "issuerThumbnail": {
+                            "@id": "lcn:boostIDIssuerThumbnail",
+                            "@type": "xsd:string"
+                        },
+                        "showIssuerThumbnail": {
+                            "@id": "lcn:boostIDShowIssuerThumbnail",
+                            "@type": "xsd:boolean"
+                        },
+                        "IDIssuerName": {
+                            "@id": "lcn:boostIDIssuerName",
+                            "@type": "xsd:string"
+                        },
+                        "idThumbnail": {
+                            "@id": "lcn:boostIDThumbnail",
+                            "@type": "xsd:string"
+                        },
+                        "accentFontColor": {
+                            "@id": "lcn:boostIDFontColor",
+                            "@type": "xsd:string"
+                        },
+                        "idBackgroundColor": {
+                            "@id": "lcn:boostIDBackgroundColor",
+                            "@type": "xsd:string"
+                        },
+                        "repeatIdBackgroundImage": {
+                            "@id": "lcn:boostIDRepeatIdBackgroundImage",
+                            "@type": "xsd:boolean"
+                        },
+                        "idDescription": {
+                            "@id": "lcn:boostIDDescription",
+                            "@type": "xsd:string"
+                        }
+                    }
+                }
+            }
+        },
+        "CertifiedBoostCredential": {
+            "@id": "lcn:certifiedBoostCredential",
+            "@context": {
+                "@version": 1.1,
+                "boostId": {
+                    "@id": "lcn:boostId",
+                    "@type": "xsd:string"
+                },
+                "boostCredential": {
+                    "@id": "cred:VerifiableCredential",
+                    "@type": "@id",
+                    "@container": "@graph"
+                }
+            }
+        }
+    }
+}
