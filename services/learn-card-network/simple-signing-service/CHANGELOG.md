@@ -1,5 +1,21 @@
 # @welibraryos/lca-api-service
 
+## 1.0.6
+
+### Patch Changes
+
+-   [`cbc84cc27d1eaf8b6830f06d86d354cb78d8d548`](https://github.com/learningeconomy/LearnCard/commit/cbc84cc27d1eaf8b6830f06d86d354cb78d8d548) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Remove NX caching in CI to ensure latest builds
+
+-   Updated dependencies [[`cbc84cc27d1eaf8b6830f06d86d354cb78d8d548`](https://github.com/learningeconomy/LearnCard/commit/cbc84cc27d1eaf8b6830f06d86d354cb78d8d548)]:
+    -   @learncard/core@9.3.23
+    -   @learncard/types@5.6.10
+    -   @learncard/did-web-plugin@1.0.60
+    -   @learncard/didkey-plugin@1.0.34
+    -   @learncard/didkit-plugin@1.5.9
+    -   @learncard/expiration-plugin@1.1.38
+    -   @learncard/learn-card-plugin@1.1.37
+    -   @learncard/vc-plugin@1.1.38
+
 ## 1.0.5
 
 ### Patch Changes

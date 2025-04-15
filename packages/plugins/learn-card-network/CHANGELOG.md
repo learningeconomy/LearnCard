@@ -1,5 +1,15 @@
 # learn-card-core
 
+## 2.4.21
+
+### Patch Changes
+
+-   [`cbc84cc27d1eaf8b6830f06d86d354cb78d8d548`](https://github.com/learningeconomy/LearnCard/commit/cbc84cc27d1eaf8b6830f06d86d354cb78d8d548) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Remove NX caching in CI to ensure latest builds
+
+-   Updated dependencies [[`cbc84cc27d1eaf8b6830f06d86d354cb78d8d548`](https://github.com/learningeconomy/LearnCard/commit/cbc84cc27d1eaf8b6830f06d86d354cb78d8d548)]:
+    -   @learncard/core@9.3.23
+    -   @learncard/network-brain-client@2.2.22
+
 ## 2.4.20
 
 ### Patch Changes

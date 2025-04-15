@@ -1,5 +1,11 @@
 # docs
 
+## 0.1.4
+
+### Patch Changes
+
+-   [`cbc84cc27d1eaf8b6830f06d86d354cb78d8d548`](https://github.com/learningeconomy/LearnCard/commit/cbc84cc27d1eaf8b6830f06d86d354cb78d8d548) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Remove NX caching in CI to ensure latest builds
+
 ## 0.1.3
 
 ### Patch Changes

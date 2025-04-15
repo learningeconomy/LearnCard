@@ -1,5 +1,16 @@
 # learn-card-core
 
+## 1.1.37
+
+### Patch Changes
+
+-   [`cbc84cc27d1eaf8b6830f06d86d354cb78d8d548`](https://github.com/learningeconomy/LearnCard/commit/cbc84cc27d1eaf8b6830f06d86d354cb78d8d548) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Remove NX caching in CI to ensure latest builds
+
+-   Updated dependencies [[`cbc84cc27d1eaf8b6830f06d86d354cb78d8d548`](https://github.com/learningeconomy/LearnCard/commit/cbc84cc27d1eaf8b6830f06d86d354cb78d8d548)]:
+    -   @learncard/core@9.3.23
+    -   @learncard/types@5.6.10
+    -   @learncard/didkit-plugin@1.5.9
+
 ## 1.1.36
 
 ### Patch Changes
