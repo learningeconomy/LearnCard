@@ -1,5 +1,18 @@
 # @learncard/chapi-example
 
+## 1.0.217
+
+### Patch Changes
+
+-   [`cbc84cc27d1eaf8b6830f06d86d354cb78d8d548`](https://github.com/learningeconomy/LearnCard/commit/cbc84cc27d1eaf8b6830f06d86d354cb78d8d548) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Remove NX caching in CI to ensure latest builds
+
+-   Updated dependencies [[`cbc84cc27d1eaf8b6830f06d86d354cb78d8d548`](https://github.com/learningeconomy/LearnCard/commit/cbc84cc27d1eaf8b6830f06d86d354cb78d8d548)]:
+    -   @learncard/helpers@1.1.12
+    -   @learncard/init@2.0.4
+    -   @learncard/types@5.6.10
+    -   @learncard/chapi-plugin@1.0.51
+    -   @learncard/react@2.7.75
+
 ## 1.0.216
 
 ### Patch Changes
