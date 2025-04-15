@@ -342,6 +342,11 @@ export type LearnCardNetworkPluginMethods = {
     ) => Promise<PaginatedContractCredentials>;
 
     verifyConsent: (uri: string, profileId: string) => Promise<boolean>;
+    
+    syncCredentialsToContract: (
+        termsUri: string,
+        categories: Record<string, string[]>
+    ) => Promise<boolean>;
 
     addDidMetadata: (metadata: Partial<DidDocument>) => Promise<boolean>;
     getDidMetadata: (id: string) => Promise<Partial<DidDocument> | undefined>;
