@@ -1,5 +1,11 @@
 # @learncard/network-brain-service
 
+## 3.3.20
+
+### Patch Changes
+
+-   [#639](https://github.com/learningeconomy/LearnCard/pull/639) [`435df22adcdf1ffb1e2840281b7eaaadd6f2d1ef`](https://github.com/learningeconomy/LearnCard/commit/435df22adcdf1ffb1e2840281b7eaaadd6f2d1ef) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add ability to sync credentials to a contract
+
 ## 3.3.19
 
 ### Patch Changes
