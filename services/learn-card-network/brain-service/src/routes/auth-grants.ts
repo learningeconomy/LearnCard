@@ -1,7 +1,7 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
-import { t, scopedProfileRoute } from '@routes';
+import { t, scopedProfileRoute, profileRoute } from '@routes';
 import { createAuthGrant } from '@accesslayer/auth-grant/create';
 import {
     getAuthGrantById,
@@ -21,7 +21,7 @@ import { v4 as uuid } from 'uuid';
 import { AUTH_GRANT_READ_ONLY_SCOPE } from 'src/constants/auth-grant';
 
 export const authGrantsRouter = t.router({
-    addAuthGrant: scopedProfileRoute
+    addAuthGrant: profileRoute
         .meta({
             openapi: {
                 protect: true,

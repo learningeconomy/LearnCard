@@ -1,6 +1,7 @@
+import crypto from 'crypto';
 import { describe, test, expect } from 'vitest';
 
-import { getLearnCardForUser, LearnCard, USERS } from './helpers/learncard.helpers';
+import { getLearnCard, getLearnCardForUser, LearnCard, USERS } from './helpers/learncard.helpers';
 import { testUnsignedBoost } from './helpers/credential.helpers';
 
 let a: LearnCard;
@@ -142,5 +143,65 @@ describe('Boosts', () => {
         // Get the parent boost's children - should be empty
         const children = await a.invoke.getBoostChildren(parentBoostUri);
         expect(children.records).toHaveLength(0);
+    });
+
+    test('Users can send a boost via signing authority using the HTTP route', async () => {
+        const learnCard = await getLearnCard(crypto.randomBytes(32).toString('hex'));
+        await learnCard.invoke.createServiceProfile({
+            profileId: 'rando',
+            displayName: 'Random User',
+            bio: '',
+            shortBio: '',
+        });
+        // Create and register a signing authority for user A
+        const sa = await learnCard.invoke.createSigningAuthority('test-sa');
+        expect(sa).toBeDefined();
+        await learnCard.invoke.registerSigningAuthority(sa.endpoint, sa.name, sa.did);
+        const saResult = await learnCard.invoke.getRegisteredSigningAuthority(sa.endpoint, sa.name);
+        expect(saResult).toBeDefined();
+        const signingAuthority = {
+            endpoint: saResult.signingAuthority.endpoint,
+            name: saResult.relationship.name,
+        };
+
+        // Create a boost as user A
+        const boostUri = await learnCard.invoke.createBoost(testUnsignedBoost);
+        expect(boostUri).toBeDefined();
+
+        const grantId = await learnCard.invoke.addAuthGrant({
+            status: 'active',
+            id: 'test',
+            name: 'test',
+            challenge: 'auth-grant:test-challenge',
+            createdAt: new Date().toISOString(),
+            scope: '*:*',
+        });
+
+        const token = await learnCard.invoke.getAPITokenForAuthGrant(grantId);
+
+        // Prepare the payload for the HTTP request
+        const payload = { boostUri, signingAuthority };
+
+        // Send the boost using the HTTP route
+        const response = await fetch(
+            `http://localhost:4000/api/boost/send/via-signing-authority/${USERS.b.profileId}`,
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: JSON.stringify(payload),
+            }
+        );
+        expect(response.status).toBe(200);
+        const sentBoostUri = await response.json();
+        expect(typeof sentBoostUri).toBe('string');
+        expect(sentBoostUri.length).toBeGreaterThan(0);
+
+        // Check that user B received the boost
+        const incomingCredentials = await b.invoke.getIncomingCredentials();
+
+        expect(incomingCredentials.some(cred => cred.uri === sentBoostUri)).toBe(true);
     });
 });
