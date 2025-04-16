@@ -201,7 +201,7 @@ export const openProfileRoute = didRoute.use(async ({ ctx, next }) => {
     return next({ ctx: { ...ctx, user: { ...ctx.user, profile } } });
 });
 
-export const profileRoute = didAndChallengeRoute.use(async ({ ctx, next }) => {
+export const profileRoute = didAndChallengeRoute.use(async ({ ctx, next, meta }) => {
     const { profile } = ctx.user;
 
     if (!profile) {
@@ -211,12 +211,8 @@ export const profileRoute = didAndChallengeRoute.use(async ({ ctx, next }) => {
         });
     }
 
-    return next({ ctx: { ...ctx, user: { ...ctx.user, profile } } });
-});
-
-export const scopedProfileRoute = profileRoute.use(({ ctx, next, meta }) => {
     if (!meta?.requiredScope) {
-        return next({ ctx });
+        return next({ ctx: { ...ctx, user: { ...ctx.user, profile } } });
     }
 
     const userScope = ctx.user?.scope || AUTH_GRANT_NO_ACCESS_SCOPE;
@@ -230,7 +226,7 @@ export const scopedProfileRoute = profileRoute.use(({ ctx, next, meta }) => {
         });
     }
 
-    return next({ ctx });
+    return next({ ctx: { ...ctx, user: { ...ctx.user, profile } } });
 });
 
 export const openProfileManagerRoute = openRoute.use(async ({ ctx, next }) => {

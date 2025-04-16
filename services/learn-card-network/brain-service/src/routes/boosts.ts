@@ -18,6 +18,9 @@ import {
     LCNProfileQueryValidator,
     LCNProfileManagerQueryValidator,
     PaginatedLCNProfileManagersValidator,
+    UnsignedVC,
+    JWE,
+    VC,
 } from '@learncard/types';
 
 import { t, profileRoute } from '@routes';
@@ -93,6 +96,7 @@ import { updateBoostPermissions } from '@accesslayer/boost/relationships/update'
 import { EMPTY_PERMISSIONS, QUERYABLE_PERMISSIONS } from 'src/constants/permissions';
 import { updateBoost } from '@accesslayer/boost/update';
 import { addClaimPermissionsForBoost } from '@accesslayer/role/relationships/create';
+import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
 
 export const boostsRouter = t.router({
     sendBoost: profileRoute
@@ -1601,6 +1605,132 @@ export const boostsRouter = t.router({
             }
 
             return removeBoostAsParent(parentBoost, childBoost);
+        }),
+
+    sendBoostViaSigningAuthority: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/boost/send/via-signing-authority/{profileId}',
+                tags: ['Boosts'],
+                summary: 'Send a boost to a profile using a signing authority',
+                description:
+                    'Issues a boost VC to a recipient profile using a specified signing authority and sends it via the network.',
+            },
+            requiredScope: 'boosts:write',
+        })
+        .input(
+            z.object({
+                profileId: z.string(),
+                boostUri: z.string(),
+                signingAuthority: z.object({
+                    name: z.string(),
+                    endpoint: z.string(),
+                }),
+                options: z
+                    .object({
+                        skipNotification: z.boolean().default(false).optional(),
+                    })
+                    .optional(),
+            })
+        )
+        .output(z.string())
+        .mutation(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { profileId, boostUri, signingAuthority, options } = input;
+
+            const boost = await getBoostByUri(boostUri);
+
+            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            if (!(await canProfileIssueBoost(profile, boost))) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile does not have permission to issue boost',
+                });
+            }
+
+            if (isDraftBoost(boost)) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'Draft Boosts can not be sent. Only Published Boosts can be sent.',
+                });
+            }
+
+            const targetProfile = await getProfileByProfileId(profileId);
+
+            if (!targetProfile) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Recipient profile not found' });
+            }
+
+            let unsignedVc: UnsignedVC;
+
+            try {
+                unsignedVc = JSON.parse(boost.dataValues.boost);
+
+                unsignedVc.issuanceDate = new Date().toISOString();
+                unsignedVc.issuer = { id: getDidWeb(ctx.domain, profile.profileId) };
+
+                if (Array.isArray(unsignedVc.credentialSubject)) {
+                    unsignedVc.credentialSubject = unsignedVc.credentialSubject.map(subject => ({
+                        ...subject,
+                        id: getDidWeb(ctx.domain, targetProfile.profileId),
+                    }));
+                } else {
+                    unsignedVc.credentialSubject = {
+                        ...unsignedVc.credentialSubject,
+                        id: getDidWeb(ctx.domain, targetProfile.profileId),
+                    };
+                }
+                if (unsignedVc?.type?.includes('BoostCredential')) unsignedVc.boostId = boostUri;
+            } catch (e) {
+                console.error('Failed to parse boost', e);
+                throw new TRPCError({
+                    code: 'INTERNAL_SERVER_ERROR',
+                    message: 'Failed to parse boost',
+                });
+            }
+
+            const sa = await getSigningAuthorityForUserByName(
+                profile,
+                signingAuthority.endpoint,
+                signingAuthority.name
+            );
+            if (!sa) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Could not find signing authority for boost',
+                });
+            }
+
+            let credential: VC | JWE;
+            try {
+                credential = await issueCredentialWithSigningAuthority(
+                    profile,
+                    unsignedVc,
+                    sa,
+                    ctx.domain
+                );
+            } catch (e) {
+                console.error('Failed to issue VC with signing authority', e);
+                throw new TRPCError({
+                    code: 'INTERNAL_SERVER_ERROR',
+                    message: 'Could not issue VC with signing authority',
+                });
+            }
+
+            let skipNotification = profile.profileId === targetProfile.profileId;
+            if (options?.skipNotification) skipNotification = options?.skipNotification;
+
+            return sendBoost({
+                from: profile,
+                to: targetProfile,
+                boost,
+                credential,
+                domain: ctx.domain,
+                skipNotification,
+            });
         }),
 });
 
