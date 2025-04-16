@@ -1,7 +1,7 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
-import { t, scopedProfileRoute, profileRoute } from '@routes';
+import { t, profileRoute } from '@routes';
 import { createAuthGrant } from '@accesslayer/auth-grant/create';
 import {
     getAuthGrantById,
@@ -63,7 +63,7 @@ export const authGrantsRouter = t.router({
             }
         }),
 
-    getAuthGrant: scopedProfileRoute
+    getAuthGrant: profileRoute
         .meta({
             openapi: {
                 protect: true,
@@ -101,7 +101,7 @@ export const authGrantsRouter = t.router({
             return doc;
         }),
 
-    getAuthGrants: scopedProfileRoute
+    getAuthGrants: profileRoute
         .meta({
             openapi: {
                 protect: true,
@@ -138,7 +138,7 @@ export const authGrantsRouter = t.router({
             });
         }),
 
-    updateAuthGrant: scopedProfileRoute
+    updateAuthGrant: profileRoute
         .meta({
             openapi: {
                 protect: true,
@@ -178,7 +178,7 @@ export const authGrantsRouter = t.router({
 
             return updateAuthGrant(authGrant, input.updates);
         }),
-    revokeAuthGrant: scopedProfileRoute
+    revokeAuthGrant: profileRoute
         .meta({
             openapi: {
                 protect: true,
@@ -220,7 +220,7 @@ export const authGrantsRouter = t.router({
 
             return true;
         }),
-    deleteAuthGrant: scopedProfileRoute
+    deleteAuthGrant: profileRoute
         .meta({
             openapi: {
                 protect: true,

@@ -229,25 +229,6 @@ export const profileRoute = didAndChallengeRoute.use(async ({ ctx, next, meta })
     return next({ ctx });
 });
 
-export const scopedProfileRoute = profileRoute.use(({ ctx, next, meta }) => {
-    if (!meta?.requiredScope) {
-        return next({ ctx });
-    }
-
-    const userScope = ctx.user?.scope || AUTH_GRANT_NO_ACCESS_SCOPE;
-
-    const hasRequiredScope = userHasRequiredScopes(userScope, meta.requiredScope);
-
-    if (!hasRequiredScope) {
-        throw new TRPCError({
-            code: 'FORBIDDEN',
-            message: `This operation requires ${meta.requiredScope} scope`,
-        });
-    }
-
-    return next({ ctx });
-});
-
 export const openProfileManagerRoute = openRoute.use(async ({ ctx, next }) => {
     if (!ctx.user?.did) throw new TRPCError({ code: 'UNAUTHORIZED' });
 
