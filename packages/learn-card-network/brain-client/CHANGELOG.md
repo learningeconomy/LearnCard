@@ -1,5 +1,28 @@
 # @learncard/network-brain-client
 
+## 2.2.23
+
+### Patch Changes
+
+-   Updated dependencies [[`ef457b4f4fb47bddb18b9ebb16cb89ed48b229f1`](https://github.com/learningeconomy/LearnCard/commit/ef457b4f4fb47bddb18b9ebb16cb89ed48b229f1)]:
+    -   @learncard/network-brain-service@3.3.22
+
+## 2.2.22
+
+### Patch Changes
+
+-   [`cbc84cc27d1eaf8b6830f06d86d354cb78d8d548`](https://github.com/learningeconomy/LearnCard/commit/cbc84cc27d1eaf8b6830f06d86d354cb78d8d548) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Remove NX caching in CI to ensure latest builds
+
+-   Updated dependencies [[`cbc84cc27d1eaf8b6830f06d86d354cb78d8d548`](https://github.com/learningeconomy/LearnCard/commit/cbc84cc27d1eaf8b6830f06d86d354cb78d8d548)]:
+    -   @learncard/network-brain-service@3.3.21
+
+## 2.2.21
+
+### Patch Changes
+
+-   Updated dependencies [[`435df22adcdf1ffb1e2840281b7eaaadd6f2d1ef`](https://github.com/learningeconomy/LearnCard/commit/435df22adcdf1ffb1e2840281b7eaaadd6f2d1ef)]:
+    -   @learncard/network-brain-service@3.3.20
+
 ## 2.2.20
 
 ### Patch Changes

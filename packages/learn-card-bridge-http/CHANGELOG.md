@@ -1,5 +1,29 @@
 # @learncard/create-http-bridge
 
+## 1.1.151
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.5
+
+## 1.1.150
+
+### Patch Changes
+
+-   [`cbc84cc27d1eaf8b6830f06d86d354cb78d8d548`](https://github.com/learningeconomy/LearnCard/commit/cbc84cc27d1eaf8b6830f06d86d354cb78d8d548) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Remove NX caching in CI to ensure latest builds
+
+-   Updated dependencies [[`cbc84cc27d1eaf8b6830f06d86d354cb78d8d548`](https://github.com/learningeconomy/LearnCard/commit/cbc84cc27d1eaf8b6830f06d86d354cb78d8d548)]:
+    -   @learncard/init@2.0.4
+    -   @learncard/types@5.6.10
+
+## 1.1.149
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.3
+
 ## 1.1.148
 
 ### Patch Changes
