@@ -1618,7 +1618,7 @@ export const boostsRouter = t.router({
                 description:
                     'Issues a boost VC to a recipient profile using a specified signing authority and sends it via the network.',
             },
-            requiredScope: 'authGrants:write',
+            requiredScope: 'boosts:write',
         })
         .input(
             z.object({

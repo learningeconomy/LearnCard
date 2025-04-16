@@ -174,7 +174,7 @@ describe('Boosts', () => {
             name: 'test',
             challenge: 'auth-grant:test-challenge',
             createdAt: new Date().toISOString(),
-            scope: '*:*',
+            scope: 'boosts:write',
         });
 
         const token = await learnCard.invoke.getAPITokenForAuthGrant(grantId);
