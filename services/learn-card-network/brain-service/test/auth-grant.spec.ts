@@ -1,6 +1,7 @@
 import { getClient, getUser } from './helpers/getClient';
 import { Profile, AuthGrant } from '@models';
 import { AuthGrantStatusValidator, AUTH_GRANT_AUDIENCE_DOMAIN_PREFIX } from '@learncard/types';
+import { isAuthGrantChallengeValidForDID } from '@accesslayer/auth-grant/read';
 
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;
@@ -106,6 +107,51 @@ describe('Auth Grants', () => {
             await expect(
                 userC.clients.fullAuth.authGrants.getAuthGrant({ id: authGrantId })
             ).rejects.toThrow();
+        });
+
+        it('should create a valid auth grant for a did with a challenge', async () => {
+            await userA.clients.fullAuth.profile.createServiceProfile({ profileId: 'usera' });
+            const authGrantId = await userA.clients.fullAuth.authGrants.addAuthGrant({
+                name: 'test',
+                scope: '*:*',
+            });
+
+            const authGrant = await userA.clients.fullAuth.authGrants.getAuthGrant({
+                id: authGrantId,
+            });
+
+            expect(authGrant).toBeDefined();
+            expect(authGrant?.status).toEqual(AuthGrantStatusValidator.Values.active);
+            expect(authGrant?.challenge).toContain(AUTH_GRANT_AUDIENCE_DOMAIN_PREFIX);
+            const { isChallengeValid, scope } = await isAuthGrantChallengeValidForDID(
+                authGrant?.challenge as string,
+                `did:web:domain:users:usera`
+            );
+
+            expect(isChallengeValid).toBe(true);
+            expect(scope).toBe('*:*');
+        });
+
+        it('should respect expiration date, and invalidate the auth grant after it is expired', async () => {
+            await userA.clients.fullAuth.profile.createServiceProfile({ profileId: 'usera' });
+            const authGrantId = await userA.clients.fullAuth.authGrants.addAuthGrant({
+                name: 'test',
+                expiresAt: new Date().toISOString(),
+                scope: '*:*',
+            });
+
+            const authGrant = await userA.clients.fullAuth.authGrants.getAuthGrant({
+                id: authGrantId,
+            });
+
+            expect(authGrant).toBeDefined();
+            const { isChallengeValid, scope } = await isAuthGrantChallengeValidForDID(
+                authGrant?.challenge as string,
+                `did:web:domain:users:usera`
+            );
+
+            expect(isChallengeValid).toBe(false);
+            expect(scope).toBeFalsy();
         });
     });
 

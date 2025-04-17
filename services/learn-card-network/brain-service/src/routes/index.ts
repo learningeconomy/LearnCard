@@ -180,7 +180,7 @@ export const scopedRoute = didAndChallengeRoute.use(({ ctx, next, meta }) => {
 
     if (!hasRequiredScope) {
         throw new TRPCError({
-            code: 'FORBIDDEN',
+            code: 'UNAUTHORIZED',
             message: `This operation requires ${meta.requiredScope} scope`,
         });
     }
@@ -221,7 +221,7 @@ export const profileRoute = didAndChallengeRoute.use(async ({ ctx, next, meta })
 
     if (!hasRequiredScope) {
         throw new TRPCError({
-            code: 'FORBIDDEN',
+            code: 'UNAUTHORIZED',
             message: `This operation requires ${meta.requiredScope} scope`,
         });
     }

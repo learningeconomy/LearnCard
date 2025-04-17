@@ -1407,6 +1407,7 @@ describe('Boosts', () => {
                         const client = getClient({
                             did: `did:test:${index + 1}`,
                             isChallengeValid: true,
+                            scope: '*:*',
                         });
                         await client.profile.createProfile({ profileId: `generated${index + 1}` });
                         await userA.clients.fullAuth.boost.addBoostAdmin({
