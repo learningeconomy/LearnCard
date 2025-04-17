@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { getLearnCardForUser, LearnCard, USERS } from './helpers/learncard.helpers';
+import { getLearnCardForUser, getLearnCard, LearnCard, USERS } from './helpers/learncard.helpers';
+import crypto from 'crypto';
 import { testUnsignedBoost } from './helpers/credential.helpers';
 
 import {
@@ -346,6 +347,71 @@ describe('ConsentFlow E2E Tests', () => {
             );
 
             expect(contractCredential).toBeDefined();
+        });
+
+        it('should allow writing a credential via signing authority HTTP route', async () => {
+            const learnCard = await getLearnCard(crypto.randomBytes(32).toString('hex'));
+            await learnCard.invoke.createServiceProfile({
+                profileId: 'rando',
+                displayName: 'Random User',
+                bio: '',
+                shortBio: '',
+            });
+            const sa = await learnCard.invoke.createSigningAuthority('test-sa');
+            expect(sa).toBeDefined();
+            await learnCard.invoke.registerSigningAuthority(sa.endpoint, sa.name, sa.did);
+            const saResult = await learnCard.invoke.getRegisteredSigningAuthority(
+                sa.endpoint,
+                sa.name
+            );
+            expect(saResult).toBeDefined();
+            const signingAuthority = {
+                endpoint: saResult.signingAuthority.endpoint,
+                name: saResult.relationship.name,
+            };
+
+            const grantId = await learnCard.invoke.addAuthGrant({
+                status: 'active',
+                id: 'test',
+                name: 'test',
+                challenge: 'auth-grant:test-challenge',
+                createdAt: new Date().toISOString(),
+                scope: 'contracts:write',
+            });
+            const token = await learnCard.invoke.getAPITokenForAuthGrant(grantId);
+
+            const newBoostUri = await learnCard.invoke.createBoost(testUnsignedBoost, {
+                category: 'Achievement',
+                name: 'Test Achievement',
+            });
+
+            const payload = { boostUri: newBoostUri, signingAuthority };
+            const response = await fetch(
+                `http://localhost:4000/api/consent-flow-contract/write/via-signing-authority/${contractUri.replace(
+                    '/',
+                    '%2F'
+                )}/${b.id.did()}`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`,
+                    },
+                    body: JSON.stringify(payload),
+                }
+            );
+            expect(response.status).toBe(200);
+            const credentialUri = await response.json();
+            expect(typeof credentialUri).toBe('string');
+            expect(credentialUri.length).toBeGreaterThan(0);
+
+            // Check that user B received the credential
+            const consentFlowCredentials = await b.invoke.getConsentFlowCredentials();
+            expect(consentFlowCredentials.records.length).toBeGreaterThan(0);
+            const credentialRecord = consentFlowCredentials.records[0];
+            expect(credentialRecord.termsUri).toBe(termsUri);
+            expect(credentialRecord.category).toBe('Achievement');
+            expect(credentialRecord.credentialUri).toBe(credentialUri);
         });
     });
 

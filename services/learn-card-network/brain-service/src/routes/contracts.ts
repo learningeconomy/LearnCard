@@ -20,6 +20,9 @@ import {
     PaginatedContractCredentialsValidator,
     VCValidator,
     JWEValidator,
+    UnsignedVC,
+    VC,
+    JWE,
     AutoBoostConfigValidator,
 } from '@learncard/types';
 import { createConsentFlowContract } from '@accesslayer/consentflowcontract/create';
@@ -64,6 +67,8 @@ import {
 } from '@accesslayer/credential/relationships/read';
 import { getCredentialUri } from '@helpers/credential.helpers';
 import { getSigningAuthorityForUserByName } from '@accesslayer/signing-authority/relationships/read';
+import { getDidWeb } from '@helpers/did.helpers';
+import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
 
 export const contractsRouter = t.router({
     createConsentFlowContract: profileRoute
@@ -569,6 +574,174 @@ export const contractsRouter = t.router({
                 boost,
                 credential,
                 domain,
+                skipNotification: true,
+                autoAcceptCredential: false,
+                contractTerms: terms,
+            });
+        }),
+
+    writeCredentialToContractViaSigningAuthority: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/consent-flow-contract/write/via-signing-authority/{contractUri}/{did}',
+                tags: ['Consent Flow Contracts'],
+                summary:
+                    'Write credential through signing authority for a DID consented to a contract',
+                description:
+                    'Issues and sends a boost credential via a registered signing authority to a DID that has consented to a contract.',
+            },
+            requiredScope: 'contracts:write',
+        })
+        .input(
+            z.object({
+                did: z.string(),
+                contractUri: z.string(),
+                boostUri: z.string(),
+                signingAuthority: z.object({
+                    name: z.string(),
+                    endpoint: z.string(),
+                }),
+            })
+        )
+        .output(z.string())
+        .mutation(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { did, contractUri, boostUri, signingAuthority } = input;
+
+            // Get recipient profile
+            const otherProfile = await getProfileByDid(did);
+            if (!otherProfile) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Profile not found. Are you sure this person exists?',
+                });
+            }
+
+            // Check blocked relationship
+            const isBlocked = await isRelationshipBlocked(profile, otherProfile);
+            if (isBlocked) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'Profile not found. Are you sure this person exists?',
+                });
+            }
+
+            // Get contract details
+            const contractDetails = await getContractDetailsByUri(contractUri);
+            if (!contractDetails) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find contract' });
+            }
+
+            // Verify consent
+            if (!(await hasProfileConsentedToContract(otherProfile, contractDetails.contract))) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'Target profile has not consented to this contract',
+                });
+            }
+
+            // Get boost and verify permissions
+            const boost = await getBoostByUri(boostUri);
+            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+            if (!(await canProfileIssueBoost(profile, boost))) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile does not have permissions to issue boost',
+                });
+            }
+            if (isDraftBoost(boost)) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'Draft Boosts can not be sent. Only Published Boosts can be sent.',
+                });
+            }
+
+            // Get contract terms
+            const terms = await getContractTermsForProfile(otherProfile, contractDetails.contract);
+            if (!terms) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'Target profile has not consented to this contract',
+                });
+            }
+
+            // Check category allowed
+            const boostCategory = boost.category;
+            if (boostCategory) {
+                const categoryAllowed = terms.terms.write?.credentials?.categories?.[boostCategory];
+                if (!categoryAllowed) {
+                    throw new TRPCError({
+                        code: 'FORBIDDEN',
+                        message: `Target profile has not consented to receive boosts in the ${boostCategory} category`,
+                    });
+                }
+            }
+
+            // Prepare unsigned VC
+            let unsignedVc: UnsignedVC;
+            try {
+                unsignedVc = JSON.parse(boost.dataValues.boost);
+                unsignedVc.issuanceDate = new Date().toISOString();
+                unsignedVc.issuer = { id: getDidWeb(ctx.domain, profile.profileId) };
+                if (Array.isArray(unsignedVc.credentialSubject)) {
+                    unsignedVc.credentialSubject = unsignedVc.credentialSubject.map(subject => ({
+                        ...subject,
+                        id: getDidWeb(ctx.domain, otherProfile.profileId),
+                    }));
+                } else {
+                    unsignedVc.credentialSubject = {
+                        ...unsignedVc.credentialSubject,
+                        id: getDidWeb(ctx.domain, otherProfile.profileId),
+                    };
+                }
+                if (unsignedVc?.type?.includes('BoostCredential')) unsignedVc.boostId = boostUri;
+            } catch (e) {
+                console.error('Failed to parse boost', e);
+                throw new TRPCError({
+                    code: 'INTERNAL_SERVER_ERROR',
+                    message: 'Failed to parse boost',
+                });
+            }
+
+            // Get signing authority
+            const sa = await getSigningAuthorityForUserByName(
+                profile,
+                signingAuthority.endpoint,
+                signingAuthority.name
+            );
+            if (!sa) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Could not find signing authority for boost',
+                });
+            }
+
+            // Issue VC with signing authority
+            let credential: VC | JWE;
+            try {
+                credential = await issueCredentialWithSigningAuthority(
+                    profile,
+                    unsignedVc,
+                    sa,
+                    ctx.domain
+                );
+            } catch (e) {
+                console.error('Failed to issue VC with signing authority', e);
+                throw new TRPCError({
+                    code: 'INTERNAL_SERVER_ERROR',
+                    message: 'Could not issue VC with signing authority',
+                });
+            }
+
+            // Send the boost
+            return sendBoost({
+                from: profile,
+                to: otherProfile,
+                boost,
+                credential,
+                domain: ctx.domain,
                 skipNotification: true,
                 autoAcceptCredential: false,
                 contractTerms: terms,
