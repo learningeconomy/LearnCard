@@ -600,7 +600,7 @@ export const contractsRouter = t.router({
                 description:
                     'Issues and sends a boost credential via a registered signing authority to a DID that has consented to a contract.',
             },
-            requiredScope: 'contracts:write',
+            requiredScope: 'contracts-data:write',
         })
         .input(
             z.object({
