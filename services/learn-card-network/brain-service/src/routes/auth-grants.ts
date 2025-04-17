@@ -28,21 +28,14 @@ export const authGrantsRouter = t.router({
                 method: 'POST',
                 path: '/auth-grant/create',
                 tags: ['AuthGrants', 'authGrants:write'],
-                summary: 'Add AuthGrant to your service profile',
-                description: 'Add AuthGrant to your service profile',
+                summary: 'Add AuthGrant to your profile',
+                description: 'Add AuthGrant to your profile',
             },
             requiredScope: 'authGrants:write',
         })
         .input(AuthGrantValidator.partial().omit({ id: true }))
         .output(z.string())
         .mutation(async ({ input, ctx }) => {
-            if (!ctx.user.profile.isServiceProfile) {
-                throw new TRPCError({
-                    code: 'UNAUTHORIZED',
-                    message: 'You must be a service profile to add an AuthGrant',
-                });
-            }
-
             try {
                 const authGrant = await createAuthGrant({
                     scope: AUTH_GRANT_READ_ONLY_SCOPE,
@@ -78,13 +71,6 @@ export const authGrantsRouter = t.router({
         .input(z.object({ id: z.string() }))
         .output(AuthGrantValidator.partial().optional())
         .query(async ({ input, ctx }) => {
-            if (!ctx.user.profile.isServiceProfile) {
-                throw new TRPCError({
-                    code: 'UNAUTHORIZED',
-                    message: 'You must be a service profile to get an AuthGrant',
-                });
-            }
-
             if (!(await isAuthGrantAssociatedWithProfile(input.id, ctx.user.profile.profileId))) {
                 throw new TRPCError({
                     code: 'UNAUTHORIZED',
@@ -124,13 +110,6 @@ export const authGrantsRouter = t.router({
         )
         .output(AuthGrantValidator.array())
         .query(async ({ ctx, input }) => {
-            if (!ctx.user.profile.isServiceProfile) {
-                throw new TRPCError({
-                    code: 'UNAUTHORIZED',
-                    message: 'You must be a service profile to get AuthGrants',
-                });
-            }
-
             return getAuthGrantsForProfile(ctx.user.profile, {
                 limit: input?.limit || 100,
                 cursor: input?.cursor,
@@ -153,13 +132,6 @@ export const authGrantsRouter = t.router({
         .input(z.object({ id: z.string(), updates: AuthGrantValidator.partial() }))
         .output(z.boolean())
         .mutation(async ({ input, ctx }) => {
-            if (!ctx.user.profile.isServiceProfile) {
-                throw new TRPCError({
-                    code: 'UNAUTHORIZED',
-                    message: 'You must be a service profile to update an AuthGrant',
-                });
-            }
-
             if (!(await isAuthGrantAssociatedWithProfile(input.id, ctx.user.profile.profileId))) {
                 throw new TRPCError({
                     code: 'UNAUTHORIZED',
@@ -193,13 +165,6 @@ export const authGrantsRouter = t.router({
         .input(z.object({ id: z.string() }))
         .output(z.boolean())
         .mutation(async ({ input, ctx }) => {
-            if (!ctx.user.profile.isServiceProfile) {
-                throw new TRPCError({
-                    code: 'UNAUTHORIZED',
-                    message: 'You must be a service profile to revoke an AuthGrant',
-                });
-            }
-
             if (!(await isAuthGrantAssociatedWithProfile(input.id, ctx.user.profile.profileId))) {
                 throw new TRPCError({
                     code: 'UNAUTHORIZED',
@@ -235,13 +200,6 @@ export const authGrantsRouter = t.router({
         .input(z.object({ id: z.string() }))
         .output(z.boolean())
         .mutation(async ({ input, ctx }) => {
-            if (!ctx.user.profile.isServiceProfile) {
-                throw new TRPCError({
-                    code: 'UNAUTHORIZED',
-                    message: 'You must be a service profile to delete an AuthGrant',
-                });
-            }
-
             if (!(await isAuthGrantAssociatedWithProfile(input.id, ctx.user.profile.profileId))) {
                 throw new TRPCError({
                     code: 'UNAUTHORIZED',

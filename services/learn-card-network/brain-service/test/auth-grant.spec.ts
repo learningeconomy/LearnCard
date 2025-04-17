@@ -67,11 +67,11 @@ describe('Auth Grants', () => {
             ).resolves.not.toThrow();
         });
 
-        it('should not allow you to add an auth grant for a regular user profile', async () => {
+        it('should allow you to add an auth grant for a regular user profile', async () => {
             await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
             await expect(
                 userA.clients.fullAuth.authGrants.addAuthGrant({ name: 'test' })
-            ).rejects.toThrow();
+            ).resolves.not.toThrow();
         });
 
         it('should return the newly created auth grant', async () => {
@@ -120,9 +120,9 @@ describe('Auth Grants', () => {
             await AuthGrant.delete({ detach: true, where: {} });
         });
 
-        it('should not allow you to get auth grants for a regular user profile', async () => {
+        it('should allow you to get auth grants for a regular user profile', async () => {
             await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
-            await expect(userA.clients.fullAuth.authGrants.getAuthGrants()).rejects.toThrow();
+            await expect(userA.clients.fullAuth.authGrants.getAuthGrants()).resolves.not.toThrow();
         });
 
         // it('should allow you to get auth grants for a scoped user profile with read scope', async () => {
@@ -215,11 +215,23 @@ describe('Auth Grants', () => {
             await AuthGrant.delete({ detach: true, where: {} });
         });
 
-        it('should not allow you to update an auth grant for a regular user profile', async () => {
+        it('should allow you to update an auth grant for a regular user profile', async () => {
             await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            const authGrantId = await userA.clients.fullAuth.authGrants.addAuthGrant({
+                name: 'test',
+            });
             await expect(
-                userA.clients.fullAuth.authGrants.updateAuthGrant({ id: 'test', updates: {} })
-            ).rejects.toThrow();
+                userA.clients.fullAuth.authGrants.updateAuthGrant({
+                    id: authGrantId,
+                    updates: { name: 'test2' },
+                })
+            ).resolves.not.toThrow();
+
+            const updatedAuthGrant = await userA.clients.fullAuth.authGrants.getAuthGrant({
+                id: authGrantId,
+            });
+
+            expect((updatedAuthGrant as any).name).toEqual('test2');
         });
 
         // it('should not allow you to update an auth grant for a scoped user profile', async () => {
@@ -306,13 +318,6 @@ describe('Auth Grants', () => {
         afterAll(async () => {
             await Profile.delete({ detach: true, where: {} });
             await AuthGrant.delete({ detach: true, where: {} });
-        });
-
-        it('should not allow you to delete an auth grant for a regular user profile', async () => {
-            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
-            await expect(
-                userA.clients.fullAuth.authGrants.deleteAuthGrant({ id: 'test' })
-            ).rejects.toThrow();
         });
 
         it('should not allow deleting an active auth grant', async () => {
@@ -405,11 +410,23 @@ describe('Auth Grants', () => {
             await AuthGrant.delete({ detach: true, where: {} });
         });
 
-        it('should not allow you to revoke an auth grant for a regular user profile', async () => {
+        it('should allow you to revoke an auth grant for a regular user profile', async () => {
             await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
-            await expect(
-                userA.clients.fullAuth.authGrants.revokeAuthGrant({ id: 'test' })
-            ).rejects.toThrow();
+            const authGrantId = await userA.clients.fullAuth.authGrants.addAuthGrant({
+                name: 'test',
+            });
+
+            const revokedAuthGrant = await userA.clients.fullAuth.authGrants.revokeAuthGrant({
+                id: authGrantId,
+            });
+
+            expect(revokedAuthGrant).toBeTruthy();
+
+            const authGrant = await userA.clients.fullAuth.authGrants.getAuthGrant({
+                id: authGrantId,
+            });
+
+            expect((authGrant as any).status).toEqual(AuthGrantStatusValidator.Values.revoked);
         });
 
         // it('should not allow you to revoke an auth grant for a scoped user profile', async () => {
