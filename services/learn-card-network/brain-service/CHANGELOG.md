@@ -1,5 +1,11 @@
 # @learncard/network-brain-service
 
+## 3.3.24
+
+### Patch Changes
+
+-   [#648](https://github.com/learningeconomy/LearnCard/pull/648) [`de9d00e840150d4e701039afea88bfd5ac804fda`](https://github.com/learningeconomy/LearnCard/commit/de9d00e840150d4e701039afea88bfd5ac804fda) Thanks [@Custard7](https://github.com/Custard7)! - Task: Auth Grants Followup
+
 ## 3.3.23
 
 ### Patch Changes
