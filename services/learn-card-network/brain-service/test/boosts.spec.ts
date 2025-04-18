@@ -1407,6 +1407,7 @@ describe('Boosts', () => {
                         const client = getClient({
                             did: `did:test:${index + 1}`,
                             isChallengeValid: true,
+                            scope: '*:*',
                         });
                         await client.profile.createProfile({ profileId: `generated${index + 1}` });
                         await userA.clients.fullAuth.boost.addBoostAdmin({
@@ -1739,14 +1740,36 @@ describe('Boosts', () => {
             );
         });
 
-        it('should prevent you from deleting a published boost', async () => {
+        it('should allow deleting a published boost', async () => {
             const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
             const boost = boosts.records[0]!;
             const uri = boost.uri;
 
             const beforeDeleteLength = (await userA.clients.fullAuth.boost.getPaginatedBoosts())
                 .records.length;
-            await expect(userA.clients.fullAuth.boost.deleteBoost({ uri })).rejects.toThrow();
+            await expect(userA.clients.fullAuth.boost.deleteBoost({ uri })).resolves.not.toThrow();
+
+            expect((await userA.clients.fullAuth.boost.getPaginatedBoosts()).records).toHaveLength(
+                beforeDeleteLength - 1
+            );
+        });
+
+        it('should not allow deleting a boost with children', async () => {
+            const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
+            const boost = boosts.records[0]!;
+            const uri = boost.uri;
+
+            await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: uri,
+                boost: { credential: testVc, status: BoostStatus.enum.DRAFT },
+            });
+
+            const beforeDeleteLength = (await userA.clients.fullAuth.boost.getPaginatedBoosts())
+                .records.length;
+            await expect(userB.clients.fullAuth.boost.deleteBoost({ uri })).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+
             expect((await userA.clients.fullAuth.boost.getPaginatedBoosts()).records).toHaveLength(
                 beforeDeleteLength
             );

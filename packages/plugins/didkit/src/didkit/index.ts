@@ -17,7 +17,7 @@ export const init = async (
     try {
         generating = true;
 
-        await _init(arg);
+        await _init({ module_or_path: arg });
 
         generating = false;
         initialized = true;

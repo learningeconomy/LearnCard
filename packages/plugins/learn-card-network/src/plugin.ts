@@ -9,6 +9,7 @@ import {
     ConsentFlowContractValidator,
     ConsentFlowTermsValidator,
     JWE,
+    AUTH_GRANT_AUDIENCE_DOMAIN_PREFIX,
 } from '@learncard/types';
 import { LearnCard } from '@learncard/core';
 import { VerifyExtension } from '@learncard/vc-plugin';
@@ -77,9 +78,9 @@ export const getLearnCardNetworkPlugin = async (
                     let result = await client.storage.resolve.query({ uri: vcUri });
 
                     if ('ciphertext' in result) {
-                        result = (await _learnCard.invoke
-                            .getDIDObject()
-                            .decryptDagJWE(result as JWE)) as any;
+                        result = await _learnCard.invoke.decryptDagJwe(result as JWE, [
+                            _learnCard.id.keypair(),
+                        ]);
                     }
 
                     return await VCValidator.or(VPValidator).parseAsync(result);
@@ -102,9 +103,10 @@ export const getLearnCardNetworkPlugin = async (
             ) => {
                 _learnCard.debug?.("learnCard.store['LearnCard Network'].upload");
 
-                const jwe = await _learnCard.invoke
-                    .getDIDObject()
-                    .createDagJWE(credential, [_learnCard.id.did(), ...recipients]);
+                const jwe = await _learnCard.invoke.createDagJwe(credential, [
+                    _learnCard.id.did(),
+                    ...recipients,
+                ]);
 
                 return client.storage.store.mutate({ item: jwe });
             },
@@ -331,9 +333,10 @@ export const getLearnCardNetworkPlugin = async (
 
                 if (!target) throw new Error('Could not find target account');
 
-                const credential = await _learnCard.invoke
-                    .getDIDObject()
-                    .createDagJWE(vc, [userData.did, target.did]);
+                const credential = await _learnCard.invoke.createDagJwe(vc, [
+                    userData.did,
+                    target.did,
+                ]);
 
                 return client.credential.sendCredential.mutate({ profileId, credential });
             },
@@ -377,9 +380,10 @@ export const getLearnCardNetworkPlugin = async (
 
                 if (!target) throw new Error('Could not find target account');
 
-                const presentation = await _learnCard.invoke
-                    .getDIDObject()
-                    .createDagJWE(vp, [userData.did, target.did]);
+                const presentation = await _learnCard.invoke.createDagJwe(vp, [
+                    userData.did,
+                    target.did,
+                ]);
 
                 return client.presentation.sendPresentation.mutate({ profileId, presentation });
             },
@@ -657,9 +661,11 @@ export const getLearnCardNetworkPlugin = async (
 
                 const lcnDid = await client.utilities.getDid.query();
 
-                const credential = await _learnCard.invoke
-                    .getDIDObject()
-                    .createDagJWE(vc, [userData.did, targetProfile.did, lcnDid]);
+                const credential = await _learnCard.invoke.createDagJwe(vc, [
+                    userData.did,
+                    targetProfile.did,
+                    lcnDid,
+                ]);
 
                 return client.boost.sendBoost.mutate({
                     profileId,
@@ -821,6 +827,15 @@ export const getLearnCardNetworkPlugin = async (
                 return client.contracts.verifyConsent.query({ uri, profileId });
             },
 
+            syncCredentialsToContract: async (_learnCard, termsUri, categories) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.contracts.syncCredentialsToContract.mutate({
+                    termsUri,
+                    categories,
+                });
+            },
+
             addDidMetadata: async (_learnCard, metadata) => {
                 if (!userData) throw new Error('Please make an account first!');
 
@@ -879,6 +894,57 @@ export const getLearnCardNetworkPlugin = async (
                 if (!userData) throw new Error('Please make an account first!');
 
                 return client.claimHook.deleteClaimHook.mutate({ id });
+            },
+
+            addAuthGrant: async (_learnCard, authGrant) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.authGrants.addAuthGrant.mutate(authGrant);
+            },
+            revokeAuthGrant: async (_learnCard, id) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.authGrants.revokeAuthGrant.mutate({ id });
+            },
+            deleteAuthGrant: async (_learnCard, id) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.authGrants.deleteAuthGrant.mutate({ id });
+            },
+            updateAuthGrant: async (_learnCard, id, updates) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.authGrants.updateAuthGrant.mutate({ id, updates });
+            },
+            getAuthGrant: async (_learnCard, id) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.authGrants.getAuthGrant.query({ id });
+            },
+            getAuthGrants: async (_learnCard, options) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.authGrants.getAuthGrants.query(options);
+            },
+            getAPITokenForAuthGrant: async (_learnCard, id) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                const authGrant = await client.authGrants.getAuthGrant.query({ id });
+                if (!authGrant) throw new Error('Auth grant not found');
+                if (authGrant.status !== 'active') throw new Error('Auth grant is not active');
+                if (!authGrant.challenge) throw new Error('Auth grant has no challenge');
+                if (!authGrant.scope) throw new Error('Auth grant has no scope');
+                if (authGrant.expiresAt && new Date(authGrant.expiresAt) < new Date())
+                    throw new Error('Auth grant is expired');
+
+                const apiToken = (await _learnCard.invoke.getDidAuthVp({
+                    challenge: authGrant.challenge,
+                    proofFormat: 'jwt',
+                })) as string;
+
+                if (!apiToken) throw new Error('Failed to get API Token for auth grant');
+
+                return apiToken;
             },
 
             resolveFromLCN: async (_learnCard, uri) => {

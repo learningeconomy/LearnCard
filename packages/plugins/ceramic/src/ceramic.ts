@@ -21,13 +21,14 @@ import type {
 } from './types';
 
 import { CeramicURIValidator } from './types';
+import { DEFAULT_CERAMIC_ARGS } from './defaults';
 
 /**
  * @group Plugins
  */
 export const getCeramicPlugin = async (
     learnCard: LearnCard<any, any, CeramicPluginDependentMethods>,
-    { ceramicEndpoint, defaultContentFamily }: CeramicArgs
+    { ceramicEndpoint, defaultContentFamily }: CeramicArgs = DEFAULT_CERAMIC_ARGS
 ): Promise<CeramicPlugin> => {
     const ceramic = new CeramicClient(ceramicEndpoint);
 

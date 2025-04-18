@@ -1,4 +1,3 @@
-import type { DID } from 'dids';
 import type { LCNClient } from '@learncard/network-brain-client';
 import {
     LCNProfile,
@@ -42,6 +41,8 @@ import {
     PaginatedConsentFlowDataForDid,
     PaginatedContractCredentials,
     AutoBoostConfig,
+    AuthGrantType,
+    AuthGrantQuery,
 } from '@learncard/types';
 import { Plugin } from '@learncard/core';
 import { ProofOptions } from '@learncard/didkit-plugin';
@@ -49,13 +50,14 @@ import { VerifyExtension } from '@learncard/vc-plugin';
 
 /** @group LearnCardNetwork Plugin */
 export type LearnCardNetworkPluginDependentMethods = {
-    getDIDObject: () => DID;
     getDidAuthVp: (options?: ProofOptions) => Promise<VP | string>;
     issueCredential: (
         credential: UnsignedVC,
         signingOptions?: Partial<ProofOptions>
     ) => Promise<VC>;
     clearDidWebCache?: () => Promise<void>;
+    createDagJwe: (cleartext: any, recipients: string[]) => Promise<JWE>;
+    decryptDagJwe: (jwe: JWE, jwks: any[]) => Promise<any>;
 };
 
 /** @group LearnCardNetwork Plugin */
@@ -340,6 +342,11 @@ export type LearnCardNetworkPluginMethods = {
     ) => Promise<PaginatedContractCredentials>;
 
     verifyConsent: (uri: string, profileId: string) => Promise<boolean>;
+    
+    syncCredentialsToContract: (
+        termsUri: string,
+        categories: Record<string, string[]>
+    ) => Promise<boolean>;
 
     addDidMetadata: (metadata: Partial<DidDocument>) => Promise<boolean>;
     getDidMetadata: (id: string) => Promise<Partial<DidDocument> | undefined>;
@@ -353,6 +360,15 @@ export type LearnCardNetworkPluginMethods = {
     ) => Promise<PaginatedClaimHooksType>;
     deleteClaimHook: (id: string) => Promise<boolean>;
 
+    addAuthGrant: (authGrant: Partial<AuthGrantType>) => Promise<string>;
+    getAuthGrant: (id: string) => Promise<Partial<AuthGrantType> | undefined>;
+    getAuthGrants: (
+        options?: Partial<PaginationOptionsType> & { query?: AuthGrantQuery }
+    ) => Promise<Partial<AuthGrantType>[] | undefined>;
+    deleteAuthGrant: (id: string) => Promise<boolean>;
+    updateAuthGrant: (id: string, updates: Partial<AuthGrantType>) => Promise<boolean>;
+    revokeAuthGrant: (id: string) => Promise<boolean>;
+    getAPITokenForAuthGrant: (id: string) => Promise<string>;
     resolveFromLCN: (
         uri: string
     ) => Promise<VC | UnsignedVC | VP | JWE | ConsentFlowContract | ConsentFlowTerms>;

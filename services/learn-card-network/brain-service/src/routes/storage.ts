@@ -39,6 +39,7 @@ export const storageRouter = t.router({
                 description:
                     'This endpoint stores a credential/presentation, returning a uri that can be used to resolve it',
             },
+            requiredScope: 'storage:write',
         })
         .input(
             z.object({
@@ -81,6 +82,7 @@ export const storageRouter = t.router({
                 description:
                     'This endpoint stores a credential/presentation, returning a uri that can be used to resolve it',
             },
+            requiredScope: 'storage:read',
         })
         .input(z.object({ uri: z.string() }))
         .output(

@@ -1,5 +1,154 @@
 # @learncard/network-brain-service
 
+## 3.3.24
+
+### Patch Changes
+
+-   [#648](https://github.com/learningeconomy/LearnCard/pull/648) [`de9d00e840150d4e701039afea88bfd5ac804fda`](https://github.com/learningeconomy/LearnCard/commit/de9d00e840150d4e701039afea88bfd5ac804fda) Thanks [@Custard7](https://github.com/Custard7)! - Task: Auth Grants Followup
+
+## 3.3.23
+
+### Patch Changes
+
+-   [#649](https://github.com/learningeconomy/LearnCard/pull/649) [`60b610c68d386108653b0559e6c7bdec9a074534`](https://github.com/learningeconomy/LearnCard/commit/60b610c68d386108653b0559e6c7bdec9a074534) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Introduce a new authenticated HTTP endpoint for issuing and sending credentials to consent flow contracts via a registered signing authority.
+
+    ```http
+    POST /api/consent-flow-contract/write/via-signing-authority/{contractUri}/{did}
+    ```
+
+    Key features:
+
+    -   Validates the DID and contract URI, ensures the target profile has consented to the contract, and verifies issuer permissions.
+    -   Leverages a registered signing authority to sign credentials (VC or JWE).
+    -   Delivers signed credentials over the network while respecting notification settings and contract terms.
+    -   Mirrors the existing `sendBoostViaSigningAuthority` route for consistency.
+    -   Adds comprehensive end-to-end tests covering the entire credential issuance and delivery flow.
+
+## 3.3.22
+
+### Patch Changes
+
+-   [#646](https://github.com/learningeconomy/LearnCard/pull/646) [`ef457b4f4fb47bddb18b9ebb16cb89ed48b229f1`](https://github.com/learningeconomy/LearnCard/commit/ef457b4f4fb47bddb18b9ebb16cb89ed48b229f1) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - # Add HTTP route for sending boosts via signing authority
+
+    This update introduces a new LearnCard Network service-level route, `/boost/send/via-signing-authority`, that allows a profile to send a boost (credential) to another profile using a registered signing authority. This is particularly useful for workflows where the server does not have access to user key material and must delegate credential issuance to an external signing authority.
+
+    Key features:
+
+    -   New POST route `/boost/send/via-signing-authority` for sending boosts via HTTP
+    -   Supports specifying the recipient profile, boost URI, and signing authority details
+    -   Issues credentials using the provided signing authority and delivers them to the recipient
+    -   Includes E2E test demonstrating direct HTTP usage and signing authority setup
+    -   Documentation updated to reflect the new pattern and best practices for AI assistants
+
+    This change makes it easier for external services and clients to programmatically send boosts in a secure and user-friendly way, even when user keys are not available server-side.
+
+## 3.3.21
+
+### Patch Changes
+
+-   [`cbc84cc27d1eaf8b6830f06d86d354cb78d8d548`](https://github.com/learningeconomy/LearnCard/commit/cbc84cc27d1eaf8b6830f06d86d354cb78d8d548) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Remove NX caching in CI to ensure latest builds
+
+-   Updated dependencies [[`cbc84cc27d1eaf8b6830f06d86d354cb78d8d548`](https://github.com/learningeconomy/LearnCard/commit/cbc84cc27d1eaf8b6830f06d86d354cb78d8d548)]:
+    -   @learncard/core@9.3.23
+    -   @learncard/helpers@1.1.12
+    -   @learncard/types@5.6.10
+    -   @learncard/crypto-plugin@1.0.34
+    -   @learncard/did-web-plugin@1.0.60
+    -   @learncard/didkey-plugin@1.0.34
+    -   @learncard/didkit-plugin@1.5.9
+    -   @learncard/encryption-plugin@1.0.8
+    -   @learncard/expiration-plugin@1.1.38
+    -   @learncard/learn-card-plugin@1.1.37
+    -   @learncard/vc-plugin@1.1.38
+    -   @learncard/vc-templates-plugin@1.0.44
+
+## 3.3.20
+
+### Patch Changes
+
+-   [#639](https://github.com/learningeconomy/LearnCard/pull/639) [`435df22adcdf1ffb1e2840281b7eaaadd6f2d1ef`](https://github.com/learningeconomy/LearnCard/commit/435df22adcdf1ffb1e2840281b7eaaadd6f2d1ef) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add ability to sync credentials to a contract
+
+## 3.3.19
+
+### Patch Changes
+
+-   [#641](https://github.com/learningeconomy/LearnCard/pull/641) [`833ef629a073fd4d202eaebceb0fb48615daa0c9`](https://github.com/learningeconomy/LearnCard/commit/833ef629a073fd4d202eaebceb0fb48615daa0c9) Thanks [@Custard7](https://github.com/Custard7)! - Feat: Add AuthGrant support
+
+-   Updated dependencies [[`833ef629a073fd4d202eaebceb0fb48615daa0c9`](https://github.com/learningeconomy/LearnCard/commit/833ef629a073fd4d202eaebceb0fb48615daa0c9)]:
+    -   @learncard/types@5.6.9
+    -   @learncard/core@9.3.22
+    -   @learncard/helpers@1.1.11
+    -   @learncard/did-web-plugin@1.0.59
+    -   @learncard/didkey-plugin@1.0.33
+    -   @learncard/didkit-plugin@1.5.8
+    -   @learncard/encryption-plugin@1.0.7
+    -   @learncard/learn-card-plugin@1.1.36
+    -   @learncard/vc-plugin@1.1.37
+    -   @learncard/vc-templates-plugin@1.0.43
+    -   @learncard/expiration-plugin@1.1.37
+    -   @learncard/crypto-plugin@1.0.33
+
+## 3.3.18
+
+### Patch Changes
+
+-   [#638](https://github.com/learningeconomy/LearnCard/pull/638) [`66b77d32cb7219ff50959762368bbbf549f8468b`](https://github.com/learningeconomy/LearnCard/commit/66b77d32cb7219ff50959762368bbbf549f8468b) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Include autoboosts as part of contract details
+
+-   Updated dependencies [[`66b77d32cb7219ff50959762368bbbf549f8468b`](https://github.com/learningeconomy/LearnCard/commit/66b77d32cb7219ff50959762368bbbf549f8468b)]:
+    -   @learncard/types@5.6.8
+    -   @learncard/core@9.3.21
+    -   @learncard/helpers@1.1.10
+    -   @learncard/did-web-plugin@1.0.58
+    -   @learncard/didkey-plugin@1.0.32
+    -   @learncard/didkit-plugin@1.5.7
+    -   @learncard/encryption-plugin@1.0.6
+    -   @learncard/learn-card-plugin@1.1.35
+    -   @learncard/vc-plugin@1.1.36
+    -   @learncard/vc-templates-plugin@1.0.42
+    -   @learncard/expiration-plugin@1.1.36
+    -   @learncard/crypto-plugin@1.0.32
+
+## 3.3.17
+
+### Patch Changes
+
+-   [#635](https://github.com/learningeconomy/LearnCard/pull/635) [`a945a7086a0848b04f9f2c8b1588e9e3826edeff`](https://github.com/learningeconomy/LearnCard/commit/a945a7086a0848b04f9f2c8b1588e9e3826edeff) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Remove dependency on ceramic
+
+-   Updated dependencies [[`a945a7086a0848b04f9f2c8b1588e9e3826edeff`](https://github.com/learningeconomy/LearnCard/commit/a945a7086a0848b04f9f2c8b1588e9e3826edeff)]:
+    -   @learncard/core@9.3.20
+    -   @learncard/crypto-plugin@1.0.31
+    -   @learncard/did-web-plugin@1.0.57
+    -   @learncard/didkey-plugin@1.0.31
+    -   @learncard/didkit-plugin@1.5.6
+    -   @learncard/encryption-plugin@1.0.5
+    -   @learncard/expiration-plugin@1.1.35
+    -   @learncard/learn-card-plugin@1.1.34
+    -   @learncard/vc-plugin@1.1.35
+    -   @learncard/vc-templates-plugin@1.0.41
+
+## 3.3.16
+
+### Patch Changes
+
+-   [#633](https://github.com/learningeconomy/LearnCard/pull/633) [`9b9b2556b1749f50982a75c291be58a8cb9979f5`](https://github.com/learningeconomy/LearnCard/commit/9b9b2556b1749f50982a75c291be58a8cb9979f5) Thanks [@gerardopar](https://github.com/gerardopar)! - LC-823 - Allow deleting live boosts + Prevent deleting boosts with children
+
+## 3.3.15
+
+### Patch Changes
+
+-   Updated dependencies [[`099f06d92d77a43fe953c0d63767355ff050ef56`](https://github.com/learningeconomy/LearnCard/commit/099f06d92d77a43fe953c0d63767355ff050ef56)]:
+    -   @learncard/didkit-plugin@1.5.5
+    -   @learncard/ceramic-plugin@1.0.30
+    -   @learncard/learn-card-plugin@1.1.33
+    -   @learncard/vc-plugin@1.1.34
+    -   @learncard/expiration-plugin@1.1.34
+
+## 3.3.14
+
+### Patch Changes
+
+-   [`b3418d22ef9773def153efb6f1cf7d548e1b3011`](https://github.com/learningeconomy/LearnCard/commit/b3418d22ef9773def153efb6f1cf7d548e1b3011) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix critical error on new Neo4j version
+
 ## 3.3.13
 
 ### Patch Changes

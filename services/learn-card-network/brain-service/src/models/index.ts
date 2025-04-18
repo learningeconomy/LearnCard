@@ -40,8 +40,9 @@ Presentation.addRelationships({
     },
 });
 
-(async () => {
-    await Promise.all([
+// Use an IIFE to create indices without top-level await
+(function createIndices() {
+    Promise.all([
         neogma.queryRunner.run(
             'CREATE INDEX profileId_idx IF NOT EXISTS FOR (p:Profile) ON (p.profileId)'
         ),
@@ -62,10 +63,16 @@ Presentation.addRelationships({
         neogma.queryRunner.run(
             'CREATE INDEX has_role_id_idx IF NOT EXISTS FOR ()-[r:HAS_ROLE]-() ON (r.roleId)'
         ),
-    ]);
-    if (process.env.NODE_ENV !== 'test') console.log('Ensured indices!');
+    ])
+        .then(() => {
+            if (process.env.NODE_ENV !== 'test') console.log('Ensured indices!');
+        })
+        .catch(err => {
+            console.error('Error creating indices:', err);
+        });
 })();
 
+export * from './AuthGrant';
 export * from './Role';
 export * from './Boost';
 export * from './Profile';

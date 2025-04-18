@@ -8,8 +8,6 @@ import { DynamicLoaderPluginType } from '@learncard/dynamic-loader-plugin';
 import { VCPlugin } from '@learncard/vc-plugin';
 import { VCTemplatePlugin } from '@learncard/vc-templates-plugin';
 import { LearnCloudPlugin } from '@learncard/learn-cloud-plugin';
-import { CeramicPlugin, CeramicArgs } from '@learncard/ceramic-plugin';
-import { IDXPlugin, IDXArgs } from '@learncard/idx-plugin';
 import { ExpirationPlugin } from '@learncard/expiration-plugin';
 import { EthereumPlugin, EthereumConfig } from '@learncard/ethereum-plugin';
 import { VpqrPlugin } from '@learncard/vpqr-plugin';
@@ -30,7 +28,6 @@ export type LearnCardConfig = {
         unencryptedCustomFields?: string[];
         automaticallyAssociateDids?: boolean;
     };
-    ceramicIdx: CeramicArgs & IDXArgs;
     didkit: InitInput | Promise<InitInput>;
     allowRemoteContexts?: boolean;
     ethereumConfig: EthereumConfig;
@@ -67,9 +64,7 @@ export type LearnCardFromSeed = InitFunction<
             EncryptionPluginType,
             VCPlugin,
             VCTemplatePlugin,
-            CeramicPlugin,
             LearnCloudPlugin,
-            IDXPlugin,
             ExpirationPlugin,
             EthereumPlugin,
             VpqrPlugin,
@@ -92,9 +87,7 @@ export type NetworkLearnCardFromSeed = InitFunction<
             EncryptionPluginType,
             VCPlugin,
             VCTemplatePlugin,
-            CeramicPlugin,
             LearnCloudPlugin,
-            IDXPlugin,
             ExpirationPlugin,
             EthereumPlugin,
             VpqrPlugin,
@@ -119,9 +112,7 @@ export type DidWebLearnCardFromSeed = InitFunction<
             EncryptionPluginType,
             VCPlugin,
             VCTemplatePlugin,
-            CeramicPlugin,
             LearnCloudPlugin,
-            IDXPlugin,
             ExpirationPlugin,
             EthereumPlugin,
             VpqrPlugin,
@@ -145,9 +136,7 @@ export type DidWebNetworkLearnCardFromSeed = InitFunction<
             EncryptionPluginType,
             VCPlugin,
             VCTemplatePlugin,
-            CeramicPlugin,
             LearnCloudPlugin,
-            IDXPlugin,
             ExpirationPlugin,
             EthereumPlugin,
             VpqrPlugin,

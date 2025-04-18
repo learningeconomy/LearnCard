@@ -27,6 +27,7 @@ export const didMetadataRouter = t.router({
                 summary: 'Add Metadata to your did web',
                 description: 'Add Metadata to your did web',
             },
+            requiredScope: 'didMetadata:write',
         })
         .input(DidDocumentValidator.partial())
         .output(z.boolean())
@@ -70,6 +71,7 @@ export const didMetadataRouter = t.router({
                 summary: 'Get DID Metadata',
                 description: 'Get DID Metadata',
             },
+            requiredScope: 'didMetadata:read',
         })
         .input(z.object({ id: z.string() }))
         .output(DidDocumentValidator.partial().optional())
@@ -93,6 +95,7 @@ export const didMetadataRouter = t.router({
                 summary: 'Get My DID Metadata',
                 description: 'Get My DID Metadata',
             },
+            requiredScope: 'didMetadata:read',
         })
         .input(z.void())
         .output(DidMetadataValidator.array())
@@ -110,6 +113,7 @@ export const didMetadataRouter = t.router({
                 summary: 'Update DID Metadata',
                 description: 'Update DID Metadata',
             },
+            requiredScope: 'didMetadata:write',
         })
         .input(z.object({ id: z.string(), updates: DidDocumentValidator.partial() }))
         .output(z.boolean())
@@ -143,6 +147,7 @@ export const didMetadataRouter = t.router({
                 summary: 'Delete DID Metadata',
                 description: 'Delete DID Metadata',
             },
+            requiredScope: 'didMetadata:delete',
         })
         .input(z.object({ id: z.string() }))
         .output(z.boolean())
