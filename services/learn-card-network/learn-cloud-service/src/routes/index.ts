@@ -46,7 +46,7 @@ export const createContext = async (
             ) {
                 const decodedJwt = jwtDecode<DidAuthVP>(jwt);
 
-                const did = decodedJwt.vp.holder;
+                const did = decodedJwt.vp.holder!;
                 const challenge = decodedJwt.nonce;
 
                 if (!challenge) return { user: { did, isChallengeValid: false }, domain };

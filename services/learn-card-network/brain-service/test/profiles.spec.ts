@@ -4,7 +4,6 @@ import { getClient, getUser } from './helpers/getClient';
 import { Profile, SigningAuthority, Credential, Boost } from '@models';
 import cache from '@cache';
 import { testVc, sendBoost, testVp, testUnsignedBoost } from './helpers/send';
-import { TRPCError } from '@trpc/server';
 
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;
@@ -167,6 +166,17 @@ describe('Profiles', () => {
                     bio: 'I am user B',
                 })
             ).resolves.not.toThrow();
+        });
+
+        it('should allow setting display info', async () => {
+            await userA.clients.fullAuth.profile.createProfile({
+                profileId: 'usera',
+                displayName: 'A',
+                display: { fontColor: '#000' },
+            });
+            const profile = await userA.clients.fullAuth.profile.getProfile();
+
+            expect(profile?.display?.fontColor).toEqual('#000');
         });
     });
 
@@ -487,6 +497,7 @@ describe('Profiles', () => {
                         const client = getClient({
                             did: `did:test:${index + 1}`,
                             isChallengeValid: true,
+                            scope: '*:*',
                         });
                         await client.profile.createProfile({
                             profileId: `generated${index + 1}`,
@@ -615,6 +626,23 @@ describe('Profiles', () => {
 
             expect(results).toHaveLength(1);
             expect(results[0]?.isServiceProfile).toBeTruthy();
+        });
+
+        it('should not include private profiles', async () => {
+            const userD = await getUser('d'.repeat(64));
+
+            await userD.clients.fullAuth.profile.createProfile({
+                profileId: 'userd',
+                displayName: 'DName',
+                email: 'userD@test.com',
+                isPrivate: true,
+            });
+
+            const results = await userA.clients.fullAuth.profile.searchProfiles({
+                input: 'userd',
+            });
+
+            expect(results).toHaveLength(0);
         });
 
         it('should omit the connection status if includeConnectionStatus is false', async () => {
@@ -785,6 +813,30 @@ describe('Profiles', () => {
                 'https://api.learncard.app/send/notifications/updated'
             );
         });
+
+        it('should allow updating your display information', async () => {
+            await expect(
+                userA.clients.fullAuth.profile.updateProfile({
+                    display: {
+                        accentColor: '#fff',
+                    },
+                })
+            ).resolves.not.toThrow();
+
+            const userAResult = await userA.clients.fullAuth.profile.getProfile();
+
+            expect(userAResult?.display?.accentColor).toEqual('#fff');
+        });
+
+        it('should allow updating isPrivate', async () => {
+            await expect(
+                userA.clients.fullAuth.profile.updateProfile({ isPrivate: true })
+            ).resolves.not.toThrow();
+
+            const userAResult = await userA.clients.fullAuth.profile.getProfile();
+
+            expect(userAResult?.isPrivate).toBeTruthy();
+        });
     });
 
     describe('deleteProfile', () => {
@@ -809,9 +861,7 @@ describe('Profiles', () => {
 
         it('should allow you to delete your profile', async () => {
             await expect(userA.clients.fullAuth.profile.deleteProfile()).resolves.not.toThrow();
-            await expect(userA.clients.fullAuth.profile.getProfile()).rejects.toMatchObject({
-                code: 'NOT_FOUND',
-            });
+            expect(await userA.clients.fullAuth.profile.getProfile()).toBeUndefined();
         });
 
         it('should allow you to delete your profile with connections', async () => {
@@ -819,9 +869,7 @@ describe('Profiles', () => {
             await userB.clients.fullAuth.profile.acceptConnectionRequest({ profileId: 'usera' });
 
             await expect(userA.clients.fullAuth.profile.deleteProfile()).resolves.not.toThrow();
-            await expect(userA.clients.fullAuth.profile.getProfile()).rejects.toMatchObject({
-                code: 'NOT_FOUND',
-            });
+            expect(await userA.clients.fullAuth.profile.getProfile()).toBeUndefined();
         });
 
         it('should not show deleted profiles to other users', async () => {
@@ -1296,6 +1344,7 @@ describe('Profiles', () => {
                         const client = getClient({
                             did: `did:test:${index + 1}`,
                             isChallengeValid: true,
+                            scope: '*:*',
                         });
                         await client.profile.createProfile({ profileId: `generated${index + 1}` });
                         await userA.clients.fullAuth.profile.connectWith({
@@ -1504,7 +1553,10 @@ describe('Profiles', () => {
             await Credential.delete({ detach: true, where: {} });
             await Boost.delete({ detach: true, where: {} });
             await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
-            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+            await userB.clients.fullAuth.profile.createProfile({
+                profileId: 'userb',
+                display: { fontColor: '#fff' },
+            });
         });
 
         afterAll(async () => {

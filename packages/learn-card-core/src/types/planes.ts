@@ -1,4 +1,4 @@
-import { CredentialRecord, VC, VP, JWK } from '@learncard/types';
+import { CredentialRecord, VC, VP, JWKWithPrivateKey } from '@learncard/types';
 import { Query } from 'sift';
 import { Plugin } from './wallet';
 import { OmitNevers } from './helpers';
@@ -33,7 +33,7 @@ export type GetPlanesForPlugins<Plugins extends Plugin[]> = any[] extends Plugin
 export type GetPlaneProviders<
     Plugins extends Plugin[],
     Plane extends ControlPlane
-    > = any[] extends Plugins
+> = any[] extends Plugins
     ? any
     : {
         [Index in keyof Plugins]: undefined extends Plugins[Index][Plane]
@@ -171,7 +171,7 @@ export type LearnCardCachePlane<Plugins extends Plugin[]> = CachePlane & {
 
 export type IdPlane = {
     did: (method?: string, options?: PlaneOptions) => string;
-    keypair: (algorithm?: string, options?: PlaneOptions) => JWK;
+    keypair: (algorithm?: string, options?: PlaneOptions) => JWKWithPrivateKey;
 };
 
 export type PluginIdPlane = IdPlane;

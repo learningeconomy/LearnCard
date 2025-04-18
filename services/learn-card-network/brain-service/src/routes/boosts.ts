@@ -3,25 +3,56 @@ import { z } from 'zod';
 import { v4 as uuid } from 'uuid';
 
 import {
+    BoostValidator as ConsumerBoostValidator,
     UnsignedVCValidator,
     VCValidator,
     JWEValidator,
     BoostRecipientValidator,
+    BoostPermissionsValidator,
     PaginatedBoostRecipientsValidator,
     PaginatedBoostsValidator,
     PaginationOptionsValidator,
     PaginatedLCNProfilesValidator,
+    BoostPermissions,
+    BoostQueryValidator,
+    LCNProfileQueryValidator,
+    LCNProfileManagerQueryValidator,
+    PaginatedLCNProfileManagersValidator,
+    UnsignedVC,
+    JWE,
+    VC,
 } from '@learncard/types';
 
 import { t, profileRoute } from '@routes';
 
-import { getBoostByUri, getBoostsForProfile, countBoostsForProfile } from '@accesslayer/boost/read';
+import {
+    getBoostByUri,
+    getBoostsForProfile,
+    countBoostsForProfile,
+    getBoostsByUri,
+    getChildrenBoosts,
+    countBoostChildren,
+    getParentBoosts,
+    countBoostParents,
+    getSiblingBoosts,
+    countBoostSiblings,
+    getFamilialBoosts,
+    countFamilialBoosts,
+    getChildrenProfileManagers,
+} from '@accesslayer/boost/read';
 import {
     getBoostRecipientsSkipLimit,
     getBoostAdmins,
     getBoostRecipients,
     isProfileBoostAdmin,
     countBoostRecipients,
+    isBoostParent,
+    getBoostPermissions,
+    canManageBoostPermissions,
+    canProfileIssueBoost,
+    canProfileEditBoost,
+    canProfileCreateChildBoost,
+    getBoostByUriWithDefaultClaimPermissions,
 } from '@accesslayer/boost/relationships/read';
 
 import { deleteStorageForUri, setStorageForUri } from '@cache/storage';
@@ -34,7 +65,13 @@ import {
     isDraftBoost,
     convertCredentialToBoostTemplateJSON,
 } from '@helpers/boost.helpers';
-import { BoostValidator, BoostGenerateClaimLinkInput } from 'types/boost';
+import {
+    BoostValidator,
+    BoostGenerateClaimLinkInput,
+    BoostStatus,
+    BoostType,
+    BoostWithClaimPermissionsValidator,
+} from 'types/boost';
 import { deleteBoost } from '@accesslayer/boost/delete';
 import { createBoost } from '@accesslayer/boost/create';
 import { getBoostOwner } from '@accesslayer/boost/relationships/read';
@@ -48,9 +85,18 @@ import {
     useClaimLinkForBoost,
 } from '@cache/claim-links';
 import { getBlockedAndBlockedByIds, isRelationshipBlocked } from '@helpers/connection.helpers';
-import { getDidWeb } from '@helpers/did.helpers';
-import { setProfileAsBoostAdmin } from '@accesslayer/boost/relationships/create';
-import { removeProfileAsBoostAdmin } from '@accesslayer/boost/relationships/delete';
+import { getDidWeb, getManagedDidWeb } from '@helpers/did.helpers';
+import { setBoostAsParent, setProfileAsBoostAdmin } from '@accesslayer/boost/relationships/create';
+import {
+    removeBoostAsParent,
+    removeProfileAsBoostAdmin,
+} from '@accesslayer/boost/relationships/delete';
+import { getIdFromUri } from '@helpers/uri.helpers';
+import { updateBoostPermissions } from '@accesslayer/boost/relationships/update';
+import { EMPTY_PERMISSIONS, QUERYABLE_PERMISSIONS } from 'src/constants/permissions';
+import { updateBoost } from '@accesslayer/boost/update';
+import { addClaimPermissionsForBoost } from '@accesslayer/role/relationships/create';
+import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
 
 export const boostsRouter = t.router({
     sendBoost: profileRoute
@@ -63,18 +109,24 @@ export const boostsRouter = t.router({
                 summary: 'Send a Boost',
                 description: 'This endpoint sends a boost to a profile',
             },
+            requiredScope: 'boosts:write',
         })
         .input(
             z.object({
                 profileId: z.string(),
                 uri: z.string(),
                 credential: VCValidator.or(JWEValidator),
+                options: z
+                    .object({
+                        skipNotification: z.boolean().default(false).optional(),
+                    })
+                    .optional(),
             })
         )
         .output(z.string())
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const { profileId, credential, uri } = input;
+            const { profileId, credential, uri, options } = input;
 
             if (process.env.NODE_ENV !== 'test') {
                 console.log('🚀 BEGIN - Send Boost', JSON.stringify(input));
@@ -94,10 +146,10 @@ export const boostsRouter = t.router({
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
-            if (!(await isProfileBoostAdmin(profile, boost))) {
+            if (!(await canProfileIssueBoost(profile, boost))) {
                 throw new TRPCError({
                     code: 'UNAUTHORIZED',
-                    message: 'Profile does not own boost',
+                    message: 'Profile does not have permissions to issue boost',
                 });
             }
 
@@ -108,14 +160,17 @@ export const boostsRouter = t.router({
                 });
             }
 
-            return sendBoost(
-                profile,
-                targetProfile,
+            let skipNotification = profile.profileId === targetProfile.profileId;
+            if (options?.skipNotification) skipNotification = options?.skipNotification;
+
+            return sendBoost({
+                from: profile,
+                to: targetProfile,
                 boost,
                 credential,
-                ctx.domain,
-                profile.profileId === targetProfile.profileId
-            );
+                domain: ctx.domain,
+                skipNotification,
+            });
         }),
 
     createBoost: profileRoute
@@ -128,20 +183,94 @@ export const boostsRouter = t.router({
                 summary: 'Creates a boost',
                 description: 'This route creates a boost',
             },
+            requiredScope: 'boosts:write',
         })
         .input(
-            BoostValidator.partial()
-                .omit({ id: true, boost: true })
-                .extend({ credential: VCValidator.or(UnsignedVCValidator) })
+            ConsumerBoostValidator.partial()
+                .omit({ uri: true, claimPermissions: true })
+                .extend({
+                    credential: VCValidator.or(UnsignedVCValidator),
+                    claimPermissions: BoostPermissionsValidator.partial().optional(),
+                })
         )
         .output(z.string())
         .mutation(async ({ input, ctx }) => {
             const { profile } = ctx.user;
-            const { credential, ...metadata } = input;
+            const { credential, claimPermissions, ...metadata } = input;
 
             const boost = await createBoost(credential, profile, metadata, ctx.domain);
 
+            if (claimPermissions) {
+                await addClaimPermissionsForBoost(boost, {
+                    ...EMPTY_PERMISSIONS,
+                    ...claimPermissions,
+                });
+            }
+
             return getBoostUri(boost.id, ctx.domain);
+        }),
+
+    createChildBoost: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/boost/create/child/{parentUri}',
+                tags: ['Boosts'],
+                summary: 'Creates a boost',
+                description: 'This route creates a boost',
+            },
+            requiredScope: 'boosts:write',
+        })
+        .input(
+            z.object({
+                parentUri: z.string(),
+                boost: ConsumerBoostValidator.partial()
+                    .omit({ uri: true, claimPermissions: true })
+                    .extend({
+                        credential: VCValidator.or(UnsignedVCValidator),
+                        claimPermissions: BoostPermissionsValidator.partial().optional(),
+                    }),
+            })
+        )
+        .output(z.string())
+        .mutation(async ({ input, ctx }) => {
+            const { profile } = ctx.user;
+            const {
+                parentUri,
+                boost: { credential, claimPermissions, ...metadata },
+            } = input;
+
+            const parentBoost = await getBoostByUri(parentUri);
+
+            if (!parentBoost) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find parent boost' });
+            }
+
+            if (
+                !(await canProfileCreateChildBoost(profile, parentBoost, {
+                    status: BoostStatus.enum.LIVE,
+                    ...metadata,
+                }))
+            ) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile does not own parent boost',
+                });
+            }
+
+            const childBoost = await createBoost(credential, profile, metadata, ctx.domain);
+
+            await setBoostAsParent(parentBoost, childBoost);
+
+            if (claimPermissions) {
+                await addClaimPermissionsForBoost(childBoost, {
+                    ...EMPTY_PERMISSIONS,
+                    ...claimPermissions,
+                });
+            }
+
+            return getBoostUri(childBoost.id, ctx.domain);
         }),
 
     getBoost: profileRoute
@@ -154,31 +283,23 @@ export const boostsRouter = t.router({
                 summary: 'Get boost',
                 description: 'This endpoint gets metadata about a boost',
             },
+            requiredScope: 'boosts:read',
         })
         .input(z.object({ uri: z.string() }))
         .output(
-            BoostValidator.omit({ id: true, boost: true }).extend({
+            BoostWithClaimPermissionsValidator.omit({ id: true, boost: true }).extend({
                 uri: z.string(),
                 boost: UnsignedVCValidator,
             })
         )
         .query(async ({ ctx, input }) => {
-            const { profile } = ctx.user;
-
             const { uri } = input;
 
-            const boost = await getBoostByUri(uri);
+            const boost = await getBoostByUriWithDefaultClaimPermissions(uri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
-            if (!(await isProfileBoostAdmin(profile, boost))) {
-                throw new TRPCError({
-                    code: 'UNAUTHORIZED',
-                    message: 'Profile does not own boost',
-                });
-            }
-
-            const { id, boost: _boost, ...remaining } = boost.dataValues;
+            const { id, boost: _boost, ...remaining } = boost;
 
             return { ...remaining, boost: JSON.parse(_boost), uri: getBoostUri(id, ctx.domain) };
         }),
@@ -195,14 +316,9 @@ export const boostsRouter = t.router({
                 description:
                     "This endpoint gets the current user's boosts.\nWarning! This route is deprecated and currently has a hard limit of returning only the first 50 boosts. Please use getPaginatedBoosts instead",
             },
+            requiredScope: 'boosts:read',
         })
-        .input(
-            z
-                .object({
-                    query: BoostValidator.omit({ id: true, boost: true }).partial().optional(),
-                })
-                .default({})
-        )
+        .input(z.object({ query: BoostQueryValidator.optional() }).default({}))
         .output(BoostValidator.omit({ id: true, boost: true }).extend({ uri: z.string() }).array())
         .query(async ({ ctx, input }) => {
             const { query } = input;
@@ -226,14 +342,9 @@ export const boostsRouter = t.router({
                 summary: 'Count managed boosts',
                 description: "This endpoint counts the current user's managed boosts.",
             },
+            requiredScope: 'boosts:read',
         })
-        .input(
-            z
-                .object({
-                    query: BoostValidator.omit({ id: true, boost: true }).partial().optional(),
-                })
-                .default({})
-        )
+        .input(z.object({ query: BoostQueryValidator.optional() }).default({}))
         .output(z.number())
         .query(async ({ ctx, input }) => {
             const { query } = input;
@@ -254,11 +365,12 @@ export const boostsRouter = t.router({
                 summary: 'Get boosts',
                 description: "This endpoint gets the current user's boosts",
             },
+            requiredScope: 'boosts:read',
         })
         .input(
             PaginationOptionsValidator.extend({
                 limit: PaginationOptionsValidator.shape.limit.default(25),
-                query: BoostValidator.omit({ id: true, boost: true }).partial().optional(),
+                query: BoostQueryValidator.optional(),
             }).default({})
         )
         .output(PaginatedBoostsValidator)
@@ -296,6 +408,7 @@ export const boostsRouter = t.router({
                 description:
                     'This endpoint gets the recipients of a particular boost.\nWarning! This route is deprecated and currently has a hard limit of returning only the first 50 boosts. Please use getPaginatedBoostRecipients instead',
             },
+            requiredScope: 'boosts:read',
         })
         .input(
             z.object({
@@ -306,7 +419,8 @@ export const boostsRouter = t.router({
             })
         )
         .output(BoostRecipientValidator.array())
-        .query(async ({ input }) => {
+        .query(async ({ input, ctx }) => {
+            const { domain } = ctx;
             const { uri, limit, skip, includeUnacceptedBoosts } = input;
 
             const boost = await getBoostByUri(uri);
@@ -314,30 +428,38 @@ export const boostsRouter = t.router({
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
             //TODO: Should we restrict who can see the recipients of a boost? Maybe to Boost owner / people who have the boost?
-            return getBoostRecipientsSkipLimit(boost, { limit, skip, includeUnacceptedBoosts });
+            return getBoostRecipientsSkipLimit(boost, {
+                limit,
+                skip,
+                includeUnacceptedBoosts,
+                domain,
+            });
         }),
 
     getPaginatedBoostRecipients: profileRoute
         .meta({
             openapi: {
                 protect: true,
-                method: 'GET',
+                method: 'POST',
                 path: '/boost/recipients/paginated/{uri}',
                 tags: ['Boosts'],
                 summary: 'Get boost recipients',
                 description: 'This endpoint gets the recipients of a particular boost',
             },
+            requiredScope: 'boosts:read',
         })
         .input(
             PaginationOptionsValidator.extend({
                 limit: PaginationOptionsValidator.shape.limit.default(25),
                 uri: z.string(),
                 includeUnacceptedBoosts: z.boolean().default(true),
+                query: LCNProfileQueryValidator.optional(),
             })
         )
         .output(PaginatedBoostRecipientsValidator)
-        .query(async ({ input }) => {
-            const { uri, limit, cursor, includeUnacceptedBoosts } = input;
+        .query(async ({ input, ctx }) => {
+            const { domain } = ctx;
+            const { uri, limit, cursor, includeUnacceptedBoosts, query } = input;
 
             const boost = await getBoostByUri(uri);
 
@@ -347,6 +469,8 @@ export const boostsRouter = t.router({
                 limit: limit + 1,
                 cursor,
                 includeUnacceptedBoosts,
+                query,
+                domain,
             });
 
             const hasMore = records.length > limit;
@@ -369,6 +493,7 @@ export const boostsRouter = t.router({
                 summary: 'Get boost recipients count',
                 description: 'This endpoint counts the recipients of a particular boost',
             },
+            requiredScope: 'boosts:read',
         })
         .input(z.object({ uri: z.string(), includeUnacceptedBoosts: z.boolean().default(true) }))
         .output(z.number())
@@ -381,6 +506,391 @@ export const boostsRouter = t.router({
 
             return countBoostRecipients(boost, { includeUnacceptedBoosts });
         }),
+
+    getChildrenProfileManagers: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/boost/children-profile-managers/{uri}',
+                tags: ['Boosts', 'Profile Managers'],
+                summary: 'Get Profile Managers that are a child of a boost',
+                description: 'Get Profile Managers that are a child of a boost',
+            },
+            requiredScope: 'boosts:read',
+        })
+        .input(
+            PaginationOptionsValidator.extend({
+                limit: PaginationOptionsValidator.shape.limit.default(25),
+                uri: z.string(),
+                query: LCNProfileManagerQueryValidator.optional(),
+            })
+        )
+        .output(PaginatedLCNProfileManagersValidator)
+        .query(async ({ input, ctx }) => {
+            const { uri, limit, cursor, query } = input;
+
+            const boost = await getBoostByUri(uri);
+
+            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            const records = await getChildrenProfileManagers(boost, {
+                limit: limit + 1,
+                cursor,
+                query,
+            });
+
+            const hasMore = records.length > limit;
+            const newCursor = records.at(hasMore ? -2 : -1)?.created;
+
+            return {
+                hasMore,
+                records: records
+                    .map(record => ({ ...record, did: getManagedDidWeb(ctx.domain, record.id) }))
+                    .slice(0, limit),
+                ...(newCursor && { cursor: newCursor }),
+            };
+        }),
+
+    getBoostChildren: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/boost/children/{uri}',
+                tags: ['Boosts'],
+                summary: 'Get boost children',
+                description: 'This endpoint gets the children of a particular boost',
+            },
+            requiredScope: 'boosts:read',
+        })
+        .input(
+            PaginationOptionsValidator.extend({
+                limit: PaginationOptionsValidator.shape.limit.default(25),
+                uri: z.string(),
+                query: BoostQueryValidator.optional(),
+                numberOfGenerations: z.number().default(1),
+            })
+        )
+        .output(PaginatedBoostsValidator)
+        .query(async ({ input, ctx }) => {
+            const { uri, limit, cursor, query, numberOfGenerations } = input;
+
+            const boost = await getBoostByUri(uri);
+
+            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            const records = await getChildrenBoosts(boost, {
+                limit: limit + 1,
+                cursor,
+                query,
+                numberOfGenerations,
+            });
+
+            const hasMore = records.length > limit;
+            const newCursor = records.at(hasMore ? -2 : -1)?.created;
+
+            return {
+                hasMore,
+                records: records
+                    .map(boost => {
+                        const { id, boost: _boost, created: _created, ...remaining } = boost;
+
+                        return { ...remaining, uri: getBoostUri(id, ctx.domain) };
+                    })
+                    .slice(0, limit),
+                ...(newCursor && { cursor: newCursor }),
+            };
+        }),
+
+    countBoostChildren: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/boost/children/{uri}/count',
+                tags: ['Boosts'],
+                summary: 'Count boost children',
+                description: 'This endpoint counts the children of a particular boost',
+            },
+            requiredScope: 'boosts:read',
+        })
+        .input(
+            z.object({
+                uri: z.string(),
+                query: BoostQueryValidator.optional(),
+                numberOfGenerations: z.number().default(1),
+            })
+        )
+        .output(z.number())
+        .query(async ({ input }) => {
+            const { uri, query, numberOfGenerations } = input;
+
+            const boost = await getBoostByUri(uri);
+
+            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            return countBoostChildren(boost, { query, numberOfGenerations });
+        }),
+
+    getBoostSiblings: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/boost/siblings/{uri}',
+                tags: ['Boosts'],
+                summary: 'Get boost siblings',
+                description: 'This endpoint gets the siblings of a particular boost',
+            },
+            requiredScope: 'boosts:read',
+        })
+        .input(
+            PaginationOptionsValidator.extend({
+                limit: PaginationOptionsValidator.shape.limit.default(25),
+                uri: z.string(),
+                query: BoostQueryValidator.optional(),
+            })
+        )
+        .output(PaginatedBoostsValidator)
+        .query(async ({ input, ctx }) => {
+            const { uri, limit, cursor, query } = input;
+
+            const boost = await getBoostByUri(uri);
+
+            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            const records = await getSiblingBoosts(boost, { limit: limit + 1, cursor, query });
+
+            const hasMore = records.length > limit;
+            const newCursor = records.at(hasMore ? -2 : -1)?.created;
+
+            return {
+                hasMore,
+                records: records
+                    .map(boost => {
+                        const { id, boost: _boost, created: _created, ...remaining } = boost;
+
+                        return { ...remaining, uri: getBoostUri(id, ctx.domain) };
+                    })
+                    .slice(0, limit),
+                ...(newCursor && { cursor: newCursor }),
+            };
+        }),
+
+    countBoostSiblings: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/boost/siblings/{uri}/count',
+                tags: ['Boosts'],
+                summary: 'Count boost siblings',
+                description: 'This endpoint counts the siblings of a particular boost',
+            },
+            requiredScope: 'boosts:read',
+        })
+        .input(
+            z.object({
+                uri: z.string(),
+                query: BoostQueryValidator.optional(),
+            })
+        )
+        .output(z.number())
+        .query(async ({ input }) => {
+            const { uri, query } = input;
+
+            const boost = await getBoostByUri(uri);
+
+            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            return countBoostSiblings(boost, { query });
+        }),
+
+    getFamilialBoosts: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/boost/family/{uri}',
+                tags: ['Boosts'],
+                summary: 'Get familial boosts',
+                description:
+                    'This endpoint gets the parents, children, and siblings of a particular boost',
+            },
+            requiredScope: 'boosts:read',
+        })
+        .input(
+            PaginationOptionsValidator.extend({
+                limit: PaginationOptionsValidator.shape.limit.default(25),
+                uri: z.string(),
+                query: BoostQueryValidator.optional(),
+                parentGenerations: z.number().default(1),
+                childGenerations: z.number().default(1),
+                includeExtendedFamily: z.boolean().default(false),
+            })
+        )
+        .output(PaginatedBoostsValidator)
+        .query(async ({ input, ctx }) => {
+            const {
+                uri,
+                limit,
+                cursor,
+                query,
+                parentGenerations,
+                childGenerations,
+                includeExtendedFamily,
+            } = input;
+
+            const boost = await getBoostByUri(uri);
+
+            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            const records = await getFamilialBoosts(boost, {
+                limit: limit + 1,
+                cursor,
+                query,
+                parentGenerations,
+                childGenerations,
+                includeExtendedFamily,
+            });
+
+            const hasMore = records.length > limit;
+            const newCursor = records.at(hasMore ? -2 : -1)?.created;
+
+            return {
+                hasMore,
+                records: records
+                    .map(boost => {
+                        const { id, boost: _boost, created: _created, ...remaining } = boost;
+
+                        return { ...remaining, uri: getBoostUri(id, ctx.domain) };
+                    })
+                    .slice(0, limit),
+                ...(newCursor && { cursor: newCursor }),
+            };
+        }),
+
+    countFamilialBoosts: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/boost/family/{uri}/count',
+                tags: ['Boosts'],
+                summary: 'Count familial boosts',
+                description:
+                    'This endpoint counts the parents, children, and siblings of a particular boost',
+            },
+            requiredScope: 'boosts:read',
+        })
+        .input(
+            z.object({
+                uri: z.string(),
+                query: BoostQueryValidator.optional(),
+                parentGenerations: z.number().default(1),
+                childGenerations: z.number().default(1),
+                includeExtendedFamily: z.boolean().default(false),
+            })
+        )
+        .output(z.number())
+        .query(async ({ input }) => {
+            const { uri, query, parentGenerations, childGenerations, includeExtendedFamily } =
+                input;
+
+            const boost = await getBoostByUri(uri);
+
+            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            return countFamilialBoosts(boost, {
+                query,
+                parentGenerations,
+                childGenerations,
+                includeExtendedFamily,
+            });
+        }),
+
+    getBoostParents: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/boost/parents/{uri}',
+                tags: ['Boosts'],
+                summary: 'Get boost parents',
+                description: 'This endpoint gets the parents of a particular boost',
+            },
+            requiredScope: 'boosts:read',
+        })
+        .input(
+            PaginationOptionsValidator.extend({
+                limit: PaginationOptionsValidator.shape.limit.default(25),
+                uri: z.string(),
+                query: BoostQueryValidator.optional(),
+                numberOfGenerations: z.number().default(1),
+            })
+        )
+        .output(PaginatedBoostsValidator)
+        .query(async ({ input, ctx }) => {
+            const { uri, limit, cursor, query, numberOfGenerations } = input;
+
+            const boost = await getBoostByUri(uri);
+
+            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            const records = await getParentBoosts(boost, {
+                limit: limit + 1,
+                cursor,
+                query,
+                numberOfGenerations,
+            });
+
+            const hasMore = records.length > limit;
+            const newCursor = records.at(hasMore ? -2 : -1)?.created;
+
+            return {
+                hasMore,
+                records: records
+                    .map(boost => {
+                        const { id, boost: _boost, created: _created, ...remaining } = boost;
+
+                        return { ...remaining, uri: getBoostUri(id, ctx.domain) };
+                    })
+                    .slice(0, limit),
+                ...(newCursor && { cursor: newCursor }),
+            };
+        }),
+
+    countBoostParents: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/boost/parents/{uri}/count',
+                tags: ['Boosts'],
+                summary: 'Count boost parents',
+                description: 'This endpoint counts the parents of a particular boost',
+            },
+            requiredScope: 'boosts:read',
+        })
+        .input(
+            z.object({
+                uri: z.string(),
+                query: BoostQueryValidator.optional(),
+                numberOfGenerations: z.number().default(1),
+            })
+        )
+        .output(z.number())
+        .query(async ({ input }) => {
+            const { uri, query, numberOfGenerations } = input;
+
+            const boost = await getBoostByUri(uri);
+
+            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            return countBoostParents(boost, { query, numberOfGenerations });
+        }),
+
     updateBoost: profileRoute
         .meta({
             openapi: {
@@ -391,6 +901,7 @@ export const boostsRouter = t.router({
                 summary: 'Update a boost',
                 description: 'This route updates a boost',
             },
+            requiredScope: 'boosts:write',
         })
         .input(
             z.object({
@@ -405,42 +916,47 @@ export const boostsRouter = t.router({
             const { profile } = ctx.user;
 
             const { uri, updates } = input;
-            const { name, type, category, status, credential } = updates;
+            const { name, type, category, status, credential, meta } = updates;
 
             const boost = await getBoostByUri(uri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
-            if (!(await isProfileBoostAdmin(profile, boost))) {
+            if (!(await canProfileEditBoost(profile, boost))) {
                 throw new TRPCError({
                     code: 'UNAUTHORIZED',
-                    message: 'Profile does not own boost',
+                    message: 'Profile does not have permission to edit this boost',
                 });
             }
 
-            if (!isDraftBoost(boost)) {
+            const actualUpdates: Partial<BoostType> = {};
+
+            if (meta) actualUpdates.meta = meta;
+
+            if (isDraftBoost(boost)) {
+                if (name) actualUpdates.name = name;
+                if (category) actualUpdates.category = category;
+                if (type) actualUpdates.type = type;
+                if (status) actualUpdates.status = status;
+                if (credential) {
+                    actualUpdates.boost = convertCredentialToBoostTemplateJSON(
+                        credential,
+                        getDidWeb(ctx.domain, profile.profileId)
+                    );
+                }
+            } else if (!meta) {
                 throw new TRPCError({
                     code: 'FORBIDDEN',
                     message:
-                        'Published Boosts can not be updated. Only Draft Boosts can be updated.',
+                        'Published Boosts can only have their meta updated. Draft Boosts can update any field.',
                 });
             }
 
-            if (name) boost.name = name;
-            if (category) boost.category = category;
-            if (type) boost.type = type;
-            if (status) boost.status = status;
-            if (credential) {
-                boost.boost = convertCredentialToBoostTemplateJSON(
-                    credential,
-                    getDidWeb(ctx.domain, profile.profileId)
-                );
-            }
+            const result = await updateBoost(boost, actualUpdates);
 
-            await boost.save();
-            await setStorageForUri(uri, JSON.parse(boost.boost));
+            if (actualUpdates.boost) await setStorageForUri(uri, JSON.parse(actualUpdates.boost));
 
-            return true;
+            return result;
         }),
 
     getBoostAdmins: profileRoute
@@ -453,6 +969,7 @@ export const boostsRouter = t.router({
                 summary: 'Get boost admins',
                 description: 'This route returns the admins for a boost',
             },
+            requiredScope: 'boosts:read',
         })
         .input(
             PaginationOptionsValidator.extend({
@@ -499,13 +1016,9 @@ export const boostsRouter = t.router({
                 summary: 'Add a Boost admin',
                 description: 'This route adds a new admin for a boost',
             },
+            requiredScope: 'boosts:write',
         })
-        .input(
-            z.object({
-                uri: z.string(),
-                profileId: z.string(),
-            })
-        )
+        .input(z.object({ uri: z.string(), profileId: z.string() }))
         .output(z.boolean())
         .mutation(async ({ input, ctx }) => {
             const { profile } = ctx.user;
@@ -556,6 +1069,7 @@ export const boostsRouter = t.router({
                 summary: 'Remove a Boost admin',
                 description: 'This route removes an  admin from a boost',
             },
+            requiredScope: 'boosts:write',
         })
         .input(
             z.object({
@@ -584,10 +1098,10 @@ export const boostsRouter = t.router({
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
-            if (!(await isProfileBoostAdmin(profile, boost))) {
+            if (!(await canManageBoostPermissions(boost, profile))) {
                 throw new TRPCError({
                     code: 'UNAUTHORIZED',
-                    message: 'Profile does not have admin rights over boost',
+                    message: 'Profile can not manage permissions for boost',
                 });
             }
 
@@ -603,6 +1117,246 @@ export const boostsRouter = t.router({
             return true;
         }),
 
+    getBoostPermissions: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/boost/permissions/{uri}',
+                tags: ['Boosts'],
+                summary: 'Get boost permissions',
+                description: 'This endpoint gets permission metadata about a boost',
+            },
+            requiredScope: 'boosts:read',
+        })
+        .input(z.object({ uri: z.string() }))
+        .output(BoostPermissionsValidator)
+        .query(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+
+            const { uri } = input;
+
+            const boost = await getBoostByUri(uri);
+
+            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            const permissions = await getBoostPermissions(boost, profile);
+
+            if (!permissions) return EMPTY_PERMISSIONS;
+
+            return permissions;
+        }),
+
+    getOtherBoostPermissions: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/boost/permissions/{uri}/{profileId}',
+                tags: ['Boosts'],
+                summary: 'Get boost permissions for someone else',
+                description:
+                    'This endpoint gets permission metadata about a boost for someone else',
+            },
+            requiredScope: 'boosts:read',
+        })
+        .input(z.object({ uri: z.string(), profileId: z.string() }))
+        .output(BoostPermissionsValidator)
+        .query(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { uri, profileId } = input;
+
+            const boost = await getBoostByUri(uri);
+
+            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            if (!(await canManageBoostPermissions(boost, profile))) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile does not have rights to get permissions',
+                });
+            }
+
+            const otherProfile = await getProfileByProfileId(profileId);
+
+            if (!otherProfile) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Could not find target profile',
+                });
+            }
+
+            const permissions = await getBoostPermissions(boost, otherProfile);
+
+            if (!permissions) return EMPTY_PERMISSIONS;
+
+            return permissions;
+        }),
+
+    updateBoostPermissions: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/boost/permissions/{uri}',
+                tags: ['Boosts'],
+                summary: 'Update boost permissions',
+                description:
+                    'This endpoint updates permission metadata about a boost for the current user',
+            },
+            requiredScope: 'boosts:write',
+        })
+        .input(
+            z.object({
+                uri: z.string(),
+                updates: BoostPermissionsValidator.omit({ role: true }).partial(),
+            })
+        )
+        .output(z.boolean())
+        .query(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { uri, updates } = input;
+
+            const boost = await getBoostByUri(uri);
+
+            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            if (await isProfileBoostOwner(profile, boost)) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message:
+                        'Cannot update boost creators permissions (this could break permissions!)',
+                });
+            }
+
+            const permissions = await getBoostPermissions(boost, profile);
+
+            if (!permissions || !permissions.canManagePermissions) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile does not have rights to manage permissions',
+                });
+            }
+
+            const newPermissions = Object.entries(updates).reduce<Partial<BoostPermissions>>(
+                (newPermissionsObject, [permission, value]) => {
+                    if (typeof value !== undefined) {
+                        if (!(permissions as any)[permission]) {
+                            throw new TRPCError({
+                                code: 'UNAUTHORIZED',
+                                message: `Profile does not have rights to manage ${permission}`,
+                            });
+                        }
+
+                        if (QUERYABLE_PERMISSIONS.includes(permission) && value && value !== '*') {
+                            try {
+                                JSON.parse(value as string);
+                            } catch (error) {
+                                throw new TRPCError({
+                                    code: 'BAD_REQUEST',
+                                    message: `Invalid value for ${permission}`,
+                                });
+                            }
+                        }
+
+                        (newPermissionsObject as any)[permission] = value;
+                    }
+                    return newPermissionsObject;
+                },
+                {}
+            );
+
+            return updateBoostPermissions(profile, boost, newPermissions);
+        }),
+
+    updateOtherBoostPermissions: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/boost/permissions/{uri}/{profileId}',
+                tags: ['Boosts'],
+                summary: "Update other profile's boost permissions",
+                description:
+                    'This endpoint updates permission metadata about a boost for another user',
+            },
+            requiredScope: 'boosts:write',
+        })
+        .input(
+            z.object({
+                uri: z.string(),
+                profileId: z.string(),
+                updates: BoostPermissionsValidator.omit({ role: true }).partial(),
+            })
+        )
+        .output(z.boolean())
+        .query(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { uri, updates, profileId } = input;
+
+            const boost = await getBoostByUri(uri);
+
+            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            const permissions = await getBoostPermissions(boost, profile);
+
+            if (!permissions || !permissions.canManagePermissions) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile does not have rights to manage permissions',
+                });
+            }
+
+            const otherProfile = await getProfileByProfileId(profileId);
+
+            if (!otherProfile) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Could not find target profile',
+                });
+            }
+
+            if (await isProfileBoostOwner(otherProfile, boost)) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Cannot update boost creators permissions',
+                });
+            }
+
+            // Ensure that there is at least an empty permissions relationship
+            await getBoostPermissions(boost, otherProfile, true);
+
+            const newPermissions = Object.entries(updates).reduce<Partial<BoostPermissions>>(
+                (newPermissionsObject, [permission, value]) => {
+                    if (typeof value !== undefined) {
+                        if (!(permissions as any)[permission]) {
+                            throw new TRPCError({
+                                code: 'UNAUTHORIZED',
+                                message: `Profile does not have rights to manage ${permission}`,
+                            });
+                        }
+
+                        if (QUERYABLE_PERMISSIONS.includes(permission) && value && value !== '*') {
+                            try {
+                                JSON.parse(value as string);
+                            } catch (error) {
+                                throw new TRPCError({
+                                    code: 'BAD_REQUEST',
+                                    message: `Invalid value for ${permission}`,
+                                });
+                            }
+                        }
+
+                        (newPermissionsObject as any)[permission] = value;
+                    }
+                    return newPermissionsObject;
+                },
+                {}
+            );
+
+            return updateBoostPermissions(otherProfile, boost, newPermissions);
+        }),
+
     deleteBoost: profileRoute
         .meta({
             openapi: {
@@ -613,6 +1367,7 @@ export const boostsRouter = t.router({
                 summary: 'Delete a boost',
                 description: 'This route deletes a boost',
             },
+            requiredScope: 'boosts:delete',
         })
         .input(z.object({ uri: z.string() }))
         .output(z.boolean())
@@ -632,11 +1387,14 @@ export const boostsRouter = t.router({
                 });
             }
 
-            if (!isDraftBoost(boost)) {
+            const childCount = await countBoostChildren(boost, {
+                query: {},
+                numberOfGenerations: 1,
+            });
+            if (childCount > 0) {
                 throw new TRPCError({
                     code: 'FORBIDDEN',
-                    message:
-                        'Published Boosts can not be deleted. Only Draft Boosts can be deleted.',
+                    message: 'Cannot delete boost with children',
                 });
             }
 
@@ -656,6 +1414,7 @@ export const boostsRouter = t.router({
                 description:
                     'This route creates a challenge that an unknown profile can use to claim a boost.',
             },
+            requiredScope: 'boosts:write',
         })
         .input(BoostGenerateClaimLinkInput)
         .output(z.object({ boostUri: z.string(), challenge: z.string() }))
@@ -667,10 +1426,10 @@ export const boostsRouter = t.router({
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
-            if (!(await isProfileBoostAdmin(profile, boost))) {
+            if (!(await canProfileIssueBoost(profile, boost))) {
                 throw new TRPCError({
                     code: 'UNAUTHORIZED',
-                    message: 'Profile does not own boost',
+                    message: 'Profile does not have permissions to issue boost',
                 });
             }
 
@@ -703,6 +1462,7 @@ export const boostsRouter = t.router({
                 summary: 'Claim a boost using a claim link',
                 description: 'Claims a boost using a claim link, including a challenge',
             },
+            requiredScope: 'boosts:write',
         })
         .input(z.object({ boostUri: z.string(), challenge: z.string() }))
         .output(z.string())
@@ -765,5 +1525,245 @@ export const boostsRouter = t.router({
                 });
             }
         }),
+
+    makeBoostParent: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/boost/make-parent',
+                tags: ['Boosts'],
+                summary: 'Make Boost Parent',
+                description: 'This endpoint creates a parent/child relationship between two boosts',
+            },
+            requiredScope: 'boosts:write',
+        })
+        .input(z.object({ parentUri: z.string(), childUri: z.string() }))
+        .output(z.boolean())
+        .mutation(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { parentUri, childUri } = input;
+            const boosts = await getBoostsByUri([parentUri, childUri]);
+
+            const parentBoost = boosts.find(boost => boost.id === getIdFromUri(parentUri));
+            const childBoost = boosts.find(boost => boost.id === getIdFromUri(childUri));
+
+            if (!parentBoost) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find parent boost' });
+            }
+
+            if (!childBoost) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find child boost' });
+            }
+
+            if (!(await canProfileCreateChildBoost(profile, parentBoost, childBoost.dataValues))) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile can not create children for parent',
+                });
+            }
+
+            if (!(await isProfileBoostAdmin(profile, childBoost))) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile does not own child boost',
+                });
+            }
+
+            if (
+                await isBoostParent(parentBoost, childBoost, {
+                    numberOfGenerations: Infinity,
+                    direction: 'none',
+                })
+            ) {
+                throw new TRPCError({
+                    code: 'CONFLICT',
+                    message: 'Boost is already a parent',
+                });
+            }
+
+            return setBoostAsParent(parentBoost, childBoost);
+        }),
+
+    removeBoostParent: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/boost/remove-parent',
+                tags: ['Boosts'],
+                summary: 'Remove Boost Parent',
+                description: 'This endpoint removes a parent/child relationship between two boosts',
+            },
+            requiredScope: 'boosts:write',
+        })
+        .input(z.object({ parentUri: z.string(), childUri: z.string() }))
+        .output(z.boolean())
+        .mutation(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { parentUri, childUri } = input;
+            const boosts = await getBoostsByUri([parentUri, childUri]);
+
+            const parentBoost = boosts.find(boost => boost.id === getIdFromUri(parentUri));
+            const childBoost = boosts.find(boost => boost.id === getIdFromUri(childUri));
+
+            if (!parentBoost) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find parent boost' });
+            }
+
+            if (!childBoost) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find child boost' });
+            }
+
+            if (!(await isProfileBoostAdmin(profile, parentBoost))) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile does not own parent boost',
+                });
+            }
+
+            if (!(await isProfileBoostAdmin(profile, childBoost))) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile does not own child boost',
+                });
+            }
+
+            if (!(await isBoostParent(parentBoost, childBoost))) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Boost is already not a parent',
+                });
+            }
+
+            return removeBoostAsParent(parentBoost, childBoost);
+        }),
+
+    sendBoostViaSigningAuthority: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/boost/send/via-signing-authority/{profileId}',
+                tags: ['Boosts'],
+                summary: 'Send a boost to a profile using a signing authority',
+                description:
+                    'Issues a boost VC to a recipient profile using a specified signing authority and sends it via the network.',
+            },
+            requiredScope: 'boosts:write',
+        })
+        .input(
+            z.object({
+                profileId: z.string(),
+                boostUri: z.string(),
+                signingAuthority: z.object({
+                    name: z.string(),
+                    endpoint: z.string(),
+                }),
+                options: z
+                    .object({
+                        skipNotification: z.boolean().default(false).optional(),
+                    })
+                    .optional(),
+            })
+        )
+        .output(z.string())
+        .mutation(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { profileId, boostUri, signingAuthority, options } = input;
+
+            const boost = await getBoostByUri(boostUri);
+
+            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            if (!(await canProfileIssueBoost(profile, boost))) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile does not have permission to issue boost',
+                });
+            }
+
+            if (isDraftBoost(boost)) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'Draft Boosts can not be sent. Only Published Boosts can be sent.',
+                });
+            }
+
+            const targetProfile = await getProfileByProfileId(profileId);
+
+            if (!targetProfile) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Recipient profile not found' });
+            }
+
+            let unsignedVc: UnsignedVC;
+
+            try {
+                unsignedVc = JSON.parse(boost.dataValues.boost);
+
+                unsignedVc.issuanceDate = new Date().toISOString();
+                unsignedVc.issuer = { id: getDidWeb(ctx.domain, profile.profileId) };
+
+                if (Array.isArray(unsignedVc.credentialSubject)) {
+                    unsignedVc.credentialSubject = unsignedVc.credentialSubject.map(subject => ({
+                        ...subject,
+                        id: getDidWeb(ctx.domain, targetProfile.profileId),
+                    }));
+                } else {
+                    unsignedVc.credentialSubject = {
+                        ...unsignedVc.credentialSubject,
+                        id: getDidWeb(ctx.domain, targetProfile.profileId),
+                    };
+                }
+                if (unsignedVc?.type?.includes('BoostCredential')) unsignedVc.boostId = boostUri;
+            } catch (e) {
+                console.error('Failed to parse boost', e);
+                throw new TRPCError({
+                    code: 'INTERNAL_SERVER_ERROR',
+                    message: 'Failed to parse boost',
+                });
+            }
+
+            const sa = await getSigningAuthorityForUserByName(
+                profile,
+                signingAuthority.endpoint,
+                signingAuthority.name
+            );
+            if (!sa) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Could not find signing authority for boost',
+                });
+            }
+
+            let credential: VC | JWE;
+            try {
+                credential = await issueCredentialWithSigningAuthority(
+                    profile,
+                    unsignedVc,
+                    sa,
+                    ctx.domain
+                );
+            } catch (e) {
+                console.error('Failed to issue VC with signing authority', e);
+                throw new TRPCError({
+                    code: 'INTERNAL_SERVER_ERROR',
+                    message: 'Could not issue VC with signing authority',
+                });
+            }
+
+            let skipNotification = profile.profileId === targetProfile.profileId;
+            if (options?.skipNotification) skipNotification = options?.skipNotification;
+
+            return sendBoost({
+                from: profile,
+                to: targetProfile,
+                boost,
+                credential,
+                domain: ctx.domain,
+                skipNotification,
+            });
+        }),
 });
+
 export type BoostsRouter = typeof boostsRouter;

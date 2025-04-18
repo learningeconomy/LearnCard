@@ -1,5 +1,5 @@
+import { ClientSession } from 'mongodb';
 import stringify from 'json-stringify-deterministic';
-
 import cache from '@cache';
 import { PaginatedEncryptedCredentialRecordsType, PaginationOptionsType } from '@learncard/types';
 import { getAllDidsForDid } from '@accesslayer/user/read';
@@ -7,13 +7,13 @@ import { getAllDidsForDid } from '@accesslayer/user/read';
 /** 1 Day */
 export const INDEX_TTL = 60 * 60 * 24;
 
-export const getIndexPageCacheKey = (
-    did: string,
+export const getIndexHashKey = (did: string): string => `index:${did}`;
+
+export const getIndexFieldKey = (
     query: Record<string, any>,
     paginationOptions: PaginationOptionsType & { sort: 'newestFirst' | 'oldestFirst' },
     includeAssociatedDids = true
-): string =>
-    `index:${did}:${stringify(paginationOptions)}:${includeAssociatedDids}:${stringify(query)}`;
+): string => `${stringify(paginationOptions)}:${includeAssociatedDids}:${stringify(query)}`;
 
 export const getCachedIndexPageForDid = async (
     did: string,
@@ -21,13 +21,18 @@ export const getCachedIndexPageForDid = async (
     paginationOptions: PaginationOptionsType & { sort: 'newestFirst' | 'oldestFirst' },
     includeAssociatedDids = true
 ): Promise<PaginatedEncryptedCredentialRecordsType | null | undefined> => {
-    const result = await cache.get(
-        getIndexPageCacheKey(did, query, paginationOptions, includeAssociatedDids),
-        true,
-        INDEX_TTL
-    );
+    const hashKey = getIndexHashKey(did);
+    const fieldKey = getIndexFieldKey(query, paginationOptions, includeAssociatedDids);
 
-    return result && JSON.parse(result);
+    const result = await cache.hget(hashKey, fieldKey);
+
+    if (result) {
+        // Reset TTL for the entire hash
+        await cache.expire(hashKey, INDEX_TTL);
+        return JSON.parse(result);
+    }
+
+    return null;
 };
 
 export const setCachedIndexPageForDid = async (
@@ -37,11 +42,13 @@ export const setCachedIndexPageForDid = async (
     page: PaginatedEncryptedCredentialRecordsType,
     includeAssociatedDids = true
 ) => {
-    return cache.set(
-        getIndexPageCacheKey(did, query, paginationOptions, includeAssociatedDids),
-        JSON.stringify(page),
-        INDEX_TTL
-    );
+    const hashKey = getIndexHashKey(did);
+    const fieldKey = getIndexFieldKey(query, paginationOptions, includeAssociatedDids);
+
+    const pipeline = cache.pipeline();
+    pipeline.hset(hashKey, fieldKey, JSON.stringify(page));
+    pipeline.expire(hashKey, INDEX_TTL);
+    return pipeline.exec();
 };
 
 export const deleteCachedIndexPageForDid = async (
@@ -50,27 +57,28 @@ export const deleteCachedIndexPageForDid = async (
     paginationOptions: PaginationOptionsType & { sort: 'newestFirst' | 'oldestFirst' },
     includeAssociatedDids = true
 ) => {
-    return cache.delete([
-        getIndexPageCacheKey(did, query, paginationOptions, includeAssociatedDids),
-    ]);
+    const hashKey = getIndexHashKey(did);
+    const fieldKey = getIndexFieldKey(query, paginationOptions, includeAssociatedDids);
+
+    return cache.hset(hashKey, fieldKey, ''); // We use an empty string to "delete" the field
 };
 
-export const flushIndexCacheForDid = async (did: string, includeAssociatedDids = true) => {
+export const flushIndexCacheForDid = async (
+    did: string,
+    includeAssociatedDids = true,
+    session?: ClientSession
+) => {
     if (!includeAssociatedDids) {
-        const keys = await cache.keys(`index:${did}:*`);
-
-        return cache.delete(keys);
+        return cache.delete([getIndexHashKey(did)]);
     }
 
-    const dids = await getAllDidsForDid(did);
+    const dids = await getAllDidsForDid(did, session);
+    const pipeline = cache.pipeline();
 
-    const results = await Promise.all(
-        dids.map(async _did => {
-            const keys = await cache.keys(`index:${_did}:*`);
+    dids.forEach(did => {
+        pipeline.delete(getIndexHashKey(did));
+    });
 
-            return cache.delete(keys);
-        })
-    );
-
-    return results.reduce<number>((total, current) => total + (current ?? 0), 0);
+    const results = await pipeline.exec();
+    return results?.reduce<number>((total, [_err, result]) => total + (result as number), 0);
 };

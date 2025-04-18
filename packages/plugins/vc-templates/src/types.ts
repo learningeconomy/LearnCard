@@ -19,6 +19,29 @@ export type BoostSkills = {
 export type BoostDisplay = {
     backgroundImage?: string;
     backgroundColor?: string;
+
+    fadeBackgroundImage?: boolean;
+    repeatBackgroundImage?: boolean;
+
+    emoji: BoostEmoji;
+};
+
+export type BoostFamilyTitleOption = {
+    plural: string;
+    singular: string;
+};
+
+export type BoostFamilyTitles = {
+    guardians: BoostFamilyTitleOption[];
+    dependents: BoostFamilyTitleOption[];
+};
+
+export type BoostEmoji = {
+    activeSkinTone: string;
+    unified: string;
+    unifiedWithoutSkinTone: string;
+    names: string[];
+    imageUrl: string;
 };
 
 export type BoostID = {
@@ -29,6 +52,12 @@ export type BoostID = {
     issuerThumbnail?: string;
     showIssuerThumbnail?: boolean;
     IDIssuerName?: string;
+
+    idThumbnail?: string;
+    accentFontColor?: string;
+    idBackgroundColor?: string;
+    repeatIdBackgroundImage: boolean;
+    idDescription?: string;
 };
 
 export type AddressSpec = {
@@ -59,6 +88,7 @@ export type BoostTemplate = {
     attachments?: BoostAttachment[];
     skills?: BoostSkills[];
     display?: BoostDisplay;
+    familyTitles?: BoostFamilyTitles;
     boostID?: BoostID;
     address?: AddressSpec;
     groupID?: string;
@@ -79,6 +109,12 @@ export type VcTemplates = {
     jff2: { did?: string; subject?: string; issuanceDate?: string };
     boost: BoostTemplate;
     boostID: BoostTemplate;
+    delegate: {
+        did?: string;
+        subject?: string;
+        issuanceDate?: string;
+        access?: ('read' | 'write')[];
+    };
 };
 
 /** @group VC Templates Plugin */

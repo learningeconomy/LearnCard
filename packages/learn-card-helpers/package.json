@@ -1,6 +1,6 @@
 {
   "name": "@learncard/helpers",
-  "version": "1.0.14",
+  "version": "1.1.12",
   "description": "Shared helpers for LearnCard packages",
   "main": "./dist/index.js",
   "module": "./dist/helpers.esm.js",
@@ -41,6 +41,7 @@
   },
   "types": "./dist/helpers.d.ts",
   "dependencies": {
-    "@learncard/types": "workspace:*"
+    "@learncard/types": "workspace:*",
+    "@trpc/server": "^10.45.2"
   }
 }

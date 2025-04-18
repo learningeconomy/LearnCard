@@ -1,5 +1,129 @@
 # learn-card-types
 
+## 5.6.10
+
+### Patch Changes
+
+-   [`cbc84cc27d1eaf8b6830f06d86d354cb78d8d548`](https://github.com/learningeconomy/LearnCard/commit/cbc84cc27d1eaf8b6830f06d86d354cb78d8d548) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Remove NX caching in CI to ensure latest builds
+
+## 5.6.9
+
+### Patch Changes
+
+-   [#641](https://github.com/learningeconomy/LearnCard/pull/641) [`833ef629a073fd4d202eaebceb0fb48615daa0c9`](https://github.com/learningeconomy/LearnCard/commit/833ef629a073fd4d202eaebceb0fb48615daa0c9) Thanks [@Custard7](https://github.com/Custard7)! - Feat: Add AuthGrant support
+
+## 5.6.8
+
+### Patch Changes
+
+-   [#638](https://github.com/learningeconomy/LearnCard/pull/638) [`66b77d32cb7219ff50959762368bbbf549f8468b`](https://github.com/learningeconomy/LearnCard/commit/66b77d32cb7219ff50959762368bbbf549f8468b) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Include autoboosts as part of contract details
+
+## 5.6.7
+
+### Patch Changes
+
+-   [#623](https://github.com/learningeconomy/LearnCard/pull/623) [`160b2f67bd119de64d26d4b16ef7ae718e34a897`](https://github.com/learningeconomy/LearnCard/commit/160b2f67bd119de64d26d4b16ef7ae718e34a897) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add credential writing capability to consent flow contracts, enabling third parties to issue credentials to profiles that have consented to a contract with appropriate write permissions
+
+-   [#623](https://github.com/learningeconomy/LearnCard/pull/623) [`160b2f67bd119de64d26d4b16ef7ae718e34a897`](https://github.com/learningeconomy/LearnCard/commit/160b2f67bd119de64d26d4b16ef7ae718e34a897) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Allow viewing written credentials for a contract
+
+-   [#623](https://github.com/learningeconomy/LearnCard/pull/623) [`160b2f67bd119de64d26d4b16ef7ae718e34a897`](https://github.com/learningeconomy/LearnCard/commit/160b2f67bd119de64d26d4b16ef7ae718e34a897) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add Auto-Boosts, which are boosts that are automatically issued once someone consents to a contract
+
+## 5.6.6
+
+### Patch Changes
+
+-   [#619](https://github.com/learningeconomy/LearnCard/pull/619) [`65d3a6ca9161d227d57a2caaf0c63241e21dc360`](https://github.com/learningeconomy/LearnCard/commit/65d3a6ca9161d227d57a2caaf0c63241e21dc360) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add ADD_ADMIN Claim Hook type that automatically grants admin privileges when claiming a boost. This enables:
+
+    -   Automatic admin role assignment for target boosts when claiming a source boost
+    -   Requires admin permissions on both source and target boosts to create hook
+    -   Cascading deletion when either boost is removed
+    -   Validation of admin permissions hierarchy during hook creation
+
+## 5.6.5
+
+### Patch Changes
+
+-   [#604](https://github.com/learningeconomy/LearnCard/pull/604) [`6f0c776840addd052a9df844fefdcb3186c7678d`](https://github.com/learningeconomy/LearnCard/commit/6f0c776840addd052a9df844fefdcb3186c7678d) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add lightweight claim hooks
+
+## 5.6.4
+
+### Patch Changes
+
+-   [#596](https://github.com/learningeconomy/LearnCard/pull/596) [`a4eead401a62a872be046e28b0d27b2d980ced3a`](https://github.com/learningeconomy/LearnCard/commit/a4eead401a62a872be046e28b0d27b2d980ced3a) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add JWKWithPrivateKey type
+
+## 5.6.3
+
+### Patch Changes
+
+-   [#594](https://github.com/learningeconomy/LearnCard/pull/594) [`86bdf08214003e1db051f5a0e93c3a57e282db62`](https://github.com/learningeconomy/LearnCard/commit/86bdf08214003e1db051f5a0e93c3a57e282db62) Thanks [@smurflo2](https://github.com/smurflo2)! - Add redirectUrl field for ConsentFlow contracts
+
+## 5.6.2
+
+### Patch Changes
+
+-   [#592](https://github.com/learningeconomy/LearnCard/pull/592) [`7d4e9dc7683bb8fa75fb6e239f59e620d3237846`](https://github.com/learningeconomy/LearnCard/commit/7d4e9dc7683bb8fa75fb6e239f59e620d3237846) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add isPrivate to profiles to prevent them from surfacing in search
+
+## 5.6.1
+
+### Patch Changes
+
+-   [#587](https://github.com/learningeconomy/LearnCard/pull/587) [`ebb2d3e69d14d97dc2691a45d0820bbf4a46be71`](https://github.com/learningeconomy/LearnCard/commit/ebb2d3e69d14d97dc2691a45d0820bbf4a46be71) Thanks [@smurflo2](https://github.com/smurflo2)! - [LC-735] Add needsGuardianConsent flag for ConsentFlow contracts
+
+## 5.6.0
+
+### Minor Changes
+
+-   [#582](https://github.com/learningeconomy/LearnCard/pull/582) [`611e911f6f1388e5d34bc893c53aef36d28ae65e`](https://github.com/learningeconomy/LearnCard/commit/611e911f6f1388e5d34bc893c53aef36d28ae65e) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add support for Profile Managers for more sophisticated identity management
+
+## 5.5.9
+
+### Patch Changes
+
+-   [#578](https://github.com/learningeconomy/LearnCard/pull/578) [`20d4585c3a2bc8c5eb4b0a628eb215be829000fa`](https://github.com/learningeconomy/LearnCard/commit/20d4585c3a2bc8c5eb4b0a628eb215be829000fa) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add display field to profiles
+
+## 5.5.8
+
+### Patch Changes
+
+-   [#569](https://github.com/learningeconomy/LearnCard/pull/569) [`72e9661ffe0c9f9e3c312ecba2b6441d61941a4a`](https://github.com/learningeconomy/LearnCard/commit/72e9661ffe0c9f9e3c312ecba2b6441d61941a4a) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - - Don't give default claim role if profile already has a role
+    -   Allow profiles who can resolve parents to resolve children
+    -   Return default claim permissions from `getBoost`
+    -   Fix `generateClaimLink` permissions check
+    -   Actually allow `$regex` to work via `superjson` with tRPC, regex strings with HTTP API
+    -   Allow querying boost recipients
+
+## 5.5.7
+
+### Patch Changes
+
+-   [#564](https://github.com/learningeconomy/LearnCard/pull/564) [`6981bceed48ff00edcc94124f5ca0461f3b00a2d`](https://github.com/learningeconomy/LearnCard/commit/6981bceed48ff00edcc94124f5ca0461f3b00a2d) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Allow $regex in boost queries
+
+-   [#564](https://github.com/learningeconomy/LearnCard/pull/564) [`6981bceed48ff00edcc94124f5ca0461f3b00a2d`](https://github.com/learningeconomy/LearnCard/commit/6981bceed48ff00edcc94124f5ca0461f3b00a2d) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add meta field to Boosts that can be updated even after the Boost has been published
+
+## 5.5.6
+
+### Patch Changes
+
+-   [#559](https://github.com/learningeconomy/LearnCard/pull/559) [`0b0a2c630d66f422f02f385fba8328767621e8bf`](https://github.com/learningeconomy/LearnCard/commit/0b0a2c630d66f422f02f385fba8328767621e8bf) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add default permissions you can receive when claiming a boost
+
+## 5.5.5
+
+### Patch Changes
+
+-   [#555](https://github.com/learningeconomy/LearnCard/pull/555) [`c01a127b8633658d64f0610690c69965339aced2`](https://github.com/learningeconomy/LearnCard/commit/c01a127b8633658d64f0610690c69965339aced2) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add $in to boost queries
+
+## 5.5.4
+
+### Patch Changes
+
+-   [#546](https://github.com/learningeconomy/LearnCard/pull/546) [`859ed5791aecc5d8dec6496347d5ade8fbe0fc5f`](https://github.com/learningeconomy/LearnCard/commit/859ed5791aecc5d8dec6496347d5ade8fbe0fc5f) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add BoostPermissions type
+
+## 5.5.3
+
+### Patch Changes
+
+-   [#524](https://github.com/learningeconomy/LearnCard/pull/524) [`035df02f21226ac1645b611e2f934c2d7e4cbd55`](https://github.com/learningeconomy/LearnCard/commit/035df02f21226ac1645b611e2f934c2d7e4cbd55) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix build issues
+
 ## 5.5.2
 
 ### Patch Changes

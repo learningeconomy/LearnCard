@@ -1,5 +1,182 @@
 # learn-card-core
 
+## 1.0.34
+
+### Patch Changes
+
+-   [`cbc84cc27d1eaf8b6830f06d86d354cb78d8d548`](https://github.com/learningeconomy/LearnCard/commit/cbc84cc27d1eaf8b6830f06d86d354cb78d8d548) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Remove NX caching in CI to ensure latest builds
+
+-   Updated dependencies [[`cbc84cc27d1eaf8b6830f06d86d354cb78d8d548`](https://github.com/learningeconomy/LearnCard/commit/cbc84cc27d1eaf8b6830f06d86d354cb78d8d548)]:
+    -   @learncard/core@9.3.23
+    -   @learncard/helpers@1.1.12
+
+## 1.0.33
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.22
+    -   @learncard/helpers@1.1.11
+
+## 1.0.32
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.21
+    -   @learncard/helpers@1.1.10
+
+## 1.0.31
+
+### Patch Changes
+
+-   Updated dependencies [[`a945a7086a0848b04f9f2c8b1588e9e3826edeff`](https://github.com/learningeconomy/LearnCard/commit/a945a7086a0848b04f9f2c8b1588e9e3826edeff)]:
+    -   @learncard/core@9.3.20
+
+## 1.0.30
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.19
+    -   @learncard/helpers@1.1.9
+
+## 1.0.29
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.18
+    -   @learncard/helpers@1.1.8
+
+## 1.0.28
+
+### Patch Changes
+
+-   Updated dependencies [[`d01d1369124d537f37ead6f8e3101cc47fff5208`](https://github.com/learningeconomy/LearnCard/commit/d01d1369124d537f37ead6f8e3101cc47fff5208)]:
+    -   @learncard/core@9.3.17
+
+## 1.0.27
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.16
+    -   @learncard/helpers@1.1.7
+
+## 1.0.26
+
+### Patch Changes
+
+-   [#596](https://github.com/learningeconomy/LearnCard/pull/596) [`a4eead401a62a872be046e28b0d27b2d980ced3a`](https://github.com/learningeconomy/LearnCard/commit/a4eead401a62a872be046e28b0d27b2d980ced3a) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Use JWKWithPrivateKey type
+
+-   Updated dependencies [[`a4eead401a62a872be046e28b0d27b2d980ced3a`](https://github.com/learningeconomy/LearnCard/commit/a4eead401a62a872be046e28b0d27b2d980ced3a)]:
+    -   @learncard/core@9.3.15
+    -   @learncard/helpers@1.1.6
+
+## 1.0.25
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.14
+    -   @learncard/helpers@1.1.5
+
+## 1.0.24
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.13
+    -   @learncard/helpers@1.1.4
+
+## 1.0.23
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.12
+    -   @learncard/helpers@1.1.3
+
+## 1.0.22
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.11
+    -   @learncard/helpers@1.1.2
+
+## 1.0.21
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.10
+    -   @learncard/helpers@1.1.1
+
+## 1.0.20
+
+### Patch Changes
+
+-   Updated dependencies [[`5abe7679d8c0a71952112b686ca9fdf66d0d50c0`](https://github.com/learningeconomy/LearnCard/commit/5abe7679d8c0a71952112b686ca9fdf66d0d50c0)]:
+    -   @learncard/helpers@1.1.0
+    -   @learncard/core@9.3.9
+
+## 1.0.19
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.8
+    -   @learncard/helpers@1.0.20
+
+## 1.0.18
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.7
+    -   @learncard/helpers@1.0.19
+
+## 1.0.17
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.6
+    -   @learncard/helpers@1.0.18
+
+## 1.0.16
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.5
+    -   @learncard/helpers@1.0.17
+
+## 1.0.15
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.4
+    -   @learncard/helpers@1.0.16
+
+## 1.0.14
+
+### Patch Changes
+
+-   Updated dependencies [[`426ba7423b77f963985bd17e7c31843da1e16217`](https://github.com/learningeconomy/LearnCard/commit/426ba7423b77f963985bd17e7c31843da1e16217)]:
+    -   @learncard/core@9.3.3
+
+## 1.0.13
+
+### Patch Changes
+
+-   Updated dependencies [[`035df02f21226ac1645b611e2f934c2d7e4cbd55`](https://github.com/learningeconomy/LearnCard/commit/035df02f21226ac1645b611e2f934c2d7e4cbd55)]:
+    -   @learncard/core@9.3.2
+    -   @learncard/helpers@1.0.15
+
 ## 1.0.12
 
 ### Patch Changes

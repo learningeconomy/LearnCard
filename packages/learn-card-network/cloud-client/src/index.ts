@@ -30,6 +30,8 @@ type OverriddenClient = Omit<Client, 'index' | 'customStorage'> & {
     };
 };
 
+export type LearnCloudClient = OverriddenClient;
+
 export const getClient = async (
     url: string,
     didAuthFunction: (challenge?: string) => Promise<string>
@@ -52,7 +54,7 @@ export const getClient = async (
         return challengeRequester.utilities.getChallenges.query({ amount });
     };
 
-    challenges = await getChallenges();
+    getChallenges().then(result => (challenges = result));
 
     const trpc = createTRPCProxyClient<AppRouter>({
         links: [

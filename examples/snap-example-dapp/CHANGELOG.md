@@ -1,5 +1,221 @@
 # Changelog
 
+## 1.0.89
+
+### Patch Changes
+
+-   [`cbc84cc27d1eaf8b6830f06d86d354cb78d8d548`](https://github.com/learningeconomy/LearnCard/commit/cbc84cc27d1eaf8b6830f06d86d354cb78d8d548) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Remove NX caching in CI to ensure latest builds
+
+-   Updated dependencies [[`cbc84cc27d1eaf8b6830f06d86d354cb78d8d548`](https://github.com/learningeconomy/LearnCard/commit/cbc84cc27d1eaf8b6830f06d86d354cb78d8d548)]:
+    -   @learncard/core@9.3.23
+    -   @learncard/didkit-plugin@1.5.9
+    -   @learncard/meta-mask-snap@1.0.74
+
+## 1.0.88
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.22
+    -   @learncard/didkit-plugin@1.5.8
+    -   @learncard/meta-mask-snap@1.0.73
+
+## 1.0.87
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.21
+    -   @learncard/didkit-plugin@1.5.7
+    -   @learncard/meta-mask-snap@1.0.72
+
+## 1.0.86
+
+### Patch Changes
+
+-   Updated dependencies [[`a945a7086a0848b04f9f2c8b1588e9e3826edeff`](https://github.com/learningeconomy/LearnCard/commit/a945a7086a0848b04f9f2c8b1588e9e3826edeff)]:
+    -   @learncard/core@9.3.20
+    -   @learncard/didkit-plugin@1.5.6
+    -   @learncard/meta-mask-snap@1.0.71
+
+## 1.0.85
+
+### Patch Changes
+
+-   Updated dependencies [[`099f06d92d77a43fe953c0d63767355ff050ef56`](https://github.com/learningeconomy/LearnCard/commit/099f06d92d77a43fe953c0d63767355ff050ef56)]:
+    -   @learncard/didkit-plugin@1.5.5
+
+## 1.0.84
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.19
+    -   @learncard/didkit-plugin@1.5.4
+    -   @learncard/meta-mask-snap@1.0.70
+
+## 1.0.83
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.18
+    -   @learncard/didkit-plugin@1.5.3
+    -   @learncard/meta-mask-snap@1.0.69
+
+## 1.0.82
+
+### Patch Changes
+
+-   Updated dependencies [[`d01d1369124d537f37ead6f8e3101cc47fff5208`](https://github.com/learningeconomy/LearnCard/commit/d01d1369124d537f37ead6f8e3101cc47fff5208)]:
+    -   @learncard/core@9.3.17
+    -   @learncard/didkit-plugin@1.5.2
+    -   @learncard/meta-mask-snap@1.0.68
+
+## 1.0.81
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.16
+    -   @learncard/didkit-plugin@1.5.1
+    -   @learncard/meta-mask-snap@1.0.67
+
+## 1.0.80
+
+### Patch Changes
+
+-   Updated dependencies [[`a4eead401a62a872be046e28b0d27b2d980ced3a`](https://github.com/learningeconomy/LearnCard/commit/a4eead401a62a872be046e28b0d27b2d980ced3a), [`a4eead401a62a872be046e28b0d27b2d980ced3a`](https://github.com/learningeconomy/LearnCard/commit/a4eead401a62a872be046e28b0d27b2d980ced3a)]:
+    -   @learncard/core@9.3.15
+    -   @learncard/didkit-plugin@1.5.0
+    -   @learncard/meta-mask-snap@1.0.66
+
+## 1.0.79
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.14
+    -   @learncard/didkit-plugin@1.4.23
+    -   @learncard/meta-mask-snap@1.0.65
+
+## 1.0.78
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.13
+    -   @learncard/didkit-plugin@1.4.22
+    -   @learncard/meta-mask-snap@1.0.64
+
+## 1.0.77
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.12
+    -   @learncard/didkit-plugin@1.4.21
+    -   @learncard/meta-mask-snap@1.0.63
+
+## 1.0.76
+
+### Patch Changes
+
+-   Updated dependencies [[`611e911f6f1388e5d34bc893c53aef36d28ae65e`](https://github.com/learningeconomy/LearnCard/commit/611e911f6f1388e5d34bc893c53aef36d28ae65e)]:
+    -   @learncard/didkit-plugin@1.4.20
+    -   @learncard/core@9.3.11
+    -   @learncard/meta-mask-snap@1.0.62
+
+## 1.0.75
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.10
+    -   @learncard/didkit-plugin@1.4.19
+    -   @learncard/meta-mask-snap@1.0.61
+
+## 1.0.74
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.9
+    -   @learncard/didkit-plugin@1.4.18
+    -   @learncard/meta-mask-snap@1.0.60
+
+## 1.0.73
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.8
+    -   @learncard/didkit-plugin@1.4.17
+    -   @learncard/meta-mask-snap@1.0.59
+
+## 1.0.72
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.7
+    -   @learncard/didkit-plugin@1.4.16
+    -   @learncard/meta-mask-snap@1.0.58
+
+## 1.0.71
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.6
+    -   @learncard/didkit-plugin@1.4.15
+    -   @learncard/meta-mask-snap@1.0.57
+
+## 1.0.70
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.5
+    -   @learncard/didkit-plugin@1.4.14
+    -   @learncard/meta-mask-snap@1.0.56
+
+## 1.0.69
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.4
+    -   @learncard/didkit-plugin@1.4.13
+    -   @learncard/meta-mask-snap@1.0.55
+
+## 1.0.68
+
+### Patch Changes
+
+-   Updated dependencies [[`26bb535d573d30dfe27555bc0b53b22499425ada`](https://github.com/learningeconomy/LearnCard/commit/26bb535d573d30dfe27555bc0b53b22499425ada)]:
+    -   @learncard/didkit-plugin@1.4.12
+
+## 1.0.67
+
+### Patch Changes
+
+-   Updated dependencies [[`426ba7423b77f963985bd17e7c31843da1e16217`](https://github.com/learningeconomy/LearnCard/commit/426ba7423b77f963985bd17e7c31843da1e16217)]:
+    -   @learncard/core@9.3.3
+    -   @learncard/didkit-plugin@1.4.11
+    -   @learncard/meta-mask-snap@1.0.54
+
+## 1.0.66
+
+### Patch Changes
+
+-   [#524](https://github.com/learningeconomy/LearnCard/pull/524) [`035df02f21226ac1645b611e2f934c2d7e4cbd55`](https://github.com/learningeconomy/LearnCard/commit/035df02f21226ac1645b611e2f934c2d7e4cbd55) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix build issues
+
+-   Updated dependencies [[`035df02f21226ac1645b611e2f934c2d7e4cbd55`](https://github.com/learningeconomy/LearnCard/commit/035df02f21226ac1645b611e2f934c2d7e4cbd55)]:
+    -   @learncard/core@9.3.2
+    -   @learncard/meta-mask-snap@1.0.53
+    -   @learncard/didkit-plugin@1.4.10
+
 ## 1.0.65
 
 ### Patch Changes

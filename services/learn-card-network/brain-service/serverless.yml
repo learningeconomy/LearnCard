@@ -29,7 +29,7 @@ custom:
         minify: true
         external: ['@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm', 'p-limit']
         sourcemap: external
-        target: 'node16'
+        target: 'node20'
         watch:
             pattern: ['src/**/*.ts', 'dids.ts']
 
@@ -84,7 +84,7 @@ package:
 
 provider:
     name: aws
-    runtime: nodejs16.x
+    runtime: nodejs20.x
     memorySize: 2048
     timeout: 29
     stage: ${opt:stage, "dev"}
@@ -148,6 +148,8 @@ functions:
         events:
             - httpApi: GET /users/{params+}
             - httpApi: OPTIONS /users/{params+}
+            - httpApi: GET /manager/{params+}
+            - httpApi: OPTIONS /manager/{params+}
             - httpApi: GET /.well-known/did.json
             - httpApi: OPTIONS /.well-known/did.json
         url:

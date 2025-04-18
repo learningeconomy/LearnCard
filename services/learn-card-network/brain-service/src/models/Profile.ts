@@ -6,16 +6,14 @@ import { Credential, CredentialInstance } from './Credential';
 import { Presentation, PresentationInstance } from './Presentation';
 import { SigningAuthority } from './SigningAuthority';
 import { transformProfileId } from '@helpers/profile.helpers';
-import { ProfileType } from 'types/profile';
+import { FlatProfileType } from 'types/profile';
 import { SigningAuthorityInstance } from './SigningAuthority';
-import { Boost, BoostInstance } from './Boost';
 
 export type ProfileRelationships = {
     connectionRequested: ModelRelatedNodesI<typeof Profile, ProfileInstance>;
     connectedWith: ModelRelatedNodesI<typeof Profile, ProfileInstance>;
     blocked: ModelRelatedNodesI<typeof Profile, ProfileInstance>;
     managedBy: ModelRelatedNodesI<typeof Profile, ProfileInstance>;
-    adminOf: ModelRelatedNodesI<typeof Boost, BoostInstance>;
     credentialSent: ModelRelatedNodesI<
         typeof Credential,
         CredentialInstance,
@@ -36,9 +34,9 @@ export type ProfileRelationships = {
     >;
 };
 
-export type ProfileInstance = NeogmaInstance<ProfileType, ProfileRelationships>;
+export type ProfileInstance = NeogmaInstance<FlatProfileType, ProfileRelationships>;
 
-export const Profile = ModelFactory<ProfileType, ProfileRelationships>(
+export const Profile = ModelFactory<FlatProfileType, ProfileRelationships>(
     {
         label: 'Profile',
         schema: {
@@ -47,6 +45,7 @@ export const Profile = ModelFactory<ProfileType, ProfileRelationships>(
             shortBio: { type: 'string', required: false },
             bio: { type: 'string', required: false },
             did: { type: 'string', required: true, uniqueItems: true },
+            isPrivate: { type: 'boolean', required: false },
             email: { type: 'string', required: false, uniqueItems: true },
             image: { type: 'string', required: false },
             heroImage: { type: 'string', required: false },

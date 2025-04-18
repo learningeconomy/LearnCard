@@ -35,6 +35,7 @@ export const credentialsRouter = t.router({
                 summary: 'Send a Credential',
                 description: 'This endpoint sends a credential to a user based on their profileId',
             },
+            requiredScope: 'credentials:write',
         })
         .input(
             z.object({
@@ -70,14 +71,24 @@ export const credentialsRouter = t.router({
                 summary: 'Accept a Credential',
                 description: 'This endpoint accepts a credential',
             },
+            requiredScope: 'credentials:write',
         })
-        .input(z.object({ uri: z.string() }))
+        .input(
+            z.object({
+                uri: z.string(),
+                options: z
+                    .object({
+                        skipNotification: z.boolean().default(false).optional(),
+                    })
+                    .optional(),
+            })
+        )
         .output(z.boolean())
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
             const { uri } = input;
 
-            return acceptCredential(profile, uri);
+            return acceptCredential(profile, uri, input?.options ?? {});
         }),
 
     receivedCredentials: profileRoute
@@ -90,6 +101,7 @@ export const credentialsRouter = t.router({
                 summary: 'Get received credentials',
                 description: "This endpoint returns the current user's received credentials",
             },
+            requiredScope: 'credentials:read',
         })
         .input(
             z
@@ -117,6 +129,7 @@ export const credentialsRouter = t.router({
                 summary: 'Get sent credentials',
                 description: "This endpoint returns the current user's sent credentials",
             },
+            requiredScope: 'credentials:read',
         })
         .input(
             z
@@ -144,6 +157,7 @@ export const credentialsRouter = t.router({
                 summary: 'Get incoming credentials',
                 description: "This endpoint returns the current user's incoming credentials",
             },
+            requiredScope: 'credentials:read',
         })
         .input(
             z
@@ -171,6 +185,7 @@ export const credentialsRouter = t.router({
                 summary: 'Delete a credential',
                 description: 'This endpoint deletes a credential',
             },
+            requiredScope: 'credentials:delete',
         })
         .input(z.object({ uri: z.string() }))
         .output(z.boolean())

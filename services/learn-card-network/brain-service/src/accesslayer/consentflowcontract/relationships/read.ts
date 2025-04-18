@@ -1,12 +1,17 @@
 import { QueryBuilder, BindParam } from 'neogma';
 import mapValues from 'lodash/mapValues';
-import { convertQueryResultToPropertiesObjectArray } from '@helpers/neo4j.helpers';
+import {
+    convertObjectRegExpToNeo4j,
+    convertQueryResultToPropertiesObjectArray,
+    getMatchQueryWhere,
+} from '@helpers/neo4j.helpers';
 import {
     Profile,
-    ProfileInstance,
     ConsentFlowContract,
     ConsentFlowTerms,
     ConsentFlowTransaction,
+    Credential,
+    Boost,
 } from '@models';
 import {
     DbTermsType,
@@ -18,18 +23,23 @@ import {
 } from 'types/consentflowcontract';
 import {
     ConsentFlowContractData,
+    ConsentFlowContractDataForDid,
     ConsentFlowContractQuery,
+    ConsentFlowDataForDidQuery,
     ConsentFlowDataQuery,
     ConsentFlowTermsQuery,
     ConsentFlowTransactionsQuery,
     LCNProfile,
 } from '@learncard/types';
-import { getIdFromUri } from '@helpers/uri.helpers';
+import { constructUri, getIdFromUri } from '@helpers/uri.helpers';
 import { flattenObject, inflateObject } from '@helpers/objects.helpers';
-import { convertDataQueryToNeo4jQuery } from '@helpers/contract.helpers';
+import { convertDataQueryToNeo4jQuery, shouldIncludeCategory } from '@helpers/contract.helpers';
+import { ProfileType } from 'types/profile';
+import { CredentialType } from 'types/credential';
+import { getBoostUri } from '@helpers/boost.helpers';
 
 export const isProfileConsentFlowContractAdmin = async (
-    profile: ProfileInstance,
+    profile: ProfileType,
     contract: DbContractType
 ): Promise<boolean> => {
     const query = new QueryBuilder().match({
@@ -46,7 +56,7 @@ export const isProfileConsentFlowContractAdmin = async (
 };
 
 export const hasProfileConsentedToContract = async (
-    profile: ProfileInstance | string,
+    profile: ProfileType | string,
     contract: DbContractType
 ): Promise<boolean> => {
     const query = new QueryBuilder().match({
@@ -97,7 +107,7 @@ export const getContractDetailsByUri = async (
 };
 
 export const getContractTermsForProfile = async (
-    profile: ProfileInstance | string,
+    profile: ProfileType | string,
     contract: DbContractType
 ): Promise<DbTermsType | null> => {
     const result = convertQueryResultToPropertiesObjectArray<{
@@ -157,11 +167,11 @@ export const getContractTermsById = async (
 
     return result.length > 0
         ? {
-              consenter: result[0]!.consenter,
-              terms: inflateObject(result[0]!.terms),
-              contract: inflateObject(result[0]!.contract),
-              contractOwner: result[0]!.contractOwner,
-          }
+            consenter: result[0]!.consenter,
+            terms: inflateObject(result[0]!.terms),
+            contract: inflateObject(result[0]!.contract),
+            contractOwner: result[0]!.contractOwner,
+        }
         : null;
 };
 
@@ -177,14 +187,15 @@ export const getContractTermsByUri = async (
 };
 
 export const getConsentFlowContractsForProfile = async (
-    profile: ProfileInstance,
+    profile: ProfileType,
     {
         query: matchQuery = {},
         limit,
         cursor,
-    }: { query?: ConsentFlowContractQuery; limit: number; cursor?: string }
-): Promise<DbContractType[]> => {
-    const _query = new QueryBuilder(
+        domain,
+    }: { query?: ConsentFlowContractQuery; limit: number; cursor?: string; domain: string }
+): Promise<{ contract: DbContractType; autoBoosts: string[] }[]> => {
+    let query = new QueryBuilder(
         new BindParam({ params: flattenObject({ contract: matchQuery }), cursor })
     )
         .match({
@@ -199,30 +210,51 @@ export const getConsentFlowContractsForProfile = async (
         })
         .where('all(key IN keys($params) WHERE contract[key] = $params[key])');
 
-    const query = cursor ? _query.raw('AND contract.updatedAt > $cursor') : _query;
+    query = cursor ? query.raw('AND contract.updatedAt > $cursor') : query;
+
+    query = query.with('contract').match({
+        optional: true,
+        related: [
+            { identifier: 'boost', model: Boost },
+            { ...ConsentFlowContract.getRelationshipByAlias('autoReceive'), direction: 'in' },
+            { identifier: 'contract' },
+        ],
+    });
 
     const results = convertQueryResultToPropertiesObjectArray<{
         contract: FlatDbContractType;
-    }>(await query.return('DISTINCT contract').orderBy('contract.updatedAt').limit(limit).run());
+        boost: any[];
+    }>(
+        await query
+            .return('DISTINCT contract, COLLECT(boost) as boost')
+            .orderBy('contract.updatedAt')
+            .limit(limit)
+            .run()
+    );
 
-    return results.map(({ contract }) => inflateObject(contract));
+    return results.map(({ contract, boost }) => ({
+        contract: inflateObject(contract),
+        autoBoosts: boost.map(boost => getBoostUri(boost.properties.id, domain)),
+    }));
 };
 
 export const getConsentedContractsForProfile = async (
-    profile: ProfileInstance,
+    profile: ProfileType,
     {
         query: matchQuery = {},
         limit,
         cursor,
-    }: { query?: ConsentFlowTermsQuery; limit: number; cursor?: string }
+        domain,
+    }: { query?: ConsentFlowTermsQuery; limit: number; cursor?: string; domain: string }
 ): Promise<
     {
         contract: DbContractType;
         owner: LCNProfile;
         terms: DbTermsType;
+        autoBoosts: string[];
     }[]
 > => {
-    const _query = new QueryBuilder(
+    let query = new QueryBuilder(
         new BindParam({ params: flattenObject({ terms: matchQuery }), cursor })
     )
         .match({
@@ -238,15 +270,25 @@ export const getConsentedContractsForProfile = async (
         })
         .where('all(key IN keys($params) WHERE terms[key] = $params[key])');
 
-    const query = cursor ? _query.raw('AND terms.updatedAt > $cursor') : _query;
+    query = cursor ? query.raw('AND terms.updatedAt > $cursor') : query;
+
+    query = query.with('contract, owner, terms').match({
+        optional: true,
+        related: [
+            { identifier: 'boost', model: Boost },
+            { ...ConsentFlowContract.getRelationshipByAlias('autoReceive'), direction: 'in' },
+            { identifier: 'contract' },
+        ],
+    });
 
     const results = convertQueryResultToPropertiesObjectArray<{
         contract: FlatDbContractType;
         owner: LCNProfile;
         terms: FlatDbTermsType;
+        boost: any[];
     }>(
         await query
-            .return('DISTINCT contract, owner, terms')
+            .return('DISTINCT contract, owner, terms, COLLECT(boost) as boost')
             .orderBy('terms.updatedAt')
             .limit(limit)
             .run()
@@ -256,6 +298,7 @@ export const getConsentedContractsForProfile = async (
         ...result,
         contract: inflateObject(result.contract),
         terms: inflateObject(result.terms),
+        autoBoosts: result.boost.map(boost => getBoostUri(boost.properties.id, domain)),
     }));
 };
 
@@ -295,7 +338,7 @@ all(key IN keys($params) WHERE
         terms: FlatDbTermsType;
     }>(await dbQuery.return('DISTINCT terms').orderBy('terms.updatedAt DESC').limit(limit).run());
 
-    const terms = results.map(result => inflateObject<DbTermsType>(result.terms));
+    const terms = results.map(result => inflateObject<any>(result.terms));
 
     return terms.map(term => ({
         date: term.updatedAt!,
@@ -315,7 +358,7 @@ export const getConsentedDataForContract = async (
 ): Promise<ConsentFlowContractData[]> => {
     const _dbQuery = new QueryBuilder(
         new BindParam({
-            params: flattenObject({ terms: convertDataQueryToNeo4jQuery(query) }),
+            params: flattenObject({ terms: flattenObject(convertDataQueryToNeo4jQuery(query)) }),
             cursor,
         })
     ).match({
@@ -343,7 +386,7 @@ all(key IN keys($params) WHERE
         terms: FlatDbTermsType;
     }>(await dbQuery.return('DISTINCT terms').orderBy('terms.updatedAt DESC').limit(limit).run());
 
-    const terms = results.map(result => inflateObject<DbTermsType>(result.terms));
+    const terms = results.map(result => inflateObject<any>(result.terms));
 
     return terms.map(term => ({
         date: term.updatedAt!,
@@ -357,6 +400,90 @@ all(key IN keys($params) WHERE
     }));
 };
 
+export const getConsentedDataBetweenProfiles = async (
+    ownerProfileId: string,
+    consenterProfileId: string,
+    {
+        query = {},
+        limit,
+        cursor,
+        domain,
+    }: { query?: ConsentFlowDataForDidQuery; limit: number; cursor?: string; domain: string }
+): Promise<ConsentFlowContractDataForDid[]> => {
+    const { id, ...params } = query;
+    const _dbQuery = new QueryBuilder(
+        new BindParam({
+            params: flattenObject({ terms: flattenObject(convertDataQueryToNeo4jQuery(params)) }),
+            contractQuery: id ? convertObjectRegExpToNeo4j({ id }) : {},
+            cursor,
+        })
+    ).match({
+        related: [
+            { model: Profile, where: { profileId: consenterProfileId } },
+            ConsentFlowTerms.getRelationshipByAlias('createdBy'),
+            { identifier: 'terms', model: ConsentFlowTerms },
+            ConsentFlowTerms.getRelationshipByAlias('consentsTo'),
+            { model: ConsentFlowContract, identifier: 'contract' },
+            ConsentFlowContract.getRelationshipByAlias('createdBy'),
+            { model: Profile, where: { profileId: ownerProfileId } },
+        ],
+        // The following is custom Cypher logic that has the following behavior:
+        // If query key is true, ensure all resulting terms have that key
+        // If query key is false, ensure no resulting terms have that key
+        // If query key is not present, return all terms whether they have it or not
+    }).where(`
+all(key IN keys($params) WHERE 
+    CASE $params[key]
+        WHEN true THEN terms[key] IS NOT NULL AND terms[key] <> []
+        WHEN false THEN terms[key] IS NULL OR terms[key] = []
+    END
+)
+AND ${getMatchQueryWhere('contract', 'contractQuery')}
+`);
+
+    const dbQuery = cursor ? _dbQuery.raw(' AND terms.updatedAt < $cursor') : _dbQuery;
+
+    const results = convertQueryResultToPropertiesObjectArray<{
+        terms: FlatDbTermsType;
+        contract: FlatDbContractType;
+    }>(
+        await dbQuery
+            .return('DISTINCT terms, contract')
+            .orderBy('terms.updatedAt DESC')
+            .limit(limit)
+            .run()
+    );
+
+    const inflatedResults = results.map(result => ({
+        term: inflateObject<any>(result.terms) as DbTermsType,
+        contract: inflateObject<any>(result.contract) as DbContractType,
+    }));
+
+    return inflatedResults.map(({ term, contract }) => ({
+        date: term.updatedAt!,
+        contractUri: constructUri('contract', contract.id, domain),
+        credentials: Object.entries(term.terms.read.credentials.categories)
+            .flatMap(([category, { shared, sharing, shareUntil }]) => {
+                if (
+                    !sharing ||
+                    (shareUntil && new Date(shareUntil) < new Date()) ||
+                    !shouldIncludeCategory(params.credentials?.categories, category)
+                ) {
+                    return false as any as { category: string; uri: string };
+                }
+
+                return (
+                    shared?.map(uri => ({
+                        category: category,
+                        uri,
+                    })) ?? []
+                );
+            })
+            .filter(Boolean),
+        personal: term.terms.read.personal,
+    }));
+};
+
 export const getTransactionsForTerms = async (
     termsId: string,
     {
@@ -364,8 +491,8 @@ export const getTransactionsForTerms = async (
         limit,
         cursor,
     }: { query?: ConsentFlowTransactionsQuery; limit: number; cursor?: string }
-): Promise<DbTransactionType[]> => {
-    const _query = new QueryBuilder(new BindParam({ params: flattenObject(matchQuery), cursor }))
+): Promise<(DbTransactionType & { credentials: CredentialType[] })[]> => {
+    const query = new QueryBuilder(new BindParam({ params: flattenObject(matchQuery), cursor }))
         .match({
             related: [
                 { identifier: 'transaction', model: ConsentFlowTransaction },
@@ -373,19 +500,52 @@ export const getTransactionsForTerms = async (
                 { model: ConsentFlowTerms, where: { id: termsId } },
             ],
         })
-        .where('all(key IN keys($params) WHERE transaction[key] = $params[key])');
-
-    const query = cursor ? _query.raw('AND transaction.date < $cursor') : _query;
+        .where(
+            `${getMatchQueryWhere('transaction', 'params')}${cursor ? 'AND transaction.date < $cursor' : ''
+            }`
+        )
+        .with('transaction')
+        .match({
+            optional: true,
+            related: [
+                { identifier: 'transaction' },
+                { ...Credential.getRelationshipByAlias('issuedViaTransaction'), direction: 'in' },
+                { model: Credential, identifier: 'credentials' },
+            ],
+        })
+        .with('transaction, collect(credentials) as credentials');
 
     const results = convertQueryResultToPropertiesObjectArray<{
         transaction: FlatDbTransactionType;
+        credentials: CredentialType[];
     }>(
         await query
-            .return('DISTINCT transaction')
+            .return('DISTINCT transaction, [node in credentials | properties(node)] AS credentials')
             .orderBy('transaction.date DESC')
             .limit(limit)
             .run()
     );
 
-    return results.map(result => inflateObject(result.transaction));
+    return results.map(result => ({
+        ...inflateObject(result.transaction),
+        credentials: result.credentials ?? [],
+    }));
+};
+
+export const getAutoBoostsForContract = async (
+    contractId: string,
+    domain: string
+): Promise<string[]> => {
+    const results = await new QueryBuilder()
+        .match({
+            related: [
+                { identifier: 'contract', model: ConsentFlowContract, where: { id: contractId } },
+                ConsentFlowContract.getRelationshipByAlias('autoReceive'),
+                { identifier: 'boost', model: Boost },
+            ],
+        })
+        .return('boost')
+        .run();
+
+    return results.records.map(record => getBoostUri(record.get('boost').properties.id, domain));
 };

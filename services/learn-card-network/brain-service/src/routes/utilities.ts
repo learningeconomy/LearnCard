@@ -27,6 +27,7 @@ export const utilitiesRouter = t.router({
     getChallenges: didRoute
         .meta({
             openapi: {
+                protect: true,
                 method: 'GET',
                 path: '/challenges',
                 tags: ['Utilities'],
@@ -50,6 +51,7 @@ export const utilitiesRouter = t.router({
     getDid: didRoute
         .meta({
             openapi: {
+                protect: true,
                 method: 'GET',
                 path: '/did',
                 tags: ['Utilities'],

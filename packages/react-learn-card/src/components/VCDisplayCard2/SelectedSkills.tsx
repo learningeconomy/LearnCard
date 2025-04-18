@@ -49,7 +49,7 @@ export const SelectedSkills: React.FC<{
 
                             const _subSkill: any = SKILLS_TO_SUBSKILLS[
                                 skill.type as BoostCMSCategorySkillEnum
-                            ].find((ss: any) => ss.type === subSkill);
+                            ]?.find((ss: any) => ss.type === subSkill);
 
                             return (
                                 <Subskill

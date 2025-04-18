@@ -5,6 +5,7 @@ import {
     LCNProfileValidator,
     LCNProfileConnectionStatusEnum,
     PaginatedLCNProfilesValidator,
+    PaginatedLCNProfilesAndManagersValidator,
     PaginationOptionsValidator,
 } from '@learncard/types';
 import { v4 as uuid } from 'uuid';
@@ -24,7 +25,12 @@ import {
     getBlockedAndBlockedByIds,
     isRelationshipBlocked,
 } from '@helpers/connection.helpers';
-import { getDidWeb, updateDidForProfile, updateDidForProfiles } from '@helpers/did.helpers';
+import {
+    getDidWeb,
+    getManagedDidWeb,
+    updateDidForProfile,
+    updateDidForProfiles,
+} from '@helpers/did.helpers';
 
 import { createProfile } from '@accesslayer/profile/create';
 import { deleteProfile } from '@accesslayer/profile/delete';
@@ -42,9 +48,9 @@ import {
     getSigningAuthoritiesForUser,
     getSigningAuthorityForUserByName,
 } from '@accesslayer/signing-authority/relationships/read';
-import { SigningAuthorityForUserValidator } from 'types/profile';
+import { ProfileType, SigningAuthorityForUserValidator } from 'types/profile';
 
-import { t, openRoute, didAndChallengeRoute, openProfileRoute, profileRoute } from '@routes';
+import { t, openRoute, didAndChallengeRoute, profileRoute, didRoute } from '@routes';
 
 import { transformProfileId } from '@helpers/profile.helpers';
 import { deleteDidDocForProfile } from '@cache/did-docs';
@@ -55,7 +61,13 @@ import {
     invalidateInvite,
 } from '@cache/invites';
 import { getLearnCard } from '@helpers/learnCard.helpers';
-import { getManagedServiceProfiles } from '@accesslayer/profile/relationships/read';
+import {
+    getManagedServiceProfiles,
+    getProfilesThatAProfileManages,
+} from '@accesslayer/profile/relationships/read';
+import { createProfileManagedByRelationship } from '@accesslayer/profile/relationships/create';
+import { updateProfile } from '@accesslayer/profile/update';
+import { LCNProfileQueryValidator } from '@learncard/types';
 
 export const profilesRouter = t.router({
     createProfile: didAndChallengeRoute
@@ -68,6 +80,7 @@ export const profilesRouter = t.router({
                 summary: 'Create a profile',
                 description: 'Creates a profile for a user',
             },
+            requiredScope: 'profiles:write',
         })
         .input(LCNProfileValidator.omit({ did: true, isServiceProfile: true }))
         .output(z.string())
@@ -105,6 +118,7 @@ export const profilesRouter = t.router({
                 summary: 'Create a service profile',
                 description: 'Creates a service profile',
             },
+            requiredScope: 'profiles:write',
         })
         .input(LCNProfileValidator.omit({ did: true, isServiceProfile: true }))
         .output(z.string())
@@ -142,8 +156,9 @@ export const profilesRouter = t.router({
                 summary: 'Create a managed service profile',
                 description: 'Creates a managed service profile',
             },
+            requiredScope: 'profiles:write',
         })
-        .input(LCNProfileValidator.omit({ did: true, isServiceProfile: true, isManaged: true }))
+        .input(LCNProfileValidator.omit({ did: true, isServiceProfile: true }))
         .output(z.string())
         .mutation(async ({ input, ctx }) => {
             const { profileId } = input;
@@ -166,20 +181,19 @@ export const profilesRouter = t.router({
                 did: spLearnCard.id.did(),
             });
 
-            await profile.relateTo({
-                alias: 'managedBy',
-                where: { profileId: ctx.user.profile.profileId },
-            });
+            if (!profile) {
+                throw new TRPCError({
+                    code: 'INTERNAL_SERVER_ERROR',
+                    message: 'An unexpected error occured, please try again later.',
+                });
+            }
 
-            if (profile) return getDidWeb(ctx.domain, profile.profileId);
+            await createProfileManagedByRelationship(ctx.user.profile, profile);
 
-            throw new TRPCError({
-                code: 'INTERNAL_SERVER_ERROR',
-                message: 'An unexpected error occured, please try again later.',
-            });
+            return getDidWeb(ctx.domain, profile.profileId);
         }),
 
-    getProfile: openProfileRoute
+    getProfile: didRoute
         .meta({
             openapi: {
                 protect: true,
@@ -190,10 +204,13 @@ export const profilesRouter = t.router({
                 description:
                     'This route uses the request header to grab the profile of the current user',
             },
+            requiredScope: 'profiles:read',
         })
         .input(z.void())
-        .output(LCNProfileValidator)
+        .output(LCNProfileValidator.optional())
         .query(async ({ ctx }) => {
+            if (!ctx.user.profile) return undefined;
+
             return updateDidForProfile(ctx.domain, ctx.user.profile);
         }),
 
@@ -207,6 +224,7 @@ export const profilesRouter = t.router({
                 description:
                     'This route grabs the profile information of any user, using their profileId',
             },
+            requiredScope: 'profiles:read',
         })
         .input(z.object({ profileId: z.string() }))
         .output(LCNProfileValidator.optional())
@@ -222,6 +240,53 @@ export const profilesRouter = t.router({
             return otherProfile ? updateDidForProfile(ctx.domain, otherProfile) : undefined;
         }),
 
+    getAvailableProfiles: profileRoute
+        .meta({
+            openapi: {
+                method: 'POST',
+                path: '/profile/available-profiles',
+                tags: ['Profiles'],
+                summary: 'Available Profiles',
+                description:
+                    'This route gets all of your available profiles. That is, profiles you directly or indirectly manage',
+            },
+            requiredScope: 'profiles:read',
+        })
+        .input(
+            PaginationOptionsValidator.extend({
+                limit: PaginationOptionsValidator.shape.limit.default(25),
+                query: LCNProfileQueryValidator.optional(),
+            }).default({})
+        )
+        .output(PaginatedLCNProfilesAndManagersValidator)
+        .query(async ({ ctx, input }) => {
+            const { query, limit, cursor } = input;
+
+            const results = await getProfilesThatAProfileManages(ctx.user.profile.profileId, {
+                limit: limit + 1,
+                cursor,
+                query,
+            });
+
+            const profiles = results.map(result => ({
+                profile: updateDidForProfile(ctx.domain, result.profile),
+                ...(result.manager && {
+                    manager: {
+                        ...result.manager,
+                        did: getManagedDidWeb(ctx.domain, result.manager.id),
+                    },
+                }),
+            }));
+            const hasMore = results.length > limit;
+            const nextCursor = hasMore ? results.at(-2)?.profile.profileId : undefined;
+
+            return {
+                hasMore,
+                ...(nextCursor && { cursor: nextCursor }),
+                records: profiles.slice(0, limit),
+            };
+        }),
+
     getManagedServiceProfiles: profileRoute
         .meta({
             openapi: {
@@ -231,6 +296,7 @@ export const profilesRouter = t.router({
                 summary: 'Managed Service Profiles',
                 description: 'This route gets all of your managed service profiles',
             },
+            requiredScope: 'profiles:read',
         })
         .input(
             PaginationOptionsValidator.extend({
@@ -268,6 +334,7 @@ export const profilesRouter = t.router({
                 summary: 'Search profiles',
                 description: 'This route searches for profiles based on their profileId',
             },
+            requiredScope: 'profiles:read',
         })
         .input(
             z.object({
@@ -338,6 +405,7 @@ export const profilesRouter = t.router({
                 summary: 'Update your profile',
                 description: 'This route updates the profile of the current user',
             },
+            requiredScope: 'profiles:write',
         })
         .input(LCNProfileValidator.omit({ did: true, isServiceProfile: true }).partial())
         .output(z.boolean())
@@ -349,13 +417,17 @@ export const profilesRouter = t.router({
                 displayName,
                 shortBio,
                 bio,
+                isPrivate,
                 image,
                 heroImage,
                 websiteLink,
                 type,
                 email,
                 notificationsWebhook,
+                display,
             } = input;
+
+            const actualUpdates: Partial<ProfileType> = {};
 
             if (profileId) {
                 const profileExists = await getProfileByProfileId(profileId);
@@ -369,7 +441,7 @@ export const profilesRouter = t.router({
 
                 await deleteDidDocForProfile(profileId);
 
-                profile.profileId = transformProfileId(profileId);
+                actualUpdates.profileId = transformProfileId(profileId);
             }
 
             if (email) {
@@ -382,21 +454,21 @@ export const profilesRouter = t.router({
                     });
                 }
 
-                profile.email = email;
+                actualUpdates.email = email;
             }
 
-            if (image) profile.image = image;
-            if (displayName) profile.displayName = displayName;
-            if (shortBio) profile.shortBio = shortBio;
-            if (bio) profile.bio = bio;
-            if (heroImage) profile.heroImage = heroImage;
-            if (websiteLink) profile.websiteLink = websiteLink;
-            if (type) profile.type = type;
-            if (notificationsWebhook) profile.notificationsWebhook = notificationsWebhook;
+            if (image) actualUpdates.image = image;
+            if (displayName) actualUpdates.displayName = displayName;
+            if (shortBio) actualUpdates.shortBio = shortBio;
+            if (isPrivate) actualUpdates.isPrivate = isPrivate;
+            if (bio) actualUpdates.bio = bio;
+            if (heroImage) actualUpdates.heroImage = heroImage;
+            if (websiteLink) actualUpdates.websiteLink = websiteLink;
+            if (type) actualUpdates.type = type;
+            if (notificationsWebhook) actualUpdates.notificationsWebhook = notificationsWebhook;
+            if (display) actualUpdates.display = display;
 
-            await profile.save();
-
-            return true;
+            return updateProfile(profile, actualUpdates);
         }),
 
     deleteProfile: profileRoute
@@ -409,6 +481,7 @@ export const profilesRouter = t.router({
                 summary: 'Delete your profile',
                 description: 'This route deletes the profile of the current user',
             },
+            requiredScope: 'profiles:delete',
         })
         .input(z.void())
         .output(z.boolean())
@@ -430,6 +503,7 @@ export const profilesRouter = t.router({
                 description:
                     'This route uses the request header to send a connection request to another user based on their profileId',
             },
+            requiredScope: 'profiles:write',
         })
         .input(z.object({ profileId: z.string() }))
         .output(z.boolean())
@@ -460,6 +534,7 @@ export const profilesRouter = t.router({
                 summary: 'Cancel Connection Request',
                 description: 'Cancels connection request with another profile',
             },
+            requiredScope: 'profiles:write',
         })
         .input(z.object({ profileId: z.string() }))
         .output(z.boolean())
@@ -489,6 +564,7 @@ export const profilesRouter = t.router({
                 summary: 'Connect using an invitation',
                 description: 'Connects with another profile using an invitation challenge',
             },
+            requiredScope: 'profiles:write',
         })
         .input(z.object({ profileId: z.string(), challenge: z.string() }))
         .output(z.boolean())
@@ -534,6 +610,7 @@ export const profilesRouter = t.router({
                 description:
                     'This route uses the request header to disconnect with another user based on their profileId',
             },
+            requiredScope: 'profiles:write',
         })
         .input(z.object({ profileId: z.string() }))
         .output(z.boolean())
@@ -564,6 +641,7 @@ export const profilesRouter = t.router({
                 description:
                     'This route uses the request header to accept a connection request from another user based on their profileId',
             },
+            requiredScope: 'profiles:write',
         })
         .input(z.object({ profileId: z.string() }))
         .output(z.boolean())
@@ -597,6 +675,7 @@ export const profilesRouter = t.router({
                 description:
                     "This route shows the current user's connections.\nWarning! This route is deprecated and currently has a hard limit of returning only the first 50 connections. Please use paginatedConnections instead!",
             },
+            requiredScope: 'connections:read',
         })
         .input(z.void())
         .output(LCNProfileValidator.array())
@@ -620,6 +699,7 @@ export const profilesRouter = t.router({
                 summary: 'View connections',
                 description: "This route shows the current user's connections",
             },
+            requiredScope: 'connections:read',
         })
         .input(
             PaginationOptionsValidator.extend({
@@ -654,6 +734,7 @@ export const profilesRouter = t.router({
                 description:
                     "This route shows the current user's pending connections.\nWarning! This route is deprecated and currently has a hard limit of returning only the first 50 connections. Please use paginatedPendingConnections instead",
             },
+            requiredScope: 'connections:read',
         })
         .input(z.void())
         .output(LCNProfileValidator.array())
@@ -673,6 +754,7 @@ export const profilesRouter = t.router({
                 summary: 'View pending connections',
                 description: "This route shows the current user's pending connections",
             },
+            requiredScope: 'connections:read',
         })
         .input(
             PaginationOptionsValidator.extend({
@@ -710,6 +792,7 @@ export const profilesRouter = t.router({
                 description:
                     "This route shows the current user's connection requests.\nWarning! This route is deprecated and currently has a hard limit of returning only the first 50 connections. Please use paginatedConnectionRequests instead",
             },
+            requiredScope: 'connections:read',
         })
         .input(z.void())
         .output(LCNProfileValidator.array())
@@ -729,6 +812,7 @@ export const profilesRouter = t.router({
                 summary: 'View connection requests',
                 description: "This route shows the current user's connection requests",
             },
+            requiredScope: 'connections:read',
         })
         .input(
             PaginationOptionsValidator.extend({
@@ -765,6 +849,7 @@ export const profilesRouter = t.router({
                 description:
                     'This route creates a one-time challenge that an unknown profile can use to connect with this account',
             },
+            requiredScope: 'connections:write',
         })
         .input(
             z
@@ -826,6 +911,7 @@ export const profilesRouter = t.router({
                 summary: 'Block another profile',
                 description: 'Block another user based on their profileId',
             },
+            requiredScope: 'connections:write',
         })
         .input(z.object({ profileId: z.string() }))
         .output(z.boolean())
@@ -857,6 +943,7 @@ export const profilesRouter = t.router({
                 summary: 'Unblock another profile',
                 description: 'Unblock another user based on their profileId',
             },
+            requiredScope: 'connections:write',
         })
         .input(z.object({ profileId: z.string() }))
         .output(z.boolean())
@@ -888,6 +975,7 @@ export const profilesRouter = t.router({
                 summary: 'View blocked profiles',
                 description: "This route shows the current user's blocked profiles",
             },
+            requiredScope: 'connections:read',
         })
         .input(z.void())
         .output(LCNProfileValidator.array())
@@ -908,6 +996,7 @@ export const profilesRouter = t.router({
                 description:
                     "This route is used to register a signing authority that can sign credentials on the current user's behalf",
             },
+            requiredScope: 'signingAuthorities:write',
         })
         .input(z.object({ endpoint: z.string(), name: z.string(), did: z.string() }))
         .output(z.boolean())
@@ -930,6 +1019,7 @@ export const profilesRouter = t.router({
                 description:
                     "This route is used to get registered signing authorities that can sign credentials on the current user's behalf",
             },
+            requiredScope: 'signingAuthorities:read',
         })
         .input(z.void())
         .output(SigningAuthorityForUserValidator.array())
@@ -948,6 +1038,7 @@ export const profilesRouter = t.router({
                 description:
                     "This route is used to get a named signing authority that can sign credentials on the current user's behalf",
             },
+            requiredScope: 'signingAuthorities:read',
         })
         .input(z.object({ endpoint: z.string(), name: z.string() }))
         .output(SigningAuthorityForUserValidator.or(z.undefined()))

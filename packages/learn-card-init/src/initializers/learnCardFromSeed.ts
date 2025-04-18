@@ -3,11 +3,10 @@ import { DynamicLoaderPlugin } from '@learncard/dynamic-loader-plugin';
 import { CryptoPlugin } from '@learncard/crypto-plugin';
 import { DidMethod, getDidKitPlugin } from '@learncard/didkit-plugin';
 import { getDidKeyPlugin } from '@learncard/didkey-plugin';
+import { getEncryptionPlugin } from '@learncard/encryption-plugin';
 import { getVCPlugin } from '@learncard/vc-plugin';
 import { getVCTemplatesPlugin } from '@learncard/vc-templates-plugin';
-import { getCeramicPlugin } from '@learncard/ceramic-plugin';
 import { getLearnCloudPlugin } from '@learncard/learn-cloud-plugin';
-import { getIDXPlugin } from '@learncard/idx-plugin';
 import { expirationPlugin } from '@learncard/expiration-plugin';
 import { getEthereumPlugin } from '@learncard/ethereum-plugin';
 import { getVpqrPlugin } from '@learncard/vpqr-plugin';
@@ -15,7 +14,7 @@ import { getCHAPIPlugin } from '@learncard/chapi-plugin';
 import { getLearnCardPlugin } from '@learncard/learn-card-plugin';
 
 import { LearnCardFromSeed } from '../types/LearnCard';
-import { defaultCeramicIDXArgs, defaultEthereumArgs } from '../defaults';
+import { defaultEthereumArgs } from '../defaults';
 
 /**
  * Generates a LearnCard Wallet from a 64 character seed string
@@ -29,8 +28,8 @@ export const learnCardFromSeed = async ({
         url = 'https://cloud.learncard.com/trpc',
         unencryptedFields = [],
         unencryptedCustomFields = [],
+        automaticallyAssociateDids = true,
     } = {},
-    ceramicIdx = defaultCeramicIDXArgs,
     didkit,
     allowRemoteContexts = false,
     ethereumConfig = defaultEthereumArgs,
@@ -46,19 +45,23 @@ export const learnCardFromSeed = async ({
         await getDidKeyPlugin<DidMethod>(didkitLc, seed, 'key')
     );
 
-    const didkeyAndVCLc = await didkeyLc.addPlugin(getVCPlugin(didkeyLc));
+    const encryptionLc = await didkeyLc.addPlugin(await getEncryptionPlugin(didkeyLc));
 
-    const templateLc = await didkeyAndVCLc.addPlugin(getVCTemplatesPlugin());
+    const vcLc = await encryptionLc.addPlugin(getVCPlugin(encryptionLc));
 
-    const ceramicLc = await templateLc.addPlugin(await getCeramicPlugin(templateLc, ceramicIdx));
+    const templateLc = await vcLc.addPlugin(getVCTemplatesPlugin());
 
-    const cloudLc = await ceramicLc.addPlugin(
-        await getLearnCloudPlugin(ceramicLc, url, unencryptedFields, unencryptedCustomFields)
+    const cloudLc = await templateLc.addPlugin(
+        await getLearnCloudPlugin(
+            templateLc,
+            url,
+            unencryptedFields,
+            unencryptedCustomFields,
+            automaticallyAssociateDids
+        )
     );
 
-    const idxLc = await cloudLc.addPlugin(await getIDXPlugin(cloudLc, ceramicIdx));
-
-    const expirationLc = await idxLc.addPlugin(expirationPlugin(idxLc));
+    const expirationLc = await cloudLc.addPlugin(expirationPlugin(cloudLc));
 
     const ethLc = await expirationLc.addPlugin(getEthereumPlugin(expirationLc, ethereumConfig));
 

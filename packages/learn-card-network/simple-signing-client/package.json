@@ -1,0 +1,27 @@
+{
+    "name": "@learncard/simple-signing-client",
+    "version": "1.0.6",
+    "description": "",
+    "main": "dist/index.js",
+    "module": "./dist/simple-signing-client.esm.js",
+    "types": "dist/index.d.ts",
+    "scripts": {
+        "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.js && tsc --p tsconfig.json"
+    },
+    "keywords": [],
+    "author": "WeLibrary, LLC (www.welibrary.io)",
+    "license": "MIT",
+    "devDependencies": {
+        "@esbuild-plugins/node-resolve": "^0.1.4",
+        "@learncard/types": "workspace:*",
+        "dts-bundle-generator": "^6.10.0",
+        "esbuild": "^0.16.16",
+        "rimraf": "^3.0.2",
+        "shx": "^0.3.4"
+    },
+    "dependencies": {
+        "@trpc/client": "^10.17.0",
+        "@trpc/server": "^10.17.0",
+        "@learncard/simple-signing-service": "workspace:*"
+    }
+}

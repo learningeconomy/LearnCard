@@ -1,5 +1,483 @@
 # @learncard/snap-chapi-example
 
+## 1.0.222
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/react@2.7.78
+
+## 1.0.221
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/react@2.7.77
+
+## 1.0.220
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/react@2.7.76
+
+## 1.0.219
+
+### Patch Changes
+
+-   [`cbc84cc27d1eaf8b6830f06d86d354cb78d8d548`](https://github.com/learningeconomy/LearnCard/commit/cbc84cc27d1eaf8b6830f06d86d354cb78d8d548) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Remove NX caching in CI to ensure latest builds
+
+-   Updated dependencies [[`cbc84cc27d1eaf8b6830f06d86d354cb78d8d548`](https://github.com/learningeconomy/LearnCard/commit/cbc84cc27d1eaf8b6830f06d86d354cb78d8d548)]:
+    -   @learncard/core@9.3.23
+    -   @learncard/helpers@1.1.12
+    -   @learncard/react@2.7.75
+    -   @learncard/meta-mask-snap@1.0.74
+
+## 1.0.218
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/react@2.7.74
+
+## 1.0.217
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.22
+    -   @learncard/helpers@1.1.11
+    -   @learncard/react@2.7.73
+    -   @learncard/meta-mask-snap@1.0.73
+
+## 1.0.216
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.21
+    -   @learncard/helpers@1.1.10
+    -   @learncard/react@2.7.72
+    -   @learncard/meta-mask-snap@1.0.72
+
+## 1.0.215
+
+### Patch Changes
+
+-   Updated dependencies [[`a945a7086a0848b04f9f2c8b1588e9e3826edeff`](https://github.com/learningeconomy/LearnCard/commit/a945a7086a0848b04f9f2c8b1588e9e3826edeff)]:
+    -   @learncard/core@9.3.20
+    -   @learncard/meta-mask-snap@1.0.71
+    -   @learncard/react@2.7.71
+
+## 1.0.214
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/react@2.7.70
+
+## 1.0.213
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/react@2.7.69
+
+## 1.0.212
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/react@2.7.68
+
+## 1.0.211
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/react@2.7.67
+
+## 1.0.210
+
+### Patch Changes
+
+-   Updated dependencies [[`b91c3a7275e23caaeb327019851d7893681d1c0f`](https://github.com/learningeconomy/LearnCard/commit/b91c3a7275e23caaeb327019851d7893681d1c0f)]:
+    -   @learncard/react@2.7.66
+    -   @learncard/core@9.3.19
+    -   @learncard/helpers@1.1.9
+    -   @learncard/meta-mask-snap@1.0.70
+
+## 1.0.209
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/react@2.7.65
+
+## 1.0.208
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.18
+    -   @learncard/helpers@1.1.8
+    -   @learncard/react@2.7.64
+    -   @learncard/meta-mask-snap@1.0.69
+
+## 1.0.207
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/react@2.7.63
+
+## 1.0.206
+
+### Patch Changes
+
+-   Updated dependencies [[`d01d1369124d537f37ead6f8e3101cc47fff5208`](https://github.com/learningeconomy/LearnCard/commit/d01d1369124d537f37ead6f8e3101cc47fff5208)]:
+    -   @learncard/core@9.3.17
+    -   @learncard/meta-mask-snap@1.0.68
+    -   @learncard/react@2.7.62
+
+## 1.0.205
+
+### Patch Changes
+
+-   Updated dependencies [[`399b1d877fbf9db8852385740ee12bb007cc7e6c`](https://github.com/learningeconomy/LearnCard/commit/399b1d877fbf9db8852385740ee12bb007cc7e6c)]:
+    -   @learncard/react@2.7.61
+
+## 1.0.204
+
+### Patch Changes
+
+-   Updated dependencies [[`0929f10633d3f86db0aca3f3c982f5cdf2c02a0c`](https://github.com/learningeconomy/LearnCard/commit/0929f10633d3f86db0aca3f3c982f5cdf2c02a0c)]:
+    -   @learncard/react@2.7.60
+
+## 1.0.203
+
+### Patch Changes
+
+-   Updated dependencies [[`c5ffa5a053742368765e557591e40d0a37a5c7e8`](https://github.com/learningeconomy/LearnCard/commit/c5ffa5a053742368765e557591e40d0a37a5c7e8)]:
+    -   @learncard/react@2.7.59
+    -   @learncard/core@9.3.16
+    -   @learncard/helpers@1.1.7
+    -   @learncard/meta-mask-snap@1.0.67
+
+## 1.0.202
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/react@2.7.58
+
+## 1.0.201
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/react@2.7.57
+
+## 1.0.200
+
+### Patch Changes
+
+-   Updated dependencies [[`74f7b7bd762501d0591f84d3c7ef6dc91e8ef30f`](https://github.com/learningeconomy/LearnCard/commit/74f7b7bd762501d0591f84d3c7ef6dc91e8ef30f)]:
+    -   @learncard/react@2.7.56
+
+## 1.0.199
+
+### Patch Changes
+
+-   Updated dependencies [[`a4eead401a62a872be046e28b0d27b2d980ced3a`](https://github.com/learningeconomy/LearnCard/commit/a4eead401a62a872be046e28b0d27b2d980ced3a)]:
+    -   @learncard/core@9.3.15
+    -   @learncard/meta-mask-snap@1.0.66
+    -   @learncard/react@2.7.55
+    -   @learncard/helpers@1.1.6
+
+## 1.0.198
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.14
+    -   @learncard/helpers@1.1.5
+    -   @learncard/react@2.7.54
+    -   @learncard/meta-mask-snap@1.0.65
+
+## 1.0.197
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.13
+    -   @learncard/helpers@1.1.4
+    -   @learncard/react@2.7.53
+    -   @learncard/meta-mask-snap@1.0.64
+
+## 1.0.196
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.12
+    -   @learncard/helpers@1.1.3
+    -   @learncard/react@2.7.52
+    -   @learncard/meta-mask-snap@1.0.63
+
+## 1.0.195
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/react@2.7.51
+
+## 1.0.194
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/react@2.7.50
+
+## 1.0.193
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.11
+    -   @learncard/helpers@1.1.2
+    -   @learncard/react@2.7.49
+    -   @learncard/meta-mask-snap@1.0.62
+
+## 1.0.192
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/react@2.7.48
+
+## 1.0.191
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/react@2.7.47
+
+## 1.0.190
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.10
+    -   @learncard/helpers@1.1.1
+    -   @learncard/react@2.7.46
+    -   @learncard/meta-mask-snap@1.0.61
+
+## 1.0.189
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/react@2.7.45
+
+## 1.0.188
+
+### Patch Changes
+
+-   Updated dependencies [[`5abe7679d8c0a71952112b686ca9fdf66d0d50c0`](https://github.com/learningeconomy/LearnCard/commit/5abe7679d8c0a71952112b686ca9fdf66d0d50c0)]:
+    -   @learncard/helpers@1.1.0
+    -   @learncard/core@9.3.9
+    -   @learncard/meta-mask-snap@1.0.60
+    -   @learncard/react@2.7.44
+
+## 1.0.187
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.8
+    -   @learncard/helpers@1.0.20
+    -   @learncard/react@2.7.43
+    -   @learncard/meta-mask-snap@1.0.59
+
+## 1.0.186
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/react@2.7.42
+
+## 1.0.185
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/react@2.7.41
+
+## 1.0.184
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.7
+    -   @learncard/helpers@1.0.19
+    -   @learncard/react@2.7.40
+    -   @learncard/meta-mask-snap@1.0.58
+
+## 1.0.183
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.6
+    -   @learncard/helpers@1.0.18
+    -   @learncard/react@2.7.39
+    -   @learncard/meta-mask-snap@1.0.57
+
+## 1.0.182
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/react@2.7.38
+
+## 1.0.181
+
+### Patch Changes
+
+-   Updated dependencies [[`3cd4737a68e9dced7a5af207571c2fb0767f8326`](https://github.com/learningeconomy/LearnCard/commit/3cd4737a68e9dced7a5af207571c2fb0767f8326)]:
+    -   @learncard/react@2.7.37
+
+## 1.0.180
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.5
+    -   @learncard/helpers@1.0.17
+    -   @learncard/react@2.7.36
+    -   @learncard/meta-mask-snap@1.0.56
+
+## 1.0.179
+
+### Patch Changes
+
+-   Updated dependencies [[`01bb2e55ce182975663f2c43ec79d05aa9e61919`](https://github.com/learningeconomy/LearnCard/commit/01bb2e55ce182975663f2c43ec79d05aa9e61919)]:
+    -   @learncard/react@2.7.35
+
+## 1.0.178
+
+### Patch Changes
+
+-   Updated dependencies [[`92d47059935e4e04f8132dee3c8dcf2db96488ac`](https://github.com/learningeconomy/LearnCard/commit/92d47059935e4e04f8132dee3c8dcf2db96488ac)]:
+    -   @learncard/react@2.7.34
+
+## 1.0.177
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/react@2.7.33
+
+## 1.0.176
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.4
+    -   @learncard/helpers@1.0.16
+    -   @learncard/react@2.7.32
+    -   @learncard/meta-mask-snap@1.0.55
+
+## 1.0.175
+
+### Patch Changes
+
+-   Updated dependencies [[`287836291b5b37a2922be73f1414d7bca6ff2a39`](https://github.com/learningeconomy/LearnCard/commit/287836291b5b37a2922be73f1414d7bca6ff2a39)]:
+    -   @learncard/react@2.7.31
+
+## 1.0.174
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/react@2.7.30
+
+## 1.0.173
+
+### Patch Changes
+
+-   Updated dependencies [[`6b9ef5e76cd9a48a1b7275afbeba8340427bfbb0`](https://github.com/learningeconomy/LearnCard/commit/6b9ef5e76cd9a48a1b7275afbeba8340427bfbb0)]:
+    -   @learncard/react@2.7.29
+
+## 1.0.172
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/react@2.7.28
+
+## 1.0.171
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/react@2.7.27
+
+## 1.0.170
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/react@2.7.26
+
+## 1.0.169
+
+### Patch Changes
+
+-   Updated dependencies [[`426ba7423b77f963985bd17e7c31843da1e16217`](https://github.com/learningeconomy/LearnCard/commit/426ba7423b77f963985bd17e7c31843da1e16217)]:
+    -   @learncard/core@9.3.3
+    -   @learncard/meta-mask-snap@1.0.54
+    -   @learncard/react@2.7.25
+
+## 1.0.168
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/react@2.7.24
+
+## 1.0.167
+
+### Patch Changes
+
+-   Updated dependencies [[`bab40e44aea413976b7f5a72779522e88676e1da`](https://github.com/learningeconomy/LearnCard/commit/bab40e44aea413976b7f5a72779522e88676e1da)]:
+    -   @learncard/react@2.7.23
+
+## 1.0.166
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/react@2.7.22
+
+## 1.0.165
+
+### Patch Changes
+
+-   Updated dependencies [[`035df02f21226ac1645b611e2f934c2d7e4cbd55`](https://github.com/learningeconomy/LearnCard/commit/035df02f21226ac1645b611e2f934c2d7e4cbd55)]:
+    -   @learncard/react@2.7.21
+    -   @learncard/core@9.3.2
+    -   @learncard/meta-mask-snap@1.0.53
+    -   @learncard/helpers@1.0.15
+
+## 1.0.164
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/react@2.7.20
+
 ## 1.0.163
 
 ### Patch Changes

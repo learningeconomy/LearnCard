@@ -1,7 +1,7 @@
-import type { DID } from 'dids';
 import type { LCNClient } from '@learncard/network-brain-client';
 import {
     LCNProfile,
+    LCNProfileManager,
     UnsignedVC,
     VC,
     VP,
@@ -27,6 +27,22 @@ import {
     PaginatedConsentFlowData,
     ConsentFlowDataQuery,
     BoostRecipientInfo,
+    BoostPermissions,
+    BoostQuery,
+    LCNProfileQuery,
+    LCNProfileManagerQuery,
+    PaginatedLCNProfileManagers,
+    PaginatedLCNProfilesAndManagers,
+    DidDocument,
+    ClaimHook,
+    ClaimHookQuery,
+    PaginatedClaimHooksType,
+    ConsentFlowDataForDidQuery,
+    PaginatedConsentFlowDataForDid,
+    PaginatedContractCredentials,
+    AutoBoostConfig,
+    AuthGrantType,
+    AuthGrantQuery,
 } from '@learncard/types';
 import { Plugin } from '@learncard/core';
 import { ProofOptions } from '@learncard/didkit-plugin';
@@ -34,12 +50,14 @@ import { VerifyExtension } from '@learncard/vc-plugin';
 
 /** @group LearnCardNetwork Plugin */
 export type LearnCardNetworkPluginDependentMethods = {
-    getDIDObject: () => DID;
     getDidAuthVp: (options?: ProofOptions) => Promise<VP | string>;
     issueCredential: (
         credential: UnsignedVC,
         signingOptions?: Partial<ProofOptions>
     ) => Promise<VC>;
+    clearDidWebCache?: () => Promise<void>;
+    createDagJwe: (cleartext: any, recipients: string[]) => Promise<JWE>;
+    decryptDagJwe: (jwe: JWE, jwks: any[]) => Promise<any>;
 };
 
 /** @group LearnCardNetwork Plugin */
@@ -48,17 +66,33 @@ export type LearnCardNetworkPluginMethods = {
     createServiceProfile: (
         profile: Omit<LCNProfile, 'did' | 'isServiceProfile'>
     ) => Promise<string>;
+    createManagedProfile: (profile: Omit<LCNProfile, 'did'>) => Promise<string>;
+    createProfileManager: (profile: Omit<LCNProfileManager, 'id' | 'created'>) => Promise<string>;
+    createChildProfileManager: (
+        parentUri: string,
+        profile: Omit<LCNProfileManager, 'id' | 'created'>
+    ) => Promise<string>;
     createManagedServiceProfile: (
         profile: Omit<LCNProfile, 'did' | 'isServiceProfile'>
     ) => Promise<string>;
+    getAvailableProfiles: (
+        options?: Partial<PaginationOptionsType> & { query?: LCNProfileQuery }
+    ) => Promise<PaginatedLCNProfilesAndManagers>;
+    getManagedProfiles: (
+        options?: Partial<PaginationOptionsType> & { query?: LCNProfileQuery }
+    ) => Promise<PaginatedLCNProfiles>;
     getManagedServiceProfiles: (
         options: Partial<PaginationOptionsType> & { id?: string }
     ) => Promise<PaginatedLCNProfiles>;
     updateProfile: (
         profile: Partial<Omit<LCNProfile, 'did' | 'isServiceProfile'>>
     ) => Promise<boolean>;
+    updateProfileManagerProfile: (
+        manager: Partial<Omit<LCNProfileManager, 'id' | 'created'>>
+    ) => Promise<boolean>;
     deleteProfile: () => Promise<boolean>;
     getProfile: (profileId?: string) => Promise<LCNProfile | undefined>;
+    getProfileManagerProfile: (id?: string) => Promise<LCNProfileManager | undefined>;
     searchProfiles: (
         profileId?: string,
         options?: {
@@ -96,7 +130,12 @@ export type LearnCardNetworkPluginMethods = {
     getBlockedProfiles: () => Promise<LCNProfile[]>;
 
     sendCredential: (profileId: string, vc: UnsignedVC | VC, encrypt?: boolean) => Promise<string>;
-    acceptCredential: (uri: string) => Promise<boolean>;
+    acceptCredential: (
+        uri: string,
+        options?: {
+            skipNotification?: boolean;
+        }
+    ) => Promise<boolean>;
     getReceivedCredentials: (from?: string) => Promise<SentCredentialInfo[]>;
     getSentCredentials: (to?: string) => Promise<SentCredentialInfo[]>;
     getIncomingCredentials: (from?: string) => Promise<SentCredentialInfo[]>;
@@ -113,13 +152,62 @@ export type LearnCardNetworkPluginMethods = {
         credential: VC | UnsignedVC,
         metadata?: Partial<Omit<Boost, 'uri'>>
     ) => Promise<string>;
+    createChildBoost: (
+        parentUri: string,
+        credential: VC | UnsignedVC,
+        metadata?: Partial<Omit<Boost, 'uri'>>
+    ) => Promise<string>;
     getBoost: (uri: string) => Promise<Boost & { boost: UnsignedVC }>;
     /** @deprecated Use getPaginatedBoosts */
-    getBoosts: (query?: Partial<Omit<Boost, 'uri'>>) => Promise<{ name?: string; uri: string }[]>;
+    getBoosts: (query?: BoostQuery) => Promise<{ name?: string; uri: string }[]>;
     getPaginatedBoosts: (
-        options?: PaginationOptionsType & { query?: Partial<Omit<Boost, 'uri'>> }
+        options?: PaginationOptionsType & { query?: BoostQuery }
     ) => Promise<PaginatedBoostsType>;
-    countBoosts: (query?: Partial<Omit<Boost, 'uri'>>) => Promise<number>;
+    countBoosts: (query?: BoostQuery) => Promise<number>;
+    getBoostChildren: (
+        uri: string,
+        options?: PaginationOptionsType & { query?: BoostQuery; numberOfGenerations?: number }
+    ) => Promise<PaginatedBoostsType>;
+    countBoostChildren: (
+        uri: string,
+        options?: { query?: BoostQuery; numberOfGenerations?: number }
+    ) => Promise<number>;
+    getBoostSiblings: (
+        uri: string,
+        options?: PaginationOptionsType & { query?: BoostQuery }
+    ) => Promise<PaginatedBoostsType>;
+    countBoostSiblings: (uri: string, options?: { query?: BoostQuery }) => Promise<number>;
+    getFamilialBoosts: (
+        uri: string,
+        options?: PaginationOptionsType & {
+            query?: BoostQuery;
+            parentGenerations?: number;
+            childGenerations?: number;
+            includeExtendedFamily?: boolean;
+        }
+    ) => Promise<PaginatedBoostsType>;
+    countFamilialBoosts: (
+        uri: string,
+        options?: {
+            query?: BoostQuery;
+            parentGenerations?: number;
+            childGenerations?: number;
+            includeExtendedFamily?: boolean;
+        }
+    ) => Promise<number>;
+    getBoostParents: (
+        uri: string,
+        options?: PaginationOptionsType & {
+            query?: BoostQuery;
+            numberOfGenerations?: number;
+        }
+    ) => Promise<PaginatedBoostsType>;
+    countBoostParents: (
+        uri: string,
+        options?: { query?: BoostQuery; numberOfGenerations?: number }
+    ) => Promise<number>;
+    makeBoostParent: (uris: { parentUri: string; childUri: string }) => Promise<boolean>;
+    removeBoostParent: (uris: { parentUri: string; childUri: string }) => Promise<boolean>;
     /** @deprecated Use getPaginatedBoostRecipients */
     getBoostRecipients: (
         uri: string,
@@ -131,25 +219,42 @@ export type LearnCardNetworkPluginMethods = {
         uri: string,
         limit?: number,
         cursor?: string,
-        includeUnacceptedBoosts?: boolean
+        includeUnacceptedBoosts?: boolean,
+        query?: LCNProfileQuery
     ) => Promise<PaginatedBoostRecipientsType>;
     countBoostRecipients: (uri: string, includeUnacceptedBoosts?: boolean) => Promise<number>;
+    getBoostChildrenProfileManagers: (
+        uri: string,
+        options?: Partial<PaginationOptionsType> & { query?: LCNProfileManagerQuery }
+    ) => Promise<PaginatedLCNProfileManagers>;
     updateBoost: (
         uri: string,
         updates: Partial<Omit<Boost, 'uri'>>,
-        credential: UnsignedVC | VC
+        credential?: UnsignedVC | VC
     ) => Promise<boolean>;
     deleteBoost: (uri: string) => Promise<boolean>;
     getBoostAdmins: (
         uri: string,
         options?: Partial<PaginationOptionsType> & { includeSelf?: boolean }
     ) => Promise<PaginatedLCNProfiles>;
+    getBoostPermissions: (uri: string, profileId?: string) => Promise<BoostPermissions>;
+    updateBoostPermissions: (
+        uri: string,
+        updates: Partial<Omit<BoostPermissions, 'role'>>,
+        profileId?: string
+    ) => Promise<boolean>;
     addBoostAdmin: (uri: string, profileId: string) => Promise<boolean>;
     removeBoostAdmin: (uri: string, profileId: string) => Promise<boolean>;
     sendBoost: (
         profileId: string,
         boostUri: string,
-        options?: boolean | { encrypt?: boolean; overideFn?: (boost: UnsignedVC) => UnsignedVC }
+        options?:
+            | boolean
+            | {
+                  encrypt?: boolean;
+                  overideFn?: (boost: UnsignedVC) => UnsignedVC;
+                  skipNotification?: boolean;
+              }
     ) => Promise<string>;
 
     registerSigningAuthority: (endpoint: string, name: string, did: string) => Promise<boolean>;
@@ -178,6 +283,7 @@ export type LearnCardNetworkPluginMethods = {
         description?: string;
         image?: string;
         expiresAt?: string;
+        autoboosts?: AutoBoostConfig[];
     }) => Promise<string>;
     getContract: (uri: string) => Promise<ConsentFlowContractDetails>;
     getContracts: (
@@ -188,10 +294,21 @@ export type LearnCardNetworkPluginMethods = {
         uri: string,
         options?: Partial<PaginationOptionsType> & { query?: ConsentFlowDataQuery }
     ) => Promise<PaginatedConsentFlowData>;
+    getConsentFlowDataForDid: (
+        did: string,
+        options?: Partial<PaginationOptionsType> & { query?: ConsentFlowDataForDidQuery }
+    ) => Promise<PaginatedConsentFlowDataForDid>;
     getAllConsentFlowData: (
         query?: ConsentFlowDataQuery,
         options?: Partial<PaginationOptionsType>
     ) => Promise<PaginatedConsentFlowData>;
+    writeCredentialToContract: (
+        did: string,
+        contractUri: string,
+        credential: VC | JWE,
+        boostUri: string
+    ) => Promise<string>;
+
     consentToContract: (
         uri: string,
         terms: {
@@ -216,8 +333,42 @@ export type LearnCardNetworkPluginMethods = {
         uri: string,
         options?: Partial<PaginationOptionsType> & { query?: ConsentFlowTransactionsQuery }
     ) => Promise<PaginatedConsentFlowTransactions>;
-    verifyConsent: (uri: string, profileId: string) => Promise<boolean>;
+    getCredentialsForContract: (
+        termsUri: string,
+        options?: Partial<PaginationOptionsType> & { includeReceived?: boolean }
+    ) => Promise<PaginatedContractCredentials>;
+    getConsentFlowCredentials: (
+        options?: Partial<PaginationOptionsType> & { includeReceived?: boolean }
+    ) => Promise<PaginatedContractCredentials>;
 
+    verifyConsent: (uri: string, profileId: string) => Promise<boolean>;
+    
+    syncCredentialsToContract: (
+        termsUri: string,
+        categories: Record<string, string[]>
+    ) => Promise<boolean>;
+
+    addDidMetadata: (metadata: Partial<DidDocument>) => Promise<boolean>;
+    getDidMetadata: (id: string) => Promise<Partial<DidDocument> | undefined>;
+    getMyDidMetadata: () => Promise<Array<Partial<DidDocument> & { id: string }>>;
+    updateDidMetadata: (id: string, updates: Partial<DidDocument>) => Promise<boolean>;
+    deleteDidMetadata: (id: string) => Promise<boolean>;
+
+    createClaimHook: (hook: ClaimHook) => Promise<string>;
+    getClaimHooksForBoost: (
+        options: Partial<PaginationOptionsType> & { uri: string; query?: ClaimHookQuery }
+    ) => Promise<PaginatedClaimHooksType>;
+    deleteClaimHook: (id: string) => Promise<boolean>;
+
+    addAuthGrant: (authGrant: Partial<AuthGrantType>) => Promise<string>;
+    getAuthGrant: (id: string) => Promise<Partial<AuthGrantType> | undefined>;
+    getAuthGrants: (
+        options?: Partial<PaginationOptionsType> & { query?: AuthGrantQuery }
+    ) => Promise<Partial<AuthGrantType>[] | undefined>;
+    deleteAuthGrant: (id: string) => Promise<boolean>;
+    updateAuthGrant: (id: string, updates: Partial<AuthGrantType>) => Promise<boolean>;
+    revokeAuthGrant: (id: string) => Promise<boolean>;
+    getAPITokenForAuthGrant: (id: string) => Promise<string>;
     resolveFromLCN: (
         uri: string
     ) => Promise<VC | UnsignedVC | VP | JWE | ConsentFlowContract | ConsentFlowTerms>;

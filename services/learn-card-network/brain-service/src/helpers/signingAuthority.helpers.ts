@@ -1,8 +1,7 @@
 import dotenv from 'dotenv';
 import { getDidWebLearnCard, getLearnCard } from '@helpers/learnCard.helpers';
 import { UnsignedVC, VCValidator, JWEValidator, VC, JWE } from '@learncard/types';
-import { SigningAuthorityForUserType } from 'types/profile';
-import { ProfileInstance } from '@models';
+import { ProfileType, SigningAuthorityForUserType } from 'types/profile';
 import { getDidWeb } from '@helpers/did.helpers';
 
 dotenv.config();
@@ -18,9 +17,10 @@ const _mockIssueCredentialWithSigningAuthority = async (credential: UnsignedVC) 
 };
 
 export async function issueCredentialWithSigningAuthority(
-    owner: ProfileInstance,
+    owner: ProfileType,
     credential: UnsignedVC,
     signingAuthorityForUser: SigningAuthorityForUserType,
+    domain: string,
     encrypt: boolean = true
 ): Promise<VC | JWE> {
     try {
@@ -46,10 +46,7 @@ export async function issueCredentialWithSigningAuthority(
 
         if (!IS_TEST_ENVIRONMENT) console.log('Issuer Endpoint: ', issuerEndpoint);
 
-        const ownerDid = getDidWeb(
-            process.env.DOMAIN_NAME ?? 'network.learncard.com',
-            owner.profileId
-        );
+        const ownerDid = getDidWeb(domain ?? 'network.learncard.com', owner.profileId);
 
         const encryption = encrypt ? { recipients: [learnCard.id.did()] } : undefined;
 

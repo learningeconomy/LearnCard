@@ -1,12 +1,12 @@
 [<img src="https://user-images.githubusercontent.com/2185016/190510561-294db809-09fd-4771-9749-6c0e0f4144fd.png" width="215"/>](https://learncard.com)
 
-# @learncard/core
+# @learncard/ceramic-plugin
 
-[![npm version](https://img.shields.io/npm/v/@learncard/core)](https://www.npmjs.com/package/@learncard/core)
-[![npm downloads](https://img.shields.io/npm/dw/@learncard/core)](https://www.npmjs.com/package/@learncard/core)
-[![vulnerabilities](https://img.shields.io/snyk/vulnerabilities/npm/@learncard/core)](https://www.npmjs.com/package/@learncard/core)
+[![npm version](https://img.shields.io/npm/v/@learncard/ceramic-plugin)](https://www.npmjs.com/package/@learncard/ceramic-plugin)
+[![npm downloads](https://img.shields.io/npm/dw/@learncard/ceramic-plugin)](https://www.npmjs.com/package/@learncard/ceramic-plugin)
+[![vulnerabilities](https://img.shields.io/snyk/vulnerabilities/npm/@learncard/ceramic-plugin)](https://www.npmjs.com/package/@learncard/ceramic-plugin)
 
-The LearnCard Core is a pluggable, open-source, universal digital wallet to enable any individual or organization to seamlessly **issue, earn, store, share, and spend currency and credentials** built for the future of education and work.
+The Ceramic Plugin provides Ceramic Network integration for LearnCard, allowing for decentralized storage of Verifiable Credentials. Note: LearnCloud is now the recommended storage solution for LearnCard.
 
 ## Documentation
 All LearnCard documentation can be found at:

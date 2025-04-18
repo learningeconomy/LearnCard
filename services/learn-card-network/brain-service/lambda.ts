@@ -36,8 +36,11 @@ export const _openApiHandler = createOpenApiAwsLambdaHandler({
         error.stack = error.stack?.replace('Mr: ', '');
         error.name = error.message;
 
-        Sentry.captureException(error, { extra: { ctx, path } });
-        Sentry.getActiveTransaction()?.setHttpStatus(TRPC_ERROR_CODE_HTTP_STATUS[error.code]);
+        // We want to ignore invalid challenge errors because they are normal
+        if (!(error.code === 'UNAUTHORIZED' && !ctx?.user?.isChallengeValid)) {
+            Sentry.captureException(error, { extra: { ctx, path } });
+            Sentry.getActiveTransaction()?.setHttpStatus(TRPC_ERROR_CODE_HTTP_STATUS[error.code]);
+        }
     },
 });
 
@@ -48,8 +51,11 @@ export const _trpcHandler = awsLambdaRequestHandler({
         error.stack = error.stack?.replace('Mr: ', '');
         error.name = error.message;
 
-        Sentry.captureException(error, { extra: { ctx, path } });
-        Sentry.getActiveTransaction()?.setHttpStatus(TRPC_ERROR_CODE_HTTP_STATUS[error.code]);
+        // We want to ignore invalid challenge errors because they are normal
+        if (!(error.code === 'UNAUTHORIZED' && !ctx?.user?.isChallengeValid)) {
+            Sentry.captureException(error, { extra: { ctx, path } });
+            Sentry.getActiveTransaction()?.setHttpStatus(TRPC_ERROR_CODE_HTTP_STATUS[error.code]);
+        }
     },
     responseMeta: () => {
         return {
@@ -98,7 +104,6 @@ export const trpcHandler = Sentry.AWSLambda.wrapHandler(
 
 export const notificationsWorker: SQSHandler = Sentry.AWSLambda.wrapHandler(
     async (event, context) => {
-        console.log('lolwat');
         await Promise.all(
             event.Records.map(async record => {
                 try {

@@ -1,5 +1,162 @@
 # learn-card-core
 
+## 9.3.23
+
+### Patch Changes
+
+-   [`cbc84cc27d1eaf8b6830f06d86d354cb78d8d548`](https://github.com/learningeconomy/LearnCard/commit/cbc84cc27d1eaf8b6830f06d86d354cb78d8d548) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Remove NX caching in CI to ensure latest builds
+
+-   Updated dependencies [[`cbc84cc27d1eaf8b6830f06d86d354cb78d8d548`](https://github.com/learningeconomy/LearnCard/commit/cbc84cc27d1eaf8b6830f06d86d354cb78d8d548)]:
+    -   @learncard/helpers@1.1.12
+
+## 9.3.22
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.1.11
+
+## 9.3.21
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.1.10
+
+## 9.3.20
+
+### Patch Changes
+
+-   [#635](https://github.com/learningeconomy/LearnCard/pull/635) [`a945a7086a0848b04f9f2c8b1588e9e3826edeff`](https://github.com/learningeconomy/LearnCard/commit/a945a7086a0848b04f9f2c8b1588e9e3826edeff) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Remove isomorphic-fetch
+
+## 9.3.19
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.1.9
+
+## 9.3.18
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.1.8
+
+## 9.3.17
+
+### Patch Changes
+
+-   [#615](https://github.com/learningeconomy/LearnCard/pull/615) [`d01d1369124d537f37ead6f8e3101cc47fff5208`](https://github.com/learningeconomy/LearnCard/commit/d01d1369124d537f37ead6f8e3101cc47fff5208) Thanks [@Custard7](https://github.com/Custard7)! - Docs: update Ceramic/IDX references to LearnCloud
+
+## 9.3.16
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.1.7
+
+## 9.3.15
+
+### Patch Changes
+
+-   [#596](https://github.com/learningeconomy/LearnCard/pull/596) [`a4eead401a62a872be046e28b0d27b2d980ced3a`](https://github.com/learningeconomy/LearnCard/commit/a4eead401a62a872be046e28b0d27b2d980ced3a) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Specify that id.keypair() should return a JWK _with_ a private key
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.1.6
+
+## 9.3.14
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.1.5
+
+## 9.3.13
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.1.4
+
+## 9.3.12
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.1.3
+
+## 9.3.11
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.1.2
+
+## 9.3.10
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.1.1
+
+## 9.3.9
+
+### Patch Changes
+
+-   Updated dependencies [[`5abe7679d8c0a71952112b686ca9fdf66d0d50c0`](https://github.com/learningeconomy/LearnCard/commit/5abe7679d8c0a71952112b686ca9fdf66d0d50c0)]:
+    -   @learncard/helpers@1.1.0
+
+## 9.3.8
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.0.20
+
+## 9.3.7
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.0.19
+
+## 9.3.6
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.0.18
+
+## 9.3.5
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.0.17
+
+## 9.3.4
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.0.16
+
+## 9.3.3
+
+### Patch Changes
+
+-   [#530](https://github.com/learningeconomy/LearnCard/pull/530) [`426ba7423b77f963985bd17e7c31843da1e16217`](https://github.com/learningeconomy/LearnCard/commit/426ba7423b77f963985bd17e7c31843da1e16217) Thanks [@gerardopar](https://github.com/gerardopar)! - Update LearnCard core readme
+
+## 9.3.2
+
+### Patch Changes
+
+-   [#524](https://github.com/learningeconomy/LearnCard/pull/524) [`035df02f21226ac1645b611e2f934c2d7e4cbd55`](https://github.com/learningeconomy/LearnCard/commit/035df02f21226ac1645b611e2f934c2d7e4cbd55) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix build issues
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.0.15
+
 ## 9.3.1
 
 ### Patch Changes

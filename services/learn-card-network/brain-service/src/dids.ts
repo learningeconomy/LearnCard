@@ -5,12 +5,20 @@ import { base64url } from 'multiformats/bases/base64';
 import { base58btc } from 'multiformats/bases/base58';
 
 import { getEmptyLearnCard, getLearnCard } from '@helpers/learnCard.helpers';
-import { getDidWeb } from '@helpers/did.helpers';
+import { getDidWeb, getManagedDidWeb } from '@helpers/did.helpers';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
 import { getSigningAuthoritiesForUser } from '@accesslayer/signing-authority/relationships/read';
-import { getDidDocForProfile, setDidDocForProfile } from '@cache/did-docs';
-import Profile from './models/Profile';
-import { JWK } from '@learncard/types';
+import {
+    getDidDocForProfile,
+    getDidDocForProfileManager,
+    setDidDocForProfile,
+    setDidDocForProfileManager,
+} from '@cache/did-docs';
+import { DidDocument, JWK } from '@learncard/types';
+import { getProfilesThatManageAProfile } from '@accesslayer/profile/relationships/read';
+import { getProfilesThatAdministrateAProfileManager } from '@accesslayer/profile-manager/relationships/read';
+import { getDidMetadataForProfile } from '@accesslayer/did-metadata/relationships/read';
+import { mergeWith, omit } from 'lodash';
 
 const encodeKey = (key: Uint8Array) => {
     const bytes = new Uint8Array(key.length + 2);
@@ -65,11 +73,6 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
             JSON.stringify(didDoc).replaceAll(profile.did, did).replaceAll(`#${key}`, '#owner')
         );
 
-        const jwk = replacedDoc.verificationMethod[0].publicKeyJwk;
-
-        const decodedJwk = base64url.decode(`u${jwk.x}`);
-        const x25519PublicKeyBytes = sodium.crypto_sign_ed25519_pk_to_curve25519(decodedJwk);
-
         let saDocs: Record<string, any>[] = [];
         try {
             console.log('Signing authorities get');
@@ -89,27 +92,9 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
                                 .replaceAll(`#${_key}`, `#${sa.relationship.name}`)
                         );
 
-                        const _jwk = _replacedDoc.verificationMethod[0].publicKeyJwk;
-
-                        const _decodedJwk = base64url.decode(`u${_jwk.x}`);
-                        const _x25519PublicKeyBytes =
-                            sodium.crypto_sign_ed25519_pk_to_curve25519(_decodedJwk);
-
                         _replacedDoc.verificationMethod[0].controller += `#${sa.relationship.name}`;
 
-                        return {
-                            ..._replacedDoc,
-                            keyAgreement: [
-                                {
-                                    id: `${did}#${encodeKey(_x25519PublicKeyBytes)}`,
-                                    type: 'X25519KeyAgreementKey2019',
-                                    controller: _replacedDoc.verificationMethod[0].controller,
-                                    publicKeyBase58: base58btc
-                                        .encode(_x25519PublicKeyBytes)
-                                        .slice(1),
-                                },
-                            ],
-                        };
+                        return _replacedDoc;
                     })
                 );
             }
@@ -117,18 +102,7 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
             console.error(e);
         }
 
-        let finalDoc = {
-            controller: profile.did,
-            ...replacedDoc,
-            keyAgreement: [
-                {
-                    id: `${did}#${encodeKey(x25519PublicKeyBytes)}`,
-                    type: 'X25519KeyAgreementKey2019',
-                    controller: did,
-                    publicKeyBase58: base58btc.encode(x25519PublicKeyBytes).slice(1),
-                },
-            ],
-        };
+        let finalDoc = { ...replacedDoc, controller: profile.did };
 
         if (saDocs) {
             saDocs.map(sa => {
@@ -151,20 +125,118 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
             });
         }
 
-        const managedRelationships = await Profile.findRelationships({
-            alias: 'managedBy',
-            where: { source: { profileId } },
+        try {
+            const managers = await getProfilesThatManageAProfile(profileId);
+
+            if (managers.length > 0) {
+                await Promise.all(
+                    managers.map(async manager => {
+                        const targetDid = manager.did;
+                        const targetKey = manager.did.split(':')[2];
+
+                        const targetDidDoc = await learnCard.invoke.resolveDid(targetDid);
+                        const targetJwk = (targetDidDoc.verificationMethod?.[0] as any)
+                            .publicKeyJwk as JWK;
+
+                        const _decodedJwk = base64url.decode(`u${targetJwk.x}`);
+                        const _x25519PublicKeyBytes =
+                            sodium.crypto_sign_ed25519_pk_to_curve25519(_decodedJwk);
+
+                        const id = `${did}#${targetKey}`;
+
+                        finalDoc.verificationMethod.unshift({
+                            id,
+                            type: 'Ed25519VerificationKey2018',
+                            controller: id,
+                            publicKeyJwk: targetJwk,
+                        });
+                        finalDoc.authentication.push(id);
+                        finalDoc.assertionMethod.push(id);
+                        finalDoc.keyAgreement.push({
+                            id: `${did}#${encodeKey(_x25519PublicKeyBytes)}`,
+                            type: 'X25519KeyAgreementKey2019',
+                            controller: id,
+                            publicKeyBase58: base58btc.encode(_x25519PublicKeyBytes).slice(1),
+                        });
+                    })
+                );
+            }
+        } catch (error) {
+            console.error(error);
+        }
+
+        const extraMetadata = await getDidMetadataForProfile(profileId);
+
+        extraMetadata.forEach(metadata => {
+            finalDoc = mergeWith(finalDoc, omit(metadata, 'id'), (src, dest) => {
+                if (Array.isArray(src)) return src.concat(dest);
+
+                return undefined;
+            });
         });
 
-        if (managedRelationships.length > 0) {
-            finalDoc.controller = profile.did;
+        setDidDocForProfile(profileId, finalDoc);
 
+        return reply.send(finalDoc);
+    });
+
+    fastify.options('/manager/:id/did.json', async (_request, reply) => {
+        reply.status(200);
+        reply.header('Access-Control-Allow-Origin', '*');
+        reply.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+        reply.header('Access-Control-Allow-Headers', '*');
+        return reply.send();
+    });
+
+    fastify.get('/manager/:id/did.json', async (request, reply) => {
+        const { id } = request.params as { id: string };
+
+        const cachedResult = await getDidDocForProfileManager(id);
+
+        if (cachedResult) return reply.send(cachedResult);
+
+        await _sodium.ready;
+        const sodium = _sodium;
+
+        const learnCard = await getEmptyLearnCard();
+
+        const domainName: string = request.hostname || (request as any).requestContext.domainName;
+        const _domain =
+            !domainName || process.env.IS_OFFLINE
+                ? `localhost%3A${process.env.PORT || 3000}`
+                : domainName.replace(/:/g, '%3A');
+
+        const domain = process.env.DOMAIN_NAME || _domain;
+
+        const did = getManagedDidWeb(domain, id);
+
+        let finalDoc: DidDocument = {
+            '@context': [
+                'https://www.w3.org/ns/did/v1',
+                {
+                    'Ed25519VerificationKey2018':
+                        'https://w3id.org/security#Ed25519VerificationKey2018',
+                    'publicKeyJwk': {
+                        '@id': 'https://w3id.org/security#publicKeyJwk',
+                        '@type': '@json',
+                    },
+                },
+            ],
+            id: did,
+            controller: did,
+            keyAgreement: [],
+            verificationMethod: [],
+            authentication: [],
+            assertionMethod: [],
+        };
+
+        const administrators = await getProfilesThatAdministrateAProfileManager(id);
+
+        if (administrators.length > 0) {
             await Promise.all(
-                managedRelationships.map(async managedRelationship => {
-                    const { target } = managedRelationship;
-
-                    const targetDid = target.did;
-                    const targetKey = target.did.split(':')[2];
+                administrators.map(async administrator => {
+                    const targetDid = administrator.did;
+                    const targetKey = administrator.did.split(':')[2];
 
                     const targetDidDoc = await learnCard.invoke.resolveDid(targetDid);
                     const targetJwk = (targetDidDoc.verificationMethod?.[0] as any)
@@ -176,15 +248,15 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
 
                     const id = `${did}#${targetKey}`;
 
-                    finalDoc.verificationMethod.unshift({
+                    finalDoc.verificationMethod!.unshift({
                         id,
                         type: 'Ed25519VerificationKey2018',
                         controller: id,
                         publicKeyJwk: targetJwk,
                     });
-                    finalDoc.authentication.push(id);
-                    finalDoc.assertionMethod.push(id);
-                    finalDoc.keyAgreement.push({
+                    finalDoc.authentication!.push(id);
+                    finalDoc.assertionMethod!.push(id);
+                    finalDoc.keyAgreement!.push({
                         id: `${did}#${encodeKey(_x25519PublicKeyBytes)}`,
                         type: 'X25519KeyAgreementKey2019',
                         controller: id,
@@ -194,7 +266,7 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
             );
         }
 
-        setDidDocForProfile(profileId, finalDoc);
+        setDidDocForProfileManager(id, finalDoc);
 
         return reply.send(finalDoc);
     });
@@ -254,6 +326,16 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
         setDidDocForProfile('::root::', finalDoc);
 
         return reply.send(finalDoc);
+    });
+
+    fastify.get('/test/clear-cache', async (_request, reply) => {
+        if (!process.env.IS_OFFLINE) return reply.status(403).send();
+
+        const learnCard = await getEmptyLearnCard();
+
+        await learnCard.invoke.clearDidWebCache();
+
+        return reply.status(200).send();
     });
 };
 

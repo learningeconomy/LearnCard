@@ -2,29 +2,30 @@ import isEqual from 'lodash/isEqual';
 import { v4 as uuidv4 } from 'uuid';
 import { VC, JWE, UnsignedVC, LCNNotificationTypeEnumValidator } from '@learncard/types';
 import { isEncrypted } from '@learncard/helpers';
-import { SigningAuthorityForUserType } from 'types/profile';
+import { ProfileType, SigningAuthorityForUserType } from 'types/profile';
 
 import { getBoostOwner } from '@accesslayer/boost/relationships/read';
-import { BoostInstance, ProfileInstance } from '@models';
+import { BoostInstance } from '@models';
 import { constructUri } from './uri.helpers';
 import { storeCredential } from '@accesslayer/credential/create';
 import { createBoostInstanceOfRelationship } from '@accesslayer/boost/relationships/create';
 import {
     createSentCredentialRelationship,
-    createReceivedCredentialRelationship,
+    createCredentialIssuedViaContractRelationship,
 } from '@accesslayer/credential/relationships/create';
-import { getCredentialUri } from './credential.helpers';
+import { acceptCredential, getCredentialUri } from './credential.helpers';
 import { getLearnCard } from './learnCard.helpers';
 import { issueCredentialWithSigningAuthority } from './signingAuthority.helpers';
 import { addNotificationToQueue } from './notifications.helpers';
 import { BoostStatus } from 'types/boost';
 import { getDidWeb } from './did.helpers';
+import { DbTermsType } from 'types/consentflowcontract';
 
 export const getBoostUri = (id: string, domain: string): string =>
     constructUri('boost', id, domain);
 
 export const isProfileBoostOwner = async (
-    profile: ProfileInstance,
+    profile: ProfileType,
     boost: BoostInstance
 ): Promise<boolean> => {
     const owner = await getBoostOwner(boost);
@@ -208,7 +209,9 @@ export const decryptCredential = async (credential: VC | JWE): Promise<VC | fals
     }
     const learnCard = await getLearnCard();
     try {
-        const decrypted = (await learnCard.invoke.getDIDObject().decryptDagJWE(credential)) as VC;
+        const decrypted = await learnCard.invoke.decryptDagJwe<VC>(credential as JWE, [
+            learnCard.id.keypair(),
+        ]);
         return decrypted || false;
     } catch (error) {
         console.warn('Could not decrypt Boost Credential!');
@@ -216,15 +219,25 @@ export const decryptCredential = async (credential: VC | JWE): Promise<VC | fals
     }
 };
 
-export const sendBoost = async (
-    from: ProfileInstance,
-    to: ProfileInstance,
-    boost: BoostInstance,
-    credential: VC | JWE,
-    domain: string,
-    skipNotification: boolean = false,
-    autoAcceptCredential: boolean = false
-): Promise<string> => {
+export const sendBoost = async ({
+    from,
+    to,
+    boost,
+    credential,
+    domain,
+    skipNotification = false,
+    autoAcceptCredential = false,
+    contractTerms,
+}: {
+    from: ProfileType;
+    to: ProfileType;
+    boost: BoostInstance;
+    credential: VC | JWE;
+    domain: string;
+    skipNotification?: boolean;
+    autoAcceptCredential?: boolean;
+    contractTerms?: DbTermsType;
+}): Promise<string> => {
     const decryptedCredential = await decryptCredential(credential);
     let boostUri: string | undefined;
     if (decryptedCredential) {
@@ -233,13 +246,24 @@ export const sendBoost = async (
         if (certifiedBoost) {
             const credentialInstance = await storeCredential(certifiedBoost);
 
-            await Promise.all([
+            const tasks = [
                 createBoostInstanceOfRelationship(credentialInstance, boost),
                 createSentCredentialRelationship(from, to, credentialInstance),
-                ...(autoAcceptCredential
-                    ? [createReceivedCredentialRelationship(to, from, credentialInstance)]
-                    : []),
-            ]);
+            ];
+            // If this credential is being issued via a contract, create that relationship
+            if (contractTerms) {
+                tasks.push(
+                    createCredentialIssuedViaContractRelationship(credentialInstance, contractTerms)
+                );
+            }
+
+            await Promise.all(tasks);
+
+            if (autoAcceptCredential) {
+                await acceptCredential(to, getCredentialUri(credentialInstance.id, domain), {
+                    skipNotification,
+                });
+            }
 
             boostUri = getCredentialUri(credentialInstance.id, domain);
             if (process.env.NODE_ENV !== 'test') {
@@ -252,13 +276,24 @@ export const sendBoost = async (
         // TODO: Should we warn them if they send a credential that can't be decrypted?
         const credentialInstance = await storeCredential(credential);
 
-        await Promise.all([
+        const tasks = [
             createBoostInstanceOfRelationship(credentialInstance, boost),
             createSentCredentialRelationship(from, to, credentialInstance),
-            ...(autoAcceptCredential
-                ? [createReceivedCredentialRelationship(to, from, credentialInstance)]
-                : []),
-        ]);
+        ];
+
+        if (contractTerms) {
+            tasks.push(
+                createCredentialIssuedViaContractRelationship(credentialInstance, contractTerms)
+            );
+        }
+
+        await Promise.all(tasks);
+
+        if (autoAcceptCredential) {
+            await acceptCredential(to, getCredentialUri(credentialInstance.id, domain), {
+                skipNotification,
+            });
+        }
 
         boostUri = getCredentialUri(credentialInstance.id, domain);
         if (process.env.NODE_ENV !== 'test') {
@@ -270,8 +305,8 @@ export const sendBoost = async (
         if (!skipNotification) {
             await addNotificationToQueue({
                 type: LCNNotificationTypeEnumValidator.enum.BOOST_RECEIVED,
-                to: to.dataValues,
-                from: from.dataValues,
+                to: to,
+                from: from,
                 message: {
                     title: 'Boost Received',
                     body: `${from.displayName} has boosted you!`,
@@ -339,8 +374,8 @@ export const constructCertifiedBoostCredential = async (
 export const issueClaimLinkBoost = async (
     boost: BoostInstance,
     domain: string,
-    from: ProfileInstance,
-    to: ProfileInstance,
+    from: ProfileType,
+    to: ProfileType,
     signingAuthorityForUser: SigningAuthorityForUserType
 ): Promise<string> => {
     const boostCredential = JSON.parse(boost.dataValues?.boost) as UnsignedVC | VC;
@@ -367,6 +402,7 @@ export const issueClaimLinkBoost = async (
         from,
         boostCredential,
         signingAuthorityForUser,
+        domain,
         false
     );
     // TODO: encrypt vc?
@@ -374,8 +410,15 @@ export const issueClaimLinkBoost = async (
     // const lcnDid = await client.utilities.getDid.query();
 
     // const credential = await _learnCard.invoke
-    //     .getDIDObject()
-    //     .createDagJWE(vc, [userData.did, targetProfile.did, lcnDid]);
+    //     .createDagJwe(vc, [userData.did, targetProfile.did, lcnDid]);
 
-    return sendBoost(from, to, boost, vc, domain, true, true);
+    return sendBoost({
+        from,
+        to,
+        boost,
+        credential: vc,
+        domain,
+        skipNotification: true,
+        autoAcceptCredential: true,
+    });
 };

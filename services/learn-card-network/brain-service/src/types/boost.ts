@@ -12,11 +12,18 @@ import {
 export const BoostStatus = LCNBoostStatus;
 export type BoostStatusEnum = LCNBoostStatusEnum;
 
-export const BoostValidator = _BoostValidator.omit({ uri: true }).extend({
-    id: z.string(),
-    boost: z.string(),
-});
+export const BoostValidator = _BoostValidator
+    .omit({ uri: true, claimPermissions: true })
+    .extend({ id: z.string(), boost: z.string() });
 export type BoostType = z.infer<typeof BoostValidator>;
+
+export const BoostWithClaimPermissionsValidator = BoostValidator.extend({
+    claimPermissions: _BoostValidator.shape.claimPermissions,
+});
+export type BoostWithClaimPermissionsType = z.infer<typeof BoostWithClaimPermissionsValidator>;
+
+export const FlatBoostValidator = BoostValidator.omit({ meta: true }).catchall(z.any());
+export type FlatBoostType = z.infer<typeof FlatBoostValidator>;
 
 export const BoostClaimLinkSigningAuthorityValidator = LCNBoostClaimLinkSigningAuthorityValidator;
 export type BoostClaimLinkSigningAuthorityType = LCNBoostClaimLinkSigningAuthorityType;

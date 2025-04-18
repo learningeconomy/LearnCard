@@ -1,0 +1,27 @@
+{
+    "name": "@workspace/e2e-tests",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "test": "echo \"Skipping E2E tests in CI. Run test:e2e if you'd like to actually run this!\"",
+        "test:e2e": "vitest",
+        "logs": "docker compose logs -f"
+    },
+    "dependencies": {
+        "@learncard/core": "workspace:*",
+        "@learncard/didkit-plugin": "workspace:*",
+        "@learncard/init": "workspace:*",
+        "@learncard/simple-signing-plugin": "workspace:*",
+        "@learncard/types": "workspace:*",
+        "@xapi/xapi": "^3.0.0",
+        "execa": "^9.5.1",
+        "hex-lite": "^1.5.0",
+        "ioredis": "^5.2.2",
+        "mongodb": "^6.2.0",
+        "neo4j-driver": "^5.18.0",
+        "pg": "^8.13.1"
+    },
+    "devDependencies": {
+        "@types/pg": "^8.11.10"
+    }
+}

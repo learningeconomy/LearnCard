@@ -56,9 +56,24 @@ export const convertDataQueryToNeo4jQuery = (_query: ConsentFlowDataQuery) => {
 
     Object.keys(query.credentials?.categories ?? {}).forEach(category => {
         query.credentials!.categories![category] = {
-            shared: query.credentials!.categories![category],
+            shared: [query.credentials!.categories![category]],
         } as any;
     });
 
     return { read: query };
+};
+
+/** Filters out categories that were not queried */
+export const shouldIncludeCategory = (
+    categoryFilters: Record<string, boolean> | undefined,
+    category: string
+): boolean => {
+    if (!categoryFilters) return true;
+
+    if (categoryFilters[category] === false) return false;
+
+    // If we have any true filters and this category isn't one of them, exclude it
+    const hasPositiveFilters = Object.values(categoryFilters).some(value => value === true);
+
+    return !hasPositiveFilters || Boolean(categoryFilters[category]);
 };

@@ -1,3 +1,4 @@
+import { RegExpTransformer } from '@learncard/helpers';
 import { createTRPCProxyClient, CreateTRPCProxyClient, httpBatchLink } from '@trpc/client';
 import type { AppRouter } from '@learncard/network-brain-service';
 
@@ -12,6 +13,10 @@ export const getClient = async (
     let challenges: string[] = [];
 
     const challengeRequester = createTRPCProxyClient<AppRouter>({
+        transformer: {
+            input: RegExpTransformer,
+            output: { serialize: o => o, deserialize: o => o },
+        },
         links: [
             httpBatchLink({
                 url,
@@ -27,9 +32,13 @@ export const getClient = async (
         return challengeRequester.utilities.getChallenges.query({ amount });
     };
 
-    challenges = await getChallenges();
+    getChallenges().then(result => (challenges = result));
 
     const trpc = createTRPCProxyClient<AppRouter>({
+        transformer: {
+            input: RegExpTransformer,
+            output: { serialize: o => o, deserialize: o => o },
+        },
         links: [
             callbackLink(async () => {
                 challenges = await getChallenges();

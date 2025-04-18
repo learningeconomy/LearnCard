@@ -14,7 +14,7 @@
 # Followed by
 #
 # ```javascript
-# let test = await initLearnCard({ seed: 'a', network: 'http://localhost:4000/trpc', cloud: { url: 'http://localhost:5000/trpc' } })
+# let test = await initLearnCard({ seed: 'a', network: 'http://localhost:4000/trpc', cloud: { url: 'http://localhost:4100/trpc' } })
 # ````
 
 services:
@@ -23,8 +23,7 @@ services:
     image: welibrary/lcn-brain-service
     build:
       context: ../../
-      dockerfile: services/learn-card-network/brain-service/Dockerfile
-    container_name: "lcn-brain-service"
+      dockerfile: services/learn-card-network/brain-service/Dockerfile.local
 
     # Change all the below 4000's to whatever port you'd like to run this on!
     expose:
@@ -33,9 +32,12 @@ services:
       - "4000:4000"
 
     depends_on:
-      - neo4j
-      - redis
-      - elasticmq
+      neo4j:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      elasticmq:
+        condition: service_started
 
     networks:
       - learn-card
@@ -43,6 +45,9 @@ services:
     # We need to attach localhost to the host's gateway in order to correctly resolve did:webs
     extra_hosts:
       - "localhost:host-gateway"
+
+    volumes:
+      - ./brain-service/src:/app/services/learn-card-network/brain-service/src
 
     environment:
       PORT: 4000
@@ -72,18 +77,18 @@ services:
     image: welibrary/lcn-cloud-service
     build:
       context: ../../
-      dockerfile: services/learn-card-network/learn-cloud-service/Dockerfile
-    container_name: "lcn-cloud-service"
+      dockerfile: services/learn-card-network/learn-cloud-service/Dockerfile.local
 
-    # Change all the below 5000's to whatever port you'd like to run this on!
+    # Change all the below 4100's to whatever port you'd like to run this on!
     expose:
-      - 5000
+      - 4100
     ports:
-      - "5000:5000"
+      - "4100:4100"
 
     depends_on:
       - mongodb
       - redis
+      - lrs
 
     networks:
       - learn-card
@@ -92,32 +97,45 @@ services:
     extra_hosts:
       - "localhost:host-gateway"
 
-    environment:
-      PORT: 5000
+    volumes:
+      - ./learn-cloud-service/src:/app/services/learn-card-network/learn-cloud-service/src
 
-      # Seed used to create the Brain Service's did
+    environment:
+      PORT: 4100
+
+      # Seed used to create the Cloud Service's did
       LEARN_CLOUD_SEED: a
 
-      LEARN_CLOUD_MONGO_URI: ${LEARN_CLOUD_MONGO_URI:-mongodb://mongodb:27017?ssl=false}
+      LEARN_CLOUD_MONGO_URI: ${LEARN_CLOUD_MONGO_URI:-mongodb://mongodb:27017?ssl=false&replicaSet=rs0}
       LEARN_CLOUD_MONGO_DB_NAME: ${LEARN_CLOUD_MONGO_DB_NAME:-learn-cloud}
 
       # We can not reuse the same Redis instance (for now) due to key collisions
       REDIS_URL: redis2
       REDIS_PORT: 6380
 
+      # If you don't need to use XAPI stuff, you may set these to false
+      XAPI_ENDPOINT: http://lrs:8080/xapi
+      XAPI_USERNAME: test-api-key
+      XAPI_PASSWORD: test-api-secret
+
   neo4j:
     image: neo4j:latest
-    container_name: "lcn-neo4j"
     ports:
       - "7687:7687"
+      - "7474:7474"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:7474 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     environment:
-      NEO4J_AUTH: neo4j/this-is-the-password
+      NEO4J_AUTH: none
     networks:
       - learn-card
 
   redis:
     image: redis:alpine
-    container_name: "lcn-redis"
     environment:
       - ALLOW_EMPTY_PASSWORD=${ALLOW_EMPTY_PASSWORD:-yes}
       - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
@@ -128,7 +146,6 @@ services:
 
   redis2:
     image: redis:alpine
-    container_name: "lcn-redis2"
     environment:
       - ALLOW_EMPTY_PASSWORD=${ALLOW_EMPTY_PASSWORD:-yes}
       - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
@@ -138,31 +155,68 @@ services:
       - learn-card
 
   mongodb:
-    command: --quiet
-    container_name: "lcn-mongodb"
+    command: ["--replSet", "rs0", "--bind_ip_all", "--port", "27017", "--quiet", "--logpath", "/var/log/mongodb/mongod.log"]
     image: mongo:latest
-    environment:
-      MONGO_INITDB_DATABASE: start
     expose:
       - 27017
     ports:
       - 27017:27017
-    restart: always
-    logging:
-      driver: none
-    entrypoint: [ "/usr/bin/mongod", "--bind_ip_all"]
+    extra_hosts:
+      - "localhost:host-gateway"
+    healthcheck:
+      test: >
+        mongosh --host localhost --port 27017 --quiet --eval "try { rs.status().ok } catch (err) { rs.initiate({_id:'rs0',members:[{_id:0,host:'localhost:27017'}]}) }"
+      interval: 5s
+      timeout: 30s
+      start_period: 0s
+      start_interval: 1s
+      retries: 30
     networks:
       - learn-card
 
   elasticmq:
     image: softwaremill/elasticmq-native
-    container_name: "lcn-elasticmq"
     expose:
       - 9324
     ports:
       - "9324:9324"
     networks:
       - learn-card
+
+  postgres:
+    image: postgres
+    networks:
+      - learn-card
+    environment:
+      POSTGRES_USER: lrsql_user
+      POSTGRES_PASSWORD: lrsql_password
+      POSTGRES_DB: lrsql_db
+    ports:
+      - "5432:5432"
+    
+
+  lrs:
+    image: yetanalytics/lrsql:latest
+    command:
+      - /lrsql/bin/run_postgres.sh
+    networks:
+      - learn-card
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    environment:
+      LRSQL_API_KEY_DEFAULT: test-api-key
+      LRSQL_API_SECRET_DEFAULT: test-api-secret
+      LRSQL_ADMIN_USER_DEFAULT: test_username
+      LRSQL_ADMIN_PASS_DEFAULT: test_password
+      LRSQL_DB_HOST: postgres
+      LRSQL_DB_NAME: lrsql_db
+      LRSQL_DB_USER: lrsql_user
+      LRSQL_DB_PASSWORD: lrsql_password
+      # If Postgres is too slow to start, increase this
+      LRSQL_POOL_INITIALIZATION_FAIL_TIMEOUT: 10000
+      LRSQL_ALLOW_ALL_ORIGINS: true
 
 
 networks:

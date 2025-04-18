@@ -1,5 +1,423 @@
 # @welibraryos/react-learn-card
 
+## 2.7.78
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.7
+
+## 2.7.77
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.6
+
+## 2.7.76
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.5
+
+## 2.7.75
+
+### Patch Changes
+
+-   [`cbc84cc27d1eaf8b6830f06d86d354cb78d8d548`](https://github.com/learningeconomy/LearnCard/commit/cbc84cc27d1eaf8b6830f06d86d354cb78d8d548) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Remove NX caching in CI to ensure latest builds
+
+-   Updated dependencies [[`cbc84cc27d1eaf8b6830f06d86d354cb78d8d548`](https://github.com/learningeconomy/LearnCard/commit/cbc84cc27d1eaf8b6830f06d86d354cb78d8d548)]:
+    -   @learncard/init@2.0.4
+
+## 2.7.74
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.3
+
+## 2.7.73
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.2
+
+## 2.7.72
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.1
+
+## 2.7.71
+
+### Patch Changes
+
+-   Updated dependencies [[`a945a7086a0848b04f9f2c8b1588e9e3826edeff`](https://github.com/learningeconomy/LearnCard/commit/a945a7086a0848b04f9f2c8b1588e9e3826edeff)]:
+    -   @learncard/init@2.0.0
+
+## 2.7.70
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.40
+
+## 2.7.69
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.39
+
+## 2.7.68
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.38
+
+## 2.7.67
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.37
+
+## 2.7.66
+
+### Patch Changes
+
+-   [#624](https://github.com/learningeconomy/LearnCard/pull/624) [`b91c3a7275e23caaeb327019851d7893681d1c0f`](https://github.com/learningeconomy/LearnCard/commit/b91c3a7275e23caaeb327019851d7893681d1c0f) Thanks [@rhen92](https://github.com/rhen92)! - [LC-819] Fix missing achievement image on Certificate Views
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.36
+
+## 2.7.65
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.35
+
+## 2.7.64
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.34
+
+## 2.7.63
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.33
+
+## 2.7.62
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.32
+
+## 2.7.61
+
+### Patch Changes
+
+-   [#610](https://github.com/learningeconomy/LearnCard/pull/610) [`399b1d877fbf9db8852385740ee12bb007cc7e6c`](https://github.com/learningeconomy/LearnCard/commit/399b1d877fbf9db8852385740ee12bb007cc7e6c) Thanks [@rhen92](https://github.com/rhen92)! - [LC-758] Fix full view for certs and awards
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.31
+
+## 2.7.60
+
+### Patch Changes
+
+-   [#607](https://github.com/learningeconomy/LearnCard/pull/607) [`0929f10633d3f86db0aca3f3c982f5cdf2c02a0c`](https://github.com/learningeconomy/LearnCard/commit/0929f10633d3f86db0aca3f3c982f5cdf2c02a0c) Thanks [@rhen92](https://github.com/rhen92)! - [LC-758] Add type and category to CertificateFrontFace and MeritBadgeFrontFace
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.30
+
+## 2.7.59
+
+### Patch Changes
+
+-   [#602](https://github.com/learningeconomy/LearnCard/pull/602) [`c5ffa5a053742368765e557591e40d0a37a5c7e8`](https://github.com/learningeconomy/LearnCard/commit/c5ffa5a053742368765e557591e40d0a37a5c7e8) Thanks [@goblincore](https://github.com/goblincore)! - chore: clean up react-learn-card assets
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.29
+
+## 2.7.58
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.28
+
+## 2.7.57
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.27
+
+## 2.7.56
+
+### Patch Changes
+
+-   [`74f7b7bd762501d0591f84d3c7ef6dc91e8ef30f`](https://github.com/learningeconomy/LearnCard/commit/74f7b7bd762501d0591f84d3c7ef6dc91e8ef30f) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Don't crash from bad skills
+
+## 2.7.55
+
+### Patch Changes
+
+-   Updated dependencies [[`a4eead401a62a872be046e28b0d27b2d980ced3a`](https://github.com/learningeconomy/LearnCard/commit/a4eead401a62a872be046e28b0d27b2d980ced3a)]:
+    -   @learncard/init@1.3.26
+
+## 2.7.54
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.25
+
+## 2.7.53
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.24
+
+## 2.7.52
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.23
+
+## 2.7.51
+
+### Patch Changes
+
+-   Updated dependencies [[`24706505149561d7de8cf76250607f4ca7459858`](https://github.com/learningeconomy/LearnCard/commit/24706505149561d7de8cf76250607f4ca7459858)]:
+    -   @learncard/init@1.3.22
+
+## 2.7.50
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.21
+
+## 2.7.49
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.20
+
+## 2.7.48
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.19
+
+## 2.7.47
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.18
+
+## 2.7.46
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.17
+
+## 2.7.45
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.16
+
+## 2.7.44
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.15
+
+## 2.7.43
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.14
+
+## 2.7.42
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.13
+
+## 2.7.41
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.12
+
+## 2.7.40
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.11
+
+## 2.7.39
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.10
+
+## 2.7.38
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.9
+
+## 2.7.37
+
+### Patch Changes
+
+-   [#557](https://github.com/learningeconomy/LearnCard/pull/557) [`3cd4737a68e9dced7a5af207571c2fb0767f8326`](https://github.com/learningeconomy/LearnCard/commit/3cd4737a68e9dced7a5af207571c2fb0767f8326) Thanks [@rhen92](https://github.com/rhen92)! - [LC-549] Polish Skills Modal
+
+## 2.7.36
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.8
+
+## 2.7.35
+
+### Patch Changes
+
+-   [#553](https://github.com/learningeconomy/LearnCard/pull/553) [`01bb2e55ce182975663f2c43ec79d05aa9e61919`](https://github.com/learningeconomy/LearnCard/commit/01bb2e55ce182975663f2c43ec79d05aa9e61919) Thanks [@goblincore](https://github.com/goblincore)! - Fix icon position and remove bad graphics files
+
+## 2.7.34
+
+### Patch Changes
+
+-   [#551](https://github.com/learningeconomy/LearnCard/pull/551) [`92d47059935e4e04f8132dee3c8dcf2db96488ac`](https://github.com/learningeconomy/LearnCard/commit/92d47059935e4e04f8132dee3c8dcf2db96488ac) Thanks [@rhen92](https://github.com/rhen92)! - [Lc-627] Give credentials more room
+
+## 2.7.33
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.7
+
+## 2.7.32
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.6
+
+## 2.7.31
+
+### Patch Changes
+
+-   [#544](https://github.com/learningeconomy/LearnCard/pull/544) [`287836291b5b37a2922be73f1414d7bca6ff2a39`](https://github.com/learningeconomy/LearnCard/commit/287836291b5b37a2922be73f1414d7bca6ff2a39) Thanks [@goblincore](https://github.com/goblincore)! - fix: [LC-393] Change ribbon size and replace backpack graphic
+
+## 2.7.30
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.5
+
+## 2.7.29
+
+### Patch Changes
+
+-   [#539](https://github.com/learningeconomy/LearnCard/pull/539) [`6b9ef5e76cd9a48a1b7275afbeba8340427bfbb0`](https://github.com/learningeconomy/LearnCard/commit/6b9ef5e76cd9a48a1b7275afbeba8340427bfbb0) Thanks [@smurflo2](https://github.com/smurflo2)! - Show Merit Badge display for credential if displayType === 'award'
+
+## 2.7.28
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.4
+
+## 2.7.27
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.3
+
+## 2.7.26
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.2
+
+## 2.7.25
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.3.1
+
+## 2.7.24
+
+### Patch Changes
+
+-   Updated dependencies [[`46390f8ee3b3c1ca81bef687c8054bed8d9912d2`](https://github.com/learningeconomy/LearnCard/commit/46390f8ee3b3c1ca81bef687c8054bed8d9912d2)]:
+    -   @learncard/init@1.3.0
+
+## 2.7.23
+
+### Patch Changes
+
+-   [#523](https://github.com/learningeconomy/LearnCard/pull/523) [`bab40e44aea413976b7f5a72779522e88676e1da`](https://github.com/learningeconomy/LearnCard/commit/bab40e44aea413976b7f5a72779522e88676e1da) Thanks [@smurflo2](https://github.com/smurflo2)! - Redesign merit badge display
+
+## 2.7.22
+
+### Patch Changes
+
+-   Updated dependencies [[`2eff967c27b0e92f7cf36181ef907b1144cbfb40`](https://github.com/learningeconomy/LearnCard/commit/2eff967c27b0e92f7cf36181ef907b1144cbfb40)]:
+    -   @learncard/init@1.2.40
+
+## 2.7.21
+
+### Patch Changes
+
+-   [#524](https://github.com/learningeconomy/LearnCard/pull/524) [`035df02f21226ac1645b611e2f934c2d7e4cbd55`](https://github.com/learningeconomy/LearnCard/commit/035df02f21226ac1645b611e2f934c2d7e4cbd55) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix build issues
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.39
+
+## 2.7.20
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@1.2.38
+
 ## 2.7.19
 
 ### Patch Changes

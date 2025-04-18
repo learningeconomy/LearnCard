@@ -1,5 +1,246 @@
 # @learncard/network-brain-client
 
+## 1.3.17
+
+### Patch Changes
+
+-   [`cbc84cc27d1eaf8b6830f06d86d354cb78d8d548`](https://github.com/learningeconomy/LearnCard/commit/cbc84cc27d1eaf8b6830f06d86d354cb78d8d548) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Remove NX caching in CI to ensure latest builds
+
+-   Updated dependencies [[`cbc84cc27d1eaf8b6830f06d86d354cb78d8d548`](https://github.com/learningeconomy/LearnCard/commit/cbc84cc27d1eaf8b6830f06d86d354cb78d8d548)]:
+    -   @learncard/learn-cloud-service@2.2.20
+
+## 1.3.16
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-service@2.2.19
+
+## 1.3.15
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-service@2.2.18
+
+## 1.3.14
+
+### Patch Changes
+
+-   Updated dependencies [[`a945a7086a0848b04f9f2c8b1588e9e3826edeff`](https://github.com/learningeconomy/LearnCard/commit/a945a7086a0848b04f9f2c8b1588e9e3826edeff)]:
+    -   @learncard/learn-cloud-service@2.2.17
+
+## 1.3.13
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-service@2.2.16
+
+## 1.3.12
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-service@2.2.15
+
+## 1.3.11
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-service@2.2.14
+
+## 1.3.10
+
+### Patch Changes
+
+-   Updated dependencies [[`60090c28bbd2af3b659e0e6a6f648cb1ddf5efaa`](https://github.com/learningeconomy/LearnCard/commit/60090c28bbd2af3b659e0e6a6f648cb1ddf5efaa)]:
+    -   @learncard/learn-cloud-service@2.2.13
+
+## 1.3.9
+
+### Patch Changes
+
+-   Updated dependencies [[`b9beeb4bd8abfecb9811b1d80a0b7c9aa6386114`](https://github.com/learningeconomy/LearnCard/commit/b9beeb4bd8abfecb9811b1d80a0b7c9aa6386114)]:
+    -   @learncard/learn-cloud-service@2.2.12
+
+## 1.3.8
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-service@2.2.11
+
+## 1.3.7
+
+### Patch Changes
+
+-   Updated dependencies [[`2f0a61fd93ac575b79c559e9232e878625d3bf47`](https://github.com/learningeconomy/LearnCard/commit/2f0a61fd93ac575b79c559e9232e878625d3bf47)]:
+    -   @learncard/learn-cloud-service@2.2.10
+
+## 1.3.6
+
+### Patch Changes
+
+-   Updated dependencies [[`d3762894ecca08a5c36ffb12aaff52f6248dea5c`](https://github.com/learningeconomy/LearnCard/commit/d3762894ecca08a5c36ffb12aaff52f6248dea5c)]:
+    -   @learncard/learn-cloud-service@2.2.9
+
+## 1.3.5
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-service@2.2.8
+
+## 1.3.4
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-service@2.2.7
+
+## 1.3.3
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-service@2.2.6
+
+## 1.3.2
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-service@2.2.5
+
+## 1.3.1
+
+### Patch Changes
+
+-   Updated dependencies [[`611e911f6f1388e5d34bc893c53aef36d28ae65e`](https://github.com/learningeconomy/LearnCard/commit/611e911f6f1388e5d34bc893c53aef36d28ae65e)]:
+    -   @learncard/learn-cloud-service@2.2.4
+
+## 1.3.0
+
+### Minor Changes
+
+-   [#577](https://github.com/learningeconomy/LearnCard/pull/577) [`afd8472f65b27383f426e630e021a65d237e9044`](https://github.com/learningeconomy/LearnCard/commit/afd8472f65b27383f426e630e021a65d237e9044) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Don't await network calls during init
+
+## 1.2.18
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-service@2.2.3
+
+## 1.2.17
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-service@2.2.2
+
+## 1.2.16
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-service@2.2.1
+
+## 1.2.15
+
+### Patch Changes
+
+-   Updated dependencies [[`df13a7de5f31fabd842884a3e7c0706746c60da1`](https://github.com/learningeconomy/LearnCard/commit/df13a7de5f31fabd842884a3e7c0706746c60da1)]:
+    -   @learncard/learn-cloud-service@2.2.0
+
+## 1.2.14
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-service@2.1.12
+
+## 1.2.13
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-service@2.1.11
+
+## 1.2.12
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-service@2.1.10
+
+## 1.2.11
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-service@2.1.9
+
+## 1.2.10
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-service@2.1.8
+
+## 1.2.9
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-service@2.1.7
+
+## 1.2.8
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-service@2.1.6
+
+## 1.2.7
+
+### Patch Changes
+
+-   Updated dependencies [[`033626bacb6e86b1ded18dbf44199a9dfe0c02ca`](https://github.com/learningeconomy/LearnCard/commit/033626bacb6e86b1ded18dbf44199a9dfe0c02ca)]:
+    -   @learncard/learn-cloud-service@2.1.5
+
+## 1.2.6
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-service@2.1.4
+
+## 1.2.5
+
+### Patch Changes
+
+-   Updated dependencies [[`a6bb3fa7cc8cfc80b0d14b9c59c776ee0ec5ddeb`](https://github.com/learningeconomy/LearnCard/commit/a6bb3fa7cc8cfc80b0d14b9c59c776ee0ec5ddeb)]:
+    -   @learncard/learn-cloud-service@2.1.3
+
+## 1.2.4
+
+### Patch Changes
+
+-   [#512](https://github.com/learningeconomy/LearnCard/pull/512) [`2eff967c27b0e92f7cf36181ef907b1144cbfb40`](https://github.com/learningeconomy/LearnCard/commit/2eff967c27b0e92f7cf36181ef907b1144cbfb40) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Expose LearnCloudClient type
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-service@2.1.2
+
+## 1.2.3
+
+### Patch Changes
+
+-   Updated dependencies [[`035df02f21226ac1645b611e2f934c2d7e4cbd55`](https://github.com/learningeconomy/LearnCard/commit/035df02f21226ac1645b611e2f934c2d7e4cbd55)]:
+    -   @learncard/learn-cloud-service@2.1.1
+
 ## 1.2.2
 
 ### Patch Changes

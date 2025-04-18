@@ -53,4 +53,4 @@ The best way to start engaging in the community is to participate in our Github 
 
 
 ## License
-MIT © [Learning Economy Foundation](https://github.com/Learning-Economy-Foundation)
+MIT © [Learning Economy Foundation](https://www.learningeconomy.io/)

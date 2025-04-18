@@ -1,6 +1,22 @@
 import { z } from 'zod';
 
 import { PaginationResponseValidator } from './mongo';
+import { StringQuery } from './queries';
+
+export const LCNProfileDisplayValidator = z.object({
+    backgroundColor: z.string().optional(),
+    backgroundImage: z.string().optional(),
+    fadeBackgroundImage: z.boolean().optional(),
+    repeatBackgroundImage: z.boolean().optional(),
+    fontColor: z.string().optional(),
+    accentColor: z.string().optional(),
+    accentFontColor: z.string().optional(),
+    idBackgroundImage: z.string().optional(),
+    fadeIdBackgroundImage: z.boolean().optional(),
+    idBackgroundColor: z.string().optional(),
+    repeatIdBackgroundImage: z.boolean().optional(),
+});
+export type LCNProfileDisplay = z.infer<typeof LCNProfileDisplayValidator>;
 
 export const LCNProfileValidator = z.object({
     profileId: z.string().min(3).max(40),
@@ -8,6 +24,7 @@ export const LCNProfileValidator = z.object({
     shortBio: z.string().default(''),
     bio: z.string().default(''),
     did: z.string(),
+    isPrivate: z.boolean().optional(),
     email: z.string().optional(),
     image: z.string().optional(),
     heroImage: z.string().optional(),
@@ -15,8 +32,23 @@ export const LCNProfileValidator = z.object({
     isServiceProfile: z.boolean().default(false).optional(),
     type: z.string().optional(),
     notificationsWebhook: z.string().url().startsWith('http').optional(),
+    display: LCNProfileDisplayValidator.optional(),
 });
 export type LCNProfile = z.infer<typeof LCNProfileValidator>;
+
+export const LCNProfileQueryValidator = z
+    .object({
+        profileId: StringQuery,
+        displayName: StringQuery,
+        shortBio: StringQuery,
+        bio: StringQuery,
+        email: StringQuery,
+        websiteLink: StringQuery,
+        isServiceProfile: z.boolean(),
+        type: StringQuery,
+    })
+    .partial();
+export type LCNProfileQuery = z.infer<typeof LCNProfileQueryValidator>;
 
 export const PaginatedLCNProfilesValidator = PaginationResponseValidator.extend({
     records: LCNProfileValidator.array(),
@@ -31,6 +63,46 @@ export const LCNProfileConnectionStatusEnum = z.enum([
 ]);
 export type LCNProfileConnectionStatusEnum = z.infer<typeof LCNProfileConnectionStatusEnum>;
 
+export const LCNProfileManagerValidator = z.object({
+    id: z.string(),
+    created: z.string(),
+    displayName: z.string().default('').optional(),
+    shortBio: z.string().default('').optional(),
+    bio: z.string().default('').optional(),
+    email: z.string().optional(),
+    image: z.string().optional(),
+    heroImage: z.string().optional(),
+});
+export type LCNProfileManager = z.infer<typeof LCNProfileManagerValidator>;
+
+export const PaginatedLCNProfileManagersValidator = PaginationResponseValidator.extend({
+    records: LCNProfileManagerValidator.extend({ did: z.string() }).array(),
+});
+export type PaginatedLCNProfileManagers = z.infer<typeof PaginatedLCNProfileManagersValidator>;
+
+export const LCNProfileManagerQueryValidator = z
+    .object({
+        id: StringQuery,
+        displayName: StringQuery,
+        shortBio: StringQuery,
+        bio: StringQuery,
+        email: StringQuery,
+    })
+    .partial();
+export type LCNProfileManagerQuery = z.infer<typeof LCNProfileManagerQueryValidator>;
+
+export const PaginatedLCNProfilesAndManagersValidator = PaginationResponseValidator.extend({
+    records: z
+        .object({
+            profile: LCNProfileValidator,
+            manager: LCNProfileManagerValidator.extend({ did: z.string() }).optional(),
+        })
+        .array(),
+});
+export type PaginatedLCNProfilesAndManagers = z.infer<
+    typeof PaginatedLCNProfilesAndManagersValidator
+>;
+
 export const SentCredentialInfoValidator = z.object({
     uri: z.string(),
     to: z.string(),
@@ -39,6 +111,81 @@ export const SentCredentialInfoValidator = z.object({
     received: z.string().datetime().optional(),
 });
 export type SentCredentialInfo = z.infer<typeof SentCredentialInfoValidator>;
+
+export const BoostPermissionsValidator = z.object({
+    role: z.string(),
+    canEdit: z.boolean(),
+    canIssue: z.boolean(),
+    canRevoke: z.boolean(),
+    canManagePermissions: z.boolean(),
+    canIssueChildren: z.string(),
+    canCreateChildren: z.string(),
+    canEditChildren: z.string(),
+    canRevokeChildren: z.string(),
+    canManageChildrenPermissions: z.string(),
+    canManageChildrenProfiles: z.boolean().default(false).optional(),
+    canViewAnalytics: z.boolean(),
+});
+export type BoostPermissions = z.infer<typeof BoostPermissionsValidator>;
+
+export const BoostPermissionsQueryValidator = z
+    .object({
+        role: StringQuery,
+        canEdit: z.boolean(),
+        canIssue: z.boolean(),
+        canRevoke: z.boolean(),
+        canManagePermissions: z.boolean(),
+        canIssueChildren: StringQuery,
+        canCreateChildren: StringQuery,
+        canEditChildren: StringQuery,
+        canRevokeChildren: StringQuery,
+        canManageChildrenPermissions: StringQuery,
+        canManageChildrenProfiles: z.boolean(),
+        canViewAnalytics: z.boolean(),
+    })
+    .partial();
+export type BoostPermissionsQuery = z.infer<typeof BoostPermissionsQueryValidator>;
+
+export const ClaimHookTypeValidator = z.enum(['GRANT_PERMISSIONS', 'ADD_ADMIN']);
+export type ClaimHookType = z.infer<typeof ClaimHookTypeValidator>;
+
+export const ClaimHookValidator = z.discriminatedUnion('type', [
+    z.object({
+        type: z.literal(ClaimHookTypeValidator.Values.GRANT_PERMISSIONS),
+        data: z.object({
+            claimUri: z.string(),
+            targetUri: z.string(),
+            permissions: BoostPermissionsValidator.partial(),
+        }),
+    }),
+    z.object({
+        type: z.literal(ClaimHookTypeValidator.Values.ADD_ADMIN),
+        data: z.object({ claimUri: z.string(), targetUri: z.string() }),
+    }),
+]);
+export type ClaimHook = z.infer<typeof ClaimHookValidator>;
+
+export const ClaimHookQueryValidator = z
+    .object({
+        type: StringQuery,
+        data: z.object({
+            claimUri: StringQuery,
+            targetUri: StringQuery,
+            permissions: BoostPermissionsQueryValidator,
+        }),
+    })
+    .deepPartial();
+export type ClaimHookQuery = z.infer<typeof ClaimHookQueryValidator>;
+
+export const FullClaimHookValidator = z
+    .object({ id: z.string(), createdAt: z.string(), updatedAt: z.string() })
+    .and(ClaimHookValidator);
+export type FullClaimHook = z.infer<typeof FullClaimHookValidator>;
+
+export const PaginatedClaimHooksValidator = PaginationResponseValidator.extend({
+    records: FullClaimHookValidator.array(),
+});
+export type PaginatedClaimHooksType = z.infer<typeof PaginatedClaimHooksValidator>;
 
 export const LCNBoostStatus = z.enum(['DRAFT', 'LIVE']);
 export type LCNBoostStatusEnum = z.infer<typeof LCNBoostStatus>;
@@ -50,8 +197,23 @@ export const BoostValidator = z.object({
     category: z.string().optional(),
     status: LCNBoostStatus.optional(),
     autoConnectRecipients: z.boolean().optional(),
+    meta: z.record(z.any()).optional(),
+    claimPermissions: BoostPermissionsValidator.optional(),
 });
 export type Boost = z.infer<typeof BoostValidator>;
+
+export const BoostQueryValidator = z
+    .object({
+        uri: StringQuery,
+        name: StringQuery,
+        type: StringQuery,
+        category: StringQuery,
+        meta: z.record(StringQuery),
+        status: LCNBoostStatus.or(z.object({ $in: LCNBoostStatus.array() })),
+        autoConnectRecipients: z.boolean(),
+    })
+    .partial();
+export type BoostQuery = z.infer<typeof BoostQueryValidator>;
 
 export const PaginatedBoostsValidator = PaginationResponseValidator.extend({
     records: BoostValidator.array(),
@@ -62,6 +224,7 @@ export const BoostRecipientValidator = z.object({
     to: LCNProfileValidator,
     from: z.string(),
     received: z.string().optional(),
+    uri: z.string().optional(),
 });
 export type BoostRecipientInfo = z.infer<typeof BoostRecipientValidator>;
 
@@ -105,6 +268,15 @@ export const LCNSigningAuthorityForUserValidator = z.object({
 });
 export type LCNSigningAuthorityForUserType = z.infer<typeof LCNSigningAuthorityForUserValidator>;
 
+export const AutoBoostConfigValidator = z.object({
+    boostUri: z.string(),
+    signingAuthority: z.object({
+        endpoint: z.string(),
+        name: z.string(),
+    }),
+});
+export type AutoBoostConfig = z.infer<typeof AutoBoostConfigValidator>;
+
 export const ConsentFlowTermsStatusValidator = z.enum(['live', 'stale', 'withdrawn']);
 export type ConsentFlowTermsStatus = z.infer<typeof ConsentFlowTermsStatusValidator>;
 
@@ -139,9 +311,13 @@ export const ConsentFlowContractDetailsValidator = z.object({
     reasonForAccessing: z.string().optional(),
     image: z.string().optional(),
     uri: z.string(),
+    needsGuardianConsent: z.boolean().optional(),
+    redirectUrl: z.string().optional(),
+    frontDoorBoostUri: z.string().optional(),
     createdAt: z.string(),
     updatedAt: z.string(),
     expiresAt: z.string().optional(),
+    autoBoosts: z.string().array().optional(),
 });
 export type ConsentFlowContractDetails = z.infer<typeof ConsentFlowContractDetailsValidator>;
 export type ConsentFlowContractDetailsInput = z.input<typeof ConsentFlowContractDetailsValidator>;
@@ -162,6 +338,21 @@ export const PaginatedConsentFlowDataValidator = PaginationResponseValidator.ext
     records: ConsentFlowContractDataValidator.array(),
 });
 export type PaginatedConsentFlowData = z.infer<typeof PaginatedConsentFlowDataValidator>;
+
+export const ConsentFlowContractDataForDidValidator = z.object({
+    credentials: z.object({ category: z.string(), uri: z.string() }).array(),
+    personal: z.record(z.string()).default({}),
+    date: z.string(),
+    contractUri: z.string(),
+});
+export type ConsentFlowContractDataForDid = z.infer<typeof ConsentFlowContractDataForDidValidator>;
+
+export const PaginatedConsentFlowDataForDidValidator = PaginationResponseValidator.extend({
+    records: ConsentFlowContractDataForDidValidator.array(),
+});
+export type PaginatedConsentFlowDataForDid = z.infer<
+    typeof PaginatedConsentFlowDataForDidValidator
+>;
 
 export const ConsentFlowTermValidator = z.object({
     sharing: z.boolean().optional(),
@@ -244,6 +435,14 @@ export const ConsentFlowDataQueryValidator = z.object({
 export type ConsentFlowDataQuery = z.infer<typeof ConsentFlowDataQueryValidator>;
 export type ConsentFlowDataQueryInput = z.input<typeof ConsentFlowDataQueryValidator>;
 
+export const ConsentFlowDataForDidQueryValidator = z.object({
+    credentials: z.object({ categories: z.record(z.boolean()).optional() }).optional(),
+    personal: z.record(z.boolean()).optional(),
+    id: StringQuery.optional(),
+});
+export type ConsentFlowDataForDidQuery = z.infer<typeof ConsentFlowDataForDidQueryValidator>;
+export type ConsentFlowDataForDidQueryInput = z.input<typeof ConsentFlowDataForDidQueryValidator>;
+
 export const ConsentFlowTermsQueryValidator = z.object({
     read: z
         .object({
@@ -273,6 +472,7 @@ export const ConsentFlowTransactionActionValidator = z.enum([
     'update',
     'sync',
     'withdraw',
+    'write',
 ]);
 export type ConsentFlowTransactionAction = z.infer<typeof ConsentFlowTransactionActionValidator>;
 
@@ -305,6 +505,7 @@ export const ConsentFlowTransactionValidator = z.object({
     id: z.string(),
     action: ConsentFlowTransactionActionValidator,
     date: z.string(),
+    uris: z.string().array().optional(),
 });
 export type ConsentFlowTransaction = z.infer<typeof ConsentFlowTransactionValidator>;
 
@@ -314,6 +515,21 @@ export const PaginatedConsentFlowTransactionsValidator = PaginationResponseValid
 export type PaginatedConsentFlowTransactions = z.infer<
     typeof PaginatedConsentFlowTransactionsValidator
 >;
+
+export const ContractCredentialValidator = z.object({
+    credentialUri: z.string(),
+    termsUri: z.string(),
+    contractUri: z.string(),
+    boostUri: z.string(),
+    category: z.string().optional(),
+    date: z.string(),
+});
+export type ContractCredential = z.infer<typeof ContractCredentialValidator>;
+
+export const PaginatedContractCredentialsValidator = PaginationResponseValidator.extend({
+    records: ContractCredentialValidator.array(),
+});
+export type PaginatedContractCredentials = z.infer<typeof PaginatedContractCredentialsValidator>;
 
 export const LCNNotificationTypeEnumValidator = z.enum([
     'CONNECTION_REQUEST',
@@ -354,3 +570,48 @@ export const LCNNotificationValidator = z.object({
 });
 
 export type LCNNotification = z.infer<typeof LCNNotificationValidator>;
+
+export const AUTH_GRANT_AUDIENCE_DOMAIN_PREFIX = 'auth-grant:';
+
+export const AuthGrantValidator = z.object({
+    id: z.string(),
+    name: z.string(),
+    description: z.string().optional(),
+    challenge: z
+        .string()
+        .startsWith(AUTH_GRANT_AUDIENCE_DOMAIN_PREFIX)
+        .min(10, { message: 'Challenge is too short' })
+        .max(100, { message: 'Challenge is too long' }),
+    status: z.enum(['revoked', 'active'], {
+        required_error: 'Status is required',
+        invalid_type_error: 'Status must be either active or revoked',
+    }),
+    scope: z.string(),
+    createdAt: z
+        .string()
+        .datetime({ message: 'createdAt must be a valid ISO 8601 datetime string' }),
+    expiresAt: z
+        .string()
+        .datetime({ message: 'expiresAt must be a valid ISO 8601 datetime string' })
+        .nullish()
+        .optional(),
+});
+export type AuthGrantType = z.infer<typeof AuthGrantValidator>;
+
+export const FlatAuthGrantValidator = z.object({ id: z.string() }).catchall(z.any());
+export type FlatAuthGrantType = z.infer<typeof FlatAuthGrantValidator>;
+
+export const AuthGrantStatusValidator = z.enum(['active', 'revoked']);
+
+export type AuthGrantStatus = z.infer<typeof AuthGrantStatusValidator>;
+
+export const AuthGrantQueryValidator = z
+    .object({
+        id: StringQuery,
+        name: StringQuery,
+        description: StringQuery,
+        status: AuthGrantStatusValidator,
+    })
+    .partial();
+
+export type AuthGrantQuery = z.infer<typeof AuthGrantQueryValidator>;

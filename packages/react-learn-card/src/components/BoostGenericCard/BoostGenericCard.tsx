@@ -2,10 +2,9 @@ import React from 'react';
 import { BoostGenericCardProps, WalletCategoryTypes } from '../../types';
 import { TYPE_TO_IMG_SRC, TYPE_TO_WALLET_DARK_COLOR } from '../../constants';
 import { CircleCheckButton } from '../CircleCheckButton';
-import CaretRightFilled from '../../assets/images/CaretRightFilled.svg';
-import DefaultFace from '../../assets/images/default-face.jpeg';
-import AddAwardLight from '../../assets/images/addawardlight.svg';
 import ThreeDots from '../../assets/images/DotsThreeOutline.svg';
+
+import { CertDisplayCardSkillsCount } from '../CertificateDisplayCard';
 
 export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
     title,
@@ -27,11 +26,15 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
     customDateDisplay,
     optionsTriggerOnClick,
     verifierBadge,
+    credential,
+    isInSkillsModal,
 }) => {
-    const thumbClass = `bg-${TYPE_TO_WALLET_DARK_COLOR[type]}` ?? 'bg-grayscale-50';
+    const thumbClass = TYPE_TO_WALLET_DARK_COLOR[type]
+        ? `bg-${TYPE_TO_WALLET_DARK_COLOR[type]}`
+        : 'bg-grayscale-50';
     const defaultThumbClass = `small-boost-card-thumb flex h-[110px] w-[110px] my-[10px] mx-auto ${thumbClass} overflow-hidden flex-col justify-center items-center rounded-full ${customThumbClass}`;
     const imgSrc = thumbImgSrc?.trim() !== '' ? thumbImgSrc : TYPE_TO_IMG_SRC[type];
-    const headerBgColor = `bg-${TYPE_TO_WALLET_DARK_COLOR[type]}` ?? 'bg-grayscale-900';
+    const headerBgColor = TYPE_TO_WALLET_DARK_COLOR[type] ? `bg-${TYPE_TO_WALLET_DARK_COLOR[type]}` : 'bg-grayscale-900';
     const checkBtnClass = checkStatus ? 'generic-vc-card checked' : 'generic-vc-card unchecked';
     const defaultHeaderClass = `flex generic-card-title w-full justify-center ${customHeaderClass}`;
 
@@ -113,6 +116,14 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
                         </p>
                     )}
                     <div className="boost-verifier-badge-display">{verifierBadge}</div>
+                    {isInSkillsModal && 
+                        <CertDisplayCardSkillsCount
+                            skills={credential?.skills ?? []}
+                            onClick={handleInnerClick}
+                            className={'boost-generic'}
+                            isInSkillsModal={isInSkillsModal}
+                        />
+                    }
                 </section>
 
                 {showChecked && (

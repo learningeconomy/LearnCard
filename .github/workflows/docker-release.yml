@@ -19,7 +19,7 @@ jobs:
     name: Push Docker images to Docker Hub
     if: | 
       github.event.pull_request.merged == true &&
-      github.head_ref == "changeset-release/main"
+      github.head_ref == 'changeset-release/main'
     runs-on: ubuntu-latest
     permissions:
       packages: write
@@ -55,13 +55,6 @@ jobs:
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
-
-      - name: Restore nx cache
-        id: restore-nx-cache
-        uses: actions/cache/restore@v3
-        with:
-          path: .nx-cache
-          key: ${{ runner.os }}-nx-cache-${{ github.workflow }}
 
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
@@ -131,9 +124,3 @@ jobs:
           push: true
           tags: ${{ steps.cloud-service-meta.outputs.tags }}
           labels: ${{ steps.cloud-service-meta.outputs.labels }}
-
-      - name: Save nx cache
-        uses: actions/cache/save@v3
-        with:
-          path: .nx-cache
-          key: ${{ steps.restore-nx-cache.outputs.cache-primary-key }}

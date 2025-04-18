@@ -79,9 +79,9 @@ package:
 
 provider:
     name: aws
-    runtime: nodejs16.x
-    memorySize: 2048
-    timeout: 20
+    runtime: nodejs20.x
+    memorySize: 4096
+    timeout: 29
     stage: ${opt:stage, "dev"}
     region: ${opt:region, "us-east-1"}
     environment:
@@ -90,6 +90,13 @@ provider:
         LEARN_CLOUD_SEED: ${env:LEARN_CLOUD_SEED}
         LEARN_CLOUD_MONGO_URI: ${env:LEARN_CLOUD_MONGO_URI}
         LEARN_CLOUD_MONGO_DB_NAME: ${env:LEARN_CLOUD_MONGO_DB_NAME}
+        XAPI_ENDPOINT: ${env:XAPI_ENDPOINT, "false"}
+        XAPI_USERNAME: ${env:XAPI_USERNAME, "false"}
+        XAPI_PASSWORD: ${env:XAPI_PASSWORD, "false"}
+        RSA_PRIVATE_KEY: ${env:RSA_PRIVATE_KEY, "false"}
+        RSA_PUBLIC_KEY: ${env:RSA_PUBLIC_KEY, "false"}
+        SERVER_URL: ${env:SERVER_URL, "https://cloud.learncard.com"}
+        JWT_SIGNING_KEY: ${env:JWT_SIGNING_KEY, ""}
         SENTRY_DSN: ${env:SENTRY_DSN}
         SENTRY_ENV: ${env:LEARN_CLOUD_SENTRY_ENV}
         SENTRY_AUTH_TOKEN: ${env:SENTRY_AUTH_TOKEN}
@@ -141,6 +148,33 @@ functions:
             - httpApi: OPTIONS /users/{params+}
             - httpApi: GET /.well-known/did.json
             - httpApi: OPTIONS /.well-known/did.json
+        url:
+            cors: true
+
+    xapi:
+        handler: xApiLambda.xApiHandler
+        vpc:
+            securityGroupIds:
+                - 'Fn::GetAtt': [ServerlessSecurityGroup, GroupId]
+            subnetIds:
+                - Ref: PrivateSubnetA
+        events:
+            - httpApi: ANY /xapi/{params+}
+        url:
+            cors: true
+
+    oidc:
+        handler: oidcLambda.oidcHandler
+        vpc:
+            securityGroupIds:
+                - 'Fn::GetAtt': [ServerlessSecurityGroup, GroupId]
+            subnetIds:
+                - Ref: PrivateSubnetA
+        events:
+            - httpApi: ANY /oidc/{params+}
+            - httpApi: GET /.well-known/openid-configuration
+            - httpApi: OPTIONS /.well-known/openid-configuration
+
         url:
             cors: true
 

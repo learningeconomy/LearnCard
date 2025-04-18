@@ -1,9 +1,11 @@
 import { ModelFactory, ModelRelatedNodesI, NeogmaInstance } from 'neogma';
+import { BoostPermissions } from '@learncard/types';
 
 import { neogma } from '@instance';
 
 import { Profile, ProfileInstance } from './Profile';
-import { BoostType, BoostStatus } from 'types/boost';
+import { FlatBoostType, BoostStatus } from 'types/boost';
+import { Role, RoleInstance } from './Role';
 
 export type BoostRelationships = {
     createdBy: ModelRelatedNodesI<
@@ -12,11 +14,19 @@ export type BoostRelationships = {
         { date: string },
         { date: string }
     >;
+    parentOf: ModelRelatedNodesI<typeof Boost, BoostInstance>;
+    hasRole: ModelRelatedNodesI<
+        typeof Profile,
+        ProfileInstance,
+        Partial<BoostPermissions> & { roleId: string },
+        Partial<BoostPermissions> & { roleId: string }
+    >;
+    claimRole: ModelRelatedNodesI<typeof Role, RoleInstance>;
 };
 
-export type BoostInstance = NeogmaInstance<BoostType, BoostRelationships>;
+export type BoostInstance = NeogmaInstance<FlatBoostType, BoostRelationships>;
 
-export const Boost = ModelFactory<BoostType, BoostRelationships>(
+export const Boost = ModelFactory<FlatBoostType, BoostRelationships>(
     {
         label: 'Boost',
         schema: {
@@ -38,6 +48,58 @@ export const Boost = ModelFactory<BoostType, BoostRelationships>(
                     date: { property: 'date', schema: { type: 'string', required: true } },
                 },
             },
+            parentOf: { model: 'self', direction: 'out', name: 'PARENT_OF' },
+            hasRole: {
+                model: Profile,
+                direction: 'in',
+                name: 'HAS_ROLE',
+                properties: {
+                    roleId: { property: 'roleId', schema: { type: 'string', required: true } },
+                    role: { property: 'role', schema: { type: 'string', required: false } },
+                    canEdit: { property: 'canEdit', schema: { type: 'boolean', required: false } },
+                    canIssue: {
+                        property: 'canIssue',
+                        schema: { type: 'boolean', required: false },
+                    },
+                    canRevoke: {
+                        property: 'canRevoke',
+                        schema: { type: 'boolean', required: false },
+                    },
+                    canManagePermissions: {
+                        property: 'canManagePermissions',
+                        schema: { type: 'boolean', required: false },
+                    },
+                    canIssueChildren: {
+                        property: 'canIssueChildren',
+                        schema: { type: 'string', required: false },
+                    },
+                    canCreateChildren: {
+                        property: 'canCreateChildren',
+                        schema: { type: 'string', required: false },
+                    },
+                    canEditChildren: {
+                        property: 'canEditChildren',
+                        schema: { type: 'string', required: false },
+                    },
+                    canRevokeChildren: {
+                        property: 'canRevokeChildren',
+                        schema: { type: 'string', required: false },
+                    },
+                    canManageChildrenPermissions: {
+                        property: 'canManageChildrenPermissions',
+                        schema: { type: 'string', required: false },
+                    },
+                    canManageChildrenProfiles: {
+                        property: 'canManageChildrenProfiles',
+                        schema: { type: 'boolean', required: false },
+                    },
+                    canViewAnalytics: {
+                        property: 'canViewAnalytics',
+                        schema: { type: 'boolean', required: false },
+                    },
+                },
+            },
+            claimRole: { model: Role, direction: 'out', name: 'CLAIM_ROLE' },
         },
     },
     neogma
