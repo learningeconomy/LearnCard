@@ -28,6 +28,7 @@ export const presentationsRouter = t.router({
                 description:
                     'This endpoint sends a presentation to a user based on their profileId',
             },
+            requiredScope: 'presentations:write',
         })
         .input(z.object({ profileId: z.string(), presentation: VPValidator.or(JWEValidator) }))
         .output(z.string())
@@ -58,6 +59,7 @@ export const presentationsRouter = t.router({
                 summary: 'Accept a Presentation',
                 description: 'This endpoint accepts a presentation',
             },
+            requiredScope: 'presentations:write',
         })
         .input(z.object({ uri: z.string() }))
         .output(z.boolean())
@@ -78,6 +80,7 @@ export const presentationsRouter = t.router({
                 summary: 'Get received presentations',
                 description: "This endpoint returns the current user's received presentations",
             },
+            requiredScope: 'presentations:read',
         })
         .input(
             z
@@ -105,6 +108,7 @@ export const presentationsRouter = t.router({
                 summary: 'Get sent presentations',
                 description: "This endpoint returns the current user's sent presentations",
             },
+            requiredScope: 'presentations:read',
         })
         .input(
             z
@@ -132,6 +136,7 @@ export const presentationsRouter = t.router({
                 summary: 'Get incoming presentations',
                 description: "This endpoint returns the current user's incoming presentations",
             },
+            requiredScope: 'presentations:read',
         })
         .input(
             z
@@ -159,6 +164,7 @@ export const presentationsRouter = t.router({
                 summary: 'Delete a presentation',
                 description: 'This endpoint deletes a presentation',
             },
+            requiredScope: 'presentations:delete',
         })
         .input(z.object({ uri: z.string() }))
         .output(z.boolean())

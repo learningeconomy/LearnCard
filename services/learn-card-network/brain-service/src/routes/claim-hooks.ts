@@ -35,6 +35,7 @@ export const claimHooksRouter = t.router({
                 description:
                     'This route creates a claim hook. Claim hooks are an atomic action that will be performed when a boost is claimed',
             },
+            requiredScope: 'claimHooks:write',
         })
         .input(z.object({ hook: ClaimHookValidator }))
         .output(z.string())
@@ -167,6 +168,7 @@ export const claimHooksRouter = t.router({
                 summary: 'Gets Claim Hooks',
                 description: 'This route gets claim hooks attached to a given boost',
             },
+            requiredScope: 'claimHooks:read',
         })
         .input(
             PaginationOptionsValidator.extend({
@@ -216,6 +218,7 @@ export const claimHooksRouter = t.router({
                 summary: 'Delete a Claim Hook',
                 description: 'This route deletes a claim hook',
             },
+            requiredScope: 'claimHooks:delete',
         })
         .input(z.object({ id: z.string() }))
         .output(z.boolean())

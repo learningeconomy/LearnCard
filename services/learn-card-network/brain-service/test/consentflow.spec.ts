@@ -580,6 +580,7 @@ describe('Consent Flow Contracts', () => {
                         const client = getClient({
                             did: `did:test:${index + 1}`,
                             isChallengeValid: true,
+                            scope: '*:*',
                         });
                         await client.profile.createProfile({
                             profileId: `user${index}`,
@@ -613,7 +614,9 @@ describe('Consent Flow Contracts', () => {
             });
             await expect(
                 userA.clients.partialAuth.contracts.getConsentedDataForContract({ uri })
-            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+            ).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
         });
 
         it('should allow you to get data for contracts you own', async () => {
@@ -1022,6 +1025,7 @@ describe('Consent Flow Contracts', () => {
                         const client = await getClient({
                             did: `did:test:${index + 1}`,
                             isChallengeValid: true,
+                            scope: '*:*',
                         });
                         await client.profile.createProfile({
                             profileId: `user${index}`,
@@ -2929,9 +2933,9 @@ describe('Consent Flow Contracts', () => {
             // All pages combined should equal the total
             expect(
                 firstPage.records.length +
-                secondPage.records.length +
-                thirdPage.records.length +
-                fourthPage.records.length
+                    secondPage.records.length +
+                    thirdPage.records.length +
+                    fourthPage.records.length
             ).toBe(10);
 
             const all = await userB.clients.fullAuth.contracts.getCredentialsForContract({

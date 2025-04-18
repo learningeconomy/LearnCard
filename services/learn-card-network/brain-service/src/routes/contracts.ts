@@ -81,6 +81,7 @@ export const contractsRouter = t.router({
                 summary: 'Create Consent Flow Contract',
                 description: 'Creates a Consent Flow Contract for a profile',
             },
+            requiredScope: 'contracts:write',
         })
         .input(
             z.object({
@@ -189,6 +190,7 @@ export const contractsRouter = t.router({
                 summary: 'Get Consent Flow Contracts',
                 description: 'Gets Consent Flow Contract Details',
             },
+            requiredScope: 'contracts:read',
         })
         .input(z.object({ uri: z.string() }))
         .output(ConsentFlowContractDetailsValidator)
@@ -232,6 +234,7 @@ export const contractsRouter = t.router({
                 summary: 'Get Consent Flow Contracts',
                 description: 'Gets Consent Flow Contracts for a profile',
             },
+            requiredScope: 'contracts:read',
         })
         .input(
             PaginationOptionsValidator.extend({
@@ -287,6 +290,7 @@ export const contractsRouter = t.router({
                 summary: 'Delete a Consent Flow Contract',
                 description: 'This route deletes a Consent Flow Contract',
             },
+            requiredScope: 'contracts:delete',
         })
         .input(z.object({ uri: z.string() }))
         .output(z.boolean())
@@ -322,6 +326,7 @@ export const contractsRouter = t.router({
                 summary: 'Get the data that has been consented for a contract',
                 description: 'This route grabs all the data that has been consented for a contract',
             },
+            requiredScope: 'contracts-data:read',
         })
         .input(
             PaginationOptionsValidator.extend({
@@ -379,6 +384,7 @@ export const contractsRouter = t.router({
                 summary: 'Get the data that has been consented by a did',
                 description: 'This route grabs all the data that has been consented by a did',
             },
+            requiredScope: 'contracts-data:read',
         })
         .input(
             PaginationOptionsValidator.extend({
@@ -431,6 +437,7 @@ export const contractsRouter = t.router({
                 description:
                     'This route grabs all the data that has been consented for all of your contracts',
             },
+            requiredScope: 'contracts-data:read',
         })
         .input(
             PaginationOptionsValidator.extend({
@@ -472,6 +479,7 @@ export const contractsRouter = t.router({
                 summary: 'Writes a boost credential to a did that has consented to a contract',
                 description: 'Writes a boost credential to a did that has consented to a contract',
             },
+            requiredScope: 'contracts-data:write',
         })
         .input(
             z.object({
@@ -592,7 +600,7 @@ export const contractsRouter = t.router({
                 description:
                     'Issues and sends a boost credential via a registered signing authority to a DID that has consented to a contract.',
             },
-            requiredScope: 'contracts:write',
+            requiredScope: 'contracts-data:write',
         })
         .input(
             z.object({
@@ -758,6 +766,7 @@ export const contractsRouter = t.router({
                 summary: 'Consent To Contract',
                 description: 'Consents to a Contract with a hard set of terms',
             },
+            requiredScope: 'contracts:write',
         })
         .input(
             z.object({
@@ -822,6 +831,7 @@ export const contractsRouter = t.router({
                 summary: 'Gets Consented Contracts',
                 description: 'Gets all consented contracts for a user',
             },
+            requiredScope: 'contracts:read',
         })
         .input(
             PaginationOptionsValidator.extend({
@@ -890,6 +900,7 @@ export const contractsRouter = t.router({
                 summary: 'Updates Contract Terms',
                 description: 'Updates the terms for a consented contract',
             },
+            requiredScope: 'contracts:write',
         })
         .input(
             z.object({
@@ -946,6 +957,7 @@ export const contractsRouter = t.router({
                 summary: 'Deletes Contract Terms',
                 description: 'Withdraws consent by deleting Contract Terms',
             },
+            requiredScope: 'contracts:write',
         })
         .input(z.object({ uri: z.string() }))
         .output(z.boolean())
@@ -986,6 +998,7 @@ export const contractsRouter = t.router({
                 description:
                     'Gets the transaction history for a set of Consent Flow Contract Terms',
             },
+            requiredScope: 'contracts:read',
         })
         .input(
             PaginationOptionsValidator.extend({
@@ -1054,6 +1067,7 @@ export const contractsRouter = t.router({
                 summary: 'Verifies that a profile has consented to a contract',
                 description: 'Withdraws consent by deleting Contract Terms',
             },
+            requiredScope: 'contracts:read',
         })
         .input(z.object({ uri: z.string(), profileId: z.string() }))
         .output(z.boolean())
@@ -1089,6 +1103,7 @@ export const contractsRouter = t.router({
                 summary: 'Sync credentials to a contract',
                 description: 'Syncs credentials to a contract that the profile has consented to',
             },
+            requiredScope: 'contracts-data:write',
         })
         .input(
             z.object({
@@ -1184,6 +1199,7 @@ export const contractsRouter = t.router({
                 summary: 'Get credentials issued via a contract',
                 description: 'Gets all credentials that were issued via a contract',
             },
+            requiredScope: 'contracts-data:read',
         })
         .input(
             PaginationOptionsValidator.extend({
@@ -1252,6 +1268,7 @@ export const contractsRouter = t.router({
                 description:
                     'Gets all credentials that were written to any terms owned by this profile',
             },
+            requiredScope: 'contracts-data:read',
         })
         .input(
             PaginationOptionsValidator.extend({
