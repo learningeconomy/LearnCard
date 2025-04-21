@@ -1,5 +1,11 @@
 # @learncard/network-brain-service
 
+## 3.3.25
+
+### Patch Changes
+
+-   [#652](https://github.com/learningeconomy/LearnCard/pull/652) [`fb6ffee657f9e517290967e5a0268bbe49eeccb7`](https://github.com/learningeconomy/LearnCard/commit/fb6ffee657f9e517290967e5a0268bbe49eeccb7) Thanks [@Custard7](https://github.com/Custard7)! - 🚑🚨 Fix: Decoded HTTP Params for URIs
+
 ## 3.3.24
 
 ### Patch Changes
