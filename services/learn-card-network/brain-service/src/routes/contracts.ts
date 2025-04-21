@@ -599,7 +599,7 @@ export const contractsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/consent-flow-contract/write/via-signing-authority/{contractUri}/{did}',
+                path: '/consent-flow-contract/write/via-signing-authority',
                 tags: ['Consent Flow Contracts'],
                 summary:
                     'Write credential through signing authority for a DID consented to a contract',

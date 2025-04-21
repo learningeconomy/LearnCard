@@ -278,7 +278,7 @@ export const boostsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'GET',
-                path: '/boost/{uri}',
+                path: '/boost',
                 tags: ['Boosts'],
                 summary: 'Get boost',
                 description: 'This endpoint gets metadata about a boost',
