@@ -67,8 +67,7 @@ export const presentationsRouter = t.router({
             const { profile } = ctx.user;
             const { uri } = input;
 
-            const decodedUri = decodeURIComponent(uri);
-            return acceptPresentation(profile, decodedUri);
+            return acceptPresentation(profile, uri);
         }),
 
     receivedPresentations: profileRoute
@@ -170,8 +169,7 @@ export const presentationsRouter = t.router({
         .input(z.object({ uri: z.string() }))
         .output(z.boolean())
         .mutation(async ({ input: { uri }, ctx }) => {
-            const decodedUri = decodeURIComponent(uri);
-            const presentation = await getPresentationByUri(decodedUri);
+            const presentation = await getPresentationByUri(uri);
 
             if (!presentation) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Presentation not found' });
@@ -186,7 +184,7 @@ export const presentationsRouter = t.router({
                 });
             }
 
-            await Promise.all([deletePresentation(presentation), deleteStorageForUri(decodedUri)]);
+            await Promise.all([deletePresentation(presentation), deleteStorageForUri(uri)]);
 
             return true;
         }),

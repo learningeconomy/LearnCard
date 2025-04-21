@@ -69,8 +69,7 @@ export const storageRouter = t.router({
         .query(async ({ input }) => {
             const { uri } = input;
 
-            const decodedUri = decodeURIComponent(uri);
-            const { id, type } = getUriParts(decodedUri);
+            const { id, type } = getUriParts(uri);
 
             const cachedResponse = await getCachedCredentialById(id);
 

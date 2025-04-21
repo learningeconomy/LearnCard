@@ -88,8 +88,7 @@ export const credentialsRouter = t.router({
             const { profile } = ctx.user;
             const { uri } = input;
 
-            const decodedUri = decodeURIComponent(uri);
-            return acceptCredential(profile, decodedUri, input?.options ?? {});
+            return acceptCredential(profile, uri, input?.options ?? {});
         }),
 
     receivedCredentials: profileRoute
@@ -191,8 +190,7 @@ export const credentialsRouter = t.router({
         .input(z.object({ uri: z.string() }))
         .output(z.boolean())
         .mutation(async ({ input: { uri }, ctx }) => {
-            const decodedUri = decodeURIComponent(uri);
-            const credential = await getCredentialByUri(decodedUri);
+            const credential = await getCredentialByUri(uri);
 
             if (!credential) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Credential not found' });
@@ -207,7 +205,7 @@ export const credentialsRouter = t.router({
                 });
             }
 
-            await Promise.all([deleteCredential(credential), deleteStorageForUri(decodedUri)]);
+            await Promise.all([deleteCredential(credential), deleteStorageForUri(uri)]);
 
             return true;
         }),
