@@ -295,7 +295,8 @@ export const boostsRouter = t.router({
         .query(async ({ ctx, input }) => {
             const { uri } = input;
 
-            const boost = await getBoostByUriWithDefaultClaimPermissions(uri);
+            const decodedUri = decodeURIComponent(uri);
+            const boost = await getBoostByUriWithDefaultClaimPermissions(decodedUri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
@@ -423,7 +424,8 @@ export const boostsRouter = t.router({
             const { domain } = ctx;
             const { uri, limit, skip, includeUnacceptedBoosts } = input;
 
-            const boost = await getBoostByUri(uri);
+            const decodedUri = decodeURIComponent(uri);
+            const boost = await getBoostByUri(decodedUri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
@@ -461,7 +463,8 @@ export const boostsRouter = t.router({
             const { domain } = ctx;
             const { uri, limit, cursor, includeUnacceptedBoosts, query } = input;
 
-            const boost = await getBoostByUri(uri);
+            const decodedUri = decodeURIComponent(uri);
+            const boost = await getBoostByUri(decodedUri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
@@ -500,7 +503,8 @@ export const boostsRouter = t.router({
         .query(async ({ input }) => {
             const { uri, includeUnacceptedBoosts } = input;
 
-            const boost = await getBoostByUri(uri);
+            const decodedUri = decodeURIComponent(uri);
+            const boost = await getBoostByUri(decodedUri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
@@ -530,7 +534,8 @@ export const boostsRouter = t.router({
         .query(async ({ input, ctx }) => {
             const { uri, limit, cursor, query } = input;
 
-            const boost = await getBoostByUri(uri);
+            const decodedUri = decodeURIComponent(uri);
+            const boost = await getBoostByUri(decodedUri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
@@ -576,7 +581,8 @@ export const boostsRouter = t.router({
         .query(async ({ input, ctx }) => {
             const { uri, limit, cursor, query, numberOfGenerations } = input;
 
-            const boost = await getBoostByUri(uri);
+            const decodedUri = decodeURIComponent(uri);
+            const boost = await getBoostByUri(decodedUri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
@@ -626,7 +632,8 @@ export const boostsRouter = t.router({
         .query(async ({ input }) => {
             const { uri, query, numberOfGenerations } = input;
 
-            const boost = await getBoostByUri(uri);
+            const decodedUri = decodeURIComponent(uri);
+            const boost = await getBoostByUri(decodedUri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
@@ -656,7 +663,8 @@ export const boostsRouter = t.router({
         .query(async ({ input, ctx }) => {
             const { uri, limit, cursor, query } = input;
 
-            const boost = await getBoostByUri(uri);
+            const decodedUri = decodeURIComponent(uri);
+            const boost = await getBoostByUri(decodedUri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
@@ -700,7 +708,8 @@ export const boostsRouter = t.router({
         .query(async ({ input }) => {
             const { uri, query } = input;
 
-            const boost = await getBoostByUri(uri);
+            const decodedUri = decodeURIComponent(uri);
+            const boost = await getBoostByUri(decodedUri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
@@ -742,7 +751,8 @@ export const boostsRouter = t.router({
                 includeExtendedFamily,
             } = input;
 
-            const boost = await getBoostByUri(uri);
+            const decodedUri = decodeURIComponent(uri);
+            const boost = await getBoostByUri(decodedUri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
@@ -798,7 +808,8 @@ export const boostsRouter = t.router({
             const { uri, query, parentGenerations, childGenerations, includeExtendedFamily } =
                 input;
 
-            const boost = await getBoostByUri(uri);
+            const decodedUri = decodeURIComponent(uri);
+            const boost = await getBoostByUri(decodedUri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
@@ -834,7 +845,8 @@ export const boostsRouter = t.router({
         .query(async ({ input, ctx }) => {
             const { uri, limit, cursor, query, numberOfGenerations } = input;
 
-            const boost = await getBoostByUri(uri);
+            const decodedUri = decodeURIComponent(uri);
+            const boost = await getBoostByUri(decodedUri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
@@ -884,7 +896,8 @@ export const boostsRouter = t.router({
         .query(async ({ input }) => {
             const { uri, query, numberOfGenerations } = input;
 
-            const boost = await getBoostByUri(uri);
+            const decodedUri = decodeURIComponent(uri);
+            const boost = await getBoostByUri(decodedUri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
@@ -918,7 +931,8 @@ export const boostsRouter = t.router({
             const { uri, updates } = input;
             const { name, type, category, status, credential, meta } = updates;
 
-            const boost = await getBoostByUri(uri);
+            const decodedUri = decodeURIComponent(uri);
+            const boost = await getBoostByUri(decodedUri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
@@ -982,7 +996,8 @@ export const boostsRouter = t.router({
         .query(async ({ input, ctx }) => {
             const { uri, limit, cursor, includeSelf } = input;
 
-            const boost = await getBoostByUri(uri);
+            const decodedUri = decodeURIComponent(uri);
+            const boost = await getBoostByUri(decodedUri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
@@ -1035,8 +1050,8 @@ export const boostsRouter = t.router({
                     message: 'Profile not found. Are you sure this person exists?',
                 });
             }
-
-            const boost = await getBoostByUri(uri);
+            const decodedUri = decodeURIComponent(uri);
+            const boost = await getBoostByUri(decodedUri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
@@ -1094,7 +1109,8 @@ export const boostsRouter = t.router({
                 });
             }
 
-            const boost = await getBoostByUri(uri);
+            const decodedUri = decodeURIComponent(uri);
+            const boost = await getBoostByUri(decodedUri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
@@ -1136,7 +1152,8 @@ export const boostsRouter = t.router({
 
             const { uri } = input;
 
-            const boost = await getBoostByUri(uri);
+            const decodedUri = decodeURIComponent(uri);
+            const boost = await getBoostByUri(decodedUri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
@@ -1166,7 +1183,8 @@ export const boostsRouter = t.router({
             const { profile } = ctx.user;
             const { uri, profileId } = input;
 
-            const boost = await getBoostByUri(uri);
+            const decodedUri = decodeURIComponent(uri);
+            const boost = await getBoostByUri(decodedUri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
@@ -1217,7 +1235,8 @@ export const boostsRouter = t.router({
             const { profile } = ctx.user;
             const { uri, updates } = input;
 
-            const boost = await getBoostByUri(uri);
+            const decodedUri = decodeURIComponent(uri);
+            const boost = await getBoostByUri(decodedUri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
@@ -1294,7 +1313,8 @@ export const boostsRouter = t.router({
             const { profile } = ctx.user;
             const { uri, updates, profileId } = input;
 
-            const boost = await getBoostByUri(uri);
+            const decodedUri = decodeURIComponent(uri);
+            const boost = await getBoostByUri(decodedUri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
@@ -1376,7 +1396,8 @@ export const boostsRouter = t.router({
 
             const { uri } = input;
 
-            const boost = await getBoostByUri(uri);
+            const decodedUri = decodeURIComponent(uri);
+            const boost = await getBoostByUri(decodedUri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 

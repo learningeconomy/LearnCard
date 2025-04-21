@@ -197,7 +197,8 @@ export const contractsRouter = t.router({
         .query(async ({ input, ctx }) => {
             const { uri } = input;
 
-            const result = await getContractDetailsByUri(uri);
+            const decodedUri = decodeURIComponent(uri);
+            const result = await getContractDetailsByUri(decodedUri);
 
             if (!result) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find contract' });
@@ -299,7 +300,8 @@ export const contractsRouter = t.router({
 
             const { uri } = input;
 
-            const contract = await getContractByUri(uri);
+            const decodedUri = decodeURIComponent(uri);
+            const contract = await getContractByUri(decodedUri);
 
             if (!contract) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find contract' });
@@ -341,7 +343,8 @@ export const contractsRouter = t.router({
 
             const { uri, query, limit, cursor } = input;
 
-            const contract = await getContractByUri(uri);
+            const decodedUri = decodeURIComponent(uri);
+            const contract = await getContractByUri(decodedUri);
 
             if (!contract) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find contract' });
@@ -399,7 +402,8 @@ export const contractsRouter = t.router({
 
             const { did, query, limit, cursor } = input;
 
-            const otherProfile = await getProfileByDid(did);
+            const decodedDid = decodeURIComponent(did);
+            const otherProfile = await getProfileByDid(decodedDid);
 
             if (!otherProfile) {
                 throw new TRPCError({
@@ -495,8 +499,9 @@ export const contractsRouter = t.router({
             const { domain } = ctx;
             const { did, contractUri, boostUri, credential } = input;
 
+            const decodedDid = decodeURIComponent(did);
             // Get the other profile by DID
-            const otherProfile = await getProfileByDid(did);
+            const otherProfile = await getProfileByDid(decodedDid);
             if (!otherProfile) {
                 throw new TRPCError({
                     code: 'NOT_FOUND',
@@ -513,8 +518,9 @@ export const contractsRouter = t.router({
                 });
             }
 
+            const decodedContractUri = decodeURIComponent(contractUri);
             // Get contract details
-            const contractDetails = await getContractDetailsByUri(contractUri);
+            const contractDetails = await getContractDetailsByUri(decodedContractUri);
             if (!contractDetails) {
                 throw new TRPCError({
                     code: 'NOT_FOUND',
@@ -618,8 +624,10 @@ export const contractsRouter = t.router({
             const { profile } = ctx.user;
             const { did, contractUri, boostUri, signingAuthority } = input;
 
+            const decodedDid = decodeURIComponent(did);
+            const decodedContractUri = decodeURIComponent(contractUri);
             // Get recipient profile
-            const otherProfile = await getProfileByDid(did);
+            const otherProfile = await getProfileByDid(decodedDid);
             if (!otherProfile) {
                 throw new TRPCError({
                     code: 'NOT_FOUND',
@@ -637,7 +645,7 @@ export const contractsRouter = t.router({
             }
 
             // Get contract details
-            const contractDetails = await getContractDetailsByUri(contractUri);
+            const contractDetails = await getContractDetailsByUri(decodedContractUri);
             if (!contractDetails) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find contract' });
             }
@@ -916,7 +924,8 @@ export const contractsRouter = t.router({
 
             const { uri, terms, expiresAt, oneTime } = input;
 
-            const relationship = await getContractTermsByUri(uri);
+            const decodedUri = decodeURIComponent(uri);
+            const relationship = await getContractTermsByUri(decodedUri);
 
             if (!relationship) {
                 throw new TRPCError({
@@ -966,7 +975,8 @@ export const contractsRouter = t.router({
 
             const { uri } = input;
 
-            const relationship = await getContractTermsByUri(uri);
+            const decodedUri = decodeURIComponent(uri);
+            const relationship = await getContractTermsByUri(decodedUri);
 
             if (!relationship) {
                 throw new TRPCError({
@@ -1012,7 +1022,8 @@ export const contractsRouter = t.router({
             const { profile } = ctx.user;
             const { uri, query, limit, cursor } = input;
 
-            const relationship = await getContractTermsByUri(uri);
+            const decodedUri = decodeURIComponent(uri);
+            const relationship = await getContractTermsByUri(decodedUri);
 
             if (!relationship) {
                 throw new TRPCError({
@@ -1074,7 +1085,8 @@ export const contractsRouter = t.router({
         .query(async ({ input }) => {
             const { uri, profileId } = input;
 
-            const contract = await getContractByUri(uri);
+            const decodedUri = decodeURIComponent(uri);
+            const contract = await getContractByUri(decodedUri);
 
             if (!contract) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find contract' });
