@@ -1,5 +1,41 @@
 # @learncard/network-brain-service
 
+## 3.3.26
+
+### Patch Changes
+
+-   [#654](https://github.com/learningeconomy/LearnCard/pull/654) [`274a65c52dad4d49df525d79c4f4a9059ae20077`](https://github.com/learningeconomy/LearnCard/commit/274a65c52dad4d49df525d79c4f4a9059ae20077) Thanks [@Custard7](https://github.com/Custard7)! - Fix: Update Get Boost and Write to Contract via Signing Authority to use query params instead
+
+## 3.3.25
+
+### Patch Changes
+
+-   [#652](https://github.com/learningeconomy/LearnCard/pull/652) [`fb6ffee657f9e517290967e5a0268bbe49eeccb7`](https://github.com/learningeconomy/LearnCard/commit/fb6ffee657f9e517290967e5a0268bbe49eeccb7) Thanks [@Custard7](https://github.com/Custard7)! - 🚑🚨 Fix: Decoded HTTP Params for URIs
+
+## 3.3.24
+
+### Patch Changes
+
+-   [#648](https://github.com/learningeconomy/LearnCard/pull/648) [`de9d00e840150d4e701039afea88bfd5ac804fda`](https://github.com/learningeconomy/LearnCard/commit/de9d00e840150d4e701039afea88bfd5ac804fda) Thanks [@Custard7](https://github.com/Custard7)! - Task: Auth Grants Followup
+
+## 3.3.23
+
+### Patch Changes
+
+-   [#649](https://github.com/learningeconomy/LearnCard/pull/649) [`60b610c68d386108653b0559e6c7bdec9a074534`](https://github.com/learningeconomy/LearnCard/commit/60b610c68d386108653b0559e6c7bdec9a074534) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Introduce a new authenticated HTTP endpoint for issuing and sending credentials to consent flow contracts via a registered signing authority.
+
+    ```http
+    POST /api/consent-flow-contract/write/via-signing-authority/{contractUri}/{did}
+    ```
+
+    Key features:
+
+    -   Validates the DID and contract URI, ensures the target profile has consented to the contract, and verifies issuer permissions.
+    -   Leverages a registered signing authority to sign credentials (VC or JWE).
+    -   Delivers signed credentials over the network while respecting notification settings and contract terms.
+    -   Mirrors the existing `sendBoostViaSigningAuthority` route for consistency.
+    -   Adds comprehensive end-to-end tests covering the entire credential issuance and delivery flow.
+
 ## 3.3.22
 
 ### Patch Changes

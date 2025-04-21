@@ -81,6 +81,7 @@ export const contractsRouter = t.router({
                 summary: 'Create Consent Flow Contract',
                 description: 'Creates a Consent Flow Contract for a profile',
             },
+            requiredScope: 'contracts:write',
         })
         .input(
             z.object({
@@ -189,13 +190,15 @@ export const contractsRouter = t.router({
                 summary: 'Get Consent Flow Contracts',
                 description: 'Gets Consent Flow Contract Details',
             },
+            requiredScope: 'contracts:read',
         })
         .input(z.object({ uri: z.string() }))
         .output(ConsentFlowContractDetailsValidator)
         .query(async ({ input, ctx }) => {
             const { uri } = input;
 
-            const result = await getContractDetailsByUri(uri);
+            const decodedUri = decodeURIComponent(uri);
+            const result = await getContractDetailsByUri(decodedUri);
 
             if (!result) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find contract' });
@@ -232,6 +235,7 @@ export const contractsRouter = t.router({
                 summary: 'Get Consent Flow Contracts',
                 description: 'Gets Consent Flow Contracts for a profile',
             },
+            requiredScope: 'contracts:read',
         })
         .input(
             PaginationOptionsValidator.extend({
@@ -287,6 +291,7 @@ export const contractsRouter = t.router({
                 summary: 'Delete a Consent Flow Contract',
                 description: 'This route deletes a Consent Flow Contract',
             },
+            requiredScope: 'contracts:delete',
         })
         .input(z.object({ uri: z.string() }))
         .output(z.boolean())
@@ -295,7 +300,8 @@ export const contractsRouter = t.router({
 
             const { uri } = input;
 
-            const contract = await getContractByUri(uri);
+            const decodedUri = decodeURIComponent(uri);
+            const contract = await getContractByUri(decodedUri);
 
             if (!contract) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find contract' });
@@ -322,6 +328,7 @@ export const contractsRouter = t.router({
                 summary: 'Get the data that has been consented for a contract',
                 description: 'This route grabs all the data that has been consented for a contract',
             },
+            requiredScope: 'contracts-data:read',
         })
         .input(
             PaginationOptionsValidator.extend({
@@ -336,7 +343,8 @@ export const contractsRouter = t.router({
 
             const { uri, query, limit, cursor } = input;
 
-            const contract = await getContractByUri(uri);
+            const decodedUri = decodeURIComponent(uri);
+            const contract = await getContractByUri(decodedUri);
 
             if (!contract) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find contract' });
@@ -379,6 +387,7 @@ export const contractsRouter = t.router({
                 summary: 'Get the data that has been consented by a did',
                 description: 'This route grabs all the data that has been consented by a did',
             },
+            requiredScope: 'contracts-data:read',
         })
         .input(
             PaginationOptionsValidator.extend({
@@ -393,7 +402,8 @@ export const contractsRouter = t.router({
 
             const { did, query, limit, cursor } = input;
 
-            const otherProfile = await getProfileByDid(did);
+            const decodedDid = decodeURIComponent(did);
+            const otherProfile = await getProfileByDid(decodedDid);
 
             if (!otherProfile) {
                 throw new TRPCError({
@@ -431,6 +441,7 @@ export const contractsRouter = t.router({
                 description:
                     'This route grabs all the data that has been consented for all of your contracts',
             },
+            requiredScope: 'contracts-data:read',
         })
         .input(
             PaginationOptionsValidator.extend({
@@ -472,6 +483,7 @@ export const contractsRouter = t.router({
                 summary: 'Writes a boost credential to a did that has consented to a contract',
                 description: 'Writes a boost credential to a did that has consented to a contract',
             },
+            requiredScope: 'contracts-data:write',
         })
         .input(
             z.object({
@@ -487,8 +499,9 @@ export const contractsRouter = t.router({
             const { domain } = ctx;
             const { did, contractUri, boostUri, credential } = input;
 
+            const decodedDid = decodeURIComponent(did);
             // Get the other profile by DID
-            const otherProfile = await getProfileByDid(did);
+            const otherProfile = await getProfileByDid(decodedDid);
             if (!otherProfile) {
                 throw new TRPCError({
                     code: 'NOT_FOUND',
@@ -505,8 +518,9 @@ export const contractsRouter = t.router({
                 });
             }
 
+            const decodedContractUri = decodeURIComponent(contractUri);
             // Get contract details
-            const contractDetails = await getContractDetailsByUri(contractUri);
+            const contractDetails = await getContractDetailsByUri(decodedContractUri);
             if (!contractDetails) {
                 throw new TRPCError({
                     code: 'NOT_FOUND',
@@ -585,14 +599,14 @@ export const contractsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/consent-flow-contract/write/via-signing-authority/{contractUri}/{did}',
+                path: '/consent-flow-contract/write/via-signing-authority',
                 tags: ['Consent Flow Contracts'],
                 summary:
                     'Write credential through signing authority for a DID consented to a contract',
                 description:
                     'Issues and sends a boost credential via a registered signing authority to a DID that has consented to a contract.',
             },
-            requiredScope: 'contracts:write',
+            requiredScope: 'contracts-data:write',
         })
         .input(
             z.object({
@@ -610,8 +624,10 @@ export const contractsRouter = t.router({
             const { profile } = ctx.user;
             const { did, contractUri, boostUri, signingAuthority } = input;
 
+            const decodedDid = decodeURIComponent(did);
+            const decodedContractUri = decodeURIComponent(contractUri);
             // Get recipient profile
-            const otherProfile = await getProfileByDid(did);
+            const otherProfile = await getProfileByDid(decodedDid);
             if (!otherProfile) {
                 throw new TRPCError({
                     code: 'NOT_FOUND',
@@ -629,7 +645,7 @@ export const contractsRouter = t.router({
             }
 
             // Get contract details
-            const contractDetails = await getContractDetailsByUri(contractUri);
+            const contractDetails = await getContractDetailsByUri(decodedContractUri);
             if (!contractDetails) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find contract' });
             }
@@ -758,6 +774,7 @@ export const contractsRouter = t.router({
                 summary: 'Consent To Contract',
                 description: 'Consents to a Contract with a hard set of terms',
             },
+            requiredScope: 'contracts:write',
         })
         .input(
             z.object({
@@ -822,6 +839,7 @@ export const contractsRouter = t.router({
                 summary: 'Gets Consented Contracts',
                 description: 'Gets all consented contracts for a user',
             },
+            requiredScope: 'contracts:read',
         })
         .input(
             PaginationOptionsValidator.extend({
@@ -890,6 +908,7 @@ export const contractsRouter = t.router({
                 summary: 'Updates Contract Terms',
                 description: 'Updates the terms for a consented contract',
             },
+            requiredScope: 'contracts:write',
         })
         .input(
             z.object({
@@ -905,7 +924,8 @@ export const contractsRouter = t.router({
 
             const { uri, terms, expiresAt, oneTime } = input;
 
-            const relationship = await getContractTermsByUri(uri);
+            const decodedUri = decodeURIComponent(uri);
+            const relationship = await getContractTermsByUri(decodedUri);
 
             if (!relationship) {
                 throw new TRPCError({
@@ -946,6 +966,7 @@ export const contractsRouter = t.router({
                 summary: 'Deletes Contract Terms',
                 description: 'Withdraws consent by deleting Contract Terms',
             },
+            requiredScope: 'contracts:write',
         })
         .input(z.object({ uri: z.string() }))
         .output(z.boolean())
@@ -954,7 +975,8 @@ export const contractsRouter = t.router({
 
             const { uri } = input;
 
-            const relationship = await getContractTermsByUri(uri);
+            const decodedUri = decodeURIComponent(uri);
+            const relationship = await getContractTermsByUri(decodedUri);
 
             if (!relationship) {
                 throw new TRPCError({
@@ -986,6 +1008,7 @@ export const contractsRouter = t.router({
                 description:
                     'Gets the transaction history for a set of Consent Flow Contract Terms',
             },
+            requiredScope: 'contracts:read',
         })
         .input(
             PaginationOptionsValidator.extend({
@@ -999,7 +1022,8 @@ export const contractsRouter = t.router({
             const { profile } = ctx.user;
             const { uri, query, limit, cursor } = input;
 
-            const relationship = await getContractTermsByUri(uri);
+            const decodedUri = decodeURIComponent(uri);
+            const relationship = await getContractTermsByUri(decodedUri);
 
             if (!relationship) {
                 throw new TRPCError({
@@ -1054,13 +1078,15 @@ export const contractsRouter = t.router({
                 summary: 'Verifies that a profile has consented to a contract',
                 description: 'Withdraws consent by deleting Contract Terms',
             },
+            requiredScope: 'contracts:read',
         })
         .input(z.object({ uri: z.string(), profileId: z.string() }))
         .output(z.boolean())
         .query(async ({ input }) => {
             const { uri, profileId } = input;
 
-            const contract = await getContractByUri(uri);
+            const decodedUri = decodeURIComponent(uri);
+            const contract = await getContractByUri(decodedUri);
 
             if (!contract) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find contract' });
@@ -1089,6 +1115,7 @@ export const contractsRouter = t.router({
                 summary: 'Sync credentials to a contract',
                 description: 'Syncs credentials to a contract that the profile has consented to',
             },
+            requiredScope: 'contracts-data:write',
         })
         .input(
             z.object({
@@ -1184,6 +1211,7 @@ export const contractsRouter = t.router({
                 summary: 'Get credentials issued via a contract',
                 description: 'Gets all credentials that were issued via a contract',
             },
+            requiredScope: 'contracts-data:read',
         })
         .input(
             PaginationOptionsValidator.extend({
@@ -1252,6 +1280,7 @@ export const contractsRouter = t.router({
                 description:
                     'Gets all credentials that were written to any terms owned by this profile',
             },
+            requiredScope: 'contracts-data:read',
         })
         .input(
             PaginationOptionsValidator.extend({
