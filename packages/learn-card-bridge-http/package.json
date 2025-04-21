@@ -1,6 +1,6 @@
 {
     "name": "@learncard/create-http-bridge",
-    "version": "1.1.154",
+    "version": "1.1.155",
     "description": "Instantly create and deploy a Learn Card Bridge HTTP API via AWS Lambda!",
     "main": "dist/index.js",
     "bin": "dist/index.js",

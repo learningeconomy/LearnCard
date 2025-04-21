@@ -1,5 +1,12 @@
 # @learncard/snap-chapi-example
 
+## 1.0.224
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/react@2.7.80
+
 ## 1.0.223
 
 ### Patch Changes
