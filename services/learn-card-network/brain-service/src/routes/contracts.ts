@@ -323,7 +323,7 @@ export const contractsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/consent-flow-contract/data',
+                path: '/consent-flow-contract/data-for-contract',
                 tags: ['Consent Flow Contracts'],
                 summary: 'Get the data that has been consented for a contract',
                 description: 'This route grabs all the data that has been consented for a contract',
@@ -382,7 +382,7 @@ export const contractsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/consent-flow-contract/data',
+                path: '/consent-flow-contract/data-for-did',
                 tags: ['Consent Flow Contracts'],
                 summary: 'Get the data that has been consented by a did',
                 description: 'This route grabs all the data that has been consented by a did',
