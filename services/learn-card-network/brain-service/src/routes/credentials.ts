@@ -66,7 +66,7 @@ export const credentialsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/credential/accept/{uri}',
+                path: '/credential/accept',
                 tags: ['Credentials'],
                 summary: 'Accept a Credential',
                 description: 'This endpoint accepts a credential',
@@ -180,7 +180,7 @@ export const credentialsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'DELETE',
-                path: '/credential/{uri}',
+                path: '/credential',
                 tags: ['Credentials'],
                 summary: 'Delete a credential',
                 description: 'This endpoint deletes a credential',

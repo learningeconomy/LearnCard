@@ -215,7 +215,7 @@ export const boostsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/boost/create/child/{parentUri}',
+                path: '/boost/create/child',
                 tags: ['Boosts'],
                 summary: 'Creates a boost',
                 description: 'This route creates a boost',
@@ -310,7 +310,7 @@ export const boostsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/boost',
+                path: '/boost/all',
                 tags: ['Boosts'],
                 summary: 'Get boosts',
                 deprecated: true,
@@ -402,7 +402,7 @@ export const boostsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'GET',
-                path: '/boost/recipients/{uri}',
+                path: '/boost/recipients',
                 tags: ['Boosts'],
                 summary: 'Get boost recipients',
                 deprecated: true,
@@ -443,7 +443,7 @@ export const boostsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/boost/recipients/paginated/{uri}',
+                path: '/boost/recipients/paginated',
                 tags: ['Boosts'],
                 summary: 'Get boost recipients',
                 description: 'This endpoint gets the recipients of a particular boost',
@@ -491,7 +491,7 @@ export const boostsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'GET',
-                path: '/boost/recipients/{uri}/count',
+                path: '/boost/recipients/count',
                 tags: ['Boosts'],
                 summary: 'Get boost recipients count',
                 description: 'This endpoint counts the recipients of a particular boost',
@@ -516,7 +516,7 @@ export const boostsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/boost/children-profile-managers/{uri}',
+                path: '/boost/children-profile-managers',
                 tags: ['Boosts', 'Profile Managers'],
                 summary: 'Get Profile Managers that are a child of a boost',
                 description: 'Get Profile Managers that are a child of a boost',
@@ -562,7 +562,7 @@ export const boostsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/boost/children/{uri}',
+                path: '/boost/children',
                 tags: ['Boosts'],
                 summary: 'Get boost children',
                 description: 'This endpoint gets the children of a particular boost',
@@ -614,7 +614,7 @@ export const boostsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/boost/children/{uri}/count',
+                path: '/boost/children/count',
                 tags: ['Boosts'],
                 summary: 'Count boost children',
                 description: 'This endpoint counts the children of a particular boost',
@@ -645,7 +645,7 @@ export const boostsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/boost/siblings/{uri}',
+                path: '/boost/siblings',
                 tags: ['Boosts'],
                 summary: 'Get boost siblings',
                 description: 'This endpoint gets the siblings of a particular boost',
@@ -691,7 +691,7 @@ export const boostsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/boost/siblings/{uri}/count',
+                path: '/boost/siblings/count',
                 tags: ['Boosts'],
                 summary: 'Count boost siblings',
                 description: 'This endpoint counts the siblings of a particular boost',
@@ -721,7 +721,7 @@ export const boostsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/boost/family/{uri}',
+                path: '/boost/family',
                 tags: ['Boosts'],
                 summary: 'Get familial boosts',
                 description:
@@ -786,7 +786,7 @@ export const boostsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/boost/family/{uri}/count',
+                path: '/boost/family/count',
                 tags: ['Boosts'],
                 summary: 'Count familial boosts',
                 description:
@@ -826,7 +826,7 @@ export const boostsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/boost/parents/{uri}',
+                path: '/boost/parents',
                 tags: ['Boosts'],
                 summary: 'Get boost parents',
                 description: 'This endpoint gets the parents of a particular boost',
@@ -878,7 +878,7 @@ export const boostsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/boost/parents/{uri}/count',
+                path: '/boost/parents/count',
                 tags: ['Boosts'],
                 summary: 'Count boost parents',
                 description: 'This endpoint counts the parents of a particular boost',
@@ -909,7 +909,7 @@ export const boostsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/boost/{uri}',
+                path: '/boost',
                 tags: ['Boosts'],
                 summary: 'Update a boost',
                 description: 'This route updates a boost',
@@ -978,7 +978,7 @@ export const boostsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/boost/admins/{uri}',
+                path: '/boost/admins',
                 tags: ['Boosts'],
                 summary: 'Get boost admins',
                 description: 'This route returns the admins for a boost',
@@ -1026,7 +1026,7 @@ export const boostsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/boost/add-admin/{uri}',
+                path: '/boost/add-admin',
                 tags: ['Boosts'],
                 summary: 'Add a Boost admin',
                 description: 'This route adds a new admin for a boost',
@@ -1079,7 +1079,7 @@ export const boostsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/boost/remove-admin/{uri}',
+                path: '/boost/remove-admin',
                 tags: ['Boosts'],
                 summary: 'Remove a Boost admin',
                 description: 'This route removes an  admin from a boost',
@@ -1138,7 +1138,7 @@ export const boostsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'GET',
-                path: '/boost/permissions/{uri}',
+                path: '/boost/permissions',
                 tags: ['Boosts'],
                 summary: 'Get boost permissions',
                 description: 'This endpoint gets permission metadata about a boost',
@@ -1169,7 +1169,7 @@ export const boostsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'GET',
-                path: '/boost/permissions/{uri}/{profileId}',
+                path: '/boost/permissions/{profileId}',
                 tags: ['Boosts'],
                 summary: 'Get boost permissions for someone else',
                 description:
@@ -1216,7 +1216,7 @@ export const boostsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/boost/permissions/{uri}',
+                path: '/boost/permissions',
                 tags: ['Boosts'],
                 summary: 'Update boost permissions',
                 description:
@@ -1293,7 +1293,7 @@ export const boostsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/boost/permissions/{uri}/{profileId}',
+                path: '/boost/permissions/{profileId}',
                 tags: ['Boosts'],
                 summary: "Update other profile's boost permissions",
                 description:
@@ -1382,7 +1382,7 @@ export const boostsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'DELETE',
-                path: '/boost/{uri}',
+                path: '/boost',
                 tags: ['Boosts'],
                 summary: 'Delete a boost',
                 description: 'This route deletes a boost',
@@ -1478,7 +1478,7 @@ export const boostsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/boost/{boostUri}/claim/{challenge}',
+                path: '/boost/claim',
                 tags: ['Boosts'],
                 summary: 'Claim a boost using a claim link',
                 description: 'Claims a boost using a claim link, including a challenge',

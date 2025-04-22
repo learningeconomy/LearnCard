@@ -1032,7 +1032,7 @@ export const profilesRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'GET',
-                path: '/profile/signing-authority/get/{endpoint}/{name}',
+                path: '/profile/signing-authority/get',
                 tags: ['Profiles'],
                 summary: 'Get Signing Authority for user',
                 description:
