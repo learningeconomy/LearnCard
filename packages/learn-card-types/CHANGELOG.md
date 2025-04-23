@@ -1,5 +1,11 @@
 # learn-card-types
 
+## 5.6.11
+
+### Patch Changes
+
+-   [#606](https://github.com/learningeconomy/LearnCard/pull/606) [`3a7e23f473c6ebeb9aa4ebebfca7938acde7b5ef`](https://github.com/learningeconomy/LearnCard/commit/3a7e23f473c6ebeb9aa4ebebfca7938acde7b5ef) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add support for VC 2.0 Data Model
+
 ## 5.6.10
 
 ### Patch Changes

@@ -1,6 +1,6 @@
 {
     "name": "@learncard/learn-cloud-service",
-    "version": "2.2.20",
+    "version": "2.2.21",
     "description": "",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
