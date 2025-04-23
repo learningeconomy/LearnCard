@@ -37,7 +37,7 @@ jobs:
               with:
                   generator: ${{ env.generator-name }}
                   openapi-url: https://network.learncard.com/docs/openapi.json
-                  command-args: -o ${{ env.working-directory }}/${{ env.generator-name }}-client/
+                  command-args: -o ${{ env.working-directory }}/${{ env.generator-name }}-client/ --skip-validate-spec
 
             - name: Get version from package.json
               id: package-version
