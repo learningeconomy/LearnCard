@@ -1,0 +1,55 @@
+name: Generate Client SDKs for LearnCard Network API
+
+on:
+    push:
+        branches:
+            - open-api-sdks
+
+env:
+    working-directory: packages/open-api-lcn-clients
+    generator-name: python
+
+jobs:
+    generate-clients:
+        runs-on: ubuntu-latest
+        name: Generate Client SDKs for LearnCard Network API
+        defaults:
+            run:
+                working-directory: ${{ env.working-directory }}
+        steps:
+            - name: Check out
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+                  token: '${{ secrets.GITHUB_TOKEN }}'
+
+            - name: Git config
+              run: |
+                  git config --local user.name "github-actions[bot]"
+                  git config --local user.email "github-actions[bot]@users.noreply.github.com"
+
+            - name: Cleanup old client
+              run: rm -rf ${{ env.generator-name }}-client/
+
+            - name: Generate new client
+              uses: openapi-generators/openapitools-generator-action@v1
+
+              with:
+                  generator: ${{ env.generator-name }}
+                  openapi-url: https://network.learncard.com/docs/openapi.json
+                  command-args: -o ${{ env.working-directory }}/${{ env.generator-name }}-client/
+
+            - name: Get version from package.json
+              id: package-version
+              run: |
+                  PACKAGE_VERSION="$(node -p "require('./${{ env.generator-name }}-client/package.json').version")"
+                  echo "version=$PACKAGE_VERSION" >> "$GITHUB_OUTPUT"
+
+            - name: Create or update PR
+              uses: peter-evans/create-pull-request@v6
+              with:
+                  commit-message: Update ${{ env.generator-name }}-client SDK to version ${{ steps.package-version.outputs.version }}
+                  title: Update ${{ env.generator-name }}-client SDK to version ${{ steps.package-version.outputs.version }}
+                  body: Generated OpenAPI client SDK for ${{ env.generator-name }}-client
+                  branch: open-api-generator-${{ env.generator-name }}
+                  base: main
