@@ -46,7 +46,7 @@ jobs:
               uses: peter-evans/create-pull-request@v6
               with:
                   commit-message: Update ${{ matrix.generator-name }}-client SDK to version ${{ steps.package-version.outputs.version }}
-                  title: Update ${{ matrix.generator-name }}-client SDK to version ${{ steps.package-version.outputs.version }}
-                  body: Generated OpenAPI client SDK for ${{ matrix.generator-name }}-client
+                  title: Update Open API Client SDKs to version ${{ steps.package-version.outputs.version }}
+                  body: Generated OpenAPI client SDK for clients.
                   branch: open-api-generator
                   base: main
