@@ -185,7 +185,7 @@ export const contractsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'GET',
-                path: '/consent-flow-contract/{uri}',
+                path: '/consent-flow-contract',
                 tags: ['Consent Flow Contracts'],
                 summary: 'Get Consent Flow Contracts',
                 description: 'Gets Consent Flow Contract Details',
@@ -286,7 +286,7 @@ export const contractsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'DELETE',
-                path: '/consent-flow-contract/{uri}',
+                path: '/consent-flow-contract',
                 tags: ['Consent Flow Contracts'],
                 summary: 'Delete a Consent Flow Contract',
                 description: 'This route deletes a Consent Flow Contract',
@@ -323,7 +323,7 @@ export const contractsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/consent-flow-contract/{uri}/data',
+                path: '/consent-flow-contract/data-for-contract',
                 tags: ['Consent Flow Contracts'],
                 summary: 'Get the data that has been consented for a contract',
                 description: 'This route grabs all the data that has been consented for a contract',
@@ -382,7 +382,7 @@ export const contractsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/consent-flow-contract/data/{did}',
+                path: '/consent-flow-contract/data-for-did',
                 tags: ['Consent Flow Contracts'],
                 summary: 'Get the data that has been consented by a did',
                 description: 'This route grabs all the data that has been consented by a did',
@@ -478,7 +478,7 @@ export const contractsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/consent-flow-contract/write/{contractUri}/{did}',
+                path: '/consent-flow-contract/write',
                 tags: ['Consent Flow Contracts'],
                 summary: 'Writes a boost credential to a did that has consented to a contract',
                 description: 'Writes a boost credential to a did that has consented to a contract',
@@ -769,7 +769,7 @@ export const contractsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/consent-flow-contract/consent/{contractUri}',
+                path: '/consent-flow-contract/consent',
                 tags: ['Consent Flow Contracts'],
                 summary: 'Consent To Contract',
                 description: 'Consents to a Contract with a hard set of terms',
@@ -903,7 +903,7 @@ export const contractsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/consent-flow-contract/consent/update/{uri}',
+                path: '/consent-flow-contract/consent/update',
                 tags: ['Consent Flow Contracts'],
                 summary: 'Updates Contract Terms',
                 description: 'Updates the terms for a consented contract',
@@ -961,7 +961,7 @@ export const contractsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'DELETE',
-                path: '/consent-flow-contract/consent/withdraw/{uri}',
+                path: '/consent-flow-contract/consent/withdraw',
                 tags: ['Consent Flow Contracts'],
                 summary: 'Deletes Contract Terms',
                 description: 'Withdraws consent by deleting Contract Terms',
@@ -1002,7 +1002,7 @@ export const contractsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/consent-flow-contract/consent/history/{uri}',
+                path: '/consent-flow-contract/consent/history',
                 tags: ['Consent Flow Contracts'],
                 summary: 'Gets Transaction History',
                 description:
@@ -1073,7 +1073,7 @@ export const contractsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'GET',
-                path: '/consent-flow-contract/verify/{uri}',
+                path: '/consent-flow-contract/verify',
                 tags: ['Consent Flow Contracts'],
                 summary: 'Verifies that a profile has consented to a contract',
                 description: 'Withdraws consent by deleting Contract Terms',
@@ -1110,7 +1110,7 @@ export const contractsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/consent-flow-contract/sync/{termsUri}',
+                path: '/consent-flow-contract/sync',
                 tags: ['Consent Flow Contracts'],
                 summary: 'Sync credentials to a contract',
                 description: 'Syncs credentials to a contract that the profile has consented to',
@@ -1206,7 +1206,7 @@ export const contractsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/consent-flow-contract/{termsUri}/credentials',
+                path: '/consent-flow-contract/credentials',
                 tags: ['Consent Flow Contracts'],
                 summary: 'Get credentials issued via a contract',
                 description: 'Gets all credentials that were issued via a contract',
