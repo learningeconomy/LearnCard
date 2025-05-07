@@ -3,8 +3,8 @@ import {
     ConsentFlowTransaction,
     LCNNotificationTypeEnumValidator,
     LCNProfile,
-    VC,
     UnsignedVC,
+    VC,
 } from '@learncard/types';
 import { v4 as uuid } from 'uuid';
 import {
@@ -15,15 +15,18 @@ import {
 } from '@models';
 import { BindParam, QueryBuilder } from 'neogma';
 import { DbContractType, FlatDbTermsType } from 'types/consentflowcontract';
+import { BoostType } from 'types/boost';
 import { flattenObject, inflateObject } from '@helpers/objects.helpers';
+import { convertQueryResultToPropertiesObjectArray } from '@helpers/neo4j.helpers';
 import { reconsentTerms } from './update';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
-import { convertQueryResultToPropertiesObjectArray } from '@helpers/neo4j.helpers';
-import { BoostType } from 'types/boost';
-import { getBoostUri, sendBoost } from '@helpers/boost.helpers';
+import { sendBoost } from '@helpers/boost.helpers';
+import { getBoostUri } from '@helpers/boost.helpers';
 import { getDidWeb } from '@helpers/did.helpers';
 import { getSigningAuthorityForUserByName } from '@accesslayer/signing-authority/relationships/read';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
+import { getProfilesByProfileIds } from '@accesslayer/profile/read';
+import { cloneDeep } from 'lodash';
 
 export const setCreatorForContract = async (contract: DbContractType, profile: LCNProfile) => {
     return ConsentFlowContract.relateTo({
@@ -54,7 +57,7 @@ export const consentToContract = async (
     consenter: LCNProfile,
     { contract, contractOwner }: { contract: DbContractType; contractOwner: LCNProfile },
     {
-        terms,
+        terms: _terms,
         expiresAt,
         oneTime,
     }: {
@@ -65,6 +68,24 @@ export const consentToContract = async (
     },
     domain: string
 ) => {
+    const terms = cloneDeep(_terms);
+    const deniedWriters: string[] = terms.deniedWriters ?? [];
+
+    if (deniedWriters && deniedWriters.length > 0) {
+        const profiles = await getProfilesByProfileIds(deniedWriters);
+
+        if (profiles.length !== deniedWriters.length) {
+            const foundProfileIds = new Set(profiles.map(p => p.profileId));
+            const missingIds = deniedWriters.filter(id => !foundProfileIds.has(id));
+            throw new Error(
+                `Could not find profiles for the following denied writer identifiers: ${missingIds.join(
+                    ', '
+                )}`
+            );
+        }
+        terms.deniedWriters = profiles.map(p => p.profileId);
+    }
+
     const existing = convertQueryResultToPropertiesObjectArray<{
         terms: FlatDbTermsType;
     }>(
@@ -146,22 +167,18 @@ export const consentToContract = async (
         .set('transaction += $params')
         .run();
 
-    // Process Auto-Boosts
     const autoBoosts = await ConsentFlowContract.findRelationships({
         alias: 'autoReceive',
         where: { source: { id: contract.id } },
     });
 
     if (autoBoosts.length > 0) {
-        // For each auto-boost, issue it to the consenter
         for (const boost of autoBoosts) {
             try {
-                // Get the signing authority information from the relationship
                 const signingAuthorityEndpoint =
                     boost.relationship?.signingAuthorityEndpoint || 'default';
                 const signingAuthorityName = boost.relationship?.signingAuthorityName || 'default';
 
-                // Get the contract owner's signing authority
                 const contractOwnerSigningAuthority = await getSigningAuthorityForUserByName(
                     contractOwner,
                     signingAuthorityEndpoint,
@@ -175,10 +192,8 @@ export const consentToContract = async (
                     continue;
                 }
 
-                // Get boost instance
                 const boostCredential = JSON.parse(boost.target.boost) as UnsignedVC | VC;
 
-                // Set the issuer and subject
                 boostCredential.issuer = { id: contractOwnerSigningAuthority.relationship.did };
 
                 boostCredential.boostId = getBoostUri(boost.target.id, domain);
@@ -194,7 +209,6 @@ export const consentToContract = async (
                     boostCredential.credentialSubject.id = getDidWeb(domain, consenter.profileId);
                 }
 
-                // Issue the credential using contract owner's signing authority
                 const vc = await issueCredentialWithSigningAuthority(
                     contractOwner,
                     boostCredential,
@@ -203,14 +217,12 @@ export const consentToContract = async (
                     false
                 );
 
-                // Create transaction to record the boost issuance
                 const boostTransaction = {
                     id: uuid(),
                     action: 'write',
                     date: new Date().toISOString(),
                 } as const satisfies ConsentFlowTransaction;
 
-                // Create the transaction in the database
                 const termsResult = await new QueryBuilder()
                     .match({
                         identifier: 'terms',
@@ -231,7 +243,9 @@ export const consentToContract = async (
                     .return('terms')
                     .run();
 
-                // Send the boost to the consenter
+                const updatedTerms = termsResult.records[0]?.get('terms')
+                    .properties as FlatDbTermsType;
+
                 await sendBoost({
                     from: contractOwner,
                     to: consenter,
@@ -240,7 +254,7 @@ export const consentToContract = async (
                     domain,
                     skipNotification: true,
                     autoAcceptCredential: false,
-                    contractTerms: inflateObject(termsResult.records[0]?.get('terms').properties),
+                    contractTerms: inflateObject(updatedTerms),
                 });
             } catch (error) {
                 console.error('Error processing auto-boost:', error);

@@ -549,3 +549,21 @@ export const getAutoBoostsForContract = async (
 
     return results.records.map(record => getBoostUri(record.get('boost').properties.id, domain));
 };
+
+export const getWritersForContract = async (contract: DbContractType): Promise<ProfileType[]> => {
+    const results = await new QueryBuilder()
+        .match({
+            related: [
+                { identifier: 'contract', model: ConsentFlowContract, where: { id: contract.id } },
+                `-[:${ConsentFlowContract.getRelationshipByAlias('createdBy').name}|:${ConsentFlowContract.getRelationshipByAlias('canWrite').name
+                }]-`,
+                { identifier: 'profile', model: Profile },
+            ],
+        })
+        .return('profile')
+        .run();
+
+    return results.records.map(record =>
+        inflateObject<ProfileType>(record.get('profile').properties)
+    );
+};

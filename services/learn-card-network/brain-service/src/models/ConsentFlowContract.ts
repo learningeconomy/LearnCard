@@ -13,6 +13,7 @@ export type ConsentFlowRelationships = {
         { signingAuthorityEndpoint: string; signingAuthorityName: string },
         { signingAuthorityEndpoint: string; signingAuthorityName: string }
     >;
+    canWrite: ModelRelatedNodesI<typeof Profile, ProfileInstance>;
 };
 
 export type ConsentFlowInstance = NeogmaInstance<FlatDbContractType, ConsentFlowRelationships>;
@@ -51,6 +52,7 @@ export const ConsentFlowContract = ModelFactory<FlatDbContractType, ConsentFlowR
                     },
                 },
             },
+            canWrite: { model: Profile, direction: 'out', name: 'CAN_WRITE' },
         },
         primaryKeyField: 'id',
     },
