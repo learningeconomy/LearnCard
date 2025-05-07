@@ -1,5 +1,6 @@
 import { ProfileInstance } from '@models';
 import { ProfileType } from 'types/profile';
+import { getProfileByDid } from '@accesslayer/profile/read';
 
 /** Generates a did:web for a user given the domain of the app */
 export const getDidWeb = (domain: string, profileId: string): string =>
@@ -38,4 +39,32 @@ export const getProfileIdFromDid = (did: string): string | undefined => {
 
     // The profileId is the 5th part (index 4)
     return parts[4];
+};
+
+/**
+ * Converts a string identifier (profile ID, did:web, did:key) to a profile ID.
+ * @param identifier - The string identifier to resolve.
+ * @param domain - The domain, used for resolving did:web.
+ * @returns The resolved profile ID, or null if resolution fails (e.g., did:key not found).
+ */
+export const getProfileIdFromString = async (
+    identifier: string,
+    domain: string
+): Promise<string | null> => {
+    if (!identifier) return null;
+
+    if (identifier.startsWith('did:')) {
+        const didWebPrefix = `did:web:${domain}:`;
+        if (identifier.startsWith(didWebPrefix)) {
+            return getProfileIdFromDid(identifier) ?? null;
+        } else if (identifier.startsWith('did:key:')) {
+            const profile = await getProfileByDid(identifier);
+            return profile?.profileId ?? null;
+        } else {
+            console.warn(`Unsupported DID format encountered: ${identifier}`);
+            return null;
+        }
+    } else {
+        return identifier;
+    }
 };
