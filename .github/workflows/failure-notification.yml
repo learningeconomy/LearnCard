@@ -1,0 +1,31 @@
+name: Global Main Branch Failure Notification
+
+on:
+  workflow_run:
+    workflows: ["*"] # Monitor all workflows
+    types:
+      - completed # Trigger when they complete
+
+jobs:
+  notify_on_failure:
+    runs-on: ubuntu-latest
+    # Only run on main branch actions that fail:
+    if: >-
+      (github.event.workflow_run.conclusion == 'failure' || github.event.workflow_run.conclusion == 'timed_out') &&
+      github.event.workflow_run.head_branch == 'main'
+    steps:
+      - name: Slack Notification
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_USERNAME: GitHub Actions CI
+          SLACK_TITLE: 'Main Branch Workflow Failed: ${{ github.event.workflow_run.name }}'
+          SLACK_MESSAGE: |
+            Workflow *${{ github.event.workflow_run.name }}* (run #${{ github.event.workflow_run.run_number }}) on branch `main` concluded with *${{ github.event.workflow_run.conclusion }}*.
+            Triggering event: `${{ github.event.workflow_run.event }}`
+            Head branch: `${{ github.event.workflow_run.head_branch }}`
+            Commit: `${{ github.event.workflow_run.head_commit.message }}` (`${{ github.event.workflow_run.head_sha }}`) by `${{ github.event.sender.login }}`
+            Actor: `${{ github.event.workflow_run.actor.login }}`
+            Check the run: ${{ github.event.workflow_run.html_url }}
+          SLACK_COLOR: 'danger'
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_DEPLOY_ERRORS_URL }} # Ensure this secret is set in your repository
+          MSG_MINIMAL: 'true'
