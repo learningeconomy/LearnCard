@@ -106,4 +106,4 @@ jobs:
 
             - name: Generate new Open API SDK clients for brain service
               if: contains(env.AFFECTED, 'network-brain-service')
-              uses: ./.github/workflows/open-api-generator.yml@v1
+              uses: ./.github/workflows/open-api-generator.yml
