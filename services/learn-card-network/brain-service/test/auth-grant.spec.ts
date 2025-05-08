@@ -2,6 +2,7 @@ import { getClient, getUser } from './helpers/getClient';
 import { Profile, AuthGrant } from '@models';
 import { AuthGrantStatusValidator, AUTH_GRANT_AUDIENCE_DOMAIN_PREFIX } from '@learncard/types';
 import { isAuthGrantChallengeValidForDID } from '@accesslayer/auth-grant/read';
+import { AUTH_GRANT_READ_ONLY_SCOPE } from 'src/constants/auth-grant';
 
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;
@@ -278,6 +279,44 @@ describe('Auth Grants', () => {
             });
 
             expect((updatedAuthGrant as any).name).toEqual('test2');
+        });
+
+        it('should not allow you to update the scopes, challenge, id, createdAt, expiresAt, status of an auth grant', async () => {
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            const authGrantId = await userA.clients.fullAuth.authGrants.addAuthGrant({
+                name: 'test',
+            });
+
+            const invalidUpdates: any = {
+                scope: '*:*',
+                challenge: 'test',
+                id: 'test',
+                createdAt: 'test',
+                expiresAt: 'test',
+                status: 'revoked',
+            };
+
+            for (const key in invalidUpdates) {
+                await expect(
+                    userA.clients.fullAuth.authGrants.updateAuthGrant({
+                        id: authGrantId,
+                        updates: {
+                            [key]: invalidUpdates[key],
+                        },
+                    })
+                ).resolves.toBe(false);
+            }
+
+            const updatedAuthGrant = await userA.clients.fullAuth.authGrants.getAuthGrant({
+                id: authGrantId,
+            });
+
+            expect((updatedAuthGrant as any).scope).toEqual(AUTH_GRANT_READ_ONLY_SCOPE);
+            expect((updatedAuthGrant as any).challenge).not.toEqual('test');
+            expect((updatedAuthGrant as any).id).not.toEqual('test');
+            expect((updatedAuthGrant as any).createdAt).not.toEqual('test');
+            expect((updatedAuthGrant as any).expiresAt).not.toEqual('test');
+            expect((updatedAuthGrant as any).status).not.toEqual('revoked');
         });
 
         // it('should not allow you to update an auth grant for a scoped user profile', async () => {
