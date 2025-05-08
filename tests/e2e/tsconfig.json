@@ -1,8 +1,6 @@
 {
     "compilerOptions": {
-        "lib": [
-            "es2022"
-        ],
+        "lib": ["es2022", "dom"],
         "module": "esnext",
         "moduleResolution": "node",
         "resolveJsonModule": true,
@@ -26,11 +24,6 @@
         "skipLibCheck": true,
         "forceConsistentCasingInFileNames": true
     },
-    "include": [
-        "test"
-    ],
-    "exclude": [
-        "./dist/**/*",
-        "./node_modules/**/*"
-    ]
+    "include": ["tests/**/*"],
+    "exclude": ["./dist/**/*", "./node_modules/**/*"]
 }
