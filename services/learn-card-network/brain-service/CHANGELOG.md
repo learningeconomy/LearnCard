@@ -1,5 +1,37 @@
 # @learncard/network-brain-service
 
+## 3.3.27
+
+### Patch Changes
+
+-   [#656](https://github.com/learningeconomy/LearnCard/pull/656) [`d31b8d29085f8d766e7a6a40e086489685673a46`](https://github.com/learningeconomy/LearnCard/commit/d31b8d29085f8d766e7a6a40e086489685673a46) Thanks [@Custard7](https://github.com/Custard7)! - 🚑🚨 [LC-899] Fix: URIs in HTTP routes
+
+-   Updated dependencies [[`3a7e23f473c6ebeb9aa4ebebfca7938acde7b5ef`](https://github.com/learningeconomy/LearnCard/commit/3a7e23f473c6ebeb9aa4ebebfca7938acde7b5ef), [`3a7e23f473c6ebeb9aa4ebebfca7938acde7b5ef`](https://github.com/learningeconomy/LearnCard/commit/3a7e23f473c6ebeb9aa4ebebfca7938acde7b5ef), [`3a7e23f473c6ebeb9aa4ebebfca7938acde7b5ef`](https://github.com/learningeconomy/LearnCard/commit/3a7e23f473c6ebeb9aa4ebebfca7938acde7b5ef)]:
+    -   @learncard/expiration-plugin@1.1.39
+    -   @learncard/didkit-plugin@1.5.10
+    -   @learncard/types@5.6.11
+    -   @learncard/learn-card-plugin@1.1.38
+    -   @learncard/vc-plugin@1.1.39
+    -   @learncard/core@9.3.24
+    -   @learncard/helpers@1.1.13
+    -   @learncard/did-web-plugin@1.0.61
+    -   @learncard/didkey-plugin@1.0.35
+    -   @learncard/encryption-plugin@1.0.9
+    -   @learncard/vc-templates-plugin@1.0.45
+    -   @learncard/crypto-plugin@1.0.35
+
+## 3.3.26
+
+### Patch Changes
+
+-   [#654](https://github.com/learningeconomy/LearnCard/pull/654) [`274a65c52dad4d49df525d79c4f4a9059ae20077`](https://github.com/learningeconomy/LearnCard/commit/274a65c52dad4d49df525d79c4f4a9059ae20077) Thanks [@Custard7](https://github.com/Custard7)! - Fix: Update Get Boost and Write to Contract via Signing Authority to use query params instead
+
+## 3.3.25
+
+### Patch Changes
+
+-   [#652](https://github.com/learningeconomy/LearnCard/pull/652) [`fb6ffee657f9e517290967e5a0268bbe49eeccb7`](https://github.com/learningeconomy/LearnCard/commit/fb6ffee657f9e517290967e5a0268bbe49eeccb7) Thanks [@Custard7](https://github.com/Custard7)! - 🚑🚨 Fix: Decoded HTTP Params for URIs
+
 ## 3.3.24
 
 ### Patch Changes

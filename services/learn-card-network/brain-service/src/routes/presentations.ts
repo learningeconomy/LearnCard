@@ -54,7 +54,7 @@ export const presentationsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/presentation/accept/{uri}',
+                path: '/presentation/accept',
                 tags: ['Presentations'],
                 summary: 'Accept a Presentation',
                 description: 'This endpoint accepts a presentation',
@@ -159,7 +159,7 @@ export const presentationsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'DELETE',
-                path: '/presentation/{uri}',
+                path: '/presentation',
                 tags: ['Presentations'],
                 summary: 'Delete a presentation',
                 description: 'This endpoint deletes a presentation',
