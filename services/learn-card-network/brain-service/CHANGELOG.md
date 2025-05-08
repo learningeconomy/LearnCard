@@ -1,5 +1,13 @@
 # @learncard/network-brain-service
 
+## 3.3.28
+
+### Patch Changes
+
+-   [#659](https://github.com/learningeconomy/LearnCard/pull/659) [`4937d038f6201b3c12800bef6eb6315344ddeafd`](https://github.com/learningeconomy/LearnCard/commit/4937d038f6201b3c12800bef6eb6315344ddeafd) Thanks [@Custard7](https://github.com/Custard7)! - 🚑🚨 [LC-899] Fix: URIs in HTTP routes
+
+-   [#660](https://github.com/learningeconomy/LearnCard/pull/660) [`9d0a9b5dccbd2eadb9430972bfac09e0911e816b`](https://github.com/learningeconomy/LearnCard/commit/9d0a9b5dccbd2eadb9430972bfac09e0911e816b) Thanks [@Custard7](https://github.com/Custard7)! - Iteration: Restrict Update Auth Grants to Name/Description Only
+
 ## 3.3.27
 
 ### Patch Changes
