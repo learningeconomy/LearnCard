@@ -1,5 +1,17 @@
 # learn-card-types
 
+## 5.6.11
+
+### Patch Changes
+
+-   [#606](https://github.com/learningeconomy/LearnCard/pull/606) [`3a7e23f473c6ebeb9aa4ebebfca7938acde7b5ef`](https://github.com/learningeconomy/LearnCard/commit/3a7e23f473c6ebeb9aa4ebebfca7938acde7b5ef) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add support for VC 2.0 Data Model
+
+## 5.6.10
+
+### Patch Changes
+
+-   [`cbc84cc27d1eaf8b6830f06d86d354cb78d8d548`](https://github.com/learningeconomy/LearnCard/commit/cbc84cc27d1eaf8b6830f06d86d354cb78d8d548) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Remove NX caching in CI to ensure latest builds
+
 ## 5.6.9
 
 ### Patch Changes

@@ -1,118 +1,109 @@
 name: Deploy
 
 on:
-  push:
-    branches:
-      - main
+    push:
+        branches:
+            - main
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
 env:
-  CI: true
-  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  AWS_DEFAULT_REGION: us-east-1
-  SEED: ${{ secrets.SEED }}
-  LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED }}
-  LEARN_CLOUD_MONGO_URI: ${{ secrets.LEARN_CLOUD_MONGO_URI }}
-  LEARN_CLOUD_MONGO_DB_NAME: ${{ secrets.LEARN_CLOUD_MONGO_DB_NAME }}
-  DOMAIN_NAME: ${{ secrets. DOMAIN_NAME }}
-  NOTIFICATIONS_SERVICE_WEBHOOK_URL: ${{ secrets.NOTIFICATIONS_SERVICE_WEBHOOK_URL }}
-  NEO4J_URI: ${{ secrets.NEO4J_URI }}
-  NEO4J_USERNAME: ${{ secrets.NEO4J_USERNAME }}
-  NEO4J_PASSWORD: ${{ secrets.NEO4J_PASSWORD }}
-  DD_API_KEY: ${{ secrets.DD_API_KEY }}
-  DD_ENV: ${{ secrets.DD_ENV }}
-  DD_SERVICE: ${{ secrets.DD_SERVICE }}
-  DD_SITE: ${{ secrets.DD_SITE }}
-  DD_VERSION: ${{ secrets.DD_VERSION }}
-  SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-  SENTRY_ENV: ${{ secrets.SENTRY_ENV }}
-  LEARN_CLOUD_SENTRY_ENV: ${{ secrets.LEARN_CLOUD_SENTRY_ENV }}
-  SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-  SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-  SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
-  SERVER_URL: ${{ secrets.SERVER_URL }}
-  XAPI_ENDPOINT: ${{ secrets.XAPI_ENDPOINT }}
-  XAPI_USERNAME: ${{ secrets.XAPI_USERNAME }}
-  XAPI_PASSWORD: ${{ secrets.XAPI_PASSWORD }}
-  JWT_SIGNING_KEY: ${{ secrets.JWT_SIGNING_KEY }}
-  RSA_PUBLIC_KEY: ${{ secrets.RSA_PUBLIC_KEY }}
-  RSA_PRIVATE_KEY: ${{ secrets.RSA_PRIVATE_KEY }}
+    CI: true
+    AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+    AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    AWS_DEFAULT_REGION: us-east-1
+    SEED: ${{ secrets.SEED }}
+    LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED }}
+    LEARN_CLOUD_MONGO_URI: ${{ secrets.LEARN_CLOUD_MONGO_URI }}
+    LEARN_CLOUD_MONGO_DB_NAME: ${{ secrets.LEARN_CLOUD_MONGO_DB_NAME }}
+    DOMAIN_NAME: ${{ secrets. DOMAIN_NAME }}
+    NOTIFICATIONS_SERVICE_WEBHOOK_URL: ${{ secrets.NOTIFICATIONS_SERVICE_WEBHOOK_URL }}
+    NEO4J_URI: ${{ secrets.NEO4J_URI }}
+    NEO4J_USERNAME: ${{ secrets.NEO4J_USERNAME }}
+    NEO4J_PASSWORD: ${{ secrets.NEO4J_PASSWORD }}
+    DD_API_KEY: ${{ secrets.DD_API_KEY }}
+    DD_ENV: ${{ secrets.DD_ENV }}
+    DD_SERVICE: ${{ secrets.DD_SERVICE }}
+    DD_SITE: ${{ secrets.DD_SITE }}
+    DD_VERSION: ${{ secrets.DD_VERSION }}
+    SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+    SENTRY_ENV: ${{ secrets.SENTRY_ENV }}
+    LEARN_CLOUD_SENTRY_ENV: ${{ secrets.LEARN_CLOUD_SENTRY_ENV }}
+    SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+    SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+    SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+    SERVER_URL: ${{ secrets.SERVER_URL }}
+    XAPI_ENDPOINT: ${{ secrets.XAPI_ENDPOINT }}
+    XAPI_USERNAME: ${{ secrets.XAPI_USERNAME }}
+    XAPI_PASSWORD: ${{ secrets.XAPI_PASSWORD }}
+    JWT_SIGNING_KEY: ${{ secrets.JWT_SIGNING_KEY }}
+    RSA_PUBLIC_KEY: ${{ secrets.RSA_PUBLIC_KEY }}
+    RSA_PRIVATE_KEY: ${{ secrets.RSA_PRIVATE_KEY }}
 
 jobs:
-  deploy:
-    name: Deploy
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v3
-        with:
-          ref: ${{ github.event.pull_request.head.ref }}
-          fetch-depth: 0
+    deploy:
+        name: Deploy
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout Repo
+              uses: actions/checkout@v3
+              with:
+                  ref: ${{ github.event.pull_request.head.ref }}
+                  fetch-depth: 0
 
-      - name: Fetch main for NX comparison
-        run: |
-          git fetch --no-tags --prune --depth=5 origin main
+            - name: Fetch main for NX comparison
+              run: |
+                  git fetch --no-tags --prune --depth=5 origin main
 
-      - name: Setup Node.js 20.10
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20.10.0
+            - name: Setup Node.js 20.10
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 20.10.0
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v2
-        id: pnpm-install
-        with:
-          version: 9
-          run_install: false
+            - name: Install pnpm
+              uses: pnpm/action-setup@v2
+              id: pnpm-install
+              with:
+                  version: 9
+                  run_install: false
 
-      - name: Get pnpm store directory
-        id: pnpm-cache
-        run: echo "pnpm_cache_dir=$(pnpm store path)" >> $GITHUB_OUTPUT
+            - name: Get pnpm store directory
+              id: pnpm-cache
+              run: echo "pnpm_cache_dir=$(pnpm store path)" >> $GITHUB_OUTPUT
 
-      - name: Setup pnpm cache
-        uses: actions/cache@v3
-        with:
-          path: ${{ steps.pnpm-cache.outputs.pnpm_cache_dir }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
+            - name: Setup pnpm cache
+              uses: actions/cache@v3
+              with:
+                  path: ${{ steps.pnpm-cache.outputs.pnpm_cache_dir }}
+                  key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+                  restore-keys: |
+                      ${{ runner.os }}-pnpm-store-
 
-      - name: Restore nx cache
-        id: restore-nx-cache
-        uses: actions/cache/restore@v3
-        with:
-          path: .nx-cache
-          key: ${{ runner.os }}-nx-cache-${{ github.workflow }}
+            - name: Install dependencies
+              run: pnpm install --no-frozen-lockfile
 
-      - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+            - name: Run tests
+              uses: nick-fields/retry@v2
+              with:
+                  timeout_minutes: 10
+                  max_attempts: 3
+                  command: pnpm exec nx affected --target=test --base=HEAD~1 --head=HEAD
+              env:
+                  SEED: ${{ secrets.SEED }}
+                  LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED }}
 
-      - name: Run tests
-        uses: nick-fields/retry@v2
-        with:
-          timeout_minutes: 10
-          max_attempts: 3
-          command: pnpm exec nx affected --target=test --base=HEAD~1 --head=HEAD
-        env:
-          SEED: ${{ secrets.SEED }}
-          LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED }}
+            - name: Get Affected List
+              id: affected
+              run: echo "AFFECTED=$(pnpm exec nx print-affected --base=HEAD~1 --head=HEAD --select=projects)" >> $GITHUB_ENV
 
-      - name: Get Affected List
-        id: affected
-        run: echo "AFFECTED=$(pnpm exec nx print-affected --base=HEAD~1 --head=HEAD --select=projects)" >> $GITHUB_ENV
+            - name: Deploy Brain Service Lambda
+              if: contains(env.AFFECTED, 'network-brain-service')
+              run: pnpm exec nx serverless-deploy network-brain-service --stage production
 
-      - name: Deploy Brain Service Lambda
-        if: contains(env.AFFECTED, 'network-brain-service')
-        run: pnpm exec nx serverless-deploy network-brain-service --stage production
+            - name: Deploy LearnCloud Lambda
+              if: contains(env.AFFECTED, 'learn-cloud-service')
+              run: pnpm exec nx serverless-deploy learn-cloud-service --stage production
 
-      - name: Deploy LearnCloud Lambda
-        if: contains(env.AFFECTED, 'learn-cloud-service')
-        run: pnpm exec nx serverless-deploy learn-cloud-service --stage production
-
-      - name: Save nx cache
-        uses: actions/cache/save@v3
-        with:
-          path: .nx-cache
-          key: ${{ steps.restore-nx-cache.outputs.cache-primary-key }}
+            - name: Generate new Open API SDK clients for brain service
+              if: contains(env.AFFECTED, 'network-brain-service')
+              uses: ./.github/workflows/open-api-generator.yml

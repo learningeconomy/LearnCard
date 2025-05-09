@@ -1,5 +1,76 @@
 # @learncard/snap-chapi-example
 
+## 1.0.226
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/react@2.7.82
+
+## 1.0.225
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.24
+    -   @learncard/helpers@1.1.13
+    -   @learncard/react@2.7.81
+    -   @learncard/meta-mask-snap@1.0.75
+
+## 1.0.224
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/react@2.7.80
+
+## 1.0.223
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/react@2.7.79
+
+## 1.0.222
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/react@2.7.78
+
+## 1.0.221
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/react@2.7.77
+
+## 1.0.220
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/react@2.7.76
+
+## 1.0.219
+
+### Patch Changes
+
+-   [`cbc84cc27d1eaf8b6830f06d86d354cb78d8d548`](https://github.com/learningeconomy/LearnCard/commit/cbc84cc27d1eaf8b6830f06d86d354cb78d8d548) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Remove NX caching in CI to ensure latest builds
+
+-   Updated dependencies [[`cbc84cc27d1eaf8b6830f06d86d354cb78d8d548`](https://github.com/learningeconomy/LearnCard/commit/cbc84cc27d1eaf8b6830f06d86d354cb78d8d548)]:
+    -   @learncard/core@9.3.23
+    -   @learncard/helpers@1.1.12
+    -   @learncard/react@2.7.75
+    -   @learncard/meta-mask-snap@1.0.74
+
+## 1.0.218
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/react@2.7.74
+
 ## 1.0.217
 
 ### Patch Changes

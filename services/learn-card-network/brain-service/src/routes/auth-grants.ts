@@ -1,7 +1,7 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
-import { t, scopedProfileRoute } from '@routes';
+import { t, profileRoute } from '@routes';
 import { createAuthGrant } from '@accesslayer/auth-grant/create';
 import {
     getAuthGrantById,
@@ -21,33 +21,33 @@ import { v4 as uuid } from 'uuid';
 import { AUTH_GRANT_READ_ONLY_SCOPE } from 'src/constants/auth-grant';
 
 export const authGrantsRouter = t.router({
-    addAuthGrant: scopedProfileRoute
+    addAuthGrant: profileRoute
         .meta({
             openapi: {
                 protect: true,
                 method: 'POST',
                 path: '/auth-grant/create',
-                tags: ['AuthGrants', 'authGrants:write'],
-                summary: 'Add AuthGrant to your service profile',
-                description: 'Add AuthGrant to your service profile',
+                tags: ['AuthGrants'],
+                summary: 'Add AuthGrant to your profile',
+                description: 'Add AuthGrant to your profile',
             },
             requiredScope: 'authGrants:write',
         })
-        .input(AuthGrantValidator.partial().omit({ id: true }))
+        .input(
+            AuthGrantValidator.partial().omit({
+                id: true,
+                status: true,
+                createdAt: true,
+                challenge: true,
+            })
+        )
         .output(z.string())
         .mutation(async ({ input, ctx }) => {
-            if (!ctx.user.profile.isServiceProfile) {
-                throw new TRPCError({
-                    code: 'UNAUTHORIZED',
-                    message: 'You must be a service profile to add an AuthGrant',
-                });
-            }
-
             try {
                 const authGrant = await createAuthGrant({
                     scope: AUTH_GRANT_READ_ONLY_SCOPE,
-                    status: AuthGrantStatusValidator.Values.active,
                     ...input,
+                    status: AuthGrantStatusValidator.Values.active,
                     createdAt: new Date().toISOString(),
                     challenge: `${AUTH_GRANT_AUDIENCE_DOMAIN_PREFIX}${uuid()}`,
                 });
@@ -63,13 +63,13 @@ export const authGrantsRouter = t.router({
             }
         }),
 
-    getAuthGrant: scopedProfileRoute
+    getAuthGrant: profileRoute
         .meta({
             openapi: {
                 protect: true,
                 method: 'GET',
                 path: '/auth-grant/{id}',
-                tags: ['AuthGrants', 'authGrants:read'],
+                tags: ['AuthGrants'],
                 summary: 'Get AuthGrant',
                 description: 'Get AuthGrant',
             },
@@ -78,13 +78,6 @@ export const authGrantsRouter = t.router({
         .input(z.object({ id: z.string() }))
         .output(AuthGrantValidator.partial().optional())
         .query(async ({ input, ctx }) => {
-            if (!ctx.user.profile.isServiceProfile) {
-                throw new TRPCError({
-                    code: 'UNAUTHORIZED',
-                    message: 'You must be a service profile to get an AuthGrant',
-                });
-            }
-
             if (!(await isAuthGrantAssociatedWithProfile(input.id, ctx.user.profile.profileId))) {
                 throw new TRPCError({
                     code: 'UNAUTHORIZED',
@@ -101,13 +94,13 @@ export const authGrantsRouter = t.router({
             return doc;
         }),
 
-    getAuthGrants: scopedProfileRoute
+    getAuthGrants: profileRoute
         .meta({
             openapi: {
                 protect: true,
                 method: 'POST',
                 path: '/profile/auth-grants',
-                tags: ['AuthGrants', 'authGrants:read'],
+                tags: ['AuthGrants'],
                 summary: 'Get My AuthGrants',
                 description: 'Get My AuthGrants',
             },
@@ -124,13 +117,6 @@ export const authGrantsRouter = t.router({
         )
         .output(AuthGrantValidator.array())
         .query(async ({ ctx, input }) => {
-            if (!ctx.user.profile.isServiceProfile) {
-                throw new TRPCError({
-                    code: 'UNAUTHORIZED',
-                    message: 'You must be a service profile to get AuthGrants',
-                });
-            }
-
             return getAuthGrantsForProfile(ctx.user.profile, {
                 limit: input?.limit || 100,
                 cursor: input?.cursor,
@@ -138,32 +124,47 @@ export const authGrantsRouter = t.router({
             });
         }),
 
-    updateAuthGrant: scopedProfileRoute
+    updateAuthGrant: profileRoute
         .meta({
             openapi: {
                 protect: true,
                 method: 'POST',
                 path: '/auth-grant/update/{id}',
-                tags: ['AuthGrants', 'authGrants:write'],
+                tags: ['AuthGrants'],
                 summary: 'Update AuthGrant',
                 description: 'Update AuthGrant',
             },
             requiredScope: 'authGrants:write',
         })
-        .input(z.object({ id: z.string(), updates: AuthGrantValidator.partial() }))
+        .input(
+            z.object({
+                id: z.string(),
+                updates: AuthGrantValidator.partial().omit({
+                    id: true,
+                    scope: true,
+                    status: true,
+                    createdAt: true,
+                    expiresAt: true,
+                    challenge: true,
+                }),
+            })
+        )
         .output(z.boolean())
         .mutation(async ({ input, ctx }) => {
-            if (!ctx.user.profile.isServiceProfile) {
-                throw new TRPCError({
-                    code: 'UNAUTHORIZED',
-                    message: 'You must be a service profile to update an AuthGrant',
-                });
-            }
-
             if (!(await isAuthGrantAssociatedWithProfile(input.id, ctx.user.profile.profileId))) {
                 throw new TRPCError({
                     code: 'UNAUTHORIZED',
                     message: 'This AuthGrant is not associated with you!',
+                });
+            }
+
+            // Extra check to reject sensitive, invalid updates
+            const invalidUpdates = ['id', 'scope', 'status', 'createdAt', 'expiresAt', 'challenge'];
+            if (invalidUpdates.some(key => input.updates.hasOwnProperty(key))) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message:
+                        'Cannot update id, scope, status, createdAt, expiresAt, or challenge of an AuthGrant',
                 });
             }
 
@@ -178,13 +179,13 @@ export const authGrantsRouter = t.router({
 
             return updateAuthGrant(authGrant, input.updates);
         }),
-    revokeAuthGrant: scopedProfileRoute
+    revokeAuthGrant: profileRoute
         .meta({
             openapi: {
                 protect: true,
                 method: 'POST',
                 path: '/auth-grant/{id}/revoke',
-                tags: ['AuthGrants', 'authGrants:write'],
+                tags: ['AuthGrants'],
                 summary: 'Revoke AuthGrant',
                 description: 'Revoke AuthGrant',
             },
@@ -193,13 +194,6 @@ export const authGrantsRouter = t.router({
         .input(z.object({ id: z.string() }))
         .output(z.boolean())
         .mutation(async ({ input, ctx }) => {
-            if (!ctx.user.profile.isServiceProfile) {
-                throw new TRPCError({
-                    code: 'UNAUTHORIZED',
-                    message: 'You must be a service profile to revoke an AuthGrant',
-                });
-            }
-
             if (!(await isAuthGrantAssociatedWithProfile(input.id, ctx.user.profile.profileId))) {
                 throw new TRPCError({
                     code: 'UNAUTHORIZED',
@@ -220,13 +214,13 @@ export const authGrantsRouter = t.router({
 
             return true;
         }),
-    deleteAuthGrant: scopedProfileRoute
+    deleteAuthGrant: profileRoute
         .meta({
             openapi: {
                 protect: true,
                 method: 'DELETE',
                 path: '/auth-grant/{id}',
-                tags: ['AuthGrants', 'authGrants:delete'],
+                tags: ['AuthGrants'],
                 summary: 'Delete AuthGrant',
                 description: 'Delete AuthGrant',
             },
@@ -235,13 +229,6 @@ export const authGrantsRouter = t.router({
         .input(z.object({ id: z.string() }))
         .output(z.boolean())
         .mutation(async ({ input, ctx }) => {
-            if (!ctx.user.profile.isServiceProfile) {
-                throw new TRPCError({
-                    code: 'UNAUTHORIZED',
-                    message: 'You must be a service profile to delete an AuthGrant',
-                });
-            }
-
             if (!(await isAuthGrantAssociatedWithProfile(input.id, ctx.user.profile.profileId))) {
                 throw new TRPCError({
                     code: 'UNAUTHORIZED',

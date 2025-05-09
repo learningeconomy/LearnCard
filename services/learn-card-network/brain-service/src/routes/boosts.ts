@@ -18,6 +18,9 @@ import {
     LCNProfileQueryValidator,
     LCNProfileManagerQueryValidator,
     PaginatedLCNProfileManagersValidator,
+    UnsignedVC,
+    JWE,
+    VC,
 } from '@learncard/types';
 
 import { t, profileRoute } from '@routes';
@@ -95,6 +98,7 @@ import { updateBoostPermissions } from '@accesslayer/boost/relationships/update'
 import { EMPTY_PERMISSIONS, QUERYABLE_PERMISSIONS } from 'src/constants/permissions';
 import { updateBoost } from '@accesslayer/boost/update';
 import { addClaimPermissionsForBoost } from '@accesslayer/role/relationships/create';
+import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
 
 export const boostsRouter = t.router({
     sendBoost: profileRoute
@@ -107,6 +111,7 @@ export const boostsRouter = t.router({
                 summary: 'Send a Boost',
                 description: 'This endpoint sends a boost to a profile',
             },
+            requiredScope: 'boosts:write',
         })
         .input(
             z.object({
@@ -180,6 +185,7 @@ export const boostsRouter = t.router({
                 summary: 'Creates a boost',
                 description: 'This route creates a boost',
             },
+            requiredScope: 'boosts:write',
         })
         .input(
             ConsumerBoostValidator.partial()
@@ -211,11 +217,12 @@ export const boostsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/boost/create/child/{parentUri}',
+                path: '/boost/create/child',
                 tags: ['Boosts'],
                 summary: 'Creates a boost',
                 description: 'This route creates a boost',
             },
+            requiredScope: 'boosts:write',
         })
         .input(
             z.object({
@@ -273,11 +280,12 @@ export const boostsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'GET',
-                path: '/boost/{uri}',
+                path: '/boost',
                 tags: ['Boosts'],
                 summary: 'Get boost',
                 description: 'This endpoint gets metadata about a boost',
             },
+            requiredScope: 'boosts:read',
         })
         .input(z.object({ uri: z.string() }))
         .output(
@@ -289,7 +297,8 @@ export const boostsRouter = t.router({
         .query(async ({ ctx, input }) => {
             const { uri } = input;
 
-            const boost = await getBoostByUriWithDefaultClaimPermissions(uri);
+            const decodedUri = decodeURIComponent(uri);
+            const boost = await getBoostByUriWithDefaultClaimPermissions(decodedUri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
@@ -303,13 +312,14 @@ export const boostsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/boost',
+                path: '/boost/all',
                 tags: ['Boosts'],
                 summary: 'Get boosts',
                 deprecated: true,
                 description:
                     "This endpoint gets the current user's boosts.\nWarning! This route is deprecated and currently has a hard limit of returning only the first 50 boosts. Please use getPaginatedBoosts instead",
             },
+            requiredScope: 'boosts:read',
         })
         .input(z.object({ query: BoostQueryValidator.optional() }).default({}))
         .output(BoostValidator.omit({ id: true, boost: true }).extend({ uri: z.string() }).array())
@@ -335,6 +345,7 @@ export const boostsRouter = t.router({
                 summary: 'Count managed boosts',
                 description: "This endpoint counts the current user's managed boosts.",
             },
+            requiredScope: 'boosts:read',
         })
         .input(z.object({ query: BoostQueryValidator.optional() }).default({}))
         .output(z.number())
@@ -357,6 +368,7 @@ export const boostsRouter = t.router({
                 summary: 'Get boosts',
                 description: "This endpoint gets the current user's boosts",
             },
+            requiredScope: 'boosts:read',
         })
         .input(
             PaginationOptionsValidator.extend({
@@ -392,13 +404,14 @@ export const boostsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'GET',
-                path: '/boost/recipients/{uri}',
+                path: '/boost/recipients',
                 tags: ['Boosts'],
                 summary: 'Get boost recipients',
                 deprecated: true,
                 description:
                     'This endpoint gets the recipients of a particular boost.\nWarning! This route is deprecated and currently has a hard limit of returning only the first 50 boosts. Please use getPaginatedBoostRecipients instead',
             },
+            requiredScope: 'boosts:read',
         })
         .input(
             z.object({
@@ -413,7 +426,8 @@ export const boostsRouter = t.router({
             const { domain } = ctx;
             const { uri, limit, skip, includeUnacceptedBoosts } = input;
 
-            const boost = await getBoostByUri(uri);
+            const decodedUri = decodeURIComponent(uri);
+            const boost = await getBoostByUri(decodedUri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
@@ -431,11 +445,12 @@ export const boostsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/boost/recipients/paginated/{uri}',
+                path: '/boost/recipients/paginated',
                 tags: ['Boosts'],
                 summary: 'Get boost recipients',
                 description: 'This endpoint gets the recipients of a particular boost',
             },
+            requiredScope: 'boosts:read',
         })
         .input(
             PaginationOptionsValidator.extend({
@@ -450,7 +465,8 @@ export const boostsRouter = t.router({
             const { domain } = ctx;
             const { uri, limit, cursor, includeUnacceptedBoosts, query } = input;
 
-            const boost = await getBoostByUri(uri);
+            const decodedUri = decodeURIComponent(uri);
+            const boost = await getBoostByUri(decodedUri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
@@ -477,18 +493,20 @@ export const boostsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'GET',
-                path: '/boost/recipients/{uri}/count',
+                path: '/boost/recipients/count',
                 tags: ['Boosts'],
                 summary: 'Get boost recipients count',
                 description: 'This endpoint counts the recipients of a particular boost',
             },
+            requiredScope: 'boosts:read',
         })
         .input(z.object({ uri: z.string(), includeUnacceptedBoosts: z.boolean().default(true) }))
         .output(z.number())
         .query(async ({ input }) => {
             const { uri, includeUnacceptedBoosts } = input;
 
-            const boost = await getBoostByUri(uri);
+            const decodedUri = decodeURIComponent(uri);
+            const boost = await getBoostByUri(decodedUri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
@@ -571,11 +589,12 @@ export const boostsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/boost/children-profile-managers/{uri}',
+                path: '/boost/children-profile-managers',
                 tags: ['Boosts', 'Profile Managers'],
                 summary: 'Get Profile Managers that are a child of a boost',
                 description: 'Get Profile Managers that are a child of a boost',
             },
+            requiredScope: 'boosts:read',
         })
         .input(
             PaginationOptionsValidator.extend({
@@ -588,7 +607,8 @@ export const boostsRouter = t.router({
         .query(async ({ input, ctx }) => {
             const { uri, limit, cursor, query } = input;
 
-            const boost = await getBoostByUri(uri);
+            const decodedUri = decodeURIComponent(uri);
+            const boost = await getBoostByUri(decodedUri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
@@ -615,11 +635,12 @@ export const boostsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/boost/children/{uri}',
+                path: '/boost/children',
                 tags: ['Boosts'],
                 summary: 'Get boost children',
                 description: 'This endpoint gets the children of a particular boost',
             },
+            requiredScope: 'boosts:read',
         })
         .input(
             PaginationOptionsValidator.extend({
@@ -633,7 +654,8 @@ export const boostsRouter = t.router({
         .query(async ({ input, ctx }) => {
             const { uri, limit, cursor, query, numberOfGenerations } = input;
 
-            const boost = await getBoostByUri(uri);
+            const decodedUri = decodeURIComponent(uri);
+            const boost = await getBoostByUri(decodedUri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
@@ -665,11 +687,12 @@ export const boostsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/boost/children/{uri}/count',
+                path: '/boost/children/count',
                 tags: ['Boosts'],
                 summary: 'Count boost children',
                 description: 'This endpoint counts the children of a particular boost',
             },
+            requiredScope: 'boosts:read',
         })
         .input(
             z.object({
@@ -682,7 +705,8 @@ export const boostsRouter = t.router({
         .query(async ({ input }) => {
             const { uri, query, numberOfGenerations } = input;
 
-            const boost = await getBoostByUri(uri);
+            const decodedUri = decodeURIComponent(uri);
+            const boost = await getBoostByUri(decodedUri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
@@ -694,11 +718,12 @@ export const boostsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/boost/siblings/{uri}',
+                path: '/boost/siblings',
                 tags: ['Boosts'],
                 summary: 'Get boost siblings',
                 description: 'This endpoint gets the siblings of a particular boost',
             },
+            requiredScope: 'boosts:read',
         })
         .input(
             PaginationOptionsValidator.extend({
@@ -711,7 +736,8 @@ export const boostsRouter = t.router({
         .query(async ({ input, ctx }) => {
             const { uri, limit, cursor, query } = input;
 
-            const boost = await getBoostByUri(uri);
+            const decodedUri = decodeURIComponent(uri);
+            const boost = await getBoostByUri(decodedUri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
@@ -738,11 +764,12 @@ export const boostsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/boost/siblings/{uri}/count',
+                path: '/boost/siblings/count',
                 tags: ['Boosts'],
                 summary: 'Count boost siblings',
                 description: 'This endpoint counts the siblings of a particular boost',
             },
+            requiredScope: 'boosts:read',
         })
         .input(
             z.object({
@@ -754,7 +781,8 @@ export const boostsRouter = t.router({
         .query(async ({ input }) => {
             const { uri, query } = input;
 
-            const boost = await getBoostByUri(uri);
+            const decodedUri = decodeURIComponent(uri);
+            const boost = await getBoostByUri(decodedUri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
@@ -766,12 +794,13 @@ export const boostsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/boost/family/{uri}',
+                path: '/boost/family',
                 tags: ['Boosts'],
                 summary: 'Get familial boosts',
                 description:
                     'This endpoint gets the parents, children, and siblings of a particular boost',
             },
+            requiredScope: 'boosts:read',
         })
         .input(
             PaginationOptionsValidator.extend({
@@ -795,7 +824,8 @@ export const boostsRouter = t.router({
                 includeExtendedFamily,
             } = input;
 
-            const boost = await getBoostByUri(uri);
+            const decodedUri = decodeURIComponent(uri);
+            const boost = await getBoostByUri(decodedUri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
@@ -829,12 +859,13 @@ export const boostsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/boost/family/{uri}/count',
+                path: '/boost/family/count',
                 tags: ['Boosts'],
                 summary: 'Count familial boosts',
                 description:
                     'This endpoint counts the parents, children, and siblings of a particular boost',
             },
+            requiredScope: 'boosts:read',
         })
         .input(
             z.object({
@@ -850,7 +881,8 @@ export const boostsRouter = t.router({
             const { uri, query, parentGenerations, childGenerations, includeExtendedFamily } =
                 input;
 
-            const boost = await getBoostByUri(uri);
+            const decodedUri = decodeURIComponent(uri);
+            const boost = await getBoostByUri(decodedUri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
@@ -867,11 +899,12 @@ export const boostsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/boost/parents/{uri}',
+                path: '/boost/parents',
                 tags: ['Boosts'],
                 summary: 'Get boost parents',
                 description: 'This endpoint gets the parents of a particular boost',
             },
+            requiredScope: 'boosts:read',
         })
         .input(
             PaginationOptionsValidator.extend({
@@ -885,7 +918,8 @@ export const boostsRouter = t.router({
         .query(async ({ input, ctx }) => {
             const { uri, limit, cursor, query, numberOfGenerations } = input;
 
-            const boost = await getBoostByUri(uri);
+            const decodedUri = decodeURIComponent(uri);
+            const boost = await getBoostByUri(decodedUri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
@@ -917,11 +951,12 @@ export const boostsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/boost/parents/{uri}/count',
+                path: '/boost/parents/count',
                 tags: ['Boosts'],
                 summary: 'Count boost parents',
                 description: 'This endpoint counts the parents of a particular boost',
             },
+            requiredScope: 'boosts:read',
         })
         .input(
             z.object({
@@ -934,7 +969,8 @@ export const boostsRouter = t.router({
         .query(async ({ input }) => {
             const { uri, query, numberOfGenerations } = input;
 
-            const boost = await getBoostByUri(uri);
+            const decodedUri = decodeURIComponent(uri);
+            const boost = await getBoostByUri(decodedUri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
@@ -946,11 +982,12 @@ export const boostsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/boost/{uri}',
+                path: '/boost',
                 tags: ['Boosts'],
                 summary: 'Update a boost',
                 description: 'This route updates a boost',
             },
+            requiredScope: 'boosts:write',
         })
         .input(
             z.object({
@@ -967,7 +1004,8 @@ export const boostsRouter = t.router({
             const { uri, updates } = input;
             const { name, type, category, status, credential, meta } = updates;
 
-            const boost = await getBoostByUri(uri);
+            const decodedUri = decodeURIComponent(uri);
+            const boost = await getBoostByUri(decodedUri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
@@ -1013,11 +1051,12 @@ export const boostsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/boost/admins/{uri}',
+                path: '/boost/admins',
                 tags: ['Boosts'],
                 summary: 'Get boost admins',
                 description: 'This route returns the admins for a boost',
             },
+            requiredScope: 'boosts:read',
         })
         .input(
             PaginationOptionsValidator.extend({
@@ -1030,7 +1069,8 @@ export const boostsRouter = t.router({
         .query(async ({ input, ctx }) => {
             const { uri, limit, cursor, includeSelf } = input;
 
-            const boost = await getBoostByUri(uri);
+            const decodedUri = decodeURIComponent(uri);
+            const boost = await getBoostByUri(decodedUri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
@@ -1059,11 +1099,12 @@ export const boostsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/boost/add-admin/{uri}',
+                path: '/boost/add-admin',
                 tags: ['Boosts'],
                 summary: 'Add a Boost admin',
                 description: 'This route adds a new admin for a boost',
             },
+            requiredScope: 'boosts:write',
         })
         .input(z.object({ uri: z.string(), profileId: z.string() }))
         .output(z.boolean())
@@ -1082,8 +1123,8 @@ export const boostsRouter = t.router({
                     message: 'Profile not found. Are you sure this person exists?',
                 });
             }
-
-            const boost = await getBoostByUri(uri);
+            const decodedUri = decodeURIComponent(uri);
+            const boost = await getBoostByUri(decodedUri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
@@ -1111,11 +1152,12 @@ export const boostsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/boost/remove-admin/{uri}',
+                path: '/boost/remove-admin',
                 tags: ['Boosts'],
                 summary: 'Remove a Boost admin',
                 description: 'This route removes an  admin from a boost',
             },
+            requiredScope: 'boosts:write',
         })
         .input(
             z.object({
@@ -1140,7 +1182,8 @@ export const boostsRouter = t.router({
                 });
             }
 
-            const boost = await getBoostByUri(uri);
+            const decodedUri = decodeURIComponent(uri);
+            const boost = await getBoostByUri(decodedUri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
@@ -1168,11 +1211,12 @@ export const boostsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'GET',
-                path: '/boost/permissions/{uri}',
+                path: '/boost/permissions',
                 tags: ['Boosts'],
                 summary: 'Get boost permissions',
                 description: 'This endpoint gets permission metadata about a boost',
             },
+            requiredScope: 'boosts:read',
         })
         .input(z.object({ uri: z.string() }))
         .output(BoostPermissionsValidator)
@@ -1181,7 +1225,8 @@ export const boostsRouter = t.router({
 
             const { uri } = input;
 
-            const boost = await getBoostByUri(uri);
+            const decodedUri = decodeURIComponent(uri);
+            const boost = await getBoostByUri(decodedUri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
@@ -1197,12 +1242,13 @@ export const boostsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'GET',
-                path: '/boost/permissions/{uri}/{profileId}',
+                path: '/boost/permissions/{profileId}',
                 tags: ['Boosts'],
                 summary: 'Get boost permissions for someone else',
                 description:
                     'This endpoint gets permission metadata about a boost for someone else',
             },
+            requiredScope: 'boosts:read',
         })
         .input(z.object({ uri: z.string(), profileId: z.string() }))
         .output(BoostPermissionsValidator)
@@ -1210,7 +1256,8 @@ export const boostsRouter = t.router({
             const { profile } = ctx.user;
             const { uri, profileId } = input;
 
-            const boost = await getBoostByUri(uri);
+            const decodedUri = decodeURIComponent(uri);
+            const boost = await getBoostByUri(decodedUri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
@@ -1242,12 +1289,13 @@ export const boostsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/boost/permissions/{uri}',
+                path: '/boost/permissions',
                 tags: ['Boosts'],
                 summary: 'Update boost permissions',
                 description:
                     'This endpoint updates permission metadata about a boost for the current user',
             },
+            requiredScope: 'boosts:write',
         })
         .input(
             z.object({
@@ -1260,7 +1308,8 @@ export const boostsRouter = t.router({
             const { profile } = ctx.user;
             const { uri, updates } = input;
 
-            const boost = await getBoostByUri(uri);
+            const decodedUri = decodeURIComponent(uri);
+            const boost = await getBoostByUri(decodedUri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
@@ -1317,12 +1366,13 @@ export const boostsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/boost/permissions/{uri}/{profileId}',
+                path: '/boost/permissions/{profileId}',
                 tags: ['Boosts'],
                 summary: "Update other profile's boost permissions",
                 description:
                     'This endpoint updates permission metadata about a boost for another user',
             },
+            requiredScope: 'boosts:write',
         })
         .input(
             z.object({
@@ -1336,7 +1386,8 @@ export const boostsRouter = t.router({
             const { profile } = ctx.user;
             const { uri, updates, profileId } = input;
 
-            const boost = await getBoostByUri(uri);
+            const decodedUri = decodeURIComponent(uri);
+            const boost = await getBoostByUri(decodedUri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
@@ -1404,11 +1455,12 @@ export const boostsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'DELETE',
-                path: '/boost/{uri}',
+                path: '/boost',
                 tags: ['Boosts'],
                 summary: 'Delete a boost',
                 description: 'This route deletes a boost',
             },
+            requiredScope: 'boosts:delete',
         })
         .input(z.object({ uri: z.string() }))
         .output(z.boolean())
@@ -1417,7 +1469,8 @@ export const boostsRouter = t.router({
 
             const { uri } = input;
 
-            const boost = await getBoostByUri(uri);
+            const decodedUri = decodeURIComponent(uri);
+            const boost = await getBoostByUri(decodedUri);
 
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
@@ -1455,6 +1508,7 @@ export const boostsRouter = t.router({
                 description:
                     'This route creates a challenge that an unknown profile can use to claim a boost.',
             },
+            requiredScope: 'boosts:write',
         })
         .input(BoostGenerateClaimLinkInput)
         .output(z.object({ boostUri: z.string(), challenge: z.string() }))
@@ -1497,11 +1551,12 @@ export const boostsRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'POST',
-                path: '/boost/{boostUri}/claim/{challenge}',
+                path: '/boost/claim',
                 tags: ['Boosts'],
                 summary: 'Claim a boost using a claim link',
                 description: 'Claims a boost using a claim link, including a challenge',
             },
+            requiredScope: 'boosts:write',
         })
         .input(z.object({ boostUri: z.string(), challenge: z.string() }))
         .output(z.string())
@@ -1575,6 +1630,7 @@ export const boostsRouter = t.router({
                 summary: 'Make Boost Parent',
                 description: 'This endpoint creates a parent/child relationship between two boosts',
             },
+            requiredScope: 'boosts:write',
         })
         .input(z.object({ parentUri: z.string(), childUri: z.string() }))
         .output(z.boolean())
@@ -1633,6 +1689,7 @@ export const boostsRouter = t.router({
                 summary: 'Remove Boost Parent',
                 description: 'This endpoint removes a parent/child relationship between two boosts',
             },
+            requiredScope: 'boosts:write',
         })
         .input(z.object({ parentUri: z.string(), childUri: z.string() }))
         .output(z.boolean())
@@ -1674,6 +1731,132 @@ export const boostsRouter = t.router({
             }
 
             return removeBoostAsParent(parentBoost, childBoost);
+        }),
+
+    sendBoostViaSigningAuthority: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/boost/send/via-signing-authority/{profileId}',
+                tags: ['Boosts'],
+                summary: 'Send a boost to a profile using a signing authority',
+                description:
+                    'Issues a boost VC to a recipient profile using a specified signing authority and sends it via the network.',
+            },
+            requiredScope: 'boosts:write',
+        })
+        .input(
+            z.object({
+                profileId: z.string(),
+                boostUri: z.string(),
+                signingAuthority: z.object({
+                    name: z.string(),
+                    endpoint: z.string(),
+                }),
+                options: z
+                    .object({
+                        skipNotification: z.boolean().default(false).optional(),
+                    })
+                    .optional(),
+            })
+        )
+        .output(z.string())
+        .mutation(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { profileId, boostUri, signingAuthority, options } = input;
+
+            const boost = await getBoostByUri(boostUri);
+
+            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            if (!(await canProfileIssueBoost(profile, boost))) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile does not have permission to issue boost',
+                });
+            }
+
+            if (isDraftBoost(boost)) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'Draft Boosts can not be sent. Only Published Boosts can be sent.',
+                });
+            }
+
+            const targetProfile = await getProfileByProfileId(profileId);
+
+            if (!targetProfile) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Recipient profile not found' });
+            }
+
+            let unsignedVc: UnsignedVC;
+
+            try {
+                unsignedVc = JSON.parse(boost.dataValues.boost);
+
+                unsignedVc.issuanceDate = new Date().toISOString();
+                unsignedVc.issuer = { id: getDidWeb(ctx.domain, profile.profileId) };
+
+                if (Array.isArray(unsignedVc.credentialSubject)) {
+                    unsignedVc.credentialSubject = unsignedVc.credentialSubject.map(subject => ({
+                        ...subject,
+                        id: getDidWeb(ctx.domain, targetProfile.profileId),
+                    }));
+                } else {
+                    unsignedVc.credentialSubject = {
+                        ...unsignedVc.credentialSubject,
+                        id: getDidWeb(ctx.domain, targetProfile.profileId),
+                    };
+                }
+                if (unsignedVc?.type?.includes('BoostCredential')) unsignedVc.boostId = boostUri;
+            } catch (e) {
+                console.error('Failed to parse boost', e);
+                throw new TRPCError({
+                    code: 'INTERNAL_SERVER_ERROR',
+                    message: 'Failed to parse boost',
+                });
+            }
+
+            const sa = await getSigningAuthorityForUserByName(
+                profile,
+                signingAuthority.endpoint,
+                signingAuthority.name
+            );
+            if (!sa) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Could not find signing authority for boost',
+                });
+            }
+
+            let credential: VC | JWE;
+            try {
+                credential = await issueCredentialWithSigningAuthority(
+                    profile,
+                    unsignedVc,
+                    sa,
+                    ctx.domain
+                );
+            } catch (e) {
+                console.error('Failed to issue VC with signing authority', e);
+                throw new TRPCError({
+                    code: 'INTERNAL_SERVER_ERROR',
+                    message: 'Could not issue VC with signing authority',
+                });
+            }
+
+            let skipNotification = profile.profileId === targetProfile.profileId;
+            if (options?.skipNotification) skipNotification = options?.skipNotification;
+
+            return sendBoost({
+                from: profile,
+                to: targetProfile,
+                boost,
+                credential,
+                domain: ctx.domain,
+                skipNotification,
+            });
         }),
 });
 

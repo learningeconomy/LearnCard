@@ -43,13 +43,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
 
-      - name: Restore nx cache
-        id: restore-nx-cache
-        uses: actions/cache/restore@v3
-        with:
-          path: .nx-cache
-          key: ${{ runner.os }}-nx-cache-${{ github.workflow }}
-
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
 
@@ -62,9 +55,3 @@ jobs:
         env:
           SEED: ${{ secrets.SEED }}
           LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED }}
-
-      - name: Save nx cache
-        uses: actions/cache/save@v3
-        with:
-          path: .nx-cache
-          key: ${{ steps.restore-nx-cache.outputs.cache-primary-key }}

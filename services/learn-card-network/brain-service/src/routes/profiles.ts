@@ -80,6 +80,7 @@ export const profilesRouter = t.router({
                 summary: 'Create a profile',
                 description: 'Creates a profile for a user',
             },
+            requiredScope: 'profiles:write',
         })
         .input(LCNProfileValidator.omit({ did: true, isServiceProfile: true }))
         .output(z.string())
@@ -117,6 +118,7 @@ export const profilesRouter = t.router({
                 summary: 'Create a service profile',
                 description: 'Creates a service profile',
             },
+            requiredScope: 'profiles:write',
         })
         .input(LCNProfileValidator.omit({ did: true, isServiceProfile: true }))
         .output(z.string())
@@ -154,6 +156,7 @@ export const profilesRouter = t.router({
                 summary: 'Create a managed service profile',
                 description: 'Creates a managed service profile',
             },
+            requiredScope: 'profiles:write',
         })
         .input(LCNProfileValidator.omit({ did: true, isServiceProfile: true }))
         .output(z.string())
@@ -201,6 +204,7 @@ export const profilesRouter = t.router({
                 description:
                     'This route uses the request header to grab the profile of the current user',
             },
+            requiredScope: 'profiles:read',
         })
         .input(z.void())
         .output(LCNProfileValidator.optional())
@@ -220,6 +224,7 @@ export const profilesRouter = t.router({
                 description:
                     'This route grabs the profile information of any user, using their profileId',
             },
+            requiredScope: 'profiles:read',
         })
         .input(z.object({ profileId: z.string() }))
         .output(LCNProfileValidator.optional())
@@ -245,6 +250,7 @@ export const profilesRouter = t.router({
                 description:
                     'This route gets all of your available profiles. That is, profiles you directly or indirectly manage',
             },
+            requiredScope: 'profiles:read',
         })
         .input(
             PaginationOptionsValidator.extend({
@@ -290,6 +296,7 @@ export const profilesRouter = t.router({
                 summary: 'Managed Service Profiles',
                 description: 'This route gets all of your managed service profiles',
             },
+            requiredScope: 'profiles:read',
         })
         .input(
             PaginationOptionsValidator.extend({
@@ -327,6 +334,7 @@ export const profilesRouter = t.router({
                 summary: 'Search profiles',
                 description: 'This route searches for profiles based on their profileId',
             },
+            requiredScope: 'profiles:read',
         })
         .input(
             z.object({
@@ -397,6 +405,7 @@ export const profilesRouter = t.router({
                 summary: 'Update your profile',
                 description: 'This route updates the profile of the current user',
             },
+            requiredScope: 'profiles:write',
         })
         .input(LCNProfileValidator.omit({ did: true, isServiceProfile: true }).partial())
         .output(z.boolean())
@@ -472,6 +481,7 @@ export const profilesRouter = t.router({
                 summary: 'Delete your profile',
                 description: 'This route deletes the profile of the current user',
             },
+            requiredScope: 'profiles:delete',
         })
         .input(z.void())
         .output(z.boolean())
@@ -493,6 +503,7 @@ export const profilesRouter = t.router({
                 description:
                     'This route uses the request header to send a connection request to another user based on their profileId',
             },
+            requiredScope: 'profiles:write',
         })
         .input(z.object({ profileId: z.string() }))
         .output(z.boolean())
@@ -523,6 +534,7 @@ export const profilesRouter = t.router({
                 summary: 'Cancel Connection Request',
                 description: 'Cancels connection request with another profile',
             },
+            requiredScope: 'profiles:write',
         })
         .input(z.object({ profileId: z.string() }))
         .output(z.boolean())
@@ -552,6 +564,7 @@ export const profilesRouter = t.router({
                 summary: 'Connect using an invitation',
                 description: 'Connects with another profile using an invitation challenge',
             },
+            requiredScope: 'profiles:write',
         })
         .input(z.object({ profileId: z.string(), challenge: z.string() }))
         .output(z.boolean())
@@ -597,6 +610,7 @@ export const profilesRouter = t.router({
                 description:
                     'This route uses the request header to disconnect with another user based on their profileId',
             },
+            requiredScope: 'profiles:write',
         })
         .input(z.object({ profileId: z.string() }))
         .output(z.boolean())
@@ -627,6 +641,7 @@ export const profilesRouter = t.router({
                 description:
                     'This route uses the request header to accept a connection request from another user based on their profileId',
             },
+            requiredScope: 'profiles:write',
         })
         .input(z.object({ profileId: z.string() }))
         .output(z.boolean())
@@ -660,6 +675,7 @@ export const profilesRouter = t.router({
                 description:
                     "This route shows the current user's connections.\nWarning! This route is deprecated and currently has a hard limit of returning only the first 50 connections. Please use paginatedConnections instead!",
             },
+            requiredScope: 'connections:read',
         })
         .input(z.void())
         .output(LCNProfileValidator.array())
@@ -683,6 +699,7 @@ export const profilesRouter = t.router({
                 summary: 'View connections',
                 description: "This route shows the current user's connections",
             },
+            requiredScope: 'connections:read',
         })
         .input(
             PaginationOptionsValidator.extend({
@@ -717,6 +734,7 @@ export const profilesRouter = t.router({
                 description:
                     "This route shows the current user's pending connections.\nWarning! This route is deprecated and currently has a hard limit of returning only the first 50 connections. Please use paginatedPendingConnections instead",
             },
+            requiredScope: 'connections:read',
         })
         .input(z.void())
         .output(LCNProfileValidator.array())
@@ -736,6 +754,7 @@ export const profilesRouter = t.router({
                 summary: 'View pending connections',
                 description: "This route shows the current user's pending connections",
             },
+            requiredScope: 'connections:read',
         })
         .input(
             PaginationOptionsValidator.extend({
@@ -773,6 +792,7 @@ export const profilesRouter = t.router({
                 description:
                     "This route shows the current user's connection requests.\nWarning! This route is deprecated and currently has a hard limit of returning only the first 50 connections. Please use paginatedConnectionRequests instead",
             },
+            requiredScope: 'connections:read',
         })
         .input(z.void())
         .output(LCNProfileValidator.array())
@@ -792,6 +812,7 @@ export const profilesRouter = t.router({
                 summary: 'View connection requests',
                 description: "This route shows the current user's connection requests",
             },
+            requiredScope: 'connections:read',
         })
         .input(
             PaginationOptionsValidator.extend({
@@ -828,6 +849,7 @@ export const profilesRouter = t.router({
                 description:
                     'This route creates a one-time challenge that an unknown profile can use to connect with this account',
             },
+            requiredScope: 'connections:write',
         })
         .input(
             z
@@ -889,6 +911,7 @@ export const profilesRouter = t.router({
                 summary: 'Block another profile',
                 description: 'Block another user based on their profileId',
             },
+            requiredScope: 'connections:write',
         })
         .input(z.object({ profileId: z.string() }))
         .output(z.boolean())
@@ -920,6 +943,7 @@ export const profilesRouter = t.router({
                 summary: 'Unblock another profile',
                 description: 'Unblock another user based on their profileId',
             },
+            requiredScope: 'connections:write',
         })
         .input(z.object({ profileId: z.string() }))
         .output(z.boolean())
@@ -951,6 +975,7 @@ export const profilesRouter = t.router({
                 summary: 'View blocked profiles',
                 description: "This route shows the current user's blocked profiles",
             },
+            requiredScope: 'connections:read',
         })
         .input(z.void())
         .output(LCNProfileValidator.array())
@@ -971,6 +996,7 @@ export const profilesRouter = t.router({
                 description:
                     "This route is used to register a signing authority that can sign credentials on the current user's behalf",
             },
+            requiredScope: 'signingAuthorities:write',
         })
         .input(z.object({ endpoint: z.string(), name: z.string(), did: z.string() }))
         .output(z.boolean())
@@ -987,12 +1013,13 @@ export const profilesRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'GET',
-                path: '/profile/signing-authority/get',
+                path: '/profile/signing-authority/get/all',
                 tags: ['Profiles'],
                 summary: 'Get Signing Authorities for user',
                 description:
                     "This route is used to get registered signing authorities that can sign credentials on the current user's behalf",
             },
+            requiredScope: 'signingAuthorities:read',
         })
         .input(z.void())
         .output(SigningAuthorityForUserValidator.array())
@@ -1005,12 +1032,13 @@ export const profilesRouter = t.router({
             openapi: {
                 protect: true,
                 method: 'GET',
-                path: '/profile/signing-authority/get/{endpoint}/{name}',
+                path: '/profile/signing-authority/get',
                 tags: ['Profiles'],
                 summary: 'Get Signing Authority for user',
                 description:
                     "This route is used to get a named signing authority that can sign credentials on the current user's behalf",
             },
+            requiredScope: 'signingAuthorities:read',
         })
         .input(z.object({ endpoint: z.string(), name: z.string() }))
         .output(SigningAuthorityForUserValidator.or(z.undefined()))

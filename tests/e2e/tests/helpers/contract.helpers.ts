@@ -182,14 +182,14 @@ export const normalNoTerms: ConsentFlowTerms = {
         personal: {},
         credentials: {
             shareAll: false,
-            sharing: false,
+            sharing: true,
             categories: {
                 Achievement: {
                     shareAll: false,
-                    sharing: false,
+                    sharing: true,
                     shared: [],
                 },
-                ID: { shareAll: false, sharing: false, shared: [] },
+                ID: { shareAll: false, sharing: true, shared: [] },
             },
         },
     },

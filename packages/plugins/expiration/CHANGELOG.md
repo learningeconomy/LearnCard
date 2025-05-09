@@ -1,5 +1,25 @@
 # learn-card-core
 
+## 1.1.39
+
+### Patch Changes
+
+-   [#606](https://github.com/learningeconomy/LearnCard/pull/606) [`3a7e23f473c6ebeb9aa4ebebfca7938acde7b5ef`](https://github.com/learningeconomy/LearnCard/commit/3a7e23f473c6ebeb9aa4ebebfca7938acde7b5ef) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Support validFrom and validUntil (from VC 2.0 Data Model)
+
+-   Updated dependencies []:
+    -   @learncard/vc-plugin@1.1.39
+    -   @learncard/core@9.3.24
+
+## 1.1.38
+
+### Patch Changes
+
+-   [`cbc84cc27d1eaf8b6830f06d86d354cb78d8d548`](https://github.com/learningeconomy/LearnCard/commit/cbc84cc27d1eaf8b6830f06d86d354cb78d8d548) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Remove NX caching in CI to ensure latest builds
+
+-   Updated dependencies [[`cbc84cc27d1eaf8b6830f06d86d354cb78d8d548`](https://github.com/learningeconomy/LearnCard/commit/cbc84cc27d1eaf8b6830f06d86d354cb78d8d548)]:
+    -   @learncard/core@9.3.23
+    -   @learncard/vc-plugin@1.1.38
+
 ## 1.1.37
 
 ### Patch Changes

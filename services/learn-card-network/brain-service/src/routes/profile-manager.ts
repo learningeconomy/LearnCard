@@ -35,6 +35,7 @@ export const profileManagersRouter = t.router({
                 summary: 'Create a profile manager',
                 description: 'Creates a profile manager',
             },
+            requiredScope: 'profileManagers:write',
         })
         .input(ProfileManagerValidator.omit({ id: true, created: true }))
         .output(z.string())
@@ -64,6 +65,7 @@ export const profileManagersRouter = t.router({
                 summary: 'Create a profile manager that is a child of a Boost',
                 description: 'Creates a profile manager that is a child of a Boost',
             },
+            requiredScope: 'profileManagers:write',
         })
         .input(
             z.object({
@@ -109,6 +111,7 @@ export const profileManagersRouter = t.router({
                 summary: 'Create a managed profile',
                 description: 'Creates a managed profile',
             },
+            requiredScope: 'profileManagers:write',
         })
         .input(LCNProfileValidator.omit({ did: true }))
         .output(z.string())
@@ -149,6 +152,7 @@ export const profileManagersRouter = t.router({
                 summary: 'Managed Profiles',
                 description: 'This route gets all of your managed profiles',
             },
+            requiredScope: 'profileManagers:read',
         })
         .input(
             PaginationOptionsValidator.extend({
@@ -188,6 +192,7 @@ export const profileManagersRouter = t.router({
                 description:
                     'This route uses the request header to grab the profile manager profile of the current profile manager',
             },
+            requiredScope: 'profileManagers:read',
         })
         .input(z.void())
         .output(LCNProfileManagerValidator.extend({ did: z.string() }).optional())
@@ -207,6 +212,7 @@ export const profileManagersRouter = t.router({
                 description:
                     'This route grabs the profile information of any profile manager, using their id',
             },
+            requiredScope: 'profileManagers:read',
         })
         .input(z.object({ id: z.string() }))
         .output(LCNProfileManagerValidator.extend({ did: z.string() }).optional())
@@ -230,6 +236,7 @@ export const profileManagersRouter = t.router({
                 summary: 'Update the profile of your Profile Manager',
                 description: 'This route updates the profile of the current profile manager',
             },
+            requiredScope: 'profileManagers:write',
         })
         .input(LCNProfileManagerValidator.omit({ id: true, created: true }).partial())
         .output(z.boolean())
