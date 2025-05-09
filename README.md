@@ -5,6 +5,7 @@
 [![Release Branch](https://img.shields.io/badge/release_branch-main-green.svg)](https://github.com/learningeconomy/LearnCard/tree/main)
 [![Development Branch](https://img.shields.io/badge/docs-quickstart-green.svg)](https://docs.learncard.com/)
 [![License](https://img.shields.io/badge/license-mit-blue.svg)](https://github.com/learningeconomy/LearnCard/blob/main/LICENSE)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/learningeconomy/LearnCard)
 
 The LearnCard SDK is an open-source digital wallet, ID, credentialing technology, and UX to enable any individual or organization to seamlessly **issue, earn, store, share, and spend currency and credentials.**
 
