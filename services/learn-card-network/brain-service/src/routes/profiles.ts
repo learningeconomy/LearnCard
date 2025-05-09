@@ -210,7 +210,6 @@ export const profilesRouter = t.router({
         .output(LCNProfileValidator.optional())
         .query(async ({ ctx }) => {
             if (!ctx.user.profile) return undefined;
-
             return updateDidForProfile(ctx.domain, ctx.user.profile);
         }),
 
@@ -425,6 +424,8 @@ export const profilesRouter = t.router({
                 email,
                 notificationsWebhook,
                 display,
+                role,
+                dob,
             } = input;
 
             const actualUpdates: Partial<ProfileType> = {};
@@ -467,6 +468,8 @@ export const profilesRouter = t.router({
             if (type) actualUpdates.type = type;
             if (notificationsWebhook) actualUpdates.notificationsWebhook = notificationsWebhook;
             if (display) actualUpdates.display = display;
+            if (role) actualUpdates.role = role;
+            if (dob) actualUpdates.dob = dob;
 
             return updateProfile(profile, actualUpdates);
         }),
