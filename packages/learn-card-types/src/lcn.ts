@@ -33,8 +33,8 @@ export const LCNProfileValidator = z.object({
     type: z.string().optional(),
     notificationsWebhook: z.string().url().startsWith('http').optional(),
     display: LCNProfileDisplayValidator.optional(),
-    role: z.string().optional(),
-    dob: z.string().optional(),
+    role: z.string().default('').optional(),
+    dob: z.string().default('').optional(),
 });
 export type LCNProfile = z.infer<typeof LCNProfileValidator>;
 
