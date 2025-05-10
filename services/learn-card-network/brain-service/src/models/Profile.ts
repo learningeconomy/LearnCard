@@ -8,6 +8,7 @@ import { SigningAuthority } from './SigningAuthority';
 import { transformProfileId } from '@helpers/profile.helpers';
 import { FlatProfileType } from 'types/profile';
 import { SigningAuthorityInstance } from './SigningAuthority';
+import { LearnCardRolesEnum } from 'types/profile';
 
 export type ProfileRelationships = {
     connectionRequested: ModelRelatedNodesI<typeof Profile, ProfileInstance>;
@@ -53,6 +54,12 @@ export const Profile = ModelFactory<FlatProfileType, ProfileRelationships>(
             isServiceProfile: { type: 'boolean', required: false },
             type: { type: 'string', required: false },
             notificationsWebhook: { type: 'string', required: false },
+            dob: { type: 'string', required: false },
+            role: {
+                type: 'string',
+                required: false,
+                enum: Object.values(LearnCardRolesEnum),
+            },
         },
         relationships: {
             connectionRequested: { model: 'self', direction: 'out', name: 'CONNECTION_REQUESTED' },
