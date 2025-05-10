@@ -2,6 +2,8 @@ import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
 import { t, profileRoute, openRoute } from '@routes';
+import { ConsentFlowContract } from '@models';
+
 import {
     ConsentFlowContractValidator,
     ConsentFlowContractDetailsValidator,
@@ -39,6 +41,7 @@ import {
     getTransactionsForTerms,
     hasProfileConsentedToContract,
     isProfileConsentFlowContractAdmin,
+    getWritersForContract,
 } from '@accesslayer/consentflowcontract/relationships/read';
 import { constructUri, getIdFromUri } from '@helpers/uri.helpers';
 import { getContractByUri } from '@accesslayer/consentflowcontract/read';
@@ -69,6 +72,8 @@ import { getCredentialUri } from '@helpers/credential.helpers';
 import { getSigningAuthorityForUserByName } from '@accesslayer/signing-authority/relationships/read';
 import { getDidWeb } from '@helpers/did.helpers';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
+import { getProfilesByProfileIds } from '@accesslayer/profile/read';
+import { resolveAndValidateDeniedWriters } from '@helpers/consentflow.helpers';
 
 export const contractsRouter = t.router({
     createConsentFlowContract: profileRoute
@@ -96,6 +101,7 @@ export const contractsRouter = t.router({
                 image: z.string().optional(),
                 expiresAt: z.string().optional(),
                 autoboosts: z.array(AutoBoostConfigValidator).optional(),
+                writers: z.array(z.string()).optional(),
             })
         )
         .output(z.string())
@@ -112,6 +118,7 @@ export const contractsRouter = t.router({
                 image,
                 expiresAt,
                 autoboosts,
+                writers,
             } = input;
 
             // Create ConsentFlow instance
@@ -130,6 +137,34 @@ export const contractsRouter = t.router({
 
             // Get profile by profileId
             await setCreatorForContract(createdContract, ctx.user.profile);
+
+            // Add specified writers
+            if (writers && writers.length > 0) {
+                const writerProfiles = await getProfilesByProfileIds(writers);
+
+                // Validate that all requested writer profiles were found
+                if (writerProfiles.length !== writers.length) {
+                    const foundIds = new Set(writerProfiles.map(p => p.profileId));
+                    const missingIds = writers.filter(id => !foundIds.has(id));
+                    throw new TRPCError({
+                        code: 'BAD_REQUEST',
+                        message: `Could not find the following writer profiles: ${missingIds.join(
+                            ', '
+                        )}`,
+                    });
+                }
+
+                // Create CAN_WRITE relationship for each writer using static relateTo
+                for (const writerProfile of writerProfiles) {
+                    await ConsentFlowContract.relateTo({
+                        alias: 'canWrite',
+                        where: {
+                            source: { id: createdContract.id }, // Specify source contract by id
+                            target: { profileId: writerProfile.profileId }, // Specify target profile by profileId
+                        },
+                    });
+                }
+            }
 
             if (autoboosts && autoboosts.length > 0) {
                 for (const autoboost of autoboosts) {
@@ -245,8 +280,9 @@ export const contractsRouter = t.router({
         )
         .output(PaginatedConsentFlowContractsValidator)
         .query(async ({ input, ctx }) => {
-            const { query, limit, cursor } = input;
             const { profile } = ctx.user;
+
+            const { query, limit, cursor } = input;
 
             const results = await getConsentFlowContractsForProfile(profile, {
                 query,
@@ -581,6 +617,23 @@ export const contractsRouter = t.router({
                 }
             }
 
+            // Ensure the current profile is an approved writer and not explicitly denied
+            const writers = await getWritersForContract(contractDetails.contract);
+            const isWriter = writers.some(writer => writer.profileId === profile.profileId);
+            if (!isWriter) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile does not have permission to write to this contract',
+                });
+            }
+
+            if (terms.terms.deniedWriters?.includes(profile.profileId)) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'Profile is explicitly denied from writing to this contract',
+                });
+            }
+
             // Use the sendBoost helper to issue the credential with contract relationship
             return sendBoost({
                 from: profile,
@@ -695,6 +748,23 @@ export const contractsRouter = t.router({
                 }
             }
 
+            // Ensure the current profile is an approved writer and not explicitly denied
+            const writers = await getWritersForContract(contractDetails.contract);
+            const isWriter = writers.some(writer => writer.profileId === profile.profileId);
+            if (!isWriter) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile does not have permission to write to this contract',
+                });
+            }
+
+            if (terms.terms.deniedWriters?.includes(profile.profileId)) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'Profile is explicitly denied from writing to this contract',
+                });
+            }
+
             // Prepare unsigned VC
             let unsignedVc: UnsignedVC;
             try {
@@ -805,6 +875,14 @@ export const contractsRouter = t.router({
 
             if (!areTermsValid(terms, contractDetails.contract.contract)) {
                 throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid Terms for Contract' });
+            }
+
+            if (terms.deniedWriters?.length) {
+                terms.deniedWriters = await resolveAndValidateDeniedWriters(
+                    contractDetails.contract,
+                    terms.deniedWriters,
+                    ctx.domain
+                );
             }
 
             await consentToContract(
@@ -946,6 +1024,15 @@ export const contractsRouter = t.router({
                     code: 'BAD_REQUEST',
                     message: 'New Terms are invalid for Contract',
                 });
+            }
+
+            // Convert deniedWriters DIDs to profile IDs if needed
+            if (terms.deniedWriters?.length) {
+                terms.deniedWriters = await resolveAndValidateDeniedWriters(
+                    relationship.contract,
+                    terms.deniedWriters,
+                    ctx.domain
+                );
             }
 
             await Promise.all([

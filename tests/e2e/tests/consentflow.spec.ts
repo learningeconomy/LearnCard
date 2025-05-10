@@ -14,13 +14,15 @@ import { VC } from '@learncard/types';
 let a: LearnCard;
 let b: LearnCard;
 let c: LearnCard;
+let d: LearnCard;
 
 describe('ConsentFlow E2E Tests', () => {
     beforeEach(async () => {
-        // Initialize LearnCards for three different users
+        // Initialize LearnCards for four different users
         a = await getLearnCardForUser('a');
         b = await getLearnCardForUser('b');
         c = await getLearnCardForUser('c');
+        d = await getLearnCardForUser('d');
     });
 
     describe('Contract Creation and Management', () => {
@@ -350,47 +352,39 @@ describe('ConsentFlow E2E Tests', () => {
         });
 
         it('should allow writing a credential via signing authority HTTP route', async () => {
-            const learnCard = await getLearnCard(crypto.randomBytes(32).toString('hex'));
-            await learnCard.invoke.createServiceProfile({
-                profileId: 'rando',
-                displayName: 'Random User',
-                bio: '',
-                shortBio: '',
-            });
-            const sa = await learnCard.invoke.createSigningAuthority('test-sa');
+            const sa = await a.invoke.createSigningAuthority('test-sa');
             expect(sa).toBeDefined();
-            await learnCard.invoke.registerSigningAuthority(sa.endpoint, sa.name, sa.did);
-            const saResult = await learnCard.invoke.getRegisteredSigningAuthority(
-                sa.endpoint,
-                sa.name
-            );
+            await a.invoke.registerSigningAuthority(sa.endpoint, sa.name, sa.did);
+            const saResult = await a.invoke.getRegisteredSigningAuthority(sa.endpoint, sa.name);
             expect(saResult).toBeDefined();
             const signingAuthority = {
                 endpoint: saResult.signingAuthority.endpoint,
                 name: saResult.relationship.name,
             };
 
-            const grantId = await learnCard.invoke.addAuthGrant({
+            const grantId = await a.invoke.addAuthGrant({
                 status: 'active',
                 id: 'test',
                 name: 'test',
                 challenge: 'auth-grant:test-challenge',
                 createdAt: new Date().toISOString(),
-                scope: 'contracts:write',
+                scope: 'contracts-data:write',
             });
-            const token = await learnCard.invoke.getAPITokenForAuthGrant(grantId);
+            const token = await a.invoke.getAPITokenForAuthGrant(grantId);
 
-            const newBoostUri = await learnCard.invoke.createBoost(testUnsignedBoost, {
+            const newBoostUri = await a.invoke.createBoost(testUnsignedBoost, {
                 category: 'Achievement',
                 name: 'Test Achievement',
             });
 
-            const payload = { boostUri: newBoostUri, signingAuthority };
+            const payload = {
+                boostUri: newBoostUri,
+                signingAuthority,
+                did: b.id.did(),
+                contractUri,
+            };
             const response = await fetch(
-                `http://localhost:4000/api/consent-flow-contract/write/via-signing-authority/${contractUri.replace(
-                    '/',
-                    '%2F'
-                )}/${b.id.did()}`,
+                `http://localhost:4000/api/consent-flow-contract/write/via-signing-authority`,
                 {
                     method: 'POST',
                     headers: {
@@ -714,6 +708,376 @@ describe('ConsentFlow E2E Tests', () => {
             expect(userBData.credentials.categories.Achievement).toEqual(
                 expect.arrayContaining(allCredentials)
             );
+        });
+    });
+
+    describe('Contract Writer Permissions', () => {
+        it('should allow credential writing by approved writers', async () => {
+            const writerContractUri = await a.invoke.createContract({
+                contract: normalContract,
+                name: 'Approved Writer Contract',
+                writers: [USERS.c.profileId],
+            });
+
+            // User B consents to the contract
+            const termsUri = await b.invoke.consentToContract(writerContractUri, {
+                terms: normalFullTerms,
+            });
+
+            // User C (approved writer) issues a boost and credential
+            const boostUri = await c.invoke.createBoost(testUnsignedBoost, {
+                category: 'Achievement',
+                name: 'Approved Writer Boost',
+            });
+
+            const credential = await c.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: c.id.did(),
+                credentialSubject: {
+                    ...testUnsignedBoost.credentialSubject,
+                    id: b.id.did(),
+                },
+                boostId: boostUri,
+            });
+
+            const credentialUri = await c.invoke.writeCredentialToContract(
+                b.id.did(),
+                writerContractUri,
+                credential,
+                boostUri
+            );
+
+            expect(credentialUri).toBeDefined();
+            expect(typeof credentialUri).toBe('string');
+
+            // Verify User B can retrieve the credential
+            const credentials = await b.invoke.getCredentialsForContract(termsUri);
+            expect(credentials.records.length).toBeGreaterThan(0);
+            const record = credentials.records[0];
+            expect(record.category).toBe('Achievement');
+        });
+
+        it('should reject credential writing by non-writers', async () => {
+            const contractUri = await a.invoke.createContract({
+                contract: normalContract,
+                name: 'No Writer Contract',
+            });
+
+            // User B consents
+            await b.invoke.consentToContract(contractUri, { terms: normalFullTerms });
+
+            // User D (not a writer) attempts to write
+            const boostUri = await d.invoke.createBoost(testUnsignedBoost, {
+                category: 'Achievement',
+                name: 'Non-writer Boost',
+            });
+
+            const credential = await d.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: d.id.did(),
+                credentialSubject: {
+                    ...testUnsignedBoost.credentialSubject,
+                    id: b.id.did(),
+                },
+                boostId: boostUri,
+            });
+
+            await expect(
+                d.invoke.writeCredentialToContract(b.id.did(), contractUri, credential, boostUri)
+            ).rejects.toThrow();
+        });
+
+        it('should reject credential writing by writers listed in deniedWriters', async () => {
+            const deniedContractUri = await a.invoke.createContract({
+                contract: normalContract,
+                name: 'Denied Writer Contract',
+                writers: [USERS.c.profileId],
+            });
+
+            // User B consents and explicitly denies User C
+            await b.invoke.consentToContract(deniedContractUri, {
+                terms: { ...normalFullTerms, deniedWriters: [USERS.c.profileId] },
+            });
+
+            // User C attempts to write
+            const boostUri = await c.invoke.createBoost(testUnsignedBoost, {
+                category: 'Achievement',
+                name: 'Denied Writer Boost',
+            });
+
+            const credential = await c.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: c.id.did(),
+                credentialSubject: {
+                    ...testUnsignedBoost.credentialSubject,
+                    id: b.id.did(),
+                },
+                boostId: boostUri,
+            });
+
+            await expect(
+                c.invoke.writeCredentialToContract(
+                    b.id.did(),
+                    deniedContractUri,
+                    credential,
+                    boostUri
+                )
+            ).rejects.toThrow();
+        });
+
+        it('should allow credential writing by multiple approved writers', async () => {
+            const multiWriterContractUri = await a.invoke.createContract({
+                contract: normalContract,
+                name: 'Multi Writer Contract',
+                writers: [USERS.c.profileId, USERS.d.profileId],
+            });
+
+            // User B consents to the contract
+            const termsUri = await b.invoke.consentToContract(multiWriterContractUri, {
+                terms: normalFullTerms,
+            });
+
+            /* -------------------- Writer C -------------------- */
+            const boostUriC = await c.invoke.createBoost(testUnsignedBoost, {
+                category: 'Achievement',
+                name: 'Multi Writer Boost C',
+            });
+
+            const credentialC = await c.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: c.id.did(),
+                credentialSubject: {
+                    ...testUnsignedBoost.credentialSubject,
+                    id: b.id.did(),
+                },
+                boostId: boostUriC,
+            });
+
+            const credentialUriC = await c.invoke.writeCredentialToContract(
+                b.id.did(),
+                multiWriterContractUri,
+                credentialC,
+                boostUriC
+            );
+
+            expect(credentialUriC).toBeDefined();
+
+            /* -------------------- Writer D -------------------- */
+            const boostUriD = await d.invoke.createBoost(testUnsignedBoost, {
+                category: 'Achievement',
+                name: 'Multi Writer Boost D',
+            });
+
+            const credentialD = await d.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: d.id.did(),
+                credentialSubject: {
+                    ...testUnsignedBoost.credentialSubject,
+                    id: b.id.did(),
+                },
+                boostId: boostUriD,
+            });
+
+            const credentialUriD = await d.invoke.writeCredentialToContract(
+                b.id.did(),
+                multiWriterContractUri,
+                credentialD,
+                boostUriD
+            );
+
+            expect(credentialUriD).toBeDefined();
+
+            // Verify that User B received at least 2 credentials for the contract
+            const credentials = await b.invoke.getCredentialsForContract(termsUri);
+            expect(credentials.records.length).toBeGreaterThanOrEqual(2);
+        });
+
+        it('should reject credential writing by multiple denied writers', async () => {
+            const multiDeniedContractUri = await a.invoke.createContract({
+                contract: normalContract,
+                name: 'Multi Denied Writer Contract',
+                writers: [USERS.c.profileId, USERS.d.profileId],
+            });
+
+            // User B consents and denies both writers
+            await b.invoke.consentToContract(multiDeniedContractUri, {
+                terms: {
+                    ...normalFullTerms,
+                    deniedWriters: [USERS.c.profileId, USERS.d.profileId],
+                },
+            });
+
+            /* -------------------- Writer C Attempt -------------------- */
+            const boostUriC = await c.invoke.createBoost(testUnsignedBoost, {
+                category: 'Achievement',
+                name: 'Denied Writer Boost C',
+            });
+
+            const credentialC = await c.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: c.id.did(),
+                credentialSubject: {
+                    ...testUnsignedBoost.credentialSubject,
+                    id: b.id.did(),
+                },
+                boostId: boostUriC,
+            });
+
+            await expect(
+                c.invoke.writeCredentialToContract(
+                    b.id.did(),
+                    multiDeniedContractUri,
+                    credentialC,
+                    boostUriC
+                )
+            ).rejects.toThrow();
+
+            /* -------------------- Writer D Attempt -------------------- */
+            const boostUriD = await d.invoke.createBoost(testUnsignedBoost, {
+                category: 'Achievement',
+                name: 'Denied Writer Boost D',
+            });
+
+            const credentialD = await d.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: d.id.did(),
+                credentialSubject: {
+                    ...testUnsignedBoost.credentialSubject,
+                    id: b.id.did(),
+                },
+                boostId: boostUriD,
+            });
+
+            await expect(
+                d.invoke.writeCredentialToContract(
+                    b.id.did(),
+                    multiDeniedContractUri,
+                    credentialD,
+                    boostUriD
+                )
+            ).rejects.toThrow();
+        });
+
+        it('should enforce deniedWriters after terms are updated', async () => {
+            const updateDeniedContractUri = await a.invoke.createContract({
+                contract: normalContract,
+                name: 'Update Denied Writer Contract',
+                writers: [USERS.c.profileId, USERS.d.profileId],
+            });
+
+            // User B consents without denied writers
+            const termsUri = await b.invoke.consentToContract(updateDeniedContractUri, {
+                terms: normalFullTerms,
+            });
+
+            /* --------- Writer C initially allowed --------- */
+            const initialBoostUri = await c.invoke.createBoost(testUnsignedBoost, {
+                category: 'Achievement',
+                name: 'Initial Writer Boost C',
+            });
+
+            const initialCredential = await c.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: c.id.did(),
+                credentialSubject: {
+                    ...testUnsignedBoost.credentialSubject,
+                    id: b.id.did(),
+                },
+                boostId: initialBoostUri,
+            });
+
+            const initialCredentialUri = await c.invoke.writeCredentialToContract(
+                b.id.did(),
+                updateDeniedContractUri,
+                initialCredential,
+                initialBoostUri
+            );
+            expect(initialCredentialUri).toBeDefined();
+
+            /* --------- Update terms to deny Writer C --------- */
+            await b.invoke.updateContractTerms(termsUri, {
+                terms: { ...normalFullTerms, deniedWriters: [USERS.c.profileId] },
+            });
+
+            // Writer C should now be rejected
+            const deniedBoostUri = await c.invoke.createBoost(testUnsignedBoost, {
+                category: 'Achievement',
+                name: 'Post Deny Boost C',
+            });
+
+            const deniedCredential = await c.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: c.id.did(),
+                credentialSubject: {
+                    ...testUnsignedBoost.credentialSubject,
+                    id: b.id.did(),
+                },
+                boostId: deniedBoostUri,
+            });
+
+            await expect(
+                c.invoke.writeCredentialToContract(
+                    b.id.did(),
+                    updateDeniedContractUri,
+                    deniedCredential,
+                    deniedBoostUri
+                )
+            ).rejects.toThrow();
+
+            /* --------- Writer D should still be allowed --------- */
+            const boostUriD = await d.invoke.createBoost(testUnsignedBoost, {
+                category: 'Achievement',
+                name: 'Allowed Writer Boost D',
+            });
+
+            const credentialD = await d.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: d.id.did(),
+                credentialSubject: {
+                    ...testUnsignedBoost.credentialSubject,
+                    id: b.id.did(),
+                },
+                boostId: boostUriD,
+            });
+
+            const credentialUriD = await d.invoke.writeCredentialToContract(
+                b.id.did(),
+                updateDeniedContractUri,
+                credentialD,
+                boostUriD
+            );
+            expect(credentialUriD).toBeDefined();
+
+            /* --------- Remove denied writers --------- */
+            await b.invoke.updateContractTerms(termsUri, {
+                terms: { ...normalFullTerms, deniedWriters: [] },
+            });
+
+            const boostUriC2 = await c.invoke.createBoost(testUnsignedBoost, {
+                category: 'Achievement',
+                name: 'Post Undeny Boost C',
+            });
+
+            const credentialC2 = await c.invoke.issueCredential({
+                ...testUnsignedBoost,
+                issuer: c.id.did(),
+                credentialSubject: {
+                    ...testUnsignedBoost.credentialSubject,
+                    id: b.id.did(),
+                },
+                boostId: boostUriC2,
+            });
+
+            const contracts = await b.invoke.getConsentedContracts();
+            const updatedTerms = contracts.records.find(record => record.uri === termsUri);
+
+            const credentialUriC2 = await c.invoke.writeCredentialToContract(
+                b.id.did(),
+                updateDeniedContractUri,
+                credentialC2,
+                boostUriC2
+            );
+            expect(credentialUriC2).toBeDefined();
         });
     });
 });

@@ -25,6 +25,7 @@ export const ConsentFlowTerms = ModelFactory<FlatDbTermsType, ConsentFlowTermsRe
             updatedAt: { type: 'string', required: false },
             expiresAt: { type: 'string', required: false },
             oneTime: { type: 'boolean', required: false },
+            deniedWriters: { type: 'string[]', required: false },
         } as any,
         relationships: {
             createdBy: { model: Profile, direction: 'out', name: 'CREATED_BY' },

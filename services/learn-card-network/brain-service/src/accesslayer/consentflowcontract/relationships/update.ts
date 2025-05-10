@@ -28,7 +28,11 @@ export const reconsentTerms = async (
         terms,
         expiresAt,
         oneTime,
-    }: { terms: ConsentFlowTermsType; expiresAt?: string; oneTime?: boolean },
+    }: {
+        terms: ConsentFlowTermsType;
+        expiresAt?: string;
+        oneTime?: boolean;
+    },
     domain: string
 ): Promise<boolean> => {
     const transaction = {
@@ -214,17 +218,28 @@ export const updateTerms = async (
         ...(typeof oneTime === 'boolean' ? { oneTime } : {}),
     } as const satisfies ConsentFlowTransactionType;
 
-    const result = await new QueryBuilder(
-        new BindParam({
-            params: flattenObject({
-                terms,
-                updatedAt: new Date().toISOString(),
-                status: oneTime ? 'stale' : 'live',
-                ...(typeof expiresAt === 'string' ? { expiresAt } : {}),
-                ...(typeof oneTime === 'boolean' ? { oneTime } : {}),
-            }),
-        })
-    )
+    /* -------------------------------------------------------------------------- */
+    /* Remove stale flattened properties (e.g. old array indexes)                */
+    /* -------------------------------------------------------------------------- */
+
+    // 1. Flatten both the existing stored terms and the new terms we are saving
+    const existingFlat = flattenObject({ terms: relationship.terms.terms });
+    const newFlatInner = flattenObject({ terms });
+
+    // 2. Determine keys that are present in the existing node but NOT in the new update
+    const keysToRemove = Object.keys(existingFlat).filter(key => !(key in newFlatInner));
+
+    // 3. Build a params object: keys for new/updated properties + keys to delete (set to null)
+    const paramsForSet = {
+        ...newFlatInner,
+        updatedAt: new Date().toISOString(),
+        status: oneTime ? 'stale' : 'live',
+        ...(typeof expiresAt === 'string' ? { expiresAt } : {}),
+        ...(typeof oneTime === 'boolean' ? { oneTime } : {}),
+        ...Object.fromEntries(keysToRemove.map(k => [k, null as any])),
+    };
+
+    const result = await new QueryBuilder(new BindParam({ params: paramsForSet }))
         .match({
             model: ConsentFlowTerms,
             where: { id: relationship.terms.id },
@@ -521,9 +536,11 @@ export const syncCredentialsToContract = async (
         to: relationship.contractOwner,
         message: {
             title: 'New Consent Transaction',
-            body: `${relationship.consenter.displayName
-                } has synced ${totalCredentials} credential(s) across ${categoryCount} ${categoryCount === 1 ? 'category' : 'categories'
-                } to ${relationship.contract.name}!`,
+            body: `${
+                relationship.consenter.displayName
+            } has synced ${totalCredentials} credential(s) across ${categoryCount} ${
+                categoryCount === 1 ? 'category' : 'categories'
+            } to ${relationship.contract.name}!`,
         },
         data: { transaction },
     });
