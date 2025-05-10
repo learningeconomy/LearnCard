@@ -230,13 +230,25 @@ export const profilesRouter = t.router({
         .query(async ({ ctx, input }) => {
             const { profileId } = input;
 
-            const selfProfile = ctx.user && ctx.user.did && (await getProfileByDid(ctx.user.did));
+            const selfProfile = ctx.user?.did ? await getProfileByDid(ctx.user.did) : null;
             const otherProfile = await getProfileByProfileId(profileId);
+
+            if (!otherProfile) return undefined;
 
             if (selfProfile && (await isRelationshipBlocked(selfProfile, otherProfile))) {
                 return undefined;
             }
-            return otherProfile ? updateDidForProfile(ctx.domain, otherProfile) : undefined;
+
+            const profile = updateDidForProfile(ctx.domain, otherProfile);
+
+            const isViewingSelf = selfProfile?.profileId === profile.profileId;
+
+            if (!isViewingSelf) {
+                const { dob, ...sanitizedProfile } = profile;
+                return sanitizedProfile;
+            }
+
+            return profile;
         }),
 
     getAvailableProfiles: profileRoute
