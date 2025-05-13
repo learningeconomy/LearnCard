@@ -1,5 +1,11 @@
 # learn-card-types
 
+## 5.6.12
+
+### Patch Changes
+
+-   [#666](https://github.com/learningeconomy/LearnCard/pull/666) [`ef22869f9e9b99200e46cbd82dfc4c41558afcd1`](https://github.com/learningeconomy/LearnCard/commit/ef22869f9e9b99200e46cbd82dfc4c41558afcd1) Thanks [@gerardopar](https://github.com/gerardopar)! - LC-907 - New Onboarding flow + Checklist UI
+
 ## 5.6.11
 
 ### Patch Changes

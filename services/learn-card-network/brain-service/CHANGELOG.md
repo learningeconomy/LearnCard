@@ -1,5 +1,25 @@
 # @learncard/network-brain-service
 
+## 3.3.29
+
+### Patch Changes
+
+-   [#666](https://github.com/learningeconomy/LearnCard/pull/666) [`ef22869f9e9b99200e46cbd82dfc4c41558afcd1`](https://github.com/learningeconomy/LearnCard/commit/ef22869f9e9b99200e46cbd82dfc4c41558afcd1) Thanks [@gerardopar](https://github.com/gerardopar)! - LC-907 - New Onboarding flow + Checklist UI
+
+-   Updated dependencies [[`ef22869f9e9b99200e46cbd82dfc4c41558afcd1`](https://github.com/learningeconomy/LearnCard/commit/ef22869f9e9b99200e46cbd82dfc4c41558afcd1)]:
+    -   @learncard/types@5.6.12
+    -   @learncard/core@9.3.25
+    -   @learncard/helpers@1.1.14
+    -   @learncard/did-web-plugin@1.0.62
+    -   @learncard/didkey-plugin@1.0.36
+    -   @learncard/didkit-plugin@1.5.11
+    -   @learncard/encryption-plugin@1.0.10
+    -   @learncard/learn-card-plugin@1.1.39
+    -   @learncard/vc-plugin@1.1.40
+    -   @learncard/vc-templates-plugin@1.0.46
+    -   @learncard/expiration-plugin@1.1.40
+    -   @learncard/crypto-plugin@1.0.36
+
 ## 3.3.28
 
 ### Patch Changes
