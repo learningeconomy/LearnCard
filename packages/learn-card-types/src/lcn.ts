@@ -320,6 +320,7 @@ export const ConsentFlowContractDetailsValidator = z.object({
     updatedAt: z.string(),
     expiresAt: z.string().optional(),
     autoBoosts: z.string().array().optional(),
+    writers: z.array(LCNProfileValidator).optional(),
 });
 export type ConsentFlowContractDetails = z.infer<typeof ConsentFlowContractDetailsValidator>;
 export type ConsentFlowContractDetailsInput = z.input<typeof ConsentFlowContractDetailsValidator>;
@@ -384,6 +385,7 @@ export const ConsentFlowTermsValidator = z.object({
             personal: z.record(z.boolean()).default({}),
         })
         .default({}),
+    deniedWriters: z.array(z.string()).optional(),
 });
 export type ConsentFlowTerms = z.infer<typeof ConsentFlowTermsValidator>;
 export type ConsentFlowTermsInput = z.input<typeof ConsentFlowTermsValidator>;

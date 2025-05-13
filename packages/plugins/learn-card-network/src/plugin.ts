@@ -720,6 +720,21 @@ export const getLearnCardNetworkPlugin = async (
                 return client.contracts.createConsentFlowContract.mutate(contract);
             },
 
+            addAutoBoostsToContract: async (_learnCard, contractUri, autoboosts) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.contracts.addAutoBoostsToContract.mutate({ contractUri, autoboosts });
+            },
+
+            removeAutoBoostsFromContract: async (_learnCard, contractUri, boostUris) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.contracts.removeAutoBoostsFromContract.mutate({
+                    contractUri,
+                    boostUris,
+                });
+            },
+
             getContract: async (_learnCard, uri) => {
                 return client.contracts.getConsentFlowContract.query({ uri });
             },
