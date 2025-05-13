@@ -19,3 +19,11 @@ export type SigningAuthorityType = LCNSigningAuthorityType;
 
 export const SigningAuthorityForUserValidator = LCNSigningAuthorityForUserValidator;
 export type SigningAuthorityForUserType = LCNSigningAuthorityForUserType;
+
+export enum LearnCardRolesEnum {
+    learner = 'learner',
+    guardian = 'guardian',
+    teacher = 'teacher',
+    admin = 'admin',
+    counselor = 'counselor',
+}

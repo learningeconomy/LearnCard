@@ -210,7 +210,6 @@ export const profilesRouter = t.router({
         .output(LCNProfileValidator.optional())
         .query(async ({ ctx }) => {
             if (!ctx.user.profile) return undefined;
-
             return updateDidForProfile(ctx.domain, ctx.user.profile);
         }),
 
@@ -231,13 +230,25 @@ export const profilesRouter = t.router({
         .query(async ({ ctx, input }) => {
             const { profileId } = input;
 
-            const selfProfile = ctx.user && ctx.user.did && (await getProfileByDid(ctx.user.did));
+            const selfProfile = ctx.user?.did ? await getProfileByDid(ctx.user.did) : null;
             const otherProfile = await getProfileByProfileId(profileId);
+
+            if (!otherProfile) return undefined;
 
             if (selfProfile && (await isRelationshipBlocked(selfProfile, otherProfile))) {
                 return undefined;
             }
-            return otherProfile ? updateDidForProfile(ctx.domain, otherProfile) : undefined;
+
+            const profile = updateDidForProfile(ctx.domain, otherProfile);
+
+            const isViewingSelf = selfProfile?.profileId === profile.profileId;
+
+            if (!isViewingSelf) {
+                const { dob, ...sanitizedProfile } = profile;
+                return sanitizedProfile;
+            }
+
+            return profile;
         }),
 
     getAvailableProfiles: profileRoute
@@ -425,6 +436,8 @@ export const profilesRouter = t.router({
                 email,
                 notificationsWebhook,
                 display,
+                role,
+                dob,
             } = input;
 
             const actualUpdates: Partial<ProfileType> = {};
@@ -467,6 +480,8 @@ export const profilesRouter = t.router({
             if (type) actualUpdates.type = type;
             if (notificationsWebhook) actualUpdates.notificationsWebhook = notificationsWebhook;
             if (display) actualUpdates.display = display;
+            if (role) actualUpdates.role = role;
+            if (dob) actualUpdates.dob = dob;
 
             return updateProfile(profile, actualUpdates);
         }),
