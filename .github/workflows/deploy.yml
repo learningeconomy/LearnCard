@@ -44,6 +44,8 @@ jobs:
     deploy:
         name: Deploy
         runs-on: ubuntu-latest
+        outputs:
+          affected: ${{ steps.affected.outputs.affected }}
         steps:
             - name: Checkout Repo
               uses: actions/checkout@v3
@@ -94,7 +96,10 @@ jobs:
 
             - name: Get Affected List
               id: affected
-              run: echo "AFFECTED=$(pnpm exec nx print-affected --base=HEAD~1 --head=HEAD --select=projects)" >> $GITHUB_ENV
+              run: |
+                affected=$(pnpm exec nx print-affected --base=HEAD~1 --head=HEAD --select=projects)
+                echo "AFFECTED=$affected" >> $GITHUB_ENV       # for use in later steps of this job
+                echo "affected=$affected" >> $GITHUB_OUTPUT     # for passing to other jobs
 
             - name: Deploy Brain Service Lambda
               if: contains(env.AFFECTED, 'network-brain-service')
@@ -103,7 +108,12 @@ jobs:
             - name: Deploy LearnCloud Lambda
               if: contains(env.AFFECTED, 'learn-cloud-service')
               run: pnpm exec nx serverless-deploy learn-cloud-service --stage production
+              
+    generate-sdk:
+        name: Generate SDK Clients for LearnCloud Network API
+        needs: deploy
+        if: contains(needs.deploy.outputs.affected, 'network-brain-service')
+        uses: ./.github/workflows/open-api-generator.yml
+        with:
+          affected: ${{ needs.deploy.outputs.affected }}
 
-            - name: Generate new Open API SDK clients for brain service
-              if: contains(env.AFFECTED, 'network-brain-service')
-              uses: ./.github/workflows/open-api-generator.yml
