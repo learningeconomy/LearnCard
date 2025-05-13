@@ -1,6 +1,11 @@
 name: Generate Client SDKs for LearnCard Network API
 
-on: workflow_call
+on:
+  workflow_call:
+    inputs:
+      affected:
+        required: true
+        type: string
 
 env:
     working-directory: packages/open-api-lcn-clients
