@@ -1,7 +1,6 @@
 ---
-"@learncard/types": patch
-"@learncard/network-brain-service": patch
-"@workspace/e2e-tests": patch
+'@learncard/types': patch
+'@learncard/network-brain-service': patch
 ---
 
 [LC-894] Multiple Contract Issuers
