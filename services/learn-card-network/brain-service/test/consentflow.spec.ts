@@ -19,6 +19,7 @@ import {
     ConsentFlowTerms,
     Boost,
     Credential,
+    SigningAuthority,
 } from '@models';
 import { testUnsignedBoost } from './helpers/send';
 
@@ -565,6 +566,7 @@ describe('Consent Flow Contracts', () => {
             await ConsentFlowTransaction.delete({ detach: true, where: {} });
             await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
             await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+            await userC.clients.fullAuth.profile.createProfile({ profileId: 'userc' });
 
             uri = await userA.clients.fullAuth.contracts.createConsentFlowContract({
                 contract: normalContract,
@@ -1708,6 +1710,308 @@ describe('Consent Flow Contracts', () => {
             expect(terms.deniedWriters).toBeDefined();
             expect(terms.deniedWriters).toEqual(['userc']);
         });
+
+        it('should not auto-issue boosts from denied writers', async () => {
+            await userA.clients.fullAuth.profile.registerSigningAuthority({
+                endpoint: 'http://localhost:5000/api',
+                name: 'mysa',
+                did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
+            });
+
+            const sa = await userA.clients.fullAuth.profile.signingAuthority({
+                endpoint: 'http://localhost:5000/api',
+                name: 'mysa',
+            });
+
+            const signingAuthority = {
+                endpoint: sa!.signingAuthority.endpoint,
+                name: sa!.relationship.name,
+            };
+
+            await userC.clients.fullAuth.profile.registerSigningAuthority({
+                endpoint: 'http://localhost:5000/api',
+                name: 'mysa',
+                did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
+            });
+
+            const sa2 = await userC.clients.fullAuth.profile.signingAuthority({
+                endpoint: 'http://localhost:5000/api',
+                name: 'mysa',
+            });
+
+            const signingAuthority2 = {
+                endpoint: sa2!.signingAuthority.endpoint,
+                name: sa2!.relationship.name,
+            };
+
+            // Create a boost
+            const boostUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'Achievement',
+                name: 'Auto-issued Boost',
+            });
+
+            const boostUri2 = await userC.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'Achievement',
+                name: 'Auto-issued Boost',
+            });
+
+            // Create a contract with the auto-boost
+            const contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract({
+                contract: normalContract,
+                name: 'Auto Boost Contract',
+                writers: ['userc'],
+                autoboosts: [{ boostUri, signingAuthority }],
+            });
+
+            await userC.clients.fullAuth.contracts.addAutoBoostsToContract({
+                contractUri,
+                autoboosts: [{ boostUri: boostUri2, signingAuthority: signingAuthority2 }],
+            });
+
+            // Consent to the contract
+            const termsUri = await userB.clients.fullAuth.contracts.consentToContract({
+                contractUri,
+                terms: { ...normalFullTerms, deniedWriters: ['userc'] },
+            });
+
+            // Check that a credential was automatically issued
+            const result = await userB.clients.fullAuth.contracts.getCredentialsForContract({
+                termsUri,
+            });
+
+            // Should have one auto-issued credential
+            expect(result.records).toHaveLength(1);
+            expect(result.records[0]?.boostUri).toContain(boostUri.split(':').pop());
+
+            // Check that the transaction history includes an auto-boost transaction
+            const transactions = await userB.clients.fullAuth.contracts.getTermsTransactionHistory({
+                uri: termsUri,
+            });
+
+            // Should have at least 2 transactions (consent + auto-boost)
+            expect(transactions.records.length).toBeGreaterThanOrEqual(2);
+
+            // At least one transaction should be an auto-boost transaction
+            const hasAutoBoostTx = transactions.records.some(tx => tx.action === 'write');
+            expect(hasAutoBoostTx).toBeTruthy();
+        });
+
+        it('should handle re-consenting to a contract, filtering auto-issued boosts based on new deniedWriters', async () => {
+            // Setup: userA (owner) and userC (writer) can issue boosts
+            // User A's SA
+            await userA.clients.fullAuth.profile.registerSigningAuthority({
+                endpoint: 'http://localhost:5000/api/reconsent-sa-a',
+                name: 'reconsent-sa-a',
+                did: userA.learnCard.id.did(),
+            });
+            const saA_Details = (await userA.clients.fullAuth.profile.signingAuthority({
+                endpoint: 'http://localhost:5000/api/reconsent-sa-a',
+                name: 'reconsent-sa-a',
+            }))!;
+
+            // User C's SA
+            await userC.clients.fullAuth.profile.registerSigningAuthority({
+                endpoint: 'http://localhost:5000/api/reconsent-sa-c',
+                name: 'reconsent-sa-c',
+                did: userC.learnCard.id.did(),
+            });
+            const saC_Details = (await userC.clients.fullAuth.profile.signingAuthority({
+                endpoint: 'http://localhost:5000/api/reconsent-sa-c',
+                name: 'reconsent-sa-c',
+            }))!;
+
+            // Boosts
+            const boostA_Uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: { ...testUnsignedBoost, id: 'boost:reconsentA' },
+                category: 'Achievement',
+                name: 'Boost from A for Reconsent',
+            });
+            const boostC_Uri = await userC.clients.fullAuth.boost.createBoost({
+                credential: { ...testUnsignedBoost, id: 'boost:reconsentC' },
+                category: 'Achievement',
+                name: 'Boost from C for Reconsent',
+            });
+
+            // Contract by userA, userC is a writer
+            const contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract({
+                contract: normalContract,
+                name: 'Reconsent Auto Boost Contract',
+                writers: ['userc'],
+                autoboosts: [
+                    {
+                        boostUri: boostA_Uri,
+                        signingAuthority: {
+                            endpoint: saA_Details.signingAuthority.endpoint,
+                            name: saA_Details.relationship.name,
+                        },
+                    },
+                ],
+            });
+            await userC.clients.fullAuth.contracts.addAutoBoostsToContract({
+                contractUri,
+                autoboosts: [
+                    {
+                        boostUri: boostC_Uri,
+                        signingAuthority: {
+                            endpoint: saC_Details.signingAuthority.endpoint,
+                            name: saC_Details.relationship.name,
+                        },
+                    },
+                ],
+            });
+
+            // 1. Initial consent by userB (no denied writers)
+            const initialTermsUri = await userB.clients.fullAuth.contracts.consentToContract({
+                contractUri,
+                terms: normalFullTerms, // No deniedWriters
+            });
+            let credentialsAfterInitialConsent =
+                await userB.clients.fullAuth.contracts.getCredentialsForContract({
+                    termsUri: initialTermsUri,
+                });
+            // Should have boosts from both A and C
+            expect(credentialsAfterInitialConsent.records).toHaveLength(2);
+            expect(
+                credentialsAfterInitialConsent.records.some(cred =>
+                    cred.boostUri?.includes(boostA_Uri.split(':').pop()!)
+                )
+            ).toBeTruthy();
+            expect(
+                credentialsAfterInitialConsent.records.some(cred =>
+                    cred.boostUri?.includes(boostC_Uri.split(':').pop()!)
+                )
+            ).toBeTruthy();
+
+            await userB.clients.fullAuth.contracts.withdrawConsent({ uri: initialTermsUri });
+
+            // 2. Re-consent by userB, denying userC
+            const reconsentTermsUri = await userB.clients.fullAuth.contracts.consentToContract({
+                contractUri, // Re-consenting to the same contract
+                terms: { ...normalFullTerms, deniedWriters: ['userc'] }, // Deny userC
+            });
+
+            // Check credentials for the new (re-consented) terms
+            const credentialsAfterReconsent =
+                await userB.clients.fullAuth.contracts.getCredentialsForContract({
+                    termsUri: reconsentTermsUri,
+                });
+
+            // Should now only have the boost from userA
+            expect(credentialsAfterReconsent.records).toHaveLength(3);
+            expect(
+                credentialsAfterReconsent.records.filter(cred =>
+                    cred.boostUri?.includes(boostA_Uri.split(':').pop()!)
+                ).length
+            ).toBe(2);
+            expect(
+                credentialsAfterReconsent.records.filter(cred =>
+                    cred.boostUri?.includes(boostC_Uri.split(':').pop()!)
+                ).length
+            ).toBe(1);
+        });
+
+        it('should handle updating terms for a contract, filtering auto-issued boosts based on new deniedWriters', async () => {
+            // Setup: userA (owner) and userC (writer) can issue boosts
+            // User A's SA
+            await userA.clients.fullAuth.profile.registerSigningAuthority({
+                endpoint: 'http://localhost:5000/api/update-terms-sa-a',
+                name: 'sa-a',
+                did: userA.learnCard.id.did(),
+            });
+            const saA_Details = (await userA.clients.fullAuth.profile.signingAuthority({
+                endpoint: 'http://localhost:5000/api/update-terms-sa-a',
+                name: 'sa-a',
+            }))!;
+
+            // User C's SA
+            await userC.clients.fullAuth.profile.registerSigningAuthority({
+                endpoint: 'http://localhost:5000/api/update-terms-sa-c',
+                name: 'sa-c',
+                did: userC.learnCard.id.did(),
+            });
+            const saC_Details = (await userC.clients.fullAuth.profile.signingAuthority({
+                endpoint: 'http://localhost:5000/api/update-terms-sa-c',
+                name: 'sa-c',
+            }))!;
+
+            // Boosts
+            const boostA_Uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: { ...testUnsignedBoost, id: 'boost:updateTermsA' },
+                category: 'Achievement',
+                name: 'Boost from A for Update Terms',
+            });
+            const boostC_Uri = await userC.clients.fullAuth.boost.createBoost({
+                credential: { ...testUnsignedBoost, id: 'boost:updateTermsC' },
+                category: 'Achievement',
+                name: 'Boost from C for Update Terms',
+            });
+
+            // Contract by userA, userC is a writer
+            const contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract({
+                contract: normalContract,
+                name: 'Update Terms Auto Boost Contract',
+                writers: ['userc'],
+                autoboosts: [
+                    {
+                        boostUri: boostA_Uri,
+                        signingAuthority: {
+                            endpoint: saA_Details.signingAuthority.endpoint,
+                            name: saA_Details.relationship.name,
+                        },
+                    },
+                ],
+            });
+            await userC.clients.fullAuth.contracts.addAutoBoostsToContract({
+                contractUri,
+                autoboosts: [
+                    {
+                        boostUri: boostC_Uri,
+                        signingAuthority: {
+                            endpoint: saC_Details.signingAuthority.endpoint,
+                            name: saC_Details.relationship.name,
+                        },
+                    },
+                ],
+            });
+
+            // 1. Initial consent by userB (no denied writers)
+            const termsUri = await userB.clients.fullAuth.contracts.consentToContract({
+                contractUri,
+                terms: normalFullTerms, // No deniedWriters
+            });
+            let credentialsAfterInitialConsent =
+                await userB.clients.fullAuth.contracts.getCredentialsForContract({ termsUri });
+            // Should have boosts from both A and C
+            expect(credentialsAfterInitialConsent.records).toHaveLength(2);
+
+            // 2. Update terms by userB, denying userC
+            await userB.clients.fullAuth.contracts.updateConsentedContractTerms({
+                uri: termsUri, // Updating the original terms
+                terms: { ...normalFullTerms, deniedWriters: [userC.learnCard.id.did()] }, // Deny userC
+            });
+
+            // Check credentials for the updated terms
+            // Assuming updateTerms re-evaluates auto-boosts based on the new terms.
+            const credentialsAfterUpdate =
+                await userB.clients.fullAuth.contracts.getCredentialsForContract({
+                    termsUri,
+                });
+
+            // Should now only have the boost from userA
+            expect(credentialsAfterUpdate.records).toHaveLength(3);
+            expect(
+                credentialsAfterUpdate.records.filter(cred =>
+                    cred.boostUri?.includes(boostA_Uri.split(':').pop()!)
+                ).length
+            ).toBe(2);
+            expect(
+                credentialsAfterUpdate.records.filter(cred =>
+                    cred.boostUri?.includes(boostC_Uri.split(':').pop()!)
+                ).length
+            ).toBe(1);
+        });
     });
 
     describe('getConsentedContracts', () => {
@@ -2785,6 +3089,7 @@ describe('Consent Flow Contracts', () => {
             const boostUri = await userD.clients.fullAuth.boost.createBoost({
                 credential: testUnsignedBoost,
                 category: 'Achievement',
+                name: 'Auto-issued Boost',
             });
 
             const credential = await userD.learnCard.invoke.issueCredential({
@@ -3789,6 +4094,305 @@ describe('Consent Flow Contracts', () => {
                     includeReceived: false,
                 });
             expect(withoutReceived.records).toHaveLength(1);
+        });
+    });
+
+    describe('Autoboost Management in Contracts', () => {
+        let contractUri: string;
+        let boost1Uri: string;
+        let boost2Uri: string;
+        let signingAuthorityDetails: { endpoint: string; name: string };
+
+        beforeEach(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await ConsentFlowContract.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+            await SigningAuthority.delete({ detach: true, where: {} });
+
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+
+            const saEndpoint = 'http://localhost:5000/sa-autoboost-man';
+            const saName = 'autoboost-sa';
+            await userA.clients.fullAuth.profile.registerSigningAuthority({
+                endpoint: saEndpoint,
+                name: saName,
+                did: userA.learnCard.id.did(), // Using User A's DID for their SA
+            });
+            const sa = await userA.clients.fullAuth.profile.signingAuthority({
+                endpoint: saEndpoint,
+                name: saName,
+            });
+
+            signingAuthorityDetails = {
+                endpoint: sa!.signingAuthority.endpoint,
+                name: sa!.relationship.name,
+            };
+
+            contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract({
+                contract: minimalContract,
+                name: 'Autoboost Test Contract',
+            });
+
+            // User A creates a couple of boosts
+            // Using more unique IDs for boosts to prevent potential collisions if not cleared properly
+            boost1Uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: { ...testUnsignedBoost, id: 'boost:automan1' }, // Unique ID
+                category: 'TestBoosts',
+                name: 'Autoboost Management Target 1',
+            });
+            boost2Uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: { ...testUnsignedBoost, id: 'boost:automan2' }, // Unique ID
+                category: 'TestBoosts',
+                name: 'Autoboost Management Target 2',
+            });
+        });
+
+        afterAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await ConsentFlowContract.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+            await SigningAuthority.delete({ detach: true, where: {} });
+        });
+
+        describe('addAutoBoostsToContract', () => {
+            it('should allow an authorized user to add an autoboost to a contract', async () => {
+                await expect(
+                    userA.clients.fullAuth.contracts.addAutoBoostsToContract({
+                        contractUri,
+                        autoboosts: [
+                            {
+                                boostUri: boost1Uri,
+                                signingAuthority: signingAuthorityDetails,
+                            },
+                        ],
+                    })
+                ).resolves.toBe(true);
+
+                const contract = await userA.clients.fullAuth.contracts.getConsentFlowContract({
+                    uri: contractUri,
+                });
+                expect(contract.autoBoosts).toEqual(expect.arrayContaining([boost1Uri]));
+            });
+
+            it('should allow adding multiple autoboosts', async () => {
+                await userA.clients.fullAuth.contracts.addAutoBoostsToContract({
+                    contractUri,
+                    autoboosts: [
+                        {
+                            boostUri: boost1Uri,
+                            signingAuthority: signingAuthorityDetails,
+                        },
+                        {
+                            boostUri: boost2Uri,
+                            signingAuthority: signingAuthorityDetails,
+                        },
+                    ],
+                });
+
+                const contract = await userA.clients.fullAuth.contracts.getConsentFlowContract({
+                    uri: contractUri,
+                });
+                expect(contract.autoBoosts).toEqual(expect.arrayContaining([boost1Uri, boost2Uri]));
+                expect(contract.autoBoosts?.length).toBe(2);
+            });
+
+            it('should not add a duplicate autoboost (same boost URI)', async () => {
+                await userA.clients.fullAuth.contracts.addAutoBoostsToContract({
+                    contractUri,
+                    autoboosts: [
+                        { boostUri: boost1Uri, signingAuthority: signingAuthorityDetails },
+                    ],
+                });
+                // Try adding the same boost again
+                await userA.clients.fullAuth.contracts.addAutoBoostsToContract({
+                    contractUri,
+                    autoboosts: [
+                        { boostUri: boost1Uri, signingAuthority: signingAuthorityDetails },
+                    ],
+                });
+
+                const contract = await userA.clients.fullAuth.contracts.getConsentFlowContract({
+                    uri: contractUri,
+                });
+                expect(contract.autoBoosts?.length).toBe(1); // Should still be 1
+            });
+
+            it('should not allow an unauthorized user (not owner/writer) to add an autoboost', async () => {
+                // User B is not an owner or writer of the contract created by User A
+                await expect(
+                    userB.clients.fullAuth.contracts.addAutoBoostsToContract({
+                        contractUri,
+                        autoboosts: [
+                            { boostUri: boost1Uri, signingAuthority: signingAuthorityDetails },
+                        ],
+                    })
+                ).rejects.toMatchObject({
+                    message: expect.stringContaining('You do not have permission'),
+                });
+            });
+
+            it('should fail if contract URI is invalid', async () => {
+                await expect(
+                    userA.clients.fullAuth.contracts.addAutoBoostsToContract({
+                        contractUri: 'contract:invalid-uri',
+                        autoboosts: [
+                            { boostUri: boost1Uri, signingAuthority: signingAuthorityDetails },
+                        ],
+                    })
+                ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+            });
+
+            it('should fail if boost URI is invalid/boost does not exist', async () => {
+                // Test with a boost URI that is syntactically plausible but guaranteed not to exist
+                await expect(
+                    userA.clients.fullAuth.contracts.addAutoBoostsToContract({
+                        contractUri,
+                        autoboosts: [
+                            {
+                                boostUri: 'urn:lc:boost:zNonExistentBoostUri12345',
+                                signingAuthority: signingAuthorityDetails,
+                            },
+                        ],
+                    })
+                ).rejects.toThrow(); // Specific error can be 'Boost not found or invalid' or similar
+            });
+
+            it('should fail if signing authority is not registered to the acting user', async () => {
+                // Create a new SA for user B, and try to use it while acting as user A
+                const userB_SA_Endpoint = 'http://localhost:5000/sa-userb';
+                const userB_SA_Name = 'userb-sa';
+                await userB.clients.fullAuth.profile.registerSigningAuthority({
+                    endpoint: userB_SA_Endpoint,
+                    name: userB_SA_Name,
+                    did: userB.learnCard.id.did(),
+                });
+                const userBsa = await userB.clients.fullAuth.profile.signingAuthority({
+                    endpoint: userB_SA_Endpoint,
+                    name: userB_SA_Name,
+                });
+
+                await expect(
+                    userA.clients.fullAuth.contracts.addAutoBoostsToContract({
+                        contractUri,
+                        autoboosts: [
+                            {
+                                boostUri: boost1Uri,
+                                signingAuthority: {
+                                    endpoint: userBsa!.signingAuthority.endpoint,
+                                    name: userBsa!.relationship.name,
+                                },
+                            },
+                        ],
+                    })
+                ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+            });
+        });
+
+        describe('removeAutoBoostsFromContract', () => {
+            beforeEach(async () => {
+                // Ensure contract has autoboosts before each removal test
+                await userA.clients.fullAuth.contracts.addAutoBoostsToContract({
+                    contractUri,
+                    autoboosts: [
+                        { boostUri: boost1Uri, signingAuthority: signingAuthorityDetails },
+                        { boostUri: boost2Uri, signingAuthority: signingAuthorityDetails },
+                    ],
+                });
+            });
+
+            it('should allow an authorized user to remove an autoboost from a contract', async () => {
+                await expect(
+                    userA.clients.fullAuth.contracts.removeAutoBoostsFromContract({
+                        contractUri,
+                        boostUris: [boost1Uri],
+                    })
+                ).resolves.toBe(true);
+
+                const contract = await userA.clients.fullAuth.contracts.getConsentFlowContract({
+                    uri: contractUri,
+                });
+                expect(contract.autoBoosts).not.toEqual(expect.arrayContaining([boost1Uri]));
+                expect(contract.autoBoosts).toEqual(expect.arrayContaining([boost2Uri]));
+                expect(contract.autoBoosts?.length).toBe(1);
+            });
+
+            it('should allow removing multiple autoboosts', async () => {
+                await userA.clients.fullAuth.contracts.removeAutoBoostsFromContract({
+                    contractUri,
+                    boostUris: [boost1Uri, boost2Uri],
+                });
+
+                const contract = await userA.clients.fullAuth.contracts.getConsentFlowContract({
+                    uri: contractUri,
+                });
+                expect(contract.autoBoosts?.length).toBe(0);
+            });
+
+            it('should handle attempt to remove a non-existent/already removed autoboost gracefully', async () => {
+                // First remove one
+                await userA.clients.fullAuth.contracts.removeAutoBoostsFromContract({
+                    contractUri,
+                    boostUris: [boost1Uri],
+                });
+                // Then try to remove it again (it's already gone)
+                await expect(
+                    userA.clients.fullAuth.contracts.removeAutoBoostsFromContract({
+                        contractUri,
+                        boostUris: [boost1Uri], // Attempting to remove already removed boost
+                    })
+                ).resolves.toBe(true); // Should not throw, operation is idempotent for missing items
+
+                const contract = await userA.clients.fullAuth.contracts.getConsentFlowContract({
+                    uri: contractUri,
+                });
+                expect(contract.autoBoosts?.length).toBe(1); // Still one (boost2Uri)
+            });
+
+            it('should not allow an unauthorized user (not owner/writer) to remove an autoboost', async () => {
+                await expect(
+                    userB.clients.fullAuth.contracts.removeAutoBoostsFromContract({
+                        contractUri,
+                        boostUris: [boost1Uri],
+                    })
+                ).rejects.toMatchObject({
+                    message: expect.stringContaining('You do not have permission'),
+                });
+            });
+
+            it('should fail if contract URI is invalid for removal', async () => {
+                await expect(
+                    userA.clients.fullAuth.contracts.removeAutoBoostsFromContract({
+                        contractUri: 'contract:invalid-uri',
+                        boostUris: [boost1Uri],
+                    })
+                ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+            });
+
+            it('should handle empty boostUris array gracefully', async () => {
+                await expect(
+                    userA.clients.fullAuth.contracts.removeAutoBoostsFromContract({
+                        contractUri,
+                        boostUris: [],
+                    })
+                ).resolves.toBe(true);
+                const contract = await userA.clients.fullAuth.contracts.getConsentFlowContract({
+                    uri: contractUri,
+                });
+                expect(contract.autoBoosts?.length).toBe(2); // No change
+            });
+
+            it('should remove all specified autoboosts even if some in the list do not exist on the contract', async () => {
+                await userA.clients.fullAuth.contracts.removeAutoBoostsFromContract({
+                    contractUri,
+                    boostUris: [boost1Uri, 'urn:lc:boost:zNonExistentBoostForRemoval'],
+                });
+                const contract = await userA.clients.fullAuth.contracts.getConsentFlowContract({
+                    uri: contractUri,
+                });
+                expect(contract.autoBoosts?.length).toBe(1);
+                expect(contract.autoBoosts).toEqual(expect.arrayContaining([boost2Uri]));
+            });
         });
     });
 });

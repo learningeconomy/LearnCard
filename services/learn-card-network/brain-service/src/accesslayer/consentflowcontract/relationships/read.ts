@@ -31,6 +31,7 @@ import {
     ConsentFlowTransactionsQuery,
     LCNProfile,
 } from '@learncard/types';
+import { FlatBoostType } from 'types/boost';
 import { constructUri, getIdFromUri } from '@helpers/uri.helpers';
 import { flattenObject, inflateObject } from '@helpers/objects.helpers';
 import { convertDataQueryToNeo4jQuery, shouldIncludeCategory } from '@helpers/contract.helpers';
@@ -167,11 +168,11 @@ export const getContractTermsById = async (
 
     return result.length > 0
         ? {
-            consenter: result[0]!.consenter,
-            terms: inflateObject(result[0]!.terms),
-            contract: inflateObject(result[0]!.contract),
-            contractOwner: result[0]!.contractOwner,
-        }
+              consenter: result[0]!.consenter,
+              terms: inflateObject(result[0]!.terms),
+              contract: inflateObject(result[0]!.contract),
+              contractOwner: result[0]!.contractOwner,
+          }
         : null;
 };
 
@@ -501,7 +502,8 @@ export const getTransactionsForTerms = async (
             ],
         })
         .where(
-            `${getMatchQueryWhere('transaction', 'params')}${cursor ? 'AND transaction.date < $cursor' : ''
+            `${getMatchQueryWhere('transaction', 'params')}${
+                cursor ? 'AND transaction.date < $cursor' : ''
             }`
         )
         .with('transaction')
@@ -532,10 +534,7 @@ export const getTransactionsForTerms = async (
     }));
 };
 
-export const getAutoBoostsForContract = async (
-    contractId: string,
-    domain: string
-): Promise<string[]> => {
+export const getRawAutoBoostsForContract = async (contractId: string): Promise<FlatBoostType[]> => {
     const results = await new QueryBuilder()
         .match({
             related: [
@@ -547,7 +546,15 @@ export const getAutoBoostsForContract = async (
         .return('boost')
         .run();
 
-    return results.records.map(record => getBoostUri(record.get('boost').properties.id, domain));
+    return results.records.map(record => record.get('boost').properties);
+};
+
+export const getAutoBoostsForContract = async (
+    contractId: string,
+    domain: string
+): Promise<string[]> => {
+    const results = await getRawAutoBoostsForContract(contractId);
+    return results.map(record => getBoostUri(record.id, domain));
 };
 
 export const getWritersForContract = async (contract: DbContractType): Promise<ProfileType[]> => {
@@ -555,7 +562,8 @@ export const getWritersForContract = async (contract: DbContractType): Promise<P
         .match({
             related: [
                 { identifier: 'contract', model: ConsentFlowContract, where: { id: contract.id } },
-                `-[:${ConsentFlowContract.getRelationshipByAlias('createdBy').name}|:${ConsentFlowContract.getRelationshipByAlias('canWrite').name
+                `-[:${ConsentFlowContract.getRelationshipByAlias('createdBy').name}|:${
+                    ConsentFlowContract.getRelationshipByAlias('canWrite').name
                 }]-`,
                 { identifier: 'profile', model: Profile },
             ],

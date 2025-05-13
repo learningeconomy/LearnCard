@@ -74,6 +74,10 @@ import { getDidWeb } from '@helpers/did.helpers';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
 import { getProfilesByProfileIds } from '@accesslayer/profile/read';
 import { resolveAndValidateDeniedWriters } from '@helpers/consentflow.helpers';
+import {
+    addAutoBoostsToContractDb,
+    removeAutoBoostsFromContractDb,
+} from '@accesslayer/consentflowcontract/relationships/manageAutoboosts';
 
 export const contractsRouter = t.router({
     createConsentFlowContract: profileRoute
@@ -208,7 +212,12 @@ export const contractsRouter = t.router({
                         });
                     }
 
-                    await setAutoBoostForContract(createdContract, boost, signingAuthority);
+                    await setAutoBoostForContract(
+                        createdContract,
+                        boost,
+                        signingAuthority,
+                        ctx.user.profile.profileId
+                    );
                 }
             }
 
@@ -1404,5 +1413,96 @@ export const contractsRouter = t.router({
                 })),
             };
         }),
+
+    addAutoBoostsToContract: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/contracts/autoboosts/add',
+                tags: ['Contracts'],
+                summary: 'Add autoboosts to a contract',
+                description:
+                    'Adds one or more autoboost configurations to an existing consent flow contract. The caller must be the contract owner or a designated writer. The signing authority for each autoboost must be registered to the caller.',
+            },
+            requiredScope: 'contracts:write autoboosts:write',
+        })
+        .input(
+            z.object({
+                contractUri: z.string(),
+                autoboosts: z.array(AutoBoostConfigValidator),
+            })
+        )
+        .output(z.boolean())
+        .mutation(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { contractUri, autoboosts } = input;
+
+            const contract = await getContractByUri(contractUri);
+
+            if (!contract) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Contract not found' });
+            }
+
+            const writers = await getWritersForContract(contract);
+            const isAuthorized = writers.some(writer => writer.profileId === profile.profileId);
+
+            if (!isAuthorized) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'You do not have permission to modify autoboosts for this contract.',
+                });
+            }
+
+            await addAutoBoostsToContractDb(contract.id, autoboosts, profile, ctx.domain);
+
+            return true;
+        }),
+
+    removeAutoBoostsFromContract: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/contracts/autoboosts/remove',
+                tags: ['Contracts'],
+                summary: 'Remove autoboosts from a contract',
+                description:
+                    'Removes one or more autoboosts from an existing consent flow contract, identified by their boost URIs. The caller must be the contract owner or a designated writer.',
+            },
+            requiredScope: 'contracts:write autoboosts:write',
+        })
+        .input(
+            z.object({
+                contractUri: z.string(),
+                boostUris: z.array(z.string()),
+            })
+        )
+        .output(z.boolean())
+        .mutation(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { contractUri, boostUris } = input;
+
+            const contract = await getContractByUri(contractUri);
+
+            if (!contract) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Contract not found' });
+            }
+
+            const writers = await getWritersForContract(contract);
+            const isAuthorized = writers.some(writer => writer.profileId === profile.profileId);
+
+            if (!isAuthorized) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'You do not have permission to modify autoboosts for this contract.',
+                });
+            }
+
+            await removeAutoBoostsFromContractDb(contract.id, boostUris, ctx.domain);
+
+            return true;
+        }),
 });
+
 export type ContractsRouter = typeof contractsRouter;

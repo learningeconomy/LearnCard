@@ -473,6 +473,221 @@ describe('ConsentFlow E2E Tests', () => {
         });
     });
 
+    describe('Auto-Boosts with Denied Writers', () => {
+        it('should handle re-consenting to a contract, filtering auto-issued boosts based on new deniedWriters', async () => {
+            // Setup: User A (owner) and User C (writer) can issue boosts
+            // User A's SA
+            const saA_name = 'test-sa';
+            const saA_created = await a.invoke.createSigningAuthority(saA_name);
+
+            if (!saA_created) throw new Error('Could not create SA for User A');
+
+            await a.invoke.registerSigningAuthority(
+                saA_created.endpoint!,
+                saA_created.name,
+                saA_created.did!
+            );
+            const saA_Details = {
+                endpoint: saA_created.endpoint!,
+                name: saA_created.name,
+            };
+
+            // User C's SA
+            const saC_name = 'test-sa2';
+            const saC_created = await c.invoke.createSigningAuthority(saC_name);
+
+            if (!saC_created) throw new Error('Could not create SA for User C');
+
+            await c.invoke.registerSigningAuthority(
+                saC_created.endpoint!,
+                saC_created.name,
+                saC_created.did!
+            );
+            const saC_Details = {
+                endpoint: saC_created.endpoint!,
+                name: saC_created.name,
+            };
+
+            // Boosts
+            const boostA_id = `boost:e2e-reconsentA-${crypto.randomUUID()}`;
+            const boostA_Uri = await a.invoke.createBoost(
+                { ...testUnsignedBoost, id: boostA_id },
+                {
+                    category: 'Achievement',
+                    name: 'Boost from A for Reconsent E2E',
+                }
+            );
+            const boostC_id = `boost:e2e-reconsentC-${crypto.randomUUID()}`;
+            const boostC_Uri = await c.invoke.createBoost(
+                { ...testUnsignedBoost, id: boostC_id },
+                {
+                    category: 'Achievement',
+                    name: 'Boost from C for Reconsent E2E',
+                }
+            );
+
+            // Contract by User A, User C is a writer
+            const contractUri = await a.invoke.createContract({
+                contract: normalContract,
+                name: `Reconsent Auto Boost Contract E2E ${crypto.randomUUID()}`,
+                writers: [USERS.c.profileId],
+                autoboosts: [
+                    {
+                        boostUri: boostA_Uri,
+                        signingAuthority: saA_Details,
+                    },
+                ],
+            });
+            await c.invoke.addAutoBoostsToContract(contractUri, [
+                {
+                    boostUri: boostC_Uri,
+                    signingAuthority: saC_Details,
+                },
+            ]);
+
+            // 1. Initial consent by User B (no denied writers)
+            const initialTermsUri = await b.invoke.consentToContract(contractUri, {
+                terms: normalFullTerms, // No deniedWriters
+            });
+            let credentialsAfterInitialConsent = await b.invoke.getCredentialsForContract(
+                initialTermsUri
+            );
+            // Should have boosts from both A and C
+            expect(credentialsAfterInitialConsent.records).toHaveLength(2);
+            expect(
+                credentialsAfterInitialConsent.records.some(cred =>
+                    cred.boostUri?.includes(boostA_Uri.split(':').pop()!)
+                )
+            ).toBeTruthy();
+            expect(
+                credentialsAfterInitialConsent.records.some(cred =>
+                    cred.boostUri?.includes(boostC_Uri.split(':').pop()!)
+                )
+            ).toBeTruthy();
+
+            await b.invoke.withdrawConsent(initialTermsUri);
+
+            // 2. Re-consent by User B, denying User C
+            const reconsentTermsUri = await b.invoke.consentToContract(contractUri, {
+                terms: { ...normalFullTerms, deniedWriters: [USERS.c.profileId] }, // Deny User C
+            });
+
+            const credentialsAfterReconsent = await b.invoke.getCredentialsForContract(
+                reconsentTermsUri
+            );
+
+            expect(credentialsAfterReconsent.records).toHaveLength(3); // Only User A's boost for this new terms instance
+            expect(
+                credentialsAfterReconsent.records.filter(cred =>
+                    cred.boostUri?.includes(boostA_Uri.split(':').pop()!)
+                ).length
+            ).toBe(2);
+            expect(
+                credentialsAfterReconsent.records.filter(cred =>
+                    cred.boostUri?.includes(boostC_Uri.split(':').pop()!)
+                ).length
+            ).toBe(1);
+        });
+
+        it('should handle updating terms for a contract, filtering auto-issued boosts based on new deniedWriters', async () => {
+            // User A's SA
+            const saA_name = 'test-sa';
+            const saA_created = await a.invoke.createSigningAuthority(saA_name);
+
+            if (!saA_created) throw new Error('Could not create SA for User A');
+
+            await a.invoke.registerSigningAuthority(
+                saA_created.endpoint!,
+                saA_created.name,
+                saA_created.did!
+            );
+            const saA_Details = {
+                endpoint: saA_created.endpoint!,
+                name: saA_created.name,
+            };
+
+            // User C's SA
+            const saC_name = 'test-sa2';
+            const saC_created = await c.invoke.createSigningAuthority(saC_name);
+
+            if (!saC_created) throw new Error('Could not create SA for User C');
+
+            await c.invoke.registerSigningAuthority(
+                saC_created.endpoint!,
+                saC_created.name,
+                saC_created.did!
+            );
+            const saC_Details = {
+                endpoint: saC_created.endpoint!,
+                name: saC_created.name,
+            };
+
+            // Boosts
+            const boostA_id = `boost:e2e-updateTermsA-${crypto.randomUUID()}`;
+            const boostA_Uri = await a.invoke.createBoost(
+                { ...testUnsignedBoost, id: boostA_id },
+                {
+                    category: 'Achievement',
+                    name: 'Boost from A for Update Terms E2E',
+                }
+            );
+            const boostC_id = `boost:e2e-updateTermsC-${crypto.randomUUID()}`;
+            const boostC_Uri = await c.invoke.createBoost(
+                { ...testUnsignedBoost, id: boostC_id },
+                {
+                    category: 'Achievement',
+                    name: 'Boost from C for Update Terms E2E',
+                }
+            );
+
+            const contractUri = await a.invoke.createContract({
+                contract: normalContract,
+                name: `Update Terms Auto Boost Contract E2E ${crypto.randomUUID()}`,
+                writers: [USERS.c.profileId],
+                autoboosts: [
+                    {
+                        boostUri: boostA_Uri,
+                        signingAuthority: saA_Details,
+                    },
+                ],
+            });
+            await c.invoke.addAutoBoostsToContract(contractUri, [
+                {
+                    boostUri: boostC_Uri,
+                    signingAuthority: saC_Details,
+                },
+            ]);
+
+            // 1. Initial consent by User B (no denied writers)
+            const termsUri = await b.invoke.consentToContract(contractUri, {
+                terms: normalFullTerms, // No deniedWriters
+            });
+            let credentialsAfterInitialConsent = await b.invoke.getCredentialsForContract(termsUri);
+            expect(credentialsAfterInitialConsent.records).toHaveLength(2);
+
+            // 2. Update terms by User B, denying User C
+            await b.invoke.updateContractTerms(termsUri, {
+                terms: { ...normalFullTerms, deniedWriters: [USERS.c.profileId] }, // Deny User C
+            });
+
+            const credentialsAfterUpdate = await b.invoke.getCredentialsForContract(termsUri);
+
+            // After update, existing credentials for these terms are re-evaluated.
+            // Boost from C should be revoked/not re-issued, boost from A remains/re-issued.
+            expect(credentialsAfterUpdate.records).toHaveLength(3);
+            expect(
+                credentialsAfterUpdate.records.filter(cred =>
+                    cred.boostUri?.includes(boostA_Uri.split(':').pop()!)
+                ).length
+            ).toBe(2);
+            expect(
+                credentialsAfterUpdate.records.filter(cred =>
+                    cred.boostUri?.includes(boostC_Uri.split(':').pop()!)
+                ).length
+            ).toBe(1);
+        });
+    }); // End of 'Auto-Boosts with Denied Writers'
+
     describe('Credential Syncing', () => {
         let contractUri: string;
         let termsUri: string;
