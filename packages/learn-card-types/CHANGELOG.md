@@ -1,5 +1,11 @@
 # learn-card-types
 
+## 5.6.13
+
+### Patch Changes
+
+-   [#662](https://github.com/learningeconomy/LearnCard/pull/662) [`319bd3a589e3529d162825d8f6b97268c44060f4`](https://github.com/learningeconomy/LearnCard/commit/319bd3a589e3529d162825d8f6b97268c44060f4) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - [LC-894] Multiple Contract Issuers
+
 ## 5.6.12
 
 ### Patch Changes

@@ -1,5 +1,25 @@
 # @learncard/network-brain-service
 
+## 2.2.23
+
+### Patch Changes
+
+-   [#662](https://github.com/learningeconomy/LearnCard/pull/662) [`319bd3a589e3529d162825d8f6b97268c44060f4`](https://github.com/learningeconomy/LearnCard/commit/319bd3a589e3529d162825d8f6b97268c44060f4) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix bug when trying to update a credential record with a different did that you own
+
+-   Updated dependencies [[`319bd3a589e3529d162825d8f6b97268c44060f4`](https://github.com/learningeconomy/LearnCard/commit/319bd3a589e3529d162825d8f6b97268c44060f4)]:
+    -   @learncard/types@5.6.13
+    -   @learncard/core@9.3.26
+    -   @learncard/helpers@1.1.15
+    -   @learncard/did-web-plugin@1.0.63
+    -   @learncard/didkey-plugin@1.0.37
+    -   @learncard/didkit-plugin@1.5.12
+    -   @learncard/encryption-plugin@1.0.11
+    -   @learncard/learn-card-plugin@1.1.40
+    -   @learncard/vc-plugin@1.1.41
+    -   @learncard/vc-templates-plugin@1.0.47
+    -   @learncard/expiration-plugin@1.1.41
+    -   @learncard/crypto-plugin@1.0.37
+
 ## 2.2.22
 
 ### Patch Changes

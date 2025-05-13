@@ -1,5 +1,27 @@
 # @learncard/network-brain-service
 
+## 3.3.30
+
+### Patch Changes
+
+-   [#662](https://github.com/learningeconomy/LearnCard/pull/662) [`319bd3a589e3529d162825d8f6b97268c44060f4`](https://github.com/learningeconomy/LearnCard/commit/319bd3a589e3529d162825d8f6b97268c44060f4) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add support for adding/removing autoboosts
+
+-   [#662](https://github.com/learningeconomy/LearnCard/pull/662) [`319bd3a589e3529d162825d8f6b97268c44060f4`](https://github.com/learningeconomy/LearnCard/commit/319bd3a589e3529d162825d8f6b97268c44060f4) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - [LC-894] Multiple Contract Issuers
+
+-   Updated dependencies [[`319bd3a589e3529d162825d8f6b97268c44060f4`](https://github.com/learningeconomy/LearnCard/commit/319bd3a589e3529d162825d8f6b97268c44060f4)]:
+    -   @learncard/types@5.6.13
+    -   @learncard/core@9.3.26
+    -   @learncard/helpers@1.1.15
+    -   @learncard/did-web-plugin@1.0.63
+    -   @learncard/didkey-plugin@1.0.37
+    -   @learncard/didkit-plugin@1.5.12
+    -   @learncard/encryption-plugin@1.0.11
+    -   @learncard/learn-card-plugin@1.1.40
+    -   @learncard/vc-plugin@1.1.41
+    -   @learncard/vc-templates-plugin@1.0.47
+    -   @learncard/expiration-plugin@1.1.41
+    -   @learncard/crypto-plugin@1.0.37
+
 ## 3.3.29
 
 ### Patch Changes
