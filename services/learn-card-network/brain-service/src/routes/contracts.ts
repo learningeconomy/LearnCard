@@ -1172,7 +1172,7 @@ export const contractsRouter = t.router({
                 path: '/consent-flow-contract/verify',
                 tags: ['Contracts'],
                 summary: 'Verifies that a profile has consented to a contract',
-                description: 'Withdraws consent by deleting Contract Terms',
+                description: 'Checks if a profile has consented to the specified contract',
             },
             requiredScope: 'contracts:read',
         })
