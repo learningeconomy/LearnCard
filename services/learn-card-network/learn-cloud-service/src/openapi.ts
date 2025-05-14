@@ -6,12 +6,12 @@ import { appRouter } from './app';
 
 // Generate OpenAPI schema document
 export const openApiDocument: OpenAPIV3.Document<{}> = generateOpenApiDocument(appRouter, {
-    title: 'LearnCloud',
-    description: 'This is the API for interacting with a LearnCloud Service',
+    title: 'LearnCloud Storage API',
+    description: 'API for interacting with LearnCloud Storage',
     version: '1.0.0',
     baseUrl: '../api',
     docsUrl: 'https://docs.learncard.com',
-    tags: ['Index', 'Utilities'],
+    tags: ['Storage', 'Index', 'User', 'Custom Storage', 'Utilities'],
 });
 
 export const app = express();
