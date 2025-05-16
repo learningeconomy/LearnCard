@@ -1,5 +1,11 @@
 # learn-card-types
 
+## 5.6.14
+
+### Patch Changes
+
+-   [#670](https://github.com/learningeconomy/LearnCard/pull/670) [`b04788beded98db2fb3827c94e0810943b7f698a`](https://github.com/learningeconomy/LearnCard/commit/b04788beded98db2fb3827c94e0810943b7f698a) Thanks [@Custard7](https://github.com/Custard7)! - 🧹Housekeeping: OpenAPI Docs
+
 ## 5.6.13
 
 ### Patch Changes
