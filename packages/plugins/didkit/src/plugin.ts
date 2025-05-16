@@ -116,12 +116,12 @@ export const getDidKitPlugin = async (
                         isJwt
                             ? '{}'
                             : JSON.stringify(
-                                  await getDocumentMap(
-                                      _learnCard,
-                                      presentation,
-                                      allowRemoteContexts
-                                  )
-                              )
+                                await getDocumentMap(
+                                    _learnCard,
+                                    presentation,
+                                    allowRemoteContexts
+                                )
+                            )
                     )
                 );
             },
@@ -169,7 +169,14 @@ export const getDidKitPlugin = async (
                     // Return primitives as-is
                     if (typeof obj !== 'object') return obj;
 
-                    // Handle objects
+                    // -- Handle objects --
+
+                    // Quick check if the object has any nested objects that need conversion
+                    const hasNestedObjects = Object.values(obj).some(
+                        val => typeof val === 'bigint' || (typeof val === 'object' && val !== null)
+                    );
+                    if (!hasNestedObjects) return obj; // Fast path for simple objects
+
                     const result: Record<string, any> = {};
                     for (const key in obj) {
                         result[key] = convertBigIntsToNumbers(obj[key]);
