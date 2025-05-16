@@ -116,12 +116,12 @@ export const getDidKitPlugin = async (
                         isJwt
                             ? '{}'
                             : JSON.stringify(
-                                await getDocumentMap(
-                                    _learnCard,
-                                    presentation,
-                                    allowRemoteContexts
-                                )
-                            )
+                                  await getDocumentMap(
+                                      _learnCard,
+                                      presentation,
+                                      allowRemoteContexts
+                                  )
+                              )
                     )
                 );
             },
@@ -154,11 +154,36 @@ export const getDidKitPlugin = async (
             createDagJwe: async (_learnCard, cleartext, recipients) =>
                 JSON.parse(await createDagJwe(cleartext as any, recipients)),
 
-            decryptDagJwe: async (_learnCard, jwe, jwks) =>
-                await decryptDagJwe(
-                    JSON.stringify(jwe),
-                    jwks.map(jwk => JSON.stringify(jwk))
-                ),
+            decryptDagJwe: async (_learnCard, jwe, jwks) => {
+                // Didkit is serializing numbers as BigInts when crossing the WASM boundary, so we
+                // need to convert them back to numbers
+                const convertBigIntsToNumbers = (obj: any): any => {
+                    if (obj === null || obj === undefined) return obj;
+
+                    // Convert BigInt to Number
+                    if (typeof obj === 'bigint') return Number(obj);
+
+                    // Handle arrays
+                    if (Array.isArray(obj)) return obj.map(convertBigIntsToNumbers);
+
+                    // Return primitives as-is
+                    if (typeof obj !== 'object') return obj;
+
+                    // Handle objects
+                    const result: Record<string, any> = {};
+                    for (const key in obj) {
+                        result[key] = convertBigIntsToNumbers(obj[key]);
+                    }
+                    return result;
+                };
+
+                return convertBigIntsToNumbers(
+                    await decryptDagJwe(
+                        JSON.stringify(jwe),
+                        jwks.map(jwk => JSON.stringify(jwk))
+                    )
+                );
+            },
 
             clearDidWebCache: async () => {
                 await clearCache();
