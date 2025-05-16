@@ -1,5 +1,25 @@
 # @learncard/network-brain-service
 
+## 3.3.31
+
+### Patch Changes
+
+-   [#670](https://github.com/learningeconomy/LearnCard/pull/670) [`b04788beded98db2fb3827c94e0810943b7f698a`](https://github.com/learningeconomy/LearnCard/commit/b04788beded98db2fb3827c94e0810943b7f698a) Thanks [@Custard7](https://github.com/Custard7)! - 🧹Housekeeping: OpenAPI Docs
+
+-   Updated dependencies [[`b04788beded98db2fb3827c94e0810943b7f698a`](https://github.com/learningeconomy/LearnCard/commit/b04788beded98db2fb3827c94e0810943b7f698a), [`c9633be1bb84eb620502543383eb17b34be1586e`](https://github.com/learningeconomy/LearnCard/commit/c9633be1bb84eb620502543383eb17b34be1586e)]:
+    -   @learncard/types@5.6.14
+    -   @learncard/didkit-plugin@1.5.13
+    -   @learncard/core@9.3.27
+    -   @learncard/helpers@1.1.16
+    -   @learncard/did-web-plugin@1.0.64
+    -   @learncard/didkey-plugin@1.0.38
+    -   @learncard/encryption-plugin@1.0.12
+    -   @learncard/learn-card-plugin@1.1.41
+    -   @learncard/vc-plugin@1.1.42
+    -   @learncard/vc-templates-plugin@1.0.48
+    -   @learncard/expiration-plugin@1.1.42
+    -   @learncard/crypto-plugin@1.0.38
+
 ## 3.3.30
 
 ### Patch Changes
