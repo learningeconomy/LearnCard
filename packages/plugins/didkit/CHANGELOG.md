@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 1.5.14
+
+### Patch Changes
+
+-   [#675](https://github.com/learningeconomy/LearnCard/pull/675) [`8957eda698be3222588d0b56834d7ef5622057fb`](https://github.com/learningeconomy/LearnCard/commit/8957eda698be3222588d0b56834d7ef5622057fb) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add Boost Context inline so that it does not need to be dynamically resolved
+
 ## 1.5.13
 
 ### Patch Changes

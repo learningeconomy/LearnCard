@@ -1,5 +1,20 @@
 # learn-card-core
 
+## 2.0.15
+
+### Patch Changes
+
+-   [#675](https://github.com/learningeconomy/LearnCard/pull/675) [`8957eda698be3222588d0b56834d7ef5622057fb`](https://github.com/learningeconomy/LearnCard/commit/8957eda698be3222588d0b56834d7ef5622057fb) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add Boost Context inline so that it does not need to be dynamically resolved
+
+-   Updated dependencies [[`8957eda698be3222588d0b56834d7ef5622057fb`](https://github.com/learningeconomy/LearnCard/commit/8957eda698be3222588d0b56834d7ef5622057fb)]:
+    -   @learncard/didkit-plugin@1.5.14
+    -   @learncard/chapi-plugin@1.0.56
+    -   @learncard/learn-card-plugin@1.1.42
+    -   @learncard/network-plugin@2.4.32
+    -   @learncard/learn-cloud-plugin@2.1.23
+    -   @learncard/vc-plugin@1.1.43
+    -   @learncard/expiration-plugin@1.1.43
+
 ## 2.0.14
 
 ### Patch Changes
