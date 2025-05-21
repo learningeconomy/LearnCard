@@ -46,7 +46,7 @@ export const getProfilesThatManageAProfile = async (profileId: string): Promise<
                 optional: true,
                 related: [
                     { model: Profile, where: { profileId } },
-                    Profile.getRelationshipByAlias('managedBy'),
+                    { ...Profile.getRelationshipByAlias('managedBy'), maxHops: Infinity, minHops: 1 },
                     { identifier: 'directManager', model: Profile },
                 ],
             })
@@ -56,7 +56,7 @@ export const getProfilesThatManageAProfile = async (profileId: string): Promise<
                     { model: Profile, where: { profileId } },
                     { ...ProfileManager.getRelationshipByAlias('manages'), direction: 'in' },
                     { model: ProfileManager },
-                    ProfileManager.getRelationshipByAlias('administratedBy'),
+                    { ...ProfileManager.getRelationshipByAlias('administratedBy'), maxHops: Infinity, minHops: 1 },
                     { model: Profile, identifier: 'manager' },
                 ],
             })
@@ -66,7 +66,7 @@ export const getProfilesThatManageAProfile = async (profileId: string): Promise<
                     { model: Profile, where: { profileId } },
                     { ...ProfileManager.getRelationshipByAlias('manages'), direction: 'in' },
                     { model: ProfileManager },
-                    ProfileManager.getRelationshipByAlias('childOf'),
+                    { ...ProfileManager.getRelationshipByAlias('childOf'), maxHops: Infinity, minHops: 1 },
                     { model: Boost },
                     { ...Boost.getRelationshipByAlias('hasRole'), identifier: 'hasRole' },
                     { identifier: 'implicitManager', model: Profile },
@@ -108,16 +108,19 @@ export const getProfilesThatAProfileManages = async (
         .match({
             optional: true,
             related: [
-                { identifier: 'directlyManaged', model: Profile, where: { profileId } },
-                Profile.getRelationshipByAlias('managedBy'),
+                // Path: (manager:Profile {profileId}) <-[:MANAGED_BY*1..]- (directlyManaged:Profile)
+                // So, (directlyManaged:Profile) -[:MANAGED_BY*1..]-> (manager:Profile {profileId})
+                { identifier: 'directlyManaged', model: Profile },
+                { ...Profile.getRelationshipByAlias('managedBy'), minHops: 1, maxHops: Infinity },
                 { model: Profile, where: { profileId } },
             ],
         })
         .match({
             optional: true,
             related: [
+                // Path: (managed:Profile) <-[:MANAGES*1..]- (managerPM:ProfileManager) <-[:ADMINISTRATED_BY]- (admin:Profile {profileId})
                 { identifier: 'managed', model: Profile },
-                { ...ProfileManager.getRelationshipByAlias('manages'), direction: 'in' },
+                { ...ProfileManager.getRelationshipByAlias('manages'), direction: 'in', minHops: 1, maxHops: Infinity },
                 { model: ProfileManager, identifier: 'manager' },
                 ProfileManager.getRelationshipByAlias('administratedBy'),
                 { model: Profile, where: { profileId } },
@@ -126,10 +129,11 @@ export const getProfilesThatAProfileManages = async (
         .match({
             optional: true,
             related: [
+                // Path: (implicitlyManaged:Profile) <-[:MANAGES*1..]- (pm:ProfileManager) <-[:CHILD_OF*1..]- (boost:Boost) <-[:HAS_ROLE]- (admin:Profile {profileId})
                 { model: Profile, identifier: 'implicitlyManaged' },
-                { ...ProfileManager.getRelationshipByAlias('manages'), direction: 'in' },
+                { ...ProfileManager.getRelationshipByAlias('manages'), direction: 'in', minHops: 1, maxHops: Infinity },
                 { model: ProfileManager, identifier: 'implicitManager' },
-                ProfileManager.getRelationshipByAlias('childOf'),
+                { ...ProfileManager.getRelationshipByAlias('childOf'), minHops: 1, maxHops: Infinity },
                 { model: Boost },
                 { ...Boost.getRelationshipByAlias('hasRole'), identifier: 'hasRole' },
                 { where: { profileId }, model: Profile },
