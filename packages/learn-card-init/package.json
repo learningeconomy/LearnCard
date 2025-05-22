@@ -3,19 +3,19 @@
     "version": "2.0.15",
     "description": "",
     "type": "module",
-    "main": "./dist/index.js",
+    "main": "./dist/index.cjs",
     "module": "./dist/init.esm.js",
     "exports": {
         ".": {
             "import": "./dist/init.esm.js",
-            "require": "./dist/index.js"
+            "require": "./dist/index.cjs"
         }
     },
     "files": [
         "dist"
     ],
     "scripts": {
-        "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.js && tsc --p tsconfig.build.json",
+        "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.cjs && tsc --p tsconfig.build.json",
         "start": "aqu watch",
         "lint": "aqu lint",
         "lint:fix": "aqu lint --fix",
