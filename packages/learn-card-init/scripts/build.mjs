@@ -47,7 +47,7 @@ const configurations = [
         plugins: [],
         entryPoints: ['src/index.ts'],
         format: 'cjs',
-        outfile: 'dist/init.cjs.development.js',
+        outfile: 'dist/init.cjs.development.cjs',
         ...buildOptions,
     },
     {
@@ -60,7 +60,7 @@ const configurations = [
         entryPoints: ['src/index.ts'],
         minify: true,
         format: 'cjs',
-        outfile: 'dist/init.cjs.production.min.js',
+        outfile: 'dist/init.cjs.production.min.cjs',
         ...buildOptions,
     },
     {

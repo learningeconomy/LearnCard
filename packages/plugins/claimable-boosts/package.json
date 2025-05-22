@@ -2,8 +2,15 @@
     "name": "@learncard/claimable-boosts-plugin",
     "version": "1.0.37",
     "description": "",
+    "type": "module",
     "main": "./dist/index.js",
     "module": "./dist/claimable-boosts-plugin.esm.js",
+    "exports": {
+        ".": {
+            "import": "./dist/claimable-boosts-plugin.esm.js",
+            "require": "./dist/index.js"
+        }
+    },
     "files": [
         "dist"
     ],
