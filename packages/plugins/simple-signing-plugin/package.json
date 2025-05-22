@@ -2,8 +2,15 @@
     "name": "@learncard/simple-signing-plugin",
     "version": "1.0.11",
     "description": "",
+    "type": "module",
     "main": "./dist/index.js",
     "module": "./dist/simple-signing-plugin.esm.js",
+    "exports": {
+        ".": {
+            "import": "./dist/simple-signing-plugin.esm.js",
+            "require": "./dist/index.js"
+        }
+    },
     "files": [
         "dist"
     ],

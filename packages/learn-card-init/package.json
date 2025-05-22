@@ -2,8 +2,15 @@
     "name": "@learncard/init",
     "version": "2.0.15",
     "description": "",
+    "type": "module",
     "main": "./dist/index.js",
     "module": "./dist/init.esm.js",
+    "exports": {
+        ".": {
+            "import": "./dist/init.esm.js",
+            "require": "./dist/index.js"
+        }
+    },
     "files": [
         "dist"
     ],
