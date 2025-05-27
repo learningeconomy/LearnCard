@@ -55,7 +55,7 @@ const configurations = [
         plugins: [],
         entryPoints: ['src/index.ts'],
         format: 'esm',
-        outfile: 'dist/core.esm.cjs',
+        outfile: 'dist/core.esm.js',
         ...buildOptions,
     },
 ];
