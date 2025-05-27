@@ -2,13 +2,20 @@
     "name": "@learncard/core",
     "version": "9.3.27",
     "description": "",
+    "type": "module",
     "main": "./dist/index.js",
     "module": "./dist/core.esm.js",
+    "exports": {
+        ".": {
+            "import": "./dist/core.esm.js",
+            "require": "./dist/core.cjs"
+        }
+    },
     "files": [
         "dist"
     ],
     "scripts": {
-        "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.js && tsc --p tsconfig.build.json && tsc-alias",
+        "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.cjs && tsc --p tsconfig.build.json && tsc-alias",
         "start": "aqu watch",
         "lint": "aqu lint",
         "lint:fix": "aqu lint --fix",

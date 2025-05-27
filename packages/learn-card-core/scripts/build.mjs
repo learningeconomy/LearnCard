@@ -43,7 +43,7 @@ const configurations = [
         entryPoints: ['src/index.ts'],
         minify: true,
         format: 'cjs',
-        outfile: 'dist/core.cjs.production.min.js',
+        outfile: 'dist/core.cjs.production.min.cjs',
         ...buildOptions,
     },
     {
@@ -55,7 +55,7 @@ const configurations = [
         plugins: [],
         entryPoints: ['src/index.ts'],
         format: 'esm',
-        outfile: 'dist/core.esm.js',
+        outfile: 'dist/core.esm.cjs',
         ...buildOptions,
     },
 ];

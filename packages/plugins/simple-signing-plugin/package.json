@@ -3,19 +3,19 @@
     "version": "1.0.11",
     "description": "",
     "type": "module",
-    "main": "./dist/index.js",
+    "main": "./dist/index.cjs",
     "module": "./dist/simple-signing-plugin.esm.js",
     "exports": {
         ".": {
             "import": "./dist/simple-signing-plugin.esm.js",
-            "require": "./dist/index.js"
+            "require": "./dist/index.cjs"
         }
     },
     "files": [
         "dist"
     ],
     "scripts": {
-        "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.js && tsc --p tsconfig.json",
+        "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.cjs && tsc --p tsconfig.json",
         "test": "jest --passWithNoTests",
         "test:watch": "jest --watch",
         "test:coverage": "jest --silent --ci --coverage --coverageReporters=\"text\" --coverageReporters=\"text-summary\""
