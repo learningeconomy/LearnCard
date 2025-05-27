@@ -41,13 +41,13 @@ These scripts import the CJS bundle using `require()`.
     NODE_ENV=development node ./test-cjs.cjs
     ```
 
-    This will test the `../../dist/init.cjs.development.js` bundle via `../../dist/index.cjs`.
+    This will test the `../../dist/init.cjs.development.cjs` bundle via `../../dist/index.cjs`.
 
 -   **Test Production CJS Bundle:**
     ```bash
     NODE_ENV=production node ./test-cjs.cjs
     ```
-    This will test the `../../dist/init.cjs.production.min.js` bundle via `../../dist/index.cjs`.
+    This will test the `../../dist/init.cjs.production.min.cjs` bundle via `../../dist/index.cjs`.
 
 **Expected Output (for each CJS test):**
 Look for messages like:
