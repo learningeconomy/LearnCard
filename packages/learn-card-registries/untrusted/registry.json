@@ -8,6 +8,11 @@
             "name": "Kyle Untrusted Account",
             "location": "Little Rock, AR 72201",
             "url": "https://www.smartresume.com/"
+        },
+        "did:web:network.learncard.com:users:sophpotato1": {
+            "name": "Soph Potato",
+            "location": "Unknown, USA",
+            "url": "https://www.example.com"
         }
     }
 }
