@@ -30,7 +30,7 @@ const configurations = [
         plugins: [],
         entryPoints: ['src/index.ts'],
         format: 'cjs',
-        outfile: 'dist/core.cjs.development.js',
+        outfile: 'dist/core.cjs.development.cjs',
         ...buildOptions,
     },
     {
