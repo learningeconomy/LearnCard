@@ -1,5 +1,14 @@
 # lca-api-plugin
 
+## 1.0.12
+
+### Patch Changes
+
+-   [#678](https://github.com/learningeconomy/LearnCard/pull/678) [`aaa05036a29e1071bf1b93e9bfdecdc89fb3d7c3`](https://github.com/learningeconomy/LearnCard/commit/aaa05036a29e1071bf1b93e9bfdecdc89fb3d7c3) Thanks [@Custard7](https://github.com/Custard7)! - Fix: Update Plugins to support CJS
+
+-   Updated dependencies []:
+    -   @learncard/simple-signing-client@1.0.12
+
 ## 1.0.11
 
 ### Patch Changes

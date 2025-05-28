@@ -1,5 +1,30 @@
 # learn-card-core
 
+## 2.0.16
+
+### Patch Changes
+
+-   [#678](https://github.com/learningeconomy/LearnCard/pull/678) [`aaa05036a29e1071bf1b93e9bfdecdc89fb3d7c3`](https://github.com/learningeconomy/LearnCard/commit/aaa05036a29e1071bf1b93e9bfdecdc89fb3d7c3) Thanks [@Custard7](https://github.com/Custard7)! - Fix: Update Plugins to support CJS
+
+-   Updated dependencies [[`aaa05036a29e1071bf1b93e9bfdecdc89fb3d7c3`](https://github.com/learningeconomy/LearnCard/commit/aaa05036a29e1071bf1b93e9bfdecdc89fb3d7c3)]:
+    -   @learncard/core@9.3.28
+    -   @learncard/chapi-plugin@1.0.57
+    -   @learncard/crypto-plugin@1.0.39
+    -   @learncard/did-web-plugin@1.0.65
+    -   @learncard/didkey-plugin@1.0.39
+    -   @learncard/didkit-plugin@1.5.15
+    -   @learncard/dynamic-loader-plugin@1.0.35
+    -   @learncard/encryption-plugin@1.0.13
+    -   @learncard/ethereum-plugin@1.0.40
+    -   @learncard/expiration-plugin@1.1.44
+    -   @learncard/learn-card-plugin@1.1.43
+    -   @learncard/network-plugin@2.4.33
+    -   @learncard/learn-cloud-plugin@2.1.24
+    -   @learncard/vc-plugin@1.1.44
+    -   @learncard/vc-api-plugin@1.0.39
+    -   @learncard/vc-templates-plugin@1.0.49
+    -   @learncard/vpqr-plugin@1.0.39
+
 ## 2.0.15
 
 ### Patch Changes

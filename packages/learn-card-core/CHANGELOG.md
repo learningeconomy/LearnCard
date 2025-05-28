@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 9.3.28
+
+### Patch Changes
+
+-   [#678](https://github.com/learningeconomy/LearnCard/pull/678) [`aaa05036a29e1071bf1b93e9bfdecdc89fb3d7c3`](https://github.com/learningeconomy/LearnCard/commit/aaa05036a29e1071bf1b93e9bfdecdc89fb3d7c3) Thanks [@Custard7](https://github.com/Custard7)! - Fix: Update Plugins to support CJS
+
 ## 9.3.27
 
 ### Patch Changes
