@@ -8,7 +8,7 @@
     "exports": {
         ".": {
             "import": "./dist/core.esm.js",
-            "require": "./dist/core.cjs"
+            "require": "./dist/index.cjs"
         }
     },
     "files": [
