@@ -3,7 +3,7 @@
     "version": "9.3.27",
     "description": "",
     "type": "module",
-    "main": "./dist/index.js",
+    "main": "./dist/index.cjs",
     "module": "./dist/core.esm.js",
     "exports": {
         ".": {
