@@ -10,6 +10,7 @@ import CertificateFrontFace from './CertificateFrontFace';
 import CertificateBackFace from './CertificateBackFace';
 import FatArrow from '../svgs/FatArrow';
 import ThreeDots from '../../assets/images/DotsThreeOutline.svg';
+import { KnownDIDRegistryType } from '../VCDisplayCard2';
 
 type CertificateDisplayCardProps = {
     credential: VC | BoostAchievementCredential;
@@ -17,7 +18,7 @@ type CertificateDisplayCardProps = {
     verificationItems: VerificationItem[];
     issuerOverride?: Profile;
     issueeOverride?: Profile;
-    trustedAppRegistry?: any[];
+    knownDIDRegistry?: KnownDIDRegistryType;
     subjectImageComponent?: React.ReactNode;
     issuerImageComponent?: React.ReactNode;
     customBodyCardComponent?: React.ReactNode;
@@ -48,7 +49,7 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
     subjectImageComponent,
     issuerImageComponent,
     customBodyCardComponent,
-    trustedAppRegistry,
+    knownDIDRegistry,
     hideIssueDate,
     customSkillsComponent,
 
@@ -80,7 +81,7 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
                         categoryType={categoryType}
                         issuerOverride={issuerOverride}
                         issueeOverride={issueeOverride}
-                        trustedAppRegistry={trustedAppRegistry}
+                        knownDIDRegistry={knownDIDRegistry}
                         subjectImageComponent={subjectImageComponent}
                         issuerImageComponent={issuerImageComponent}
                         customBodyCardComponent={customBodyCardComponent}
