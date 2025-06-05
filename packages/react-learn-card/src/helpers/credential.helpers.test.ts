@@ -1,5 +1,11 @@
+import { vi } from 'vitest';
 import { Image } from '@learncard/types';
-import { getImageFromImage, getNameFromProfile, getImageFromProfile, getInfoFromCredential } from './credential.helpers';
+import {
+    getImageFromImage,
+    getNameFromProfile,
+    getImageFromProfile,
+    getInfoFromCredential,
+} from './credential.helpers';
 import { JffCredential, VC2CredentialWithValidFrom, VC2CredentialNoDate } from './test.helpers';
 
 describe('Credential Helpers', () => {
@@ -82,15 +88,20 @@ describe('Credential Helpers', () => {
                 ...JffCredential,
                 issuanceDate: 'invalid-date-string',
             };
-            const consoleSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+            const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => { });
             const result = getInfoFromCredential(credentialWithInvalidDate as any);
             expect(result.createdAt).toEqual('');
-            expect(consoleSpy).toHaveBeenCalledWith('Invalid date format in credential:', 'invalid-date-string');
+            expect(consoleSpy).toHaveBeenCalledWith(
+                'Invalid date format in credential:',
+                'invalid-date-string'
+            );
             consoleSpy.mockRestore();
         });
 
         it('respects custom date format options', () => {
-            const result = getInfoFromCredential(JffCredential as any, 'yyyy-MM-dd', { uppercaseDate: false });
+            const result = getInfoFromCredential(JffCredential as any, 'yyyy-MM-dd', {
+                uppercaseDate: false,
+            });
             expect(result.createdAt).toEqual('2022-07-27');
         });
     });
