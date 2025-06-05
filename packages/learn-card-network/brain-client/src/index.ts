@@ -1,10 +1,10 @@
 import { RegExpTransformer } from '@learncard/helpers';
-import { createTRPCProxyClient, CreateTRPCProxyClient, httpBatchLink } from '@trpc/client';
+import { createTRPCClient, TRPCClient, httpBatchLink } from '@trpc/client';
 import type { AppRouter } from '@learncard/network-brain-service';
 
 import { callbackLink } from './callbackLink';
 
-export type LCNClient = CreateTRPCProxyClient<AppRouter>;
+export type LCNClient = TRPCClient<AppRouter>;
 
 export const getClient = async (
     url: string,
@@ -12,16 +12,16 @@ export const getClient = async (
 ): Promise<LCNClient> => {
     let challenges: string[] = [];
 
-    const challengeRequester = createTRPCProxyClient<AppRouter>({
-        transformer: {
-            input: RegExpTransformer,
-            output: { serialize: o => o, deserialize: o => o },
-        },
+    const challengeRequester = createTRPCClient<AppRouter>({
         links: [
             httpBatchLink({
                 url,
                 maxURLLength: 2048,
                 headers: { Authorization: `Bearer ${await didAuthFunction()}` },
+                transformer: {
+                    input: RegExpTransformer,
+                    output: { serialize: o => o, deserialize: o => o },
+                },
             }),
         ],
     });
@@ -34,22 +34,23 @@ export const getClient = async (
 
     getChallenges().then(result => (challenges = result));
 
-    const trpc = createTRPCProxyClient<AppRouter>({
-        transformer: {
-            input: RegExpTransformer,
-            output: { serialize: o => o, deserialize: o => o },
-        },
+    const trpc = createTRPCClient<AppRouter>({
         links: [
             callbackLink(async () => {
                 challenges = await getChallenges();
             }),
             httpBatchLink({
+                methodOverride: 'POST',
                 maxURLLength: 2048,
                 url,
                 headers: async () => {
                     if (challenges.length === 0) challenges.push(...(await getChallenges()));
 
                     return { Authorization: `Bearer ${await didAuthFunction(challenges.pop())}` };
+                },
+                transformer: {
+                    input: RegExpTransformer,
+                    output: { serialize: o => o, deserialize: o => o },
                 },
             }),
         ],

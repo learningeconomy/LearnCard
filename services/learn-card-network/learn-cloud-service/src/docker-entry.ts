@@ -4,7 +4,7 @@ import Fastify from 'fastify';
 import fastifyStatic from '@fastify/static';
 import fastifyCors from '@fastify/cors';
 import { fastifyTRPCPlugin, FastifyTRPCPluginOptions } from '@trpc/server/adapters/fastify';
-import { fastifyTRPCOpenApiPlugin, CreateOpenApiFastifyPluginOptions } from 'trpc-openapi';
+import { fastifyTRPCOpenApiPlugin, CreateOpenApiFastifyPluginOptions } from 'trpc-to-openapi';
 import { appRouter, type AppRouter, createContext } from './app';
 import { openApiDocument } from './openapi';
 import { didFastifyPlugin } from './dids';
@@ -18,6 +18,7 @@ server.register(fastifyCors);
 server.register(fastifyTRPCPlugin, {
     prefix: '/trpc',
     trpcOptions: {
+        allowMethodOverride: true,
         router: appRouter,
         createContext,
         onError({ path, error }) {
