@@ -3,6 +3,7 @@ import { Story, Meta } from '@storybook/react';
 
 import VCDisplayCard, { VCDisplayCardPropsReal } from './VCDisplayCard';
 import { VerificationStatusEnum } from '@learncard/types';
+import { VC2CredentialWithValidFrom, VC2CredentialNoDate } from '../../helpers/test.helpers';
 
 export default {
     title: 'VCDisplayCard',
@@ -135,6 +136,32 @@ VCDisplayCardTest.args = {
             check: 'proof',
             status: VerificationStatusEnum.Success,
             message: 'Valid • Does Not Expire',
+        },
+    ],
+};
+
+export const VC2WithValidFrom = Template.bind({});
+VC2WithValidFrom.args = {
+    credential: VC2CredentialWithValidFrom as any,
+    loading: false,
+    verification: [
+        {
+            check: 'proof',
+            status: VerificationStatusEnum.Success,
+            message: 'Valid • VC 2.0 with validFrom field',
+        },
+    ],
+};
+
+export const VC2NoDate = Template.bind({});
+VC2NoDate.args = {
+    credential: VC2CredentialNoDate as any,
+    loading: false,
+    verification: [
+        {
+            check: 'proof',
+            status: VerificationStatusEnum.Success,
+            message: 'Valid • No date fields present',
         },
     ],
 };

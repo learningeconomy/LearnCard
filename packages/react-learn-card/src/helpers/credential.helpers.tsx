@@ -44,7 +44,7 @@ export const getInfoFromCredential = (
     dateFormat: string = 'dd MMM yyyy',
     options: { uppercaseDate?: boolean } = { uppercaseDate: true }
 ): CredentialInfo => {
-    const { issuer, issuanceDate } = credential;
+    const { issuer, issuanceDate, validFrom } = credential;
 
     const credentialSubject = Array.isArray(credential.credentialSubject)
         ? credential.credentialSubject[0]
@@ -54,9 +54,21 @@ export const getInfoFromCredential = (
     const issuee = credentialSubject.id;
     const imageUrl = credentialSubject.achievement?.image;
 
-    let createdAt = format(new Date(issuanceDate), dateFormat);
-    if (options.uppercaseDate) {
-        createdAt = createdAt.toUpperCase();
+    // Support both VC 2.0 (validFrom) and VC 1.0 (issuanceDate)
+    // Gracefully handle missing dates
+    const dateValue = validFrom || issuanceDate;
+    let createdAt = '';
+    
+    if (dateValue) {
+        try {
+            createdAt = format(new Date(dateValue), dateFormat);
+            if (options.uppercaseDate) {
+                createdAt = createdAt.toUpperCase();
+            }
+        } catch (error) {
+            console.warn('Invalid date format in credential:', dateValue);
+            createdAt = '';
+        }
     }
 
     return { title, createdAt, issuer, issuee, credentialSubject, imageUrl };
