@@ -7,7 +7,7 @@
     "scripts": {
         "test": "vitest",
         "test:watch": "vitest --watch",
-        "build": "shx rm -rf dist && node esbuild.mjs && tsc --p tsconfig.build.json",
+        "build": "shx rm -rf dist && node esbuild.mjs && tsc --p tsconfig.build.json && tsc --showConfig --p tsconfig.build.json > tsconfig.temp.json && tsc-alias --replacer ./tsc-alias-replacer.cjs -p tsconfig.temp.json && shx rm tsconfig.temp.json",
         "build:docker": "shx rm -rf dist && node esbuild-docker.mjs",
         "start": "PORT=3000 serverless offline --httpPort 3000 --websocketPort 3001 --lambdaPort 3002 --albPort 3003 --host 127.0.0.1 --config serverless-local.yml",
         "start-p-4000": "PORT=4000 serverless offline --httpPort 4000 --websocketPort 4001 --lambdaPort 4002 --albPort 4003 --host 127.0.0.1 --config serverless-local.yml",
@@ -59,7 +59,7 @@
         "@learncard/vc-templates-plugin": "workspace:*",
         "@sentry/esbuild-plugin": "2.16.0",
         "@sentry/serverless": "7.61.0",
-        "@trpc/server": "^10.45.2",
+        "@trpc/server": "^11.3.0",
         "@types/lodash": "^4.14.191",
         "cors": "^2.8.5",
         "dotenv": "^16.0.3",
@@ -77,6 +77,8 @@
         "serverless-offline": "^12.0.4",
         "sift": "^17.0.1",
         "trpc-openapi": "^1.2.0",
+        "trpc-to-openapi": "^2.3.1",
+        "tsc-alias": "^1.8.10",
         "uuid": "^9.0.0"
     }
 }

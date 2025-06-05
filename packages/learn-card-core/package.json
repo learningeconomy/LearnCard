@@ -45,7 +45,7 @@
         "shx": "^0.3.4",
         "sift": "^17.0.1",
         "ts-jest": "^29.0.3",
-        "tsc-alias": "^1.6.9"
+        "tsc-alias": "^1.8.10"
     },
     "types": "./dist/index.d.ts",
     "dependencies": {

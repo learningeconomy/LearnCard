@@ -1,7 +1,11 @@
+import http from 'node:http';
+
 import { initTRPC, TRPCError } from '@trpc/server';
-import { APIGatewayEvent, CreateAWSLambdaContextOptions } from '@trpc/server/adapters/aws-lambda';
+import type { APIGatewayProxyEventV2 } from 'aws-lambda';
+import { CreateAWSLambdaContextOptions } from '@trpc/server/adapters/aws-lambda';
+import { NodeHTTPCreateContextFnOptions } from '@trpc/server/adapters/node-http';
 import { CreateFastifyContextOptions } from '@trpc/server/adapters/fastify';
-import { OpenApiMeta } from 'trpc-openapi';
+import { OpenApiMeta } from 'trpc-to-openapi';
 import jwtDecode from 'jwt-decode';
 import * as Sentry from '@sentry/serverless';
 
@@ -20,7 +24,10 @@ export type Context = {
 export const t = initTRPC.context<Context>().meta<OpenApiMeta>().create();
 
 export const createContext = async (
-    options: CreateAWSLambdaContextOptions<APIGatewayEvent> | CreateFastifyContextOptions
+    options:
+        | CreateAWSLambdaContextOptions<APIGatewayProxyEventV2>
+        | CreateFastifyContextOptions
+        | NodeHTTPCreateContextFnOptions<http.IncomingMessage, http.ServerResponse>
 ): Promise<Context> => {
     const event = 'event' in options ? options.event : options.req;
     const authHeader = event.headers.authorization;
@@ -65,7 +72,7 @@ export const createContext = async (
 };
 
 export const openRoute = t.procedure
-    .use(t.middleware(Sentry.Handlers.trpcMiddleware({ attachRpcInput: true })))
+    .use(t.middleware(Sentry.Handlers.trpcMiddleware({ attachRpcInput: true }) as any))
     .use(({ ctx, next, path }) => {
         Sentry.configureScope(scope => {
             scope.setTransactionName(`trpc-${path}`);

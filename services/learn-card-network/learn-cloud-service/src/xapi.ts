@@ -124,11 +124,11 @@ export const xapiFastifyPlugin: FastifyPluginAsync = async fastify => {
 
             reply.code(response.status);
 
-            for (const [key, value] of response.headers.entries()) {
+            response.headers.forEach((value, key) => {
                 if (key !== 'transfer-encoding') reply.header(key, value);
-            }
+            });
 
-            return response.text();
+            return await response.text();
         } catch (error) {
             console.error(error);
             return reply.status(500).send('The server could not process that xAPI request.');

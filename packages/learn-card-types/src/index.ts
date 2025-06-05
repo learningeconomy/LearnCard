@@ -1,3 +1,5 @@
+import 'zod-openapi/extend';
+
 export * from './vc';
 export * from './did';
 export * from './obv3';
