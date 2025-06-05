@@ -35,9 +35,9 @@ export const _openApiHandler = serverlessHttp(
     http.createServer(
         createOpenApiHttpHandler({
             router: appRouter,
+            responseMeta: undefined,
+            maxBodySize: undefined,
             createContext,
-            responseMeta: undefined as any,
-            maxBodySize: undefined as any,
             onError: ({ error, ctx, path }) => {
                 error.stack = error.stack?.replace('Mr: ', '');
                 error.name = error.message;

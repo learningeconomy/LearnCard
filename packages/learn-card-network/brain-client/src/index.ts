@@ -15,8 +15,9 @@ export const getClient = async (
     const challengeRequester = createTRPCClient<AppRouter>({
         links: [
             httpBatchLink({
+                methodOverride: 'POST',
                 url,
-                maxURLLength: 2048,
+                maxURLLength: 3072,
                 headers: { Authorization: `Bearer ${await didAuthFunction()}` },
                 transformer: {
                     input: RegExpTransformer,
@@ -41,7 +42,7 @@ export const getClient = async (
             }),
             httpBatchLink({
                 methodOverride: 'POST',
-                maxURLLength: 2048,
+                maxURLLength: 3072,
                 url,
                 headers: async () => {
                     if (challenges.length === 0) challenges.push(...(await getChallenges()));
