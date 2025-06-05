@@ -1,5 +1,11 @@
 # learn-card-types
 
+## 5.7.0
+
+### Minor Changes
+
+-   [#682](https://github.com/learningeconomy/LearnCard/pull/682) [`1ed5313935264890917c6ddf19249ada91d1e524`](https://github.com/learningeconomy/LearnCard/commit/1ed5313935264890917c6ddf19249ada91d1e524) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Include zod-openapi in validators
+
 ## 5.6.14
 
 ### Patch Changes

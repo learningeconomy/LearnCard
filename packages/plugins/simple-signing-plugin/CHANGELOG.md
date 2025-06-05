@@ -1,5 +1,14 @@
 # lca-api-plugin
 
+## 1.0.13
+
+### Patch Changes
+
+-   [#682](https://github.com/learningeconomy/LearnCard/pull/682) [`1ed5313935264890917c6ddf19249ada91d1e524`](https://github.com/learningeconomy/LearnCard/commit/1ed5313935264890917c6ddf19249ada91d1e524) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Bump tsc-alias
+
+-   Updated dependencies []:
+    -   @learncard/simple-signing-client@1.0.13
+
 ## 1.0.12
 
 ### Patch Changes
