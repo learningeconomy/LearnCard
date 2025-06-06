@@ -358,6 +358,68 @@ export const BoostCredential = {
     ],
 };
 
+// VC 2.0 Credentials using validFrom instead of issuanceDate
+export const VC2CredentialWithValidFrom = {
+    '@context': [
+        'https://www.w3.org/2018/credentials/v1',
+        'https://purl.imsglobal.org/spec/ob/v3p0/context.json',
+    ],
+    type: ['VerifiableCredential', 'OpenBadgeCredential'],
+    issuer: {
+        type: 'Profile',
+        id: 'did:key:z6MksNj6FwQ7t7ejgJVXCNyaX655uHJ8mPJ8xLtxrqQDV2Bo',
+        name: 'Modern Skills Institute',
+        url: 'https://www.modernskills.org/',
+        image: 'https://example.com/logo.png',
+    },
+    validFrom: '2024-01-15T14:30:00.000Z',
+    validUntil: '2025-01-15T14:30:00.000Z',
+    credentialSubject: {
+        type: 'AchievementSubject',
+        id: 'did:key:z6Mkqk4j3VnaRf4XHEoU6eT343VTfdfZG23CK6zaf5g5KKju',
+        achievement: {
+            type: 'Achievement',
+            name: 'Advanced TypeScript Development',
+            description: 'Demonstrates mastery of advanced TypeScript concepts and patterns',
+            criteria: {
+                type: 'Criteria',
+                narrative: 'Successfully completed advanced TypeScript certification with practical projects.',
+            },
+            image: 'https://example.com/typescript-badge.png',
+        },
+    },
+};
+
+export const VC2CredentialNoDate = {
+    '@context': [
+        'https://www.w3.org/2018/credentials/v1',
+        'https://purl.imsglobal.org/spec/ob/v3p0/context.json',
+    ],
+    type: ['VerifiableCredential', 'OpenBadgeCredential'],
+    issuer: {
+        type: 'Profile',
+        id: 'did:key:z6MksNj6FwQ7t7ejgJVXCNyaX655uHJ8mPJ8xLtxrqQDV2Bo',
+        name: 'Future Learning Academy',
+        url: 'https://www.futurelearning.edu/',
+        image: 'https://example.com/academy-logo.png',
+    },
+    // No validFrom or issuanceDate - should handle gracefully
+    credentialSubject: {
+        type: 'AchievementSubject',
+        id: 'did:key:z6Mkqk4j3VnaRf4XHEoU6eT343VTfdfZG23CK6zaf5g5KKju',
+        achievement: {
+            type: 'Achievement',
+            name: 'Lifetime Learning Award',
+            description: 'Recognition for continuous professional development',
+            criteria: {
+                type: 'Criteria',
+                narrative: 'Demonstrated commitment to lifelong learning and growth.',
+            },
+            image: 'https://example.com/lifetime-badge.png',
+        },
+    },
+};
+
 export const TestVerificationItems = {
     // Real verification items returned by validation
     SUCCESS: {

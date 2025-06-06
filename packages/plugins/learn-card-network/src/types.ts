@@ -283,8 +283,14 @@ export type LearnCardNetworkPluginMethods = {
         description?: string;
         image?: string;
         expiresAt?: string;
+        writers?: string[];
         autoboosts?: AutoBoostConfig[];
     }) => Promise<string>;
+    addAutoBoostsToContract: (
+        contractUri: string,
+        autoboosts: AutoBoostConfig[]
+    ) => Promise<boolean>;
+    removeAutoBoostsFromContract: (contractUri: string, boostUris: string[]) => Promise<boolean>;
     getContract: (uri: string) => Promise<ConsentFlowContractDetails>;
     getContracts: (
         options?: Partial<PaginationOptionsType> & { query?: ConsentFlowContractQuery }
@@ -342,7 +348,7 @@ export type LearnCardNetworkPluginMethods = {
     ) => Promise<PaginatedContractCredentials>;
 
     verifyConsent: (uri: string, profileId: string) => Promise<boolean>;
-    
+
     syncCredentialsToContract: (
         termsUri: string,
         categories: Record<string, string[]>

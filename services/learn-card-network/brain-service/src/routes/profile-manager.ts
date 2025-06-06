@@ -257,3 +257,4 @@ export const profileManagersRouter = t.router({
             return updateProfileManager(manager, actualUpdates);
         }),
 });
+export type ProfileManagersRouter = typeof profileManagersRouter;

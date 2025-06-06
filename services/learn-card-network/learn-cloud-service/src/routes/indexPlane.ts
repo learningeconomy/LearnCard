@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { setTimeout } from 'timers/promises';
+import { client } from '@mongo';
 
 import {
     JWE,
@@ -32,6 +33,7 @@ import {
     getCachedIndexPageForDid,
     setCachedIndexPageForDid,
 } from '@cache/indexPlane';
+import { getAllDidsForDid } from '@accesslayer/user/read';
 
 export const indexRouter = t.router({
     get: didAndChallengeRoute
@@ -275,7 +277,11 @@ export const indexRouter = t.router({
                 updates = await decryptObject(_updates as JWE);
             }
 
-            const success = Boolean(await updateCredentialRecord(did, id, updates));
+            const session = client.startSession();
+
+            const dids = await session.withTransaction(async () => getAllDidsForDid(did, session));
+
+            const success = Boolean(await updateCredentialRecord(dids, id, updates));
             await flushIndexCacheForDid(did);
 
             if (!success) {

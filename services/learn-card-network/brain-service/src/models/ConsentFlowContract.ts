@@ -10,9 +10,10 @@ export type ConsentFlowRelationships = {
     autoReceive: ModelRelatedNodesI<
         typeof Boost,
         BoostInstance,
-        { signingAuthorityEndpoint: string; signingAuthorityName: string },
-        { signingAuthorityEndpoint: string; signingAuthorityName: string }
+        { signingAuthorityEndpoint: string; signingAuthorityName: string; issuer?: string },
+        { signingAuthorityEndpoint: string; signingAuthorityName: string; issuer?: string }
     >;
+    canWrite: ModelRelatedNodesI<typeof Profile, ProfileInstance>;
 };
 
 export type ConsentFlowInstance = NeogmaInstance<FlatDbContractType, ConsentFlowRelationships>;
@@ -49,8 +50,13 @@ export const ConsentFlowContract = ModelFactory<FlatDbContractType, ConsentFlowR
                         property: 'signingAuthorityName',
                         schema: { type: 'string', required: true },
                     },
+                    issuer: {
+                        property: 'issuer',
+                        schema: { type: 'string', required: false },
+                    },
                 },
             },
+            canWrite: { model: Profile, direction: 'out', name: 'CAN_WRITE' },
         },
         primaryKeyField: 'id',
     },

@@ -178,6 +178,26 @@ describe('Profiles', () => {
 
             expect(profile?.display?.fontColor).toEqual('#000');
         });
+
+        it('should allow setting your role', async () => {
+            await userA.clients.fullAuth.profile.createProfile({
+                profileId: 'usera',
+                role: 'learner',
+            });
+            const profile = await userA.clients.fullAuth.profile.getProfile();
+
+            expect(profile?.role).toEqual('learner');
+        });
+
+        it('should allow setting your dob', async () => {
+            await userA.clients.fullAuth.profile.createProfile({
+                profileId: 'usera',
+                dob: '2000-01-01',
+            });
+            const profile = await userA.clients.fullAuth.profile.getProfile();
+
+            expect(profile?.dob).toEqual('2000-01-01');
+        });
     });
 
     describe('createServiceProfile', () => {

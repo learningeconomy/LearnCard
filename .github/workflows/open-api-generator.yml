@@ -1,0 +1,57 @@
+name: Generate Client SDKs for LearnCard Network API
+
+on:
+  workflow_call:
+    inputs:
+      affected:
+        required: true
+        type: string
+
+env:
+    working-directory: packages/open-api-lcn-clients
+
+jobs:
+    generate-clients:
+        runs-on: ubuntu-latest
+        name: Generate Client SDKs for LearnCard Network API
+        strategy:
+            matrix:
+                # generator-name: [python, java, swift5, kotlin, go, php, rust]
+                generator-name: [python, java]
+        steps:
+            - name: Checkout Repo
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+                  token: '${{ secrets.GITHUB_TOKEN }}'
+
+            - name: Git config
+              run: |
+                  git config --local user.name "github-actions[bot]"
+                  git config --local user.email "github-actions[bot]@users.noreply.github.com"
+
+            - name: Cleanup old client
+              run: rm -rf ${{ env.working-directory }}/${{ matrix.generator-name }}-client/
+
+            - name: Generate new client
+              uses: openapi-generators/openapitools-generator-action@v1
+
+              with:
+                  generator: ${{ matrix.generator-name }}
+                  openapi-url: https://network.learncard.com/docs/openapi.json
+                  command-args: -o ${{ env.working-directory }}/${{ matrix.generator-name }}-client/ --skip-validate-spec
+
+            - name: Get version from package.json
+              id: package-version
+              run: |
+                  PACKAGE_VERSION="$(node -p "require('./services/learn-card-network/brain-service/package.json').version")"
+                  echo "version=$PACKAGE_VERSION" >> "$GITHUB_OUTPUT"
+
+            - name: Create or update PR
+              uses: peter-evans/create-pull-request@v6
+              with:
+                  commit-message: Update ${{ matrix.generator-name }}-client SDK to version ${{ steps.package-version.outputs.version }}
+                  title: Update Open API Client SDKs to version ${{ steps.package-version.outputs.version }}
+                  body: Generated OpenAPI client SDK for clients.
+                  branch: open-api-generator
+                  base: main

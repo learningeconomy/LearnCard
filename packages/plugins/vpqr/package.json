@@ -1,6 +1,6 @@
 {
     "name": "@learncard/vpqr-plugin",
-    "version": "1.0.35",
+    "version": "1.0.40",
     "description": "",
     "main": "./dist/index.js",
     "module": "./dist/vpqr-plugin.esm.js",

@@ -1,5 +1,60 @@
 # @welibraryos/react-learn-card
 
+## 2.7.89
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.17
+
+## 2.7.88
+
+### Patch Changes
+
+-   [#684](https://github.com/learningeconomy/LearnCard/pull/684) [`0b10e74bac01e5232031539a8f88b9b63aee847b`](https://github.com/learningeconomy/LearnCard/commit/0b10e74bac01e5232031539a8f88b9b63aee847b) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - fix: add VC 2.0 support for validFrom field in React components
+
+## 2.7.87
+
+### Patch Changes
+
+-   Updated dependencies [[`aaa05036a29e1071bf1b93e9bfdecdc89fb3d7c3`](https://github.com/learningeconomy/LearnCard/commit/aaa05036a29e1071bf1b93e9bfdecdc89fb3d7c3)]:
+    -   @learncard/init@2.0.16
+
+## 2.7.86
+
+### Patch Changes
+
+-   Updated dependencies [[`8957eda698be3222588d0b56834d7ef5622057fb`](https://github.com/learningeconomy/LearnCard/commit/8957eda698be3222588d0b56834d7ef5622057fb)]:
+    -   @learncard/init@2.0.15
+
+## 2.7.85
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.14
+
+## 2.7.84
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.13
+
+## 2.7.83
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.12
+
+## 2.7.82
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.11
+
 ## 2.7.81
 
 ### Patch Changes
