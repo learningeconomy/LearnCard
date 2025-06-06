@@ -58,7 +58,7 @@ export const getInfoFromCredential = (
     // Gracefully handle missing dates
     const dateValue = validFrom || issuanceDate;
     let createdAt = '';
-    
+
     if (dateValue) {
         try {
             createdAt = format(new Date(dateValue), dateFormat);
@@ -92,11 +92,11 @@ export const getColorForVerificationStatus = (
 export const getCategoryColor = (category = LCCategoryEnum.achievement) => {
     switch (category) {
         case LCCategoryEnum.socialBadge:
-            return 'cyan-700';
+            return 'blue-600';
         case LCCategoryEnum.skill:
             return 'indigo-600';
         case LCCategoryEnum.achievement:
-            return 'spice-600';
+            return 'pink-600';
         case LCCategoryEnum.learningHistory:
             return 'emerald-700';
         case LCCategoryEnum.id:
@@ -108,7 +108,7 @@ export const getCategoryColor = (category = LCCategoryEnum.achievement) => {
         case LCCategoryEnum.course:
             return 'emerald-700';
         case LCCategoryEnum.currency:
-            return 'cyan-700';
+            return 'blue-600';
         case LCCategoryEnum.membership:
             return 'teal-500';
         default:
@@ -119,17 +119,17 @@ export const getCategoryColor = (category = LCCategoryEnum.achievement) => {
 export const getCategoryPrimaryColor = (category = LCCategoryEnum.achievement) => {
     switch (category) {
         case LCCategoryEnum.socialBadge:
-            return 'cyan';
+            return 'blue';
         case LCCategoryEnum.skill:
             return 'indigo';
         case LCCategoryEnum.achievement:
-            return 'spice';
+            return 'pink';
         case LCCategoryEnum.learningHistory:
             return 'emerald';
         case LCCategoryEnum.id:
             return 'yellow';
         case LCCategoryEnum.workHistory:
-            return 'blue';
+            return 'cyan';
         case LCCategoryEnum.job:
             return 'rose';
         case LCCategoryEnum.course:
@@ -139,9 +139,9 @@ export const getCategoryPrimaryColor = (category = LCCategoryEnum.achievement) =
         case LCCategoryEnum.membership:
             return 'teal';
         case LCCategoryEnum.accommodations:
-            return 'amber';
+            return 'violet';
         case LCCategoryEnum.accomplishments:
-            return 'lime';
+            return 'yellow';
         default:
             return 'spice';
     }
