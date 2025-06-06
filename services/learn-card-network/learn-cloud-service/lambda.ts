@@ -1,7 +1,9 @@
+import http from 'node:http';
+
 import serverlessHttp from 'serverless-http';
 import type { Context, APIGatewayProxyResultV2, APIGatewayProxyEventV2 } from 'aws-lambda';
 import { awsLambdaRequestHandler } from '@trpc/server/adapters/aws-lambda';
-import { createOpenApiAwsLambdaHandler } from 'trpc-openapi';
+import { createOpenApiHttpHandler } from 'trpc-to-openapi';
 import { TRPC_ERROR_CODE_HTTP_STATUS } from 'trpc-openapi/dist/adapters/node-http/errors';
 import * as Sentry from '@sentry/serverless';
 
@@ -23,22 +25,32 @@ Sentry.AWSLambda.init({
 
 export const swaggerUiHandler = serverlessHttp(app, { basePath: '/docs' });
 
-export const _openApiHandler = createOpenApiAwsLambdaHandler({
-    router: appRouter,
-    createContext,
-    onError: ({ error, ctx, path }) => {
-        error.stack = error.stack?.replace('Mr: ', '');
-        error.name = error.message;
+export const _openApiHandler = serverlessHttp(
+    http.createServer(
+        createOpenApiHttpHandler({
+            router: appRouter,
+            createContext,
+            responseMeta: undefined,
+            maxBodySize: undefined,
+            onError: ({ error, ctx, path }) => {
+                error.stack = error.stack?.replace('Mr: ', '');
+                error.name = error.message;
 
-        // We want to ignore invalid challenge errors because they are normal
-        if (!(error.code === 'UNAUTHORIZED' && !ctx?.user?.isChallengeValid)) {
-            Sentry.captureException(error, { extra: { ctx, path } });
-            Sentry.getActiveTransaction()?.setHttpStatus(TRPC_ERROR_CODE_HTTP_STATUS[error.code]);
-        }
-    },
-});
+                // We want to ignore invalid challenge errors because they are normal
+                if (!(error.code === 'UNAUTHORIZED' && !ctx?.user?.isChallengeValid)) {
+                    Sentry.captureException(error, { extra: { ctx, path } });
+                    Sentry.getActiveTransaction()?.setHttpStatus(
+                        TRPC_ERROR_CODE_HTTP_STATUS[error.code]
+                    );
+                }
+            },
+        })
+    ),
+    { basePath: '/api' }
+);
 
 export const _trpcHandler = awsLambdaRequestHandler({
+    allowMethodOverride: true,
     router: appRouter,
     createContext,
     onError: ({ error, ctx, path }) => {

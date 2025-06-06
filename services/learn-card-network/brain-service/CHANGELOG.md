@@ -1,5 +1,27 @@
 # @learncard/network-brain-service
 
+## 3.4.0
+
+### Minor Changes
+
+-   [#682](https://github.com/learningeconomy/LearnCard/pull/682) [`1ed5313935264890917c6ddf19249ada91d1e524`](https://github.com/learningeconomy/LearnCard/commit/1ed5313935264890917c6ddf19249ada91d1e524) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Upgrade to tRPC v11 and allow overriding method
+
+### Patch Changes
+
+-   Updated dependencies [[`1ed5313935264890917c6ddf19249ada91d1e524`](https://github.com/learningeconomy/LearnCard/commit/1ed5313935264890917c6ddf19249ada91d1e524), [`1ed5313935264890917c6ddf19249ada91d1e524`](https://github.com/learningeconomy/LearnCard/commit/1ed5313935264890917c6ddf19249ada91d1e524)]:
+    -   @learncard/core@9.3.29
+    -   @learncard/types@5.7.0
+    -   @learncard/crypto-plugin@1.0.40
+    -   @learncard/did-web-plugin@1.0.66
+    -   @learncard/didkey-plugin@1.0.40
+    -   @learncard/didkit-plugin@1.5.16
+    -   @learncard/encryption-plugin@1.0.14
+    -   @learncard/expiration-plugin@1.1.45
+    -   @learncard/learn-card-plugin@1.1.44
+    -   @learncard/vc-plugin@1.1.45
+    -   @learncard/vc-templates-plugin@1.0.50
+    -   @learncard/helpers@1.1.17
+
 ## 3.3.33
 
 ### Patch Changes

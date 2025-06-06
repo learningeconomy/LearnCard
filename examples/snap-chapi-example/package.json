@@ -1,7 +1,7 @@
 {
   "name": "@learncard/snap-chapi-example",
   "type": "module",
-  "version": "1.0.231",
+  "version": "1.0.233",
   "private": true,
   "scripts": {
     "dev": "astro dev",
