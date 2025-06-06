@@ -128,7 +128,7 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
         <section
             role="button"
             onClick={() => handleViewBackFace?.()}
-            className="relative p-[13px] mt-[55px] bg-white border-[5px] rounded-[30px] border-soid border-grayscale-200 md:max-w-[300px] sm:max-w-[500px]"
+            className="relative p-[13px] mt-[55px] bg-white border-[5px] rounded-[30px] border-soid border-grayscale-200"
         >
             <div className="w-[calc(100%-26px)] absolute top-[-52px]">
                 <CertificateImageDisplay
@@ -213,9 +213,7 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
 
                     <VerifierStateBadgeAndText verifierState={verifierState} />
                 </div>
-                <div
-                    className={`${textLightColor} uppercase text-[14px] font-notoSans font-[600]`}
-                >
+                <div className={`${textLightColor} uppercase text-[14px] font-notoSans font-[600]`}>
                     {categoryTitle}
                 </div>
             </div>
