@@ -361,7 +361,8 @@ export const canProfileViewBoost = async (
         .with('COLLECT(parents) + COLLECT(target) AS boosts')
         .match({ identifier: 'profile', model: Profile, where: { profileId: profile.profileId } })
         .where(
-            `ANY(boost IN boosts WHERE EXISTS((profile)-[:${Boost.getRelationshipByAlias('hasRole').name
+            `ANY(boost IN boosts WHERE EXISTS((profile)-[:${
+                Boost.getRelationshipByAlias('hasRole').name
             }]-(boost)))`
         );
     const result = await query.return('count(profile) AS count, boosts').run();
@@ -777,4 +778,293 @@ export const isBoostParent = async (
     const result = await query.return('count(parent) AS count').run();
 
     return Number(result.records[0]?.get('count') ?? 0) > 0;
+};
+
+/**
+ * Get boost recipients that are connected with the requesting profile
+ */
+export const getConnectedBoostRecipients = async (
+    requestingProfile: ProfileType,
+    boost: BoostInstance,
+    {
+        limit,
+        cursor,
+        includeUnacceptedBoosts = true,
+        query: matchQuery = {},
+        domain,
+    }: {
+        limit: number;
+        cursor?: string;
+        includeUnacceptedBoosts?: boolean;
+        query?: LCNProfileQuery;
+        domain: string;
+    }
+): Promise<Array<BoostRecipientInfo & { sent: string }>> => {
+    const _query = new QueryBuilder(
+        new BindParam({
+            matchQuery: convertObjectRegExpToNeo4j(matchQuery),
+            cursor,
+        })
+    )
+        // Build connection list
+        .match({
+            model: Profile,
+            where: { profileId: requestingProfile.profileId },
+            identifier: 'requester',
+        })
+        // Direct connections
+        .match({
+            optional: true,
+            related: [
+                { identifier: 'requester' },
+                { ...Profile.getRelationshipByAlias('connectedWith'), direction: 'none' },
+                { identifier: 'directTarget', model: Profile },
+            ],
+        })
+        .with('requester, COLLECT(DISTINCT directTarget) AS directlyConnected')
+        // Auto-connect via received boost
+        .match({
+            optional: true,
+            related: [
+                { identifier: 'requester' },
+                { ...Credential.getRelationshipByAlias('credentialReceived') },
+                { model: Credential },
+                { ...Credential.getRelationshipByAlias('instanceOf') },
+                { model: Boost, where: { autoConnectRecipients: true } },
+                { ...Credential.getRelationshipByAlias('instanceOf'), direction: 'in' },
+                { model: Credential },
+                { ...Credential.getRelationshipByAlias('credentialReceived') },
+                { model: Profile, identifier: 'receivedBoostTarget' },
+            ],
+        })
+        .with(
+            'requester, directlyConnected, COLLECT(DISTINCT receivedBoostTarget) AS receivedBoostTargets'
+        )
+        // Auto-connect via owned boost
+        .match({
+            optional: true,
+            related: [
+                { identifier: 'requester' },
+                { ...Boost.getRelationshipByAlias('createdBy'), direction: 'in' },
+                { model: Boost, where: { autoConnectRecipients: true } },
+                { ...Credential.getRelationshipByAlias('instanceOf'), direction: 'in' },
+                { model: Credential },
+                { ...Credential.getRelationshipByAlias('credentialReceived') },
+                { model: Profile, identifier: 'ownedBoostTarget' },
+            ],
+        })
+        .with(
+            'directlyConnected, receivedBoostTargets, COLLECT(DISTINCT ownedBoostTarget) AS ownedBoostTargets'
+        )
+        .match({
+            optional: true,
+            related: [
+                { model: Profile, identifier: 'otherOwnedBoostTarget' },
+                { ...Boost.getRelationshipByAlias('createdBy'), direction: 'in' },
+                { model: Boost, where: { autoConnectRecipients: true } },
+                { ...Credential.getRelationshipByAlias('instanceOf'), direction: 'in' },
+                { model: Credential },
+                { ...Credential.getRelationshipByAlias('credentialReceived') },
+                { identifier: 'source' },
+            ],
+        })
+        .where(`otherOwnedBoostTarget.profileId <> "${requestingProfile.profileId}"`)
+        .with(
+            'directlyConnected, receivedBoostTargets, ownedBoostTargets, COLLECT(DISTINCT otherOwnedBoostTarget) AS otherOwnedBoostTargets'
+        )
+        .with(
+            'directlyConnected + receivedBoostTargets + ownedBoostTargets + otherOwnedBoostTargets AS allConnectedProfiles'
+        )
+        .unwind('allConnectedProfiles AS conn')
+        .with('COLLECT(DISTINCT conn.profileId) AS connectionIds')
+        // --- Boost recipient matching ---
+        .match({
+            related: [
+                { identifier: 'source', model: Boost, where: { id: boost.id } },
+                {
+                    ...Credential.getRelationshipByAlias('instanceOf'),
+                    identifier: 'instanceOf',
+                    direction: 'in',
+                },
+                { identifier: 'credential', model: Credential },
+                {
+                    ...Profile.getRelationshipByAlias('credentialSent'),
+                    identifier: 'sent',
+                    direction: 'in',
+                },
+                { identifier: 'sender', model: Profile },
+            ],
+        })
+        .match({ model: Profile, identifier: 'recipient' })
+        .where('recipient.profileId = sent.to')
+        .match({
+            optional: includeUnacceptedBoosts,
+            related: [
+                { identifier: 'credential', model: Credential },
+                {
+                    ...Credential.getRelationshipByAlias('credentialReceived'),
+                    identifier: 'received',
+                },
+                { identifier: 'recipient' },
+            ],
+        })
+        .with('sender, sent, received, recipient, credential, connectionIds')
+        .where(`sent.to IN connectionIds AND ${getMatchQueryWhere('recipient')}`);
+
+    const query = cursor ? _query.raw('AND sent.date > $cursor') : _query;
+
+    const results = convertQueryResultToPropertiesObjectArray<{
+        sender: FlatProfileType;
+        sent: ProfileRelationships['credentialSent']['RelationshipProperties'];
+        recipient?: FlatProfileType;
+        received?: CredentialRelationships['credentialReceived']['RelationshipProperties'];
+        credential?: CredentialInstance;
+    }>(
+        await query
+            .return('sender, sent, received, recipient, credential')
+            .orderBy('sent.date')
+            .limit(limit)
+            .run()
+    );
+
+    const resultsWithIds = results.map(({ sender, sent, received, credential }) => ({
+        sent: sent.date,
+        to: sent.to,
+        from: sender.profileId,
+        received: received?.date,
+        ...(credential && { uri: getCredentialUri(credential.id, domain) }),
+    }));
+
+    const recipients = await getProfilesByProfileIds(resultsWithIds.map(result => result.to));
+
+    return resultsWithIds
+        .map(result => ({
+            ...result,
+            to: recipients.find(recipient => recipient.profileId === result.to),
+        }))
+        .filter(result => Boolean(result.to)) as Array<BoostRecipientInfo & { sent: string }>;
+};
+
+/**
+ * Count boost recipients that are connected with the requesting profile
+ */
+export const countConnectedBoostRecipients = async (
+    requestingProfile: ProfileType,
+    boost: BoostInstance,
+    {
+        includeUnacceptedBoosts = true,
+        query: matchQuery = {},
+    }: { includeUnacceptedBoosts?: boolean; query?: LCNProfileQuery }
+): Promise<number> => {
+    const countQuery = new QueryBuilder(
+        new BindParam({ matchQuery: convertObjectRegExpToNeo4j(matchQuery) })
+    )
+        // Build connection list
+        .match({
+            model: Profile,
+            where: { profileId: requestingProfile.profileId },
+            identifier: 'requester',
+        })
+        // Direct connections
+        .match({
+            optional: true,
+            related: [
+                { identifier: 'requester' },
+                { ...Profile.getRelationshipByAlias('connectedWith'), direction: 'none' },
+                { identifier: 'directTarget', model: Profile },
+            ],
+        })
+        .with('requester, COLLECT(DISTINCT directTarget) AS directlyConnected')
+        // Auto-connect via received boost
+        .match({
+            optional: true,
+            related: [
+                { identifier: 'requester' },
+                { ...Credential.getRelationshipByAlias('credentialReceived') },
+                { model: Credential },
+                { ...Credential.getRelationshipByAlias('instanceOf') },
+                { model: Boost, where: { autoConnectRecipients: true } },
+                { ...Credential.getRelationshipByAlias('instanceOf'), direction: 'in' },
+                { model: Credential },
+                { ...Credential.getRelationshipByAlias('credentialReceived') },
+                { model: Profile, identifier: 'receivedBoostTarget' },
+            ],
+        })
+        .with(
+            'requester, directlyConnected, COLLECT(DISTINCT receivedBoostTarget) AS receivedBoostTargets'
+        )
+        // Auto-connect via owned boost
+        .match({
+            optional: true,
+            related: [
+                { identifier: 'requester' },
+                { ...Boost.getRelationshipByAlias('createdBy'), direction: 'in' },
+                { model: Boost, where: { autoConnectRecipients: true } },
+                { ...Credential.getRelationshipByAlias('instanceOf'), direction: 'in' },
+                { model: Credential },
+                { ...Credential.getRelationshipByAlias('credentialReceived') },
+                { model: Profile, identifier: 'ownedBoostTarget' },
+            ],
+        })
+        .with(
+            'directlyConnected, receivedBoostTargets, COLLECT(DISTINCT ownedBoostTarget) AS ownedBoostTargets'
+        )
+        .match({
+            optional: true,
+            related: [
+                { model: Profile, identifier: 'otherOwnedBoostTarget' },
+                { ...Boost.getRelationshipByAlias('createdBy'), direction: 'in' },
+                { model: Boost, where: { autoConnectRecipients: true } },
+                { ...Credential.getRelationshipByAlias('instanceOf'), direction: 'in' },
+                { model: Credential },
+                { ...Credential.getRelationshipByAlias('credentialReceived') },
+                { identifier: 'source' },
+            ],
+        })
+        .where(`otherOwnedBoostTarget.profileId <> "${requestingProfile.profileId}"`)
+        .with(
+            'directlyConnected, receivedBoostTargets, ownedBoostTargets, COLLECT(DISTINCT otherOwnedBoostTarget) AS otherOwnedBoostTargets'
+        )
+        .with(
+            'directlyConnected + receivedBoostTargets + ownedBoostTargets + otherOwnedBoostTargets AS allConnectedProfiles'
+        )
+        .unwind('allConnectedProfiles AS conn')
+        .with('COLLECT(DISTINCT conn.profileId) AS connectionIds')
+        // --- Boost recipient matching ---
+        .match({
+            related: [
+                { identifier: 'source', model: Boost, where: { id: boost.id } },
+                {
+                    ...Credential.getRelationshipByAlias('instanceOf'),
+                    identifier: 'instanceOf',
+                    direction: 'in',
+                },
+                { identifier: 'credential', model: Credential },
+                {
+                    ...Profile.getRelationshipByAlias('credentialSent'),
+                    identifier: 'sent',
+                    direction: 'in',
+                },
+                { identifier: 'sender', model: Profile },
+            ],
+        })
+        .match({ model: Profile, identifier: 'recipient' })
+        .where('recipient.profileId = sent.to')
+        .match({
+            optional: includeUnacceptedBoosts,
+            related: [
+                { identifier: 'credential', model: Credential },
+                {
+                    ...Credential.getRelationshipByAlias('credentialReceived'),
+                    identifier: 'received',
+                },
+                { identifier: 'recipient' },
+            ],
+        })
+        .with('sender, sent, received, recipient, credential, connectionIds')
+        .where(`sent.to IN connectionIds AND ${getMatchQueryWhere('recipient')}`);
+
+    const result = await countQuery.return('COUNT(DISTINCT sent.to) AS count').run();
+
+    return Number(result.records[0]?.get('count') ?? 0);
 };
