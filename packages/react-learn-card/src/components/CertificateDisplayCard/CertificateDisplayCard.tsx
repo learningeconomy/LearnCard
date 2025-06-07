@@ -73,7 +73,7 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
 
     return (
         <section className="w-full flex flex-col gap-[15px] justify-center relative min-w-[220px]">
-            <section className="sm:mx-0 md:mx-auto">
+            <section className="max-w-[400px] w-full">
                 {isFront && (
                     <CertificateFrontFace
                         credential={credential}

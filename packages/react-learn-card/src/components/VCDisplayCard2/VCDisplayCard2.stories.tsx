@@ -15,6 +15,7 @@ import {
     AllFieldsBackgroundColorCredential,
     BoostCredential,
     LongTitleCredential,
+    ShortFieldsCredential,
 } from '../../helpers/test.helpers';
 
 export default {
@@ -150,5 +151,41 @@ LongTitleTest.args = {
         TestVerificationItems.FAILED.SIGNATURE,
         TestVerificationItems.FAILED.PROOF_TYPE,
         TestVerificationItems.FAILED.APPLICABLE_PROOF,
+    ],
+};
+
+export const ShortFieldsCertificateTest = Template.bind({});
+ShortFieldsCertificateTest.args = {
+    credential: ShortFieldsCredential,
+    handleXClick: () => console.log('X clicked!'),
+    issueHistory: issueHistoryDummyData,
+    //customThumbComponent: <div>Custom thumb component</div>,
+    // customFooterComponent: <div>Custom Footer</div>,
+    // customBodyCardComponent: <div>Custom Body</div>,
+    // customIssueHistoryComponent: <div>Custom Issuer History</div>,
+    verificationItems: [
+        TestVerificationItems.SUCCESS.PROOF,
+        TestVerificationItems.SUCCESS.NOT_EXPIRED,
+    ],
+};
+
+export const ShortFieldsBadgeTest = Template.bind({});
+ShortFieldsBadgeTest.args = {
+    credential: {
+        ...ShortFieldsCredential,
+        display: {
+            ...ShortFieldsCredential.display,
+            displayType: 'badge',
+        },
+    },
+    handleXClick: () => console.log('X clicked!'),
+    issueHistory: issueHistoryDummyData,
+    //customThumbComponent: <div>Custom thumb component</div>,
+    // customFooterComponent: <div>Custom Footer</div>,
+    // customBodyCardComponent: <div>Custom Body</div>,
+    // customIssueHistoryComponent: <div>Custom Issuer History</div>,
+    verificationItems: [
+        TestVerificationItems.SUCCESS.PROOF,
+        TestVerificationItems.SUCCESS.NOT_EXPIRED,
     ],
 };
