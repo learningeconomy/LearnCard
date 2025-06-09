@@ -1,5 +1,5 @@
 import { inflateObject } from '@helpers/objects.helpers';
-import { PresentationInstance, Profile, ProfileRelationships } from '@models';
+import { Presentation, PresentationInstance, Profile, ProfileRelationships } from '@models';
 import { ProfileType } from 'types/profile';
 
 export const getPresentationSentToProfile = async (
@@ -46,8 +46,6 @@ export const getPresentationReceivedByProfile = async (
     presentationId: string,
     profile: ProfileType
 ): Promise<boolean> => {
-    const { Presentation } = await import('@models');
-    
     const relationships = await Presentation.findRelationships({
         alias: 'presentationReceived',
         where: {
