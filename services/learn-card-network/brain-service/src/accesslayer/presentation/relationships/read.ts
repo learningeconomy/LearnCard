@@ -41,3 +41,20 @@ export const getPresentationOwner = async (
 
     return inflateObject<ProfileType>(owner.dataValues as any);
 };
+
+export const getPresentationReceivedByProfile = async (
+    presentationId: string,
+    profile: ProfileType
+): Promise<boolean> => {
+    const { Presentation } = await import('@models');
+    
+    const relationships = await Presentation.findRelationships({
+        alias: 'presentationReceived',
+        where: {
+            source: { id: presentationId },
+            target: { profileId: profile.profileId },
+        },
+    });
+
+    return relationships.length > 0;
+};
