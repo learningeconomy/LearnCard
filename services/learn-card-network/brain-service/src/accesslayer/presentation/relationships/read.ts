@@ -1,5 +1,5 @@
 import { inflateObject } from '@helpers/objects.helpers';
-import { PresentationInstance, Profile, ProfileRelationships } from '@models';
+import { Presentation, PresentationInstance, Profile, ProfileRelationships } from '@models';
 import { ProfileType } from 'types/profile';
 
 export const getPresentationSentToProfile = async (
@@ -40,4 +40,19 @@ export const getPresentationOwner = async (
     if (!owner) return undefined;
 
     return inflateObject<ProfileType>(owner.dataValues as any);
+};
+
+export const getPresentationReceivedByProfile = async (
+    presentationId: string,
+    profile: ProfileType
+): Promise<boolean> => {
+    const relationships = await Presentation.findRelationships({
+        alias: 'presentationReceived',
+        where: {
+            source: { id: presentationId },
+            target: { profileId: profile.profileId },
+        },
+    });
+
+    return relationships.length > 0;
 };

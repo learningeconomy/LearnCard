@@ -102,6 +102,26 @@ describe('Credentials', () => {
                 userB.clients.fullAuth.credential.acceptCredential({ uri })
             ).resolves.not.toThrow();
         });
+
+        it('should not allow accepting the same credential twice', async () => {
+            const uri = await userA.clients.fullAuth.credential.sendCredential({
+                profileId: 'userb',
+                credential: testVc,
+            });
+
+            // First acceptance should succeed
+            await expect(
+                userB.clients.fullAuth.credential.acceptCredential({ uri })
+            ).resolves.not.toThrow();
+
+            // Second acceptance should fail
+            await expect(
+                userB.clients.fullAuth.credential.acceptCredential({ uri })
+            ).rejects.toMatchObject({
+                code: 'BAD_REQUEST',
+                message: expect.stringContaining('already been received'),
+            });
+        });
     });
 
     describe('receivedCredentials', () => {

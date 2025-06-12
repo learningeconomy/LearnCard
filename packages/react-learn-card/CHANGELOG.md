@@ -1,5 +1,18 @@
 # @welibraryos/react-learn-card
 
+## 2.7.91
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.18
+
+## 2.7.90
+
+### Patch Changes
+
+-   [#688](https://github.com/learningeconomy/LearnCard/pull/688) [`d1c55ca4e179162ba0d0b63e85b0e16eebae3278`](https://github.com/learningeconomy/LearnCard/commit/d1c55ca4e179162ba0d0b63e85b0e16eebae3278) Thanks [@gerardopar](https://github.com/gerardopar)! - LC-849 - colors support
+
 ## 2.7.89
 
 ### Patch Changes

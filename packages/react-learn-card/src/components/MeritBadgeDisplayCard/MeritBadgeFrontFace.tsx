@@ -79,20 +79,20 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
     let borderColor = `border-${credentialLightColor}`;
 
     if (categoryType === LCCategoryEnum.accommodations) {
-        textLightColor = 'text-amber-500';
-        textDarkColor = 'text-amber-700';
-        borderColor = 'border-amber-500';
+        textLightColor = 'text-violet-500';
+        textDarkColor = 'text-violet-700';
+        borderColor = 'border-violet-500';
     } else if (categoryType === LCCategoryEnum.accomplishments) {
-        textLightColor = 'text-lime-500';
-        textDarkColor = 'text-lime-700';
-        borderColor = 'border-lime-500';
+        textLightColor = 'text-yellow-500';
+        textDarkColor = 'text-yellow-700';
+        borderColor = 'border-yellow-500';
     } else if (categoryType === LCCategoryEnum.learningHistory) {
-        categoryTitle = 'Course';
+        categoryTitle = 'Study';
     } else if (categoryType === LCCategoryEnum.workHistory) {
         categoryTitle = 'Experiences';
-        textLightColor = 'text-blue-500';
-        textDarkColor = 'text-blue-700';
-        borderColor = 'border-blue-500';
+        textLightColor = 'text-cyan-500';
+        textDarkColor = 'text-cyan-700';
+        borderColor = 'border-cyan-500';
     }
 
     const issuerName = getNameFromProfile(issuer ?? '');
