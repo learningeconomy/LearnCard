@@ -1013,7 +1013,17 @@ export const profilesRouter = t.router({
             },
             requiredScope: 'signingAuthorities:write',
         })
-        .input(z.object({ endpoint: z.string(), name: z.string(), did: z.string() }))
+        .input(z.object({ 
+            endpoint: z.string(), 
+            name: z
+                .string()
+                .max(15)
+                .regex(/^[a-z0-9-]+$/, {
+                    message:
+                        'The input string must contain only lowercase letters, numbers, and hyphens.',
+                }), 
+            did: z.string() 
+        }))
         .output(z.boolean())
         .mutation(async ({ input, ctx }) => {
             const { endpoint, name, did } = input;
