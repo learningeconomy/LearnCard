@@ -1,5 +1,31 @@
 # @welibraryos/react-learn-card
 
+## 2.7.91
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.18
+
+## 2.7.90
+
+### Patch Changes
+
+-   [#688](https://github.com/learningeconomy/LearnCard/pull/688) [`d1c55ca4e179162ba0d0b63e85b0e16eebae3278`](https://github.com/learningeconomy/LearnCard/commit/d1c55ca4e179162ba0d0b63e85b0e16eebae3278) Thanks [@gerardopar](https://github.com/gerardopar)! - LC-849 - colors support
+
+## 2.7.89
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.17
+
+## 2.7.88
+
+### Patch Changes
+
+-   [#684](https://github.com/learningeconomy/LearnCard/pull/684) [`0b10e74bac01e5232031539a8f88b9b63aee847b`](https://github.com/learningeconomy/LearnCard/commit/0b10e74bac01e5232031539a8f88b9b63aee847b) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - fix: add VC 2.0 support for validFrom field in React components
+
 ## 2.7.87
 
 ### Patch Changes

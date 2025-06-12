@@ -6,7 +6,7 @@ import {
     createReceivedPresentationRelationship,
     createSentPresentationRelationship,
 } from '@accesslayer/presentation/relationships/create';
-import { getPresentationSentToProfile } from '@accesslayer/presentation/relationships/read';
+import { getPresentationSentToProfile, getPresentationReceivedByProfile } from '@accesslayer/presentation/relationships/read';
 import { constructUri, getUriParts } from './uri.helpers';
 import { addNotificationToQueue } from './notifications.helpers';
 import { ProfileType } from 'types/profile';
@@ -56,6 +56,15 @@ export const acceptPresentation = async (profile: ProfileType, uri: string): Pro
         throw new TRPCError({
             code: 'NOT_FOUND',
             message: 'Pending Presentation not found',
+        });
+    }
+
+    // Check if presentation has already been received by this profile
+    const alreadyReceived = await getPresentationReceivedByProfile(id, profile);
+    if (alreadyReceived) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Presentation has already been received',
         });
     }
 

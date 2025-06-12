@@ -78,20 +78,20 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
     let borderColor = `border-${credentialLightColor}`;
 
     if (categoryType === LCCategoryEnum.accommodations) {
-        textLightColor = 'text-amber-500';
-        textDarkColor = 'text-amber-700';
-        borderColor = 'border-amber-500';
+        textLightColor = 'text-violet-500';
+        textDarkColor = 'text-violet-700';
+        borderColor = 'border-violet-500';
     } else if (categoryType === LCCategoryEnum.accomplishments) {
-        textLightColor = 'text-lime-500';
-        textDarkColor = 'text-lime-700';
-        borderColor = 'border-lime-500';
+        textLightColor = 'text-yellow-500';
+        textDarkColor = 'text-yellow-700';
+        borderColor = 'border-yellow-500';
     } else if (categoryType === LCCategoryEnum.learningHistory) {
-        categoryTitle = 'Course';
+        categoryTitle = 'Study';
     } else if (categoryType === LCCategoryEnum.workHistory) {
         categoryTitle = 'Experiences';
-        textLightColor = 'text-blue-500';
-        textDarkColor = 'text-blue-700';
-        borderColor = 'border-blue-500';
+        textLightColor = 'text-cyan-500';
+        textDarkColor = 'text-cyan-700';
+        borderColor = 'border-cyan-500';
     }
 
     const issuerName = getNameFromProfile(issuer ?? '');
@@ -128,7 +128,7 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
         <section
             role="button"
             onClick={() => handleViewBackFace?.()}
-            className="relative p-[13px] mt-[55px] bg-white border-[5px] rounded-[30px] border-soid border-grayscale-200 md:max-w-[300px] sm:max-w-[500px]"
+            className="relative p-[13px] mt-[55px] bg-white border-[5px] rounded-[30px] border-soid border-grayscale-200"
         >
             <div className="w-[calc(100%-26px)] absolute top-[-52px]">
                 <CertificateImageDisplay
@@ -213,9 +213,7 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
 
                     <VerifierStateBadgeAndText verifierState={verifierState} />
                 </div>
-                <div
-                    className={`${textLightColor} uppercase text-[14px] font-notoSans font-[600]`}
-                >
+                <div className={`${textLightColor} uppercase text-[14px] font-notoSans font-[600]`}>
                     {categoryTitle}
                 </div>
             </div>

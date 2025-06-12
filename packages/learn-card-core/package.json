@@ -1,6 +1,6 @@
 {
     "name": "@learncard/core",
-    "version": "9.3.28",
+    "version": "9.3.29",
     "description": "",
     "type": "module",
     "main": "./dist/index.cjs",
@@ -45,7 +45,7 @@
         "shx": "^0.3.4",
         "sift": "^17.0.1",
         "ts-jest": "^29.0.3",
-        "tsc-alias": "^1.6.9"
+        "tsc-alias": "^1.8.10"
     },
     "types": "./dist/index.d.ts",
     "dependencies": {

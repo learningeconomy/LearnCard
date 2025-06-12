@@ -81,7 +81,7 @@ program
             'For help/documentation regarding your wallet, please read the documentation at\n'
         );
 
-        console.log('https://docs.learncard.com/learn-card-sdk/learncard-core/quick-start\n');
+        console.log('https://docs.learncard.com/sdks/learncard-core/construction\n');
 
         console.log("To get a feel for what's possible, try some of the following commands\n");
 

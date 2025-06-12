@@ -1,5 +1,16 @@
 # @learncard/network-brain-client
 
+## 1.4.0
+
+### Minor Changes
+
+-   [#682](https://github.com/learningeconomy/LearnCard/pull/682) [`1ed5313935264890917c6ddf19249ada91d1e524`](https://github.com/learningeconomy/LearnCard/commit/1ed5313935264890917c6ddf19249ada91d1e524) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Upgrade to tRPC v11 and switch method to POST
+
+### Patch Changes
+
+-   Updated dependencies [[`1ed5313935264890917c6ddf19249ada91d1e524`](https://github.com/learningeconomy/LearnCard/commit/1ed5313935264890917c6ddf19249ada91d1e524)]:
+    -   @learncard/learn-cloud-service@2.3.0
+
 ## 1.3.23
 
 ### Patch Changes

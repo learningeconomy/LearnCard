@@ -258,3 +258,4 @@ export const authGrantsRouter = t.router({
             return true;
         }),
 });
+export type AuthGrantsRouter = typeof authGrantsRouter;

@@ -53,6 +53,21 @@ export const getCredentialOwner = async (
     return inflateObject<ProfileType>(owner.dataValues as any);
 };
 
+export const getCredentialReceivedByProfile = async (
+    credentialId: string,
+    profile: ProfileType
+): Promise<boolean> => {
+    const relationships = await Credential.findRelationships({
+        alias: 'credentialReceived',
+        where: {
+            source: { id: credentialId },
+            target: { profileId: profile.profileId },
+        },
+    });
+
+    return relationships.length > 0;
+};
+
 /**
  * Gets credentials that were issued via a specific contract terms relationship
  *
