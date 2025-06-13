@@ -373,3 +373,13 @@ export type VideoMetadata = {
     videoLength?: string;
     imageUrl?: string;
 };
+
+export type KnownDIDRegistryType = {
+    source: string;
+    results:
+        | {
+              matchingIssuers: any[];
+              uncheckedRegistries: any[];
+          }
+        | {};
+};
