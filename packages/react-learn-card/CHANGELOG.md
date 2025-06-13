@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.8.0
+
+### Minor Changes
+
+-   [#687](https://github.com/learningeconomy/LearnCard/pull/687) [`bd9809172b3b696d47c9a440519d264466444c2d`](https://github.com/learningeconomy/LearnCard/commit/bd9809172b3b696d47c9a440519d264466444c2d) Thanks [@smurflo2](https://github.com/smurflo2)! - Change width behavior for Certificate display. It now has a max width of 400px with "width: full" so it will fill the 400px. Notably, the auto x margin was removed, so anything relying on it for centering will be broken.
+
 ## 2.7.93
 
 ### Patch Changes
