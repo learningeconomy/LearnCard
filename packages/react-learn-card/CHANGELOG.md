@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.7.92
+
+### Patch Changes
+
+-   [#681](https://github.com/learningeconomy/LearnCard/pull/681) [`6fb5fcef103a56eb019c6d4aefdbde7ab4918155`](https://github.com/learningeconomy/LearnCard/commit/6fb5fcef103a56eb019c6d4aefdbde7ab4918155) Thanks [@rhen92](https://github.com/rhen92)! - [LC-961] Upgrade Trust Registries
+
 ## 2.7.91
 
 ### Patch Changes
