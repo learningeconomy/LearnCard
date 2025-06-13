@@ -237,6 +237,8 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
 
             {/* so that tailwind will put these colors in the css */}
             <span className="hidden border-rose-500 text-spice-500 border-spice-500 border-cyan-500 text-cyan-500 border-indigo-500"></span>
+            <span className="hidden border-blue-500 border-indigo-500 border-pink-500 border-emerald-500 border-yellow-500 border-cyan-500 border-rose-500 border-emerald-500 border-teal-500 border-violet-500 border-yellow-500 border-spice-500 "></span>
+            <span className="hidden text-blue-700 text-indigo-700 text-pink-700 text-emerald-700 text-yellow-700 text-cyan-700 text-rose-700 text-emerald-700 text-teal-700 text-violet-700 text-yellow-700 text-spice-700 "></span>
         </section>
     );
 };

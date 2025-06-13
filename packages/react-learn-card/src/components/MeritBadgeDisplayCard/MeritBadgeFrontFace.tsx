@@ -127,7 +127,7 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
         <section
             role="button"
             onClick={() => handleViewBackFace?.()}
-            className="relative p-[13px] mt-[68px] bg-white border-[5px] rounded-[30px] border-soid border-grayscale-200 min-w-[295px] max-w-[300px]"
+            className="relative p-[13px] mt-[68px] bg-white border-[5px] rounded-[30px] border-soid border-grayscale-200 min-w-[295px]"
         >
             <div className="w-[calc(100%-26px)] absolute top-[-72px]">
                 <MeritBadgeImageDisplay

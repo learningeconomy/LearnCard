@@ -73,8 +73,8 @@ export const MeritBadgeDisplayCard: React.FC<MeritBadgeDisplayCardProps> = ({
     const setIsFront = setIsFrontOverride ?? _setIsFront;
 
     return (
-        <section className="w-full flex flex-col gap-[15px] justify-center relative min-w-[220px]">
-            <section className="mx-auto">
+        <section className="w-full flex flex-col gap-[15px] items-center justify-center relative min-w-[220px]">
+            <section className="max-w-[350px] w-full">
                 {isFront && (
                     <MeritBadgeFrontFace
                         credential={credential}
