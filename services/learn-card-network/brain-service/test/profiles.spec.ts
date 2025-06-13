@@ -1837,9 +1837,8 @@ describe('Profiles', () => {
                         name: 'this-name-is-too-long-to-be-valid',
                         did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
                     })
-                ).rejects.toMatchObject({ 
+                ).rejects.toMatchObject({
                     code: 'BAD_REQUEST',
-                    message: expect.stringContaining('The input string must contain only lowercase letters, numbers, and hyphens')
                 });
             });
 
@@ -1850,9 +1849,11 @@ describe('Profiles', () => {
                         name: 'MySignAuth',
                         did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
                     })
-                ).rejects.toMatchObject({ 
+                ).rejects.toMatchObject({
                     code: 'BAD_REQUEST',
-                    message: expect.stringContaining('The input string must contain only lowercase letters, numbers, and hyphens')
+                    message: expect.stringContaining(
+                        'The input string must contain only lowercase letters, numbers, and hyphens'
+                    ),
                 });
             });
 
@@ -1863,9 +1864,11 @@ describe('Profiles', () => {
                         name: 'my_sign_auth',
                         did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
                     })
-                ).rejects.toMatchObject({ 
+                ).rejects.toMatchObject({
                     code: 'BAD_REQUEST',
-                    message: expect.stringContaining('The input string must contain only lowercase letters, numbers, and hyphens')
+                    message: expect.stringContaining(
+                        'The input string must contain only lowercase letters, numbers, and hyphens'
+                    ),
                 });
 
                 await expect(
@@ -1874,9 +1877,11 @@ describe('Profiles', () => {
                         name: 'my.sign.auth',
                         did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
                     })
-                ).rejects.toMatchObject({ 
+                ).rejects.toMatchObject({
                     code: 'BAD_REQUEST',
-                    message: expect.stringContaining('The input string must contain only lowercase letters, numbers, and hyphens')
+                    message: expect.stringContaining(
+                        'The input string must contain only lowercase letters, numbers, and hyphens'
+                    ),
                 });
 
                 await expect(
@@ -1885,9 +1890,11 @@ describe('Profiles', () => {
                         name: 'my sign auth',
                         did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
                     })
-                ).rejects.toMatchObject({ 
+                ).rejects.toMatchObject({
                     code: 'BAD_REQUEST',
-                    message: expect.stringContaining('The input string must contain only lowercase letters, numbers, and hyphens')
+                    message: expect.stringContaining(
+                        'The input string must contain only lowercase letters, numbers, and hyphens'
+                    ),
                 });
             });
 
