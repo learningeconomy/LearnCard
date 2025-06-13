@@ -22,6 +22,7 @@ import VerifierStateBadgeAndText, {
     VerifierState,
     VERIFIER_STATES,
 } from '../CertificateDisplayCard/VerifierStateBadgeAndText';
+import { KnownDIDRegistryType } from '../../types';
 
 type MeritBadgeFrontFaceProps = {
     isFront?: boolean;
@@ -29,7 +30,7 @@ type MeritBadgeFrontFaceProps = {
     categoryType?: LCCategoryEnum;
     issuerOverride?: Profile;
     issueeOverride?: Profile;
-    trustedAppRegistry?: any[];
+    knownDIDRegistry?: KnownDIDRegistryType;
     subjectImageComponent?: React.ReactNode;
     issuerImageComponent?: React.ReactNode;
     customBodyCardComponent?: React.ReactNode;
@@ -45,7 +46,7 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
     categoryType,
     issuerOverride,
     issueeOverride,
-    trustedAppRegistry,
+    knownDIDRegistry,
     subjectImageComponent,
     issuerImageComponent,
     customBodyCardComponent,
@@ -108,14 +109,12 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
         // the did:example:123 condition is so that we don't show this status from the Manage Boosts tab
         verifierState = VERIFIER_STATES.selfVerified;
     } else {
-        const appRegistryEntry = trustedAppRegistry?.find(
-            registryEntry => registryEntry.did === issuerDid
-        );
-
-        if (appRegistryEntry) {
-            verifierState = appRegistryEntry.isTrusted
-                ? VERIFIER_STATES.trustedVerifier
-                : VERIFIER_STATES.untrustedVerifier;
+        if (knownDIDRegistry?.source === 'trusted') {
+            verifierState = VERIFIER_STATES.trustedVerifier;
+        } else if (knownDIDRegistry?.source === 'untrusted') {
+            verifierState = VERIFIER_STATES.untrustedVerifier;
+        } else if (knownDIDRegistry?.source === 'unknown') {
+            verifierState = VERIFIER_STATES.unknownVerifier;
         } else {
             verifierState = VERIFIER_STATES.unknownVerifier;
         }
