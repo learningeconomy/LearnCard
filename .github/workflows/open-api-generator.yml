@@ -17,7 +17,7 @@ jobs:
         strategy:
             matrix:
                 # generator-name: [python, java, swift5, kotlin, go, php, rust]
-                generator-name: [python, java]
+                generator-name: [python]
         steps:
             - name: Checkout Repo
               uses: actions/checkout@v4
