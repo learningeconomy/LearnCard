@@ -10,7 +10,7 @@ import CertificateFrontFace from './CertificateFrontFace';
 import CertificateBackFace from './CertificateBackFace';
 import FatArrow from '../svgs/FatArrow';
 import ThreeDots from '../../assets/images/DotsThreeOutline.svg';
-import { KnownDIDRegistryType } from '../VCDisplayCard2';
+import { KnownDIDRegistryType } from '../../types';
 
 type CertificateDisplayCardProps = {
     credential: VC | BoostAchievementCredential;

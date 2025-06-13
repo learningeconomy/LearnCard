@@ -10,7 +10,7 @@ import MeritBadgeFrontFace from './MeritBadgeFrontFace';
 import MeritBadgeBackFace from './MeritBadgeBackFace';
 import FatArrow from '../svgs/FatArrow';
 import ThreeDots from '../../assets/images/DotsThreeOutline.svg';
-import { KnownDIDRegistryType } from '../VCDisplayCard2';
+import { KnownDIDRegistryType } from '../../types';
 
 type MeritBadgeDisplayCardProps = {
     credential: VC | BoostAchievementCredential;

@@ -22,7 +22,7 @@ import VerifierStateBadgeAndText, {
     VerifierState,
     VERIFIER_STATES,
 } from './VerifierStateBadgeAndText';
-import { KnownDIDRegistryType } from '../VCDisplayCard2';
+import { KnownDIDRegistryType } from '../../types';
 
 type CertificateFrontFaceProps = {
     isFront?: boolean;

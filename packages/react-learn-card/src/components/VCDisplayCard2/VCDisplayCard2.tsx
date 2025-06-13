@@ -27,20 +27,11 @@ import {
 } from '../../types';
 import { CertificateDisplayCard } from '../CertificateDisplayCard';
 import { MeritBadgeDisplayCard } from '../MeritBadgeDisplayCard';
+import { KnownDIDRegistryType } from '../../types';
 
 export type CredentialIconType = {
     image?: React.ReactNode;
     color?: string;
-};
-
-export type KnownDIDRegistryType = {
-    source: string;
-    results:
-        | {
-              matchingIssuers: any[];
-              uncheckedRegistries: any[];
-          }
-        | {};
 };
 
 export type VCDisplayCard2Props = {

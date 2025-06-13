@@ -11,7 +11,7 @@ import {
     VideoMetadata,
 } from '../../types';
 import { VC, VerificationItem } from '@learncard/types';
-import { KnownDIDRegistryType } from './VCDisplayCard2';
+import { KnownDIDRegistryType } from '../../types';
 
 export type VCIDDisplayCardProps = {
     credential: VC | BoostAchievementCredential;

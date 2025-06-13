@@ -14,7 +14,7 @@ import { getInfoFromCredential } from '../../helpers/credential.helpers';
 import { VC } from '@learncard/types';
 import { BoostAchievementCredential } from '../../types';
 import TruncateTextBox from './TruncateTextBox';
-import { KnownDIDRegistryType } from './VCDisplayCard2';
+import { KnownDIDRegistryType } from '../../types';
 
 type VCIDDisplayFrontFaceProps = {
     isFront: boolean;

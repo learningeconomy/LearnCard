@@ -15,7 +15,7 @@ import VerifierStateBadgeAndText, {
     VERIFIER_STATES,
 } from '../CertificateDisplayCard/VerifierStateBadgeAndText';
 import { BoostAchievementCredential } from '../../types';
-import { KnownDIDRegistryType } from './VCDisplayCard2';
+import { KnownDIDRegistryType } from '../../types';
 
 type VC2FrontFaceInfoProps = {
     credential: VC | BoostAchievementCredential;
