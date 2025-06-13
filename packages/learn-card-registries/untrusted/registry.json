@@ -1,0 +1,18 @@
+{
+    "meta": {
+        "created": "2022-10-27T17:57:31+00:00",
+        "updated": "2025-05-28T18:26:43+00:00"
+    },
+    "registry": {
+        "did:key:z6MkmYGgibfx6dbjXHTzqwvyC4vhM3oEPK9GdH7xkqBFxWAH": {
+            "name": "Kyle Untrusted Account",
+            "location": "Little Rock, AR 72201",
+            "url": "https://www.smartresume.com/"
+        },
+        "did:web:network.learncard.com:users:sophpotato1": {
+            "name": "Soph Potato",
+            "location": "Unknown, USA",
+            "url": "https://www.example.com"
+        }
+    }
+}

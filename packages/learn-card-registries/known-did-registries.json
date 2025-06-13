@@ -1,0 +1,50 @@
+[
+    {
+        "name": "LEF Member Registry",
+        "type": "dcc-legacy",
+        "governanceUrl": "https://learningeconomy.io",
+        "url": "https://registries.learncard.com/trusted/registry.json"
+    },
+    {
+        "name": "Credential Engine Test Issuer Registry",
+        "type": "oidf",
+        "governanceUrl": "https://credentialengine.org/",
+        "trustAnchorEC": "https://test.issuerregistry.credentialengine.org/oidfed/.well-known/openid-federation"
+    },
+    {
+        "name": "DCC Member Registry",
+        "type": "oidf",
+        "governanceUrl": "https://registry.docconsortium.org/governance",
+        "trustAnchorEC": "https://registry.dcconsortium.org/.well-known/openid-federation"
+    },
+    {
+        "name": "Test DCC Member Registry",
+        "type": "oidf",
+        "governanceUrl": "https://test.registry.docconsortium.org/governance",
+        "trustAnchorEC": "https://test.registry.dcconsortium.org/.well-known/openid-federation"
+    },
+    {
+        "name": "DCC Sandbox Registry",
+        "type": "dcc-legacy",
+        "governanceUrl": "https://digitalcredentials.github.io/sandbox-registry",
+        "url": "https://digitalcredentials.github.io/sandbox-registry/registry.json"
+    },
+    {
+        "name": "DCC Community Registry",
+        "type": "dcc-legacy",
+        "governanceUrl": "https://digitalcredentials.github.io/community-registry",
+        "url": "https://digitalcredentials.github.io/community-registry/registry.json"
+    },
+    {
+        "name": "DCC Member Registry",
+        "type": "dcc-legacy",
+        "governanceUrl": "https://digitalcredentials.github.io/dcc-registry",
+        "url": "https://digitalcredentials.github.io/dcc-registry/registry.json"
+    },
+    {
+        "name": "MSP Registry",
+        "type": "dcc-legacy",
+        "governanceUrl": "https://pocket.asu.edu/",
+        "url": "https://sandbox-issuer.myskillspocket.com/registry.json"
+    }
+]

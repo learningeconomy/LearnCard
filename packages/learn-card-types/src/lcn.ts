@@ -19,20 +19,42 @@ export const LCNProfileDisplayValidator = z.object({
 export type LCNProfileDisplay = z.infer<typeof LCNProfileDisplayValidator>;
 
 export const LCNProfileValidator = z.object({
-    profileId: z.string().min(3).max(40),
-    displayName: z.string().default(''),
-    shortBio: z.string().default(''),
-    bio: z.string().default(''),
-    did: z.string(),
-    isPrivate: z.boolean().optional(),
-    email: z.string().optional(),
-    image: z.string().optional(),
-    heroImage: z.string().optional(),
-    websiteLink: z.string().optional(),
-    isServiceProfile: z.boolean().default(false).optional(),
-    type: z.string().optional(),
-    notificationsWebhook: z.string().url().startsWith('http').optional(),
-    display: LCNProfileDisplayValidator.optional(),
+    profileId: z.string().min(3).max(40).describe('Unique, URL-safe identifier for the profile.'),
+    displayName: z.string().default('').describe('Human-readable display name for the profile.'),
+    shortBio: z.string().default('').describe('Short bio for the profile.'),
+    bio: z.string().default('').describe('Longer bio for the profile.'),
+    did: z.string().describe('Decentralized Identifier for the profile. (auto-assigned)'),
+    isPrivate: z
+        .boolean()
+        .optional()
+        .describe('Whether the profile is private or not and shows up in search results.'),
+    email: z.string().optional().describe('Contact email address for the profile.'),
+    image: z.string().optional().describe('Profile image URL for the profile.'),
+    heroImage: z.string().optional().describe('Hero image URL for the profile.'),
+    websiteLink: z.string().optional().describe('Website link for the profile.'),
+    isServiceProfile: z
+        .boolean()
+        .default(false)
+        .optional()
+        .describe('Whether the profile is a service profile or not.'),
+    type: z.string().optional().describe('Profile type: e.g. "person", "organization", "service".'),
+    notificationsWebhook: z
+        .string()
+        .url()
+        .startsWith('http')
+        .optional()
+        .describe('URL to send notifications to.'),
+    display: LCNProfileDisplayValidator.optional().describe('Display settings for the profile.'),
+    role: z
+        .string()
+        .default('')
+        .optional()
+        .describe('Role of the profile: e.g. "teacher", "student".'),
+    dob: z
+        .string()
+        .default('')
+        .optional()
+        .describe('Date of birth of the profile: e.g. "1990-01-01".'),
 });
 export type LCNProfile = z.infer<typeof LCNProfileValidator>;
 
@@ -318,6 +340,7 @@ export const ConsentFlowContractDetailsValidator = z.object({
     updatedAt: z.string(),
     expiresAt: z.string().optional(),
     autoBoosts: z.string().array().optional(),
+    writers: z.array(LCNProfileValidator).optional(),
 });
 export type ConsentFlowContractDetails = z.infer<typeof ConsentFlowContractDetailsValidator>;
 export type ConsentFlowContractDetailsInput = z.input<typeof ConsentFlowContractDetailsValidator>;
@@ -382,6 +405,7 @@ export const ConsentFlowTermsValidator = z.object({
             personal: z.record(z.boolean()).default({}),
         })
         .default({}),
+    deniedWriters: z.array(z.string()).optional(),
 });
 export type ConsentFlowTerms = z.infer<typeof ConsentFlowTermsValidator>;
 export type ConsentFlowTermsInput = z.input<typeof ConsentFlowTermsValidator>;

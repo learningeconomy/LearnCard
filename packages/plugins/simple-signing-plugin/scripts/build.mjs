@@ -20,7 +20,7 @@ const configurations = [
         plugins: [],
         entryPoints: ['src/index.ts'],
         format: 'cjs',
-        outfile: 'dist/simple-signing-plugin.cjs.development.js',
+        outfile: 'dist/simple-signing-plugin.cjs.development.cjs',
         ...buildOptions,
     },
     {
@@ -33,7 +33,7 @@ const configurations = [
         entryPoints: ['src/index.ts'],
         minify: true,
         format: 'cjs',
-        outfile: 'dist/simple-signing-plugin.cjs.production.min.js',
+        outfile: 'dist/simple-signing-plugin.cjs.production.min.cjs',
         ...buildOptions,
     },
     {

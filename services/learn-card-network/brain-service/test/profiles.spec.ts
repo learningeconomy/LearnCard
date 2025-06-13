@@ -178,6 +178,26 @@ describe('Profiles', () => {
 
             expect(profile?.display?.fontColor).toEqual('#000');
         });
+
+        it('should allow setting your role', async () => {
+            await userA.clients.fullAuth.profile.createProfile({
+                profileId: 'usera',
+                role: 'learner',
+            });
+            const profile = await userA.clients.fullAuth.profile.getProfile();
+
+            expect(profile?.role).toEqual('learner');
+        });
+
+        it('should allow setting your dob', async () => {
+            await userA.clients.fullAuth.profile.createProfile({
+                profileId: 'usera',
+                dob: '2000-01-01',
+            });
+            const profile = await userA.clients.fullAuth.profile.getProfile();
+
+            expect(profile?.dob).toEqual('2000-01-01');
+        });
     });
 
     describe('createServiceProfile', () => {
@@ -1806,6 +1826,110 @@ describe('Profiles', () => {
                     name: 'mysa2',
                     did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
                 },
+            });
+        });
+
+        describe('name validation', () => {
+            it('should reject names longer than 15 characters', async () => {
+                await expect(
+                    userA.clients.fullAuth.profile.registerSigningAuthority({
+                        endpoint: 'http://localhost:4000',
+                        name: 'this-name-is-too-long-to-be-valid',
+                        did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
+                    })
+                ).rejects.toMatchObject({
+                    code: 'BAD_REQUEST',
+                });
+            });
+
+            it('should reject names with uppercase letters', async () => {
+                await expect(
+                    userA.clients.fullAuth.profile.registerSigningAuthority({
+                        endpoint: 'http://localhost:4000',
+                        name: 'MySignAuth',
+                        did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
+                    })
+                ).rejects.toMatchObject({
+                    code: 'BAD_REQUEST',
+                    message: expect.stringContaining(
+                        'The input string must contain only lowercase letters, numbers, and hyphens'
+                    ),
+                });
+            });
+
+            it('should reject names with special characters other than hyphens', async () => {
+                await expect(
+                    userA.clients.fullAuth.profile.registerSigningAuthority({
+                        endpoint: 'http://localhost:4000',
+                        name: 'my_sign_auth',
+                        did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
+                    })
+                ).rejects.toMatchObject({
+                    code: 'BAD_REQUEST',
+                    message: expect.stringContaining(
+                        'The input string must contain only lowercase letters, numbers, and hyphens'
+                    ),
+                });
+
+                await expect(
+                    userA.clients.fullAuth.profile.registerSigningAuthority({
+                        endpoint: 'http://localhost:4000',
+                        name: 'my.sign.auth',
+                        did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
+                    })
+                ).rejects.toMatchObject({
+                    code: 'BAD_REQUEST',
+                    message: expect.stringContaining(
+                        'The input string must contain only lowercase letters, numbers, and hyphens'
+                    ),
+                });
+
+                await expect(
+                    userA.clients.fullAuth.profile.registerSigningAuthority({
+                        endpoint: 'http://localhost:4000',
+                        name: 'my sign auth',
+                        did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
+                    })
+                ).rejects.toMatchObject({
+                    code: 'BAD_REQUEST',
+                    message: expect.stringContaining(
+                        'The input string must contain only lowercase letters, numbers, and hyphens'
+                    ),
+                });
+            });
+
+            it('should accept valid names with lowercase letters, numbers, and hyphens', async () => {
+                await expect(
+                    userA.clients.fullAuth.profile.registerSigningAuthority({
+                        endpoint: 'http://localhost:4000',
+                        name: 'valid-name-123',
+                        did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
+                    })
+                ).resolves.not.toThrow();
+
+                await expect(
+                    userA.clients.fullAuth.profile.registerSigningAuthority({
+                        endpoint: 'http://localhost:5000',
+                        name: 'short',
+                        did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
+                    })
+                ).resolves.not.toThrow();
+
+                await expect(
+                    userA.clients.fullAuth.profile.registerSigningAuthority({
+                        endpoint: 'http://localhost:6000',
+                        name: '123-numbers-ok',
+                        did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
+                    })
+                ).resolves.not.toThrow();
+
+                await expect(
+                    userA.clients.fullAuth.profile.registerSigningAuthority({
+                        endpoint: 'http://localhost:7000',
+                        name: 'exactly15chars1',
+                        did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
+                    })
+                ).resolves.not.toThrow();
             });
         });
     });

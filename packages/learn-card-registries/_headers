@@ -1,0 +1,11 @@
+# Netlify _headers file
+
+# Target JSON-LD files within the /trusted/ path
+/**/**.json
+  Content-Type: application/json
+  Access-Control-Allow-Origin: *
+
+# Target plain .json files for registries:
+/**.json
+  Content-Type: application/json  
+  Access-Control-Allow-Origin: *

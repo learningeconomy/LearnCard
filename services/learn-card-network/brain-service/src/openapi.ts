@@ -1,17 +1,28 @@
-import { OpenAPIV3 } from 'openapi-types';
-import { generateOpenApiDocument } from 'trpc-openapi';
+import { generateOpenApiDocument } from 'trpc-to-openapi';
 import express from 'express';
 
 import { appRouter } from './app';
 
 // Generate OpenAPI schema document
-export const openApiDocument: OpenAPIV3.Document<{}> = generateOpenApiDocument(appRouter, {
-    title: 'LearnCard Network Profile Service API',
-    description: 'This is the API for interacting with a LearnCard Network Profile Service',
+export const openApiDocument = generateOpenApiDocument(appRouter, {
+    title: 'LearnCloud Network API',
+    description: 'API for interacting with LearnCloud Network',
     version: '1.0.0',
     baseUrl: '../api',
     docsUrl: 'https://docs.learncard.com',
-    tags: ['Profiles', 'Credentials', 'Utilities'],
+    tags: [
+        'Profiles',
+        'Profile Managers',
+        'Credentials',
+        'Boosts',
+        'Presentations',
+        'Storage',
+        'Contracts',
+        'DID Metadata',
+        'Claim Hooks',
+        'Auth Grants',
+        'Utilities',
+    ],
 });
 
 export const app = express();

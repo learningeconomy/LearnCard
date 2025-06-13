@@ -7,7 +7,7 @@ import {
     createSentCredentialRelationship,
     setDefaultClaimedRole,
 } from '@accesslayer/credential/relationships/create';
-import { getCredentialSentToProfile } from '@accesslayer/credential/relationships/read';
+import { getCredentialSentToProfile, getCredentialReceivedByProfile } from '@accesslayer/credential/relationships/read';
 import { constructUri, getUriParts } from './uri.helpers';
 import { addNotificationToQueue } from './notifications.helpers';
 import { ProfileType } from 'types/profile';
@@ -62,6 +62,15 @@ export const acceptCredential = async (
         throw new TRPCError({
             code: 'NOT_FOUND',
             message: 'Pending Credential not found',
+        });
+    }
+
+    // Check if credential has already been received by this profile
+    const alreadyReceived = await getCredentialReceivedByProfile(id, profile);
+    if (alreadyReceived) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Credential has already been received',
         });
     }
 

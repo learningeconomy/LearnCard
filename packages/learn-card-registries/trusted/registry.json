@@ -1,0 +1,123 @@
+{
+    "meta": {
+        "created": "2022-10-27T17:57:31+00:00",
+        "updated": "2025-05-16T18:26:43+00:00"
+    },
+    "registry": {
+        "did:web:network.learncard.com:users:smartresume": {
+            "name": "SmartResume",
+            "location": "Little Rock, AR 72201",
+            "url": "https://www.smartresume.com/"
+        },
+        "did:web:scoutnetwork.org": {
+            "name": "ScoutPass",
+            "location": "Kuala Lumpur, Malaysia",
+            "url": "https://pass.scout.org/"
+        },
+        "did:web:scoutnetwork.org:users:worldscouting": {
+            "name": "World Scouting",
+            "location": "Kuala Lumpur, Malaysia",
+            "url": "https://www.scout.org/"
+        },
+        "did:web:network.learncard.com:users:learnfleet-academy": {
+            "name": "LearnFleet Academy",
+            "location": "Washington, DC, USA",
+            "url": "https://www.learncard.com/"
+        },
+        "did:key:z6MkmYGgibfx6dbjXHTzqwvyC4vhM3oEPK9GdH7xkqBFxWAH": {
+            "name": "LearnFleet Academy",
+            "location": "Washington, DC, USA",
+            "url": "https://www.learncard.com/"
+        },
+        "did:web:network.learncard.com:users:sync60ler": {
+            "name": "Sync60",
+            "location": "Durham, NC 27705",
+            "url": "https://www.sync60.io/"
+        },
+        "did:web:network.learncard.com:users:ai-passport": {
+            "name": "AI Passport",
+            "location": "Nashville, TN 372115",
+            "url": "https://www.learningeconomy.io/"
+        },
+        "did:key:z6MkuL7x2mTEoBmUuuaQ2hvEUd2YsEtmsHeX9JzqJZ8VYaVH": {
+            "name": "DCC did:key for testing a did in four registries",
+            "location": "Cambridge, MA, USA",
+            "url": "https://digitalcredentials.mit.edu"
+        },
+        "did:key:z6MkpLDL3RoAoMRTwTgo3rs39ZwssfaPKtGdZw7AGRN7CK4W": {
+            "name": "(Example) My University",
+            "location": "Cambridge, MA, USA",
+            "url": "https://digitalcredentials.mit.edu"
+        },
+        "did:key:z6MktL8XGbuYv5f7hwf6hVyJkJWynNtNhcsXFYe9NJzjKHkW": {
+            "name": "Digital Credentials Consortium",
+            "location": "Cambridge, MA, USA",
+            "url": "https://digitalcredentials.mit.edu"
+        },
+        "did:key:z6MkqEwzA36k2PWsWpeQXjFMzT1PpZuVjZ9W9jd2ZGRb6JKr": {
+            "name": "DCC Sandbox Issuer",
+            "location": "Cambridge, MA, USA",
+            "url": "https://verify.dcconsortium.org"
+        },
+        "did:key:z6MkhVTX9BF3NGYX6cc7jWpbNnR7cAjH8LUffabZP8Qu4ysC": {
+            "name": "DCC Playground",
+            "location": "Cambridge, MA, USA",
+            "url": "https://digitalcredentials.github.io/playground"
+        },
+        "did:key:z6Mkn6E3RLksUuArW6aPXWY6n9Wr5yhjTLEk7vUP448rmj7E": {
+            "name": "MIT xPRO",
+            "location": "Cambridge, MA, USA",
+            "url": "https://xpro.mit.edu"
+        },
+        "did:key:z6MkiUrQooGc3QBsYoDvwGtEdHTaCsaD4zdAyZJsiKr8Lkss": {
+            "name": "MIT xPRO RC",
+            "location": "Cambridge, MA, USA",
+            "url": "https://rc.xpro.mit.edu"
+        },
+        "did:web:digitalcredentials.odl.mit.edu": {
+            "name": "MIT xPRO",
+            "location": "Cambridge, MA, USA",
+            "url": "https://xpro.mit.edu"
+        },
+        "did:web:c21u.gatech.edu": {
+            "name": "Georgia Tech Center for 21st Century Universities",
+            "location": "Atlanta, GA, USA",
+            "url": "https://c21u.gatech.edu"
+        },
+        "did:web:credentials.mcmaster.ca": {
+            "name": "McMaster University Digital Credentialing Pilot",
+            "location": "Hamilton, ON, Canada",
+            "url": "https://credentials.mcmaster.ca"
+        },
+        "did:web:dibiho.org:TUM": {
+            "name": "Technical University of Munich",
+            "location": "Munich, Germany",
+            "url": "https://www.it.tum.de/it/dibiho/"
+        },
+        "did:web:dibiho.org:TUM.Test": {
+            "name": "Technical University of Munich",
+            "location": "Munich, Germany",
+            "url": "https://www.it.tum.de/it/dibiho/"
+        },
+        "did:web:dibiho.org:HPI": {
+            "name": "openHPI",
+            "location": "Potsdam, Germany",
+            "url": "https://staging.openhpi.de"
+        },
+        "did:web:staging.openhpi.de": {
+            "name": "openHPI",
+            "location": "Potsdam, Germany",
+            "url": "https://staging.openhpi.de"
+        },
+        "did:key:z6MkmZYh1qm9S4MLYdrue8z6TSA2XVe9Zi49h4KRgASwbQf1": {
+            "name": "MIT Jameel World Education Lab",
+            "location": "Cambridge, MA, USA",
+            "url": "https://jwel.mit.edu"
+        },
+        "did:key:z6MkjSdgaUNWTQsH8RbkrNoxk98ZA2FHQsyEFEcHAEGhk3dB": {
+            "name": "Instituto Tecnológico de Monterrey Test",
+            "location": "Monterrey, Nuevo León, México",
+            "url": "https://tec.mx/es"
+        }
+    }
+}
