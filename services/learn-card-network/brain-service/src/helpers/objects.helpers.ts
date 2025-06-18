@@ -104,7 +104,9 @@ export function inflateObject<T extends Record<string, any>>(
         }
     }
 
-    return result as InflateObject<T>;
+    // eslint-disable-next-line @typescript-eslint/no-use-before-define
+    const collapsedResult = collapseSparseArrays(result);
+    return collapsedResult as InflateObject<T>;
 }
 
 function getParent(obj: any, keys: string[]): any {
@@ -119,6 +121,28 @@ function getParent(obj: any, keys: string[]): any {
         }
     }
     return current;
+}
+
+/**
+ * Recursively collapses sparse arrays by removing `undefined` holes and
+ * re-indexes their elements sequentially. Traverses the entire structure so
+ * nested arrays are also compacted.
+ */
+function collapseSparseArrays(value: any): any {
+    if (Array.isArray(value)) {
+        // Remove holes / undefined entries and recursively collapse nested values
+        return value.filter(v => v !== undefined).map(v => collapseSparseArrays(v));
+    }
+
+    if (value && typeof value === 'object') {
+        for (const key in value) {
+            if (Object.prototype.hasOwnProperty.call(value, key)) {
+                value[key] = collapseSparseArrays(value[key]);
+            }
+        }
+    }
+
+    return value;
 }
 
 type Primitive = string | number | boolean;
