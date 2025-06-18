@@ -4,7 +4,8 @@
     "version": "1.0.1",
     "scripts": {
         "preinstall": "npx only-allow pnpm",
-        "lint": "oxlint ."
+        "lint": "oxlint .",
+        "lint:fix": "oxlint . --fix --fix-suggestions"
     },
     "devDependencies": {
         "@changesets/changelog-github": "^0.4.8",
