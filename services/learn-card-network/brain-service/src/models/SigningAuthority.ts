@@ -1,8 +1,8 @@
-import { ModelFactory, NeogmaInstance } from 'neogma';
+import { ModelFactory, type NeogmaInstance } from 'neogma';
 
 import { neogma } from '@instance';
 
-import { SigningAuthorityType } from 'types/profile';
+import type { SigningAuthorityType } from 'types/profile';
 
 export type SigningAuthorityRelationships = {};
 

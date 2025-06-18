@@ -1,4 +1,4 @@
-import Redis from 'ioredis';
+import type Redis from 'ioredis';
 
 export const simpleScan = async (redis: Redis.Redis, pattern: string): Promise<string[]> => {
     try {

@@ -1,11 +1,11 @@
 import React from 'react';
 import { getCategoryDarkColor, getInfoFromCredential } from '../../helpers/credential.helpers';
-import { VC, VerificationItem } from '@learncard/types';
+import type { VC, VerificationItem } from '@learncard/types';
 import {
-    BoostAchievementCredential,
     LCCategoryEnum,
-    MediaMetadata,
-    VideoMetadata,
+    type BoostAchievementCredential,
+    type MediaMetadata,
+    type VideoMetadata,
 } from '../../types';
 import VerificationsBox from './VerificationsBox';
 import AlignmentsBox from './AlignmentsBox';
@@ -82,10 +82,11 @@ export const MeritBadgeBackFace: React.FC<MeritBadgeBackFaceProps> = ({
 
             <TruncateTextBox headerText="About" text={description}>
                 <span
-                    className={`text-grayscale-600 font-poppins text-[12px] font-[600] w-full ${description
+                    className={`text-grayscale-600 font-poppins text-[12px] font-[600] w-full ${
+                        description
                             ? 'pt-[10px] border-t-[1px] border-solid border-grayscale-200'
                             : ''
-                        }`}
+                    }`}
                 >
                     Awarded on {createdAt}
                 </span>
@@ -94,11 +95,7 @@ export const MeritBadgeBackFace: React.FC<MeritBadgeBackFaceProps> = ({
             {criteria && <TruncateTextBox headerText="Criteria" text={criteria} />}
 
             {(credential.skills?.length ?? 0) > 0 &&
-                (customSkillsComponent ? (
-                    customSkillsComponent
-                ) : (
-                    <SkillsBox skills={credential.skills ?? []} />
-                ))}
+                (customSkillsComponent || <SkillsBox skills={credential.skills ?? []} />)}
 
             {credential.attachments && credential.attachments.length > 0 && (
                 <MediaAttachmentsBox

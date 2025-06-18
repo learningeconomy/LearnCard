@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React from 'react';
 
 import {
     boostCMSSKillCategories,
-    BoostCMSSKillsCategoryEnum,
     CATEGORY_TO_SKILLS,
     SKILLS_TO_SUBSKILLS,
+    type BoostCMSSKillsCategoryEnum,
 } from '../../constants/skills';
 
 import SelectedSkills from './SelectedSkills';
@@ -25,13 +25,13 @@ const SkillsBox: React.FC<{
             {skills.length > 0 && (
                 <div className="pt-0 pb-4 flex items-center justify-center flex-col w-full">
                     {skills.map((_skill, index) => {
-                        const category = boostCMSSKillCategories.find(
+                        const _category = boostCMSSKillCategories.find(
                             c => c.type === _skill.category
                         );
                         const skill: any = CATEGORY_TO_SKILLS[
                             _skill.category as BoostCMSSKillsCategoryEnum
                         ].find(s => s.type === _skill.skill);
-                        const subSkills = SKILLS_TO_SUBSKILLS[_skill.skill];
+                        const _subSkills = SKILLS_TO_SUBSKILLS[_skill.skill];
 
                         const selectedSkills = skills ?? [];
                         const skillSelected: any = selectedSkills.find(s => s.skill === skill.type);

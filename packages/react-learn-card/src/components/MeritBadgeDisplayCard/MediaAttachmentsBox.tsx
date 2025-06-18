@@ -6,9 +6,9 @@ import LinkIcon from '../svgs/LinkIcon';
 import VideoIcon from '../svgs/VideoIcon';
 import GenericDocumentIcon from '../svgs/GenericDocumentIcon';
 
-import { Attachment, MediaMetadata, VideoMetadata } from '../../types';
+import type { Attachment, MediaMetadata, VideoMetadata } from '../../types';
 import { getBaseUrl } from '../../helpers/url.helpers';
-import { Lightbox, LightboxItem } from '../Lightbox';
+import { Lightbox, type LightboxItem } from '../Lightbox';
 
 type MediaAttachmentsBoxProps = {
     attachments: Attachment[];
@@ -177,7 +177,7 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                         if (media.type === 'video') {
                             const metadata = videoMetadata[media.url];
                             title = (title || metadata?.title) ?? '';
-                            const baseUrl = getBaseUrl(media.url);
+                            const _baseUrl = getBaseUrl(media.url);
 
                             innerContent = (
                                 <div

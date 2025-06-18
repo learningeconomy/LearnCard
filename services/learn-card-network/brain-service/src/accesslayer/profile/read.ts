@@ -1,6 +1,6 @@
 import { QueryBuilder, BindParam, QueryRunner } from 'neogma';
 import { Profile } from '@models';
-import { ProfileType, FlatProfileType } from 'types/profile';
+import type { ProfileType, FlatProfileType } from 'types/profile';
 import { transformProfileId } from '@helpers/profile.helpers';
 import { inflateObject } from '@helpers/objects.helpers';
 

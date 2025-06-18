@@ -4,7 +4,7 @@ import VerificationRow from './VerificationRow';
 import InfoIcon from '../svgs/InfoIcon';
 import InfoBox from './InfoBox';
 
-import { VerificationItem } from '@learncard/types';
+import type { VerificationItem } from '@learncard/types';
 
 type VerificationsBoxProps = {
     verificationItems: VerificationItem[];

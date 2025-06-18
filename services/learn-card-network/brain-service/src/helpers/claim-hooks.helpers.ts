@@ -1,7 +1,7 @@
 import { QueryBuilder } from 'neogma';
 
-import { CredentialInstance, Credential, Boost, Profile, ClaimHook, Role } from '@models';
-import { ProfileType } from 'types/profile';
+import { Credential, Boost, Profile, ClaimHook, Role, type CredentialInstance } from '@models';
+import type { ProfileType } from 'types/profile';
 import { clearDidWebCacheForChildProfileManagers } from '@accesslayer/boost/relationships/update';
 import { getAdminRole } from '@accesslayer/role/read';
 

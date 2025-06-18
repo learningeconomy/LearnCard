@@ -1,11 +1,11 @@
-import {
+import type {
     VerificationItem,
     AchievementCredential,
     Profile,
     CredentialSubject,
     VC,
 } from '@learncard/types';
-import React, { ReactNode } from 'react';
+import React from 'react';
 
 export enum Icons {
     coinsIcon,

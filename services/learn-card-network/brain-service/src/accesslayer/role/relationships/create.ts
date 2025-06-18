@@ -1,5 +1,5 @@
-import { BoostPermissions } from '@learncard/types';
-import { BoostInstance } from '@models';
+import type { BoostPermissions } from '@learncard/types';
+import type { BoostInstance } from '@models';
 import { createRole } from '../create';
 
 export const addClaimPermissionsForBoost = async (

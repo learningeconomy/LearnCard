@@ -1,5 +1,5 @@
 import { PREFIX } from '../create/index';
-import { Context, IssuerConfig } from 'src/types/index';
+import type { Context, IssuerConfig } from 'src/types/index';
 
 export const getIssuerConfigs = async (
     context: Context,
@@ -22,5 +22,5 @@ export const getIssuerConfigById = async (
     scope?: string
 ): Promise<IssuerConfig> => {
     const issuerJSON = await context.cache.get(`${PREFIX}${scope || 'default'}:${id}`);
-    return issuerJSON ? JSON.parse(issuerJSON) : null;
+    return issuerJSON && JSON.parse(issuerJSON);
 };

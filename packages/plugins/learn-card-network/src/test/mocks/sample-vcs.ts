@@ -1,4 +1,4 @@
-import { VC, CredentialRecord } from '@learncard/types';
+import { type VC } from '@learncard/types';
 
 export const SAMPLE_VCS: Record<string, VC> = {
     VALID_BOOST: {

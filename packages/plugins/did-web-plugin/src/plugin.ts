@@ -1,6 +1,6 @@
-import { LearnCard } from '@learncard/core';
+import type { LearnCard } from '@learncard/core';
 
-import { DidWebPluginDependentMethods, DidWebPlugin } from './types';
+import type { DidWebPluginDependentMethods, DidWebPlugin } from './types';
 export * from './types';
 
 /**

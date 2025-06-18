@@ -1,5 +1,5 @@
 import React from 'react';
-import { VCDisplayCardProps } from '../../types';
+import type { VCDisplayCardProps } from '../../types';
 import { VCVerificationCheckWithText } from '../VCVerificationCheck/VCVerificationCheck';
 import VCVerificationPill from '../VCVerificationPill/VCVerificationPill';
 import FlipArrowRight from '../../assets/images/ArrowArcRight.svg';
@@ -55,7 +55,7 @@ export const VCDisplayBackFace: React.FC<VCDisplayCardProps> = ({
         </>
     );
 
-    const renderDetails = overrideDetailsComponent ? overrideDetailsComponent : defaultDetails;
+    const renderDetails = overrideDetailsComponent ?? defaultDetails;
 
     return (
         <div
@@ -91,7 +91,7 @@ export const VCDisplayBackFace: React.FC<VCDisplayCardProps> = ({
                     </span>
                 </button>
 
-                <section className="flex-col items-center justify-center checklist-container justify-center w-[100%] width-full mt-[20px]">
+                <section className="flex-col items-center checklist-container justify-center w-[100%] width-full mt-[20px]">
                     <VCVerificationCheckWithText loading={loading} />
                     <section>
                         {verification.map(item => (

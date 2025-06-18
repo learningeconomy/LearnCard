@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 
-interface FitTextProps {
+type FitTextProps = {
     text: string;
     width: string;
     className?: string;

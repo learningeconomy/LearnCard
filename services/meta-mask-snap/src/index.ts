@@ -1,6 +1,6 @@
 import type { MetaMaskInpageProvider } from '@metamask/providers';
 
-import { LearnCardRPCAPI, LearnCardRPCAPITypes } from './types/rpc';
+import { LearnCardRPCAPI, type LearnCardRPCAPITypes } from './types/rpc';
 
 declare global {
     const ethereum: MetaMaskInpageProvider;

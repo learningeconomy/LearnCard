@@ -1,4 +1,4 @@
-import { VCImplicitLearnCard } from './types';
+import type { VCImplicitLearnCard } from './types';
 
 /**
  * Determines the default verification method to use for a given did by resolving it and looking

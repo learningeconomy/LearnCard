@@ -1,8 +1,8 @@
 import React from 'react';
-import { Story, Meta } from '@storybook/react';
+import type { Story, Meta } from '@storybook/react';
 
 import SkillsCard from './SkillsCard';
-import { SkillsCardProps } from '../../types';
+import type { SkillsCardProps } from '../../types';
 
 export default {
     title: 'Skills Card',

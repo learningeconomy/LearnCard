@@ -1,6 +1,6 @@
 import { v4 as uuid } from 'uuid';
 
-import { ClaimHook as ClaimHookType } from 'types/claim-hook';
+import type { ClaimHook as ClaimHookType } from 'types/claim-hook';
 
 import { ClaimHook } from '@models';
 

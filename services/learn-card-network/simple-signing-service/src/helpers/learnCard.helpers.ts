@@ -1,12 +1,12 @@
 import { readFile } from 'node:fs/promises';
 
-import { generateLearnCard, LearnCard } from '@learncard/core';
-import { DIDKitPlugin, DidMethod, getDidKitPlugin } from '@learncard/didkit-plugin';
-import { DidKeyPlugin, getDidKeyPlugin } from '@learncard/didkey-plugin';
-import { VCPlugin, getVCPlugin } from '@learncard/vc-plugin';
-import { ExpirationPlugin, expirationPlugin } from '@learncard/expiration-plugin';
-import { LearnCardPlugin, getLearnCardPlugin } from '@learncard/learn-card-plugin';
-import { getDidWebPlugin, DidWebPlugin } from '@learncard/did-web-plugin';
+import { generateLearnCard, type LearnCard } from '@learncard/core';
+import { getDidKitPlugin, type DIDKitPlugin, type DidMethod } from '@learncard/didkit-plugin';
+import { getDidKeyPlugin, type DidKeyPlugin } from '@learncard/didkey-plugin';
+import { getVCPlugin, type VCPlugin } from '@learncard/vc-plugin';
+import { expirationPlugin, type ExpirationPlugin } from '@learncard/expiration-plugin';
+import { getLearnCardPlugin, type LearnCardPlugin } from '@learncard/learn-card-plugin';
+import { getDidWebPlugin, type DidWebPlugin } from '@learncard/did-web-plugin';
 import { getLRUCache } from '@cache/in-memory-lru';
 import { getSigningAuthorityForDid } from '@accesslayer/signing-authority/read';
 

@@ -1,4 +1,4 @@
-import { UserNotificationTypeEnum } from '../../constants/notifications';
+import type { UserNotificationTypeEnum } from '../../constants/notifications';
 
 export type NotificationUserAcceptedBoostCardProps = {
     className?: string;

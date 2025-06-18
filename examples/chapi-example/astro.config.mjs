@@ -1,5 +1,4 @@
 import { defineConfig } from 'astro/config';
-import GlobalPolyfill from '@esbuild-plugins/node-globals-polyfill';
 import stdlibbrowser from 'node-stdlib-browser';
 import basicSsl from '@vitejs/plugin-basic-ssl';
 import react from '@astrojs/react';

@@ -3,7 +3,7 @@ import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import { XAPI_ENDPOINT } from '../constants/xapi';
 
-interface KeyPair {
+type KeyPair = {
     privateKey: string;
     publicKey: string;
     keyId: string;
@@ -69,8 +69,8 @@ export function getKeyPair(): KeyPair {
 
     // Output keys so they can be set as environment variables
     console.log('\nAdd these to your environment variables:');
-    console.log(`RSA_PRIVATE_KEY=${newPrivateKey.replace(/\n/g, '\\n')}`);
-    console.log(`RSA_PUBLIC_KEY=${newPublicKey.replace(/\n/g, '\\n')}\n`);
+    console.log(`RSA_PRIVATE_KEY=${newPrivateKey.replace(/\n/g, String.raw`\n`)}`);
+    console.log(`RSA_PUBLIC_KEY=${newPublicKey.replace(/\n/g, String.raw`\n`)}\n`);
 
     return cachedKeyPair;
 }

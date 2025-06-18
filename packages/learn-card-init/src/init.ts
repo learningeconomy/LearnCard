@@ -6,7 +6,7 @@ import { didWebLearnCardFromSeed } from './initializers/didWebLearnCardFromSeed'
 import { didWebNetworkLearnCardFromSeed } from './initializers/didWebNetworkLearnCardFromSeed';
 import { learnCardFromApiUrl } from './initializers/apiLearnCard';
 
-import {
+import type {
     InitLearnCard,
     EmptyLearnCard,
     LearnCardFromSeed,

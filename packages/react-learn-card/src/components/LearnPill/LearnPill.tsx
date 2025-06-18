@@ -1,5 +1,5 @@
 import React from 'react';
-import { LearnPillProps, LCSubtypes } from '../../types';
+import { LCSubtypes, type LearnPillProps } from '../../types';
 import { TYPE_TO_MINI_ICON } from '../../constants/';
 
 const TYPE_TO_COLOR: any = {

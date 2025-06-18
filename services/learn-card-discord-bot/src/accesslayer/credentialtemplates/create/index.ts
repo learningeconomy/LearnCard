@@ -1,6 +1,5 @@
 import { randomUUID } from 'crypto';
-import { CredentialTemplate } from 'src/types/index';
-import { Context } from 'src/types/index';
+import type { Context, CredentialTemplate } from 'src/types/index';
 
 export const PREFIX = 'credentialtemplate:';
 

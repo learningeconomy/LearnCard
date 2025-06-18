@@ -1,5 +1,5 @@
-import { BoostInstance, Boost } from '@models';
-import { ProfileType } from 'types/profile';
+import { Boost, type BoostInstance } from '@models';
+import type { ProfileType } from 'types/profile';
 import { clearDidWebCacheForChildProfileManagers } from './update';
 
 export const removeProfileAsBoostAdmin = async (

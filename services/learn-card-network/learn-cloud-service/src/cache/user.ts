@@ -1,6 +1,6 @@
 import { getAllDidsForDid } from '@accesslayer/user/read';
 import cache from '@cache';
-import { MongoUserType } from '@models';
+import type { MongoUserType } from '@models';
 
 /** 1 Day */
 export const USER_TTL = 60 * 60 * 24;

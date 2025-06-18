@@ -1,7 +1,7 @@
 import React from 'react';
-import { Story, Meta } from '@storybook/react';
+import type { Story, Meta } from '@storybook/react';
 
-import VCDisplayCard2, { VCDisplayCard2Props } from './VCDisplayCard2';
+import VCDisplayCard2, { type VCDisplayCard2Props } from './VCDisplayCard2';
 import {
     JffCredential,
     SuperSkillsOprahCredential,

@@ -1,8 +1,8 @@
 import React from 'react';
-import { Story, Meta } from '@storybook/react';
+import type { Story, Meta } from '@storybook/react';
 
 import MiniVCThumbnail from './MiniVCThumbnail';
-import { MiniVCThumbnailProps } from './types';
+import type { MiniVCThumbnailProps } from './types';
 
 export default {
     title: 'MiniVCThumbnail',

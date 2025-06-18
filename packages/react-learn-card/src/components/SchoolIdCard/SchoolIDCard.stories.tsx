@@ -1,9 +1,9 @@
 import React from 'react';
-import { Story, Meta } from '@storybook/react';
+import type { Story, Meta } from '@storybook/react';
 
 import MotlowBuckCardBG from '../../assets/images/motlow-buckcard-bg.svg';
 import SchoolIDCard from './SchoolIDCard';
-import { SchoolIDCardProps } from './types';
+import type { SchoolIDCardProps } from './types';
 
 export default {
     title: 'SchoolIDCard',

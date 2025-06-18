@@ -1,7 +1,5 @@
-/// <reference path="../global.d.ts" />
-
-import Redis, { RedisValue, RedisKey } from 'ioredis';
-import MemoryRedis, { Redis as RedisMockType } from 'ioredis-mock';
+import Redis, { type RedisValue, type RedisKey } from 'ioredis';
+import MemoryRedis, { type Redis as RedisMockType } from 'ioredis-mock';
 
 let ioredisInstance: Redis;
 
@@ -12,11 +10,7 @@ export type Pipeline = {
     exec: () => Promise<[Error | null, any][] | null>;
 };
 
-const simpleScan = async (
-    redis: Redis,
-    pattern: string,
-    count: number = 100
-): Promise<string[]> => {
+const simpleScan = async (redis: Redis, pattern: string, count = 100): Promise<string[]> => {
     try {
         return await new Promise<string[]>(res => {
             const results: string[] = [];
@@ -118,8 +112,8 @@ export const getCache = (): Cache => {
                     if (cache?.redis) return await cache.redis.setex(key, ttl, value);
                     if (cache?.node) return await cache.node.setex(key, ttl, value);
                 }
-            } catch (e) {
-                console.error('Cache set error', e);
+            } catch (error) {
+                console.error('Cache set error', error);
             }
 
             return undefined;
@@ -155,8 +149,8 @@ export const getCache = (): Cache => {
                     if (cache?.redis) return await cache.redis.mset(values);
                     if (cache?.node) return await cache.node.mset(values);
                 }
-            } catch (e) {
-                console.error('Cache set error', e);
+            } catch (error) {
+                console.error('Cache set error', error);
             }
 
             return undefined;
@@ -170,7 +164,7 @@ export const getCache = (): Cache => {
                     if (cache?.redis) return await cache.redis.get(key);
                     if (cache?.node) return await cache.node.get(key);
                 }
-            } catch (e) {
+            } catch {
                 // logger.error('Cache get error', e);
             }
 
@@ -201,7 +195,7 @@ export const getCache = (): Cache => {
                     if (cache?.redis) return await cache.redis.mget(keys);
                     if (cache?.node) return await cache.node.mget(keys);
                 }
-            } catch (e) {
+            } catch {
                 // logger.error('Cache get error', e);
             }
 
@@ -223,8 +217,8 @@ export const getCache = (): Cache => {
             try {
                 if (cache?.redis) return await cache.redis.unlink(keys);
                 if (cache?.node) return await cache.node.unlink(keys);
-            } catch (e) {
-                console.error('Cache delete error', e);
+            } catch (error) {
+                console.error('Cache delete error', error);
             }
 
             return undefined;
@@ -233,7 +227,7 @@ export const getCache = (): Cache => {
             try {
                 if (cache?.redis) return await cache.redis.ttl(key);
                 if (cache?.node) return await cache.node.ttl(key);
-            } catch (e) {
+            } catch {
                 // logger.error('Cache get error', e);
             }
 
@@ -243,8 +237,8 @@ export const getCache = (): Cache => {
             try {
                 if (cache?.redis) return await cache.redis.hset(key, field, value);
                 if (cache?.node) return await cache.node.hset(key, field, value);
-            } catch (e) {
-                console.error('Cache hset error', e);
+            } catch (error) {
+                console.error('Cache hset error', error);
             }
             return 0;
         },
@@ -253,8 +247,8 @@ export const getCache = (): Cache => {
             try {
                 if (cache?.redis) return await cache.redis.hget(key, field);
                 if (cache?.node) return await cache.node.hget(key, field);
-            } catch (e) {
-                console.error('Cache hget error', e);
+            } catch (error) {
+                console.error('Cache hget error', error);
             }
             return null;
         },
@@ -263,8 +257,8 @@ export const getCache = (): Cache => {
             try {
                 if (cache?.redis) return await cache.redis.expire(key, seconds);
                 if (cache?.node) return await cache.node.expire(key, seconds);
-            } catch (e) {
-                console.error('Cache expire error', e);
+            } catch (error) {
+                console.error('Cache expire error', error);
             }
             return 0;
         },
@@ -322,8 +316,8 @@ export const getCache = (): Cache => {
 
             cache.redis = ioredisInstance;
         }
-    } catch (e) {
-        console.error('Could not connect to redis', e);
+    } catch (error) {
+        console.error('Could not connect to redis', error);
         delete cache.redis;
     }
 

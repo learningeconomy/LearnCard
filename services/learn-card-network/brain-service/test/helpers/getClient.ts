@@ -1,5 +1,5 @@
 import { appRouter } from '../../src/app';
-import { SeedLearnCard, getLearnCard } from '@helpers/learnCard.helpers';
+import { getLearnCard, type SeedLearnCard } from '@helpers/learnCard.helpers';
 import { AUTH_GRANT_FULL_ACCESS_SCOPE } from 'src/constants/auth-grant';
 
 export const getClient = (options?: {

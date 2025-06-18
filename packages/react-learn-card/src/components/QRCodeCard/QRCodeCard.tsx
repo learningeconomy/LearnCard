@@ -1,7 +1,7 @@
 import React from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 
-import { QRCodeCardProps } from './types';
+import type { QRCodeCardProps } from './types';
 
 export const QRCodeCard: React.FC<QRCodeCardProps> = ({
     userHandle,

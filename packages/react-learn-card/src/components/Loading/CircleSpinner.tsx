@@ -31,8 +31,8 @@ const CircleSpinner: React.FC<CircleSpinnerProps> = ({
     // inner circle circumference is a ratio of the outer size
     // this is the actual spinning thing you see
     const spinnerStyles = {
-        height: `${Math.floor(size / 1.1111111)}px`,
-        width: `${Math.floor(size / 1.11111111)}px`,
+        height: `${Math.floor(size / 1.111_111_1)}px`,
+        width: `${Math.floor(size / 1.111_111_11)}px`,
         border: `${thickness}px solid #fff`,
         margin: `${marginOffset}px`,
         borderColor: `${color}${

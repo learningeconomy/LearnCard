@@ -1,0 +1,62 @@
+{
+    "categories": {
+        "correctness": "error",
+        "suspicious": "warn",
+        "style": "warn"
+    },
+    "env": {
+        "browser": true,
+        "node": true,
+        "es2024": true
+    },
+    "ignorePatterns": [
+        "**/node_modules/**",
+        "**/dist/**",
+        "**/build/**",
+        "pnpm-lock.yaml",
+        "**/playwright-report/**",
+        "**/test-results/**",
+        "**/swagger-ui/**",
+        "**/*.spec.ts",
+        "**/*.test.ts",
+        "**/*wasm*"
+    ],
+    "rules": {
+        "no-plusplus": [
+            "error",
+            {
+                "allowForLoopAfterthoughts": true
+            }
+        ],
+        "no-console": "off",
+        "no-explicit-any": "off",
+        "no-null": "off",
+        "filename-case": "off",
+        "curly": "off",
+        "sort-imports": "off",
+        "func-style": "off",
+        "no-ternary": "off",
+        "no-magic-numbers": "off",
+        "sort-keys": "off",
+        "prefer-global-this": "off",
+        "no-await-expression-member": "off",
+        "init-declarations": "off",
+        "max-params": "off",
+        "yoda": ["warn", "never"],
+        "consistent-type-definitions": ["warn", "type"],
+        "consistent-indexed-object-style": ["warn", "record"],
+        "no-nested-ternary": "off",
+        "no-continue": "off",
+        "consistent-type-imports": [
+            "warn",
+            {
+                "prefer": "type-imports",
+                "fixStyle": "inline-type-imports"
+            }
+        ],
+        "number-literal-case": "off",
+        "no-instanceof-builtins": "off",
+        "no-async-endpoint-handlers": "off",
+        "func-names": "off"
+    }
+}

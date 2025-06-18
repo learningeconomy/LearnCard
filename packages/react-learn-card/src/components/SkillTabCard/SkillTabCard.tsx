@@ -1,8 +1,7 @@
 import React from 'react';
 import { RoundedPill } from '../RoundedPill';
-import { LCSubtypes } from '../../types';
 import { CircleCheckButton } from '../CircleCheckButton';
-import { SkillTabCardProps } from '../../types';
+import { LCSubtypes, type SkillTabCardProps } from '../../types';
 
 export const SkillTabCard: React.FC<SkillTabCardProps> = ({
     title,

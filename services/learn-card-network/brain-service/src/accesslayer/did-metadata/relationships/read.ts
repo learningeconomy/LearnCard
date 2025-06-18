@@ -2,9 +2,9 @@ import { Profile, DidMetadata } from '@models';
 import { QueryBuilder } from 'neogma';
 
 import { convertQueryResultToPropertiesObjectArray } from '@helpers/neo4j.helpers';
-import { FlatProfileType, ProfileType } from 'types/profile';
+import type { FlatProfileType, ProfileType } from 'types/profile';
 import { inflateObject } from '@helpers/objects.helpers';
-import { DidMetadataType, FlatDidMetadataType } from 'types/did-metadata';
+import type { DidMetadataType, FlatDidMetadataType } from 'types/did-metadata';
 
 export const getProfilesAssociatedWithMetadata = async (id: string): Promise<ProfileType[]> => {
     const results = convertQueryResultToPropertiesObjectArray<{

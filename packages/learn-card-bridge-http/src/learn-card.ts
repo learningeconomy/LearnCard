@@ -1,5 +1,4 @@
-import fs from 'fs/promises';
-import { initLearnCard, LearnCardFromSeed } from '@learncard/init';
+import { initLearnCard, type LearnCardFromSeed } from '@learncard/init';
 import didkit from './didkit_wasm_bg.wasm';
 
 export const getLearnCard = async (): Promise<LearnCardFromSeed['returnValue']> => {

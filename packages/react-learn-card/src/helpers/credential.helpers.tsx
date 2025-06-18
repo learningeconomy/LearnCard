@@ -2,13 +2,13 @@ import React from 'react';
 import { format } from 'date-fns';
 
 import {
-    Image,
-    Profile,
-    VC,
-    AchievementCredential,
     VerificationStatusEnum,
+    type Image,
+    type Profile,
+    type VC,
+    type AchievementCredential,
 } from '@learncard/types';
-import { CredentialInfo, LCCategoryEnum } from '../types';
+import { LCCategoryEnum, type CredentialInfo } from '../types';
 
 import SocialBadgesIcon from '../components/svgs/SocialBadgesIcon';
 import PuzzlePiece from '../components/svgs/PuzzlePiece';
@@ -41,7 +41,7 @@ export const getImageFromProfile = (profile: Profile): string => {
 
 export const getInfoFromCredential = (
     credential: VC | AchievementCredential,
-    dateFormat: string = 'dd MMM yyyy',
+    dateFormat = 'dd MMM yyyy',
     options: { uppercaseDate?: boolean } = { uppercaseDate: true }
 ): CredentialInfo => {
     const { issuer, issuanceDate, validFrom } = credential;
@@ -65,7 +65,7 @@ export const getInfoFromCredential = (
             if (options.uppercaseDate) {
                 createdAt = createdAt.toUpperCase();
             }
-        } catch (error) {
+        } catch {
             console.warn('Invalid date format in credential:', dateValue);
             createdAt = '';
         }
@@ -163,7 +163,7 @@ export const getCategoryDarkColor = (category = LCCategoryEnum.achievement) => {
     return `${getCategoryPrimaryColor(category)}-700`;
 };
 
-export const getCategoryIcon = (category = LCCategoryEnum.achievement, size: string = '21') => {
+export const getCategoryIcon = (category = LCCategoryEnum.achievement, size = '21') => {
     switch (category) {
         case LCCategoryEnum.socialBadge:
             return <SocialBadgesIcon size={size} />;
@@ -188,7 +188,6 @@ export const getCategoryIcon = (category = LCCategoryEnum.achievement, size: str
             return <AccomplishmentsIcon size={size} />;
         case LCCategoryEnum.meritBadge:
             return <ScoutsLogo size={size} />;
-        case LCCategoryEnum.currency:
         default:
             console.log('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥');
             console.log('getCategoryIcon - unhandled category:', category);
@@ -197,7 +196,7 @@ export const getCategoryIcon = (category = LCCategoryEnum.achievement, size: str
 };
 
 export const categorizeSkills = (skills: any) => {
-    let categorizedSkills = skills.reduce((acc, obj) => {
+    let categorizedSkills = skills.reduce((acc: any, obj: any) => {
         // If the category doesn't exist in the accumulator, create a new array for it
         if (!acc[obj.category]) {
             acc[obj.category] = [];
@@ -206,21 +205,21 @@ export const categorizeSkills = (skills: any) => {
         }
 
         // Check if the skill already exists for this category
-        let existingSkill = acc[obj.category].find(skill => skill.skill === obj.skill);
+        let existingSkill = acc[obj.category].find((skill: any) => skill.skill === obj.skill);
         if (existingSkill) {
             // Update the existing object's subskills
             existingSkill.subskills = [
-                ...new Set(existingSkill?.subskills?.concat(obj?.subskills)),
+                ...new Set([...(existingSkill?.subskills ?? []), ...(obj?.subskills ?? [])]),
             ];
         } else {
             // Add a new object to the array for this category
             acc[obj.category].push(obj);
-            acc[obj.category].totalSkills++; // Increment totalSkills count
+            acc[obj.category].totalSkills += 1; // Increment totalSkills count
         }
 
         // Calculate total subskills count for this category
         let totalSubskillsCount = acc[obj.category].reduce(
-            (total, skill) => total + (skill?.subskills?.length ?? 0),
+            (total: number, skill: any) => total + (skill?.subskills?.length ?? 0),
             0
         );
         acc[obj.category].totalSubskillsCount = totalSubskillsCount;
@@ -238,7 +237,7 @@ export const getTotalCountOfSkills = (
     let totalCount = 0;
 
     skills?.forEach(skill => {
-        totalCount++; // Increment for each skill
+        totalCount += 1; // Increment for each skill
 
         if (skill?.subSkills) {
             totalCount += skill?.subSkills.length; // Increment for each subskill

@@ -1,20 +1,19 @@
 import { getClient } from '@learncard/network-brain-client';
 import {
     JWEValidator,
-    LCNProfile,
     UnsignedVCValidator,
     VCValidator,
     VPValidator,
-    Profile,
     ConsentFlowContractValidator,
     ConsentFlowTermsValidator,
-    JWE,
-    AUTH_GRANT_AUDIENCE_DOMAIN_PREFIX,
+    type LCNProfile,
+    type Profile,
+    type JWE,
 } from '@learncard/types';
-import { LearnCard } from '@learncard/core';
-import { VerifyExtension } from '@learncard/vc-plugin';
+import type { LearnCard } from '@learncard/core';
+import type { VerifyExtension } from '@learncard/vc-plugin';
 
-import {
+import type {
     LearnCardNetworkPluginDependentMethods,
     LearnCardNetworkPlugin,
     VerifyBoostPlugin,
@@ -526,7 +525,7 @@ export const getLearnCardNetworkPlugin = async (
                 limit = 25,
                 cursor = undefined,
                 includeUnacceptedBoosts = true,
-                query
+                query = undefined
             ) => {
                 if (!userData) throw new Error('Please make an account first!');
 
@@ -1071,7 +1070,7 @@ export const getVerifyBoostPlugin = async (
                             }
                         }
                     }
-                } catch (e) {
+                } catch {
                     verificationCheck.errors.push('Boost authenticity could not be verified.');
                 }
                 return verificationCheck;

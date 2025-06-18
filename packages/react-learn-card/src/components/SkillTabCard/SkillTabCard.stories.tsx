@@ -1,7 +1,7 @@
 import React from 'react';
-import { Story, Meta } from '@storybook/react';
+import type { Story, Meta } from '@storybook/react';
 import SkillTabCard from './SkillTabCard';
-import { SkillTabCardProps } from '../../types';
+import type { SkillTabCardProps } from '../../types';
 
 export default {
     title: 'SkillTabCard',

@@ -1,8 +1,7 @@
 import React from 'react';
-import { Story, Meta } from '@storybook/react';
-import { LCSubtypes } from '../../types';
+import type { Story, Meta } from '@storybook/react';
+import { LCSubtypes, type LearnPillProps } from '../../types';
 import LearnPill from './LearnPill';
-import { LearnPillProps } from '../../types';
 
 export default {
     title: 'LearnPill',

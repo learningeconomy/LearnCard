@@ -1,7 +1,7 @@
 import {
-    BaseCommandInteraction,
     ApplicationCommandOptionType,
     PermissionsBitField,
+    type BaseCommandInteraction
 } from 'discord.js';
 import { getCredentialTemplates } from '../accesslayer/credentialtemplates/read';
 
@@ -44,8 +44,8 @@ export const ListCredentials: Command = {
                     content: `**Credential Templates**\n ${listOfCredentials}`,
                 });
             }
-        } catch (e) {
-            console.error(e);
+        } catch (error) {
+            console.error(error);
             await interaction.reply({
                 content: 'Woops, an error occured. Try that again 🫠.`',
                 ephemeral: true,

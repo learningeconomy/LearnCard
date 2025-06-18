@@ -1,4 +1,4 @@
-import { Plugin } from '@learncard/core';
+import type { Plugin } from '@learncard/core';
 
 export type CryptoPluginMethods = {
     crypto: () => Crypto;

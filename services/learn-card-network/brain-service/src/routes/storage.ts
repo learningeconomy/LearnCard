@@ -1,16 +1,16 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import {
-    UnsignedVC,
-    VC,
-    VP,
-    JWE,
     UnsignedVCValidator,
     VCValidator,
     VPValidator,
     JWEValidator,
     ConsentFlowContractValidator,
     ConsentFlowTermsValidator,
+    type UnsignedVC,
+    type VC,
+    type VP,
+    type JWE,
 } from '@learncard/types';
 
 import { getCredentialUri } from '@helpers/credential.helpers';

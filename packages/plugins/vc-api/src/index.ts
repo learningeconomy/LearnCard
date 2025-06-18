@@ -6,7 +6,7 @@ import {
     VerificationCheckValidator,
 } from '@learncard/types';
 
-import { VCAPIPlugin } from './types';
+import type { VCAPIPlugin } from './types';
 import { isSuccessful, post } from './helpers';
 
 export * from './types';

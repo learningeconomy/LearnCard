@@ -1,5 +1,5 @@
 import { PREFIX } from '../create/index';
-import { Context, PendingVc } from 'src/types/index';
+import type { Context, PendingVc } from 'src/types/index';
 
 export const getPendingVcs = async (context: Context, scope?: string): Promise<PendingVc[]> => {
     const pendingVcKeys = await context.cache.keys(`${PREFIX}${scope ? scope + ':' : ''}*`);
@@ -19,5 +19,5 @@ export const getPendingVcById = async (
     scope?: string
 ): Promise<PendingVc> => {
     const pendingVcJSON = await context.cache.get(`${PREFIX}${scope || 'default'}:${id}`);
-    return pendingVcJSON ? JSON.parse(pendingVcJSON) : null;
+    return pendingVcJSON && JSON.parse(pendingVcJSON);
 };

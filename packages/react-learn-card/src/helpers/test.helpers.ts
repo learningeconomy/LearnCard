@@ -515,7 +515,7 @@ export const issuerOverride = {
 
 export const simpleConvertTagsToSkills = (tags: string[]) => {
     let lastSkill: string;
-    const skillsObj: { [skill: string]: string[] } = {};
+    const skillsObj: Record<string, string[]> = {};
 
     tags.forEach(tag => {
         const isSubskill = tag.includes('Subskill');
@@ -556,10 +556,10 @@ export const superSkillsConvertTags = (tags: string[]) => {
         return Object.values(SKILL).includes(maybeSkill);
     };
 
-    const skillsToSubskills: { [skill: string]: string[] } = {};
+    const skillsToSubskills: Record<string, string[]> = {};
     tags.forEach(tag => {
         if (isSkill(tag)) {
-            const subskillOptions = SKILL_SUBTYPE[tag];
+            const subskillOptions = SKILL_SUBTYPE[tag as keyof typeof SKILL_SUBTYPE];
             skillsToSubskills[tag] = tags.filter(t => subskillOptions.includes(t));
         }
     });

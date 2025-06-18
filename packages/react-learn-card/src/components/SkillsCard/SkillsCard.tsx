@@ -1,5 +1,5 @@
 import React from 'react';
-import { SkillsCardProps } from '../../types';
+import type { SkillsCardProps } from '../../types';
 
 type SkillsMeterSegmentProps = {
     filled?: boolean;
@@ -9,7 +9,7 @@ type SkillsMeterSegmentProps = {
 
 export const SkillsMeterSegment: React.FC<SkillsMeterSegmentProps> = ({
     filled = false,
-    className,
+    className: _className,
     skillColor = 'bg-cyan-700',
 }) => {
     const bgColor = filled ? skillColor : 'bg-gray-200';

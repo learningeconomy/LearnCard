@@ -1,4 +1,4 @@
-import { EthereumConfig } from '@learncard/ethereum-plugin';
+import type { EthereumConfig } from '@learncard/ethereum-plugin';
 
 export const defaultEthereumArgs: EthereumConfig = {
     infuraProjectId: '',

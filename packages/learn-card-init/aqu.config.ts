@@ -1,4 +1,4 @@
-import { BuildOptions, Plugin } from 'esbuild';
+import { type BuildOptions } from 'esbuild';
 import { copy } from 'esbuild-plugin-copy';
 
 const buildOptions: BuildOptions = {

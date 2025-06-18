@@ -21,7 +21,7 @@ Sentry.AWSLambda.init({
     dsn: process.env.SENTRY_DSN,
     environment: process.env.SENTRY_ENV,
     enabled: Boolean(process.env.SENTRY_DSN),
-    tracesSampleRate: 1.0,
+    tracesSampleRate: 1,
     integrations: [
         new Sentry.Integrations.Console(),
         new Sentry.Integrations.Http({ tracing: true }),
@@ -115,7 +115,7 @@ export const trpcHandler = Sentry.AWSLambda.wrapHandler(
 );
 
 export const notificationsWorker: SQSHandler = Sentry.AWSLambda.wrapHandler(
-    async (event, context) => {
+    async (event, _context) => {
         await Promise.all(
             event.Records.map(async record => {
                 try {
@@ -124,7 +124,7 @@ export const notificationsWorker: SQSHandler = Sentry.AWSLambda.wrapHandler(
                     const notification = await LCNNotificationValidator.parseAsync(_notification);
 
                     await sendNotification(notification);
-                } catch (error) {
+                } catch {
                     console.error('Invalid Notification Object', record.body);
                 }
             })

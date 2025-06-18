@@ -2,7 +2,7 @@ import React from 'react';
 
 import VerifiedCheck from '../../assets/images/verified-check.png';
 
-import { MiniVCThumbnailProps } from './types';
+import type { MiniVCThumbnailProps } from './types';
 
 export const MiniVCThumbnail: React.FC<MiniVCThumbnailProps> = ({
     title,

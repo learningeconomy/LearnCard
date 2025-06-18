@@ -13,21 +13,26 @@ import VCDisplayCardCategoryType from './VCDisplayCardCategoryType';
 import VCDisplayCardSkillsCount from './VCDisplayCardSkillsCount';
 import VCIDDisplayCard from './VCIDDIsplayCard';
 
-import { Profile, VC, VerificationItem, VerificationStatusEnum } from '@learncard/types';
+import {
+    VerificationStatusEnum,
+    type Profile,
+    type VC,
+    type VerificationItem,
+} from '@learncard/types';
 import {
     getColorForVerificationStatus,
     getInfoFromCredential,
 } from '../../helpers/credential.helpers';
 import {
-    BoostAchievementCredential,
-    IssueHistory,
     LCCategoryEnum,
-    MediaMetadata,
-    VideoMetadata,
+    type BoostAchievementCredential,
+    type IssueHistory,
+    type MediaMetadata,
+    type VideoMetadata,
+    type KnownDIDRegistryType,
 } from '../../types';
 import { CertificateDisplayCard } from '../CertificateDisplayCard';
 import { MeritBadgeDisplayCard } from '../MeritBadgeDisplayCard';
-import { KnownDIDRegistryType } from '../../types';
 
 export type CredentialIconType = {
     image?: React.ReactNode;
@@ -133,7 +138,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     const isFront = isFrontOverride ?? _isFront;
     const setIsFront = setIsFrontOverride ?? _setIsFront;
 
-    const [headerHeight, setHeaderHeight] = useState(100); // 79 is the height if the header is one line
+    const [_headerHeight, setHeaderHeight] = useState(100); // 79 is the height if the header is one line
     const [headerWidth, setHeaderWidth] = useState(0);
 
     const headerRef = useRef<HTMLHeadingElement>(null);
@@ -305,7 +310,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                             className={`${headerClassName} absolute`}
                             style={{ wordBreak: 'break-word' }}
                         >
-                            {customRibbonCategoryComponent && customRibbonCategoryComponent}
+                            {customRibbonCategoryComponent}
                             {!customRibbonCategoryComponent && (
                                 <VCDisplayCardCategoryType categoryType={categoryType} />
                             )}
@@ -344,7 +349,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                                 className={`${headerClassName} invisible`}
                                 style={{ wordBreak: 'break-word' }}
                             >
-                                {customRibbonCategoryComponent && customRibbonCategoryComponent}
+                                {customRibbonCategoryComponent}
                                 {!customRibbonCategoryComponent && (
                                     <VCDisplayCardCategoryType categoryType={categoryType} />
                                 )}
@@ -438,9 +443,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                         </div>
                     </div>
                     <footer className="vc-card-footer w-full flex justify-between p-[5px] mt-[5px]">
-                        <Flipped inverseFlipId="card">
-                            {customFooterComponent && customFooterComponent}
-                        </Flipped>
+                        <Flipped inverseFlipId="card">{customFooterComponent}</Flipped>
                         <Flipped inverseFlipId="card">
                             {!customFooterComponent && (
                                 <>

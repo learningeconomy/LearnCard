@@ -1,12 +1,12 @@
-import { z } from 'zod';
-import { initLearnCard, LearnCardFromKey, DidMethod } from '@learncard/core';
-import { OnRpcRequestHandler } from '@metamask/snap-types';
-import { MetaMaskInpageProvider } from '@metamask/providers';
+import type { z } from 'zod';
+import { initLearnCard, type LearnCardFromSeed } from '@learncard/init';
+import type { OnRpcRequestHandler } from '@metamask/snap-types';
+import type { MetaMaskInpageProvider } from '@metamask/providers';
 
-import { LearnCardRPCAPI, LearnCardRPCAPITypes } from './';
+import { LearnCardRPCAPI, type LearnCardRPCAPITypes } from './';
 
 import didkit from './didkit_wasm_bg.wasm';
-import { RPCMethod } from './types/helpers';
+import type { RPCMethod } from './types/helpers';
 
 const serializeResponse = async <Serializer extends RPCMethod>(
     serializer: Serializer,
@@ -29,15 +29,12 @@ declare global {
 
 const HANDLERS: {
     [Method in LearnCardRPCAPITypes[keyof LearnCardRPCAPITypes]['method']]: (
-        lc: LearnCardFromKey,
+        lc: LearnCardFromSeed['returnValue'],
         request: LearnCardRPCAPITypes[Method]['arguments']['deserializer']
     ) => Promise<LearnCardRPCAPITypes[Method]['returnValue']['serializer']>;
 } = {
     did: async (learnCard, request) => {
-        return serializeResponse(
-            LearnCardRPCAPI.did,
-            learnCard.id.did(request.didMethod as DidMethod)
-        );
+        return serializeResponse(LearnCardRPCAPI.did, learnCard.id.did(request.didMethod as any));
     },
 
     getTestVc: async learnCard => {

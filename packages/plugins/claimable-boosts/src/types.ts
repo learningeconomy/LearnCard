@@ -1,7 +1,6 @@
 import { z } from 'zod';
-import { Plugin } from '@learncard/core';
-import { LCNBoostClaimLinkOptionsType } from '@learncard/types';
-import { LCNSigningAuthorityForUserType } from '@learncard/types';
+import type { Plugin } from '@learncard/core';
+import type { LCNBoostClaimLinkOptionsType, LCNSigningAuthorityForUserType } from '@learncard/types';
 
 export const SigningAuthorityValidator = z.object({
     _id: z.string().optional(),

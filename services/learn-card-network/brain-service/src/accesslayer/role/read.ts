@@ -1,4 +1,4 @@
-import { Role, RoleInstance } from '@models';
+import { Role, type RoleInstance } from '@models';
 import { createAdminRole, createCreatorRole, createEmptyRole } from './create';
 import { ADMIN_ROLE_ID, CREATOR_ROLE_ID, EMPTY_ROLE_ID } from 'src/constants/roles';
 

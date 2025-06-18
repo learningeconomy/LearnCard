@@ -1,4 +1,4 @@
-import { createTRPCClient, TRPCClient, httpBatchLink } from '@trpc/client';
+import { createTRPCClient, httpBatchLink, type TRPCClient } from '@trpc/client';
 import type { AppRouter } from '@learncard/learn-cloud-service';
 
 import { callbackLink } from './callbackLink';

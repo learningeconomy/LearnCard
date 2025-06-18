@@ -1,4 +1,4 @@
-import Fastify, { FastifyPluginAsync } from 'fastify';
+import Fastify, { type FastifyPluginAsync } from 'fastify';
 import fastifyCors from '@fastify/cors';
 import { generateJwk } from '@helpers/auth.helpers';
 

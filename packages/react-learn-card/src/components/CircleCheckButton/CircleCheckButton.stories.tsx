@@ -1,6 +1,6 @@
 import React from 'react';
-import { Story, Meta } from '@storybook/react';
-import { CircleCheckButtonProps } from '../../types';
+import type { Story, Meta } from '@storybook/react';
+import type { CircleCheckButtonProps } from '../../types';
 import CircleCheckButton from './CircleCheckButton';
 
 export default {

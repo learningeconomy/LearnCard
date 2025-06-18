@@ -1,14 +1,14 @@
-import { LearnCardFromSeed } from '@learncard/init';
-import { Client } from 'discord.js';
-import { Cache } from 'src/cache/index';
+import type { LearnCardFromSeed } from '@learncard/init';
+import type { Client } from 'discord.js';
+import type { Cache } from 'src/cache/index';
 
-export interface Context {
+export type Context = {
     wallet: LearnCardFromSeed['returnValue'];
     client: Client;
     cache: Cache;
 }
 
-export interface CredentialTemplate {
+export type CredentialTemplate = {
     _id: string;
     name: string;
     description?: string;
@@ -21,28 +21,28 @@ export enum DIDAssociationType {
     DiscordAccount,
 }
 
-export interface DIDAssocation {
+export type DIDAssocation = {
     _id?: string;
     type: DIDAssociationType;
     source: string;
     did: string;
 }
 
-export interface DIDChallenge {
+export type DIDChallenge = {
     _id?: string;
     type: DIDAssociationType;
     source: string;
     challenge: string;
 }
 
-export interface IssuerConfig {
+export type IssuerConfig = {
     _id: string;
     seed: string;
     guildId: string;
     issuer: Issuer;
 }
 
-export interface Issuer {
+export type Issuer = {
     type?: string;
     id: string;
     name?: string;
@@ -50,7 +50,7 @@ export interface Issuer {
     image?: string;
 }
 
-export interface PendingVc {
+export type PendingVc = {
     _id?: string;
     guildId: string;
     issuerConfigId: string;
@@ -58,12 +58,12 @@ export interface PendingVc {
     credentialTemplateId: string;
 }
 
-export interface SendCredentialResponse {
+export type SendCredentialResponse = {
     data: SendCredentialData;
     error?: object | undefined;
 }
 
-export interface SendCredentialData {
+export type SendCredentialData = {
     credentialTemplate?: CredentialTemplate;
     claimCredentialLink?: string;
     subjectUserName?: string;

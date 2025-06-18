@@ -1,4 +1,4 @@
-import { MongoSigningAuthorityType } from '@models';
+import type { MongoSigningAuthorityType } from '@models';
 import { SigningAuthorities } from '.';
 
 export const getSigningAuthorityById = async (

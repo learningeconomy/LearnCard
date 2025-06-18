@@ -1,9 +1,9 @@
-import { ModelFactory, ModelRelatedNodesI, NeogmaInstance } from 'neogma';
+import { ModelFactory, type ModelRelatedNodesI, type NeogmaInstance } from 'neogma';
 
 import { neogma } from '@instance';
 
-import { Profile, ProfileInstance } from './Profile';
-import { PresentationType } from 'types/presentation';
+import type { Profile, ProfileInstance } from './Profile';
+import type { PresentationType } from 'types/presentation';
 
 export type PresentationRelationships = {
     presentationReceived: ModelRelatedNodesI<

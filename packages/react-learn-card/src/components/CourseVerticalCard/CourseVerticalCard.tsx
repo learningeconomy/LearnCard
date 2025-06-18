@@ -1,12 +1,11 @@
 import React from 'react';
-import { CourseCardVerticalProps } from '../../types';
 import { CircleCheckButton } from '../CircleCheckButton';
 import CourseCardPlaceholder from '../../assets/images/lhplaceholder.png';
 import { RoundedPill } from '../RoundedPill';
 import MiniTrophyIcon from '../../assets/images/minitrophy.svg';
 import MiniJobIcon from '../../assets/images/minijob.svg';
 import MiniPuzzleIcon from '../../assets/images/minipuzzle.svg';
-import { LCSubtypes } from '../../types';
+import { LCSubtypes, type CourseCardVerticalProps } from '../../types';
 
 const TYPE_TO_COURSE_MINI_ICON: any = {
     ['job']: MiniJobIcon,
@@ -47,7 +46,7 @@ const CourseCardStatBubble: React.FC<CourseCardStatBubbleProps> = ({
 export const CourseVerticalCard: React.FC<CourseCardVerticalProps> = ({
     className,
     title,
-    thumbImgSrc,
+    thumbImgSrc: _thumbImgSrc,
     showStatus,
     claimStatus = false,
     achievementCount = 0,

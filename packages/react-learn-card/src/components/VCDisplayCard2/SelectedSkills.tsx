@@ -4,12 +4,10 @@ import TopLevelSkill from './TopLevelSkill';
 import Subskill from './Subskill';
 
 import {
-    boostCMSSKillCategories,
-    BoostCMSSKillsCategoryEnum,
-    BoostCMSCategorySkillEnum,
-    BoostCMSSubSkillEnum,
-    CATEGORY_TO_SKILLS,
     SKILLS_TO_SUBSKILLS,
+    type BoostCMSSKillsCategoryEnum,
+    type BoostCMSCategorySkillEnum,
+    type BoostCMSSubSkillEnum
 } from '../../constants/skills';
 
 export const SelectedSkills: React.FC<{

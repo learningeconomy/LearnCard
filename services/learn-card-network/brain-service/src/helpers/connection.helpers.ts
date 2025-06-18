@@ -4,7 +4,7 @@ import { TRPCError } from '@trpc/server';
 import { Boost, Profile, Credential } from '@models';
 import { convertQueryResultToPropertiesObjectArray } from '@helpers/neo4j.helpers';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
-import { FlatProfileType, ProfileType } from 'types/profile';
+import type { FlatProfileType, ProfileType } from 'types/profile';
 import { inflateObject } from './objects.helpers';
 
 export const getConnections = async (

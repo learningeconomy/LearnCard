@@ -1,4 +1,4 @@
-import { IDXArgs } from './types';
+import type { IDXArgs } from './types';
 
 export const DEFAULT_IDX_ARGS: IDXArgs = {
     modelData: {

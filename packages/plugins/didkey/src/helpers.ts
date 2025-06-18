@@ -1,4 +1,4 @@
-import { Algorithm } from './types';
+import type { Algorithm } from './types';
 
 export const ED25519_METHODS = ['key', 'tz', 'pkh:tz', 'pkh:tezos', 'pkh:sol', 'pkh:solana'];
 

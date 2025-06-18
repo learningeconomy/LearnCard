@@ -13,7 +13,7 @@ import Info from './Info';
 
 import { generateRandomSeed } from './random';
 
-import { FormState } from './types';
+import type { FormState } from './types';
 
 type Step = 'form' | 'cloning' | 'info';
 

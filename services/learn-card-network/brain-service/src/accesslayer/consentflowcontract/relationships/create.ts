@@ -1,10 +1,10 @@
 import {
-    ConsentFlowTerms as ConsentFlowTermsType,
-    ConsentFlowTransaction,
     LCNNotificationTypeEnumValidator,
-    LCNProfile,
-    UnsignedVC,
-    VC,
+    type ConsentFlowTerms as ConsentFlowTermsType,
+    type ConsentFlowTransaction,
+    type LCNProfile,
+    type UnsignedVC,
+    type VC
 } from '@learncard/types';
 import { v4 as uuid } from 'uuid';
 import {
@@ -14,14 +14,13 @@ import {
     Profile,
 } from '@models';
 import { BindParam, QueryBuilder } from 'neogma';
-import { DbContractType, FlatDbTermsType } from 'types/consentflowcontract';
-import { BoostType } from 'types/boost';
+import type { DbContractType, FlatDbTermsType } from 'types/consentflowcontract';
+import type { BoostType } from 'types/boost';
 import { flattenObject, inflateObject } from '@helpers/objects.helpers';
 import { convertQueryResultToPropertiesObjectArray } from '@helpers/neo4j.helpers';
 import { reconsentTerms } from './update';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
-import { sendBoost } from '@helpers/boost.helpers';
-import { getBoostUri } from '@helpers/boost.helpers';
+import { sendBoost, getBoostUri } from '@helpers/boost.helpers';
 import { getDidWeb } from '@helpers/did.helpers';
 import { getSigningAuthorityForUserByName } from '@accesslayer/signing-authority/relationships/read';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';

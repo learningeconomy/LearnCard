@@ -1,5 +1,5 @@
-import React, { ComponentPropsWithRef } from 'react';
-import { Text, Box, useFocus, useFocusManager, useInput, DOMElement } from 'ink';
+import React, { type ComponentPropsWithRef } from 'react';
+import { Text, Box, useFocus, useFocusManager, useInput, type DOMElement } from 'ink';
 
 type RawButtonProps = ComponentPropsWithRef<typeof Box> & {
     autoFocus?: boolean;

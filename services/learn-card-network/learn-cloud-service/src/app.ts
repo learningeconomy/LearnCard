@@ -1,9 +1,9 @@
 import { t } from '@routes';
-import { customStorageRouter, CustomStorageRouter } from '@routes/customStorage';
-import { indexRouter, IndexRouter } from '@routes/indexPlane';
-import { storageRouter, StorageRouter } from '@routes/storage';
-import { userRouter, UserRouter } from '@routes/user';
-import { utilitiesRouter, UtilitiesRouter } from '@routes/utilities';
+import { customStorageRouter, type CustomStorageRouter } from '@routes/customStorage';
+import { indexRouter, type IndexRouter } from '@routes/indexPlane';
+import { storageRouter, type StorageRouter } from '@routes/storage';
+import { userRouter, type UserRouter } from '@routes/user';
+import { utilitiesRouter, type UtilitiesRouter } from '@routes/utilities';
 
 export { createContext } from '@routes';
 

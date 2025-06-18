@@ -1,6 +1,6 @@
-import { VerifyExtension } from '@learncard/vc-plugin';
-import { LearnCard } from '@learncard/core';
-import { ExpirationPlugin } from './types';
+import type { VerifyExtension } from '@learncard/vc-plugin';
+import type { LearnCard } from '@learncard/core';
+import type { ExpirationPlugin } from './types';
 
 export * from './types';
 

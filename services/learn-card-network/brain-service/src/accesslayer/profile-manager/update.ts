@@ -1,6 +1,6 @@
 import { QueryBuilder, BindParam } from 'neogma';
 import { ProfileManager } from '@models';
-import { ProfileManagerType } from 'types/profile-manager';
+import type { ProfileManagerType } from 'types/profile-manager';
 
 export const updateProfileManager = async (
     manager: ProfileManagerType,

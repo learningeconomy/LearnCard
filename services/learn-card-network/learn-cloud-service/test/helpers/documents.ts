@@ -1,4 +1,4 @@
-import { EncryptedRecord } from '@learncard/types';
+import type { EncryptedRecord } from '@learncard/types';
 
 export const testDocumentA: EncryptedRecord = {
     encryptedRecord: {

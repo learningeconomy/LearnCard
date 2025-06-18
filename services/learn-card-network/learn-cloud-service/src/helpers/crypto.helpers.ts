@@ -1,9 +1,47 @@
 import crypto from 'crypto';
 import { Buffer } from 'buffer';
 
-export interface KeyPair {
+export type KeyPair = {
     publicKey: string;
     privateKey: string;
+};
+
+// Convert to PEM format
+function derToPem(der: Buffer, type: string): string {
+    const b64 = der.toString('base64');
+    const lines = b64.match(/.{1,64}/g) || [];
+    return `-----BEGIN ${type}-----\n${lines.join('\n')}\n-----END ${type}-----\n`;
+}
+
+function modInverse(a: bigint, m: bigint): bigint {
+    let [old_r, r] = [a, m];
+    let [old_s, s] = [1n, 0n];
+    let [old_t, t] = [0n, 1n];
+
+    while (r !== 0n) {
+        const quotient = old_r / r;
+        [old_r, r] = [r, old_r - quotient * r];
+        [old_s, s] = [s, old_s - quotient * s];
+        [old_t, t] = [t, old_t - quotient * t];
+    }
+
+    return old_s < 0n ? old_s + m : old_s;
+}
+
+function modPow(base: bigint, exponent: bigint, modulus: bigint): bigint {
+    if (modulus === 1n) return 0n;
+
+    let result = 1n;
+    base %= modulus;
+
+    while (exponent > 0n) {
+        if (exponent % 2n === 1n) {
+            result = (result * base) % modulus;
+        }
+        base = (base * base) % modulus;
+        exponent /= 2n;
+    }
+    return result;
 }
 
 /**
@@ -35,7 +73,7 @@ export function generateDeterministicRSAKeyPair(seed: Uint8Array): KeyPair {
             while (true) {
                 const buf = this.getBytes(bytesNeeded);
                 let num = BigInt('0x' + buf.toString('hex'));
-                num = num % range;
+                num %= range;
                 if (num <= range) {
                     return num + min;
                 }
@@ -46,7 +84,7 @@ export function generateDeterministicRSAKeyPair(seed: Uint8Array): KeyPair {
     const prng = new DeterministicPRNG(seed);
 
     // Miller-Rabin primality test
-    function isProbablePrime(n: bigint, k: number = 64): boolean {
+    function isProbablePrime(n: bigint, k = 64): boolean {
         if (n <= 1n || n === 4n) return false;
         if (n <= 3n) return true;
 
@@ -54,7 +92,7 @@ export function generateDeterministicRSAKeyPair(seed: Uint8Array): KeyPair {
         let r = 0;
         while (d % 2n === 0n) {
             d /= 2n;
-            r++;
+            r += 1;
         }
 
         for (let i = 0; i < k; i++) {
@@ -79,22 +117,6 @@ export function generateDeterministicRSAKeyPair(seed: Uint8Array): KeyPair {
         return true;
     }
 
-    function modPow(base: bigint, exponent: bigint, modulus: bigint): bigint {
-        if (modulus === 1n) return 0n;
-
-        let result = 1n;
-        base = base % modulus;
-
-        while (exponent > 0n) {
-            if (exponent % 2n === 1n) {
-                result = (result * base) % modulus;
-            }
-            base = (base * base) % modulus;
-            exponent = exponent / 2n;
-        }
-        return result;
-    }
-
     function generatePrime(): bigint {
         while (true) {
             const num = BigInt('0x' + prng.getBytes(128).toString('hex')); // 1024 bits
@@ -103,21 +125,6 @@ export function generateDeterministicRSAKeyPair(seed: Uint8Array): KeyPair {
                 return candidate;
             }
         }
-    }
-
-    function modInverse(a: bigint, m: bigint): bigint {
-        let [old_r, r] = [a, m];
-        let [old_s, s] = [1n, 0n];
-        let [old_t, t] = [0n, 1n];
-
-        while (r !== 0n) {
-            const quotient = old_r / r;
-            [old_r, r] = [r, old_r - quotient * r];
-            [old_s, s] = [s, old_s - quotient * s];
-            [old_t, t] = [t, old_t - quotient * t];
-        }
-
-        return old_s < 0n ? old_s + m : old_s;
     }
 
     // Convert BigInt to Buffer with proper padding
@@ -131,7 +138,7 @@ export function generateDeterministicRSAKeyPair(seed: Uint8Array): KeyPair {
     const p = generatePrime();
     const q = generatePrime();
     const n = p * q;
-    const e = 65537n;
+    const e = 65_537n;
     const phi = (p - 1n) * (q - 1n);
     const d = modInverse(e, phi);
     const dp = d % (p - 1n);
@@ -223,13 +230,6 @@ export function generateDeterministicRSAKeyPair(seed: Uint8Array): KeyPair {
             publicKeyIntegers,
         ])
     );
-
-    // Convert to PEM format
-    function derToPem(der: Buffer, type: string): string {
-        const b64 = der.toString('base64');
-        const lines = b64.match(/.{1,64}/g) || [];
-        return `-----BEGIN ${type}-----\n${lines.join('\n')}\n-----END ${type}-----\n`;
-    }
 
     return {
         privateKey: derToPem(privateKeyWrapped, 'PRIVATE KEY'),

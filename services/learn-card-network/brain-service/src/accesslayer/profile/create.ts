@@ -1,10 +1,10 @@
 import { flattenObject, inflateObject } from '@helpers/objects.helpers';
 import { transformProfileId } from '@helpers/profile.helpers';
-import { LCNProfile } from '@learncard/types';
+import type { LCNProfile } from '@learncard/types';
 
 import { Profile } from '@models';
 import { BindParam, QueryBuilder } from 'neogma';
-import { ProfileType } from 'types/profile';
+import type { ProfileType } from 'types/profile';
 
 export const createProfile = async (input: LCNProfile): Promise<ProfileType> => {
     const result = await new QueryBuilder(

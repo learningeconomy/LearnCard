@@ -1,5 +1,5 @@
 import cache from '@cache';
-import { JWE } from '@learncard/types';
+import type { JWE } from '@learncard/types';
 
 /** 1 Day */
 export const CREDENTIAL_TTL = 60 * 60 * 24;

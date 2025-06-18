@@ -1,10 +1,10 @@
 import React from 'react';
 
 import {
-    BoostCMSCategorySkillEnum,
     boostCMSSKillCategories,
-    BoostCMSSKillsCategoryEnum,
-    BoostCMSSubSkillEnum,
+    type BoostCMSCategorySkillEnum,
+    type BoostCMSSKillsCategoryEnum,
+    type BoostCMSSubSkillEnum,
 } from '../../constants/skills';
 
 const Subskill: React.FC<{
@@ -23,8 +23,8 @@ const Subskill: React.FC<{
         type: BoostCMSSubSkillEnum | string;
     };
     subskillSelected: boolean;
-}> = ({ subskillSelected, skill, subSkill }) => {
-    const { title, IconComponent, type, category } = skill;
+}> = ({ subskillSelected: _subskillSelected, skill, subSkill }) => {
+    const { title: _title, IconComponent, type: _type, category } = skill;
 
     const _category = boostCMSSKillCategories.find(c => c.type === category);
 

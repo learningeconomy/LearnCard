@@ -6,10 +6,10 @@ import {
     getMatchQueryWhere,
 } from '@helpers/neo4j.helpers';
 import { Boost, ClaimHook, Role } from '@models';
-import { BoostType } from 'types/boost';
-import { ClaimHookQuery, FullClaimHook } from '@learncard/types';
-import { ClaimHook as ClaimHookType } from 'types/claim-hook';
-import { Role as RoleType } from 'types/role';
+import type { BoostType } from 'types/boost';
+import type { ClaimHookQuery, FullClaimHook } from '@learncard/types';
+import type { ClaimHook as ClaimHookType } from 'types/claim-hook';
+import type { Role as RoleType } from 'types/role';
 import { getBoostUri } from '@helpers/boost.helpers';
 
 export const getClaimHookById = async (id: string): Promise<ClaimHookType | null> => {

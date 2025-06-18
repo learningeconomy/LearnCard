@@ -112,7 +112,7 @@ export const getSerializerObject = <
 >(
     method: Method,
     args: Args,
-    skipSerializationKeys?: Array<keyof Args>
+    skipSerializationKeys?: (keyof Args)[]
 ): z.ZodObject<{ method: z.ZodLiteral<Method> } & SerializedArguments<Args>> => {
     const serializedArguments = Object.entries(args).reduce<SerializedArguments<Args>>(
         (acc, [key, value]) => {
@@ -136,7 +136,7 @@ export const getDeserializerObject = <
 >(
     method: Method,
     args: Args,
-    skipSerializationKeys?: Array<keyof Args>
+    skipSerializationKeys?: (keyof Args)[]
 ): z.ZodObject<{ method: z.ZodLiteral<Method> } & DeserializedArguments<Args>> => {
     const serializedArguments = Object.entries(args).reduce<DeserializedArguments<Args>>(
         (acc, [key, value]) => {
@@ -165,7 +165,7 @@ export const getRpcMethod = <
     {
         skipSerializationKeys = [],
         serializeReturnValue = true,
-    }: { skipSerializationKeys?: Array<keyof Args>; serializeReturnValue?: boolean } = {}
+    }: { skipSerializationKeys?: (keyof Args)[]; serializeReturnValue?: boolean } = {}
 ): RPCMethod<Method, Args, ReturnValidator> => ({
     method,
     arguments: {

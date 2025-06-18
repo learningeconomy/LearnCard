@@ -1,8 +1,8 @@
 import React from 'react';
-import { Story, Meta } from '@storybook/react';
+import type { Story, Meta } from '@storybook/react';
 
 import RoundedSquare from './RoundedSquare';
-import { RoundedSquareProps, Icons, WalletCategoryTypes } from '../../types';
+import { Icons, WalletCategoryTypes, type RoundedSquareProps } from '../../types';
 import { ICONS_TO_SOURCE } from '../../constants/icons';
 
 export default {

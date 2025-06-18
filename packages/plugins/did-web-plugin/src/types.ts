@@ -1,4 +1,4 @@
-import { Plugin } from '@learncard/core';
+import type { Plugin } from '@learncard/core';
 
 /** @group DID Web Plugin */
 export type DidWebPluginDependentMethods = {};

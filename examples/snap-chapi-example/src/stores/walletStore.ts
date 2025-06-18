@@ -1,4 +1,4 @@
-import { LearnCard } from '@learncard/core';
+import type { LearnCard } from '@learncard/core';
 import { atom } from 'nanostores';
 import { persistentAtom } from '@nanostores/persistent';
 

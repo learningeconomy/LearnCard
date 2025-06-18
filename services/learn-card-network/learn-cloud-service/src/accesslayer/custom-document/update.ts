@@ -1,8 +1,8 @@
-import { Filter, ObjectId } from 'mongodb';
-import { EncryptedRecord } from '@learncard/types';
+import { ObjectId, type Filter } from 'mongodb';
+import type { EncryptedRecord } from '@learncard/types';
 
 import { CustomDocuments } from '.';
-import { MongoCustomDocumentType } from '@models';
+import type { MongoCustomDocumentType } from '@models';
 import { getUserForDid } from '@accesslayer/user/read';
 
 export const updateCustomDocumentsByQuery = async (
@@ -30,8 +30,8 @@ export const updateCustomDocumentsByQuery = async (
                 { $set: { modified: new Date(), ...update } }
             )
         ).modifiedCount;
-    } catch (e) {
-        console.error(e);
+    } catch (error) {
+        console.error(error);
         return 0;
     }
 };

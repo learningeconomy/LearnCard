@@ -14,16 +14,17 @@ export type NotificationUserCardProps = {
     isArchived?: boolean;
 };
 
-export const UserNotificationTypeStyles: {
-    [key: UserNotificationTypeEnum | string]: {
+export const UserNotificationTypeStyles: Record<
+    UserNotificationTypeEnum | string,
+    {
         viewButtonStyles: string;
         unclaimedButtonStyles: string;
         claimedButtonStyles: string;
         textStyles: string;
         iconCircleStyles: string;
         typeText?: string;
-    };
-} = {
+    }
+> = {
     [UserNotificationTypeEnum.ConnectionRequest]: {
         viewButtonStyles: 'border-indigo-600 text-indigo-400',
         unclaimedButtonStyles: 'text-white bg-indigo-600 border-indigo-600 shadow-bottom',

@@ -11,10 +11,9 @@ import RedFlag from '../svgs/RedFlag';
 
 import { getInfoFromCredential } from '../../helpers/credential.helpers';
 
-import { VC } from '@learncard/types';
-import { BoostAchievementCredential } from '../../types';
+import type { VC } from '@learncard/types';
 import TruncateTextBox from './TruncateTextBox';
-import { KnownDIDRegistryType } from '../../types';
+import type { BoostAchievementCredential, KnownDIDRegistryType } from '../../types';
 
 type VCIDDisplayFrontFaceProps = {
     isFront: boolean;
@@ -73,8 +72,9 @@ const VCIDDisplayFrontFace: React.FC<VCIDDisplayFrontFaceProps> = ({
     const isSelfVerified = verifierState === VERIFIER_STATES.selfVerified;
 
     const achievement =
-        'achievement' in credential?.credentialSubject
-            ? credential?.credentialSubject?.achievement
+        'achievement' in (credential?.credentialSubject ?? {})
+            ? (credential?.credentialSubject as { achievement: { description: string } })
+                  ?.achievement
             : undefined;
     const description = achievement?.description;
 
@@ -84,9 +84,7 @@ const VCIDDisplayFrontFace: React.FC<VCIDDisplayFrontFaceProps> = ({
                 <section className="vc-front-face w-full flex flex-col items-center gap-[15px]">
                     {/* <div className="w-[380px] h-[211px] bg-red-300" /> */}
 
-                    <Flipped inverseFlipId="face">
-                        {customThumbComponent && customThumbComponent}
-                    </Flipped>
+                    <Flipped inverseFlipId="face">{customThumbComponent}</Flipped>
 
                     <Flipped inverseFlipId="face">
                         <div className="text-white w-full flex items-center justify-center font-poppins">
@@ -125,7 +123,7 @@ const VCIDDisplayFrontFace: React.FC<VCIDDisplayFrontFaceProps> = ({
                                 </>
                             )}
 
-                            {customIDDescription && customIDDescription}
+                            {customIDDescription}
 
                             {isFront && showDetailsBtn && (
                                 <button

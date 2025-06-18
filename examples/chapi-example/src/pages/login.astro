@@ -54,12 +54,12 @@ import Layout from '@layouts/Layout.astro';
         const seed = seedInput.value;
 
         if (seed.length === 0 || seed.length > 64) {
-            errorDisplay.innerText = 'Please enter a seed between 1 and 64 characters long';
+            errorDisplay.textContent = 'Please enter a seed between 1 and 64 characters long';
             return;
         }
 
         if (!isHex(seed)) {
-            errorDisplay.innerText = 'Please enter a valid hex string (i.e. only numbers and A-F)';
+            errorDisplay.textContent = 'Please enter a valid hex string (i.e. only numbers and A-F)';
             return;
         }
 
@@ -67,6 +67,6 @@ import Layout from '@layouts/Layout.astro';
         window.location.href = '/';
     };
 
-    form.onsubmit = onSubmit;
+    form.addEventListener('submit', onSubmit);
     seedInput.value = randomKey();
 </script>

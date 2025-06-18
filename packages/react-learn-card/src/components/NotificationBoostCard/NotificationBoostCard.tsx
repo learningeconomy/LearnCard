@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import X from '../../assets/images/X.svg';
-import { NotificationBoostCardProps } from './types';
+import type { NotificationBoostCardProps } from './types';
 import { NotificationTypeStyles } from '../Notification/types';
 import { NotificationTypeEnum } from '../../constants/notifications';
 import DefaultFace from '../../assets/images/default-face.jpeg';
@@ -23,8 +23,8 @@ export const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
     showIssuerInfo = true,
     isArchived,
 }) => {
-    const [isClaimed, setIsClaimed] = useState<boolean>(claimStatus || false);
-    const [isLoading, setIsLoading] = useState<boolean>(loadingState || false);
+    const [isClaimed, setIsClaimed] = useState<boolean>(claimStatus);
+    const [isLoading, setIsLoading] = useState<boolean>(loadingState);
 
     useEffect(() => {
         setIsClaimed(claimStatus);
@@ -45,11 +45,11 @@ export const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
 
     const claimButtonStyles = isClaimed ? claimedButtonStyles : unclaimedButtonStyles;
 
-    let buttonText: string = '';
+    let buttonText = '';
 
     if (isClaimed) {
         buttonText = 'Claimed';
-    } else if (!isClaimed) {
+    } else {
         buttonText = 'Claim';
     }
 

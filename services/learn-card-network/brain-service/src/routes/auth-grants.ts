@@ -55,7 +55,7 @@ export const authGrantsRouter = t.router({
                 await associateAuthGrantWithProfile(authGrant.id, ctx.user.profile.profileId);
 
                 return authGrant.id;
-            } catch (error) {
+            } catch {
                 throw new TRPCError({
                     code: 'INTERNAL_SERVER_ERROR',
                     message: 'Failed to add AuthGrant',

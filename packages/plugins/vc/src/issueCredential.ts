@@ -1,7 +1,7 @@
-import { UnsignedVC } from '@learncard/types';
+import type { UnsignedVC } from '@learncard/types';
 
-import { ProofOptions } from '@learncard/didkit-plugin';
-import { VCDependentLearnCard, VCImplicitLearnCard } from './types';
+import type { ProofOptions } from '@learncard/didkit-plugin';
+import type { VCDependentLearnCard, VCImplicitLearnCard } from './types';
 import { getDefaultVerificationMethod } from './helpers';
 
 export const issueCredential = (initLearnCard: VCDependentLearnCard) => {

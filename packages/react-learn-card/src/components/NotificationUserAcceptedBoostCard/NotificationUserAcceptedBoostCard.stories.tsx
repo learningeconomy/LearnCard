@@ -1,8 +1,8 @@
 import React from 'react';
-import { Story, Meta } from '@storybook/react';
+import type { Story, Meta } from '@storybook/react';
 
 import NotificationUserAcceptedBoostCard from './NotificationUserAcceptedBoostCard';
-import { NotificationUserAcceptedBoostCardProps } from './types';
+import type { NotificationUserAcceptedBoostCardProps } from './types';
 import { UserNotificationTypeEnum } from '../../constants/notifications';
 
 export default {

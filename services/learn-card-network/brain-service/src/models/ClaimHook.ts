@@ -1,9 +1,9 @@
-import { ModelFactory, ModelRelatedNodesI, NeogmaInstance } from 'neogma';
+import { ModelFactory, type ModelRelatedNodesI, type NeogmaInstance } from 'neogma';
 
 import { neogma } from '@instance';
-import { ClaimHook as ClaimHookType } from 'types/claim-hook';
-import Boost, { BoostInstance } from './Boost';
-import Role, { RoleInstance } from './Role';
+import type { ClaimHook as ClaimHookType } from 'types/claim-hook';
+import Boost, { type BoostInstance } from './Boost';
+import Role, { type RoleInstance } from './Role';
 
 export type ClaimHookRelationships = {
     hookFor: ModelRelatedNodesI<typeof Boost, BoostInstance>;

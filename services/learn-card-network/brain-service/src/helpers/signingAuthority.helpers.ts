@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
 import { getDidWebLearnCard, getLearnCard } from '@helpers/learnCard.helpers';
-import { UnsignedVC, VCValidator, JWEValidator, VC, JWE } from '@learncard/types';
-import { ProfileType, SigningAuthorityForUserType } from 'types/profile';
+import { VCValidator, JWEValidator, type UnsignedVC, type VC, type JWE } from '@learncard/types';
+import type { ProfileType, SigningAuthorityForUserType } from 'types/profile';
 import { getDidWeb } from '@helpers/did.helpers';
 
 dotenv.config();
@@ -21,7 +21,7 @@ export async function issueCredentialWithSigningAuthority(
     credential: UnsignedVC,
     signingAuthorityForUser: SigningAuthorityForUserType,
     domain: string,
-    encrypt: boolean = true
+    encrypt = true
 ): Promise<VC | JWE> {
     try {
         if (!IS_TEST_ENVIRONMENT) {
@@ -44,7 +44,7 @@ export async function issueCredentialWithSigningAuthority(
 
         const issuerEndpoint = `${signingAuthorityForUser.signingAuthority.endpoint}/credentials/issue`;
 
-        if (!IS_TEST_ENVIRONMENT) console.log('Issuer Endpoint: ', issuerEndpoint);
+        if (!IS_TEST_ENVIRONMENT) console.log('Issuer Endpoint:', issuerEndpoint);
 
         const ownerDid = getDidWeb(domain ?? 'network.learncard.com', owner.profileId);
 
@@ -79,7 +79,7 @@ export async function issueCredentialWithSigningAuthority(
 
         const res = await response.json();
 
-        if (!IS_TEST_ENVIRONMENT) console.log('RESPONSE: ', res);
+        if (!IS_TEST_ENVIRONMENT) console.log('RESPONSE:', res);
 
         if (!res || res?.code === 'INTERNAL_SERVER_ERROR') {
             throw new Error(res);

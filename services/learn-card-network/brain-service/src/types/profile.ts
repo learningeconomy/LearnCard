@@ -1,11 +1,11 @@
 import { z } from 'zod';
 import {
-    LCNProfile,
     LCNProfileValidator,
     LCNSigningAuthorityValidator,
-    LCNSigningAuthorityType,
     LCNSigningAuthorityForUserValidator,
-    LCNSigningAuthorityForUserType,
+    type LCNProfile,
+    type LCNSigningAuthorityType,
+    type LCNSigningAuthorityForUserType,
 } from '@learncard/types';
 
 export const ProfileValidator = LCNProfileValidator;

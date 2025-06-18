@@ -1,17 +1,17 @@
 import express from 'express';
 import cors from 'cors';
-import { VP, VPValidator } from '@learncard/types';
+import { VPValidator, type VP } from '@learncard/types';
 
-import { TypedRequest } from './types.helpers';
+import type { TypedRequest } from './types.helpers';
 import {
-    IssueEndpoint,
     IssueEndpointValidator,
     IssuePresentationEndpointValidator,
-    UpdateStatusEndpoint,
-    VerifyCredentialEndpoint,
     VerifyCredentialEndpointValidator,
-    VerifyPresentationEndpoint,
     VerifyPresentationEndpointValidator,
+    type IssueEndpoint,
+    type UpdateStatusEndpoint,
+    type VerifyCredentialEndpoint,
+    type VerifyPresentationEndpoint,
 } from './validators';
 import { getLearnCard } from './learn-card';
 
@@ -57,9 +57,9 @@ app.post('/credentials/issue', async (req: TypedRequest<IssueEndpoint>, res) => 
 
         if (!validationResult.success) {
             console.error(
-                '[/credentials/issue] Validation error: ',
+                '[/credentials/issue] Validation error:',
                 validationResult.error.message,
-                '(received: ',
+                '(received:',
                 req.body,
                 ')'
             );
@@ -68,7 +68,7 @@ app.post('/credentials/issue', async (req: TypedRequest<IssueEndpoint>, res) => 
 
         const validatedBody = validationResult.data;
         const learnCard = await getLearnCard();
-        const { credentialStatus, ...options } = validatedBody.options ?? {};
+        const { credentialStatus: _credentialStatus, ...options } = validatedBody.options ?? {};
 
         const issuedCredential = await learnCard.invoke.issueCredential(
             validatedBody.credential,
@@ -77,7 +77,7 @@ app.post('/credentials/issue', async (req: TypedRequest<IssueEndpoint>, res) => 
 
         return res.status(201).json(issuedCredential);
     } catch (error) {
-        console.error('[/credentials/issue] Caught error: ', error, '(received: ', req.body);
+        console.error('[/credentials/issue] Caught error:', error, '(received:', req.body);
         return res.status(400).json(`Invalid input: ${error}`);
     }
 });
@@ -92,9 +92,9 @@ app.post('/credentials/verify', async (req: TypedRequest<VerifyCredentialEndpoin
 
         if (!validationResult.success) {
             console.error(
-                '[/credentials/verify] Validation error: ',
+                '[/credentials/verify] Validation error:',
                 validationResult.error.message,
-                '(received: ',
+                '(received:',
                 req.body,
                 ')'
             );
@@ -111,9 +111,9 @@ app.post('/credentials/verify', async (req: TypedRequest<VerifyCredentialEndpoin
 
         if (verificationResult.errors.length > 0) {
             console.error(
-                '[/credentials/verify] Verification error(s): ',
+                '[/credentials/verify] Verification error(s):',
                 verificationResult.errors,
-                '(received: ',
+                '(received:',
                 req.body
             );
             return res.status(400).json(verificationResult);
@@ -126,7 +126,7 @@ app.post('/credentials/verify', async (req: TypedRequest<VerifyCredentialEndpoin
 
         return res.status(200).json(verificationResult);
     } catch (error) {
-        console.error('[/credentials/verify] Caught error: ', error, '(received: ', req.body);
+        console.error('[/credentials/verify] Caught error:', error, '(received:', req.body);
         return res.status(400).json(`Invalid input: ${error}`);
     }
 });
@@ -142,9 +142,9 @@ app.post('/presentations/issue', async (req: TypedRequest<IssueEndpoint>, res) =
 
         if (!validationResult.success) {
             console.error(
-                '[/presentations/issue] Validation error: ',
+                '[/presentations/issue] Validation error:',
                 validationResult.error.message,
-                '(received: ',
+                '(received:',
                 req.body,
                 ')'
             );
@@ -161,7 +161,7 @@ app.post('/presentations/issue', async (req: TypedRequest<IssueEndpoint>, res) =
 
         return res.status(201).json(issuedPresentation);
     } catch (error) {
-        console.error('[/presentations/issue] Caught error: ', error, '(received: ', req.body);
+        console.error('[/presentations/issue] Caught error:', error, '(received:', req.body);
         return res.status(400).json(`Invalid input: ${error}`);
     }
 });
@@ -172,9 +172,9 @@ app.post('/presentations/verify', async (req: TypedRequest<VerifyPresentationEnd
 
         if (!validationResult.success) {
             console.error(
-                '[/presentations/verify] Validation error: ',
+                '[/presentations/verify] Validation error:',
                 validationResult.error.message,
-                '(received: ',
+                '(received:',
                 req.body,
                 ')'
             );
@@ -193,9 +193,9 @@ app.post('/presentations/verify', async (req: TypedRequest<VerifyPresentationEnd
 
         if (verificationResult.errors.length > 0) {
             console.error(
-                '[/presentations/verify] Verification error(s): ',
+                '[/presentations/verify] Verification error(s):',
                 verificationResult.errors,
-                '(received: ',
+                '(received:',
                 req.body
             );
             return res.status(400).json(verificationResult);
@@ -203,7 +203,7 @@ app.post('/presentations/verify', async (req: TypedRequest<VerifyPresentationEnd
 
         return res.status(200).json(verificationResult);
     } catch (error) {
-        console.error('[/presentations/verify] Caught error: ', error, '(received: ', req.body);
+        console.error('[/presentations/verify] Caught error:', error, '(received:', req.body);
         return res.status(400).json(`Invalid input: ${error}`);
     }
 });
@@ -230,9 +230,9 @@ app.post('/exchanges/:uri', async (req: TypedRequest<VP, { challenge?: string }>
 
         if (!validationResult.success) {
             console.error(
-                '[/exchanges/:uri] Validation error: ',
+                '[/exchanges/:uri] Validation error:',
                 validationResult.error.message,
-                '(received: ',
+                '(received:',
                 req.body,
                 ')'
             );
@@ -252,9 +252,9 @@ app.post('/exchanges/:uri', async (req: TypedRequest<VP, { challenge?: string }>
 
         if (verification.warnings.length > 0 || verification.errors.length > 0) {
             console.error(
-                '[/exchanges/:uri] Validation error: ',
+                '[/exchanges/:uri] Validation error:',
                 verification,
-                '(received: ',
+                '(received:',
                 req.body,
                 ')'
             );
@@ -265,7 +265,7 @@ app.post('/exchanges/:uri', async (req: TypedRequest<VP, { challenge?: string }>
 
         const subject = validatedBody.holder;
 
-        const credential = await learnCard.read.get(req.params.uri);
+        const credential = (await learnCard.read.get(req.params.uri))!;
 
         credential.issuer = {
             ...(typeof credential.issuer === 'string' ? {} : credential.issuer),
@@ -277,13 +277,13 @@ app.post('/exchanges/:uri', async (req: TypedRequest<VP, { challenge?: string }>
             credential.credentialSubject.id = subject;
         }
 
-        delete credential.proof;
+        delete (credential as any).proof;
 
-        const newVc = await learnCard.invoke.issueCredential(credential);
+        const newVc = await learnCard.invoke.issueCredential(credential as any);
 
         return res.status(201).json(newVc);
     } catch (error) {
-        console.error('[/exchanges/:uri] Caught error: ', error, '(received: ', req.body);
+        console.error('[/exchanges/:uri] Caught error:', error, '(received:', req.body);
         return res.status(400).json(`Invalid input: ${error}`);
     }
 });

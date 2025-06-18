@@ -1,6 +1,6 @@
-import { VC, VP } from '@learncard/types';
-import { getUser } from './getClient';
-import { UnsignedVC } from '../../../../../packages/learn-card-types/dist/vc';
+import type { VC, VP } from '@learncard/types';
+import type { getUser } from './getClient';
+import type { UnsignedVC } from '../../../../../packages/learn-card-types/dist/vc';
 
 export const testVc: VC = {
     '@context': ['https://www.w3.org/2018/credentials/v1'],
@@ -142,7 +142,7 @@ export const sendBoost = async (
     from: { profileId: string; user: Awaited<ReturnType<typeof getUser>> },
     to: { profileId: string; user: Awaited<ReturnType<typeof getUser>> },
     uri: string,
-    autoAcceptIncomingBoost: boolean = true
+    autoAcceptIncomingBoost = true
 ): Promise<string> => {
     // TODO: Actually resolve boost from storage.
     //const boost = await from.user.clients.fullAuth.storage.resolve({ uri });

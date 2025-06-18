@@ -1,7 +1,7 @@
-import { UnsignedVC, VC, JWE } from '@learncard/types';
+import type { UnsignedVC, VC, JWE } from '@learncard/types';
 import { v4 as uuid } from 'uuid';
 
-import { Credential, CredentialInstance } from '@models';
+import { Credential, type CredentialInstance } from '@models';
 
 export const storeCredential = async (
     credential: UnsignedVC | VC | JWE

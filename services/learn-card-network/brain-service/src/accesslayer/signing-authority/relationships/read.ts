@@ -1,5 +1,5 @@
 import { Profile } from '@models';
-import { ProfileType, SigningAuthorityForUserType } from 'types/profile';
+import type { ProfileType, SigningAuthorityForUserType } from 'types/profile';
 
 export const getSigningAuthoritiesForUser = async (
     user: ProfileType

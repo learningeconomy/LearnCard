@@ -2,7 +2,7 @@ import React from 'react';
 
 import ContactlessSymbol from '../../assets/images/contactless-symbol.svg';
 
-import { LearnCardCreditCardBackFaceProps } from './types';
+import type { LearnCardCreditCardBackFaceProps } from './types';
 
 export const LearnCardCreditCardBackFace: React.FC<LearnCardCreditCardBackFaceProps> = ({
     className,

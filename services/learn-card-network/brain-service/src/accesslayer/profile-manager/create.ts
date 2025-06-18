@@ -1,7 +1,7 @@
 import { v4 as uuid } from 'uuid';
 
-import { ProfileManager, ProfileManagerInstance } from '@models';
-import { ProfileManagerType } from 'types/profile-manager';
+import { ProfileManager, type ProfileManagerInstance } from '@models';
+import type { ProfileManagerType } from 'types/profile-manager';
 
 export const createProfileManager = async (
     input: Omit<ProfileManagerType, 'id' | 'created'>

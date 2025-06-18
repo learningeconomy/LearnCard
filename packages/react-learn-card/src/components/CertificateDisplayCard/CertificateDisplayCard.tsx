@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
-import { VC, Profile, VerificationItem } from '@learncard/types';
-import {
+import type { VC, Profile, VerificationItem } from '@learncard/types';
+import type {
     BoostAchievementCredential,
     LCCategoryEnum,
     MediaMetadata,
     VideoMetadata,
+    KnownDIDRegistryType,
 } from '../../types';
 import CertificateFrontFace from './CertificateFrontFace';
 import CertificateBackFace from './CertificateBackFace';
 import FatArrow from '../svgs/FatArrow';
 import ThreeDots from '../../assets/images/DotsThreeOutline.svg';
-import { KnownDIDRegistryType } from '../../types';
 
 type CertificateDisplayCardProps = {
     credential: VC | BoostAchievementCredential;
@@ -51,7 +51,7 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
     customBodyCardComponent,
     knownDIDRegistry,
     hideIssueDate,
-    customSkillsComponent,
+    customSkillsComponent: _customSkillsComponent,
 
     getFileMetadata,
     getVideoMetadata,

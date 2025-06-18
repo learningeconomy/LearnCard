@@ -1,14 +1,12 @@
-import { ModelFactory, ModelRelatedNodesI, NeogmaInstance } from 'neogma';
+import { ModelFactory, type ModelRelatedNodesI, type NeogmaInstance } from 'neogma';
 
 import { neogma } from '@instance';
 
-import { Credential, CredentialInstance } from './Credential';
-import { Presentation, PresentationInstance } from './Presentation';
-import { SigningAuthority } from './SigningAuthority';
+import { Credential, type CredentialInstance } from './Credential';
+import { Presentation, type PresentationInstance } from './Presentation';
+import { SigningAuthority, type SigningAuthorityInstance } from './SigningAuthority';
 import { transformProfileId } from '@helpers/profile.helpers';
-import { FlatProfileType } from 'types/profile';
-import { SigningAuthorityInstance } from './SigningAuthority';
-import { LearnCardRolesEnum } from 'types/profile';
+import { LearnCardRolesEnum, type FlatProfileType } from 'types/profile';
 
 export type ProfileRelationships = {
     connectionRequested: ModelRelatedNodesI<typeof Profile, ProfileInstance>;

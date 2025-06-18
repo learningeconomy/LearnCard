@@ -1,7 +1,7 @@
 import React from 'react';
 import RoundedCorner from '../svgs/RoundedCorner';
 import { getCategoryIcon, getCategoryLightColor } from '../../helpers/credential.helpers';
-import { LCCategoryEnum } from '../../types';
+import type { LCCategoryEnum } from '../../types';
 
 type MeritBadgeCornerIconProps = {
     categoryType: LCCategoryEnum;

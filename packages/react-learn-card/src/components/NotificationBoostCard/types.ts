@@ -1,6 +1,6 @@
-import { NotificationTypeEnum } from '../../constants/notifications';
+import type { NotificationTypeEnum } from '../../constants/notifications';
 
-export interface NotificationIssuerMeta {
+export type NotificationIssuerMeta = {
     image?: string;
     fullName?: string;
     profileId?: string;

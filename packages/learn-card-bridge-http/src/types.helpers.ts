@@ -1,7 +1,7 @@
-import Express from 'express';
-import { Query } from 'express-serve-static-core';
+import type Express from 'express';
+import type { Query } from 'express-serve-static-core';
 
-export interface TypedRequest<T, U extends Query = {}> extends Express.Request {
+export type TypedRequest<T, U extends Query = {}> = {
     body: T;
     query: U;
-}
+} & Express.Request

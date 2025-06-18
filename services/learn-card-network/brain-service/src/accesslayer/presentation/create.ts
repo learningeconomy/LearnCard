@@ -1,7 +1,7 @@
-import { VP, JWE } from '@learncard/types';
+import type { VP, JWE } from '@learncard/types';
 import { v4 as uuid } from 'uuid';
 
-import { Presentation, PresentationInstance } from '@models';
+import { Presentation, type PresentationInstance } from '@models';
 
 export const storePresentation = async (presentation: VP | JWE): Promise<PresentationInstance> => {
     const id = uuid();

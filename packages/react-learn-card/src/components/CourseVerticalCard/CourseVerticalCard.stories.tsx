@@ -1,8 +1,8 @@
 import React from 'react';
-import { Story, Meta } from '@storybook/react';
+import type { Story, Meta } from '@storybook/react';
 
 import CourseVerticalCard from './CourseVerticalCard';
-import { CourseCardVerticalProps } from '../../types';
+import type { CourseCardVerticalProps } from '../../types';
 
 export default {
     title: 'Course Vertical Card',

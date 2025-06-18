@@ -1,11 +1,11 @@
 import { QueryBuilder, BindParam } from 'neogma';
 import { flattenObject } from '@helpers/objects.helpers';
 import { Profile } from '@models';
-import { ProfileType } from 'types/profile';
+import type { ProfileType } from 'types/profile';
 
 export const updateProfile = async (profile: ProfileType, updates: Partial<ProfileType>) => {
     const currentDisplay = profile.display;
-    const newDisplay = { ...(currentDisplay || {}), ...(updates.display || {}) };
+    const newDisplay = { ...currentDisplay, ...updates.display };
 
     const newUpdates = flattenObject<Partial<ProfileType>>({
         ...updates,

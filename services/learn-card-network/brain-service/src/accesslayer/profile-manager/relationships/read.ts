@@ -5,9 +5,9 @@ import {
     convertQueryResultToPropertiesObjectArray,
     getMatchQueryWhere,
 } from '@helpers/neo4j.helpers';
-import { ProfileType, FlatProfileType } from 'types/profile';
-import { ProfileManagerType } from 'types/profile-manager';
-import { LCNProfileQuery } from '@learncard/types';
+import type { ProfileType, FlatProfileType } from 'types/profile';
+import type { ProfileManagerType } from 'types/profile-manager';
+import type { LCNProfileQuery } from '@learncard/types';
 import { inflateObject } from '@helpers/objects.helpers';
 
 export const getProfilesThatAdministrateAProfileManager = async (

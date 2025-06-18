@@ -3,8 +3,8 @@ import { verifyCredential } from './verifyCredential';
 import { issuePresentation } from './issuePresentation';
 import { verifyPresentation } from './verifyPresentation';
 
-import { VCDependentLearnCard, VCPlugin } from './types';
-import { UnsignedVP } from '@learncard/types';
+import type { VCDependentLearnCard, VCPlugin } from './types';
+import type { UnsignedVP } from '@learncard/types';
 
 /**
  * @group Plugins

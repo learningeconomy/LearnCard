@@ -1,7 +1,7 @@
 import { initTRPC, TRPCError } from '@trpc/server';
-import { APIGatewayEvent, CreateAWSLambdaContextOptions } from '@trpc/server/adapters/aws-lambda';
-import { CreateFastifyContextOptions } from '@trpc/server/adapters/fastify';
-import { OpenApiMeta } from 'trpc-openapi';
+import type { APIGatewayEvent, CreateAWSLambdaContextOptions } from '@trpc/server/adapters/aws-lambda';
+import type { CreateFastifyContextOptions } from '@trpc/server/adapters/fastify';
+import type { OpenApiMeta } from 'trpc-openapi';
 import jwtDecode from 'jwt-decode';
 import * as Sentry from '@sentry/serverless';
 
@@ -88,8 +88,8 @@ export const createContext = async (
                 }
             }
         }
-    } catch (e) {
-        console.error(e);
+    } catch (error) {
+        console.error(error);
     }
 
     return { domain };

@@ -1,7 +1,7 @@
 import React from 'react';
-import { Story, Meta } from '@storybook/react';
+import type { Story, Meta } from '@storybook/react';
 
-import VCCard, { VCCardProps } from './VCCard';
+import VCCard, { type VCCardProps } from './VCCard';
 import {
     JffCredential,
     // simpleConvertTagsToSkills,

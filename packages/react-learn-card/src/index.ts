@@ -1,3 +1,3 @@
-/// <reference path="./declaration.d.ts" />
+import './declaration.d.ts';
 
 export * from './components/index';

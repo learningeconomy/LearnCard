@@ -1,5 +1,5 @@
 import dotenv from 'dotenv';
-import { MongoSigningAuthorityType } from '@models';
+import type { MongoSigningAuthorityType } from '@models';
 
 dotenv.config();
 

@@ -2,11 +2,11 @@ import { z } from 'zod';
 import {
     BoostValidator as _BoostValidator,
     LCNBoostClaimLinkSigningAuthorityValidator,
-    LCNBoostClaimLinkSigningAuthorityType,
     LCNBoostClaimLinkOptionsValidator,
-    LCNBoostClaimLinkOptionsType,
     LCNBoostStatus,
-    LCNBoostStatusEnum,
+    type LCNBoostClaimLinkSigningAuthorityType,
+    type LCNBoostClaimLinkOptionsType,
+    type LCNBoostStatusEnum
 } from '@learncard/types';
 
 export const BoostStatus = LCNBoostStatus;

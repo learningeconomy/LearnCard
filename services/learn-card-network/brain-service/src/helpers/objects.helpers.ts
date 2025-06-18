@@ -20,6 +20,7 @@ export function flattenObject<T extends Record<string, any>>(obj: T): FlattenObj
                 });
             }
         } else if (currentObj !== null && typeof currentObj === 'object') {
+            // oxlint-disable-next-line guard-for-in
             for (const key in currentObj) {
                 const newKey = prefix ? `${prefix}.${key}` : key;
                 flattenHelper(currentObj[key], newKey);
@@ -46,6 +47,7 @@ export function inflateObject<T extends Record<string, any>>(
 ): any extends T ? any : InflateObject<T> {
     let result: any = {};
 
+    // oxlint-disable-next-line guard-for-in
     for (const key in obj) {
         const keys = key.split('.');
         let current = result;
@@ -125,36 +127,36 @@ type Primitive = string | number | boolean;
 
 export type FlattenObject<T, K extends string = ''> = T extends Primitive
     ? K extends ''
-    ? {}
-    : undefined extends T
-    ? { [P in K]?: T }
-    : { [P in K]: T }
+        ? {}
+        : undefined extends T
+        ? { [P in K]?: T }
+        : { [P in K]: T }
     : T extends any[]
     ? number extends T['length']
-    ? FlattenObject<{
-        [I in T[number]as `${K}${K extends '' ? '' : '.'}${number}`]: T[number];
-    }>
-    : MergeObjects<
-        UnionToIntersection<
-            {
-                [I in keyof T]: FlattenObject<
-                    T[I],
-                    `${K}${K extends '' ? '' : '.'}${I & string}`
-                >;
-            }[number]
-        >
-    >
+        ? FlattenObject<{
+              [I in T[number] as `${K}${K extends '' ? '' : '.'}${number}`]: T[number];
+          }>
+        : MergeObjects<
+              UnionToIntersection<
+                  {
+                      [I in keyof T]: FlattenObject<
+                          T[I],
+                          `${K}${K extends '' ? '' : '.'}${I & string}`
+                      >;
+                  }[number]
+              >
+          >
     : T extends Record<string, any>
     ? UnionToIntersection<
-        MergeObjects<
-            {
-                [P in keyof T & string]: FlattenObject<
-                    T[P],
-                    `${K}${K extends '' ? '' : '.'}${P}`
-                >;
-            }[keyof T & string]
-        >
-    >
+          MergeObjects<
+              {
+                  [P in keyof T & string]: FlattenObject<
+                      T[P],
+                      `${K}${K extends '' ? '' : '.'}${P}`
+                  >;
+              }[keyof T & string]
+          >
+      >
     : {};
 
 // Rest of the types remain the same...
@@ -164,14 +166,14 @@ type UnflattenPath<K extends string, V> = K extends `${infer First}.${infer Rest
 
 type MergeObjects<T> = {
     [K in keyof T]: T[K] extends object
-    ? MergeObjects<T[K]>
-    : T[K] extends string
-    ? string
-    : T[K] extends number
-    ? number
-    : T[K] extends boolean
-    ? boolean
-    : T[K];
+        ? MergeObjects<T[K]>
+        : T[K] extends string
+        ? string
+        : T[K] extends number
+        ? number
+        : T[K] extends boolean
+        ? boolean
+        : T[K];
 };
 
 export type InflateObject<T extends Record<string, any>> = MergeObjects<

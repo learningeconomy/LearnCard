@@ -1,6 +1,6 @@
 import XAPI from '@xapi/xapi';
 import jwtDecode from 'jwt-decode';
-import Fastify, { FastifyPluginAsync } from 'fastify';
+import Fastify, { type FastifyPluginAsync } from 'fastify';
 import fastifyCors from '@fastify/cors';
 
 import { getEmptyLearnCard } from '@helpers/learnCard.helpers';

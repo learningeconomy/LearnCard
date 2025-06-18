@@ -1,7 +1,7 @@
 import { generateLearnCard } from '@learncard/core';
 import { DynamicLoaderPlugin } from '@learncard/dynamic-loader-plugin';
 import { CryptoPlugin } from '@learncard/crypto-plugin';
-import { DidMethod, getDidKitPlugin } from '@learncard/didkit-plugin';
+import { getDidKitPlugin, type DidMethod } from '@learncard/didkit-plugin';
 import { getDidKeyPlugin } from '@learncard/didkey-plugin';
 import { getEncryptionPlugin } from '@learncard/encryption-plugin';
 import { getVCPlugin } from '@learncard/vc-plugin';
@@ -15,7 +15,7 @@ import { getVerifyBoostPlugin, getLearnCardNetworkPlugin } from '@learncard/netw
 import { getLearnCardPlugin } from '@learncard/learn-card-plugin';
 import { getDidWebPlugin } from '@learncard/did-web-plugin';
 
-import { DidWebNetworkLearnCardFromSeed } from '../types/LearnCard';
+import type { DidWebNetworkLearnCardFromSeed } from '../types/LearnCard';
 import { defaultEthereumArgs } from '../defaults';
 
 /**

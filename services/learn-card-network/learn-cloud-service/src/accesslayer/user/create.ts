@@ -1,6 +1,6 @@
-import { ClientSession } from 'mongodb';
+import type { ClientSession } from 'mongodb';
 
-import { MongoUserType } from '@models';
+import type { MongoUserType } from '@models';
 import { Users } from '.';
 import { getUserForDid } from './read';
 import { getCachedUserForDid, setCachedUserForDid } from '@cache/user';
@@ -14,8 +14,8 @@ export const createUser = async (did: string, session?: ClientSession): Promise<
         if (id) await setCachedUserForDid(did, newUser);
 
         return id;
-    } catch (e) {
-        console.error(e);
+    } catch (error) {
+        console.error(error);
         return false;
     }
 };

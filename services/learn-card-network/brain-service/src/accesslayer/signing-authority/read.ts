@@ -1,4 +1,4 @@
-import { SigningAuthority, SigningAuthorityInstance } from '@models';
+import { SigningAuthority, type SigningAuthorityInstance } from '@models';
 
 export const getSigningAuthorityByEndpoint = async (
     endpoint: string

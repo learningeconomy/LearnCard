@@ -1,10 +1,9 @@
 import React from 'react';
-import { AchievementCardProps } from '../../types';
 import { RoundedPill } from '../RoundedPill';
 import { CircleCheckButton } from '../CircleCheckButton';
 import { Trophy } from '../svgs';
 import { TYPE_TO_MINI_ICON } from '../../constants';
-import { LCSubtypes } from '../../types';
+import { LCSubtypes, type AchievementCardProps } from '../../types';
 
 export const AchievementCard: React.FC<AchievementCardProps> = ({
     title = 'Title Lorem Ipsum',

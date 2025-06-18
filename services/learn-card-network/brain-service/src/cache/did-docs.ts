@@ -1,5 +1,5 @@
 import cache from '@cache';
-import { DidDocument } from '@learncard/types';
+import type { DidDocument } from '@learncard/types';
 
 export const getDidDocCacheKey = (profileId: string): string => `did-doc:${profileId}`;
 

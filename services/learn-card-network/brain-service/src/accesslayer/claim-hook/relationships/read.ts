@@ -1,5 +1,5 @@
-import { ClaimHook, BoostInstance } from '@models';
-import { ClaimHook as ClaimHookType } from 'types/claim-hook';
+import { ClaimHook, type BoostInstance } from '@models';
+import type { ClaimHook as ClaimHookType } from 'types/claim-hook';
 
 export const getClaimBoostForClaimHook = async (
     claimHook: ClaimHookType

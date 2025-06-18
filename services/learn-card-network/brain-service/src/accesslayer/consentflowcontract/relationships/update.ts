@@ -1,17 +1,17 @@
 import { QueryBuilder, BindParam } from 'neogma';
 import { v4 as uuid } from 'uuid';
 import {
-    ConsentFlowTerms as ConsentFlowTermsType,
-    ConsentFlowTransaction as ConsentFlowTransactionType,
     LCNNotificationTypeEnumValidator,
-    LCNProfile,
-    VC,
-    UnsignedVC,
+    type ConsentFlowTerms as ConsentFlowTermsType,
+    type ConsentFlowTransaction as ConsentFlowTransactionType,
+    type LCNProfile,
+    type VC,
+    type UnsignedVC,
 } from '@learncard/types';
 import { ConsentFlowTerms, ConsentFlowTransaction, ConsentFlowContract } from '@models';
 import { flattenObject } from '@helpers/objects.helpers';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
-import { DbContractType, DbTermsType } from 'types/consentflowcontract';
+import type { DbContractType, DbTermsType } from 'types/consentflowcontract';
 import { getBoostUri, sendBoost } from '@helpers/boost.helpers';
 import { getDidWeb } from '@helpers/did.helpers';
 import { getSigningAuthorityForUserByName } from '@accesslayer/signing-authority/relationships/read';
@@ -482,9 +482,7 @@ export const syncCredentialsToContract = async (
 
     // Update the terms with the synced credentials
     // Clone the existing terms to avoid modifying the original
-    const updatedTerms = JSON.parse(
-        JSON.stringify(relationship.terms.terms)
-    ) as ConsentFlowTermsType;
+    const updatedTerms = structuredClone(relationship.terms.terms) as ConsentFlowTermsType;
 
     // Ensure the credentials structure exists
     if (!updatedTerms.read) updatedTerms.read = {} as any;

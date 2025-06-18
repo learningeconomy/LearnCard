@@ -1,5 +1,5 @@
 import React from 'react';
-import { VerificationStatus, VerificationStatusEnum } from '@learncard/types';
+import { VerificationStatusEnum, type VerificationStatus } from '@learncard/types';
 
 import VerificationFailedIcon from '../../assets/images/RedXCircle.svg';
 import VerificationPassedIcon from '../../assets/images/GreenCheckCircle.svg';

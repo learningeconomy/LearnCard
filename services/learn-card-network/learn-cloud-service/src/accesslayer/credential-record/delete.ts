@@ -10,8 +10,8 @@ export const deleteCredentialRecordById = async (
 
         return (await getCredentialRecordCollection().deleteOne({ did: { $in: dids }, id }))
             .deletedCount;
-    } catch (e) {
-        console.error(e);
+    } catch (error) {
+        console.error(error);
         return false;
     }
 };
@@ -19,8 +19,8 @@ export const deleteCredentialRecordById = async (
 export const deleteCredentialRecordsForDid = async (did: string): Promise<number | false> => {
     try {
         return (await getCredentialRecordCollection().deleteMany({ did })).deletedCount;
-    } catch (e) {
-        console.error(e);
+    } catch (error) {
+        console.error(error);
         return false;
     }
 };

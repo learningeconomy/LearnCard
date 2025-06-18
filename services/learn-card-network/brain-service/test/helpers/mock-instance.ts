@@ -1,5 +1,5 @@
 declare module 'vitest' {
-    export interface ProvidedContext {
+    export type ProvidedContext = {
         'neo4j-uri': string;
         'neo4j-password': string;
     }

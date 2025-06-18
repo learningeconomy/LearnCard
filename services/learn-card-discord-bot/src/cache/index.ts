@@ -45,16 +45,16 @@ const getCache = (): Cache => {
             try {
                 if (cache?.redis) return await cache.redis.set(key, value);
                 if (cache?.node) return await cache.node.set(key, value);
-            } catch (e) {
-                console.error('Cache set error', e);
+            } catch (error) {
+                console.error('Cache set error', error);
             }
         },
         setex: async (key, value, ttl = DEFAULT_TTL_SECS) => {
             try {
                 if (cache?.redis) return await cache.redis.setex(key, ttl, value);
                 if (cache?.node) return await cache.node.setex(key, ttl, value);
-            } catch (e) {
-                console.error('Cache setex error', e);
+            } catch (error) {
+                console.error('Cache setex error', error);
             }
         },
         get: async (key, resetTTL = false, ttl = DEFAULT_TTL_SECS) => {
@@ -66,7 +66,7 @@ const getCache = (): Cache => {
                     if (cache?.redis) return await cache.redis.get(key);
                     if (cache?.node) return await cache.node.get(key);
                 }
-            } catch (e) {
+            } catch {
                 // logger.error('Cache get error', e);
             }
         },
@@ -84,8 +84,8 @@ const getCache = (): Cache => {
             try {
                 if (cache?.redis) return await cache.redis.unlink(keys);
                 if (cache?.node) return await cache.node.unlink(keys);
-            } catch (e) {
-                console.error('Cache delete error', e);
+            } catch (error) {
+                console.error('Cache delete error', error);
             }
         },
     };
@@ -105,8 +105,8 @@ const getCache = (): Cache => {
                 ...(password ? { password } : {}),
             });
         }
-    } catch (e) {
-        console.log('Could not connect to redis', e);
+    } catch (error) {
+        console.log('Could not connect to redis', error);
         delete cache.redis;
     }
 

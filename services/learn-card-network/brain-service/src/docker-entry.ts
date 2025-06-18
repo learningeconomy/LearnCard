@@ -3,8 +3,8 @@ import path from 'path';
 import Fastify from 'fastify';
 import fastifyStatic from '@fastify/static';
 import fastifyCors from '@fastify/cors';
-import { fastifyTRPCPlugin, FastifyTRPCPluginOptions } from '@trpc/server/adapters/fastify';
-import { fastifyTRPCOpenApiPlugin, CreateOpenApiFastifyPluginOptions } from 'trpc-to-openapi';
+import { fastifyTRPCPlugin, type FastifyTRPCPluginOptions } from '@trpc/server/adapters/fastify';
+import { fastifyTRPCOpenApiPlugin, type CreateOpenApiFastifyPluginOptions } from 'trpc-to-openapi';
 import {
     SQSClient,
     CreateQueueCommand,
@@ -55,10 +55,10 @@ server.register(didFastifyPlugin);
 
 (async () => {
     try {
-        console.log('Server starting on port ', process.env.PORT || 3000);
+        console.log('Server starting on port', process.env.PORT || 3000);
         await server.listen({ host: '0.0.0.0', port: Number(process.env.PORT || 3000) });
-    } catch (err) {
-        console.error(err);
+    } catch (error) {
+        console.error(error);
         process.exit(1);
     }
 })();
@@ -107,7 +107,7 @@ if (pollUrl) {
                             });
 
                             return await sqs.send(deleteCommand);
-                        } catch (error) {
+                        } catch {
                             console.error('Invalid Notification Object', message.Body);
                             return;
                         }

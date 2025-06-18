@@ -15,8 +15,8 @@ import Layout from '../layouts/Layout.astro';
 
     try {
         await wallet.installChapiHandler();
-    } catch (e) {
-        console.error('Error in loadOnce:', e);
+    } catch (error) {
+        console.error('Error in loadOnce:', error);
     }
 
     wallet.activateChapiHandler({

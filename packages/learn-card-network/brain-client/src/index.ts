@@ -1,5 +1,5 @@
 import { RegExpTransformer } from '@learncard/helpers';
-import { createTRPCClient, TRPCClient, httpBatchLink } from '@trpc/client';
+import { createTRPCClient, httpBatchLink, type TRPCClient } from '@trpc/client';
 import type { AppRouter } from '@learncard/network-brain-service';
 
 import { callbackLink } from './callbackLink';

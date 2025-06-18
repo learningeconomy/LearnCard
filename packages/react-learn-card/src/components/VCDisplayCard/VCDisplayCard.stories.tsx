@@ -1,7 +1,7 @@
 import React from 'react';
-import { Story, Meta } from '@storybook/react';
+import type { Story, Meta } from '@storybook/react';
 
-import VCDisplayCard, { VCDisplayCardPropsReal } from './VCDisplayCard';
+import VCDisplayCard, { type VCDisplayCardPropsReal } from './VCDisplayCard';
 import { VerificationStatusEnum } from '@learncard/types';
 import { VC2CredentialWithValidFrom, VC2CredentialNoDate } from '../../helpers/test.helpers';
 

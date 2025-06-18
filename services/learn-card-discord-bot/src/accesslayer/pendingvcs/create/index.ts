@@ -1,6 +1,5 @@
 import { randomUUID } from 'crypto';
-import { PendingVc } from 'src/types/index';
-import { Context } from 'src/types/index';
+import type { Context, PendingVc } from 'src/types/index';
 
 export const PREFIX = 'pendingvc:';
 

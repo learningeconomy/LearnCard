@@ -1,14 +1,14 @@
 import { readFile } from 'node:fs/promises';
 
-import { generateLearnCard, LearnCard } from '@learncard/core';
-import { CryptoPlugin, CryptoPluginType } from '@learncard/crypto-plugin';
-import { DIDKitPlugin, DidMethod, getDidKitPlugin } from '@learncard/didkit-plugin';
-import { EncryptionPluginType, getEncryptionPlugin } from '@learncard/encryption-plugin';
-import { DidKeyPlugin, getDidKeyPlugin } from '@learncard/didkey-plugin';
-import { VCPlugin, getVCPlugin } from '@learncard/vc-plugin';
-import { VCTemplatePlugin, getVCTemplatesPlugin } from '@learncard/vc-templates-plugin';
-import { ExpirationPlugin, expirationPlugin } from '@learncard/expiration-plugin';
-import { LearnCardPlugin, getLearnCardPlugin } from '@learncard/learn-card-plugin';
+import { generateLearnCard, type LearnCard } from '@learncard/core';
+import { CryptoPlugin, type CryptoPluginType } from '@learncard/crypto-plugin';
+import { getDidKitPlugin, type DIDKitPlugin, type DidMethod } from '@learncard/didkit-plugin';
+import { getEncryptionPlugin, type EncryptionPluginType } from '@learncard/encryption-plugin';
+import { getDidKeyPlugin, type DidKeyPlugin } from '@learncard/didkey-plugin';
+import { getVCPlugin, type VCPlugin } from '@learncard/vc-plugin';
+import { getVCTemplatesPlugin, type VCTemplatePlugin } from '@learncard/vc-templates-plugin';
+import { expirationPlugin, type ExpirationPlugin } from '@learncard/expiration-plugin';
+import { getLearnCardPlugin, type LearnCardPlugin } from '@learncard/learn-card-plugin';
 import { isTest } from './test.helpers';
 
 const didkit = readFile(require.resolve('@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm'));

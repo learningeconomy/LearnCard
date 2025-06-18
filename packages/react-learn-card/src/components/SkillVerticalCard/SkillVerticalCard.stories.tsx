@@ -1,8 +1,8 @@
 import React from 'react';
-import { Story, Meta } from '@storybook/react';
+import type { Story, Meta } from '@storybook/react';
 
 import SkillVerticalCard from './SkillVerticalCard';
-import { SkillVerticalCardProps } from '../../types';
+import type { SkillVerticalCardProps } from '../../types';
 
 export default {
     title: 'Skill Vertical Card',

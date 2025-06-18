@@ -1,6 +1,6 @@
-import { UnsignedVC, VC, UnsignedVP } from '@learncard/types';
-import { DiscriminatedUnionize } from './type.helpers';
-import { Plugin } from '@learncard/core';
+import type { UnsignedVC, VC, UnsignedVP } from '@learncard/types';
+import type { DiscriminatedUnionize } from './type.helpers';
+import type { Plugin } from '@learncard/core';
 
 /** @group VC Templates Plugin */
 export type BoostAttachment = {

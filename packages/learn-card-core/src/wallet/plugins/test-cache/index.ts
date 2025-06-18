@@ -1,5 +1,5 @@
-import { CredentialRecord, VC, VP } from '@learncard/types';
-import { TestCachePlugin } from './types';
+import type { CredentialRecord, VC, VP } from '@learncard/types';
+import type { TestCachePlugin } from './types';
 
 export const getTestCache = (): TestCachePlugin => {
     let index: Record<string, CredentialRecord[]> = {};

@@ -1,4 +1,4 @@
-import { DbContractType } from 'types/consentflowcontract';
+import type { DbContractType } from 'types/consentflowcontract';
 import { getWritersForContract } from '@accesslayer/consentflowcontract/relationships/read';
 import { getProfileIdFromString } from './did.helpers';
 import { TRPCError } from '@trpc/server';

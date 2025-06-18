@@ -1,6 +1,6 @@
 import { QueryBuilder } from 'neogma';
 import { DidMetadata } from '@models';
-import { DidMetadataType } from 'types/did-metadata';
+import type { DidMetadataType } from 'types/did-metadata';
 import { inflateObject } from '@helpers/objects.helpers';
 
 export const getDidMetadataById = async (id: string): Promise<DidMetadataType | null> => {

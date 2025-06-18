@@ -4,14 +4,14 @@ import { Flipper, Flipped } from 'react-flip-toolkit';
 import VC2BackFace from './VC2BackFace';
 import VCIDDisplayFrontFace from './VCIDDisplayFrontFace';
 
-import {
+import type {
     BoostAchievementCredential,
     IssueHistory,
     MediaMetadata,
     VideoMetadata,
+    KnownDIDRegistryType,
 } from '../../types';
-import { VC, VerificationItem } from '@learncard/types';
-import { KnownDIDRegistryType } from '../../types';
+import type { VC, VerificationItem } from '@learncard/types';
 
 export type VCIDDisplayCardProps = {
     credential: VC | BoostAchievementCredential;

@@ -1,5 +1,5 @@
-import { providers } from 'ethers';
-import { Plugin } from '@learncard/core';
+import type { providers } from 'ethers';
+import type { Plugin } from '@learncard/core';
 
 /** @group Ethereum Plugin */
 export type EthereumPluginMethods = {

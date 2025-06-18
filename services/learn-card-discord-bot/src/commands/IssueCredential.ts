@@ -1,5 +1,5 @@
-import { BaseCommandInteraction } from 'discord.js';
-import { Context } from 'src/types/index';
+import type { BaseCommandInteraction } from 'discord.js';
+import type { Context } from 'src/types/index';
 
 export const IssueCredential: Command = {
     name: 'issue_test_credential',
@@ -19,8 +19,8 @@ export const IssueCredential: Command = {
                 ephemeral: true,
                 content,
             });
-        } catch (e) {
-            console.error(e);
+        } catch (error) {
+            console.error(error);
             await interaction.reply({
                 content: 'Woops, an error occured. Try that again 🫠.`',
                 ephemeral: true,

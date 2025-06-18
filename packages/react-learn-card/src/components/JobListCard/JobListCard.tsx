@@ -1,7 +1,6 @@
 import React from 'react';
-import { JobListCardProps } from '../../types';
 import { TYPE_TO_MINI_ICON } from '../../constants/';
-import { LCSubtypes } from '../../types';
+import { LCSubtypes, type JobListCardProps } from '../../types';
 
 const TYPE_TO_COLOR: any = {
     course: 'bg-emerald-50',
@@ -53,8 +52,8 @@ export const JobListCard: React.FC<JobListCardProps> = ({
     postDateDisplay,
     customButtonComponent,
     imgThumb,
-    isBookmarked,
-    onBookmark,
+    isBookmarked: _isBookmarked,
+    onBookmark: _onBookmark,
     onClick,
 }) => {
     const courseReqCount = qualificationDisplay?.courses?.totalRequiredCount;
@@ -101,7 +100,7 @@ export const JobListCard: React.FC<JobListCardProps> = ({
         </button>
     );
 
-    const buttonComponent = customButtonComponent ? customButtonComponent : defaultButton;
+    const buttonComponent = customButtonComponent || defaultButton;
 
     return (
         <div

@@ -1,5 +1,5 @@
 import React from 'react';
-import { GenericCardProps, WalletCategoryTypes } from '../../types';
+import { WalletCategoryTypes, type GenericCardProps } from '../../types';
 import { TYPE_TO_IMG_SRC, TYPE_TO_WALLET_DARK_COLOR } from '../../constants';
 import { CircleCheckButton } from '../CircleCheckButton';
 
@@ -10,7 +10,7 @@ export const GenericCard: React.FC<GenericCardProps> = ({
     customHeaderClass = '',
     type = WalletCategoryTypes.achievements,
     className,
-    onClick = () => { },
+    onClick = () => {},
     showChecked,
     checkStatus,
     flipped,

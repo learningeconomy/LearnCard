@@ -1,5 +1,5 @@
 import { TRPCError } from '@trpc/server';
-import { VP, JWE, LCNNotificationTypeEnumValidator } from '@learncard/types';
+import { LCNNotificationTypeEnumValidator, type VP, type JWE } from '@learncard/types';
 
 import { storePresentation } from '@accesslayer/presentation/create';
 import {
@@ -9,7 +9,7 @@ import {
 import { getPresentationSentToProfile, getPresentationReceivedByProfile } from '@accesslayer/presentation/relationships/read';
 import { constructUri, getUriParts } from './uri.helpers';
 import { addNotificationToQueue } from './notifications.helpers';
-import { ProfileType } from 'types/profile';
+import type { ProfileType } from 'types/profile';
 
 export const getPresentationUri = (id: string, domain: string): string =>
     constructUri('presentation', id, domain);

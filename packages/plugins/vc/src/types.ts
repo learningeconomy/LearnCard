@@ -1,4 +1,4 @@
-import {
+import type {
     UnsignedVC,
     VC,
     UnsignedVP,
@@ -7,8 +7,8 @@ import {
     DidDocument,
     JWKWithPrivateKey,
 } from '@learncard/types';
-import { Plugin, LearnCard } from '@learncard/core';
-import { ProofOptions, InputMetadata } from '@learncard/didkit-plugin';
+import type { Plugin, LearnCard } from '@learncard/core';
+import type { ProofOptions, InputMetadata } from '@learncard/didkit-plugin';
 
 /** @group VC Plugin */
 export type VCPluginDependentMethods = {

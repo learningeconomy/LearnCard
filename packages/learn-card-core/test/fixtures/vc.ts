@@ -1,4 +1,4 @@
-import { VC } from '@learncard/types';
+import type { VC } from '@learncard/types';
 
 export const testVc: VC = {
     '@context': ['https://www.w3.org/2018/credentials/v1'],

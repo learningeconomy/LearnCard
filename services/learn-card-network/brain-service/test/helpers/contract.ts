@@ -1,4 +1,4 @@
-import { ConsentFlowContract, ConsentFlowTerms } from '@learncard/types';
+import type { ConsentFlowContract, ConsentFlowTerms } from '@learncard/types';
 
 export const minimalContract: ConsentFlowContract = {
     read: {

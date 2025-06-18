@@ -1,7 +1,7 @@
-import { BoostPermissions } from '@learncard/types';
+import type { BoostPermissions } from '@learncard/types';
 import { v4 as uuid } from 'uuid';
 
-import { Role, RoleInstance } from '@models';
+import { Role, type RoleInstance } from '@models';
 import { ADMIN_ROLE_ID, CREATOR_ROLE_ID, EMPTY_ROLE_ID } from 'src/constants/roles';
 import {
     ADMIN_PERMISSIONS,

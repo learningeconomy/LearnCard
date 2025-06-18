@@ -1,5 +1,5 @@
-import { Plugin } from '@learncard/core';
-import { JWKWithPrivateKey } from '@learncard/types';
+import type { Plugin } from '@learncard/core';
+import type { JWKWithPrivateKey } from '@learncard/types';
 
 /** @group DidKey Plugin */
 export type Algorithm = 'ed25519' | 'secp256k1';

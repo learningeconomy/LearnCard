@@ -1,8 +1,8 @@
 import React from 'react';
-import { Story, Meta } from '@storybook/react';
+import type { Story, Meta } from '@storybook/react';
 
 import SmallVCCard from './SmallAchievementCard';
-import { SmallAchievementCardProps } from '../../types';
+import type { SmallAchievementCardProps } from '../../types';
 
 export default {
     title: 'Mini Achievement Display Card',

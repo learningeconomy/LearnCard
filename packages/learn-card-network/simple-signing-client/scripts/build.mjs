@@ -1,8 +1,9 @@
 import path from 'path';
 
 import esbuild from 'esbuild';
-import { NodeResolvePlugin } from '@esbuild-plugins/node-resolve';
 import rimraf from 'rimraf';
+
+import { NodeResolvePlugin } from '@esbuild-plugins/node-resolve';
 
 const nodeResolveExternal = NodeResolvePlugin({
     extensions: ['.ts', '.js', '.tsx', '.jsx', '.cjs', '.mjs'],
@@ -79,7 +80,7 @@ function main() {
                 console.log('✔ Build successful');
                 process.exit(0);
             })
-            .catch(err => {
+            .catch(() => {
                 console.error('❌ Build failed');
                 process.exit(1);
             });

@@ -1,5 +1,5 @@
-import React, { ComponentPropsWithRef } from 'react';
-import { Text, Box, useFocus, DOMElement } from 'ink';
+import React, { type ComponentPropsWithRef } from 'react';
+import { Text, Box, useFocus, type DOMElement } from 'ink';
 import TextInput from 'ink-text-input';
 
 type InputProps = ComponentPropsWithRef<typeof Box> & {

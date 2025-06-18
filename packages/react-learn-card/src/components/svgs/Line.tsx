@@ -5,7 +5,7 @@ type LineProps = {
     width?: string;
 };
 
-const Line: React.FC<LineProps> = ({ className = '', width = '109' }) => {
+const Line: React.FC<LineProps> = ({ className: _className = '', width = '109' }) => {
     return (
         <svg
             width={width}

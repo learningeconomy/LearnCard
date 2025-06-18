@@ -1,7 +1,5 @@
-/// <reference path="../global.d.ts" />
-
-import Redis, { RedisValue, RedisKey } from 'ioredis';
-import MemoryRedis, { Redis as RedisMockType } from 'ioredis-mock';
+import Redis, { type RedisKey, type RedisValue } from 'ioredis';
+import MemoryRedis, { type Redis as RedisMockType } from 'ioredis-mock';
 
 const simpleScan = async (redis: Redis, pattern: string): Promise<string[]> => {
     try {
@@ -81,27 +79,27 @@ const DEFAULT_TTL_SECS = 60 * 60;
 export const getCache = (): Cache => {
     const cache: Cache = {
         node: new MemoryRedis(),
-        set: async (key, value, ttl = DEFAULT_TTL_SECS, keepTtl) => {
+        set: async (key, value, ttl = DEFAULT_TTL_SECS, keepTtl = false) => {
             if (keepTtl) {
                 try {
                     if (cache?.redis) return await cache.redis.set(key, value, 'KEEPTTL');
                     if (cache?.node) return await cache.node.set(key, value, 'KEEPTTL');
-                } catch (e) {
-                    console.error('Cache set error', e);
+                } catch (error) {
+                    console.error('Cache set error', error);
                 }
             } else if (ttl) {
                 try {
                     if (cache?.redis) return await cache.redis.setex(key, ttl, value);
                     if (cache?.node) return await cache.node.setex(key, ttl, value);
-                } catch (e) {
-                    console.error('Cache set error', e);
+                } catch (error) {
+                    console.error('Cache set error', error);
                 }
             } else {
                 try {
                     if (cache?.redis) return await cache.redis.set(key, value);
                     if (cache?.node) return await cache.node.set(key, value);
-                } catch (e) {
-                    console.error('Cache set error', e);
+                } catch (error) {
+                    console.error('Cache set error', error);
                 }
             }
 
@@ -138,8 +136,8 @@ export const getCache = (): Cache => {
                     if (cache?.redis) return await cache.redis.mset(values);
                     if (cache?.node) return await cache.node.mset(values);
                 }
-            } catch (e) {
-                console.error('Cache set error', e);
+            } catch (error) {
+                console.error('Cache set error', error);
             }
 
             return undefined;
@@ -153,7 +151,7 @@ export const getCache = (): Cache => {
                     if (cache?.redis) return await cache.redis.get(key);
                     if (cache?.node) return await cache.node.get(key);
                 }
-            } catch (e) {
+            } catch {
                 // logger.error('Cache get error', e);
             }
 
@@ -175,8 +173,8 @@ export const getCache = (): Cache => {
             try {
                 if (cache?.redis) return await cache.redis.unlink(keys);
                 if (cache?.node) return await cache.node.unlink(keys);
-            } catch (e) {
-                console.error('Cache delete error', e);
+            } catch (error) {
+                console.error('Cache delete error', error);
             }
 
             return undefined;
@@ -185,7 +183,7 @@ export const getCache = (): Cache => {
             try {
                 if (cache?.redis) return await cache.redis.ttl(key);
                 if (cache?.node) return await cache.node.ttl(key);
-            } catch (e) {
+            } catch {
                 // logger.error('Cache get error', e);
             }
 
@@ -207,8 +205,8 @@ export const getCache = (): Cache => {
                 enableAutoPipelining: true,
             });
         }
-    } catch (e) {
-        console.error('Could not connect to redis', e);
+    } catch (error) {
+        console.error('Could not connect to redis', error);
         delete cache.redis;
     }
 

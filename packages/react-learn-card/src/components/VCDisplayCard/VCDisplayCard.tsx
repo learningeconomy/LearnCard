@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AchievementCredential, VC, Profile, VerificationItem } from '@learncard/types';
+import type { AchievementCredential, VC, Profile, VerificationItem } from '@learncard/types';
 
 import FlippyCard from '../FlippyCard/FlippyCard';
 import VCDisplayFrontFace from '../VCDisplayFrontFace/VCDisplayFrontFace';

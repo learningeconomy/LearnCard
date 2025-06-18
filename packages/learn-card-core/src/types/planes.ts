@@ -1,8 +1,8 @@
-import { CredentialRecord, VC, VP, JWKWithPrivateKey } from '@learncard/types';
-import { Query } from 'sift';
-import { Plugin } from './wallet';
-import { OmitNevers } from './helpers';
-import { DeepPartial } from './utilities';
+import type { CredentialRecord, VC, VP, JWKWithPrivateKey } from '@learncard/types';
+import type { Query } from 'sift';
+import type { Plugin } from './wallet';
+import type { OmitNevers } from './helpers';
+import type { DeepPartial } from './utilities';
 
 export type CacheStrategy = 'cache-only' | 'cache-first' | 'skip-cache';
 

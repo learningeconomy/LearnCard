@@ -1,4 +1,4 @@
-import { UnsignedVC } from '@learncard/types';
+import type { UnsignedVC } from '@learncard/types';
 
 export const testUnsignedBoost: UnsignedVC = {
     '@context': [

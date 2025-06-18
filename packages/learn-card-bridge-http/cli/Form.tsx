@@ -1,13 +1,13 @@
 import React from 'react';
 import { Box, useFocusManager } from 'ink';
-import { Updater } from 'use-immer';
+import type { Updater } from 'use-immer';
 
 import { curriedStateSlice } from './curriedStateSlice';
 
 import Input from './Input';
 import Button from './Button';
 
-import { FormState } from './types';
+import type { FormState } from './types';
 import { generateRandomSeed } from './random';
 
 type FormProps = {

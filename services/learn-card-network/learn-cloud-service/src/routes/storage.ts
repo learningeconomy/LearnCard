@@ -1,6 +1,12 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
-import { JWE, UnsignedVCValidator, VCValidator, VPValidator, JWEValidator } from '@learncard/types';
+import {
+    UnsignedVCValidator,
+    VCValidator,
+    VPValidator,
+    JWEValidator,
+    type JWE,
+} from '@learncard/types';
 
 import { t, didAndChallengeRoute } from '@routes';
 import { createCredential } from '@accesslayer/credential/create';
@@ -114,7 +120,7 @@ export const storageRouter = t.router({
                     const { id } = getUriParts(uri);
 
                     return id;
-                } catch (error) {
+                } catch {
                     return null;
                 }
             });
@@ -132,9 +138,9 @@ export const storageRouter = t.router({
 
                 if (!id) return null; // Null if invalid ID
 
-                const filteredIndex = filteredIds.findIndex(filteredId => filteredId === id);
+                const filteredIndex = filteredIds.indexOf(id);
 
-                if (filteredIndex < 0) return null; // This is theoretically impossible, but a good sanity check
+                if (filteredIndex === -1) return null; // This is theoretically impossible, but a good sanity check
 
                 return cachedValues[filteredIndex] || uri; // Resolved object if cache hit, string uri if cache miss
             });
@@ -152,7 +158,7 @@ export const storageRouter = t.router({
                     credential => credential._id.toString() === value
                 );
 
-                return index > -1 ? credentials[index]!.jwe : null;
+                return index !== -1 ? credentials[index]!.jwe : null;
             });
         }),
 });

@@ -1,5 +1,5 @@
 import React from 'react';
-import { CircleCheckButtonProps } from '../../types';
+import type { CircleCheckButtonProps } from '../../types';
 import { CheckmarkSvg } from '../RoundedPill';
 
 export const CircleCheckButton: React.FC<CircleCheckButtonProps> = ({
@@ -8,7 +8,7 @@ export const CircleCheckButton: React.FC<CircleCheckButtonProps> = ({
     bgColor,
     className = '',
 }) => {
-    const backgroundColor = checked ? 'bg-emerald-700' : bgColor ? bgColor : 'bg-gray-50';
+    const backgroundColor = checked ? 'bg-emerald-700' : (bgColor ?? 'bg-gray-50');
 
     const handleClick = () => {
         onClick?.();

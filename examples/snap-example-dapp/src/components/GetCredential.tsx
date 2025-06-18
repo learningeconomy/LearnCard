@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { VC } from '@learncard/types';
+import type { VC } from '@learncard/types';
 
 import TextBox from '@components/input/TextBox';
 

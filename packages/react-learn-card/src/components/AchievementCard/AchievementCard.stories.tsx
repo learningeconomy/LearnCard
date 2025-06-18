@@ -1,8 +1,8 @@
 import React from 'react';
-import { Story, Meta } from '@storybook/react';
+import type { Story, Meta } from '@storybook/react';
 import AchievementCard from './AchievementCard';
 
-import { AchievementCardProps } from '../../types';
+import type { AchievementCardProps } from '../../types';
 
 export default {
     title: 'Achievement Display Card',

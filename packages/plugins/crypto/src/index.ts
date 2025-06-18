@@ -1,4 +1,4 @@
-import { CryptoPluginType } from './types';
+import type { CryptoPluginType } from './types';
 
 import crypto from './crypto';
 

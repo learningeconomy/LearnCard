@@ -1,8 +1,8 @@
 import React from 'react';
-import { Story, Meta } from '@storybook/react';
+import type { Story, Meta } from '@storybook/react';
 
 import RoundedPill from './RoundedPill';
-import { RoundedPillProps } from '../../types';
+import type { RoundedPillProps } from '../../types';
 
 export default {
     title: 'Rounded Pill',

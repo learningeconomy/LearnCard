@@ -1,7 +1,7 @@
-import { ModelFactory, NeogmaInstance } from 'neogma';
+import { ModelFactory, type NeogmaInstance } from 'neogma';
 
 import { neogma } from '@instance';
-import { Role as RoleType } from 'types/role';
+import type { Role as RoleType } from 'types/role';
 
 export type RoleRelationships = {};
 

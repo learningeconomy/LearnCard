@@ -1,6 +1,6 @@
 import { VC_TEMPLATES } from './templates';
 
-import { VCTemplatePlugin } from './types';
+import type { VCTemplatePlugin } from './types';
 
 /**
  * @group Plugins

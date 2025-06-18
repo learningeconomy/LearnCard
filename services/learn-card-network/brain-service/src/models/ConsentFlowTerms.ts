@@ -1,9 +1,9 @@
-import { ModelFactory, ModelRelatedNodesI, NeogmaInstance } from 'neogma';
-import { Profile, ProfileInstance } from './Profile';
-import { ConsentFlowContract, ConsentFlowInstance } from './ConsentFlowContract';
+import { ModelFactory, type ModelRelatedNodesI, type NeogmaInstance } from 'neogma';
+import { Profile, type ProfileInstance } from './Profile';
+import { ConsentFlowContract, type ConsentFlowInstance } from './ConsentFlowContract';
 import { neogma } from '@instance';
 
-import { FlatDbTermsType } from 'types/consentflowcontract';
+import type { FlatDbTermsType } from 'types/consentflowcontract';
 
 export type ConsentFlowTermsRelationships = {
     createdBy: ModelRelatedNodesI<typeof Profile, ProfileInstance>;

@@ -1,5 +1,5 @@
 import React from 'react';
-import { SkillsStatsCardProps } from '../../types';
+import type { SkillsStatsCardProps } from '../../types';
 import SkillGraphPlaceholder from '../../assets/images/skillgraph.svg';
 
 type SkillStatListItemProps = {
@@ -28,7 +28,7 @@ const SkillStatListItemIndicator: React.FC<SkillStatListItemIndicatorProps> = ({
     );
 };
 
-const SkillStatListItem: React.FC<SkillStatListItemProps> = ({ name, percent, className }) => {
+const SkillStatListItem: React.FC<SkillStatListItemProps> = ({ name, percent, className: _className }) => {
     const colorIndicator = <SkillStatListItemIndicator />;
     return (
         <div className="flex items-center justify-between px-[10px] skill-stat-list-item flex text-xs h-[20px] py-[5px] shadow-[0_1px_3px_rgba(0,0,0,0.3)] mt-[10px] rounded-[10px] text-grayscale-900 font-semibold">
@@ -41,7 +41,7 @@ const SkillStatListItem: React.FC<SkillStatListItemProps> = ({ name, percent, cl
     );
 };
 
-const MoreSkillsListItem: React.FC<MoreSkillsListItemProps> = ({ count, percent, className }) => {
+const MoreSkillsListItem: React.FC<MoreSkillsListItemProps> = ({ count, percent, className: _className }) => {
     const colorIndicator = <SkillStatListItemIndicator className="bg-grayscale-200" />;
     return (
         <div className="flex items-center justify-between px-[10px] skill-stat-list-item flex text-xs h-[20px] py-[5px] shadow-[0_1px_3px_rgba(0,0,0,0.3)] mt-[10px] rounded-[10px] text-grayscale-900 font-semibold">

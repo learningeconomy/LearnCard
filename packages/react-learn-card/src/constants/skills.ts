@@ -168,8 +168,9 @@ export enum BoostCMSCategorySkillEnum {
     HealthcareAdministration = 'healthcareAdministration',
 }
 
-export const CATEGORY_TO_SKILLS: {
-    [key: BoostCMSSKillsCategoryEnum | string]: {
+export const CATEGORY_TO_SKILLS: Record<
+    BoostCMSSKillsCategoryEnum | string,
+    {
         id: number;
         title: string;
         IconComponent: React.ReactNode | string;
@@ -177,8 +178,8 @@ export const CATEGORY_TO_SKILLS: {
         iconCircleClass: string;
         category: BoostCMSSKillsCategoryEnum | string;
         type: BoostCMSCategorySkillEnum | string;
-    }[];
-} = {
+    }[]
+> = {
     [BoostCMSSKillsCategoryEnum.Durable]: [
         {
             id: 1,
@@ -689,7 +690,7 @@ export enum BoostCMSSubSkillEnum {
     weightLifting = 'weightLifting',
     speedTraining = 'speedTraining',
     agility = 'agility',
-    lexibility = 'flexibility',
+    // flexibility = 'flexibility', // ! duplicate
     // injuryPrevention = 'injuryPrevention', // ! duplicate
 
     // coordination
@@ -935,13 +936,14 @@ export enum BoostCMSSubSkillEnum {
     facilityManagement = 'facilityManagement',
 }
 
-export const SKILLS_TO_SUBSKILLS: {
-    [key: BoostCMSCategorySkillEnum | string]: {
+export const SKILLS_TO_SUBSKILLS: Record<
+    BoostCMSCategorySkillEnum | string,
+    {
         id: number;
         title: string;
         type: BoostCMSCategorySkillEnum | string;
-    }[];
-} = {
+    }[]
+> = {
     // Durable
     [BoostCMSCategorySkillEnum.Adaptability]: [
         {

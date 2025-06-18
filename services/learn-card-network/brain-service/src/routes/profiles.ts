@@ -7,6 +7,7 @@ import {
     PaginatedLCNProfilesValidator,
     PaginatedLCNProfilesAndManagersValidator,
     PaginationOptionsValidator,
+    LCNProfileQueryValidator,
 } from '@learncard/types';
 import { v4 as uuid } from 'uuid';
 
@@ -48,7 +49,7 @@ import {
     getSigningAuthoritiesForUser,
     getSigningAuthorityForUserByName,
 } from '@accesslayer/signing-authority/relationships/read';
-import { ProfileType, SigningAuthorityForUserValidator } from 'types/profile';
+import { SigningAuthorityForUserValidator, type ProfileType } from 'types/profile';
 
 import { t, openRoute, didAndChallengeRoute, profileRoute, didRoute } from '@routes';
 
@@ -67,7 +68,6 @@ import {
 } from '@accesslayer/profile/relationships/read';
 import { createProfileManagedByRelationship } from '@accesslayer/profile/relationships/create';
 import { updateProfile } from '@accesslayer/profile/update';
-import { LCNProfileQueryValidator } from '@learncard/types';
 
 export const profilesRouter = t.router({
     createProfile: didAndChallengeRoute
@@ -244,7 +244,7 @@ export const profilesRouter = t.router({
             const isViewingSelf = selfProfile?.profileId === profile.profileId;
 
             if (!isViewingSelf) {
-                const { dob, ...sanitizedProfile } = profile;
+                const { dob: _dob, ...sanitizedProfile } = profile;
                 return sanitizedProfile;
             }
 
@@ -608,7 +608,7 @@ export const profilesRouter = t.router({
             const success = await connectProfiles(profile, targetProfile, false);
 
             if (success) {
-                await Promise.all([invalidateInvite(profileId, challenge)]);
+                await invalidateInvite(profileId, challenge);
             }
 
             return success;
@@ -908,7 +908,7 @@ export const profilesRouter = t.router({
                 });
             }
 
-            let expiresIn: number | null = expiration === 0 ? null : expiration;
+            let expiresIn: number | null = expiration || null;
 
             // Set the invite with the calculated expiration time
             await setValidInviteForProfile(profile.profileId, challenge, expiresIn ?? null);

@@ -3,11 +3,11 @@ import { setTimeout } from 'timers/promises';
 import { client } from '@mongo';
 
 import {
-    JWE,
     JWEValidator,
     EncryptedCredentialRecordValidator,
-    EncryptedCredentialRecord,
     PaginatedEncryptedCredentialRecordsValidator,
+    type JWE,
+    type EncryptedCredentialRecord,
 } from '@learncard/types';
 
 import { t, didAndChallengeRoute } from '@routes';
@@ -189,7 +189,7 @@ export const indexRouter = t.router({
 
             const success = Boolean(await createCredentialRecord(did, record));
 
-            const flushTimeout = 23000; // 5 seconds timeout
+            const flushTimeout = 23_000; // 5 seconds timeout
             try {
                 const timeoutPromise = setTimeout(flushTimeout, 'Timeout');
                 const flushPromise = flushIndexCacheForDid(did);
