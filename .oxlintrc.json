@@ -57,6 +57,7 @@
         "number-literal-case": "off",
         "no-instanceof-builtins": "off",
         "no-async-endpoint-handlers": "off",
-        "func-names": "off"
+        "func-names": "off",
+        "prefer-object-has-own": "off"
     }
 }
