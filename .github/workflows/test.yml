@@ -53,9 +53,15 @@ jobs:
       - name: Run lint fix
         id: lintfix
         run: |
+          set +e
           pnpm lint:fix
+          status=$?
+          set -e
           if [[ -n $(git status --porcelain) ]]; then
             echo "changes=true" >> $GITHUB_OUTPUT
+          fi
+          if [[ $status -ne 0 ]]; then
+            echo "lint_failed=true" >> $GITHUB_OUTPUT
           fi
 
       - name: Commit and push lint fixes
@@ -67,12 +73,18 @@ jobs:
           git commit -m "chore: auto lint fixes"
           git push
 
+      - name: Fail due to remaining lint errors
+        if: steps.lintfix.outputs.lint_failed == 'true'
+        run: |
+          echo "Unfixable lint errors remain. Failing CI early."
+          exit 1
+
       - name: Skip tests after lint commit
-        if: steps.lintfix.outputs.changes == 'true'
+        if: steps.lintfix.outputs.changes == 'true' && steps.lintfix.outputs.lint_failed != 'true'
         run: echo "Lint fixes pushed; skipping tests."
 
       - name: Run tests
-        if: steps.lintfix.outputs.changes != 'true'
+        if: steps.lintfix.outputs.changes != 'true' && steps.lintfix.outputs.lint_failed != 'true'
         uses: nick-fields/retry@v2
         with:
           timeout_minutes: 10
