@@ -1,5 +1,12 @@
 # @welibraryos/react-learn-card
 
+## 2.8.1
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.20
+
 ## 2.8.0
 
 ### Minor Changes

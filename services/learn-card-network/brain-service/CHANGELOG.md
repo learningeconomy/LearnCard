@@ -1,5 +1,11 @@
 # @learncard/network-brain-service
 
+## 3.4.3
+
+### Patch Changes
+
+-   [#700](https://github.com/learningeconomy/LearnCard/pull/700) [`56fdc6d3f54327ff9fef1ee97a42e722f21fa1ca`](https://github.com/learningeconomy/LearnCard/commit/56fdc6d3f54327ff9fef1ee97a42e722f21fa1ca) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Remove undefined from inflated arrays
+
 ## 3.4.2
 
 ### Patch Changes
