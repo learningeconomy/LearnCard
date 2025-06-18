@@ -52,17 +52,14 @@ jobs:
 
       - name: Run lint fix
         id: lintfix
+        continue-on-error: true
         run: |
-          set +e
           pnpm lint:fix
           status=$?
-          set -e
           if [[ -n $(git status --porcelain) ]]; then
             echo "changes=true" >> $GITHUB_OUTPUT
           fi
-          if [[ $status -ne 0 ]]; then
-            echo "lint_failed=true" >> $GITHUB_OUTPUT
-          fi
+          echo "exitcode=$status" >> $GITHUB_OUTPUT
 
       - name: Commit and push lint fixes
         if: steps.lintfix.outputs.changes == 'true'
@@ -74,17 +71,17 @@ jobs:
           git push
 
       - name: Fail due to remaining lint errors
-        if: steps.lintfix.outputs.lint_failed == 'true'
+        if: steps.lintfix.outputs.exitcode != '0'
         run: |
           echo "Unfixable lint errors remain. Failing CI early."
           exit 1
 
       - name: Skip tests after lint commit
-        if: steps.lintfix.outputs.changes == 'true' && steps.lintfix.outputs.lint_failed != 'true'
+        if: steps.lintfix.outputs.changes == 'true' && steps.lintfix.outputs.exitcode == '0'
         run: echo "Lint fixes pushed; skipping tests."
 
       - name: Run tests
-        if: steps.lintfix.outputs.changes != 'true' && steps.lintfix.outputs.lint_failed != 'true'
+        if: steps.lintfix.outputs.changes != 'true' && steps.lintfix.outputs.exitcode == '0'
         uses: nick-fields/retry@v2
         with:
           timeout_minutes: 10
