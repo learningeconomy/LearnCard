@@ -1,11 +1,15 @@
-name: Test Runner
+name: CI
 
 on:
   pull_request:
     types: [opened, synchronize]
 
+permissions:
+  contents: write
+  pull-requests: read
+
 jobs:
-  Test:
+  test:
     runs-on: ubuntu-latest
 
     steps:
@@ -46,7 +50,29 @@ jobs:
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
 
+      - name: Run lint fix
+        id: lintfix
+        run: |
+          pnpm lint:fix
+          if [[ -n $(git status --porcelain) ]]; then
+            echo "changes=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit and push lint fixes
+        if: steps.lintfix.outputs.changes == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "chore: auto lint fixes"
+          git push
+
+      - name: Skip tests after lint commit
+        if: steps.lintfix.outputs.changes == 'true'
+        run: echo "Lint fixes pushed; skipping tests."
+
       - name: Run tests
+        if: steps.lintfix.outputs.changes != 'true'
         uses: nick-fields/retry@v2
         with:
           timeout_minutes: 10
