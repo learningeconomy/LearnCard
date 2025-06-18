@@ -3,7 +3,8 @@ import dns from 'node:dns';
 
 import repl from 'pretty-repl';
 import { getTestCache } from '@learncard/core';
-import { initLearnCard, emptyLearnCard, learnCardFromSeed } from '@learncard/init';
+import { emptyLearnCard, learnCardFromSeed } from '@learncard/init';
+import { initLearnCard } from '@learncard/init';
 import types from '@learncard/types';
 import gradient from 'gradient-string';
 import figlet from 'figlet';
