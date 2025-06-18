@@ -1,5 +1,5 @@
 declare module 'vitest' {
-    export interface ProvidedContext {
+    export type ProvidedContext = {
         'mongo-uri': string;
     }
 }

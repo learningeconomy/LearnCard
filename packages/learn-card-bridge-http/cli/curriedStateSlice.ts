@@ -1,8 +1,8 @@
-import { SetStateAction } from 'react';
-import produce, { Draft, castDraft } from 'immer';
-import { DraftFunction, Updater } from 'use-immer';
+import type { SetStateAction } from 'react';
+import produce, { castDraft, type Draft } from 'immer';
+import type { DraftFunction, Updater } from 'use-immer';
 
-import { SetState } from './types';
+import type { SetState } from './types';
 
 // Inlined version of the hopefully one day npm package curriedStateSlice
 
@@ -137,7 +137,7 @@ export const curriedInnerImmerOuterImmer =
         field: Field,
         value?: ValueArg
     ) =>
-        innerImmerOuterImmer<State, Field, Value, ValueArg>(setState, field, value);
+        innerImmerOuterImmer<State, Field, Value, ValueArg>(setState, field, value!) as any;
 
 export function innerReactOuterImmer<
     State,
@@ -194,6 +194,8 @@ export function innerReactOuterImmer<
                 ? (value(oldState[field]) as Draft<State>[Field])
                 : (value as Draft<State>[Field]);
     });
+
+    return;
 }
 
 /**
@@ -221,7 +223,7 @@ export const curriedInnerReactOuterImmer =
         field: Field,
         value?: ValueArg
     ) =>
-        innerReactOuterImmer<State, Field, Value, ValueArg>(setState, field, value);
+        innerReactOuterImmer<State, Field, Value, ValueArg>(setState, field, value!) as any;
 
 export function innerImmerOuterReact<
     State,
@@ -268,14 +270,16 @@ export function innerImmerOuterReact<
     if (value === undefined) {
         return (innerValue: NonNullable<Value>) => {
             if (innerValue instanceof Function) {
-                setState(produce(oldState => innerValue(oldState[field])));
+                setState(produce((oldState: any) => innerValue(oldState[field])));
             } else setState(oldState => ({ ...oldState, [field]: innerValue }));
         };
     }
 
     if (value instanceof Function) {
-        setState(produce(oldState => value(oldState[field])));
+        setState(produce((oldState: any) => value(oldState[field])));
     } else setState(oldState => ({ ...oldState, [field]: value }));
+
+    return;
 }
 
 /**
@@ -308,7 +312,7 @@ export const curriedInnerImmerOuterReact =
         field: Field,
         value?: ValueArg
     ) =>
-        innerImmerOuterReact<State, Field, Value, ValueArg>(setState, field, value);
+        innerImmerOuterReact<State, Field, Value, ValueArg>(setState, field, value!) as any;
 
 export function innerReactOuterReact<
     State,
@@ -363,6 +367,8 @@ export function innerReactOuterReact<
         ...oldState,
         [field]: value instanceof Function ? value(oldState[field]) : value,
     }));
+
+    return;
 }
 
 /**
@@ -393,7 +399,7 @@ export const curriedInnerReactOuterReact =
         field: Field,
         value?: ValueArg
     ) =>
-        innerReactOuterReact<State, Field, Value, ValueArg>(setState, field, value);
+        innerReactOuterReact<State, Field, Value, ValueArg>(setState, field, value!) as any;
 
 export function curriedStateSlice<State>(setState: Updater<State>): InnerImmerOuterImmer<State>;
 export function curriedStateSlice<State>(

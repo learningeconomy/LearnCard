@@ -1,4 +1,4 @@
-import {
+import type {
     ControlPlane,
     GetPlanesForPlugins,
     PluginReadPlane,
@@ -14,7 +14,7 @@ import {
     LearnCardIdPlane,
     LearnCardContextPlane,
 } from './planes';
-import { UnionToIntersection, MergeObjects, IsAnyOrNever } from './utilities';
+import type { UnionToIntersection, MergeObjects, IsAnyOrNever } from './utilities';
 
 export type GenerateLearnCard<
     NewControlPlanes extends ControlPlane = never,

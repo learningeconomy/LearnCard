@@ -1,20 +1,20 @@
 import { inflateObject } from '@helpers/objects.helpers';
 import {
-    CredentialInstance,
     Profile,
-    ProfileRelationships,
     ConsentFlowTerms,
     ConsentFlowTransaction,
     Boost,
     Credential,
     ConsentFlowContract,
+    type CredentialInstance,
+    type ProfileRelationships,
 } from '@models';
-import { ProfileType } from 'types/profile';
+import type { ProfileType } from 'types/profile';
 import { BindParam, QueryBuilder } from 'neogma';
 import { convertQueryResultToPropertiesObjectArray } from '@helpers/neo4j.helpers';
-import { CredentialType } from 'types/credential';
-import { BoostType } from 'types/boost';
-import { DbContractType, DbTermsType, DbTransactionType } from 'types/consentflowcontract';
+import type { CredentialType } from 'types/credential';
+import type { BoostType } from 'types/boost';
+import type { DbContractType, DbTermsType, DbTransactionType } from 'types/consentflowcontract';
 
 export const getCredentialSentToProfile = async (
     id: string,

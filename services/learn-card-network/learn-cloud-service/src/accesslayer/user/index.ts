@@ -1,6 +1,6 @@
 import mongodb from '@mongo';
 
-import { USER_COLLECTION, MongoUserType } from '@models';
+import { USER_COLLECTION, type MongoUserType } from '@models';
 
 export const getUserCollection = () => {
     return mongodb.collection<MongoUserType>(USER_COLLECTION);

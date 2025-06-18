@@ -1,7 +1,7 @@
 import { deleteDidDocForProfile, deleteDidDocForProfileManager } from '@cache/did-docs';
-import { BoostPermissions } from '@learncard/types';
-import { BoostInstance, ProfileManager } from '@models';
-import { ProfileType } from 'types/profile';
+import type { BoostPermissions } from '@learncard/types';
+import { ProfileManager, type BoostInstance } from '@models';
+import type { ProfileType } from 'types/profile';
 
 export const updateBoostPermissions = async (
     profile: ProfileType,

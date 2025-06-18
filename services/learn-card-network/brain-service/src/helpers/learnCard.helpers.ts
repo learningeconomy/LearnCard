@@ -1,15 +1,15 @@
 import { readFile } from 'node:fs/promises';
 
-import { generateLearnCard, LearnCard } from '@learncard/core';
-import { CryptoPlugin, CryptoPluginType } from '@learncard/crypto-plugin';
-import { DIDKitPlugin, DidMethod, getDidKitPlugin } from '@learncard/didkit-plugin';
-import { DidKeyPlugin, getDidKeyPlugin } from '@learncard/didkey-plugin';
-import { EncryptionPluginType, getEncryptionPlugin } from '@learncard/encryption-plugin';
-import { VCPlugin, getVCPlugin } from '@learncard/vc-plugin';
-import { VCTemplatePlugin, getVCTemplatesPlugin } from '@learncard/vc-templates-plugin';
-import { ExpirationPlugin, expirationPlugin } from '@learncard/expiration-plugin';
-import { LearnCardPlugin, getLearnCardPlugin } from '@learncard/learn-card-plugin';
-import { getDidWebPlugin, DidWebPlugin } from '@learncard/did-web-plugin';
+import { generateLearnCard, type LearnCard } from '@learncard/core';
+import { CryptoPlugin, type CryptoPluginType } from '@learncard/crypto-plugin';
+import { getDidKitPlugin, type DIDKitPlugin, type DidMethod } from '@learncard/didkit-plugin';
+import { getDidKeyPlugin, type DidKeyPlugin } from '@learncard/didkey-plugin';
+import { getEncryptionPlugin, type EncryptionPluginType } from '@learncard/encryption-plugin';
+import { getVCPlugin, type VCPlugin } from '@learncard/vc-plugin';
+import { getVCTemplatesPlugin, type VCTemplatePlugin } from '@learncard/vc-templates-plugin';
+import { expirationPlugin, type ExpirationPlugin } from '@learncard/expiration-plugin';
+import { getLearnCardPlugin, type LearnCardPlugin } from '@learncard/learn-card-plugin';
+import { getDidWebPlugin, type DidWebPlugin } from '@learncard/did-web-plugin';
 
 // Initialize didkit lazily to avoid top-level await issues
 let didkitPromise: Promise<Buffer> | null = null;

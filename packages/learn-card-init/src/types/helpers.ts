@@ -1,5 +1,5 @@
-import { LearnCardConfig } from './LearnCard';
-import { LearnCard } from '@learncard/core';
+import type { LearnCardConfig } from './LearnCard';
+import type { LearnCard } from '@learncard/core';
 
 export type InitFunction<
     Args extends Record<string, any> = Record<string, any>,

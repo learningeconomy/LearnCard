@@ -1,7 +1,7 @@
 import { z } from 'zod';
-import { VP, LCNProfile } from '@learncard/types';
-import { Plugin } from '@learncard/core';
-import { ProofOptions } from '@learncard/didkit-plugin';
+import type { VP, LCNProfile } from '@learncard/types';
+import type { Plugin } from '@learncard/core';
+import type { ProofOptions } from '@learncard/didkit-plugin';
 
 export const SigningAuthorityValidator = z.object({
     _id: z.string().optional(),

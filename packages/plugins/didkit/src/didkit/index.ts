@@ -1,4 +1,4 @@
-import _init, { InitInput } from './pkg/didkit_wasm';
+import _init, { type InitInput } from './pkg/didkit_wasm';
 
 export * from './pkg/didkit_wasm';
 

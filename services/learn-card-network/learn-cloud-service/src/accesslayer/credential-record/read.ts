@@ -1,12 +1,12 @@
 import { getAllDidsForDid, getUserForDid } from '@accesslayer/user/read';
 import { CredentialRecords } from '.';
-import { MongoCredentialRecordType } from '@models';
-import { Filter } from 'mongodb';
+import type { MongoCredentialRecordType } from '@models';
+import type { Filter } from 'mongodb';
 
 export const getCredentialRecordsForDid = async (
     did: string,
     query: Filter<MongoCredentialRecordType> = {},
-    sort: 'newestFirst' | 'oldestFirst',
+    sort: 'newestFirst' | 'oldestFirst' = 'newestFirst',
     cursor?: string,
     limit = 25,
     includeAssociatedDids = true
@@ -33,8 +33,8 @@ export const getCredentialRecordsForDid = async (
             .sort({ cursor: sort === 'newestFirst' ? -1 : 1 })
             .limit(limit)
             .toArray();
-    } catch (e) {
-        console.error(e);
+    } catch (error) {
+        console.error(error);
         return [];
     }
 };
@@ -60,8 +60,8 @@ export const countCredentialRecordsForDid = async (
             ...query,
             did: { $in: dids },
         });
-    } catch (e) {
-        console.error(e);
+    } catch (error) {
+        console.error(error);
         return 0;
     }
 };

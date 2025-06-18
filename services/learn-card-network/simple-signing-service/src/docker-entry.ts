@@ -3,8 +3,8 @@ import path from 'path';
 import Fastify from 'fastify';
 import fastifyStatic from '@fastify/static';
 import fastifyCors from '@fastify/cors';
-import { fastifyTRPCPlugin, FastifyTRPCPluginOptions } from '@trpc/server/adapters/fastify';
-import { fastifyTRPCOpenApiPlugin, CreateOpenApiFastifyPluginOptions } from 'trpc-openapi';
+import { fastifyTRPCPlugin, type FastifyTRPCPluginOptions } from '@trpc/server/adapters/fastify';
+import { fastifyTRPCOpenApiPlugin, type CreateOpenApiFastifyPluginOptions } from 'trpc-openapi';
 import { appRouter, type AppRouter, createContext } from './app';
 import { openApiDocument } from './openapi';
 import { didFastifyPlugin } from './dids';
@@ -45,10 +45,10 @@ server.register(didFastifyPlugin);
 
 (async () => {
     try {
-        console.log('Server starting on port ', process.env.PORT || 3000);
+        console.log('Server starting on port', process.env.PORT || 3000);
         await server.listen({ host: '0.0.0.0', port: Number(process.env.PORT || 3000) });
-    } catch (err) {
-        console.error(err);
+    } catch (error) {
+        console.error(error);
         process.exit(1);
     }
 })();

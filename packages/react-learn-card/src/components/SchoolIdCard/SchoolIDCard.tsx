@@ -2,7 +2,7 @@ import React from 'react';
 
 import Barcode from 'react-barcode';
 
-import { SchoolIDCardProps } from './types';
+import type { SchoolIDCardProps } from './types';
 
 export const SchoolIDCard: React.FC<SchoolIDCardProps> = ({
     userImage,
@@ -49,7 +49,7 @@ export const SchoolIDCard: React.FC<SchoolIDCardProps> = ({
                     {issueeImageEl}
                     <div className="h-full flex items-start justify-center flex-col mt-7">
                         {userName && <p className="text-sm text-black font-light">{userName}</p>}
-                        {textEl && textEl}
+                        {textEl}
                     </div>
                 </div>
 

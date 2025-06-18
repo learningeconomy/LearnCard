@@ -1,4 +1,4 @@
-import { VC, CredentialRecord } from '@learncard/types';
+import type { VC, CredentialRecord } from '@learncard/types';
 
 export const persistenceMocks = () => {
     let credentials: CredentialRecord[] = [];

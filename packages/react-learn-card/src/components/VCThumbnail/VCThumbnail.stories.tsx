@@ -1,8 +1,8 @@
 import React from 'react';
-import { Story, Meta } from '@storybook/react';
+import type { Story, Meta } from '@storybook/react';
 
 import VCThumbnail from './VCThumbnail';
-import { VCThumbnailProps } from './types';
+import type { VCThumbnailProps } from './types';
 
 export default {
     title: 'VCThumbnail',

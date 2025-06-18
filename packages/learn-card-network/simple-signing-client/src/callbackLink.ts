@@ -1,5 +1,5 @@
-import { TRPCLink } from '@trpc/client';
-import { observable, Unsubscribable } from '@trpc/server/observable';
+import type { TRPCLink } from '@trpc/client';
+import { observable, type Unsubscribable } from '@trpc/server/observable';
 import type { AppRouter } from '@learncard/simple-signing-service';
 
 export const callbackLink = (callback: () => Promise<void>): TRPCLink<AppRouter> => {

@@ -1,9 +1,9 @@
-import { ModelAliases } from '@glazed/types';
+import type { ModelAliases } from '@glazed/types';
 import { z } from 'zod';
-import { StreamID } from '@ceramicnetwork/streamid';
-import { Plugin } from '@learncard/core';
-import { VC, CredentialRecord, CredentialRecordValidator } from '@learncard/types';
-import { CeramicClient } from '@ceramicnetwork/http-client';
+import type { StreamID } from '@ceramicnetwork/streamid';
+import type { Plugin } from '@learncard/core';
+import { CredentialRecordValidator, type VC, type CredentialRecord } from '@learncard/types';
+import type { CeramicClient } from '@ceramicnetwork/http-client';
 
 /** @group IDXPlugin */
 export type IDXIndexObject<
@@ -47,7 +47,7 @@ export type IDXPluginDependentMethods = {
 
 /** @group IDXPlugin */
 export type CredentialsList<Metadata extends Record<string, any> = Record<never, never>> = {
-    credentials: Array<CredentialRecord<Metadata>>;
+    credentials: CredentialRecord<Metadata>[];
 };
 
 /** @group IDXPlugin */
@@ -77,7 +77,7 @@ export const BackwardsCompatIDXCredentialValidator: z.ZodType<BackwardsCompatIDX
 export type BackwardsCompatCredentialsList<
     Metadata extends Record<string, any> = Record<never, never>
 > = {
-    credentials: Array<CredentialRecord<Metadata> | BackwardsCompatIDXCredential<Metadata>>;
+    credentials: (CredentialRecord<Metadata> | BackwardsCompatIDXCredential<Metadata>)[];
 };
 
 /** @group IDXPlugin */

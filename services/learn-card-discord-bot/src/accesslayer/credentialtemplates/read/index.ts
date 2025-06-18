@@ -1,5 +1,5 @@
 import { PREFIX } from '../create/index';
-import { Context, CredentialTemplate } from 'src/types/index';
+import type { Context, CredentialTemplate } from 'src/types/index';
 
 export const getCredentialTemplates = async (
     context: Context,
@@ -22,5 +22,5 @@ export const getCredentialTemplateById = async (
     scope?: string
 ): Promise<CredentialTemplate> => {
     const templateJSON = await context.cache.get(`${PREFIX}${scope || 'default'}:${id}`);
-    return templateJSON ? JSON.parse(templateJSON) : null;
+    return templateJSON && JSON.parse(templateJSON);
 };

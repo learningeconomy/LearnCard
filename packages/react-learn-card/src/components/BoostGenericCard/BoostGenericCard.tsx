@@ -1,5 +1,5 @@
 import React from 'react';
-import { BoostGenericCardProps, WalletCategoryTypes } from '../../types';
+import { WalletCategoryTypes, type BoostGenericCardProps } from '../../types';
 import { TYPE_TO_IMG_SRC, TYPE_TO_WALLET_DARK_COLOR } from '../../constants';
 import { CircleCheckButton } from '../CircleCheckButton';
 import ThreeDots from '../../assets/images/DotsThreeOutline.svg';
@@ -34,7 +34,6 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
         : 'bg-grayscale-50';
     const defaultThumbClass = `small-boost-card-thumb flex h-[110px] w-[110px] my-[10px] mx-auto ${thumbClass} overflow-hidden flex-col justify-center items-center rounded-full ${customThumbClass}`;
     const imgSrc = thumbImgSrc?.trim() !== '' ? thumbImgSrc : TYPE_TO_IMG_SRC[type];
-    const headerBgColor = TYPE_TO_WALLET_DARK_COLOR[type] ? `bg-${TYPE_TO_WALLET_DARK_COLOR[type]}` : 'bg-grayscale-900';
     const checkBtnClass = checkStatus ? 'generic-vc-card checked' : 'generic-vc-card unchecked';
     const defaultHeaderClass = `flex generic-card-title w-full justify-center ${customHeaderClass}`;
 
@@ -73,7 +72,7 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
                 className="boost-small-card inner-click-container z-10"
                 onClick={handleInnerClick}
             >
-                {customThumbComponent && customThumbComponent}
+                {customThumbComponent}
                 {!customThumbComponent && (
                     <section className={defaultThumbClass}>
                         {thumbImgSrc && thumbImgSrc?.trim() !== '' && (
@@ -100,30 +99,30 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
                         </div>
                     )}
 
-                    {customTitle && customTitle}
+                    {customTitle}
 
-                    {customIssuerName && customIssuerName}
+                    {customIssuerName}
                     {!customIssuerName && (
                         <span className="flex items-center justify-center small-generic-boost-issuer-name line-clamp-1 text-[12px] text-grayscale-700 px-[6px]">
                             by <span className="font-bold whitespace-pre"> {issuerName}</span>
                         </span>
                     )}
 
-                    {customDateDisplay && customDateDisplay}
+                    {customDateDisplay}
                     {!customDateDisplay && (
                         <p className="small-generic-boost-date-display line-clamp-1 text-[12px] text-grayscale-700  px-[7px]">
                             {dateDisplay}
                         </p>
                     )}
                     <div className="boost-verifier-badge-display">{verifierBadge}</div>
-                    {isInSkillsModal && 
+                    {isInSkillsModal && (
                         <CertDisplayCardSkillsCount
                             skills={credential?.skills ?? []}
                             onClick={handleInnerClick}
                             className={'boost-generic'}
                             isInSkillsModal={isInSkillsModal}
                         />
-                    }
+                    )}
                 </section>
 
                 {showChecked && (

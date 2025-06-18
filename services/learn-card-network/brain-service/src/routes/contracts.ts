@@ -22,10 +22,10 @@ import {
     PaginatedContractCredentialsValidator,
     VCValidator,
     JWEValidator,
-    UnsignedVC,
-    VC,
-    JWE,
     AutoBoostConfigValidator,
+    type UnsignedVC,
+    type VC,
+    type JWE,
 } from '@learncard/types';
 import { createConsentFlowContract } from '@accesslayer/consentflowcontract/create';
 import {
@@ -48,7 +48,7 @@ import { getContractByUri } from '@accesslayer/consentflowcontract/read';
 import { deleteStorageForUri } from '@cache/storage';
 import { deleteConsentFlowContract } from '@accesslayer/consentflowcontract/delete';
 import { areTermsValid } from '@helpers/contract.helpers';
-import { updateDidForProfile } from '@helpers/did.helpers';
+import { updateDidForProfile, getDidWeb } from '@helpers/did.helpers';
 import {
     syncCredentialsToContract,
     updateTerms,
@@ -59,7 +59,7 @@ import {
     setAutoBoostForContract,
     setCreatorForContract,
 } from '@accesslayer/consentflowcontract/relationships/create';
-import { getProfileByDid } from '@accesslayer/profile/read';
+import { getProfileByDid, getProfilesByProfileIds } from '@accesslayer/profile/read';
 import { sendBoost, isDraftBoost } from '@helpers/boost.helpers';
 import { isRelationshipBlocked } from '@helpers/connection.helpers';
 import { getBoostByUri } from '@accesslayer/boost/read';
@@ -70,9 +70,7 @@ import {
 } from '@accesslayer/credential/relationships/read';
 import { getCredentialUri } from '@helpers/credential.helpers';
 import { getSigningAuthorityForUserByName } from '@accesslayer/signing-authority/relationships/read';
-import { getDidWeb } from '@helpers/did.helpers';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
-import { getProfilesByProfileIds } from '@accesslayer/profile/read';
 import { resolveAndValidateDeniedWriters } from '@helpers/consentflow.helpers';
 import {
     addAutoBoostsToContractDb,
@@ -792,8 +790,8 @@ export const contractsRouter = t.router({
                     };
                 }
                 if (unsignedVc?.type?.includes('BoostCredential')) unsignedVc.boostId = boostUri;
-            } catch (e) {
-                console.error('Failed to parse boost', e);
+            } catch (error) {
+                console.error('Failed to parse boost', error);
                 throw new TRPCError({
                     code: 'INTERNAL_SERVER_ERROR',
                     message: 'Failed to parse boost',
@@ -822,8 +820,8 @@ export const contractsRouter = t.router({
                     sa,
                     ctx.domain
                 );
-            } catch (e) {
-                console.error('Failed to issue VC with signing authority', e);
+            } catch (error) {
+                console.error('Failed to issue VC with signing authority', error);
                 throw new TRPCError({
                     code: 'INTERNAL_SERVER_ERROR',
                     message: 'Could not issue VC with signing authority',

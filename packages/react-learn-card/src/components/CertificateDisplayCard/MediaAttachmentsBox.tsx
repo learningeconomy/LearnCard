@@ -6,9 +6,9 @@ import LinkIcon from '../svgs/LinkIcon';
 import VideoIcon from '../svgs/VideoIcon';
 import GenericDocumentIcon from '../svgs/GenericDocumentIcon';
 
-import { Attachment, MediaMetadata, VideoMetadata } from '../../types';
+import type { Attachment, MediaMetadata, VideoMetadata } from '../../types';
 import { getBaseUrl } from '../../helpers/url.helpers';
-import { Lightbox, LightboxItem } from '../Lightbox';
+import { Lightbox, type LightboxItem } from '../Lightbox';
 
 type MediaAttachmentsBoxProps = {
     attachments: Attachment[];
@@ -177,15 +177,15 @@ const MediaAttachmentsBox: React.FC<MediaAttachmentsBoxProps> = ({
                         if (media.type === 'video') {
                             const metadata = videoMetadata[media.url];
                             title = (title || metadata?.title) ?? '';
-                            const baseUrl = getBaseUrl(media.url);
 
                             innerContent = (
                                 <div
                                     className="bg-cover bg-no-repeat bg-center relative font-poppins text-white text-[12px] font-[400] leading-[17px] flex flex-col justify-end items-start p-[10px] text-left bg-rose-600 rounded-[15px] h-full"
                                     style={{
                                         backgroundImage: metadata?.imageUrl
-                                            ? `linear-gradient(180deg, rgba(0, 0, 0, 0) 44.20%, rgba(0, 0, 0, 0.6) 69%), url(${metadata?.imageUrl ?? ''
-                                            })`
+                                            ? `linear-gradient(180deg, rgba(0, 0, 0, 0) 44.20%, rgba(0, 0, 0, 0.6) 69%), url(${
+                                                  metadata?.imageUrl ?? ''
+                                              })`
                                             : undefined,
                                     }}
                                 >

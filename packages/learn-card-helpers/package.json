@@ -10,8 +10,7 @@
   "scripts": {
     "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.js && dts-bundle-generator src/index.ts -o dist/helpers.d.ts --no-check",
     "start": "aqu watch",
-    "lint": "aqu lint",
-    "lint:fix": "aqu lint --fix",
+    "lint": "oxlint .",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --silent --ci --coverage --coverageReporters=\"text\" --coverageReporters=\"text-summary\""

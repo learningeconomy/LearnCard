@@ -1,8 +1,8 @@
 import { QueryBuilder, BindParam } from 'neogma';
 import { flattenObject } from '@helpers/objects.helpers';
 import { DidMetadata } from '@models';
-import { DidMetadataType } from 'types/did-metadata';
-import { DidDocument } from '@learncard/types';
+import type { DidMetadataType } from 'types/did-metadata';
+import type { DidDocument } from '@learncard/types';
 import { getProfilesAssociatedWithMetadata } from './relationships/read';
 import { deleteDidDocForProfile } from '@cache/did-docs';
 

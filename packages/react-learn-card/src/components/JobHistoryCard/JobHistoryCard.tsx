@@ -1,5 +1,5 @@
 import React from 'react';
-import { JobHistoryCardProps } from '../../types';
+import type { JobHistoryCardProps } from '../../types';
 import GenericArrow from '../svgs/GenericArrow';
 
 export const JobHistoryCard: React.FC<JobHistoryCardProps> = ({

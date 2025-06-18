@@ -15,7 +15,7 @@ import { getDidWeb, getManagedDidWeb, updateDidForProfile } from '@helpers/did.h
 import { createProfileManager } from '@accesslayer/profile-manager/create';
 import { checkIfProfileExists } from '@accesslayer/profile/read';
 
-import { ProfileManagerType, ProfileManagerValidator } from 'types/profile-manager';
+import { ProfileManagerValidator, type ProfileManagerType } from 'types/profile-manager';
 import { getLearnCard } from '@helpers/learnCard.helpers';
 import { createProfile } from '@accesslayer/profile/create';
 import { createManagesRelationship } from '@accesslayer/profile-manager/relationships/create';

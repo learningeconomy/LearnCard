@@ -1,5 +1,5 @@
 import { TRPCError } from '@trpc/server';
-import { UnsignedVC, VC, JWE, LCNNotificationTypeEnumValidator } from '@learncard/types';
+import { LCNNotificationTypeEnumValidator, type UnsignedVC, type VC, type JWE } from '@learncard/types';
 
 import { storeCredential } from '@accesslayer/credential/create';
 import {
@@ -10,7 +10,7 @@ import {
 import { getCredentialSentToProfile, getCredentialReceivedByProfile } from '@accesslayer/credential/relationships/read';
 import { constructUri, getUriParts } from './uri.helpers';
 import { addNotificationToQueue } from './notifications.helpers';
-import { ProfileType } from 'types/profile';
+import type { ProfileType } from 'types/profile';
 import { processClaimHooks } from './claim-hooks.helpers';
 
 export const getCredentialUri = (id: string, domain: string): string =>

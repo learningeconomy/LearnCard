@@ -5,10 +5,10 @@ import {
     getMatchQueryWhere,
 } from '@helpers/neo4j.helpers';
 import { Boost, Profile, ProfileManager } from '@models';
-import { FlatProfileType, ProfileType } from 'types/profile';
+import type { FlatProfileType, ProfileType } from 'types/profile';
 import { inflateObject } from '@helpers/objects.helpers';
-import { LCNProfileQuery } from '@learncard/types';
-import { ProfileManagerType } from 'types/profile-manager';
+import type { LCNProfileQuery } from '@learncard/types';
+import type { ProfileManagerType } from 'types/profile-manager';
 
 export const getManagedServiceProfiles = async (
     profileId: string,

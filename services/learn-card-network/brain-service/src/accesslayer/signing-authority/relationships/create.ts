@@ -1,5 +1,5 @@
-import { SigningAuthorityInstance, Profile } from '@models';
-import { ProfileType } from 'types/profile';
+import { Profile, type SigningAuthorityInstance } from '@models';
+import type { ProfileType } from 'types/profile';
 
 export const createUseSigningAuthorityRelationship = async (
     user: ProfileType,

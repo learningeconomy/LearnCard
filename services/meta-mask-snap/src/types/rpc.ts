@@ -9,7 +9,12 @@ import {
     CredentialRecordValidator,
 } from '@learncard/types';
 
-import { getRpcMethod, GetRPCMethodType, getAPIEndpoint, GetAPIEndpointType } from './helpers';
+import {
+    getRpcMethod,
+    getAPIEndpoint,
+    type GetRPCMethodType,
+    type GetAPIEndpointType,
+} from './helpers';
 
 // Endpoint Methods
 

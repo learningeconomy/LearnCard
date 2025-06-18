@@ -1,4 +1,4 @@
-import Fastify, { FastifyPluginAsync } from 'fastify';
+import Fastify, { type FastifyPluginAsync } from 'fastify';
 import fastifyCors from '@fastify/cors';
 import _sodium from 'libsodium-wrappers';
 import { base64url } from 'multiformats/bases/base64';
@@ -9,7 +9,7 @@ import { getDidDocForProfile, setDidDocForProfile } from '@cache/did-docs';
 
 const encodeKey = (key: Uint8Array) => {
     const bytes = new Uint8Array(key.length + 2);
-    bytes[0] = 0xec;
+    bytes[0] = 0xEC;
     bytes[1] = 0x01;
     bytes.set(key, 2);
     return base58btc.encode(bytes);

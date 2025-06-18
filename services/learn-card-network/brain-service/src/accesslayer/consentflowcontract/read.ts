@@ -2,7 +2,7 @@ import { QueryBuilder } from 'neogma';
 
 import { getIdFromUri } from '@helpers/uri.helpers';
 import { ConsentFlowContract } from '@models';
-import { DbContractType } from 'types/consentflowcontract';
+import type { DbContractType } from 'types/consentflowcontract';
 import { inflateObject } from '@helpers/objects.helpers';
 
 export const getContractById = async (id: string): Promise<DbContractType | null> => {

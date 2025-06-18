@@ -1,7 +1,7 @@
 import { loadOnce } from 'credential-handler-polyfill';
 import { installHandler, activateHandler, receiveCredentialEvent } from 'web-credential-handler';
 
-import { CHAPIPlugin } from './types';
+import type { CHAPIPlugin } from './types';
 
 /**
  * @group Plugins
@@ -90,8 +90,7 @@ export const getCHAPIPlugin = async (): Promise<CHAPIPlugin> => {
 
                 // If sending multiple credentials through CHAPI
                 if (Array.isArray(credential)) {
-                    for (let x = 0; x < credential.length; x++) {
-                        const cred = credential[x];
+                    for (const cred of credential) {
                         if (!Array.isArray(cred.credentialSubject)) {
                             cred.credentialSubject.id = subject;
                         }

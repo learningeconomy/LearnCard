@@ -1,11 +1,11 @@
-import http from 'node:http';
+import type http from 'node:http';
 
 import { initTRPC, TRPCError } from '@trpc/server';
 import type { APIGatewayProxyEventV2 } from 'aws-lambda';
-import { CreateAWSLambdaContextOptions } from '@trpc/server/adapters/aws-lambda';
-import { NodeHTTPCreateContextFnOptions } from '@trpc/server/adapters/node-http';
-import { CreateFastifyContextOptions } from '@trpc/server/adapters/fastify';
-import { OpenApiMeta } from 'trpc-to-openapi';
+import type { CreateAWSLambdaContextOptions } from '@trpc/server/adapters/aws-lambda';
+import type { NodeHTTPCreateContextFnOptions } from '@trpc/server/adapters/node-http';
+import type { CreateFastifyContextOptions } from '@trpc/server/adapters/fastify';
+import type { OpenApiMeta } from 'trpc-to-openapi';
 import jwtDecode from 'jwt-decode';
 import * as Sentry from '@sentry/serverless';
 import { AUTH_GRANT_AUDIENCE_DOMAIN_PREFIX } from '@learncard/types';
@@ -15,7 +15,7 @@ import { RegExpTransformer } from '@learncard/helpers';
 import { getProfileByDid } from '@accesslayer/profile/read';
 import { getEmptyLearnCard } from '@helpers/learnCard.helpers';
 import { invalidateChallengeForDid, isChallengeValidForDid } from '@cache/challenges';
-import { ProfileType } from 'types/profile';
+import type { ProfileType } from 'types/profile';
 import { getProfileManagerById } from '@accesslayer/profile-manager/read';
 import { isAuthGrantChallengeValidForDID } from '@accesslayer/auth-grant/read';
 import { AUTH_GRANT_FULL_ACCESS_SCOPE, AUTH_GRANT_NO_ACCESS_SCOPE } from 'src/constants/auth-grant';

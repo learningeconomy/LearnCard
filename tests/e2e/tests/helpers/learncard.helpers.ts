@@ -1,8 +1,8 @@
 import { readFile } from 'fs/promises';
 
-import { AddPlugin } from '@learncard/core';
-import { initLearnCard, NetworkLearnCardFromSeed } from '@learncard/init';
-import { getSimpleSigningPlugin, SimpleSigningPlugin } from '@learncard/simple-signing-plugin';
+import type { AddPlugin } from '@learncard/core';
+import { initLearnCard, type NetworkLearnCardFromSeed } from '@learncard/init';
+import { getSimpleSigningPlugin, type SimpleSigningPlugin } from '@learncard/simple-signing-plugin';
 
 const didkit = readFile(
     require.resolve('@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm')

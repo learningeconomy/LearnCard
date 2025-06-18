@@ -1,9 +1,9 @@
 import React from 'react';
-import { Story, Meta } from '@storybook/react';
+import type { Story, Meta } from '@storybook/react';
 
 import QRCodeCard from './QRCodeCard';
 
-import { QRCodeCardProps } from './types';
+import type { QRCodeCardProps } from './types';
 
 export default {
     title: 'QRCodeCard',

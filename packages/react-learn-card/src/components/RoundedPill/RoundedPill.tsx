@@ -1,6 +1,6 @@
 import React from 'react';
 import { TYPE_TO_ICON } from '../../constants/icons';
-import { RoundedPillProps } from '../../types';
+import type { RoundedPillProps } from '../../types';
 
 const TYPE_TO_BG_COLOR_CLASS: any = {
     skill: 'indigo-50',

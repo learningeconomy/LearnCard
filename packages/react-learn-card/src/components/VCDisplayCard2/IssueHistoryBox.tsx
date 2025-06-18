@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import DefaultFace from '../../assets/images/default-face.jpeg';
 
-import { IssueHistory } from '../../types';
+import type { IssueHistory } from '../../types';
 
 type SkillsBoxProps = {
     issueHistory: IssueHistory[];
@@ -40,7 +40,7 @@ const IssueHistoryBox: React.FC<SkillsBoxProps> = ({
     return (
         <div className="bg-white flex flex-col items-start gap-[10px] rounded-[20px] shadow-bottom px-[15px] py-[20px] w-full relative">
             <h3 className="text-[20px] leading-[20px] text-grayscale-900">Issue Log</h3>
-            {!customIssueHistoryComponent ? renderIssueHistory : customIssueHistoryComponent}
+            {customIssueHistoryComponent ?? renderIssueHistory}
         </div>
     );
 };

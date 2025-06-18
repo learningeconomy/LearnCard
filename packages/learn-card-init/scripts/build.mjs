@@ -1,22 +1,8 @@
 import path from 'path';
-import fs from 'fs/promises';
 
 import esbuild from 'esbuild';
 import { copy } from 'esbuild-plugin-copy';
-import { NodeResolvePlugin } from '@esbuild-plugins/node-resolve';
 import rimraf from 'rimraf';
-
-const nodeResolveExternal = NodeResolvePlugin({
-    extensions: ['.ts', '.js', '.tsx', '.jsx', '.cjs', '.mjs'],
-    onResolved: resolved => {
-        if (resolved.includes('node_modules')) {
-            return {
-                external: true,
-            };
-        }
-        return resolved;
-    },
-});
 
 const buildOptions = {
     // target: 'es6',
@@ -102,7 +88,7 @@ await Promise.all(
     })
 );
 
-await Promise.all(configurations.map(config => esbuild.build(config))).catch(err => {
+await Promise.all(configurations.map(config => esbuild.build(config))).catch(() => {
     console.error('❌ Build failed');
     process.exit(1);
 });

@@ -6,7 +6,7 @@ import AddAwardLight from '../../assets/images/addawardlight.svg';
 import ThreeDots from '../../assets/images/DotsThreeOutline.svg';
 import { CircleCheckButton } from '../CircleCheckButton';
 
-import { BoostSmallCardProps, WalletCategoryTypes } from '../../types';
+import { WalletCategoryTypes, type BoostSmallCardProps } from '../../types';
 import { TYPE_TO_IMG_SRC, TYPE_TO_WALLET_DARK_COLOR } from '../../constants';
 import { getDarkBGColor } from '../../helpers/color.helpers';
 
@@ -94,7 +94,7 @@ export const BoostSmallCard: React.FC<BoostSmallCardProps> = ({
             )}
 
             <div className={innerClickContainerClass} onClick={handleInnerClick}>
-                {customThumbComponent && customThumbComponent}
+                {customThumbComponent}
                 {!customThumbComponent && (
                     <section className={defaultThumbClass}>
                         {thumbImgSrc && thumbImgSrc?.trim() !== '' && (
@@ -113,7 +113,7 @@ export const BoostSmallCard: React.FC<BoostSmallCardProps> = ({
                     </section>
                 )}
 
-                {customTitle && customTitle}
+                {customTitle}
                 {!customTitle && (
                     <section className={defaultHeaderClass}>
                         <p className="relative z-[100] small-boost-title text-[16px] leading-[130%] p-[0px] font-medium text-center line-clamp-2">
@@ -123,7 +123,7 @@ export const BoostSmallCard: React.FC<BoostSmallCardProps> = ({
                 )}
 
                 <section className={defaultBodyClass}>
-                    {customBodyComponent && customBodyComponent}
+                    {customBodyComponent}
                     {!customBodyComponent &&
                         issueHistory &&
                         issueHistory?.length > 0 &&
@@ -137,11 +137,11 @@ export const BoostSmallCard: React.FC<BoostSmallCardProps> = ({
             </div>
 
             <section className="small-boost-card-footer flex justify-center items-center absolute bottom-[15px] w-full">
-                {customButtonComponent && customButtonComponent}
+                {customButtonComponent}
 
                 {!customButtonComponent && (
                     <div className="flex w-full flex-col items-center justify-center">
-                        {customDraftComponent && customDraftComponent}
+                        {customDraftComponent}
                         <div onClick={buttonOnClick} className={defaultButtonClass}>
                             <img className="h-[25px] mr-[7px] text-" src={AddAwardLight} />
                             <span className="font-mouse text-[25px] tracking-wider">BOOST</span>

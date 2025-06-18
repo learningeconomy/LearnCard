@@ -1,4 +1,4 @@
-import { EncryptedCredentialRecord } from '@learncard/types';
+import type { EncryptedCredentialRecord } from '@learncard/types';
 
 export const testRecordA: EncryptedCredentialRecord = {
     encryptedRecord: {

@@ -1,6 +1,5 @@
 import { randomUUID } from 'crypto';
-import { IssuerConfig } from 'src/types/index';
-import { Context } from 'src/types/index';
+import type { Context, IssuerConfig } from 'src/types/index';
 
 export const PREFIX = 'issuer:';
 

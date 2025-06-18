@@ -1,24 +1,24 @@
-import { LearnCard } from '@learncard/core';
-import { InitInput } from '@learncard/types';
+import type { LearnCard } from '@learncard/core';
+import type { InitInput } from '@learncard/types';
 
-import { CryptoPluginType } from '@learncard/crypto-plugin';
-import { DIDKitPlugin, DidMethod } from '@learncard/didkit-plugin';
-import { DidKeyPlugin } from '@learncard/didkey-plugin';
-import { DynamicLoaderPluginType } from '@learncard/dynamic-loader-plugin';
-import { VCPlugin } from '@learncard/vc-plugin';
-import { VCTemplatePlugin } from '@learncard/vc-templates-plugin';
-import { LearnCloudPlugin } from '@learncard/learn-cloud-plugin';
-import { ExpirationPlugin } from '@learncard/expiration-plugin';
-import { EthereumPlugin, EthereumConfig } from '@learncard/ethereum-plugin';
-import { VpqrPlugin } from '@learncard/vpqr-plugin';
-import { CHAPIPlugin } from '@learncard/chapi-plugin';
-import { VCAPIPlugin } from '@learncard/vc-api-plugin';
-import { LearnCardPlugin } from '@learncard/learn-card-plugin';
-import { VerifyBoostPlugin, LearnCardNetworkPlugin } from '@learncard/network-plugin';
-import { DidWebPlugin } from '@learncard/did-web-plugin';
-import { EncryptionPluginType } from '@learncard/encryption-plugin';
+import type { CryptoPluginType } from '@learncard/crypto-plugin';
+import type { DIDKitPlugin, DidMethod } from '@learncard/didkit-plugin';
+import type { DidKeyPlugin } from '@learncard/didkey-plugin';
+import type { DynamicLoaderPluginType } from '@learncard/dynamic-loader-plugin';
+import type { VCPlugin } from '@learncard/vc-plugin';
+import type { VCTemplatePlugin } from '@learncard/vc-templates-plugin';
+import type { LearnCloudPlugin } from '@learncard/learn-cloud-plugin';
+import type { ExpirationPlugin } from '@learncard/expiration-plugin';
+import type { EthereumPlugin, EthereumConfig } from '@learncard/ethereum-plugin';
+import type { VpqrPlugin } from '@learncard/vpqr-plugin';
+import type { CHAPIPlugin } from '@learncard/chapi-plugin';
+import type { VCAPIPlugin } from '@learncard/vc-api-plugin';
+import type { LearnCardPlugin } from '@learncard/learn-card-plugin';
+import type { VerifyBoostPlugin, LearnCardNetworkPlugin } from '@learncard/network-plugin';
+import type { DidWebPlugin } from '@learncard/did-web-plugin';
+import type { EncryptionPluginType } from '@learncard/encryption-plugin';
 
-import { InitFunction, GenericInitFunction } from './helpers';
+import type { InitFunction, GenericInitFunction } from './helpers';
 
 /** @group LearnCard */
 export type LearnCardConfig = {

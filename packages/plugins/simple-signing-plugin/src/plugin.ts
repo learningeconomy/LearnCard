@@ -1,7 +1,7 @@
 import { getClient } from '@learncard/simple-signing-client';
-import { LearnCard } from '@learncard/core';
+import type { LearnCard } from '@learncard/core';
 
-import { SimpleSigningPluginDependentMethods, SimpleSigningPlugin } from './types';
+import type { SimpleSigningPluginDependentMethods, SimpleSigningPlugin } from './types';
 export * from './types';
 
 const getNewClient = async (

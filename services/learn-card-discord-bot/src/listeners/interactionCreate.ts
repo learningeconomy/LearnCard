@@ -1,6 +1,6 @@
-import { BaseCommandInteraction, Client, Interaction, InteractionType } from 'discord.js';
+import { InteractionType, type BaseCommandInteraction, type Interaction } from 'discord.js';
 import { Commands, Modals, MessageComponents } from './../Commands';
-import { Context } from 'src/types/index';
+import type { Context } from 'src/types/index';
 
 export default (context: Context): void => {
     console.log('Initiating interactionCreate listener...');

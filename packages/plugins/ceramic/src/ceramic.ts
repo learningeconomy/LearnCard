@@ -1,26 +1,25 @@
 import _ from 'lodash';
-import { DID, DIDResolutionResult } from 'dids';
+import { DID, type DIDResolutionResult } from 'dids';
 import type { JWE } from 'did-jwt';
 import { toUint8Array } from 'hex-lite';
 import KeyDidResolver from 'key-did-resolver';
 import { Ed25519Provider } from 'key-did-provider-ed25519';
 import { TileLoader } from '@glazed/tile-loader';
 import { CeramicClient } from '@ceramicnetwork/http-client';
-import { CreateOpts } from '@ceramicnetwork/common';
-import { TileDocument, TileMetadataArgs } from '@ceramicnetwork/stream-tile';
-import { LearnCard } from '@learncard/core';
-import { InputMetadata } from '@learncard/didkit-plugin';
-import { VCValidator, VC, VPValidator, VP } from '@learncard/types';
+import type { CreateOpts } from '@ceramicnetwork/common';
+import { TileDocument, type TileMetadataArgs } from '@ceramicnetwork/stream-tile';
+import type { LearnCard } from '@learncard/core';
+import type { InputMetadata } from '@learncard/didkit-plugin';
+import { VCValidator, VPValidator, type VC, type VP } from '@learncard/types';
 
 import { streamIdToCeramicURI } from './helpers';
-import type {
-    CeramicEncryptionParams,
-    CeramicPlugin,
-    CeramicPluginDependentMethods,
-    CeramicArgs,
+import {
+    CeramicURIValidator,
+    type CeramicEncryptionParams,
+    type CeramicPlugin,
+    type CeramicPluginDependentMethods,
+    type CeramicArgs,
 } from './types';
-
-import { CeramicURIValidator } from './types';
 import { DEFAULT_CERAMIC_ARGS } from './defaults';
 
 /**
@@ -107,10 +106,10 @@ export const getCeramicPlugin = async (
         if (content?.ciphertext) {
             try {
                 return await did.decryptDagJWE(content as JWE);
-            } catch (e) {
+            } catch (error) {
                 learnCard.debug?.(
                     'learnCard.read.get.readContentFromCeramic - Could not decrypt credential - DID not authorized.',
-                    e
+                    error
                 );
                 throw new Error('Could not decrypt credential - DID not authorized.');
             }
@@ -161,8 +160,8 @@ export const getCeramicPlugin = async (
                     return await VCValidator.or(VPValidator).parseAsync(
                         await readContentFromCeramic(streamId)
                     );
-                } catch (e) {
-                    _learnCard.debug?.(e);
+                } catch (error) {
+                    _learnCard.debug?.(error);
                     return undefined;
                 }
             },

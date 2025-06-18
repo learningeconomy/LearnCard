@@ -1,4 +1,4 @@
-import { EncryptionPluginType, EncryptionDependentLearnCard } from './types';
+import type { EncryptionPluginType, EncryptionDependentLearnCard } from './types';
 
 export * from './types';
 

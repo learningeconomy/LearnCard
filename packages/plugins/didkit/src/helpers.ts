@@ -1,4 +1,4 @@
-import { LearnCard } from '@learncard/core';
+import type { LearnCard } from '@learncard/core';
 
 export const getContextURIs = (jsonld: Record<string, any>) => {
     const contexts: string[] = [];

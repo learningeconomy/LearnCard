@@ -1,5 +1,5 @@
 import React from 'react';
-import { CourseCardProps } from '../../types';
+import type { CourseCardProps } from '../../types';
 import CourseCardPlaceholder from '../../assets/images/lhplaceholder.png';
 
 import MiniTrophyIcon from '../../assets/images/minitrophy.svg';
@@ -48,7 +48,7 @@ export const CourseCard: React.FC<CourseCardProps> = ({
     semester = 'Fall 2022',
     jobCount = 1,
     achievementCount = 4,
-    thumbSrc,
+    thumbSrc: _thumbSrc,
     hideHeader = false,
     skillCount = 9,
     className,

@@ -1,11 +1,11 @@
-import { ModelFactory, ModelRelatedNodesI, NeogmaInstance } from 'neogma';
+import { ModelFactory, type ModelRelatedNodesI, type NeogmaInstance } from 'neogma';
 
 import { neogma } from '@instance';
 
-import { Profile, ProfileInstance } from './Profile';
-import { Boost, BoostInstance } from './Boost';
-import { ConsentFlowTransaction, ConsentFlowTransactionInstance } from './ConsentFlowTransaction';
-import { CredentialType } from 'types/credential';
+import type { Profile, ProfileInstance } from './Profile';
+import type { Boost, BoostInstance } from './Boost';
+import type { ConsentFlowTransaction, ConsentFlowTransactionInstance } from './ConsentFlowTransaction';
+import type { CredentialType } from 'types/credential';
 
 export type CredentialRelationships = {
     credentialReceived: ModelRelatedNodesI<

@@ -1,6 +1,5 @@
 import { randomUUID } from 'crypto';
-import { DIDAssocation, DIDChallenge } from 'src/types/index';
-import { Context } from 'src/types/index';
+import type { Context, DIDAssocation, DIDChallenge } from 'src/types/index';
 
 export const PREFIX = 'didassociation:';
 export const CHALLENGE_PREFIX = 'didchallenge:';

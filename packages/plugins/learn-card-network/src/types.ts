@@ -1,5 +1,5 @@
 import type { LCNClient } from '@learncard/network-brain-client';
-import {
+import type {
     LCNProfile,
     LCNProfileManager,
     UnsignedVC,
@@ -44,9 +44,9 @@ import {
     AuthGrantType,
     AuthGrantQuery,
 } from '@learncard/types';
-import { Plugin } from '@learncard/core';
-import { ProofOptions } from '@learncard/didkit-plugin';
-import { VerifyExtension } from '@learncard/vc-plugin';
+import type { Plugin } from '@learncard/core';
+import type { ProofOptions } from '@learncard/didkit-plugin';
+import type { VerifyExtension } from '@learncard/vc-plugin';
 
 /** @group LearnCardNetwork Plugin */
 export type LearnCardNetworkPluginDependentMethods = {
@@ -356,7 +356,7 @@ export type LearnCardNetworkPluginMethods = {
 
     addDidMetadata: (metadata: Partial<DidDocument>) => Promise<boolean>;
     getDidMetadata: (id: string) => Promise<Partial<DidDocument> | undefined>;
-    getMyDidMetadata: () => Promise<Array<Partial<DidDocument> & { id: string }>>;
+    getMyDidMetadata: () => Promise<(Partial<DidDocument> & { id: string })[]>;
     updateDidMetadata: (id: string, updates: Partial<DidDocument>) => Promise<boolean>;
     deleteDidMetadata: (id: string) => Promise<boolean>;
 

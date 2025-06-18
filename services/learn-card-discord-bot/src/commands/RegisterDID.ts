@@ -67,7 +67,7 @@ export const RegisterDID: Command = {
             if (pendingVCs?.length > 0) {
                 const successCount = pendingVCs.filter(p => !p.error).length;
                 await interaction.followUp({
-                    content: `**(${successCount}/${pendingVCs.length}) pending credentials successfully sent. ✅** \n You\'re all set!`,
+                    content: `**(${successCount}/${pendingVCs.length}) pending credentials successfully sent. ✅** \n You're all set!`,
                     ephemeral: true,
                 });
             } else {
@@ -78,8 +78,8 @@ export const RegisterDID: Command = {
             }
 
             await deletePendingVcs(context, user.id);
-        } catch (e) {
-            console.error(e);
+        } catch (error) {
+            console.error(error);
             await interaction.reply({
                 content: 'Woops, an error occured. Try that again 🫠.`',
                 ephemeral: true,

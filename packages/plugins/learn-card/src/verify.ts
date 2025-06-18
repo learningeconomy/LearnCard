@@ -1,8 +1,8 @@
-import { VC, VerificationCheck, VerificationItem, VerificationStatusEnum } from '@learncard/types';
+import { VerificationStatusEnum, type VC, type VerificationCheck, type VerificationItem } from '@learncard/types';
 import { format } from 'date-fns';
 
-import { LearnCard } from '@learncard/core';
-import { ProofOptions } from '@learncard/didkit-plugin';
+import type { LearnCard } from '@learncard/core';
+import type { ProofOptions } from '@learncard/didkit-plugin';
 
 const transformErrorCheck = (error: string, _credential: VC): string => {
     const prefix = error.split(' error')[0];

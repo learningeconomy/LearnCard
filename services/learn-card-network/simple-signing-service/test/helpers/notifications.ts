@@ -1,8 +1,8 @@
 import {
     LCNNotificationTypeEnumValidator,
-    LCNNotificationTypeEnum,
-    LCNNotification,
-    LCNProfile,
+    type LCNNotificationTypeEnum,
+    type LCNNotification,
+    type LCNProfile,
 } from '@learncard/types';
 
 export const getTestNotification = (
@@ -22,5 +22,5 @@ export const getTestNotification = (
 };
 
 export const addMinutesToDate = (date: Date, minutes: number): Date => {
-    return new Date(date.getTime() + minutes * 60000);
+    return new Date(date.getTime() + minutes * 60_000);
 };

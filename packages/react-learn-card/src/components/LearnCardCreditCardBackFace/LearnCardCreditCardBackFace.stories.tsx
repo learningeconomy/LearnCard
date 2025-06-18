@@ -1,9 +1,9 @@
 import React from 'react';
-import { Story, Meta } from '@storybook/react';
+import type { Story, Meta } from '@storybook/react';
 
 import LearnCardCreditCardBackFace from './LearnCardCreditCardBackFace';
 
-import { LearnCardCreditCardBackFaceProps } from './types';
+import type { LearnCardCreditCardBackFaceProps } from './types';
 
 export default {
     title: 'LearnCardCreditCardBackFace',

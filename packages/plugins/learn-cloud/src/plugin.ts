@@ -1,17 +1,17 @@
 import { chunk } from 'lodash';
-import { getClient, LearnCloudClient } from '@learncard/learn-cloud-client';
-import { LearnCard } from '@learncard/core';
+import { getClient, type LearnCloudClient } from '@learncard/learn-cloud-client';
+import type { LearnCard } from '@learncard/core';
 import { isEncrypted } from '@learncard/helpers';
 import {
-    CredentialRecord,
-    JWE,
-    PaginatedEncryptedRecordsType,
-    PaginatedEncryptedCredentialRecordsType,
     VCValidator,
     VPValidator,
+    type CredentialRecord,
+    type JWE,
+    type PaginatedEncryptedRecordsType,
+    type PaginatedEncryptedCredentialRecordsType,
 } from '@learncard/types';
 
-import { LearnCloudPluginDependentMethods, LearnCloudPlugin } from './types';
+import type { LearnCloudPluginDependentMethods, LearnCloudPlugin } from './types';
 import {
     generateEncryptedRecord,
     generateEncryptedFieldsArray,
@@ -336,7 +336,7 @@ export const getLearnCloudPlugin = async (
                     const fullUrl = (
                         uriUrl.startsWith('http')
                             ? uriUrl
-                            : `http${uriUrl.includes('http') || uriUrl.includes('localhost') ? '' : 's'
+                            : `http${uriUrl.includes('localhost') ? '' : 's'
                             }://${uriUrl}`
                     ).replaceAll('%3A', ':');
 

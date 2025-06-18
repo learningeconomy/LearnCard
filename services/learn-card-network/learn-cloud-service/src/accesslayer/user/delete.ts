@@ -1,4 +1,4 @@
-import { ClientSession } from 'mongodb';
+import type { ClientSession } from 'mongodb';
 
 import { deleteCachedUsersForDid } from '@cache/user';
 import { Users } from '.';
@@ -11,8 +11,8 @@ export const deleteUserByDid = async (
         await deleteCachedUsersForDid(did);
 
         return (await Users.deleteOne({ did }, { session })).deletedCount;
-    } catch (e) {
-        console.error(e);
+    } catch (error) {
+        console.error(error);
         return false;
     }
 };

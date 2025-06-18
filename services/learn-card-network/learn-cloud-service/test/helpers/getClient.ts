@@ -1,6 +1,6 @@
 import { appRouter } from '../../src/app';
 
-import { getLearnCard, SeedLearnCard } from '@helpers/learnCard.helpers';
+import { getLearnCard, type SeedLearnCard } from '@helpers/learnCard.helpers';
 
 export const getClient = (options?: { did?: string; isChallengeValid?: boolean }) => {
     const { did, isChallengeValid } = options ?? {};

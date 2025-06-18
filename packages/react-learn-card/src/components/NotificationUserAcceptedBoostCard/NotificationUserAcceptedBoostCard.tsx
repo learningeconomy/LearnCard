@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import X from '../../assets/images/X.svg';
-import { NotificationUserAcceptedBoostCardProps } from './types';
+import type { NotificationUserAcceptedBoostCardProps } from './types';
 import { UserNotificationTypeStyles } from '../NotificationUserCard/types';
 
 import { UserNotificationTypeEnum } from '../../constants/notifications';
@@ -19,7 +19,7 @@ export const NotificationUserAcceptedBoostCard: React.FC<
     handleCancelClick,
     isArchived,
 }) => {
-    const [isLoading, setIsLoading] = useState<boolean>(loadingState || false);
+    const [_isLoading, setIsLoading] = useState<boolean>(loadingState);
 
     useEffect(() => {
         setIsLoading(loadingState);

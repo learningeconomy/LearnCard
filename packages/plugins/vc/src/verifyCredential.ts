@@ -1,7 +1,7 @@
-import { VC } from '@learncard/types';
+import type { VC } from '@learncard/types';
 
-import { ProofOptions } from '@learncard/didkit-plugin';
-import { VCDependentLearnCard, VCImplicitLearnCard } from './types';
+import type { ProofOptions } from '@learncard/didkit-plugin';
+import type { VCDependentLearnCard, VCImplicitLearnCard } from './types';
 
 export const verifyCredential = (initLearnCard: VCDependentLearnCard) => {
     return async (

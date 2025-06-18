@@ -1,7 +1,7 @@
 import { BindParam, QueryBuilder } from 'neogma';
 import { AuthGrant, Profile } from '@models';
-import { AuthGrantQuery, AuthGrantType, AuthGrantStatusValidator } from '@learncard/types';
-import { ProfileType } from 'types/profile';
+import { AuthGrantStatusValidator, type AuthGrantQuery, type AuthGrantType } from '@learncard/types';
+import type { ProfileType } from 'types/profile';
 import { inflateObject } from '@helpers/objects.helpers';
 import { getProfileIdFromDid } from '@helpers/did.helpers';
 import {
@@ -36,7 +36,7 @@ export const getAuthGrantsForProfile = async (
         cursor,
         query: matchQuery = {},
     }: { limit: number; cursor?: string; query?: AuthGrantQuery }
-): Promise<Array<AuthGrantType & { created: string }>> => {
+): Promise<(AuthGrantType & { created: string })[]> => {
     const _query = new QueryBuilder(
         new BindParam({ matchQuery: convertObjectRegExpToNeo4j(matchQuery), cursor })
     )

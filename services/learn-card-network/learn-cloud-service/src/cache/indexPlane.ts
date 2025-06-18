@@ -1,7 +1,7 @@
-import { ClientSession } from 'mongodb';
+import type { ClientSession } from 'mongodb';
 import stringify from 'json-stringify-deterministic';
 import cache from '@cache';
-import { PaginatedEncryptedCredentialRecordsType, PaginationOptionsType } from '@learncard/types';
+import type { PaginatedEncryptedCredentialRecordsType, PaginationOptionsType } from '@learncard/types';
 import { getAllDidsForDid } from '@accesslayer/user/read';
 
 /** 1 Day */

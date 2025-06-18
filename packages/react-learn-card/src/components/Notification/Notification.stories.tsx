@@ -1,8 +1,8 @@
 import React from 'react';
-import { Story, Meta } from '@storybook/react';
+import type { Story, Meta } from '@storybook/react';
 
 import Notification from './Notification';
-import { NotificationProps } from './types';
+import type { NotificationProps } from './types';
 import { NotificationTypeEnum } from '../../constants/notifications';
 
 export default {

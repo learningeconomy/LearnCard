@@ -1,5 +1,5 @@
-import { VP } from '@learncard/types';
-import { Plugin } from '@learncard/core';
+import type { VP } from '@learncard/types';
+import type { Plugin } from '@learncard/core';
 
 /** @group VPQR Plugin */
 export type VpqrPluginMethods = {

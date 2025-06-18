@@ -1,8 +1,8 @@
-import { CredentialRecord } from '@learncard/types';
-import { Query } from 'sift';
+import type { CredentialRecord } from '@learncard/types';
+import type { Query } from 'sift';
 
-import { Plugin, LearnCard, GetPluginMethods, AddImplicitLearnCardArgument } from 'types/wallet';
-import {
+import type { Plugin, LearnCard, GetPluginMethods, AddImplicitLearnCardArgument } from 'types/wallet';
+import type {
     ControlPlane,
     GetPlanesForPlugins,
     GetPlaneProviders,
@@ -484,7 +484,7 @@ const generateCachePlane = <
                 const index = results.find(isFulfilledAndNotEmpty)?.value;
 
                 return index;
-            } catch (error) {
+            } catch {
                 return undefined;
             }
         },
@@ -536,7 +536,7 @@ const generateCachePlane = <
                 const index = results.find(isFulfilledAndNotEmpty)?.value;
 
                 return index;
-            } catch (error) {
+            } catch {
                 return undefined;
             }
         },
@@ -585,7 +585,7 @@ const generateCachePlane = <
                 const index = results.find(isFulfilledAndNotEmpty)?.value;
 
                 return index;
-            } catch (error) {
+            } catch {
                 return undefined;
             }
         },
@@ -636,7 +636,7 @@ const generateCachePlane = <
                 const vc = results.find(isFulfilledAndNotEmpty)?.value;
 
                 return vc;
-            } catch (error) {
+            } catch {
                 return undefined;
             }
         },
@@ -690,7 +690,7 @@ const generateIdPlane = <
                     if (!pluginImplementsPlane(plugin, 'id')) return undefined;
 
                     return plugin.id.did(learnCard as any, method);
-                } catch (error) {
+                } catch {
                     return undefined;
                 }
             });
@@ -707,7 +707,7 @@ const generateIdPlane = <
                     if (!pluginImplementsPlane(plugin, 'id')) return undefined;
 
                     return plugin.id.keypair(learnCard as any, algorithm);
-                } catch (error) {
+                } catch {
                     return undefined;
                 }
             });
@@ -791,7 +791,7 @@ export const generateLearnCard = async <
         context: {} as LearnCardContextPlane<Plugins>,
         plugins: plugins as Plugins,
         invoke: pluginMethods,
-        addPlugin: function (plugin) {
+        addPlugin: function  addPlugin(plugin) {
             return addPluginToLearnCard(this as any, plugin);
         },
         debug: _learnCard.debug,

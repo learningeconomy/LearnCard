@@ -1,11 +1,11 @@
 import { QueryBuilder, BindParam } from 'neogma';
 import { flattenObject, inflateObject } from '@helpers/objects.helpers';
-import { Boost, BoostInstance } from '@models';
-import { BoostType } from 'types/boost';
+import { Boost, type BoostInstance } from '@models';
+import type { BoostType } from 'types/boost';
 
 export const updateBoost = async (boost: BoostInstance, updates: Partial<BoostType>) => {
     const currentMeta = (inflateObject as any)(boost.getDataValues() as any).meta;
-    const newMeta = { ...(currentMeta || {}), ...(updates.meta || {}) };
+    const newMeta = { ...currentMeta, ...updates.meta };
 
     const newUpdates = (flattenObject as any)({
         ...updates,

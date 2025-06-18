@@ -1,5 +1,5 @@
 import React from 'react';
-import { Flipper, Flipped } from 'react-flip-toolkit';
+import { Flipped } from 'react-flip-toolkit';
 
 import DefaultFace from '../../assets/images/default-face.jpeg';
 
@@ -9,13 +9,12 @@ import {
     getNameFromProfile,
 } from '../../helpers/credential.helpers';
 import { truncateWithEllipsis } from '../../helpers/string.helpers';
-import { Profile, VC } from '@learncard/types';
+import type { Profile, VC } from '@learncard/types';
 import VerifierStateBadgeAndText, {
-    VerifierState,
     VERIFIER_STATES,
+    type VerifierState,
 } from '../CertificateDisplayCard/VerifierStateBadgeAndText';
-import { BoostAchievementCredential } from '../../types';
-import { KnownDIDRegistryType } from '../../types';
+import type { BoostAchievementCredential, KnownDIDRegistryType } from '../../types';
 
 type VC2FrontFaceInfoProps = {
     credential: VC | BoostAchievementCredential;
@@ -111,9 +110,9 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
                     />
                 )}
 
-                {customThumbComponent && customThumbComponent}
+                {customThumbComponent}
                 <div className="vc-issue-info-box bg-white flex flex-col items-center gap-[5px] rounded-[20px] shadow-bottom px-[15px] py-[20px] w-full">
-                    {customBodyCardComponent && customBodyCardComponent}
+                    {customBodyCardComponent}
 
                     {!customBodyCardComponent && (
                         <>

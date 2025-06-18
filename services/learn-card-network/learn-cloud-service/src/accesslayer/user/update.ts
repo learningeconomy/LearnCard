@@ -1,4 +1,4 @@
-import { ClientSession } from 'mongodb';
+import type { ClientSession } from 'mongodb';
 
 import { deleteCachedUsersForDid } from '@cache/user';
 import { Users } from '.';
@@ -26,8 +26,8 @@ export const addDidToUser = async (
         await Promise.all([deleteCachedUsersForDid(primaryDid), deleteCachedUsersForDid(did)]);
 
         return result;
-    } catch (e) {
-        console.error(e);
+    } catch (error) {
+        console.error(error);
         return false;
     }
 };
@@ -55,8 +55,8 @@ export const removeDidFromUser = async (
         await Promise.all([deleteCachedUsersForDid(primaryDid), deleteCachedUsersForDid(did)]);
 
         return result;
-    } catch (e) {
-        console.error(e);
+    } catch (error) {
+        console.error(error);
         return false;
     }
 };
@@ -90,8 +90,8 @@ export const setDidAsPrimary = async (
         ]);
 
         return result;
-    } catch (e) {
-        console.error(e);
+    } catch (error) {
+        console.error(error);
         return false;
     }
 };

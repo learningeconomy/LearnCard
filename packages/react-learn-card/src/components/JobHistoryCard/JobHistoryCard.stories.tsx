@@ -1,7 +1,7 @@
 import React from 'react';
-import { Story, Meta } from '@storybook/react';
+import type { Story, Meta } from '@storybook/react';
 import JobHistoryCard from './JobHistoryCard';
-import { JobHistoryCardProps } from '../../types';
+import type { JobHistoryCardProps } from '../../types';
 
 export default {
     title: 'Job History Card',

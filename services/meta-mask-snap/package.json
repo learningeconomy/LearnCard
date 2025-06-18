@@ -27,9 +27,6 @@
     "devDependencies": {
         "@learncard/types": "workspace:*",
         "@metamask/auto-changelog": "^2.5.0",
-        "@metamask/eslint-config": "^10.0.0",
-        "@metamask/eslint-config-jest": "^10.0.0",
-        "@metamask/eslint-config-nodejs": "^8.0.0",
         "@metamask/providers": "^9.1.0",
         "@metamask/rollup-plugin-snaps": "^0.21.0",
         "@metamask/snap-types": "^0.21.0",

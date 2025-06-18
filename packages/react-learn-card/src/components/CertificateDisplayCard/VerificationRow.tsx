@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { VerificationItem, VerificationStatusEnum } from '@learncard/types';
+import { VerificationStatusEnum, type VerificationItem } from '@learncard/types';
 import { getColorForVerificationStatus } from '../../helpers/credential.helpers';
 
 import InfoBox from './InfoBox';

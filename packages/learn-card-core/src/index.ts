@@ -1,5 +1,3 @@
-/// <reference path="./types/global.d.ts" />
-
 import './polyfills';
 
 export { LearnCard, Plugin } from 'types/wallet';

@@ -1,4 +1,4 @@
-import Fastify, { FastifyPluginAsync } from 'fastify';
+import Fastify, { type FastifyPluginAsync } from 'fastify';
 import fastifyCors from '@fastify/cors';
 import _sodium from 'libsodium-wrappers';
 import { base64url } from 'multiformats/bases/base64';
@@ -14,7 +14,7 @@ import {
     setDidDocForProfile,
     setDidDocForProfileManager,
 } from '@cache/did-docs';
-import { DidDocument, JWK } from '@learncard/types';
+import type { DidDocument, JWK } from '@learncard/types';
 import { getProfilesThatManageAProfile } from '@accesslayer/profile/relationships/read';
 import { getProfilesThatAdministrateAProfileManager } from '@accesslayer/profile-manager/relationships/read';
 import { getDidMetadataForProfile } from '@accesslayer/did-metadata/relationships/read';
@@ -98,8 +98,8 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
                     })
                 );
             }
-        } catch (e) {
-            console.error(e);
+        } catch (error) {
+            console.error(error);
         }
 
         let finalDoc = { ...replacedDoc, controller: profile.did };
@@ -136,7 +136,7 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
 
                         const targetDidDoc = await learnCard.invoke.resolveDid(targetDid);
                         const targetJwk = (targetDidDoc.verificationMethod?.[0] as any)
-                            .publicKeyJwk as JWK;
+                            ?.publicKeyJwk as JWK;
 
                         const _decodedJwk = base64url.decode(`u${targetJwk.x}`);
                         const _x25519PublicKeyBytes =
@@ -169,7 +169,7 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
 
         extraMetadata.forEach(metadata => {
             finalDoc = mergeWith(finalDoc, omit(metadata, 'id'), (src, dest) => {
-                if (Array.isArray(src)) return src.concat(dest);
+                if (Array.isArray(src)) return [...src, ...dest];
 
                 return undefined;
             });
@@ -240,7 +240,7 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
 
                     const targetDidDoc = await learnCard.invoke.resolveDid(targetDid);
                     const targetJwk = (targetDidDoc.verificationMethod?.[0] as any)
-                        .publicKeyJwk as JWK;
+                        ?.publicKeyJwk as JWK;
 
                     const _decodedJwk = base64url.decode(`u${targetJwk.x}`);
                     const _x25519PublicKeyBytes =

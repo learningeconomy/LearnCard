@@ -1,4 +1,4 @@
-import { BoostPermissions } from '@learncard/types';
+import type { BoostPermissions } from '@learncard/types';
 
 export const creatorRole: BoostPermissions = {
     role: 'creator',

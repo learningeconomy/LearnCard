@@ -2,7 +2,6 @@ import React from 'react';
 
 import MeritBadgeCornerIcon from './MeritBadgeCornerIcon';
 import MeritBadgeImageDisplay from './MeritBadgeImageDisplay';
-import MeritBadgeSkillsCount from './MeritBadgeSkillsCount';
 import MeritBadgeProfileImageDisplay from './MeritBadgeProfileImageDisplay';
 
 import Smiley from '../svgs/Smiley';
@@ -16,13 +15,16 @@ import {
     getCategoryDarkColor,
 } from '../../helpers/credential.helpers';
 
-import { VC, Profile } from '@learncard/types';
-import { BoostAchievementCredential, LCCategoryEnum } from '../../types';
+import type { VC, Profile } from '@learncard/types';
+import {
+    LCCategoryEnum,
+    type BoostAchievementCredential,
+    type KnownDIDRegistryType,
+} from '../../types';
 import VerifierStateBadgeAndText, {
-    VerifierState,
     VERIFIER_STATES,
+    type VerifierState,
 } from '../CertificateDisplayCard/VerifierStateBadgeAndText';
-import { KnownDIDRegistryType } from '../../types';
 
 type MeritBadgeFrontFaceProps = {
     isFront?: boolean;
@@ -41,7 +43,6 @@ type MeritBadgeFrontFaceProps = {
 };
 
 export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
-    isFront,
     credential,
     categoryType,
     issuerOverride,
@@ -50,9 +51,7 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
     subjectImageComponent,
     issuerImageComponent,
     customBodyCardComponent,
-    hideIssueDate,
     handleViewBackFace,
-    showDetailsBtn = false,
     formattedDisplayType,
 }) => {
     const {
@@ -66,8 +65,6 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
 
     const issuee = issueeOverride || _issuee;
     const issuer = issuerOverride || _issuer;
-
-    const { description } = credentialSubject?.achievement ?? {};
 
     const credentialLightColor = getCategoryLightColor(categoryType); // 500
     const credentialDarkColor = getCategoryDarkColor(categoryType); // 700
@@ -119,7 +116,6 @@ export const MeritBadgeFrontFace: React.FC<MeritBadgeFrontFaceProps> = ({
             verifierState = VERIFIER_STATES.unknownVerifier;
         }
     }
-    const isSelfVerified = verifierState === VERIFIER_STATES.selfVerified;
 
     const issueeImageExists = issueeImage || subjectImageComponent;
 

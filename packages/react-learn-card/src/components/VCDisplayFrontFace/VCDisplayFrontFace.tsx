@@ -1,7 +1,6 @@
 import React from 'react';
-import { VCDisplayCardProps } from '../../types';
+import type { VCDisplayCardProps } from '../../types';
 import FatArrow from '../../assets/images/icon.green.fat-arrow.png';
-import FlipArrowRight from '../../assets/images/ArrowArcRight.svg';
 import DefaultFace from '../../assets/images/default-face.jpeg';
 import { VCVerificationCheckWithText } from '../VCVerificationCheck/VCVerificationCheck';
 import { getImageFromProfile, getNameFromProfile } from '../../helpers/credential.helpers';
@@ -76,8 +75,8 @@ const VCDisplayFrontFace: React.FC<VCDisplayCardProps> = ({
         <></>
     );
 
-    const renderCardImg = overrideCardImageComponent ? overrideCardImageComponent : credImg;
-    const cardTitle = overrideCardTitle ? overrideCardTitle : title;
+    const renderCardImg = overrideCardImageComponent ?? credImg;
+    const cardTitle = overrideCardTitle ?? title;
 
     return (
         <div
@@ -97,7 +96,7 @@ const VCDisplayFrontFace: React.FC<VCDisplayCardProps> = ({
                         </h3>
                     </div>
 
-                    {customHeaderComponent && customHeaderComponent}
+                    {customHeaderComponent}
                 </section>
 
                 <section className="flex flex-row items-center justify-center mt-2 w-full my-2 vc-card-issuer-thumbs">

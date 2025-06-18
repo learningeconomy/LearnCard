@@ -1,18 +1,18 @@
 import { calculateObjectSize } from 'bson';
-import { Filter, ObjectId } from 'mongodb';
+import { ObjectId, type Filter } from 'mongodb';
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import {
-    JWE,
     JWEValidator,
-    EncryptedRecord,
     EncryptedRecordValidator,
     PaginatedEncryptedRecordsValidator,
+    type JWE,
+    type EncryptedRecord,
 } from '@learncard/types';
 import { isEncrypted } from '@learncard/helpers';
 
 import { t, didAndChallengeRoute } from '@routes';
-import { MongoCustomDocumentType } from '@models';
+import type { MongoCustomDocumentType } from '@models';
 import { createCustomDocument, createCustomDocuments } from '@accesslayer/custom-document/create';
 import {
     countCustomDocumentsByQuery,
@@ -151,7 +151,13 @@ export const customStorageRouter = t.router({
             );
 
             const results = rawResults.map(_result => {
-                const { did: _did, cursor: _cursor, modified, created, ...result } = _result;
+                const {
+                    did: _did,
+                    cursor: _cursor,
+                    modified: _modified,
+                    created: _created,
+                    ...result
+                } = _result;
 
                 return {
                     ...result,

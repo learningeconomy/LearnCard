@@ -1,13 +1,11 @@
 import {
-    Client,
-    BaseCommandInteraction,
     ModalBuilder,
     ApplicationCommandOptionType,
     TextInputBuilder,
     ActionRowBuilder,
     PermissionsBitField,
+    type BaseCommandInteraction,
 } from 'discord.js';
-import { VC } from '@learncard/types';
 
 import { createIssuerConfig } from '../accesslayer/issuers/create/index';
 import { initLearnCard } from '@learncard/init';
@@ -60,8 +58,8 @@ export const ConfigureIssuer: Command = {
             modal.addComponents([firstActionRow, secondActionRow, thirdActionRow]);
 
             await interaction.showModal(modal);
-        } catch (e) {
-            console.error(e);
+        } catch (error) {
+            console.error(error);
             await interaction.reply({
                 content: 'Woops, an error occured. Try that again 🫠.`',
                 ephemeral: true,

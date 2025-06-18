@@ -1,4 +1,4 @@
-import { SigningAuthority, SigningAuthorityInstance } from '@models';
+import { SigningAuthority, type SigningAuthorityInstance } from '@models';
 import { getSigningAuthorityByEndpoint } from './read';
 
 export const createSigningAuthority = async (
@@ -11,5 +11,5 @@ export const upsertSigningAuthority = async (
     endpoint: string
 ): Promise<SigningAuthorityInstance> => {
     const existing = await getSigningAuthorityByEndpoint(endpoint);
-    return existing ? existing : SigningAuthority.createOne({ endpoint });
+    return existing ?? SigningAuthority.createOne({ endpoint });
 };

@@ -1,11 +1,11 @@
-import { LCNBoostClaimLinkOptionsType } from '@learncard/types';
-import {
+import type { LCNBoostClaimLinkOptionsType } from '@learncard/types';
+import type {
     ClaimableBoostsPlugin,
     ClaimableBoostsPluginDependentMethods,
     SigningAuthorityType,
 } from './types';
 
-import { LearnCard } from '@learncard/core';
+import type { LearnCard } from '@learncard/core';
 
 export * from './types';
 
@@ -15,7 +15,7 @@ const DEFAULT_RELATIONSHIP_NAME = 'lca-sa';
  * @group Plugins
  */
 export const getClaimableBoostsPlugin = (
-    learnCard: LearnCard<any, any, ClaimableBoostsPluginDependentMethods>
+    _learnCard: LearnCard<any, any, ClaimableBoostsPluginDependentMethods>
 ): ClaimableBoostsPlugin => {
     return {
         name: 'ClaimableBoosts',

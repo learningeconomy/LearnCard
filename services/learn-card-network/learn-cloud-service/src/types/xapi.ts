@@ -1,12 +1,12 @@
 import type { Statement } from '@xapi/xapi';
 import type { FastifyRequest } from 'fastify';
 
-export interface XAPIRequestQuery {
+export type XAPIRequestQuery = {
     agent?: string;
     method?: string;
 }
 
-export interface XAPIRequest extends FastifyRequest {
+export type XAPIRequest = {
     Querystring?: XAPIRequestQuery;
     Body?: Statement;
-}
+} & FastifyRequest

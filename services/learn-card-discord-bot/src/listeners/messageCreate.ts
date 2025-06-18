@@ -1,5 +1,5 @@
-import { Message } from 'discord.js';
-import { Context } from 'src/types/index';
+import type { Message } from 'discord.js';
+import type { Context } from 'src/types/index';
 
 export default ({ client }: Context): void => {
     console.log('Initiating messageCreate listener...');

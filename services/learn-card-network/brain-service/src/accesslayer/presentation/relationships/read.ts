@@ -1,6 +1,6 @@
 import { inflateObject } from '@helpers/objects.helpers';
-import { Presentation, PresentationInstance, Profile, ProfileRelationships } from '@models';
-import { ProfileType } from 'types/profile';
+import { Presentation, Profile, type PresentationInstance, type ProfileRelationships } from '@models';
+import type { ProfileType } from 'types/profile';
 
 export const getPresentationSentToProfile = async (
     id: string,

@@ -1,11 +1,11 @@
 import isEqual from 'lodash/isEqual';
 import { v4 as uuidv4 } from 'uuid';
-import { VC, JWE, UnsignedVC, LCNNotificationTypeEnumValidator } from '@learncard/types';
+import { LCNNotificationTypeEnumValidator, type VC, type JWE, type UnsignedVC } from '@learncard/types';
 import { isEncrypted } from '@learncard/helpers';
-import { ProfileType, SigningAuthorityForUserType } from 'types/profile';
+import type { ProfileType, SigningAuthorityForUserType } from 'types/profile';
 
 import { getBoostOwner } from '@accesslayer/boost/relationships/read';
-import { BoostInstance } from '@models';
+import type { BoostInstance } from '@models';
 import { constructUri } from './uri.helpers';
 import { storeCredential } from '@accesslayer/credential/create';
 import { createBoostInstanceOfRelationship } from '@accesslayer/boost/relationships/create';
@@ -19,7 +19,7 @@ import { issueCredentialWithSigningAuthority } from './signingAuthority.helpers'
 import { addNotificationToQueue } from './notifications.helpers';
 import { BoostStatus } from 'types/boost';
 import { getDidWeb } from './did.helpers';
-import { DbTermsType } from 'types/consentflowcontract';
+import type { DbTermsType } from 'types/consentflowcontract';
 
 export const getBoostUri = (id: string, domain: string): string =>
     constructUri('boost', id, domain);
@@ -170,7 +170,7 @@ export const issueCertifiedBoost = async (
         if (!didDoc) {
             lcnDID = learnCard.id.did();
         }
-    } catch (e) {
+    } catch {
         if (process.env.NODE_ENV !== 'test') {
             console.warn(
                 'LCN DID Document is unable to resolve while issuing Certified Boost. Reverting to did:key. Is this a test environment?',
@@ -213,7 +213,7 @@ export const decryptCredential = async (credential: VC | JWE): Promise<VC | fals
             learnCard.id.keypair(),
         ]);
         return decrypted || false;
-    } catch (error) {
+    } catch {
         console.warn('Could not decrypt Boost Credential!');
         return false;
     }

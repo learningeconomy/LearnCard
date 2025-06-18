@@ -67,8 +67,8 @@ Presentation.addRelationships({
         .then(() => {
             if (process.env.NODE_ENV !== 'test') console.log('Ensured indices!');
         })
-        .catch(err => {
-            console.error('Error creating indices:', err);
+        .catch(error => {
+            console.error('Error creating indices:', error);
         });
 })();
 

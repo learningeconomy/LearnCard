@@ -1,7 +1,7 @@
 import { toQrCode, fromQrCode } from '@digitalbazaar/vpqr';
 
-import { VpqrPlugin, VpqrPluginDependentMethods } from './types';
-import { LearnCard } from '@learncard/core';
+import type { VpqrPlugin, VpqrPluginDependentMethods } from './types';
+import type { LearnCard } from '@learncard/core';
 
 export * from './types';
 

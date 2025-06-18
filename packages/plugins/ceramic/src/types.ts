@@ -1,8 +1,8 @@
 import type { DID, CreateJWEOptions, DIDResolutionResult } from 'dids';
 import { z } from 'zod';
-import { CeramicClient } from '@ceramicnetwork/http-client';
-import { Plugin } from '@learncard/core';
-import { InputMetadata } from '@learncard/didkit-plugin';
+import type { CeramicClient } from '@ceramicnetwork/http-client';
+import type { Plugin } from '@learncard/core';
+import type { InputMetadata } from '@learncard/didkit-plugin';
 
 /** @group CeramicPlugin */
 export type CeramicArgs = {
@@ -18,10 +18,12 @@ export const CeramicURIValidator = z
     .string()
     .refine(
         string => string.split(':').length === 3 && string.split(':')[0] === 'lc',
+        // oxlint-disable-next-line no-template-curly-in-string
         'URI must be of the form lc:${storage}:${url}'
     )
     .refine(
         string => string.split(':')[1] === 'ceramic',
+        // oxlint-disable-next-line no-template-curly-in-string
         'URI must use storage type ceramic (i.e. must be lc:ceramic:${streamID})'
     );
 

@@ -13,14 +13,14 @@ import {
     PaginatedBoostsValidator,
     PaginationOptionsValidator,
     PaginatedLCNProfilesValidator,
-    BoostPermissions,
     BoostQueryValidator,
     LCNProfileQueryValidator,
     LCNProfileManagerQueryValidator,
     PaginatedLCNProfileManagersValidator,
-    UnsignedVC,
-    JWE,
-    VC,
+    type BoostPermissions,
+    type UnsignedVC,
+    type JWE,
+    type VC,
 } from '@learncard/types';
 
 import { t, profileRoute } from '@routes';
@@ -53,6 +53,7 @@ import {
     canProfileEditBoost,
     canProfileCreateChildBoost,
     getBoostByUriWithDefaultClaimPermissions,
+    getBoostOwner,
 } from '@accesslayer/boost/relationships/read';
 
 import { deleteStorageForUri, setStorageForUri } from '@cache/storage';
@@ -69,12 +70,11 @@ import {
     BoostValidator,
     BoostGenerateClaimLinkInput,
     BoostStatus,
-    BoostType,
     BoostWithClaimPermissionsValidator,
+    type BoostType,
 } from 'types/boost';
 import { deleteBoost } from '@accesslayer/boost/delete';
 import { createBoost } from '@accesslayer/boost/create';
-import { getBoostOwner } from '@accesslayer/boost/relationships/read';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
 import { getSigningAuthorityForUserByName } from '@accesslayer/signing-authority/relationships/read';
 
@@ -1259,7 +1259,7 @@ export const boostsRouter = t.router({
 
             const newPermissions = Object.entries(updates).reduce<Partial<BoostPermissions>>(
                 (newPermissionsObject, [permission, value]) => {
-                    if (typeof value !== undefined) {
+                    if (typeof value !== 'undefined') {
                         if (!(permissions as any)[permission]) {
                             throw new TRPCError({
                                 code: 'UNAUTHORIZED',
@@ -1270,7 +1270,7 @@ export const boostsRouter = t.router({
                         if (QUERYABLE_PERMISSIONS.includes(permission) && value && value !== '*') {
                             try {
                                 JSON.parse(value as string);
-                            } catch (error) {
+                            } catch {
                                 throw new TRPCError({
                                     code: 'BAD_REQUEST',
                                     message: `Invalid value for ${permission}`,
@@ -1348,7 +1348,7 @@ export const boostsRouter = t.router({
 
             const newPermissions = Object.entries(updates).reduce<Partial<BoostPermissions>>(
                 (newPermissionsObject, [permission, value]) => {
-                    if (typeof value !== undefined) {
+                    if (typeof value !== 'undefined') {
                         if (!(permissions as any)[permission]) {
                             throw new TRPCError({
                                 code: 'UNAUTHORIZED',
@@ -1359,7 +1359,7 @@ export const boostsRouter = t.router({
                         if (QUERYABLE_PERMISSIONS.includes(permission) && value && value !== '*') {
                             try {
                                 JSON.parse(value as string);
-                            } catch (error) {
+                            } catch {
                                 throw new TRPCError({
                                     code: 'BAD_REQUEST',
                                     message: `Invalid value for ${permission}`,
@@ -1534,11 +1534,11 @@ export const boostsRouter = t.router({
                 );
                 try {
                     await useClaimLinkForBoost(boostUri, challenge);
-                } catch (e) {
-                    console.error('Problem using useClaimLinkForBoost', e);
+                } catch (error) {
+                    console.error('Problem using useClaimLinkForBoost', error);
                 }
                 return sentBoostUri;
-            } catch (e) {
+            } catch {
                 console.error('Unable to issueClaimLinkBoost');
                 throw new TRPCError({
                     code: 'INTERNAL_SERVER_ERROR',
@@ -1737,8 +1737,8 @@ export const boostsRouter = t.router({
                     };
                 }
                 if (unsignedVc?.type?.includes('BoostCredential')) unsignedVc.boostId = boostUri;
-            } catch (e) {
-                console.error('Failed to parse boost', e);
+            } catch (error) {
+                console.error('Failed to parse boost', error);
                 throw new TRPCError({
                     code: 'INTERNAL_SERVER_ERROR',
                     message: 'Failed to parse boost',
@@ -1765,8 +1765,8 @@ export const boostsRouter = t.router({
                     sa,
                     ctx.domain
                 );
-            } catch (e) {
-                console.error('Failed to issue VC with signing authority', e);
+            } catch (error) {
+                console.error('Failed to issue VC with signing authority', error);
                 throw new TRPCError({
                     code: 'INTERNAL_SERVER_ERROR',
                     message: 'Could not issue VC with signing authority',

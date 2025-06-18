@@ -1,8 +1,8 @@
-import { JWE, EncryptedRecord } from '@learncard/types';
+import type { JWE, EncryptedRecord } from '@learncard/types';
 import stringify from 'json-stringify-deterministic';
 import pbkdf2Hmac from 'pbkdf2-hmac';
 
-import { LearnCloudDependentLearnCard } from './types';
+import type { LearnCloudDependentLearnCard } from './types';
 
 export const hash = async (
     learnCard: LearnCloudDependentLearnCard,
@@ -28,7 +28,7 @@ export const hash = async (
 
     const digestBuffer = await crypto.subtle.sign('HMAC', cryptoKey, uint8Message);
 
-    const digestArray = Array.from(new Uint8Array(digestBuffer));
+    const digestArray = [...new Uint8Array(digestBuffer)];
 
     return digestArray.map(byte => (byte as any).toString(16).padStart(2, '0')).join('');
 };

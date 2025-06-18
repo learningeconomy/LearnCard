@@ -76,7 +76,7 @@ function main() {
                 console.log('✔ Build successful');
                 process.exit(0);
             })
-            .catch(err => {
+            .catch(() => {
                 console.error('❌ Build failed');
                 process.exit(1);
             });

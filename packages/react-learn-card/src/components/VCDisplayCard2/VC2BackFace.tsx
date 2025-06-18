@@ -1,15 +1,15 @@
 import React from 'react';
 import { format } from 'date-fns';
-import { Flipper, Flipped } from 'react-flip-toolkit';
+import { Flipped } from 'react-flip-toolkit';
 
 import MediaAttachmentsBox from './MediaAttachmentsBox';
 import TruncateTextBox from './TruncateTextBox';
 import SkillsBox from './SkillsBox';
 import IssueHistoryBox from './IssueHistoryBox';
-import { VC, VerificationItem } from '@learncard/types';
+import type { VC, VerificationItem } from '@learncard/types';
 import VerificationsBox from './VerificationsBox';
 import AlignmentsBox from '../CertificateDisplayCard/AlignmentsBox';
-import {
+import type {
     BoostAchievementCredential,
     IssueHistory,
     MediaMetadata,
@@ -135,11 +135,7 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
                     />
                 )}
                 {(credential.skills?.length ?? 0) > 0 &&
-                    (customSkillsComponent ? (
-                        customSkillsComponent
-                    ) : (
-                        <SkillsBox skills={credential.skills ?? []} />
-                    ))}
+                    (customSkillsComponent ?? <SkillsBox skills={credential.skills ?? []} />)}
 
                 {issueHistory && issueHistory?.length > 0 && (
                     <IssueHistoryBox

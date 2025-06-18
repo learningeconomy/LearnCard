@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-import { NotificationProps, NotificationTypeStyles } from './types';
+import { NotificationTypeStyles, type NotificationProps } from './types';
 import { NotificationTypeEnum } from '../../constants/notifications';
 
 import Checkmark from '../svgs/Checkmark';
@@ -39,7 +39,7 @@ export const Notification: React.FC<NotificationProps> = ({
 
     const claimButtonStyles = isClaimed ? claimedButtonStyles : unclaimedButtonStyles;
 
-    let buttonText: string = '';
+    let buttonText = '';
 
     if (isClaimed) {
         buttonText = 'Claimed';

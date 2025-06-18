@@ -1,6 +1,5 @@
-import { Filter, ObjectId } from 'mongodb';
-
-import { MongoCustomDocumentType } from '@models';
+import { ObjectId, type Filter } from 'mongodb';
+import type { MongoCustomDocumentType } from '@models';
 import { CustomDocuments } from '.';
 import { getUserForDid } from '@accesslayer/user/read';
 
@@ -17,8 +16,8 @@ export const getCustomDocumentByQuery = async (
         const dids = [user?.did ?? did, ...(user?.associatedDids ?? [])];
 
         return await CustomDocuments.findOne({ ...query, did: { $in: dids } });
-    } catch (e) {
-        console.error(e);
+    } catch (error) {
+        console.error(error);
         return undefined;
     }
 };
@@ -56,8 +55,8 @@ export const getCustomDocumentsByQuery = async (
             .sort({ cursor: 1 })
             .limit(limit)
             .toArray();
-    } catch (e) {
-        console.error(e);
+    } catch (error) {
+        console.error(error);
         return [];
     }
 };
@@ -85,8 +84,8 @@ export const countCustomDocumentsByQuery = async (
             did: { $in: dids },
             ...(typeof query._id === 'string' ? { _id: new ObjectId(query._id) } : {}),
         });
-    } catch (e) {
-        console.error(e);
+    } catch (error) {
+        console.error(error);
         return 0;
     }
 };

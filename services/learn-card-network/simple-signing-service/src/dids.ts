@@ -1,4 +1,4 @@
-import Fastify, { FastifyPluginAsync } from 'fastify';
+import Fastify, { type FastifyPluginAsync } from 'fastify';
 import fastifyCors from '@fastify/cors';
 import _sodium from 'libsodium-wrappers';
 import { base64url } from 'multiformats/bases/base64';

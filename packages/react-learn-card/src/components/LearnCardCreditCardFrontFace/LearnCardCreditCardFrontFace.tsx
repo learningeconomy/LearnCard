@@ -1,7 +1,7 @@
 import React from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 
-import { LearnCardCreditCardFrontFaceProps } from './types';
+import type { LearnCardCreditCardFrontFaceProps } from './types';
 
 import CardChip from '../../assets/images/card-chip.svg';
 import MasterCardLogo from '../../assets/images/master-card-logo.svg';

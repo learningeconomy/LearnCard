@@ -1,10 +1,10 @@
 import React from 'react';
 
 import {
-    BoostCMSCategorySkillEnum,
     boostCMSSKillCategories,
-    BoostCMSSKillsCategoryEnum,
-    BoostCMSSubSkillEnum,
+    type BoostCMSCategorySkillEnum,
+    type BoostCMSSKillsCategoryEnum,
+    type BoostCMSSubSkillEnum,
 } from '../../constants/skills';
 
 const TopLevelSkill: React.FC<{
@@ -25,7 +25,7 @@ const TopLevelSkill: React.FC<{
 
     handleExpandSubSkills?: () => void;
 }> = ({ skillSelected, skill, handleExpandSubSkills }) => {
-    const { title, IconComponent, type, category } = skill;
+    const { title, IconComponent, type: _type, category } = skill;
 
     const _category = boostCMSSKillCategories.find(c => c.type === category);
 

@@ -71,7 +71,7 @@ await Promise.all(
     })
 );
 
-await Promise.all(configurations.map(config => esbuild.build(config))).catch(err => {
+await Promise.all(configurations.map(config => esbuild.build(config))).catch(_error => {
     console.error('❌ Build failed');
     process.exit(1);
 });

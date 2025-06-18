@@ -20,8 +20,9 @@ export type NotificationProps = {
     loadingState: boolean;
 };
 
-export const NotificationTypeStyles: {
-    [key: NotificationTypeEnum | string]: {
+export const NotificationTypeStyles: Record<
+    NotificationTypeEnum | string,
+    {
         viewButtonStyles: string;
         unclaimedButtonStyles: string;
         claimedButtonStyles: string;
@@ -29,8 +30,8 @@ export const NotificationTypeStyles: {
         iconCircleStyles: string;
         IconComponent: any;
         typeText: string;
-    };
-} = {
+    }
+> = {
     [NotificationTypeEnum.Currency]: {
         viewButtonStyles: 'border-cyan-400 text-cyan-400',
         unclaimedButtonStyles: 'text-white bg-cyan-400 border-cyan-400 shadow-bottom',

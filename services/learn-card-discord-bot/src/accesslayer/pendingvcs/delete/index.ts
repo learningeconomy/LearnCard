@@ -1,5 +1,5 @@
 import { PREFIX } from '../create/index';
-import { Context } from 'src/types/index';
+import type { Context } from 'src/types/index';
 
 export const deletePendingVcs = async (
     context: Context,

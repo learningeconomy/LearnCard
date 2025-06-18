@@ -1,5 +1,5 @@
 import React from 'react';
-import { DidMethod } from '@learncard/didkit-plugin';
+import type { DidMethod } from '@learncard/didkit-plugin';
 
 type DidSelectorProps = {
     did: string;

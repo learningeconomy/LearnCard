@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { initLearnCard } from '@learncard/init';
-import { VC, Profile, VerificationItem } from '@learncard/types';
+import type { VC, Profile, VerificationItem } from '@learncard/types';
 
 import { VCDisplayCard } from '../VCDisplayCard';
 import {
     VCDisplayCard2,
-    CredentialIconType,
+    type CredentialIconType,
 } from '../VCDisplayCard2';
 
-import { MediaMetadata, VideoMetadata } from '../../types';
+import type { MediaMetadata, VideoMetadata } from '../../types';
 
 export type VCCardProps = {
     credential: VC;

@@ -1,11 +1,11 @@
 import { toUint8Array } from 'hex-lite';
 import { isHex } from '@learncard/helpers';
-import { JWKWithPrivateKey } from '@learncard/types';
-import { LearnCard } from '@learncard/core';
+import type { JWKWithPrivateKey } from '@learncard/types';
+import type { LearnCard } from '@learncard/core';
 
 import { getAlgorithmForDidMethod } from './helpers';
 
-import { DidKeyPlugin, DependentMethods, Algorithm } from './types';
+import type { DidKeyPlugin, DependentMethods, Algorithm } from './types';
 
 export * from './types';
 

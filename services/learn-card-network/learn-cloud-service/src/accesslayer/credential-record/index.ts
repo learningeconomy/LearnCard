@@ -1,6 +1,6 @@
 import mongodb from '@mongo';
 
-import { CREDENTIAL_RECORD_COLLECTION, MongoCredentialRecordType } from '@models';
+import { CREDENTIAL_RECORD_COLLECTION, type MongoCredentialRecordType } from '@models';
 
 export const getCredentialRecordCollection = () => {
     return mongodb.collection<MongoCredentialRecordType>(CREDENTIAL_RECORD_COLLECTION);

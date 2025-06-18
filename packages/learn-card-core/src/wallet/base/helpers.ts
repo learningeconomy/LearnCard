@@ -1,5 +1,5 @@
-import { LearnCard, Plugin } from 'types/wallet';
-import { ControlPlane } from 'types/planes';
+import type { LearnCard, Plugin } from 'types/wallet';
+import type { ControlPlane } from 'types/planes';
 
 /** Type guard for removing null/undefined */
 export const isNotNull = <T>(item?: T | null): item is T => !!item;

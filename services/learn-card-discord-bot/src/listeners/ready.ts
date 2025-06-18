@@ -1,7 +1,5 @@
-import { Client } from 'discord.js';
 import { Commands } from '../Commands';
-import { Tally, constructTallyMessage } from '../commands/Tally';
-import { Context } from 'src/types/index';
+import type { Context } from 'src/types/index';
 
 export default async ({ client }: Context): Promise<void> => {
     client.on('ready', async () => {

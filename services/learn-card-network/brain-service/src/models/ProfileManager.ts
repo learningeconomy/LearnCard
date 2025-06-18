@@ -1,11 +1,11 @@
-import { ModelFactory, ModelRelatedNodesI, NeogmaInstance } from 'neogma';
+import { ModelFactory, type ModelRelatedNodesI, type NeogmaInstance } from 'neogma';
 
 import { neogma } from '@instance';
 
-import { Profile, ProfileInstance } from './Profile';
-import { Boost, BoostInstance } from './Boost';
+import { Profile, type ProfileInstance } from './Profile';
+import { Boost, type BoostInstance } from './Boost';
 
-import { ProfileManagerType } from 'types/profile-manager';
+import type { ProfileManagerType } from 'types/profile-manager';
 
 export type ProfileManagerRelationships = {
     manages: ModelRelatedNodesI<typeof Profile, ProfileInstance>;

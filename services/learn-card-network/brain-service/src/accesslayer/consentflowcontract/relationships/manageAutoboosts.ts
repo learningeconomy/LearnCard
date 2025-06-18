@@ -1,11 +1,11 @@
 import { TRPCError } from '@trpc/server';
-import { AutoBoostConfig } from '@learncard/types';
+import type { AutoBoostConfig } from '@learncard/types';
 import { ConsentFlowContract } from '../../../models/ConsentFlowContract';
 import { QueryBuilder, BindParam } from 'neogma';
 import { getIdFromUri } from '@helpers/uri.helpers';
 import { getBoostByUri } from '@accesslayer/boost/read';
 import { getSigningAuthorityForUserByName } from '@accesslayer/signing-authority/relationships/read';
-import { ProfileType } from 'types/profile';
+import type { ProfileType } from 'types/profile';
 import { getAutoBoostsForContract } from './read';
 import { Boost } from '@models';
 

@@ -1,5 +1,5 @@
 import { generateLearnCard } from '@learncard/core';
-import { CustomLearnCard } from '../types/LearnCard';
+import type { CustomLearnCard } from '../types/LearnCard';
 
 /**
  * Generates a custom LearnCard with no plugins added

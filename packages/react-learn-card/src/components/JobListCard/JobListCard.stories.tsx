@@ -1,8 +1,8 @@
 import React from 'react';
-import { Story, Meta } from '@storybook/react';
+import type { Story, Meta } from '@storybook/react';
 import imgPlaceholder from '../../assets/images/photoplaceholder.png';
 import JobListCard from './JobListCard';
-import { JobListCardProps } from '../../types';
+import type { JobListCardProps } from '../../types';
 
 export default {
     title: 'Job List Card',
@@ -25,7 +25,7 @@ const dummyQualificationDisplay = {
     },
 };
 
-const customButtonTest = (
+const _customButtonTest = (
     <button type="button" onClick={() => console.log('custom button clicked')}>
         BUTTON TEST{' '}
     </button>

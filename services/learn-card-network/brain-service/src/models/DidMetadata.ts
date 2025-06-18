@@ -1,9 +1,9 @@
-import { ModelFactory, ModelRelatedNodesI, NeogmaInstance } from 'neogma';
+import { ModelFactory, type ModelRelatedNodesI, type NeogmaInstance } from 'neogma';
 
 import { neogma } from '@instance';
 
-import { Profile, ProfileInstance } from './Profile';
-import { FlatDidMetadataType } from 'types/did-metadata';
+import { Profile, type ProfileInstance } from './Profile';
+import type { FlatDidMetadataType } from 'types/did-metadata';
 
 export type DidMetadataRelationships = {
     associatedWith: ModelRelatedNodesI<typeof Profile, ProfileInstance>;

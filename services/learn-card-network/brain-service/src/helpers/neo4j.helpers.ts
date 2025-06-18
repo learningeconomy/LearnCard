@@ -1,4 +1,4 @@
-import { QueryResult } from 'neo4j-driver';
+import type { QueryResult } from 'neo4j-driver';
 
 export const getMatchQueryWhere = (identifierToFilter: string, matchQueryKey = 'matchQuery') => `
 all(key IN keys($${matchQueryKey}) 

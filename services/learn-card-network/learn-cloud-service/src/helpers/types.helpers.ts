@@ -1,11 +1,11 @@
-import Express from 'express';
+import type Express from 'express';
 
-export interface TypedRequest<
+export type TypedRequest<
     Body extends Record<string, any> = {},
     Query extends Record<string, any> = {},
     Params extends Record<string, any> = {}
-> extends Express.Request {
+> = {
     body: Body;
     query: Query;
     params: Params;
-}
+} & Express.Request

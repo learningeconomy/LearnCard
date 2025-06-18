@@ -1,5 +1,5 @@
 import cache from '@cache';
-import { UnsignedVC, VC, VP, JWE, ConsentFlowContract, ConsentFlowTerms } from '@learncard/types';
+import type { UnsignedVC, VC, VP, JWE, ConsentFlowContract, ConsentFlowTerms } from '@learncard/types';
 
 const STORAGE_TTL = 60 * 60 * 24;
 

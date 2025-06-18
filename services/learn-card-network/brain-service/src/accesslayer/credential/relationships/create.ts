@@ -2,17 +2,17 @@ import { QueryBuilder } from 'neogma';
 import { v4 as uuid } from 'uuid';
 
 import {
-    CredentialInstance,
     Credential,
     Boost,
     Role,
     Profile,
     ConsentFlowTerms,
     ConsentFlowTransaction,
+    type CredentialInstance
 } from '@models';
-import { ProfileType } from 'types/profile';
+import type { ProfileType } from 'types/profile';
 import { clearDidWebCacheForChildProfileManagers } from '@accesslayer/boost/relationships/update';
-import { DbTermsType } from 'types/consentflowcontract';
+import type { DbTermsType } from 'types/consentflowcontract';
 
 export const createSentCredentialRelationship = async (
     from: ProfileType,

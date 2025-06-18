@@ -1,4 +1,4 @@
-import { LearnCard, Plugin } from 'types/wallet';
+import type { LearnCard, Plugin } from 'types/wallet';
 
 export type GetPlugins<LC extends LearnCard<any, any, any>> = LC['plugins'];
 

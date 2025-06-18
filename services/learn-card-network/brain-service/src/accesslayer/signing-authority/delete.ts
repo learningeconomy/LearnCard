@@ -1,4 +1,4 @@
-import { SigningAuthorityInstance } from '@models';
+import type { SigningAuthorityInstance } from '@models';
 
 export const deleteSigningAuthority = async (
     signingAuthority: SigningAuthorityInstance

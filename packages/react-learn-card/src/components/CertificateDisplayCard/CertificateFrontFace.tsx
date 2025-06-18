@@ -16,13 +16,12 @@ import {
     getCategoryDarkColor,
 } from '../../helpers/credential.helpers';
 
-import { VC, Profile } from '@learncard/types';
-import { BoostAchievementCredential, LCCategoryEnum } from '../../types';
+import type { VC, Profile } from '@learncard/types';
+import { LCCategoryEnum, type BoostAchievementCredential, type KnownDIDRegistryType } from '../../types';
 import VerifierStateBadgeAndText, {
-    VerifierState,
     VERIFIER_STATES,
+    type VerifierState,
 } from './VerifierStateBadgeAndText';
-import { KnownDIDRegistryType } from '../../types';
 
 type CertificateFrontFaceProps = {
     isFront?: boolean;

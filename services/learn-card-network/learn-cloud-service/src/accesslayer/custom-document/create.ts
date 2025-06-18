@@ -1,5 +1,5 @@
 import { ObjectId } from 'mongodb';
-import { EncryptedRecord } from '@learncard/types';
+import type { EncryptedRecord } from '@learncard/types';
 
 import { CustomDocuments } from '.';
 
@@ -22,8 +22,8 @@ export const createCustomDocument = async (
                 ...(typeof document._id === 'string' ? { _id: new ObjectId(document._id) } : {}),
             })
         ).insertedId.toString();
-    } catch (e) {
-        console.error(e);
+    } catch (error) {
+        console.error(error);
         return false;
     }
 };
@@ -49,8 +49,8 @@ export const createCustomDocuments = async (
         });
 
         return (await CustomDocuments.insertMany(documents)).insertedCount;
-    } catch (e) {
-        console.error(e);
+    } catch (error) {
+        console.error(error);
         return 0;
     }
 };

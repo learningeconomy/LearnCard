@@ -1,4 +1,4 @@
-import { JWE } from '@learncard/types';
+import type { JWE } from '@learncard/types';
 import { getLearnCard } from '@helpers/learnCard.helpers';
 import { isTest } from './test.helpers';
 

@@ -5,20 +5,20 @@ import {
     convertQueryResultToPropertiesObjectArray,
     getMatchQueryWhere,
 } from '@helpers/neo4j.helpers';
-import { BoostRecipientInfo, BoostPermissions, LCNProfileQuery } from '@learncard/types';
+import type { BoostRecipientInfo, BoostPermissions, LCNProfileQuery } from '@learncard/types';
 import {
     Boost,
-    BoostInstance,
     Profile,
     Credential,
-    CredentialInstance,
-    CredentialRelationships,
-    ProfileRelationships,
     Role,
+    type BoostInstance,
+    type CredentialInstance,
+    type CredentialRelationships,
+    type ProfileRelationships,
 } from '@models';
 import { getProfilesByProfileIds } from '@accesslayer/profile/read';
-import { FlatProfileType, ProfileType } from 'types/profile';
-import { BoostType, BoostWithClaimPermissionsType } from 'types/boost';
+import type { FlatProfileType, ProfileType } from 'types/profile';
+import type { BoostType, BoostWithClaimPermissionsType } from 'types/boost';
 import { ADMIN_ROLE_ID, CREATOR_ROLE_ID } from 'src/constants/roles';
 import {
     CHILD_TO_NON_CHILD_PERMISSION,
@@ -26,7 +26,7 @@ import {
     QUERYABLE_PERMISSIONS,
 } from 'src/constants/permissions';
 import { getIdFromUri } from '@helpers/uri.helpers';
-import { Role as RoleType } from 'types/role';
+import type { Role as RoleType } from 'types/role';
 import { inflateObject } from '@helpers/objects.helpers';
 import { getCredentialUri } from '@helpers/credential.helpers';
 import { giveProfileEmptyPermissions } from './create';
@@ -102,7 +102,7 @@ export const getBoostRecipients = async (
         query?: LCNProfileQuery;
         domain: string;
     }
-): Promise<Array<BoostRecipientInfo & { sent: string }>> => {
+): Promise<(BoostRecipientInfo & { sent: string })[]> => {
     const _query = new QueryBuilder(
         new BindParam({ matchQuery: convertObjectRegExpToNeo4j(matchQuery), cursor })
     )
@@ -170,7 +170,7 @@ export const getBoostRecipients = async (
             ...result,
             to: recipients.find(recipient => recipient.profileId === result.to),
         }))
-        .filter(result => Boolean(result.to)) as Array<BoostRecipientInfo & { sent: string }>;
+        .filter(result => Boolean(result.to)) as (BoostRecipientInfo & { sent: string })[];
 };
 
 /** @deprecated */

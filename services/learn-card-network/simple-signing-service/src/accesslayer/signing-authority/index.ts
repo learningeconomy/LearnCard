@@ -1,4 +1,4 @@
-import { SIGNING_AUTHORITIES_COLLECTION, MongoSigningAuthorityType } from '@models';
+import { SIGNING_AUTHORITIES_COLLECTION, type MongoSigningAuthorityType } from '@models';
 import mongodb from '@mongo';
 
 export const getSigningAuthoritiesCollection = () => {

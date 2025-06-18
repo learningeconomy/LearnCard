@@ -1,5 +1,5 @@
 import { Profile } from '@models';
-import { ProfileType } from 'types/profile';
+import type { ProfileType } from 'types/profile';
 
 export const createProfileManagedByRelationship = async (
     manager: ProfileType,

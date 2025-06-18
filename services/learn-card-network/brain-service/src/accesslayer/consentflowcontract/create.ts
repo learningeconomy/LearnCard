@@ -1,10 +1,10 @@
 import { QueryBuilder, BindParam } from 'neogma';
 
 import { ConsentFlowContract } from '@models';
-import { ConsentFlowContract as ConsentFlowContractType } from '@learncard/types';
+import type { ConsentFlowContract as ConsentFlowContractType } from '@learncard/types';
 import { v4 as uuid } from 'uuid';
 import { getContractById } from './read';
-import { DbContractType } from 'types/consentflowcontract';
+import type { DbContractType } from 'types/consentflowcontract';
 import { flattenObject } from '@helpers/objects.helpers';
 
 export const createConsentFlowContract = async ({

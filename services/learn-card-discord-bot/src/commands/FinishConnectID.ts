@@ -38,8 +38,8 @@ export const FinishConnectID: Command = {
             modal.addComponents([firstActionRow]);
 
             await interaction.showModal(modal);
-        } catch (e) {
-            console.error(e);
+        } catch (error) {
+            console.error(error);
             await interaction.reply({
                 content: 'Woops, an error occured. Try that again 🫠.`',
                 ephemeral: true,
@@ -75,8 +75,8 @@ export const FinishConnectIDModal = {
 
         try {
             vp = await wallet.invoke.readContentFromCeramic(streamVerificationInput);
-        } catch (e) {
-            console.error(e);
+        } catch (error) {
+            console.error(error);
             await interaction.reply({
                 content:
                     'Auth verification failed ❌.\n `Could not read VP from Ceramic.`\nPlease provide a valid verification code or presentation.\n If your code expired, use `/start-connect-id` to generate another.',
@@ -130,7 +130,7 @@ export const FinishConnectIDModal = {
         if (pendingVCs?.length > 0) {
             const successCount = pendingVCs.filter(p => !p.error).length;
             await interaction.followUp({
-                content: `**(${successCount}/${pendingVCs.length}) pending credentials successfully sent. ✅** \n You\'re all set!`,
+                content: `**(${successCount}/${pendingVCs.length}) pending credentials successfully sent. ✅** \n You're all set!`,
                 ephemeral: true,
             });
         } else {

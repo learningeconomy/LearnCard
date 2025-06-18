@@ -1,5 +1,5 @@
-import { CredentialRecord, VC, VP } from '@learncard/types';
-import { TestStoragePlugin } from './types';
+import type { CredentialRecord, VC, VP } from '@learncard/types';
+import type { TestStoragePlugin } from './types';
 
 export const getTestStorage = (): TestStoragePlugin => {
     let index: CredentialRecord[] = [];

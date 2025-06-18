@@ -1,4 +1,3 @@
-/* tslint:disable */
 /* eslint-disable */
 export function getVersion(): string;
 export function clearCache(): Promise<any>;

@@ -1,5 +1,5 @@
 import React from 'react';
-import { SkillVerticalCardProps } from '../../types';
+import type { SkillVerticalCardProps } from '../../types';
 import SkillPlaceholder from '../../assets/images/skillplaceholder.png';
 
 export const SkillVerticalCard: React.FC<SkillVerticalCardProps> = ({

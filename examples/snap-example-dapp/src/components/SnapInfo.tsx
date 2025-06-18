@@ -37,15 +37,6 @@ const options = Object.keys(Tabs).map(option => (
     </option>
 ));
 
-const Button: React.FC<{ component: JSX.Element }> = ({ component, children }) => (
-    <button
-        className="border rounded bg-green-300 p-4"
-        type="button"
-        onClick={() => modalComponent.set(component)}
-    >
-        {children}
-    </button>
-);
 const SnapInfo: React.FC = () => {
     const [tab, setTab] = useState<keyof typeof Tabs>('View Dids');
 

@@ -1,4 +1,4 @@
-import { Command } from './Command';
+import type { Command } from './Command';
 import { IssueCredential } from './commands/IssueCredential';
 import {
     AddCredential,

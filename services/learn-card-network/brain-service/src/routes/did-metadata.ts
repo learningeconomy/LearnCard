@@ -45,7 +45,7 @@ export const didMetadataRouter = t.router({
                     );
 
                     return true;
-                } catch (error) {
+                } catch {
                     await deleteDidMetadata(metadata.id);
 
                     throw new TRPCError({

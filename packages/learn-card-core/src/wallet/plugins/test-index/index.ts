@@ -1,5 +1,5 @@
-import { CredentialRecord, VC } from '@learncard/types';
-import { TestIndexPlugin } from './types';
+import type { CredentialRecord } from '@learncard/types';
+import type { TestIndexPlugin } from './types';
 
 export const getTestIndex = (): TestIndexPlugin => {
     let index: CredentialRecord[] = [];

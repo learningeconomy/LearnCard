@@ -1,5 +1,5 @@
-import { UnsignedVC, UnsignedVP, VC, VP, VerificationCheck } from '@learncard/types';
-import { Plugin } from '@learncard/core';
+import type { UnsignedVC, UnsignedVP, VC, VP, VerificationCheck } from '@learncard/types';
+import type { Plugin } from '@learncard/core';
 
 /** @group VC-API Plugin */
 export type APIOptions = {

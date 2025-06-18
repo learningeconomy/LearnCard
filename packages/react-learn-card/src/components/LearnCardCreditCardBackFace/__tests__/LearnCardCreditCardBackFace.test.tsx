@@ -3,7 +3,7 @@ import '@testing-library/jest-dom';
 import { render, screen } from '@testing-library/react';
 
 import LearnCardCreditCardBackFace from '../LearnCardCreditCardBackFace';
-import { LearnCardCreditCardUserProps, LearnCardCreditCardProps } from '../types';
+import type { LearnCardCreditCardUserProps, LearnCardCreditCardProps } from '../types';
 
 describe('LearnCardCreditCardBackFace', () => {
     test('Checks LearnCardCreditCardBackFace renders with props', () => {

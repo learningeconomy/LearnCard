@@ -1,4 +1,4 @@
-import { JWE, JWEValidator } from '@learncard/types';
+import { JWEValidator, type JWE } from '@learncard/types';
 import type { DataTransformer } from '@trpc/server';
 
 /**

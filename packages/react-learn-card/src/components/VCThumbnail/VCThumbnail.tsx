@@ -3,7 +3,7 @@ import React from 'react';
 import FatArrow from '../../assets/images/icon.green.fat-arrow.png';
 import VerifiedCheck from '../../assets/images/verified-check.png';
 
-import { VCThumbnailProps } from './types';
+import type { VCThumbnailProps } from './types';
 
 export const VCThumbnail: React.FC<VCThumbnailProps> = ({
     title,

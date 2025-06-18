@@ -22,7 +22,7 @@ const fetchWithTimeout = async (url: string, options: RequestInit = {}, timeout 
 const healthCheck = async (): Promise<boolean> => {
     try {
         return (await fetchWithTimeout('http://localhost:4000/api/health-check'))?.status === 200;
-    } catch (error) {
+    } catch {
         return false;
     }
 };

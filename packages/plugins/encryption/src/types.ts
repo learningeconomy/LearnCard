@@ -1,5 +1,5 @@
-import { LearnCard, Plugin } from '@learncard/core';
-import { JWE, JWKWithPrivateKey } from '@learncard/types';
+import type { LearnCard, Plugin } from '@learncard/core';
+import type { JWE, JWKWithPrivateKey } from '@learncard/types';
 
 export type EncryptionPluginMethods = {
     createJwe: (cleartext: string, recipients?: string[]) => Promise<JWE>;

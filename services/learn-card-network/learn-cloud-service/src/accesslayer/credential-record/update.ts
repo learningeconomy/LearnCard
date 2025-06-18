@@ -1,6 +1,6 @@
 import { MongoServerError } from 'mongodb';
 import { TRPCError } from '@trpc/server';
-import { EncryptedCredentialRecord } from '@learncard/types';
+import type { EncryptedCredentialRecord } from '@learncard/types';
 
 import { getCredentialRecordCollection } from '.';
 
@@ -18,7 +18,7 @@ export const updateCredentialRecord = async (
         ).modifiedCount;
     } catch (error) {
         // 11000 is the Mongo Duplicate Key Error Code
-        if (error instanceof MongoServerError && error.code === 11000) {
+        if (error instanceof MongoServerError && error.code === 11_000) {
             throw new TRPCError({
                 code: 'CONFLICT',
                 message: 'Record with that ID already exists!',

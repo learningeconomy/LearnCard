@@ -1,3 +1,3 @@
-import { Plugin } from 'types/wallet';
+import type { Plugin } from 'types/wallet';
 
 export type TestCachePlugin = Plugin<'Test Cache', 'cache'>;

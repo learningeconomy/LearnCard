@@ -17,8 +17,7 @@
     "scripts": {
         "build": "node ./scripts/build.mjs && shx cp ./scripts/mixedEntypoint.js ./dist/index.cjs && tsc --p tsconfig.build.json",
         "start": "aqu watch",
-        "lint": "aqu lint",
-        "lint:fix": "aqu lint --fix",
+        "lint": "oxlint .",
         "test": "vitest"
     },
     "author": "Learning Economy Foundation (www.learningeconomy.io)",

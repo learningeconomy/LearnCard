@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { getDidWebLearnCard } from '@helpers/learnCard.helpers';
-import { LCNNotification } from '@learncard/types';
+import type { LCNNotification } from '@learncard/types';
 import { getDidWeb } from '@helpers/did.helpers';
 import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
 

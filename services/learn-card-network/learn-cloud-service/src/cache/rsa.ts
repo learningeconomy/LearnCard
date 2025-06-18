@@ -1,5 +1,5 @@
 import cache from '@cache';
-import { KeyPair } from '@helpers/crypto.helpers';
+import type { KeyPair } from '@helpers/crypto.helpers';
 
 /** 1 Week */
 export const RSA_TTL = 60 * 60 * 24 * 7;

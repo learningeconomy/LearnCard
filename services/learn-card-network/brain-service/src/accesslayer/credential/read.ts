@@ -1,17 +1,17 @@
 import { Op, QueryBuilder, Where } from 'neogma';
 import {
     Credential,
-    CredentialInstance,
-    CredentialRelationships,
     Profile,
-    ProfileRelationships,
+    type CredentialInstance,
+    type CredentialRelationships,
+    type ProfileRelationships,
 } from '@models';
-import { SentCredentialInfo } from '@learncard/types';
+import type { SentCredentialInfo } from '@learncard/types';
 
 import { getCredentialUri } from '@helpers/credential.helpers';
 
-import { CredentialType } from 'types/credential';
-import { ProfileType } from 'types/profile';
+import type { CredentialType } from 'types/credential';
+import type { ProfileType } from 'types/profile';
 import { convertQueryResultToPropertiesObjectArray } from '@helpers/neo4j.helpers';
 import { getIdFromUri } from '@helpers/uri.helpers';
 

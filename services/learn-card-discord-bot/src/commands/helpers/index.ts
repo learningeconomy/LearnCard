@@ -1,19 +1,17 @@
 import { initLearnCard } from '@learncard/init';
 import { getDIDForSource } from '../../accesslayer/didregistry/read';
-import {
-    getCredentialTemplates,
-    getCredentialTemplateById,
-} from '../../accesslayer/credentialtemplates/read';
+import { getCredentialTemplateById } from '../../accesslayer/credentialtemplates/read';
 
 import {
-    CredentialTemplate,
-    IssuerConfig,
-    SendCredentialResponse,
-    SendCredentialData,
+    type CredentialTemplate,
+    type SendCredentialResponse,
+    type SendCredentialData,
+    type Context,
 } from '../../types';
-import { getIssuerConfigById, getIssuerConfigs } from '../../accesslayer/issuers/read';
+import { getIssuerConfigById } from '../../accesslayer/issuers/read';
 import { createPendingVc } from '../../accesslayer/pendingvcs/create';
 import { getPendingVcs } from '../../accesslayer/pendingvcs/read';
+import type { Interaction } from 'discord.js';
 
 export const constructCredentialForSubject = (
     issuer: string | object,
@@ -57,7 +55,7 @@ export const sendCredentialToSubject = async (
     context: Context,
     guildId?: string
 ): Promise<SendCredentialResponse> => {
-    if (!guildId) guildId = interaction.guildId;
+    if (!guildId) guildId = interaction.guildId!;
 
     const issuerConfig = await getIssuerConfigById(issuerConfigId, context, guildId);
     const credentialTemplate = await getCredentialTemplateById(templateId, context, guildId);
@@ -73,7 +71,7 @@ export const sendCredentialToSubject = async (
 
     if (!subjectDID) {
         data.pendingVc = {
-            guildId: interaction.guildId,
+            guildId: interaction.guildId!,
             issuerConfigId,
             subjectId,
             credentialTemplateId: templateId,
@@ -94,8 +92,8 @@ export const sendCredentialToSubject = async (
 
         const unsignedVc = constructCredentialForSubject(issuer, credentialTemplate, subjectDID);
 
-        const vc = await issuerLC.invoke.issueCredential(unsignedVc);
-        const streamId = await issuerLC.store.Ceramic.upload(vc);
+        const vc = await issuerLC.invoke.issueCredential(unsignedVc as any);
+        const streamId = await (issuerLC.store as any).Ceramic.upload(vc);
 
         data.claimCredentialLink = `https://learncard.app/claim-credential/${streamId}`;
     }
@@ -114,9 +112,10 @@ export const sendCredentialToSubject = async (
                 `Hello 👋! You have received a credential: **${credentialTemplate.name}** 🎉 \n To claim the credential, you need to setup your wallet or LearnCard. \n\n Please run \`/start-connect-id\` to complete setup 🚧\n\n*Need help?* Check out the guide: https://docs.learncard.com/learncard-services/discord-bot/register-learncard-did  `
             );
         }
-    } catch (e: object | undefined) {
-        console.error('Error sending message to user.', e);
-        error = e;
+        // oxlint-disable-next-line catch-error-name
+    } catch (_error) {
+        console.error('Error sending message to user.', _error);
+        error = _error as Error;
     }
 
     return {

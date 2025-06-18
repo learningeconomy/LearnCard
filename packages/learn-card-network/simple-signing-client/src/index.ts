@@ -1,4 +1,4 @@
-import { createTRPCProxyClient, CreateTRPCProxyClient, httpBatchLink } from '@trpc/client';
+import { createTRPCProxyClient, httpBatchLink, type CreateTRPCProxyClient } from '@trpc/client';
 import type { AppRouter } from '@learncard/simple-signing-service';
 
 import { callbackLink } from './callbackLink';

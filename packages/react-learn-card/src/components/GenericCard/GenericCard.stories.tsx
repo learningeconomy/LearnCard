@@ -1,7 +1,7 @@
 import React from 'react';
-import { Story, Meta } from '@storybook/react';
+import type { Story, Meta } from '@storybook/react';
 import GenericCard from './GenericCard';
-import { GenericCardProps, WalletCategoryTypes } from '../../types';
+import { WalletCategoryTypes, type GenericCardProps } from '../../types';
 
 export default {
     title: 'Generic Card',

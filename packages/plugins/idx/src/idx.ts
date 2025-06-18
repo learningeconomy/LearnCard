@@ -1,16 +1,21 @@
 import { DIDDataStore } from '@glazed/did-datastore';
-import { CredentialRecordValidator, VC, CredentialRecord, VCValidator } from '@learncard/types';
-import { LearnCard } from '@learncard/core';
+import {
+    CredentialRecordValidator,
+    VCValidator,
+    type VC,
+    type CredentialRecord,
+} from '@learncard/types';
+import type { LearnCard } from '@learncard/core';
 
 import { streamIdToCeramicURI } from '@learncard/ceramic-plugin';
 
 import {
-    IDXPlugin,
-    CredentialsList,
     CredentialsListValidator,
-    IDXPluginDependentMethods,
-    IDXArgs,
     BackwardsCompatCredentialsListValidator,
+    type IDXPlugin,
+    type CredentialsList,
+    type IDXPluginDependentMethods,
+    type IDXArgs,
 } from './types';
 import { DEFAULT_IDX_ARGS } from './defaults';
 
@@ -44,7 +49,7 @@ export const getIDXPlugin = async (
             const newCreds = oldCreds.map(cred => {
                 if ('uri' in cred) return cred as CredentialRecord;
 
-                const { title, id, storageType, ...rest } = cred;
+                const { title, id, storageType: _storageType, ...rest } = cred;
 
                 return {
                     ...rest,
@@ -90,7 +95,7 @@ export const getIDXPlugin = async (
 
         if (!record) throw new Error('record is required');
 
-        if (!record.uri) throw Error('No URI provided');
+        if (!record.uri) throw new Error('No URI provided');
 
         // Make sure URI can be resolved
         await learnCard.read.get(record.uri);
@@ -101,7 +106,7 @@ export const getIDXPlugin = async (
             return credential.id === record.id;
         });
 
-        if (indexOfExistingCredential > -1) {
+        if (indexOfExistingCredential !== -1) {
             existing.credentials[indexOfExistingCredential] = record;
         } else existing.credentials.push(record);
 
@@ -124,7 +129,7 @@ export const getIDXPlugin = async (
                     return credential.id === record.id;
                 });
 
-                if (indexOfExistingCredential > -1) {
+                if (indexOfExistingCredential !== -1) {
                     existing.credentials[indexOfExistingCredential] = record;
                 } else existing.credentials.push(record);
             })
@@ -230,7 +235,7 @@ export const getIDXPlugin = async (
 
                 if (!record) throw new Error('record is required');
 
-                if (!record.uri) throw Error('No URI provided');
+                if (!record.uri) throw new Error('No URI provided');
 
                 // Make sure URI can be resolved
                 await _learnCard.read.get(record.uri);
@@ -241,7 +246,7 @@ export const getIDXPlugin = async (
                     return credential.id === record.id;
                 });
 
-                if (indexOfExistingCredential > -1) {
+                if (indexOfExistingCredential !== -1) {
                     existing.credentials[indexOfExistingCredential] = record;
                 } else existing.credentials.push(record);
 

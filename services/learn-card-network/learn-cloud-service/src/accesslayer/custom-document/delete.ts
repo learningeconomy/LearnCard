@@ -1,6 +1,5 @@
-import { Filter, ObjectId } from 'mongodb';
-
-import { MongoCustomDocumentType } from '@models';
+import { ObjectId, type Filter } from 'mongodb';
+import type { MongoCustomDocumentType } from '@models';
 import { CustomDocuments } from '.';
 import { getUserForDid } from '@accesslayer/user/read';
 
@@ -31,8 +30,8 @@ export const deleteCustomDocumentsByQuery = async (
                 ...(typeof query._id === 'string' ? { _id: new ObjectId(query._id) } : {}),
             })
         ).deletedCount;
-    } catch (e) {
-        console.error(e);
+    } catch (error) {
+        console.error(error);
         return false;
     }
 };

@@ -1,4 +1,4 @@
-import {
+import type {
     JWE,
     JWKWithPrivateKey,
     UnsignedVC,
@@ -9,7 +9,7 @@ import {
     DidDocument,
 } from '@learncard/types';
 import type { DIDResolutionResult } from 'dids';
-import { Plugin } from '@learncard/core';
+import type { Plugin } from '@learncard/core';
 
 /** @group DIDKit Plugin */
 export type DidMethod =

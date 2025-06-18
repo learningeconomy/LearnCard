@@ -1,5 +1,5 @@
-import { ProfileInstance } from '@models';
-import { ProfileType } from 'types/profile';
+import type { ProfileInstance } from '@models';
+import type { ProfileType } from 'types/profile';
 import { getProfileByDid } from '@accesslayer/profile/read';
 
 /** Generates a did:web for a user given the domain of the app */

@@ -1,5 +1,5 @@
-import { LearnCard } from '@learncard/core';
-import { LearnCardPluginDependentMethods, LearnCardPlugin } from './types';
+import type { LearnCard } from '@learncard/core';
+import type { LearnCardPluginDependentMethods, LearnCardPlugin } from './types';
 import { verifyCredential } from './verify';
 
 export * from './types';

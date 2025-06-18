@@ -1,8 +1,8 @@
 import cache from '@cache';
 import {
-    BoostClaimLinkSigningAuthorityType,
-    BoostClaimLinkOptionsType,
     BoostClaimLinkCacheValueValidator,
+    type BoostClaimLinkSigningAuthorityType,
+    type BoostClaimLinkOptionsType,
 } from 'types/boost';
 
 export const getClaimLinkCacheKey = (boostUri: string, challenge: string): string =>

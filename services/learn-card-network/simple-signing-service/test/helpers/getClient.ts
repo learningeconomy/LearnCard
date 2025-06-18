@@ -1,7 +1,7 @@
 import { readFile } from 'fs/promises';
 
 import { appRouter } from '../../src/app';
-import { initLearnCard, LearnCardFromSeed } from '@learncard/init';
+import { initLearnCard, type LearnCardFromSeed } from '@learncard/init';
 
 const didkit = readFile(require.resolve('@learncard/didkit-plugin/dist/didkit_wasm_bg.wasm'));
 
@@ -48,7 +48,7 @@ export const getUser = async (seed?: string) => {
     });
 
     return {
-        learnCard,
+        learnCard: learnCard as LearnCardFromSeed['returnValue'],
         clients: { partialAuth, fullAuth, authorizedDidAuth },
     };
 };

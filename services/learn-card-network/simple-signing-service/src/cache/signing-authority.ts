@@ -1,5 +1,5 @@
 import cache from '@cache';
-import { SigningAuthorityMeta } from 'types/signing-authority';
+import type { SigningAuthorityMeta } from 'types/signing-authority';
 
 export const getSigningAuthorityKey = (did: string, name: string): string => `sa|${did}|${name}`;
 

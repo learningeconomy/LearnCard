@@ -1,8 +1,8 @@
 import { ObjectId, MongoServerError } from 'mongodb';
 import { TRPCError } from '@trpc/server';
-import { EncryptedCredentialRecord } from '@learncard/types';
+import type { EncryptedCredentialRecord } from '@learncard/types';
 
-import { MongoCredentialRecordType } from '@models';
+import type { MongoCredentialRecordType } from '@models';
 import { CredentialRecords } from '.';
 
 export const createCredentialRecord = async (
@@ -25,7 +25,7 @@ export const createCredentialRecord = async (
         ).insertedId.toString();
     } catch (error) {
         // 11000 is the Mongo Duplicate Key Error Code
-        if (error instanceof MongoServerError && error.code === 11000) {
+        if (error instanceof MongoServerError && error.code === 11_000) {
             throw new TRPCError({
                 code: 'CONFLICT',
                 message: 'Record with that ID already exists!',
@@ -55,7 +55,7 @@ export const createCredentialRecords = async (
         } as MongoCredentialRecordType;
     });
 
-    const dedupedRecordIds = Array.from(new Set(records.map(record => record.id)));
+    const dedupedRecordIds = [...new Set(records.map((record) => record.id))];
 
     if (dedupedRecordIds.length !== records.length) {
         throw new TRPCError({
@@ -68,7 +68,7 @@ export const createCredentialRecords = async (
         return (await CredentialRecords.insertMany(records)).insertedCount;
     } catch (error) {
         // 11000 is the Mongo Duplicate Key Error Code
-        if (error instanceof MongoServerError && error.code === 11000) {
+        if (error instanceof MongoServerError && error.code === 11_000) {
             throw new TRPCError({
                 code: 'CONFLICT',
                 message: 'Tried to insert a record with an ID that already exists!',

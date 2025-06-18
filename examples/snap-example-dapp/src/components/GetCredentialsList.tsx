@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CredentialRecord } from '@learncard/types';
+import type { CredentialRecord } from '@learncard/types';
 
 import { useIsSnapReady } from '@state/snapState';
 

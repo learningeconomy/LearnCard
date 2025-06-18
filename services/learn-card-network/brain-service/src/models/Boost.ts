@@ -1,11 +1,11 @@
-import { ModelFactory, ModelRelatedNodesI, NeogmaInstance } from 'neogma';
-import { BoostPermissions } from '@learncard/types';
+import { ModelFactory, type ModelRelatedNodesI, type NeogmaInstance } from 'neogma';
+import type { BoostPermissions } from '@learncard/types';
 
 import { neogma } from '@instance';
 
-import { Profile, ProfileInstance } from './Profile';
-import { FlatBoostType, BoostStatus } from 'types/boost';
-import { Role, RoleInstance } from './Role';
+import { Profile, type ProfileInstance } from './Profile';
+import { BoostStatus, type FlatBoostType } from 'types/boost';
+import { Role, type RoleInstance } from './Role';
 
 export type BoostRelationships = {
     createdBy: ModelRelatedNodesI<

@@ -1,14 +1,12 @@
 import {
-    Client,
-    BaseCommandInteraction,
     ModalBuilder,
     ApplicationCommandOptionType,
     TextInputBuilder,
     ActionRowBuilder,
     PermissionsBitField,
     SelectMenuBuilder,
+    type BaseCommandInteraction,
 } from 'discord.js';
-import { VC } from '@learncard/types';
 
 import { createCredentialTemplate } from '../accesslayer/credentialtemplates/create/index';
 import { getCredentialTypeOptions } from './helpers';
@@ -43,8 +41,8 @@ export const AddCredential: Command = {
                 content: `Great! Lets create a new credential template for your community ✏️`,
                 components: [firstActionRow],
             });
-        } catch (e) {
-            console.error(e);
+        } catch (error) {
+            console.error(error);
             await interaction.reply({
                 content: 'Woops, an error occured. Try that again 🫠.`',
                 ephemeral: true,

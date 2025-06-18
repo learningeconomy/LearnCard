@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { VC } from '@learncard/types';
+import type { VC } from '@learncard/types';
 
 import { useIsSnapReady } from '@state/snapState';
 

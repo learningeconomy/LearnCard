@@ -21,7 +21,7 @@ export async function clearDatabases() {
         // Connect to Postgres
         try {
             await pgClient.connect();
-        } catch (error) { }
+        } catch {}
 
         // Run all clear operations concurrently
         await Promise.all([

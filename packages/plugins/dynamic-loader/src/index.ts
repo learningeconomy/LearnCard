@@ -1,4 +1,4 @@
-import { DynamicLoaderPluginType } from './types';
+import type { DynamicLoaderPluginType } from './types';
 
 export * from './types';
 

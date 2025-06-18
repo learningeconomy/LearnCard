@@ -1,7 +1,7 @@
 import React from 'react';
-import { Story, Meta } from '@storybook/react';
+import type { Story, Meta } from '@storybook/react';
 import BoostSmallCard from './BoostSmallCard';
-import { BoostSmallCardProps, WalletCategoryTypes } from '../../types';
+import { WalletCategoryTypes, type BoostSmallCardProps } from '../../types';
 
 export default {
     title: 'Boost Small Card',

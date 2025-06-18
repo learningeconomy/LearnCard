@@ -1,17 +1,17 @@
 import { Op, QueryBuilder, Where } from 'neogma';
 import {
     Presentation,
-    PresentationInstance,
-    PresentationRelationships,
     Profile,
-    ProfileRelationships,
+    type PresentationInstance,
+    type PresentationRelationships,
+    type ProfileRelationships,
 } from '@models';
-import { SentCredentialInfo } from '@learncard/types';
+import type { SentCredentialInfo } from '@learncard/types';
 
 import { getPresentationUri } from '@helpers/presentation.helpers';
 
-import { PresentationType } from 'types/presentation';
-import { ProfileType } from 'types/profile';
+import type { PresentationType } from 'types/presentation';
+import type { ProfileType } from 'types/profile';
 import { convertQueryResultToPropertiesObjectArray } from '@helpers/neo4j.helpers';
 import { getIdFromUri } from '@helpers/uri.helpers';
 

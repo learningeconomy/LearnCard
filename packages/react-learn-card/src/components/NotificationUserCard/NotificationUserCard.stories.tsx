@@ -1,8 +1,8 @@
 import React from 'react';
-import { Story, Meta } from '@storybook/react';
+import type { Story, Meta } from '@storybook/react';
 
 import NotificationUserCard from './NotificationUserCard';
-import { NotificationUserCardProps } from './types';
+import type { NotificationUserCardProps } from './types';
 
 export default {
     title: 'NotificationUserCard',

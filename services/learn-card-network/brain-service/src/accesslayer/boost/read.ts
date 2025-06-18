@@ -6,12 +6,12 @@ import {
     convertQueryResultToPropertiesObjectArray,
     getMatchQueryWhere,
 } from '@helpers/neo4j.helpers';
-import { Boost, Profile, BoostInstance, ProfileManager } from '@models';
-import { BoostType } from 'types/boost';
-import { BoostQuery, LCNProfileManager, LCNProfileManagerQuery } from '@learncard/types';
+import { Boost, Profile, ProfileManager, type BoostInstance } from '@models';
+import type { BoostType } from 'types/boost';
+import type { BoostQuery, LCNProfileManager, LCNProfileManagerQuery } from '@learncard/types';
 import { inflateObject } from '@helpers/objects.helpers';
-import { ProfileType } from 'types/profile';
-import { ProfileManagerType } from 'types/profile-manager';
+import type { ProfileType } from 'types/profile';
+import type { ProfileManagerType } from 'types/profile-manager';
 
 export const getBoostById = async (id: string): Promise<BoostInstance | null> => {
     return Boost.findOne({ where: { id } });
@@ -36,7 +36,7 @@ export const getBoostsForProfile = async (
         cursor,
         query: matchQuery = {},
     }: { limit: number; cursor?: string; query?: BoostQuery }
-): Promise<Array<BoostType & { created: string }>> => {
+): Promise<(BoostType & { created: string })[]> => {
     const _query = new QueryBuilder(
         new BindParam({ matchQuery: convertObjectRegExpToNeo4j(matchQuery), cursor })
     )
@@ -109,7 +109,7 @@ export const getChildrenBoosts = async (
         query?: BoostQuery;
         numberOfGenerations?: number;
     }
-): Promise<Array<BoostType & { created: string }>> => {
+): Promise<(BoostType & { created: string })[]> => {
     const _query = new QueryBuilder(
         new BindParam({ matchQuery: convertObjectRegExpToNeo4j(matchQuery), cursor })
     )
@@ -189,7 +189,7 @@ export const getSiblingBoosts = async (
         cursor?: string;
         query?: BoostQuery;
     }
-): Promise<Array<BoostType & { created: string }>> => {
+): Promise<(BoostType & { created: string })[]> => {
     const _query = new QueryBuilder(
         new BindParam({ matchQuery: convertObjectRegExpToNeo4j(matchQuery), cursor })
     )
@@ -270,7 +270,7 @@ export const getFamilialBoosts = async (
         childGenerations?: number;
         includeExtendedFamily?: boolean;
     }
-): Promise<Array<BoostType & { created: string }>> => {
+): Promise<(BoostType & { created: string })[]> => {
     // Theoretically these should never _not_ be a number, but because we are interpolating them into
     // the cypher string, it's good to sanitize them anyways
     if (typeof parentGenerations !== 'number' || typeof childGenerations !== 'number') {
@@ -383,7 +383,7 @@ export const getParentBoosts = async (
         query?: BoostQuery;
         numberOfGenerations?: number;
     }
-): Promise<Array<BoostType & { created: string }>> => {
+): Promise<(BoostType & { created: string })[]> => {
     const _query = new QueryBuilder(
         new BindParam({ matchQuery: convertObjectRegExpToNeo4j(matchQuery), cursor })
     )
@@ -463,7 +463,7 @@ export const getChildrenProfileManagers = async (
         cursor?: string;
         query?: LCNProfileManagerQuery;
     }
-): Promise<Array<LCNProfileManager>> => {
+): Promise<LCNProfileManager[]> => {
     const _query = new QueryBuilder(
         new BindParam({ matchQuery: convertObjectRegExpToNeo4j(matchQuery), cursor })
     )

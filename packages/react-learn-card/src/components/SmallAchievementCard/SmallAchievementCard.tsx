@@ -1,13 +1,12 @@
 import React from 'react';
-import { SmallAchievementCardProps } from '../../types';
-import { RoundedPill } from '../RoundedPill';
+import type { SmallAchievementCardProps } from '../../types';
 import { Trophy } from '../svgs';
 
 export const SmallAchievementCard: React.FC<SmallAchievementCardProps> = ({
     title = 'Title Lorem Ipsum',
     thumbImgSrc,
     date = 'Apr 20, 2022',
-    showStatus = false,
+    showStatus: _showStatus = false,
     onClick = () => {},
 }) => {
     const thumbClass = thumbImgSrc ? 'bg-grayscale-50' : 'bg-indigo-200';

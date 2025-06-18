@@ -1,9 +1,9 @@
 import { Buffer } from 'buffer';
 
-import { LearnCard } from '@learncard/core';
+import type { LearnCard } from '@learncard/core';
 import { ethers } from 'ethers';
 
-import { EthereumConfig, EthereumPlugin, TokenList } from './types';
+import type { EthereumConfig, EthereumPlugin, TokenList } from './types';
 import {
     formatUnits,
     parseUnits,
@@ -51,9 +51,10 @@ export const getEthereumPlugin = (
     let provider: ethers.providers.Provider;
 
     const getDefaultTokenList = (): TokenList => {
-        return require('@uniswap/default-token-list/build/uniswap-default.tokenlist.json').tokens.concat(
-            hardcodedTokens
-        );
+        return [
+            ...require('@uniswap/default-token-list/build/uniswap-default.tokenlist.json').tokens,
+            ...hardcodedTokens,
+        ];
     };
     const defaultTokenList: TokenList = getDefaultTokenList();
 
@@ -103,7 +104,7 @@ export const getEthereumPlugin = (
         const tokenAddress = await getTokenAddress(tokenSymbolOrAddress);
 
         if (!tokenAddress) {
-            throw new Error(`Unable to determine token address for \"${tokenSymbolOrAddress}\"`);
+            throw new Error(`Unable to determine token address for "${tokenSymbolOrAddress}"`);
         }
 
         const balance = await getErc20TokenBalance(tokenAddress, walletAddress);
@@ -140,7 +141,7 @@ export const getEthereumPlugin = (
                 const tokenAddress = await getTokenAddress(tokenSymbolOrAddress);
                 if (!tokenAddress) {
                     throw new Error(
-                        `Unable to determine token address for \"${tokenSymbolOrAddress}\"`
+                        `Unable to determine token address for "${tokenSymbolOrAddress}"`
                     );
                 }
 
@@ -174,10 +175,10 @@ export const getEthereumPlugin = (
                 try {
                     network = _network;
                     provider = getProvider();
-                } catch (e) {
+                } catch (error) {
                     network = oldNetwork;
                     provider = getProvider();
-                    throw e;
+                    throw error;
                 }
             },
             addInfuraProjectId: (_learnCard, infuraProjectIdToAdd) => {

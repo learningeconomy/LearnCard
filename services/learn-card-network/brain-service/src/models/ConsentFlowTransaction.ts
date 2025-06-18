@@ -1,8 +1,8 @@
-import { ModelFactory, ModelRelatedNodesI, NeogmaInstance } from 'neogma';
-import { ConsentFlowTerms, ConsentFlowTermsInstance } from './ConsentFlowTerms';
+import { ModelFactory, type ModelRelatedNodesI, type NeogmaInstance } from 'neogma';
+import { ConsentFlowTerms, type ConsentFlowTermsInstance } from './ConsentFlowTerms';
 import { neogma } from '@instance';
 
-import { FlatDbTransactionType } from 'types/consentflowcontract';
+import type { FlatDbTransactionType } from 'types/consentflowcontract';
 
 export type ConsentFlowTransactionRelationships = {
     isFor: ModelRelatedNodesI<typeof ConsentFlowTerms, ConsentFlowTermsInstance>;

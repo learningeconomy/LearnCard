@@ -1,5 +1,4 @@
 import init, {
-    InitInput,
     generateEd25519KeyFromBytes,
     generateSecp256k1KeyFromBytes,
     keyToDID,
@@ -17,10 +16,11 @@ import init, {
     createDagJwe,
     decryptDagJwe,
     clearCache,
+    type InitInput,
 } from './didkit/index';
 import { getDocumentMap } from './helpers';
 
-import { DIDKitPlugin, DidMethod } from './types';
+import type { DIDKitPlugin } from './types';
 
 /**
  j
@@ -31,8 +31,6 @@ export const getDidKitPlugin = async (
     allowRemoteContexts = false
 ): Promise<DIDKitPlugin> => {
     await init(input);
-
-    const memoizedDids: Partial<Record<DidMethod, string>> = {};
 
     return {
         name: 'DIDKit',
@@ -116,12 +114,12 @@ export const getDidKitPlugin = async (
                         isJwt
                             ? '{}'
                             : JSON.stringify(
-                                await getDocumentMap(
-                                    _learnCard,
-                                    presentation,
-                                    allowRemoteContexts
-                                )
-                            )
+                                  await getDocumentMap(
+                                      _learnCard,
+                                      presentation,
+                                      allowRemoteContexts
+                                  )
+                              )
                     )
                 );
             },
@@ -179,7 +177,9 @@ export const getDidKitPlugin = async (
 
                     const result: Record<string, any> = {};
                     for (const key in obj) {
-                        result[key] = convertBigIntsToNumbers(obj[key]);
+                        if (key in obj) {
+                            result[key] = convertBigIntsToNumbers(obj[key]);
+                        }
                     }
                     return result;
                 };

@@ -1,15 +1,13 @@
 import {
-    ModalBuilder,
     ApplicationCommandOptionType,
     SelectMenuBuilder,
     ActionRowBuilder,
-    SlashCommandBuilder,
     PermissionsBitField,
 } from 'discord.js';
 
 import { getCredentialTemplates } from '../accesslayer/credentialtemplates/read';
 
-import { CredentialTemplate, IssuerConfig } from '../types';
+import type { CredentialTemplate, IssuerConfig } from '../types';
 import { getIssuerConfigs } from '../accesslayer/issuers/read';
 import { sendCredentialToSubject } from './helpers';
 
@@ -72,8 +70,8 @@ export const SendCredential: Command = {
                 content: `${subject.id}`,
                 components: [firstActionRow],
             });
-        } catch (e) {
-            console.error(e);
+        } catch (error) {
+            console.error(error);
             await interaction.reply({
                 content: 'Woops, an error occured. Try that again 🫠.`',
                 ephemeral: true,

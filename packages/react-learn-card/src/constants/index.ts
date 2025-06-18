@@ -1,5 +1,4 @@
 import coinsGraphic from '../assets/images/walletcurrency.webp';
-import idsGraphic from '../assets/images/walletids.webp';
 import idPurple from '../assets/images/id-purple.png';
 import learningHistoryGraphic from '../assets/images/backpack.png';
 import skillsGraphic from '../assets/images/walletskills.webp';

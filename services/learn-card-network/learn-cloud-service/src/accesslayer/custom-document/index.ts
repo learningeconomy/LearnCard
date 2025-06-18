@@ -1,6 +1,6 @@
 import mongodb from '@mongo';
 
-import { CUSTOM_DOCUMENT_COLLECTION, MongoCustomDocumentType } from '@models';
+import { CUSTOM_DOCUMENT_COLLECTION, type MongoCustomDocumentType } from '@models';
 
 export const getCustomDocumentCollection = () => {
     return mongodb.collection<MongoCustomDocumentType>(CUSTOM_DOCUMENT_COLLECTION);

@@ -6,7 +6,7 @@ import { t, didAndChallengeRoute } from '@routes';
 import { getAllDidsForDid, getUserForDid } from '@accesslayer/user/read';
 import { VPValidator } from '@learncard/types';
 import { getEmptyLearnCard } from '@helpers/learnCard.helpers';
-import { DidAuthVP } from 'types/vp';
+import type { DidAuthVP } from 'types/vp';
 import { addDidToUser, removeDidFromUser, setDidAsPrimary } from '@accesslayer/user/update';
 import { ensureUserForDid } from '@accesslayer/user/create';
 import { deleteUserByDid } from '@accesslayer/user/delete';

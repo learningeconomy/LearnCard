@@ -1,8 +1,8 @@
 import React from 'react';
-import { Story, Meta } from '@storybook/react';
+import type { Story, Meta } from '@storybook/react';
 
 import CourseCard from './CourseCard';
-import { CourseCardProps } from '../../types';
+import type { CourseCardProps } from '../../types';
 
 export default {
     title: 'Course Card',

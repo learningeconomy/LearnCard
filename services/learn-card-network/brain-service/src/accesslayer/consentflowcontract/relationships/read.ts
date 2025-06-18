@@ -13,7 +13,7 @@ import {
     Credential,
     Boost,
 } from '@models';
-import {
+import type {
     DbTermsType,
     FlatDbTermsType,
     DbContractType,
@@ -21,7 +21,7 @@ import {
     FlatDbTransactionType,
     DbTransactionType,
 } from 'types/consentflowcontract';
-import {
+import type {
     ConsentFlowContractData,
     ConsentFlowContractDataForDid,
     ConsentFlowContractQuery,
@@ -31,12 +31,12 @@ import {
     ConsentFlowTransactionsQuery,
     LCNProfile,
 } from '@learncard/types';
-import { FlatBoostType } from 'types/boost';
+import type { FlatBoostType } from 'types/boost';
 import { constructUri, getIdFromUri } from '@helpers/uri.helpers';
 import { flattenObject, inflateObject } from '@helpers/objects.helpers';
 import { convertDataQueryToNeo4jQuery, shouldIncludeCategory } from '@helpers/contract.helpers';
-import { ProfileType } from 'types/profile';
-import { CredentialType } from 'types/credential';
+import type { ProfileType } from 'types/profile';
+import type { CredentialType } from 'types/credential';
 import { getBoostUri } from '@helpers/boost.helpers';
 
 export const isProfileConsentFlowContractAdmin = async (

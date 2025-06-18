@@ -1,6 +1,6 @@
 import { ethers } from 'ethers';
 
-import { Token, TokenList } from './types';
+import type { Token, TokenList } from './types';
 
 export const isAddress = (maybeAddress: string) => {
     return maybeAddress.startsWith('0x') && maybeAddress.length === 42;

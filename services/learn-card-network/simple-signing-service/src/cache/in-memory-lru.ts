@@ -4,7 +4,7 @@ export const getLRUCache = <T>(limit = 50) => {
     const get = (key: string) => {
         const index = items.findIndex(item => item.key === key);
 
-        if (index < 0) return;
+        if (index === -1) return;
 
         items[index]!.timestamp = Date.now();
 

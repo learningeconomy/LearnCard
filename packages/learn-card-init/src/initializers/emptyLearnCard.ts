@@ -7,7 +7,7 @@ import { getVCTemplatesPlugin } from '@learncard/vc-templates-plugin';
 import { getCHAPIPlugin } from '@learncard/chapi-plugin';
 import { getLearnCardPlugin } from '@learncard/learn-card-plugin';
 
-import { EmptyLearnCard } from '../types/LearnCard';
+import type { EmptyLearnCard } from '../types/LearnCard';
 
 /**
  * Generates an empty wallet with no key material

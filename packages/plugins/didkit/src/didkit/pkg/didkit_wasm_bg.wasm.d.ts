@@ -1,4 +1,3 @@
-/* tslint:disable */
 /* eslint-disable */
 export const memory: WebAssembly.Memory;
 export const getVersion: () => [number, number];

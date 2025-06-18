@@ -39,8 +39,8 @@ export const StartConnectID: Command = {
                     ephemeral: true,
                 });
             }
-        } catch (e) {
-            console.error(e);
+        } catch (error) {
+            console.error(error);
             await interaction.reply({
                 content: 'Woops, an error occured. Try that again 🫠.`',
                 ephemeral: true,
