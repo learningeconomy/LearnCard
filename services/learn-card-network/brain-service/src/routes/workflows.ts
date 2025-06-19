@@ -27,7 +27,6 @@ import {
 } from '@helpers/boost.helpers';
 import { getEmptyLearnCard, getLearnCard } from '@helpers/learnCard.helpers';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
-import { getProfileByDid } from '@accesslayer/profile/read';
 
 // Zod schema for the participate in exchange input
 const participateInExchangeInput = z.object({
