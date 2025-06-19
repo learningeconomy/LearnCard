@@ -35,7 +35,28 @@ export const _openApiHandler = serverlessHttp(
     http.createServer(
         createOpenApiHttpHandler({
             router: appRouter,
-            responseMeta: undefined,
+            responseMeta({ data, errors, ctx, paths, type }) {
+                // Default headers, can be customized further if needed
+                const headers = {
+                    'Access-Control-Allow-Origin': '*',
+                    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+                    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+                };
+
+                // If it's an OPTIONS request (preflight), respond with 204 No Content and CORS headers
+                if (ctx?.req.method === 'OPTIONS') {
+                    return {
+                        status: 204,
+                        headers,
+                    };
+                }
+
+                // For other requests, include existing headers (if any) and add CORS headers
+                // You might want to merge existing headers from `data` or `errors` if they exist
+                return {
+                    headers,
+                };
+            },
             maxBodySize: undefined,
             createContext,
             onError: ({ error, ctx, path }) => {
