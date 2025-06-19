@@ -137,6 +137,8 @@ functions:
                 - Ref: PrivateSubnetA
         events:
             - httpApi: ANY /api/{trpc+}
+        url:
+            cors: true
 
     didWeb:
         handler: didWebLambda.didWebHandler
