@@ -320,7 +320,7 @@ async function handlePresentationForClaim(
         if (Array.isArray(boostCredential.credentialSubject)) {
             boostCredential.credentialSubject = boostCredential.credentialSubject.map(subject => ({
                 ...subject,
-                id: subject.did,
+                id: subject.did || subject.id || holderDid,
             }));
         } else {
             boostCredential.credentialSubject.id = holderDid;
