@@ -1,13 +1,12 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
-import { v4 as uuid } from 'uuid';
+import base64url from "base64url";
 
 import {
-    VPValidator,
-    VP,
-    UnsignedVPValidator,
+    VC,
     UnsignedVC,
-    VCValidator,
+    VP,
+    VPValidator,
 } from '@learncard/types';
 
 import { t, openRoute } from '@routes';
@@ -18,52 +17,52 @@ import { getSigningAuthorityForUserByName } from '@accesslayer/signing-authority
 
 import {
     isClaimLinkAlreadySetForBoost,
-    setValidClaimLinkForBoost,
     getClaimLinkSAInfoForBoost,
     useClaimLinkForBoost,
 } from '@cache/claim-links';
 
 import {
-    issueClaimLinkBoost,
     getBoostUri,
     isDraftBoost,
-    sendBoost,
 } from '@helpers/boost.helpers';
-import { getEmptyLearnCard } from '@helpers/learnCard.helpers';
-import { getDidWeb } from '@helpers/did.helpers';
+import { getEmptyLearnCard, getLearnCard } from '@helpers/learnCard.helpers';
+import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
 import { getProfileByDid } from '@accesslayer/profile/read';
 
 // Zod schema for the participate in exchange input
 const participateInExchangeInput = z.object({
     localWorkflowId: z.string(),
     localExchangeId: z.string(),
-    body: z.union([
-        // Type 1: A body containing the VP for the challenge-response step
-        z.object({
-            verifiablePresentation: VPValidator,
-        }),
-        // Type 2: An empty body for the initiation step
-        z.object({}).optional(),
-    ]).default({}),
+    // Type 1: A body containing the VP for the challenge-response step
+    verifiablePresentation: VPValidator.optional()
 });
 
 // Response schema for the initiation step (VPR)
 const VerifiablePresentationRequestValidator = z.object({
-    query: z.object({
+    query: z.array(z.object({
         type: z.string(),
         credentialQuery: z.array(z.object({
             required: z.boolean().optional(),
             reason: z.string().optional(),
         })).optional(),
-    }),
+    })),
     challenge: z.string(),
     domain: z.string(),
 });
 
-// Response schema for the claim step (VP containing the issued VC)
-const ParticipateExchangeClaimResponseValidator = UnsignedVPValidator.extend({
-    verifiableCredential: VCValidator.array(),
+const ParticipateInExchangeResponseValidator = z.object({
+    verifiablePresentation: VPValidator.optional(),
+    verifiablePresentationRequest: VerifiablePresentationRequestValidator.optional(),
+    redirectUrl: z.string().optional(),
 });
+
+
+const ExchangeInfoValidator = z.object({
+    boostUri: z.string(),
+    challenge: z.string(),
+});
+
+type ExchangeInfoType = z.infer<typeof ExchangeInfoValidator>;
 
 export const workflowsRouter = t.router({
     participateInExchange: openRoute
@@ -77,45 +76,97 @@ export const workflowsRouter = t.router({
             },
         })
         .input(participateInExchangeInput)
-        .output(
-            z.union([
-                VerifiablePresentationRequestValidator,
-                ParticipateExchangeClaimResponseValidator,
-            ])
-        )
+        .output(ParticipateInExchangeResponseValidator)
         .mutation(async ({ ctx, input }) => {
-            const { localWorkflowId, localExchangeId, body } = input;
+            const { localWorkflowId, localExchangeId, verifiablePresentation } = input;
             const { domain } = ctx;
 
-            if (process.env.NODE_ENV !== 'test') {
-                console.log('🚀 BEGIN - Participate in Exchange', JSON.stringify(input));
-            }
+            // TODO: This is a temporary redirect for testing
+            if (localWorkflowId == "redirect") {
+                return {
+                    redirectUrl: "https://www.learncard.com"
+                }
+            } 
 
             // Check if this is an initiation request (empty body) or presentation request (contains VP)
-            const isInitiation = !body || !('verifiablePresentation' in body);
+            const isInitiation = !verifiablePresentation;
+            // Decode the boost URI from the base64url encoded localExchangeId because boostUris have URL-unsafe characters
+            const exchangeInfo = parseExchangeInfo(localExchangeId);
+            if(!exchangeInfo) { 
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Invalid exchange ID',
+                });
 
+            }
+
+            // TODO: This is a temporary redirect for testing verification flows
+            if (localWorkflowId == "verify") {
+                if (verifiablePresentation) {
+                    return { redirectUrl: "https://www.learncard.com" }
+                }
+                return {
+                    verifiablePresentationRequest: {
+                        query: [{
+                            type: 'QueryByExample',
+                            credentialQuery: [{
+                                required: true,
+                                reason: "Please present a credential to verify your identity",
+                            }],
+                        }],
+                        challenge: exchangeInfo.challenge,
+                        domain,
+                    },
+                }
+            }
+
+            // If the user submitted an empty {} post request, this is an initiation of an exchange.
             if (isInitiation) {
                 // Scenario 1: Exchange Initiation
-                return handleExchangeInitiation(localWorkflowId, localExchangeId, domain);
+                return handleExchangeInitiation(exchangeInfo, domain);
             } else {
+                // If the user submitted a VP post request, this is a presentation for claim.
                 // Scenario 2: Presentation for Claim
                 return handlePresentationForClaim(
-                    localWorkflowId,
-                    localExchangeId,
-                    body.verifiablePresentation,
+                    exchangeInfo,
+                    verifiablePresentation,
                     domain
                 );
             }
         }),
 });
 
+function parseExchangeInfo(localExchangeId: string): ExchangeInfoType | undefined {
+    try {
+        const exchangeInfo = JSON.parse(base64url.decode(localExchangeId)) as ExchangeInfoType;
+        return exchangeInfo;
+    } catch (e) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Invalid exchange ID',
+        });
+    }
+}
+
+async function issueResponsePresentationWithVcs(vcs: VC[]) : Promise<VP> {
+    const learnCard = await getLearnCard();
+    return learnCard.invoke.issuePresentation({
+        '@context': [
+            'https://www.w3.org/2018/credentials/v1',
+            'https://w3id.org/security/suites/ed25519-2020/v1',
+        ],
+        type: ['VerifiablePresentation'],
+        verifiableCredential: vcs,
+        holder: learnCard.id.did(),
+    });
+}
+
 async function handleExchangeInitiation(
-    localWorkflowId: string,
-    localExchangeId: string,
+    exchangeInfo: ExchangeInfoType,
     domain: string
 ) {
-    // Validate that the localExchangeId (boost ID) is valid and available
-    const boost = await getBoostByUri(localExchangeId);
+    // Validate that the boost URI is valid and available
+    const boost = await getBoostByUri(exchangeInfo.boostUri);
 
     if (!boost) {
         throw new TRPCError({
@@ -131,14 +182,11 @@ async function handleExchangeInitiation(
         });
     }
 
-    // Generate a cryptographically secure challenge
-    const challenge = uuid();
-
     // Check if challenge is already in use (shouldn't happen with UUID but be safe)
-    if (await isClaimLinkAlreadySetForBoost(localExchangeId, challenge)) {
+    if (!await isClaimLinkAlreadySetForBoost(exchangeInfo.boostUri, exchangeInfo.challenge)) {
         throw new TRPCError({
-            code: 'CONFLICT',
-            message: 'Challenge collision detected, please retry',
+            code: 'BAD_REQUEST',
+            message: 'Challenge is not valid for this boost',
         });
     }
 
@@ -152,42 +200,31 @@ async function handleExchangeInitiation(
         });
     }
 
-    // For VC-API workflow, we need to check if the boost owner has a signing authority available
-    // Since we can't prompt for it in this step, we'll need to store a placeholder and validate later
-    // Store the exchange state with minimal info - the actual signing authority lookup happens during claim
-    await setValidClaimLinkForBoost(localExchangeId, challenge, {
-        name: 'vc-api-exchange',
-        endpoint: domain,
-    }, {
-        ttlSeconds: 300, // 5 minute expiry
-        totalUses: 1, // Single use for security
-    });
 
     // Return VerifiablePresentationRequest
     return {
-        query: {
-            type: 'VerifiablePresentationRequest',
-            credentialQuery: [{
-                required: false,
-                reason: 'Please present a credential to verify your identity and claim this boost',
+        verifiablePresentationRequest: {
+            query: [{
+                type: 'DIDAuthentication',
+                acceptedMethods: [{method: "key"}, {method: "web"}]
             }],
+            challenge: exchangeInfo.challenge,
+            domain,
         },
-        challenge,
-        domain,
     };
 }
 
 async function handlePresentationForClaim(
-    localWorkflowId: string,
-    localExchangeId: string,
+    exchangeInfo: ExchangeInfoType,
     verifiablePresentation: VP,
     domain: string
 ) {
+
     // Extract challenge from the VP (handle both single proof and proof array)
     const challenge = Array.isArray(verifiablePresentation.proof)
         ? verifiablePresentation.proof[0]?.challenge
         : verifiablePresentation.proof?.challenge;
-    
+
     if (!challenge) {
         throw new TRPCError({
             code: 'BAD_REQUEST',
@@ -195,13 +232,42 @@ async function handlePresentationForClaim(
         });
     }
 
-    // Retrieve exchange state from Redis
-    const claimLinkInfo = await getClaimLinkSAInfoForBoost(localExchangeId, challenge);
-    
-    if (!claimLinkInfo) {
+    if (exchangeInfo.challenge !== challenge) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Challenge mismatch',
+        });
+    }
+
+    const [claimLinkSA, boost] = await Promise.all([
+        getClaimLinkSAInfoForBoost(exchangeInfo.boostUri, exchangeInfo.challenge),
+        getBoostByUri(exchangeInfo.boostUri),
+    ]);
+
+    if (!claimLinkSA) {
         throw new TRPCError({
             code: 'NOT_FOUND',
-            message: 'Exchange session not found or expired',
+            message: `Challenge not found for ${exchangeInfo.boostUri}`,
+        });
+    }
+
+    if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+    const boostOwner = await getBoostOwner(boost);
+    if (!boostOwner) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost owner' });
+    }
+
+    const signingAuthorityForUser = await getSigningAuthorityForUserByName(
+        boostOwner,
+        claimLinkSA.endpoint,
+        claimLinkSA.name
+    );
+
+    if (!signingAuthorityForUser) {
+        throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Could not find signing authority for boost',
         });
     }
 
@@ -221,7 +287,6 @@ async function handlePresentationForClaim(
 
     // Extract holder DID from the VP
     const holderDid = verifiablePresentation.holder;
-    
     if (!holderDid) {
         throw new TRPCError({
             code: 'BAD_REQUEST',
@@ -229,42 +294,14 @@ async function handlePresentationForClaim(
         });
     }
 
-    // Get the holder profile by DID
-    const holderProfile = await getProfileByDid(holderDid);
-    
-    if (!holderProfile) {
-        throw new TRPCError({
-            code: 'NOT_FOUND',
-            message: 'Holder profile not found. Please create a profile first.',
-        });
-    }
+    // TODO if there is a profile for the holder, we should use it
+    /** Get the holder profile by DID
+        const holderProfile = await getProfileByDid(holderDid);
+        if (!holderProfile) {
+            console.log("Holder has a profile! ", holderProfile)
+        }
+    */
 
-    // Get boost and validate it's still available
-    const boost = await getBoostByUri(localExchangeId);
-    
-    if (!boost) {
-        throw new TRPCError({
-            code: 'NOT_FOUND',
-            message: 'Boost not found',
-        });
-    }
-
-    if (isDraftBoost(boost)) {
-        throw new TRPCError({
-            code: 'FORBIDDEN',
-            message: 'Draft boosts cannot be claimed',
-        });
-    }
-
-    // Get boost owner and their signing authority
-    const boostOwner = await getBoostOwner(boost);
-    
-    if (!boostOwner) {
-        throw new TRPCError({
-            code: 'NOT_FOUND',
-            message: 'Boost owner not found',
-        });
-    }
 
     try {
         // For VC-API workflow, we'll create the credential directly and use sendBoost
@@ -272,55 +309,45 @@ async function handlePresentationForClaim(
         const boostCredential = JSON.parse(boost.dataValues?.boost) as UnsignedVC;
         const boostURI = getBoostUri(boost.dataValues?.id, domain);
 
-        // Create the credential with proper subject and issuer
-        const credentialToIssue = {
-            ...boostCredential,
-            issuer: { id: getDidWeb(domain, boostOwner.profileId) },
-            issuanceDate: new Date().toISOString(),
-            credentialSubject: Array.isArray(boostCredential.credentialSubject)
-                ? boostCredential.credentialSubject.map(subject => ({
-                    ...subject,
-                    id: holderDid,
-                }))
-                : {
-                    ...boostCredential.credentialSubject,
-                    id: holderDid,
-                },
-        };
-
-        // Add boostId for BoostCredentials
-        if (credentialToIssue?.type?.includes('BoostCredential')) {
-            credentialToIssue.boostId = boostURI;
+        // Ensure `type` is a non-empty array to satisfy Zod validation for the output.
+        // If the boost's credential type is missing or empty, we default it.
+        // We include 'BoostCredential' because the logic below for adding a `boostId` depends on it.
+        if (!boostCredential.type || boostCredential.type.length === 0) {
+            boostCredential.type = ['VerifiableCredential', 'BoostCredential'];
         }
 
-        // Use sendBoost to issue and store the credential
-        const issuedCredentialUri = await sendBoost({
-            from: boostOwner,
-            to: holderProfile,
-            boost,
-            credential: credentialToIssue,
+        boostCredential.issuer = signingAuthorityForUser.relationship.did;
+
+        if (Array.isArray(boostCredential.credentialSubject)) {
+            boostCredential.credentialSubject = boostCredential.credentialSubject.map(subject => ({
+                ...subject,
+                id: subject.did,
+            }));
+        } else {
+            boostCredential.credentialSubject.id = holderDid;
+        }
+
+        // Embed the boostURI into the boost credential for verification purposes.
+        if (boostCredential?.type?.includes('BoostCredential')) {
+            boostCredential.boostId = boostURI;
+        }
+
+        const vc = await issueCredentialWithSigningAuthority(
+            boostOwner,
+            boostCredential,
+            signingAuthorityForUser,
             domain,
-            skipNotification: true,
-            autoAcceptCredential: true,
-        });
+            false
+        ) as VC;
 
         // Mark the challenge as used
-        await useClaimLinkForBoost(localExchangeId, challenge);
+        await useClaimLinkForBoost(exchangeInfo.boostUri, exchangeInfo.challenge);
 
-        // Return VP containing the issued credential
-        // We'll use the same credential structure we just created for sendBoost
-        const responseVP = {
-            '@context': ['https://www.w3.org/2018/credentials/v1'],
-            type: ['VerifiablePresentation'],
-            holder: holderDid,
-            verifiableCredential: [credentialToIssue],
+        const vp = await issueResponsePresentationWithVcs([vc]);
+
+        return {
+            verifiablePresentation: vp
         };
-
-        if (process.env.NODE_ENV !== 'test') {
-            console.log('🚀 VC-API Exchange Complete - Credential Issued', issuedCredentialUri);
-        }
-
-        return responseVP;
 
     } catch (error) {
         console.error('Failed to issue credential via VC-API exchange:', error);
