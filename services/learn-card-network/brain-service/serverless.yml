@@ -136,7 +136,13 @@ functions:
             subnetIds:
                 - Ref: PrivateSubnetA
         events:
-            - httpApi: ANY /api/{trpc+}
+            - httpApi:
+                  method: ANY
+                  path: /api/{trpc+}
+                  cors:
+                    allowedOrigins: '*'
+                    allowedHeaders: 'Authorization, Content-Type'
+                    allowedMethods: '*'
 
     didWeb:
         handler: didWebLambda.didWebHandler
