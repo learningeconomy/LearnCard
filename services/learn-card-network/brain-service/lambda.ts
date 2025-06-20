@@ -35,24 +35,13 @@ export const _openApiHandler = serverlessHttp(
     http.createServer(
         createOpenApiHttpHandler({
             router: appRouter,
-            responseMeta: ({ ctx }) => {
-                const headers = {
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-                    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-                };
-
-                // If it's a preflight request, respond with 204 No Content
-                // if (ctx?.req.method === 'OPTIONS') {
-                //     return {
-                //         status: 204,
-                //         headers,
-                //     };
-                // }
-
-                // For other requests, just add the headers
+            responseMeta: () => {
                 return {
-                    headers,
+                    headers: {
+                        'Access-Control-Allow-Origin': '*',
+                        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+                        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+                    },
                 };
             },
             maxBodySize: undefined,
@@ -103,7 +92,7 @@ export const openApiHandler = Sentry.AWSLambda.wrapHandler(
     async (event: APIGatewayProxyEventV2, context: Context): Promise<APIGatewayProxyResultV2> => {
         if (event.requestContext.http.method === 'OPTIONS') {
             return {
-                statusCode: 200,
+                statusCode: 204,
                 headers: {
                     'Access-Control-Allow-Origin': '*',
                     'Access-Control-Allow-Headers': '*',
