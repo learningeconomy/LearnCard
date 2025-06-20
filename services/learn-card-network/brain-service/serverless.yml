@@ -142,7 +142,7 @@ functions:
                   cors:
                     allowedOrigins: '*'
                     allowedHeaders: 'Authorization, Content-Type'
-                    allowedMethods: '*'
+                    allowedMethods: 'GET, POST, PUT, DELETE, OPTIONS'
 
     didWeb:
         handler: didWebLambda.didWebHandler
