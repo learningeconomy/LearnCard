@@ -114,8 +114,8 @@ provider:
     httpApi:
         cors:
             allowedOrigins: '*'
-            allowedHeaders: '*'
-            allowedMethods: '*'
+            allowedHeaders: 'Authorization, Content-Type'
+            allowedMethods: 'GET, POST, PUT, DELETE, OPTIONS'
 
 functions:
     trpc:
@@ -136,13 +136,7 @@ functions:
             subnetIds:
                 - Ref: PrivateSubnetA
         events:
-            - httpApi:
-                  method: ANY
-                  path: /api/{trpc+}
-                  cors:
-                    allowedOrigins: '*'
-                    allowedHeaders: 'Authorization, Content-Type'
-                    allowedMethods: 'GET, POST, PUT, DELETE, OPTIONS'
+            - httpApi: ANY /api/{trpc+}
 
     didWeb:
         handler: didWebLambda.didWebHandler
