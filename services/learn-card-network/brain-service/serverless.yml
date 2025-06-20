@@ -115,7 +115,7 @@ provider:
         cors:
             allowedOrigins: '*'
             allowedHeaders: 'Authorization, Content-Type'
-            allowedMethods: 'GET, POST, PUT, DELETE, OPTIONS'
+            allowedMethods: '*'
 
 functions:
     trpc:
