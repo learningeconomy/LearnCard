@@ -114,7 +114,7 @@ provider:
     httpApi:
         cors:
             allowedOrigins: '*'
-            allowedHeaders: 'Authorization, Content-Type'
+            allowedHeaders: '*'
             allowedMethods: '*'
 
 functions:
