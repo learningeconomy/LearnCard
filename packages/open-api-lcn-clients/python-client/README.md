@@ -216,6 +216,8 @@ Class | Method | HTTP request | Description
 *UtilitiesApi* | [**utilities_get_challenges**](docs/UtilitiesApi.md#utilities_get_challenges) | **GET** /challenges | Request a list of valid challenges
 *UtilitiesApi* | [**utilities_get_did**](docs/UtilitiesApi.md#utilities_get_did) | **GET** /did | Get LCN Did
 *UtilitiesApi* | [**utilities_health_check**](docs/UtilitiesApi.md#utilities_health_check) | **GET** /health-check | Check health of endpoint
+*VCAPIApi* | [**workflows_participate_in_exchange**](docs/VCAPIApi.md#workflows_participate_in_exchange) | **POST** /workflows/{localWorkflowId}/exchanges/{localExchangeId} | Participate in an Exchange
+*WorkflowsApi* | [**workflows_participate_in_exchange**](docs/WorkflowsApi.md#workflows_participate_in_exchange) | **POST** /workflows/{localWorkflowId}/exchanges/{localExchangeId} | Participate in an Exchange
 
 
 ## Documentation For Models
@@ -439,6 +441,11 @@ Class | Method | HTTP request | Description
  - [StorageStoreRequest](docs/StorageStoreRequest.md)
  - [StorageStoreRequestItem](docs/StorageStoreRequestItem.md)
  - [StorageStoreRequestItemAnyOf](docs/StorageStoreRequestItemAnyOf.md)
+ - [WorkflowsParticipateInExchange200Response](docs/WorkflowsParticipateInExchange200Response.md)
+ - [WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequest](docs/WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequest.md)
+ - [WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequestQueryInner](docs/WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequestQueryInner.md)
+ - [WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequestQueryInnerCredentialQueryInner](docs/WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequestQueryInnerCredentialQueryInner.md)
+ - [WorkflowsParticipateInExchangeRequest](docs/WorkflowsParticipateInExchangeRequest.md)
 
 
 <a id="documentation-for-authorization"></a>
