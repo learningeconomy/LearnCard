@@ -39,7 +39,7 @@ export const _openApiHandler = serverlessHttp(
                 headers: {
                     'Access-Control-Allow-Origin': '*',
                     'Access-Control-Allow-Methods': '*',
-                    'Access-Control-Allow-Headers': 'authorization',
+                    'Access-Control-Allow-Headers': '*',
                 },
             };
         },

@@ -136,10 +136,7 @@ functions:
             subnetIds:
                 - Ref: PrivateSubnetA
         events:
-            - httpApi:
-                  method: ANY
-                  path: /api/{trpc+}
-                  cors: true
+            - httpApi: ANY /api/{trpc+}
 
     didWeb:
         handler: didWebLambda.didWebHandler
@@ -157,6 +154,7 @@ functions:
             - httpApi: OPTIONS /.well-known/did.json
         url:
             cors: true
+
     swagger:
         handler: lambda.swaggerUiHandler
         events:
