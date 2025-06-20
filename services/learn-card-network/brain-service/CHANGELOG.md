@@ -1,5 +1,11 @@
 # @learncard/network-brain-service
 
+## 3.4.4
+
+### Patch Changes
+
+-   [#699](https://github.com/learningeconomy/LearnCard/pull/699) [`2a59c9056fbee1fe5aa832d2d27e72b685445e1e`](https://github.com/learningeconomy/LearnCard/commit/2a59c9056fbee1fe5aa832d2d27e72b685445e1e) Thanks [@Custard7](https://github.com/Custard7)! - feat: implement Claim Boosts as a VC-API workflow
+
 ## 3.4.3
 
 ### Patch Changes
