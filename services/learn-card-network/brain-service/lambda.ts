@@ -43,12 +43,12 @@ export const _openApiHandler = serverlessHttp(
                 };
 
                 // If it's a preflight request, respond with 204 No Content
-                if (ctx?.req.method === 'OPTIONS') {
-                    return {
-                        status: 204,
-                        headers,
-                    };
-                }
+                // if (ctx?.req.method === 'OPTIONS') {
+                //     return {
+                //         status: 204,
+                //         headers,
+                //     };
+                // }
 
                 // For other requests, just add the headers
                 return {
