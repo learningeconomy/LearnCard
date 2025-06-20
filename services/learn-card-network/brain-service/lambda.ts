@@ -35,7 +35,15 @@ export const _openApiHandler = serverlessHttp(
     http.createServer(
         createOpenApiHttpHandler({
             router: appRouter,
-            responseMeta: undefined,
+            responseMeta: () => {
+                return {
+                    headers: {
+                        'Access-Control-Allow-Origin': '*',
+                        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+                        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+                    },
+                };
+            },
             maxBodySize: undefined,
             createContext,
             onError: ({ error, ctx, path }) => {
