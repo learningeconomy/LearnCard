@@ -32,32 +32,34 @@ Sentry.AWSLambda.init({
 export const swaggerUiHandler = serverlessHttp(app, { basePath: '/docs' });
 
 export const _openApiHandler = serverlessHttp(
-    createOpenApiHttpHandler({
-        router: appRouter,
-        responseMeta: () => {
-            return {
-                headers: {
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-                    'Access-Control-Allow-Headers': 'Authorization, Content-Type',
-                },
-            };
-        },
-        maxBodySize: undefined,
-        createContext,
-        onError: ({ error, ctx, path }) => {
-            error.stack = error.stack?.replace('Mr: ', '');
-            error.name = error.message;
+    http.createServer(
+        createOpenApiHttpHandler({
+            router: appRouter,
+            responseMeta: () => {
+                return {
+                    headers: {
+                        'Access-Control-Allow-Origin': '*',
+                        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+                        'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+                    },
+                };
+            },
+            maxBodySize: undefined,
+            createContext,
+            onError: ({ error, ctx, path }) => {
+                error.stack = error.stack?.replace('Mr: ', '');
+                error.name = error.message;
 
-            // We want to ignore invalid challenge errors because they are normal
-            if (!(error.code === 'UNAUTHORIZED' && !ctx?.user?.isChallengeValid)) {
-                Sentry.captureException(error, { extra: { ctx, path } });
-                Sentry.getActiveTransaction()?.setHttpStatus(
-                    TRPC_ERROR_CODE_HTTP_STATUS[error.code]
-                );
-            }
-        },
-    }),
+                // We want to ignore invalid challenge errors because they are normal
+                if (!(error.code === 'UNAUTHORIZED' && !ctx?.user?.isChallengeValid)) {
+                    Sentry.captureException(error, { extra: { ctx, path } });
+                    Sentry.getActiveTransaction()?.setHttpStatus(
+                        TRPC_ERROR_CODE_HTTP_STATUS[error.code]
+                    );
+                }
+            },
+        })
+    ),
     { basePath: '/api' }
 );
 
