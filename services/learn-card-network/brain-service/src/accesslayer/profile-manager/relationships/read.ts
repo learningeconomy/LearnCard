@@ -22,7 +22,7 @@ export const getProfilesThatAdministrateAProfileManager = async (
                 optional: true,
                 related: [
                     { identifier: 'manager' },
-                    ProfileManager.getRelationshipByAlias('administratedBy'),
+                    { ...ProfileManager.getRelationshipByAlias('administratedBy'), minHops: 1, maxHops: Infinity },
                     { identifier: 'administrator', model: Profile },
                 ],
             })
@@ -30,7 +30,7 @@ export const getProfilesThatAdministrateAProfileManager = async (
                 optional: true,
                 related: [
                     { identifier: 'manager' },
-                    ProfileManager.getRelationshipByAlias('childOf'),
+                    { ...ProfileManager.getRelationshipByAlias('childOf'), minHops: 1, maxHops: Infinity },
                     { model: Boost },
                     { ...Boost.getRelationshipByAlias('hasRole'), identifier: 'hasRole' },
                     { identifier: 'implicitAdministrator', model: Profile },
