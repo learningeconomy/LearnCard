@@ -195,8 +195,6 @@ export const createOpenApiAwsLambdaHandler = <TRouter extends OpenApiRouter>(
             const req = createRequestFromEvent(event);
             const { res, promise } = createResponseHandler();
 
-            console.log('req', req);
-
             // Execute the handler
             await openApiHttpHandler(req, res);
 
