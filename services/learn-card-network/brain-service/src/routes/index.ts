@@ -59,9 +59,13 @@ export const createContext = async (
         | CreateAWSLambdaContextOptions<APIGatewayProxyEventV2>
         | CreateFastifyContextOptions
         | NodeHTTPCreateContextFnOptions<http.IncomingMessage, http.ServerResponse>
+        | { req: { headers: Map<string, string> } }
 ): Promise<Context> => {
     const event = 'event' in options ? options.event : options.req;
-    const authHeader = event.headers.authorization;
+    const authHeader =
+        'get' in event.headers
+            ? (event.headers as Map<string, string>).get('authorization')
+            : event.headers.authorization;
     const domainName = 'requestContext' in event ? event.requestContext.domainName : '';
 
     const _domain =
