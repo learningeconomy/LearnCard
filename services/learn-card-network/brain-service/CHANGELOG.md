@@ -1,5 +1,13 @@
 # @learncard/network-brain-service
 
+## 3.4.4
+
+### Patch Changes
+
+-   [#699](https://github.com/learningeconomy/LearnCard/pull/699) [`2a59c9056fbee1fe5aa832d2d27e72b685445e1e`](https://github.com/learningeconomy/LearnCard/commit/2a59c9056fbee1fe5aa832d2d27e72b685445e1e) Thanks [@Custard7](https://github.com/Custard7)! - feat: implement Claim Boosts as a VC-API workflow
+
+-   [#705](https://github.com/learningeconomy/LearnCard/pull/705) [`45edf4c37263199bf2147a51567511d1d4dfe269`](https://github.com/learningeconomy/LearnCard/commit/45edf4c37263199bf2147a51567511d1d4dfe269) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix Auth Headers in OpenAPI routes
+
 ## 3.4.3
 
 ### Patch Changes

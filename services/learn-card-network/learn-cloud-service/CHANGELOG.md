@@ -1,5 +1,11 @@
 # @learncard/network-brain-service
 
+## 2.3.1
+
+### Patch Changes
+
+-   [#705](https://github.com/learningeconomy/LearnCard/pull/705) [`45edf4c37263199bf2147a51567511d1d4dfe269`](https://github.com/learningeconomy/LearnCard/commit/45edf4c37263199bf2147a51567511d1d4dfe269) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix Auth Headers in OpenAPI routes
+
 ## 2.3.0
 
 ### Minor Changes
