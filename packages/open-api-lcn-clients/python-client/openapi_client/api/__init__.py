@@ -12,4 +12,6 @@ from openapi_client.api.profile_managers_api import ProfileManagersApi
 from openapi_client.api.profiles_api import ProfilesApi
 from openapi_client.api.storage_api import StorageApi
 from openapi_client.api.utilities_api import UtilitiesApi
+from openapi_client.api.vcapi_api import VCAPIApi
+from openapi_client.api.workflows_api import WorkflowsApi
 
