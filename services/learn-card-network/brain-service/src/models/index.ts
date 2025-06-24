@@ -5,6 +5,8 @@ import { Profile } from './Profile';
 import { Credential } from './Credential';
 import { Presentation } from './Presentation';
 import { ConsentFlowTransaction } from './ConsentFlowTransaction';
+import './EmailAddress';
+import './InboxCredential';
 
 Credential.addRelationships({
     credentialReceived: {
@@ -63,6 +65,15 @@ Presentation.addRelationships({
         neogma.queryRunner.run(
             'CREATE INDEX has_role_id_idx IF NOT EXISTS FOR ()-[r:HAS_ROLE]-() ON (r.roleId)'
         ),
+        neogma.queryRunner.run(
+            'CREATE INDEX email_address_email_idx IF NOT EXISTS FOR (e:EmailAddress) ON (e.email)'
+        ),
+        neogma.queryRunner.run(
+            'CREATE INDEX inbox_credential_status_idx IF NOT EXISTS FOR (i:InboxCredential) ON (i.currentStatus)'
+        ),
+        neogma.queryRunner.run(
+            'CREATE INDEX inbox_credential_expires_idx IF NOT EXISTS FOR (i:InboxCredential) ON (i.expiresAt)'
+        ),
     ])
         .then(() => {
             if (process.env.NODE_ENV !== 'test') console.log('Ensured indices!');
@@ -85,3 +96,5 @@ export * from './SigningAuthority';
 export * from './ConsentFlowTerms';
 export * from './ConsentFlowContract';
 export * from './ConsentFlowTransaction';
+export * from './EmailAddress';
+export * from './InboxCredential';

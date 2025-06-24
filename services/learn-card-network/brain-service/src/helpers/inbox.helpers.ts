@@ -1,0 +1,216 @@
+import { TRPCError } from '@trpc/server';
+import { VC, UnsignedVC } from '@learncard/types';
+
+import { ProfileType } from 'types/profile';
+import { createInboxCredential } from '@accesslayer/inbox-credential/create';
+import { markInboxCredentialAsDelivered } from '@accesslayer/inbox-credential/update';
+import { 
+    createDeliveredRelationship,
+    createEmailSentRelationship,
+    createWebhookSentRelationship,
+} from '@accesslayer/inbox-credential/relationships/create';
+import { getEmailAddressByEmail } from '@accesslayer/email-address/read';
+import { getProfileByVerifiedEmail } from '@accesslayer/email-address/relationships/read';
+import { sendCredential } from '@helpers/credential.helpers';
+import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
+import { getSigningAuthorityForUserByName } from '@accesslayer/signing-authority/relationships/read';
+import { generateInboxClaimToken, generateClaimUrl } from '@helpers/email.helpers';
+import { InboxCredentialType, SigningAuthorityType } from 'types/inbox-credential';
+
+export const issueToInbox = async (
+    issuerProfile: ProfileType,
+    recipientEmail: string,
+    credential: object,
+    options: {
+        isSigned?: boolean;
+        signingAuthority?: SigningAuthorityType;
+        webhookUrl?: string;
+        expiresInDays?: number;
+    } = {}
+): Promise<{ 
+    status: 'PENDING' | 'DELIVERED'; 
+    inboxCredential: InboxCredentialType;
+    claimUrl?: string;
+    recipientDid?: string;
+}> => {
+    const { isSigned = false, signingAuthority, webhookUrl, expiresInDays = 30 } = options;
+
+    // Validate that unsigned credentials have signing authority
+    if (!isSigned && !signingAuthority) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Unsigned credentials require a signing authority',
+        });
+    }
+
+    // Check if recipient already exists with verified email
+    const existingProfile = await getProfileByVerifiedEmail(recipientEmail);
+
+    if (existingProfile) {
+        // Auto-deliver to existing user
+        let finalCredential: VC;
+
+        if (isSigned) {
+            finalCredential = credential as VC;
+        } else {
+            // Sign the credential using signing authority
+            const signingAuthorityForUser = await getSigningAuthorityForUserByName(
+                issuerProfile.did,
+                signingAuthority!.endpoint,
+                signingAuthority!.name
+            );
+
+            if (!signingAuthorityForUser) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Signing authority not found for issuer',
+                });
+            }
+
+            finalCredential = await issueCredentialWithSigningAuthority(
+                issuerProfile.did,
+                credential as UnsignedVC,
+                signingAuthorityForUser,
+                'claim.learncard.com', // domain
+                false // don't encrypt
+            ) as VC;
+        }
+
+        // Create inbox record for tracking
+        const inboxCredential = await createInboxCredential({
+            credential: JSON.stringify(finalCredential),
+            isSigned: true,
+            recipientEmail,
+            issuerDid: issuerProfile.did,
+            webhookUrl,
+            expiresInDays,
+        });
+
+        // Send credential directly
+        await sendCredential(
+            issuerProfile,
+            existingProfile,
+            finalCredential,
+            'claim.learncard.com' // domain
+        );
+
+        // Mark as delivered and create relationship
+        await markInboxCredentialAsDelivered(inboxCredential.id);
+        await createDeliveredRelationship(
+            issuerProfile.did,
+            inboxCredential.id,
+            existingProfile.did,
+            'auto-delivery'
+        );
+
+        // Send webhook if configured
+        if (webhookUrl) {
+            await triggerWebhook(
+                issuerProfile.did,
+                inboxCredential.id,
+                webhookUrl,
+                {
+                    event: 'issuance.delivered',
+                    data: {
+                        issuanceId: inboxCredential.id,
+                        status: 'DELIVERED',
+                        recipient: {
+                            email: recipientEmail,
+                            learnCardId: existingProfile.did,
+                        },
+                        deliveredAt: new Date().toISOString(),
+                    },
+                }
+            );
+        }
+
+        return {
+            status: 'DELIVERED',
+            inboxCredential,
+            recipientDid: existingProfile.did,
+        };
+    } else {
+        // Store in inbox for claiming
+        const inboxCredential = await createInboxCredential({
+            credential: JSON.stringify(credential),
+            isSigned,
+            recipientEmail,
+            issuerDid: issuerProfile.did,
+            webhookUrl,
+            signingAuthority,
+            expiresInDays,
+        });
+
+        // Generate claim token
+        const emailAddress = await getEmailAddressByEmail(recipientEmail);
+        if (!emailAddress) {
+            throw new TRPCError({
+                code: 'INTERNAL_SERVER_ERROR',
+                message: 'Failed to create email address record',
+            });
+        }
+
+        const claimToken = await generateInboxClaimToken(emailAddress.id);
+        const claimUrl = generateClaimUrl(claimToken, 'claim.learncard.com');
+
+        // Record email being sent
+        await createEmailSentRelationship(
+            issuerProfile.did,
+            inboxCredential.id,
+            recipientEmail,
+            claimToken
+        );
+
+        // TODO: Send actual email here using notification system
+        console.log(`Email would be sent to ${recipientEmail} with claim URL: ${claimUrl}`);
+
+        return {
+            status: 'PENDING',
+            inboxCredential,
+            claimUrl,
+        };
+    }
+};
+
+// Note: Claim functionality is implemented in workflows route
+
+export const triggerWebhook = async (
+    issuerDid: string,
+    inboxCredentialId: string,
+    webhookUrl: string,
+    payload: object
+): Promise<void> => {
+    try {
+        const response = await fetch(webhookUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'User-Agent': 'LearnCard-Webhook/1.0',
+            },
+            body: JSON.stringify(payload),
+        });
+
+        const responseText = await response.text();
+
+        await createWebhookSentRelationship(
+            issuerDid,
+            inboxCredentialId,
+            webhookUrl,
+            response.status.toString(),
+            responseText.slice(0, 1000) // Limit response size
+        );
+
+        if (!response.ok) {
+            console.error(`Webhook failed: ${response.status} ${responseText}`);
+        }
+    } catch (error) {
+        console.error('Webhook error:', error);
+        await createWebhookSentRelationship(
+            issuerDid,
+            inboxCredentialId,
+            webhookUrl,
+            'error',
+            error instanceof Error ? error.message : 'Unknown error'
+        );
+    }
+};

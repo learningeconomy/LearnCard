@@ -11,6 +11,8 @@ import { contractsRouter, ContractsRouter } from '@routes/contracts';
 import { didMetadataRouter, DidMetadataRouter } from '@routes/did-metadata';
 import { authGrantsRouter, AuthGrantsRouter } from '@routes/auth-grants';
 import { workflowsRouter, WorkflowsRouter } from '@routes/workflows';
+import { emailsRouter, EmailsRouter } from '@routes/emails';
+import { inboxRouter, InboxRouter } from '@routes/inbox';
 
 export { createContext } from '@routes';
 
@@ -27,6 +29,8 @@ export const appRouter = t.router<{
     didMetadata: DidMetadataRouter;
     authGrants: AuthGrantsRouter;
     workflows: WorkflowsRouter;
+    emails: EmailsRouter;
+    inbox: InboxRouter;
 }>({
     boost: boostsRouter,
     claimHook: claimHooksRouter,
@@ -40,6 +44,8 @@ export const appRouter = t.router<{
     didMetadata: didMetadataRouter,
     authGrants: authGrantsRouter,
     workflows: workflowsRouter,
+    emails: emailsRouter,
+    inbox: inboxRouter,
 });
 
 export type AppRouter = typeof appRouter;
