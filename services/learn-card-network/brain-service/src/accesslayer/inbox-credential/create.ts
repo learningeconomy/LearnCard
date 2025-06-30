@@ -1,17 +1,19 @@
 import { QueryBuilder, BindParam } from 'neogma';
 import { v4 as uuid } from 'uuid';
 
-import { InboxCredential, EmailAddress, Profile } from '@models';
+import { InboxCredential } from '@models';
 import { InboxCredentialType } from 'types/inbox-credential';
 import { flattenObject } from '@helpers/objects.helpers';
 import { getInboxCredentialById } from './read';
-import { getEmailAddressByEmail } from '@accesslayer/email-address/read';
-import { createEmailAddress } from '@accesslayer/email-address/create';
+import { getContactMethodByValue } from '@accesslayer/contact-method/read';
+import { createContactMethod } from '@accesslayer/contact-method/create';
+import { ProfileType } from 'types/profile';
+import { ContactMethodQueryType } from 'types/contact-method';
 
 export const createInboxCredential = async (input: {
     credential: string;
     isSigned: boolean;
-    recipientEmail: string;
+    recipient: ContactMethodQueryType;
     issuerProfile: ProfileType;
     webhookUrl?: string;
     signingAuthority?: { endpoint: string; name: string };
@@ -37,10 +39,9 @@ export const createInboxCredential = async (input: {
         } : {}),
     };
 
-    const result = await new QueryBuilder(
+    await new QueryBuilder(
         new BindParam({
             params: flattenObject(inboxCredentialData),
-            recipientEmail: input.recipientEmail,
             issuerProfileId: input.issuerProfile.profileId,
             timestamp: new Date().toISOString(),
         })
@@ -49,28 +50,30 @@ export const createInboxCredential = async (input: {
         .set('inboxCredential += $params')
         .run();
 
-    const emailAddress = await getEmailAddressByEmail(input.recipientEmail);
-    if (!emailAddress) {
-        await createEmailAddress({
-                email: input.recipientEmail,
+    const contactMethod = await getContactMethodByValue(input.recipient.type, input.recipient.value);
+    if (!contactMethod) {
+        await createContactMethod({
+                type: input.recipient.type,
+                value: input.recipient.value,
                 isVerified: false,
                 isPrimary: false,
             });
         }
 
     const inboxCredential = (await getInboxCredentialById(id))!;
-        await Promise.all([
-            inboxCredential.relateTo({
-                alias: 'createdBy',
-                properties: { timestamp: new Date().toISOString() },
-                where: { profileId: input.issuerProfile.profileId },
-            }),
-            inboxCredential.relateTo({
-                alias: 'addressedTo',
-                properties: { timestamp: new Date().toISOString() },
-                where: { email: input.recipientEmail },
-            }),
-        ]);
+
+    await Promise.all([
+        inboxCredential.relateTo({
+            alias: 'createdBy',
+            properties: { timestamp: new Date().toISOString() },
+            where: { profileId: input.issuerProfile.profileId },
+        }),
+        inboxCredential.relateTo({
+            alias: 'addressedTo',
+            properties: { timestamp: new Date().toISOString() },
+            where: { type: input.recipient.type, value: input.recipient.value },
+        }),
+    ]);
 
     return inboxCredential;
 };

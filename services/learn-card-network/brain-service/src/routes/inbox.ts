@@ -13,6 +13,7 @@ import {
     PaginatedInboxCredentialsValidator,
     InboxCredentialQueryValidator,
 } from 'types/inbox-credential';
+import { ContactMethodQueryValidator } from 'types/contact-method';
 
 export const inboxRouter = t.router({
     // Issue a credential to someone's inbox
@@ -31,7 +32,7 @@ export const inboxRouter = t.router({
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
             const { 
-                recipientEmail, 
+                recipient, 
                 credential, 
                 isSigned, 
                 signingAuthority, 
@@ -42,7 +43,7 @@ export const inboxRouter = t.router({
             try {
                 const result = await issueToInbox(
                     profile,
-                    recipientEmail,
+                    recipient,
                     credential,
                     {
                         isSigned,
@@ -56,12 +57,11 @@ export const inboxRouter = t.router({
                 return {
                     issuanceId: result.inboxCredential.id,
                     status: result.status,
-                    recipient: recipientEmail,
+                    recipient,
                     claimUrl: result.claimUrl,
                     recipientDid: result.recipientDid,
                 };
             } catch (error) {
-                
                 if (error instanceof TRPCError) {
                     throw error;
                 }
@@ -87,16 +87,16 @@ export const inboxRouter = t.router({
         .input(PaginationOptionsValidator.extend({
             limit: PaginationOptionsValidator.shape.limit.default(25),
             query: InboxCredentialQueryValidator.optional(),
-            recipientEmail: z.string().email().optional(),
+            recipient: ContactMethodQueryValidator.optional(),
         }).default({}))
         .output(PaginatedInboxCredentialsValidator)
         .query(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const { limit, cursor, query, recipientEmail } = input;
+            const { limit, cursor, query, recipient } = input;
 
             const credentials = await getInboxCredentialsForProfile(
                 profile.profileId,
-                { limit: limit + 1, cursor, query, recipientEmail }
+                { limit: limit + 1, cursor, query, recipient }
             );
 
             const hasMore = credentials.length > limit;

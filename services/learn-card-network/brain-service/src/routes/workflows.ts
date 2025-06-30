@@ -1,13 +1,8 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
-import base64url from "base64url";
+import base64url from 'base64url';
 
-import {
-    VC,
-    UnsignedVC,
-    VP,
-    VPValidator,
-} from '@learncard/types';
+import { VC, UnsignedVC, VP, VPValidator } from '@learncard/types';
 
 import { t, openRoute, Context } from '@routes';
 
@@ -24,25 +19,22 @@ import {
 import {
     validateInboxClaimToken,
     markInboxClaimTokenAsUsed,
-} from '@helpers/email.helpers';
-import { getPendingInboxCredentialsForEmailId } from '@accesslayer/inbox-credential/read';
+} from '@helpers/contact-method.helpers';
+import { getPendingInboxCredentialsForContactMethodId } from '@accesslayer/inbox-credential/read';
 import { markInboxCredentialAsClaimed } from '@accesslayer/inbox-credential/update';
 import { createClaimedRelationship } from '@accesslayer/inbox-credential/relationships/create';
 import {
-    getEmailAddressById,
-    getProfileByEmailAddress,
-} from '@accesslayer/email-address/read';
+    getContactMethodById,
+    getProfileByContactMethod,
+} from '@accesslayer/contact-method/read';
 import { getProfileByDid } from '@accesslayer/profile/read';
 import { triggerWebhook } from '@helpers/inbox.helpers';
 
-import {
-    getBoostUri,
-    isDraftBoost,
-} from '@helpers/boost.helpers';
+import { getBoostUri, isDraftBoost } from '@helpers/boost.helpers';
 import { getEmptyLearnCard, getLearnCard } from '@helpers/learnCard.helpers';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
-import { createProfileEmailRelationship, createProfileEmailRelationship } from '@accesslayer/email-address/relationships/create';
-import { verifyEmailAddress } from '@accesslayer/email-address/update';
+import { createProfileContactMethodRelationship } from '@accesslayer/contact-method/relationships/create';
+import { verifyContactMethod } from '@accesslayer/contact-method/update';
 
 // Zod schema for the participate in exchange input
 const participateInExchangeInput = z.object({
@@ -71,7 +63,7 @@ const ParticipateInExchangeResponseValidator = z.object({
     redirectUrl: z.string().optional(),
 });
 
-
+// Exchange info schema
 const ExchangeInfoValidator = z.object({
     boostUri: z.string(),
     challenge: z.string(),
@@ -397,17 +389,16 @@ async function handleInboxClaimInitiation(
         });
     }
 
-    // Verify there are pending credentials for this email
-    const pendingCredentials = await getPendingInboxCredentialsForEmailId(claimTokenData.emailId);
+    // Verify there are pending credentials for this contact method
+    const pendingCredentials = await getPendingInboxCredentialsForContactMethodId(
+        claimTokenData.contactMethodId
+    );
     if (pendingCredentials.length === 0) {
         throw new TRPCError({
             code: 'NOT_FOUND',
             message: 'No pending credentials found for this claim token',
         });
     }
-
-    // Generate challenge for this claim session
-    const challenge = `inbox-claim-${Date.now()}-${Math.random().toString(36).substring(2)}`;
 
     // Return VerifiablePresentationRequest
     return {
@@ -416,7 +407,7 @@ async function handleInboxClaimInitiation(
                 type: 'DIDAuthentication',
                 acceptedMethods: [{method: "key"}, {method: "web"}]
             }],
-            challenge,
+            challenge: claimTokenData.token,
             domain,
         },
     };
@@ -436,22 +427,19 @@ async function handleInboxClaimPresentation(
         });
     }
 
-    // Extract challenge from the VP
-    const challenge = Array.isArray(verifiablePresentation.proof)
-        ? verifiablePresentation.proof[0]?.challenge
-        : verifiablePresentation.proof?.challenge;
+    const contactMethod = await getContactMethodById(claimTokenData.contactMethodId);
 
-    if (!challenge) {
+    if (!contactMethod) {
         throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'Verifiable presentation must include challenge in proof',
+            code: 'NOT_FOUND',
+            message: 'Contact method not found',
         });
     }
 
     // Verify the presentation
     const learnCard = await getEmptyLearnCard();
     const verificationResult = await learnCard.invoke.verifyPresentation(verifiablePresentation, {
-        challenge,
+        challenge: claimTokenData.token,
         domain: ctx.domain,
     });
 
@@ -471,35 +459,47 @@ async function handleInboxClaimPresentation(
         });
     }
 
-    // Get the email address and verify the claimer has access to it
-    const emailAddress = await getEmailAddressById(claimTokenData.emailId);
-    if (!emailAddress) {
-        throw new TRPCError({
-            code: 'NOT_FOUND',
-            message: 'Email address not found',
-        });
+    let holderProfile = await getProfileByContactMethod(contactMethod.id);
+
+    if (holderProfile) {
+        // If the holder's DID from the presentation doesn't match the profile's DID, throw an error
+        if (holderProfile.did !== holderDid) {
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: 'DID mismatch. The presented DID does not match the profile associated with this contact method.',
+            });
+        }
+    } else {
+        // If no profile is associated with the contact method, check if a profile exists for the presented DID
+        const existingProfile = await getProfileByDid(holderDid);
+        if (existingProfile) {
+            // If a profile exists, link the contact method to it
+            holderProfile = existingProfile;
+            await createProfileContactMethodRelationship(holderProfile.did, contactMethod.id);
+        } else {
+            // If no profile exists for the DID, we can't proceed with claiming
+            // The user should create a profile first
+            throw new TRPCError({
+                code: 'NOT_FOUND',
+                message: 'No profile found for the presented DID. Please create a profile before claiming.',
+            });
+        }
     }
 
-    // Check if the holder DID corresponds to a profile with this verified email
-    const profileForEmail = await getProfileByEmailAddress(emailAddress);
- 
-    if (!profileForEmail) {
-        await createProfileEmailRelationship(ctx.user?.did || holderDid, emailAddress.id);
-        await verifyEmailAddress(emailAddress.id);
+    // Mark the contact method as verified
+    if (!contactMethod.isVerified) {
+        await verifyContactMethod(contactMethod.id);
     }
-    // if (!profileForEmail || profileForEmail.did !== holderDid) {
-    //     throw new TRPCError({
-    //         code: 'FORBIDDEN',
-    //         message: 'You do not have access to credentials for this email address',
-    //     });
-    // }
 
-    // Get all pending credentials for this email
-    const pendingCredentials = await getPendingInboxCredentialsForEmailId(claimTokenData.emailId);
+    // Get pending credentials for this contact method
+    const pendingCredentials = await getPendingInboxCredentialsForContactMethodId(
+        contactMethod.id
+    );
+
     if (pendingCredentials.length === 0) {
         throw new TRPCError({
             code: 'NOT_FOUND',
-            message: 'No pending credentials found',
+            message: 'No pending credentials found for this contact method.',
         });
     }
 
@@ -516,7 +516,7 @@ async function handleInboxClaimPresentation(
             } else {
                 // Need to sign the credential using signing authority
                 const unsignedCredential = JSON.parse(inboxCredential.credential) as UnsignedVC;
-                
+
                 if (!inboxCredential?.signingAuthority?.endpoint || !inboxCredential?.signingAuthority?.name) {
                     console.error(`Inbox credential ${inboxCredential.id} missing signing authority info`);
                     continue;

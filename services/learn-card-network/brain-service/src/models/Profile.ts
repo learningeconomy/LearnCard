@@ -5,7 +5,7 @@ import { neogma } from '@instance';
 import { Credential, CredentialInstance } from './Credential';
 import { Presentation, PresentationInstance } from './Presentation';
 import { SigningAuthority } from './SigningAuthority';
-import { EmailAddress, EmailAddressInstance } from './EmailAddress';
+import { ContactMethod, ContactMethodInstance } from './ContactMethod';
 import { transformProfileId } from '@helpers/profile.helpers';
 import { FlatProfileType } from 'types/profile';
 import { SigningAuthorityInstance } from './SigningAuthority';
@@ -34,7 +34,7 @@ export type ProfileRelationships = {
         { name: string; did: string },
         { name: string; did: string }
     >;
-    hasEmail: ModelRelatedNodesI<typeof EmailAddress, EmailAddressInstance>;
+    hasContactMethod: ModelRelatedNodesI<typeof ContactMethod, ContactMethodInstance>; 
 };
 
 export type ProfileInstance = NeogmaInstance<FlatProfileType, ProfileRelationships>;
@@ -95,7 +95,7 @@ export const Profile: any = ModelFactory<FlatProfileType, ProfileRelationships>(
                     did: { property: 'did', schema: { type: 'string', required: true } },
                 },
             },
-            hasEmail: { model: EmailAddress, direction: 'out', name: 'HAS_EMAIL' },
+            hasContactMethod: { model: ContactMethod, direction: 'out', name: 'HAS_CONTACT_METHOD' },
         },
         primaryKeyField: 'did',
     },

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ContactMethodQueryValidator } from './contact-method';
 
 export const InboxCredentialValidator = z.object({
     id: z.string(),
@@ -42,7 +43,7 @@ export const SigningAuthorityValidator = z.object({
 export type SigningAuthorityType = z.infer<typeof SigningAuthorityValidator>;
 
 export const IssueInboxCredentialValidator = z.object({
-    recipientEmail: z.string().email(),
+    recipient: ContactMethodQueryValidator,
     credential: z.object({}).passthrough(), // Any valid JSON object for the credential
     isSigned: z.boolean().optional().default(false),
     signingAuthority: SigningAuthorityValidator.optional(),
@@ -55,7 +56,7 @@ export type IssueInboxCredentialType = z.infer<typeof IssueInboxCredentialValida
 export const IssueInboxCredentialResponseValidator = z.object({
     issuanceId: z.string(),
     status: z.enum(['PENDING', 'DELIVERED']),
-    recipient: z.string().email(),
+    recipient: ContactMethodQueryValidator,
     claimUrl: z.string().url().optional(),
     recipientDid: z.string().optional(),
 });
@@ -64,7 +65,7 @@ export type IssueInboxCredentialResponseType = z.infer<typeof IssueInboxCredenti
 
 export const ClaimTokenValidator = z.object({
     token: z.string(),
-    emailId: z.string(),
+    contactMethodId: z.string(),
     createdAt: z.string(),
     expiresAt: z.string(),
     used: z.boolean(),

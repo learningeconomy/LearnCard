@@ -9,9 +9,9 @@ export const getSigningAuthoritiesForUser = async (
             alias: 'usesSigningAuthority',
             where: { source: { profileId: user.profileId } },
         })
-    ).map(relationship => {
+    ).map((relationship: { signingAuthority: any; relationship: any }) => {
         return {
-            signingAuthority: relationship.target.dataValues,
+            signingAuthority: relationship.signingAuthority,
             relationship: relationship.relationship,
         };
     });
@@ -31,9 +31,9 @@ export const getSigningAuthorityForUserByName = async (
                 target: { endpoint },
             },
         })
-    ).map(relationship => {
+    ).map((relationship: { signingAuthority: any; relationship: any }) => {
         return {
-            signingAuthority: relationship.target.dataValues,
+            signingAuthority: relationship.signingAuthority,
             relationship: relationship.relationship,
         };
     })[0];

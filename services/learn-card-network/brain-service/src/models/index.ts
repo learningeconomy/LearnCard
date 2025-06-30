@@ -5,8 +5,6 @@ import { Profile } from './Profile';
 import { Credential } from './Credential';
 import { Presentation } from './Presentation';
 import { ConsentFlowTransaction } from './ConsentFlowTransaction';
-import './EmailAddress';
-import './InboxCredential';
 
 Credential.addRelationships({
     credentialReceived: {
@@ -66,7 +64,7 @@ Presentation.addRelationships({
             'CREATE INDEX has_role_id_idx IF NOT EXISTS FOR ()-[r:HAS_ROLE]-() ON (r.roleId)'
         ),
         neogma.queryRunner.run(
-            'CREATE INDEX email_address_email_idx IF NOT EXISTS FOR (e:EmailAddress) ON (e.email)'
+            'CREATE CONSTRAINT contact_method_type_value_unique IF NOT EXISTS FOR (c:ContactMethod) REQUIRE (c.type, c.value) IS UNIQUE'
         ),
         neogma.queryRunner.run(
             'CREATE INDEX inbox_credential_status_idx IF NOT EXISTS FOR (i:InboxCredential) ON (i.currentStatus)'
@@ -96,5 +94,5 @@ export * from './SigningAuthority';
 export * from './ConsentFlowTerms';
 export * from './ConsentFlowContract';
 export * from './ConsentFlowTransaction';
-export * from './EmailAddress';
+export * from './ContactMethod';    
 export * from './InboxCredential';

@@ -10,18 +10,19 @@ import {
     createEmailSentRelationship,
     createWebhookSentRelationship,
 } from '@accesslayer/inbox-credential/relationships/create';
-import { getEmailAddressByEmail } from '@accesslayer/email-address/read';
-import { createEmailAddress } from '@accesslayer/email-address/create';
-import { getProfileByVerifiedEmail } from '@accesslayer/email-address/relationships/read';
+import { getContactMethodByValue } from '@accesslayer/contact-method/read';
+import { createContactMethod } from '@accesslayer/contact-method/create';
+import { getProfileByVerifiedContactMethod } from '@accesslayer/contact-method/relationships/read';
 import { sendCredential } from '@helpers/credential.helpers';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
 import { getSigningAuthorityForUserByName } from '@accesslayer/signing-authority/relationships/read';
-import { generateInboxClaimToken, generateClaimUrl } from '@helpers/email.helpers';
+import { ContactMethodQueryType } from 'types/contact-method';
+import { generateInboxClaimToken, generateClaimUrl } from '@helpers/contact-method.helpers';
 import { InboxCredentialType, SigningAuthorityType } from 'types/inbox-credential';
 
 export const issueToInbox = async (
     issuerProfile: ProfileType,
-    recipientEmail: string,
+    recipient: ContactMethodQueryType,
     credential: object,
     options: {
         isSigned?: boolean;
@@ -47,7 +48,7 @@ export const issueToInbox = async (
     }
 
     // Check if recipient already exists with verified email
-    const existingProfile = await getProfileByVerifiedEmail(recipientEmail);
+    const existingProfile = await getProfileByVerifiedContactMethod('email', recipient.value);
 
     if (existingProfile) {
         // Auto-deliver to existing user
@@ -58,7 +59,7 @@ export const issueToInbox = async (
         } else {
             // Sign the credential using signing authority
             const signingAuthorityForUser = await getSigningAuthorityForUserByName(
-                issuerProfile.did,
+                issuerProfile,
                 signingAuthority!.endpoint,
                 signingAuthority!.name
             );
@@ -71,7 +72,7 @@ export const issueToInbox = async (
             }
 
             finalCredential = await issueCredentialWithSigningAuthority(
-                issuerProfile.did,
+                issuerProfile,
                 credential as UnsignedVC,
                 signingAuthorityForUser,
                 ctx.domain,
@@ -83,7 +84,7 @@ export const issueToInbox = async (
         const inboxCredential = await createInboxCredential({
             credential: JSON.stringify(finalCredential),
             isSigned: true,
-            recipientEmail,
+            recipient,
             issuerProfile,
             webhookUrl,
             expiresInDays,
@@ -119,7 +120,7 @@ export const issueToInbox = async (
                         issuanceId: inboxCredential.id,
                         status: 'DELIVERED',
                         recipient: {
-                            email: recipientEmail,
+                            email: recipient.value,
                             learnCardId: existingProfile.did,
                         },
                         deliveredAt: new Date().toISOString(),
@@ -138,7 +139,7 @@ export const issueToInbox = async (
         const inboxCredential = await createInboxCredential({
             credential: JSON.stringify(credential),
             isSigned,
-            recipientEmail,
+            recipient,
             issuerProfile,
             webhookUrl,
             signingAuthority,
@@ -146,28 +147,29 @@ export const issueToInbox = async (
         });
 
         // Generate claim token
-        let emailAddress = await getEmailAddressByEmail(recipientEmail);
-        if (!emailAddress) {
+        let recipientContactMethod = await getContactMethodByValue(recipient.type, recipient.value);
+        if (!recipientContactMethod) {
 
-            emailAddress = await createEmailAddress({
-                email: recipientEmail,
+            recipientContactMethod = await createContactMethod({
+                type: recipient.type,
+                value: recipient.value,
                 isVerified: false,
             });
         }
 
-        const claimToken = await generateInboxClaimToken(emailAddress.id);
+        const claimToken = await generateInboxClaimToken(recipientContactMethod.id);
         const claimUrl = generateClaimUrl(claimToken, 'claim.learncard.com');
 
         // Record email being sent
         await createEmailSentRelationship(
             issuerProfile.did,
             inboxCredential?.id,
-            recipientEmail,
+            recipient.value,
             claimToken
         );
 
         // TODO: Send actual email here using notification system
-        //console.log(`Email would be sent to ${recipientEmail} with claim URL: ${claimUrl}`);
+        //console.log(`Email would be sent to ${recipient.value} with claim URL: ${claimUrl}`);
 
         return {
             status: 'PENDING',

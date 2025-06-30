@@ -3,7 +3,7 @@ import { ModelFactory, ModelRelatedNodesI, NeogmaInstance } from 'neogma';
 import { neogma } from '@instance';
 
 import { Profile, ProfileInstance } from './Profile';
-import { EmailAddress, EmailAddressInstance } from './EmailAddress';
+import ContactMethod, { ContactMethodInstance } from './ContactMethod';
 
 export type InboxCredentialType = {
     id: string;
@@ -19,7 +19,7 @@ export type InboxCredentialType = {
 };
 
 export type InboxCredentialRelationships = {
-    addressedTo: ModelRelatedNodesI<typeof EmailAddress, EmailAddressInstance>;
+    addressedTo: ModelRelatedNodesI<typeof ContactMethod, ContactMethodInstance, { timestamp: string }, { timestamp: string }>;
     createdBy: ModelRelatedNodesI<
         typeof Profile,
         ProfileInstance,
@@ -80,7 +80,14 @@ export const InboxCredential = ModelFactory<InboxCredentialType, InboxCredential
             'signingAuthority.name': { type: 'string', required: false },
         },
         relationships: {
-            addressedTo: { model: EmailAddress, direction: 'out', name: 'ADDRESSED_TO' },
+            addressedTo: { 
+                model: ContactMethod, 
+                direction: 'out', 
+                name: 'ADDRESSED_TO', 
+                properties: {
+                    timestamp: { property: 'timestamp', schema: { type: 'string', required: true } },
+                },
+            },
             createdBy: {
                 model: Profile,
                 direction: 'in',

@@ -26,20 +26,22 @@ export const createDeliveredRelationship = async (
 };
 
 export const createClaimedRelationship = async (
-    profileDid: string,
+    profileId: string,
     inboxCredentialId: string,
     claimToken: string
 ): Promise<boolean> => {
     const timestamp = new Date().toISOString();
     
     const result = await new QueryBuilder(new BindParam({ 
-        profileDid, 
+        profileId, 
         inboxCredentialId, 
         timestamp, 
         claimToken 
     }))
-        .match({ model: Profile, identifier: 'profile', where: { did: '$profileDid' } })
-        .match({ model: InboxCredential, identifier: 'inboxCredential', where: { id: '$inboxCredentialId' } })
+        .match({ model: Profile, identifier: 'profile'})
+        .where('profile.profileId = $profileId')
+        .match({ model: InboxCredential, identifier: 'inboxCredential'})
+        .where('inboxCredential.id = $inboxCredentialId')
         .create('(profile)-[:CLAIMED_INBOX_CREDENTIAL { timestamp: $timestamp, claimToken: $claimToken }]->(inboxCredential)')
         .return('profile')
         .run();
