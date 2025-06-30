@@ -19,6 +19,7 @@ import { getSigningAuthorityForUserByName } from '@accesslayer/signing-authority
 import { ContactMethodQueryType } from 'types/contact-method';
 import { generateInboxClaimToken, generateClaimUrl } from '@helpers/contact-method.helpers';
 import { InboxCredentialType, SigningAuthorityType } from 'types/inbox-credential';
+import { getDeliveryService } from '@services/delivery/delivery.factory';
 
 export const issueToInbox = async (
     issuerProfile: ProfileType,
@@ -29,6 +30,7 @@ export const issueToInbox = async (
         signingAuthority?: SigningAuthorityType;
         webhookUrl?: string;
         expiresInDays?: number;
+        template?: { id: string; model?: Record<string, any> };
     } = {},
     ctx: Context
 ): Promise<{ 
@@ -37,7 +39,7 @@ export const issueToInbox = async (
     claimUrl?: string;
     recipientDid?: string;
 }> => {
-    const { isSigned = false, signingAuthority, webhookUrl, expiresInDays } = options;
+    const { isSigned = false, signingAuthority, webhookUrl, expiresInDays, template } = options;
 
     // Validate that unsigned credentials have signing authority
     if (!isSigned && !signingAuthority) {
@@ -168,8 +170,20 @@ export const issueToInbox = async (
             claimToken
         );
 
-        // TODO: Send actual email here using notification system
-        //console.log(`Email would be sent to ${recipient.value} with claim URL: ${claimUrl}`);
+        // Send claim email
+
+        const deliveryService = getDeliveryService();
+        await deliveryService.send({
+            contactMethod: recipient,
+            templateId: template?.id || 'credential-claim',
+            templateModel: {
+                claimUrl,
+                issuerName: issuerProfile.profileId ?? 'An Organization',
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                credentialName: (credential as any)?.name ?? 'A Credential',
+                ...template?.model,
+            },
+        });
 
         return {
             status: 'PENDING',

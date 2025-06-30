@@ -49,6 +49,10 @@ export const IssueInboxCredentialValidator = z.object({
     signingAuthority: SigningAuthorityValidator.optional(),
     webhookUrl: z.string().url().optional(),
     expiresInDays: z.number().min(1).max(365).optional(),
+    template: z.object({
+        id: z.string(),
+        model: z.record(z.any()).optional(),
+    }).optional(),
 });
 
 export type IssueInboxCredentialType = z.infer<typeof IssueInboxCredentialValidator>;

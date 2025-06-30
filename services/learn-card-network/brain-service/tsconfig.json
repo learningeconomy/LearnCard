@@ -54,6 +54,9 @@
             ],
             "types/*": [
                 "src/types/*"
+            ],
+            "@services/*": [
+                "src/services/*"
             ]
         },
         "esModuleInterop": true,

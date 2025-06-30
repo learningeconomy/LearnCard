@@ -76,6 +76,7 @@
         "multiformats": "^11.0.1",
         "neo4j-driver": "^5.18.0",
         "neogma": "^1.13.0",
+        "postmark": "^4.0.5",
         "sift": "^17.0.1",
         "trpc-openapi": "^1.2.0",
         "trpc-to-openapi": "^2.3.1",

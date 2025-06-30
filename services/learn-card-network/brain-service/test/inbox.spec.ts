@@ -1,4 +1,4 @@
-import { vi } from 'vitest';
+import { vi, describe, it, expect, beforeEach, afterAll, beforeAll } from 'vitest';
 import { LCNProfileConnectionStatusEnum, VC, VP } from '@learncard/types';
 import { getClient, getUser } from './helpers/getClient';
 import { Profile, SigningAuthority, Credential, Boost, InboxCredential, ContactMethod } from '@models';
@@ -13,6 +13,11 @@ let userA: Awaited<ReturnType<typeof getUser>>;
 let userB: Awaited<ReturnType<typeof getUser>>;
 let userC: Awaited<ReturnType<typeof getUser>>;
 
+const sendSpy = vi.fn();
+vi.mock('@services/delivery/delivery.factory', () => ({
+    getDeliveryService: () => ({ send: sendSpy }),
+}));
+
 describe('Universal Inbox', () => {
     beforeAll(async () => {
         userA = await getUser('a'.repeat(64));
@@ -22,6 +27,7 @@ describe('Universal Inbox', () => {
 
     describe('Issue credential to inbox', () => {
         beforeEach(async () => {
+            sendSpy.mockClear();
             await Profile.delete({ detach: true, where: {} });
             await InboxCredential.delete({ detach: true, where: {} });
             await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
@@ -29,6 +35,7 @@ describe('Universal Inbox', () => {
         });
 
         afterAll(async () => {
+            sendSpy.mockClear();
             await Profile.delete({ detach: true, where: {} });
             await InboxCredential.delete({ detach: true, where: {} });
         });
@@ -67,11 +74,54 @@ describe('Universal Inbox', () => {
                 message: 'Unsigned credentials require a signing authority',
             });
         });
+
+        it('should call the delivery service with the default template', async () => {
+            const vc = await userA.learnCard.invoke.issueCredential(await userA.learnCard.invoke.getTestVc());
+            await userA.clients.fullAuth.inbox.issue({
+                credential: vc,
+                isSigned: true,
+                recipient: { type: 'email', value: 'newuser@test.com' },
+            });
+
+            expect(sendSpy).toHaveBeenCalledOnce();
+            expect(sendSpy).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    templateId: 'credential-claim',
+                    templateModel: expect.objectContaining({
+                        issuerName: 'usera',
+                        credentialName: "A Credential",
+                    }),
+                })
+            );
+        });
+
+        it('should call the delivery service with a custom template model', async () => {
+            const vc = await userA.learnCard.invoke.issueCredential(await userA.learnCard.invoke.getTestVc());
+            await userA.clients.fullAuth.inbox.issue({
+                credential: vc,
+                isSigned: true,
+                recipient: { type: 'email', value: 'customuser@test.com' },
+                template: { id: 'credential-claim', model: { customMessage: 'Welcome to our platform!', credentialName: 'Banana!' } },
+            });
+
+            expect(sendSpy).toHaveBeenCalledOnce();
+            expect(sendSpy).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    templateId: 'credential-claim',
+                    templateModel: expect.objectContaining({
+                        issuerName: 'usera',
+                        credentialName: 'Banana!',
+                        customMessage: 'Welcome to our platform!',
+                    }),
+                })
+            );
+        });
     });
 
 
     describe('Get inbox credentials', () => {
         beforeEach(async () => {
+            sendSpy.mockClear();
             await Profile.delete({ detach: true, where: {} });
             await InboxCredential.delete({ detach: true, where: {} });
             await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
@@ -167,6 +217,7 @@ describe('Universal Inbox', () => {
 
     describe('Get individual inbox credential', () => {
         beforeEach(async () => {
+            sendSpy.mockClear();
             await Profile.delete({ detach: true, where: {} });
             await InboxCredential.delete({ detach: true, where: {} });
             await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
@@ -349,7 +400,7 @@ describe('Universal Inbox', () => {
             if (!incomingCredentials?.[0]?.uri) {
                 throw new Error('Incoming credential URI is undefined');
             }
-            const receivedCred = await userB.clients.fullAuth.storage.resolve({ uri: incomingCredentials?.[0].uri });
+            const receivedCred = (await userB.clients.fullAuth.storage.resolve({ uri: incomingCredentials?.[0].uri })) as VC;
             if (!receivedCred) {
                 throw new Error('Received credential is undefined');
             }
