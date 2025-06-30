@@ -4,9 +4,10 @@ import { EmailAddressType } from 'types/email-address';
 import { ProfileType } from 'types/profile';
 import { inflateObject } from '@helpers/objects.helpers';
 
-export const getProfileEmailRelationships = async (profileDid: string): Promise<EmailAddressType[]> => {
-    const result = await new QueryBuilder(new BindParam({ profileDid }))
-        .match({ model: Profile, identifier: 'profile', where: { did: '$profileDid' } })
+export const getProfileEmailRelationships = async (profile: ProfileType): Promise<EmailAddressType[]> => {
+    const result = await new QueryBuilder(new BindParam({ profileId: profile.profileId }))
+        .match({ model: Profile, identifier: 'profile' })
+        .where('profile.profileId = $profileId')
         .match('(profile)-[:HAS_EMAIL]->(emailAddress:EmailAddress)')
         .return('emailAddress')
         .run();
@@ -31,7 +32,8 @@ export const checkProfileEmailRelationship = async (
 
 export const getProfileByVerifiedEmail = async (email: string): Promise<ProfileType | null> => {
     const result = await new QueryBuilder(new BindParam({ email }))
-        .match({ model: EmailAddress, identifier: 'emailAddress', where: { email: '$email', isVerified: true } })
+        .match({ model: EmailAddress, identifier: 'emailAddress' })
+        .where('emailAddress.email = $email AND emailAddress.isVerified = true')
         .match('(profile:Profile)-[:HAS_EMAIL]->(emailAddress)')
         .return('profile')
         .limit(1)

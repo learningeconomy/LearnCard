@@ -14,7 +14,8 @@ export const updateEmailAddress = async (
     const result = await new QueryBuilder(
         new BindParam({ id, updates: updateData })
     )
-        .match({ model: EmailAddress, identifier: 'emailAddress', where: { id: '$id' } })
+        .match({ model: EmailAddress, identifier: 'emailAddress' })
+        .where('emailAddress.id = $id')
         .set('emailAddress += $updates')
         .return('emailAddress')
         .limit(1)

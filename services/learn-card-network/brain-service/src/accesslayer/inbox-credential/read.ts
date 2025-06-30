@@ -1,24 +1,12 @@
 import { QueryBuilder, BindParam, QueryRunner } from 'neogma';
-import { InboxCredential, EmailAddress, Profile } from '@models';
+import { InboxCredential, EmailAddress, InboxCredentialInstance } from '@models';
 import { InboxCredentialType } from 'types/inbox-credential';
 import { inflateObject } from '@helpers/objects.helpers';
+import { InboxCredentialQuery } from 'types/inbox-credential';
+import { convertQueryResultToPropertiesObjectArray, convertObjectRegExpToNeo4j, getMatchQueryWhere } from '@helpers/neo4j.helpers';
 
-export const getInboxCredentialById = async (id: string): Promise<InboxCredentialType | null> => {
-    const result = await new QueryBuilder()
-        .match({
-            model: InboxCredential,
-            identifier: 'inboxCredential',
-            where: { id },
-        })
-        .return('inboxCredential')
-        .limit(1)
-        .run();
-
-    const inboxCredential = result.records[0]?.get('inboxCredential').properties;
-
-    if (!inboxCredential) return null;
-
-    return inflateObject<InboxCredentialType>(inboxCredential as any);
+export const getInboxCredentialById = async (id: string): Promise<InboxCredentialInstance | null> => {
+    return InboxCredential.findOne({ where: { id } });
 };
 
 export const getPendingInboxCredentialsForEmail = async (email: string): Promise<InboxCredentialType[]> => {
@@ -34,11 +22,12 @@ export const getPendingInboxCredentialsForEmail = async (email: string): Promise
     ) ?? [];
 };
 
-export const getPendingInboxCredentialsForEmailAddress = async (emailAddressId: string): Promise<InboxCredentialType[]> => {
+export const getPendingInboxCredentialsForEmailId = async (emailAddressId: string): Promise<InboxCredentialType[]> => {
     const result = await new QueryBuilder(new BindParam({ emailAddressId }))
-        .match({ model: EmailAddress, identifier: 'emailAddress', where: { id: '$emailAddressId' } })
+        .match({ model: EmailAddress, identifier: 'emailAddress' })
+        .where('emailAddress.id = $emailAddressId')
         .match('(inboxCredential:InboxCredential)-[:ADDRESSED_TO]->(emailAddress)')
-        .where('inboxCredential.currentStatus = "PENDING" AND inboxCredential.expiresAt > datetime()')
+        .where(`inboxCredential.currentStatus = "PENDING" AND datetime(inboxCredential.expiresAt) > datetime()`)
         .return('inboxCredential')
         .run();
 
@@ -48,23 +37,35 @@ export const getPendingInboxCredentialsForEmailAddress = async (emailAddressId: 
 };
 
 export const getInboxCredentialsForProfile = async (
-    profileDid: string,
-    status?: InboxCredentialType['currentStatus']
-): Promise<InboxCredentialType[]> => {
-    const statusFilter = status ? ` AND inboxCredential.currentStatus = "${status}"` : '';
-    
-    const result = await new QueryBuilder(new BindParam({ profileDid }))
-        .match({ model: Profile, identifier: 'profile', where: { did: '$profileDid' } })
-        .match('(profile)-[:CREATED_INBOX_CREDENTIAL]->(inboxCredential:InboxCredential)')
-        .where(`true ${statusFilter}`)
-        .return('inboxCredential')
-        .orderBy('inboxCredential.createdAt DESC')
-        .run();
+    profileId: string,
+    { limit, cursor, query: matchQuery = {}, recipientEmail }: { limit: number; cursor?: string; query?: InboxCredentialQuery; recipientEmail?: string },
+): Promise<InboxCredentialType[]> => {    
+    const _query = new QueryBuilder(new BindParam({ profileId, matchQuery: convertObjectRegExpToNeo4j(matchQuery), cursor, recipientEmail }))
+    .match('(profile)-[:CREATED_INBOX_CREDENTIAL]->(inboxCredential:InboxCredential)')
+    .where(`profile.profileId = $profileId AND ${getMatchQueryWhere('inboxCredential')}`);
 
-    return QueryRunner.getResultProperties<InboxCredentialType[]>(result, 'inboxCredential')?.map(
-        credential => inflateObject<InboxCredentialType>(credential as any)
-    ) ?? [];
+    if (recipientEmail) {
+        _query.match('(inboxCredential)-[:ADDRESSED_TO]->(emailAddress:EmailAddress)')
+            .where('emailAddress.email = $recipientEmail');
+    }
+
+    const query = cursor ? _query.raw('AND inboxCredential.createdAt < $cursor') : _query;
+
+    const results = convertQueryResultToPropertiesObjectArray<{
+        inboxCredential: InboxCredentialType;
+    }>(
+        await query
+            .return('DISTINCT inboxCredential')
+            .orderBy('inboxCredential.createdBy DESC')
+            .limit(limit)
+            .run()
+    );
+
+    return results.map(result => ({
+        ...(inflateObject as any)(result.inboxCredential as any),
+    }));
 };
+
 
 export const getExpiredInboxCredentials = async (limit = 100): Promise<InboxCredentialType[]> => {
     const result = await new QueryBuilder()

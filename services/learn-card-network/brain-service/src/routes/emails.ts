@@ -40,7 +40,7 @@ export const emailsRouter = t.router({
         .output(z.array(EmailAddressValidator))
         .query(async ({ ctx }) => {
             const { profile } = ctx.user;
-            return getProfileEmailRelationships(profile.did);
+            return getProfileEmailRelationships(profile);
         }),
 
     // Add a new email address (requires verification)

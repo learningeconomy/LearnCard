@@ -9,7 +9,7 @@ import {
     VPValidator,
 } from '@learncard/types';
 
-import { t, openRoute } from '@routes';
+import { t, openRoute, Context } from '@routes';
 
 import { getBoostByUri } from '@accesslayer/boost/read';
 import { getBoostOwner } from '@accesslayer/boost/relationships/read';
@@ -25,7 +25,7 @@ import {
     validateInboxClaimToken,
     markInboxClaimTokenAsUsed,
 } from '@helpers/email.helpers';
-import { getPendingInboxCredentialsForEmailAddress } from '@accesslayer/inbox-credential/read';
+import { getPendingInboxCredentialsForEmailId } from '@accesslayer/inbox-credential/read';
 import { markInboxCredentialAsClaimed } from '@accesslayer/inbox-credential/update';
 import { createClaimedRelationship } from '@accesslayer/inbox-credential/relationships/create';
 import {
@@ -41,6 +41,8 @@ import {
 } from '@helpers/boost.helpers';
 import { getEmptyLearnCard, getLearnCard } from '@helpers/learnCard.helpers';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
+import { createProfileEmailRelationship, createProfileEmailRelationship } from '@accesslayer/email-address/relationships/create';
+import { verifyEmailAddress } from '@accesslayer/email-address/update';
 
 // Zod schema for the participate in exchange input
 const participateInExchangeInput = z.object({
@@ -108,7 +110,7 @@ export const workflowsRouter = t.router({
                 if (isInitiation) {
                     return handleInboxClaimInitiation(localExchangeId, domain);
                 } else {
-                    return handleInboxClaimPresentation(localExchangeId, verifiablePresentation, domain);
+                    return handleInboxClaimPresentation(localExchangeId, verifiablePresentation, ctx);
                 }
             }
 
@@ -396,7 +398,7 @@ async function handleInboxClaimInitiation(
     }
 
     // Verify there are pending credentials for this email
-    const pendingCredentials = await getPendingInboxCredentialsForEmailAddress(claimTokenData.emailId);
+    const pendingCredentials = await getPendingInboxCredentialsForEmailId(claimTokenData.emailId);
     if (pendingCredentials.length === 0) {
         throw new TRPCError({
             code: 'NOT_FOUND',
@@ -423,7 +425,7 @@ async function handleInboxClaimInitiation(
 async function handleInboxClaimPresentation(
     claimToken: string,
     verifiablePresentation: VP,
-    domain: string
+    ctx: Context
 ) {
     // Validate the claim token
     const claimTokenData = await validateInboxClaimToken(claimToken);
@@ -450,7 +452,7 @@ async function handleInboxClaimPresentation(
     const learnCard = await getEmptyLearnCard();
     const verificationResult = await learnCard.invoke.verifyPresentation(verifiablePresentation, {
         challenge,
-        domain,
+        domain: ctx.domain,
     });
 
     if (verificationResult.errors.length > 0 || !verificationResult.checks.includes('proof')) {
@@ -480,15 +482,20 @@ async function handleInboxClaimPresentation(
 
     // Check if the holder DID corresponds to a profile with this verified email
     const profileForEmail = await getProfileByEmailAddress(emailAddress);
-    if (!profileForEmail || profileForEmail.did !== holderDid) {
-        throw new TRPCError({
-            code: 'FORBIDDEN',
-            message: 'You do not have access to credentials for this email address',
-        });
+ 
+    if (!profileForEmail) {
+        await createProfileEmailRelationship(ctx.user?.did || holderDid, emailAddress.id);
+        await verifyEmailAddress(emailAddress.id);
     }
+    // if (!profileForEmail || profileForEmail.did !== holderDid) {
+    //     throw new TRPCError({
+    //         code: 'FORBIDDEN',
+    //         message: 'You do not have access to credentials for this email address',
+    //     });
+    // }
 
     // Get all pending credentials for this email
-    const pendingCredentials = await getPendingInboxCredentialsForEmailAddress(claimTokenData.emailId);
+    const pendingCredentials = await getPendingInboxCredentialsForEmailId(claimTokenData.emailId);
     if (pendingCredentials.length === 0) {
         throw new TRPCError({
             code: 'NOT_FOUND',
@@ -510,7 +517,7 @@ async function handleInboxClaimPresentation(
                 // Need to sign the credential using signing authority
                 const unsignedCredential = JSON.parse(inboxCredential.credential) as UnsignedVC;
                 
-                if (!inboxCredential['signingAuthority.endpoint'] || !inboxCredential['signingAuthority.name']) {
+                if (!inboxCredential?.signingAuthority?.endpoint || !inboxCredential?.signingAuthority?.name) {
                     console.error(`Inbox credential ${inboxCredential.id} missing signing authority info`);
                     continue;
                 }
@@ -524,8 +531,8 @@ async function handleInboxClaimPresentation(
 
                 const signingAuthorityForUser = await getSigningAuthorityForUserByName(
                     issuerProfile,
-                    inboxCredential['signingAuthority.endpoint'],
-                    inboxCredential['signingAuthority.name']
+                    inboxCredential?.signingAuthority?.endpoint,
+                    inboxCredential?.signingAuthority?.name
                 );
 
                 if (!signingAuthorityForUser) {
@@ -551,7 +558,7 @@ async function handleInboxClaimPresentation(
                     issuerProfile,
                     unsignedCredential,
                     signingAuthorityForUser,
-                    domain,
+                    ctx.domain,
                     false // don't encrypt
                 ) as VC;
             }

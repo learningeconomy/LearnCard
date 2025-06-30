@@ -2,6 +2,7 @@ import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
 import { t, profileRoute } from '@routes';
+import { PaginationOptionsValidator } from '@learncard/types';
 
 import { issueToInbox } from '@helpers/inbox.helpers';
 import { getInboxCredentialsForProfile } from '@accesslayer/inbox-credential/read';
@@ -9,6 +10,8 @@ import {
     IssueInboxCredentialValidator,
     IssueInboxCredentialResponseValidator,
     InboxCredentialValidator,
+    PaginatedInboxCredentialsValidator,
+    InboxCredentialQueryValidator,
 } from 'types/inbox-credential';
 
 export const inboxRouter = t.router({
@@ -46,7 +49,8 @@ export const inboxRouter = t.router({
                         signingAuthority,
                         webhookUrl,
                         expiresInDays,
-                    }
+                    },
+                    ctx
                 );
 
                 return {
@@ -57,7 +61,6 @@ export const inboxRouter = t.router({
                     recipientDid: result.recipientDid,
                 };
             } catch (error) {
-                console.error('Inbox issuance error:', error);
                 
                 if (error instanceof TRPCError) {
                     throw error;
@@ -81,22 +84,30 @@ export const inboxRouter = t.router({
                 description: 'Get all inbox credentials issued by the authenticated profile',
             },
         })
-        .input(z.object({
-            status: z.enum(['PENDING', 'CLAIMED', 'EXPIRED', 'DELIVERED']).optional(),
-            limit: z.number().min(1).max(100).default(25),
-        }))
-        .output(z.array(InboxCredentialValidator))
+        .input(PaginationOptionsValidator.extend({
+            limit: PaginationOptionsValidator.shape.limit.default(25),
+            query: InboxCredentialQueryValidator.optional(),
+            recipientEmail: z.string().email().optional(),
+        }).default({}))
+        .output(PaginatedInboxCredentialsValidator)
         .query(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const { status } = input;
+            const { limit, cursor, query, recipientEmail } = input;
 
             const credentials = await getInboxCredentialsForProfile(
-                profile.did,
-                status
+                profile.profileId,
+                { limit: limit + 1, cursor, query, recipientEmail }
             );
 
-            return credentials;
+            const hasMore = credentials.length > limit;
+            const newCursor = credentials.at(hasMore ? -2 : -1)?.createdAt;
+            return {
+                hasMore,
+                records: credentials.slice(0, limit),
+                ...(newCursor && { cursor: newCursor }),
+            };
         }),
+
 
     // Get a specific inbox credential (if owned by the profile)
     getInboxCredential: profileRoute
@@ -118,8 +129,9 @@ export const inboxRouter = t.router({
             const { credentialId } = input;
 
             // Get all credentials for this profile and find the requested one
-            const credentials = await getInboxCredentialsForProfile(profile.did);
-            const credential = credentials.find(c => c.id === credentialId);
+            // TODO: Should this just be a getInboxCredentialById function?
+            const credentials = await getInboxCredentialsForProfile(profile.profileId, { limit: 1, query: { id: credentialId }});
+            const credential = credentials?.find(c => c.id === credentialId);
 
             if (!credential) {
                 throw new TRPCError({

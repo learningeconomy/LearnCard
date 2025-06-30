@@ -4,12 +4,14 @@ import { VC, UnsignedVC } from '@learncard/types';
 import { ProfileType } from 'types/profile';
 import { createInboxCredential } from '@accesslayer/inbox-credential/create';
 import { markInboxCredentialAsDelivered } from '@accesslayer/inbox-credential/update';
+import { Context } from '@routes'
 import { 
     createDeliveredRelationship,
     createEmailSentRelationship,
     createWebhookSentRelationship,
 } from '@accesslayer/inbox-credential/relationships/create';
 import { getEmailAddressByEmail } from '@accesslayer/email-address/read';
+import { createEmailAddress } from '@accesslayer/email-address/create';
 import { getProfileByVerifiedEmail } from '@accesslayer/email-address/relationships/read';
 import { sendCredential } from '@helpers/credential.helpers';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
@@ -26,14 +28,15 @@ export const issueToInbox = async (
         signingAuthority?: SigningAuthorityType;
         webhookUrl?: string;
         expiresInDays?: number;
-    } = {}
+    } = {},
+    ctx: Context
 ): Promise<{ 
     status: 'PENDING' | 'DELIVERED'; 
     inboxCredential: InboxCredentialType;
     claimUrl?: string;
     recipientDid?: string;
 }> => {
-    const { isSigned = false, signingAuthority, webhookUrl, expiresInDays = 30 } = options;
+    const { isSigned = false, signingAuthority, webhookUrl, expiresInDays } = options;
 
     // Validate that unsigned credentials have signing authority
     if (!isSigned && !signingAuthority) {
@@ -71,7 +74,7 @@ export const issueToInbox = async (
                 issuerProfile.did,
                 credential as UnsignedVC,
                 signingAuthorityForUser,
-                'claim.learncard.com', // domain
+                ctx.domain,
                 false // don't encrypt
             ) as VC;
         }
@@ -81,7 +84,7 @@ export const issueToInbox = async (
             credential: JSON.stringify(finalCredential),
             isSigned: true,
             recipientEmail,
-            issuerDid: issuerProfile.did,
+            issuerProfile,
             webhookUrl,
             expiresInDays,
         });
@@ -91,8 +94,9 @@ export const issueToInbox = async (
             issuerProfile,
             existingProfile,
             finalCredential,
-            'claim.learncard.com' // domain
+            ctx.domain // domain
         );
+
 
         // Mark as delivered and create relationship
         await markInboxCredentialAsDelivered(inboxCredential.id);
@@ -135,18 +139,19 @@ export const issueToInbox = async (
             credential: JSON.stringify(credential),
             isSigned,
             recipientEmail,
-            issuerDid: issuerProfile.did,
+            issuerProfile,
             webhookUrl,
             signingAuthority,
             expiresInDays,
         });
 
         // Generate claim token
-        const emailAddress = await getEmailAddressByEmail(recipientEmail);
+        let emailAddress = await getEmailAddressByEmail(recipientEmail);
         if (!emailAddress) {
-            throw new TRPCError({
-                code: 'INTERNAL_SERVER_ERROR',
-                message: 'Failed to create email address record',
+
+            emailAddress = await createEmailAddress({
+                email: recipientEmail,
+                isVerified: false,
             });
         }
 
@@ -156,13 +161,13 @@ export const issueToInbox = async (
         // Record email being sent
         await createEmailSentRelationship(
             issuerProfile.did,
-            inboxCredential.id,
+            inboxCredential?.id,
             recipientEmail,
             claimToken
         );
 
         // TODO: Send actual email here using notification system
-        console.log(`Email would be sent to ${recipientEmail} with claim URL: ${claimUrl}`);
+        //console.log(`Email would be sent to ${recipientEmail} with claim URL: ${claimUrl}`);
 
         return {
             status: 'PENDING',

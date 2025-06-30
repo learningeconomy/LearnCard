@@ -15,6 +15,25 @@ export const InboxCredentialValidator = z.object({
 
 export type InboxCredentialType = z.infer<typeof InboxCredentialValidator>;
 
+export const PaginatedInboxCredentialsValidator = z.object({
+    hasMore: z.boolean(),
+    records: z.array(InboxCredentialValidator),
+    cursor: z.string().optional(),
+});
+
+export type PaginatedInboxCredentialsType = z.infer<typeof PaginatedInboxCredentialsValidator>;
+
+export const InboxCredentialQueryValidator = z
+    .object({
+        currentStatus: z.enum(['PENDING', 'CLAIMED', 'EXPIRED', 'DELIVERED']),
+        id: z.string(),
+        isSigned: z.boolean(),
+        issuerDid: z.string(),
+    })
+    .partial();
+
+export type InboxCredentialQuery = z.infer<typeof InboxCredentialQueryValidator>;
+
 export const SigningAuthorityValidator = z.object({
     endpoint: z.string().url(),
     name: z.string(),
@@ -28,7 +47,7 @@ export const IssueInboxCredentialValidator = z.object({
     isSigned: z.boolean().optional().default(false),
     signingAuthority: SigningAuthorityValidator.optional(),
     webhookUrl: z.string().url().optional(),
-    expiresInDays: z.number().min(1).max(365).optional().default(30),
+    expiresInDays: z.number().min(1).max(365).optional(),
 });
 
 export type IssueInboxCredentialType = z.infer<typeof IssueInboxCredentialValidator>;
