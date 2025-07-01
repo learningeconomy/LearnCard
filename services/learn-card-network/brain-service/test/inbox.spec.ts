@@ -47,13 +47,14 @@ describe('Universal Inbox', () => {
         });
 
         it('should not allow you to issue a credential to an inbox without full auth', async () => {
+            const vc = await userA.learnCard.invoke.getTestVc();
             await expect(
-                noAuthClient.inbox.issue({ credential: {}, recipient: { type: 'email', value: 'userA@test.com' } })
+                noAuthClient.inbox.issue({ credential: vc, recipient: { type: 'email', value: 'userA@test.com' } })
             ).rejects.toMatchObject({
                 code: 'UNAUTHORIZED',
             });
             await expect(
-                userA.clients.partialAuth.inbox.issue({ credential: {}, recipient: { type: 'email', value: 'userA@test.com' } })
+                userA.clients.partialAuth.inbox.issue({ credential: vc, recipient: { type: 'email', value: 'userA@test.com' } })
             ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
         });
 
@@ -78,6 +79,16 @@ describe('Universal Inbox', () => {
             ).rejects.toMatchObject({
                 code: 'BAD_REQUEST',
                 message: 'Unsigned credentials require a signing authority',
+            });
+        });
+
+        it('should not allow you to send an unsigned credential if you specify it is signed', async () => {
+            const vc = await userA.learnCard.invoke.getTestVc();
+            await expect(
+                userA.clients.fullAuth.inbox.issue({ credential: vc, isSigned: true, recipient: { type: 'email', value: 'userA@test.com' } })
+            ).rejects.toMatchObject({
+                code: 'BAD_REQUEST',
+                message: 'If isSigned is true, credential must be signed. Missing proof.',
             });
         });
 
@@ -380,8 +391,9 @@ describe('Universal Inbox', () => {
         });
 
         it('should create an email address contact method if it doesn\'t exist for the recipient', async () => {
+            const vc = await userA.learnCard.invoke.getTestVc();
             await expect(
-                userA.clients.fullAuth.inbox.issue({ credential: {}, isSigned: false, signingAuthority: { endpoint: 'https://example.com', name: 'Example' }, recipient: { type: 'email', value: 'userA@test.com' } })
+                userA.clients.fullAuth.inbox.issue({ credential: vc, isSigned: false, signingAuthority: { endpoint: 'https://example.com', name: 'Example' }, recipient: { type: 'email', value: 'userA@test.com' } })
             ).resolves.not.toThrow();
 
             const emailAddress = (await ContactMethod.findOne({ where: { value: 'userA@test.com' } })).dataValues.value;
@@ -391,8 +403,9 @@ describe('Universal Inbox', () => {
         });
 
         it('should create an phone contact method if it doesn\'t exist for the recipient', async () => {
+            const vc = await userA.learnCard.invoke.getTestVc();
             await expect(
-                userA.clients.fullAuth.inbox.issue({ credential: {}, isSigned: false, signingAuthority: { endpoint: 'https://example.com', name: 'Example' }, recipient: { type: 'phone', value: '+15555555' } })
+                userA.clients.fullAuth.inbox.issue({ credential: vc, isSigned: false, signingAuthority: { endpoint: 'https://example.com', name: 'Example' }, recipient: { type: 'phone', value: '+15555555' } })
             ).resolves.not.toThrow();
 
             const phone = (await ContactMethod.findOne({ where: { value: '+15555555' } })).dataValues.value;
@@ -419,13 +432,15 @@ describe('Universal Inbox', () => {
         });
 
         it('should allow you to get an individual inbox credential', async () => {
-            const inboxCredential = await userA.clients.fullAuth.inbox.issue({ credential: {}, isSigned: false, signingAuthority: { endpoint: 'https://example.com', name: 'Example' }, recipient: { type: 'email', value: 'userA@test.com' } });
+            const vc = await userA.learnCard.invoke.getTestVc();
+            const inboxCredential = await userA.clients.fullAuth.inbox.issue({ credential: vc, isSigned: false, signingAuthority: { endpoint: 'https://example.com', name: 'Example' }, recipient: { type: 'email', value: 'userA@test.com' } });
             await expect(
                 userA.clients.fullAuth.inbox.getInboxCredential({ credentialId: inboxCredential.issuanceId })
             ).resolves.not.toThrow();
         });
         it('should not allow you to get an individual inbox credential you do not own', async () => {
-            const inboxCredential = await userA.clients.fullAuth.inbox.issue({ credential: {}, isSigned: false, signingAuthority: { endpoint: 'https://example.com', name: 'Example' }, recipient: { type: 'email', value: 'userA@test.com' } });
+            const vc = await userA.learnCard.invoke.getTestVc();
+            const inboxCredential = await userA.clients.fullAuth.inbox.issue({ credential: vc, isSigned: false, signingAuthority: { endpoint: 'https://example.com', name: 'Example' }, recipient: { type: 'email', value: 'userA@test.com' } });
             await expect(
                 userB.clients.fullAuth.inbox.getInboxCredential({ credentialId: inboxCredential.issuanceId })
             ).rejects.toThrow();

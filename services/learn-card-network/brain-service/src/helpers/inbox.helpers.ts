@@ -1,5 +1,5 @@
 import { TRPCError } from '@trpc/server';
-import { VC, UnsignedVC, LCNNotificationTypeEnumValidator, LCNInboxStatusEnumValidator } from '@learncard/types';
+import { VC, UnsignedVC, LCNNotificationTypeEnumValidator, LCNInboxStatusEnumValidator, VP } from '@learncard/types';
 
 import { ProfileType } from 'types/profile';
 import { createInboxCredential } from '@accesslayer/inbox-credential/create';
@@ -8,7 +8,6 @@ import { Context } from '@routes'
 import { 
     createDeliveredRelationship,
     createEmailSentRelationship,
-    createWebhookSentRelationship,
 } from '@accesslayer/inbox-credential/relationships/create';
 import { getContactMethodByValue } from '@accesslayer/contact-method/read';
 import { createContactMethod } from '@accesslayer/contact-method/create';
@@ -26,7 +25,7 @@ import { getLearnCard } from '@helpers/learnCard.helpers';
 export const issueToInbox = async (
     issuerProfile: ProfileType,
     recipient: ContactMethodQueryType,
-    credential: object,
+    credential: VC | UnsignedVC | VP, 
     options: {
         isSigned?: boolean;
         signingAuthority?: SigningAuthorityType;
@@ -36,7 +35,7 @@ export const issueToInbox = async (
     } = {},
     ctx: Context
 ): Promise<{ 
-    status: 'PENDING' | 'DELIVERED'; 
+    status: 'PENDING' | 'DELIVERED' | 'CLAIMED' | 'EXPIRED'; 
     inboxCredential: InboxCredentialType;
     claimUrl?: string;
     recipientDid?: string;
@@ -48,6 +47,13 @@ export const issueToInbox = async (
         throw new TRPCError({
             code: 'BAD_REQUEST',
             message: 'Unsigned credentials require a signing authority',
+        });
+    }
+
+    if(isSigned && !credential?.proof){
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'If isSigned is true, credential must be signed. Missing proof.',
         });
     }
 
@@ -139,7 +145,7 @@ export const issueToInbox = async (
         }
 
         return {
-            status: 'DELIVERED',
+            status: LCNInboxStatusEnumValidator.enum.DELIVERED,
             inboxCredential,
             recipientDid: existingProfile.did,
         };
@@ -218,7 +224,7 @@ export const issueToInbox = async (
         }
 
         return {
-            status: 'PENDING',
+            status: LCNInboxStatusEnumValidator.enum.DELIVERED,
             inboxCredential,
             claimUrl,
         };

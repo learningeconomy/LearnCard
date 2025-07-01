@@ -64,6 +64,12 @@ describe('Contact Methods', () => {
             }
             expect(contactMethods?.[0].value).toBe('userB@test.com');
             expect(contactMethods?.[0].isVerified).toBe(false);
+            expect(contactMethods?.[0].verifiedAt).toBeUndefined();
+            expect(contactMethods?.[0].createdAt).toBeDefined();
+            if (!contactMethods?.[0].createdAt) {
+                throw new Error('Created at is undefined');
+            }
+            expect(new Date(contactMethods?.[0].createdAt).getTime()).toBeLessThanOrEqual(new Date().getTime());
         });
 
         it('should allow verifying an email contact method', async () => {
@@ -87,6 +93,10 @@ describe('Contact Methods', () => {
             const contactMethods = await userB.clients.fullAuth.contactMethods.getMyContactMethods();
             const verifiedMethod = contactMethods?.find(cm => cm.value === 'userB@test.com');
             expect(verifiedMethod?.isVerified).toBe(true);
+            if (!verifiedMethod?.verifiedAt) {
+                throw new Error('Verified at is undefined');
+            }
+            expect(new Date(verifiedMethod?.verifiedAt).getTime()).toBeLessThanOrEqual(new Date().getTime());
         });
 
         it('should allow verifying a phone contact method', async () => {

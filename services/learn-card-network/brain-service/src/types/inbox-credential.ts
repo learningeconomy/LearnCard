@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { ContactMethodQueryValidator } from './contact-method';
 import { LCNInboxStatusEnumValidator } from '@learncard/types';
+import { VCValidator, VPValidator, UnsignedVCValidator } from '@learncard/types';
 
 export const InboxCredentialValidator = z.object({
     id: z.string(),
@@ -45,7 +46,7 @@ export type SigningAuthorityType = z.infer<typeof SigningAuthorityValidator>;
 
 export const IssueInboxCredentialValidator = z.object({
     recipient: ContactMethodQueryValidator,
-    credential: z.object({}).passthrough(), // Any valid JSON object for the credential
+    credential: VCValidator.passthrough().or(VPValidator.passthrough()).or(UnsignedVCValidator.passthrough()), 
     isSigned: z.boolean().optional().default(false),
     signingAuthority: SigningAuthorityValidator.optional(),
     webhookUrl: z.string().url().optional(),
