@@ -159,6 +159,18 @@ describe('Universal Inbox', () => {
             );
         });
 
+        it('should not call the delivery service if suppressDelivery is true', async () => {
+            const vc = await userA.learnCard.invoke.issueCredential(await userA.learnCard.invoke.getTestVc());
+            await userA.clients.fullAuth.inbox.issue({
+                credential: vc,
+                isSigned: true,
+                recipient: { type: 'email', value: 'newuser@test.com' },
+                suppressDelivery: true,
+            });
+
+            expect(sendSpy).not.toHaveBeenCalled();
+        });
+
         it('should trigger a webhook if provided when a credential is delivered', async () => {
             const vc = await userA.learnCard.invoke.issueCredential(await userA.learnCard.invoke.getTestVc());
             const inboxCredential = await userA.clients.fullAuth.inbox.issue({

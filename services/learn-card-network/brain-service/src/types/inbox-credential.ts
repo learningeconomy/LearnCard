@@ -55,6 +55,7 @@ export const IssueInboxCredentialValidator = z.object({
         id: z.string(),
         model: z.record(z.any()).optional(),
     }).optional(),
+    suppressDelivery: z.boolean().optional().default(false),
 });
 
 export type IssueInboxCredentialType = z.infer<typeof IssueInboxCredentialValidator>;

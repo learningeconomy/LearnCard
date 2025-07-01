@@ -32,6 +32,7 @@ export const issueToInbox = async (
         webhookUrl?: string;
         expiresInDays?: number;
         template?: { id: string; model?: Record<string, any> };
+        suppressDelivery?: boolean;
     } = {},
     ctx: Context
 ): Promise<{ 
@@ -40,7 +41,7 @@ export const issueToInbox = async (
     claimUrl?: string;
     recipientDid?: string;
 }> => {
-    const { isSigned = false, signingAuthority, webhookUrl, expiresInDays, template } = options;
+    const { isSigned = false, signingAuthority, webhookUrl, expiresInDays, template, suppressDelivery } = options;
 
     // Validate that unsigned credentials have signing authority
     if (!isSigned && !signingAuthority) {
@@ -175,28 +176,29 @@ export const issueToInbox = async (
         const claimToken = await generateInboxClaimToken(recipientContactMethod.id);
         const claimUrl = generateClaimUrl(claimToken);
 
-        // Record email being sent
-        await createEmailSentRelationship(
-            issuerProfile.did,
-            inboxCredential?.id,
-            recipient.value,
-            claimToken
-        );
+        if (!suppressDelivery) {
+            // Record email being sent
+            await createEmailSentRelationship(
+                issuerProfile.did,
+                inboxCredential?.id,
+                recipient.value,
+                claimToken
+            );
 
-        
-        // Send claim email
-        const deliveryService = getDeliveryService(recipient);
-        await deliveryService.send({
-            contactMethod: recipient,
-            templateId: template?.id || 'credential-claim',
-            templateModel: {
-                claimUrl,
-                issuerName: issuerProfile.profileId ?? 'An Organization',
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                credentialName: (credential as any)?.name ?? 'A Credential',
-                ...template?.model,
-            },
-        });
+            // Send claim email
+            const deliveryService = getDeliveryService(recipient);
+            await deliveryService.send({
+                contactMethod: recipient,
+                templateId: template?.id || 'credential-claim',
+                templateModel: {
+                    claimUrl,
+                    issuerName: issuerProfile.profileId ?? 'An Organization',
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    credentialName: (credential as any)?.name ?? 'A Credential',
+                    ...template?.model,
+                },
+            });
+        }
 
         // Send webhook if configured
         if (webhookUrl) {

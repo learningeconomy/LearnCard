@@ -38,7 +38,8 @@ export const inboxRouter = t.router({
                 signingAuthority, 
                 webhookUrl, 
                 expiresInDays,
-                template
+                template,
+                suppressDelivery
             } = input;
 
             try {
@@ -51,7 +52,8 @@ export const inboxRouter = t.router({
                         signingAuthority,
                         webhookUrl,
                         expiresInDays,
-                        template,  
+                        template,
+                        suppressDelivery  
                     },
                     ctx
                 );
