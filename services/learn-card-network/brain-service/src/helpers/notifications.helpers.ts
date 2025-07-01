@@ -3,6 +3,7 @@ import { getDidWebLearnCard } from '@helpers/learnCard.helpers';
 import { LCNNotification } from '@learncard/types';
 import { getDidWeb } from '@helpers/did.helpers';
 import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
+import { createWebhookSentRelationship } from '@accesslayer/inbox-credential/relationships/create';
 
 // Timeout value in milliseconds for aborting the request
 const TIMEOUT = 6000;
@@ -99,6 +100,21 @@ export async function sendNotification(notification: LCNNotification) {
 
             if (!validationResult.success) {
                 throw new Error('Notifications Endpoint returned a malformed result');
+                
+            } 
+            
+            try {
+                if (notification?.data?.inbox?.issuanceId) {
+                    await createWebhookSentRelationship(
+                        notification.to?.did,
+                        notification.data.inbox.issuanceId,
+                        notificationsWebhook,
+                        res.status.toString(),
+                        JSON.stringify(res)
+                    );
+                }
+            } catch (error) {
+                console.error('Notifications Helpers - Error While Creating Webhook Sent Relationship:', error);
             }
 
             return validationResult.data;

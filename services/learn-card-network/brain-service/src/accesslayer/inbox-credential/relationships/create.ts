@@ -66,8 +66,10 @@ export const createEmailSentRelationship = async (
         emailAddress, 
         token 
     }))
-        .match({ model: Profile, identifier: 'profile', where: { did: '$profileDid' } })
-        .match({ model: InboxCredential, identifier: 'inboxCredential', where: { id: '$inboxCredentialId' } })
+        .match({ model: Profile, identifier: 'profile' })
+        .where('profile.did = $profileDid')
+        .match({ model: InboxCredential, identifier: 'inboxCredential' })
+        .where('inboxCredential.id = $inboxCredentialId')
         .create('(profile)-[:SENT_EMAIL { timestamp: $timestamp, emailAddress: $emailAddress, token: $token }]->(inboxCredential)')
         .return('profile')
         .run();
@@ -92,8 +94,10 @@ export const createWebhookSentRelationship = async (
         status,
         response: response || null
     }))
-        .match({ model: Profile, identifier: 'profile', where: { did: '$profileDid' } })
-        .match({ model: InboxCredential, identifier: 'inboxCredential', where: { id: '$inboxCredentialId' } })
+        .match({ model: Profile, identifier: 'profile' })
+        .where('profile.did = $profileDid')
+        .match({ model: InboxCredential, identifier: 'inboxCredential' })
+        .where('inboxCredential.id = $inboxCredentialId')
         .create('(profile)-[:SENT_WEBHOOK { timestamp: $timestamp, url: $url, status: $status, response: $response }]->(inboxCredential)')
         .return('profile')
         .run();
@@ -112,8 +116,10 @@ export const createExpiredRelationship = async (
         inboxCredentialId, 
         timestamp 
     }))
-        .match({ model: Profile, identifier: 'profile', where: { did: '$profileDid' } })
-        .match({ model: InboxCredential, identifier: 'inboxCredential', where: { id: '$inboxCredentialId' } })
+        .match({ model: Profile, identifier: 'profile' })
+        .where('profile.did = $profileDid')
+        .match({ model: InboxCredential, identifier: 'inboxCredential' })
+        .where('inboxCredential.id = $inboxCredentialId')
         .create('(profile)-[:EXPIRED_INBOX_CREDENTIAL { timestamp: $timestamp }]->(inboxCredential)')
         .return('profile')
         .run();

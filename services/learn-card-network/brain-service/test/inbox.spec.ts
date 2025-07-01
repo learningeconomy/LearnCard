@@ -698,7 +698,6 @@ describe('Universal Inbox', () => {
             // Issue a third credential to anyone@test.com
             await userA.clients.fullAuth.inbox.issue({ credential: vc2, isSigned: true, recipient: { type: 'email', value: 'anyone@test.com' } });
 
-
             // User C attempts to claim second credential
             expect(userC.clients.fullAuth.workflows.participateInExchange({ localWorkflowId: 'inbox-claim', localExchangeId: localExchangeId2 })).rejects.toThrow();
 
