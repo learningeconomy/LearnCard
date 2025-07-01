@@ -85,6 +85,14 @@ export const markInboxClaimTokenAsUsed = async (token: string): Promise<boolean>
     return true;
 };
 
-export const generateClaimUrl = (token: string, domain: string): string => {
-    return `https://app.${domain}/inbox/claim/${token}`;
+export const generateClaimUrl = (token: string): string => {
+    const domainName = process.env.DOMAIN_NAME;
+    const domain =
+        !domainName || process.env.IS_OFFLINE
+            ? `localhost:${process.env.PORT || 3000}`
+            : domainName;
+
+    const protocol = process.env.IS_OFFLINE ? 'http' : 'https';
+
+    return `${protocol}://${domain}/interactions/inbox-claim/${token}?iuv=1`;
 };

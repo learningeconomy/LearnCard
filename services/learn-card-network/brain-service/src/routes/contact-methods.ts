@@ -158,7 +158,6 @@ export const contactMethodsRouter = t.router({
                 contactMethodId
             );
 
-            console.log('ownsContactMethod', ownsContactMethod);
             if (!ownsContactMethod) {
                 throw new TRPCError({
                     code: 'FORBIDDEN',

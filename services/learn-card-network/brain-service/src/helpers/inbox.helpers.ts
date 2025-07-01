@@ -167,7 +167,7 @@ export const issueToInbox = async (
         }
 
         const claimToken = await generateInboxClaimToken(recipientContactMethod.id);
-        const claimUrl = generateClaimUrl(claimToken, 'claim.learncard.com');
+        const claimUrl = generateClaimUrl(claimToken);
 
         // Record email being sent
         await createEmailSentRelationship(

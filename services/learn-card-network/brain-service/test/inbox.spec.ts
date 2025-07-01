@@ -14,6 +14,12 @@ vi.mock('@services/delivery/delivery.factory', () => ({
     getDeliveryService: () => ({ send: sendSpy }),
 }));
 
+const getExchangeIdFromClaimUrl = (claimUrl: string | undefined) => {
+    if (!claimUrl) return undefined;
+    const url = new URL(claimUrl);
+    return url.pathname.split('/').pop()?.replace('?iuv=1', '');
+};
+
 
 describe('Universal Inbox', () => {
     beforeAll(async () => {
@@ -73,6 +79,14 @@ describe('Universal Inbox', () => {
                 code: 'BAD_REQUEST',
                 message: 'Unsigned credentials require a signing authority',
             });
+        });
+
+        it('should create an interoperable vc-api interaction claimUrl', async () => {
+            const vc = await userA.learnCard.invoke.issueCredential(await userA.learnCard.invoke.getTestVc());
+            const inboxCredential = await userA.clients.fullAuth.inbox.issue({ credential: vc, isSigned: true, recipient: { type: 'email', value: 'userA@test.com' } })
+            expect(inboxCredential.claimUrl).not.toBeNull();
+            expect(inboxCredential.claimUrl).toContain('/interactions/inbox-claim');
+            expect(inboxCredential.claimUrl).toContain('?iuv=1');
         });
 
         it('should call the delivery service with the default template', async () => {
@@ -327,7 +341,7 @@ describe('Universal Inbox', () => {
             // Have User B claim the inbox credentials for this user issued by User A
             const inboxCredential = await userA.clients.fullAuth.inbox.issue({ credential: signedCredential, isSigned: true, recipient: { type: 'phone', value: '+15555555' } })
 
-            const localExchangeId = inboxCredential.claimUrl?.split('/').pop();
+            const localExchangeId = getExchangeIdFromClaimUrl(inboxCredential?.claimUrl);
             if (!localExchangeId) {
                 throw new Error('Local exchange ID is undefined');
             }
@@ -442,7 +456,7 @@ describe('Universal Inbox', () => {
             const vc = await userA.learnCard.invoke.issueCredential(await userA.learnCard.invoke.getTestVc());
             const inboxCredential = await userA.clients.fullAuth.inbox.issue({ credential: vc, isSigned: true, recipient: { type: 'email', value: 'userA@test.com' } });
 
-            const localExchangeId = inboxCredential.claimUrl?.split('/').pop();
+            const localExchangeId = getExchangeIdFromClaimUrl(inboxCredential.claimUrl);
             expect(localExchangeId).toBeDefined();
 
             if (!localExchangeId) {
@@ -484,7 +498,7 @@ describe('Universal Inbox', () => {
             await userA.clients.fullAuth.inbox.issue({ credential: vc2, isSigned: true, recipient: { type: 'email', value: 'userA@test.com' } });
             await userA.clients.fullAuth.inbox.issue({ credential: vc3, isSigned: true, recipient: { type: 'email', value: 'userA@test.com' } });
 
-            const localExchangeId = inboxCredential.claimUrl?.split('/').pop();
+            const localExchangeId = getExchangeIdFromClaimUrl(inboxCredential?.claimUrl);
             expect(localExchangeId).toBeDefined();
 
             if (!localExchangeId) {
@@ -542,7 +556,7 @@ describe('Universal Inbox', () => {
 
             addNotificationToQueueSpy.mockClear();
 
-            const localExchangeId = inboxCredential.claimUrl?.split('/').pop();
+            const localExchangeId = getExchangeIdFromClaimUrl(inboxCredential?.claimUrl);
             if (!localExchangeId) {
                 throw new Error('Local exchange ID is undefined');
             }
@@ -579,7 +593,7 @@ describe('Universal Inbox', () => {
             const vc = await userA.learnCard.invoke.issueCredential(await userA.learnCard.invoke.getTestVc());
             const inboxCredential = await userA.clients.fullAuth.inbox.issue({ credential: vc, isSigned: true, recipient: { type: 'email', value: 'userB@test.com' } });
 
-            const localExchangeId = inboxCredential.claimUrl?.split('/').pop();
+            const localExchangeId = getExchangeIdFromClaimUrl(inboxCredential?.claimUrl);
             expect(localExchangeId).toBeDefined();
 
             if (!localExchangeId) {
@@ -612,7 +626,7 @@ describe('Universal Inbox', () => {
             const vc = await userA.learnCard.invoke.issueCredential(await userA.learnCard.invoke.getTestVc());
             const inboxCredential = await userA.clients.fullAuth.inbox.issue({ credential: vc, isSigned: true, recipient: { type: 'phone', value: '+15555555' } });
 
-            const localExchangeId = inboxCredential.claimUrl?.split('/').pop();
+            const localExchangeId = getExchangeIdFromClaimUrl(inboxCredential?.claimUrl);
             expect(localExchangeId).toBeDefined();
 
             if (!localExchangeId) {
@@ -646,7 +660,7 @@ describe('Universal Inbox', () => {
             const vc = await userA.learnCard.invoke.issueCredential(await userA.learnCard.invoke.getTestVc());
             const inboxCredential = await userA.clients.fullAuth.inbox.issue({ credential: vc, isSigned: true, recipient: { type: 'email', value: 'anyone@test.com' } });
 
-            const localExchangeId = inboxCredential.claimUrl?.split('/').pop();
+            const localExchangeId = getExchangeIdFromClaimUrl(inboxCredential?.claimUrl);
 
             if (!localExchangeId) {
                 throw new Error('Local exchange ID is undefined');
@@ -656,7 +670,7 @@ describe('Universal Inbox', () => {
             const vc2 = await userA.learnCard.invoke.issueCredential(await userA.learnCard.invoke.getTestVc());
             const inboxCredential2 = await userA.clients.fullAuth.inbox.issue({ credential: vc2, isSigned: true, recipient: { type: 'email', value: 'anyone@test.com' } });
 
-            const localExchangeId2 = inboxCredential2.claimUrl?.split('/').pop();
+            const localExchangeId2 = getExchangeIdFromClaimUrl(inboxCredential2?.claimUrl);
 
             if (!localExchangeId2) {
                 throw new Error('Local exchange ID is undefined');
@@ -693,7 +707,7 @@ describe('Universal Inbox', () => {
         it('should route credentials to the correct profile if the recipient exists with a verified email contact method', async () => {
             const vc = await userA.learnCard.invoke.issueCredential(await userA.learnCard.invoke.getTestVc());
             const inboxCredential = await userA.clients.fullAuth.inbox.issue({ credential: vc, isSigned: true, recipient: { type: 'email', value: 'userB@test.com' } });
-            const localExchangeId = inboxCredential.claimUrl?.split('/').pop();
+            const localExchangeId = getExchangeIdFromClaimUrl(inboxCredential?.claimUrl);
 
             if (!localExchangeId) {
                 throw new Error('Local exchange ID is undefined');
@@ -777,7 +791,7 @@ describe('Universal Inbox', () => {
             const credential = await userA.learnCard.invoke.newCredential({ type: 'achievement', name: 'Signing Authority Credential', achievementName: 'Signing Authority Credential' });
             const inboxCredential = await userA.clients.fullAuth.inbox.issue({ credential, isSigned: false, recipient: { type: 'email', value: 'userA@test.com' }, signingAuthority: { endpoint: 'https://example.com', name: 'Example' } });
 
-            const localExchangeId = inboxCredential.claimUrl?.split('/').pop();
+            const localExchangeId = getExchangeIdFromClaimUrl(inboxCredential?.claimUrl);
             expect(localExchangeId).toBeDefined();
 
             if (!localExchangeId) {
