@@ -63,6 +63,9 @@ export const getInboxCredentialsForProfile = async (
         recipient?: { type: string; value: string };
     }
 ): Promise<InboxCredentialType[]> => {
+
+    const cursorQuery = cursor ? `AND inboxCredential.createdAt < $cursor` : '';
+
     const _query = new QueryBuilder(
         new BindParam({
             profileId,
@@ -72,7 +75,7 @@ export const getInboxCredentialsForProfile = async (
         })
     )
         .match('(profile)-[:CREATED_INBOX_CREDENTIAL]->(inboxCredential:InboxCredential)')
-        .where(`profile.profileId = $profileId AND ${getMatchQueryWhere('inboxCredential')}`);
+        .where(`profile.profileId = $profileId AND ${getMatchQueryWhere('inboxCredential')}${cursorQuery}`);
 
     if (recipient) {
         _query
@@ -82,9 +85,6 @@ export const getInboxCredentialsForProfile = async (
 
     _query.return('inboxCredential').orderBy('inboxCredential.createdAt DESC');
 
-    if (cursor) {
-        _query.where('inboxCredential.id < $cursor');
-    }
 
     const result = await _query.limit(limit).run();
 

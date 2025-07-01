@@ -54,6 +54,11 @@ export async function sendNotification(notification: LCNNotification) {
         if (!notification.sent) {
             notification.sent = new Date().toISOString();
         }
+        // If webhookUrl is provided, use it instead of the default. It takes precedence over the default and 'to' default.
+        if(typeof notification.webhookUrl === 'string') {
+            notificationsWebhook = notification.webhookUrl;
+        }
+
         if (typeof notificationsWebhook === 'string' && notificationsWebhook?.startsWith('http')) {
             if (process.env.NODE_ENV !== 'test') {
                 console.log(

@@ -565,6 +565,8 @@ export const LCNNotificationTypeEnumValidator = z.enum([
     'PRESENTATION_REQUEST',
     'PRESENTATION_RECEIVED',
     'CONSENT_FLOW_TRANSACTION',
+    'ISSUANCE_CLAIMED',
+    'ISSUANCE_DELIVERED',
 ]);
 
 export type LCNNotificationTypeEnum = z.infer<typeof LCNNotificationTypeEnumValidator>;
@@ -576,10 +578,33 @@ export const LCNNotificationMessageValidator = z.object({
 
 export type LCNNotificationMessage = z.infer<typeof LCNNotificationMessageValidator>;
 
+export const LCNInboxContactMethodValidator = z.object({
+    type: z.string(),
+    value: z.string(),
+});
+
+export type LCNInboxContactMethod = z.infer<typeof LCNInboxContactMethodValidator>;
+
+export const LCNInboxStatusEnumValidator = z.enum(['PENDING', 'DELIVERED', 'CLAIMED', 'EXPIRED']);
+export type LCNInboxStatusEnum = z.infer<typeof LCNInboxStatusEnumValidator>;
+
+export const LCNNotificationInboxValidator = z.object({
+    issuanceId: z.string(),
+    status: LCNInboxStatusEnumValidator,
+    recipient: z.object({
+        contactMethod: LCNInboxContactMethodValidator.optional(),
+        learnCardId: z.string().optional(),
+    }),
+    timestamp: z.string().datetime().optional(),
+});
+
+export type LCNNotificationInbox = z.infer<typeof LCNNotificationInboxValidator>;
+
 export const LCNNotificationDataValidator = z.object({
     vcUris: z.array(z.string()).optional(),
     vpUris: z.array(z.string()).optional(),
     transaction: ConsentFlowTransactionValidator.optional(),
+    inbox: LCNNotificationInboxValidator.optional(),
 });
 
 export type LCNNotificationData = z.infer<typeof LCNNotificationDataValidator>;
@@ -591,6 +616,7 @@ export const LCNNotificationValidator = z.object({
     message: LCNNotificationMessageValidator.optional(),
     data: LCNNotificationDataValidator.optional(),
     sent: z.string().datetime().optional(),
+    webhookUrl: z.string().optional(),
 });
 
 export type LCNNotification = z.infer<typeof LCNNotificationValidator>;

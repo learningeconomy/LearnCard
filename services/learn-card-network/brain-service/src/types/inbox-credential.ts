@@ -1,11 +1,12 @@
 import { z } from 'zod';
 import { ContactMethodQueryValidator } from './contact-method';
+import { LCNInboxStatusEnumValidator } from '@learncard/types';
 
 export const InboxCredentialValidator = z.object({
     id: z.string(),
     credential: z.string(),
     isSigned: z.boolean(),
-    currentStatus: z.enum(['PENDING', 'CLAIMED', 'EXPIRED', 'DELIVERED']),
+    currentStatus: LCNInboxStatusEnumValidator,
     expiresAt: z.string(),
     createdAt: z.string(),
     issuerDid: z.string(),
@@ -26,7 +27,7 @@ export type PaginatedInboxCredentialsType = z.infer<typeof PaginatedInboxCredent
 
 export const InboxCredentialQueryValidator = z
     .object({
-        currentStatus: z.enum(['PENDING', 'CLAIMED', 'EXPIRED', 'DELIVERED']),
+        currentStatus: LCNInboxStatusEnumValidator,
         id: z.string(),
         isSigned: z.boolean(),
         issuerDid: z.string(),
@@ -59,7 +60,7 @@ export type IssueInboxCredentialType = z.infer<typeof IssueInboxCredentialValida
 
 export const IssueInboxCredentialResponseValidator = z.object({
     issuanceId: z.string(),
-    status: z.enum(['PENDING', 'DELIVERED']),
+    status: LCNInboxStatusEnumValidator,
     recipient: ContactMethodQueryValidator,
     claimUrl: z.string().url().optional(),
     recipientDid: z.string().optional(),

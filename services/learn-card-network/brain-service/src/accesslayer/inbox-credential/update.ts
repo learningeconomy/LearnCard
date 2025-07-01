@@ -10,7 +10,8 @@ export const updateInboxCredential = async (
     const result = await new QueryBuilder(
         new BindParam({ id, updates: flattenObject(updates) })
     )
-        .match({ model: InboxCredential, identifier: 'inboxCredential', where: { id: '$id' } })
+        .match({ model: InboxCredential, identifier: 'inboxCredential' })
+        .where('inboxCredential.id = $id')
         .set('inboxCredential += $updates')
         .return('inboxCredential')
         .limit(1)

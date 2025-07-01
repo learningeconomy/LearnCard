@@ -20,12 +20,14 @@ export const getProfileContactMethodRelationships = async (
 };
 
 export const checkProfileContactMethodRelationship = async (
-    profileDid: string,
+    profileId: string,
     contactMethodId: string
 ): Promise<boolean> => {
-    const result = await new QueryBuilder(new BindParam({ profileDid, contactMethodId }))
-        .match({ model: Profile, identifier: 'profile', where: { did: '$profileDid' } })
-        .match({ model: ContactMethod, identifier: 'contactMethod', where: { id: '$contactMethodId' } })
+    const result = await new QueryBuilder(new BindParam({ profileId, contactMethodId }))
+        .match({ model: Profile, identifier: 'profile' })
+        .where('profile.profileId = $profileId')
+        .match({ model: ContactMethod, identifier: 'contactMethod' })
+        .where('contactMethod.id = $contactMethodId')
         .match('(profile)-[:HAS_CONTACT_METHOD]->(contactMethod)')
         .return('profile')
         .limit(1)

@@ -23,6 +23,7 @@ import {
     ContactMethodVerificationValidator,
     SetPrimaryContactMethodValidator,
 } from 'types/contact-method';
+import { getDeliveryService } from '@services/delivery/delivery.factory';
 
 export const contactMethodsRouter = t.router({
     // Get all contact methods for the authenticated profile
@@ -71,7 +72,7 @@ export const contactMethodsRouter = t.router({
             if (existingContactMethod) {
                 // Check if this profile already owns this contact method
                 const ownsContactMethod = await checkProfileContactMethodRelationship(
-                    profile.did,
+                    profile.profileId,
                     existingContactMethod.id
                 );
 
@@ -97,17 +98,21 @@ export const contactMethodsRouter = t.router({
             });
 
             // Create relationship with profile
-            await createProfileContactMethodRelationship(profile.did, contactMethod.id);
+            await createProfileContactMethodRelationship(profile.profileId, contactMethod.id);
 
             // Generate verification token
             const verificationToken = await generateContactMethodVerificationToken(
                 contactMethod.id
             );
 
-            // TODO: Send verification notification using notification system
-            console.log(
-                `Verification notification would be sent to ${value} with token: ${verificationToken}`
-            );
+            const deliveryService = getDeliveryService(contactMethod);
+            await deliveryService.send({
+                contactMethod,
+                templateId: 'contact-method-verification',
+                templateModel: {
+                    verificationToken,
+                },
+            });
 
             return {
                 message: 'Contact method added. Please check for verification instructions.',
@@ -149,10 +154,11 @@ export const contactMethodsRouter = t.router({
 
             // Check if this profile owns this contact method
             const ownsContactMethod = await checkProfileContactMethodRelationship(
-                profile.did,
+                profile.profileId,
                 contactMethodId
             );
 
+            console.log('ownsContactMethod', ownsContactMethod);
             if (!ownsContactMethod) {
                 throw new TRPCError({
                     code: 'FORBIDDEN',
@@ -195,7 +201,7 @@ export const contactMethodsRouter = t.router({
 
             // Check if this profile owns this contact method
             const ownsContactMethod = await checkProfileContactMethodRelationship(
-                profile.did,
+                profile.profileId,
                 contactMethodId
             );
 
@@ -230,7 +236,7 @@ export const contactMethodsRouter = t.router({
 
             // Check if this profile owns this contact method
             const ownsContactMethod = await checkProfileContactMethodRelationship(
-                profile.did,
+                profile.profileId,
                 id
             );
 
@@ -242,7 +248,7 @@ export const contactMethodsRouter = t.router({
             }
 
             // Delete relationship and contact method node
-            await deleteProfileContactMethodRelationship(profile.did, id);
+            await deleteProfileContactMethodRelationship(profile.profileId, id);
             await deleteContactMethod(id);
 
             return { message: 'Contact method removed successfully.' };

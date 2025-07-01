@@ -81,6 +81,7 @@
         "trpc-openapi": "^1.2.0",
         "trpc-to-openapi": "^2.3.1",
         "tsc-alias": "^1.8.10",
+        "twilio": "^5.7.1",
         "uuid": "^9.0.0"
     }
 }

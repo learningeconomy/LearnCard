@@ -1,5 +1,5 @@
 import { TRPCError } from '@trpc/server';
-import { VC, UnsignedVC } from '@learncard/types';
+import { VC, UnsignedVC, LCNNotificationTypeEnumValidator, LCNInboxStatusEnumValidator } from '@learncard/types';
 
 import { ProfileType } from 'types/profile';
 import { createInboxCredential } from '@accesslayer/inbox-credential/create';
@@ -20,6 +20,8 @@ import { ContactMethodQueryType } from 'types/contact-method';
 import { generateInboxClaimToken, generateClaimUrl } from '@helpers/contact-method.helpers';
 import { InboxCredentialType, SigningAuthorityType } from 'types/inbox-credential';
 import { getDeliveryService } from '@services/delivery/delivery.factory';
+import { addNotificationToQueue } from '@helpers/notifications.helpers';
+import { getLearnCard } from '@helpers/learnCard.helpers';
 
 export const issueToInbox = async (
     issuerProfile: ProfileType,
@@ -50,7 +52,7 @@ export const issueToInbox = async (
     }
 
     // Check if recipient already exists with verified email
-    const existingProfile = await getProfileByVerifiedContactMethod('email', recipient.value);
+    const existingProfile = await getProfileByVerifiedContactMethod(recipient.type, recipient.value);
 
     if (existingProfile) {
         // Auto-deliver to existing user
@@ -104,7 +106,7 @@ export const issueToInbox = async (
         // Mark as delivered and create relationship
         await markInboxCredentialAsDelivered(inboxCredential.id);
         await createDeliveredRelationship(
-            issuerProfile.did,
+            issuerProfile.profileId,
             inboxCredential.id,
             existingProfile.did,
             'auto-delivery'
@@ -112,23 +114,28 @@ export const issueToInbox = async (
 
         // Send webhook if configured
         if (webhookUrl) {
-            await triggerWebhook(
-                issuerProfile.did,
-                inboxCredential.id,
+            const learnCard = await getLearnCard();
+            await addNotificationToQueue({
                 webhookUrl,
-                {
-                    event: 'issuance.delivered',
-                    data: {
+                type: LCNNotificationTypeEnumValidator.enum.ISSUANCE_DELIVERED,
+                from: { did: learnCard.id.did() },
+                to: issuerProfile,
+                message: {
+                    title: 'Credential Delivered to Inbox',
+                    body: `${issuerProfile.displayName} sent a credential to ${recipient.type}'s inbox at ${recipient.value}!`,
+                },
+                data: { 
+                    inbox: {
                         issuanceId: inboxCredential.id,
-                        status: 'DELIVERED',
+                        status: LCNInboxStatusEnumValidator.enum.DELIVERED,
                         recipient: {
-                            email: recipient.value,
+                            contactMethod: recipient,
                             learnCardId: existingProfile.did,
                         },
-                        deliveredAt: new Date().toISOString(),
+                        timestamp: new Date().toISOString(),
                     },
-                }
-            );
+                },
+            });
         }
 
         return {
@@ -170,9 +177,9 @@ export const issueToInbox = async (
             claimToken
         );
 
+        
         // Send claim email
-
-        const deliveryService = getDeliveryService();
+        const deliveryService = getDeliveryService(recipient);
         await deliveryService.send({
             contactMethod: recipient,
             templateId: template?.id || 'credential-claim',
@@ -184,6 +191,31 @@ export const issueToInbox = async (
                 ...template?.model,
             },
         });
+
+        // Send webhook if configured
+        if (webhookUrl) {
+            const learnCard = await getLearnCard();
+            await addNotificationToQueue({
+                webhookUrl,
+                type: LCNNotificationTypeEnumValidator.enum.ISSUANCE_DELIVERED,
+                from: { did: learnCard.id.did() },
+                to: issuerProfile,
+                message: {
+                    title: 'Credential Delivered to Inbox',
+                    body: `${issuerProfile.displayName} sent a credential to ${recipient.type}'s inbox at ${recipient.value}!`,
+                },
+                data: { 
+                    inbox: {
+                        issuanceId: inboxCredential.id,
+                        status: LCNInboxStatusEnumValidator.enum.DELIVERED,
+                        recipient: {
+                            contactMethod: recipient,
+                        },
+                        timestamp: new Date().toISOString(),
+                    },
+                },
+            });
+        }
 
         return {
             status: 'PENDING',

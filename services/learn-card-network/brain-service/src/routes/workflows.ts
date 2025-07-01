@@ -2,7 +2,7 @@ import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import base64url from 'base64url';
 
-import { VC, UnsignedVC, VP, VPValidator } from '@learncard/types';
+import { VC, UnsignedVC, VP, VPValidator, LCNNotificationTypeEnumValidator, LCNInboxStatusEnumValidator } from '@learncard/types';
 
 import { t, openRoute, Context } from '@routes';
 
@@ -28,13 +28,13 @@ import {
     getProfileByContactMethod,
 } from '@accesslayer/contact-method/read';
 import { getProfileByDid } from '@accesslayer/profile/read';
-import { triggerWebhook } from '@helpers/inbox.helpers';
 
 import { getBoostUri, isDraftBoost } from '@helpers/boost.helpers';
 import { getEmptyLearnCard, getLearnCard } from '@helpers/learnCard.helpers';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
 import { createProfileContactMethodRelationship } from '@accesslayer/contact-method/relationships/create';
 import { verifyContactMethod } from '@accesslayer/contact-method/update';
+import { addNotificationToQueue } from '@helpers/notifications.helpers';
 
 // Zod schema for the participate in exchange input
 const participateInExchangeInput = z.object({
@@ -475,7 +475,7 @@ async function handleInboxClaimPresentation(
         if (existingProfile) {
             // If a profile exists, link the contact method to it
             holderProfile = existingProfile;
-            await createProfileContactMethodRelationship(holderProfile.did, contactMethod.id);
+            await createProfileContactMethodRelationship(holderProfile.profileId, contactMethod.id);
         } else {
             // If no profile exists for the DID, we can't proceed with claiming
             // The user should create a profile first
@@ -565,31 +565,35 @@ async function handleInboxClaimPresentation(
 
             // Mark credential as claimed
             await markInboxCredentialAsClaimed(inboxCredential.id);
-            await createClaimedRelationship(holderDid, inboxCredential.id, claimToken);
+            await createClaimedRelationship(holderProfile.profileId, inboxCredential.id, claimToken);
 
             // Add to claimed credentials
             claimedCredentials.push(finalCredential);
 
             // Trigger webhook if configured
             if (inboxCredential.webhookUrl) {
-                await triggerWebhook(
-                    inboxCredential.issuerDid,
-                    inboxCredential.id,
-                    inboxCredential.webhookUrl,
-                    {
-                        event: 'issuance.claimed',
-                        timestamp: new Date().toISOString(),
-                        data: {
+                const learnCard = await getLearnCard();
+                await addNotificationToQueue({
+                    webhookUrl: inboxCredential.webhookUrl,
+                    type: LCNNotificationTypeEnumValidator.enum.ISSUANCE_CLAIMED,
+                    from: { did: learnCard.id.did() },
+                    to: { did: inboxCredential.issuerDid },
+                    message: {
+                        title: 'Credential Claimed from Inbox',
+                        body: `${contactMethod.value} claimed a credential from their inbox.`,
+                    },
+                    data: { 
+                        inbox: {
                             issuanceId: inboxCredential.id,
-                            status: 'CLAIMED',
+                            status: LCNInboxStatusEnumValidator.enum.CLAIMED,
                             recipient: {
-                                email: emailAddress.email,
-                                learnCardId: holderDid,
+                                contactMethod: { type: contactMethod.type, value: contactMethod.value },
+                                learnCardId: holderProfile.did || holderDid,
                             },
-                            claimedAt: new Date().toISOString(),
+                            timestamp: new Date().toISOString(),
                         },
-                    }
-                );
+                    },
+                });
             }
         } catch (error) {
             console.error(`Failed to process inbox credential ${inboxCredential.id}:`, error);

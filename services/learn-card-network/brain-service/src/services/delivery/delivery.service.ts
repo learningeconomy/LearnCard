@@ -1,5 +1,5 @@
 export interface ContactMethod {
-    type: 'email' | 'phone' | string;
+    type: 'email' | 'phone';
     value: string;
 }
 

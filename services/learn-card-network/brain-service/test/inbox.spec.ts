@@ -1,22 +1,19 @@
 import { vi, describe, it, expect, beforeEach, afterAll, beforeAll } from 'vitest';
-import { LCNProfileConnectionStatusEnum, VC, VP } from '@learncard/types';
 import { getClient, getUser } from './helpers/getClient';
-import { Profile, SigningAuthority, Credential, Boost, InboxCredential, ContactMethod } from '@models';
-import cache from '@cache';
-import { testVc, sendBoost, testVp, testUnsignedBoost } from './helpers/send';
-
-import { QueryBuilder, BindParam, QueryRunner } from 'neogma';
-
+import { Profile, SigningAuthority, InboxCredential, ContactMethod } from '@models';
+import { LCNInboxStatusEnumValidator, LCNNotificationTypeEnumValidator, VP } from '@learncard/types';
+import { sendSpy, addNotificationToQueueSpy } from './helpers/spies';
+import * as notifications from '@helpers/notifications.helpers';
 
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;
 let userB: Awaited<ReturnType<typeof getUser>>;
 let userC: Awaited<ReturnType<typeof getUser>>;
 
-const sendSpy = vi.fn();
 vi.mock('@services/delivery/delivery.factory', () => ({
     getDeliveryService: () => ({ send: sendSpy }),
 }));
+
 
 describe('Universal Inbox', () => {
     beforeAll(async () => {
@@ -28,10 +25,13 @@ describe('Universal Inbox', () => {
     describe('Issue credential to inbox', () => {
         beforeEach(async () => {
             sendSpy.mockClear();
+            vi.spyOn(notifications, 'addNotificationToQueue').mockImplementation(addNotificationToQueueSpy);
+            addNotificationToQueueSpy.mockClear();
             await Profile.delete({ detach: true, where: {} });
             await InboxCredential.delete({ detach: true, where: {} });
             await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
             await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+            await userC.clients.fullAuth.profile.createProfile({ profileId: 'userc' });
         });
 
         afterAll(async () => {
@@ -116,6 +116,51 @@ describe('Universal Inbox', () => {
                 })
             );
         });
+
+        it('should call the delivery service for a phone recipient', async () => {
+            const vc = await userA.learnCard.invoke.issueCredential(await userA.learnCard.invoke.getTestVc());
+            await userA.clients.fullAuth.inbox.issue({
+                credential: vc,
+                isSigned: true,
+                recipient: { type: 'phone', value: '+15551234567' },
+            });
+
+            expect(sendSpy).toHaveBeenCalledOnce();
+            expect(sendSpy).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    contactMethod: { type: 'phone', value: '+15551234567' },
+                    templateId: 'credential-claim',
+                })
+            );
+        });
+
+        it('should trigger a webhook if provided when a credential is delivered', async () => {
+            const vc = await userA.learnCard.invoke.issueCredential(await userA.learnCard.invoke.getTestVc());
+            const inboxCredential = await userA.clients.fullAuth.inbox.issue({
+                credential: vc,
+                isSigned: true,
+                recipient: { type: 'email', value: 'userB@test.com' },
+                webhookUrl: 'https://example.com/webhook',
+            });
+
+            expect(addNotificationToQueueSpy).toHaveBeenCalledOnce();
+            expect(addNotificationToQueueSpy).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    webhookUrl: 'https://example.com/webhook',
+                    data:
+                    { inbox:
+                        {
+                        issuanceId: inboxCredential.issuanceId,
+                        recipient: { contactMethod: { type: 'email', value: 'userB@test.com' } },
+                        status: LCNInboxStatusEnumValidator.enum.DELIVERED,
+                        timestamp: expect.any(String),
+                        }
+                    },
+                    type: LCNNotificationTypeEnumValidator.enum.ISSUANCE_DELIVERED,
+                })
+            );
+        });
+
     });
 
 
@@ -126,6 +171,7 @@ describe('Universal Inbox', () => {
             await InboxCredential.delete({ detach: true, where: {} });
             await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
             await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+            await userC.clients.fullAuth.profile.createProfile({ profileId: 'userc' });
         });
 
         afterAll(async () => {
@@ -163,6 +209,67 @@ describe('Universal Inbox', () => {
                 userBIssuedCredentials.records
             ).toHaveLength(0);
         });
+
+        it('should return paginated results', async () => {
+            const vc = await userA.learnCard.invoke.getTestVc();
+            for (let i = 0; i < 26; i++) {
+                await expect(
+                    userA.clients.fullAuth.inbox.issue({ credential: vc, isSigned: false, signingAuthority: { endpoint: 'https://example.com', name: 'Example' }, recipient: { type: 'email', value: 'userA@test.com' } })
+                ).resolves.not.toThrow();
+            }
+            await expect(
+                userA.clients.fullAuth.inbox.getMyIssuedCredentials({})
+            ).resolves.not.toThrow();
+
+            const issuedCredentials = await userA.clients.fullAuth.inbox.getMyIssuedCredentials({ limit: 5 });
+            await expect(
+                issuedCredentials.records
+            ).toHaveLength(5);
+            expect(issuedCredentials.hasMore).toBe(true);
+            expect(issuedCredentials.cursor).toBeDefined();
+
+            const issuedCredentials2 = await userA.clients.fullAuth.inbox.getMyIssuedCredentials({ limit: 5, cursor: issuedCredentials.cursor });
+            await expect(
+                issuedCredentials2.records
+            ).toHaveLength(5);
+            expect(issuedCredentials2.hasMore).toBe(true);
+            expect(issuedCredentials2.cursor).toBeDefined();
+
+            const issuedCredentials3 = await userA.clients.fullAuth.inbox.getMyIssuedCredentials({ limit: 5, cursor: issuedCredentials2.cursor });
+            await expect(
+                issuedCredentials3.records
+            ).toHaveLength(5);
+            expect(issuedCredentials3.hasMore).toBe(true);
+            expect(issuedCredentials3.cursor).toBeDefined();
+
+            const issuedCredentials4 = await userA.clients.fullAuth.inbox.getMyIssuedCredentials({ limit: 5, cursor: issuedCredentials3.cursor });
+            await expect(
+                issuedCredentials4.records
+            ).toHaveLength(5);
+            expect(issuedCredentials4.hasMore).toBe(true);
+            expect(issuedCredentials4.cursor).toBeDefined();
+
+            const issuedCredentials5 = await userA.clients.fullAuth.inbox.getMyIssuedCredentials({ limit: 5, cursor: issuedCredentials4.cursor });
+            await expect(
+                issuedCredentials5.records
+            ).toHaveLength(5);
+            expect(issuedCredentials5.hasMore).toBe(true);
+            expect(issuedCredentials5.cursor).toBeDefined();
+
+            const issuedCredentials6 = await userA.clients.fullAuth.inbox.getMyIssuedCredentials({ limit: 5, cursor: issuedCredentials5.cursor });
+            await expect(
+                issuedCredentials6.records
+            ).toHaveLength(1);
+            expect(issuedCredentials6.hasMore).toBe(false);
+            expect(issuedCredentials6.cursor).toBeDefined();
+
+            const issuedCredentials7 = await userA.clients.fullAuth.inbox.getMyIssuedCredentials({ limit: 5, cursor: issuedCredentials6.cursor });
+            await expect(
+                issuedCredentials7.records
+            ).toHaveLength(0);
+            expect(issuedCredentials7.hasMore).toBe(false);
+            expect(issuedCredentials7.cursor).toBeUndefined();
+        })
 
         it('should allow you to filter your inbox credentials by status', async () => {
             const vc = await userA.learnCard.invoke.getTestVc();
@@ -202,6 +309,62 @@ describe('Universal Inbox', () => {
             ).toHaveLength(0);
         });
 
+        it('should paginate compound filters', async () => {
+            const vc = await userA.learnCard.invoke.getTestVc();
+            const signedCredential = await userA.learnCard.invoke.issueCredential(vc);
+            await userA.clients.fullAuth.inbox.issue({ credential: vc, isSigned: false, signingAuthority: { endpoint: 'https://example.com', name: 'Example' }, recipient: { type: 'email', value: 'userA@test.com' } })
+  
+            await userA.clients.fullAuth.inbox.issue({ credential: signedCredential, isSigned: true, recipient: { type: 'email', value: 'userB@test.com' } })
+            await userA.clients.fullAuth.inbox.issue({ credential: signedCredential, isSigned: true, recipient: { type: 'email', value: 'userB@test.com' } })
+            await userA.clients.fullAuth.inbox.issue({ credential: signedCredential, isSigned: true, recipient: { type: 'email', value: 'userB@test.com' } })
+
+            await userA.clients.fullAuth.inbox.issue({ credential: signedCredential, isSigned: true, recipient: { type: 'email', value: 'userC@test.com' } })
+            await userA.clients.fullAuth.inbox.issue({ credential: signedCredential, isSigned: true, recipient: { type: 'email', value: 'userC@test.com' } })
+            
+            await userA.clients.fullAuth.inbox.issue({ credential: signedCredential, isSigned: true, recipient: { type: 'phone', value: '+15555555' } })
+            await userA.clients.fullAuth.inbox.issue({ credential: signedCredential, isSigned: true, recipient: { type: 'phone', value: '+15555555' } })
+
+            // Have User B claim the inbox credentials for this user issued by User A
+            const inboxCredential = await userA.clients.fullAuth.inbox.issue({ credential: signedCredential, isSigned: true, recipient: { type: 'phone', value: '+15555555' } })
+
+            const localExchangeId = inboxCredential.claimUrl?.split('/').pop();
+            if (!localExchangeId) {
+                throw new Error('Local exchange ID is undefined');
+            }
+            const exchangeInitiationResponse = await userB.clients.fullAuth.workflows.participateInExchange({ localWorkflowId: 'inbox-claim', localExchangeId })
+            const didAuthVp = await userB.learnCard.invoke.getDidAuthVp(
+                {
+                    challenge: exchangeInitiationResponse?.verifiablePresentationRequest?.challenge,
+                    domain: exchangeInitiationResponse?.verifiablePresentationRequest?.domain,
+                }
+            ) as VP;
+            await userB.clients.fullAuth.workflows.participateInExchange({ localWorkflowId: 'inbox-claim', localExchangeId, verifiablePresentation: didAuthVp })
+            await userA.clients.fullAuth.inbox.issue({ credential: signedCredential, isSigned: true, recipient: { type: 'phone', value: '+15555555' } })
+            const deliveredInboxCredential = await userA.clients.fullAuth.inbox.issue({ credential: signedCredential, isSigned: true, recipient: { type: 'phone', value: '+15555555' } })
+
+            // Now have User A query and filter paginated records
+            expect((await userA.clients.fullAuth.inbox.getMyIssuedCredentials({ query: { currentStatus: LCNInboxStatusEnumValidator.enum.CLAIMED } })).records).toHaveLength(3);
+            const claimed = await userA.clients.fullAuth.inbox.getMyIssuedCredentials({ query: { currentStatus: LCNInboxStatusEnumValidator.enum.CLAIMED }, limit:1 })
+            await expect(claimed.records).toHaveLength(1);
+            expect((await userA.clients.fullAuth.inbox.getMyIssuedCredentials({ query: { currentStatus: LCNInboxStatusEnumValidator.enum.CLAIMED }, limit: 3, cursor: claimed.cursor })).records).toHaveLength(2);
+            expect((await userA.clients.fullAuth.inbox.getMyIssuedCredentials({ query: { currentStatus: LCNInboxStatusEnumValidator.enum.CLAIMED }, limit: 1, cursor: claimed.cursor })).records).toHaveLength(1);
+
+            expect((await userA.clients.fullAuth.inbox.getMyIssuedCredentials({ query: { currentStatus: LCNInboxStatusEnumValidator.enum.PENDING } })).records).toHaveLength(6);
+            expect((await userA.clients.fullAuth.inbox.getMyIssuedCredentials({ query: { currentStatus: LCNInboxStatusEnumValidator.enum.PENDING, isSigned: true } })).records).toHaveLength(5);
+            expect((await userA.clients.fullAuth.inbox.getMyIssuedCredentials({ query: { currentStatus: LCNInboxStatusEnumValidator.enum.PENDING, isSigned: false } })).records).toHaveLength(1);
+
+            expect((await userA.clients.fullAuth.inbox.getMyIssuedCredentials({ recipient: { type: 'email', value: 'userA@test.com' }, query: { currentStatus: LCNInboxStatusEnumValidator.enum.PENDING } })).records).toHaveLength(1);
+            expect((await userA.clients.fullAuth.inbox.getMyIssuedCredentials({ recipient: { type: 'email', value: 'userB@test.com' }, query: { currentStatus: LCNInboxStatusEnumValidator.enum.PENDING } })).records).toHaveLength(3);
+            expect((await userA.clients.fullAuth.inbox.getMyIssuedCredentials({ recipient: { type: 'email', value: 'userC@test.com' }, query: { currentStatus: LCNInboxStatusEnumValidator.enum.PENDING } })).records).toHaveLength(2);
+            expect((await userA.clients.fullAuth.inbox.getMyIssuedCredentials({ recipient: { type: 'phone', value: '+15555555' }, query: { currentStatus: LCNInboxStatusEnumValidator.enum.CLAIMED } })).records).toHaveLength(3);
+            expect((await userA.clients.fullAuth.inbox.getMyIssuedCredentials({ recipient: { type: 'phone', value: '+15555555' }, query: { currentStatus: LCNInboxStatusEnumValidator.enum.PENDING } })).records).toHaveLength(0);
+            expect((await userA.clients.fullAuth.inbox.getMyIssuedCredentials({ recipient: { type: 'phone', value: '+15555555' }, query: { currentStatus: LCNInboxStatusEnumValidator.enum.DELIVERED } })).records).toHaveLength(2);
+            expect((await userA.clients.fullAuth.inbox.getMyIssuedCredentials({ recipient: { type: 'phone', value: '+15555555' }, query: { currentStatus: LCNInboxStatusEnumValidator.enum.CLAIMED, isSigned: true } })).records).toHaveLength(3);
+            expect((await userA.clients.fullAuth.inbox.getMyIssuedCredentials({ recipient: { type: 'phone', value: '+15555555' }, query: { currentStatus: LCNInboxStatusEnumValidator.enum.CLAIMED, isSigned: false } })).records).toHaveLength(0);
+            expect((await userA.clients.fullAuth.inbox.getMyIssuedCredentials({ recipient: { type: 'phone', value: '+15555555' }, query: { currentStatus: LCNInboxStatusEnumValidator.enum.DELIVERED, isSigned: true, id: deliveredInboxCredential.issuanceId, issuerDid: userA.learnCard.id.did() } })).records).toHaveLength(1);
+        
+        });
+
         it('should create an email address contact method if it doesn\'t exist for the recipient', async () => {
             await expect(
                 userA.clients.fullAuth.inbox.issue({ credential: {}, isSigned: false, signingAuthority: { endpoint: 'https://example.com', name: 'Example' }, recipient: { type: 'email', value: 'userA@test.com' } })
@@ -213,6 +376,17 @@ describe('Universal Inbox', () => {
             ).toBe('userA@test.com');
         });
 
+        it('should create an phone contact method if it doesn\'t exist for the recipient', async () => {
+            await expect(
+                userA.clients.fullAuth.inbox.issue({ credential: {}, isSigned: false, signingAuthority: { endpoint: 'https://example.com', name: 'Example' }, recipient: { type: 'phone', value: '+15555555' } })
+            ).resolves.not.toThrow();
+
+            const phone = (await ContactMethod.findOne({ where: { value: '+15555555' } })).dataValues.value;
+            await expect(
+                phone
+            ).toBe('+15555555');
+        });
+
     });
 
     describe('Get individual inbox credential', () => {
@@ -222,6 +396,7 @@ describe('Universal Inbox', () => {
             await InboxCredential.delete({ detach: true, where: {} });
             await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
             await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+            await userC.clients.fullAuth.profile.createProfile({ profileId: 'userc' });
         });
 
         afterAll(async () => {
@@ -245,11 +420,15 @@ describe('Universal Inbox', () => {
 
     describe('Claim inbox credential', () => {
         beforeEach(async () => {
+            sendSpy.mockClear();
+            vi.spyOn(notifications, 'addNotificationToQueue').mockImplementation(addNotificationToQueueSpy);
+            addNotificationToQueueSpy.mockClear();
             await Profile.delete({ detach: true, where: {} });
             await InboxCredential.delete({ detach: true, where: {} });
             await ContactMethod.delete({ detach: true, where: {} });
             await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
             await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+            await userC.clients.fullAuth.profile.createProfile({ profileId: 'userc' });
         });
 
         afterAll(async () => {
@@ -335,6 +514,67 @@ describe('Universal Inbox', () => {
 
         });
 
+        it('should trigger a webhook if provided when a credential is claimed', async () => {
+            const vc = await userA.learnCard.invoke.issueCredential(await userA.learnCard.invoke.getTestVc());
+            const inboxCredential = await userA.clients.fullAuth.inbox.issue({
+                credential: vc,
+                isSigned: true,
+                recipient: { type: 'phone', value: '+15555555555' },
+                webhookUrl: 'https://example.com/webhook',
+            });
+
+            expect(addNotificationToQueueSpy).toHaveBeenCalledOnce();
+            expect(addNotificationToQueueSpy).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    webhookUrl: 'https://example.com/webhook',
+                    data:
+                    { 
+                        inbox: {
+                            issuanceId: inboxCredential.issuanceId,
+                            recipient: { contactMethod: { type: 'phone', value: '+15555555555' } },
+                            status: LCNInboxStatusEnumValidator.enum.DELIVERED,
+                            timestamp: expect.any(String),
+                        }
+                    },
+                    type: LCNNotificationTypeEnumValidator.enum.ISSUANCE_DELIVERED,
+                })
+            );
+
+            addNotificationToQueueSpy.mockClear();
+
+            const localExchangeId = inboxCredential.claimUrl?.split('/').pop();
+            if (!localExchangeId) {
+                throw new Error('Local exchange ID is undefined');
+            }
+
+            const exchangeInitiationResponse = await userB.clients.fullAuth.workflows.participateInExchange({ localWorkflowId: 'inbox-claim', localExchangeId })
+            const didAuthVp = await userB.learnCard.invoke.getDidAuthVp(
+                {
+                    challenge: exchangeInitiationResponse?.verifiablePresentationRequest?.challenge,
+                    domain: exchangeInitiationResponse?.verifiablePresentationRequest?.domain,
+                }
+            ) as VP;
+
+            await userB.clients.fullAuth.workflows.participateInExchange({ localWorkflowId: 'inbox-claim', localExchangeId, verifiablePresentation: didAuthVp })
+
+            expect(addNotificationToQueueSpy).toHaveBeenCalledOnce();
+            expect(addNotificationToQueueSpy).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    webhookUrl: 'https://example.com/webhook',
+                    data:
+                    { 
+                        inbox: {
+                            issuanceId: inboxCredential.issuanceId,
+                            recipient: { contactMethod: { type: 'phone', value: '+15555555555' }, learnCardId: userB.learnCard.id.did() },
+                            status: LCNInboxStatusEnumValidator.enum.CLAIMED,
+                            timestamp: expect.any(String),
+                        }
+                    },
+                    type: LCNNotificationTypeEnumValidator.enum.ISSUANCE_CLAIMED,
+                })
+            );
+        });
+
         it('should verify and associate your email address contact method with your profile', async () => {
             const vc = await userA.learnCard.invoke.issueCredential(await userA.learnCard.invoke.getTestVc());
             const inboxCredential = await userA.clients.fullAuth.inbox.issue({ credential: vc, isSigned: true, recipient: { type: 'email', value: 'userB@test.com' } });
@@ -366,6 +606,88 @@ describe('Universal Inbox', () => {
             }
             expect(contactMethods?.[0].value).toBe('userB@test.com');
             expect(contactMethods?.[0].isVerified).toBe(true);
+        });
+
+        it('should verify and associate your phone contact method with your profile', async () => {
+            const vc = await userA.learnCard.invoke.issueCredential(await userA.learnCard.invoke.getTestVc());
+            const inboxCredential = await userA.clients.fullAuth.inbox.issue({ credential: vc, isSigned: true, recipient: { type: 'phone', value: '+15555555' } });
+
+            const localExchangeId = inboxCredential.claimUrl?.split('/').pop();
+            expect(localExchangeId).toBeDefined();
+
+            if (!localExchangeId) {
+                throw new Error('Local exchange ID is undefined');
+            }
+
+            const exchangeInitiationResponse = await userB.clients.fullAuth.workflows.participateInExchange({ localWorkflowId: 'inbox-claim', localExchangeId })
+            const didAuthVp = await userB.learnCard.invoke.getDidAuthVp(
+                {
+                    challenge: exchangeInitiationResponse?.verifiablePresentationRequest?.challenge,
+                    domain: exchangeInitiationResponse?.verifiablePresentationRequest?.domain,
+                }
+            ) as VP;
+
+            await userB.clients.fullAuth.workflows.participateInExchange({ localWorkflowId: 'inbox-claim', localExchangeId, verifiablePresentation: didAuthVp })
+
+            const profile = await userB.clients.fullAuth.profile.getProfile();
+            expect(profile).toBeDefined();
+            const contactMethods = await userB.clients.fullAuth.contactMethods.getMyContactMethods();
+            expect(contactMethods).toBeDefined();
+            expect(contactMethods?.length).toBeGreaterThan(0);
+            if (!contactMethods?.[0]) {
+                throw new Error('Contact method is undefined');
+            }
+            expect(contactMethods?.[0].value).toBe('+15555555');
+            expect(contactMethods?.[0].isVerified).toBe(true);
+        });
+
+        it('should reject a second profile claiming an inbox credential if the first profile already claimed it', async () => {
+            // Issue first credential to anyone@test.com
+            const vc = await userA.learnCard.invoke.issueCredential(await userA.learnCard.invoke.getTestVc());
+            const inboxCredential = await userA.clients.fullAuth.inbox.issue({ credential: vc, isSigned: true, recipient: { type: 'email', value: 'anyone@test.com' } });
+
+            const localExchangeId = inboxCredential.claimUrl?.split('/').pop();
+
+            if (!localExchangeId) {
+                throw new Error('Local exchange ID is undefined');
+            }
+
+            // Issue second credential to anyone@test.com
+            const vc2 = await userA.learnCard.invoke.issueCredential(await userA.learnCard.invoke.getTestVc());
+            const inboxCredential2 = await userA.clients.fullAuth.inbox.issue({ credential: vc2, isSigned: true, recipient: { type: 'email', value: 'anyone@test.com' } });
+
+            const localExchangeId2 = inboxCredential2.claimUrl?.split('/').pop();
+
+            if (!localExchangeId2) {
+                throw new Error('Local exchange ID is undefined');
+            }
+
+            // Claim first credential
+            const exchangeInitiationResponse = await userB.clients.fullAuth.workflows.participateInExchange({ localWorkflowId: 'inbox-claim', localExchangeId })
+            const didAuthVp = await userB.learnCard.invoke.getDidAuthVp(
+                {
+                    challenge: exchangeInitiationResponse?.verifiablePresentationRequest?.challenge,
+                    domain: exchangeInitiationResponse?.verifiablePresentationRequest?.domain,
+                }
+            ) as VP;
+
+            await userB.clients.fullAuth.workflows.participateInExchange({ localWorkflowId: 'inbox-claim', localExchangeId, verifiablePresentation: didAuthVp })
+
+            const profile = await userB.clients.fullAuth.profile.getProfile();
+            const contactMethods = await userB.clients.fullAuth.contactMethods.getMyContactMethods();
+            if (!contactMethods?.[0]) {
+                throw new Error('Contact method is undefined');
+            }
+            expect(contactMethods?.[0].value).toBe('anyone@test.com');
+            expect(contactMethods?.[0].isVerified).toBe(true);
+
+            // Issue a third credential to anyone@test.com
+            await userA.clients.fullAuth.inbox.issue({ credential: vc2, isSigned: true, recipient: { type: 'email', value: 'anyone@test.com' } });
+
+
+            // User C attempts to claim second credential
+            expect(userC.clients.fullAuth.workflows.participateInExchange({ localWorkflowId: 'inbox-claim', localExchangeId: localExchangeId2 })).rejects.toThrow();
+
         });
 
         it('should route credentials to the correct profile if the recipient exists with a verified email contact method', async () => {
@@ -412,6 +734,7 @@ describe('Universal Inbox', () => {
 
     describe('Claim inbox credentials issued by signing authority', () => {
         beforeEach(async () => {
+            sendSpy.mockClear();
             await Profile.delete({ detach: true, where: {} });
             await InboxCredential.delete({ detach: true, where: {} });
             await ContactMethod.delete({ detach: true, where: {} });

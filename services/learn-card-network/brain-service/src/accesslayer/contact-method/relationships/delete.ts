@@ -6,8 +6,10 @@ export const deleteProfileContactMethodRelationship = async (
     contactMethodId: string
 ): Promise<boolean> => {
     const result = await new QueryBuilder(new BindParam({ profileDid, contactMethodId }))
-        .match({ model: Profile, identifier: 'profile', where: { did: '$profileDid' } })
-        .match({ model: ContactMethod, identifier: 'contactMethod', where: { id: '$contactMethodId' } })
+        .match({ model: Profile, identifier: 'profile' })
+        .where('profile.profileId = $profileDid')
+        .match({ model: ContactMethod, identifier: 'contactMethod' })
+        .where('contactMethod.id = $contactMethodId')
         .match('(profile)-[rel:HAS_CONTACT_METHOD]->(contactMethod)')
         .delete('rel')
         .run();

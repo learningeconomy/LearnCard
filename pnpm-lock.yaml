@@ -2010,6 +2010,9 @@ importers:
       tsc-alias:
         specifier: ^1.8.10
         version: 1.8.11
+      twilio:
+        specifier: ^5.7.1
+        version: 5.7.1
       uuid:
         specifier: ^9.0.0
         version: 9.0.1
@@ -18004,6 +18007,9 @@ packages:
     resolution: {integrity: sha512-Gf9qqc58SpCA/xdziiHz35F4GNIWYWZrEshUc/G/r5BnLph6xpKuLeoJoQuj5WfBIx/eQLf+hmVPYHaxJu7V2g==}
     engines: {node: '>= 10.13.0'}
 
+  scmp@2.1.0:
+    resolution: {integrity: sha512-o/mRQGk9Rcer/jEEw/yw4mwo3EU/NvYvp577/Btqrym9Qy5/MdWGBqipbALgd2lrdWTJ5/gqDusxfnQBxOxT2Q==}
+
   scoped-regex@2.1.0:
     resolution: {integrity: sha512-g3WxHrqSWCZHGHlSrF51VXFdjImhwvH8ZO/pryFH56Qi0cDsZfylQa/t0jCzVQFNbNvM00HfHjkDPEuarKDSWQ==}
     engines: {node: '>=8'}
@@ -19357,6 +19363,10 @@ packages:
   tweetnacl@0.14.5:
     resolution: {integrity: sha512-KXXFFdAbFXY4geFIwoyNK+f5Z1b7swfXABfL7HXCmoIWMKU3dmS26672A4EeQtDzLKy7SXmfBu51JolvEKwtGA==}
 
+  twilio@5.7.1:
+    resolution: {integrity: sha512-BcoVK6FR580HRX94z2u3b+foHkvFj39DDzLU4Xv+N/7ejDIGgQdrtg7CgRqIT04UNs98HJAvjuAOzkYetI6ExQ==}
+    engines: {node: '>=14.0'}
+
   tx2@1.0.5:
     resolution: {integrity: sha512-sJ24w0y03Md/bxzK4FU8J8JveYYUbSs2FViLJ2D/8bytSiyPRbuE3DyL/9UKYXTZlV3yXq0L8GLlhobTnekCVg==}
 
@@ -20514,6 +20524,10 @@ packages:
   xmlbuilder@11.0.1:
     resolution: {integrity: sha512-fDlsI/kFEx7gLvbecc0/ohLG50fugQp8ryHzMTuW9vSa1GJ0XYWKnhsUx7oie3G98+r56aTQIUB4kht42R3JvA==}
     engines: {node: '>=4.0'}
+
+  xmlbuilder@13.0.2:
+    resolution: {integrity: sha512-Eux0i2QdDYKbdbA6AM6xE4m6ZTZr4G4xF9kahI2ukSEMCzwce2eX9WlTI5J3s+NU7hpasFsr8hWIONae7LluAQ==}
+    engines: {node: '>=6.0'}
 
   xmlbuilder@14.0.0:
     resolution: {integrity: sha512-ts+B2rSe4fIckR6iquDjsKbQFK2NlUk6iG5nf14mDEyldgoc2nEKZ3jZWMPTxGQwVgToSjt6VGIho1H8/fNFTg==}
@@ -43308,6 +43322,8 @@ snapshots:
       ajv-formats: 2.1.1(ajv@8.17.1)
       ajv-keywords: 5.1.0(ajv@8.17.1)
 
+  scmp@2.1.0: {}
+
   scoped-regex@2.1.0: {}
 
   scrypt-js@3.0.1: {}
@@ -45336,6 +45352,19 @@ snapshots:
 
   tweetnacl@0.14.5: {}
 
+  twilio@5.7.1:
+    dependencies:
+      axios: 1.8.4
+      dayjs: 1.11.13
+      https-proxy-agent: 5.0.1(supports-color@8.1.1)
+      jsonwebtoken: 9.0.2
+      qs: 6.14.0
+      scmp: 2.1.0
+      xmlbuilder: 13.0.2
+    transitivePeerDependencies:
+      - debug
+      - supports-color
+
   tx2@1.0.5:
     dependencies:
       json-stringify-safe: 5.0.1
@@ -46647,6 +46676,8 @@ snapshots:
       xmlbuilder: 11.0.1
 
   xmlbuilder@11.0.1: {}
+
+  xmlbuilder@13.0.2: {}
 
   xmlbuilder@14.0.0:
     optional: true
