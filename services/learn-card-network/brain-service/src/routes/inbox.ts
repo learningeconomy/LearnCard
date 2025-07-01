@@ -131,18 +131,17 @@ export const inboxRouter = t.router({
             const { credentialId } = input;
 
             // Get all credentials for this profile and find the requested one
-            // TODO: Should this just be a getInboxCredentialById function?
-            const credentials = await getInboxCredentialsForProfile(profile.profileId, { limit: 1, query: { id: credentialId }});
-            const credential = credentials?.find(c => c.id === credentialId);
+            const inboxCredentials = await getInboxCredentialsForProfile(profile.profileId, { limit: 1, query: { id: credentialId } });
 
-            if (!credential) {
+            const inboxCredential = inboxCredentials[0];
+            if (!inboxCredential) {
                 throw new TRPCError({
                     code: 'NOT_FOUND',
                     message: 'Inbox credential not found or not owned by you',
                 });
             }
 
-            return credential;
+            return inboxCredential;
         }),
 });
 
