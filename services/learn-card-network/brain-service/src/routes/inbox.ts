@@ -34,7 +34,6 @@ export const inboxRouter = t.router({
             const { 
                 recipient, 
                 credential, 
-                isSigned, 
                 signingAuthority, 
                 webhookUrl, 
                 expiresInDays,
@@ -48,7 +47,6 @@ export const inboxRouter = t.router({
                     recipient,
                     credential,
                     {
-                        isSigned,
                         signingAuthority,
                         webhookUrl,
                         expiresInDays,

@@ -27,7 +27,6 @@ export const issueToInbox = async (
     recipient: ContactMethodQueryType,
     credential: VC | UnsignedVC | VP, 
     options: {
-        isSigned?: boolean;
         signingAuthority?: SigningAuthorityType;
         webhookUrl?: string;
         expiresInDays?: number;
@@ -41,20 +40,14 @@ export const issueToInbox = async (
     claimUrl?: string;
     recipientDid?: string;
 }> => {
-    const { isSigned = false, signingAuthority, webhookUrl, expiresInDays, template, suppressDelivery } = options;
+    const { signingAuthority, webhookUrl, expiresInDays, template, suppressDelivery } = options;
 
+    const isSigned = !!credential?.proof;
     // Validate that unsigned credentials have signing authority
     if (!isSigned && !signingAuthority) {
         throw new TRPCError({
             code: 'BAD_REQUEST',
             message: 'Unsigned credentials require a signing authority',
-        });
-    }
-
-    if(isSigned && !credential?.proof){
-        throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'If isSigned is true, credential must be signed. Missing proof.',
         });
     }
 
@@ -94,7 +87,7 @@ export const issueToInbox = async (
         // Create inbox record for tracking
         const inboxCredential = await createInboxCredential({
             credential: JSON.stringify(finalCredential),
-            isSigned: true,
+            isSigned,
             recipient,
             issuerProfile,
             webhookUrl,

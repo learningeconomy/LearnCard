@@ -47,7 +47,6 @@ export type SigningAuthorityType = z.infer<typeof SigningAuthorityValidator>;
 export const IssueInboxCredentialValidator = z.object({
     recipient: ContactMethodQueryValidator,
     credential: VCValidator.passthrough().or(VPValidator.passthrough()).or(UnsignedVCValidator.passthrough()), 
-    isSigned: z.boolean().optional().default(false),
     signingAuthority: SigningAuthorityValidator.optional(),
     webhookUrl: z.string().url().optional(),
     expiresInDays: z.number().min(1).max(365).optional(),
