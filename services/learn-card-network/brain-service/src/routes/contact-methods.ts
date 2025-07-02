@@ -30,12 +30,14 @@ export const contactMethodsRouter = t.router({
     getMyContactMethods: profileRoute
         .meta({
             openapi: {
+                protect: true,
                 method: 'GET',
                 path: '/profile/contact-methods',
                 tags: ['Contact Methods'],
                 summary: 'Get My Contact Methods',
                 description: 'Get all contact methods associated with the authenticated profile',
             },
+            requiredScope: 'contact-methods:read',
         })
         .input(z.void())
         .output(z.array(ContactMethodValidator))
@@ -48,12 +50,14 @@ export const contactMethodsRouter = t.router({
     addContactMethod: profileRoute
         .meta({
             openapi: {
+                protect: true,
                 method: 'POST',
                 path: '/profile/contact-methods/add',
                 tags: ['Contact Methods'],
                 summary: 'Add Contact Method',
                 description: 'Add a new contact method to the profile (requires verification)',
             },
+            requiredScope: 'contact-methods:write',
         })
         .input(ContactMethodVerificationRequestValidator)
         .output(
@@ -125,12 +129,14 @@ export const contactMethodsRouter = t.router({
     verifyContactMethod: profileRoute
         .meta({
             openapi: {
+                protect: true,
                 method: 'POST',
                 path: '/profile/contact-methods/verify',
                 tags: ['Contact Methods'],
                 summary: 'Verify Contact Method',
                 description: 'Verify a contact method using the verification token',
             },
+            requiredScope: 'contact-methods:write',
         })
         .input(ContactMethodVerificationValidator)
         .output(
@@ -185,12 +191,14 @@ export const contactMethodsRouter = t.router({
     setPrimaryContactMethod: profileRoute
         .meta({
             openapi: {
+                protect: true,
                 method: 'POST',
                 path: '/profile/contact-methods/set-primary',
                 tags: ['Contact Methods'],
                 summary: 'Set Primary Contact Method',
                 description: 'Set a contact method as the primary one for the profile',
             },
+            requiredScope: 'contact-methods:write',
         })
         .input(SetPrimaryContactMethodValidator)
         .output(z.object({ message: z.string() }))
@@ -220,12 +228,14 @@ export const contactMethodsRouter = t.router({
     removeContactMethod: profileRoute
         .meta({
             openapi: {
+                protect: true,
                 method: 'POST',
                 path: '/profile/contact-methods/remove',
                 tags: ['Contact Methods'],
                 summary: 'Remove Contact Method',
                 description: 'Remove a contact method from the profile',
             },
+            requiredScope: 'contact-methods:delete',
         })
         .input(z.object({ id: z.string() }))
         .output(z.object({ message: z.string() }))

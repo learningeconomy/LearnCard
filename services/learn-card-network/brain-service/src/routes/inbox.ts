@@ -20,12 +20,14 @@ export const inboxRouter = t.router({
     issue: profileRoute
         .meta({
             openapi: {
+                protect: true,
                 method: 'POST',
                 path: '/inbox/issue',
-                tags: ['Inbox'],
-                summary: 'Issue Credential to Inbox',
+                tags: ['Universal Inbox'],
+                summary: 'Issue Credential to Universal Inbox',
                 description: 'Issue a credential to a recipient\'s inbox. If the recipient exists with a verified email, the credential is auto-delivered.',
             },
+            requiredScope: 'inbox:write',
         })
         .input(IssueInboxCredentialValidator)
         .output(IssueInboxCredentialResponseValidator)
@@ -79,12 +81,14 @@ export const inboxRouter = t.router({
     getMyIssuedCredentials: profileRoute
         .meta({
             openapi: {
+                protect: true,
                 method: 'GET',
                 path: '/inbox/issued',
-                tags: ['Inbox'],
-                summary: 'Get My Issued Inbox Credentials',
+                tags: ['Universal Inbox'],
+                summary: 'Get My Issued Universal Inbox Credentials',
                 description: 'Get all inbox credentials issued by the authenticated profile',
             },
+            requiredScope: 'inbox:read',
         })
         .input(PaginationOptionsValidator.extend({
             limit: PaginationOptionsValidator.shape.limit.default(25),
@@ -115,12 +119,14 @@ export const inboxRouter = t.router({
     getInboxCredential: profileRoute
         .meta({
             openapi: {
+                protect: true,
                 method: 'GET',
                 path: '/inbox/credentials/{credentialId}',
-                tags: ['Inbox'],
-                summary: 'Get Inbox Credential Details',
+                tags: ['Universal Inbox'],
+                summary: 'Get Universal Inbox Credential Details',
                 description: 'Get details of a specific inbox credential (if owned by the authenticated profile)',
             },
+            requiredScope: 'inbox:read',
         })
         .input(z.object({
             credentialId: z.string(),
