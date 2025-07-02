@@ -962,6 +962,40 @@ export const getLearnCardNetworkPlugin = async (
                 return apiToken;
             },
 
+
+            sendCredentialViaInbox: async (_learnCard, issueInboxCredential) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.inbox.issue.mutate(issueInboxCredential);
+            },
+            getMySentInboxCredentials: async (_learnCard, options) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.inbox.getMyIssuedCredentials.query(options);
+            },
+            getInboxCredential: async (_learnCard, id) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.inbox.getInboxCredential.query({ credentialId: id });
+            },
+            addContactMethod: async (_learnCard, contactMethod) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.contactMethods.addContactMethod.mutate(contactMethod);
+            },
+            getMyContactMethods: async (_learnCard) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.contactMethods.getMyContactMethods.query();
+            },
+            setPrimaryContactMethod: async (_learnCard, contactMethodId) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.contactMethods.setPrimaryContactMethod.mutate({ contactMethodId });
+            },
+            verifyContactMethod: async (_learnCard, token) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.contactMethods.verifyContactMethod.mutate({ token });
+            },
+            removeContactMethod: async (_learnCard, id) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.contactMethods.removeContactMethod.mutate({ id });
+            },
+
             resolveFromLCN: async (_learnCard, uri) => {
                 const result = await client.storage.resolve.query({ uri });
 
