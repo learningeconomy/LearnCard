@@ -361,7 +361,8 @@ export const canProfileViewBoost = async (
         .with('COLLECT(parents) + COLLECT(target) AS boosts')
         .match({ identifier: 'profile', model: Profile, where: { profileId: profile.profileId } })
         .where(
-            `ANY(boost IN boosts WHERE EXISTS((profile)-[:${Boost.getRelationshipByAlias('hasRole').name
+            `ANY(boost IN boosts WHERE EXISTS((profile)-[:${
+                Boost.getRelationshipByAlias('hasRole').name
             }]-(boost)))`
         );
     const result = await query.return('count(profile) AS count, boosts').run();
@@ -374,6 +375,9 @@ export const canProfileCreateChildBoost = async (
     parentBoost: BoostInstance,
     childBoost: Omit<BoostType, 'boost' | 'id'>
 ) => {
+    // If the parent boost explicitly allows anyone to create children, bypass further checks
+    if (parentBoost.allowAnyoneToCreateChildren) return true;
+
     const query = new QueryBuilder()
         .match({ model: Boost, where: { id: parentBoost.id }, identifier: 'targetBoost' })
         .match({ model: Profile, where: { profileId: profile.profileId }, identifier: 'profile' })
