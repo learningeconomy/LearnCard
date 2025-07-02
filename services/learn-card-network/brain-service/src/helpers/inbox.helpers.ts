@@ -1,5 +1,5 @@
 import { TRPCError } from '@trpc/server';
-import { VC, UnsignedVC, LCNNotificationTypeEnumValidator, LCNInboxStatusEnumValidator, VP } from '@learncard/types';
+import { VC, UnsignedVC, LCNNotificationTypeEnumValidator, LCNInboxStatusEnumValidator, VP, ContactMethodQueryType, InboxCredentialType, IssueInboxSigningAuthority } from '@learncard/types';
 
 import { ProfileType } from 'types/profile';
 import { createInboxCredential } from '@accesslayer/inbox-credential/create';
@@ -15,9 +15,7 @@ import { getProfileByVerifiedContactMethod } from '@accesslayer/contact-method/r
 import { sendCredential } from '@helpers/credential.helpers';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
 import { getSigningAuthorityForUserByName } from '@accesslayer/signing-authority/relationships/read';
-import { ContactMethodQueryType } from 'types/contact-method';
 import { generateInboxClaimToken, generateClaimUrl } from '@helpers/contact-method.helpers';
-import { InboxCredentialType, SigningAuthorityType } from 'types/inbox-credential';
 import { getDeliveryService } from '@services/delivery/delivery.factory';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
 import { getLearnCard } from '@helpers/learnCard.helpers';
@@ -27,7 +25,7 @@ export const issueToInbox = async (
     recipient: ContactMethodQueryType,
     credential: VC | UnsignedVC | VP, 
     options: {
-        signingAuthority?: SigningAuthorityType;
+        signingAuthority?: IssueInboxSigningAuthority;
         webhookUrl?: string;
         expiresInDays?: number;
         template?: { id: string; model?: Record<string, any> };

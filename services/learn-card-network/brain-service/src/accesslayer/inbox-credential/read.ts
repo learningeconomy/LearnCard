@@ -1,8 +1,7 @@
 import { QueryBuilder, BindParam, QueryRunner } from 'neogma';
 import { InboxCredential, ContactMethod, InboxCredentialInstance } from '@models';
-import { InboxCredentialType } from 'types/inbox-credential';
+import { InboxCredentialType, InboxCredentialQuery } from '@learncard/types';
 import { inflateObject } from '@helpers/objects.helpers';
-import { InboxCredentialQuery } from 'types/inbox-credential';
 import {
     convertObjectRegExpToNeo4j,
     getMatchQueryWhere,

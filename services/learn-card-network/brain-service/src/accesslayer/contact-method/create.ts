@@ -2,7 +2,7 @@ import { QueryBuilder, BindParam } from 'neogma';
 import { v4 as uuid } from 'uuid';
 
 import { ContactMethod } from '@models';
-import { ContactMethodType } from 'types/contact-method';
+import { ContactMethodType } from '@learncard/types';
 
 export const createContactMethod = async (input: {
     type: 'email' | 'phone';

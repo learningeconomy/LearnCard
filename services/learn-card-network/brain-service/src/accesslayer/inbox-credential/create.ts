@@ -2,13 +2,12 @@ import { QueryBuilder, BindParam } from 'neogma';
 import { v4 as uuid } from 'uuid';
 
 import { InboxCredential } from '@models';
-import { InboxCredentialType } from 'types/inbox-credential';
+import { InboxCredentialType, ContactMethodQueryType } from '@learncard/types';
 import { flattenObject } from '@helpers/objects.helpers';
 import { getInboxCredentialById } from './read';
 import { getContactMethodByValue } from '@accesslayer/contact-method/read';
 import { createContactMethod } from '@accesslayer/contact-method/create';
 import { ProfileType } from 'types/profile';
-import { ContactMethodQueryType } from 'types/contact-method';
 
 export const createInboxCredential = async (input: {
     credential: string;

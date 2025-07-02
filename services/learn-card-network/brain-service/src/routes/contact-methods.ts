@@ -22,7 +22,7 @@ import {
     ContactMethodVerificationRequestValidator,
     ContactMethodVerificationValidator,
     SetPrimaryContactMethodValidator,
-} from 'types/contact-method';
+} from '@learncard/types';
 import { getDeliveryService } from '@services/delivery/delivery.factory';
 
 export const contactMethodsRouter = t.router({

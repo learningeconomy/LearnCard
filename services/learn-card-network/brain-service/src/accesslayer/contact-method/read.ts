@@ -1,6 +1,6 @@
 import { BindParam, QueryBuilder } from 'neogma';
 import { ContactMethod, Profile } from '@models';
-import { ContactMethodType } from 'types/contact-method';
+import { ContactMethodType } from '@learncard/types';
 import { ProfileType } from 'types/profile';
 import { inflateObject } from '@helpers/objects.helpers';
 

@@ -1,6 +1,6 @@
 import { QueryBuilder, BindParam } from 'neogma';
 import { ContactMethod } from '@models';
-import { ContactMethodType } from 'types/contact-method';
+import { ContactMethodType } from '@learncard/types';
 
 export const updateContactMethod = async (
     id: string,

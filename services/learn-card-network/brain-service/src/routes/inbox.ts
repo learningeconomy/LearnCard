@@ -2,18 +2,18 @@ import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
 import { t, profileRoute } from '@routes';
-import { PaginationOptionsValidator } from '@learncard/types';
-
-import { issueToInbox } from '@helpers/inbox.helpers';
-import { getInboxCredentialsForProfile } from '@accesslayer/inbox-credential/read';
-import {
+import { 
+    PaginationOptionsValidator,     
     IssueInboxCredentialValidator,
     IssueInboxCredentialResponseValidator,
     InboxCredentialValidator,
     PaginatedInboxCredentialsValidator,
-    InboxCredentialQueryValidator,
-} from 'types/inbox-credential';
-import { ContactMethodQueryValidator } from 'types/contact-method';
+    InboxCredentialQueryValidator, 
+    ContactMethodQueryValidator 
+} from '@learncard/types';
+
+import { issueToInbox } from '@helpers/inbox.helpers';
+import { getInboxCredentialsForProfile } from '@accesslayer/inbox-credential/read';
 
 export const inboxRouter = t.router({
     // Issue a credential to someone's inbox

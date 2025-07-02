@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import { PaginationResponseValidator } from './mongo';
 import { StringQuery } from './queries';
+import { UnsignedVCValidator, VCValidator, VPValidator } from './vc';
 
 export const LCNProfileDisplayValidator = z.object({
     backgroundColor: z.string().optional(),
@@ -665,3 +666,155 @@ export const AuthGrantQueryValidator = z
     .partial();
 
 export type AuthGrantQuery = z.infer<typeof AuthGrantQueryValidator>;
+
+
+// Contact Methods
+const contactMethodBase = z.object({
+    id: z.string(),
+    isVerified: z.boolean(),
+    verifiedAt: z.string().optional(),
+    isPrimary: z.boolean(),
+    createdAt: z.string(),
+});
+
+export const ContactMethodValidator = z.discriminatedUnion('type', [
+    z.object({
+        type: z.literal('email'),
+        value: z.string().email(),
+    }).merge(contactMethodBase),
+    z.object({
+        type: z.literal('phone'),
+        value: z.string(), // Can be improved with a regex later
+    }).merge(contactMethodBase),
+]);
+
+export type ContactMethodType = z.infer<typeof ContactMethodValidator>;
+
+const createContactMethodBase = z.object({
+    isVerified: z.boolean().optional(),
+    isPrimary: z.boolean().optional(),
+});
+
+export const ContactMethodCreateValidator = z.discriminatedUnion('type', [
+    z.object({
+        type: z.literal('email'),
+        value: z.string().email(),
+    }).merge(createContactMethodBase),
+    z.object({
+        type: z.literal('phone'),
+        value: z.string(),
+    }).merge(createContactMethodBase),
+]);
+
+export type ContactMethodCreateType = z.infer<typeof ContactMethodCreateValidator>;
+
+export const ContactMethodQueryValidator = z.discriminatedUnion('type', [
+    z.object({
+        type: z.literal('email'),
+        value: z.string().email(),
+    }),
+    z.object({
+        type: z.literal('phone'),
+        value: z.string(),
+    }),
+]);
+
+export type ContactMethodQueryType = z.infer<typeof ContactMethodQueryValidator>;
+
+export const ContactMethodVerificationRequestValidator = z.object({
+    value: z.string(),
+    type: z.enum(['email', 'phone']),
+});
+
+export type ContactMethodVerificationRequestType = z.infer<
+    typeof ContactMethodVerificationRequestValidator
+>;
+
+export const ContactMethodVerificationValidator = z.object({
+    token: z.string(),
+});
+
+export type ContactMethodVerificationType = z.infer<typeof ContactMethodVerificationValidator>;
+
+export const SetPrimaryContactMethodValidator = z.object({
+    contactMethodId: z.string(),
+});
+
+export type SetPrimaryContactMethodType = z.infer<typeof SetPrimaryContactMethodValidator>;
+
+// Inbox Credentials
+export const InboxCredentialValidator = z.object({
+    id: z.string(),
+    credential: z.string(),
+    isSigned: z.boolean(),
+    currentStatus: LCNInboxStatusEnumValidator,
+    expiresAt: z.string(),
+    createdAt: z.string(),
+    issuerDid: z.string(),
+    webhookUrl: z.string().optional(),
+    'signingAuthority.endpoint': z.string().optional(),
+    'signingAuthority.name': z.string().optional(),
+});
+
+export type InboxCredentialType = z.infer<typeof InboxCredentialValidator>;
+
+export const PaginatedInboxCredentialsValidator = z.object({
+    hasMore: z.boolean(),
+    records: z.array(InboxCredentialValidator),
+    cursor: z.string().optional(),
+});
+
+export type PaginatedInboxCredentialsType = z.infer<typeof PaginatedInboxCredentialsValidator>;
+
+export const InboxCredentialQueryValidator = z
+    .object({
+        currentStatus: LCNInboxStatusEnumValidator,
+        id: z.string(),
+        isSigned: z.boolean(),
+        issuerDid: z.string(),
+    })
+    .partial();
+
+export type InboxCredentialQuery = z.infer<typeof InboxCredentialQueryValidator>;
+
+export const IssueInboxSigningAuthorityValidator = z.object({
+    endpoint: z.string().url(),
+    name: z.string(),
+});
+
+export type IssueInboxSigningAuthority = z.infer<typeof IssueInboxSigningAuthorityValidator>;
+
+export const IssueInboxCredentialValidator = z.object({
+    recipient: ContactMethodQueryValidator,
+    credential: VCValidator.passthrough().or(VPValidator.passthrough()).or(UnsignedVCValidator.passthrough()), 
+    signingAuthority: IssueInboxSigningAuthorityValidator.optional(),
+    webhookUrl: z.string().url().optional(),
+    expiresInDays: z.number().min(1).max(365).optional(),
+    template: z.object({
+        id: z.string(),
+        model: z.record(z.any()).optional(),
+    }).optional(),
+    suppressDelivery: z.boolean().optional().default(false),
+});
+
+export type IssueInboxCredentialType = z.infer<typeof IssueInboxCredentialValidator>;
+
+export const IssueInboxCredentialResponseValidator = z.object({
+    issuanceId: z.string(),
+    status: LCNInboxStatusEnumValidator,
+    recipient: ContactMethodQueryValidator,
+    claimUrl: z.string().url().optional(),
+    recipientDid: z.string().optional(),
+});
+
+export type IssueInboxCredentialResponseType = z.infer<typeof IssueInboxCredentialResponseValidator>;
+
+export const ClaimTokenValidator = z.object({
+    token: z.string(),
+    contactMethodId: z.string(),
+    createdAt: z.string(),
+    expiresAt: z.string(),
+    used: z.boolean(),
+});
+
+export type ClaimTokenType = z.infer<typeof ClaimTokenValidator>;

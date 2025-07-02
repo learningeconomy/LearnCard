@@ -1,6 +1,6 @@
 import { v4 as uuid } from 'uuid';
 import cache from '@cache';
-import { ClaimTokenType } from 'types/inbox-credential';
+import { ClaimTokenType } from '@learncard/types';
 
 const CONTACT_METHOD_VERIFICATION_PREFIX = 'contact_method_verification:';
 const INBOX_CLAIM_TOKEN_PREFIX = 'inbox_claim:';

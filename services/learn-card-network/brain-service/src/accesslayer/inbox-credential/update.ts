@@ -1,6 +1,6 @@
 import { QueryBuilder, BindParam } from 'neogma';
 import { InboxCredential } from '@models';
-import { InboxCredentialType } from 'types/inbox-credential';
+import { InboxCredentialType } from '@learncard/types';
 import { flattenObject, inflateObject } from '@helpers/objects.helpers';
 
 export const updateInboxCredential = async (
