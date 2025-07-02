@@ -35,8 +35,12 @@ const copyFunction = (text: string | object | number) => {
     if (typeof text === 'number') {
         text = text.toString();
     }
-    clipboard.writeSync(text);
-    console.log('Copied to clipboard!');
+    try {
+        clipboard.writeSync(text);
+        console.log('Copied to clipboard!');
+    } catch (error) {
+        console.error('Failed to copy to clipboard:', error instanceof Error ? error.message : 'Unknown error');
+    }
 };
 
 program
