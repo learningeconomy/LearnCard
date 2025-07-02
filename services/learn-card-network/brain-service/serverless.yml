@@ -94,6 +94,7 @@ provider:
         LAMBDA_STAGE: ${opt:stage, "dev"}
         SEED: ${env:SEED}
         DOMAIN_NAME: ${env:DOMAIN_NAME}
+        CLIENT_APP_DOMAIN_NAME: ${env:CLIENT_APP_DOMAIN_NAME}
         NOTIFICATIONS_SERVICE_WEBHOOK_URL: ${env:NOTIFICATIONS_SERVICE_WEBHOOK_URL}
         NEO4J_URI: ${env:NEO4J_URI}
         NEO4J_USERNAME: ${env:NEO4J_USERNAME}

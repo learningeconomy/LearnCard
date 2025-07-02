@@ -86,7 +86,7 @@ export const markInboxClaimTokenAsUsed = async (token: string): Promise<boolean>
 };
 
 export const generateClaimUrl = (token: string): string => {
-    const domainName = process.env.DOMAIN_NAME;
+    const domainName = process.env.CLIENT_APP_DOMAIN_NAME;
     const domain =
         !domainName || process.env.IS_OFFLINE
             ? `localhost:${process.env.PORT || 3000}`

@@ -82,7 +82,7 @@ export const inboxRouter = t.router({
         .meta({
             openapi: {
                 protect: true,
-                method: 'GET',
+                method: 'POST',
                 path: '/inbox/issued',
                 tags: ['Universal Inbox'],
                 summary: 'Get My Issued Universal Inbox Credentials',
@@ -90,11 +90,13 @@ export const inboxRouter = t.router({
             },
             requiredScope: 'inbox:read',
         })
-        .input(PaginationOptionsValidator.extend({
-            limit: PaginationOptionsValidator.shape.limit.default(25),
-            query: InboxCredentialQueryValidator.optional(),
-            recipient: ContactMethodQueryValidator.optional(),
-        }).default({}))
+        .input( 
+            PaginationOptionsValidator.extend({
+                limit: PaginationOptionsValidator.shape.limit.default(25),
+                query: InboxCredentialQueryValidator.optional(),
+                recipient: ContactMethodQueryValidator.optional(),
+            }).default({})
+        )
         .output(PaginatedInboxCredentialsValidator)
         .query(async ({ ctx, input }) => {
             const { profile } = ctx.user;
