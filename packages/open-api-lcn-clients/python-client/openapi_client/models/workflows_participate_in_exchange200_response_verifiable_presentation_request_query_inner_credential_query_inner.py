@@ -17,34 +17,18 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator
+from pydantic import BaseModel, ConfigDict, StrictBool, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
 from typing import Optional, Set
 from typing_extensions import Self
 
-class BoostGetBoosts200ResponseInner(BaseModel):
+class WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequestQueryInnerCredentialQueryInner(BaseModel):
     """
-    BoostGetBoosts200ResponseInner
+    WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequestQueryInnerCredentialQueryInner
     """ # noqa: E501
-    name: Optional[StrictStr] = None
-    type: Optional[StrictStr] = None
-    category: Optional[StrictStr] = None
-    status: Optional[StrictStr] = None
-    auto_connect_recipients: Optional[StrictBool] = Field(default=None, alias="autoConnectRecipients")
-    meta: Optional[Dict[str, Any]] = None
-    allow_anyone_to_create_children: Optional[StrictBool] = Field(default=None, alias="allowAnyoneToCreateChildren")
-    uri: StrictStr
-    __properties: ClassVar[List[str]] = ["name", "type", "category", "status", "autoConnectRecipients", "meta", "allowAnyoneToCreateChildren", "uri"]
-
-    @field_validator('status')
-    def status_validate_enum(cls, value):
-        """Validates the enum"""
-        if value is None:
-            return value
-
-        if value not in set(['DRAFT', 'LIVE']):
-            raise ValueError("must be one of enum values ('DRAFT', 'LIVE')")
-        return value
+    required: Optional[StrictBool] = None
+    reason: Optional[StrictStr] = None
+    __properties: ClassVar[List[str]] = ["required", "reason"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -64,7 +48,7 @@ class BoostGetBoosts200ResponseInner(BaseModel):
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
-        """Create an instance of BoostGetBoosts200ResponseInner from a JSON string"""
+        """Create an instance of WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequestQueryInnerCredentialQueryInner from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -89,7 +73,7 @@ class BoostGetBoosts200ResponseInner(BaseModel):
 
     @classmethod
     def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
-        """Create an instance of BoostGetBoosts200ResponseInner from a dict"""
+        """Create an instance of WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequestQueryInnerCredentialQueryInner from a dict"""
         if obj is None:
             return None
 
@@ -97,14 +81,8 @@ class BoostGetBoosts200ResponseInner(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "name": obj.get("name"),
-            "type": obj.get("type"),
-            "category": obj.get("category"),
-            "status": obj.get("status"),
-            "autoConnectRecipients": obj.get("autoConnectRecipients"),
-            "meta": obj.get("meta"),
-            "allowAnyoneToCreateChildren": obj.get("allowAnyoneToCreateChildren"),
-            "uri": obj.get("uri")
+            "required": obj.get("required"),
+            "reason": obj.get("reason")
         })
         return _obj
 

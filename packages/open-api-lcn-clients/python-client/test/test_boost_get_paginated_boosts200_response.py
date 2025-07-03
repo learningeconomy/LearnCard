@@ -60,7 +60,8 @@ class TestBoostGetPaginatedBoosts200Response(unittest.TestCase):
                             can_revoke_children = '', 
                             can_manage_children_permissions = '', 
                             can_manage_children_profiles = True, 
-                            can_view_analytics = True, ), )
+                            can_view_analytics = True, ), 
+                        allow_anyone_to_create_children = True, )
                     ]
             )
         else:
@@ -89,7 +90,8 @@ class TestBoostGetPaginatedBoosts200Response(unittest.TestCase):
                             can_revoke_children = '', 
                             can_manage_children_permissions = '', 
                             can_manage_children_profiles = True, 
-                            can_view_analytics = True, ), )
+                            can_view_analytics = True, ), 
+                        allow_anyone_to_create_children = True, )
                     ],
         )
         """

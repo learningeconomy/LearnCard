@@ -34,10 +34,11 @@ class BoostGetBoost200Response(BaseModel):
     status: Optional[StrictStr] = None
     auto_connect_recipients: Optional[StrictBool] = Field(default=None, alias="autoConnectRecipients")
     meta: Optional[Dict[str, Any]] = None
+    allow_anyone_to_create_children: Optional[StrictBool] = Field(default=None, alias="allowAnyoneToCreateChildren")
     claim_permissions: Optional[BoostGetBoost200ResponseClaimPermissions] = Field(default=None, alias="claimPermissions")
     uri: StrictStr
     boost: BoostCreateBoostRequestCredentialAnyOf
-    __properties: ClassVar[List[str]] = ["name", "type", "category", "status", "autoConnectRecipients", "meta", "claimPermissions", "uri", "boost"]
+    __properties: ClassVar[List[str]] = ["name", "type", "category", "status", "autoConnectRecipients", "meta", "allowAnyoneToCreateChildren", "claimPermissions", "uri", "boost"]
 
     @field_validator('status')
     def status_validate_enum(cls, value):
@@ -112,6 +113,7 @@ class BoostGetBoost200Response(BaseModel):
             "status": obj.get("status"),
             "autoConnectRecipients": obj.get("autoConnectRecipients"),
             "meta": obj.get("meta"),
+            "allowAnyoneToCreateChildren": obj.get("allowAnyoneToCreateChildren"),
             "claimPermissions": BoostGetBoost200ResponseClaimPermissions.from_dict(obj["claimPermissions"]) if obj.get("claimPermissions") is not None else None,
             "uri": obj.get("uri"),
             "boost": BoostCreateBoostRequestCredentialAnyOf.from_dict(obj["boost"]) if obj.get("boost") is not None else None

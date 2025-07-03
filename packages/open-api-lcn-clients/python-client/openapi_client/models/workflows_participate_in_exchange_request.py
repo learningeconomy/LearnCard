@@ -17,34 +17,18 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator
+from pydantic import BaseModel, ConfigDict, Field
 from typing import Any, ClassVar, Dict, List, Optional
+from openapi_client.models.presentation_send_presentation_request_presentation_any_of import PresentationSendPresentationRequestPresentationAnyOf
 from typing import Optional, Set
 from typing_extensions import Self
 
-class BoostGetBoosts200ResponseInner(BaseModel):
+class WorkflowsParticipateInExchangeRequest(BaseModel):
     """
-    BoostGetBoosts200ResponseInner
+    WorkflowsParticipateInExchangeRequest
     """ # noqa: E501
-    name: Optional[StrictStr] = None
-    type: Optional[StrictStr] = None
-    category: Optional[StrictStr] = None
-    status: Optional[StrictStr] = None
-    auto_connect_recipients: Optional[StrictBool] = Field(default=None, alias="autoConnectRecipients")
-    meta: Optional[Dict[str, Any]] = None
-    allow_anyone_to_create_children: Optional[StrictBool] = Field(default=None, alias="allowAnyoneToCreateChildren")
-    uri: StrictStr
-    __properties: ClassVar[List[str]] = ["name", "type", "category", "status", "autoConnectRecipients", "meta", "allowAnyoneToCreateChildren", "uri"]
-
-    @field_validator('status')
-    def status_validate_enum(cls, value):
-        """Validates the enum"""
-        if value is None:
-            return value
-
-        if value not in set(['DRAFT', 'LIVE']):
-            raise ValueError("must be one of enum values ('DRAFT', 'LIVE')")
-        return value
+    verifiable_presentation: Optional[PresentationSendPresentationRequestPresentationAnyOf] = Field(default=None, alias="verifiablePresentation")
+    __properties: ClassVar[List[str]] = ["verifiablePresentation"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -64,7 +48,7 @@ class BoostGetBoosts200ResponseInner(BaseModel):
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
-        """Create an instance of BoostGetBoosts200ResponseInner from a JSON string"""
+        """Create an instance of WorkflowsParticipateInExchangeRequest from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -85,11 +69,14 @@ class BoostGetBoosts200ResponseInner(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # override the default output from pydantic by calling `to_dict()` of verifiable_presentation
+        if self.verifiable_presentation:
+            _dict['verifiablePresentation'] = self.verifiable_presentation.to_dict()
         return _dict
 
     @classmethod
     def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
-        """Create an instance of BoostGetBoosts200ResponseInner from a dict"""
+        """Create an instance of WorkflowsParticipateInExchangeRequest from a dict"""
         if obj is None:
             return None
 
@@ -97,14 +84,7 @@ class BoostGetBoosts200ResponseInner(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "name": obj.get("name"),
-            "type": obj.get("type"),
-            "category": obj.get("category"),
-            "status": obj.get("status"),
-            "autoConnectRecipients": obj.get("autoConnectRecipients"),
-            "meta": obj.get("meta"),
-            "allowAnyoneToCreateChildren": obj.get("allowAnyoneToCreateChildren"),
-            "uri": obj.get("uri")
+            "verifiablePresentation": PresentationSendPresentationRequestPresentationAnyOf.from_dict(obj["verifiablePresentation"]) if obj.get("verifiablePresentation") is not None else None
         })
         return _obj
 

@@ -45,6 +45,7 @@ class TestBoostCreateChildBoostRequest(unittest.TestCase):
                     meta = {
                         'key' : null
                         }, 
+                    allow_anyone_to_create_children = True, 
                     credential = null, 
                     claim_permissions = openapi_client.models.boost_create_boost_request_claim_permissions.boost_createBoost_request_claimPermissions(
                         role = '', 
@@ -72,6 +73,7 @@ class TestBoostCreateChildBoostRequest(unittest.TestCase):
                     meta = {
                         'key' : null
                         }, 
+                    allow_anyone_to_create_children = True, 
                     credential = null, 
                     claim_permissions = openapi_client.models.boost_create_boost_request_claim_permissions.boost_createBoost_request_claimPermissions(
                         role = '', 
