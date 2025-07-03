@@ -1,5 +1,26 @@
 # learn-card-core
 
+## 2.4.39
+
+### Patch Changes
+
+-   [#708](https://github.com/learningeconomy/LearnCard/pull/708) [`1b99797c404648412f6a6e8a1f77ebab71caa28c`](https://github.com/learningeconomy/LearnCard/commit/1b99797c404648412f6a6e8a1f77ebab71caa28c) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Introduces a new optional boolean `allowAnyoneToCreateChildren` on Boost nodes.
+
+    When set to `true` on a parent boost:
+
+    -   Any profile can create child boosts without possessing the `canCreateChildren` role permission.
+    -   The permission gate (`canProfileCreateChildBoost`) now short-circuits when this flag is detected.
+
+    This change updates:
+
+    -   Boost schema & shared types (`@learncard/types`)
+    -   Brain-service model & access-layer logic (`@learncard/network-brain-service`)
+    -   Unit and E2E tests to cover the new behaviour.
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.3.5
+    -   @learncard/core@9.3.30
+
 ## 2.4.38
 
 ### Patch Changes
