@@ -5,7 +5,7 @@ export interface ContactMethod {
 
 export interface Notification {
     contactMethod: ContactMethod;
-    templateId: string; // e.g., 'credential-claim'
+    templateId: string; // e.g., 'universal-inbox-claim'
     templateModel: Record<string, any>; // Data for the template
 }
 

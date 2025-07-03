@@ -180,7 +180,7 @@ export const issueToInbox = async (
             const deliveryService = getDeliveryService(recipient);
             await deliveryService.send({
                 contactMethod: recipient,
-                templateId: template?.id || 'credential-claim',
+                templateId: template?.id || 'universal-inbox-claim',
                 templateModel: {
                     claimUrl,
                     issuerName: issuerProfile.profileId ?? 'An Organization',

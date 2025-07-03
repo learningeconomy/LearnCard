@@ -29,7 +29,7 @@ export const LCNProfileValidator = z.object({
         .boolean()
         .optional()
         .describe('Whether the profile is private or not and shows up in search results.'),
-    email: z.string().optional().describe('Contact email address for the profile.'),
+    email: z.string().optional().describe('Contact email address for the profile. (deprecated)'),
     image: z.string().optional().describe('Profile image URL for the profile.'),
     heroImage: z.string().optional().describe('Hero image URL for the profile.'),
     websiteLink: z.string().optional().describe('Website link for the profile.'),
