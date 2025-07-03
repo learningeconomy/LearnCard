@@ -64,10 +64,12 @@ describe('Inbox', () => {
             const payload = {
                 credential: await a.invoke.issueCredential(await a.invoke.getTestVc()),
                 recipient: { type: 'email', value: 'userB@test.com' },
-                webhookUrl: 'https://example.com/webhook',
-                signingAuthority: {
-                    endpoint: sa.endpoint!,
-                    name: sa.name,
+                configuration: {
+                    webhookUrl: 'https://example.com/webhook',
+                    signingAuthority: {
+                        endpoint: sa.endpoint!,
+                        name: sa.name,
+                    },
                 },
             };
 

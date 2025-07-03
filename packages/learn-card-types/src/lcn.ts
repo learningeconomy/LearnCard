@@ -784,17 +784,32 @@ export const IssueInboxSigningAuthorityValidator = z.object({
 
 export type IssueInboxSigningAuthority = z.infer<typeof IssueInboxSigningAuthorityValidator>;
 
+
 export const IssueInboxCredentialValidator = z.object({
-    recipient: ContactMethodQueryValidator,
-    credential: VCValidator.passthrough().or(VPValidator.passthrough()).or(UnsignedVCValidator.passthrough()), 
-    signingAuthority: IssueInboxSigningAuthorityValidator.optional(),
-    webhookUrl: z.string().url().optional(),
-    expiresInDays: z.number().min(1).max(365).optional(),
-    template: z.object({
-        id: z.string(),
-        model: z.record(z.any()).optional(),
-    }).optional(),
-    suppressDelivery: z.boolean().optional().default(false),
+    // === CORE DATA (Required) ===
+    // WHAT is being sent and WHO is it for?
+    recipient: ContactMethodQueryValidator.describe('The recipient of the credential'),
+    credential: VCValidator.passthrough().or(VPValidator.passthrough()).or(UnsignedVCValidator.passthrough()).describe('The credential to issue. If not signed, the users default signing authority will be used, or the specified signing authority in the configuration.'), 
+
+    // === OPTIONAL FEATURES ===
+    // Add major, distinct features at the top level.
+    //consentRequest: ConsentRequestValidator.optional(),
+
+    // === PROCESS CONFIGURATION (Optional) ===
+    // HOW should this issuance be handled?
+    configuration: z.object({
+        signingAuthority: IssueInboxSigningAuthorityValidator.optional().describe('The signing authority to use for the credential. If not provided, the users default signing authority will be used if the credential is not signed.'),
+        webhookUrl: z.string().url().optional().describe('The webhook URL to receive credential issuance events.'),
+        expiresInDays: z.number().min(1).max(365).optional().describe('The number of days the credential will be valid for.'),
+        // --- For User-Facing Delivery (Email/SMS) ---
+        delivery: z.object({
+            suppress: z.boolean().optional().default(false).describe('Whether to suppress delivery of the credential to the recipient. If true, the email/sms will not be sent to the recipient. Useful if you would like to manually send claim link to your users.'),
+            template: z.object({
+                id: z.string().optional().describe('The template ID to use for the credential delivery. If not provided, the default template will be used.'),
+                model: z.record(z.any()).optional().describe('The template model to use for the credential delivery. Injects via template variables into email/sms templates. If not provided, the default template will be used.'),
+            }).optional().describe('The template to use for the credential delivery. If not provided, the default template will be used.'),
+        }).optional().describe('Configuration for the credential delivery i.e. email or SMS. When credentials are sent to a user who has a verified email or phone associated with their account, delivery is skipped, and the credential will be sent using in-app notifications. If not provided, the default configuration will be used.'),
+    }).optional().describe('Configuration for the credential issuance. If not provided, the default configuration will be used.'),
 });
 
 export type IssueInboxCredentialType = z.infer<typeof IssueInboxCredentialValidator>;

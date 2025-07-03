@@ -68,7 +68,7 @@ describe('Universal Inbox', () => {
         it('should allow you to send an unsigned credential to an inbox with a signing authority', async () => {
             const vc = await userA.learnCard.invoke.getTestVc();
             await expect(
-                userA.clients.fullAuth.inbox.issue({ credential: vc, signingAuthority: { endpoint: 'https://example.com', name: 'Example' }, recipient: { type: 'email', value: 'userA@test.com' } })
+                userA.clients.fullAuth.inbox.issue({ credential: vc, recipient: { type: 'email', value: 'userA@test.com' }, configuration: { signingAuthority: { endpoint: 'https://example.com', name: 'Example' } } })
             ).resolves.not.toThrow();
         });
 
@@ -101,7 +101,7 @@ describe('Universal Inbox', () => {
             expect(sendSpy).toHaveBeenCalledOnce();
             expect(sendSpy).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    templateId: 'credential-claim',
+                    templateId: 'universal-inbox-claim',
                     templateModel: expect.objectContaining({
                         issuerName: 'usera',
                         credentialName: "A Credential",
@@ -115,13 +115,20 @@ describe('Universal Inbox', () => {
             await userA.clients.fullAuth.inbox.issue({
                 credential: vc,
                 recipient: { type: 'email', value: 'customuser@test.com' },
-                template: { id: 'credential-claim', model: { customMessage: 'Welcome to our platform!', credentialName: 'Banana!' } },
+                configuration: {
+                    delivery: {
+                        template: { 
+                            id: 'universal-inbox-claim', 
+                            model: { customMessage: 'Welcome to our platform!', credentialName: 'Banana!' } 
+                        },
+                    },
+                },
             });
 
             expect(sendSpy).toHaveBeenCalledOnce();
             expect(sendSpy).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    templateId: 'credential-claim',
+                    templateId: 'universal-inbox-claim',
                     templateModel: expect.objectContaining({
                         issuerName: 'usera',
                         credentialName: 'Banana!',
@@ -142,7 +149,7 @@ describe('Universal Inbox', () => {
             expect(sendSpy).toHaveBeenCalledWith(
                 expect.objectContaining({
                     contactMethod: { type: 'phone', value: '+15551234567' },
-                    templateId: 'credential-claim',
+                    templateId: 'universal-inbox-claim',
                 })
             );
         });
@@ -152,7 +159,11 @@ describe('Universal Inbox', () => {
             await userA.clients.fullAuth.inbox.issue({
                 credential: vc,
                 recipient: { type: 'email', value: 'newuser@test.com' },
-                suppressDelivery: true,
+                configuration: {
+                    delivery: {
+                        suppress: true,
+                    },
+                },
             });
 
             expect(sendSpy).not.toHaveBeenCalled();
@@ -163,7 +174,9 @@ describe('Universal Inbox', () => {
             const inboxCredential = await userA.clients.fullAuth.inbox.issue({
                 credential: vc,
                 recipient: { type: 'email', value: 'userB@test.com' },
-                webhookUrl: 'https://example.com/webhook',
+                configuration: {
+                    webhookUrl: 'https://example.com/webhook',
+                },
             });
 
             expect(addNotificationToQueueSpy).toHaveBeenCalledOnce();
@@ -211,14 +224,14 @@ describe('Universal Inbox', () => {
         it('should allow you to retrieve your issued inbox credentials', async () => {
             const vc = await userA.learnCard.invoke.getTestVc();
             await expect(
-                userA.clients.fullAuth.inbox.issue({ credential: vc, signingAuthority: { endpoint: 'https://example.com', name: 'Example' }, recipient: { type: 'email', value: 'userA@test.com' } })
+                userA.clients.fullAuth.inbox.issue({ credential: vc, configuration: { signingAuthority: { endpoint: 'https://example.com', name: 'Example' } }, recipient: { type: 'email', value: 'userA@test.com' } })
             ).resolves.not.toThrow();
             await expect(
                 userA.clients.fullAuth.inbox.getMyIssuedCredentials({})
             ).resolves.not.toThrow();
 
             await expect(
-                userA.clients.fullAuth.inbox.issue({ credential: vc, signingAuthority: { endpoint: 'https://example.com', name: 'Example' }, recipient: { type: 'email', value: 'userA@test.com' } })
+                userA.clients.fullAuth.inbox.issue({ credential: vc, configuration: { signingAuthority: { endpoint: 'https://example.com', name: 'Example' } }, recipient: { type: 'email', value: 'userA@test.com' } })
             ).resolves.not.toThrow();
 
             const issuedCredentials = await userA.clients.fullAuth.inbox.getMyIssuedCredentials({});
@@ -237,7 +250,7 @@ describe('Universal Inbox', () => {
             const vc = await userA.learnCard.invoke.getTestVc();
             for (let i = 0; i < 26; i++) {
                 await expect(
-                    userA.clients.fullAuth.inbox.issue({ credential: vc, signingAuthority: { endpoint: 'https://example.com', name: 'Example' }, recipient: { type: 'email', value: 'userA@test.com' } })
+                    userA.clients.fullAuth.inbox.issue({ credential: vc, configuration: { signingAuthority: { endpoint: 'https://example.com', name: 'Example' } }, recipient: { type: 'email', value: 'userA@test.com' } })
                 ).resolves.not.toThrow();
             }
             await expect(
@@ -297,7 +310,7 @@ describe('Universal Inbox', () => {
         it('should allow you to filter your inbox credentials by status', async () => {
             const vc = await userA.learnCard.invoke.getTestVc();
             await expect(
-                userA.clients.fullAuth.inbox.issue({ credential: vc, signingAuthority: { endpoint: 'https://example.com', name: 'Example' }, recipient: { type: 'email', value: 'userA@test.com' } })
+                userA.clients.fullAuth.inbox.issue({ credential: vc, configuration: { signingAuthority: { endpoint: 'https://example.com', name: 'Example' } }, recipient: { type: 'email', value: 'userA@test.com' } })
             ).resolves.not.toThrow();
             const pendingCreds = await userA.clients.fullAuth.inbox.getMyIssuedCredentials({ query: { currentStatus: 'PENDING' } })
             await expect(
@@ -313,7 +326,7 @@ describe('Universal Inbox', () => {
         it('should allow you to filter your inbox credentials by recipient email', async () => {
             const vc = await userA.learnCard.invoke.getTestVc();
             await expect(
-                userA.clients.fullAuth.inbox.issue({ credential: vc, signingAuthority: { endpoint: 'https://example.com', name: 'Example' }, recipient: { type: 'email', value: 'userA@test.com' } })
+                userA.clients.fullAuth.inbox.issue({ credential: vc, configuration: { signingAuthority: { endpoint: 'https://example.com', name: 'Example' } }, recipient: { type: 'email', value: 'userA@test.com' } })
             ).resolves.not.toThrow();
             const pendingCreds = await userA.clients.fullAuth.inbox.getMyIssuedCredentials({ query: { currentStatus: 'PENDING' }, recipient: { type: 'email', value: 'userA@test.com' } })
             await expect(
@@ -335,7 +348,7 @@ describe('Universal Inbox', () => {
         it('should paginate compound filters', async () => {
             const vc = await userA.learnCard.invoke.getTestVc();
             const signedCredential = await userA.learnCard.invoke.issueCredential(vc);
-            await userA.clients.fullAuth.inbox.issue({ credential: vc, signingAuthority: { endpoint: 'https://example.com', name: 'Example' }, recipient: { type: 'email', value: 'userA@test.com' } })
+            await userA.clients.fullAuth.inbox.issue({ credential: vc, configuration: { signingAuthority: { endpoint: 'https://example.com', name: 'Example' } }, recipient: { type: 'email', value: 'userA@test.com' } })
   
             await userA.clients.fullAuth.inbox.issue({ credential: signedCredential, recipient: { type: 'email', value: 'userB@test.com' } })
             await userA.clients.fullAuth.inbox.issue({ credential: signedCredential, recipient: { type: 'email', value: 'userB@test.com' } })
@@ -391,7 +404,7 @@ describe('Universal Inbox', () => {
         it('should create an email address contact method if it doesn\'t exist for the recipient', async () => {
             const vc = await userA.learnCard.invoke.getTestVc();
             await expect(
-                userA.clients.fullAuth.inbox.issue({ credential: vc, signingAuthority: { endpoint: 'https://example.com', name: 'Example' }, recipient: { type: 'email', value: 'userA@test.com' } })
+                userA.clients.fullAuth.inbox.issue({ credential: vc, configuration: { signingAuthority: { endpoint: 'https://example.com', name: 'Example' } }, recipient: { type: 'email', value: 'userA@test.com' } })
             ).resolves.not.toThrow();
 
             const emailAddress = (await ContactMethod.findOne({ where: { value: 'userA@test.com' } })).dataValues.value;
@@ -403,7 +416,7 @@ describe('Universal Inbox', () => {
         it('should create an phone contact method if it doesn\'t exist for the recipient', async () => {
             const vc = await userA.learnCard.invoke.getTestVc();
             await expect(
-                userA.clients.fullAuth.inbox.issue({ credential: vc, signingAuthority: { endpoint: 'https://example.com', name: 'Example' }, recipient: { type: 'phone', value: '+15555555' } })
+                userA.clients.fullAuth.inbox.issue({ credential: vc, configuration: { signingAuthority: { endpoint: 'https://example.com', name: 'Example' } }, recipient: { type: 'phone', value: '+15555555' } })
             ).resolves.not.toThrow();
 
             const phone = (await ContactMethod.findOne({ where: { value: '+15555555' } })).dataValues.value;
@@ -431,14 +444,14 @@ describe('Universal Inbox', () => {
 
         it('should allow you to get an individual inbox credential', async () => {
             const vc = await userA.learnCard.invoke.getTestVc();
-            const inboxCredential = await userA.clients.fullAuth.inbox.issue({ credential: vc, signingAuthority: { endpoint: 'https://example.com', name: 'Example' }, recipient: { type: 'email', value: 'userA@test.com' } });
+            const inboxCredential = await userA.clients.fullAuth.inbox.issue({ credential: vc, configuration: { signingAuthority: { endpoint: 'https://example.com', name: 'Example' } }, recipient: { type: 'email', value: 'userA@test.com' } });
             await expect(
                 userA.clients.fullAuth.inbox.getInboxCredential({ credentialId: inboxCredential.issuanceId })
             ).resolves.not.toThrow();
         });
         it('should not allow you to get an individual inbox credential you do not own', async () => {
             const vc = await userA.learnCard.invoke.getTestVc();
-            const inboxCredential = await userA.clients.fullAuth.inbox.issue({ credential: vc, signingAuthority: { endpoint: 'https://example.com', name: 'Example' }, recipient: { type: 'email', value: 'userA@test.com' } });
+            const inboxCredential = await userA.clients.fullAuth.inbox.issue({ credential: vc, configuration: { signingAuthority: { endpoint: 'https://example.com', name: 'Example' } }, recipient: { type: 'email', value: 'userA@test.com' } });
             await expect(
                 userB.clients.fullAuth.inbox.getInboxCredential({ credentialId: inboxCredential.issuanceId })
             ).rejects.toThrow();
@@ -546,7 +559,7 @@ describe('Universal Inbox', () => {
             const inboxCredential = await userA.clients.fullAuth.inbox.issue({
                 credential: vc,
                 recipient: { type: 'phone', value: '+15555555555' },
-                webhookUrl: 'https://example.com/webhook',
+                configuration: { webhookUrl: 'https://example.com/webhook' },
             });
 
             expect(addNotificationToQueueSpy).toHaveBeenCalledOnce();
@@ -699,7 +712,7 @@ describe('Universal Inbox', () => {
 
             await userB.clients.fullAuth.workflows.participateInExchange({ localWorkflowId: 'inbox-claim', localExchangeId, verifiablePresentation: didAuthVp })
 
-            const profile = await userB.clients.fullAuth.profile.getProfile();
+            await userB.clients.fullAuth.profile.getProfile();
             const contactMethods = await userB.clients.fullAuth.contactMethods.getMyContactMethods();
             if (!contactMethods?.[0]) {
                 throw new Error('Contact method is undefined');
@@ -800,7 +813,7 @@ describe('Universal Inbox', () => {
 
         it('should allow you to claim an inbox credential using a signing authority', async () => {
             const credential = await userA.learnCard.invoke.newCredential({ type: 'achievement', name: 'Signing Authority Credential', achievementName: 'Signing Authority Credential' });
-            const inboxCredential = await userA.clients.fullAuth.inbox.issue({ credential, recipient: { type: 'email', value: 'userA@test.com' }, signingAuthority: { endpoint: 'https://example.com', name: 'Example' } });
+            const inboxCredential = await userA.clients.fullAuth.inbox.issue({ credential, recipient: { type: 'email', value: 'userA@test.com' }, configuration: { signingAuthority: { endpoint: 'https://example.com', name: 'Example' } } });
 
             const localExchangeId = getExchangeIdFromClaimUrl(inboxCredential?.claimUrl);
             expect(localExchangeId).toBeDefined();

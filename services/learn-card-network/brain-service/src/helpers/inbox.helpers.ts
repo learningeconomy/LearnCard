@@ -1,5 +1,5 @@
 import { TRPCError } from '@trpc/server';
-import { VC, UnsignedVC, LCNNotificationTypeEnumValidator, LCNInboxStatusEnumValidator, VP, ContactMethodQueryType, InboxCredentialType, IssueInboxSigningAuthority } from '@learncard/types';
+import { VC, UnsignedVC, LCNNotificationTypeEnumValidator, LCNInboxStatusEnumValidator, VP, ContactMethodQueryType, InboxCredentialType, IssueInboxCredentialType } from '@learncard/types';
 
 import { ProfileType } from 'types/profile';
 import { createInboxCredential } from '@accesslayer/inbox-credential/create';
@@ -24,13 +24,7 @@ export const issueToInbox = async (
     issuerProfile: ProfileType,
     recipient: ContactMethodQueryType,
     credential: VC | UnsignedVC | VP, 
-    options: {
-        signingAuthority?: IssueInboxSigningAuthority;
-        webhookUrl?: string;
-        expiresInDays?: number;
-        template?: { id: string; model?: Record<string, any> };
-        suppressDelivery?: boolean;
-    } = {},
+    configuration: IssueInboxCredentialType['configuration'] = {},
     ctx: Context
 ): Promise<{ 
     status: 'PENDING' | 'DELIVERED' | 'CLAIMED' | 'EXPIRED'; 
@@ -38,7 +32,7 @@ export const issueToInbox = async (
     claimUrl?: string;
     recipientDid?: string;
 }> => {
-    const { signingAuthority, webhookUrl, expiresInDays, template, suppressDelivery } = options;
+    const { signingAuthority, webhookUrl, expiresInDays, delivery } = configuration;
 
     const isSigned = !!credential?.proof;
     // Validate that unsigned credentials have signing authority
@@ -167,7 +161,7 @@ export const issueToInbox = async (
         const claimToken = await generateInboxClaimToken(recipientContactMethod.id);
         const claimUrl = generateClaimUrl(claimToken);
 
-        if (!suppressDelivery) {
+        if (!delivery?.suppress) {
             // Record email being sent
             await createEmailSentRelationship(
                 issuerProfile.did,
@@ -180,13 +174,13 @@ export const issueToInbox = async (
             const deliveryService = getDeliveryService(recipient);
             await deliveryService.send({
                 contactMethod: recipient,
-                templateId: template?.id || 'universal-inbox-claim',
+                templateId: delivery?.template?.id || 'universal-inbox-claim',
                 templateModel: {
                     claimUrl,
                     issuerName: issuerProfile.profileId ?? 'An Organization',
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     credentialName: (credential as any)?.name ?? 'A Credential',
-                    ...template?.model,
+                    ...delivery?.template?.model,
                 },
             });
         }
