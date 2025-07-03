@@ -73,6 +73,7 @@
         "jwt-decode": "^3.1.2",
         "libsodium-wrappers": "^0.7.11",
         "lodash": "^4.17.21",
+        "messagebird": "^4.0.1",
         "multiformats": "^11.0.1",
         "neo4j-driver": "^5.18.0",
         "neogma": "^1.13.0",

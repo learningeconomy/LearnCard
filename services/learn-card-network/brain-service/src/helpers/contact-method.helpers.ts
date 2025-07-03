@@ -5,11 +5,16 @@ import { ClaimTokenType } from '@learncard/types';
 const CONTACT_METHOD_VERIFICATION_PREFIX = 'contact_method_verification:';
 const INBOX_CLAIM_TOKEN_PREFIX = 'inbox_claim:';
 
+const generate6DigitCode = () => {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+};
+
 export const generateContactMethodVerificationToken = async (
     contactMethodId: string,
+    type: 'phone' | 'email',
     ttlHours = 24
 ): Promise<string> => {
-    const token = uuid();
+    const token = type == 'phone' ? generate6DigitCode() : uuid();
     const key = `${CONTACT_METHOD_VERIFICATION_PREFIX}${token}`;
 
     await cache.set(key, contactMethodId, ttlHours * 60 * 60);

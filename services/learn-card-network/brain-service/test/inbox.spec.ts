@@ -1,7 +1,7 @@
 import { vi, describe, it, expect, beforeEach, afterAll, beforeAll } from 'vitest';
 import { getClient, getUser } from './helpers/getClient';
 import { Profile, SigningAuthority, InboxCredential, ContactMethod } from '@models';
-import { LCNInboxStatusEnumValidator, LCNNotificationTypeEnumValidator, VP } from '@learncard/types';
+import { LCNInboxStatusEnumValidator, LCNNotificationTypeEnumValidator, VC, VP } from '@learncard/types';
 import { sendSpy, addNotificationToQueueSpy } from './helpers/spies';
 import * as notifications from '@helpers/notifications.helpers';
 
@@ -35,7 +35,7 @@ describe('Universal Inbox', () => {
             addNotificationToQueueSpy.mockClear();
             await Profile.delete({ detach: true, where: {} });
             await InboxCredential.delete({ detach: true, where: {} });
-            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera', displayName: 'User A' });
             await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
             await userC.clients.fullAuth.profile.createProfile({ profileId: 'userc' });
         });
@@ -139,8 +139,7 @@ describe('Universal Inbox', () => {
                 expect.objectContaining({
                     templateId: 'universal-inbox-claim',
                     templateModel: expect.objectContaining({
-                        issuerName: 'usera',
-                        credentialName: "A Credential",
+                        issuer: { name: 'User A' },
                     }),
                 })
             );
@@ -155,7 +154,7 @@ describe('Universal Inbox', () => {
                     delivery: {
                         template: { 
                             id: 'universal-inbox-claim', 
-                            model: { customMessage: 'Welcome to our platform!', credentialName: 'Banana!' } 
+                            model: { issuer: { name: 'Montana Tech', logoUrl: 'https://example.com/logo.png' }, credential: { name: 'Banana!', type: 'transcript' }, recipient: { name: 'Custom User' } } 
                         },
                     },
                 },
@@ -166,9 +165,10 @@ describe('Universal Inbox', () => {
                 expect.objectContaining({
                     templateId: 'universal-inbox-claim',
                     templateModel: expect.objectContaining({
-                        issuerName: 'usera',
-                        credentialName: 'Banana!',
-                        customMessage: 'Welcome to our platform!',
+                        claimUrl: expect.any(String),
+                        issuer: { name: 'Montana Tech', logoUrl: 'https://example.com/logo.png' },
+                        credential: { name: 'Banana!', type: 'transcript' },
+                        recipient: { name: 'Custom User', email: 'customuser@test.com' },
                     }),
                 })
             );
@@ -801,6 +801,54 @@ describe('Universal Inbox', () => {
                 throw new Error('Received credential is undefined');
             }
             expect(receivedCred?.name).toBe('Delivered Straight to Wallet');
+        });
+
+
+        it('should not route credentials to the profile if the recipient exists with a unverified email contact method', async () => {
+            const vc = await userA.learnCard.invoke.issueCredential(await userA.learnCard.invoke.getTestVc());
+            // First sendSpy
+            const inboxCredential = await userA.clients.fullAuth.inbox.issue({ credential: vc, recipient: { type: 'email', value: 'userB@test.com' } });
+            
+            // Second sendSpy
+            await userB.clients.fullAuth.contactMethods.addContactMethod({ type: 'email', value: 'userB@test.com' });
+
+            const vc2 = await userA.learnCard.invoke.issueCredential(await userA.learnCard.invoke.newCredential({ type: 'achievement', name: 'Delivered to Inbox', achievementName: 'Delivered to Inbox' }));
+            // Third sendSpy
+            const deliveredCredential = await userA.clients.fullAuth.inbox.issue({ credential: vc2, recipient: { type: 'email', value: 'userB@test.com' } });
+            expect(deliveredCredential.status).toBe('DELIVERED');
+
+            // User B should see the credentials as incoming 
+            const incomingCredentials = await userB.clients.fullAuth.credential.incomingCredentials();
+            expect(incomingCredentials?.length).toBe(0);
+
+            // Retrieve the verification token from the second spy's call arguments
+            const sendArgs = sendSpy.mock.calls[1][0];
+            const verificationToken = sendArgs.templateModel.verificationToken;
+
+            expect(sendArgs.templateId).toBe('contact-method-verification');
+            expect(verificationToken).toBeDefined();
+
+            // Use the retrieved token to complete the verification
+            await userB.clients.fullAuth.contactMethods.verifyContactMethod({ token: verificationToken });
+
+            // The next credential sent should be delivered straight to wallet
+            const vc3 = await userA.learnCard.invoke.issueCredential(await userA.learnCard.invoke.newCredential({ type: 'achievement', name: 'Delivered Straight to Wallet', achievementName: 'Delivered Straight to Wallet' }));
+            const deliveredCredential2 = await userA.clients.fullAuth.inbox.issue({ credential: vc3, recipient: { type: 'email', value: 'userB@test.com' } });
+            expect(deliveredCredential2.status).toBe('DELIVERED');
+
+            // User B should see the credentials as incoming 
+            const incomingCredentials2 = await userB.clients.fullAuth.credential.incomingCredentials();
+            expect(incomingCredentials2).toBeDefined();
+            expect(incomingCredentials2?.length).toBe(1);
+
+            if (!incomingCredentials2?.[0]?.uri) {
+                throw new Error('Incoming credential URI is undefined');
+            }
+            const receivedCred2 = (await userB.clients.fullAuth.storage.resolve({ uri: incomingCredentials2?.[0].uri })) as VC;
+            if (!receivedCred2) {
+                throw new Error('Received credential is undefined');
+            }
+            expect(receivedCred2?.name).toBe('Delivered Straight to Wallet');
         });
 
         

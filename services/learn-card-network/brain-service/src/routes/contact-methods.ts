@@ -12,7 +12,7 @@ import {
     checkProfileContactMethodRelationship,
     getProfileContactMethodRelationships,
 } from '@accesslayer/contact-method/relationships/read';
-import { deleteProfileContactMethodRelationship } from '@accesslayer/contact-method/relationships/delete';
+import { deleteAllProfileContactMethodRelationshipsExceptForProfileId, deleteProfileContactMethodRelationship } from '@accesslayer/contact-method/relationships/delete';
 import {
     generateContactMethodVerificationToken,
     validateContactMethodVerificationToken,
@@ -71,9 +71,10 @@ export const contactMethodsRouter = t.router({
             const { profile } = ctx.user;
             const { type, value } = input;
 
+            
             // Check if contact method already exists
             const existingContactMethod = await getContactMethodByValue(type, value);
-            if (existingContactMethod) {
+            if (existingContactMethod?.isVerified) {
                 // Check if this profile already owns this contact method
                 const ownsContactMethod = await checkProfileContactMethodRelationship(
                     profile.profileId,
@@ -92,26 +93,30 @@ export const contactMethodsRouter = t.router({
                     });
                 }
             }
-
-            // Create new contact method (unverified)
-            const contactMethod = await createContactMethod({
-                type,
-                value,
+            let contactMethodToVerify = existingContactMethod;
+            if (!contactMethodToVerify) {
+                // Create new contact method (unverified)
+                const contactMethod = await createContactMethod({
+                    type,
+                    value,
                 isVerified: false,
                 isPrimary: false,
             });
+            contactMethodToVerify = contactMethod;
+        }
 
             // Create relationship with profile
-            await createProfileContactMethodRelationship(profile.profileId, contactMethod.id);
+            await createProfileContactMethodRelationship(profile.profileId, contactMethodToVerify.id);
 
             // Generate verification token
             const verificationToken = await generateContactMethodVerificationToken(
-                contactMethod.id
+                contactMethodToVerify.id,
+                type
             );
 
-            const deliveryService = getDeliveryService(contactMethod);
+            const deliveryService = getDeliveryService(contactMethodToVerify);
             await deliveryService.send({
-                contactMethod,
+                contactMethod: contactMethodToVerify,
                 templateId: 'contact-method-verification',
                 templateModel: {
                     verificationToken,
@@ -120,7 +125,7 @@ export const contactMethodsRouter = t.router({
 
             return {
                 message: 'Contact method added. Please check for verification instructions.',
-                contactMethodId: contactMethod.id,
+                contactMethodId: contactMethodToVerify.id,
                 verificationRequired: true,
             };
         }),
@@ -170,6 +175,9 @@ export const contactMethodsRouter = t.router({
                     message: 'You do not own this contact method',
                 });
             }
+
+            // Delete all other contact method relationships for this profile
+            await deleteAllProfileContactMethodRelationshipsExceptForProfileId(profile.profileId, contactMethodId);
 
             // Mark contact method as verified
             const updatedContactMethod = await verifyContactMethod(contactMethodId);

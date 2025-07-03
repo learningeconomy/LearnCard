@@ -153,6 +153,39 @@ describe('Contact Methods', () => {
             expect(verifiedMethod?.isVerified).toBe(false);
         });
 
+        it('if multiple profiles add the contact method, it should delete it from other profiles once verified', async () => {
+            // Add a contact method to user A
+            await userA.clients.fullAuth.contactMethods.addContactMethod({ type: 'email', value: 'userA@test.com' });
+
+            // Get the verification token from the spy's call arguments
+            const sendArgs = sendSpy.mock.calls[0][0];
+            const verificationToken = sendArgs.templateModel.verificationToken;
+
+            // Add a contact method to user A
+            await userB.clients.fullAuth.contactMethods.addContactMethod({ type: 'email', value: 'userA@test.com' });
+
+            // Get the verification token from the spy's call arguments
+            const sendArgs2 = sendSpy.mock.calls[1][0];
+            const verificationToken2 = sendArgs2.templateModel.verificationToken;
+
+        
+            // Verify the contact method as user B
+            await expect(
+                userB.clients.fullAuth.contactMethods.verifyContactMethod({ token: verificationToken2 })
+            ).resolves.not.toThrow();
+
+            // Assert that the contact method is verified for user B
+            const contactMethods = await userB.clients.fullAuth.contactMethods.getMyContactMethods();
+            const verifiedMethod = contactMethods?.find(cm => cm.value === 'userA@test.com');
+            expect(verifiedMethod?.isVerified).toBe(true);
+
+            // Assert that the contact method is deleted for user A
+            const contactMethods2 = await userA.clients.fullAuth.contactMethods.getMyContactMethods();
+            const verifiedMethod2 = contactMethods2?.find(cm => cm.value === 'userA@test.com');
+            expect(verifiedMethod2).toBeUndefined(); 
+            
+        });
+
         it('should allow setting a contact method as primary', async () => {
             // Add a contact method to user B
             const { contactMethodId } = await userB.clients.fullAuth.contactMethods.addContactMethod({ type: 'email', value: 'userB@test.com' });

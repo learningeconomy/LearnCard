@@ -1989,6 +1989,9 @@ importers:
       lodash:
         specifier: ^4.17.21
         version: 4.17.21
+      messagebird:
+        specifier: ^4.0.1
+        version: 4.0.1
       multiformats:
         specifier: ^11.0.1
         version: 11.0.2
@@ -14950,6 +14953,10 @@ packages:
   merge2@1.4.1:
     resolution: {integrity: sha512-8q7VEgMJW4J8tcfVPy8g09NcQwZdbwFEqhe/WZkoIzjn/3TGDwtOCYtXGxA3O8tPzpczCCDgv+P2P5y00ZJOOg==}
     engines: {node: '>= 8'}
+
+  messagebird@4.0.1:
+    resolution: {integrity: sha512-Abn0aoH1Dzsq5KMeI3LNanVETwu4+HvNXZrhWRGzRIJ9ea88sefsVfy98Qj4NDmxGuXLFmT8Lhgw1kStzu7F0g==}
+    engines: {node: '>=10.0.0'}
 
   methods@1.1.2:
     resolution: {integrity: sha512-iclAHeNqNm68zFtnZ0e+1L2yUIdvzNoauKU4WBA3VvH/vPFieF7qfRlwUZU+DA9P9bPXIS90ulxoUoCH23sV2w==}
@@ -39240,6 +39247,12 @@ snapshots:
   merge-stream@2.0.0: {}
 
   merge2@1.4.1: {}
+
+  messagebird@4.0.1:
+    dependencies:
+      jose: 4.15.9
+      safe-buffer: 5.2.1
+      scmp: 2.1.0
 
   methods@1.1.2: {}
 

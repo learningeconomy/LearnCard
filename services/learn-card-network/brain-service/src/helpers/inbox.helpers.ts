@@ -245,9 +245,6 @@ export const issueToInbox = async (
                 templateId: delivery?.template?.id || 'universal-inbox-claim',
                 templateModel: {
                     claimUrl,
-                    issuerName: issuerProfile.profileId ?? 'An Organization',
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    credentialName: (credential as any)?.name ?? 'A Credential',
                     ...injectedTemplateFields,
                 },
                 messageStream: 'universal-inbox'

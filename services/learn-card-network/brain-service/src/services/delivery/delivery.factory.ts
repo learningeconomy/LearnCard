@@ -1,5 +1,6 @@
 import { ContactMethod, DeliveryService } from './delivery.service';
 import { LogAdapter } from './adapters/log.adapter';
+import { MessagebirdAdapter } from './adapters/messagebird.adapter';
 import { PostmarkAdapter } from './adapters/postmark.adapter';
 import { TwilioAdapter } from './adapters/twilio.adapter';
 
@@ -10,6 +11,13 @@ export const getDeliveryService = (contactMethod: ContactMethod): DeliveryServic
         if (TWILIO_ACCOUNT_SID && TWILIO_AUTH_TOKEN) {
             console.log('Twilio credentials found. Using TwilioAdapter.');
             return new TwilioAdapter(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
+        }
+
+        const { MESSAGEBIRD_AUTH_TOKEN, MESSAGEBIRD_ORIGINATOR } = process.env;
+
+        if (MESSAGEBIRD_AUTH_TOKEN && MESSAGEBIRD_ORIGINATOR) {
+            console.log('Messagebird credentials found. Using MessagebirdAdapter.');
+            return new MessagebirdAdapter(MESSAGEBIRD_AUTH_TOKEN, MESSAGEBIRD_ORIGINATOR);
         }
 
         console.log('No Twilio credentials found. Using LogAdapter for phone.');
