@@ -8,6 +8,8 @@ import types from '@learncard/types';
 import gradient from 'gradient-string';
 import figlet from 'figlet';
 import { program } from 'commander';
+import clipboard from 'clipboardy';
+
 
 import { generateRandomSeed } from './random';
 
@@ -23,6 +25,22 @@ const g = {
     seed: gradient(['cyan', 'green'])('seed'),
     generateRandomSeed: gradient(['cyan', 'green'])('generateRandomSeed'),
     types: gradient(['cyan', 'green'])('types'),
+    copy: gradient(['cyan', 'green'])('copy'),
+};
+
+const copyFunction = (text: string | object | number) => {
+    if (typeof text === 'object') {
+        text = JSON.stringify(text);
+    }
+    if (typeof text === 'number') {
+        text = text.toString();
+    }
+    try {
+        clipboard.writeSync(text);
+        console.log('Copied to clipboard!');
+    } catch (error) {
+        console.error('Failed to copy to clipboard:', error instanceof Error ? error.message : 'Unknown error');
+    }
 };
 
 program
@@ -57,6 +75,8 @@ program
         globalThis.types = types;
         globalThis.getTestCache = getTestCache;
 
+        globalThis.copy = copyFunction;
+
         // delete 'Creating wallet...' message
         process.stdout.moveCursor?.(0, -1);
         process.stdout.clearLine?.(1);
@@ -73,6 +93,7 @@ program
         console.log(`│               ${g.seed} │ Seed used to generate wallet  │`);
         console.log(`│ ${g.generateRandomSeed} │ Generates a random seed       │`);
         console.log(`│              ${g.types} │ Helpful zod validators        │`);
+        console.log(`│              ${g.copy}  │ Copy text to clipboard        │`);
         console.log('└────────────────────┴───────────────────────────────┘');
 
         console.log('');
@@ -118,7 +139,8 @@ program
                     .replace('initLearnCard', g.initLearnCard)
                     .replace('learnCard', g.learnCard)
                     .replace('seed', g.seed)
-                    .replace('generateRandomSeed', g.generateRandomSeed);
+                    .replace('generateRandomSeed', g.generateRandomSeed)
+                    .replace('copy', g.copy);
             },
         });
     })
