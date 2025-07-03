@@ -21,6 +21,19 @@ import { addNotificationToQueue } from '@helpers/notifications.helpers';
 import { getLearnCard } from '@helpers/learnCard.helpers';
 import { getPrimarySigningAuthorityForUser } from '@accesslayer/signing-authority/relationships/read';
 
+export const verifyCredentialCanBeSigned = async (credential: UnsignedVC): Promise<boolean> => {
+    try {
+        const learnCard = await getLearnCard();
+        const testCredential = credential;
+        testCredential.issuer = learnCard.id.did();
+        await learnCard.invoke.issueCredential(testCredential);
+    } catch (error) {
+       return false;
+    }
+    return true;
+}
+
+
 export const issueToInbox = async (
     issuerProfile: ProfileType,
     recipient: ContactMethodQueryType,
@@ -34,11 +47,18 @@ export const issueToInbox = async (
     recipientDid?: string;
 }> => {
     const { signingAuthority: _signingAuthority, webhookUrl, expiresInDays, delivery } = configuration;
+    
 
     const isSigned = !!credential?.proof;
     let signingAuthority: IssueInboxSigningAuthority | undefined = _signingAuthority;
+
     // Validate that unsigned credentials have signing authority
     if (!isSigned && !signingAuthority) {
+
+        /**  If credential is unsigned & no signing authority provided in configuration
+         * Then, try to retrieve the primary signing authority for user. 
+         * This is the 'default' path so users can send credentials quickly with our API
+         **/
         const primary = await getPrimarySigningAuthorityForUser(
             issuerProfile
         );
@@ -48,6 +68,19 @@ export const issueToInbox = async (
                 endpoint: primary.signingAuthority.endpoint,
                 name: primary.relationship.name,
             };
+
+            /**  If the user is relying on a primary signing authority, we should verify that the credential they submitted can be issued.
+             * This check doesn't happen if the user submits a custom signing authority through configuration. We assume, in that case, 
+             * the user has verified that the credential can be issued. Our API cannot replicate the logic of their unknown, external service. 
+             * By providing this parameter, the developer explicitly takes responsibility for the signing process. We trust them and proceed.
+             **/
+            if(!(await verifyCredentialCanBeSigned(credential as UnsignedVC))) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Credential failed to pass a pre-flight issuance test. Please verify that the credential is well-formed and can be issued.',
+                });
+            }
+
         } else {
             throw new TRPCError({
                 code: 'BAD_REQUEST',
