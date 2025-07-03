@@ -183,7 +183,7 @@ describe('Contact Methods', () => {
             const contactMethods2 = await userA.clients.fullAuth.contactMethods.getMyContactMethods();
             const verifiedMethod2 = contactMethods2?.find(cm => cm.value === 'userA@test.com');
             expect(verifiedMethod2).toBeUndefined(); 
-            
+
         });
 
         it('should allow setting a contact method as primary', async () => {
@@ -254,6 +254,31 @@ describe('Contact Methods', () => {
             // Assert that the contact method is no longer associated with the profile
             const contactMethods = await userB.clients.fullAuth.contactMethods.getMyContactMethods();
             expect(contactMethods?.length).toBe(0);
+        });
+
+        it('should allow removing a verified contact method', async () => {
+            // Add a contact method. This will also trigger the verification email.
+            const { contactMethodId } =await userB.clients.fullAuth.contactMethods.addContactMethod({ type: 'email', value: 'userB@test.com' });
+
+            // Check that the delivery service was called
+            expect(sendSpy).toHaveBeenCalledOnce();
+
+            // Retrieve the verification token from the spy's call arguments
+            const sendArgs = sendSpy.mock.calls[0][0];
+            const verificationToken = sendArgs.templateModel.verificationToken;
+
+            expect(sendArgs.templateId).toBe('contact-method-verification');
+            expect(verificationToken).toBeDefined();
+
+            // Use the retrieved token to complete the verification
+            await userB.clients.fullAuth.contactMethods.verifyContactMethod({ token: verificationToken });
+
+            // Remove the contact method
+            await userB.clients.fullAuth.contactMethods.removeContactMethod({ id: contactMethodId });
+
+            // Assert that the contact method is no longer associated with the profile
+            const contactMethods2 = await userB.clients.fullAuth.contactMethods.getMyContactMethods();
+            expect(contactMethods2?.length).toBe(0);
         });
 
         it('should not allow removing a contact method that does not belong to the profile', async () => {
