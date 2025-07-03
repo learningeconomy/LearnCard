@@ -29,6 +29,8 @@ __all__ = [
     "ProfilesApi",
     "StorageApi",
     "UtilitiesApi",
+    "VCAPIApi",
+    "WorkflowsApi",
     "ApiResponse",
     "ApiClient",
     "Configuration",
@@ -257,6 +259,11 @@ __all__ = [
     "StorageStoreRequest",
     "StorageStoreRequestItem",
     "StorageStoreRequestItemAnyOf",
+    "WorkflowsParticipateInExchange200Response",
+    "WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequest",
+    "WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequestQueryInner",
+    "WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequestQueryInnerCredentialQueryInner",
+    "WorkflowsParticipateInExchangeRequest",
 ]
 
 # import apis into sdk package
@@ -271,6 +278,8 @@ from openapi_client.api.profile_managers_api import ProfileManagersApi as Profil
 from openapi_client.api.profiles_api import ProfilesApi as ProfilesApi
 from openapi_client.api.storage_api import StorageApi as StorageApi
 from openapi_client.api.utilities_api import UtilitiesApi as UtilitiesApi
+from openapi_client.api.vcapi_api import VCAPIApi as VCAPIApi
+from openapi_client.api.workflows_api import WorkflowsApi as WorkflowsApi
 
 # import ApiClient
 from openapi_client.api_response import ApiResponse as ApiResponse
@@ -503,3 +512,8 @@ from openapi_client.models.storage_resolve200_response_any_of_any_of_write impor
 from openapi_client.models.storage_store_request import StorageStoreRequest as StorageStoreRequest
 from openapi_client.models.storage_store_request_item import StorageStoreRequestItem as StorageStoreRequestItem
 from openapi_client.models.storage_store_request_item_any_of import StorageStoreRequestItemAnyOf as StorageStoreRequestItemAnyOf
+from openapi_client.models.workflows_participate_in_exchange200_response import WorkflowsParticipateInExchange200Response as WorkflowsParticipateInExchange200Response
+from openapi_client.models.workflows_participate_in_exchange200_response_verifiable_presentation_request import WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequest as WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequest
+from openapi_client.models.workflows_participate_in_exchange200_response_verifiable_presentation_request_query_inner import WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequestQueryInner as WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequestQueryInner
+from openapi_client.models.workflows_participate_in_exchange200_response_verifiable_presentation_request_query_inner_credential_query_inner import WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequestQueryInnerCredentialQueryInner as WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequestQueryInnerCredentialQueryInner
+from openapi_client.models.workflows_participate_in_exchange_request import WorkflowsParticipateInExchangeRequest as WorkflowsParticipateInExchangeRequest

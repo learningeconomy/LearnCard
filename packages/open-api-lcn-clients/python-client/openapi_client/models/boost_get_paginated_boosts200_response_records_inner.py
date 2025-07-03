@@ -35,7 +35,8 @@ class BoostGetPaginatedBoosts200ResponseRecordsInner(BaseModel):
     auto_connect_recipients: Optional[StrictBool] = Field(default=None, alias="autoConnectRecipients")
     meta: Optional[Dict[str, Any]] = None
     claim_permissions: Optional[BoostGetBoost200ResponseClaimPermissions] = Field(default=None, alias="claimPermissions")
-    __properties: ClassVar[List[str]] = ["uri", "name", "type", "category", "status", "autoConnectRecipients", "meta", "claimPermissions"]
+    allow_anyone_to_create_children: Optional[StrictBool] = Field(default=None, alias="allowAnyoneToCreateChildren")
+    __properties: ClassVar[List[str]] = ["uri", "name", "type", "category", "status", "autoConnectRecipients", "meta", "claimPermissions", "allowAnyoneToCreateChildren"]
 
     @field_validator('status')
     def status_validate_enum(cls, value):
@@ -108,7 +109,8 @@ class BoostGetPaginatedBoosts200ResponseRecordsInner(BaseModel):
             "status": obj.get("status"),
             "autoConnectRecipients": obj.get("autoConnectRecipients"),
             "meta": obj.get("meta"),
-            "claimPermissions": BoostGetBoost200ResponseClaimPermissions.from_dict(obj["claimPermissions"]) if obj.get("claimPermissions") is not None else None
+            "claimPermissions": BoostGetBoost200ResponseClaimPermissions.from_dict(obj["claimPermissions"]) if obj.get("claimPermissions") is not None else None,
+            "allowAnyoneToCreateChildren": obj.get("allowAnyoneToCreateChildren")
         })
         return _obj
 

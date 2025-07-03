@@ -43,6 +43,7 @@ class TestBoostGetBoost200Response(unittest.TestCase):
                 meta = {
                     'key' : null
                     },
+                allow_anyone_to_create_children = True,
                 claim_permissions = openapi_client.models.boost_get_boost_200_response_claim_permissions.boost_getBoost_200_response_claimPermissions(
                     role = '', 
                     can_edit = True, 

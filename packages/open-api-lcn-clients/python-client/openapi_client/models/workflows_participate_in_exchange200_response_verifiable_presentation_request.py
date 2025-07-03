@@ -17,34 +17,20 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator
-from typing import Any, ClassVar, Dict, List, Optional
+from pydantic import BaseModel, ConfigDict, StrictStr
+from typing import Any, ClassVar, Dict, List
+from openapi_client.models.workflows_participate_in_exchange200_response_verifiable_presentation_request_query_inner import WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequestQueryInner
 from typing import Optional, Set
 from typing_extensions import Self
 
-class BoostGetBoosts200ResponseInner(BaseModel):
+class WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequest(BaseModel):
     """
-    BoostGetBoosts200ResponseInner
+    WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequest
     """ # noqa: E501
-    name: Optional[StrictStr] = None
-    type: Optional[StrictStr] = None
-    category: Optional[StrictStr] = None
-    status: Optional[StrictStr] = None
-    auto_connect_recipients: Optional[StrictBool] = Field(default=None, alias="autoConnectRecipients")
-    meta: Optional[Dict[str, Any]] = None
-    allow_anyone_to_create_children: Optional[StrictBool] = Field(default=None, alias="allowAnyoneToCreateChildren")
-    uri: StrictStr
-    __properties: ClassVar[List[str]] = ["name", "type", "category", "status", "autoConnectRecipients", "meta", "allowAnyoneToCreateChildren", "uri"]
-
-    @field_validator('status')
-    def status_validate_enum(cls, value):
-        """Validates the enum"""
-        if value is None:
-            return value
-
-        if value not in set(['DRAFT', 'LIVE']):
-            raise ValueError("must be one of enum values ('DRAFT', 'LIVE')")
-        return value
+    query: List[WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequestQueryInner]
+    challenge: StrictStr
+    domain: StrictStr
+    __properties: ClassVar[List[str]] = ["query", "challenge", "domain"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -64,7 +50,7 @@ class BoostGetBoosts200ResponseInner(BaseModel):
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
-        """Create an instance of BoostGetBoosts200ResponseInner from a JSON string"""
+        """Create an instance of WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequest from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -85,11 +71,18 @@ class BoostGetBoosts200ResponseInner(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # override the default output from pydantic by calling `to_dict()` of each item in query (list)
+        _items = []
+        if self.query:
+            for _item_query in self.query:
+                if _item_query:
+                    _items.append(_item_query.to_dict())
+            _dict['query'] = _items
         return _dict
 
     @classmethod
     def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
-        """Create an instance of BoostGetBoosts200ResponseInner from a dict"""
+        """Create an instance of WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequest from a dict"""
         if obj is None:
             return None
 
@@ -97,14 +90,9 @@ class BoostGetBoosts200ResponseInner(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "name": obj.get("name"),
-            "type": obj.get("type"),
-            "category": obj.get("category"),
-            "status": obj.get("status"),
-            "autoConnectRecipients": obj.get("autoConnectRecipients"),
-            "meta": obj.get("meta"),
-            "allowAnyoneToCreateChildren": obj.get("allowAnyoneToCreateChildren"),
-            "uri": obj.get("uri")
+            "query": [WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequestQueryInner.from_dict(_item) for _item in obj["query"]] if obj.get("query") is not None else None,
+            "challenge": obj.get("challenge"),
+            "domain": obj.get("domain")
         })
         return _obj
 
