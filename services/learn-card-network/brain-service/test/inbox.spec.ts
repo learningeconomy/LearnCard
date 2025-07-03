@@ -82,6 +82,20 @@ describe('Universal Inbox', () => {
             });
         });
 
+        it('should allow you to send an unsigned credential if your profile has a primary signing authority set up', async () => {
+            await expect(
+                userA.clients.fullAuth.profile.registerSigningAuthority({
+                    endpoint: 'http://localhost:4000',
+                    name: 'mysa',
+                    did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
+                })
+            ).resolves.not.toThrow();
+
+            const vc = await userA.learnCard.invoke.getTestVc();
+            await expect(
+                userA.clients.fullAuth.inbox.issue({ credential: vc, recipient: { type: 'email', value: 'userA@test.com' } })
+            ).resolves.not.toThrow()
+        })
 
         it('should create an interoperable vc-api interaction claimUrl', async () => {
             const vc = await userA.learnCard.invoke.issueCredential(await userA.learnCard.invoke.getTestVc());

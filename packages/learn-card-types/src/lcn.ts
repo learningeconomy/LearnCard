@@ -287,6 +287,7 @@ export const LCNSigningAuthorityForUserValidator = z.object({
                     'The input string must contain only lowercase letters, numbers, and hyphens.',
             }),
         did: z.string(),
+        isPrimary: z.boolean().optional(),
     }),
 });
 export type LCNSigningAuthorityForUserType = z.infer<typeof LCNSigningAuthorityForUserValidator>;

@@ -1,5 +1,5 @@
 import { TRPCError } from '@trpc/server';
-import { VC, UnsignedVC, LCNNotificationTypeEnumValidator, LCNInboxStatusEnumValidator, VP, ContactMethodQueryType, InboxCredentialType, IssueInboxCredentialType } from '@learncard/types';
+import { VC, UnsignedVC, LCNNotificationTypeEnumValidator, LCNInboxStatusEnumValidator, VP, ContactMethodQueryType, InboxCredentialType, IssueInboxCredentialType, IssueInboxSigningAuthority } from '@learncard/types';
 
 import { ProfileType } from 'types/profile';
 import { createInboxCredential } from '@accesslayer/inbox-credential/create';
@@ -19,6 +19,7 @@ import { generateInboxClaimToken, generateClaimUrl } from '@helpers/contact-meth
 import { getDeliveryService } from '@services/delivery/delivery.factory';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
 import { getLearnCard } from '@helpers/learnCard.helpers';
+import { getPrimarySigningAuthorityForUser } from '@accesslayer/signing-authority/relationships/read';
 
 export const issueToInbox = async (
     issuerProfile: ProfileType,
@@ -32,15 +33,27 @@ export const issueToInbox = async (
     claimUrl?: string;
     recipientDid?: string;
 }> => {
-    const { signingAuthority, webhookUrl, expiresInDays, delivery } = configuration;
+    const { signingAuthority: _signingAuthority, webhookUrl, expiresInDays, delivery } = configuration;
 
     const isSigned = !!credential?.proof;
+    let signingAuthority: IssueInboxSigningAuthority | undefined = _signingAuthority;
     // Validate that unsigned credentials have signing authority
     if (!isSigned && !signingAuthority) {
-        throw new TRPCError({
-            code: 'BAD_REQUEST',
-            message: 'Unsigned credentials require a signing authority',
-        });
+        const primary = await getPrimarySigningAuthorityForUser(
+            issuerProfile
+        );
+
+        if(primary) {
+            signingAuthority = {
+                endpoint: primary.signingAuthority.endpoint,
+                name: primary.relationship.name,
+            };
+        } else {
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: 'Unsigned credentials require a signing authority',
+            });
+        }
     }
 
     // Check if recipient already exists with verified email

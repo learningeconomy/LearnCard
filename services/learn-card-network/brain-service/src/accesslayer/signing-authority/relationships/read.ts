@@ -38,3 +38,22 @@ export const getSigningAuthorityForUserByName = async (
         };
     })[0];
 };
+
+export const getPrimarySigningAuthorityForUser = async (
+    user: ProfileType
+): Promise<SigningAuthorityForUserType | undefined> => {
+    return (
+        await Profile.findRelationships({
+            alias: 'usesSigningAuthority',
+            where: {
+                source: { profileId: user.profileId },
+                relationship: { isPrimary: true },
+            },
+        })
+    ).map((relationship: { target: any; relationship: any }) => {
+        return {
+            signingAuthority: relationship.target.dataValues,
+            relationship: relationship.relationship,
+        };
+    })[0];
+};

@@ -31,8 +31,8 @@ export type ProfileRelationships = {
     usesSigningAuthority: ModelRelatedNodesI<
         typeof SigningAuthority,
         SigningAuthorityInstance,
-        { name: string; did: string },
-        { name: string; did: string }
+        { name: string; did: string, isPrimary?: boolean },
+        { name: string; did: string, isPrimary?: boolean }
     >;
     hasContactMethod: ModelRelatedNodesI<typeof ContactMethod, ContactMethodInstance>; 
 };
@@ -93,6 +93,7 @@ export const Profile: any = ModelFactory<FlatProfileType, ProfileRelationships>(
                 properties: {
                     name: { property: 'name', schema: { type: 'string', required: true } },
                     did: { property: 'did', schema: { type: 'string', required: true } },
+                    isPrimary: { property: 'isPrimary', schema: { type: 'boolean', required: false } },
                 },
             },
             hasContactMethod: { model: ContactMethod, direction: 'out', name: 'HAS_CONTACT_METHOD' },
