@@ -807,8 +807,20 @@ export const IssueInboxCredentialValidator = z.object({
         delivery: z.object({
             suppress: z.boolean().optional().default(false).describe('Whether to suppress delivery of the credential to the recipient. If true, the email/sms will not be sent to the recipient. Useful if you would like to manually send claim link to your users.'),
             template: z.object({
-                id: z.string().optional().describe('The template ID to use for the credential delivery. If not provided, the default template will be used.'),
-                model: z.record(z.any()).optional().describe('The template model to use for the credential delivery. Injects via template variables into email/sms templates. If not provided, the default template will be used.'),
+                id: z.enum(['universal-inbox-claim']).optional().describe('The template ID to use for the credential delivery. If not provided, the default template will be used.'),
+                model: z.object({
+                    issuer: z.object({
+                        name: z.string().optional().describe('The name of the organization (e.g., "State University").'),
+                        logoUrl: z.string().url().optional().describe('The URL of the organization\'s logo.'),
+                    }).optional(),
+                    credential: z.object({
+                        name: z.string().optional().describe('The name of the credential (e.g., "Bachelor of Science").'),
+                        type: z.string().optional().describe('The type of the credential (e.g., "degree", "certificate").'),
+                    }).optional(),
+                    recipient: z.object({
+                        name: z.string().optional().describe('The name of the recipient (e.g., "John Doe").')
+                    }).optional(),
+                }).describe('The template model to use for the credential delivery. Injects via template variables into email/sms templates. If not provided, the default template will be used.'),
             }).optional().describe('The template to use for the credential delivery. If not provided, the default template will be used.'),
         }).optional().describe('Configuration for the credential delivery i.e. email or SMS. When credentials are sent to a user who has a verified email or phone associated with their account, delivery is skipped, and the credential will be sent using in-app notifications. If not provided, the default configuration will be used.'),
     }).optional().describe('Configuration for the credential issuance. If not provided, the default configuration will be used.'),

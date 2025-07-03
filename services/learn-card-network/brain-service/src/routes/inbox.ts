@@ -28,7 +28,7 @@ export const inboxRouter = t.router({
                 description: 'Issue a credential to a recipient\'s inbox. If the recipient exists with a verified email, the credential is auto-delivered.',
             },
             requiredScope: 'inbox:write',
-        })
+        }) 
         .input(IssueInboxCredentialValidator)
         .output(IssueInboxCredentialResponseValidator)
         .mutation(async ({ ctx, input }) => {

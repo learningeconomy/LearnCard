@@ -218,6 +218,28 @@ export const issueToInbox = async (
 
             // Send claim email
             const deliveryService = getDeliveryService(recipient);
+            // Only inject whitelisted template fields.
+            const injectedTemplateFields = {
+                recipient: {
+                    ...(delivery?.template?.model?.recipient ?? {}),
+                    ...(recipientContactMethod ? {
+                        ...(recipientContactMethod.type === 'email' ? {
+                            email: recipientContactMethod.value,
+                        } : {}),
+                        ...(recipientContactMethod.type === 'phone' ? {
+                            phone: recipientContactMethod.value,
+                        } : {}),
+                    } : {}),
+                },
+                issuer: {
+                    name: issuerProfile.displayName,
+                    ...(delivery?.template?.model?.issuer ?? {})
+                },
+                credential: {
+                    name: (credential as any)?.name,
+                    ...(delivery?.template?.model?.credential ?? {})
+                }
+            }
             await deliveryService.send({
                 contactMethod: recipient,
                 templateId: delivery?.template?.id || 'universal-inbox-claim',
@@ -226,8 +248,9 @@ export const issueToInbox = async (
                     issuerName: issuerProfile.profileId ?? 'An Organization',
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     credentialName: (credential as any)?.name ?? 'A Credential',
-                    ...delivery?.template?.model,
+                    ...injectedTemplateFields,
                 },
+                messageStream: 'universal-inbox'
             });
         }
 

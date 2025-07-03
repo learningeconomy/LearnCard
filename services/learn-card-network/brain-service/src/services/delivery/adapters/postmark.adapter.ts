@@ -11,10 +11,11 @@ export class PostmarkAdapter implements DeliveryService {
     public async send(notification: Notification): Promise<void> {
         try {
             await this.client.sendEmailWithTemplate({
-                From: process.env.POSTMARK_FROM_EMAIL || 'no-reply@learncard.com',
+                From: process.env.POSTMARK_FROM_EMAIL || 'support@learningeconomy.io',
                 To: notification.contactMethod.value,
                 TemplateAlias: notification.templateId,
                 TemplateModel: notification.templateModel,
+                MessageStream: notification.messageStream
             });
         } catch (error) {
             console.error('Postmark API Error:', error);
