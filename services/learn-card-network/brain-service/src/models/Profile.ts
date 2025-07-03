@@ -5,6 +5,7 @@ import { neogma } from '@instance';
 import { Credential, CredentialInstance } from './Credential';
 import { Presentation, PresentationInstance } from './Presentation';
 import { SigningAuthority } from './SigningAuthority';
+import { ContactMethod, ContactMethodInstance } from './ContactMethod';
 import { transformProfileId } from '@helpers/profile.helpers';
 import { FlatProfileType } from 'types/profile';
 import { SigningAuthorityInstance } from './SigningAuthority';
@@ -30,14 +31,15 @@ export type ProfileRelationships = {
     usesSigningAuthority: ModelRelatedNodesI<
         typeof SigningAuthority,
         SigningAuthorityInstance,
-        { name: string; did: string },
-        { name: string; did: string }
+        { name: string; did: string, isPrimary?: boolean },
+        { name: string; did: string, isPrimary?: boolean }
     >;
+    hasContactMethod: ModelRelatedNodesI<typeof ContactMethod, ContactMethodInstance>; 
 };
 
 export type ProfileInstance = NeogmaInstance<FlatProfileType, ProfileRelationships>;
 
-export const Profile = ModelFactory<FlatProfileType, ProfileRelationships>(
+export const Profile: any = ModelFactory<FlatProfileType, ProfileRelationships>(
     {
         label: 'Profile',
         schema: {
@@ -91,15 +93,17 @@ export const Profile = ModelFactory<FlatProfileType, ProfileRelationships>(
                 properties: {
                     name: { property: 'name', schema: { type: 'string', required: true } },
                     did: { property: 'did', schema: { type: 'string', required: true } },
+                    isPrimary: { property: 'isPrimary', schema: { type: 'boolean', required: false } },
                 },
             },
+            hasContactMethod: { model: ContactMethod, direction: 'out', name: 'HAS_CONTACT_METHOD' },
         },
         primaryKeyField: 'did',
     },
     neogma
 );
 
-Profile.beforeCreate = profile => {
+Profile.beforeCreate = (profile: any) => {
     profile.profileId = transformProfileId(profile.profileId);
 };
 

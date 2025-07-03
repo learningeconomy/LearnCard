@@ -1,15 +1,10 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
-import base64url from "base64url";
+import base64url from 'base64url';
 
-import {
-    VC,
-    UnsignedVC,
-    VP,
-    VPValidator,
-} from '@learncard/types';
+import { VC, UnsignedVC, VP, VPValidator, LCNNotificationTypeEnumValidator, LCNInboxStatusEnumValidator } from '@learncard/types';
 
-import { t, openRoute } from '@routes';
+import { t, openRoute, Context } from '@routes';
 
 import { getBoostByUri } from '@accesslayer/boost/read';
 import { getBoostOwner } from '@accesslayer/boost/relationships/read';
@@ -22,11 +17,24 @@ import {
 } from '@cache/claim-links';
 
 import {
-    getBoostUri,
-    isDraftBoost,
-} from '@helpers/boost.helpers';
+    validateInboxClaimToken,
+    markInboxClaimTokenAsUsed,
+} from '@helpers/contact-method.helpers';
+import { getPendingInboxCredentialsForContactMethodId } from '@accesslayer/inbox-credential/read';
+import { markInboxCredentialAsClaimed } from '@accesslayer/inbox-credential/update';
+import { createClaimedRelationship } from '@accesslayer/inbox-credential/relationships/create';
+import {
+    getContactMethodById,
+    getProfileByContactMethod,
+} from '@accesslayer/contact-method/read';
+import { getProfileByDid } from '@accesslayer/profile/read';
+
+import { getBoostUri, isDraftBoost } from '@helpers/boost.helpers';
 import { getEmptyLearnCard, getLearnCard } from '@helpers/learnCard.helpers';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
+import { createProfileContactMethodRelationship } from '@accesslayer/contact-method/relationships/create';
+import { verifyContactMethod } from '@accesslayer/contact-method/update';
+import { addNotificationToQueue } from '@helpers/notifications.helpers';
 
 // Zod schema for the participate in exchange input
 const participateInExchangeInput = z.object({
@@ -55,7 +63,7 @@ const ParticipateInExchangeResponseValidator = z.object({
     redirectUrl: z.string().optional(),
 });
 
-
+// Exchange info schema
 const ExchangeInfoValidator = z.object({
     boostUri: z.string(),
     challenge: z.string(),
@@ -86,6 +94,17 @@ export const workflowsRouter = t.router({
                     redirectUrl: "https://www.learncard.com"
                 }
             } 
+
+            // Handle inbox claim workflow
+            if (localWorkflowId === "inbox-claim") {
+                const isInitiation = !verifiablePresentation;
+                
+                if (isInitiation) {
+                    return handleInboxClaimInitiation(localExchangeId, domain);
+                } else {
+                    return handleInboxClaimPresentation(localExchangeId, verifiablePresentation, ctx);
+                }
+            }
 
             // Check if this is an initiation request (empty body) or presentation request (contains VP)
             const isInitiation = !verifiablePresentation;
@@ -355,6 +374,253 @@ async function handlePresentationForClaim(
             message: 'Failed to issue credential for exchange',
         });
     }
+}
+
+async function handleInboxClaimInitiation(
+    claimToken: string,
+    domain: string
+) {
+    // Validate the claim token
+    const claimTokenData = await validateInboxClaimToken(claimToken);
+    if (!claimTokenData) {
+        throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Invalid or expired claim token',
+        });
+    }
+
+    // Verify there are pending credentials for this contact method
+    const pendingCredentials = await getPendingInboxCredentialsForContactMethodId(
+        claimTokenData.contactMethodId
+    );
+    if (pendingCredentials.length === 0) {
+        throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'No pending credentials found for this claim token',
+        });
+    }
+
+    // Return VerifiablePresentationRequest
+    return {
+        verifiablePresentationRequest: {
+            query: [{
+                type: 'DIDAuthentication',
+                acceptedMethods: [{method: "key"}, {method: "web"}]
+            }],
+            challenge: claimTokenData.token,
+            domain,
+        },
+    };
+}
+
+async function handleInboxClaimPresentation(
+    claimToken: string,
+    verifiablePresentation: VP,
+    ctx: Context
+) {
+    // Validate the claim token
+    const claimTokenData = await validateInboxClaimToken(claimToken);
+    if (!claimTokenData) {
+        throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Invalid or expired claim token',
+        });
+    }
+
+    const contactMethod = await getContactMethodById(claimTokenData.contactMethodId);
+
+    if (!contactMethod) {
+        throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Contact method not found',
+        });
+    }
+
+    // Verify the presentation
+    const learnCard = await getEmptyLearnCard();
+    const verificationResult = await learnCard.invoke.verifyPresentation(verifiablePresentation, {
+        challenge: claimTokenData.token,
+        domain: ctx.domain,
+    });
+
+    if (verificationResult.errors.length > 0 || !verificationResult.checks.includes('proof')) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Verifiable presentation verification failed',
+        });
+    }
+
+    // Extract holder DID from the VP
+    const holderDid = verifiablePresentation.holder;
+    if (!holderDid) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Verifiable presentation must include holder DID',
+        });
+    }
+
+    let holderProfile = await getProfileByContactMethod(contactMethod.id);
+
+    if (holderProfile) {
+        // If the holder's DID from the presentation doesn't match the profile's DID, throw an error
+        if (holderProfile.did !== holderDid) {
+            throw new TRPCError({
+                code: 'BAD_REQUEST',
+                message: 'DID mismatch. The presented DID does not match the profile associated with this contact method.',
+            });
+        }
+    } else {
+        // If no profile is associated with the contact method, check if a profile exists for the presented DID
+        const existingProfile = await getProfileByDid(holderDid);
+        if (existingProfile) {
+            // If a profile exists, link the contact method to it
+            holderProfile = existingProfile;
+            await createProfileContactMethodRelationship(holderProfile.profileId, contactMethod.id);
+        } else {
+            // If no profile exists for the DID, we can't proceed with claiming
+            // The user should create a profile first
+            throw new TRPCError({
+                code: 'NOT_FOUND',
+                message: 'No profile found for the presented DID. Please create a profile before claiming.',
+            });
+        }
+    }
+
+    // Mark the contact method as verified
+    if (!contactMethod.isVerified) {
+        await verifyContactMethod(contactMethod.id);
+    }
+
+    // Get pending credentials for this contact method
+    const pendingCredentials = await getPendingInboxCredentialsForContactMethodId(
+        contactMethod.id
+    );
+
+    if (pendingCredentials.length === 0) {
+        throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'No pending credentials found for this contact method.',
+        });
+    }
+
+    const claimedCredentials: VC[] = [];
+
+    // Process each pending credential
+    for (const inboxCredential of pendingCredentials) {
+        try {
+            let finalCredential: VC;
+
+            if (inboxCredential.isSigned) {
+                // Credential is already signed
+                finalCredential = JSON.parse(inboxCredential.credential) as VC;
+            } else {
+                // Need to sign the credential using signing authority
+                const unsignedCredential = JSON.parse(inboxCredential.credential) as UnsignedVC;
+
+                // Neo4j doesn't support object properties, so we have to do this
+                //@ts-ignore
+                if (!inboxCredential?.signingAuthority?.endpoint || !inboxCredential?.signingAuthority?.name) {
+                    console.error(`Inbox credential ${inboxCredential.id} missing signing authority info`);
+                    continue;
+                }
+
+                // Get the issuer profile and signing authority
+                const issuerProfile = await getProfileByDid(inboxCredential.issuerDid);
+                if (!issuerProfile) {
+                    console.error(`Issuer profile not found for ${inboxCredential.issuerDid}`);
+                    continue;
+                }
+
+                const signingAuthorityForUser = await getSigningAuthorityForUserByName(
+                    issuerProfile,
+                    //@ts-ignore
+                    inboxCredential?.signingAuthority?.endpoint,
+                    //@ts-ignore
+                    inboxCredential?.signingAuthority?.name
+                );
+
+                if (!signingAuthorityForUser) {
+                    console.error(`Signing authority not found for issuer ${inboxCredential.issuerDid}`);
+                    continue;
+                }
+
+                // Set credential subject to claimer's DID
+                if (Array.isArray(unsignedCredential.credentialSubject)) {
+                    unsignedCredential.credentialSubject = unsignedCredential.credentialSubject.map(subject => ({
+                        ...subject,
+                        id: subject.did || subject.id || holderDid,
+                    }));
+                } else {
+                    unsignedCredential.credentialSubject.id = holderDid;
+                }
+
+                // Set issuer from signing authority
+                unsignedCredential.issuer = signingAuthorityForUser.relationship.did;
+
+                // Sign the credential
+                finalCredential = await issueCredentialWithSigningAuthority(
+                    issuerProfile,
+                    unsignedCredential,
+                    signingAuthorityForUser,
+                    ctx.domain,
+                    false // don't encrypt
+                ) as VC;
+            }
+
+            // Mark credential as claimed
+            await markInboxCredentialAsClaimed(inboxCredential.id);
+            await createClaimedRelationship(holderProfile.profileId, inboxCredential.id, claimToken);
+
+            // Add to claimed credentials
+            claimedCredentials.push(finalCredential);
+
+            // Trigger webhook if configured
+            if (inboxCredential.webhookUrl) {
+                const learnCard = await getLearnCard();
+                await addNotificationToQueue({
+                    webhookUrl: inboxCredential.webhookUrl,
+                    type: LCNNotificationTypeEnumValidator.enum.ISSUANCE_CLAIMED,
+                    from: { did: learnCard.id.did() },
+                    to: { did: inboxCredential.issuerDid },
+                    message: {
+                        title: 'Credential Claimed from Inbox',
+                        body: `${contactMethod.value} claimed a credential from their inbox.`,
+                    },
+                    data: { 
+                        inbox: {
+                            issuanceId: inboxCredential.id,
+                            status: LCNInboxStatusEnumValidator.enum.CLAIMED,
+                            recipient: {
+                                contactMethod: { type: contactMethod.type, value: contactMethod.value },
+                                learnCardId: holderProfile.did || holderDid,
+                            },
+                            timestamp: new Date().toISOString(),
+                        },
+                    },
+                });
+            }
+        } catch (error) {
+            console.error(`Failed to process inbox credential ${inboxCredential.id}:`, error);
+            // Continue processing other credentials
+        }
+    }
+
+    // Mark claim token as used
+    await markInboxClaimTokenAsUsed(claimToken);
+
+    if (claimedCredentials.length === 0) {
+        throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Failed to process any credentials',
+        });
+    }
+
+    // Create response VP with all claimed credentials
+    const responseVP = await issueResponsePresentationWithVcs(claimedCredentials);
+
+    return {
+        verifiablePresentation: responseVP
+    };
 }
 
 export type WorkflowsRouter = typeof workflowsRouter;

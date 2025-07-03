@@ -5,7 +5,8 @@ export const createUseSigningAuthorityRelationship = async (
     user: ProfileType,
     signingAuthority: SigningAuthorityInstance,
     name: string,
-    did: string
+    did: string,
+    isPrimary: boolean = false
 ): Promise<void> => {
     await Profile.relateTo({
         alias: 'usesSigningAuthority',
@@ -13,6 +14,6 @@ export const createUseSigningAuthorityRelationship = async (
             source: { profileId: user.profileId },
             target: { endpoint: signingAuthority.endpoint },
         },
-        properties: { name, did },
+        properties: { name, did, isPrimary },
     });
 };
