@@ -273,6 +273,11 @@ export type LearnCardNetworkPluginMethods = {
         endpoint: string,
         name: string
     ) => Promise<LCNSigningAuthorityForUserType | undefined>;
+    setPrimaryRegisteredSigningAuthority: (
+        endpoint: string,
+        name: string
+    ) => Promise<boolean>;
+    getPrimaryRegisteredSigningAuthority: () => Promise<LCNSigningAuthorityForUserType | undefined>;
 
     generateClaimLink: (
         boostUri: string,

@@ -696,6 +696,16 @@ export const getLearnCardNetworkPlugin = async (
 
                 return client.profile.signingAuthority.query({ endpoint, name });
             },
+            setPrimaryRegisteredSigningAuthority: async (_learnCard, endpoint, name) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.profile.setPrimarySigningAuthority.mutate({ endpoint, name });
+            }, 
+            getPrimaryRegisteredSigningAuthority: async (_learnCard) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.profile.primarySigningAuthority.query();
+            }, 
 
             generateClaimLink: async (_learnCard, boostUri, claimLinkSA, options, challenge) => {
                 if (!userData) throw new Error('Please make an account first!');
