@@ -1,5 +1,11 @@
 # @learncard/cli
 
+## 3.3.105
+
+### Patch Changes
+
+-   [#706](https://github.com/learningeconomy/LearnCard/pull/706) [`454ec6e32db5b27c969ad023d968fdd6f7ee3316`](https://github.com/learningeconomy/LearnCard/commit/454ec6e32db5b27c969ad023d968fdd6f7ee3316) Thanks [@Custard7](https://github.com/Custard7)! - Feat: Add copy function to CLI
+
 ## 3.3.104
 
 ### Patch Changes
