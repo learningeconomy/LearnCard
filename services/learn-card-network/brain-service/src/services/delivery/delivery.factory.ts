@@ -4,7 +4,13 @@ import { MessagebirdAdapter } from './adapters/messagebird.adapter';
 import { PostmarkAdapter } from './adapters/postmark.adapter';
 import { TwilioAdapter } from './adapters/twilio.adapter';
 
+const IS_TEST_ENVIRONMENT = process.env.NODE_ENV === 'test';
+
 export const getDeliveryService = (contactMethod: ContactMethod): DeliveryService => {
+    if (IS_TEST_ENVIRONMENT || process.env.IS_CI) {
+        return new LogAdapter();
+    }
+    
     if (contactMethod.type === 'phone') {
         const { TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN } = process.env;
 
