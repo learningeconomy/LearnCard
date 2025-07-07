@@ -1,5 +1,15 @@
 # @learncard/snap-chapi-example
 
+## 1.0.242
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.31
+    -   @learncard/helpers@1.1.19
+    -   @learncard/react@2.8.4
+    -   @learncard/meta-mask-snap@1.0.82
+
 ## 1.0.241
 
 ### Patch Changes
