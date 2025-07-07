@@ -22,6 +22,16 @@ const getExchangeIdFromClaimUrl = (claimUrl: string | undefined) => {
 
 
 describe('Universal Inbox', () => {
+    const originalEnv = process.env;
+
+    beforeEach(() => {
+        process.env = { ...originalEnv };
+    });
+
+    afterAll(() => {
+        process.env = originalEnv;
+    });
+
     beforeAll(async () => {
         userA = await getUser('a'.repeat(64));
         userB = await getUser('b'.repeat(64));
@@ -175,6 +185,7 @@ describe('Universal Inbox', () => {
         });
 
         it('should call the delivery service for a phone recipient', async () => {
+            process.env.TRUSTED_ISSUERS_WHITELIST = userA.learnCard.id.did();
             const vc = await userA.learnCard.invoke.issueCredential(await userA.learnCard.invoke.getTestVc());
             await userA.clients.fullAuth.inbox.issue({
                 credential: vc,
@@ -188,6 +199,16 @@ describe('Universal Inbox', () => {
                     templateId: 'universal-inbox-claim',
                 })
             );
+        });
+
+        it('should not call the delivery service for a phone recipient if the issuer is not trusted', async () => {
+            const vc = await userA.learnCard.invoke.issueCredential(await userA.learnCard.invoke.getTestVc());
+            await expect(
+                userA.clients.fullAuth.inbox.issue({
+                    credential: vc,
+                    recipient: { type: 'phone', value: '+15551234567' },
+                })
+            ).rejects.toThrow();
         });
 
         it('should not call the delivery service if suppressDelivery is true', async () => {
@@ -382,6 +403,7 @@ describe('Universal Inbox', () => {
         });
 
         it('should paginate compound filters', async () => {
+            process.env.TRUSTED_ISSUERS_WHITELIST = userA.learnCard.id.did();
             const vc = await userA.learnCard.invoke.getTestVc();
             const signedCredential = await userA.learnCard.invoke.issueCredential(vc);
             await userA.clients.fullAuth.inbox.issue({ credential: vc, configuration: { signingAuthority: { endpoint: 'https://example.com', name: 'Example' } }, recipient: { type: 'email', value: 'userA@test.com' } })
@@ -449,7 +471,8 @@ describe('Universal Inbox', () => {
             ).toBe('userA@test.com');
         });
 
-        it('should create an phone contact method if it doesn\'t exist for the recipient', async () => {
+        it('should create a phone contact method if it doesn\'t exist for the recipient', async () => {
+            process.env.TRUSTED_ISSUERS_WHITELIST = userA.learnCard.id.did();
             const vc = await userA.learnCard.invoke.getTestVc();
             await expect(
                 userA.clients.fullAuth.inbox.issue({ credential: vc, configuration: { signingAuthority: { endpoint: 'https://example.com', name: 'Example' } }, recipient: { type: 'phone', value: '+15555555' } })
@@ -591,6 +614,7 @@ describe('Universal Inbox', () => {
         });
 
         it('should trigger a webhook if provided when a credential is claimed', async () => {
+            process.env.TRUSTED_ISSUERS_WHITELIST = userA.learnCard.id.did();
             const vc = await userA.learnCard.invoke.issueCredential(await userA.learnCard.invoke.getTestVc());
             const inboxCredential = await userA.clients.fullAuth.inbox.issue({
                 credential: vc,
@@ -684,6 +708,7 @@ describe('Universal Inbox', () => {
         });
 
         it('should verify and associate your phone contact method with your profile', async () => {
+            process.env.TRUSTED_ISSUERS_WHITELIST = userA.learnCard.id.did();
             const vc = await userA.learnCard.invoke.issueCredential(await userA.learnCard.invoke.getTestVc());
             const inboxCredential = await userA.clients.fullAuth.inbox.issue({ credential: vc, recipient: { type: 'phone', value: '+15555555' } });
 

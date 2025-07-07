@@ -24,6 +24,7 @@ import {
     SetPrimaryContactMethodValidator,
 } from '@learncard/types';
 import { getDeliveryService } from '@services/delivery/delivery.factory';
+import { getRegistryService } from '@services/registry/registry.factory';
 
 export const contactMethodsRouter = t.router({
     // Get all contact methods for the authenticated profile
@@ -71,7 +72,21 @@ export const contactMethodsRouter = t.router({
             const { profile } = ctx.user;
             const { type, value } = input;
 
-            
+            /**
+             * Phone numbers can only be added and verified by trusted issuers
+             * TODO: Remove this check once we have a way to add progressive trust verification: i.e. 
+             * Allow after verifying email, etc. with significant captcha + rate limits in place.
+            */
+            if (type === 'phone') {
+                const isTrusted = await getRegistryService().isTrusted(profile.did);
+                if (!isTrusted) {
+                    throw new TRPCError({
+                        code: 'FORBIDDEN',
+                        message: 'Manually adding and verifying a phone is a feature reserved for members of the LearnCard Trusted Registry. To verify your DID, visit: https://docs.learncard.com/how-to-guides/verify-my-issuer',
+                    });
+                }
+            }
+
             // Check if contact method already exists
             const existingContactMethod = await getContactMethodByValue(type, value);
             if (existingContactMethod?.isVerified) {
@@ -99,11 +114,11 @@ export const contactMethodsRouter = t.router({
                 const contactMethod = await createContactMethod({
                     type,
                     value,
-                isVerified: false,
-                isPrimary: false,
-            });
-            contactMethodToVerify = contactMethod;
-        }
+                    isVerified: false,
+                    isPrimary: false,
+                });
+                contactMethodToVerify = contactMethod;
+            }
 
             // Create relationship with profile
             await createProfileContactMethodRelationship(profile.profileId, contactMethodToVerify.id);

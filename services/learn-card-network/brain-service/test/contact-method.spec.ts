@@ -12,6 +12,16 @@ vi.mock('@services/delivery/delivery.factory', () => ({
 }));
 
 describe('Contact Methods', () => {
+    const originalEnv = process.env;
+
+    beforeEach(() => {
+        process.env = { ...originalEnv };
+    });
+
+    afterAll(() => {
+        process.env = originalEnv;
+    }); 
+    
     beforeAll(async () => {
         userA = await getUser('a'.repeat(64));
         userB = await getUser('b'.repeat(64));
@@ -100,6 +110,7 @@ describe('Contact Methods', () => {
         });
 
         it('should allow verifying a phone contact method', async () => {
+            process.env.TRUSTED_ISSUERS_WHITELIST = userB.learnCard.id.did();
             // Add a contact method. This will also trigger the verification SMS.
             await userB.clients.fullAuth.contactMethods.addContactMethod({ type: 'phone', value: '+15555555' });
 
@@ -120,6 +131,10 @@ describe('Contact Methods', () => {
             const contactMethods = await userB.clients.fullAuth.contactMethods.getMyContactMethods();
             const verifiedMethod = contactMethods?.find(cm => cm.value === '+15555555');
             expect(verifiedMethod?.isVerified).toBe(true);
+        });
+
+        it('should not allow verifying a phone contact if the profiles DID is not in the trusted issuers whitelist', async () => {
+            await expect(userB.clients.fullAuth.contactMethods.addContactMethod({ type: 'phone', value: '+15555555' })).rejects.toThrow();
         });
 
         it('should not allow verifying a contact method that does not exist', async () => {
@@ -200,6 +215,7 @@ describe('Contact Methods', () => {
         });
 
         it('should unset previous primary contacts when setting a new primary contact', async () => {
+            process.env.TRUSTED_ISSUERS_WHITELIST = userB.learnCard.id.did();
             // Add a contact method to user B
             const { contactMethodId } = await userB.clients.fullAuth.contactMethods.addContactMethod({ type: 'email', value: 'userB@test.com' });
 

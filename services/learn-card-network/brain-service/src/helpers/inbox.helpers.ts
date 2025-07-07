@@ -20,6 +20,7 @@ import { getDeliveryService } from '@services/delivery/delivery.factory';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
 import { getLearnCard } from '@helpers/learnCard.helpers';
 import { getPrimarySigningAuthorityForUser } from '@accesslayer/signing-authority/relationships/read';
+import { getRegistryService } from '@services/registry/registry.factory';
 
 export const verifyCredentialCanBeSigned = async (credential: UnsignedVC): Promise<boolean> => {
     try {
@@ -48,9 +49,18 @@ export const issueToInbox = async (
 }> => {
     const { signingAuthority: _signingAuthority, webhookUrl, expiresInDays, delivery } = configuration;
     
-
     const isSigned = !!credential?.proof;
     let signingAuthority: IssueInboxSigningAuthority | undefined = _signingAuthority;
+
+    if (recipient.type === 'phone') {
+        const isTrusted = await getRegistryService().isTrusted(issuerProfile.did);
+        if (!isTrusted) {
+            throw new TRPCError({
+                code: 'FORBIDDEN',
+                message: 'Sending credentials via phone is a feature reserved for members of the LearnCard Trusted Registry. Email delivery is available for all issuers. To verify your issuer, visit: https://docs.learncard.com/how-to-guides/verify-my-issuer',
+            });
+        }
+    }
 
     // Validate that unsigned credentials have signing authority
     if (!isSigned && !signingAuthority) {
