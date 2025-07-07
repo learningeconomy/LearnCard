@@ -48,13 +48,10 @@ export const getContactMethodsForProfile = async (
 ): Promise<ContactMethodType[]> => {
     const result = await new QueryBuilder(new BindParam({ profileDid }))
         .match({
-            model: Profile,
-        })
-        .where('profile.did = $profileDid')
-        .match({
             related: [
                 {
                     model: Profile,
+                    identifier: 'profile',
                 },
                 {
                     name: 'HAS_CONTACT_METHOD',
@@ -66,6 +63,7 @@ export const getContactMethodsForProfile = async (
                 },
             ],
         })
+        .where('profile.did = $profileDid')
         .return('contactMethod')
         .run();
 
@@ -79,14 +77,10 @@ export const getProfileByContactMethod = async (
 ): Promise<ProfileType | null> => {
     const result = await new QueryBuilder(new BindParam({ contactMethodId }))
         .match({
-            model: ContactMethod,
-            identifier: 'contactMethod',
-        })
-        .where('contactMethod.id = $contactMethodId')
-        .match({
             related: [
                 {
                     model: ContactMethod,
+                    identifier: 'contactMethod',
                 },
                 {
                     name: 'HAS_CONTACT_METHOD',
@@ -98,6 +92,7 @@ export const getProfileByContactMethod = async (
                 },
             ],
         })
+        .where('contactMethod.id = $contactMethodId')
         .return('profile')
         .run();
 
