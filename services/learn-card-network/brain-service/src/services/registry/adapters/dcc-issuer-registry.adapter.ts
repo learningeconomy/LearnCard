@@ -34,6 +34,8 @@ export class DccIssuerRegistryAdapter implements RegistryService {
         await this.initialize();
         try {
             const results = await this.registryClient.lookupIssuersFor(issuer);
+            // TODO: Remove this once the types are fixed in the DCC Package
+            //@ts-ignore
             return results as IssuerLookupResult;
         } catch (error) {
             console.error(`Error looking up issuer ${issuer}:`, error);

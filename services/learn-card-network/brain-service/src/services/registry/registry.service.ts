@@ -2,8 +2,8 @@ export interface MatchingIssuer {
     issuer: {
         federation_entity: {
             organization_name: string;
-            homepage_uri: string;
-            logo_uri: string;
+            homepage_uri?: string;
+            logo_uri?: string;
             location?: string;
         };
         institution_additional_information?: {
