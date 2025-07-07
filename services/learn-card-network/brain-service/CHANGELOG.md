@@ -1,5 +1,27 @@
 # @learncard/network-brain-service
 
+## 3.5.0
+
+### Minor Changes
+
+-   [#707](https://github.com/learningeconomy/LearnCard/pull/707) [`e6f76c42d840389f791d2767de46b063bb392180`](https://github.com/learningeconomy/LearnCard/commit/e6f76c42d840389f791d2767de46b063bb392180) Thanks [@Custard7](https://github.com/Custard7)! - LC-1805 Feat: Universal Inbox
+
+### Patch Changes
+
+-   Updated dependencies [[`e6f76c42d840389f791d2767de46b063bb392180`](https://github.com/learningeconomy/LearnCard/commit/e6f76c42d840389f791d2767de46b063bb392180)]:
+    -   @learncard/types@5.8.0
+    -   @learncard/core@9.3.31
+    -   @learncard/helpers@1.1.19
+    -   @learncard/did-web-plugin@1.0.68
+    -   @learncard/didkey-plugin@1.0.42
+    -   @learncard/didkit-plugin@1.5.18
+    -   @learncard/encryption-plugin@1.0.16
+    -   @learncard/learn-card-plugin@1.1.46
+    -   @learncard/vc-plugin@1.1.47
+    -   @learncard/vc-templates-plugin@1.0.52
+    -   @learncard/expiration-plugin@1.1.47
+    -   @learncard/crypto-plugin@1.0.42
+
 ## 3.4.5
 
 ### Patch Changes

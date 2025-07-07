@@ -1,5 +1,11 @@
 # learn-card-types
 
+## 5.8.0
+
+### Minor Changes
+
+-   [#707](https://github.com/learningeconomy/LearnCard/pull/707) [`e6f76c42d840389f791d2767de46b063bb392180`](https://github.com/learningeconomy/LearnCard/commit/e6f76c42d840389f791d2767de46b063bb392180) Thanks [@Custard7](https://github.com/Custard7)! - LC-1805 Feat: Universal Inbox
+
 ## 5.7.1
 
 ### Patch Changes
