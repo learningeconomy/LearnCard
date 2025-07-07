@@ -16,11 +16,17 @@ env:
     LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED }}
     LEARN_CLOUD_MONGO_URI: ${{ secrets.LEARN_CLOUD_MONGO_URI }}
     LEARN_CLOUD_MONGO_DB_NAME: ${{ secrets.LEARN_CLOUD_MONGO_DB_NAME }}
-    DOMAIN_NAME: ${{ secrets. DOMAIN_NAME }}
+    DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
+    CLIENT_APP_DOMAIN_NAME: ${{ vars.CLIENT_APP_DOMAIN_NAME }}
     NOTIFICATIONS_SERVICE_WEBHOOK_URL: ${{ secrets.NOTIFICATIONS_SERVICE_WEBHOOK_URL }}
     NEO4J_URI: ${{ secrets.NEO4J_URI }}
     NEO4J_USERNAME: ${{ secrets.NEO4J_USERNAME }}
     NEO4J_PASSWORD: ${{ secrets.NEO4J_PASSWORD }}
+    POSTMARK_API_KEY: ${{ secrets.POSTMARK_API_KEY }}
+    MESSAGEBIRD_AUTH_TOKEN: ${{ secrets.MESSAGEBIRD_AUTH_TOKEN }}
+    MESSAGEBIRD_ORIGINATOR: ${{ secrets.MESSAGEBIRD_ORIGINATOR }}
+    TRUSTED_ISSUERS_WHITELIST: ${{ secrets.TRUSTED_ISSUERS_WHITELIST }}
+    DCC_KNOWN_REGISTRIES_URL: ${{ secrets.DCC_KNOWN_REGISTRIES_URL }}
     DD_API_KEY: ${{ secrets.DD_API_KEY }}
     DD_ENV: ${{ secrets.DD_ENV }}
     DD_SERVICE: ${{ secrets.DD_SERVICE }}
@@ -116,4 +122,3 @@ jobs:
         uses: ./.github/workflows/open-api-generator.yml
         with:
           affected: ${{ needs.deploy.outputs.affected }}
-
