@@ -1,5 +1,11 @@
 # @learncard/cli
 
+## 3.3.107
+
+### Patch Changes
+
+-   [#712](https://github.com/learningeconomy/LearnCard/pull/712) [`fed57d95b03a458e41a97a2e2092a0b95d07a392`](https://github.com/learningeconomy/LearnCard/commit/fed57d95b03a458e41a97a2e2092a0b95d07a392) Thanks [@Custard7](https://github.com/Custard7)! - Feat: Add Simple Signing Plugin to CLI
+
 ## 3.3.106
 
 ### Patch Changes
