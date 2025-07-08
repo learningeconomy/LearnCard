@@ -42,8 +42,6 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
         : 'bg-grayscale-900';
     const checkBtnClass = checkStatus ? 'generic-vc-card checked' : 'generic-vc-card unchecked';
     const defaultHeaderClass = `flex generic-card-title w-full justify-center ${customHeaderClass}`;
-    const linkedCredentialsCountStyles =
-        linkedCredentialsCount > 0 ? `rounded-b-[0px] !shadow-none` : '';
 
     const handleInnerClick = () => {
         innerOnClick?.();
@@ -57,7 +55,7 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
 
     return (
         <div
-            className={`flex generic-display-card-simple bg-white flex-col shadow-bottom relative py-[0px] px-[0px] w-[160px] h-[270px] rounded-[20px] overflow-hidden ${linkedCredentialsCountStyles} ${className}`}
+            className={`flex generic-display-card-simple bg-white flex-col shadow-bottom relative py-[0px] px-[0px] w-[160px] min-h-[260px] rounded-[20px] overflow-hidden ${className}`}
         >
             {optionsTriggerOnClick && (
                 <section
