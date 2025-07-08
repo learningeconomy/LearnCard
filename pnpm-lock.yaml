@@ -433,6 +433,9 @@ importers:
       '@learncard/learn-cloud-plugin':
         specifier: workspace:*
         version: link:../plugins/learn-cloud
+      '@learncard/simple-signing-plugin':
+        specifier: workspace:*
+        version: link:../plugins/simple-signing-plugin
       '@learncard/types':
         specifier: workspace:*
         version: link:../learn-card-types
