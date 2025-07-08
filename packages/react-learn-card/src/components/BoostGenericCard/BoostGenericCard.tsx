@@ -3,7 +3,7 @@ import { BoostGenericCardProps, WalletCategoryTypes } from '../../types';
 import { TYPE_TO_IMG_SRC, TYPE_TO_WALLET_DARK_COLOR } from '../../constants';
 import { CircleCheckButton } from '../CircleCheckButton';
 import ThreeDots from '../../assets/images/DotsThreeOutline.svg';
-
+import { DisplayTypeEnum, getDisplayIcon } from '../../helpers/display.helpers';
 import { CertDisplayCardSkillsCount } from '../CertificateDisplayCard';
 
 export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
@@ -28,15 +28,22 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
     verifierBadge,
     credential,
     isInSkillsModal,
+    displayType,
+    linkedCredentialsCount = 0,
+    linkedCredentialsClassName = '',
 }) => {
     const thumbClass = TYPE_TO_WALLET_DARK_COLOR[type]
         ? `bg-${TYPE_TO_WALLET_DARK_COLOR[type]}`
         : 'bg-grayscale-50';
     const defaultThumbClass = `small-boost-card-thumb flex h-[110px] w-[110px] my-[10px] mx-auto ${thumbClass} overflow-hidden flex-col justify-center items-center rounded-full ${customThumbClass}`;
     const imgSrc = thumbImgSrc?.trim() !== '' ? thumbImgSrc : TYPE_TO_IMG_SRC[type];
-    const headerBgColor = TYPE_TO_WALLET_DARK_COLOR[type] ? `bg-${TYPE_TO_WALLET_DARK_COLOR[type]}` : 'bg-grayscale-900';
+    const headerBgColor = TYPE_TO_WALLET_DARK_COLOR[type]
+        ? `bg-${TYPE_TO_WALLET_DARK_COLOR[type]}`
+        : 'bg-grayscale-900';
     const checkBtnClass = checkStatus ? 'generic-vc-card checked' : 'generic-vc-card unchecked';
     const defaultHeaderClass = `flex generic-card-title w-full justify-center ${customHeaderClass}`;
+    const linkedCredentialsCountStyles =
+        linkedCredentialsCount > 0 ? `rounded-b-[0px] !shadow-none` : '';
 
     const handleInnerClick = () => {
         innerOnClick?.();
@@ -46,9 +53,11 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
         optionsTriggerOnClick?.();
     };
 
+    const DisplayIcon = getDisplayIcon(displayType as DisplayTypeEnum);
+
     return (
         <div
-            className={`flex generic-display-card-simple bg-white flex-col shadow-bottom relative $ py-[0px] px-[0px] w-[160px] h-[250px] rounded-[20px] overflow-hidden ${className}`}
+            className={`flex generic-display-card-simple bg-white flex-col shadow-bottom relative py-[0px] px-[0px] w-[160px] h-[270px] rounded-[20px] overflow-hidden ${linkedCredentialsCountStyles} ${className}`}
         >
             {optionsTriggerOnClick && (
                 <section
@@ -111,31 +120,43 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
 
                     {customDateDisplay && customDateDisplay}
                     {!customDateDisplay && (
-                        <p className="small-generic-boost-date-display line-clamp-1 text-[12px] text-grayscale-700  px-[7px]">
+                        <p className="small-generic-boost-date-display line-clamp-1 flex items-center justify-center text-center text-[12px] text-grayscale-700  px-[7px]">
+                            {verifierBadge}
                             {dateDisplay}
                         </p>
                     )}
-                    <div className="boost-verifier-badge-display">{verifierBadge}</div>
-                    {isInSkillsModal && 
+
+                    {isInSkillsModal && (
                         <CertDisplayCardSkillsCount
                             skills={credential?.skills ?? []}
                             onClick={handleInnerClick}
                             className={'boost-generic'}
                             isInSkillsModal={isInSkillsModal}
                         />
-                    }
+                    )}
                 </section>
-
-                {showChecked && (
-                    <div className="check-btn-overlay absolute top-[5px] left-[5px]">
-                        <CircleCheckButton
-                            checked={checkStatus}
-                            onClick={onCheckClick}
-                            className={checkBtnClass}
-                        />
-                    </div>
-                )}
             </button>
+
+            {linkedCredentialsCount > 0 && (
+                <div
+                    className={`absolute bottom-0 left-0 h-[20px] w-full rounded-b-[20px] flex items-center justify-center py-4 mt-1 ${linkedCredentialsClassName}`}
+                >
+                    <DisplayIcon className={`h-[20px] w-[20px]`} />{' '}
+                    <span className="ml-2 font-poppins text-sm font-semibold text-white">
+                        +{linkedCredentialsCount} Linked
+                    </span>
+                </div>
+            )}
+
+            {showChecked && (
+                <div className="check-btn-overlay absolute top-[5px] left-[5px]">
+                    <CircleCheckButton
+                        checked={checkStatus}
+                        onClick={onCheckClick}
+                        className={checkBtnClass}
+                    />
+                </div>
+            )}
         </div>
     );
 };
