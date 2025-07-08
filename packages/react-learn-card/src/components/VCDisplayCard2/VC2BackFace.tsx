@@ -41,6 +41,7 @@ type VC2BackFaceProps = {
     customSkillsComponent?: React.ReactNode;
     customIssueHistoryComponent?: React.ReactNode;
     enableLightbox?: boolean;
+    customLinkedCredentialsComponent?: React.ReactNode;
 };
 
 const VC2BackFace: React.FC<VC2BackFaceProps> = ({
@@ -58,6 +59,7 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
     customSkillsComponent,
     customIssueHistoryComponent,
     enableLightbox,
+    customLinkedCredentialsComponent,
 }) => {
     const expiration = credential.expirationDate
         ? format(new Date(credential.expirationDate), 'MMM dd, yyyy')
@@ -134,6 +136,9 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
                         className="criteria-box"
                     />
                 )}
+
+                {customLinkedCredentialsComponent && customLinkedCredentialsComponent}
+
                 {(credential.skills?.length ?? 0) > 0 &&
                     (customSkillsComponent ? (
                         customSkillsComponent

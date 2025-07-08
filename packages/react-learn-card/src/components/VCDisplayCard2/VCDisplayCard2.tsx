@@ -75,6 +75,7 @@ export type VCDisplayCard2Props = {
     customIDDescription?: React.ReactNode;
     hideGradientBackground?: boolean;
     formattedDisplayType?: string;
+    customLinkedCredentialsComponent?: React.ReactNode;
 };
 
 export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
@@ -118,6 +119,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     customIDDescription,
     hideGradientBackground = false,
     formattedDisplayType,
+    customLinkedCredentialsComponent,
 }) => {
     const {
         title = '',
@@ -392,6 +394,9 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                                     customIssueHistoryComponent={customIssueHistoryComponent}
                                     enableLightbox={enableLightbox}
                                     customSkillsComponent={customSkillsComponent}
+                                    customLinkedCredentialsComponent={
+                                        customLinkedCredentialsComponent
+                                    }
                                 />
                             )}
 
