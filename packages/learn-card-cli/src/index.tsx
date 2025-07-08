@@ -4,6 +4,7 @@ import dns from 'node:dns';
 import repl from 'pretty-repl';
 import { getTestCache } from '@learncard/core';
 import { initLearnCard, emptyLearnCard, learnCardFromSeed } from '@learncard/init';
+import { getSimpleSigningPlugin } from '@learncard/simple-signing-plugin';
 import types from '@learncard/types';
 import gradient from 'gradient-string';
 import figlet from 'figlet';
@@ -64,7 +65,7 @@ program
         globalThis.learnCardFromSeed = learnCardFromSeed;
         globalThis.initLearnCard = initLearnCard;
 
-        globalThis.learnCard = await initLearnCard({
+        const _learnCard = await initLearnCard({
             seed,
             network: true,
             allowRemoteContexts: true,
@@ -72,6 +73,11 @@ program
                 require.resolve('@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm')
             ),
         });
+
+        globalThis.learnCard = await _learnCard.addPlugin(
+            await getSimpleSigningPlugin(_learnCard, 'https://api.learncard.app/trpc')
+        );
+
         globalThis.types = types;
         globalThis.getTestCache = getTestCache;
 

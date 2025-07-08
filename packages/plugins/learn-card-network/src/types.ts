@@ -43,6 +43,12 @@ import {
     AutoBoostConfig,
     AuthGrantType,
     AuthGrantQuery,
+    IssueInboxCredentialType,
+    InboxCredentialType,
+    PaginatedInboxCredentialsType,
+    ContactMethodType,
+    InboxCredentialQuery,
+    IssueInboxCredentialResponseType,
 } from '@learncard/types';
 import { Plugin } from '@learncard/core';
 import { ProofOptions } from '@learncard/didkit-plugin';
@@ -267,6 +273,11 @@ export type LearnCardNetworkPluginMethods = {
         endpoint: string,
         name: string
     ) => Promise<LCNSigningAuthorityForUserType | undefined>;
+    setPrimaryRegisteredSigningAuthority: (
+        endpoint: string,
+        name: string
+    ) => Promise<boolean>;
+    getPrimaryRegisteredSigningAuthority: () => Promise<LCNSigningAuthorityForUserType | undefined>;
 
     generateClaimLink: (
         boostUri: string,
@@ -375,6 +386,21 @@ export type LearnCardNetworkPluginMethods = {
     updateAuthGrant: (id: string, updates: Partial<AuthGrantType>) => Promise<boolean>;
     revokeAuthGrant: (id: string) => Promise<boolean>;
     getAPITokenForAuthGrant: (id: string) => Promise<string>;
+
+    sendCredentialViaInbox: (issueInboxCredential: IssueInboxCredentialType) => Promise<IssueInboxCredentialResponseType>;
+    getMySentInboxCredentials: (
+        options?: Partial<PaginationOptionsType> & { query?: InboxCredentialQuery }
+    ) => Promise<PaginatedInboxCredentialsType>;
+
+    getInboxCredential: (id: string) => Promise<InboxCredentialType | null>;
+
+    addContactMethod: (contactMethod: ContactMethodType) => Promise<{ message: string; contactMethodId: string; verificationRequired: boolean }>;
+    getMyContactMethods: () => Promise<ContactMethodType[]>;
+
+    setPrimaryContactMethod: (contactMethodId: string) => Promise<{ message: string}>;
+    verifyContactMethod: (token: string) => Promise<{ message: string; contactMethod: ContactMethodType}>;
+    removeContactMethod: (contactMethodId: string) => Promise<{ message: string}>;
+
     resolveFromLCN: (
         uri: string
     ) => Promise<VC | UnsignedVC | VP | JWE | ConsentFlowContract | ConsentFlowTerms>;

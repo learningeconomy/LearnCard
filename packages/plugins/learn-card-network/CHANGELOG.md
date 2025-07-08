@@ -1,5 +1,17 @@
 # learn-card-core
 
+## 2.5.0
+
+### Minor Changes
+
+-   [#707](https://github.com/learningeconomy/LearnCard/pull/707) [`e6f76c42d840389f791d2767de46b063bb392180`](https://github.com/learningeconomy/LearnCard/commit/e6f76c42d840389f791d2767de46b063bb392180) Thanks [@Custard7](https://github.com/Custard7)! - LC-1805 Feat: Universal Inbox
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.31
+    -   @learncard/network-brain-client@2.3.6
+
 ## 2.4.39
 
 ### Patch Changes
