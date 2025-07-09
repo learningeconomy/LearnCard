@@ -210,6 +210,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 showBackButton={showBackButton}
                 showDetailsBtn={showDetailsBtn}
                 formattedDisplayType={formattedDisplayType}
+                customLinkedCredentialsComponent={customLinkedCredentialsComponent}
             />
         );
     }
@@ -239,6 +240,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 showBackButton={showBackButton}
                 showDetailsBtn={showDetailsBtn}
                 formattedDisplayType={formattedDisplayType}
+                customLinkedCredentialsComponent={customLinkedCredentialsComponent}
             />
         );
     } else if (credential?.display?.displayType === 'id' || categoryType === 'ID') {
@@ -267,6 +269,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                     showDetailsBtn={showDetailsBtn}
                     customIDDescription={customIDDescription}
                     hideGradientBackground={hideGradientBackground}
+                    customLinkedCredentialsComponent={customLinkedCredentialsComponent}
                 />
             </div>
         );

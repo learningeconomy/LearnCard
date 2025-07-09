@@ -38,6 +38,7 @@ type MeritBadgeDisplayCardProps = {
     showBackButton?: boolean;
     showDetailsBtn?: boolean;
     formattedDisplayType?: string;
+    customLinkedCredentialsComponent?: React.ReactNode;
 };
 
 export const MeritBadgeDisplayCard: React.FC<MeritBadgeDisplayCardProps> = ({
@@ -66,6 +67,7 @@ export const MeritBadgeDisplayCard: React.FC<MeritBadgeDisplayCardProps> = ({
     showBackButton = false,
     showDetailsBtn = false,
     formattedDisplayType,
+    customLinkedCredentialsComponent,
 }) => {
     const [_isFront, _setIsFront] = useState(isFrontOverride ?? true);
 
@@ -104,6 +106,7 @@ export const MeritBadgeDisplayCard: React.FC<MeritBadgeDisplayCardProps> = ({
                         enableLightbox={enableLightbox}
                         showBackButton={(showBackButton && !hideNavButtons) || showDetailsBtn}
                         handleViewFrontFace={() => setIsFront(!isFront)}
+                        customLinkedCredentialsComponent={customLinkedCredentialsComponent}
                     />
                 )}
 
