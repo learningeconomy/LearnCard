@@ -18,7 +18,6 @@ import {
 
 import {
     validateInboxClaimToken,
-    markInboxClaimTokenAsUsed,
 } from '@helpers/contact-method.helpers';
 import { getPendingInboxCredentialsForContactMethodId } from '@accesslayer/inbox-credential/read';
 import { markInboxCredentialAsClaimed } from '@accesslayer/inbox-credential/update';
