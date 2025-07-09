@@ -18,7 +18,6 @@ import {
 
 import {
     validateInboxClaimToken,
-    markInboxClaimTokenAsUsed,
 } from '@helpers/contact-method.helpers';
 import { getPendingInboxCredentialsForContactMethodId } from '@accesslayer/inbox-credential/read';
 import { markInboxCredentialAsClaimed } from '@accesslayer/inbox-credential/update';
@@ -606,7 +605,8 @@ async function handleInboxClaimPresentation(
     }
 
     // Mark claim token as used
-    await markInboxClaimTokenAsUsed(claimToken);
+    // TODO: Disabling, since it disrupts VC-API workflows - and other mechanisms are sufficient to prevent double claims.
+    // await markInboxClaimTokenAsUsed(claimToken);
 
     if (claimedCredentials.length === 0) {
         throw new TRPCError({
