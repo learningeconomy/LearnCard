@@ -137,9 +137,7 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
                     />
                 )}
 
-                {customLinkedCredentialsComponent && (
-                    <>Testing {customLinkedCredentialsComponent}</>
-                )}
+                {customLinkedCredentialsComponent && customLinkedCredentialsComponent}
 
                 {(credential.skills?.length ?? 0) > 0 &&
                     (customSkillsComponent ? (
