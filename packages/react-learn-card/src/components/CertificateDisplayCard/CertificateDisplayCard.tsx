@@ -38,6 +38,7 @@ type CertificateDisplayCardProps = {
     showBackButton?: boolean;
     showDetailsBtn?: boolean;
     formattedDisplayType?: string;
+    customLinkedCredentialsComponent?: React.ReactNode;
 };
 
 export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
@@ -66,6 +67,7 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
     showBackButton = false,
     showDetailsBtn = false,
     formattedDisplayType,
+    customLinkedCredentialsComponent,
 }) => {
     const [_isFront, _setIsFront] = useState(isFrontOverride ?? true);
 
@@ -104,6 +106,7 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
                         enableLightbox={enableLightbox}
                         showBackButton={(showBackButton && !hideNavButtons) || showDetailsBtn}
                         handleViewFrontFace={() => setIsFront(!isFront)}
+                        customLinkedCredentialsComponent={customLinkedCredentialsComponent}
                     />
                 )}
 

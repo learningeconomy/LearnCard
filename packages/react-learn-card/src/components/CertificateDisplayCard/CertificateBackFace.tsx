@@ -27,6 +27,7 @@ type CertificateBackFaceProps = {
     enableLightbox?: boolean;
     showBackButton?: boolean;
     handleViewFrontFace?: () => void;
+    customLinkedCredentialsComponent?: React.ReactNode;
 };
 
 export const CertificateBackFace: React.FC<CertificateBackFaceProps> = ({
@@ -41,6 +42,7 @@ export const CertificateBackFace: React.FC<CertificateBackFaceProps> = ({
     enableLightbox,
     showBackButton,
     handleViewFrontFace,
+    customLinkedCredentialsComponent,
 }) => {
     const { createdAt, credentialSubject } = getInfoFromCredential(credential, 'MMM dd, yyyy', {
         uppercaseDate: false,
@@ -82,16 +84,19 @@ export const CertificateBackFace: React.FC<CertificateBackFaceProps> = ({
 
             <TruncateTextBox headerText="About" text={description}>
                 <span
-                    className={`text-grayscale-600 font-poppins text-[12px] font-[600] w-full ${description
+                    className={`text-grayscale-600 font-poppins text-[12px] font-[600] w-full ${
+                        description
                             ? 'pt-[10px] border-t-[1px] border-solid border-grayscale-200'
                             : ''
-                        }`}
+                    }`}
                 >
                     Awarded on {createdAt}
                 </span>
             </TruncateTextBox>
 
             {criteria && <TruncateTextBox headerText="Criteria" text={criteria} />}
+
+            {customLinkedCredentialsComponent && customLinkedCredentialsComponent}
 
             {(credential.skills?.length ?? 0) > 0 &&
                 (customSkillsComponent ? (
