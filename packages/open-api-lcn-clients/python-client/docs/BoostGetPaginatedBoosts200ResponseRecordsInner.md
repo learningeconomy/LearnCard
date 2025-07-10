@@ -13,6 +13,7 @@ Name | Type | Description | Notes
 **auto_connect_recipients** | **bool** |  | [optional] 
 **meta** | **Dict[str, object]** |  | [optional] 
 **claim_permissions** | [**BoostGetBoost200ResponseClaimPermissions**](BoostGetBoost200ResponseClaimPermissions.md) |  | [optional] 
+**allow_anyone_to_create_children** | **bool** |  | [optional] 
 
 ## Example
 

@@ -7,6 +7,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **name** | **str** |  | 
 **did** | **str** |  | 
+**is_primary** | **bool** |  | [optional] 
 
 ## Example
 

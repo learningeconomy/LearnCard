@@ -28,8 +28,10 @@ Method | HTTP request | Description
 [**profile_paginated_connections**](ProfilesApi.md#profile_paginated_connections) | **GET** /profile/connections/paginated | View connections
 [**profile_paginated_pending_connections**](ProfilesApi.md#profile_paginated_pending_connections) | **GET** /profile/pending-connections/paginated | View pending connections
 [**profile_pending_connections**](ProfilesApi.md#profile_pending_connections) | **GET** /profile/pending-connections | View pending connections
+[**profile_primary_signing_authority**](ProfilesApi.md#profile_primary_signing_authority) | **GET** /profile/signing-authority/get-primary | Get primary Signing Authority for user
 [**profile_register_signing_authority**](ProfilesApi.md#profile_register_signing_authority) | **POST** /profile/signing-authority/register | Register a Signing Authority
 [**profile_search_profiles**](ProfilesApi.md#profile_search_profiles) | **GET** /search/profiles/{input} | Search profiles
+[**profile_set_primary_signing_authority**](ProfilesApi.md#profile_set_primary_signing_authority) | **POST** /profile/signing-authority/set-primary | Set Primary Signing Authority
 [**profile_signing_authorities**](ProfilesApi.md#profile_signing_authorities) | **GET** /profile/signing-authority/get/all | Get Signing Authorities for user
 [**profile_signing_authority**](ProfilesApi.md#profile_signing_authority) | **GET** /profile/signing-authority/get | Get Signing Authority for user
 [**profile_unblock_profile**](ProfilesApi.md#profile_unblock_profile) | **POST** /profile/{profileId}/unblock | Unblock another profile
@@ -1998,6 +2000,83 @@ This endpoint does not need any parameter.
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
+# **profile_primary_signing_authority**
+> ProfileSigningAuthorities200ResponseInner profile_primary_signing_authority()
+
+Get primary Signing Authority for user
+
+This route is used to get the primary signing authority that can sign credentials on the current user's behalf
+
+### Example
+
+* Bearer Authentication (Authorization):
+
+```python
+import openapi_client
+from openapi_client.models.profile_signing_authorities200_response_inner import ProfileSigningAuthorities200ResponseInner
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to https://network.learncard.com/api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "https://network.learncard.com/api"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization: Authorization
+configuration = openapi_client.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.ProfilesApi(api_client)
+
+    try:
+        # Get primary Signing Authority for user
+        api_response = api_instance.profile_primary_signing_authority()
+        print("The response of ProfilesApi->profile_primary_signing_authority:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling ProfilesApi->profile_primary_signing_authority: %s\n" % e)
+```
+
+
+
+### Parameters
+
+This endpoint does not need any parameter.
+
+### Return type
+
+[**ProfileSigningAuthorities200ResponseInner**](ProfileSigningAuthorities200ResponseInner.md)
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | Successful response |  -  |
+**401** | Authorization not provided |  -  |
+**403** | Insufficient access |  -  |
+**500** | Internal server error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
 # **profile_register_signing_authority**
 > bool profile_register_signing_authority(profile_register_signing_authority_request)
 
@@ -2167,6 +2246,88 @@ Name | Type | Description  | Notes
 **401** | Authorization not provided |  -  |
 **403** | Insufficient access |  -  |
 **404** | Not found |  -  |
+**500** | Internal server error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **profile_set_primary_signing_authority**
+> bool profile_set_primary_signing_authority(profile_set_primary_signing_authority_request)
+
+Set Primary Signing Authority
+
+This route is used to set a signing authority as the primary one for the current user
+
+### Example
+
+* Bearer Authentication (Authorization):
+
+```python
+import openapi_client
+from openapi_client.models.profile_set_primary_signing_authority_request import ProfileSetPrimarySigningAuthorityRequest
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to https://network.learncard.com/api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "https://network.learncard.com/api"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization: Authorization
+configuration = openapi_client.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.ProfilesApi(api_client)
+    profile_set_primary_signing_authority_request = openapi_client.ProfileSetPrimarySigningAuthorityRequest() # ProfileSetPrimarySigningAuthorityRequest | 
+
+    try:
+        # Set Primary Signing Authority
+        api_response = api_instance.profile_set_primary_signing_authority(profile_set_primary_signing_authority_request)
+        print("The response of ProfilesApi->profile_set_primary_signing_authority:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling ProfilesApi->profile_set_primary_signing_authority: %s\n" % e)
+```
+
+
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **profile_set_primary_signing_authority_request** | [**ProfileSetPrimarySigningAuthorityRequest**](ProfileSetPrimarySigningAuthorityRequest.md)|  | 
+
+### Return type
+
+**bool**
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | Successful response |  -  |
+**400** | Invalid input data |  -  |
+**401** | Authorization not provided |  -  |
+**403** | Insufficient access |  -  |
 **500** | Internal server error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)

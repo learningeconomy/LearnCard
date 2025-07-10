@@ -14,10 +14,10 @@
 
 import unittest
 
-from openapi_client.models.error_badrequest_issues_inner import ErrorBADREQUESTIssuesInner
+from openapi_client.models.inbox_issue_request_recipient import InboxIssueRequestRecipient
 
-class TestErrorBADREQUESTIssuesInner(unittest.TestCase):
-    """ErrorBADREQUESTIssuesInner unit test stubs"""
+class TestInboxIssueRequestRecipient(unittest.TestCase):
+    """InboxIssueRequestRecipient unit test stubs"""
 
     def setUp(self):
         pass
@@ -25,26 +25,28 @@ class TestErrorBADREQUESTIssuesInner(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def make_instance(self, include_optional) -> ErrorBADREQUESTIssuesInner:
-        """Test ErrorBADREQUESTIssuesInner
+    def make_instance(self, include_optional) -> InboxIssueRequestRecipient:
+        """Test InboxIssueRequestRecipient
             include_optional is a boolean, when False only required
             params are included, when True both required and
             optional params are included """
-        # uncomment below to create an instance of `ErrorBADREQUESTIssuesInner`
+        # uncomment below to create an instance of `InboxIssueRequestRecipient`
         """
-        model = ErrorBADREQUESTIssuesInner()
+        model = InboxIssueRequestRecipient()
         if include_optional:
-            return ErrorBADREQUESTIssuesInner(
-                message = ''
+            return InboxIssueRequestRecipient(
+                type = 'email',
+                value = ''
             )
         else:
-            return ErrorBADREQUESTIssuesInner(
-                message = '',
+            return InboxIssueRequestRecipient(
+                type = 'email',
+                value = '',
         )
         """
 
-    def testErrorBADREQUESTIssuesInner(self):
-        """Test ErrorBADREQUESTIssuesInner"""
+    def testInboxIssueRequestRecipient(self):
+        """Test InboxIssueRequestRecipient"""
         # inst_req_only = self.make_instance(include_optional=False)
         # inst_req_and_optional = self.make_instance(include_optional=True)
 

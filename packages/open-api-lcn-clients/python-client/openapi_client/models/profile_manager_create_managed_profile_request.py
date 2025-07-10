@@ -33,7 +33,7 @@ class ProfileManagerCreateManagedProfileRequest(BaseModel):
     short_bio: Optional[StrictStr] = Field(default='', description="Short bio for the profile.", alias="shortBio")
     bio: Optional[StrictStr] = Field(default='', description="Longer bio for the profile.")
     is_private: Optional[StrictBool] = Field(default=None, description="Whether the profile is private or not and shows up in search results.", alias="isPrivate")
-    email: Optional[StrictStr] = Field(default=None, description="Contact email address for the profile.")
+    email: Optional[StrictStr] = Field(default=None, description="Contact email address for the profile. (deprecated)")
     image: Optional[StrictStr] = Field(default=None, description="Profile image URL for the profile.")
     hero_image: Optional[StrictStr] = Field(default=None, description="Hero image URL for the profile.", alias="heroImage")
     website_link: Optional[StrictStr] = Field(default=None, description="Website link for the profile.", alias="websiteLink")

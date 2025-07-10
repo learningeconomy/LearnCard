@@ -11,7 +11,7 @@ Name | Type | Description | Notes
 **bio** | **str** | Longer bio for the profile. | [default to '']
 **did** | **str** | Decentralized Identifier for the profile. (auto-assigned) | 
 **is_private** | **bool** | Whether the profile is private or not and shows up in search results. | [optional] 
-**email** | **str** | Contact email address for the profile. | [optional] 
+**email** | **str** | Contact email address for the profile. (deprecated) | [optional] 
 **image** | **str** | Profile image URL for the profile. | [optional] 
 **hero_image** | **str** | Hero image URL for the profile. | [optional] 
 **website_link** | **str** | Website link for the profile. | [optional] 
