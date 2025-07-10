@@ -33,8 +33,9 @@ class BoostUpdateBoostRequestUpdates(BaseModel):
     status: Optional[StrictStr] = None
     auto_connect_recipients: Optional[StrictBool] = Field(default=None, alias="autoConnectRecipients")
     meta: Optional[Dict[str, Any]] = None
+    allow_anyone_to_create_children: Optional[StrictBool] = Field(default=None, alias="allowAnyoneToCreateChildren")
     credential: Optional[BoostCreateBoostRequestCredential] = None
-    __properties: ClassVar[List[str]] = ["name", "type", "category", "status", "autoConnectRecipients", "meta", "credential"]
+    __properties: ClassVar[List[str]] = ["name", "type", "category", "status", "autoConnectRecipients", "meta", "allowAnyoneToCreateChildren", "credential"]
 
     @field_validator('status')
     def status_validate_enum(cls, value):
@@ -106,6 +107,7 @@ class BoostUpdateBoostRequestUpdates(BaseModel):
             "status": obj.get("status"),
             "autoConnectRecipients": obj.get("autoConnectRecipients"),
             "meta": obj.get("meta"),
+            "allowAnyoneToCreateChildren": obj.get("allowAnyoneToCreateChildren"),
             "credential": BoostCreateBoostRequestCredential.from_dict(obj["credential"]) if obj.get("credential") is not None else None
         })
         return _obj

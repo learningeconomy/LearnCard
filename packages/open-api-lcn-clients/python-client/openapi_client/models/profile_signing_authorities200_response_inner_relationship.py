@@ -17,8 +17,8 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
-from typing import Any, ClassVar, Dict, List
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator
+from typing import Any, ClassVar, Dict, List, Optional
 from typing_extensions import Annotated
 from typing import Optional, Set
 from typing_extensions import Self
@@ -29,7 +29,8 @@ class ProfileSigningAuthorities200ResponseInnerRelationship(BaseModel):
     """ # noqa: E501
     name: Annotated[str, Field(strict=True, max_length=15)]
     did: StrictStr
-    __properties: ClassVar[List[str]] = ["name", "did"]
+    is_primary: Optional[StrictBool] = Field(default=None, alias="isPrimary")
+    __properties: ClassVar[List[str]] = ["name", "did", "isPrimary"]
 
     @field_validator('name')
     def name_validate_regular_expression(cls, value):
@@ -90,7 +91,8 @@ class ProfileSigningAuthorities200ResponseInnerRelationship(BaseModel):
 
         _obj = cls.model_validate({
             "name": obj.get("name"),
-            "did": obj.get("did")
+            "did": obj.get("did"),
+            "isPrimary": obj.get("isPrimary")
         })
         return _obj
 

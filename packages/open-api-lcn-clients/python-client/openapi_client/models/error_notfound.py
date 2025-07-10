@@ -19,7 +19,7 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
-from openapi_client.models.error_badrequest_issues_inner import ErrorBADREQUESTIssuesInner
+from openapi_client.models.contact_methods_set_primary_contact_method200_response import ContactMethodsSetPrimaryContactMethod200Response
 from typing import Optional, Set
 from typing_extensions import Self
 
@@ -29,7 +29,7 @@ class ErrorNOTFOUND(BaseModel):
     """ # noqa: E501
     message: StrictStr = Field(description="The error message")
     code: StrictStr = Field(description="The error code")
-    issues: Optional[List[ErrorBADREQUESTIssuesInner]] = Field(default=None, description="An array of issues that were responsible for the error")
+    issues: Optional[List[ContactMethodsSetPrimaryContactMethod200Response]] = Field(default=None, description="An array of issues that were responsible for the error")
     __properties: ClassVar[List[str]] = ["message", "code", "issues"]
 
     model_config = ConfigDict(
@@ -92,7 +92,7 @@ class ErrorNOTFOUND(BaseModel):
         _obj = cls.model_validate({
             "message": obj.get("message"),
             "code": obj.get("code"),
-            "issues": [ErrorBADREQUESTIssuesInner.from_dict(_item) for _item in obj["issues"]] if obj.get("issues") is not None else None
+            "issues": [ContactMethodsSetPrimaryContactMethod200Response.from_dict(_item) for _item in obj["issues"]] if obj.get("issues") is not None else None
         })
         return _obj
 
