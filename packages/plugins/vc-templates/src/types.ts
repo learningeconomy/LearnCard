@@ -7,6 +7,9 @@ export type BoostAttachment = {
     type?: string;
     title?: string;
     url?: string;
+    fileName?: string;
+    fileSize?: string;
+    fileType?: string;
 };
 
 export type BoostSkills = {
