@@ -135,6 +135,7 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
                 </section>
             </button>
 
+            {/* Linked Credentials */}
             {linkedCredentialsCount > 0 && (
                 <div
                     className={`absolute bottom-0 left-0 h-[20px] w-full rounded-b-[20px] flex items-center justify-center py-4 mt-1 ${linkedCredentialsClassName}`}
