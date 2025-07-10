@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 1.0.53
+
+### Patch Changes
+
+-   [#715](https://github.com/learningeconomy/LearnCard/pull/715) [`953ab1fa7c8db697e2d7b9761a214835ddc4d4e0`](https://github.com/learningeconomy/LearnCard/commit/953ab1fa7c8db697e2d7b9761a214835ddc4d4e0) Thanks [@gerardopar](https://github.com/gerardopar)! - extend-attachments-context
+
 ## 1.0.52
 
 ### Patch Changes
