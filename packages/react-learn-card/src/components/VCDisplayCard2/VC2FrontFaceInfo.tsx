@@ -15,6 +15,7 @@ import VerifierStateBadgeAndText, {
     VERIFIER_STATES,
 } from '../CertificateDisplayCard/VerifierStateBadgeAndText';
 import { BoostAchievementCredential } from '../../types';
+import { KnownDIDRegistryType } from '../../types';
 
 type VC2FrontFaceInfoProps = {
     credential: VC | BoostAchievementCredential;
@@ -28,7 +29,7 @@ type VC2FrontFaceInfoProps = {
     imageUrl?: string;
     customBodyCardComponent?: React.ReactNode;
     customThumbComponent?: React.ReactNode;
-    trustedAppRegistry?: any[];
+    knownDIDRegistry?: KnownDIDRegistryType;
 };
 
 const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
@@ -42,7 +43,7 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
     createdAt,
     imageUrl,
     customThumbComponent,
-    trustedAppRegistry,
+    knownDIDRegistry,
 }) => {
     const issuerName = truncateWithEllipsis(getNameFromProfile(issuer ?? ''), 20);
     const issueeName = truncateWithEllipsis(getNameFromProfile(issuee ?? ''), 25);
@@ -89,14 +90,12 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
         // the did:example:123 condition is so that we don't show this status from the Manage Boosts tab
         verifierState = VERIFIER_STATES.selfVerified;
     } else {
-        const appRegistryEntry = trustedAppRegistry?.find(
-            registryEntry => registryEntry.did === issuerDid
-        );
-
-        if (appRegistryEntry) {
-            verifierState = appRegistryEntry.isTrusted
-                ? VERIFIER_STATES.trustedVerifier
-                : VERIFIER_STATES.untrustedVerifier;
+        if (knownDIDRegistry?.source === 'trusted') {
+            verifierState = VERIFIER_STATES.trustedVerifier;
+        } else if (knownDIDRegistry?.source === 'untrusted') {
+            verifierState = VERIFIER_STATES.untrustedVerifier;
+        } else if (knownDIDRegistry?.source === 'unknown') {
+            verifierState = VERIFIER_STATES.unknownVerifier;
         } else {
             verifierState = VERIFIER_STATES.unknownVerifier;
         }

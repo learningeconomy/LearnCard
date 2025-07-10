@@ -5,14 +5,14 @@ import { EncryptedCredentialRecord } from '@learncard/types';
 import { getCredentialRecordCollection } from '.';
 
 export const updateCredentialRecord = async (
-    did: string,
+    did: string | string[],
     id: string,
     updates: Partial<EncryptedCredentialRecord>
 ): Promise<number | false> => {
     try {
         return (
-            await getCredentialRecordCollection().updateOne(
-                { did, id },
+            await getCredentialRecordCollection().updateMany(
+                { did: Array.isArray(did) ? { $in: did } : did, id },
                 { $set: { modified: new Date(), ...updates } }
             )
         ).modifiedCount;

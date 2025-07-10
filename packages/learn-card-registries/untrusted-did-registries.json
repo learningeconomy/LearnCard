@@ -1,0 +1,8 @@
+[
+    {
+        "name": "LEF Untrusted Registry",
+        "type": "dcc-legacy",
+        "governanceUrl": "https://learningeconomy.io",
+        "url": "https://registries.learncard.com/untrusted/registry.json"
+    }
+]

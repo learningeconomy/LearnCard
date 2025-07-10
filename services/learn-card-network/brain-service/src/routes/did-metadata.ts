@@ -164,3 +164,4 @@ export const didMetadataRouter = t.router({
             return true;
         }),
 });
+export type DidMetadataRouter = typeof didMetadataRouter;

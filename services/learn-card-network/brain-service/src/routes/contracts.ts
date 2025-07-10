@@ -2,6 +2,8 @@ import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
 import { t, profileRoute, openRoute } from '@routes';
+import { ConsentFlowContract } from '@models';
+
 import {
     ConsentFlowContractValidator,
     ConsentFlowContractDetailsValidator,
@@ -39,6 +41,7 @@ import {
     getTransactionsForTerms,
     hasProfileConsentedToContract,
     isProfileConsentFlowContractAdmin,
+    getWritersForContract,
 } from '@accesslayer/consentflowcontract/relationships/read';
 import { constructUri, getIdFromUri } from '@helpers/uri.helpers';
 import { getContractByUri } from '@accesslayer/consentflowcontract/read';
@@ -69,6 +72,12 @@ import { getCredentialUri } from '@helpers/credential.helpers';
 import { getSigningAuthorityForUserByName } from '@accesslayer/signing-authority/relationships/read';
 import { getDidWeb } from '@helpers/did.helpers';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
+import { getProfilesByProfileIds } from '@accesslayer/profile/read';
+import { resolveAndValidateDeniedWriters } from '@helpers/consentflow.helpers';
+import {
+    addAutoBoostsToContractDb,
+    removeAutoBoostsFromContractDb,
+} from '@accesslayer/consentflowcontract/relationships/manageAutoboosts';
 
 export const contractsRouter = t.router({
     createConsentFlowContract: profileRoute
@@ -77,7 +86,7 @@ export const contractsRouter = t.router({
                 protect: true,
                 method: 'POST',
                 path: '/consent-flow-contract',
-                tags: ['Consent Flow Contracts'],
+                tags: ['Contracts'],
                 summary: 'Create Consent Flow Contract',
                 description: 'Creates a Consent Flow Contract for a profile',
             },
@@ -96,6 +105,7 @@ export const contractsRouter = t.router({
                 image: z.string().optional(),
                 expiresAt: z.string().optional(),
                 autoboosts: z.array(AutoBoostConfigValidator).optional(),
+                writers: z.array(z.string()).optional(),
             })
         )
         .output(z.string())
@@ -112,6 +122,7 @@ export const contractsRouter = t.router({
                 image,
                 expiresAt,
                 autoboosts,
+                writers,
             } = input;
 
             // Create ConsentFlow instance
@@ -130,6 +141,34 @@ export const contractsRouter = t.router({
 
             // Get profile by profileId
             await setCreatorForContract(createdContract, ctx.user.profile);
+
+            // Add specified writers
+            if (writers && writers.length > 0) {
+                const writerProfiles = await getProfilesByProfileIds(writers);
+
+                // Validate that all requested writer profiles were found
+                if (writerProfiles.length !== writers.length) {
+                    const foundIds = new Set(writerProfiles.map(p => p.profileId));
+                    const missingIds = writers.filter(id => !foundIds.has(id));
+                    throw new TRPCError({
+                        code: 'BAD_REQUEST',
+                        message: `Could not find the following writer profiles: ${missingIds.join(
+                            ', '
+                        )}`,
+                    });
+                }
+
+                // Create CAN_WRITE relationship for each writer using static relateTo
+                for (const writerProfile of writerProfiles) {
+                    await ConsentFlowContract.relateTo({
+                        alias: 'canWrite',
+                        where: {
+                            source: { id: createdContract.id }, // Specify source contract by id
+                            target: { profileId: writerProfile.profileId }, // Specify target profile by profileId
+                        },
+                    });
+                }
+            }
 
             if (autoboosts && autoboosts.length > 0) {
                 for (const autoboost of autoboosts) {
@@ -173,7 +212,12 @@ export const contractsRouter = t.router({
                         });
                     }
 
-                    await setAutoBoostForContract(createdContract, boost, signingAuthority);
+                    await setAutoBoostForContract(
+                        createdContract,
+                        boost,
+                        signingAuthority,
+                        ctx.user.profile.profileId
+                    );
                 }
             }
 
@@ -186,7 +230,7 @@ export const contractsRouter = t.router({
                 protect: true,
                 method: 'GET',
                 path: '/consent-flow-contract',
-                tags: ['Consent Flow Contracts'],
+                tags: ['Contracts'],
                 summary: 'Get Consent Flow Contracts',
                 description: 'Gets Consent Flow Contract Details',
             },
@@ -231,7 +275,7 @@ export const contractsRouter = t.router({
                 protect: true,
                 method: 'POST',
                 path: '/consent-flow-contracts',
-                tags: ['Consent Flow Contracts'],
+                tags: ['Contracts'],
                 summary: 'Get Consent Flow Contracts',
                 description: 'Gets Consent Flow Contracts for a profile',
             },
@@ -245,8 +289,9 @@ export const contractsRouter = t.router({
         )
         .output(PaginatedConsentFlowContractsValidator)
         .query(async ({ input, ctx }) => {
-            const { query, limit, cursor } = input;
             const { profile } = ctx.user;
+
+            const { query, limit, cursor } = input;
 
             const results = await getConsentFlowContractsForProfile(profile, {
                 query,
@@ -287,7 +332,7 @@ export const contractsRouter = t.router({
                 protect: true,
                 method: 'DELETE',
                 path: '/consent-flow-contract',
-                tags: ['Consent Flow Contracts'],
+                tags: ['Contracts'],
                 summary: 'Delete a Consent Flow Contract',
                 description: 'This route deletes a Consent Flow Contract',
             },
@@ -324,7 +369,7 @@ export const contractsRouter = t.router({
                 protect: true,
                 method: 'POST',
                 path: '/consent-flow-contract/data-for-contract',
-                tags: ['Consent Flow Contracts'],
+                tags: ['Contracts'],
                 summary: 'Get the data that has been consented for a contract',
                 description: 'This route grabs all the data that has been consented for a contract',
             },
@@ -383,7 +428,7 @@ export const contractsRouter = t.router({
                 protect: true,
                 method: 'POST',
                 path: '/consent-flow-contract/data-for-did',
-                tags: ['Consent Flow Contracts'],
+                tags: ['Contracts'],
                 summary: 'Get the data that has been consented by a did',
                 description: 'This route grabs all the data that has been consented by a did',
             },
@@ -436,7 +481,7 @@ export const contractsRouter = t.router({
                 protect: true,
                 method: 'POST',
                 path: '/consent-flow-contract/data',
-                tags: ['Consent Flow Contracts'],
+                tags: ['Contracts'],
                 summary: 'Get the data that has been consented for all of your contracts',
                 description:
                     'This route grabs all the data that has been consented for all of your contracts',
@@ -479,7 +524,7 @@ export const contractsRouter = t.router({
                 protect: true,
                 method: 'POST',
                 path: '/consent-flow-contract/write',
-                tags: ['Consent Flow Contracts'],
+                tags: ['Contracts'],
                 summary: 'Writes a boost credential to a did that has consented to a contract',
                 description: 'Writes a boost credential to a did that has consented to a contract',
             },
@@ -581,6 +626,23 @@ export const contractsRouter = t.router({
                 }
             }
 
+            // Ensure the current profile is an approved writer and not explicitly denied
+            const writers = await getWritersForContract(contractDetails.contract);
+            const isWriter = writers.some(writer => writer.profileId === profile.profileId);
+            if (!isWriter) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile does not have permission to write to this contract',
+                });
+            }
+
+            if (terms.terms.deniedWriters?.includes(profile.profileId)) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'Profile is explicitly denied from writing to this contract',
+                });
+            }
+
             // Use the sendBoost helper to issue the credential with contract relationship
             return sendBoost({
                 from: profile,
@@ -600,7 +662,7 @@ export const contractsRouter = t.router({
                 protect: true,
                 method: 'POST',
                 path: '/consent-flow-contract/write/via-signing-authority',
-                tags: ['Consent Flow Contracts'],
+                tags: ['Contracts'],
                 summary:
                     'Write credential through signing authority for a DID consented to a contract',
                 description:
@@ -695,6 +757,23 @@ export const contractsRouter = t.router({
                 }
             }
 
+            // Ensure the current profile is an approved writer and not explicitly denied
+            const writers = await getWritersForContract(contractDetails.contract);
+            const isWriter = writers.some(writer => writer.profileId === profile.profileId);
+            if (!isWriter) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile does not have permission to write to this contract',
+                });
+            }
+
+            if (terms.terms.deniedWriters?.includes(profile.profileId)) {
+                throw new TRPCError({
+                    code: 'FORBIDDEN',
+                    message: 'Profile is explicitly denied from writing to this contract',
+                });
+            }
+
             // Prepare unsigned VC
             let unsignedVc: UnsignedVC;
             try {
@@ -770,7 +849,7 @@ export const contractsRouter = t.router({
                 protect: true,
                 method: 'POST',
                 path: '/consent-flow-contract/consent',
-                tags: ['Consent Flow Contracts'],
+                tags: ['Contracts'],
                 summary: 'Consent To Contract',
                 description: 'Consents to a Contract with a hard set of terms',
             },
@@ -807,6 +886,14 @@ export const contractsRouter = t.router({
                 throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid Terms for Contract' });
             }
 
+            if (terms.deniedWriters?.length) {
+                terms.deniedWriters = await resolveAndValidateDeniedWriters(
+                    contractDetails.contract,
+                    terms.deniedWriters,
+                    ctx.domain
+                );
+            }
+
             await consentToContract(
                 profile,
                 contractDetails,
@@ -835,7 +922,7 @@ export const contractsRouter = t.router({
                 protect: true,
                 method: 'POST',
                 path: '/consent-flow-contracts/consent',
-                tags: ['Consent Flow Contracts'],
+                tags: ['Contracts'],
                 summary: 'Gets Consented Contracts',
                 description: 'Gets all consented contracts for a user',
             },
@@ -904,7 +991,7 @@ export const contractsRouter = t.router({
                 protect: true,
                 method: 'POST',
                 path: '/consent-flow-contract/consent/update',
-                tags: ['Consent Flow Contracts'],
+                tags: ['Contracts'],
                 summary: 'Updates Contract Terms',
                 description: 'Updates the terms for a consented contract',
             },
@@ -948,6 +1035,15 @@ export const contractsRouter = t.router({
                 });
             }
 
+            // Convert deniedWriters DIDs to profile IDs if needed
+            if (terms.deniedWriters?.length) {
+                terms.deniedWriters = await resolveAndValidateDeniedWriters(
+                    relationship.contract,
+                    terms.deniedWriters,
+                    ctx.domain
+                );
+            }
+
             await Promise.all([
                 updateTerms(relationship, { terms, expiresAt, oneTime }, ctx.domain),
                 deleteStorageForUri(uri),
@@ -962,7 +1058,7 @@ export const contractsRouter = t.router({
                 protect: true,
                 method: 'DELETE',
                 path: '/consent-flow-contract/consent/withdraw',
-                tags: ['Consent Flow Contracts'],
+                tags: ['Contracts'],
                 summary: 'Deletes Contract Terms',
                 description: 'Withdraws consent by deleting Contract Terms',
             },
@@ -1003,7 +1099,7 @@ export const contractsRouter = t.router({
                 protect: true,
                 method: 'POST',
                 path: '/consent-flow-contract/consent/history',
-                tags: ['Consent Flow Contracts'],
+                tags: ['Contracts'],
                 summary: 'Gets Transaction History',
                 description:
                     'Gets the transaction history for a set of Consent Flow Contract Terms',
@@ -1074,9 +1170,9 @@ export const contractsRouter = t.router({
                 protect: true,
                 method: 'GET',
                 path: '/consent-flow-contract/verify',
-                tags: ['Consent Flow Contracts'],
+                tags: ['Contracts'],
                 summary: 'Verifies that a profile has consented to a contract',
-                description: 'Withdraws consent by deleting Contract Terms',
+                description: 'Checks if a profile has consented to the specified contract',
             },
             requiredScope: 'contracts:read',
         })
@@ -1111,7 +1207,7 @@ export const contractsRouter = t.router({
                 protect: true,
                 method: 'POST',
                 path: '/consent-flow-contract/sync',
-                tags: ['Consent Flow Contracts'],
+                tags: ['Contracts'],
                 summary: 'Sync credentials to a contract',
                 description: 'Syncs credentials to a contract that the profile has consented to',
             },
@@ -1207,7 +1303,7 @@ export const contractsRouter = t.router({
                 protect: true,
                 method: 'POST',
                 path: '/consent-flow-contract/credentials',
-                tags: ['Consent Flow Contracts'],
+                tags: ['Contracts'],
                 summary: 'Get credentials issued via a contract',
                 description: 'Gets all credentials that were issued via a contract',
             },
@@ -1275,7 +1371,7 @@ export const contractsRouter = t.router({
                 protect: true,
                 method: 'POST',
                 path: '/consent-flow-contracts/credentials',
-                tags: ['Consent Flow Contracts'],
+                tags: ['Contracts'],
                 summary: 'Get all credentials written to any terms',
                 description:
                     'Gets all credentials that were written to any terms owned by this profile',
@@ -1317,5 +1413,96 @@ export const contractsRouter = t.router({
                 })),
             };
         }),
+
+    addAutoBoostsToContract: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/consent-flow-contracts/autoboosts/add',
+                tags: ['Contracts'],
+                summary: 'Add autoboosts to a contract',
+                description:
+                    'Adds one or more autoboost configurations to an existing consent flow contract. The caller must be the contract owner or a designated writer. The signing authority for each autoboost must be registered to the caller.',
+            },
+            requiredScope: 'contracts:write autoboosts:write',
+        })
+        .input(
+            z.object({
+                contractUri: z.string(),
+                autoboosts: z.array(AutoBoostConfigValidator),
+            })
+        )
+        .output(z.boolean())
+        .mutation(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { contractUri, autoboosts } = input;
+
+            const contract = await getContractByUri(contractUri);
+
+            if (!contract) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Contract not found' });
+            }
+
+            const writers = await getWritersForContract(contract);
+            const isAuthorized = writers.some(writer => writer.profileId === profile.profileId);
+
+            if (!isAuthorized) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'You do not have permission to modify autoboosts for this contract.',
+                });
+            }
+
+            await addAutoBoostsToContractDb(contract.id, autoboosts, profile, ctx.domain);
+
+            return true;
+        }),
+
+    removeAutoBoostsFromContract: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/consent-flow-contracts/autoboosts/remove',
+                tags: ['Contracts'],
+                summary: 'Remove autoboosts from a contract',
+                description:
+                    'Removes one or more autoboosts from an existing consent flow contract, identified by their boost URIs. The caller must be the contract owner or a designated writer.',
+            },
+            requiredScope: 'contracts:write autoboosts:write',
+        })
+        .input(
+            z.object({
+                contractUri: z.string(),
+                boostUris: z.array(z.string()),
+            })
+        )
+        .output(z.boolean())
+        .mutation(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { contractUri, boostUris } = input;
+
+            const contract = await getContractByUri(contractUri);
+
+            if (!contract) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Contract not found' });
+            }
+
+            const writers = await getWritersForContract(contract);
+            const isAuthorized = writers.some(writer => writer.profileId === profile.profileId);
+
+            if (!isAuthorized) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'You do not have permission to modify autoboosts for this contract.',
+                });
+            }
+
+            await removeAutoBoostsFromContractDb(contract.id, boostUris, ctx.domain);
+
+            return true;
+        }),
 });
+
 export type ContractsRouter = typeof contractsRouter;

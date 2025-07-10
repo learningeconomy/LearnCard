@@ -1,3 +1,5 @@
+import http from 'node:http';
+
 import serverlessHttp from 'serverless-http';
 import type {
     Context,
@@ -7,13 +9,13 @@ import type {
 } from 'aws-lambda';
 import { LCNNotificationValidator } from '@learncard/types';
 import { awsLambdaRequestHandler } from '@trpc/server/adapters/aws-lambda';
-import { createOpenApiAwsLambdaHandler } from 'trpc-openapi';
 import { TRPC_ERROR_CODE_HTTP_STATUS } from 'trpc-openapi/dist/adapters/node-http/errors';
 import * as Sentry from '@sentry/serverless';
 
 import app from './src/openapi';
 import { appRouter, createContext } from './src/app';
 import { sendNotification } from './src/helpers/notifications.helpers';
+import { createOpenApiAwsLambdaHandler } from './src/helpers/shim';
 
 Sentry.AWSLambda.init({
     dsn: process.env.SENTRY_DSN,
@@ -31,6 +33,15 @@ export const swaggerUiHandler = serverlessHttp(app, { basePath: '/docs' });
 
 export const _openApiHandler = createOpenApiAwsLambdaHandler({
     router: appRouter,
+    responseMeta: () => {
+        return {
+            headers: {
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+                'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+            },
+        };
+    },
     createContext,
     onError: ({ error, ctx, path }) => {
         error.stack = error.stack?.replace('Mr: ', '');
@@ -45,6 +56,7 @@ export const _openApiHandler = createOpenApiAwsLambdaHandler({
 });
 
 export const _trpcHandler = awsLambdaRequestHandler({
+    allowMethodOverride: true,
     router: appRouter,
     createContext,
     onError: ({ error, ctx, path }) => {
@@ -72,11 +84,11 @@ export const openApiHandler = Sentry.AWSLambda.wrapHandler(
     async (event: APIGatewayProxyEventV2, context: Context): Promise<APIGatewayProxyResultV2> => {
         if (event.requestContext.http.method === 'OPTIONS') {
             return {
-                statusCode: 200,
+                statusCode: 204,
                 headers: {
                     'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Headers': '*',
-                    'Access-Control-Allow-Methods': '*',
+                    'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+                    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
                 },
             };
         }

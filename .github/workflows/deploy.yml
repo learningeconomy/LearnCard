@@ -16,11 +16,18 @@ env:
     LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED }}
     LEARN_CLOUD_MONGO_URI: ${{ secrets.LEARN_CLOUD_MONGO_URI }}
     LEARN_CLOUD_MONGO_DB_NAME: ${{ secrets.LEARN_CLOUD_MONGO_DB_NAME }}
-    DOMAIN_NAME: ${{ secrets. DOMAIN_NAME }}
+    DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
+    CLIENT_APP_DOMAIN_NAME: ${{ vars.CLIENT_APP_DOMAIN_NAME }}
     NOTIFICATIONS_SERVICE_WEBHOOK_URL: ${{ secrets.NOTIFICATIONS_SERVICE_WEBHOOK_URL }}
     NEO4J_URI: ${{ secrets.NEO4J_URI }}
     NEO4J_USERNAME: ${{ secrets.NEO4J_USERNAME }}
     NEO4J_PASSWORD: ${{ secrets.NEO4J_PASSWORD }}
+    POSTMARK_API_KEY: ${{ secrets.POSTMARK_API_KEY }}
+    POSTMARK_FROM_EMAIL: ${{ vars.POSTMARK_FROM_EMAIL }}
+    MESSAGEBIRD_AUTH_TOKEN: ${{ secrets.MESSAGEBIRD_AUTH_TOKEN }}
+    MESSAGEBIRD_ORIGINATOR: ${{ secrets.MESSAGEBIRD_ORIGINATOR }}
+    TRUSTED_ISSUERS_WHITELIST: ${{ secrets.TRUSTED_ISSUERS_WHITELIST }}
+    DCC_KNOWN_REGISTRIES_URL: ${{ secrets.DCC_KNOWN_REGISTRIES_URL }}
     DD_API_KEY: ${{ secrets.DD_API_KEY }}
     DD_ENV: ${{ secrets.DD_ENV }}
     DD_SERVICE: ${{ secrets.DD_SERVICE }}
@@ -44,6 +51,8 @@ jobs:
     deploy:
         name: Deploy
         runs-on: ubuntu-latest
+        outputs:
+          affected: ${{ steps.affected.outputs.affected }}
         steps:
             - name: Checkout Repo
               uses: actions/checkout@v3
@@ -94,7 +103,10 @@ jobs:
 
             - name: Get Affected List
               id: affected
-              run: echo "AFFECTED=$(pnpm exec nx print-affected --base=HEAD~1 --head=HEAD --select=projects)" >> $GITHUB_ENV
+              run: |
+                affected=$(pnpm exec nx print-affected --base=HEAD~1 --head=HEAD --select=projects)
+                echo "AFFECTED=$affected" >> $GITHUB_ENV       # for use in later steps of this job
+                echo "affected=$affected" >> $GITHUB_OUTPUT     # for passing to other jobs
 
             - name: Deploy Brain Service Lambda
               if: contains(env.AFFECTED, 'network-brain-service')
@@ -103,7 +115,11 @@ jobs:
             - name: Deploy LearnCloud Lambda
               if: contains(env.AFFECTED, 'learn-cloud-service')
               run: pnpm exec nx serverless-deploy learn-cloud-service --stage production
-
-            - name: Generate new Open API SDK clients for brain service
-              if: contains(env.AFFECTED, 'network-brain-service')
-              uses: ./.github/workflows/open-api-generator.yml
+              
+    generate-sdk:
+        name: Generate SDK Clients for LearnCloud Network API
+        needs: deploy
+        if: contains(needs.deploy.outputs.affected, 'network-brain-service')
+        uses: ./.github/workflows/open-api-generator.yml
+        with:
+          affected: ${{ needs.deploy.outputs.affected }}

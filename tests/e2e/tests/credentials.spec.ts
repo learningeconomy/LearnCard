@@ -84,4 +84,25 @@ describe('Credentials', () => {
         expect(bRecords).toHaveLength(0);
         expect(await b.read.get(uri)).toBeUndefined();
     });
+
+    test('Users cannot accept the same credential twice', async () => {
+        const unsignedVc = a.invoke.getTestVc(b.id.did());
+        const vc = await a.invoke.issueCredential(unsignedVc);
+
+        const uri = await a.invoke.sendCredential('testb', vc);
+
+        // First acceptance should succeed
+        await expect(b.invoke.acceptCredential(uri)).resolves.not.toThrow();
+
+        // Verify the credential is now in received credentials
+        const receivedCreds = await b.invoke.getReceivedCredentials();
+        expect(receivedCreds).toHaveLength(1);
+
+        // Second acceptance should fail
+        await expect(b.invoke.acceptCredential(uri)).rejects.toThrow(/already been received/);
+
+        // Verify that received credentials count hasn't changed
+        const receivedCredsAfter = await b.invoke.getReceivedCredentials();
+        expect(receivedCredsAfter).toHaveLength(1);
+    });
 });

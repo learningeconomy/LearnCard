@@ -107,6 +107,26 @@ describe('Presentations', () => {
                 userB.clients.fullAuth.presentation.acceptPresentation({ uri })
             ).resolves.not.toThrow();
         });
+
+        it('should not allow accepting the same presentation twice', async () => {
+            const uri = await userA.clients.fullAuth.presentation.sendPresentation({
+                profileId: 'userb',
+                presentation: testVp,
+            });
+
+            // First acceptance should succeed
+            await expect(
+                userB.clients.fullAuth.presentation.acceptPresentation({ uri })
+            ).resolves.not.toThrow();
+
+            // Second acceptance should fail
+            await expect(
+                userB.clients.fullAuth.presentation.acceptPresentation({ uri })
+            ).rejects.toMatchObject({
+                code: 'BAD_REQUEST',
+                message: expect.stringContaining('already been received'),
+            });
+        });
     });
 
     describe('receivedPresentations', () => {

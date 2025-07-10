@@ -11,6 +11,7 @@ import {
     VideoMetadata,
 } from '../../types';
 import { VC, VerificationItem } from '@learncard/types';
+import { KnownDIDRegistryType } from '../../types';
 
 export type VCIDDisplayCardProps = {
     credential: VC | BoostAchievementCredential;
@@ -25,7 +26,7 @@ export type VCIDDisplayCardProps = {
     issueHistory?: IssueHistory[];
     showBackButton?: boolean;
     enableLightbox?: boolean;
-    trustedAppRegistry?: any[];
+    knownDIDRegistry?: KnownDIDRegistryType;
     customSkillsComponent?: React.ReactNode;
     isFrontOverride?: boolean;
     setIsFrontOverride?: (value: boolean) => void;
@@ -50,7 +51,7 @@ export const VCIDDisplayCard: React.FC<VCIDDisplayCardProps> = ({
     issueHistory,
     showBackButton = true,
     enableLightbox,
-    trustedAppRegistry,
+    knownDIDRegistry,
     customSkillsComponent,
     isFrontOverride,
     setIsFrontOverride,
@@ -99,7 +100,7 @@ export const VCIDDisplayCard: React.FC<VCIDDisplayCardProps> = ({
                                     showDetailsBtn={showDetailsBtn}
                                     customThumbComponent={customThumbComponent}
                                     credential={credential}
-                                    trustedAppRegistry={trustedAppRegistry}
+                                    knownDIDRegistry={knownDIDRegistry}
                                     qrCodeOnClick={qrCodeOnClick}
                                     hideQRCode={hideQRCode}
                                     customIDDescription={customIDDescription}

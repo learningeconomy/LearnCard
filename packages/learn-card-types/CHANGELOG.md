@@ -1,5 +1,52 @@
 # learn-card-types
 
+## 5.8.0
+
+### Minor Changes
+
+-   [#707](https://github.com/learningeconomy/LearnCard/pull/707) [`e6f76c42d840389f791d2767de46b063bb392180`](https://github.com/learningeconomy/LearnCard/commit/e6f76c42d840389f791d2767de46b063bb392180) Thanks [@Custard7](https://github.com/Custard7)! - LC-1805 Feat: Universal Inbox
+
+## 5.7.1
+
+### Patch Changes
+
+-   [#708](https://github.com/learningeconomy/LearnCard/pull/708) [`1b99797c404648412f6a6e8a1f77ebab71caa28c`](https://github.com/learningeconomy/LearnCard/commit/1b99797c404648412f6a6e8a1f77ebab71caa28c) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Introduces a new optional boolean `allowAnyoneToCreateChildren` on Boost nodes.
+
+    When set to `true` on a parent boost:
+
+    -   Any profile can create child boosts without possessing the `canCreateChildren` role permission.
+    -   The permission gate (`canProfileCreateChildBoost`) now short-circuits when this flag is detected.
+
+    This change updates:
+
+    -   Boost schema & shared types (`@learncard/types`)
+    -   Brain-service model & access-layer logic (`@learncard/network-brain-service`)
+    -   Unit and E2E tests to cover the new behaviour.
+
+## 5.7.0
+
+### Minor Changes
+
+-   [#682](https://github.com/learningeconomy/LearnCard/pull/682) [`1ed5313935264890917c6ddf19249ada91d1e524`](https://github.com/learningeconomy/LearnCard/commit/1ed5313935264890917c6ddf19249ada91d1e524) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Include zod-openapi in validators
+
+## 5.6.14
+
+### Patch Changes
+
+-   [#670](https://github.com/learningeconomy/LearnCard/pull/670) [`b04788beded98db2fb3827c94e0810943b7f698a`](https://github.com/learningeconomy/LearnCard/commit/b04788beded98db2fb3827c94e0810943b7f698a) Thanks [@Custard7](https://github.com/Custard7)! - 🧹Housekeeping: OpenAPI Docs
+
+## 5.6.13
+
+### Patch Changes
+
+-   [#662](https://github.com/learningeconomy/LearnCard/pull/662) [`319bd3a589e3529d162825d8f6b97268c44060f4`](https://github.com/learningeconomy/LearnCard/commit/319bd3a589e3529d162825d8f6b97268c44060f4) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - [LC-894] Multiple Contract Issuers
+
+## 5.6.12
+
+### Patch Changes
+
+-   [#666](https://github.com/learningeconomy/LearnCard/pull/666) [`ef22869f9e9b99200e46cbd82dfc4c41558afcd1`](https://github.com/learningeconomy/LearnCard/commit/ef22869f9e9b99200e46cbd82dfc4c41558afcd1) Thanks [@gerardopar](https://github.com/gerardopar)! - LC-907 - New Onboarding flow + Checklist UI
+
 ## 5.6.11
 
 ### Patch Changes

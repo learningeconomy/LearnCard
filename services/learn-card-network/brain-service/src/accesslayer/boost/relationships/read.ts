@@ -375,6 +375,9 @@ export const canProfileCreateChildBoost = async (
     parentBoost: BoostInstance,
     childBoost: Omit<BoostType, 'boost' | 'id'>
 ) => {
+    // If the parent boost explicitly allows anyone to create children, bypass further checks
+    if (parentBoost.allowAnyoneToCreateChildren) return true;
+
     const query = new QueryBuilder()
         .match({ model: Boost, where: { id: parentBoost.id }, identifier: 'targetBoost' })
         .match({ model: Profile, where: { profileId: profile.profileId }, identifier: 'profile' })

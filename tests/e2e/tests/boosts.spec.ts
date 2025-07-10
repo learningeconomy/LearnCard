@@ -551,4 +551,31 @@ describe('Boosts', () => {
             });
         });
     });
+
+    test('Any user can create child boost if flag set on parent', async () => {
+        // User A creates a parent boost with the universal-child flag
+        // @ts-ignore – allow universal child flag not yet in typed SDK
+        const parentBoostUri = await a.invoke.createBoost(testUnsignedBoost, {
+            allowAnyoneToCreateChildren: true,
+        });
+        expect(parentBoostUri).toBeDefined();
+
+        // User B attempts to create a child boost of A's boost – should succeed without role
+        const childBoostUri = await b.invoke.createChildBoost(parentBoostUri, testUnsignedBoost);
+        expect(childBoostUri).toBeDefined();
+
+        // Verify relationship exists
+        const parents = await b.invoke.getBoostParents(childBoostUri);
+        expect(parents.records.some(record => record.uri === parentBoostUri)).toBe(true);
+
+        const secondChildBoostUri = await b.invoke.createBoost(testUnsignedBoost);
+
+        await b.invoke.makeBoostParent({
+            parentUri: parentBoostUri,
+            childUri: secondChildBoostUri,
+        });
+
+        const secondChildParents = await b.invoke.getBoostParents(secondChildBoostUri);
+        expect(secondChildParents.records.some(record => record.uri === parentBoostUri)).toBe(true);
+    });
 });

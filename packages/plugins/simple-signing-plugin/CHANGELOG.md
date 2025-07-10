@@ -1,5 +1,65 @@
 # lca-api-plugin
 
+## 1.0.15
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/simple-signing-client@1.0.15
+
+## 1.0.14
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/simple-signing-client@1.0.14
+
+## 1.0.13
+
+### Patch Changes
+
+-   [#682](https://github.com/learningeconomy/LearnCard/pull/682) [`1ed5313935264890917c6ddf19249ada91d1e524`](https://github.com/learningeconomy/LearnCard/commit/1ed5313935264890917c6ddf19249ada91d1e524) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Bump tsc-alias
+
+-   Updated dependencies []:
+    -   @learncard/simple-signing-client@1.0.13
+
+## 1.0.12
+
+### Patch Changes
+
+-   [#678](https://github.com/learningeconomy/LearnCard/pull/678) [`aaa05036a29e1071bf1b93e9bfdecdc89fb3d7c3`](https://github.com/learningeconomy/LearnCard/commit/aaa05036a29e1071bf1b93e9bfdecdc89fb3d7c3) Thanks [@Custard7](https://github.com/Custard7)! - Fix: Update Plugins to support CJS
+
+-   Updated dependencies []:
+    -   @learncard/simple-signing-client@1.0.12
+
+## 1.0.11
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/simple-signing-client@1.0.11
+
+## 1.0.10
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/simple-signing-client@1.0.10
+
+## 1.0.9
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/simple-signing-client@1.0.9
+
+## 1.0.8
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/simple-signing-client@1.0.8
+
 ## 1.0.7
 
 ### Patch Changes

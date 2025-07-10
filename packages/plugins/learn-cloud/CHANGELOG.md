@@ -1,5 +1,89 @@
 # learn-card-core
 
+## 2.1.28
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.31
+    -   @learncard/helpers@1.1.19
+    -   @learncard/learn-cloud-client@1.4.3
+    -   @learncard/didkit-plugin@1.5.18
+
+## 2.1.27
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.30
+    -   @learncard/helpers@1.1.18
+    -   @learncard/learn-cloud-client@1.4.2
+    -   @learncard/didkit-plugin@1.5.17
+
+## 2.1.26
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-client@1.4.1
+
+## 2.1.25
+
+### Patch Changes
+
+-   Updated dependencies [[`1ed5313935264890917c6ddf19249ada91d1e524`](https://github.com/learningeconomy/LearnCard/commit/1ed5313935264890917c6ddf19249ada91d1e524), [`1ed5313935264890917c6ddf19249ada91d1e524`](https://github.com/learningeconomy/LearnCard/commit/1ed5313935264890917c6ddf19249ada91d1e524)]:
+    -   @learncard/core@9.3.29
+    -   @learncard/learn-cloud-client@1.4.0
+    -   @learncard/didkit-plugin@1.5.16
+    -   @learncard/helpers@1.1.17
+
+## 2.1.24
+
+### Patch Changes
+
+-   Updated dependencies [[`aaa05036a29e1071bf1b93e9bfdecdc89fb3d7c3`](https://github.com/learningeconomy/LearnCard/commit/aaa05036a29e1071bf1b93e9bfdecdc89fb3d7c3)]:
+    -   @learncard/core@9.3.28
+    -   @learncard/didkit-plugin@1.5.15
+    -   @learncard/learn-cloud-client@1.3.23
+
+## 2.1.23
+
+### Patch Changes
+
+-   Updated dependencies [[`8957eda698be3222588d0b56834d7ef5622057fb`](https://github.com/learningeconomy/LearnCard/commit/8957eda698be3222588d0b56834d7ef5622057fb)]:
+    -   @learncard/didkit-plugin@1.5.14
+    -   @learncard/learn-cloud-client@1.3.22
+
+## 2.1.22
+
+### Patch Changes
+
+-   Updated dependencies [[`c9633be1bb84eb620502543383eb17b34be1586e`](https://github.com/learningeconomy/LearnCard/commit/c9633be1bb84eb620502543383eb17b34be1586e)]:
+    -   @learncard/didkit-plugin@1.5.13
+    -   @learncard/core@9.3.27
+    -   @learncard/helpers@1.1.16
+    -   @learncard/learn-cloud-client@1.3.21
+
+## 2.1.21
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-client@1.3.20
+    -   @learncard/core@9.3.26
+    -   @learncard/helpers@1.1.15
+    -   @learncard/didkit-plugin@1.5.12
+
+## 2.1.20
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.25
+    -   @learncard/helpers@1.1.14
+    -   @learncard/learn-cloud-client@1.3.19
+    -   @learncard/didkit-plugin@1.5.11
+
 ## 2.1.19
 
 ### Patch Changes

@@ -1,5 +1,115 @@
 # learn-card-core
 
+## 2.5.0
+
+### Minor Changes
+
+-   [#707](https://github.com/learningeconomy/LearnCard/pull/707) [`e6f76c42d840389f791d2767de46b063bb392180`](https://github.com/learningeconomy/LearnCard/commit/e6f76c42d840389f791d2767de46b063bb392180) Thanks [@Custard7](https://github.com/Custard7)! - LC-1805 Feat: Universal Inbox
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.31
+    -   @learncard/network-brain-client@2.3.6
+
+## 2.4.39
+
+### Patch Changes
+
+-   [#708](https://github.com/learningeconomy/LearnCard/pull/708) [`1b99797c404648412f6a6e8a1f77ebab71caa28c`](https://github.com/learningeconomy/LearnCard/commit/1b99797c404648412f6a6e8a1f77ebab71caa28c) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Introduces a new optional boolean `allowAnyoneToCreateChildren` on Boost nodes.
+
+    When set to `true` on a parent boost:
+
+    -   Any profile can create child boosts without possessing the `canCreateChildren` role permission.
+    -   The permission gate (`canProfileCreateChildBoost`) now short-circuits when this flag is detected.
+
+    This change updates:
+
+    -   Boost schema & shared types (`@learncard/types`)
+    -   Brain-service model & access-layer logic (`@learncard/network-brain-service`)
+    -   Unit and E2E tests to cover the new behaviour.
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.3.5
+    -   @learncard/core@9.3.30
+
+## 2.4.38
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.3.4
+
+## 2.4.37
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.3.3
+
+## 2.4.36
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.3.2
+
+## 2.4.35
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.3.1
+
+## 2.4.34
+
+### Patch Changes
+
+-   Updated dependencies [[`1ed5313935264890917c6ddf19249ada91d1e524`](https://github.com/learningeconomy/LearnCard/commit/1ed5313935264890917c6ddf19249ada91d1e524), [`1ed5313935264890917c6ddf19249ada91d1e524`](https://github.com/learningeconomy/LearnCard/commit/1ed5313935264890917c6ddf19249ada91d1e524)]:
+    -   @learncard/core@9.3.29
+    -   @learncard/network-brain-client@2.3.0
+
+## 2.4.33
+
+### Patch Changes
+
+-   Updated dependencies [[`aaa05036a29e1071bf1b93e9bfdecdc89fb3d7c3`](https://github.com/learningeconomy/LearnCard/commit/aaa05036a29e1071bf1b93e9bfdecdc89fb3d7c3)]:
+    -   @learncard/core@9.3.28
+    -   @learncard/network-brain-client@2.2.34
+
+## 2.4.32
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.2.33
+
+## 2.4.31
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.27
+    -   @learncard/network-brain-client@2.2.32
+
+## 2.4.30
+
+### Patch Changes
+
+-   [#662](https://github.com/learningeconomy/LearnCard/pull/662) [`319bd3a589e3529d162825d8f6b97268c44060f4`](https://github.com/learningeconomy/LearnCard/commit/319bd3a589e3529d162825d8f6b97268c44060f4) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add support for adding/removing autoboosts
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.2.31
+    -   @learncard/core@9.3.26
+
+## 2.4.29
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.25
+    -   @learncard/network-brain-client@2.2.30
+
 ## 2.4.28
 
 ### Patch Changes

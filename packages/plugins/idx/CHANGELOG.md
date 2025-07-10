@@ -1,5 +1,67 @@
 # learn-card-core
 
+## 1.0.42
+
+### Patch Changes
+
+-   Updated dependencies [[`e6f76c42d840389f791d2767de46b063bb392180`](https://github.com/learningeconomy/LearnCard/commit/e6f76c42d840389f791d2767de46b063bb392180)]:
+    -   @learncard/types@5.8.0
+    -   @learncard/core@9.3.31
+    -   @learncard/ceramic-plugin@1.0.42
+
+## 1.0.41
+
+### Patch Changes
+
+-   Updated dependencies [[`1b99797c404648412f6a6e8a1f77ebab71caa28c`](https://github.com/learningeconomy/LearnCard/commit/1b99797c404648412f6a6e8a1f77ebab71caa28c)]:
+    -   @learncard/types@5.7.1
+    -   @learncard/core@9.3.30
+    -   @learncard/ceramic-plugin@1.0.41
+
+## 1.0.40
+
+### Patch Changes
+
+-   Updated dependencies [[`1ed5313935264890917c6ddf19249ada91d1e524`](https://github.com/learningeconomy/LearnCard/commit/1ed5313935264890917c6ddf19249ada91d1e524), [`1ed5313935264890917c6ddf19249ada91d1e524`](https://github.com/learningeconomy/LearnCard/commit/1ed5313935264890917c6ddf19249ada91d1e524)]:
+    -   @learncard/core@9.3.29
+    -   @learncard/types@5.7.0
+    -   @learncard/ceramic-plugin@1.0.40
+
+## 1.0.39
+
+### Patch Changes
+
+-   Updated dependencies [[`aaa05036a29e1071bf1b93e9bfdecdc89fb3d7c3`](https://github.com/learningeconomy/LearnCard/commit/aaa05036a29e1071bf1b93e9bfdecdc89fb3d7c3)]:
+    -   @learncard/core@9.3.28
+    -   @learncard/ceramic-plugin@1.0.39
+
+## 1.0.38
+
+### Patch Changes
+
+-   Updated dependencies [[`b04788beded98db2fb3827c94e0810943b7f698a`](https://github.com/learningeconomy/LearnCard/commit/b04788beded98db2fb3827c94e0810943b7f698a)]:
+    -   @learncard/types@5.6.14
+    -   @learncard/core@9.3.27
+    -   @learncard/ceramic-plugin@1.0.38
+
+## 1.0.37
+
+### Patch Changes
+
+-   Updated dependencies [[`319bd3a589e3529d162825d8f6b97268c44060f4`](https://github.com/learningeconomy/LearnCard/commit/319bd3a589e3529d162825d8f6b97268c44060f4)]:
+    -   @learncard/types@5.6.13
+    -   @learncard/core@9.3.26
+    -   @learncard/ceramic-plugin@1.0.37
+
+## 1.0.36
+
+### Patch Changes
+
+-   Updated dependencies [[`ef22869f9e9b99200e46cbd82dfc4c41558afcd1`](https://github.com/learningeconomy/LearnCard/commit/ef22869f9e9b99200e46cbd82dfc4c41558afcd1)]:
+    -   @learncard/types@5.6.12
+    -   @learncard/core@9.3.25
+    -   @learncard/ceramic-plugin@1.0.36
+
 ## 1.0.35
 
 ### Patch Changes

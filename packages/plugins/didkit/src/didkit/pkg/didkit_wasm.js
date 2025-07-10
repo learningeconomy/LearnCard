@@ -822,7 +822,7 @@ const __wbindgen_enum_RequestCredentials = ["omit", "same-origin", "include"];
 const __wbindgen_enum_RequestMode = ["same-origin", "no-cors", "cors", "navigate"];
 
 async function __wbg_load(module, imports) {
-    if (typeof Response === 'function' && Object.prototype.toString.call(module) === '[object Response]') {
+    if (typeof Response === 'function' && module instanceof Response) {
         if (typeof WebAssembly.instantiateStreaming === 'function') {
             try {
                 return await WebAssembly.instantiateStreaming(module, imports);
@@ -1236,7 +1236,7 @@ function __wbg_get_imports() {
         const ret = false;
         return ret;
     };
-    imports.wbg.__wbindgen_closure_wrapper12543 = function(arg0, arg1, arg2) {
+    imports.wbg.__wbindgen_closure_wrapper12542 = function(arg0, arg1, arg2) {
         const ret = makeMutClosure(arg0, arg1, 4131, __wbg_adapter_52);
         return ret;
     };

@@ -723,6 +723,16 @@ export const getLearnCardNetworkPlugin = async (
 
                 return client.profile.signingAuthority.query({ endpoint, name });
             },
+            setPrimaryRegisteredSigningAuthority: async (_learnCard, endpoint, name) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.profile.setPrimarySigningAuthority.mutate({ endpoint, name });
+            }, 
+            getPrimaryRegisteredSigningAuthority: async (_learnCard) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.profile.primarySigningAuthority.query();
+            }, 
 
             generateClaimLink: async (_learnCard, boostUri, claimLinkSA, options, challenge) => {
                 if (!userData) throw new Error('Please make an account first!');
@@ -745,6 +755,21 @@ export const getLearnCardNetworkPlugin = async (
                 if (!userData) throw new Error('Please make an account first!');
 
                 return client.contracts.createConsentFlowContract.mutate(contract);
+            },
+
+            addAutoBoostsToContract: async (_learnCard, contractUri, autoboosts) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.contracts.addAutoBoostsToContract.mutate({ contractUri, autoboosts });
+            },
+
+            removeAutoBoostsFromContract: async (_learnCard, contractUri, boostUris) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.contracts.removeAutoBoostsFromContract.mutate({
+                    contractUri,
+                    boostUris,
+                });
             },
 
             getContract: async (_learnCard, uri) => {
@@ -972,6 +997,40 @@ export const getLearnCardNetworkPlugin = async (
                 if (!apiToken) throw new Error('Failed to get API Token for auth grant');
 
                 return apiToken;
+            },
+
+
+            sendCredentialViaInbox: async (_learnCard, issueInboxCredential) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.inbox.issue.mutate(issueInboxCredential);
+            },
+            getMySentInboxCredentials: async (_learnCard, options) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.inbox.getMyIssuedCredentials.query(options);
+            },
+            getInboxCredential: async (_learnCard, id) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.inbox.getInboxCredential.query({ credentialId: id });
+            },
+            addContactMethod: async (_learnCard, contactMethod) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.contactMethods.addContactMethod.mutate(contactMethod);
+            },
+            getMyContactMethods: async (_learnCard) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.contactMethods.getMyContactMethods.query();
+            },
+            setPrimaryContactMethod: async (_learnCard, contactMethodId) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.contactMethods.setPrimaryContactMethod.mutate({ contactMethodId });
+            },
+            verifyContactMethod: async (_learnCard, token) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.contactMethods.verifyContactMethod.mutate({ token });
+            },
+            removeContactMethod: async (_learnCard, id) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.contactMethods.removeContactMethod.mutate({ id });
             },
 
             resolveFromLCN: async (_learnCard, uri) => {

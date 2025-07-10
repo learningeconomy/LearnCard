@@ -6,9 +6,10 @@
 [![npm downloads](https://img.shields.io/npm/dw/@learncard/core)](https://www.npmjs.com/package/@learncard/core)
 [![vulnerabilities](https://img.shields.io/snyk/vulnerabilities/npm/@learncard/core)](https://www.npmjs.com/package/@learncard/core)
 
-The LearnCard Core is a pluggable, open-source, universal digital wallet to enable any individual or organization to seamlessly **issue, earn, store, share, and spend currency and credentials** built for the future of education and work.
+The LearnCard Wallet SDK is a pluggable, open-source, universal digital wallet to enable any individual or organization to seamlessly **issue, earn, store, share, and spend currency and credentials** built for the future of education and work.
 
 ## Documentation
+
 All LearnCard documentation can be found at:
 https://docs.learncard.com
 
@@ -22,12 +23,12 @@ pnpm i @learncard/core
 
 ### Instantiation
 
-Instantiate a wallet using `initLearnCard`. This method accepts a unique identifier string that is 
+Instantiate a wallet using `initLearnCard`. This method accepts a unique identifier string that is
 up to 64 characters long. If it is less than 64 characters, `initLearnCard` will pad the start of
 the string with 0's until it is 64 characters long.
 
 ```js
-import { initLearnCard } from "@learncard/core";
+import { initLearnCard } from '@learncard/core';
 
 const wallet = await initLearnCard({ seed: 'a'.repeat(64) });
 ```
@@ -35,6 +36,7 @@ const wallet = await initLearnCard({ seed: 'a'.repeat(64) });
 ### Issuing/Verifying Credentials and Presentations
 
 #### Issue a credential
+
 ```js
 // Grab a test VC, or create your own!
 const unsignedVc = await wallet.invoke.getTestVc();
@@ -43,6 +45,7 @@ const vc = await wallet.invoke.issueCredential(unsignedVc);
 ```
 
 #### Verify a credential
+
 ```js
 const result = await wallet.invoke.verifyCredential(vc, {}, true);
 
@@ -53,11 +56,13 @@ else console.log('This credential is valid!');
 ```
 
 #### Issue a presentation
+
 ```js
 const vp = await wallet.invoke.issuePresentation(vc);
 ```
 
 #### Verify a presentation
+
 ```js
 const result = await wallet.invoke.verifyPresentation(vp);
 
@@ -74,18 +79,17 @@ store references to that public place. While this is not the only way to store c
 also definitely not a silver bullet! E.g. credentials containing private data), it is the opinion of
 this library that it should be used by default.
 
-#### Publish Credential 
+#### Publish Credential
 
 After signing a VC, you may choose to publish that credential to LearnCloud. Doing so will return a
-URI, which you may share to the recipient. That URI can then be used to resolve the 
+URI, which you may share to the recipient. That URI can then be used to resolve the
 issued credential. This means both the issuer and recipient may store the _URI_ instead of the
 credential itself.
 
 ```js
-
 // Issuer
 
-const holderDid = 'did:key:z6MknqnHBn4Rx64gH4Dy1qjmaHjxFjaNG1WioKvQuXKhEKL5'
+const holderDid = 'did:key:z6MknqnHBn4Rx64gH4Dy1qjmaHjxFjaNG1WioKvQuXKhEKL5';
 const uvc = learnCard.invoke.newCredential({ subject: holderDid });
 const vc = await learnCard.invoke.issueCredential(uvc);
 const uri = await learnCard.store.LearnCloud.upload(vc);
@@ -98,18 +102,14 @@ const result = await learnCard.invoke.verifyCredential(credential);
 if (result.errors.length == 0) {
     await learnCard.index.LearnCloud.add({ uri, id: 'test' });
 }
-
 ```
 
 #### Reading From LearnCloud
 
-
 ```js
-
 const records = await learnCard.index.LearnCloud.get();
 const record = records.find(({ id }) => id === 'test');
 const storedCredential = await learnCard.read.get(record.uri);
-
 ```
 
 #### Adding a Credential to a Wallet
@@ -141,6 +141,7 @@ const vcs = await Promise.all(uris.map(async uri => wallet.read.get(uri)));
 ```
 
 ## Contributing
+
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
 Please make sure to update tests as appropriate.
@@ -148,7 +149,6 @@ Please make sure to update tests as appropriate.
 ## Who is Learning Economy Foundation?
 
 **[Learning Economy Foundation (LEF)](https://www.learningeconomy.io)** is a 501(c)(3) non-profit organization leveraging global standards and web3 protocols to bring quality skills and equal opportunity to every human on earth, and address the persistent inequities that exist around the globe in education and employment. We help you build the future of education and work with:
-
 
 ## License
 

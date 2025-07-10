@@ -17,7 +17,7 @@ type VerifierStateBadgeAndTextProps = {
     className?: string;
 };
 
-const VerifierStateBadgeAndText: React.FC<VerifierStateBadgeAndTextProps> = ({
+export const VerifierStateBadgeAndText: React.FC<VerifierStateBadgeAndTextProps> = ({
     verifierState,
     className = '',
 }) => {

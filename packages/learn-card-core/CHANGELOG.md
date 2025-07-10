@@ -1,5 +1,55 @@
 # learn-card-core
 
+## 9.3.31
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.1.19
+
+## 9.3.30
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.1.18
+
+## 9.3.29
+
+### Patch Changes
+
+-   [#682](https://github.com/learningeconomy/LearnCard/pull/682) [`1ed5313935264890917c6ddf19249ada91d1e524`](https://github.com/learningeconomy/LearnCard/commit/1ed5313935264890917c6ddf19249ada91d1e524) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Bump tsc-alias
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.1.17
+
+## 9.3.28
+
+### Patch Changes
+
+-   [#678](https://github.com/learningeconomy/LearnCard/pull/678) [`aaa05036a29e1071bf1b93e9bfdecdc89fb3d7c3`](https://github.com/learningeconomy/LearnCard/commit/aaa05036a29e1071bf1b93e9bfdecdc89fb3d7c3) Thanks [@Custard7](https://github.com/Custard7)! - Fix: Update Plugins to support CJS
+
+## 9.3.27
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.1.16
+
+## 9.3.26
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.1.15
+
+## 9.3.25
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/helpers@1.1.14
+
 ## 9.3.24
 
 ### Patch Changes
