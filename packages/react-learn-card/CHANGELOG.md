@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.8.6
+
+### Patch Changes
+
+-   [#718](https://github.com/learningeconomy/LearnCard/pull/718) [`f9d07836a4392d2a396ad25304730192260f8b45`](https://github.com/learningeconomy/LearnCard/commit/f9d07836a4392d2a396ad25304730192260f8b45) Thanks [@gerardopar](https://github.com/gerardopar)! - add comment
+
 ## 2.8.5
 
 ### Patch Changes
