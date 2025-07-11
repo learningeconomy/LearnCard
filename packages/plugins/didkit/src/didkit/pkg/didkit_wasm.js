@@ -810,11 +810,11 @@ export function contextLoader(url) {
 }
 
 function __wbg_adapter_52(arg0, arg1, arg2) {
-    wasm.closure4178_externref_shim(arg0, arg1, arg2);
+    wasm.closure4177_externref_shim(arg0, arg1, arg2);
 }
 
 function __wbg_adapter_214(arg0, arg1, arg2, arg3) {
-    wasm.closure4580_externref_shim(arg0, arg1, arg2, arg3);
+    wasm.closure4579_externref_shim(arg0, arg1, arg2, arg3);
 }
 
 const __wbindgen_enum_RequestCredentials = ["omit", "same-origin", "include"];
@@ -1239,8 +1239,8 @@ function __wbg_get_imports() {
         const ret = false;
         return ret;
     };
-    imports.wbg.__wbindgen_closure_wrapper12232 = function(arg0, arg1, arg2) {
-        const ret = makeMutClosure(arg0, arg1, 4179, __wbg_adapter_52);
+    imports.wbg.__wbindgen_closure_wrapper12244 = function(arg0, arg1, arg2) {
+        const ret = makeMutClosure(arg0, arg1, 4178, __wbg_adapter_52);
         return ret;
     };
     imports.wbg.__wbindgen_debug_string = function(arg0, arg1) {
