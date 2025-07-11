@@ -124,7 +124,10 @@ export type VcTemplates = {
 export type NewCredentialFunction = (args?: DiscriminatedUnionize<VcTemplates>) => UnsignedVC;
 
 /** @group VC Templates Plugin */
-export type VCTemplatePluginDependentMethods = { getSubjectDid?: (type: 'key') => string };
+export type VCTemplatePluginDependentMethods = {
+    getSubjectDid?: (type: 'key') => string;
+    crypto: () => Crypto;
+};
 
 /** @group VC Templates Plugin */
 export type VCTemplatePluginMethods = {

@@ -1,0 +1,22 @@
+{
+    "@context": {
+        "type": "@type",
+        "xsd": "https://www.w3.org/2001/XMLSchema#",
+        "lcn": "https://docs.learncard.com/definitions#",
+        "DelegateCredential": {
+            "@id": "lcn:delegateCredential",
+            "@context": {
+                "permissions": {
+                    "@id": "lcn:delegateAccess",
+                    "@context": {
+                        "statementAccess": {
+                            "@id": "lcn:delegateAccess",
+                            "@container": "@set",
+                            "@type": "xsd:string"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

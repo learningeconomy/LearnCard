@@ -1,0 +1,65 @@
+{
+    "@context": {
+        "type": "@type",
+        "xsd": "https://www.w3.org/2001/XMLSchema#",
+        "lcn": "https://docs.learncard.com/definitions#",
+        "BoostID": {
+            "@id": "lcn:boostID",
+            "@context": {
+                "boostID": {
+                    "@id": "lcn:boostIDField",
+                    "@context": {
+                        "fontColor": {
+                            "@id": "lcn:boostIDFontColor",
+                            "@type": "xsd:string"
+                        },
+                        "accentColor": {
+                            "@id": "lcn:boostIDAccentColor",
+                            "@type": "xsd:string"
+                        },
+                        "backgroundImage": {
+                            "@id": "lcn:boostIDBackgroundImage",
+                            "@type": "xsd:string"
+                        },
+                        "dimBackgroundImage": {
+                            "@id": "lcn:boostIDDimBackgroundImage",
+                            "@type": "xsd:boolean"
+                        },
+                        "issuerThumbnail": {
+                            "@id": "lcn:boostIDIssuerThumbnail",
+                            "@type": "xsd:string"
+                        },
+                        "showIssuerThumbnail": {
+                            "@id": "lcn:boostIDShowIssuerThumbnail",
+                            "@type": "xsd:boolean"
+                        },
+                        "IDIssuerName": {
+                            "@id": "lcn:boostIDIssuerName",
+                            "@type": "xsd:string"
+                        },
+                        "idThumbnail": {
+                            "@id": "lcn:boostIDThumbnail",
+                            "@type": "xsd:string"
+                        },
+                        "accentFontColor": {
+                            "@id": "lcn:boostIDFontColor",
+                            "@type": "xsd:string"
+                        },
+                        "idBackgroundColor": {
+                            "@id": "lcn:boostIDBackgroundColor",
+                            "@type": "xsd:string"
+                        },
+                        "repeatIdBackgroundImage": {
+                            "@id": "lcn:boostIDRepeatIdBackgroundImage",
+                            "@type": "xsd:boolean"
+                        },
+                        "idDescription": {
+                            "@id": "lcn:boostIDDescription",
+                            "@type": "xsd:string"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
