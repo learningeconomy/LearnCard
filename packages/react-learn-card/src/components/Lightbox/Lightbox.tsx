@@ -1,5 +1,6 @@
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { getVideoMetadata, VideoMetadata } from '../../helpers/video.helpers';
 
 export type LightboxItemType = 'photo' | 'video';
 
@@ -23,25 +24,10 @@ export type LightboxProps = {
     setCurrentUrl: (url: string | undefined) => void;
 };
 
-const getYoutubeVideoId = (url: string): string | null => {
-    const match = url.match(
-        /(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/))([\w-]{11})/
-    );
-    return match ? match[1] : null;
-};
-
-const isYoutubeUrl = (url: string): boolean => {
-    try {
-        const { hostname } = new URL(url);
-        return hostname.includes('youtube.com') || hostname === 'youtu.be';
-    } catch {
-        return false;
-    }
-};
-
 export const Lightbox: React.FC<LightboxProps> = ({ items, currentUrl, setCurrentUrl }) => {
     const currentItem = items.find(item => item.url === currentUrl);
     const innerRef = useRef<HTMLImageElement>(null);
+    const [videoMetadata, setVideoMetadata] = useState<VideoMetadata | null>(null);
 
     const goToNextItem = useCallback(() => {
         const currentIndex = items.findIndex(item => item.url === currentUrl);
@@ -79,6 +65,19 @@ export const Lightbox: React.FC<LightboxProps> = ({ items, currentUrl, setCurren
         return () => window.removeEventListener('keydown', keydownListener);
     }, [currentUrl, currentItem, goToNextItem, goToPreviousItem, setCurrentUrl]);
 
+    useEffect(() => {
+        const fetchMetadata = async () => {
+            if (currentItem?.type === 'video') {
+                const metadata = await getVideoMetadata(currentItem.url);
+                setVideoMetadata(metadata);
+            } else {
+                setVideoMetadata(null);
+            }
+        };
+
+        fetchMetadata();
+    }, []);
+
     if (!currentUrl || !currentItem) return null;
 
     return createPortal(
@@ -100,17 +99,17 @@ export const Lightbox: React.FC<LightboxProps> = ({ items, currentUrl, setCurren
                 />
             )}
 
-            {currentItem.type === 'video' && isYoutubeUrl(currentUrl) && (
-                <iframe
-                    width="800"
-                    height="450"
-                    src={`https://www.youtube.com/embed/${getYoutubeVideoId(currentUrl)}`}
-                    title="YouTube video player"
-                    frameBorder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                    className="max-w-[90vw] max-h-[90vh]"
-                />
+            {currentItem.type === 'video' && videoMetadata?.embedUrl && (
+                <div className="relative w-[90vw] max-w-[800px] aspect-video">
+                    <iframe
+                        src={videoMetadata.embedUrl}
+                        className="absolute top-0 left-0 w-full h-full rounded-md"
+                        title="Video player"
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                    />
+                </div>
             )}
         </div>,
         document.body
