@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 1.0.54
+
+### Patch Changes
+
+-   [#717](https://github.com/learningeconomy/LearnCard/pull/717) [`fe42f075d452eda41ed013a3eb9668bdc6a4ef60`](https://github.com/learningeconomy/LearnCard/commit/fe42f075d452eda41ed013a3eb9668bdc6a4ef60) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Update templates to use inline contexts, OBv3.0.3, and VC 2
+
 ## 1.0.53
 
 ### Patch Changes
