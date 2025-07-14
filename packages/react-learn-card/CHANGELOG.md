@@ -1,5 +1,25 @@
 # @welibraryos/react-learn-card
 
+## 2.8.7
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.25
+
+## 2.8.6
+
+### Patch Changes
+
+-   [#718](https://github.com/learningeconomy/LearnCard/pull/718) [`f9d07836a4392d2a396ad25304730192260f8b45`](https://github.com/learningeconomy/LearnCard/commit/f9d07836a4392d2a396ad25304730192260f8b45) Thanks [@gerardopar](https://github.com/gerardopar)! - add comment
+
+## 2.8.5
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.24
+
 ## 2.8.4
 
 ### Patch Changes
