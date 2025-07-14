@@ -41,6 +41,7 @@
     "types": "./dist/index.d.ts",
     "dependencies": {
         "@learncard/core": "workspace:*",
+        "@learncard/helpers": "workspace:*",
         "@learncard/network-brain-client": "workspace:*"
     }
 }
