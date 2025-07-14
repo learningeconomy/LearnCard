@@ -37,7 +37,7 @@ export const getVCTemplatesPlugin = (): VCTemplatePlugin => {
                 if (!did) throw new Error('Could not get issuer did!');
 
                 return {
-                    '@context': ['https://www.w3.org/2018/credentials/v1'],
+                    '@context': ['https://www.w3.org/ns/credentials/v2'],
                     type: ['VerifiablePresentation'],
                     holder: did,
                     verifiableCredential: credential,
