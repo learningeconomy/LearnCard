@@ -1,0 +1,36 @@
+{
+    "@context": {
+        "id": "@id",
+        "type": "@type",
+        "lcn": "https://docs.learncard.com/definitions#",
+        "xsd": "https://www.w3.org/2001/XMLSchema#",
+        "RawArtifactCredential": {
+            "@id": "lcn:rawArtifactCredential"
+        },
+        "rawArtifact": {
+            "@id": "lcn:rawArtifact",
+            "@context": {
+                "data": {
+                    "@id": "lcn:rawArtifactData",
+                    "@type": "xsd:string"
+                },
+                "type": {
+                    "@id": "lcn:rawArtifactType",
+                    "@type": "xsd:string"
+                },
+                "fileName": {
+                    "@id": "lcn:rawArtifactFileName",
+                    "@type": "xsd:string"
+                },
+                "fileSize": {
+                    "@id": "lcn:rawArtifactFileSize",
+                    "@type": "xsd:string"
+                },
+                "fileType": {
+                    "@id": "lcn:rawArtifactFileType",
+                    "@type": "xsd:string"
+                }
+            }
+        }
+    }
+}
