@@ -1,5 +1,19 @@
 # learn-card-core
 
+## 2.0.25
+
+### Patch Changes
+
+-   Updated dependencies [[`fe42f075d452eda41ed013a3eb9668bdc6a4ef60`](https://github.com/learningeconomy/LearnCard/commit/fe42f075d452eda41ed013a3eb9668bdc6a4ef60), [`fe42f075d452eda41ed013a3eb9668bdc6a4ef60`](https://github.com/learningeconomy/LearnCard/commit/fe42f075d452eda41ed013a3eb9668bdc6a4ef60)]:
+    -   @learncard/didkit-plugin@1.5.19
+    -   @learncard/vc-templates-plugin@1.0.54
+    -   @learncard/chapi-plugin@1.0.61
+    -   @learncard/learn-card-plugin@1.1.47
+    -   @learncard/network-plugin@2.5.2
+    -   @learncard/learn-cloud-plugin@2.1.30
+    -   @learncard/vc-plugin@1.1.48
+    -   @learncard/expiration-plugin@1.1.48
+
 ## 2.0.24
 
 ### Patch Changes

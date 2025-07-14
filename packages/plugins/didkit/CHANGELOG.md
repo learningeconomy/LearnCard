@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 1.5.19
+
+### Patch Changes
+
+-   [#717](https://github.com/learningeconomy/LearnCard/pull/717) [`fe42f075d452eda41ed013a3eb9668bdc6a4ef60`](https://github.com/learningeconomy/LearnCard/commit/fe42f075d452eda41ed013a3eb9668bdc6a4ef60) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add more inline LearnCard contexts
+
 ## 1.5.18
 
 ### Patch Changes
