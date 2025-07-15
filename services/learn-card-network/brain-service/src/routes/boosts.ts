@@ -22,6 +22,7 @@ import {
     JWE,
     VC,
 } from '@learncard/types';
+import { isVC2Format } from '@learncard/helpers';
 
 import { t, profileRoute } from '@routes';
 
@@ -1332,7 +1333,7 @@ export const boostsRouter = t.router({
 
             const newPermissions = Object.entries(updates).reduce<Partial<BoostPermissions>>(
                 (newPermissionsObject, [permission, value]) => {
-                    if (typeof value !== undefined) {
+                    if (typeof value !== 'undefined') {
                         if (!(permissions as any)[permission]) {
                             throw new TRPCError({
                                 code: 'UNAUTHORIZED',
@@ -1421,7 +1422,7 @@ export const boostsRouter = t.router({
 
             const newPermissions = Object.entries(updates).reduce<Partial<BoostPermissions>>(
                 (newPermissionsObject, [permission, value]) => {
-                    if (typeof value !== undefined) {
+                    if (typeof value !== 'undefined') {
                         if (!(permissions as any)[permission]) {
                             throw new TRPCError({
                                 code: 'UNAUTHORIZED',
@@ -1795,7 +1796,11 @@ export const boostsRouter = t.router({
             try {
                 unsignedVc = JSON.parse(boost.dataValues.boost);
 
-                unsignedVc.issuanceDate = new Date().toISOString();
+                if (isVC2Format(unsignedVc)) {
+                    unsignedVc.validFrom = new Date().toISOString();
+                } else {
+                    unsignedVc.issuanceDate = new Date().toISOString();
+                }
                 unsignedVc.issuer = { id: getDidWeb(ctx.domain, profile.profileId) };
 
                 if (Array.isArray(unsignedVc.credentialSubject)) {

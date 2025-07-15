@@ -50,6 +50,7 @@
         "@learncard/didkey-plugin": "workspace:*",
         "@learncard/didkit-plugin": "workspace:*",
         "@learncard/expiration-plugin": "workspace:*",
+        "@learncard/helpers": "workspace:*",
         "@learncard/learn-card-plugin": "workspace:*",
         "@learncard/vc-plugin": "workspace:*",
         "@learncard/types": "workspace:*",

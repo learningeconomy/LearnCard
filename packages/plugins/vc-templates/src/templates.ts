@@ -14,7 +14,7 @@ export const VC_TEMPLATES: {
         } = {},
         crypto
     ) => ({
-        '@context': ['https://www.w3.org/2018/credentials/v1'],
+        '@context': ['https://www.w3.org/ns/credentials/v2'],
         id: `urn:uuid:${crypto.randomUUID()}`,
         type: ['VerifiableCredential'],
         issuer: did,
