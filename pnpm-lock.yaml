@@ -1344,6 +1344,9 @@ importers:
       '@learncard/core':
         specifier: workspace:*
         version: link:../../learn-card-core
+      '@learncard/helpers':
+        specifier: workspace:*
+        version: link:../../learn-card-helpers
       '@learncard/network-brain-client':
         specifier: workspace:*
         version: link:../../learn-card-network/brain-client

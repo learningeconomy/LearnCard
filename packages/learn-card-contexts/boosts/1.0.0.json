@@ -24,18 +24,6 @@
                         "url": {
                             "@id": "lcn:boostAttachmentUrl",
                             "@type": "xsd:string"
-                        },
-                        "fileName": {
-                            "@id": "lcn:boostAttachmentFileName",
-                            "@type": "xsd:string"
-                        },
-                        "fileSize": {
-                            "@id": "lcn:boostAttachmentFileSize",
-                            "@type": "xsd:string"
-                        },
-                        "fileType": {
-                            "@id": "lcn:boostAttachmentFileType",
-                            "@type": "xsd:string"
                         }
                     },
                     "@id": "lcn:boostAttachments"

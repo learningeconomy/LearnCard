@@ -13,6 +13,7 @@ import {
 } from '@learncard/types';
 import { LearnCard } from '@learncard/core';
 import { VerifyExtension } from '@learncard/vc-plugin';
+import { isVC2Format } from '@learncard/helpers';
 
 import {
     LearnCardNetworkPluginDependentMethods,
@@ -652,7 +653,11 @@ export const getLearnCardNetworkPlugin = async (
 
                 let boost = data.data;
 
-                boost.issuanceDate = new Date().toISOString();
+                if (isVC2Format(boost)) {
+                    boost.validFrom = new Date().toISOString();
+                } else {
+                    boost.issuanceDate = new Date().toISOString();
+                }
                 boost.issuer = _learnCard.id.did();
 
                 if (Array.isArray(boost.credentialSubject)) {
@@ -727,12 +732,12 @@ export const getLearnCardNetworkPlugin = async (
                 if (!userData) throw new Error('Please make an account first!');
 
                 return client.profile.setPrimarySigningAuthority.mutate({ endpoint, name });
-            }, 
-            getPrimaryRegisteredSigningAuthority: async (_learnCard) => {
+            },
+            getPrimaryRegisteredSigningAuthority: async _learnCard => {
                 if (!userData) throw new Error('Please make an account first!');
 
                 return client.profile.primarySigningAuthority.query();
-            }, 
+            },
 
             generateClaimLink: async (_learnCard, boostUri, claimLinkSA, options, challenge) => {
                 if (!userData) throw new Error('Please make an account first!');
@@ -999,7 +1004,6 @@ export const getLearnCardNetworkPlugin = async (
                 return apiToken;
             },
 
-
             sendCredentialViaInbox: async (_learnCard, issueInboxCredential) => {
                 if (!userData) throw new Error('Please make an account first!');
                 return client.inbox.issue.mutate(issueInboxCredential);
@@ -1016,7 +1020,7 @@ export const getLearnCardNetworkPlugin = async (
                 if (!userData) throw new Error('Please make an account first!');
                 return client.contactMethods.addContactMethod.mutate(contactMethod);
             },
-            getMyContactMethods: async (_learnCard) => {
+            getMyContactMethods: async _learnCard => {
                 if (!userData) throw new Error('Please make an account first!');
                 return client.contactMethods.getMyContactMethods.query();
             },

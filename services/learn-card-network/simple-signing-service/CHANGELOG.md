@@ -1,5 +1,28 @@
 # @welibraryos/lca-api-service
 
+## 1.0.18
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.32
+    -   @learncard/didkey-plugin@1.0.43
+    -   @learncard/did-web-plugin@1.0.69
+    -   @learncard/didkit-plugin@1.5.21
+    -   @learncard/expiration-plugin@1.1.50
+    -   @learncard/learn-card-plugin@1.1.49
+    -   @learncard/vc-plugin@1.1.50
+
+## 1.0.17
+
+### Patch Changes
+
+-   Updated dependencies [[`52f0829ffdcc9b0f896fe72f10195e37e00d63d3`](https://github.com/learningeconomy/LearnCard/commit/52f0829ffdcc9b0f896fe72f10195e37e00d63d3)]:
+    -   @learncard/didkit-plugin@1.5.20
+    -   @learncard/learn-card-plugin@1.1.48
+    -   @learncard/vc-plugin@1.1.49
+    -   @learncard/expiration-plugin@1.1.49
+
 ## 1.0.16
 
 ### Patch Changes

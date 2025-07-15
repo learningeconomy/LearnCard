@@ -1,5 +1,23 @@
 # learn-card-core
 
+## 2.5.4
+
+### Patch Changes
+
+-   [#724](https://github.com/learningeconomy/LearnCard/pull/724) [`610657555402897bc2b0321be81a17975d28c0f4`](https://github.com/learningeconomy/LearnCard/commit/610657555402897bc2b0321be81a17975d28c0f4) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix sending boosts that are VC 2.0's
+
+-   Updated dependencies [[`610657555402897bc2b0321be81a17975d28c0f4`](https://github.com/learningeconomy/LearnCard/commit/610657555402897bc2b0321be81a17975d28c0f4)]:
+    -   @learncard/helpers@1.1.20
+    -   @learncard/core@9.3.32
+    -   @learncard/network-brain-client@2.3.10
+
+## 2.5.3
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.3.9
+
 ## 2.5.2
 
 ### Patch Changes

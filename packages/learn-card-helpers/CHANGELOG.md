@@ -1,5 +1,11 @@
 # @learncard/helpers
 
+## 1.1.20
+
+### Patch Changes
+
+-   [#724](https://github.com/learningeconomy/LearnCard/pull/724) [`610657555402897bc2b0321be81a17975d28c0f4`](https://github.com/learningeconomy/LearnCard/commit/610657555402897bc2b0321be81a17975d28c0f4) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add isVC2 helper
+
 ## 1.1.19
 
 ### Patch Changes
