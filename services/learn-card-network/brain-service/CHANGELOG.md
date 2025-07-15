@@ -1,5 +1,11 @@
 # @learncard/network-brain-service
 
+## 3.5.5
+
+### Patch Changes
+
+-   [#664](https://github.com/learningeconomy/LearnCard/pull/664) [`3e4e7b70f5a357c098aa88c3a97d19ce879a8d6c`](https://github.com/learningeconomy/LearnCard/commit/3e4e7b70f5a357c098aa88c3a97d19ce879a8d6c) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Refined connection logic for auto-connect boosts to ensure bi-directional connections are established. Updated `getConnections`, `getConnectedBoostRecipients`, and `countConnectedBoostRecipients` to use consistent connection resolution. Ported and expanded tests for connected boost recipients to E2E.
+
 ## 3.5.4
 
 ### Patch Changes
