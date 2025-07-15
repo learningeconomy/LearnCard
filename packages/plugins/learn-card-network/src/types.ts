@@ -229,6 +229,19 @@ export type LearnCardNetworkPluginMethods = {
         query?: LCNProfileQuery
     ) => Promise<PaginatedBoostRecipientsType>;
     countBoostRecipients: (uri: string, includeUnacceptedBoosts?: boolean) => Promise<number>;
+    getConnectedBoostRecipients: (
+        uri: string,
+        options?: {
+            limit?: number;
+            cursor?: string;
+            includeUnacceptedBoosts?: boolean;
+            query?: LCNProfileQuery;
+        }
+    ) => Promise<PaginatedBoostRecipientsType>;
+    countConnectedBoostRecipients: (
+        uri: string,
+        includeUnacceptedBoosts?: boolean
+    ) => Promise<number>;
     getBoostChildrenProfileManagers: (
         uri: string,
         options?: Partial<PaginationOptionsType> & { query?: LCNProfileManagerQuery }
