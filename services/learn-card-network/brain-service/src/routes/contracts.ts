@@ -27,6 +27,7 @@ import {
     JWE,
     AutoBoostConfigValidator,
 } from '@learncard/types';
+import { isVC2Format } from '@learncard/helpers';
 import { createConsentFlowContract } from '@accesslayer/consentflowcontract/create';
 import {
     getAutoBoostsForContract,
@@ -778,7 +779,11 @@ export const contractsRouter = t.router({
             let unsignedVc: UnsignedVC;
             try {
                 unsignedVc = JSON.parse(boost.dataValues.boost);
-                unsignedVc.issuanceDate = new Date().toISOString();
+                if (isVC2Format(unsignedVc)) {
+                    unsignedVc.validFrom = new Date().toISOString();
+                } else {
+                    unsignedVc.issuanceDate = new Date().toISOString();
+                }
                 unsignedVc.issuer = { id: getDidWeb(ctx.domain, profile.profileId) };
                 if (Array.isArray(unsignedVc.credentialSubject)) {
                     unsignedVc.credentialSubject = unsignedVc.credentialSubject.map(subject => ({
