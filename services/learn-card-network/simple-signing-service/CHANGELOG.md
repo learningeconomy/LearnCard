@@ -1,5 +1,15 @@
 # @welibraryos/lca-api-service
 
+## 1.0.19
+
+### Patch Changes
+
+-   [#727](https://github.com/learningeconomy/LearnCard/pull/727) [`3922c670b598a19ec33084ae4cadbdcf89177f64`](https://github.com/learningeconomy/LearnCard/commit/3922c670b598a19ec33084ae4cadbdcf89177f64) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Better VC 2 support
+
+-   Updated dependencies [[`3922c670b598a19ec33084ae4cadbdcf89177f64`](https://github.com/learningeconomy/LearnCard/commit/3922c670b598a19ec33084ae4cadbdcf89177f64)]:
+    -   @learncard/vc-plugin@1.1.51
+    -   @learncard/expiration-plugin@1.1.51
+
 ## 1.0.18
 
 ### Patch Changes
