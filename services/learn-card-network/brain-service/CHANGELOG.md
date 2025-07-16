@@ -1,5 +1,11 @@
 # @learncard/network-brain-service
 
+## 3.5.7
+
+### Patch Changes
+
+-   [#730](https://github.com/learningeconomy/LearnCard/pull/730) [`b979f88ea7e60f24863ec7e3120b6f04d61ceef8`](https://github.com/learningeconomy/LearnCard/commit/b979f88ea7e60f24863ec7e3120b6f04d61ceef8) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix potential Neo4j Deadlock when creating a child boost
+
 ## 3.5.6
 
 ### Patch Changes
