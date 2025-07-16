@@ -45,6 +45,7 @@ class TestBoostUpdateBoostRequest(unittest.TestCase):
                     meta = {
                         'key' : null
                         }, 
+                    allow_anyone_to_create_children = True, 
                     credential = null, )
             )
         else:
@@ -59,6 +60,7 @@ class TestBoostUpdateBoostRequest(unittest.TestCase):
                     meta = {
                         'key' : null
                         }, 
+                    allow_anyone_to_create_children = True, 
                     credential = null, ),
         )
         """
