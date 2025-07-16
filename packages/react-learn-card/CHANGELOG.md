@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.8.11
+
+### Patch Changes
+
+-   [#720](https://github.com/learningeconomy/LearnCard/pull/720) [`53cfa3a0275c3cfd144bc078dbbd03ec9d2b515b`](https://github.com/learningeconomy/LearnCard/commit/53cfa3a0275c3cfd144bc078dbbd03ec9d2b515b) Thanks [@gerardopar](https://github.com/gerardopar)! - [LC-1107] - Media Display Type
+
 ## 2.8.10
 
 ### Patch Changes
