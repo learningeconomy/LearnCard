@@ -2324,6 +2324,9 @@ importers:
       '@learncard/expiration-plugin':
         specifier: workspace:*
         version: link:../../../packages/plugins/expiration
+      '@learncard/helpers':
+        specifier: workspace:*
+        version: link:../../../packages/learn-card-helpers
       '@learncard/learn-card-plugin':
         specifier: workspace:*
         version: link:../../../packages/plugins/learn-card

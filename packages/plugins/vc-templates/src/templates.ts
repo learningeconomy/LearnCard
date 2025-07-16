@@ -18,7 +18,7 @@ export const VC_TEMPLATES: {
         id: `urn:uuid:${crypto.randomUUID()}`,
         type: ['VerifiableCredential'],
         issuer: did,
-        issuanceDate,
+        validFrom: issuanceDate,
         credentialSubject: { id: subject },
     }),
     achievement: (
@@ -208,12 +208,12 @@ export const VC_TEMPLATES: {
         },
         ...(address
             ? {
-                  address: {
-                      type: ['Address'],
-                      ...address,
-                      ...(address.geo ? { geo: { type: ['GeoCoordinates'], ...address.geo } } : {}),
-                  },
-              }
+                address: {
+                    type: ['Address'],
+                    ...address,
+                    ...(address.geo ? { geo: { type: ['GeoCoordinates'], ...address.geo } } : {}),
+                },
+            }
             : {}),
         display,
         familyTitles,
