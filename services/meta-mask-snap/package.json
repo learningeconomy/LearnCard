@@ -35,7 +35,7 @@
         "@metamask/snap-types": "^0.21.0",
         "@metamask/snaps-cli": "^0.21.0",
         "@rollup/plugin-node-resolve": "^13.3.0",
-        "rollup": "^2.71.1",
+        "rollup": "^4.22.4",
         "rollup-plugin-base64": "^1.0.1",
         "rollup-plugin-commonjs": "^10.1.0",
         "rollup-plugin-delete": "^2.0.0",
