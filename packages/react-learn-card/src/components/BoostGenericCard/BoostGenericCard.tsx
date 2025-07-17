@@ -2,9 +2,9 @@ import React from 'react';
 import { BoostGenericCardProps, WalletCategoryTypes } from '../../types';
 import { TYPE_TO_IMG_SRC, TYPE_TO_WALLET_DARK_COLOR } from '../../constants';
 import { CircleCheckButton } from '../CircleCheckButton';
-import ThreeDots from '../../assets/images/DotsThreeOutline.svg';
 import { DisplayTypeEnum, getDisplayIcon } from '../../helpers/display.helpers';
 import { CertDisplayCardSkillsCount } from '../CertificateDisplayCard';
+import ThreeDotVertical from '../svgs/ThreeDotVertical';
 
 export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
     title,
@@ -59,14 +59,10 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
         >
             {optionsTriggerOnClick && (
                 <section
-                    className="absolute cursor-pointer shadow-bottom h-[30px] w-[30px] top-[5px] right-[5px] rounded-full overflow-hidden z-20 bg-white flex items-center justify-center"
+                    className="absolute cursor-pointer shadow-bottom h-[30px] w-[30px] top-[5px] right-[5px] rounded-full overflow-hidden z-20 bg-white/70 flex items-center justify-center"
                     onClick={handleOptionsClick}
                 >
-                    <img
-                        alt="Menu dropdown icon"
-                        className="h-[20px] w-[20px] object-cover overflow-hidden"
-                        src={ThreeDots}
-                    />
+                    <ThreeDotVertical className="h-[20px] w-[20px] z-50 text-grayscale-900" />
                 </section>
             )}
 
