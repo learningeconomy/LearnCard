@@ -880,7 +880,8 @@ export const contractsRouter = t.router({
             console.log('🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆');
             console.log('🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆');
 
-            console.log('contractDetails', contractDetails);
+            // console.log('contractDetails', contractDetails);
+            console.log('terms:', terms);
 
             console.log('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥');
             console.log('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥');
@@ -933,8 +934,6 @@ export const contractsRouter = t.router({
             const accessToken = accessTokenResponse.access_token;
 
             console.log('🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧');
-            console.log('clientId:', clientId);
-            console.log('accessKey:', accessKey);
             console.log('accessToken:', accessToken);
 
             await consentToContract(
