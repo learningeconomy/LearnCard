@@ -63,6 +63,15 @@ Presentation.addRelationships({
         neogma.queryRunner.run(
             'CREATE INDEX has_role_id_idx IF NOT EXISTS FOR ()-[r:HAS_ROLE]-() ON (r.roleId)'
         ),
+        neogma.queryRunner.run(
+            'CREATE CONSTRAINT contact_method_type_value_unique IF NOT EXISTS FOR (c:ContactMethod) REQUIRE (c.type, c.value) IS UNIQUE'
+        ),
+        neogma.queryRunner.run(
+            'CREATE INDEX inbox_credential_status_idx IF NOT EXISTS FOR (i:InboxCredential) ON (i.currentStatus)'
+        ),
+        neogma.queryRunner.run(
+            'CREATE INDEX inbox_credential_expires_idx IF NOT EXISTS FOR (i:InboxCredential) ON (i.expiresAt)'
+        ),
     ])
         .then(() => {
             if (process.env.NODE_ENV !== 'test') console.log('Ensured indices!');
@@ -85,3 +94,5 @@ export * from './SigningAuthority';
 export * from './ConsentFlowTerms';
 export * from './ConsentFlowContract';
 export * from './ConsentFlowTransaction';
+export * from './ContactMethod';    
+export * from './InboxCredential';

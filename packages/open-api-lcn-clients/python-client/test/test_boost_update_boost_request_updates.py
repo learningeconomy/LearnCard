@@ -43,6 +43,7 @@ class TestBoostUpdateBoostRequestUpdates(unittest.TestCase):
                 meta = {
                     'key' : null
                     },
+                allow_anyone_to_create_children = True,
                 credential = None
             )
         else:

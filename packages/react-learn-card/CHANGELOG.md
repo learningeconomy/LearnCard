@@ -1,5 +1,100 @@
 # @welibraryos/react-learn-card
 
+## 2.8.13
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.30
+
+## 2.8.12
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.29
+
+## 2.8.11
+
+### Patch Changes
+
+-   [#720](https://github.com/learningeconomy/LearnCard/pull/720) [`53cfa3a0275c3cfd144bc078dbbd03ec9d2b515b`](https://github.com/learningeconomy/LearnCard/commit/53cfa3a0275c3cfd144bc078dbbd03ec9d2b515b) Thanks [@gerardopar](https://github.com/gerardopar)! - [LC-1107] - Media Display Type
+
+## 2.8.10
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.28
+
+## 2.8.9
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.27
+
+## 2.8.8
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.26
+
+## 2.8.7
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.25
+
+## 2.8.6
+
+### Patch Changes
+
+-   [#718](https://github.com/learningeconomy/LearnCard/pull/718) [`f9d07836a4392d2a396ad25304730192260f8b45`](https://github.com/learningeconomy/LearnCard/commit/f9d07836a4392d2a396ad25304730192260f8b45) Thanks [@gerardopar](https://github.com/gerardopar)! - add comment
+
+## 2.8.5
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.24
+
+## 2.8.4
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.23
+
+## 2.8.3
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.22
+
+## 2.8.2
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.21
+
+## 2.8.1
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.20
+
+## 2.8.0
+
+### Minor Changes
+
+-   [#687](https://github.com/learningeconomy/LearnCard/pull/687) [`bd9809172b3b696d47c9a440519d264466444c2d`](https://github.com/learningeconomy/LearnCard/commit/bd9809172b3b696d47c9a440519d264466444c2d) Thanks [@smurflo2](https://github.com/smurflo2)! - Change width behavior for Certificate display. It now has a max width of 400px with "width: full" so it will fill the 400px. Notably, the auto x margin was removed, so anything relying on it for centering will be broken.
+
 ## 2.7.93
 
 ### Patch Changes

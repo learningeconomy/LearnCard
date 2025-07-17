@@ -17,10 +17,7 @@ export const getConnections = async (
             optional: true,
             related: [
                 { identifier: 'source' },
-                {
-                    ...Profile.getRelationshipByAlias('connectedWith'),
-                    direction: 'none',
-                },
+                { ...Profile.getRelationshipByAlias('connectedWith'), direction: 'none' },
                 { identifier: 'directTarget', model: Profile },
             ],
         })
@@ -57,16 +54,32 @@ export const getConnections = async (
         .with(
             'directlyConnected, receivedBoostTargets, COLLECT(DISTINCT ownedBoostTarget) AS ownedBoostTargets'
         )
+        .match({
+            optional: true,
+            related: [
+                { model: Profile, identifier: 'otherOwnedBoostTarget' },
+                { ...Boost.getRelationshipByAlias('createdBy'), direction: 'in' },
+                { model: Boost, where: { autoConnectRecipients: true } },
+                { ...Credential.getRelationshipByAlias('instanceOf'), direction: 'in' },
+                { model: Credential },
+                { ...Credential.getRelationshipByAlias('credentialReceived') },
+                { identifier: 'source' },
+            ],
+        })
+        .where(`otherOwnedBoostTarget.profileId <> "${profile.profileId}"`)
         .with(
-            'directlyConnected + receivedBoostTargets + ownedBoostTargets AS allConnectedProfiles'
+            'directlyConnected, receivedBoostTargets, ownedBoostTargets, COLLECT(DISTINCT otherOwnedBoostTarget) AS otherOwnedBoostTargets'
+        )
+        .with(
+            'directlyConnected + receivedBoostTargets + ownedBoostTargets + otherOwnedBoostTargets AS allConnectedProfiles'
         )
         .unwind('allConnectedProfiles AS target')
         .with('target');
 
     const query = cursor
         ? _query.where(
-            new Where({ target: { profileId: { [Op.gt]: cursor } } }, _query.getBindParam())
-        )
+              new Where({ target: { profileId: { [Op.gt]: cursor } } }, _query.getBindParam())
+          )
         : _query;
 
     const results = convertQueryResultToPropertiesObjectArray<{ target: FlatProfileType }>(
@@ -90,8 +103,8 @@ export const getPendingConnections = async (
 
     const query = cursor
         ? _query.where(
-            new Where({ target: { displayName: { [Op.gt]: cursor } } }, _query.getBindParam())
-        )
+              new Where({ target: { displayName: { [Op.gt]: cursor } } }, _query.getBindParam())
+          )
         : _query;
 
     const results = convertQueryResultToPropertiesObjectArray<{ target: FlatProfileType }>(
@@ -114,8 +127,8 @@ export const getConnectionRequests = async (
 
     const query = cursor
         ? _query.where(
-            new Where({ source: { displayName: { [Op.gt]: cursor } } }, _query.getBindParam())
-        )
+              new Where({ source: { displayName: { [Op.gt]: cursor } } }, _query.getBindParam())
+          )
         : _query;
 
     const results = convertQueryResultToPropertiesObjectArray<{ source: FlatProfileType }>(

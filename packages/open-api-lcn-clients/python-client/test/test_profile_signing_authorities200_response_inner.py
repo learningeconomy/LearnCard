@@ -39,7 +39,8 @@ class TestProfileSigningAuthorities200ResponseInner(unittest.TestCase):
                     endpoint = '', ),
                 relationship = openapi_client.models.profile_signing_authorities_200_response_inner_relationship.profile_signingAuthorities_200_response_inner_relationship(
                     name = 'p', 
-                    did = '', )
+                    did = '', 
+                    is_primary = True, )
             )
         else:
             return ProfileSigningAuthorities200ResponseInner(
@@ -47,7 +48,8 @@ class TestProfileSigningAuthorities200ResponseInner(unittest.TestCase):
                     endpoint = '', ),
                 relationship = openapi_client.models.profile_signing_authorities_200_response_inner_relationship.profile_signingAuthorities_200_response_inner_relationship(
                     name = 'p', 
-                    did = '', ),
+                    did = '', 
+                    is_primary = True, ),
         )
         """
 

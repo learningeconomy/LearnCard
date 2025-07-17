@@ -223,7 +223,7 @@ describe('LearnCard SDK', () => {
             const learnCard = await getLearnCard();
 
             const uvc = learnCard.invoke.getTestVc();
-            uvc.expirationDate = new Date(Date.now() + 3600).toISOString();
+            uvc.validUntil = new Date(Date.now() + 3600).toISOString();
 
             const vc = await learnCard.invoke.issueCredential(uvc);
 
@@ -240,7 +240,7 @@ describe('LearnCard SDK', () => {
             const learnCard = await getLearnCard();
 
             const uvc = learnCard.invoke.getTestVc();
-            uvc.expirationDate = new Date(Date.now() - 3600).toISOString();
+            uvc.validUntil = new Date(Date.now() - 3600).toISOString();
 
             const vc = await learnCard.invoke.issueCredential(uvc);
 

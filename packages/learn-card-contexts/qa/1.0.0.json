@@ -1,0 +1,27 @@
+{
+    "@context": {
+        "lcn": "https://docs.learncard.com/definitions#",
+        "type": "@type",
+        "xsd": "https://www.w3.org/2001/XMLSchema#",
+        "QACredential": {
+            "@id": "lcn:qaCredential",
+            "@context": {
+                "qaPairs": {
+                    "@id": "lcn:qaPairs",
+                    "@container": "@set",
+                    "@context": {
+                        "question": {
+                            "@id": "lcn:question",
+                            "@type": "xsd:string"
+                        },
+                        "answer": {
+                            "@id": "lcn:answer",
+                            "@type": "xsd:string",
+                            "@container": "@set"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

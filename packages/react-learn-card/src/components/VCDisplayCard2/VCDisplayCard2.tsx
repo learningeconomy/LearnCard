@@ -75,6 +75,7 @@ export type VCDisplayCard2Props = {
     customIDDescription?: React.ReactNode;
     hideGradientBackground?: boolean;
     formattedDisplayType?: string;
+    customLinkedCredentialsComponent?: React.ReactNode;
 };
 
 export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
@@ -118,6 +119,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     customIDDescription,
     hideGradientBackground = false,
     formattedDisplayType,
+    customLinkedCredentialsComponent,
 }) => {
     const {
         title = '',
@@ -208,6 +210,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 showBackButton={showBackButton}
                 showDetailsBtn={showDetailsBtn}
                 formattedDisplayType={formattedDisplayType}
+                customLinkedCredentialsComponent={customLinkedCredentialsComponent}
             />
         );
     }
@@ -237,6 +240,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 showBackButton={showBackButton}
                 showDetailsBtn={showDetailsBtn}
                 formattedDisplayType={formattedDisplayType}
+                customLinkedCredentialsComponent={customLinkedCredentialsComponent}
             />
         );
     } else if (credential?.display?.displayType === 'id' || categoryType === 'ID') {
@@ -265,6 +269,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                     showDetailsBtn={showDetailsBtn}
                     customIDDescription={customIDDescription}
                     hideGradientBackground={hideGradientBackground}
+                    customLinkedCredentialsComponent={customLinkedCredentialsComponent}
                 />
             </div>
         );
@@ -392,6 +397,9 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                                     customIssueHistoryComponent={customIssueHistoryComponent}
                                     enableLightbox={enableLightbox}
                                     customSkillsComponent={customSkillsComponent}
+                                    customLinkedCredentialsComponent={
+                                        customLinkedCredentialsComponent
+                                    }
                                 />
                             )}
 

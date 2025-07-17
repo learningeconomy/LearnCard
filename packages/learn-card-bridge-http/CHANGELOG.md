@@ -1,5 +1,84 @@
 # @learncard/create-http-bridge
 
+## 1.1.176
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.30
+
+## 1.1.175
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.29
+
+## 1.1.174
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.28
+
+## 1.1.173
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.27
+
+## 1.1.172
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.26
+
+## 1.1.171
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.25
+
+## 1.1.170
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.24
+
+## 1.1.169
+
+### Patch Changes
+
+-   Updated dependencies [[`e6f76c42d840389f791d2767de46b063bb392180`](https://github.com/learningeconomy/LearnCard/commit/e6f76c42d840389f791d2767de46b063bb392180)]:
+    -   @learncard/types@5.8.0
+    -   @learncard/init@2.0.23
+
+## 1.1.168
+
+### Patch Changes
+
+-   Updated dependencies [[`1b99797c404648412f6a6e8a1f77ebab71caa28c`](https://github.com/learningeconomy/LearnCard/commit/1b99797c404648412f6a6e8a1f77ebab71caa28c)]:
+    -   @learncard/types@5.7.1
+    -   @learncard/init@2.0.22
+
+## 1.1.167
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.21
+
+## 1.1.166
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.20
+
 ## 1.1.165
 
 ### Patch Changes

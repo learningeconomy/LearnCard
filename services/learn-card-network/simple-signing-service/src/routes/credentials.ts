@@ -1,4 +1,5 @@
 import { TRPCError } from '@trpc/server';
+import { isVC2Format } from '@learncard/helpers';
 import { VCValidator, JWEValidator } from '@learncard/types';
 
 import { IssueEndpointValidator } from 'types/credentials';
@@ -25,8 +26,16 @@ export const credentialsRouter = t.router({
             const { credential, options = {}, signingAuthority, encryption } = input;
             try {
                 // If incoming credential doesn't have an issuanceDate, default it to right now
-                if (credential && !('issuanceDate' in (credential ?? {}))) {
-                    credential.issuanceDate = new Date().toISOString();
+                if (
+                    credential &&
+                    !('issuanceDate' in (credential ?? {})) &&
+                    !('validFrom' in (credential ?? {}))
+                ) {
+                    if (isVC2Format(credential)) {
+                        credential.validFrom = new Date().toISOString();
+                    } else {
+                        credential.issuanceDate = new Date().toISOString();
+                    }
                 }
 
                 const learnCard = await getSigningAuthorityLearnCard(

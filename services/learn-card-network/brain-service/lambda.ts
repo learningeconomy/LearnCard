@@ -9,13 +9,13 @@ import type {
 } from 'aws-lambda';
 import { LCNNotificationValidator } from '@learncard/types';
 import { awsLambdaRequestHandler } from '@trpc/server/adapters/aws-lambda';
-import { createOpenApiHttpHandler } from 'trpc-to-openapi';
 import { TRPC_ERROR_CODE_HTTP_STATUS } from 'trpc-openapi/dist/adapters/node-http/errors';
 import * as Sentry from '@sentry/serverless';
 
 import app from './src/openapi';
 import { appRouter, createContext } from './src/app';
 import { sendNotification } from './src/helpers/notifications.helpers';
+import { createOpenApiAwsLambdaHandler } from './src/helpers/shim';
 
 Sentry.AWSLambda.init({
     dsn: process.env.SENTRY_DSN,
@@ -31,29 +31,29 @@ Sentry.AWSLambda.init({
 
 export const swaggerUiHandler = serverlessHttp(app, { basePath: '/docs' });
 
-export const _openApiHandler = serverlessHttp(
-    http.createServer(
-        createOpenApiHttpHandler({
-            router: appRouter,
-            responseMeta: undefined,
-            maxBodySize: undefined,
-            createContext,
-            onError: ({ error, ctx, path }) => {
-                error.stack = error.stack?.replace('Mr: ', '');
-                error.name = error.message;
-
-                // We want to ignore invalid challenge errors because they are normal
-                if (!(error.code === 'UNAUTHORIZED' && !ctx?.user?.isChallengeValid)) {
-                    Sentry.captureException(error, { extra: { ctx, path } });
-                    Sentry.getActiveTransaction()?.setHttpStatus(
-                        TRPC_ERROR_CODE_HTTP_STATUS[error.code]
-                    );
-                }
+export const _openApiHandler = createOpenApiAwsLambdaHandler({
+    router: appRouter,
+    responseMeta: () => {
+        return {
+            headers: {
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+                'Access-Control-Allow-Headers': 'Authorization, Content-Type',
             },
-        })
-    ),
-    { basePath: '/api' }
-);
+        };
+    },
+    createContext,
+    onError: ({ error, ctx, path }) => {
+        error.stack = error.stack?.replace('Mr: ', '');
+        error.name = error.message;
+
+        // We want to ignore invalid challenge errors because they are normal
+        if (!(error.code === 'UNAUTHORIZED' && !ctx?.user?.isChallengeValid)) {
+            Sentry.captureException(error, { extra: { ctx, path } });
+            Sentry.getActiveTransaction()?.setHttpStatus(TRPC_ERROR_CODE_HTTP_STATUS[error.code]);
+        }
+    },
+});
 
 export const _trpcHandler = awsLambdaRequestHandler({
     allowMethodOverride: true,
@@ -84,11 +84,11 @@ export const openApiHandler = Sentry.AWSLambda.wrapHandler(
     async (event: APIGatewayProxyEventV2, context: Context): Promise<APIGatewayProxyResultV2> => {
         if (event.requestContext.http.method === 'OPTIONS') {
             return {
-                statusCode: 200,
+                statusCode: 204,
                 headers: {
                     'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Headers': '*',
-                    'Access-Control-Allow-Methods': '*',
+                    'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+                    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
                 },
             };
         }

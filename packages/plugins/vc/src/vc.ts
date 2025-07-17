@@ -24,11 +24,11 @@ export const getVCPlugin = (learnCard: VCDependentLearnCard): VCPlugin => {
                 const did = _learnCard.id.did();
 
                 return {
-                    '@context': ['https://www.w3.org/2018/credentials/v1'],
-                    id: 'http://example.org/credentials/3731',
+                    '@context': ['https://www.w3.org/ns/credentials/v2'],
+                    id: `urn:uuid:${crypto.randomUUID()}`,
                     type: ['VerifiableCredential'],
                     issuer: did,
-                    issuanceDate: '2020-08-19T21:41:50Z',
+                    validFrom: new Date().toISOString(),
                     credentialSubject: { id: subject },
                 };
             },
@@ -40,7 +40,7 @@ export const getVCPlugin = (learnCard: VCDependentLearnCard): VCPlugin => {
                 const did = _learnCard.id.did();
 
                 return {
-                    '@context': ['https://www.w3.org/2018/credentials/v1'],
+                    '@context': ['https://www.w3.org/ns/credentials/v2'],
                     type: ['VerifiablePresentation'],
                     holder: did,
                     verifiableCredential: credential,
@@ -49,7 +49,7 @@ export const getVCPlugin = (learnCard: VCDependentLearnCard): VCPlugin => {
             getDidAuthVp: async (_learnCard, options = {}) => {
                 const did = _learnCard.id.did();
                 const unsignedVP: UnsignedVP = {
-                    '@context': ['https://www.w3.org/2018/credentials/v1'],
+                    '@context': ['https://www.w3.org/ns/credentials/v2'],
                     type: ['VerifiablePresentation'],
                     holder: did,
                 };

@@ -1,6 +1,6 @@
 {
     "name": "@learncard/network-plugin",
-    "version": "2.4.36",
+    "version": "2.5.7",
     "description": "",
     "main": "./dist/index.js",
     "module": "./dist/lcn-plugin.esm.js",
@@ -41,6 +41,7 @@
     "types": "./dist/index.d.ts",
     "dependencies": {
         "@learncard/core": "workspace:*",
+        "@learncard/helpers": "workspace:*",
         "@learncard/network-brain-client": "workspace:*"
     }
 }
