@@ -45,6 +45,7 @@ export * from "./ScoutsPledge";
 export * from "./ShieldChevron";
 export * from "./Smiley";
 export * from "./SocialBadgesIcon";
+export * from "./ThreeDotVertical";
 export * from "./Trophy";
 export * from "./UnknownVerifierBadge";
 export * from "./User";
