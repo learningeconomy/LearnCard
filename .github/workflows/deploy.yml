@@ -46,6 +46,8 @@ env:
     JWT_SIGNING_KEY: ${{ secrets.JWT_SIGNING_KEY }}
     RSA_PUBLIC_KEY: ${{ secrets.RSA_PUBLIC_KEY }}
     RSA_PRIVATE_KEY: ${{ secrets.RSA_PRIVATE_KEY }}
+    SMART_RESUME_CLIENT_ID: ${{ secrets.SMART_RESUME_CLIENT_ID }}
+    SMART_RESUME_ACCESS_KEY: ${{ secrets.SMART_RESUME_ACCESS_KEY }}
 
 jobs:
     deploy:

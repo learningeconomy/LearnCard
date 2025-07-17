@@ -882,6 +882,10 @@ export const contractsRouter = t.router({
 
             console.log('contractDetails', contractDetails);
 
+            console.log('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥');
+            console.log('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥');
+            console.log('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥');
+
             if (!contractDetails) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find contract' });
             }
@@ -904,6 +908,34 @@ export const contractsRouter = t.router({
                     ctx.domain
                 );
             }
+
+            // SmartResume handling
+            const smartResumeContractUri = process.env.SMART_RESUME_CONTRACT_URI; // TODO set this up
+            const isProduction = !process.env.IS_OFFLINE;
+            const srUrl = isProduction
+                ? 'https://my.smartresume.com/'
+                : 'https://mystage.smartresume.com/';
+            const clientId = process.env.SMART_RESUME_CLIENT_ID;
+            const accessKey = process.env.SMART_RESUME_ACCESS_KEY;
+
+            const accessTokenResponse = await fetch(`${srUrl}api/v1/token`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    Authorization: `Basic ${btoa(`${clientId}:${accessKey}`)}`,
+                },
+                body: new URLSearchParams({
+                    grant_type: 'client_credentials',
+                    scope: 'delete readonly replace',
+                }),
+            }).then(res => res.json());
+
+            const accessToken = accessTokenResponse.access_token;
+
+            console.log('🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧');
+            console.log('clientId:', clientId);
+            console.log('accessKey:', accessKey);
+            console.log('accessToken:', accessToken);
 
             await consentToContract(
                 profile,
