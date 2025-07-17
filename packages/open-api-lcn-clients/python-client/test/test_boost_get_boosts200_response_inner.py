@@ -43,6 +43,7 @@ class TestBoostGetBoosts200ResponseInner(unittest.TestCase):
                 meta = {
                     'key' : null
                     },
+                allow_anyone_to_create_children = True,
                 uri = ''
             )
         else:

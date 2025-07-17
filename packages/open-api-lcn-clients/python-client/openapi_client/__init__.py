@@ -21,6 +21,7 @@ __all__ = [
     "AuthGrantsApi",
     "BoostsApi",
     "ClaimHooksApi",
+    "ContactMethodsApi",
     "ContractsApi",
     "CredentialsApi",
     "DIDMetadataApi",
@@ -28,7 +29,10 @@ __all__ = [
     "ProfileManagersApi",
     "ProfilesApi",
     "StorageApi",
+    "UniversalInboxApi",
     "UtilitiesApi",
+    "VCAPIApi",
+    "WorkflowsApi",
     "ApiResponse",
     "ApiClient",
     "Configuration",
@@ -80,6 +84,7 @@ __all__ = [
     "BoostGetChildrenProfileManagers200ResponseRecordsInner",
     "BoostGetChildrenProfileManagersRequest",
     "BoostGetChildrenProfileManagersRequestQuery",
+    "BoostGetConnectedBoostRecipientsRequest",
     "BoostGetFamilialBoostsRequest",
     "BoostGetPaginatedBoostRecipients200Response",
     "BoostGetPaginatedBoostRecipientsRequest",
@@ -140,6 +145,15 @@ __all__ = [
     "ClaimHookGetClaimHooksForBoostRequestQuery",
     "ClaimHookGetClaimHooksForBoostRequestQueryData",
     "ClaimHookGetClaimHooksForBoostRequestQueryDataPermissions",
+    "ContactMethodsAddContactMethod200Response",
+    "ContactMethodsAddContactMethodRequest",
+    "ContactMethodsGetMyContactMethods200ResponseInner",
+    "ContactMethodsGetMyContactMethods200ResponseInnerOneOf",
+    "ContactMethodsGetMyContactMethods200ResponseInnerOneOf1",
+    "ContactMethodsSetPrimaryContactMethod200Response",
+    "ContactMethodsSetPrimaryContactMethodRequest",
+    "ContactMethodsVerifyContactMethod200Response",
+    "ContactMethodsVerifyContactMethodRequest",
     "ContractsAddAutoBoostsToContractRequest",
     "ContractsConsentToContractRequest",
     "ContractsConsentToContractRequestTerms",
@@ -216,11 +230,30 @@ __all__ = [
     "DidMetadataGetMyDidMetadata200ResponseInner",
     "DidMetadataUpdateDidMetadataRequest",
     "ErrorBADREQUEST",
-    "ErrorBADREQUESTIssuesInner",
     "ErrorFORBIDDEN",
     "ErrorINTERNALSERVERERROR",
     "ErrorNOTFOUND",
     "ErrorUNAUTHORIZED",
+    "InboxGetMyIssuedCredentials200Response",
+    "InboxGetMyIssuedCredentials200ResponseRecordsInner",
+    "InboxGetMyIssuedCredentialsRequest",
+    "InboxGetMyIssuedCredentialsRequestQuery",
+    "InboxIssue200Response",
+    "InboxIssue200ResponseRecipient",
+    "InboxIssueRequest",
+    "InboxIssueRequestConfiguration",
+    "InboxIssueRequestConfigurationDelivery",
+    "InboxIssueRequestConfigurationDeliveryTemplate",
+    "InboxIssueRequestConfigurationDeliveryTemplateModel",
+    "InboxIssueRequestConfigurationDeliveryTemplateModelCredential",
+    "InboxIssueRequestConfigurationDeliveryTemplateModelIssuer",
+    "InboxIssueRequestConfigurationDeliveryTemplateModelRecipient",
+    "InboxIssueRequestConfigurationSigningAuthority",
+    "InboxIssueRequestCredential",
+    "InboxIssueRequestCredentialAnyOf",
+    "InboxIssueRequestRecipient",
+    "InboxIssueRequestRecipientOneOf",
+    "InboxIssueRequestRecipientOneOf1",
     "PresentationAcceptPresentationRequest",
     "PresentationSendPresentationRequest",
     "PresentationSendPresentationRequestPresentation",
@@ -237,6 +270,7 @@ __all__ = [
     "ProfileManagerCreateProfileManagerRequest",
     "ProfileRegisterSigningAuthorityRequest",
     "ProfileSearchProfiles200ResponseInner",
+    "ProfileSetPrimarySigningAuthorityRequest",
     "ProfileSigningAuthorities200ResponseInner",
     "ProfileSigningAuthorities200ResponseInnerRelationship",
     "ProfileSigningAuthorities200ResponseInnerSigningAuthority",
@@ -257,12 +291,18 @@ __all__ = [
     "StorageStoreRequest",
     "StorageStoreRequestItem",
     "StorageStoreRequestItemAnyOf",
+    "WorkflowsParticipateInExchange200Response",
+    "WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequest",
+    "WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequestQueryInner",
+    "WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequestQueryInnerCredentialQueryInner",
+    "WorkflowsParticipateInExchangeRequest",
 ]
 
 # import apis into sdk package
 from openapi_client.api.auth_grants_api import AuthGrantsApi as AuthGrantsApi
 from openapi_client.api.boosts_api import BoostsApi as BoostsApi
 from openapi_client.api.claim_hooks_api import ClaimHooksApi as ClaimHooksApi
+from openapi_client.api.contact_methods_api import ContactMethodsApi as ContactMethodsApi
 from openapi_client.api.contracts_api import ContractsApi as ContractsApi
 from openapi_client.api.credentials_api import CredentialsApi as CredentialsApi
 from openapi_client.api.did_metadata_api import DIDMetadataApi as DIDMetadataApi
@@ -270,7 +310,10 @@ from openapi_client.api.presentations_api import PresentationsApi as Presentatio
 from openapi_client.api.profile_managers_api import ProfileManagersApi as ProfileManagersApi
 from openapi_client.api.profiles_api import ProfilesApi as ProfilesApi
 from openapi_client.api.storage_api import StorageApi as StorageApi
+from openapi_client.api.universal_inbox_api import UniversalInboxApi as UniversalInboxApi
 from openapi_client.api.utilities_api import UtilitiesApi as UtilitiesApi
+from openapi_client.api.vcapi_api import VCAPIApi as VCAPIApi
+from openapi_client.api.workflows_api import WorkflowsApi as WorkflowsApi
 
 # import ApiClient
 from openapi_client.api_response import ApiResponse as ApiResponse
@@ -326,6 +369,7 @@ from openapi_client.models.boost_get_children_profile_managers200_response impor
 from openapi_client.models.boost_get_children_profile_managers200_response_records_inner import BoostGetChildrenProfileManagers200ResponseRecordsInner as BoostGetChildrenProfileManagers200ResponseRecordsInner
 from openapi_client.models.boost_get_children_profile_managers_request import BoostGetChildrenProfileManagersRequest as BoostGetChildrenProfileManagersRequest
 from openapi_client.models.boost_get_children_profile_managers_request_query import BoostGetChildrenProfileManagersRequestQuery as BoostGetChildrenProfileManagersRequestQuery
+from openapi_client.models.boost_get_connected_boost_recipients_request import BoostGetConnectedBoostRecipientsRequest as BoostGetConnectedBoostRecipientsRequest
 from openapi_client.models.boost_get_familial_boosts_request import BoostGetFamilialBoostsRequest as BoostGetFamilialBoostsRequest
 from openapi_client.models.boost_get_paginated_boost_recipients200_response import BoostGetPaginatedBoostRecipients200Response as BoostGetPaginatedBoostRecipients200Response
 from openapi_client.models.boost_get_paginated_boost_recipients_request import BoostGetPaginatedBoostRecipientsRequest as BoostGetPaginatedBoostRecipientsRequest
@@ -386,6 +430,15 @@ from openapi_client.models.claim_hook_get_claim_hooks_for_boost_request import C
 from openapi_client.models.claim_hook_get_claim_hooks_for_boost_request_query import ClaimHookGetClaimHooksForBoostRequestQuery as ClaimHookGetClaimHooksForBoostRequestQuery
 from openapi_client.models.claim_hook_get_claim_hooks_for_boost_request_query_data import ClaimHookGetClaimHooksForBoostRequestQueryData as ClaimHookGetClaimHooksForBoostRequestQueryData
 from openapi_client.models.claim_hook_get_claim_hooks_for_boost_request_query_data_permissions import ClaimHookGetClaimHooksForBoostRequestQueryDataPermissions as ClaimHookGetClaimHooksForBoostRequestQueryDataPermissions
+from openapi_client.models.contact_methods_add_contact_method200_response import ContactMethodsAddContactMethod200Response as ContactMethodsAddContactMethod200Response
+from openapi_client.models.contact_methods_add_contact_method_request import ContactMethodsAddContactMethodRequest as ContactMethodsAddContactMethodRequest
+from openapi_client.models.contact_methods_get_my_contact_methods200_response_inner import ContactMethodsGetMyContactMethods200ResponseInner as ContactMethodsGetMyContactMethods200ResponseInner
+from openapi_client.models.contact_methods_get_my_contact_methods200_response_inner_one_of import ContactMethodsGetMyContactMethods200ResponseInnerOneOf as ContactMethodsGetMyContactMethods200ResponseInnerOneOf
+from openapi_client.models.contact_methods_get_my_contact_methods200_response_inner_one_of1 import ContactMethodsGetMyContactMethods200ResponseInnerOneOf1 as ContactMethodsGetMyContactMethods200ResponseInnerOneOf1
+from openapi_client.models.contact_methods_set_primary_contact_method200_response import ContactMethodsSetPrimaryContactMethod200Response as ContactMethodsSetPrimaryContactMethod200Response
+from openapi_client.models.contact_methods_set_primary_contact_method_request import ContactMethodsSetPrimaryContactMethodRequest as ContactMethodsSetPrimaryContactMethodRequest
+from openapi_client.models.contact_methods_verify_contact_method200_response import ContactMethodsVerifyContactMethod200Response as ContactMethodsVerifyContactMethod200Response
+from openapi_client.models.contact_methods_verify_contact_method_request import ContactMethodsVerifyContactMethodRequest as ContactMethodsVerifyContactMethodRequest
 from openapi_client.models.contracts_add_auto_boosts_to_contract_request import ContractsAddAutoBoostsToContractRequest as ContractsAddAutoBoostsToContractRequest
 from openapi_client.models.contracts_consent_to_contract_request import ContractsConsentToContractRequest as ContractsConsentToContractRequest
 from openapi_client.models.contracts_consent_to_contract_request_terms import ContractsConsentToContractRequestTerms as ContractsConsentToContractRequestTerms
@@ -462,11 +515,30 @@ from openapi_client.models.did_metadata_add_did_metadata_request_verification_me
 from openapi_client.models.did_metadata_get_my_did_metadata200_response_inner import DidMetadataGetMyDidMetadata200ResponseInner as DidMetadataGetMyDidMetadata200ResponseInner
 from openapi_client.models.did_metadata_update_did_metadata_request import DidMetadataUpdateDidMetadataRequest as DidMetadataUpdateDidMetadataRequest
 from openapi_client.models.error_badrequest import ErrorBADREQUEST as ErrorBADREQUEST
-from openapi_client.models.error_badrequest_issues_inner import ErrorBADREQUESTIssuesInner as ErrorBADREQUESTIssuesInner
 from openapi_client.models.error_forbidden import ErrorFORBIDDEN as ErrorFORBIDDEN
 from openapi_client.models.error_internalservererror import ErrorINTERNALSERVERERROR as ErrorINTERNALSERVERERROR
 from openapi_client.models.error_notfound import ErrorNOTFOUND as ErrorNOTFOUND
 from openapi_client.models.error_unauthorized import ErrorUNAUTHORIZED as ErrorUNAUTHORIZED
+from openapi_client.models.inbox_get_my_issued_credentials200_response import InboxGetMyIssuedCredentials200Response as InboxGetMyIssuedCredentials200Response
+from openapi_client.models.inbox_get_my_issued_credentials200_response_records_inner import InboxGetMyIssuedCredentials200ResponseRecordsInner as InboxGetMyIssuedCredentials200ResponseRecordsInner
+from openapi_client.models.inbox_get_my_issued_credentials_request import InboxGetMyIssuedCredentialsRequest as InboxGetMyIssuedCredentialsRequest
+from openapi_client.models.inbox_get_my_issued_credentials_request_query import InboxGetMyIssuedCredentialsRequestQuery as InboxGetMyIssuedCredentialsRequestQuery
+from openapi_client.models.inbox_issue200_response import InboxIssue200Response as InboxIssue200Response
+from openapi_client.models.inbox_issue200_response_recipient import InboxIssue200ResponseRecipient as InboxIssue200ResponseRecipient
+from openapi_client.models.inbox_issue_request import InboxIssueRequest as InboxIssueRequest
+from openapi_client.models.inbox_issue_request_configuration import InboxIssueRequestConfiguration as InboxIssueRequestConfiguration
+from openapi_client.models.inbox_issue_request_configuration_delivery import InboxIssueRequestConfigurationDelivery as InboxIssueRequestConfigurationDelivery
+from openapi_client.models.inbox_issue_request_configuration_delivery_template import InboxIssueRequestConfigurationDeliveryTemplate as InboxIssueRequestConfigurationDeliveryTemplate
+from openapi_client.models.inbox_issue_request_configuration_delivery_template_model import InboxIssueRequestConfigurationDeliveryTemplateModel as InboxIssueRequestConfigurationDeliveryTemplateModel
+from openapi_client.models.inbox_issue_request_configuration_delivery_template_model_credential import InboxIssueRequestConfigurationDeliveryTemplateModelCredential as InboxIssueRequestConfigurationDeliveryTemplateModelCredential
+from openapi_client.models.inbox_issue_request_configuration_delivery_template_model_issuer import InboxIssueRequestConfigurationDeliveryTemplateModelIssuer as InboxIssueRequestConfigurationDeliveryTemplateModelIssuer
+from openapi_client.models.inbox_issue_request_configuration_delivery_template_model_recipient import InboxIssueRequestConfigurationDeliveryTemplateModelRecipient as InboxIssueRequestConfigurationDeliveryTemplateModelRecipient
+from openapi_client.models.inbox_issue_request_configuration_signing_authority import InboxIssueRequestConfigurationSigningAuthority as InboxIssueRequestConfigurationSigningAuthority
+from openapi_client.models.inbox_issue_request_credential import InboxIssueRequestCredential as InboxIssueRequestCredential
+from openapi_client.models.inbox_issue_request_credential_any_of import InboxIssueRequestCredentialAnyOf as InboxIssueRequestCredentialAnyOf
+from openapi_client.models.inbox_issue_request_recipient import InboxIssueRequestRecipient as InboxIssueRequestRecipient
+from openapi_client.models.inbox_issue_request_recipient_one_of import InboxIssueRequestRecipientOneOf as InboxIssueRequestRecipientOneOf
+from openapi_client.models.inbox_issue_request_recipient_one_of1 import InboxIssueRequestRecipientOneOf1 as InboxIssueRequestRecipientOneOf1
 from openapi_client.models.presentation_accept_presentation_request import PresentationAcceptPresentationRequest as PresentationAcceptPresentationRequest
 from openapi_client.models.presentation_send_presentation_request import PresentationSendPresentationRequest as PresentationSendPresentationRequest
 from openapi_client.models.presentation_send_presentation_request_presentation import PresentationSendPresentationRequestPresentation as PresentationSendPresentationRequestPresentation
@@ -483,6 +555,7 @@ from openapi_client.models.profile_manager_create_managed_profile_request import
 from openapi_client.models.profile_manager_create_profile_manager_request import ProfileManagerCreateProfileManagerRequest as ProfileManagerCreateProfileManagerRequest
 from openapi_client.models.profile_register_signing_authority_request import ProfileRegisterSigningAuthorityRequest as ProfileRegisterSigningAuthorityRequest
 from openapi_client.models.profile_search_profiles200_response_inner import ProfileSearchProfiles200ResponseInner as ProfileSearchProfiles200ResponseInner
+from openapi_client.models.profile_set_primary_signing_authority_request import ProfileSetPrimarySigningAuthorityRequest as ProfileSetPrimarySigningAuthorityRequest
 from openapi_client.models.profile_signing_authorities200_response_inner import ProfileSigningAuthorities200ResponseInner as ProfileSigningAuthorities200ResponseInner
 from openapi_client.models.profile_signing_authorities200_response_inner_relationship import ProfileSigningAuthorities200ResponseInnerRelationship as ProfileSigningAuthorities200ResponseInnerRelationship
 from openapi_client.models.profile_signing_authorities200_response_inner_signing_authority import ProfileSigningAuthorities200ResponseInnerSigningAuthority as ProfileSigningAuthorities200ResponseInnerSigningAuthority
@@ -503,3 +576,8 @@ from openapi_client.models.storage_resolve200_response_any_of_any_of_write impor
 from openapi_client.models.storage_store_request import StorageStoreRequest as StorageStoreRequest
 from openapi_client.models.storage_store_request_item import StorageStoreRequestItem as StorageStoreRequestItem
 from openapi_client.models.storage_store_request_item_any_of import StorageStoreRequestItemAnyOf as StorageStoreRequestItemAnyOf
+from openapi_client.models.workflows_participate_in_exchange200_response import WorkflowsParticipateInExchange200Response as WorkflowsParticipateInExchange200Response
+from openapi_client.models.workflows_participate_in_exchange200_response_verifiable_presentation_request import WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequest as WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequest
+from openapi_client.models.workflows_participate_in_exchange200_response_verifiable_presentation_request_query_inner import WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequestQueryInner as WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequestQueryInner
+from openapi_client.models.workflows_participate_in_exchange200_response_verifiable_presentation_request_query_inner_credential_query_inner import WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequestQueryInnerCredentialQueryInner as WorkflowsParticipateInExchange200ResponseVerifiablePresentationRequestQueryInnerCredentialQueryInner
+from openapi_client.models.workflows_participate_in_exchange_request import WorkflowsParticipateInExchangeRequest as WorkflowsParticipateInExchangeRequest

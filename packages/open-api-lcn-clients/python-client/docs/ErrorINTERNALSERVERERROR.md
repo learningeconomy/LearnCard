@@ -8,7 +8,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **message** | **str** | The error message | 
 **code** | **str** | The error code | 
-**issues** | [**List[ErrorBADREQUESTIssuesInner]**](ErrorBADREQUESTIssuesInner.md) | An array of issues that were responsible for the error | [optional] 
+**issues** | [**List[ContactMethodsSetPrimaryContactMethod200Response]**](ContactMethodsSetPrimaryContactMethod200Response.md) | An array of issues that were responsible for the error | [optional] 
 
 ## Example
 
