@@ -317,7 +317,7 @@ importers:
         version: link:../learn-card-types
       '@rollup/plugin-json':
         specifier: ^4.1.0
-        version: 4.1.0(rollup@2.79.2)
+        version: 4.1.0(rollup@4.37.0)
       commander:
         specifier: ^9.3.0
         version: 9.5.0
@@ -361,11 +361,11 @@ importers:
         specifier: ^18.2.0
         version: 18.3.1
       rollup:
-        specifier: ^2.71.1
-        version: 2.79.2
+        specifier: ^4.22.4
+        version: 4.37.0
       rollup-plugin-esbuild:
         specifier: ^4.9.1
-        version: 4.10.3(esbuild@0.25.1)(rollup@2.79.2)
+        version: 4.10.3(esbuild@0.25.1)(rollup@4.37.0)
       serverless-esbuild:
         specifier: ^1.25.0
         version: 1.45.1(esbuild@0.25.1)
@@ -441,7 +441,7 @@ importers:
         version: link:../learn-card-types
       '@rollup/plugin-json':
         specifier: ^4.1.0
-        version: 4.1.0(rollup@2.79.2)
+        version: 4.1.0(rollup@4.37.0)
       clipboardy:
         specifier: ^4.0.0
         version: 4.0.0
@@ -458,11 +458,11 @@ importers:
         specifier: ^3.1.1
         version: 3.1.2
       rollup:
-        specifier: ^2.71.1
-        version: 2.79.2
+        specifier: ^4.22.4
+        version: 4.37.0
       rollup-plugin-esbuild:
         specifier: ^4.9.1
-        version: 4.10.3(esbuild@0.25.1)(rollup@2.79.2)
+        version: 4.10.3(esbuild@0.25.1)(rollup@4.37.0)
     devDependencies:
       '@types/cors':
         specifier: ^2.8.12
@@ -1684,13 +1684,13 @@ importers:
         version: link:../learn-card-types
       '@rollup/plugin-commonjs':
         specifier: ^22.0.0
-        version: 22.0.2(rollup@2.79.2)
+        version: 22.0.2(rollup@4.37.0)
       '@rollup/plugin-json':
         specifier: ^4.1.0
-        version: 4.1.0(rollup@2.79.2)
+        version: 4.1.0(rollup@4.37.0)
       '@rollup/plugin-node-resolve':
         specifier: ^13.3.0
-        version: 13.3.0(rollup@2.79.2)
+        version: 13.3.0(rollup@4.37.0)
       '@storybook/addon-actions':
         specifier: ^7.0.18
         version: 7.6.20
@@ -1708,7 +1708,7 @@ importers:
         version: 1.3.7(@types/react-dom@18.3.5(@types/react@17.0.84))(@types/react@17.0.84)(less@4.2.2)(postcss@8.5.3)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.6.2)(webpack@5.98.0(esbuild@0.14.54))
       '@storybook/react-vite':
         specifier: ^7.0.18
-        version: 7.6.20(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(rollup@2.79.2)(typescript@5.6.2)(vite@5.4.15(@types/node@22.13.14)(less@4.2.2)(lightningcss@1.27.0)(terser@5.39.0))
+        version: 7.6.20(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(rollup@4.37.0)(typescript@5.6.2)(vite@5.4.15(@types/node@22.13.14)(less@4.2.2)(lightningcss@1.27.0)(terser@5.39.0))
       '@storybook/testing-library':
         specifier: ^0.1.0
         version: 0.1.0
@@ -1779,26 +1779,26 @@ importers:
         specifier: ^6.2.1
         version: 6.2.1(postcss@8.5.3)(webpack@5.98.0(esbuild@0.14.54))
       rollup:
-        specifier: ^2.71.1
-        version: 2.79.2
+        specifier: ^4.22.4
+        version: 4.37.0
       rollup-plugin-delete:
         specifier: ^2.0.0
-        version: 2.2.0(rollup@2.79.2)
+        version: 2.2.0(rollup@4.37.0)
       rollup-plugin-dts:
         specifier: ^4.2.2
-        version: 4.2.3(rollup@2.79.2)(typescript@5.6.2)
+        version: 4.2.3(rollup@4.37.0)(typescript@5.6.2)
       rollup-plugin-esbuild:
         specifier: ^4.9.1
-        version: 4.10.3(esbuild@0.14.54)(rollup@2.79.2)
+        version: 4.10.3(esbuild@0.14.54)(rollup@4.37.0)
       rollup-plugin-peer-deps-external:
         specifier: ^2.2.4
-        version: 2.2.4(rollup@2.79.2)
+        version: 2.2.4(rollup@4.37.0)
       rollup-plugin-smart-asset:
         specifier: ^2.1.2
-        version: 2.1.2(rollup@2.79.2)
+        version: 2.1.2(rollup@4.37.0)
       rollup-plugin-styles:
         specifier: ^4.0.0
-        version: 4.0.0(rollup@2.79.2)
+        version: 4.0.0(rollup@4.37.0)
       storybook:
         specifier: ^7.0.18
         version: 7.6.20
@@ -1819,7 +1819,7 @@ importers:
         version: link:../../packages/learn-card-types
       '@rollup/plugin-json':
         specifier: ^4.1.0
-        version: 4.1.0(rollup@2.79.2)
+        version: 4.1.0(rollup@4.37.0)
       discord.js:
         specifier: ^14.6.0
         version: 14.18.0
@@ -1833,11 +1833,11 @@ importers:
         specifier: ^8.2.2
         version: 8.9.0(@types/ioredis-mock@8.2.5)(ioredis@5.6.0)
       rollup:
-        specifier: ^2.71.1
-        version: 2.79.2
+        specifier: ^4.22.4
+        version: 4.37.0
       rollup-plugin-esbuild:
         specifier: ^4.9.1
-        version: 4.10.3(esbuild@0.25.1)(rollup@2.79.2)
+        version: 4.10.3(esbuild@0.25.1)(rollup@4.37.0)
     devDependencies:
       '@changesets/changelog-github':
         specifier: ^0.4.5
@@ -2484,22 +2484,22 @@ importers:
         version: 0.21.0
       '@rollup/plugin-node-resolve':
         specifier: ^13.3.0
-        version: 13.3.0(rollup@2.79.2)
+        version: 13.3.0(rollup@4.37.0)
       rollup:
-        specifier: ^2.71.1
-        version: 2.79.2
+        specifier: ^4.22.4
+        version: 4.37.0
       rollup-plugin-base64:
         specifier: ^1.0.1
-        version: 1.0.1(rollup@2.79.2)
+        version: 1.0.1(rollup@4.37.0)
       rollup-plugin-commonjs:
         specifier: ^10.1.0
-        version: 10.1.0(rollup@2.79.2)
+        version: 10.1.0(rollup@4.37.0)
       rollup-plugin-delete:
         specifier: ^2.0.0
-        version: 2.2.0(rollup@2.79.2)
+        version: 2.2.0(rollup@4.37.0)
       rollup-plugin-esbuild:
         specifier: ^4.9.1
-        version: 4.10.3(esbuild@0.25.1)(rollup@2.79.2)
+        version: 4.10.3(esbuild@0.25.1)(rollup@4.37.0)
       serve:
         specifier: ^14.0.1
         version: 14.2.4
@@ -27600,51 +27600,43 @@ snapshots:
       react-native: 0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(react@18.3.1)
     optional: true
 
-  '@rollup/plugin-commonjs@22.0.2(rollup@2.79.2)':
+  '@rollup/plugin-commonjs@22.0.2(rollup@4.37.0)':
     dependencies:
-      '@rollup/pluginutils': 3.1.0(rollup@2.79.2)
+      '@rollup/pluginutils': 3.1.0(rollup@4.37.0)
       commondir: 1.0.1
       estree-walker: 2.0.2
       glob: 7.2.3
       is-reference: 1.2.1
       magic-string: 0.25.9
       resolve: 1.22.10
-      rollup: 2.79.2
+      rollup: 4.37.0
 
-  '@rollup/plugin-json@4.1.0(rollup@2.79.2)':
+  '@rollup/plugin-json@4.1.0(rollup@4.37.0)':
     dependencies:
-      '@rollup/pluginutils': 3.1.0(rollup@2.79.2)
-      rollup: 2.79.2
+      '@rollup/pluginutils': 3.1.0(rollup@4.37.0)
+      rollup: 4.37.0
 
-  '@rollup/plugin-node-resolve@13.3.0(rollup@2.79.2)':
+  '@rollup/plugin-node-resolve@13.3.0(rollup@4.37.0)':
     dependencies:
-      '@rollup/pluginutils': 3.1.0(rollup@2.79.2)
+      '@rollup/pluginutils': 3.1.0(rollup@4.37.0)
       '@types/resolve': 1.17.1
       deepmerge: 4.3.1
       is-builtin-module: 3.2.1
       is-module: 1.0.0
       resolve: 1.22.10
-      rollup: 2.79.2
+      rollup: 4.37.0
 
-  '@rollup/pluginutils@3.1.0(rollup@2.79.2)':
+  '@rollup/pluginutils@3.1.0(rollup@4.37.0)':
     dependencies:
       '@types/estree': 0.0.39
       estree-walker: 1.0.1
       picomatch: 2.3.1
-      rollup: 2.79.2
+      rollup: 4.37.0
 
   '@rollup/pluginutils@4.2.1':
     dependencies:
       estree-walker: 2.0.2
       picomatch: 2.3.1
-
-  '@rollup/pluginutils@5.1.4(rollup@2.79.2)':
-    dependencies:
-      '@types/estree': 1.0.7
-      estree-walker: 2.0.2
-      picomatch: 4.0.2
-    optionalDependencies:
-      rollup: 2.79.2
 
   '@rollup/pluginutils@5.1.4(rollup@4.37.0)':
     dependencies:
@@ -29174,10 +29166,10 @@ snapshots:
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
 
-  '@storybook/react-vite@7.6.20(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(rollup@2.79.2)(typescript@5.6.2)(vite@5.4.15(@types/node@22.13.14)(less@4.2.2)(lightningcss@1.27.0)(terser@5.39.0))':
+  '@storybook/react-vite@7.6.20(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(rollup@4.37.0)(typescript@5.6.2)(vite@5.4.15(@types/node@22.13.14)(less@4.2.2)(lightningcss@1.27.0)(terser@5.39.0))':
     dependencies:
       '@joshwooding/vite-plugin-react-docgen-typescript': 0.3.0(typescript@5.6.2)(vite@5.4.15(@types/node@22.13.14)(less@4.2.2)(lightningcss@1.27.0)(terser@5.39.0))
-      '@rollup/pluginutils': 5.1.4(rollup@2.79.2)
+      '@rollup/pluginutils': 5.1.4(rollup@4.37.0)
       '@storybook/builder-vite': 7.6.20(typescript@5.6.2)(vite@5.4.15(@types/node@22.13.14)(less@4.2.2)(lightningcss@1.27.0)(terser@5.39.0))
       '@storybook/react': 7.6.20(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.6.2)
       '@vitejs/plugin-react': 3.1.0(vite@5.4.15(@types/node@22.13.14)(less@4.2.2)(lightningcss@1.27.0)(terser@5.39.0))
@@ -43274,35 +43266,35 @@ snapshots:
       semver-compare: 1.0.0
       sprintf-js: 1.1.3
 
-  rollup-plugin-base64@1.0.1(rollup@2.79.2):
+  rollup-plugin-base64@1.0.1(rollup@4.37.0):
     dependencies:
-      '@rollup/pluginutils': 3.1.0(rollup@2.79.2)
+      '@rollup/pluginutils': 3.1.0(rollup@4.37.0)
     transitivePeerDependencies:
       - rollup
 
-  rollup-plugin-commonjs@10.1.0(rollup@2.79.2):
+  rollup-plugin-commonjs@10.1.0(rollup@4.37.0):
     dependencies:
       estree-walker: 0.6.1
       is-reference: 1.2.1
       magic-string: 0.25.9
       resolve: 1.22.10
-      rollup: 2.79.2
+      rollup: 4.37.0
       rollup-pluginutils: 2.8.2
 
-  rollup-plugin-delete@2.2.0(rollup@2.79.2):
+  rollup-plugin-delete@2.2.0(rollup@4.37.0):
     dependencies:
       del: 6.1.1
-      rollup: 2.79.2
+      rollup: 4.37.0
 
-  rollup-plugin-dts@4.2.3(rollup@2.79.2)(typescript@5.6.2):
+  rollup-plugin-dts@4.2.3(rollup@4.37.0)(typescript@5.6.2):
     dependencies:
       magic-string: 0.26.7
-      rollup: 2.79.2
+      rollup: 4.37.0
       typescript: 5.6.2
     optionalDependencies:
       '@babel/code-frame': 7.26.2
 
-  rollup-plugin-esbuild@4.10.3(esbuild@0.14.54)(rollup@2.79.2):
+  rollup-plugin-esbuild@4.10.3(esbuild@0.14.54)(rollup@4.37.0):
     dependencies:
       '@rollup/pluginutils': 4.2.1
       debug: 4.4.0(supports-color@8.1.1)
@@ -43310,11 +43302,11 @@ snapshots:
       esbuild: 0.14.54
       joycon: 3.1.1
       jsonc-parser: 3.3.1
-      rollup: 2.79.2
+      rollup: 4.37.0
     transitivePeerDependencies:
       - supports-color
 
-  rollup-plugin-esbuild@4.10.3(esbuild@0.25.1)(rollup@2.79.2):
+  rollup-plugin-esbuild@4.10.3(esbuild@0.25.1)(rollup@4.37.0):
     dependencies:
       '@rollup/pluginutils': 4.2.1
       debug: 4.4.0(supports-color@8.1.1)
@@ -43322,24 +43314,24 @@ snapshots:
       esbuild: 0.25.1
       joycon: 3.1.1
       jsonc-parser: 3.3.1
-      rollup: 2.79.2
+      rollup: 4.37.0
     transitivePeerDependencies:
       - supports-color
 
-  rollup-plugin-peer-deps-external@2.2.4(rollup@2.79.2):
+  rollup-plugin-peer-deps-external@2.2.4(rollup@4.37.0):
     dependencies:
-      rollup: 2.79.2
+      rollup: 4.37.0
 
-  rollup-plugin-smart-asset@2.1.2(rollup@2.79.2):
+  rollup-plugin-smart-asset@2.1.2(rollup@4.37.0):
     dependencies:
       big.js: 6.2.2
       magic-string: 0.25.9
       mime: 2.6.0
       mkdirp: 1.0.4
-      rollup: 2.79.2
+      rollup: 4.37.0
       rollup-pluginutils: 2.8.2
 
-  rollup-plugin-styles@4.0.0(rollup@2.79.2):
+  rollup-plugin-styles@4.0.0(rollup@4.37.0):
     dependencies:
       '@rollup/pluginutils': 4.2.1
       '@types/cssnano': 5.1.3(postcss@8.5.3)
@@ -43357,7 +43349,7 @@ snapshots:
       postcss-value-parser: 4.2.0
       query-string: 7.1.3
       resolve: 1.22.10
-      rollup: 2.79.2
+      rollup: 4.37.0
       source-map-js: 1.2.1
       tslib: 2.8.1
 
