@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.8.19
+
+### Patch Changes
+
+-   [#746](https://github.com/learningeconomy/LearnCard/pull/746) [`9bde535a160695364fc3bb7fa087ad3cf91adafe`](https://github.com/learningeconomy/LearnCard/commit/9bde535a160695364fc3bb7fa087ad3cf91adafe) Thanks [@rhen92](https://github.com/rhen92)! - [LC-1167] Remove shadow around skills
+
 ## 2.8.18
 
 ### Patch Changes
