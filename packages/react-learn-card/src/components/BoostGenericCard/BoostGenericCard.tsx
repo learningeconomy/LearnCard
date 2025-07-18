@@ -4,6 +4,7 @@ import { TYPE_TO_IMG_SRC, TYPE_TO_WALLET_DARK_COLOR } from '../../constants';
 import { DisplayTypeEnum, getDisplayIcon } from '../../helpers/display.helpers';
 import { CertDisplayCardSkillsCount } from '../CertificateDisplayCard';
 import ThreeDotVertical from '../svgs/ThreeDotVertical';
+import { CircleCheckButton } from '../CircleCheckButton';
 
 export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
     title,
@@ -30,6 +31,7 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
     displayType,
     linkedCredentialsCount = 0,
     linkedCredentialsClassName = '',
+    checkBtnClass = '',
 }) => {
     const thumbClass = TYPE_TO_WALLET_DARK_COLOR[type]
         ? `bg-${TYPE_TO_WALLET_DARK_COLOR[type]}`
@@ -142,11 +144,15 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
             </button>
 
             {/* Optional Check Button overlay */}
-            {/* {showChecked && (
-        <div className="absolute top-[5px] left-[5px]">
-          <CircleCheckButton checked={checkStatus} onClick={onCheckClick} className={checkBtnClass} />
-        </div>
-      )} */}
+            {showChecked && (
+                <div className="absolute top-[5px] left-[5px]">
+                    <CircleCheckButton
+                        checked={checkStatus}
+                        onClick={onCheckClick}
+                        className={checkBtnClass}
+                    />
+                </div>
+            )}
         </div>
     );
 };
