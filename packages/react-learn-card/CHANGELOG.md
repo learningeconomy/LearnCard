@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.8.17
+
+### Patch Changes
+
+-   [#742](https://github.com/learningeconomy/LearnCard/pull/742) [`f356d2730d711d4c93a401f87e60dc61a7aacee2`](https://github.com/learningeconomy/LearnCard/commit/f356d2730d711d4c93a401f87e60dc61a7aacee2) Thanks [@gerardopar](https://github.com/gerardopar)! - fix checkbox button on generic card
+
 ## 2.8.16
 
 ### Patch Changes
