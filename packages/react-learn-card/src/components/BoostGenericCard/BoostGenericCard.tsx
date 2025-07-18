@@ -88,15 +88,19 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
 
                 {/* Details Section: grows to fill available space */}
                 <section
-                    className={`flex flex-col flex-grow items-center justify-end pt-1 ${
+                    className={`flex flex-col flex-grow items-center justify-end pt-1 w-full ${
                         linkedCredentialsCount === 0 ? 'pb-[20px]' : ''
                     }`}
                 >
-                    <div className="px-1 flex flex-col items-center justify-center">
+                    <div className="px-1 flex flex-col items-center justify-center w-full">
                         {/* Title */}
                         {!customTitle ? (
                             <p
-                                className={`${customHeaderClass} text-[16px] font-medium text-center text-grayscale-900 line-clamp-2`}
+                                className={`
+                                ${customHeaderClass}
+                                text-[16px] font-medium text-center text-grayscale-900 line-clamp-2
+                                h-[40px] flex items-center justify-center
+                            `}
                             >
                                 {title}
                             </p>
