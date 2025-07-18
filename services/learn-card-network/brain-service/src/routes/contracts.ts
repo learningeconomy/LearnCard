@@ -44,7 +44,7 @@ import {
     isProfileConsentFlowContractAdmin,
     getWritersForContract,
 } from '@accesslayer/consentflowcontract/relationships/read';
-import { constructUri, getIdFromUri } from '@helpers/uri.helpers';
+import { constructUri, getIdFromUri, resolveUri } from '@helpers/uri.helpers';
 import { getContractByUri } from '@accesslayer/consentflowcontract/read';
 import { deleteStorageForUri } from '@cache/storage';
 import { deleteConsentFlowContract } from '@accesslayer/consentflowcontract/delete';
@@ -63,7 +63,7 @@ import {
 import { getProfileByDid } from '@accesslayer/profile/read';
 import { sendBoost, isDraftBoost } from '@helpers/boost.helpers';
 import { isRelationshipBlocked } from '@helpers/connection.helpers';
-import { getBoostByUri } from '@accesslayer/boost/read';
+import { getBoostByUri, getBoostsByUri } from '@accesslayer/boost/read';
 import { canProfileIssueBoost } from '@accesslayer/boost/relationships/read';
 import {
     getCredentialsForContractTerms,
@@ -79,6 +79,8 @@ import {
     addAutoBoostsToContractDb,
     removeAutoBoostsFromContractDb,
 } from '@accesslayer/consentflowcontract/relationships/manageAutoboosts';
+import { getCredentialByUri } from '@accesslayer/credential/read';
+import { getDidWebLearnCard, getDidWebLearnCard, getLearnCard } from '@helpers/learnCard.helpers';
 
 export const contractsRouter = t.router({
     createConsentFlowContract: profileRoute
@@ -879,9 +881,62 @@ export const contractsRouter = t.router({
             console.log('🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆');
             console.log('🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆');
             console.log('🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆');
+            // console.log('input:', input);
+            // console.log('🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧');
+
+            // console.log('ctx:', ctx);
+
+            // console.log('🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧');
 
             // console.log('contractDetails', contractDetails);
             console.log('terms:', terms);
+            console.log('terms.read.credentials.categories:', terms.read.credentials.categories);
+
+            const categories = terms.read.credentials.categories;
+            const allSharedCredentialUris = [
+                ...new Set(Object.values(categories).flatMap(category => category.shared || [])),
+            ];
+
+            console.log('allSharedCredentialUris:', allSharedCredentialUris);
+
+            const credentials = (
+                await Promise.all(
+                    allSharedCredentialUris.map(async uri => {
+                        try {
+                            return await resolveUri(uri);
+                        } catch (error) {
+                            console.error(`Error resolving URI ${uri}:`, error);
+                            return undefined;
+                        }
+                    })
+                )
+            ).filter(cred => cred !== undefined && cred !== '');
+            // .map(cred => cred?.boostCredential ?? cred);
+
+            const cred = credentials[0];
+            if (cred) {
+                console.log('🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧');
+                console.log('🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧');
+                console.log('🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧');
+                console.log('cred:', cred);
+                console.log('🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧');
+                console.log('🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧');
+                console.log('🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧');
+                console.log('cred?.boostCredential:', cred?.boostCredential);
+            }
+
+            // console.log('🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧');
+
+            // console.log('credentials:', credentials);
+
+            // if (allSharedCredentialUris.length > 0) {
+            //     const firstCredUri = allSharedCredentialUris[0];
+            //     console.log('firstCredUri:', firstCredUri);
+
+            //     // const credential = await getCredentialByUri(firstCredUri);
+            //     const credential = await wallet.read.get(firstCredUri);
+            //     console.log('credential:', credential);
+            // }
 
             console.log('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥');
             console.log('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥');
@@ -935,6 +990,219 @@ export const contractsRouter = t.router({
 
             console.log('🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧');
             console.log('accessToken:', accessToken);
+
+            // const _credentials = [];
+            const body = `{
+                "@context": [
+                    "https://www.w3.org/ns/credentials/v2",
+                    "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json",
+                    "https://w3id.org/security/suites/ed25519-2020/v1"
+                ],
+                "recipienttoken": "",
+                "recipient": {
+                    "id": "474989023199323",
+                    "givenName": "",
+                    "familyName": "",
+                    "additionalName": "",
+                    "email": "jsmith@institutionx.edu",
+                    "phone": "",
+                    "studentId": "",
+                    "signupOrganization": ""
+                },
+                "credentials": ${JSON.stringify(credentials)}
+            }`;
+
+            // console.log('🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆');
+            // console.log('body:', body);
+
+            try {
+                const response = await fetch(`${srUrl}api/v1/credentials`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body,
+                    // body: [],
+                    // body: JSON.stringify({
+                    //     '@context': [
+                    //         'https://www.w3.org/ns/credentials/v2',
+                    //         'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+                    //         'https://w3id.org/security/suites/ed25519-2020/v1',
+                    //     ],
+                    //     'recipienttoken': '',
+                    //     'recipient': {
+                    //         'id': '474989023199323',
+                    //         'givenName': '',
+                    //         'familyName': '',
+                    //         'additionalName': '',
+                    //         'email': 'jsmith@institutionx.edu',
+                    //         'phone': '',
+                    //         'studentId': '',
+                    //         'signupOrganization': '',
+                    //     },
+                    //     'credentials': [
+                    //         {
+                    //             '@context': [
+                    //                 'https://www.w3.org/ns/credentials/v2',
+                    //                 'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+                    //                 'https://w3id.org/security/suites/ed25519-2020/v1',
+                    //             ],
+                    //             'id': '351843720888468',
+                    //             'name': 'Calculus w/Analytic Geometry I',
+                    //             'awardedDate': 'Spring 2023',
+                    //             'activityEndDate': '',
+                    //             'issuedOn': '',
+                    //             'issuanceDate': '',
+                    //             'expirationDate': '',
+                    //             'credentialSubject': {
+                    //                 'type': ['AchievementSubject'],
+                    //                 'achievement': {
+                    //                     'id': '351843720888468',
+                    //                     'achievementType': 'Course',
+                    //                     'name': 'Calculus w/Analytic Geometry I',
+                    //                     'description':
+                    //                         'Real numbers, limits and continuity, and differential and integral calculus of functions of 1 variable.',
+                    //                     'image': {
+                    //                         'id': '',
+                    //                     },
+                    //                 },
+                    //             },
+                    //             'issuer': {
+                    //                 'id': '123456789',
+                    //                 'name': 'Institution X',
+                    //                 'email': 'admissions@institutionx.edu',
+                    //                 'url': 'https://institutionx.edu',
+                    //                 'image': {
+                    //                     'id': '',
+                    //                 },
+                    //                 'description':
+                    //                     'Institution X, founded in 1925, is known for its beautiful campus and arts programs.',
+                    //             },
+                    //             'endorsements': {
+                    //                 'issuedOn': '',
+                    //                 'issuer': {
+                    //                     'name': '',
+                    //                 },
+                    //                 'claim': {
+                    //                     'endorsementComment': '',
+                    //                 },
+                    //             },
+                    //         },
+                    //         {
+                    //             '@context': [
+                    //                 'https://www.w3.org/ns/credentials/v2',
+                    //                 'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+                    //                 'https://w3id.org/security/suites/ed25519-2020/v1',
+                    //             ],
+                    //             'id': '369435906932892',
+                    //             'name': 'Introduction to Psychology',
+                    //             'awardedDate': 'Spring 2023',
+                    //             'activityEndDate': '',
+                    //             'issuedOn': '',
+                    //             'issuanceDate': '',
+                    //             'expirationDate': '',
+                    //             'credentialSubject': {
+                    //                 'type': ['AchievementSubject'],
+                    //                 'achievement': {
+                    //                     'id': '351843720888469',
+                    //                     'achievementType': 'Course',
+                    //                     'name': 'Introduction to Psychology',
+                    //                     'description':
+                    //                         'Major areas of theory and research in psychology. Requires participation in department-sponsored research or an educationally equivalent alternative activity.',
+                    //                     'image': {
+                    //                         'id': '',
+                    //                     },
+                    //                 },
+                    //             },
+                    //             'issuer': {
+                    //                 'id': '123456789',
+                    //                 'name': 'Institution X',
+                    //                 'email': 'admissions@institutionx.edu',
+                    //                 'url': 'https://institutionx.edu',
+                    //                 'image': {
+                    //                     'id': '',
+                    //                 },
+                    //                 'description':
+                    //                     'Institution X, founded in 1925, is known for its beautiful campus and arts programs.',
+                    //             },
+                    //             'endorsements': {
+                    //                 'issuedOn': '',
+                    //                 'issuer': {
+                    //                     'name': '',
+                    //                 },
+                    //                 'claim': {
+                    //                     'endorsementComment': '',
+                    //                 },
+                    //             },
+                    //         },
+                    //         {
+                    //             '@context': [
+                    //                 'https://www.w3.org/ns/credentials/v2',
+                    //                 'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+                    //                 'https://w3id.org/security/suites/ed25519-2020/v1',
+                    //             ],
+                    //             'id': '369435906932893',
+                    //             'name': 'First-Year Composition',
+                    //             'awardedDate': 'Spring 2023',
+                    //             'activityEndDate': '',
+                    //             'issuedOn': '',
+                    //             'issuanceDate': '',
+                    //             'expirationDate': '',
+                    //             'credentialSubject': {
+                    //                 'type': ['AchievementSubject'],
+                    //                 'achievement': {
+                    //                     'id': '351843720888470',
+                    //                     'achievementType': 'Course',
+                    //                     'name': 'First-Year Composition',
+                    //                     'description':
+                    //                         "Discovers, organizes and develops ideas in relation to the writer's purpose, subject and audience. Emphasizes modes of written discourse and effective use of rhetorical principles.",
+                    //                     'image': {
+                    //                         'id': '',
+                    //                     },
+                    //                 },
+                    //             },
+                    //             'issuer': {
+                    //                 'id': '123456789',
+                    //                 'name': 'Institution X',
+                    //                 'email': 'admissions@institutionx.edu',
+                    //                 'url': 'https://institutionx.edu',
+                    //                 'image': {
+                    //                     'id': '',
+                    //                 },
+                    //                 'description':
+                    //                     'Institution X, founded in 1925, is known for its beautiful campus and arts programs.',
+                    //             },
+                    //             'endorsements': {
+                    //                 'issuedOn': '',
+                    //                 'issuer': {
+                    //                     'name': '',
+                    //                 },
+                    //                 'claim': {
+                    //                     'endorsementComment': '',
+                    //                 },
+                    //             },
+                    //         },
+                    //     ],
+                    // }),
+                });
+
+                if (!response.ok) {
+                    // console.log('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥');
+                    // console.log('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥');
+                    // console.log('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥');
+                    // console.log('response:', response);
+
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                console.log('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥');
+                console.log('result:', result);
+            } catch (error) {
+                console.error('Error uploading credentials:', error);
+                throw error;
+            }
 
             await consentToContract(
                 profile,
