@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 1.5.22
+
+### Patch Changes
+
+-   [#734](https://github.com/learningeconomy/LearnCard/pull/734) [`7d77c34d7f4c9a6f6702d0213684747c3c196758`](https://github.com/learningeconomy/LearnCard/commit/7d77c34d7f4c9a6f6702d0213684747c3c196758) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix issue with creating Dag JWEs that have null/undefined/empty strings in them
+
 ## 1.5.21
 
 ### Patch Changes
