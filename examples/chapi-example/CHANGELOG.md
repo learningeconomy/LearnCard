@@ -4,7 +4,7 @@
 
 ### Patch Changes
 
--   Updated dependencies [[`255b8c1997fe8e4e51dd8fa87e07d9bbb1b713f1`](https://github.com/learningeconomy/LearnCard/commit/255b8c1997fe8e4e51dd8fa87e07d9bbb1b713f1)]:
+-   Updated dependencies [[`255b8c1997fe8e4e51dd8fa87e07d9bbb1b713f1`](https://github.com/learningeconomy/LearnCard/commit/255b8c1997fe8e4e51dd8fa87e07d9bbb1b713f1), [`f356d2730d711d4c93a401f87e60dc61a7aacee2`](https://github.com/learningeconomy/LearnCard/commit/f356d2730d711d4c93a401f87e60dc61a7aacee2)]:
     -   @learncard/react@2.8.16
 
 ## 1.0.251
