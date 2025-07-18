@@ -1,5 +1,13 @@
 # @welibraryos/react-learn-card
 
+## 2.8.16
+
+### Patch Changes
+
+-   [#740](https://github.com/learningeconomy/LearnCard/pull/740) [`255b8c1997fe8e4e51dd8fa87e07d9bbb1b713f1`](https://github.com/learningeconomy/LearnCard/commit/255b8c1997fe8e4e51dd8fa87e07d9bbb1b713f1) Thanks [@rhen92](https://github.com/rhen92)! - [LC-1155] Fix padding above title and below type
+
+-   [#742](https://github.com/learningeconomy/LearnCard/pull/742) [`f356d2730d711d4c93a401f87e60dc61a7aacee2`](https://github.com/learningeconomy/LearnCard/commit/f356d2730d711d4c93a401f87e60dc61a7aacee2) Thanks [@gerardopar](https://github.com/gerardopar)! - fix checkbox button on generic card
+
 ## 2.8.15
 
 ### Patch Changes
