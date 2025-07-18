@@ -194,6 +194,13 @@ class TestProfilesApi(unittest.TestCase):
         """
         pass
 
+    def test_profile_primary_signing_authority(self) -> None:
+        """Test case for profile_primary_signing_authority
+
+        Get primary Signing Authority for user
+        """
+        pass
+
     def test_profile_register_signing_authority(self) -> None:
         """Test case for profile_register_signing_authority
 
@@ -205,6 +212,13 @@ class TestProfilesApi(unittest.TestCase):
         """Test case for profile_search_profiles
 
         Search profiles
+        """
+        pass
+
+    def test_profile_set_primary_signing_authority(self) -> None:
+        """Test case for profile_set_primary_signing_authority
+
+        Set Primary Signing Authority
         """
         pass
 

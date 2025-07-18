@@ -173,6 +173,20 @@ class TestBoostsApi(unittest.TestCase):
         """
         pass
 
+    def test_boost_get_connected_boost_recipient_count(self) -> None:
+        """Test case for boost_get_connected_boost_recipient_count
+
+        Get boost recipients count
+        """
+        pass
+
+    def test_boost_get_connected_boost_recipients(self) -> None:
+        """Test case for boost_get_connected_boost_recipients
+
+        Get connected boost recipients
+        """
+        pass
+
     def test_boost_get_familial_boosts(self) -> None:
         """Test case for boost_get_familial_boosts
 

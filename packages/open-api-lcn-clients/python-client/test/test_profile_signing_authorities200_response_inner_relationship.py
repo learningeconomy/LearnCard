@@ -36,7 +36,8 @@ class TestProfileSigningAuthorities200ResponseInnerRelationship(unittest.TestCas
         if include_optional:
             return ProfileSigningAuthorities200ResponseInnerRelationship(
                 name = 'p',
-                did = ''
+                did = '',
+                is_primary = True
             )
         else:
             return ProfileSigningAuthorities200ResponseInnerRelationship(
