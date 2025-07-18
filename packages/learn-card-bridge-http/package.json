@@ -29,7 +29,7 @@
         "inquirer": "^8.2.4",
         "lookpath": "^1.2.2",
         "react": "^18.2.0",
-        "rollup": "^4.22.4",
+        "rollup": "^2.71.1",
         "rollup-plugin-esbuild": "^4.9.1",
         "serverless-esbuild": "^1.25.0",
         "serverless-http": "^3.0.1",
