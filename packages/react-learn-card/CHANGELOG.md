@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.8.15
+
+### Patch Changes
+
+-   [#738](https://github.com/learningeconomy/LearnCard/pull/738) [`f7851009fdef650581e9681175cc47c35b5b3d3f`](https://github.com/learningeconomy/LearnCard/commit/f7851009fdef650581e9681175cc47c35b5b3d3f) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: Boost Generic Card Content
+
 ## 2.8.14
 
 ### Patch Changes
