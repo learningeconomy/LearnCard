@@ -34,7 +34,7 @@ export const CertDisplayCardSkillsCount: React.FC<{
     return (
         <div
             className={`flex w-full items-center justify-center cursor-pointer bg-white rounded-[20px] ${
-                className === 'boost-generic' ? '' : 'px-4 py-2 mt-4 shadow-bottom'
+                className === 'boost-generic' ? '' : 'px-4 py-2 mt-4'
             } `}
             onClick={onClick}
         >
