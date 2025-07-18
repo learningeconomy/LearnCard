@@ -1,5 +1,53 @@
 # learn-card-core
 
+## 2.5.8
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.3.14
+
+## 2.5.7
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.3.13
+
+## 2.5.6
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.3.12
+
+## 2.5.5
+
+### Patch Changes
+
+-   [#664](https://github.com/learningeconomy/LearnCard/pull/664) [`3e4e7b70f5a357c098aa88c3a97d19ce879a8d6c`](https://github.com/learningeconomy/LearnCard/commit/3e4e7b70f5a357c098aa88c3a97d19ce879a8d6c) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Refined connection logic for auto-connect boosts to ensure bi-directional connections are established. Updated `getConnections`, `getConnectedBoostRecipients`, and `countConnectedBoostRecipients` to use consistent connection resolution. Ported and expanded tests for connected boost recipients to E2E.
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.3.11
+
+## 2.5.4
+
+### Patch Changes
+
+-   [#724](https://github.com/learningeconomy/LearnCard/pull/724) [`610657555402897bc2b0321be81a17975d28c0f4`](https://github.com/learningeconomy/LearnCard/commit/610657555402897bc2b0321be81a17975d28c0f4) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix sending boosts that are VC 2.0's
+
+-   Updated dependencies [[`610657555402897bc2b0321be81a17975d28c0f4`](https://github.com/learningeconomy/LearnCard/commit/610657555402897bc2b0321be81a17975d28c0f4)]:
+    -   @learncard/helpers@1.1.20
+    -   @learncard/core@9.3.32
+    -   @learncard/network-brain-client@2.3.10
+
+## 2.5.3
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.3.9
+
 ## 2.5.2
 
 ### Patch Changes

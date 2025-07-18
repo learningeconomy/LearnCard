@@ -1,5 +1,61 @@
 # @welibraryos/react-learn-card
 
+## 2.8.15
+
+### Patch Changes
+
+-   [#738](https://github.com/learningeconomy/LearnCard/pull/738) [`f7851009fdef650581e9681175cc47c35b5b3d3f`](https://github.com/learningeconomy/LearnCard/commit/f7851009fdef650581e9681175cc47c35b5b3d3f) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: Boost Generic Card Content
+
+## 2.8.14
+
+### Patch Changes
+
+-   [#733](https://github.com/learningeconomy/LearnCard/pull/733) [`b81277c9118111178342b09ccf1cd3070de92b19`](https://github.com/learningeconomy/LearnCard/commit/b81277c9118111178342b09ccf1cd3070de92b19) Thanks [@gerardopar](https://github.com/gerardopar)! - [LC-1132] - thumbnail polishes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.31
+
+## 2.8.13
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.30
+
+## 2.8.12
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.29
+
+## 2.8.11
+
+### Patch Changes
+
+-   [#720](https://github.com/learningeconomy/LearnCard/pull/720) [`53cfa3a0275c3cfd144bc078dbbd03ec9d2b515b`](https://github.com/learningeconomy/LearnCard/commit/53cfa3a0275c3cfd144bc078dbbd03ec9d2b515b) Thanks [@gerardopar](https://github.com/gerardopar)! - [LC-1107] - Media Display Type
+
+## 2.8.10
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.28
+
+## 2.8.9
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.27
+
+## 2.8.8
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.26
+
 ## 2.8.7
 
 ### Patch Changes

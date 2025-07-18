@@ -1,7 +1,7 @@
 import isEqual from 'lodash/isEqual';
 import { v4 as uuidv4 } from 'uuid';
 import { VC, JWE, UnsignedVC, LCNNotificationTypeEnumValidator } from '@learncard/types';
-import { isEncrypted } from '@learncard/helpers';
+import { isEncrypted, isVC2Format } from '@learncard/helpers';
 import { ProfileType, SigningAuthorityForUserType } from 'types/profile';
 
 import { getBoostOwner } from '@accesslayer/boost/relationships/read';
@@ -336,35 +336,19 @@ export const constructCertifiedBoostCredential = async (
     const boostId = boost?.dataValues?.id;
     const boostURI = getBoostUri(boostId, domain);
 
+    const isVC2 = isVC2Format(credential);
+
     return {
         '@context': [
-            'https://www.w3.org/2018/credentials/v1',
-            {
-                id: '@id',
-                type: '@type',
-                cred: 'https://www.w3.org/2018/credentials#',
-                lcn: 'https://docs.learncard.com/definitions#',
-                CertifiedBoostCredential: {
-                    '@id': 'lcn:certifiedBoostCredential',
-                    '@context': {
-                        '@version': 1.1,
-                        boostId: {
-                            '@id': 'lcn:boostId',
-                            '@type': 'xsd:string',
-                        },
-                        boostCredential: {
-                            '@id': 'cred:VerifiableCredential',
-                            '@type': '@id',
-                            '@container': '@graph',
-                        },
-                    },
-                },
-            },
+            isVC2
+                ? 'https://www.w3.org/ns/credentials/v2'
+                : 'https://www.w3.org/2018/credentials/v1',
+            'https://ctx.learncard.com/boosts/1.0.1.json',
         ],
         id: `urn:uuid:${uuidv4()}`,
         type: ['VerifiableCredential', 'CertifiedBoostCredential'],
         issuer: issuerDid,
-        issuanceDate: currentDate,
+        ...(isVC2 ? { validFrom: currentDate } : { issuanceDate: currentDate }),
         credentialSubject: { id: issuerDid },
         boostId: boostURI,
         boostCredential: credential,

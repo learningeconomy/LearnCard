@@ -32,8 +32,9 @@ class BoostGetBoosts200ResponseInner(BaseModel):
     status: Optional[StrictStr] = None
     auto_connect_recipients: Optional[StrictBool] = Field(default=None, alias="autoConnectRecipients")
     meta: Optional[Dict[str, Any]] = None
+    allow_anyone_to_create_children: Optional[StrictBool] = Field(default=None, alias="allowAnyoneToCreateChildren")
     uri: StrictStr
-    __properties: ClassVar[List[str]] = ["name", "type", "category", "status", "autoConnectRecipients", "meta", "uri"]
+    __properties: ClassVar[List[str]] = ["name", "type", "category", "status", "autoConnectRecipients", "meta", "allowAnyoneToCreateChildren", "uri"]
 
     @field_validator('status')
     def status_validate_enum(cls, value):
@@ -102,6 +103,7 @@ class BoostGetBoosts200ResponseInner(BaseModel):
             "status": obj.get("status"),
             "autoConnectRecipients": obj.get("autoConnectRecipients"),
             "meta": obj.get("meta"),
+            "allowAnyoneToCreateChildren": obj.get("allowAnyoneToCreateChildren"),
             "uri": obj.get("uri")
         })
         return _obj

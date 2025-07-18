@@ -34,7 +34,7 @@ class BoostGetBoostRecipients200ResponseInnerTo(BaseModel):
     bio: StrictStr = Field(description="Longer bio for the profile.")
     did: StrictStr = Field(description="Decentralized Identifier for the profile. (auto-assigned)")
     is_private: Optional[StrictBool] = Field(default=None, description="Whether the profile is private or not and shows up in search results.", alias="isPrivate")
-    email: Optional[StrictStr] = Field(default=None, description="Contact email address for the profile.")
+    email: Optional[StrictStr] = Field(default=None, description="Contact email address for the profile. (deprecated)")
     image: Optional[StrictStr] = Field(default=None, description="Profile image URL for the profile.")
     hero_image: Optional[StrictStr] = Field(default=None, description="Hero image URL for the profile.", alias="heroImage")
     website_link: Optional[StrictStr] = Field(default=None, description="Website link for the profile.", alias="websiteLink")

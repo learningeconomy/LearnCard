@@ -1,6 +1,6 @@
 {
     "name": "@learncard/simple-signing-plugin",
-    "version": "1.0.16",
+    "version": "1.0.20",
     "description": "",
     "type": "module",
     "main": "./dist/index.cjs",

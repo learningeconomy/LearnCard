@@ -1,0 +1,30 @@
+# InboxIssue200ResponseRecipient
+
+
+## Properties
+
+Name | Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+**type** | **str** |  | 
+**value** | **str** |  | 
+
+## Example
+
+```python
+from openapi_client.models.inbox_issue200_response_recipient import InboxIssue200ResponseRecipient
+
+# TODO update the JSON string below
+json = "{}"
+# create an instance of InboxIssue200ResponseRecipient from a JSON string
+inbox_issue200_response_recipient_instance = InboxIssue200ResponseRecipient.from_json(json)
+# print the JSON string representation of the object
+print(InboxIssue200ResponseRecipient.to_json())
+
+# convert the object into a dict
+inbox_issue200_response_recipient_dict = inbox_issue200_response_recipient_instance.to_dict()
+# create an instance of InboxIssue200ResponseRecipient from a dict
+inbox_issue200_response_recipient_from_dict = InboxIssue200ResponseRecipient.from_dict(inbox_issue200_response_recipient_dict)
+```
+[[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
+
+

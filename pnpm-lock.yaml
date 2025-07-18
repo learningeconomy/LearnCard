@@ -1344,6 +1344,9 @@ importers:
       '@learncard/core':
         specifier: workspace:*
         version: link:../../learn-card-core
+      '@learncard/helpers':
+        specifier: workspace:*
+        version: link:../../learn-card-helpers
       '@learncard/network-brain-client':
         specifier: workspace:*
         version: link:../../learn-card-network/brain-client
@@ -2321,6 +2324,9 @@ importers:
       '@learncard/expiration-plugin':
         specifier: workspace:*
         version: link:../../../packages/plugins/expiration
+      '@learncard/helpers':
+        specifier: workspace:*
+        version: link:../../../packages/learn-card-helpers
       '@learncard/learn-card-plugin':
         specifier: workspace:*
         version: link:../../../packages/plugins/learn-card

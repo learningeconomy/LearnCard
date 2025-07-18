@@ -1,5 +1,24 @@
 # learn-card-core
 
+## 1.0.57
+
+### Patch Changes
+
+-   [#727](https://github.com/learningeconomy/LearnCard/pull/727) [`3922c670b598a19ec33084ae4cadbdcf89177f64`](https://github.com/learningeconomy/LearnCard/commit/3922c670b598a19ec33084ae4cadbdcf89177f64) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Better VC 2 support
+
+## 1.0.56
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.32
+
+## 1.0.55
+
+### Patch Changes
+
+-   [#722](https://github.com/learningeconomy/LearnCard/pull/722) [`52f0829ffdcc9b0f896fe72f10195e37e00d63d3`](https://github.com/learningeconomy/LearnCard/commit/52f0829ffdcc9b0f896fe72f10195e37e00d63d3) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Boost 1.0.1 context
+
 ## 1.0.54
 
 ### Patch Changes

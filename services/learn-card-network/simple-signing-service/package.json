@@ -1,6 +1,6 @@
 {
     "name": "@learncard/simple-signing-service",
-    "version": "1.0.16",
+    "version": "1.0.20",
     "description": "",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
@@ -50,6 +50,7 @@
         "@learncard/didkey-plugin": "workspace:*",
         "@learncard/didkit-plugin": "workspace:*",
         "@learncard/expiration-plugin": "workspace:*",
+        "@learncard/helpers": "workspace:*",
         "@learncard/learn-card-plugin": "workspace:*",
         "@learncard/vc-plugin": "workspace:*",
         "@learncard/types": "workspace:*",

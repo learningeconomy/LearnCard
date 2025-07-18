@@ -2,7 +2,7 @@ import { QueryBuilder, BindParam } from 'neogma';
 import { UnsignedVC, VC } from '@learncard/types';
 import { v4 as uuid } from 'uuid';
 
-import { Boost, BoostInstance } from '@models';
+import { Boost, BoostInstance, Profile } from '@models';
 import { BoostStatus, BoostType } from 'types/boost';
 import { convertCredentialToBoostTemplateJSON } from '@helpers/boost.helpers';
 import { getDidWeb } from '@helpers/did.helpers';
@@ -23,6 +23,8 @@ export const createBoost = async (
 
     const { status = BoostStatus.enum.LIVE } = metadata;
 
+    const timestamp = new Date().toISOString();
+
     const query = new QueryBuilder(
         new BindParam({
             params: {
@@ -34,27 +36,27 @@ export const createBoost = async (
                 status,
                 ...((flattenObject as any)(metadata) as any),
             },
+            profileId: creator.profileId,
+            roleId: role.id,
+            date: timestamp,
         })
     )
+        .match({ model: Profile, identifier: 'creatorProfile' })
+        .where('creatorProfile.profileId = $profileId')
         .create({ model: Boost, identifier: 'boost' })
-        .set('boost += $params');
+        .set('boost += $params')
+        .create(
+            `(boost)-[:${Boost.getRelationshipByAlias('createdBy').name} { date: $date }]->(creatorProfile)`
+        )
+        .create(
+            `(creatorProfile)-[:${Boost.getRelationshipByAlias('hasRole').name} { roleId: $roleId }]->(boost)`
+        );
 
     await query.run();
 
     const boost = (await getBoostById(id))!;
 
-    await Promise.all([
-        boost.relateTo({
-            alias: 'createdBy',
-            properties: { date: new Date().toISOString() },
-            where: { profileId: creator.profileId },
-        }),
-        boost.relateTo({
-            alias: 'hasRole',
-            properties: { roleId: role.id },
-            where: { profileId: creator.profileId },
-        }),
-    ]);
+    
 
     return boost;
 };
