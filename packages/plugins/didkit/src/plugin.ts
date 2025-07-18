@@ -116,12 +116,12 @@ export const getDidKitPlugin = async (
                         isJwt
                             ? '{}'
                             : JSON.stringify(
-                                await getDocumentMap(
-                                    _learnCard,
-                                    presentation,
-                                    allowRemoteContexts
-                                )
-                            )
+                                  await getDocumentMap(
+                                      _learnCard,
+                                      presentation,
+                                      allowRemoteContexts
+                                  )
+                              )
                     )
                 );
             },
