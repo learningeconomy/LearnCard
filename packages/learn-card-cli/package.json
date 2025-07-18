@@ -23,7 +23,7 @@
         "figlet": "^1.5.2",
         "gradient-string": "^2.0.1",
         "pretty-repl": "^3.1.1",
-        "rollup": "^4.22.4",
+        "rollup": "^2.71.1",
         "rollup-plugin-esbuild": "^4.9.1"
     },
     "devDependencies": {
