@@ -8,6 +8,7 @@ import {
     normalFullTerms,
     normalContract,
     normalNoTerms,
+    contractWithDefaults,
 } from './helpers/contract.helpers';
 import { VC } from '@learncard/types';
 
@@ -95,6 +96,47 @@ describe('ConsentFlow E2E Tests', () => {
                 // Expected to fail
                 expect(error).toBeDefined();
             }
+        });
+
+        it('should allow creating and retrieving a contract with defaultEnabled fields', async () => {
+            const contractName = `Default Enabled Contract ${Date.now()}`;
+            const contractUri = await a.invoke.createContract({
+                contract: contractWithDefaults,
+                name: contractName,
+                description: 'A contract for testing defaultEnabled fields',
+            });
+
+            expect(contractUri).toBeDefined();
+            expect(typeof contractUri).toBe('string');
+
+            // Retrieve the contract and verify defaultEnabled fields are preserved
+            const contract = await a.invoke.getContract(contractUri);
+
+            expect(contract).toBeDefined();
+            expect(contract.name).toBe(contractName);
+            expect(contract.description).toBe('A contract for testing defaultEnabled fields');
+
+            // Verify read section defaultEnabled fields
+            expect(contract.contract.read.personal.name?.defaultEnabled).toBe(true);
+            expect(contract.contract.read.personal.email?.defaultEnabled).toBe(false);
+            expect(contract.contract.read.personal.phone?.defaultEnabled).toBe(true);
+            expect(contract.contract.read.credentials.categories.Achievement?.defaultEnabled).toBe(true);
+            expect(contract.contract.read.credentials.categories.ID?.defaultEnabled).toBe(false);
+            expect(contract.contract.read.credentials.categories.Certificate?.defaultEnabled).toBe(false);
+
+            // Verify write section defaultEnabled fields
+            expect(contract.contract.write.personal.name?.defaultEnabled).toBe(true);
+            expect(contract.contract.write.personal.email?.defaultEnabled).toBe(false);
+            expect(contract.contract.write.credentials.categories.Achievement?.defaultEnabled).toBe(false);
+            expect(contract.contract.write.credentials.categories.Badge?.defaultEnabled).toBe(true);
+
+            // Verify required fields are still preserved alongside defaultEnabled
+            expect(contract.contract.read.personal.name?.required).toBe(false);
+            expect(contract.contract.read.personal.email?.required).toBe(true);
+            expect(contract.contract.read.credentials.categories.Achievement?.required).toBe(false);
+            expect(contract.contract.read.credentials.categories.Certificate?.required).toBe(true);
+            expect(contract.contract.write.credentials.categories.Achievement?.required).toBe(true);
+            expect(contract.contract.write.credentials.categories.Badge?.required).toBe(false);
         });
     });
 
