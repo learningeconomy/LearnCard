@@ -116,6 +116,18 @@ export const reconsentTerms = async (
                         return;
                     }
 
+                    const boostCategory = boost.dataValues.category;
+                    if (boostCategory) {
+                        const categoryWritePermission =
+                            terms.write?.credentials?.categories?.[boostCategory];
+
+                        // Category not found in write permissions - deny autoboost
+                        if (!categoryWritePermission) return;
+
+                        // Check if write permission is explicitly denied (false) or not granted (undefined)
+                        // Only issue autoboost if write permission is explicitly granted (true)
+                        if (categoryWritePermission !== true) return;
+                    }
                     // Get boost instance
                     const boostCredential = JSON.parse(boost.dataValues?.boost) as UnsignedVC | VC;
 
@@ -307,6 +319,18 @@ export const updateTerms = async (
                             `Signing authority "${signingAuthorityName}" at endpoint "${signingAuthorityEndpoint}" not found for contract owner`
                         );
                         return;
+                    }
+
+                    const boostCategory = boost.target.category;
+                    if (boostCategory) {
+                        const categoryWritePermission =
+                            terms.write?.credentials?.categories?.[boostCategory];
+
+                        if (!categoryWritePermission) return;
+
+                        // Check if write permission is explicitly denied (false) or not granted (undefined)
+                        // Only issue autoboost if write permission is explicitly granted (true)
+                        if (categoryWritePermission !== true) return;
                     }
 
                     // Get boost instance
