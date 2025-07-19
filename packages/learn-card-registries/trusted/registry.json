@@ -1,9 +1,14 @@
 {
     "meta": {
         "created": "2022-10-27T17:57:31+00:00",
-        "updated": "2025-07-19T04:43:47.086Z"
+        "updated": "2025-07-19T05:08:19.031Z"
     },
     "registry": {
+        "did:web:network.learncard.com:users:learn-cloud": {
+            "name": "LearnCloud AI",
+            "location": "Washington, DC, USA",
+            "url": "https://www.learncard.com/"
+        },
         "did:web:network.learncard.com:users:smartresume": {
             "name": "SmartResume",
             "location": "Little Rock, AR 72201",
