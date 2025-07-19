@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.8.20
+
+### Patch Changes
+
+-   [#749](https://github.com/learningeconomy/LearnCard/pull/749) [`e2764728feaa2c4f1a5bc6cb3b2dec8b21b49458`](https://github.com/learningeconomy/LearnCard/commit/e2764728feaa2c4f1a5bc6cb3b2dec8b21b49458) Thanks [@gerardopar](https://github.com/gerardopar)! - LC-1168 - Update Verifier State
+
 ## 2.8.19
 
 ### Patch Changes
