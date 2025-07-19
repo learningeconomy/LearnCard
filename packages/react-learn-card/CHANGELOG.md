@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.8.21
+
+### Patch Changes
+
+-   [#751](https://github.com/learningeconomy/LearnCard/pull/751) [`65bacfaa9a24f97a5e59a7dd4cffe7f1f96c1888`](https://github.com/learningeconomy/LearnCard/commit/65bacfaa9a24f97a5e59a7dd4cffe7f1f96c1888) Thanks [@gerardopar](https://github.com/gerardopar)! - fix portfolio category display text
+
 ## 2.8.20
 
 ### Patch Changes
