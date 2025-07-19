@@ -120,14 +120,20 @@ describe('ConsentFlow E2E Tests', () => {
             expect(contract.contract.read.personal.name?.defaultEnabled).toBe(true);
             expect(contract.contract.read.personal.email?.defaultEnabled).toBe(false);
             expect(contract.contract.read.personal.phone?.defaultEnabled).toBe(true);
-            expect(contract.contract.read.credentials.categories.Achievement?.defaultEnabled).toBe(true);
+            expect(contract.contract.read.credentials.categories.Achievement?.defaultEnabled).toBe(
+                true
+            );
             expect(contract.contract.read.credentials.categories.ID?.defaultEnabled).toBe(false);
-            expect(contract.contract.read.credentials.categories.Certificate?.defaultEnabled).toBe(false);
+            expect(contract.contract.read.credentials.categories.Certificate?.defaultEnabled).toBe(
+                false
+            );
 
             // Verify write section defaultEnabled fields
             expect(contract.contract.write.personal.name?.defaultEnabled).toBe(true);
             expect(contract.contract.write.personal.email?.defaultEnabled).toBe(false);
-            expect(contract.contract.write.credentials.categories.Achievement?.defaultEnabled).toBe(false);
+            expect(contract.contract.write.credentials.categories.Achievement?.defaultEnabled).toBe(
+                false
+            );
             expect(contract.contract.write.credentials.categories.Badge?.defaultEnabled).toBe(true);
 
             // Verify required fields are still preserved alongside defaultEnabled
@@ -512,6 +518,31 @@ describe('ConsentFlow E2E Tests', () => {
             // At least one transaction should be a write action (auto-boost)
             const hasWriteAction = transactions.records.some(tx => tx.action === 'write');
             expect(hasWriteAction).toBe(true);
+        });
+
+        it('should NOT auto-issue boosts when write permission is denied in consent terms', async () => {
+            // Create a contract with autoboost for Achievement category
+            const contractUri = await a.invoke.createContract({
+                contract: normalContract, // Allows Achievement category
+                name: 'Security Test Contract',
+                description: 'Testing autoboost permission enforcement',
+                autoboosts: [{ boostUri, signingAuthority }], // Use existing boostUri and signingAuthority
+            });
+
+            // User B consents but DENIES write permission for Achievement category
+            const termsUri = await b.invoke.consentToContract(contractUri, {
+                terms: normalNoTerms, // This denies ALL write permissions: Achievement: false, ID: false
+            });
+
+            expect(termsUri).toBeDefined();
+
+            // Wait a moment for any autoboost processing
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            // Check if any credentials were issued (there should be NONE)
+            const credentials = await b.invoke.getCredentialsForContract(termsUri);
+
+            expect(credentials.records).toHaveLength(0);
         });
     });
 
