@@ -1,5 +1,11 @@
 # learn-card-types
 
+## 5.8.1
+
+### Patch Changes
+
+-   [#753](https://github.com/learningeconomy/LearnCard/pull/753) [`dd5bfff7d94670f43e53d6e7c86a6fd3f80d92b8`](https://github.com/learningeconomy/LearnCard/commit/dd5bfff7d94670f43e53d6e7c86a6fd3f80d92b8) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add defaultEnabled flags to contracts as a UI hint
+
 ## 5.8.0
 
 ### Minor Changes
