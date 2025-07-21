@@ -63,7 +63,7 @@ import {
 import { getProfileByDid } from '@accesslayer/profile/read';
 import { sendBoost, isDraftBoost } from '@helpers/boost.helpers';
 import { isRelationshipBlocked } from '@helpers/connection.helpers';
-import { getBoostByUri, getBoostsByUri } from '@accesslayer/boost/read';
+import { getBoostByUri } from '@accesslayer/boost/read';
 import { canProfileIssueBoost } from '@accesslayer/boost/relationships/read';
 import {
     getCredentialsForContractTerms,
@@ -79,8 +79,6 @@ import {
     addAutoBoostsToContractDb,
     removeAutoBoostsFromContractDb,
 } from '@accesslayer/consentflowcontract/relationships/manageAutoboosts';
-import { getCredentialByUri } from '@accesslayer/credential/read';
-import { getDidWebLearnCard, getDidWebLearnCard, getLearnCard } from '@helpers/learnCard.helpers';
 
 export const contractsRouter = t.router({
     createConsentFlowContract: profileRoute
