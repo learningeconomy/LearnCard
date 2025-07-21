@@ -1,5 +1,11 @@
 # @learncard/network-brain-service
 
+## 2.3.11
+
+### Patch Changes
+
+-   [#758](https://github.com/learningeconomy/LearnCard/pull/758) [`fed6117ee9e849839b6211897fd1e71f95d013fd`](https://github.com/learningeconomy/LearnCard/commit/fed6117ee9e849839b6211897fd1e71f95d013fd) Thanks [@smurflo2](https://github.com/smurflo2)! - Add special handling for SmartResume integration
+
 ## 2.3.10
 
 ### Patch Changes
