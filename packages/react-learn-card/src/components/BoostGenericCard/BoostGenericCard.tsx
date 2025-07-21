@@ -149,7 +149,7 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
 
             {/* Optional Check Button overlay */}
             {showChecked && (
-                <div className="absolute top-[5px] left-[5px]">
+                <div className="absolute top-[5px] left-[5px] z-20">
                     <CircleCheckButton
                         checked={checkStatus}
                         onClick={onCheckClick}
