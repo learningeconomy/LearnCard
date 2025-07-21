@@ -298,10 +298,6 @@ export const boostsRouter = t.router({
         .query(async ({ ctx, input }) => {
             const { uri } = input;
 
-            console.log('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥');
-            console.log('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥');
-            console.log('uri:', uri);
-
             const decodedUri = decodeURIComponent(uri);
             const boost = await getBoostByUriWithDefaultClaimPermissions(decodedUri);
 
