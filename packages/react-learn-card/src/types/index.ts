@@ -352,6 +352,7 @@ export type BoostGenericCardProps = {
     displayType?: DisplayTypeEnum | string;
     linkedCredentialsCount?: number;
     linkedCredentialsClassName?: string;
+    checkBtnClass?: string;
 };
 
 export type Attachment = {

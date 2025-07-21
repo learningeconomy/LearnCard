@@ -1,9 +1,14 @@
 {
     "meta": {
         "created": "2022-10-27T17:57:31+00:00",
-        "updated": "2025-05-16T18:26:43+00:00"
+        "updated": "2025-07-19T05:08:19.031Z"
     },
     "registry": {
+        "did:web:network.learncard.com:users:learn-cloud": {
+            "name": "LearnCloud AI",
+            "location": "Washington, DC, USA",
+            "url": "https://www.learncard.com/"
+        },
         "did:web:network.learncard.com:users:smartresume": {
             "name": "SmartResume",
             "location": "Little Rock, AR 72201",
@@ -118,6 +123,81 @@
             "name": "Instituto Tecnológico de Monterrey Test",
             "location": "Monterrey, Nuevo León, México",
             "url": "https://tec.mx/es"
+        },
+        "did:web:network.learncard.com:users:hillvalleyhigh": {
+            "name": "Hill Valley High School",
+            "location": "Washington, DC, USA",
+            "url": "https://www.learncard.com/"
+        },
+        "did:web:network.learncard.com:users:arcadia2": {
+            "name": "Arcadia Media Labs",
+            "location": "Washington, DC, USA",
+            "url": "https://www.learncard.com/"
+        },
+        "did:web:network.learncard.com:users:roycharles2": {
+            "name": "Roy Charleston",
+            "location": "Washington, DC, USA",
+            "url": "https://www.learncard.com/"
+        },
+        "did:web:network.learncard.com:users:scouting2": {
+            "name": "World Scouting",
+            "location": "Washington, DC, USA",
+            "url": "https://www.learncard.com/"
+        },
+        "did:web:network.learncard.com:users:redwoodvalley2": {
+            "name": "Redwood Valley University",
+            "location": "Washington, DC, USA",
+            "url": "https://www.learncard.com/"
+        },
+        "did:web:network.learncard.com:users:toefl2": {
+            "name": "TOEFL",
+            "location": "Washington, DC, USA",
+            "url": "https://www.learncard.com/"
+        },
+        "did:web:network.learncard.com:users:collegeboard2": {
+            "name": "College Board",
+            "location": "Washington, DC, USA",
+            "url": "https://www.learncard.com/"
+        },
+        "did:web:network.learncard.com:users:coderise2": {
+            "name": "CodeRise Academy",
+            "location": "Washington, DC, USA",
+            "url": "https://www.learncard.com/"
+        },
+        "did:web:network.learncard.com:users:lefdemoschool": {
+            "name": "Learning Economy",
+            "location": "Washington, DC, USA",
+            "url": "https://www.learncard.com/"
+        },
+        "did:web:network.learncard.com:users:oliviatcreative": {
+            "name": "Olivia Trujillo",
+            "location": "Washington, DC, USA",
+            "url": "https://www.learncard.com/"
+        },
+        "did:web:network.learncard.com:users:summit-accessibility-office": {
+            "name": "Summit Accessibility Office",
+            "location": "Washington, DC, USA",
+            "url": "https://www.learncard.com/"
+        },
+        "did:web:network.learncard.com:users:camptallpines2": {
+            "name": "Camp Tall Pines",
+            "location": "Washington, DC, USA",
+            "url": "https://www.learncard.com/"
+        },
+        "did:web:network.learncard.com:users:kikuhana2": {
+            "name": "Kikuhana International University",
+            "location": "Washington, DC, USA",
+            "url": "https://www.learncard.com/"
+        },
+        "did:web:network.learncard.com:users:summit-marketing": {
+            "name": "Summit Marketing",
+            "location": "Washington, DC, USA",
+            "url": "https://www.learncard.com/"
+        },
+        "did:web:network.learncard.com:users:motlowstate2": {
+            "name": "Motlow State College",
+            "location": "Washington, DC, USA",
+            "url": "https://www.learncard.com/"
         }
     }
 }

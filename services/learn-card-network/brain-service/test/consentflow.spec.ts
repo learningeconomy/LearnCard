@@ -277,6 +277,51 @@ describe('Consent Flow Contracts', () => {
             // Verifying the image field
             expect(contract.image).toEqual(contractData.image);
         });
+
+        it('should allow setting and retrieving the defaultEnabled field for contract categories', async () => {
+            const contractWithDefaults: ConsentFlowContract = {
+                read: {
+                    personal: { 
+                        name: { required: false, defaultEnabled: true },
+                        email: { required: true, defaultEnabled: false }
+                    },
+                    credentials: {
+                        categories: {
+                            Achievement: { required: false, defaultEnabled: true },
+                            ID: { required: false, defaultEnabled: false }
+                        },
+                    },
+                },
+                write: {
+                    personal: {
+                        name: { required: false, defaultEnabled: true }
+                    },
+                    credentials: {
+                        categories: {
+                            Achievement: { required: true, defaultEnabled: false }
+                        },
+                    },
+                },
+            };
+
+            const contractUri = await userA.clients.fullAuth.contracts.createConsentFlowContract({
+                contract: contractWithDefaults,
+                name: 'Default Enabled Test Contract',
+            });
+
+            // Fetching the created contract
+            const contract = await userA.clients.fullAuth.contracts.getConsentFlowContract({
+                uri: contractUri,
+            });
+
+            // Verifying the defaultEnabled fields are preserved
+            expect(contract.contract.read.personal.name.defaultEnabled).toBe(true);
+            expect(contract.contract.read.personal.email.defaultEnabled).toBe(false);
+            expect(contract.contract.read.credentials.categories.Achievement.defaultEnabled).toBe(true);
+            expect(contract.contract.read.credentials.categories.ID.defaultEnabled).toBe(false);
+            expect(contract.contract.write.personal.name.defaultEnabled).toBe(true);
+            expect(contract.contract.write.credentials.categories.Achievement.defaultEnabled).toBe(false);
+        });
     });
 
     describe('getConsentFlowContracts', () => {

@@ -86,6 +86,7 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
         textLightColor = 'text-yellow-500';
         textDarkColor = 'text-yellow-700';
         borderColor = 'border-yellow-500';
+        categoryTitle = 'Portfolio';
     } else if (categoryType === LCCategoryEnum.learningHistory) {
         categoryTitle = 'Study';
     } else if (categoryType === LCCategoryEnum.workHistory) {

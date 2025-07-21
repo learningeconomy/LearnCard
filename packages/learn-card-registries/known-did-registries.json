@@ -6,28 +6,10 @@
         "url": "https://registries.learncard.com/trusted/registry.json"
     },
     {
-        "name": "Credential Engine Test Issuer Registry",
-        "type": "oidf",
-        "governanceUrl": "https://credentialengine.org/",
-        "trustAnchorEC": "https://test.issuerregistry.credentialengine.org/oidfed/.well-known/openid-federation"
-    },
-    {
         "name": "OpenSALT Test Issuer Registry",
         "type": "oidf",
         "governanceUrl": "https://staging.opensalt.net/issuer-registry/governance",
         "trustAnchorEC": "https://staging.opensalt.net/issuer-registry/.well-known/openid-federation"
-    },
-    {
-        "name": "DCC Member Registry",
-        "type": "oidf",
-        "governanceUrl": "https://registry.docconsortium.org/governance",
-        "trustAnchorEC": "https://registry.dcconsortium.org/.well-known/openid-federation"
-    },
-    {
-        "name": "Test DCC Member Registry",
-        "type": "oidf",
-        "governanceUrl": "https://test.registry.docconsortium.org/governance",
-        "trustAnchorEC": "https://test.registry.dcconsortium.org/.well-known/openid-federation"
     },
     {
         "name": "DCC Sandbox Registry",

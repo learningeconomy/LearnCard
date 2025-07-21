@@ -310,17 +310,17 @@ export const ConsentFlowContractValidator = z.object({
         .object({
             anonymize: z.boolean().optional(),
             credentials: z
-                .object({ categories: z.record(z.object({ required: z.boolean() })).default({}) })
+                .object({ categories: z.record(z.object({ required: z.boolean(), defaultEnabled: z.boolean().optional() })).default({}) })
                 .default({}),
-            personal: z.record(z.object({ required: z.boolean() })).default({}),
+            personal: z.record(z.object({ required: z.boolean(), defaultEnabled: z.boolean().optional() })).default({}),
         })
         .default({}),
     write: z
         .object({
             credentials: z
-                .object({ categories: z.record(z.object({ required: z.boolean() })).default({}) })
+                .object({ categories: z.record(z.object({ required: z.boolean(), defaultEnabled: z.boolean().optional() })).default({}) })
                 .default({}),
-            personal: z.record(z.object({ required: z.boolean() })).default({}),
+            personal: z.record(z.object({ required: z.boolean(), defaultEnabled: z.boolean().optional() })).default({}),
         })
         .default({}),
 });

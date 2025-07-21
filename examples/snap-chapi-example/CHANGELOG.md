@@ -1,5 +1,71 @@
 # @learncard/snap-chapi-example
 
+## 1.0.261
+
+### Patch Changes
+
+-   Updated dependencies [[`84a7928c4e78217010dce6d70443de540148d976`](https://github.com/learningeconomy/LearnCard/commit/84a7928c4e78217010dce6d70443de540148d976)]:
+    -   @learncard/react@2.8.23
+
+## 1.0.260
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.33
+    -   @learncard/helpers@1.1.21
+    -   @learncard/react@2.8.22
+    -   @learncard/meta-mask-snap@1.0.84
+
+## 1.0.259
+
+### Patch Changes
+
+-   Updated dependencies [[`65bacfaa9a24f97a5e59a7dd4cffe7f1f96c1888`](https://github.com/learningeconomy/LearnCard/commit/65bacfaa9a24f97a5e59a7dd4cffe7f1f96c1888)]:
+    -   @learncard/react@2.8.21
+
+## 1.0.258
+
+### Patch Changes
+
+-   Updated dependencies [[`e2764728feaa2c4f1a5bc6cb3b2dec8b21b49458`](https://github.com/learningeconomy/LearnCard/commit/e2764728feaa2c4f1a5bc6cb3b2dec8b21b49458)]:
+    -   @learncard/react@2.8.20
+
+## 1.0.257
+
+### Patch Changes
+
+-   Updated dependencies [[`9bde535a160695364fc3bb7fa087ad3cf91adafe`](https://github.com/learningeconomy/LearnCard/commit/9bde535a160695364fc3bb7fa087ad3cf91adafe)]:
+    -   @learncard/react@2.8.19
+
+## 1.0.256
+
+### Patch Changes
+
+-   Updated dependencies [[`a4fbcdba26392e0badfc407cb3bcb24e92e3d2ad`](https://github.com/learningeconomy/LearnCard/commit/a4fbcdba26392e0badfc407cb3bcb24e92e3d2ad)]:
+    -   @learncard/react@2.8.18
+
+## 1.0.255
+
+### Patch Changes
+
+-   Updated dependencies [[`f356d2730d711d4c93a401f87e60dc61a7aacee2`](https://github.com/learningeconomy/LearnCard/commit/f356d2730d711d4c93a401f87e60dc61a7aacee2)]:
+    -   @learncard/react@2.8.17
+
+## 1.0.254
+
+### Patch Changes
+
+-   Updated dependencies [[`255b8c1997fe8e4e51dd8fa87e07d9bbb1b713f1`](https://github.com/learningeconomy/LearnCard/commit/255b8c1997fe8e4e51dd8fa87e07d9bbb1b713f1), [`f356d2730d711d4c93a401f87e60dc61a7aacee2`](https://github.com/learningeconomy/LearnCard/commit/f356d2730d711d4c93a401f87e60dc61a7aacee2)]:
+    -   @learncard/react@2.8.16
+
+## 1.0.253
+
+### Patch Changes
+
+-   Updated dependencies [[`f7851009fdef650581e9681175cc47c35b5b3d3f`](https://github.com/learningeconomy/LearnCard/commit/f7851009fdef650581e9681175cc47c35b5b3d3f)]:
+    -   @learncard/react@2.8.15
+
 ## 1.0.252
 
 ### Patch Changes

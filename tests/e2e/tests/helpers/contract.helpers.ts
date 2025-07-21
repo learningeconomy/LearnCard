@@ -237,3 +237,32 @@ export const promiscuousTerms: ConsentFlowTerms = {
         },
     },
 };
+
+export const contractWithDefaults: ConsentFlowContract = {
+    read: {
+        personal: { 
+            name: { required: false, defaultEnabled: true },
+            email: { required: true, defaultEnabled: false },
+            phone: { required: false, defaultEnabled: true }
+        },
+        credentials: {
+            categories: {
+                Achievement: { required: false, defaultEnabled: true },
+                ID: { required: false, defaultEnabled: false },
+                Certificate: { required: true, defaultEnabled: false }
+            },
+        },
+    },
+    write: {
+        personal: {
+            name: { required: false, defaultEnabled: true },
+            email: { required: false, defaultEnabled: false }
+        },
+        credentials: {
+            categories: {
+                Achievement: { required: true, defaultEnabled: false },
+                Badge: { required: false, defaultEnabled: true }
+            },
+        },
+    },
+};
