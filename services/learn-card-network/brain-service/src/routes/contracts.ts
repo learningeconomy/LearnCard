@@ -946,7 +946,7 @@ export const contractsRouter = t.router({
                     )
                 )
                     .filter(cred => cred !== undefined && cred !== '')
-                    .map(cred => cred?.boostCredential ?? cred); // unwrap credential
+                    .map(cred => cred?.boostCredential ?? cred?.BoostCredential ?? cred); // unwrap credential
 
                 const transformedCredentials = credentials.map(cred => {
                     // If issuer is a string, convert it to an object with an id property
