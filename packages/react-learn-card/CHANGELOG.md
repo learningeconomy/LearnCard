@@ -1,5 +1,11 @@
 # @welibraryos/react-learn-card
 
+## 2.8.25
+
+### Patch Changes
+
+-   [#760](https://github.com/learningeconomy/LearnCard/pull/760) [`238155cf1ff325559e517dece60bca3e1f143a80`](https://github.com/learningeconomy/LearnCard/commit/238155cf1ff325559e517dece60bca3e1f143a80) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: BoostGenericCard selective state
+
 ## 2.8.24
 
 ### Patch Changes
