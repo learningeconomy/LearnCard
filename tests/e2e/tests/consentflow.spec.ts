@@ -159,7 +159,7 @@ describe('ConsentFlow E2E Tests', () => {
         });
 
         it('should allow a user to consent to a contract', async () => {
-            const termsUri = await b.invoke.consentToContract(contractUri, {
+            const { termsUri } = await b.invoke.consentToContract(contractUri, {
                 terms: normalFullTerms,
             });
 
@@ -266,9 +266,10 @@ describe('ConsentFlow E2E Tests', () => {
             });
 
             // User B consents to the contract
-            termsUri = await b.invoke.consentToContract(contractUri, {
+            const { termsUri: _termsUri } = await b.invoke.consentToContract(contractUri, {
                 terms: normalFullTerms,
             });
+            termsUri = _termsUri;
         });
 
         it('should allow contract owner to get data from consented users', async () => {
@@ -339,9 +340,10 @@ describe('ConsentFlow E2E Tests', () => {
             });
 
             // User B consents to the contract
-            termsUri = await b.invoke.consentToContract(contractUri, {
+            const { termsUri: _termsUri } = await b.invoke.consentToContract(contractUri, {
                 terms: normalFullTerms,
             });
+            termsUri = _termsUri;
 
             // User A issues a credential
             const unsignedCredential = {
@@ -496,7 +498,7 @@ describe('ConsentFlow E2E Tests', () => {
             });
 
             // User B consents to the contract
-            const termsUri = await b.invoke.consentToContract(contractUri, {
+            const { termsUri } = await b.invoke.consentToContract(contractUri, {
                 terms: normalFullTerms,
             });
 
@@ -619,7 +621,7 @@ describe('ConsentFlow E2E Tests', () => {
             ]);
 
             // 1. Initial consent by User B (no denied writers)
-            const initialTermsUri = await b.invoke.consentToContract(contractUri, {
+            const { termsUri: initialTermsUri } = await b.invoke.consentToContract(contractUri, {
                 terms: normalFullTerms, // No deniedWriters
             });
             let credentialsAfterInitialConsent = await b.invoke.getCredentialsForContract(
@@ -641,7 +643,7 @@ describe('ConsentFlow E2E Tests', () => {
             await b.invoke.withdrawConsent(initialTermsUri);
 
             // 2. Re-consent by User B, denying User C
-            const reconsentTermsUri = await b.invoke.consentToContract(contractUri, {
+            const { termsUri: reconsentTermsUri } = await b.invoke.consentToContract(contractUri, {
                 terms: { ...normalFullTerms, deniedWriters: [USERS.c.profileId] }, // Deny User C
             });
 
@@ -732,7 +734,7 @@ describe('ConsentFlow E2E Tests', () => {
             ]);
 
             // 1. Initial consent by User B (no denied writers)
-            const termsUri = await b.invoke.consentToContract(contractUri, {
+            const { termsUri } = await b.invoke.consentToContract(contractUri, {
                 terms: normalFullTerms, // No deniedWriters
             });
             let credentialsAfterInitialConsent = await b.invoke.getCredentialsForContract(termsUri);
@@ -774,9 +776,10 @@ describe('ConsentFlow E2E Tests', () => {
             });
 
             // User B consents to the contract with no shared credentials initially
-            termsUri = await b.invoke.consentToContract(contractUri, {
+            const { termsUri: _termsUri } = await b.invoke.consentToContract(contractUri, {
                 terms: normalNoTerms,
             });
+            termsUri = _termsUri;
         });
 
         it('should allow syncing credentials to a contract in a single category', async () => {
@@ -1008,7 +1011,7 @@ describe('ConsentFlow E2E Tests', () => {
             });
 
             // User B consents to the contract
-            const termsUri = await b.invoke.consentToContract(writerContractUri, {
+            const { termsUri } = await b.invoke.consentToContract(writerContractUri, {
                 terms: normalFullTerms,
             });
 
@@ -1121,7 +1124,7 @@ describe('ConsentFlow E2E Tests', () => {
             });
 
             // User B consents to the contract
-            const termsUri = await b.invoke.consentToContract(multiWriterContractUri, {
+            const { termsUri } = await b.invoke.consentToContract(multiWriterContractUri, {
                 terms: normalFullTerms,
             });
 
@@ -1254,7 +1257,7 @@ describe('ConsentFlow E2E Tests', () => {
             });
 
             // User B consents without denied writers
-            const termsUri = await b.invoke.consentToContract(updateDeniedContractUri, {
+            const { termsUri } = await b.invoke.consentToContract(updateDeniedContractUri, {
                 terms: normalFullTerms,
             });
 
