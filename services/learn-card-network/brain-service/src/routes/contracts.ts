@@ -878,26 +878,16 @@ export const contractsRouter = t.router({
 
             const contractDetails = await getContractDetailsByUri(contractUri);
 
-            console.log('🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆');
-            console.log('🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆');
-            console.log('🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆');
-            // console.log('input:', input);
-            // console.log('🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧');
-
-            // console.log('ctx:', ctx);
-
-            // console.log('🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧');
-
-            // console.log('contractDetails', contractDetails);
-            console.log('terms:', terms);
-            console.log('terms.read.credentials.categories:', terms.read.credentials.categories);
-
             const categories = terms.read.credentials.categories;
             const allSharedCredentialUris = [
+                // filter out duplicates
                 ...new Set(Object.values(categories).flatMap(category => category.shared || [])),
             ];
 
-            console.log('allSharedCredentialUris:', allSharedCredentialUris);
+            console.log('🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆');
+            console.log('input:', input);
+            console.log('🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧');
+            console.log('terms:', terms);
 
             const credentials = (
                 await Promise.all(
@@ -910,37 +900,9 @@ export const contractsRouter = t.router({
                         }
                     })
                 )
-            ).filter(cred => cred !== undefined && cred !== '');
-            // .map(cred => cred?.boostCredential ?? cred);
-
-            const cred = credentials[0];
-            if (cred) {
-                console.log('🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧');
-                console.log('🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧');
-                console.log('🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧');
-                console.log('cred:', cred);
-                console.log('🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧');
-                console.log('🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧');
-                console.log('🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧');
-                console.log('cred?.boostCredential:', cred?.boostCredential);
-            }
-
-            // console.log('🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧');
-
-            // console.log('credentials:', credentials);
-
-            // if (allSharedCredentialUris.length > 0) {
-            //     const firstCredUri = allSharedCredentialUris[0];
-            //     console.log('firstCredUri:', firstCredUri);
-
-            //     // const credential = await getCredentialByUri(firstCredUri);
-            //     const credential = await wallet.read.get(firstCredUri);
-            //     console.log('credential:', credential);
-            // }
-
-            console.log('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥');
-            console.log('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥');
-            console.log('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥');
+            )
+                .filter(cred => cred !== undefined && cred !== '')
+                .map(cred => cred?.boostCredential ?? cred); // unwrap credential
 
             if (!contractDetails) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find contract' });
@@ -988,32 +950,39 @@ export const contractsRouter = t.router({
 
             const accessToken = accessTokenResponse.access_token;
 
-            console.log('🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧');
-            console.log('accessToken:', accessToken);
+            const transformedCredentials = credentials.map(cred => {
+                // If issuer is a string, convert it to an object with an id property
+                const issuer =
+                    typeof cred.issuer === 'string'
+                        ? { id: cred.issuer }
+                        : cred.issuer || { id: '' };
 
-            // const _credentials = [];
-            const body = `{
-                "@context": [
-                    "https://www.w3.org/ns/credentials/v2",
-                    "https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json",
-                    "https://w3id.org/security/suites/ed25519-2020/v1"
+                // Return the transformed credential
+                return {
+                    ...cred,
+                    issuer,
+                };
+            });
+
+            const body = JSON.stringify({
+                '@context': [
+                    'https://www.w3.org/ns/credentials/v2',
+                    'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+                    'https://w3id.org/security/suites/ed25519-2020/v1',
                 ],
-                "recipienttoken": "",
-                "recipient": {
-                    "id": "474989023199323",
-                    "givenName": "",
-                    "familyName": "",
-                    "additionalName": "",
-                    "email": "jsmith@institutionx.edu",
-                    "phone": "",
-                    "studentId": "",
-                    "signupOrganization": ""
+                'recipienttoken': '',
+                'recipient': {
+                    'id': '474989023199323',
+                    'givenName': '',
+                    'familyName': '',
+                    'additionalName': '',
+                    'email': 'jsmith@institutionx.edu',
+                    'phone': '',
+                    'studentId': '',
+                    'signupOrganization': '',
                 },
-                "credentials": ${JSON.stringify(credentials)}
-            }`;
-
-            // console.log('🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆');
-            // console.log('body:', body);
+                'credentials': transformedCredentials,
+            });
 
             try {
                 const response = await fetch(`${srUrl}api/v1/credentials`, {
@@ -1023,182 +992,21 @@ export const contractsRouter = t.router({
                         'Content-Type': 'application/json',
                     },
                     body,
-                    // body: [],
-                    // body: JSON.stringify({
-                    //     '@context': [
-                    //         'https://www.w3.org/ns/credentials/v2',
-                    //         'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
-                    //         'https://w3id.org/security/suites/ed25519-2020/v1',
-                    //     ],
-                    //     'recipienttoken': '',
-                    //     'recipient': {
-                    //         'id': '474989023199323',
-                    //         'givenName': '',
-                    //         'familyName': '',
-                    //         'additionalName': '',
-                    //         'email': 'jsmith@institutionx.edu',
-                    //         'phone': '',
-                    //         'studentId': '',
-                    //         'signupOrganization': '',
-                    //     },
-                    //     'credentials': [
-                    //         {
-                    //             '@context': [
-                    //                 'https://www.w3.org/ns/credentials/v2',
-                    //                 'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
-                    //                 'https://w3id.org/security/suites/ed25519-2020/v1',
-                    //             ],
-                    //             'id': '351843720888468',
-                    //             'name': 'Calculus w/Analytic Geometry I',
-                    //             'awardedDate': 'Spring 2023',
-                    //             'activityEndDate': '',
-                    //             'issuedOn': '',
-                    //             'issuanceDate': '',
-                    //             'expirationDate': '',
-                    //             'credentialSubject': {
-                    //                 'type': ['AchievementSubject'],
-                    //                 'achievement': {
-                    //                     'id': '351843720888468',
-                    //                     'achievementType': 'Course',
-                    //                     'name': 'Calculus w/Analytic Geometry I',
-                    //                     'description':
-                    //                         'Real numbers, limits and continuity, and differential and integral calculus of functions of 1 variable.',
-                    //                     'image': {
-                    //                         'id': '',
-                    //                     },
-                    //                 },
-                    //             },
-                    //             'issuer': {
-                    //                 'id': '123456789',
-                    //                 'name': 'Institution X',
-                    //                 'email': 'admissions@institutionx.edu',
-                    //                 'url': 'https://institutionx.edu',
-                    //                 'image': {
-                    //                     'id': '',
-                    //                 },
-                    //                 'description':
-                    //                     'Institution X, founded in 1925, is known for its beautiful campus and arts programs.',
-                    //             },
-                    //             'endorsements': {
-                    //                 'issuedOn': '',
-                    //                 'issuer': {
-                    //                     'name': '',
-                    //                 },
-                    //                 'claim': {
-                    //                     'endorsementComment': '',
-                    //                 },
-                    //             },
-                    //         },
-                    //         {
-                    //             '@context': [
-                    //                 'https://www.w3.org/ns/credentials/v2',
-                    //                 'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
-                    //                 'https://w3id.org/security/suites/ed25519-2020/v1',
-                    //             ],
-                    //             'id': '369435906932892',
-                    //             'name': 'Introduction to Psychology',
-                    //             'awardedDate': 'Spring 2023',
-                    //             'activityEndDate': '',
-                    //             'issuedOn': '',
-                    //             'issuanceDate': '',
-                    //             'expirationDate': '',
-                    //             'credentialSubject': {
-                    //                 'type': ['AchievementSubject'],
-                    //                 'achievement': {
-                    //                     'id': '351843720888469',
-                    //                     'achievementType': 'Course',
-                    //                     'name': 'Introduction to Psychology',
-                    //                     'description':
-                    //                         'Major areas of theory and research in psychology. Requires participation in department-sponsored research or an educationally equivalent alternative activity.',
-                    //                     'image': {
-                    //                         'id': '',
-                    //                     },
-                    //                 },
-                    //             },
-                    //             'issuer': {
-                    //                 'id': '123456789',
-                    //                 'name': 'Institution X',
-                    //                 'email': 'admissions@institutionx.edu',
-                    //                 'url': 'https://institutionx.edu',
-                    //                 'image': {
-                    //                     'id': '',
-                    //                 },
-                    //                 'description':
-                    //                     'Institution X, founded in 1925, is known for its beautiful campus and arts programs.',
-                    //             },
-                    //             'endorsements': {
-                    //                 'issuedOn': '',
-                    //                 'issuer': {
-                    //                     'name': '',
-                    //                 },
-                    //                 'claim': {
-                    //                     'endorsementComment': '',
-                    //                 },
-                    //             },
-                    //         },
-                    //         {
-                    //             '@context': [
-                    //                 'https://www.w3.org/ns/credentials/v2',
-                    //                 'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
-                    //                 'https://w3id.org/security/suites/ed25519-2020/v1',
-                    //             ],
-                    //             'id': '369435906932893',
-                    //             'name': 'First-Year Composition',
-                    //             'awardedDate': 'Spring 2023',
-                    //             'activityEndDate': '',
-                    //             'issuedOn': '',
-                    //             'issuanceDate': '',
-                    //             'expirationDate': '',
-                    //             'credentialSubject': {
-                    //                 'type': ['AchievementSubject'],
-                    //                 'achievement': {
-                    //                     'id': '351843720888470',
-                    //                     'achievementType': 'Course',
-                    //                     'name': 'First-Year Composition',
-                    //                     'description':
-                    //                         "Discovers, organizes and develops ideas in relation to the writer's purpose, subject and audience. Emphasizes modes of written discourse and effective use of rhetorical principles.",
-                    //                     'image': {
-                    //                         'id': '',
-                    //                     },
-                    //                 },
-                    //             },
-                    //             'issuer': {
-                    //                 'id': '123456789',
-                    //                 'name': 'Institution X',
-                    //                 'email': 'admissions@institutionx.edu',
-                    //                 'url': 'https://institutionx.edu',
-                    //                 'image': {
-                    //                     'id': '',
-                    //                 },
-                    //                 'description':
-                    //                     'Institution X, founded in 1925, is known for its beautiful campus and arts programs.',
-                    //             },
-                    //             'endorsements': {
-                    //                 'issuedOn': '',
-                    //                 'issuer': {
-                    //                     'name': '',
-                    //                 },
-                    //                 'claim': {
-                    //                     'endorsementComment': '',
-                    //                 },
-                    //             },
-                    //         },
-                    //     ],
-                    // }),
                 });
 
                 if (!response.ok) {
-                    // console.log('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥');
-                    // console.log('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥');
-                    // console.log('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥');
-                    // console.log('response:', response);
-
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                    throw new Error(
+                        `HTTP error! status: ${
+                            response.status
+                        }. Error text: ${await response.text()}`
+                    );
                 }
 
                 const result = await response.json();
+                const redirectUrl = result.redirect_url;
                 console.log('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥');
                 console.log('result:', result);
+                console.log('redirectUrl:', redirectUrl);
             } catch (error) {
                 console.error('Error uploading credentials:', error);
                 throw error;
