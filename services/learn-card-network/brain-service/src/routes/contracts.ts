@@ -878,30 +878,6 @@ export const contractsRouter = t.router({
 
             const contractDetails = await getContractDetailsByUri(contractUri);
 
-            const categories = terms.read.credentials.categories;
-            const allSharedCredentialUris = [
-                // filter out duplicates
-                ...new Set(Object.values(categories).flatMap(category => category.shared || [])),
-            ];
-
-            const credentials = (
-                await Promise.all(
-                    allSharedCredentialUris.map(async uri => {
-                        try {
-                            return await resolveUri(uri);
-                        } catch (error) {
-                            console.error(`Error resolving URI ${uri}:`, error);
-                            return undefined;
-                        }
-                    })
-                )
-            )
-                .filter(cred => cred !== undefined && cred !== '')
-                .map(cred => cred?.boostCredential ?? cred); // unwrap credential
-
-            console.log('🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧');
-            console.log('Number of credentials shared: ', credentials.length);
-
             if (!contractDetails) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find contract' });
             }
@@ -929,11 +905,7 @@ export const contractsRouter = t.router({
             // SmartResume handling
             const isSmartResume = contractUri === process.env.SMART_RESUME_CONTRACT_URI;
             if (isSmartResume) {
-                console.log('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥 SMARTRESUME');
-                console.log('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥');
-
                 const isProduction = !process.env.IS_OFFLINE;
-                console.log('isProduction:', isProduction);
 
                 const srUrl = isProduction
                     ? 'https://my.smartresume.com/'
@@ -954,6 +926,29 @@ export const contractsRouter = t.router({
                 }).then(res => res.json());
 
                 const accessToken = accessTokenResponse.access_token;
+
+                const categories = terms.read.credentials.categories;
+                const allSharedCredentialUris = [
+                    // filter out duplicates
+                    ...new Set(
+                        Object.values(categories).flatMap(category => category.shared || [])
+                    ),
+                ];
+
+                const credentials = (
+                    await Promise.all(
+                        allSharedCredentialUris.map(async uri => {
+                            try {
+                                return await resolveUri(uri);
+                            } catch (error) {
+                                console.error(`Error resolving URI ${uri}:`, error);
+                                return undefined;
+                            }
+                        })
+                    )
+                )
+                    .filter(cred => cred !== undefined && cred !== '')
+                    .map(cred => cred?.boostCredential ?? cred); // unwrap credential
 
                 const transformedCredentials = credentials.map(cred => {
                     // If issuer is a string, convert it to an object with an id property
