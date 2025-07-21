@@ -286,10 +286,7 @@ export type LearnCardNetworkPluginMethods = {
         endpoint: string,
         name: string
     ) => Promise<LCNSigningAuthorityForUserType | undefined>;
-    setPrimaryRegisteredSigningAuthority: (
-        endpoint: string,
-        name: string
-    ) => Promise<boolean>;
+    setPrimaryRegisteredSigningAuthority: (endpoint: string, name: string) => Promise<boolean>;
     getPrimaryRegisteredSigningAuthority: () => Promise<LCNSigningAuthorityForUserType | undefined>;
 
     generateClaimLink: (
@@ -346,7 +343,7 @@ export type LearnCardNetworkPluginMethods = {
             expiresAt?: string;
             oneTime?: boolean;
         }
-    ) => Promise<string>;
+    ) => Promise<{ termsUri: string; redirectUrl?: string }>;
     getConsentedContracts: (
         options?: Partial<PaginationOptionsType> & { query?: ConsentFlowTermsQuery }
     ) => Promise<PaginatedConsentFlowTerms>;
@@ -400,19 +397,25 @@ export type LearnCardNetworkPluginMethods = {
     revokeAuthGrant: (id: string) => Promise<boolean>;
     getAPITokenForAuthGrant: (id: string) => Promise<string>;
 
-    sendCredentialViaInbox: (issueInboxCredential: IssueInboxCredentialType) => Promise<IssueInboxCredentialResponseType>;
+    sendCredentialViaInbox: (
+        issueInboxCredential: IssueInboxCredentialType
+    ) => Promise<IssueInboxCredentialResponseType>;
     getMySentInboxCredentials: (
         options?: Partial<PaginationOptionsType> & { query?: InboxCredentialQuery }
     ) => Promise<PaginatedInboxCredentialsType>;
 
     getInboxCredential: (id: string) => Promise<InboxCredentialType | null>;
 
-    addContactMethod: (contactMethod: ContactMethodType) => Promise<{ message: string; contactMethodId: string; verificationRequired: boolean }>;
+    addContactMethod: (
+        contactMethod: ContactMethodType
+    ) => Promise<{ message: string; contactMethodId: string; verificationRequired: boolean }>;
     getMyContactMethods: () => Promise<ContactMethodType[]>;
 
-    setPrimaryContactMethod: (contactMethodId: string) => Promise<{ message: string}>;
-    verifyContactMethod: (token: string) => Promise<{ message: string; contactMethod: ContactMethodType}>;
-    removeContactMethod: (contactMethodId: string) => Promise<{ message: string}>;
+    setPrimaryContactMethod: (contactMethodId: string) => Promise<{ message: string }>;
+    verifyContactMethod: (
+        token: string
+    ) => Promise<{ message: string; contactMethod: ContactMethodType }>;
+    removeContactMethod: (contactMethodId: string) => Promise<{ message: string }>;
 
     resolveFromLCN: (
         uri: string
