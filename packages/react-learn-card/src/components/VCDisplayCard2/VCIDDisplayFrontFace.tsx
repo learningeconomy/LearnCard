@@ -29,10 +29,10 @@ type VCIDDisplayFrontFaceProps = {
 };
 
 const VERIFIER_STATES = {
-    selfVerified: 'Self Verified',
-    trustedVerifier: 'Trusted Verifier',
-    unknownVerifier: 'Unknown Verifier',
-    untrustedVerifier: 'Untrusted Verifier',
+    selfVerified: 'Self Issued',
+    trustedVerifier: 'Trusted Issuer',
+    unknownVerifier: 'Unknown Issuer',
+    untrustedVerifier: 'Untrusted Issuer',
 } as const;
 type VerifierState = (typeof VERIFIER_STATES)[keyof typeof VERIFIER_STATES];
 
@@ -145,25 +145,25 @@ const VCIDDisplayFrontFace: React.FC<VCIDDisplayFrontFaceProps> = ({
                                 {isSelfVerified && (
                                     <span className="uppercase font-poppins text-base font-[500] text-green-dark flex gap-[3px] items-center">
                                         <PersonBadge className="w-[20px] h-[20px]" />
-                                        Self Verified
+                                        Self Issued
                                     </span>
                                 )}
                                 {verifierState === VERIFIER_STATES.trustedVerifier && (
                                     <span className="uppercase font-poppins text-base font-[500] text-blue-light flex gap-[3px] items-center">
                                         <VerifiedBadge className="w-[20px] h-[20px]" />
-                                        Trusted Verifier
+                                        Trusted Issuer
                                     </span>
                                 )}
                                 {verifierState === VERIFIER_STATES.unknownVerifier && (
                                     <span className="uppercase font-poppins text-base font-[500] text-orange-500 flex gap-[3px] items-center">
                                         <UnknownVerifierBadge className="w-[20px] h-[20px]" />
-                                        Unknown Verifier
+                                        Unknown Issuer
                                     </span>
                                 )}
                                 {verifierState === VERIFIER_STATES.untrustedVerifier && (
                                     <span className="uppercase font-poppins text-base font-[500] text-red-mastercard flex gap-[3px] items-center">
                                         <RedFlag className="w-[20px] h-[20px]" />
-                                        Untrusted Verifier
+                                        Untrusted Issuer
                                     </span>
                                 )}
                             </div>
