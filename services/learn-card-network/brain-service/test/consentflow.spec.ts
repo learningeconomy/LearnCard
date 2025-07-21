@@ -1342,7 +1342,7 @@ describe('Consent Flow Contracts', () => {
             });
 
             // Consent to the contract
-            const termsUri = await userB.clients.fullAuth.contracts.consentToContract({
+            const { termsUri } = await userB.clients.fullAuth.contracts.consentToContract({
                 contractUri,
                 terms: normalFullTerms,
             });
@@ -1480,7 +1480,7 @@ describe('Consent Flow Contracts', () => {
             });
 
             // Consent to the contract
-            const termsUri = await userB.clients.fullAuth.contracts.consentToContract({
+            const { termsUri } = await userB.clients.fullAuth.contracts.consentToContract({
                 contractUri,
                 terms: normalFullTerms,
             });
@@ -1578,7 +1578,7 @@ describe('Consent Flow Contracts', () => {
             });
 
             // Consent to the contract
-            const termsUri = await userB.clients.fullAuth.contracts.consentToContract({
+            const { termsUri } = await userB.clients.fullAuth.contracts.consentToContract({
                 contractUri,
                 terms: normalFullTerms,
             });
@@ -1625,7 +1625,7 @@ describe('Consent Flow Contracts', () => {
                     writers: ['userc'],
                 });
 
-            const termsUri = await userB.clients.fullAuth.contracts.consentToContract({
+            const { termsUri } = await userB.clients.fullAuth.contracts.consentToContract({
                 contractUri: testContractUri,
                 terms: { ...normalFullTerms, deniedWriters: ['userc'] },
             });
@@ -1647,7 +1647,7 @@ describe('Consent Flow Contracts', () => {
 
             const userCDid = userC.learnCard.id.did();
 
-            const termsUri = await userB.clients.fullAuth.contracts.consentToContract({
+            const { termsUri } = await userB.clients.fullAuth.contracts.consentToContract({
                 contractUri: testContractUri,
                 terms: { ...normalFullTerms, deniedWriters: [userCDid] },
             });
@@ -1693,7 +1693,7 @@ describe('Consent Flow Contracts', () => {
                 });
 
             // Initial consent without denied writers
-            const termsUri = await userB.clients.fullAuth.contracts.consentToContract({
+            const { termsUri } = await userB.clients.fullAuth.contracts.consentToContract({
                 contractUri: testContractUri,
                 terms: normalIDOnlyTerms,
             });
@@ -1771,7 +1771,7 @@ describe('Consent Flow Contracts', () => {
             });
 
             // Consent to the contract
-            const termsUri = await userB.clients.fullAuth.contracts.consentToContract({
+            const { termsUri } = await userB.clients.fullAuth.contracts.consentToContract({
                 contractUri,
                 terms: { ...normalFullTerms, deniedWriters: ['userc'] },
             });
@@ -1863,10 +1863,11 @@ describe('Consent Flow Contracts', () => {
             });
 
             // 1. Initial consent by userB (no denied writers)
-            const initialTermsUri = await userB.clients.fullAuth.contracts.consentToContract({
-                contractUri,
-                terms: normalFullTerms, // No deniedWriters
-            });
+            const { termsUri: initialTermsUri } =
+                await userB.clients.fullAuth.contracts.consentToContract({
+                    contractUri,
+                    terms: normalFullTerms, // No deniedWriters
+                });
             let credentialsAfterInitialConsent =
                 await userB.clients.fullAuth.contracts.getCredentialsForContract({
                     termsUri: initialTermsUri,
@@ -1887,10 +1888,11 @@ describe('Consent Flow Contracts', () => {
             await userB.clients.fullAuth.contracts.withdrawConsent({ uri: initialTermsUri });
 
             // 2. Re-consent by userB, denying userC
-            const reconsentTermsUri = await userB.clients.fullAuth.contracts.consentToContract({
-                contractUri, // Re-consenting to the same contract
-                terms: { ...normalFullTerms, deniedWriters: ['userc'] }, // Deny userC
-            });
+            const { termsUri: reconsentTermsUri } =
+                await userB.clients.fullAuth.contracts.consentToContract({
+                    contractUri, // Re-consenting to the same contract
+                    terms: { ...normalFullTerms, deniedWriters: ['userc'] }, // Deny userC
+                });
 
             // Check credentials for the new (re-consented) terms
             const credentialsAfterReconsent =
@@ -1977,7 +1979,7 @@ describe('Consent Flow Contracts', () => {
             });
 
             // 1. Initial consent by userB (no denied writers)
-            const termsUri = await userB.clients.fullAuth.contracts.consentToContract({
+            const { termsUri } = await userB.clients.fullAuth.contracts.consentToContract({
                 contractUri,
                 terms: normalFullTerms, // No deniedWriters
             });
@@ -2056,7 +2058,7 @@ describe('Consent Flow Contracts', () => {
 
             expect(contracts.records).toHaveLength(0);
 
-            const termsUri = await userB.clients.fullAuth.contracts.consentToContract({
+            const { termsUri } = await userB.clients.fullAuth.contracts.consentToContract({
                 terms: minimalTerms,
                 contractUri: uri,
             });
@@ -2072,7 +2074,7 @@ describe('Consent Flow Contracts', () => {
         });
 
         it("should not return other user's contracts", async () => {
-            const termsUri = await userB.clients.fullAuth.contracts.consentToContract({
+            const { termsUri } = await userB.clients.fullAuth.contracts.consentToContract({
                 terms: minimalTerms,
                 contractUri: uri,
             });
@@ -2188,7 +2190,7 @@ describe('Consent Flow Contracts', () => {
                 autoboosts: [{ boostUri, signingAuthority }],
             });
 
-            const termsUri = await userB.clients.fullAuth.contracts.consentToContract({
+            const { termsUri } = await userB.clients.fullAuth.contracts.consentToContract({
                 terms: minimalTerms,
                 contractUri,
             });
@@ -2247,7 +2249,7 @@ describe('Consent Flow Contracts', () => {
                 ],
             });
 
-            const termsUri = await userB.clients.fullAuth.contracts.consentToContract({
+            const { termsUri } = await userB.clients.fullAuth.contracts.consentToContract({
                 terms: minimalTerms,
                 contractUri,
             });
@@ -2285,10 +2287,12 @@ describe('Consent Flow Contracts', () => {
                 name: 'a',
                 writers: ['userc', 'userd'],
             });
-            termsUri = await userB.clients.fullAuth.contracts.consentToContract({
-                contractUri,
-                terms: minimalTerms,
-            });
+            const { termsUri: _termsUri } =
+                await userB.clients.fullAuth.contracts.consentToContract({
+                    contractUri,
+                    terms: minimalTerms,
+                });
+            termsUri = _termsUri;
         });
 
         afterAll(async () => {
@@ -2336,10 +2340,11 @@ describe('Consent Flow Contracts', () => {
                     name: 'b',
                 });
 
-            const promiscuousTermsUri = await userB.clients.fullAuth.contracts.consentToContract({
-                contractUri: predatoryContractUri,
-                terms: promiscuousTerms,
-            });
+            const { termsUri: promiscuousTermsUri } =
+                await userB.clients.fullAuth.contracts.consentToContract({
+                    contractUri: predatoryContractUri,
+                    terms: promiscuousTerms,
+                });
 
             await expect(
                 userB.clients.fullAuth.contracts.updateConsentedContractTerms({
@@ -2373,10 +2378,11 @@ describe('Consent Flow Contracts', () => {
                 },
             };
 
-            const normalTermsUri = await userB.clients.fullAuth.contracts.consentToContract({
-                contractUri: normalContractUri,
-                terms: oldTerms,
-            });
+            const { termsUri: normalTermsUri } =
+                await userB.clients.fullAuth.contracts.consentToContract({
+                    contractUri: normalContractUri,
+                    terms: oldTerms,
+                });
 
             const newTerms = {
                 ...normalFullTerms,
@@ -2474,10 +2480,12 @@ describe('Consent Flow Contracts', () => {
                 contract: minimalContract,
                 name: 'a',
             });
-            termsUri = await userB.clients.fullAuth.contracts.consentToContract({
-                contractUri,
-                terms: minimalTerms,
-            });
+            const { termsUri: _termsUri } =
+                await userB.clients.fullAuth.contracts.consentToContract({
+                    contractUri,
+                    terms: minimalTerms,
+                });
+            termsUri = _termsUri;
         });
 
         afterAll(async () => {
@@ -2528,10 +2536,12 @@ describe('Consent Flow Contracts', () => {
                 contract: minimalContract,
                 name: 'a',
             });
-            termsUri = await userB.clients.fullAuth.contracts.consentToContract({
-                contractUri,
-                terms: minimalTerms,
-            });
+            const { termsUri: _termsUri } =
+                await userB.clients.fullAuth.contracts.consentToContract({
+                    contractUri,
+                    terms: minimalTerms,
+                });
+            termsUri = _termsUri;
         });
 
         afterAll(async () => {
@@ -2693,10 +2703,12 @@ describe('Consent Flow Contracts', () => {
                 name: 'a',
                 expiresAt: new Date(Date.UTC(2024, 3, 25)).toISOString(), // Set explicit expiration
             });
-            termsUri = await userB.clients.fullAuth.contracts.consentToContract({
-                contractUri,
-                terms: minimalTerms,
-            });
+            const { termsUri: _termsUri } =
+                await userB.clients.fullAuth.contracts.consentToContract({
+                    contractUri,
+                    terms: minimalTerms,
+                });
+            termsUri = _termsUri;
         });
 
         afterAll(async () => {
@@ -2849,10 +2861,12 @@ describe('Consent Flow Contracts', () => {
             });
 
             // User B consents to the contract with terms that allow Achievement category
-            termsUri = await userB.clients.fullAuth.contracts.consentToContract({
-                contractUri,
-                terms: normalFullTerms,
-            });
+            const { termsUri: _termsUri } =
+                await userB.clients.fullAuth.contracts.consentToContract({
+                    contractUri,
+                    terms: normalFullTerms,
+                });
+            termsUri = _termsUri;
         });
 
         afterEach(async () => {
@@ -3028,10 +3042,11 @@ describe('Consent Flow Contracts', () => {
                 });
 
             // User B consents to contract
-            const writerTermsUri = await userB.clients.fullAuth.contracts.consentToContract({
-                contractUri: writerContractUri,
-                terms: normalFullTerms,
-            });
+            const { termsUri: writerTermsUri } =
+                await userB.clients.fullAuth.contracts.consentToContract({
+                    contractUri: writerContractUri,
+                    terms: normalFullTerms,
+                });
 
             // userC creates a boost he can issue
             const writerBoostUri = await userC.clients.fullAuth.boost.createBoost({
@@ -3176,10 +3191,12 @@ describe('Consent Flow Contracts', () => {
             });
 
             // User B consents to the contract with terms that allow Achievement category
-            termsUri = await userB.clients.fullAuth.contracts.consentToContract({
-                contractUri,
-                terms: normalFullTerms,
-            });
+            const { termsUri: _termsUri } =
+                await userB.clients.fullAuth.contracts.consentToContract({
+                    contractUri,
+                    terms: normalFullTerms,
+                });
+            termsUri = _termsUri;
 
             // Create and issue one credential for the contract
             const boostUri = await userA.clients.fullAuth.boost.createBoost({
@@ -3612,10 +3629,12 @@ describe('Consent Flow Contracts', () => {
             });
 
             // User B consents to the contract
-            termsUri = await userB.clients.fullAuth.contracts.consentToContract({
-                contractUri,
-                terms: normalNoTerms, // Start with no shared credentials
-            });
+            const { termsUri: _termsUri } =
+                await userB.clients.fullAuth.contracts.consentToContract({
+                    contractUri,
+                    terms: normalNoTerms, // Start with no shared credentials
+                });
+            termsUri = _termsUri;
         });
 
         afterEach(async () => {

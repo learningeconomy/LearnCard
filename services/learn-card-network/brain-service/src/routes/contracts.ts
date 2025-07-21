@@ -870,7 +870,7 @@ export const contractsRouter = t.router({
                 oneTime: z.boolean().optional(),
             })
         )
-        .output(z.string())
+        .output(z.object({ termsUri: z.string(), redirectUrl: z.string().optional() }))
         .mutation(async ({ input, ctx }) => {
             const { profile } = ctx.user;
 
@@ -885,9 +885,7 @@ export const contractsRouter = t.router({
             ];
 
             console.log('🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆');
-            console.log('input:', input);
-            console.log('🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧');
-            console.log('terms:', terms);
+            console.log('terms.read.personal:', terms.read.personal);
 
             const credentials = (
                 await Promise.all(
@@ -903,6 +901,9 @@ export const contractsRouter = t.router({
             )
                 .filter(cred => cred !== undefined && cred !== '')
                 .map(cred => cred?.boostCredential ?? cred); // unwrap credential
+
+            console.log('🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧🐧');
+            console.log('Number of credentials shared: ', credentials.length);
 
             if (!contractDetails) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find contract' });
@@ -927,6 +928,7 @@ export const contractsRouter = t.router({
                 );
             }
 
+            let redirectUrl: string | undefined;
             // SmartResume handling
             const smartResumeContractUri = process.env.SMART_RESUME_CONTRACT_URI; // TODO set this up
             const isProduction = !process.env.IS_OFFLINE;
@@ -1003,7 +1005,7 @@ export const contractsRouter = t.router({
                 }
 
                 const result = await response.json();
-                const redirectUrl = result.redirect_url;
+                redirectUrl = result.redirect_url;
                 console.log('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥');
                 console.log('result:', result);
                 console.log('redirectUrl:', redirectUrl);
@@ -1031,7 +1033,7 @@ export const contractsRouter = t.router({
                 });
             }
 
-            return constructUri('terms', relationship.id, ctx.domain);
+            return { termsUri: constructUri('terms', relationship.id, ctx.domain), redirectUrl };
         }),
 
     getConsentedContracts: profileRoute
