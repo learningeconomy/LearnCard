@@ -884,9 +884,6 @@ export const contractsRouter = t.router({
                 ...new Set(Object.values(categories).flatMap(category => category.shared || [])),
             ];
 
-            console.log('🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆🎆');
-            console.log('terms.read.personal:', terms.read.personal);
-
             const credentials = (
                 await Promise.all(
                     allSharedCredentialUris.map(async uri => {
@@ -930,87 +927,90 @@ export const contractsRouter = t.router({
 
             let redirectUrl: string | undefined;
             // SmartResume handling
-            const smartResumeContractUri = process.env.SMART_RESUME_CONTRACT_URI; // TODO set this up
-            const isProduction = !process.env.IS_OFFLINE;
-            const srUrl = isProduction
-                ? 'https://my.smartresume.com/'
-                : 'https://mystage.smartresume.com/';
-            const clientId = process.env.SMART_RESUME_CLIENT_ID;
-            const accessKey = process.env.SMART_RESUME_ACCESS_KEY;
+            const isSmartResume = contractUri === process.env.SMART_RESUME_CONTRACT_URI;
+            if (isSmartResume) {
+                console.log('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥 SMARTRESUME');
+                console.log('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥');
 
-            const accessTokenResponse = await fetch(`${srUrl}api/v1/token`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    Authorization: `Basic ${btoa(`${clientId}:${accessKey}`)}`,
-                },
-                body: new URLSearchParams({
-                    grant_type: 'client_credentials',
-                    scope: 'delete readonly replace',
-                }),
-            }).then(res => res.json());
+                const isProduction = !process.env.IS_OFFLINE;
+                console.log('isProduction:', isProduction);
 
-            const accessToken = accessTokenResponse.access_token;
+                const srUrl = isProduction
+                    ? 'https://my.smartresume.com/'
+                    : 'https://mystage.smartresume.com/';
+                const clientId = process.env.SMART_RESUME_CLIENT_ID;
+                const accessKey = process.env.SMART_RESUME_ACCESS_KEY;
 
-            const transformedCredentials = credentials.map(cred => {
-                // If issuer is a string, convert it to an object with an id property
-                const issuer =
-                    typeof cred.issuer === 'string'
-                        ? { id: cred.issuer }
-                        : cred.issuer || { id: '' };
-
-                // Return the transformed credential
-                return {
-                    ...cred,
-                    issuer,
-                };
-            });
-
-            const { name, email } = terms.read.personal;
-
-            const body = JSON.stringify({
-                '@context': [
-                    'https://www.w3.org/ns/credentials/v2',
-                    'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
-                    'https://w3id.org/security/suites/ed25519-2020/v1',
-                ],
-                'recipienttoken': '',
-                'recipient': {
-                    'id': ctx.user.did,
-                    'givenName': name && name !== 'Anonymous' ? name : '',
-                    'familyName': '', // this is neecessary in order for givenName to be respected
-                    // 'additionalName': '',
-                    'email': email && email !== 'anonymous@hidden.com' ? email : '',
-                    // 'phone': '',
-                    // 'studentId': '',
-                    // 'signupOrganization': '',
-                },
-                'credentials': transformedCredentials,
-            });
-
-            try {
-                const response = await fetch(`${srUrl}api/v1/credentials`, {
+                const accessTokenResponse = await fetch(`${srUrl}api/v1/token`, {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${accessToken}`,
-                        'Content-Type': 'application/json',
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        Authorization: `Basic ${btoa(`${clientId}:${accessKey}`)}`,
                     },
-                    body,
+                    body: new URLSearchParams({
+                        grant_type: 'client_credentials',
+                        scope: 'delete readonly replace',
+                    }),
+                }).then(res => res.json());
+
+                const accessToken = accessTokenResponse.access_token;
+
+                const transformedCredentials = credentials.map(cred => {
+                    // If issuer is a string, convert it to an object with an id property
+                    const issuer =
+                        typeof cred.issuer === 'string'
+                            ? { id: cred.issuer }
+                            : cred.issuer || { id: '' };
+
+                    // Return the transformed credential
+                    return {
+                        ...cred,
+                        issuer,
+                    };
                 });
 
-                if (!response.ok) {
-                    throw new Error(
-                        `HTTP error! status: ${
-                            response.status
-                        }. Error text: ${await response.text()}`
-                    );
-                }
+                const { name, email } = terms.read.personal;
 
-                const result = await response.json();
-                redirectUrl = result.redirect_url;
-            } catch (error) {
-                console.error('Error uploading credentials:', error);
-                throw error;
+                const body = JSON.stringify({
+                    '@context': [
+                        'https://www.w3.org/ns/credentials/v2',
+                        'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+                        'https://w3id.org/security/suites/ed25519-2020/v1',
+                    ],
+                    'recipienttoken': '',
+                    'recipient': {
+                        'id': ctx.user.did,
+                        'givenName': name && name !== 'Anonymous' ? name : '',
+                        'familyName': '', // this is neecessary in order for givenName to be respected
+                        // 'additionalName': '',
+                        'email': email && email !== 'anonymous@hidden.com' ? email : '',
+                        // 'phone': '',
+                        // 'studentId': '',
+                        // 'signupOrganization': '',
+                    },
+                    'credentials': transformedCredentials,
+                });
+
+                try {
+                    const response = await fetch(`${srUrl}api/v1/credentials`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${accessToken}`,
+                            'Content-Type': 'application/json',
+                        },
+                        body,
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Error (${response.status}): ${await response.text()}`);
+                    }
+
+                    const result = await response.json();
+                    redirectUrl = result.redirect_url;
+                } catch (error) {
+                    console.error('Error uploading credentials to SmartResume:', error);
+                    throw error;
+                }
             }
 
             await consentToContract(
