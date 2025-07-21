@@ -966,6 +966,8 @@ export const contractsRouter = t.router({
                 };
             });
 
+            const { name, email } = terms.read.personal;
+
             const body = JSON.stringify({
                 '@context': [
                     'https://www.w3.org/ns/credentials/v2',
@@ -974,14 +976,14 @@ export const contractsRouter = t.router({
                 ],
                 'recipienttoken': '',
                 'recipient': {
-                    'id': '474989023199323',
-                    'givenName': '',
-                    'familyName': '',
-                    'additionalName': '',
-                    'email': 'jsmith@institutionx.edu',
-                    'phone': '',
-                    'studentId': '',
-                    'signupOrganization': '',
+                    'id': ctx.user.did,
+                    'givenName': name && name !== 'Anonymous' ? name : '',
+                    'familyName': '', // this is neecessary in order for givenName to be respected
+                    // 'additionalName': '',
+                    'email': email && email !== 'anonymous@hidden.com' ? email : '',
+                    // 'phone': '',
+                    // 'studentId': '',
+                    // 'signupOrganization': '',
                 },
                 'credentials': transformedCredentials,
             });
@@ -1006,9 +1008,6 @@ export const contractsRouter = t.router({
 
                 const result = await response.json();
                 redirectUrl = result.redirect_url;
-                console.log('🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥');
-                console.log('result:', result);
-                console.log('redirectUrl:', redirectUrl);
             } catch (error) {
                 console.error('Error uploading credentials:', error);
                 throw error;
