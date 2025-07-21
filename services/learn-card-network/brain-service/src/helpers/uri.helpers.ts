@@ -56,7 +56,7 @@ export const constructUri = (type: URIType, id: string, domain: string): string 
     `lc:network:${domain}/trpc:${type}:${id}`;
 
 export const resolveUri = async (uri: string) => {
-    const { domain, type, id, method } = getUriParts(uri, true);
+    const { domain, type, method } = getUriParts(uri, true);
 
     if (method === 'cloud') {
         const isLocal = domain.includes('localhost');
