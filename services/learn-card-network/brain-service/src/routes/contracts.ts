@@ -904,9 +904,9 @@ export const contractsRouter = t.router({
             // SmartResume handling
             const isSmartResume = contractUri === process.env.SMART_RESUME_CONTRACT_URI;
             if (isSmartResume) {
-                if (!recipientToken) {
+                /* if (!recipientToken) {
                     throw new Error('Missing recipientToken for SmartResume');
-                }
+                } */
 
                 const isProduction = !process.env.IS_OFFLINE;
 
