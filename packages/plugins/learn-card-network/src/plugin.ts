@@ -836,7 +836,7 @@ export const getLearnCardNetworkPlugin = async (
                     terms,
                     expiresAt,
                     oneTime,
-                    recipientToken
+                    recipientToken // for SmartResume
                 });
             },
 
