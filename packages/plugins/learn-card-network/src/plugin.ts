@@ -828,7 +828,7 @@ export const getLearnCardNetworkPlugin = async (
                 });
             },
 
-            consentToContract: async (_learnCard, contractUri, { terms, expiresAt, oneTime }) => {
+            consentToContract: async (_learnCard, contractUri, { terms, expiresAt, oneTime }, recipientToken) => {
                 if (!userData) throw new Error('Please make an account first!');
 
                 return client.contracts.consentToContract.mutate({
@@ -836,6 +836,7 @@ export const getLearnCardNetworkPlugin = async (
                     terms,
                     expiresAt,
                     oneTime,
+                    recipientToken
                 });
             },
 
