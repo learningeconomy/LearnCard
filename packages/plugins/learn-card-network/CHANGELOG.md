@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 2.5.11
+
+### Patch Changes
+
+-   [#762](https://github.com/learningeconomy/LearnCard/pull/762) [`d015e60c16977cd08674a140ca3dff4d9c351bf4`](https://github.com/learningeconomy/LearnCard/commit/d015e60c16977cd08674a140ca3dff4d9c351bf4) Thanks [@smurflo2](https://github.com/smurflo2)! - Add recipientToken to consentToContract
+
 ## 2.5.10
 
 ### Patch Changes
