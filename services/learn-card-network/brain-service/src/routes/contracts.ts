@@ -866,13 +866,14 @@ export const contractsRouter = t.router({
                 contractUri: z.string(),
                 expiresAt: z.string().optional(),
                 oneTime: z.boolean().optional(),
+                recipientToken: z.string().optional(), // SmartResume recipientToken needed for API call
             })
         )
         .output(z.object({ termsUri: z.string(), redirectUrl: z.string().optional() }))
         .mutation(async ({ input, ctx }) => {
             const { profile } = ctx.user;
 
-            const { terms, contractUri, expiresAt, oneTime } = input;
+            const { terms, contractUri, expiresAt, oneTime, recipientToken } = input;
 
             const contractDetails = await getContractDetailsByUri(contractUri);
 
@@ -903,6 +904,10 @@ export const contractsRouter = t.router({
             // SmartResume handling
             const isSmartResume = contractUri === process.env.SMART_RESUME_CONTRACT_URI;
             if (isSmartResume) {
+                if (!recipientToken) {
+                    throw new Error('Missing recipientToken for SmartResume');
+                }
+
                 const isProduction = !process.env.IS_OFFLINE;
 
                 const srUrl = isProduction
@@ -970,7 +975,7 @@ export const contractsRouter = t.router({
                         'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
                         'https://w3id.org/security/suites/ed25519-2020/v1',
                     ],
-                    'recipienttoken': '',
+                    'recipienttoken': recipientToken,
                     'recipient': {
                         'id': ctx.user.did,
                         'givenName': name && name !== 'Anonymous' ? name : '',

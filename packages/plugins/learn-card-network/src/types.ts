@@ -342,7 +342,8 @@ export type LearnCardNetworkPluginMethods = {
             terms: ConsentFlowTerms;
             expiresAt?: string;
             oneTime?: boolean;
-        }
+        },
+        recipientToken?: string
     ) => Promise<{ termsUri: string; redirectUrl?: string }>;
     getConsentedContracts: (
         options?: Partial<PaginationOptionsType> & { query?: ConsentFlowTermsQuery }
