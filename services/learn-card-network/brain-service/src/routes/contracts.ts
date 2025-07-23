@@ -902,7 +902,10 @@ export const contractsRouter = t.router({
 
             let redirectUrl: string | undefined;
             // SmartResume handling
-            const isSmartResume = contractUri === process.env.SMART_RESUME_CONTRACT_URI;
+            const isSmartResume =
+                contractUri === process.env.SMART_RESUME_CONTRACT_URI ||
+                contractUri ===
+                    'lc:network:network.learncard.com/trpc:contract:55b738f0-49f4-4b33-b6c1-afa99b605cd6'; // hardcode for quick fix purposes
             if (isSmartResume) {
                 if (!recipientToken) {
                     throw new Error('Missing recipientToken for SmartResume');
