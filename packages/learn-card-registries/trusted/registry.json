@@ -198,6 +198,11 @@
             "name": "Motlow State College",
             "location": "Washington, DC, USA",
             "url": "https://www.learncard.com/"
+        },
+        "did:web:network.learncard.com:users:tayken": {
+            "name": "LearnCloud AI",
+            "location": "Washington, DC, USA",
+            "url": "https://www.learncard.com/"
         }
     }
 }
