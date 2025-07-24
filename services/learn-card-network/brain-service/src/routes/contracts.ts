@@ -27,6 +27,7 @@ import {
     JWE,
     AutoBoostConfigValidator,
 } from '@learncard/types';
+import { isVC2Format } from '@learncard/helpers';
 import { createConsentFlowContract } from '@accesslayer/consentflowcontract/create';
 import {
     getAutoBoostsForContract,
@@ -43,7 +44,7 @@ import {
     isProfileConsentFlowContractAdmin,
     getWritersForContract,
 } from '@accesslayer/consentflowcontract/relationships/read';
-import { constructUri, getIdFromUri } from '@helpers/uri.helpers';
+import { constructUri, getIdFromUri, resolveUri } from '@helpers/uri.helpers';
 import { getContractByUri } from '@accesslayer/consentflowcontract/read';
 import { deleteStorageForUri } from '@cache/storage';
 import { deleteConsentFlowContract } from '@accesslayer/consentflowcontract/delete';
@@ -778,7 +779,11 @@ export const contractsRouter = t.router({
             let unsignedVc: UnsignedVC;
             try {
                 unsignedVc = JSON.parse(boost.dataValues.boost);
-                unsignedVc.issuanceDate = new Date().toISOString();
+                if (isVC2Format(unsignedVc)) {
+                    unsignedVc.validFrom = new Date().toISOString();
+                } else {
+                    unsignedVc.issuanceDate = new Date().toISOString();
+                }
                 unsignedVc.issuer = { id: getDidWeb(ctx.domain, profile.profileId) };
                 if (Array.isArray(unsignedVc.credentialSubject)) {
                     unsignedVc.credentialSubject = unsignedVc.credentialSubject.map(subject => ({
@@ -861,13 +866,14 @@ export const contractsRouter = t.router({
                 contractUri: z.string(),
                 expiresAt: z.string().optional(),
                 oneTime: z.boolean().optional(),
+                recipientToken: z.string().optional(), // SmartResume recipientToken needed for API call
             })
         )
-        .output(z.string())
+        .output(z.object({ termsUri: z.string(), redirectUrl: z.string().optional() }))
         .mutation(async ({ input, ctx }) => {
             const { profile } = ctx.user;
 
-            const { terms, contractUri, expiresAt, oneTime } = input;
+            const { terms, contractUri, expiresAt, oneTime, recipientToken } = input;
 
             const contractDetails = await getContractDetailsByUri(contractUri);
 
@@ -894,6 +900,124 @@ export const contractsRouter = t.router({
                 );
             }
 
+            let redirectUrl: string | undefined;
+            // SmartResume handling
+            const isSmartResume =
+                contractUri === process.env.SMART_RESUME_CONTRACT_URI ||
+                contractUri ===
+                    'lc:network:network.learncard.com/trpc:contract:55b738f0-49f4-4b33-b6c1-afa99b605cd6'; // hardcode for quick fix purposes
+            if (isSmartResume) {
+                if (!recipientToken) {
+                    throw new Error('Missing recipientToken for SmartResume');
+                }
+
+                const isProduction = !process.env.IS_OFFLINE;
+
+                const srUrl = isProduction
+                    ? 'https://my.smartresume.com/'
+                    : 'https://mystage.smartresume.com/';
+                const clientId = process.env.SMART_RESUME_CLIENT_ID;
+                const accessKey = process.env.SMART_RESUME_ACCESS_KEY;
+
+                const accessTokenResponse = await fetch(`${srUrl}api/v1/token`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        Authorization: `Basic ${btoa(`${clientId}:${accessKey}`)}`,
+                    },
+                    body: new URLSearchParams({
+                        grant_type: 'client_credentials',
+                        scope: 'delete readonly replace',
+                    }),
+                }).then(res => res.json());
+
+                const accessToken = accessTokenResponse.access_token;
+
+                const categories = terms.read.credentials.categories;
+                const allSharedCredentialUris = [
+                    // filter out duplicates
+                    ...new Set(
+                        Object.values(categories).flatMap(category => category.shared || [])
+                    ),
+                ];
+
+                const credentials = (
+                    await Promise.all(
+                        allSharedCredentialUris.map(async uri => {
+                            try {
+                                return await resolveUri(uri);
+                            } catch (error) {
+                                console.error(`Error resolving URI ${uri}:`, error);
+                                return undefined;
+                            }
+                        })
+                    )
+                )
+                    .filter(cred => cred !== undefined && cred !== '')
+                    .map(cred => {
+                        return cred?.boostCredential
+                            ? { ...cred?.boostCredential, id: cred?.id } // unwrap credential, preserve id
+                            : cred;
+                    });
+
+                const transformedCredentials = credentials.map(cred => {
+                    // If issuer is a string, convert it to an object with an id property
+                    const issuer =
+                        typeof cred.issuer === 'string'
+                            ? { id: cred.issuer }
+                            : cred.issuer || { id: '' };
+
+                    // Return the transformed credential
+                    return {
+                        ...cred,
+                        issuer,
+                    };
+                });
+
+                const { name, email } = terms.read.personal;
+
+                const body = JSON.stringify({
+                    '@context': [
+                        'https://www.w3.org/ns/credentials/v2',
+                        'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json',
+                        'https://w3id.org/security/suites/ed25519-2020/v1',
+                    ],
+                    'recipienttoken': recipientToken,
+                    'recipient': {
+                        'id': ctx.user.did,
+                        'givenName': name && name !== 'Anonymous' ? name : '',
+                        'familyName': '', // this is neecessary in order for givenName to be respected
+                        // 'additionalName': '',
+                        'email': email && email !== 'anonymous@hidden.com' ? email : '',
+                        // 'phone': '',
+                        // 'studentId': '',
+                        // 'signupOrganization': '',
+                    },
+                    'credentials': transformedCredentials,
+                });
+
+                try {
+                    const response = await fetch(`${srUrl}api/v1/credentials`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${accessToken}`,
+                            'Content-Type': 'application/json',
+                        },
+                        body,
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Error (${response.status}): ${await response.text()}`);
+                    }
+
+                    const result = await response.json();
+                    redirectUrl = result.redirect_url;
+                } catch (error) {
+                    console.error('Error uploading credentials to SmartResume:', error);
+                    throw error;
+                }
+            }
+
             await consentToContract(
                 profile,
                 contractDetails,
@@ -913,7 +1037,7 @@ export const contractsRouter = t.router({
                 });
             }
 
-            return constructUri('terms', relationship.id, ctx.domain);
+            return { termsUri: constructUri('terms', relationship.id, ctx.domain), redirectUrl };
         }),
 
     getConsentedContracts: profileRoute

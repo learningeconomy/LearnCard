@@ -26,7 +26,10 @@ export const getVCTemplatesPlugin = (): VCTemplatePlugin => {
 
                 if (!(type in VC_TEMPLATES)) throw new Error('Invalid Test VC Type!');
 
-                return VC_TEMPLATES[type]({ ...defaults, ...functionArgs });
+                return VC_TEMPLATES[type](
+                    { ...defaults, ...functionArgs },
+                    _learnCard.invoke.crypto()
+                );
             },
             newPresentation: async (_learnCard, credential, args = {}) => {
                 const did = args?.did || _learnCard.id.did();
@@ -34,7 +37,7 @@ export const getVCTemplatesPlugin = (): VCTemplatePlugin => {
                 if (!did) throw new Error('Could not get issuer did!');
 
                 return {
-                    '@context': ['https://www.w3.org/2018/credentials/v1'],
+                    '@context': ['https://www.w3.org/ns/credentials/v2'],
                     type: ['VerifiablePresentation'],
                     holder: did,
                     verifiableCredential: credential,

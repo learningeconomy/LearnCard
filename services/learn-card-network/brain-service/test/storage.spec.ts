@@ -191,12 +191,12 @@ describe('Storage', () => {
                 name: 'a',
             });
 
-            const uri = await userB.clients.fullAuth.contracts.consentToContract({
+            const { termsUri } = await userB.clients.fullAuth.contracts.consentToContract({
                 contractUri,
                 terms: minimalTerms,
             });
 
-            const promise = userA.clients.fullAuth.storage.resolve({ uri });
+            const promise = userA.clients.fullAuth.storage.resolve({ uri: termsUri });
 
             await expect(promise).resolves.not.toThrow();
 

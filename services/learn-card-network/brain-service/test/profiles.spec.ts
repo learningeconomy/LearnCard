@@ -1225,29 +1225,19 @@ describe('Profiles', () => {
                 credential: testUnsignedBoost,
                 autoConnectRecipients: true,
             });
-            const userBProfile = await userB.clients.fullAuth.profile.getProfile();
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB },
+                uri
+            );
 
-            const credential = await userA.learnCard.invoke.issueCredential({
-                ...testUnsignedBoost,
-                issuer: userA.learnCard.id.did(),
-                credentialSubject: {
-                    ...testUnsignedBoost.credentialSubject,
-                    id: userA.learnCard.id.did(),
-                },
-                boostId: uri,
-            });
+            const userAConnections = await userA.clients.fullAuth.profile.connections();
+            expect(userAConnections).toHaveLength(1);
+            expect(userAConnections[0]!.profileId).toEqual('userb');
 
-            const credentialUri = await userA.clients.fullAuth.boost.sendBoost({
-                profileId: userBProfile.profileId,
-                uri,
-                credential,
-            });
-            await userB.clients.fullAuth.credential.acceptCredential({ uri: credentialUri });
-
-            const oneConnection = await userA.clients.fullAuth.profile.connections();
-
-            expect(oneConnection).toHaveLength(1);
-            expect(oneConnection[0]!.profileId).toEqual('userb');
+            const userBConnections = await userB.clients.fullAuth.profile.connections();
+            expect(userBConnections).toHaveLength(1);
+            expect(userBConnections[0]!.profileId).toEqual('usera');
         });
 
         it('should not show connections from non-auto-connect boosts', async () => {
@@ -1758,6 +1748,80 @@ describe('Profiles', () => {
                     did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
                 })
             ).resolves.not.toThrow();
+        });
+
+        it('should set the first signing authority registered as primary', async () => {
+            await expect(userA.clients.fullAuth.profile.primarySigningAuthority()).resolves.toBeUndefined();
+            await expect(
+                userA.clients.fullAuth.profile.registerSigningAuthority({
+                    endpoint: 'http://localhost:4000',
+                    name: 'mysa',
+                    did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
+                })
+            ).resolves.not.toThrow();
+            await expect(userA.clients.fullAuth.profile.primarySigningAuthority()).resolves.toMatchObject({
+                signingAuthority: {
+                    endpoint: 'http://localhost:4000',
+                },
+                relationship: {
+                    name: 'mysa',
+                    did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
+                },
+            });
+        });
+
+        it('should allow setting a signing authority as primary', async () => {
+            await expect(userA.clients.fullAuth.profile.primarySigningAuthority()).resolves.toBeUndefined();
+            await expect(
+                userA.clients.fullAuth.profile.registerSigningAuthority({
+                    endpoint: 'http://localhost:4000',
+                    name: 'mysa',
+                    did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
+                })
+            ).resolves.not.toThrow();
+            await expect(userA.clients.fullAuth.profile.primarySigningAuthority()).resolves.toMatchObject({
+                signingAuthority: {
+                    endpoint: 'http://localhost:4000',
+                },
+                relationship: {
+                    name: 'mysa',
+                    did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
+                },
+            });
+
+            await expect(
+                userA.clients.fullAuth.profile.registerSigningAuthority({
+                    endpoint: 'http://localhost:5000',
+                    name: 'mysa2',
+                    did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
+                })
+            ).resolves.not.toThrow();
+
+            await expect(userA.clients.fullAuth.profile.primarySigningAuthority()).resolves.toMatchObject({
+                signingAuthority: {
+                    endpoint: 'http://localhost:4000',
+                },
+                relationship: {
+                    name: 'mysa',
+                    did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
+                },
+            });
+
+            await expect(
+                userA.clients.fullAuth.profile.setPrimarySigningAuthority({
+                    endpoint: 'http://localhost:5000',
+                    name: 'mysa2',
+                })
+            ).resolves.not.toThrow();
+            await expect(userA.clients.fullAuth.profile.primarySigningAuthority()).resolves.toMatchObject({
+                signingAuthority: {
+                    endpoint: 'http://localhost:5000',
+                },
+                relationship: {
+                    name: 'mysa2',
+                    did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
+                },
+            });
         });
 
         it('allows retrieving a list of signing authorities', async () => {

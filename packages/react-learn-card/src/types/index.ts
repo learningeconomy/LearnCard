@@ -6,6 +6,7 @@ import {
     VC,
 } from '@learncard/types';
 import React, { ReactNode } from 'react';
+import { DisplayTypeEnum } from '../helpers/display.helpers';
 
 export enum Icons {
     coinsIcon,
@@ -348,6 +349,10 @@ export type BoostGenericCardProps = {
     verifierBadge?: React.ReactNode;
     credential?: VC;
     isInSkillsModal?: boolean;
+    displayType?: DisplayTypeEnum | string;
+    linkedCredentialsCount?: number;
+    linkedCredentialsClassName?: string;
+    checkBtnClass?: string;
 };
 
 export type Attachment = {

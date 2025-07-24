@@ -35,6 +35,7 @@ export const USERS = {
     c: { seed: 'c'.repeat(64), profileId: 'testc', displayName: 'User C' },
     d: { seed: 'd'.repeat(64), profileId: 'testd', displayName: 'User D' },
     e: { seed: 'e'.repeat(64), profileId: 'teste', displayName: 'User E' },
+    f: { seed: 'e'.repeat(62) + '00', profileId: 'testf', displayName: 'User F' },
 } as const satisfies Record<string, { seed: string; profileId: string; displayName: string }>;
 
 export const getLearnCardForUser = async (userKey: keyof typeof USERS) => {

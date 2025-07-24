@@ -56,7 +56,8 @@ class TestBoostGetPaginatedBoosts200ResponseRecordsInner(unittest.TestCase):
                     can_revoke_children = '', 
                     can_manage_children_permissions = '', 
                     can_manage_children_profiles = True, 
-                    can_view_analytics = True, )
+                    can_view_analytics = True, ),
+                allow_anyone_to_create_children = True
             )
         else:
             return BoostGetPaginatedBoosts200ResponseRecordsInner(

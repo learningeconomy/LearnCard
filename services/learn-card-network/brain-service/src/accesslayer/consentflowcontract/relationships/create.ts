@@ -190,6 +190,16 @@ export const consentToContract = async (
 
                     if (terms.deniedWriters?.includes(issuer.profileId)) return;
 
+                    const boostCategory = boost.target.category;
+                    if (boostCategory) {
+                        const categoryWritePermission =
+                            terms.write?.credentials?.categories?.[boostCategory];
+
+                        if (!categoryWritePermission) return;
+
+                        if (categoryWritePermission !== true) return;
+                    }
+
                     const contractOwnerSigningAuthority = await getSigningAuthorityForUserByName(
                         issuer,
                         signingAuthorityEndpoint,

@@ -1,5 +1,129 @@
 # learn-card-core
 
+## 2.5.11
+
+### Patch Changes
+
+-   [#762](https://github.com/learningeconomy/LearnCard/pull/762) [`d015e60c16977cd08674a140ca3dff4d9c351bf4`](https://github.com/learningeconomy/LearnCard/commit/d015e60c16977cd08674a140ca3dff4d9c351bf4) Thanks [@smurflo2](https://github.com/smurflo2)! - Add recipientToken to consentToContract
+
+## 2.5.10
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.3.16
+
+## 2.5.9
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.3.15
+    -   @learncard/core@9.3.33
+    -   @learncard/helpers@1.1.21
+
+## 2.5.8
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.3.14
+
+## 2.5.7
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.3.13
+
+## 2.5.6
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.3.12
+
+## 2.5.5
+
+### Patch Changes
+
+-   [#664](https://github.com/learningeconomy/LearnCard/pull/664) [`3e4e7b70f5a357c098aa88c3a97d19ce879a8d6c`](https://github.com/learningeconomy/LearnCard/commit/3e4e7b70f5a357c098aa88c3a97d19ce879a8d6c) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Refined connection logic for auto-connect boosts to ensure bi-directional connections are established. Updated `getConnections`, `getConnectedBoostRecipients`, and `countConnectedBoostRecipients` to use consistent connection resolution. Ported and expanded tests for connected boost recipients to E2E.
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.3.11
+
+## 2.5.4
+
+### Patch Changes
+
+-   [#724](https://github.com/learningeconomy/LearnCard/pull/724) [`610657555402897bc2b0321be81a17975d28c0f4`](https://github.com/learningeconomy/LearnCard/commit/610657555402897bc2b0321be81a17975d28c0f4) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix sending boosts that are VC 2.0's
+
+-   Updated dependencies [[`610657555402897bc2b0321be81a17975d28c0f4`](https://github.com/learningeconomy/LearnCard/commit/610657555402897bc2b0321be81a17975d28c0f4)]:
+    -   @learncard/helpers@1.1.20
+    -   @learncard/core@9.3.32
+    -   @learncard/network-brain-client@2.3.10
+
+## 2.5.3
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.3.9
+
+## 2.5.2
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.3.8
+
+## 2.5.1
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.3.7
+
+## 2.5.0
+
+### Minor Changes
+
+-   [#707](https://github.com/learningeconomy/LearnCard/pull/707) [`e6f76c42d840389f791d2767de46b063bb392180`](https://github.com/learningeconomy/LearnCard/commit/e6f76c42d840389f791d2767de46b063bb392180) Thanks [@Custard7](https://github.com/Custard7)! - LC-1805 Feat: Universal Inbox
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.31
+    -   @learncard/network-brain-client@2.3.6
+
+## 2.4.39
+
+### Patch Changes
+
+-   [#708](https://github.com/learningeconomy/LearnCard/pull/708) [`1b99797c404648412f6a6e8a1f77ebab71caa28c`](https://github.com/learningeconomy/LearnCard/commit/1b99797c404648412f6a6e8a1f77ebab71caa28c) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Introduces a new optional boolean `allowAnyoneToCreateChildren` on Boost nodes.
+
+    When set to `true` on a parent boost:
+
+    -   Any profile can create child boosts without possessing the `canCreateChildren` role permission.
+    -   The permission gate (`canProfileCreateChildBoost`) now short-circuits when this flag is detected.
+
+    This change updates:
+
+    -   Boost schema & shared types (`@learncard/types`)
+    -   Brain-service model & access-layer logic (`@learncard/network-brain-service`)
+    -   Unit and E2E tests to cover the new behaviour.
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.3.5
+    -   @learncard/core@9.3.30
+
+## 2.4.38
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.3.4
+
 ## 2.4.37
 
 ### Patch Changes

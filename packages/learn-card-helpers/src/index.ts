@@ -1,4 +1,4 @@
-import { JWE, JWEValidator } from '@learncard/types';
+import { JWE, JWEValidator, UnsignedVC, VC } from '@learncard/types';
 import type { DataTransformer } from '@trpc/server';
 
 /**
@@ -46,4 +46,15 @@ export const RegExpTransformer: DataTransformer = {
             return value;
         });
     },
+};
+
+/**
+ * Determines if a credential uses VC 2.0 format by checking the @context array
+ */
+export const isVC2Format = (credential: UnsignedVC | VC): boolean => {
+    if (!credential['@context'] || !Array.isArray(credential['@context'])) {
+        return false;
+    }
+
+    return credential['@context'].includes('https://www.w3.org/ns/credentials/v2');
 };

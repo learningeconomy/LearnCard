@@ -22,6 +22,7 @@ import {
     JWE,
     VC,
 } from '@learncard/types';
+import { isVC2Format } from '@learncard/helpers';
 
 import { t, profileRoute } from '@routes';
 
@@ -44,6 +45,8 @@ import {
     getBoostRecipientsSkipLimit,
     getBoostAdmins,
     getBoostRecipients,
+    getConnectedBoostRecipients,
+    countConnectedBoostRecipients,
     isProfileBoostAdmin,
     countBoostRecipients,
     isBoostParent,
@@ -509,6 +512,77 @@ export const boostsRouter = t.router({
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
             return countBoostRecipients(boost, { includeUnacceptedBoosts });
+        }),
+
+    getConnectedBoostRecipients: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/boost/recipients/connected/{uri}',
+                tags: ['Boosts'],
+                summary: 'Get connected boost recipients',
+                description: 'This endpoint gets the recipients of a particular boost',
+            },
+        })
+        .input(
+            PaginationOptionsValidator.extend({
+                limit: PaginationOptionsValidator.shape.limit.default(25),
+                uri: z.string(),
+                includeUnacceptedBoosts: z.boolean().default(true),
+                query: LCNProfileQueryValidator.optional(),
+            })
+        )
+        .output(PaginatedBoostRecipientsValidator)
+        .query(async ({ input, ctx }) => {
+            const { domain } = ctx;
+            const { uri, limit, cursor, includeUnacceptedBoosts, query } = input;
+
+            const boost = await getBoostByUri(uri);
+
+            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            const records = await getConnectedBoostRecipients(ctx.user.profile, boost, {
+                limit: limit + 1,
+                cursor,
+                includeUnacceptedBoosts,
+                query,
+                domain,
+            });
+
+            const hasMore = records.length > limit;
+            const newCursor = records.at(hasMore ? -2 : -1)?.sent;
+
+            return {
+                hasMore,
+                records: records.slice(0, limit),
+                ...(newCursor && { cursor: newCursor }),
+            };
+        }),
+
+    getConnectedBoostRecipientCount: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/boost/recipients/connected/{uri}/count',
+                tags: ['Boosts'],
+                summary: 'Get boost recipients count',
+                description: 'This endpoint counts the recipients of a particular boost',
+            },
+        })
+        .input(z.object({ uri: z.string(), includeUnacceptedBoosts: z.boolean().default(true) }))
+        .output(z.number())
+        .query(async ({ input, ctx }) => {
+            const { uri, includeUnacceptedBoosts } = input;
+
+            const boost = await getBoostByUri(uri);
+
+            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            return countConnectedBoostRecipients(ctx.user.profile, boost, {
+                includeUnacceptedBoosts,
+            });
         }),
 
     getChildrenProfileManagers: profileRoute
@@ -1259,7 +1333,7 @@ export const boostsRouter = t.router({
 
             const newPermissions = Object.entries(updates).reduce<Partial<BoostPermissions>>(
                 (newPermissionsObject, [permission, value]) => {
-                    if (typeof value !== undefined) {
+                    if (typeof value !== 'undefined') {
                         if (!(permissions as any)[permission]) {
                             throw new TRPCError({
                                 code: 'UNAUTHORIZED',
@@ -1348,7 +1422,7 @@ export const boostsRouter = t.router({
 
             const newPermissions = Object.entries(updates).reduce<Partial<BoostPermissions>>(
                 (newPermissionsObject, [permission, value]) => {
-                    if (typeof value !== undefined) {
+                    if (typeof value !== 'undefined') {
                         if (!(permissions as any)[permission]) {
                             throw new TRPCError({
                                 code: 'UNAUTHORIZED',
@@ -1722,7 +1796,11 @@ export const boostsRouter = t.router({
             try {
                 unsignedVc = JSON.parse(boost.dataValues.boost);
 
-                unsignedVc.issuanceDate = new Date().toISOString();
+                if (isVC2Format(unsignedVc)) {
+                    unsignedVc.validFrom = new Date().toISOString();
+                } else {
+                    unsignedVc.issuanceDate = new Date().toISOString();
+                }
                 unsignedVc.issuer = { id: getDidWeb(ctx.domain, profile.profileId) };
 
                 if (Array.isArray(unsignedVc.credentialSubject)) {

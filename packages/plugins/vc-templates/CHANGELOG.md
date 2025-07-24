@@ -1,5 +1,60 @@
 # learn-card-core
 
+## 1.0.58
+
+### Patch Changes
+
+-   Updated dependencies [[`dd5bfff7d94670f43e53d6e7c86a6fd3f80d92b8`](https://github.com/learningeconomy/LearnCard/commit/dd5bfff7d94670f43e53d6e7c86a6fd3f80d92b8)]:
+    -   @learncard/types@5.8.1
+    -   @learncard/core@9.3.33
+
+## 1.0.57
+
+### Patch Changes
+
+-   [#727](https://github.com/learningeconomy/LearnCard/pull/727) [`3922c670b598a19ec33084ae4cadbdcf89177f64`](https://github.com/learningeconomy/LearnCard/commit/3922c670b598a19ec33084ae4cadbdcf89177f64) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Better VC 2 support
+
+## 1.0.56
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.32
+
+## 1.0.55
+
+### Patch Changes
+
+-   [#722](https://github.com/learningeconomy/LearnCard/pull/722) [`52f0829ffdcc9b0f896fe72f10195e37e00d63d3`](https://github.com/learningeconomy/LearnCard/commit/52f0829ffdcc9b0f896fe72f10195e37e00d63d3) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Boost 1.0.1 context
+
+## 1.0.54
+
+### Patch Changes
+
+-   [#717](https://github.com/learningeconomy/LearnCard/pull/717) [`fe42f075d452eda41ed013a3eb9668bdc6a4ef60`](https://github.com/learningeconomy/LearnCard/commit/fe42f075d452eda41ed013a3eb9668bdc6a4ef60) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Update templates to use inline contexts, OBv3.0.3, and VC 2
+
+## 1.0.53
+
+### Patch Changes
+
+-   [#715](https://github.com/learningeconomy/LearnCard/pull/715) [`953ab1fa7c8db697e2d7b9761a214835ddc4d4e0`](https://github.com/learningeconomy/LearnCard/commit/953ab1fa7c8db697e2d7b9761a214835ddc4d4e0) Thanks [@gerardopar](https://github.com/gerardopar)! - extend-attachments-context
+
+## 1.0.52
+
+### Patch Changes
+
+-   Updated dependencies [[`e6f76c42d840389f791d2767de46b063bb392180`](https://github.com/learningeconomy/LearnCard/commit/e6f76c42d840389f791d2767de46b063bb392180)]:
+    -   @learncard/types@5.8.0
+    -   @learncard/core@9.3.31
+
+## 1.0.51
+
+### Patch Changes
+
+-   Updated dependencies [[`1b99797c404648412f6a6e8a1f77ebab71caa28c`](https://github.com/learningeconomy/LearnCard/commit/1b99797c404648412f6a6e8a1f77ebab71caa28c)]:
+    -   @learncard/types@5.7.1
+    -   @learncard/core@9.3.30
+
 ## 1.0.50
 
 ### Patch Changes

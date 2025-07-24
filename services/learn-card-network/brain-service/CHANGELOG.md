@@ -1,5 +1,173 @@
 # @learncard/network-brain-service
 
+## 3.5.10
+
+### Patch Changes
+
+-   [#758](https://github.com/learningeconomy/LearnCard/pull/758) [`fed6117ee9e849839b6211897fd1e71f95d013fd`](https://github.com/learningeconomy/LearnCard/commit/fed6117ee9e849839b6211897fd1e71f95d013fd) Thanks [@smurflo2](https://github.com/smurflo2)! - Add special handling for SmartResume integration
+
+## 3.5.9
+
+### Patch Changes
+
+-   [#753](https://github.com/learningeconomy/LearnCard/pull/753) [`dd5bfff7d94670f43e53d6e7c86a6fd3f80d92b8`](https://github.com/learningeconomy/LearnCard/commit/dd5bfff7d94670f43e53d6e7c86a6fd3f80d92b8) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add defaultEnabled flags to contracts as a UI hint
+
+-   [#753](https://github.com/learningeconomy/LearnCard/pull/753) [`dd5bfff7d94670f43e53d6e7c86a6fd3f80d92b8`](https://github.com/learningeconomy/LearnCard/commit/dd5bfff7d94670f43e53d6e7c86a6fd3f80d92b8) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Do not issue autoboosts when the user has not given write permission for it!
+
+-   Updated dependencies [[`dd5bfff7d94670f43e53d6e7c86a6fd3f80d92b8`](https://github.com/learningeconomy/LearnCard/commit/dd5bfff7d94670f43e53d6e7c86a6fd3f80d92b8)]:
+    -   @learncard/types@5.8.1
+    -   @learncard/core@9.3.33
+    -   @learncard/helpers@1.1.21
+    -   @learncard/did-web-plugin@1.0.70
+    -   @learncard/didkey-plugin@1.0.44
+    -   @learncard/didkit-plugin@1.5.23
+    -   @learncard/encryption-plugin@1.0.18
+    -   @learncard/learn-card-plugin@1.1.51
+    -   @learncard/vc-plugin@1.1.53
+    -   @learncard/vc-templates-plugin@1.0.58
+    -   @learncard/expiration-plugin@1.1.53
+    -   @learncard/crypto-plugin@1.0.44
+
+## 3.5.8
+
+### Patch Changes
+
+-   Updated dependencies [[`7d77c34d7f4c9a6f6702d0213684747c3c196758`](https://github.com/learningeconomy/LearnCard/commit/7d77c34d7f4c9a6f6702d0213684747c3c196758)]:
+    -   @learncard/didkit-plugin@1.5.22
+    -   @learncard/learn-card-plugin@1.1.50
+    -   @learncard/vc-plugin@1.1.52
+    -   @learncard/expiration-plugin@1.1.52
+
+## 3.5.7
+
+### Patch Changes
+
+-   [#730](https://github.com/learningeconomy/LearnCard/pull/730) [`b979f88ea7e60f24863ec7e3120b6f04d61ceef8`](https://github.com/learningeconomy/LearnCard/commit/b979f88ea7e60f24863ec7e3120b6f04d61ceef8) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix potential Neo4j Deadlock when creating a child boost
+
+## 3.5.6
+
+### Patch Changes
+
+-   [#727](https://github.com/learningeconomy/LearnCard/pull/727) [`3922c670b598a19ec33084ae4cadbdcf89177f64`](https://github.com/learningeconomy/LearnCard/commit/3922c670b598a19ec33084ae4cadbdcf89177f64) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Better VC 2 support
+
+-   Updated dependencies [[`3922c670b598a19ec33084ae4cadbdcf89177f64`](https://github.com/learningeconomy/LearnCard/commit/3922c670b598a19ec33084ae4cadbdcf89177f64)]:
+    -   @learncard/vc-templates-plugin@1.0.57
+    -   @learncard/vc-plugin@1.1.51
+    -   @learncard/expiration-plugin@1.1.51
+
+## 3.5.5
+
+### Patch Changes
+
+-   [#664](https://github.com/learningeconomy/LearnCard/pull/664) [`3e4e7b70f5a357c098aa88c3a97d19ce879a8d6c`](https://github.com/learningeconomy/LearnCard/commit/3e4e7b70f5a357c098aa88c3a97d19ce879a8d6c) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Refined connection logic for auto-connect boosts to ensure bi-directional connections are established. Updated `getConnections`, `getConnectedBoostRecipients`, and `countConnectedBoostRecipients` to use consistent connection resolution. Ported and expanded tests for connected boost recipients to E2E.
+
+## 3.5.4
+
+### Patch Changes
+
+-   Updated dependencies [[`610657555402897bc2b0321be81a17975d28c0f4`](https://github.com/learningeconomy/LearnCard/commit/610657555402897bc2b0321be81a17975d28c0f4)]:
+    -   @learncard/helpers@1.1.20
+    -   @learncard/core@9.3.32
+    -   @learncard/didkey-plugin@1.0.43
+    -   @learncard/crypto-plugin@1.0.43
+    -   @learncard/did-web-plugin@1.0.69
+    -   @learncard/didkit-plugin@1.5.21
+    -   @learncard/encryption-plugin@1.0.17
+    -   @learncard/expiration-plugin@1.1.50
+    -   @learncard/learn-card-plugin@1.1.49
+    -   @learncard/vc-plugin@1.1.50
+    -   @learncard/vc-templates-plugin@1.0.56
+
+## 3.5.3
+
+### Patch Changes
+
+-   Updated dependencies [[`52f0829ffdcc9b0f896fe72f10195e37e00d63d3`](https://github.com/learningeconomy/LearnCard/commit/52f0829ffdcc9b0f896fe72f10195e37e00d63d3)]:
+    -   @learncard/vc-templates-plugin@1.0.55
+    -   @learncard/didkit-plugin@1.5.20
+    -   @learncard/learn-card-plugin@1.1.48
+    -   @learncard/vc-plugin@1.1.49
+    -   @learncard/expiration-plugin@1.1.49
+
+## 3.5.2
+
+### Patch Changes
+
+-   Updated dependencies [[`fe42f075d452eda41ed013a3eb9668bdc6a4ef60`](https://github.com/learningeconomy/LearnCard/commit/fe42f075d452eda41ed013a3eb9668bdc6a4ef60), [`fe42f075d452eda41ed013a3eb9668bdc6a4ef60`](https://github.com/learningeconomy/LearnCard/commit/fe42f075d452eda41ed013a3eb9668bdc6a4ef60)]:
+    -   @learncard/didkit-plugin@1.5.19
+    -   @learncard/vc-templates-plugin@1.0.54
+    -   @learncard/learn-card-plugin@1.1.47
+    -   @learncard/vc-plugin@1.1.48
+    -   @learncard/expiration-plugin@1.1.48
+
+## 3.5.1
+
+### Patch Changes
+
+-   Updated dependencies [[`953ab1fa7c8db697e2d7b9761a214835ddc4d4e0`](https://github.com/learningeconomy/LearnCard/commit/953ab1fa7c8db697e2d7b9761a214835ddc4d4e0)]:
+    -   @learncard/vc-templates-plugin@1.0.53
+
+## 3.5.0
+
+### Minor Changes
+
+-   [#707](https://github.com/learningeconomy/LearnCard/pull/707) [`e6f76c42d840389f791d2767de46b063bb392180`](https://github.com/learningeconomy/LearnCard/commit/e6f76c42d840389f791d2767de46b063bb392180) Thanks [@Custard7](https://github.com/Custard7)! - LC-1805 Feat: Universal Inbox
+
+### Patch Changes
+
+-   Updated dependencies [[`e6f76c42d840389f791d2767de46b063bb392180`](https://github.com/learningeconomy/LearnCard/commit/e6f76c42d840389f791d2767de46b063bb392180)]:
+    -   @learncard/types@5.8.0
+    -   @learncard/core@9.3.31
+    -   @learncard/helpers@1.1.19
+    -   @learncard/did-web-plugin@1.0.68
+    -   @learncard/didkey-plugin@1.0.42
+    -   @learncard/didkit-plugin@1.5.18
+    -   @learncard/encryption-plugin@1.0.16
+    -   @learncard/learn-card-plugin@1.1.46
+    -   @learncard/vc-plugin@1.1.47
+    -   @learncard/vc-templates-plugin@1.0.52
+    -   @learncard/expiration-plugin@1.1.47
+    -   @learncard/crypto-plugin@1.0.42
+
+## 3.4.5
+
+### Patch Changes
+
+-   [#708](https://github.com/learningeconomy/LearnCard/pull/708) [`1b99797c404648412f6a6e8a1f77ebab71caa28c`](https://github.com/learningeconomy/LearnCard/commit/1b99797c404648412f6a6e8a1f77ebab71caa28c) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Introduces a new optional boolean `allowAnyoneToCreateChildren` on Boost nodes.
+
+    When set to `true` on a parent boost:
+
+    -   Any profile can create child boosts without possessing the `canCreateChildren` role permission.
+    -   The permission gate (`canProfileCreateChildBoost`) now short-circuits when this flag is detected.
+
+    This change updates:
+
+    -   Boost schema & shared types (`@learncard/types`)
+    -   Brain-service model & access-layer logic (`@learncard/network-brain-service`)
+    -   Unit and E2E tests to cover the new behaviour.
+
+-   Updated dependencies [[`1b99797c404648412f6a6e8a1f77ebab71caa28c`](https://github.com/learningeconomy/LearnCard/commit/1b99797c404648412f6a6e8a1f77ebab71caa28c)]:
+    -   @learncard/types@5.7.1
+    -   @learncard/core@9.3.30
+    -   @learncard/helpers@1.1.18
+    -   @learncard/did-web-plugin@1.0.67
+    -   @learncard/didkey-plugin@1.0.41
+    -   @learncard/didkit-plugin@1.5.17
+    -   @learncard/encryption-plugin@1.0.15
+    -   @learncard/learn-card-plugin@1.1.45
+    -   @learncard/vc-plugin@1.1.46
+    -   @learncard/vc-templates-plugin@1.0.51
+    -   @learncard/expiration-plugin@1.1.46
+    -   @learncard/crypto-plugin@1.0.41
+
+## 3.4.4
+
+### Patch Changes
+
+-   [#699](https://github.com/learningeconomy/LearnCard/pull/699) [`2a59c9056fbee1fe5aa832d2d27e72b685445e1e`](https://github.com/learningeconomy/LearnCard/commit/2a59c9056fbee1fe5aa832d2d27e72b685445e1e) Thanks [@Custard7](https://github.com/Custard7)! - feat: implement Claim Boosts as a VC-API workflow
+
+-   [#705](https://github.com/learningeconomy/LearnCard/pull/705) [`45edf4c37263199bf2147a51567511d1d4dfe269`](https://github.com/learningeconomy/LearnCard/commit/45edf4c37263199bf2147a51567511d1d4dfe269) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix Auth Headers in OpenAPI routes
+
 ## 3.4.3
 
 ### Patch Changes

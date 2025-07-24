@@ -1,6 +1,6 @@
 {
     "name": "@learncard/cli",
-    "version": "3.3.102",
+    "version": "3.3.118",
     "description": "Test out learn card!",
     "main": "dist/index.js",
     "bin": "dist/index.js",
@@ -15,8 +15,10 @@
         "@learncard/didkit-plugin": "workspace:^",
         "@learncard/init": "workspace:^",
         "@learncard/learn-cloud-plugin": "workspace:*",
+        "@learncard/simple-signing-plugin": "workspace:*",
         "@learncard/types": "workspace:*",
         "@rollup/plugin-json": "^4.1.0",
+        "clipboardy": "^4.0.0",
         "commander": "^9.3.0",
         "figlet": "^1.5.2",
         "gradient-string": "^2.0.1",

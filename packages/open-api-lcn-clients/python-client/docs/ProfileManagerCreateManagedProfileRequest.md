@@ -10,7 +10,7 @@ Name | Type | Description | Notes
 **short_bio** | **str** | Short bio for the profile. | [optional] [default to '']
 **bio** | **str** | Longer bio for the profile. | [optional] [default to '']
 **is_private** | **bool** | Whether the profile is private or not and shows up in search results. | [optional] 
-**email** | **str** | Contact email address for the profile. | [optional] 
+**email** | **str** | Contact email address for the profile. (deprecated) | [optional] 
 **image** | **str** | Profile image URL for the profile. | [optional] 
 **hero_image** | **str** | Hero image URL for the profile. | [optional] 
 **website_link** | **str** | Website link for the profile. | [optional] 

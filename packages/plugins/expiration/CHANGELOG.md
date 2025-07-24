@@ -1,5 +1,65 @@
 # learn-card-core
 
+## 1.1.53
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.33
+    -   @learncard/vc-plugin@1.1.53
+
+## 1.1.52
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/vc-plugin@1.1.52
+
+## 1.1.51
+
+### Patch Changes
+
+-   Updated dependencies [[`3922c670b598a19ec33084ae4cadbdcf89177f64`](https://github.com/learningeconomy/LearnCard/commit/3922c670b598a19ec33084ae4cadbdcf89177f64)]:
+    -   @learncard/vc-plugin@1.1.51
+
+## 1.1.50
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.32
+    -   @learncard/vc-plugin@1.1.50
+
+## 1.1.49
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/vc-plugin@1.1.49
+
+## 1.1.48
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/vc-plugin@1.1.48
+
+## 1.1.47
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.31
+    -   @learncard/vc-plugin@1.1.47
+
+## 1.1.46
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.30
+    -   @learncard/vc-plugin@1.1.46
+
 ## 1.1.45
 
 ### Patch Changes

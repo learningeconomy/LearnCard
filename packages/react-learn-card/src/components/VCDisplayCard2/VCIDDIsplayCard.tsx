@@ -36,6 +36,7 @@ export type VCIDDisplayCardProps = {
     showDetailsBtn?: boolean;
     customIDDescription?: React.ReactNode;
     hideGradientBackground?: boolean;
+    customLinkedCredentialsComponent?: React.ReactNode;
 };
 
 export const VCIDDisplayCard: React.FC<VCIDDisplayCardProps> = ({
@@ -61,6 +62,7 @@ export const VCIDDisplayCard: React.FC<VCIDDisplayCardProps> = ({
     showDetailsBtn = false,
     customIDDescription,
     hideGradientBackground = false,
+    customLinkedCredentialsComponent,
 }) => {
     const [_isFront, _setIsFront] = useState<boolean>(isFrontOverride ?? true);
     const isFront = isFrontOverride ?? _isFront;
@@ -123,6 +125,9 @@ export const VCIDDisplayCard: React.FC<VCIDDisplayCardProps> = ({
                                     customIssueHistoryComponent={customIssueHistoryComponent}
                                     enableLightbox={enableLightbox}
                                     customSkillsComponent={customSkillsComponent}
+                                    customLinkedCredentialsComponent={
+                                        customLinkedCredentialsComponent
+                                    }
                                 />
                             )}
                         </div>

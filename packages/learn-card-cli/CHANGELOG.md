@@ -1,5 +1,146 @@
 # @learncard/cli
 
+## 3.3.118
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.34
+
+## 3.3.117
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-plugin@2.1.36
+    -   @learncard/init@2.0.33
+
+## 3.3.116
+
+### Patch Changes
+
+-   Updated dependencies [[`dd5bfff7d94670f43e53d6e7c86a6fd3f80d92b8`](https://github.com/learningeconomy/LearnCard/commit/dd5bfff7d94670f43e53d6e7c86a6fd3f80d92b8)]:
+    -   @learncard/types@5.8.1
+    -   @learncard/core@9.3.33
+    -   @learncard/init@2.0.32
+    -   @learncard/didkit-plugin@1.5.23
+    -   @learncard/learn-cloud-plugin@2.1.35
+    -   @learncard/simple-signing-plugin@1.0.21
+
+## 3.3.115
+
+### Patch Changes
+
+-   Updated dependencies [[`7d77c34d7f4c9a6f6702d0213684747c3c196758`](https://github.com/learningeconomy/LearnCard/commit/7d77c34d7f4c9a6f6702d0213684747c3c196758)]:
+    -   @learncard/didkit-plugin@1.5.22
+    -   @learncard/init@2.0.31
+    -   @learncard/learn-cloud-plugin@2.1.34
+    -   @learncard/simple-signing-plugin@1.0.20
+
+## 3.3.114
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.30
+
+## 3.3.113
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.29
+    -   @learncard/simple-signing-plugin@1.0.19
+    -   @learncard/learn-cloud-plugin@2.1.33
+
+## 3.3.112
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.28
+
+## 3.3.111
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.32
+    -   @learncard/init@2.0.27
+    -   @learncard/learn-cloud-plugin@2.1.32
+    -   @learncard/didkit-plugin@1.5.21
+    -   @learncard/simple-signing-plugin@1.0.18
+
+## 3.3.110
+
+### Patch Changes
+
+-   Updated dependencies [[`52f0829ffdcc9b0f896fe72f10195e37e00d63d3`](https://github.com/learningeconomy/LearnCard/commit/52f0829ffdcc9b0f896fe72f10195e37e00d63d3)]:
+    -   @learncard/didkit-plugin@1.5.20
+    -   @learncard/init@2.0.26
+    -   @learncard/learn-cloud-plugin@2.1.31
+    -   @learncard/simple-signing-plugin@1.0.17
+
+## 3.3.109
+
+### Patch Changes
+
+-   Updated dependencies [[`fe42f075d452eda41ed013a3eb9668bdc6a4ef60`](https://github.com/learningeconomy/LearnCard/commit/fe42f075d452eda41ed013a3eb9668bdc6a4ef60)]:
+    -   @learncard/didkit-plugin@1.5.19
+    -   @learncard/init@2.0.25
+    -   @learncard/learn-cloud-plugin@2.1.30
+    -   @learncard/simple-signing-plugin@1.0.16
+
+## 3.3.108
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.24
+    -   @learncard/learn-cloud-plugin@2.1.29
+
+## 3.3.107
+
+### Patch Changes
+
+-   [#712](https://github.com/learningeconomy/LearnCard/pull/712) [`fed57d95b03a458e41a97a2e2092a0b95d07a392`](https://github.com/learningeconomy/LearnCard/commit/fed57d95b03a458e41a97a2e2092a0b95d07a392) Thanks [@Custard7](https://github.com/Custard7)! - Feat: Add Simple Signing Plugin to CLI
+
+## 3.3.106
+
+### Patch Changes
+
+-   Updated dependencies [[`e6f76c42d840389f791d2767de46b063bb392180`](https://github.com/learningeconomy/LearnCard/commit/e6f76c42d840389f791d2767de46b063bb392180)]:
+    -   @learncard/types@5.8.0
+    -   @learncard/core@9.3.31
+    -   @learncard/init@2.0.23
+    -   @learncard/didkit-plugin@1.5.18
+    -   @learncard/learn-cloud-plugin@2.1.28
+
+## 3.3.105
+
+### Patch Changes
+
+-   [#706](https://github.com/learningeconomy/LearnCard/pull/706) [`454ec6e32db5b27c969ad023d968fdd6f7ee3316`](https://github.com/learningeconomy/LearnCard/commit/454ec6e32db5b27c969ad023d968fdd6f7ee3316) Thanks [@Custard7](https://github.com/Custard7)! - Feat: Add copy function to CLI
+
+## 3.3.104
+
+### Patch Changes
+
+-   Updated dependencies [[`1b99797c404648412f6a6e8a1f77ebab71caa28c`](https://github.com/learningeconomy/LearnCard/commit/1b99797c404648412f6a6e8a1f77ebab71caa28c)]:
+    -   @learncard/types@5.7.1
+    -   @learncard/init@2.0.22
+    -   @learncard/core@9.3.30
+    -   @learncard/didkit-plugin@1.5.17
+    -   @learncard/learn-cloud-plugin@2.1.27
+
+## 3.3.103
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/learn-cloud-plugin@2.1.26
+    -   @learncard/init@2.0.21
+
 ## 3.3.102
 
 ### Patch Changes
