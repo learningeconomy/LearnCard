@@ -42,7 +42,7 @@ const issueHistoryDummyData = [
     {
         id: '3',
         name: 'John Doe',
-        thumb: 'https://picsum.photos/200',
+        // thumb: 'https://picsum.photos/200',
         date: '2020-01-01',
     },
 ];
