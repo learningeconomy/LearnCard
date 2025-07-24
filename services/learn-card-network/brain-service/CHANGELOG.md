@@ -1,5 +1,13 @@
 # @learncard/network-brain-service
 
+## 3.5.11
+
+### Patch Changes
+
+-   [`4f7e691db5440ad5ffa5a200690974e500572bf0`](https://github.com/learningeconomy/LearnCard/commit/4f7e691db5440ad5ffa5a200690974e500572bf0) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Update SR Contract URI
+
+-   [`459629af8a49fc7292602352ef87e71593af526c`](https://github.com/learningeconomy/LearnCard/commit/459629af8a49fc7292602352ef87e71593af526c) Thanks [@smurflo2](https://github.com/smurflo2)! - Hardcode SR contract URI
+
 ## 3.5.10
 
 ### Patch Changes
