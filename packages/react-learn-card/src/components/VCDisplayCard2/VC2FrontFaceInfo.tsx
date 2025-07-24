@@ -57,17 +57,25 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
     const getImageElement = (
         imageUrl: string,
         alt: string,
-        overrideComponent: React.ReactNode | undefined
+        overrideComponent: React.ReactNode | undefined,
+        bigText?: boolean
     ) => {
         if (overrideComponent) return overrideComponent;
 
-        return <UserProfilePicture user={{ image: imageUrl, name: issueeName }} />;
+        return (
+            <UserProfilePicture
+                user={{ image: imageUrl, name: issueeName }}
+                alt={alt}
+                customContainerClass={bigText ? '!text-4xl' : ''}
+            />
+        );
     };
 
     const issueeImageEl: React.ReactNode = getImageElement(
         issueeImage,
         'Issuee image',
-        subjectImageComponent
+        subjectImageComponent,
+        true
     );
     const issuerImageEl: React.ReactNode = getImageElement(
         issuerImage,
