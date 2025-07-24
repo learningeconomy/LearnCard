@@ -161,6 +161,7 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
                         imageComponent={subjectImageComponent}
                         className={`flex justify-center items-center ${textDarkColor}`}
                         isIssuer={isSelfVerified}
+                        userName={issueeName}
                     />
                 )}
                 {!issueeImageExists && !customBodyCardComponent && (
@@ -233,6 +234,7 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
                     imageComponent={issuerImageComponent}
                     className={`w-[calc(100%-26px)] absolute bottom-0 flex justify-center items-center ${textDarkColor}`}
                     isIssuer
+                    userName={issuerName}
                 />
             )}
 

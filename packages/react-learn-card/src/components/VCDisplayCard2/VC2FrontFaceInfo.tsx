@@ -66,7 +66,7 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
             <UserProfilePicture
                 user={{ image: imageUrl, name: issueeName }}
                 alt={alt}
-                customContainerClass={bigText ? '!text-4xl' : ''}
+                customContainerClass={`h-full w-full ${bigText ? '!text-4xl' : ''}`}
             />
         );
     };

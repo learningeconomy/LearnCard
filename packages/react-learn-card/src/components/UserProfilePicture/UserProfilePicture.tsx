@@ -20,7 +20,7 @@ export const UserProfilePicture: React.FC<{
     if (!src) {
         return (
             <div
-                className={`rounded-full flex items-center justify-center font-bold uppercase select-none h-full w-full text-white text-2xl ${customContainerClass} ${baseColor}`}
+                className={`rounded-full flex items-center justify-center font-bold uppercase select-none text-white text-2xl ${customContainerClass} ${baseColor}`}
             >
                 {letterToDisplay}
                 {children}
