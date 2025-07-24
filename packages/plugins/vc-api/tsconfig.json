@@ -14,7 +14,7 @@
         "skipLibCheck": true,
         "paths": {},
         "allowSyntheticDefaultImports": true,
-        "moduleResolution": "node"
+        "moduleResolution": "bundler"
     },
     "include": ["src", "src/test"],
     "exclude": ["node_modules", "example"]

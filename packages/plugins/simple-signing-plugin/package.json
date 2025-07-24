@@ -7,6 +7,7 @@
     "module": "./dist/simple-signing-plugin.esm.js",
     "exports": {
         ".": {
+            "types": "./dist/index.d.ts",
             "import": "./dist/simple-signing-plugin.esm.js",
             "require": "./dist/index.cjs"
         }
