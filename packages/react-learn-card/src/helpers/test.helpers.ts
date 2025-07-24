@@ -370,7 +370,7 @@ export const VC2CredentialWithValidFrom = {
         id: 'did:key:z6MksNj6FwQ7t7ejgJVXCNyaX655uHJ8mPJ8xLtxrqQDV2Bo',
         name: 'Modern Skills Institute',
         url: 'https://www.modernskills.org/',
-        image: 'https://example.com/logo.png',
+        image: 'https://picsum.photos/200',
     },
     validFrom: '2024-01-15T14:30:00.000Z',
     validUntil: '2025-01-15T14:30:00.000Z',
@@ -386,7 +386,7 @@ export const VC2CredentialWithValidFrom = {
                 narrative:
                     'Successfully completed advanced TypeScript certification with practical projects.',
             },
-            image: 'https://example.com/typescript-badge.png',
+            image: 'https://picsum.photos/201',
         },
     },
 };
@@ -402,7 +402,7 @@ export const VC2CredentialNoDate = {
         id: 'did:key:z6MksNj6FwQ7t7ejgJVXCNyaX655uHJ8mPJ8xLtxrqQDV2Bo',
         name: 'Future Learning Academy',
         url: 'https://www.futurelearning.edu/',
-        image: 'https://example.com/academy-logo.png',
+        image: 'https://picsum.photos/202',
     },
     // No validFrom or issuanceDate - should handle gracefully
     credentialSubject: {
@@ -416,7 +416,7 @@ export const VC2CredentialNoDate = {
                 type: 'Criteria',
                 narrative: 'Demonstrated commitment to lifelong learning and growth.',
             },
-            image: 'https://example.com/lifetime-badge.png',
+            image: 'https://picsum.photos/203',
         },
     },
 };
