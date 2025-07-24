@@ -5,7 +5,6 @@ import CertificateImageDisplay from './CertificateImageDisplay';
 import CertDisplayCardSkillsCount from './CertDisplayCardSkillsCount';
 import CertificateProfileImageDisplay from './CertificateProfileImageDisplay';
 
-import Smiley from '../svgs/Smiley';
 import Line from '../svgs/Line';
 
 import {
@@ -155,7 +154,7 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
                 </div>
 
                 {customBodyCardComponent}
-                {issueeImageExists && !customBodyCardComponent && (
+                {!customBodyCardComponent && (
                     <CertificateProfileImageDisplay
                         imageUrl={issueeImage}
                         imageComponent={subjectImageComponent}
@@ -163,11 +162,6 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
                         isIssuer={isSelfVerified}
                         userName={issueeName}
                     />
-                )}
-                {!issueeImageExists && !customBodyCardComponent && (
-                    <div className="h-[50px] w-[50px] rounded-full bg-grayscale-500 flex items-center justify-center">
-                        <Smiley />
-                    </div>
                 )}
 
                 <div className="text-[14px] text-grayscale-800 flex flex-col items-center w-full">
