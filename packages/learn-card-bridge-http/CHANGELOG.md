@@ -1,5 +1,15 @@
 # @learncard/create-http-bridge
 
+## 1.1.182
+
+### Patch Changes
+
+-   [#765](https://github.com/learningeconomy/LearnCard/pull/765) [`41a24971a8e9a916736c82e44b5b41f1da1f1a67`](https://github.com/learningeconomy/LearnCard/commit/41a24971a8e9a916736c82e44b5b41f1da1f1a67) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Allow using bundler moduleResolution
+
+-   Updated dependencies [[`41a24971a8e9a916736c82e44b5b41f1da1f1a67`](https://github.com/learningeconomy/LearnCard/commit/41a24971a8e9a916736c82e44b5b41f1da1f1a67)]:
+    -   @learncard/init@2.0.36
+    -   @learncard/types@5.8.2
+
 ## 1.1.181
 
 ### Patch Changes
