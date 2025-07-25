@@ -1,10 +1,10 @@
 import React from 'react';
-import { VCDisplayCardProps } from '../../types';
 import FatArrow from '../../assets/images/icon.green.fat-arrow.png';
-import FlipArrowRight from '../../assets/images/ArrowArcRight.svg';
-import DefaultFace from '../../assets/images/default-face.jpeg';
+import UserProfilePicture from '../UserProfilePicture/UserProfilePicture';
 import { VCVerificationCheckWithText } from '../VCVerificationCheck/VCVerificationCheck';
 import { getImageFromProfile, getNameFromProfile } from '../../helpers/credential.helpers';
+
+import { VCDisplayCardProps } from '../../types';
 
 const VCDisplayFrontFace: React.FC<VCDisplayCardProps> = ({
     title,
@@ -29,41 +29,35 @@ const VCDisplayFrontFace: React.FC<VCDisplayCardProps> = ({
     const issuerImage = getImageFromProfile(issuer ?? '');
     const issueeImage = getImageFromProfile(issuee ?? '');
 
-    const issuerNameAbr = issuerName?.slice(0, 1) ?? '';
-
     let issueeImageEl: React.ReactNode | null = null;
-    const issuerImgExists = issuerImage && issuerImage !== '';
-    const issueeImgExists = issueeImage && issueeImage !== '';
-    if (issueeImgExists) {
-        issueeImageEl = (
-            <div className="flex flex-row items-center justify-center h-full w-full rounded-full border-solid border-4 border-white overflow-hidden bg-white">
-                <img
-                    className="h-full w-full object-cover"
-                    src={issueeImage || DefaultFace}
-                    alt="Issuee image"
-                />
-            </div>
-        );
-    } else if (!issueeImgExists && subjectImageComponent) {
+    if (subjectImageComponent) {
         issueeImageEl = subjectImageComponent;
+    } else {
+        issueeImageEl = (
+            <UserProfilePicture
+                customContainerClass={`object-cover h-full w-full text-4xl ${
+                    !issueeImage ? 'pt-[8px]' : ''
+                }`}
+                user={{ image: issueeImage, name: issueeName }}
+                alt="Issuee image"
+            />
+        );
     }
 
     let issuerImageEl: React.ReactNode | null = null;
 
-    if (issuerImgExists) {
-        issuerImageEl = (
-            <img className="w-4/6 h-4/6 object-cover" src={issuerImage} alt="Issuer image" />
-        );
-    } else {
-        issuerImageEl = (
-            <div className="flex flex-row items-center justify-center h-full w-full overflow-hidden bg-emerald-700 text-white font-medium text-3xl">
-                {issuerNameAbr}
-            </div>
-        );
-    }
-
     if (issuerImageComponent) {
         issuerImageEl = issuerImageComponent;
+    } else {
+        issuerImageEl = (
+            <UserProfilePicture
+                customContainerClass={`object-cover h-full w-full text-4xl ${
+                    !issuerImage ? 'pt-[8px]' : ''
+                }`}
+                user={{ image: issuerImage, name: issuerName }}
+                alt="Issuer image"
+            />
+        );
     }
 
     const credImg = credentialAchievementImage ? (

@@ -1,5 +1,18 @@
 # @welibraryos/react-learn-card
 
+## 2.8.28
+
+### Patch Changes
+
+-   [#766](https://github.com/learningeconomy/LearnCard/pull/766) [`258b08e9baacb3a6e31ea275d25d9fecf3270f0c`](https://github.com/learningeconomy/LearnCard/commit/258b08e9baacb3a6e31ea275d25d9fecf3270f0c) Thanks [@smurflo2](https://github.com/smurflo2)! - Use first letter of user name instead of DefaultFace picture when missing a profile picture
+
+## 2.8.27
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.35
+
 ## 2.8.26
 
 ### Patch Changes

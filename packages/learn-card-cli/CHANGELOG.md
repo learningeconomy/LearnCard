@@ -1,5 +1,12 @@
 # @learncard/cli
 
+## 3.3.119
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.35
+
 ## 3.3.118
 
 ### Patch Changes
