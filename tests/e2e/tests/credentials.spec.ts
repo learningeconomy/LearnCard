@@ -105,4 +105,436 @@ describe('Credentials', () => {
         const receivedCredsAfter = await b.invoke.getReceivedCredentials();
         expect(receivedCredsAfter).toHaveLength(1);
     });
+
+    describe('DataIntegrity Proofs', () => {
+        test('Users can issue credentials with DataIntegrity proof', async () => {
+            const c = await getLearnCardForUser('c');
+
+            // Create an unsigned credential
+            const unsignedVc: UnsignedVC = {
+                '@context': [
+                    'https://www.w3.org/ns/credentials/v2',
+                    'https://www.w3.org/ns/credentials/examples/v2',
+                ],
+                id: 'http://university.example/credentials/data-integrity-test',
+                type: ['VerifiableCredential', 'ExampleDegreeCredential'],
+                issuer: a.id.did(),
+                validFrom: new Date().toISOString(),
+                validUntil: new Date(Date.now() + 3_600_000).toISOString(),
+                credentialSubject: {
+                    id: b.id.did(),
+                    degree: {
+                        type: 'BachelorDegree',
+                        name: 'Bachelor of Science and Arts',
+                    },
+                },
+            };
+
+            // Issue credential with DataIntegrity proof options
+            const dataIntegrityOptions = {
+                type: 'DataIntegrityProof',
+                proofPurpose: 'assertionMethod',
+            };
+
+            const vc = await a.invoke.issueCredential(unsignedVc, dataIntegrityOptions);
+
+            // Verify the credential has the expected DataIntegrity proof structure
+            expect(vc.proof).toBeDefined();
+            expect(vc.proof.type).toBe('DataIntegrityProof');
+            expect(vc.proof.cryptosuite).toBeDefined(); // Should be auto-determined (e.g., 'eddsa-2022' for Ed25519)
+            expect(vc.proof.proofPurpose).toBe('assertionMethod');
+            expect(vc.proof.verificationMethod).toBeDefined();
+            expect(vc.proof.created).toBeDefined();
+            expect(vc.proof.proofValue).toBeDefined();
+
+            // Verify that another user can verify the DataIntegrity credential
+            const verification = await c.invoke.verifyCredential(vc);
+
+            expect(verification.warnings).toHaveLength(0);
+            expect(verification.errors).toHaveLength(0);
+            expect(verification.checks).toContain('proof');
+        });
+
+        test('Users can issue VC 2.0 credentials with DataIntegrity proof and send via LCN', async () => {
+            // Create an unsigned VC 2.0 credential
+            const unsignedVc: UnsignedVC = {
+                '@context': [
+                    'https://www.w3.org/ns/credentials/v2',
+                    'https://www.w3.org/ns/credentials/examples/v2',
+                ],
+                id: 'http://university.example/credentials/data-integrity-lcn-test',
+                type: ['VerifiableCredential', 'ExampleAlumniCredential'],
+                issuer: {
+                    id: a.id.did(),
+                    name: 'Example University',
+                },
+                validFrom: new Date().toISOString(),
+                credentialSubject: {
+                    id: b.id.did(),
+                    alumniOf: {
+                        id: 'did:example:c276e12ec21ebfeb1f712ebc6f1',
+                        name: 'Example University',
+                    },
+                },
+            };
+
+            // Issue credential with DataIntegrity proof
+            const dataIntegrityOptions = {
+                type: 'DataIntegrityProof',
+                proofPurpose: 'assertionMethod',
+            };
+
+            const vc = await a.invoke.issueCredential(unsignedVc, dataIntegrityOptions);
+
+            // Verify DataIntegrity proof structure
+            expect(vc.proof).toBeDefined();
+            expect(vc.proof.type).toBe('DataIntegrityProof');
+            expect(vc.proof.cryptosuite).toBeDefined(); // Should be auto-determined
+
+            // Send the DataIntegrity credential via LCN
+            const uri = await a.invoke.sendCredential('testb', vc);
+
+            const incomingCreds = await b.invoke.getIncomingCredentials();
+            expect(incomingCreds).toHaveLength(1);
+            expect(incomingCreds[0].uri).toEqual(uri);
+
+            const resolvedVc = await b.read.get(incomingCreds[0].uri);
+            expect(resolvedVc).toEqual(vc);
+
+            // Verify the received DataIntegrity credential maintains its proof structure
+            expect(resolvedVc.proof.type).toBe('DataIntegrityProof');
+            expect(resolvedVc.proof.cryptosuite).toBeDefined(); // Should be auto-determined
+
+            await b.invoke.acceptCredential(uri);
+
+            expect(await a.invoke.getSentCredentials()).toHaveLength(1);
+            expect(await b.invoke.getReceivedCredentials()).toHaveLength(1);
+            expect(await b.invoke.getIncomingCredentials()).toHaveLength(0);
+        });
+
+        test('DataIntegrity credentials can be stored and retrieved from LearnCloud', async () => {
+            // Create and issue a DataIntegrity credential
+            const unsignedVc: UnsignedVC = {
+                '@context': [
+                    'https://www.w3.org/ns/credentials/v2',
+                    'https://www.w3.org/ns/credentials/examples/v2',
+                ],
+                id: 'http://university.example/credentials/data-integrity-storage-test',
+                type: ['VerifiableCredential', 'ExampleCredential'],
+                issuer: a.id.did(),
+                validFrom: new Date().toISOString(),
+                credentialSubject: {
+                    id: b.id.did(),
+                    achievement: {
+                        type: 'Achievement',
+                        name: 'DataIntegrity Test Achievement',
+                    },
+                },
+            };
+
+            const dataIntegrityOptions = {
+                type: 'DataIntegrityProof',
+                proofPurpose: 'assertionMethod',
+            };
+
+            const vc = await a.invoke.issueCredential(unsignedVc, dataIntegrityOptions);
+
+            // Store the DataIntegrity credential
+            const uri = await a.store.LearnCloud.uploadEncrypted!(vc);
+            await a.index.LearnCloud.add({ id: 'data-integrity-test', uri });
+
+            const records = await a.index.LearnCloud.get();
+            expect(records).toHaveLength(1);
+            expect(records[0].uri).toEqual(uri);
+
+            // Retrieve and verify the stored DataIntegrity credential
+            const retrievedVc = await a.read.get(uri);
+            expect(retrievedVc).toEqual(vc);
+            expect(retrievedVc.proof.type).toBe('DataIntegrityProof');
+            expect(retrievedVc.proof.cryptosuite).toBeDefined(); // Should be auto-determined
+
+            // Ensure privacy: other users cannot access the stored credential
+            const bRecords = await b.index.LearnCloud.get();
+            expect(bRecords).toHaveLength(0);
+            expect(await b.read.get(uri)).toBeUndefined();
+        });
+
+        test('DataIntegrity proof verification fails for tampered credentials', async () => {
+            const c = await getLearnCardForUser('c');
+
+            // Create and issue a DataIntegrity credential
+            const unsignedVc: UnsignedVC = {
+                '@context': [
+                    'https://www.w3.org/ns/credentials/v2',
+                    'https://www.w3.org/ns/credentials/examples/v2',
+                ],
+                id: 'http://university.example/credentials/data-integrity-tamper-test',
+                type: ['VerifiableCredential', 'ExampleCredential'],
+                issuer: a.id.did(),
+                validFrom: new Date().toISOString(),
+                credentialSubject: {
+                    id: b.id.did(),
+                    originalValue: 'authentic data',
+                },
+            };
+
+            const dataIntegrityOptions = {
+                type: 'DataIntegrityProof',
+                proofPurpose: 'assertionMethod',
+            };
+
+            const vc = await a.invoke.issueCredential(unsignedVc, dataIntegrityOptions);
+
+            // Verify the original credential is valid
+            const originalVerification = await c.invoke.verifyCredential(vc);
+            expect(originalVerification.errors).toHaveLength(0);
+
+            // Tamper with the credential data
+            const tamperedVc = {
+                ...vc,
+                credentialSubject: {
+                    ...vc.credentialSubject,
+                    originalValue: 'tampered data',
+                },
+            };
+
+            // Verify that the tampered credential fails verification
+            const tamperedVerification = await c.invoke.verifyCredential(tamperedVc);
+            expect(tamperedVerification.errors.length).toBeGreaterThan(0);
+        });
+
+        test('DataIntegrity proof includes proper context and follows W3C spec', async () => {
+            // Create a credential that follows W3C VC 2.0 spec closely
+            const unsignedVc: UnsignedVC = {
+                '@context': [
+                    'https://www.w3.org/ns/credentials/v2',
+                    'https://www.w3.org/ns/credentials/examples/v2',
+                ],
+                id: 'http://university.example/credentials/data-integrity-spec-test',
+                type: ['VerifiableCredential', 'UniversityDegreeCredential'],
+                issuer: {
+                    id: a.id.did(),
+                    name: 'Example University',
+                    description: 'A university for testing DataIntegrity proofs',
+                },
+                validFrom: new Date().toISOString(),
+                validUntil: new Date(Date.now() + 86400000).toISOString(), // 24 hours
+                credentialSubject: {
+                    id: b.id.did(),
+                    degree: {
+                        type: 'BachelorDegree',
+                        name: 'Bachelor of Science in Computer Science',
+                        degreeSchool: 'School of Engineering',
+                    },
+                },
+            };
+
+            const dataIntegrityOptions = {
+                type: 'DataIntegrityProof',
+                proofPurpose: 'assertionMethod',
+            };
+
+            const vc = await a.invoke.issueCredential(unsignedVc, dataIntegrityOptions);
+
+            // Verify W3C DataIntegrity spec compliance
+            expect(vc['@context']).toContain('https://www.w3.org/ns/credentials/v2');
+            expect(vc.type).toContain('VerifiableCredential');
+            expect(vc.issuer).toBeDefined();
+            expect(vc.validFrom).toBeDefined();
+            expect(vc.credentialSubject).toBeDefined();
+
+            // Verify DataIntegrity proof follows W3C spec
+            expect(vc.proof).toBeDefined();
+            expect(vc.proof.type).toBe('DataIntegrityProof');
+            expect(vc.proof.cryptosuite).toBeDefined(); // Should be auto-determined (e.g., 'eddsa-2022' for Ed25519)
+            expect(vc.proof.proofPurpose).toBe('assertionMethod');
+            expect(vc.proof.verificationMethod).toMatch(/^did:/); // Should be a DID URL
+            expect(vc.proof.created).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/); // ISO 8601 format
+            expect(vc.proof.proofValue).toBeDefined();
+            expect(typeof vc.proof.proofValue).toBe('string');
+
+            // Verify the credential can be verified by a third party
+            const c = await getLearnCardForUser('c');
+            const verification = await c.invoke.verifyCredential(vc);
+            expect(verification.warnings).toHaveLength(0);
+            expect(verification.errors).toHaveLength(0);
+        });
+
+        test('DataIntegrity proof context is placed at top-level vc["@context"] for interoperability', async () => {
+            const c = await getLearnCardForUser('c');
+
+            // Create an unsigned credential with minimal context
+            const unsignedVc: UnsignedVC = {
+                '@context': ['https://www.w3.org/ns/credentials/v2'],
+                id: 'http://university.example/credentials/context-placement-test',
+                type: ['VerifiableCredential'],
+                issuer: c.id.did(), // Fix: Use the same user who will sign the credential
+                validFrom: new Date().toISOString(),
+                credentialSubject: {
+                    id: b.id.did(),
+                    name: 'Context Placement Test Subject',
+                },
+            };
+
+            // Issue credential with DataIntegrity proof (auto-detects cryptosuite)
+            const vc = await c.invoke.issueCredential(unsignedVc, {
+                type: 'DataIntegrityProof',
+                proofPurpose: 'assertionMethod',
+            });
+
+            // Verify the credential structure
+            expect(vc).toBeDefined();
+            expect(vc.proof).toBeDefined();
+            expect((vc.proof as any).type).toBe('DataIntegrityProof');
+            expect((vc.proof as any).cryptosuite).toBeDefined();
+
+            // Debug: Log the proof structure to see if it now has context
+            console.log('DEBUG: Proof structure:', JSON.stringify(vc.proof, null, 2));
+
+            // CRITICAL: Verify proof context is NOT in the proof object
+            expect((vc.proof as any)['@context']).toBeUndefined();
+
+            // CRITICAL: Verify DataIntegrity context is at top-level
+            expect(vc['@context']).toBeDefined();
+            expect(Array.isArray(vc['@context'])).toBe(true);
+
+            const contexts = vc['@context'] as string[];
+
+            // Should contain original credential context
+            expect(contexts).toContain('https://www.w3.org/ns/credentials/v2');
+
+            // Debug: Log the actual contexts to see what's being added
+            console.log('DEBUG: Actual contexts in credential:', JSON.stringify(contexts, null, 2));
+
+            // Verify the credential is valid
+            const verification = await c.invoke.verifyCredential(vc);
+            expect(verification.warnings).toHaveLength(0);
+            expect(verification.errors).toHaveLength(0);
+            expect(verification.checks).toContain('proof');
+        });
+
+        test('Multiple DataIntegrity proofs merge contexts correctly at top-level', async () => {
+            const c = await getLearnCardForUser('c');
+            const d = await getLearnCardForUser('d');
+
+            // Create an unsigned credential
+            const unsignedVc: UnsignedVC = {
+                '@context': ['https://www.w3.org/ns/credentials/v2'],
+                id: 'http://university.example/credentials/multi-proof-context-test',
+                type: ['VerifiableCredential'],
+                issuer: c.id.did(), // Fix: Use the first signing user as issuer
+                validFrom: new Date().toISOString(),
+                credentialSubject: {
+                    id: b.id.did(),
+                    name: 'Multi-Proof Context Test Subject',
+                },
+            };
+
+            // Issue credential with first DataIntegrity proof
+            let vc = await c.invoke.issueCredential(unsignedVc, {
+                type: 'DataIntegrityProof',
+                proofPurpose: 'assertionMethod',
+            });
+
+            // Add second DataIntegrity proof from different issuer
+            // Note: For multiple proofs, we modify the issuer to match the second signer
+            const vcWithSecondIssuer = { ...vc, issuer: d.id.did() };
+            vc = await d.invoke.issueCredential(vcWithSecondIssuer, {
+                type: 'DataIntegrityProof',
+                proofPurpose: 'assertionMethod',
+            });
+
+            // Verify multiple proofs exist
+            expect(vc.proof).toBeDefined();
+            expect(Array.isArray(vc.proof)).toBe(true);
+            expect(vc.proof).toHaveLength(2);
+
+            // Verify each proof has DataIntegrity type but NO context
+            vc.proof.forEach((proof: any) => {
+                expect((proof as any).type).toBe('DataIntegrityProof');
+                expect((proof as any).cryptosuite).toBeDefined();
+                expect((proof as any)['@context']).toBeUndefined(); // Context should NOT be in proof
+            });
+
+            // Verify all contexts are merged at top-level
+            expect(vc['@context']).toBeDefined();
+            expect(Array.isArray(vc['@context'])).toBe(true);
+
+            const contexts = vc['@context'] as string[];
+
+            // Should contain original credential context
+            expect(contexts).toContain('https://www.w3.org/ns/credentials/v2');
+
+            // Verify the credential with multiple proofs is valid
+            const verification = await c.invoke.verifyCredential(vc);
+            expect(verification.warnings).toHaveLength(0);
+            expect(verification.errors).toHaveLength(0);
+            expect(verification.checks).toContain('proof');
+        });
+
+        test('DataIntegrity context placement works with complex existing contexts', async () => {
+            const c = await getLearnCardForUser('c');
+
+            // Create an unsigned credential with complex context structure
+            const unsignedVc: UnsignedVC = {
+                '@context': [
+                    'https://www.w3.org/ns/credentials/v2',
+                    'https://www.w3.org/ns/credentials/examples/v2',
+                    {
+                        'ex': 'https://example.org/examples#',
+                        'customField': 'ex:customField',
+                    },
+                ],
+                id: 'http://university.example/credentials/complex-context-test',
+                type: ['VerifiableCredential', 'ExampleCredential'],
+                issuer: c.id.did(), // Fix: Use the same user who will sign the credential
+                validFrom: new Date().toISOString(),
+                credentialSubject: {
+                    id: b.id.did(),
+                    customField: 'Complex context test value',
+                },
+            };
+
+            // Issue credential with DataIntegrity proof
+            const vc = await c.invoke.issueCredential(unsignedVc, {
+                type: 'DataIntegrityProof',
+                proofPurpose: 'assertionMethod',
+            });
+
+            // Verify the credential structure
+            expect(vc).toBeDefined();
+            expect(vc.proof).toBeDefined();
+            expect((vc.proof as any).type).toBe('DataIntegrityProof');
+
+            // CRITICAL: Verify proof context is NOT in the proof object
+            expect((vc.proof as any)['@context']).toBeUndefined();
+
+            // CRITICAL: Verify all contexts are preserved and DataIntegrity context is added
+            expect(vc['@context']).toBeDefined();
+            expect(Array.isArray(vc['@context'])).toBe(true);
+
+            const contexts = vc['@context'] as (string | object)[];
+
+            // Should contain all original contexts
+            expect(contexts).toContain('https://www.w3.org/ns/credentials/v2');
+            expect(contexts).toContain('https://www.w3.org/ns/credentials/examples/v2');
+
+            // Should contain the custom context object
+            expect(
+                contexts.some(
+                    ctx =>
+                        typeof ctx === 'object' &&
+                        ctx !== null &&
+                        'ex' in ctx &&
+                        (ctx as any).ex === 'https://example.org/examples#'
+                )
+            ).toBe(true);
+
+            // Verify the credential is valid
+            const verification = await c.invoke.verifyCredential(vc);
+            expect(verification.warnings).toHaveLength(0);
+            expect(verification.errors).toHaveLength(0);
+            expect(verification.checks).toContain('proof');
+        });
+    });
 });
