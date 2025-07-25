@@ -1,7 +1,7 @@
 import React from 'react';
-import { Flipper, Flipped } from 'react-flip-toolkit';
+import { Flipped } from 'react-flip-toolkit';
 
-import DefaultFace from '../../assets/images/default-face.jpeg';
+import UserProfilePicture from '../UserProfilePicture/UserProfilePicture';
 
 import {
     getImageFromProfile,
@@ -57,15 +57,16 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
     const getImageElement = (
         imageUrl: string,
         alt: string,
-        overrideComponent: React.ReactNode | undefined
+        overrideComponent: React.ReactNode | undefined,
+        bigText?: boolean
     ) => {
         if (overrideComponent) return overrideComponent;
 
         return (
-            <img
-                className="h-full w-full object-cover select-none"
-                src={imageUrl || DefaultFace}
+            <UserProfilePicture
+                user={{ image: imageUrl, name: issueeName }}
                 alt={alt}
+                customContainerClass={`h-full w-full ${bigText ? '!text-4xl' : ''}`}
             />
         );
     };
@@ -73,7 +74,8 @@ const VC2FrontFaceInfo: React.FC<VC2FrontFaceInfoProps> = ({
     const issueeImageEl: React.ReactNode = getImageElement(
         issueeImage,
         'Issuee image',
-        subjectImageComponent
+        subjectImageComponent,
+        true
     );
     const issuerImageEl: React.ReactNode = getImageElement(
         issuerImage,
