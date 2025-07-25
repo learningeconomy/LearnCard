@@ -1,5 +1,16 @@
 # learn-card-core
 
+## 1.1.52
+
+### Patch Changes
+
+-   [#765](https://github.com/learningeconomy/LearnCard/pull/765) [`41a24971a8e9a916736c82e44b5b41f1da1f1a67`](https://github.com/learningeconomy/LearnCard/commit/41a24971a8e9a916736c82e44b5b41f1da1f1a67) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Allow using bundler moduleResolution
+
+-   Updated dependencies [[`41a24971a8e9a916736c82e44b5b41f1da1f1a67`](https://github.com/learningeconomy/LearnCard/commit/41a24971a8e9a916736c82e44b5b41f1da1f1a67)]:
+    -   @learncard/core@9.3.34
+    -   @learncard/types@5.8.2
+    -   @learncard/didkit-plugin@1.5.24
+
 ## 1.1.51
 
 ### Patch Changes
