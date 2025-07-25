@@ -212,7 +212,7 @@ describe('Universal Inbox', () => {
                             model: {
                                 issuer: {
                                     name: 'Montana Tech',
-                                    logoUrl: 'https://example.com/logo.png',
+                                    logoUrl: 'https://picsum.photos/200',
                                 },
                                 credential: { name: 'Banana!', type: 'transcript' },
                                 recipient: { name: 'Custom User' },
@@ -228,7 +228,7 @@ describe('Universal Inbox', () => {
                     templateId: 'universal-inbox-claim',
                     templateModel: expect.objectContaining({
                         claimUrl: expect.any(String),
-                        issuer: { name: 'Montana Tech', logoUrl: 'https://example.com/logo.png' },
+                        issuer: { name: 'Montana Tech', logoUrl: 'https://picsum.photos/200' },
                         credential: { name: 'Banana!', type: 'transcript' },
                         recipient: { name: 'Custom User', email: 'customuser@test.com' },
                     }),

@@ -1,15 +1,14 @@
 import React from 'react';
 
 import CaretRightFilled from '../../assets/images/CaretRightFilled.svg';
-import DefaultFace from '../../assets/images/default-face.jpeg';
 import AddAwardLight from '../../assets/images/addawardlight.svg';
-import ThreeDots from '../../assets/images/DotsThreeOutline.svg';
+import ThreeDotVertical from '../svgs/ThreeDotVertical';
+import UserProfilePicture from '../UserProfilePicture/UserProfilePicture';
 import { CircleCheckButton } from '../CircleCheckButton';
 
 import { BoostSmallCardProps, WalletCategoryTypes } from '../../types';
 import { TYPE_TO_IMG_SRC, TYPE_TO_WALLET_DARK_COLOR } from '../../constants';
 import { getDarkBGColor } from '../../helpers/color.helpers';
-import ThreeDotVertical from '../svgs/ThreeDotVertical';
 
 export const BoostSmallCard: React.FC<BoostSmallCardProps> = ({
     title = 'Title Lorem Ipsum',
@@ -54,9 +53,11 @@ export const BoostSmallCard: React.FC<BoostSmallCardProps> = ({
                 key={issueItem?.id}
                 className="profile-thumb-img border-[1px] border-white border-solid  vc-issuee-image h-[35px] w-[35px] rounded-full overflow-hidden mx-[-5px]"
             >
-                <img
-                    className="h-full w-full object-cover"
-                    src={issueItem?.thumb || DefaultFace}
+                <UserProfilePicture
+                    customContainerClass={`h-full w-full object-cover ${
+                        !issueItem?.thumb ? 'pt-[8px]' : ''
+                    }`}
+                    user={{ image: issueItem?.thumb, name: issueItem?.name }}
                     alt="profile"
                 />
             </div>
