@@ -85,21 +85,25 @@ class TestStorageResolve200ResponseAnyOf(unittest.TestCase):
                     credentials = openapi_client.models.storage_resolve_200_response_any_of_any_of_read_credentials.storage_resolve_200_response_anyOf_anyOf_read_credentials(
                         categories = {
                             'key' : openapi_client.models.storage_resolve_200_response_any_of_any_of_read_credentials_categories_value.storage_resolve_200_response_anyOf_anyOf_read_credentials_categories_value(
-                                required = True, )
+                                required = True, 
+                                default_enabled = True, )
                             }, ), 
                     personal = {
                         'key' : openapi_client.models.storage_resolve_200_response_any_of_any_of_read_credentials_categories_value.storage_resolve_200_response_anyOf_anyOf_read_credentials_categories_value(
-                            required = True, )
+                            required = True, 
+                            default_enabled = True, )
                         }, ),
                 write = openapi_client.models.storage_resolve_200_response_any_of_any_of_write.storage_resolve_200_response_anyOf_anyOf_write(
                     credentials = openapi_client.models.storage_resolve_200_response_any_of_any_of_read_credentials.storage_resolve_200_response_anyOf_anyOf_read_credentials(
                         categories = {
                             'key' : openapi_client.models.storage_resolve_200_response_any_of_any_of_read_credentials_categories_value.storage_resolve_200_response_anyOf_anyOf_read_credentials_categories_value(
-                                required = True, )
+                                required = True, 
+                                default_enabled = True, )
                             }, ), 
                     personal = {
                         'key' : openapi_client.models.storage_resolve_200_response_any_of_any_of_read_credentials_categories_value.storage_resolve_200_response_anyOf_anyOf_read_credentials_categories_value(
-                            required = True, )
+                            required = True, 
+                            default_enabled = True, )
                         }, )
             )
         else:
@@ -120,21 +124,25 @@ class TestStorageResolve200ResponseAnyOf(unittest.TestCase):
                     credentials = openapi_client.models.storage_resolve_200_response_any_of_any_of_read_credentials.storage_resolve_200_response_anyOf_anyOf_read_credentials(
                         categories = {
                             'key' : openapi_client.models.storage_resolve_200_response_any_of_any_of_read_credentials_categories_value.storage_resolve_200_response_anyOf_anyOf_read_credentials_categories_value(
-                                required = True, )
+                                required = True, 
+                                default_enabled = True, )
                             }, ), 
                     personal = {
                         'key' : openapi_client.models.storage_resolve_200_response_any_of_any_of_read_credentials_categories_value.storage_resolve_200_response_anyOf_anyOf_read_credentials_categories_value(
-                            required = True, )
+                            required = True, 
+                            default_enabled = True, )
                         }, ),
                 write = openapi_client.models.storage_resolve_200_response_any_of_any_of_write.storage_resolve_200_response_anyOf_anyOf_write(
                     credentials = openapi_client.models.storage_resolve_200_response_any_of_any_of_read_credentials.storage_resolve_200_response_anyOf_anyOf_read_credentials(
                         categories = {
                             'key' : openapi_client.models.storage_resolve_200_response_any_of_any_of_read_credentials_categories_value.storage_resolve_200_response_anyOf_anyOf_read_credentials_categories_value(
-                                required = True, )
+                                required = True, 
+                                default_enabled = True, )
                             }, ), 
                     personal = {
                         'key' : openapi_client.models.storage_resolve_200_response_any_of_any_of_read_credentials_categories_value.storage_resolve_200_response_anyOf_anyOf_read_credentials_categories_value(
-                            required = True, )
+                            required = True, 
+                            default_enabled = True, )
                         }, ),
         )
         """

@@ -17,8 +17,8 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, StrictBool
-from typing import Any, ClassVar, Dict, List
+from pydantic import BaseModel, ConfigDict, Field, StrictBool
+from typing import Any, ClassVar, Dict, List, Optional
 from typing import Optional, Set
 from typing_extensions import Self
 
@@ -27,7 +27,8 @@ class StorageResolve200ResponseAnyOfAnyOfReadCredentialsCategoriesValue(BaseMode
     StorageResolve200ResponseAnyOfAnyOfReadCredentialsCategoriesValue
     """ # noqa: E501
     required: StrictBool
-    __properties: ClassVar[List[str]] = ["required"]
+    default_enabled: Optional[StrictBool] = Field(default=None, alias="defaultEnabled")
+    __properties: ClassVar[List[str]] = ["required", "defaultEnabled"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -80,7 +81,8 @@ class StorageResolve200ResponseAnyOfAnyOfReadCredentialsCategoriesValue(BaseMode
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "required": obj.get("required")
+            "required": obj.get("required"),
+            "defaultEnabled": obj.get("defaultEnabled")
         })
         return _obj
 
