@@ -347,6 +347,7 @@ Class | Method | HTTP request | Description
  - [ContactMethodsVerifyContactMethod200Response](docs/ContactMethodsVerifyContactMethod200Response.md)
  - [ContactMethodsVerifyContactMethodRequest](docs/ContactMethodsVerifyContactMethodRequest.md)
  - [ContractsAddAutoBoostsToContractRequest](docs/ContractsAddAutoBoostsToContractRequest.md)
+ - [ContractsConsentToContract200Response](docs/ContractsConsentToContract200Response.md)
  - [ContractsConsentToContractRequest](docs/ContractsConsentToContractRequest.md)
  - [ContractsConsentToContractRequestTerms](docs/ContractsConsentToContractRequestTerms.md)
  - [ContractsConsentToContractRequestTermsRead](docs/ContractsConsentToContractRequestTermsRead.md)
