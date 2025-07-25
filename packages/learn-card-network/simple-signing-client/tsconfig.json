@@ -5,7 +5,7 @@
             "DOM"
         ],
         "module": "esnext",
-        "moduleResolution": "node",
+        "moduleResolution": "bundler",
         "resolveJsonModule": true,
         "removeComments": true,
         "preserveConstEnums": true,

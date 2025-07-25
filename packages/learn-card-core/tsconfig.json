@@ -21,7 +21,7 @@
         },
         "skipLibCheck": true,
         "allowSyntheticDefaultImports": true,
-        "moduleResolution": "node"
+        "moduleResolution": "bundler"
     },
     "include": ["src", "test"],
     "exclude": ["node_modules", "example"]
