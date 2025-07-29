@@ -4,6 +4,19 @@ on:
     push:
         branches:
             - main
+    workflow_dispatch:
+        inputs:
+            network-environment:
+                description: 'Choose Environment'
+                required: true
+                default: 'learn-card-network-api-staging'
+                type: environment
+            learn-cloud-environment:
+                description: 'Choose Environment'
+                required: true
+                default: 'learn-card-storage-api-staging'
+                type: environment
+
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
@@ -69,7 +82,7 @@ jobs:
         runs-on: ubuntu-latest
         strategy:
             matrix:
-                environment: [learn-cloud-network-api-production, scout-network-api-production]
+                environment: ${{ github.event_name == 'workflow_dispatch' && fromJSON(format('["{0}"]', github.event.inputs.network-environment)) || fromJSON('["learn-cloud-network-api-production", "scout-network-api-production"]') }}
         environment: ${{ matrix.environment }}
         steps:
             - name: Checkout Repo
@@ -88,7 +101,8 @@ jobs:
         runs-on: ubuntu-latest
         strategy:
             matrix:
-                environment: [learn-cloud-storage-api-production, scout-storage-api-production]
+                environment: ${{ github.event_name == 'workflow_dispatch' && fromJSON(format('["{0}"]', github.event.inputs.learn-cloud-environment)) || fromJSON('["learn-cloud-storage-api-production", "scout-storage-api-production"]') }}
+        environment: ${{ matrix.environment }}
         steps:
             - name: Checkout Repo
               uses: actions/checkout@v3
