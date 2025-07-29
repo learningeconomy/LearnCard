@@ -12,47 +12,10 @@ env:
     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     AWS_DEFAULT_REGION: us-east-1
-    SEED: ${{ secrets.SEED }}
-    LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED }}
-    LEARN_CLOUD_MONGO_URI: ${{ secrets.LEARN_CLOUD_MONGO_URI }}
-    LEARN_CLOUD_MONGO_DB_NAME: ${{ secrets.LEARN_CLOUD_MONGO_DB_NAME }}
-    DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
-    CLIENT_APP_DOMAIN_NAME: ${{ vars.CLIENT_APP_DOMAIN_NAME }}
-    NOTIFICATIONS_SERVICE_WEBHOOK_URL: ${{ secrets.NOTIFICATIONS_SERVICE_WEBHOOK_URL }}
-    NEO4J_URI: ${{ secrets.NEO4J_URI }}
-    NEO4J_USERNAME: ${{ secrets.NEO4J_USERNAME }}
-    NEO4J_PASSWORD: ${{ secrets.NEO4J_PASSWORD }}
-    POSTMARK_API_KEY: ${{ secrets.POSTMARK_API_KEY }}
-    POSTMARK_FROM_EMAIL: ${{ vars.POSTMARK_FROM_EMAIL }}
-    MESSAGEBIRD_AUTH_TOKEN: ${{ secrets.MESSAGEBIRD_AUTH_TOKEN }}
-    MESSAGEBIRD_ORIGINATOR: ${{ secrets.MESSAGEBIRD_ORIGINATOR }}
-    TRUSTED_ISSUERS_WHITELIST: ${{ secrets.TRUSTED_ISSUERS_WHITELIST }}
-    DCC_KNOWN_REGISTRIES_URL: ${{ secrets.DCC_KNOWN_REGISTRIES_URL }}
-    DD_API_KEY: ${{ secrets.DD_API_KEY }}
-    DD_ENV: ${{ secrets.DD_ENV }}
-    DD_SERVICE: ${{ secrets.DD_SERVICE }}
-    DD_SITE: ${{ secrets.DD_SITE }}
-    DD_VERSION: ${{ secrets.DD_VERSION }}
-    SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-    SENTRY_ENV: ${{ secrets.SENTRY_ENV }}
-    LEARN_CLOUD_SENTRY_ENV: ${{ secrets.LEARN_CLOUD_SENTRY_ENV }}
-    SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-    SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-    SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
-    SERVER_URL: ${{ secrets.SERVER_URL }}
-    XAPI_ENDPOINT: ${{ secrets.XAPI_ENDPOINT }}
-    XAPI_USERNAME: ${{ secrets.XAPI_USERNAME }}
-    XAPI_PASSWORD: ${{ secrets.XAPI_PASSWORD }}
-    JWT_SIGNING_KEY: ${{ secrets.JWT_SIGNING_KEY }}
-    RSA_PUBLIC_KEY: ${{ secrets.RSA_PUBLIC_KEY }}
-    RSA_PRIVATE_KEY: ${{ secrets.RSA_PRIVATE_KEY }}
-    SMART_RESUME_CLIENT_ID: ${{ secrets.SMART_RESUME_CLIENT_ID }}
-    SMART_RESUME_ACCESS_KEY: ${{ secrets.SMART_RESUME_ACCESS_KEY }}
-    SMART_RESUME_CONTRACT_URI: ${{ secrets.SMART_RESUME_CONTRACT_URI }}
 
 jobs:
-    deploy:
-        name: Deploy
+    determine-affected:
+        name: Determine Affected Projects
         runs-on: ubuntu-latest
         outputs:
             affected: ${{ steps.affected.outputs.affected }}
@@ -67,32 +30,27 @@ jobs:
               run: |
                   git fetch --no-tags --prune --depth=5 origin main
 
-            - name: Setup Node.js 20.10
-              uses: actions/setup-node@v4
-              with:
-                  node-version: 20.10.0
+            - name: Use Composite Setup Action
+              uses: ./.github/actions/setup
 
-            - name: Install pnpm
-              uses: pnpm/action-setup@v2
-              id: pnpm-install
-              with:
-                  version: 9
-                  run_install: false
+            - name: Get Affected List
+              id: affected
+              run: |
+                  affected=$(pnpm exec nx print-affected --base=HEAD~1 --head=HEAD --select=projects)
+                  echo "affected=$affected" >> $GITHUB_OUTPUT
 
-            - name: Get pnpm store directory
-              id: pnpm-cache
-              run: echo "pnpm_cache_dir=$(pnpm store path)" >> $GITHUB_OUTPUT
+    test-affected:
+        name: Test Affected Projects
+        needs: determine-affected
+        if: needs.determine-affected.outputs.affected != ''
+        runs-on: ubuntu-latest
+        environment: ci-tests
+        steps:
+            - name: Checkout Repo
+              uses: actions/checkout@v3
 
-            - name: Setup pnpm cache
-              uses: actions/cache@v3
-              with:
-                  path: ${{ steps.pnpm-cache.outputs.pnpm_cache_dir }}
-                  key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-                  restore-keys: |
-                      ${{ runner.os }}-pnpm-store-
-
-            - name: Install dependencies
-              run: pnpm install --no-frozen-lockfile
+            - name: Use Composite Setup Action
+              uses: ./.github/actions/setup
 
             - name: Run tests
               uses: nick-fields/retry@v2
@@ -104,25 +62,47 @@ jobs:
                   SEED: ${{ secrets.SEED }}
                   LEARN_CLOUD_SEED: ${{ secrets.LEARN_CLOUD_SEED }}
 
-            - name: Get Affected List
-              id: affected
-              run: |
-                  affected=$(pnpm exec nx print-affected --base=HEAD~1 --head=HEAD --select=projects)
-                  echo "AFFECTED=$affected" >> $GITHUB_ENV       # for use in later steps of this job
-                  echo "affected=$affected" >> $GITHUB_OUTPUT     # for passing to other jobs
+    deploy-brain-service:
+        name: Deploy ${{ matrix.environment }} Network API 
+        needs: [determine-affected, test-affected]
+        if: contains(needs.determine-affected.outputs.affected, 'network-brain-service')
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                environment: [learn-cloud-network-api-production, scout-network-api-production]
+        environment: ${{ matrix.environment }}
+        steps:
+            - name: Checkout Repo
+              uses: actions/checkout@v3
+
+            - name: Use Composite Setup Action
+              uses: ./.github/actions/setup
 
             - name: Deploy Brain Service Lambda
-              if: contains(env.AFFECTED, 'network-brain-service')
-              run: pnpm exec nx serverless-deploy network-brain-service --stage production
+              run: pnpm exec nx serverless-deploy network-brain-service --stage ${{ vars.SERVERLESS_STAGE }} --region ${{ vars.SERVERLESS_REGION }}
+
+    deploy-learn-cloud:
+        name: Deploy ${{ matrix.environment }} Storage API
+        needs: [determine-affected, test-affected]
+        if: contains(needs.determine-affected.outputs.affected, 'learn-cloud-service')
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                environment: [learn-cloud-storage-api-production, scout-storage-api-production]
+        steps:
+            - name: Checkout Repo
+              uses: actions/checkout@v3
+
+            - name: Use Composite Setup Action
+              uses: ./.github/actions/setup
 
             - name: Deploy LearnCloud Lambda
-              if: contains(env.AFFECTED, 'learn-cloud-service')
-              run: pnpm exec nx serverless-deploy learn-cloud-service --stage production
+              run: pnpm exec nx serverless-deploy learn-cloud-service --stage ${{ vars.SERVERLESS_STAGE }} --region ${{ vars.SERVERLESS_REGION }}
 
     generate-sdk:
         name: Generate SDK Clients for LearnCloud Network API
-        needs: deploy
-        if: contains(needs.deploy.outputs.affected, 'network-brain-service')
+        needs: [determine-affected, deploy-brain-service]
+        if: contains(needs.determine-affected.outputs.affected, 'network-brain-service')
         uses: ./.github/workflows/open-api-generator.yml
         with:
-            affected: ${{ needs.deploy.outputs.affected }}
+            affected: ${{ needs.determine-affected.outputs.affected }}
