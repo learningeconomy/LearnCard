@@ -32,7 +32,7 @@
  * - Resource-wide: "authGrants:*"
  * - Multiple scopes: Space-separated list of scopes
  *   e.g., "authGrants:read contracts:write didMetadata:read"
- * - No access: ""
+ * - No access: "".
  */
 
 // Common scope bundles
