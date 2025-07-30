@@ -37,9 +37,9 @@ custom:
         # References to 'dev' stage
         dev:
             # don't forget the dot on the end!
-            hostedZoneName: ${env:SERVERLESS_HOSTED_ZONE_NAMES, 'testnet-cloud.learncard.com.'}
-            domainName: ${env:SERVERLESS_DOMAIN_NAME, 'testnet-cloud.learncard.com'}
-            certificateName: ${env:SERVERLESS_DOMAIN_NAME, 'testnet-cloud.learncard.com'}
+            hostedZoneName: ${env:SERVERLESS_HOSTED_ZONE_NAMES, 'cloud.learncard.com.'}
+            domainName: ${env:SERVERLESS_DOMAIN_NAME, 'staging.cloud.learncard.com'}
+            certificateName: ${env:SERVERLESS_DOMAIN_NAME, 'staging.cloud.learncard.com'}
 
     # Amazon Certificate Manager
     customCertificate:
