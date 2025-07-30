@@ -165,7 +165,7 @@ jobs:
                 RSA_PUBLIC_KEY: ${{ secrets.RSA_PUBLIC_KEY }}
                 JWT_SIGNING_KEY: ${{ secrets.JWT_SIGNING_KEY }}
                 SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-                SENTRY_ENV: ${{ secrets.LEARN_CLOUD_SENTRY_ENV }}
+                SENTRY_ENV: ${{ secrets.SENTRY_ENV }}
                 SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
                 SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
                 SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
