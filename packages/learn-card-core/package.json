@@ -7,6 +7,7 @@
     "module": "./dist/core.esm.js",
     "exports": {
         ".": {
+            "types": "./dist/index.d.ts",
             "import": "./dist/core.esm.js",
             "require": "./dist/index.cjs"
         }
