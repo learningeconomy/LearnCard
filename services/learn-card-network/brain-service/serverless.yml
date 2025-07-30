@@ -117,9 +117,9 @@ provider:
         REDIS_PORT:
             'Fn::GetAtt': [ElasticCacheCluster, RedisEndpoint.Port]
         NOTIFICATIONS_QUEUE_URL: ${construct:notifications-queue.queueUrl}
-        SMART_RESUME_CLIENT_ID: ${env:SMART_RESUME_CLIENT_ID}
-        SMART_RESUME_ACCESS_KEY: ${env:SMART_RESUME_ACCESS_KEY}
-        SMART_RESUME_CONTRACT_URI: ${env:SMART_RESUME_CONTRACT_URI}
+        SMART_RESUME_CLIENT_ID: ${env:SMART_RESUME_CLIENT_ID, ""}
+        SMART_RESUME_ACCESS_KEY: ${env:SMART_RESUME_ACCESS_KEY, ""}
+        SMART_RESUME_CONTRACT_URI: ${env:SMART_RESUME_CONTRACT_URI, ""}
     tracing:
         apiGateway: true
         lambda: true
