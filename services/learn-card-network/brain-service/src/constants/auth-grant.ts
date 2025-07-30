@@ -19,6 +19,7 @@
  * - contracts-data
  * - didMetadata
  * - authGrants
+ * - inbox
  *
  * Actions include:
  * - read: Permission to view resources
