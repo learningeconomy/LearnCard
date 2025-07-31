@@ -14,6 +14,7 @@ import {
     PaginationOptionsType,
     PaginatedBoostsType,
     PaginatedBoostRecipientsType,
+    PaginatedBoostRecipientsWithChildrenType,
     PaginatedLCNProfiles,
     ConsentFlowContract,
     ConsentFlowContractQuery,
@@ -228,6 +229,15 @@ export type LearnCardNetworkPluginMethods = {
         includeUnacceptedBoosts?: boolean,
         query?: LCNProfileQuery
     ) => Promise<PaginatedBoostRecipientsType>;
+    getPaginatedBoostRecipientsWithChildren: (
+        uri: string,
+        limit?: number,
+        cursor?: string,
+        includeUnacceptedBoosts?: boolean,
+        boostQuery?: BoostQuery,
+        profileQuery?: LCNProfileQuery,
+        numberOfGenerations?: number
+    ) => Promise<PaginatedBoostRecipientsWithChildrenType>;
     countBoostRecipients: (uri: string, includeUnacceptedBoosts?: boolean) => Promise<number>;
     getConnectedBoostRecipients: (
         uri: string,
