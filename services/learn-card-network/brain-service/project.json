@@ -31,6 +31,18 @@
         ]
     },
     "targets": {
+        "serverless-deploy": {
+            "executor": "nx:run-script",
+            "inputs": [
+                "source"
+            ],
+            "dependsOn": [
+                "^build"
+            ],
+            "options": {
+                "script": "serverless-deploy"
+            }
+        },
         "build": {
             "executor": "nx:run-script",
             "inputs": [

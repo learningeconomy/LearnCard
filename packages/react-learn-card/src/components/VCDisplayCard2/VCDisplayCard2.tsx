@@ -27,6 +27,7 @@ import {
 } from '../../types';
 import { CertificateDisplayCard } from '../CertificateDisplayCard';
 import { MeritBadgeDisplayCard } from '../MeritBadgeDisplayCard';
+import { KnownDIDRegistryType } from '../../types';
 
 export type CredentialIconType = {
     image?: React.ReactNode;
@@ -61,7 +62,7 @@ export type VCDisplayCard2Props = {
     enableLightbox?: boolean;
     customRibbonCategoryComponent?: React.ReactNode;
     customFrontButton?: React.ReactNode;
-    trustedAppRegistry?: any[];
+    knownDIDRegistry?: KnownDIDRegistryType;
     hideIssueDate?: boolean;
     onDotsClick?: () => void;
     customSkillsComponent?: React.ReactNode;
@@ -74,6 +75,7 @@ export type VCDisplayCard2Props = {
     customIDDescription?: React.ReactNode;
     hideGradientBackground?: boolean;
     formattedDisplayType?: string;
+    customLinkedCredentialsComponent?: React.ReactNode;
 };
 
 export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
@@ -104,7 +106,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     enableLightbox,
     customRibbonCategoryComponent,
     customFrontButton,
-    trustedAppRegistry,
+    knownDIDRegistry,
     hideIssueDate,
     onDotsClick,
     customSkillsComponent,
@@ -117,6 +119,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     customIDDescription,
     hideGradientBackground = false,
     formattedDisplayType,
+    customLinkedCredentialsComponent,
 }) => {
     const {
         title = '',
@@ -194,7 +197,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 getVideoMetadata={getVideoMetadata}
                 onMediaAttachmentClick={onMediaAttachmentClick}
                 enableLightbox={enableLightbox}
-                trustedAppRegistry={trustedAppRegistry}
+                knownDIDRegistry={knownDIDRegistry}
                 handleXClick={handleXClick}
                 subjectImageComponent={subjectImageComponent}
                 issuerImageComponent={issuerImageComponent}
@@ -207,6 +210,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 showBackButton={showBackButton}
                 showDetailsBtn={showDetailsBtn}
                 formattedDisplayType={formattedDisplayType}
+                customLinkedCredentialsComponent={customLinkedCredentialsComponent}
             />
         );
     }
@@ -223,7 +227,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 getVideoMetadata={getVideoMetadata}
                 onMediaAttachmentClick={onMediaAttachmentClick}
                 enableLightbox={enableLightbox}
-                trustedAppRegistry={trustedAppRegistry}
+                knownDIDRegistry={knownDIDRegistry}
                 handleXClick={handleXClick}
                 subjectImageComponent={subjectImageComponent}
                 issuerImageComponent={issuerImageComponent}
@@ -236,6 +240,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 showBackButton={showBackButton}
                 showDetailsBtn={showDetailsBtn}
                 formattedDisplayType={formattedDisplayType}
+                customLinkedCredentialsComponent={customLinkedCredentialsComponent}
             />
         );
     } else if (credential?.display?.displayType === 'id' || categoryType === 'ID') {
@@ -253,7 +258,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                     customIssueHistoryComponent={customIssueHistoryComponent}
                     issueHistory={issueHistory}
                     enableLightbox={enableLightbox}
-                    trustedAppRegistry={trustedAppRegistry}
+                    knownDIDRegistry={knownDIDRegistry}
                     customSkillsComponent={customSkillsComponent}
                     isFrontOverride={isFrontOverride}
                     setIsFrontOverride={setIsFrontOverride}
@@ -264,6 +269,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                     showDetailsBtn={showDetailsBtn}
                     customIDDescription={customIDDescription}
                     hideGradientBackground={hideGradientBackground}
+                    customLinkedCredentialsComponent={customLinkedCredentialsComponent}
                 />
             </div>
         );
@@ -273,7 +279,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     const headerClassName =
         'vc-card-header px-[20px] pb-[10px] pt-[3px] overflow-visible mt-[40px] text-center bg-white border-y-[5px] border-[#EEF2FF] w-[calc(100%_+_16px)] rounded-t-[8px] z-50';
     const headerFitTextClassName =
-        'vc-card-header-main-title text-[#18224E] leading-[80%] text-[32px]';
+        'vc-card-header-main-title text-[#18224E] pt-[3px] leading-[80%] text-[32px]';
 
     return (
         <Flipper className="w-full" flipKey={isFront}>
@@ -370,7 +376,7 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                                     customThumbComponent={customThumbComponent}
                                     createdAt={createdAt ?? ''}
                                     imageUrl={imageUrl}
-                                    trustedAppRegistry={trustedAppRegistry}
+                                    knownDIDRegistry={knownDIDRegistry}
                                 />
                             )}
                             {!isFront && (
@@ -391,6 +397,9 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                                     customIssueHistoryComponent={customIssueHistoryComponent}
                                     enableLightbox={enableLightbox}
                                     customSkillsComponent={customSkillsComponent}
+                                    customLinkedCredentialsComponent={
+                                        customLinkedCredentialsComponent
+                                    }
                                 />
                             )}
 
@@ -408,16 +417,16 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                                     {isFront && customFrontButton}
                                     {((isFront && !customFrontButton) ||
                                         (isFront && showDetailsBtn)) && (
-                                            <Flipped inverseFlipId="card">
-                                                <button
-                                                    type="button"
-                                                    className="vc-toggle-side-button text-white shadow-bottom bg-[#00000099] px-[30px] py-[8px] rounded-[40px] text-[28px] tracking-[0.75px] uppercase leading-[28px] mt-[40px] w-fit select-none"
-                                                    onClick={() => setIsFront(!isFront)}
-                                                >
-                                                    Details
-                                                </button>
-                                            </Flipped>
-                                        )}
+                                        <Flipped inverseFlipId="card">
+                                            <button
+                                                type="button"
+                                                className="vc-toggle-side-button text-white shadow-bottom bg-[#00000099] px-[30px] py-[8px] rounded-[40px] text-[28px] tracking-[0.75px] uppercase leading-[28px] mt-[40px] w-fit select-none"
+                                                onClick={() => setIsFront(!isFront)}
+                                            >
+                                                Details
+                                            </button>
+                                        </Flipped>
+                                    )}
                                     {!isFront && (
                                         <Flipped inverseFlipId="card">
                                             <button

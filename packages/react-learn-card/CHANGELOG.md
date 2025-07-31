@@ -1,5 +1,219 @@
 # @welibraryos/react-learn-card
 
+## 2.8.29
+
+### Patch Changes
+
+-   Updated dependencies [[`41a24971a8e9a916736c82e44b5b41f1da1f1a67`](https://github.com/learningeconomy/LearnCard/commit/41a24971a8e9a916736c82e44b5b41f1da1f1a67)]:
+    -   @learncard/init@2.0.36
+
+## 2.8.28
+
+### Patch Changes
+
+-   [#766](https://github.com/learningeconomy/LearnCard/pull/766) [`258b08e9baacb3a6e31ea275d25d9fecf3270f0c`](https://github.com/learningeconomy/LearnCard/commit/258b08e9baacb3a6e31ea275d25d9fecf3270f0c) Thanks [@smurflo2](https://github.com/smurflo2)! - Use first letter of user name instead of DefaultFace picture when missing a profile picture
+
+## 2.8.27
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.35
+
+## 2.8.26
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.34
+
+## 2.8.25
+
+### Patch Changes
+
+-   [#760](https://github.com/learningeconomy/LearnCard/pull/760) [`238155cf1ff325559e517dece60bca3e1f143a80`](https://github.com/learningeconomy/LearnCard/commit/238155cf1ff325559e517dece60bca3e1f143a80) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: BoostGenericCard selective state
+
+## 2.8.24
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.33
+
+## 2.8.23
+
+### Patch Changes
+
+-   [#756](https://github.com/learningeconomy/LearnCard/pull/756) [`84a7928c4e78217010dce6d70443de540148d976`](https://github.com/learningeconomy/LearnCard/commit/84a7928c4e78217010dce6d70443de540148d976) Thanks [@gerardopar](https://github.com/gerardopar)! - Update Verifier State Text
+
+## 2.8.22
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.32
+
+## 2.8.21
+
+### Patch Changes
+
+-   [#751](https://github.com/learningeconomy/LearnCard/pull/751) [`65bacfaa9a24f97a5e59a7dd4cffe7f1f96c1888`](https://github.com/learningeconomy/LearnCard/commit/65bacfaa9a24f97a5e59a7dd4cffe7f1f96c1888) Thanks [@gerardopar](https://github.com/gerardopar)! - fix portfolio category display text
+
+## 2.8.20
+
+### Patch Changes
+
+-   [#749](https://github.com/learningeconomy/LearnCard/pull/749) [`e2764728feaa2c4f1a5bc6cb3b2dec8b21b49458`](https://github.com/learningeconomy/LearnCard/commit/e2764728feaa2c4f1a5bc6cb3b2dec8b21b49458) Thanks [@gerardopar](https://github.com/gerardopar)! - LC-1168 - Update Verifier State
+
+## 2.8.19
+
+### Patch Changes
+
+-   [#746](https://github.com/learningeconomy/LearnCard/pull/746) [`9bde535a160695364fc3bb7fa087ad3cf91adafe`](https://github.com/learningeconomy/LearnCard/commit/9bde535a160695364fc3bb7fa087ad3cf91adafe) Thanks [@rhen92](https://github.com/rhen92)! - [LC-1167] Remove shadow around skills
+
+## 2.8.18
+
+### Patch Changes
+
+-   [#745](https://github.com/learningeconomy/LearnCard/pull/745) [`a4fbcdba26392e0badfc407cb3bcb24e92e3d2ad`](https://github.com/learningeconomy/LearnCard/commit/a4fbcdba26392e0badfc407cb3bcb24e92e3d2ad) Thanks [@gerardopar](https://github.com/gerardopar)! - center text
+
+## 2.8.17
+
+### Patch Changes
+
+-   [#742](https://github.com/learningeconomy/LearnCard/pull/742) [`f356d2730d711d4c93a401f87e60dc61a7aacee2`](https://github.com/learningeconomy/LearnCard/commit/f356d2730d711d4c93a401f87e60dc61a7aacee2) Thanks [@gerardopar](https://github.com/gerardopar)! - fix checkbox button on generic card
+
+## 2.8.16
+
+### Patch Changes
+
+-   [#740](https://github.com/learningeconomy/LearnCard/pull/740) [`255b8c1997fe8e4e51dd8fa87e07d9bbb1b713f1`](https://github.com/learningeconomy/LearnCard/commit/255b8c1997fe8e4e51dd8fa87e07d9bbb1b713f1) Thanks [@rhen92](https://github.com/rhen92)! - [LC-1155] Fix padding above title and below type
+
+-   [#742](https://github.com/learningeconomy/LearnCard/pull/742) [`f356d2730d711d4c93a401f87e60dc61a7aacee2`](https://github.com/learningeconomy/LearnCard/commit/f356d2730d711d4c93a401f87e60dc61a7aacee2) Thanks [@gerardopar](https://github.com/gerardopar)! - fix checkbox button on generic card
+
+## 2.8.15
+
+### Patch Changes
+
+-   [#738](https://github.com/learningeconomy/LearnCard/pull/738) [`f7851009fdef650581e9681175cc47c35b5b3d3f`](https://github.com/learningeconomy/LearnCard/commit/f7851009fdef650581e9681175cc47c35b5b3d3f) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: Boost Generic Card Content
+
+## 2.8.14
+
+### Patch Changes
+
+-   [#733](https://github.com/learningeconomy/LearnCard/pull/733) [`b81277c9118111178342b09ccf1cd3070de92b19`](https://github.com/learningeconomy/LearnCard/commit/b81277c9118111178342b09ccf1cd3070de92b19) Thanks [@gerardopar](https://github.com/gerardopar)! - [LC-1132] - thumbnail polishes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.31
+
+## 2.8.13
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.30
+
+## 2.8.12
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.29
+
+## 2.8.11
+
+### Patch Changes
+
+-   [#720](https://github.com/learningeconomy/LearnCard/pull/720) [`53cfa3a0275c3cfd144bc078dbbd03ec9d2b515b`](https://github.com/learningeconomy/LearnCard/commit/53cfa3a0275c3cfd144bc078dbbd03ec9d2b515b) Thanks [@gerardopar](https://github.com/gerardopar)! - [LC-1107] - Media Display Type
+
+## 2.8.10
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.28
+
+## 2.8.9
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.27
+
+## 2.8.8
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.26
+
+## 2.8.7
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.25
+
+## 2.8.6
+
+### Patch Changes
+
+-   [#718](https://github.com/learningeconomy/LearnCard/pull/718) [`f9d07836a4392d2a396ad25304730192260f8b45`](https://github.com/learningeconomy/LearnCard/commit/f9d07836a4392d2a396ad25304730192260f8b45) Thanks [@gerardopar](https://github.com/gerardopar)! - add comment
+
+## 2.8.5
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.24
+
+## 2.8.4
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.23
+
+## 2.8.3
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.22
+
+## 2.8.2
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.21
+
+## 2.8.1
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.20
+
+## 2.8.0
+
+### Minor Changes
+
+-   [#687](https://github.com/learningeconomy/LearnCard/pull/687) [`bd9809172b3b696d47c9a440519d264466444c2d`](https://github.com/learningeconomy/LearnCard/commit/bd9809172b3b696d47c9a440519d264466444c2d) Thanks [@smurflo2](https://github.com/smurflo2)! - Change width behavior for Certificate display. It now has a max width of 400px with "width: full" so it will fill the 400px. Notably, the auto x margin was removed, so anything relying on it for centering will be broken.
+
+## 2.7.93
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.19
+
+## 2.7.92
+
+### Patch Changes
+
+-   [#681](https://github.com/learningeconomy/LearnCard/pull/681) [`6fb5fcef103a56eb019c6d4aefdbde7ab4918155`](https://github.com/learningeconomy/LearnCard/commit/6fb5fcef103a56eb019c6d4aefdbde7ab4918155) Thanks [@rhen92](https://github.com/rhen92)! - [LC-961] Upgrade Trust Registries
+
 ## 2.7.91
 
 ### Patch Changes

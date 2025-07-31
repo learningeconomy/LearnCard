@@ -1,12 +1,13 @@
 {
     "name": "@learncard/simple-signing-plugin",
-    "version": "1.0.13",
+    "version": "1.0.22",
     "description": "",
     "type": "module",
     "main": "./dist/index.cjs",
     "module": "./dist/simple-signing-plugin.esm.js",
     "exports": {
         ".": {
+            "types": "./dist/index.d.ts",
             "import": "./dist/simple-signing-plugin.esm.js",
             "require": "./dist/index.cjs"
         }

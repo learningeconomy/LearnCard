@@ -1,10 +1,10 @@
 import React from 'react';
 import { BoostGenericCardProps, WalletCategoryTypes } from '../../types';
 import { TYPE_TO_IMG_SRC, TYPE_TO_WALLET_DARK_COLOR } from '../../constants';
-import { CircleCheckButton } from '../CircleCheckButton';
-import ThreeDots from '../../assets/images/DotsThreeOutline.svg';
-
+import { DisplayTypeEnum, getDisplayIcon } from '../../helpers/display.helpers';
 import { CertDisplayCardSkillsCount } from '../CertificateDisplayCard';
+import ThreeDotVertical from '../svgs/ThreeDotVertical';
+import { CircleCheckButton } from '../CircleCheckButton';
 
 export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
     title,
@@ -28,114 +28,135 @@ export const BoostGenericCard: React.FC<BoostGenericCardProps> = ({
     verifierBadge,
     credential,
     isInSkillsModal,
+    displayType,
+    linkedCredentialsCount = 0,
+    linkedCredentialsClassName = '',
+    checkBtnClass = '',
 }) => {
     const thumbClass = TYPE_TO_WALLET_DARK_COLOR[type]
         ? `bg-${TYPE_TO_WALLET_DARK_COLOR[type]}`
         : 'bg-grayscale-50';
     const defaultThumbClass = `small-boost-card-thumb flex h-[110px] w-[110px] my-[10px] mx-auto ${thumbClass} overflow-hidden flex-col justify-center items-center rounded-full ${customThumbClass}`;
     const imgSrc = thumbImgSrc?.trim() !== '' ? thumbImgSrc : TYPE_TO_IMG_SRC[type];
-    const headerBgColor = TYPE_TO_WALLET_DARK_COLOR[type] ? `bg-${TYPE_TO_WALLET_DARK_COLOR[type]}` : 'bg-grayscale-900';
-    const checkBtnClass = checkStatus ? 'generic-vc-card checked' : 'generic-vc-card unchecked';
-    const defaultHeaderClass = `flex generic-card-title w-full justify-center ${customHeaderClass}`;
 
-    const handleInnerClick = () => {
-        innerOnClick?.();
-    };
+    const handleInnerClick = () => innerOnClick?.();
+    const handleOptionsClick = () => optionsTriggerOnClick?.();
 
-    const handleOptionsClick = () => {
-        optionsTriggerOnClick?.();
-    };
+    const DisplayIcon = getDisplayIcon(displayType as DisplayTypeEnum);
 
     return (
         <div
-            className={`flex generic-display-card-simple bg-white flex-col shadow-bottom relative $ py-[0px] px-[0px] w-[160px] h-[250px] rounded-[20px] overflow-hidden ${className}`}
+            className={`flex bg-white flex-col shadow-bottom relative p-0 w-[160px] h-[265px] rounded-[20px] overflow-hidden ${className}`}
         >
             {optionsTriggerOnClick && (
                 <section
-                    className="absolute cursor-pointer shadow-bottom h-[30px] w-[30px] top-[5px] right-[5px] rounded-full overflow-hidden z-20 bg-white flex items-center justify-center"
+                    className="absolute cursor-pointer h-[30px] w-[30px] top-[5px] right-[5px] rounded-full bg-white/70 flex items-center justify-center z-20"
                     onClick={handleOptionsClick}
                 >
-                    <img
-                        alt="Menu dropdown icon"
-                        className="h-[20px] w-[20px] object-cover overflow-hidden"
-                        src={ThreeDots}
-                    />
+                    <ThreeDotVertical className="h-[20px] w-[20px] text-grayscale-900" />
                 </section>
             )}
 
             {bgImgSrc && (
-                <section className="absolute top-[-50px] shadow-bottom left-[0px] rounded-b-full overflow-hidden z-0 mt-3">
-                    <img className="h-full w-full object-cover overflow-hidden" src={bgImgSrc} />
+                <section className="absolute top-[-50px] left-0 rounded-b-full overflow-hidden z-0">
+                    <img className="h-full w-full object-cover" src={bgImgSrc} />
                 </section>
             )}
+
             <button
                 type="button"
-                className="boost-small-card inner-click-container z-10"
+                className="z-10 flex flex-col flex-grow"
                 onClick={handleInnerClick}
             >
-                {customThumbComponent && customThumbComponent}
-                {!customThumbComponent && (
+                {/* Thumbnail */}
+                {customThumbComponent || (
                     <section className={defaultThumbClass}>
-                        {thumbImgSrc && thumbImgSrc?.trim() !== '' && (
+                        {thumbImgSrc?.trim() ? (
                             <img
-                                className="generic-display-card-img h-full w-full  w-[110px] h-[110px] rounded-full object-cover overflow-hidden"
-                                src={thumbImgSrc ?? ''}
-                                alt="Credential Achievement Image"
+                                className="w-full h-full rounded-full object-cover"
+                                src={thumbImgSrc}
+                                alt="Credential Achievement"
                             />
-                        )}
-                        {(!thumbImgSrc || thumbImgSrc?.trim() === '') && (
+                        ) : (
                             <img
-                                className="max-w-[110px] w-full h-full p-[0px] object-cover rounded-full"
+                                className="max-w-full p-0 object-cover rounded-full"
                                 src={imgSrc}
                             />
                         )}
                     </section>
                 )}
-                <section className="boost-generic-info-section">
-                    {!customTitle && (
-                        <div className={`${defaultHeaderClass} items-center`}>
-                            <p className="relative z-[100] small-boost-title text-[16px] leading-[130%] px-[0px] font-medium text-center text-grayscale-900 line-clamp-2 max-w-full">
+
+                {/* Details Section: grows to fill available space */}
+                <section
+                    className={`flex flex-col flex-grow items-center justify-end pt-1 w-full ${
+                        linkedCredentialsCount === 0 ? 'pb-[20px]' : ''
+                    }`}
+                >
+                    <div className="px-1 flex flex-col items-center justify-center w-full">
+                        {/* Title */}
+                        {!customTitle ? (
+                            <p
+                                className={`
+                                ${customHeaderClass}
+                                text-[16px] font-medium text-center text-grayscale-900 line-clamp-2
+                                h-[40px] flex items-center justify-center
+                            `}
+                            >
                                 {title}
                             </p>
+                        ) : (
+                            customTitle
+                        )}
+
+                        {/* Issuer */}
+                        {customIssuerName || (
+                            <span className="text-[12px] text-grayscale-700 mt-1">
+                                by <span className="font-bold">{issuerName}</span>
+                            </span>
+                        )}
+
+                        {/* Date & Verifier */}
+                        {customDateDisplay || (
+                            <p className="text-[12px] text-grayscale-700 mt-1 flex items-center">
+                                {verifierBadge}
+                                {dateDisplay}
+                            </p>
+                        )}
+
+                        {/* Skills count if in modal */}
+                        {isInSkillsModal && (
+                            <CertDisplayCardSkillsCount
+                                skills={credential?.skills || []}
+                                onClick={handleInnerClick}
+                                isInSkillsModal={isInSkillsModal}
+                            />
+                        )}
+                    </div>
+
+                    {/* Linked Credentials moved inside details */}
+                    {linkedCredentialsCount > 0 && (
+                        <div
+                            className={`mt-auto flex items-center justify-center py-1 w-full ${linkedCredentialsClassName}`}
+                        >
+                            <DisplayIcon className="h-[20px] w-[20px] text-grayscale-900" />
+                            <span className="ml-1 text-sm font-semibold text-grayscale-900">
+                                +{linkedCredentialsCount} Linked
+                            </span>
                         </div>
                     )}
-
-                    {customTitle && customTitle}
-
-                    {customIssuerName && customIssuerName}
-                    {!customIssuerName && (
-                        <span className="flex items-center justify-center small-generic-boost-issuer-name line-clamp-1 text-[12px] text-grayscale-700 px-[6px]">
-                            by <span className="font-bold whitespace-pre"> {issuerName}</span>
-                        </span>
-                    )}
-
-                    {customDateDisplay && customDateDisplay}
-                    {!customDateDisplay && (
-                        <p className="small-generic-boost-date-display line-clamp-1 text-[12px] text-grayscale-700  px-[7px]">
-                            {dateDisplay}
-                        </p>
-                    )}
-                    <div className="boost-verifier-badge-display">{verifierBadge}</div>
-                    {isInSkillsModal && 
-                        <CertDisplayCardSkillsCount
-                            skills={credential?.skills ?? []}
-                            onClick={handleInnerClick}
-                            className={'boost-generic'}
-                            isInSkillsModal={isInSkillsModal}
-                        />
-                    }
                 </section>
-
-                {showChecked && (
-                    <div className="check-btn-overlay absolute top-[5px] left-[5px]">
-                        <CircleCheckButton
-                            checked={checkStatus}
-                            onClick={onCheckClick}
-                            className={checkBtnClass}
-                        />
-                    </div>
-                )}
             </button>
+
+            {/* Optional Check Button overlay */}
+            {showChecked && (
+                <div className="absolute top-[5px] left-[5px] z-20">
+                    <CircleCheckButton
+                        checked={checkStatus}
+                        onClick={onCheckClick}
+                        className={checkBtnClass}
+                    />
+                </div>
+            )}
         </div>
     );
 };

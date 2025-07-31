@@ -1,12 +1,13 @@
 {
     "name": "@learncard/init",
-    "version": "2.0.18",
+    "version": "2.0.36",
     "description": "",
     "type": "module",
     "main": "./dist/index.cjs",
     "module": "./dist/init.esm.js",
     "exports": {
         ".": {
+            "types": "./dist/index.d.ts",
             "import": "./dist/init.esm.js",
             "require": "./dist/index.cjs"
         }

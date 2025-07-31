@@ -1,6 +1,6 @@
 # serverless.yml
 
-service: learn-cloud-service
+service: ${env:SERVERLESS_SERVICE_NAME, 'learn-cloud-service'}
 
 frameworkVersion: '3'
 
@@ -14,7 +14,7 @@ plugins:
 
 custom:
     config:
-        CACHE_INSTANCE_SIZE: cache.t2.micro
+        CACHE_INSTANCE_SIZE: ${env:SERVERLESS_CACHE_INSTANCE_SIZE, 'cache.t2.micro'}
     esbuild:
         packager: pnpm
         plugins: esbuildPlugins.cjs
@@ -30,16 +30,16 @@ custom:
         # References to 'prod' stage
         production:
             # don't forget the dot on the end!
-            hostedZoneName: 'cloud.learncard.com.'
-            domainName: cloud.learncard.com
-            certificateName: cloud.learncard.com
+            hostedZoneName: ${env:SERVERLESS_HOSTED_ZONE_NAMES, 'cloud.learncard.com.'}
+            domainName: ${env:SERVERLESS_DOMAIN_NAME, 'cloud.learncard.com'}
+            certificateName: ${env:SERVERLESS_DOMAIN_NAME, 'cloud.learncard.com'}
 
         # References to 'dev' stage
         dev:
             # don't forget the dot on the end!
-            hostedZoneName: 'testnet-cloud.learncard.com.'
-            domainName: testnet-cloud.learncard.com
-            certificateName: testnet-cloud.learncard.com
+            hostedZoneName: ${env:SERVERLESS_HOSTED_ZONE_NAMES, 'cloud.learncard.com.'}
+            domainName: ${env:SERVERLESS_DOMAIN_NAME, 'staging.cloud.learncard.com'}
+            certificateName: ${env:SERVERLESS_DOMAIN_NAME, 'staging.cloud.learncard.com'}
 
     # Amazon Certificate Manager
     customCertificate:
@@ -98,7 +98,7 @@ provider:
         SERVER_URL: ${env:SERVER_URL, "https://cloud.learncard.com"}
         JWT_SIGNING_KEY: ${env:JWT_SIGNING_KEY, ""}
         SENTRY_DSN: ${env:SENTRY_DSN}
-        SENTRY_ENV: ${env:LEARN_CLOUD_SENTRY_ENV}
+        SENTRY_ENV: ${env:SENTRY_ENV}
         SENTRY_AUTH_TOKEN: ${env:SENTRY_AUTH_TOKEN}
         SENTRY_ORG: ${env:SENTRY_ORG}
         SENTRY_PROJECT: ${env:SENTRY_PROJECT}

@@ -1,27 +1,41 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import dotenv from 'dotenv';
-import { MongoClient } from 'mongodb';
+import { Db, MongoClient } from 'mongodb';
 
 dotenv.config();
 
-const uri = process.env.__MONGO_URI__ || process.env.LEARN_CLOUD_MONGO_URI;
-const dbName = process.env.__MONGO_DB_NAME__ || process.env.LEARN_CLOUD_MONGO_DB_NAME;
+let getClient: () => MongoClient;
+let client: MongoClient;
+let mongodb: Db;
 
-if (!uri) throw new Error('No Mongo URI set!');
+if (process.env.CI) {
+	getClient = () => ({} as any);
+	client = {} as any;
+	mongodb = {} as any;
+} else {
+	const uri = process.env.__MONGO_URI__ || process.env.LEARN_CLOUD_MONGO_URI;
+	const dbName = process.env.__MONGO_DB_NAME__ || process.env.LEARN_CLOUD_MONGO_DB_NAME;
 
-export const getClient = () => {
-    return new MongoClient(uri, {
-        connectTimeoutMS: 180_000,
-        socketTimeoutMS: 180_000,
-        maxPoolSize: 5,
-        minPoolSize: 1,
-        maxIdleTimeMS: 180_000,
-        serverSelectionTimeoutMS: 180_000,
-    });
-};
+	if (!uri) throw new Error('No Mongo URI set!');
 
-export const client = getClient();
-export const mongodb = client.db(dbName);
+	getClient = () => {
+		return new MongoClient(uri, {
+			connectTimeoutMS: 180_000,
+			socketTimeoutMS: 180_000,
+			maxPoolSize: 5,
+			minPoolSize: 1,
+			maxIdleTimeMS: 180_000,
+			serverSelectionTimeoutMS: 180_000,
+		});
+	};
 
-client.on('error', error => console.log('Mongo error!', error));
+	client = getClient();
+	mongodb = client.db(dbName);
+
+	client.on('error', error => console.log('Mongo error!', error));
+}
+
+export { getClient, client, mongodb };
 
 export default mongodb;
+

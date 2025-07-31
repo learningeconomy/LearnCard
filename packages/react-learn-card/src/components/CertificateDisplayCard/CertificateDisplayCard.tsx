@@ -10,6 +10,7 @@ import CertificateFrontFace from './CertificateFrontFace';
 import CertificateBackFace from './CertificateBackFace';
 import FatArrow from '../svgs/FatArrow';
 import ThreeDots from '../../assets/images/DotsThreeOutline.svg';
+import { KnownDIDRegistryType } from '../../types';
 
 type CertificateDisplayCardProps = {
     credential: VC | BoostAchievementCredential;
@@ -17,7 +18,7 @@ type CertificateDisplayCardProps = {
     verificationItems: VerificationItem[];
     issuerOverride?: Profile;
     issueeOverride?: Profile;
-    trustedAppRegistry?: any[];
+    knownDIDRegistry?: KnownDIDRegistryType;
     subjectImageComponent?: React.ReactNode;
     issuerImageComponent?: React.ReactNode;
     customBodyCardComponent?: React.ReactNode;
@@ -37,6 +38,7 @@ type CertificateDisplayCardProps = {
     showBackButton?: boolean;
     showDetailsBtn?: boolean;
     formattedDisplayType?: string;
+    customLinkedCredentialsComponent?: React.ReactNode;
 };
 
 export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
@@ -48,7 +50,7 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
     subjectImageComponent,
     issuerImageComponent,
     customBodyCardComponent,
-    trustedAppRegistry,
+    knownDIDRegistry,
     hideIssueDate,
     customSkillsComponent,
 
@@ -65,6 +67,7 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
     showBackButton = false,
     showDetailsBtn = false,
     formattedDisplayType,
+    customLinkedCredentialsComponent,
 }) => {
     const [_isFront, _setIsFront] = useState(isFrontOverride ?? true);
 
@@ -72,15 +75,15 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
     const setIsFront = setIsFrontOverride ?? _setIsFront;
 
     return (
-        <section className="w-full flex flex-col gap-[15px] justify-center relative min-w-[220px]">
-            <section className="sm:mx-0 md:mx-auto">
+        <section className="w-full flex flex-col gap-[15px] items-center justify-center relative min-w-[220px]">
+            <section className="max-w-[350px] w-full">
                 {isFront && (
                     <CertificateFrontFace
                         credential={credential}
                         categoryType={categoryType}
                         issuerOverride={issuerOverride}
                         issueeOverride={issueeOverride}
-                        trustedAppRegistry={trustedAppRegistry}
+                        knownDIDRegistry={knownDIDRegistry}
                         subjectImageComponent={subjectImageComponent}
                         issuerImageComponent={issuerImageComponent}
                         customBodyCardComponent={customBodyCardComponent}
@@ -103,6 +106,7 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
                         enableLightbox={enableLightbox}
                         showBackButton={(showBackButton && !hideNavButtons) || showDetailsBtn}
                         handleViewFrontFace={() => setIsFront(!isFront)}
+                        customLinkedCredentialsComponent={customLinkedCredentialsComponent}
                     />
                 )}
 

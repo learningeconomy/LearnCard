@@ -1,9 +1,9 @@
 import React from 'react';
 
 import CaretRightFilled from '../../assets/images/CaretRightFilled.svg';
-import DefaultFace from '../../assets/images/default-face.jpeg';
 import AddAwardLight from '../../assets/images/addawardlight.svg';
-import ThreeDots from '../../assets/images/DotsThreeOutline.svg';
+import ThreeDotVertical from '../svgs/ThreeDotVertical';
+import UserProfilePicture from '../UserProfilePicture/UserProfilePicture';
 import { CircleCheckButton } from '../CircleCheckButton';
 
 import { BoostSmallCardProps, WalletCategoryTypes } from '../../types';
@@ -53,9 +53,11 @@ export const BoostSmallCard: React.FC<BoostSmallCardProps> = ({
                 key={issueItem?.id}
                 className="profile-thumb-img border-[1px] border-white border-solid  vc-issuee-image h-[35px] w-[35px] rounded-full overflow-hidden mx-[-5px]"
             >
-                <img
-                    className="h-full w-full object-cover"
-                    src={issueItem?.thumb || DefaultFace}
+                <UserProfilePicture
+                    customContainerClass={`h-full w-full object-cover ${
+                        !issueItem?.thumb ? 'pt-[8px]' : ''
+                    }`}
+                    user={{ image: issueItem?.thumb, name: issueItem?.name }}
                     alt="profile"
                 />
             </div>
@@ -76,14 +78,10 @@ export const BoostSmallCard: React.FC<BoostSmallCardProps> = ({
         >
             {optionsTriggerOnClick && (
                 <section
-                    className="absolute cursor-pointer h-[30px] w-[30px] top-[5px] right-[5px] rounded-full overflow-hidden z-20 bg-white flex items-center justify-center"
+                    className="absolute cursor-pointer shadow-bottom h-[30px] w-[30px] top-[5px] right-[5px] rounded-full overflow-hidden z-20 bg-white/70 flex items-center justify-center"
                     onClick={handleOptionsClick}
                 >
-                    <img
-                        alt="Menu dropdown icon"
-                        className="h-[20px] w-[20px] object-cover overflow-hidden"
-                        src={ThreeDots}
-                    />
+                    <ThreeDotVertical className="h-[20px] w-[20px] z-50 text-grayscale-900" />
                 </section>
             )}
 

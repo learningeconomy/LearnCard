@@ -5,7 +5,6 @@ import CertificateImageDisplay from './CertificateImageDisplay';
 import CertDisplayCardSkillsCount from './CertDisplayCardSkillsCount';
 import CertificateProfileImageDisplay from './CertificateProfileImageDisplay';
 
-import Smiley from '../svgs/Smiley';
 import Line from '../svgs/Line';
 
 import {
@@ -22,6 +21,7 @@ import VerifierStateBadgeAndText, {
     VerifierState,
     VERIFIER_STATES,
 } from './VerifierStateBadgeAndText';
+import { KnownDIDRegistryType } from '../../types';
 
 type CertificateFrontFaceProps = {
     isFront?: boolean;
@@ -29,7 +29,7 @@ type CertificateFrontFaceProps = {
     categoryType?: LCCategoryEnum;
     issuerOverride?: Profile;
     issueeOverride?: Profile;
-    trustedAppRegistry?: any[];
+    knownDIDRegistry?: KnownDIDRegistryType;
     subjectImageComponent?: React.ReactNode;
     issuerImageComponent?: React.ReactNode;
     customBodyCardComponent?: React.ReactNode;
@@ -45,7 +45,7 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
     categoryType,
     issuerOverride,
     issueeOverride,
-    trustedAppRegistry,
+    knownDIDRegistry,
     subjectImageComponent,
     issuerImageComponent,
     customBodyCardComponent,
@@ -85,6 +85,7 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
         textLightColor = 'text-yellow-500';
         textDarkColor = 'text-yellow-700';
         borderColor = 'border-yellow-500';
+        categoryTitle = 'Portfolio';
     } else if (categoryType === LCCategoryEnum.learningHistory) {
         categoryTitle = 'Study';
     } else if (categoryType === LCCategoryEnum.workHistory) {
@@ -108,14 +109,12 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
         // the did:example:123 condition is so that we don't show this status from the Manage Boosts tab
         verifierState = VERIFIER_STATES.selfVerified;
     } else {
-        const appRegistryEntry = trustedAppRegistry?.find(
-            registryEntry => registryEntry.did === issuerDid
-        );
-
-        if (appRegistryEntry) {
-            verifierState = appRegistryEntry.isTrusted
-                ? VERIFIER_STATES.trustedVerifier
-                : VERIFIER_STATES.untrustedVerifier;
+        if (knownDIDRegistry?.source === 'trusted') {
+            verifierState = VERIFIER_STATES.trustedVerifier;
+        } else if (knownDIDRegistry?.source === 'untrusted') {
+            verifierState = VERIFIER_STATES.untrustedVerifier;
+        } else if (knownDIDRegistry?.source === 'unknown') {
+            verifierState = VERIFIER_STATES.unknownVerifier;
         } else {
             verifierState = VERIFIER_STATES.unknownVerifier;
         }
@@ -155,18 +154,14 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
                 </div>
 
                 {customBodyCardComponent}
-                {issueeImageExists && !customBodyCardComponent && (
+                {!customBodyCardComponent && (
                     <CertificateProfileImageDisplay
                         imageUrl={issueeImage}
                         imageComponent={subjectImageComponent}
                         className={`flex justify-center items-center ${textDarkColor}`}
                         isIssuer={isSelfVerified}
+                        userName={issueeName}
                     />
-                )}
-                {!issueeImageExists && !customBodyCardComponent && (
-                    <div className="h-[50px] w-[50px] rounded-full bg-grayscale-500 flex items-center justify-center">
-                        <Smiley />
-                    </div>
                 )}
 
                 <div className="text-[14px] text-grayscale-800 flex flex-col items-center w-full">
@@ -233,11 +228,14 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
                     imageComponent={issuerImageComponent}
                     className={`w-[calc(100%-26px)] absolute bottom-0 flex justify-center items-center ${textDarkColor}`}
                     isIssuer
+                    userName={issuerName}
                 />
             )}
 
             {/* so that tailwind will put these colors in the css */}
             <span className="hidden border-rose-500 text-spice-500 border-spice-500 border-cyan-500 text-cyan-500 border-indigo-500"></span>
+            <span className="hidden border-blue-500 border-indigo-500 border-pink-500 border-emerald-500 border-yellow-500 border-cyan-500 border-rose-500 border-emerald-500 border-teal-500 border-violet-500 border-yellow-500 border-spice-500 "></span>
+            <span className="hidden text-blue-700 text-indigo-700 text-pink-700 text-emerald-700 text-yellow-700 text-cyan-700 text-rose-700 text-emerald-700 text-teal-700 text-violet-700 text-yellow-700 text-spice-700 "></span>
         </section>
     );
 };

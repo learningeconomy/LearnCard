@@ -1,6 +1,6 @@
 # serverless.yml
 
-service: lcn-brain-service
+service: ${env:SERVERLESS_SERVICE_NAME, 'lcn-brain-service'}
 
 frameworkVersion: '3'
 
@@ -21,7 +21,7 @@ constructs:
 
 custom:
     config:
-        CACHE_INSTANCE_SIZE: cache.t2.micro
+        CACHE_INSTANCE_SIZE: ${env:SERVERLESS_CACHE_INSTANCE_SIZE, 'cache.t2.micro'}
     esbuild:
         packager: pnpm
         plugins: esbuildPlugins.cjs
@@ -36,19 +36,21 @@ custom:
     domains:
         # References to 'prod' stage
         production:
-            domainName: network.learncard.com
-            certificateName: network.learncard.com
+            hostedZoneName: ${env:SERVERLESS_HOSTED_ZONE_NAMES, 'network.learncard.com.'}
+            domainName: ${env:SERVERLESS_DOMAIN_NAME, 'network.learncard.com'}
+            certificateName: ${env:SERVERLESS_DOMAIN_NAME, 'network.learncard.com'}
 
         # References to 'dev' stage
         dev:
-            domainName: testnet.network.learncard.com
-            certificateName: testnet.network.learncard.com
+            hostedZoneName: ${env:SERVERLESS_HOSTED_ZONE_NAMES, 'network.learncard.com.'}
+            domainName: ${env:SERVERLESS_DOMAIN_NAME, 'staging.network.learncard.com'}
+            certificateName: ${env:SERVERLESS_DOMAIN_NAME, 'staging.network.learncard.com'}
 
     # Amazon Certificate Manager
     customCertificate:
         # Route 53 Hosted Zone name
         # don't forget the dot on the end!
-        hostedZoneNames: 'network.learncard.com.'
+        hostedZoneNames: ${self:custom.domains.${self:provider.stage}.hostedZoneName}
 
         # Here we get our certificate name inside custom.domain.STAGE.certificateName
         # STAGE will be automatically filled with the value from "provider > stage"
@@ -94,10 +96,17 @@ provider:
         LAMBDA_STAGE: ${opt:stage, "dev"}
         SEED: ${env:SEED}
         DOMAIN_NAME: ${env:DOMAIN_NAME}
+        CLIENT_APP_DOMAIN_NAME: ${env:CLIENT_APP_DOMAIN_NAME}
         NOTIFICATIONS_SERVICE_WEBHOOK_URL: ${env:NOTIFICATIONS_SERVICE_WEBHOOK_URL}
         NEO4J_URI: ${env:NEO4J_URI}
         NEO4J_USERNAME: ${env:NEO4J_USERNAME}
         NEO4J_PASSWORD: ${env:NEO4J_PASSWORD}
+        POSTMARK_API_KEY: ${env:POSTMARK_API_KEY}
+        POSTMARK_FROM_EMAIL: ${env:POSTMARK_FROM_EMAIL}
+        MESSAGEBIRD_AUTH_TOKEN: ${env:MESSAGEBIRD_AUTH_TOKEN}
+        MESSAGEBIRD_ORIGINATOR: ${env:MESSAGEBIRD_ORIGINATOR}
+        TRUSTED_ISSUERS_WHITELIST: ${env:TRUSTED_ISSUERS_WHITELIST, ""}
+        DCC_KNOWN_REGISTRIES_URL: ${env:DCC_KNOWN_REGISTRIES_URL, ""}
         SENTRY_DSN: ${env:SENTRY_DSN}
         SENTRY_ENV: ${env:SENTRY_ENV}
         SENTRY_AUTH_TOKEN: ${env:SENTRY_AUTH_TOKEN}
@@ -108,6 +117,9 @@ provider:
         REDIS_PORT:
             'Fn::GetAtt': [ElasticCacheCluster, RedisEndpoint.Port]
         NOTIFICATIONS_QUEUE_URL: ${construct:notifications-queue.queueUrl}
+        SMART_RESUME_CLIENT_ID: ${env:SMART_RESUME_CLIENT_ID, ""}
+        SMART_RESUME_ACCESS_KEY: ${env:SMART_RESUME_ACCESS_KEY, ""}
+        SMART_RESUME_CONTRACT_URI: ${env:SMART_RESUME_CONTRACT_URI, ""}
     tracing:
         apiGateway: true
         lambda: true

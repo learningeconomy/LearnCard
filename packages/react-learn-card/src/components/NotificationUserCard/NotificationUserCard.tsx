@@ -3,7 +3,6 @@ import X from '../../assets/images/X.svg';
 import { NotificationUserCardProps, UserNotificationTypeStyles } from './types';
 
 import { UserNotificationTypeEnum } from '../../constants/notifications';
-import DefaultFace from '../../assets/images/default-face.jpeg';
 import Checkmark from '../svgs/Checkmark';
 import ArrowArcLeft from '../../assets/images/ArrowArcLeft.svg';
 

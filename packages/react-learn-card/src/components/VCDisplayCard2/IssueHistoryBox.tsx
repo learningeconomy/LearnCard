@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import DefaultFace from '../../assets/images/default-face.jpeg';
+import React from 'react';
 
+import UserProfilePicture from '../UserProfilePicture/UserProfilePicture';
 import { IssueHistory } from '../../types';
 
 type SkillsBoxProps = {
@@ -15,13 +15,15 @@ const IssueHistoryBox: React.FC<SkillsBoxProps> = ({
     let renderIssueHistory = issueHistory?.map(issueItem => {
         return (
             <div
-                className="flex items-center issue-log-item border-b-[1px] py-[5px] border-grayscale-200 border-solid w-full"
+                className="flex items-center issue-log-item border-b-[1px] last:border-b-0 py-[5px] border-grayscale-200 border-solid w-full"
                 key={issueItem?.id}
             >
                 <div className="profile-thumb-img vc-issuee-image h-[35px] w-[35px] rounded-full overflow-hidden">
-                    <img
-                        className="h-full w-full object-cover select-none"
-                        src={issueItem?.thumb || DefaultFace}
+                    <UserProfilePicture
+                        customContainerClass={`h-full w-full object-cover select-none text-xl ${
+                            !issueItem?.thumb ? 'pt-[2px]' : ''
+                        }`}
+                        user={{ image: issueItem?.thumb, name: issueItem?.name }}
                         alt="profile"
                     />
                 </div>

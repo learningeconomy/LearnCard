@@ -33,32 +33,30 @@ export const CertDisplayCardSkillsCount: React.FC<{
 
     return (
         <div
-            className={`flex items-center justify-center cursor-pointer bg-white rounded-[20px] ${className === 'boost-generic' ? '' : 'px-4 py-2 mt-8 shadow-bottom'} `}
+            className={`flex w-full items-center justify-center cursor-pointer bg-white rounded-[20px] ${
+                className === 'boost-generic' ? '' : 'px-4 py-2 mt-4'
+            } `}
             onClick={onClick}
         >
             <div
                 className={`text-violet-500 flex items-center justify-center tracking-[0.75px] font-poppins font-semibold ${
-                    className === 'boost-generic' ? 'text-[12px] mt-[5px]' : 'text-xl'
+                    className === 'boost-generic' ? 'text-[12px] mt-[5px]' : 'text-sm'
                 }`}
             >
                 {isInSkillsModal ? (
-                        <>
-                            <div
-                                className="bg-violet-500 rounded-full flex items-center justify-center mr-[5px] p-1 h-[20px] w-[20px]"
-                            >
-                                <PuzzlePiece className="text-white" fill="#fff" />
-                            </div>
-                            +{total} {text}
-                        </>
-                    ) : (
-                        <>
-                            +{total} {text}
-                            <div
-                                className="bg-violet-500 rounded-full flex items-center justify-center ml-2 p-1 h-[30px] w-[30px]"
-                            >
-                                <PuzzlePiece className="text-white" fill="#fff" />
-                            </div>
-                        </>
+                    <>
+                        <div className="bg-violet-500 rounded-full flex items-center justify-center mr-[5px] p-1 h-[20px] w-[20px]">
+                            <PuzzlePiece className="text-white" fill="#fff" />
+                        </div>
+                        +{total} {text}
+                    </>
+                ) : (
+                    <>
+                        +{total} {text}
+                        <div className="bg-violet-500 rounded-full flex items-center justify-center ml-2 p-1 h-[30px] w-[30px]">
+                            <PuzzlePiece className="text-white" fill="#fff" />
+                        </div>
+                    </>
                 )}
             </div>
         </div>

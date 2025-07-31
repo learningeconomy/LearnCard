@@ -2,7 +2,7 @@ import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 import { JWE, UnsignedVCValidator, VCValidator, VPValidator, JWEValidator } from '@learncard/types';
 
-import { t, didAndChallengeRoute } from '@routes';
+import { t, didAndChallengeRoute, openRoute } from '@routes';
 import { createCredential } from '@accesslayer/credential/create';
 import { getCredentialById, getCredentialsById } from '@accesslayer/credential/read';
 import { getUriParts, constructUri } from '@helpers/uri.helpers';
@@ -52,12 +52,12 @@ export const storageRouter = t.router({
             return constructUri('credential', id, ctx.domain);
         }),
 
-    resolve: didAndChallengeRoute
+    resolve: openRoute
         .meta({
             openapi: {
                 protect: true,
                 method: 'GET',
-                path: '/storage/resolve/{uri}',
+                path: '/storage/resolve',
                 tags: ['Storage'],
                 summary: 'Resolves a URI to a Credential/Presentation',
                 description:

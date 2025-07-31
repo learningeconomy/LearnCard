@@ -45,6 +45,7 @@ import {
 import { upsertSigningAuthority } from '@accesslayer/signing-authority/create';
 import { createUseSigningAuthorityRelationship } from '@accesslayer/signing-authority/relationships/create';
 import {
+    getPrimarySigningAuthorityForUser,
     getSigningAuthoritiesForUser,
     getSigningAuthorityForUserByName,
 } from '@accesslayer/signing-authority/relationships/read';
@@ -68,6 +69,7 @@ import {
 import { createProfileManagedByRelationship } from '@accesslayer/profile/relationships/create';
 import { updateProfile } from '@accesslayer/profile/update';
 import { LCNProfileQueryValidator } from '@learncard/types';
+import { setPrimarySigningAuthority } from '@accesslayer/signing-authority/relationships/update';
 
 export const profilesRouter = t.router({
     createProfile: didAndChallengeRoute
@@ -608,7 +610,7 @@ export const profilesRouter = t.router({
             const success = await connectProfiles(profile, targetProfile, false);
 
             if (success) {
-                await Promise.all([invalidateInvite(profileId, challenge)]);
+                await invalidateInvite(profileId, challenge);
             }
 
             return success;
@@ -1013,12 +1015,28 @@ export const profilesRouter = t.router({
             },
             requiredScope: 'signingAuthorities:write',
         })
-        .input(z.object({ endpoint: z.string(), name: z.string(), did: z.string() }))
+        .input(
+            z.object({
+                endpoint: z.string(),
+                name: z
+                    .string()
+                    .max(15)
+                    .regex(/^[a-z0-9-]+$/, {
+                        message:
+                            'The input string must contain only lowercase letters, numbers, and hyphens.',
+                    }),
+                did: z.string(),
+            })
+        )
         .output(z.boolean())
         .mutation(async ({ input, ctx }) => {
             const { endpoint, name, did } = input;
+
+            const existingSas = await getSigningAuthoritiesForUser(ctx.user.profile);
+            const setAsPrimary = existingSas.length === 0;
+
             const sa = await upsertSigningAuthority(endpoint);
-            await createUseSigningAuthorityRelationship(ctx.user.profile, sa, name, did);
+            await createUseSigningAuthorityRelationship(ctx.user.profile, sa, name, did, setAsPrimary);
             await deleteDidDocForProfile(ctx.user.profile.profileId);
             return true;
         }),
@@ -1059,6 +1077,67 @@ export const profilesRouter = t.router({
         .output(SigningAuthorityForUserValidator.or(z.undefined()))
         .query(async ({ ctx, input }) => {
             return getSigningAuthorityForUserByName(ctx.user.profile, input.endpoint, input.name);
+        }),
+
+    setPrimarySigningAuthority: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/profile/signing-authority/set-primary',
+                tags: ['Profiles'],
+                summary: 'Set Primary Signing Authority',
+                description:
+                    "This route is used to set a signing authority as the primary one for the current user",
+            },
+            requiredScope: 'signingAuthorities:write',
+        })
+        .input(
+            z.object({
+                endpoint: z.string(),
+                name: z
+                    .string()
+                    .max(15)
+                    .regex(/^[a-z0-9-]+$/, {
+                        message:
+                            'The input string must contain only lowercase letters, numbers, and hyphens.',
+                    }),
+            })
+        )
+        .output(z.boolean())
+        .mutation(async ({ input, ctx }) => {
+            const { endpoint, name } = input;
+
+            const sa = await getSigningAuthorityForUserByName(ctx.user.profile, endpoint, name);
+
+            if (!sa) {
+                throw new TRPCError({
+                    code: 'NOT_FOUND',
+                    message: 'Signing authority not found or owned by user.',
+                });
+            }
+
+            await setPrimarySigningAuthority(ctx.user.profile, endpoint, name);
+            await deleteDidDocForProfile(ctx.user.profile.profileId);
+            return true;
+        }),
+    primarySigningAuthority: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/profile/signing-authority/get-primary',
+                tags: ['Profiles'],
+                summary: 'Get primary Signing Authority for user',
+                description:
+                    "This route is used to get the primary signing authority that can sign credentials on the current user's behalf",
+            },
+            requiredScope: 'signingAuthorities:read',
+        })
+        .input(z.void())
+        .output(SigningAuthorityForUserValidator.or(z.undefined()))
+        .query(async ({ ctx }) => {
+            return getPrimarySigningAuthorityForUser(ctx.user.profile);
         }),
 });
 export type ProfilesRouter = typeof profilesRouter;

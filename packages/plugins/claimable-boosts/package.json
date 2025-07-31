@@ -1,12 +1,13 @@
 {
     "name": "@learncard/claimable-boosts-plugin",
-    "version": "1.0.39",
+    "version": "1.0.44",
     "description": "",
     "type": "module",
     "main": "./dist/index.cjs",
     "module": "./dist/claimable-boosts-plugin.esm.js",
     "exports": {
         ".": {
+            "types": "./dist/index.d.ts",
             "import": "./dist/claimable-boosts-plugin.esm.js",
             "require": "./dist/index.cjs"
         }

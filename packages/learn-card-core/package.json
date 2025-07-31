@@ -1,12 +1,13 @@
 {
     "name": "@learncard/core",
-    "version": "9.3.29",
+    "version": "9.3.34",
     "description": "",
     "type": "module",
     "main": "./dist/index.cjs",
     "module": "./dist/core.esm.js",
     "exports": {
         ".": {
+            "types": "./dist/index.d.ts",
             "import": "./dist/core.esm.js",
             "require": "./dist/index.cjs"
         }

@@ -5,6 +5,7 @@
     "scripts": {
         "test": "echo \"Skipping E2E tests in CI. Run test:e2e if you'd like to actually run this!\"",
         "test:e2e": "vitest",
+        "test:run": "vitest run",
         "logs": "docker compose logs -f"
     },
     "dependencies": {

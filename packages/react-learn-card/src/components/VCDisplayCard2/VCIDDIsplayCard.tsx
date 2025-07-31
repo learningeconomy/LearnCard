@@ -11,6 +11,7 @@ import {
     VideoMetadata,
 } from '../../types';
 import { VC, VerificationItem } from '@learncard/types';
+import { KnownDIDRegistryType } from '../../types';
 
 export type VCIDDisplayCardProps = {
     credential: VC | BoostAchievementCredential;
@@ -25,7 +26,7 @@ export type VCIDDisplayCardProps = {
     issueHistory?: IssueHistory[];
     showBackButton?: boolean;
     enableLightbox?: boolean;
-    trustedAppRegistry?: any[];
+    knownDIDRegistry?: KnownDIDRegistryType;
     customSkillsComponent?: React.ReactNode;
     isFrontOverride?: boolean;
     setIsFrontOverride?: (value: boolean) => void;
@@ -35,6 +36,7 @@ export type VCIDDisplayCardProps = {
     showDetailsBtn?: boolean;
     customIDDescription?: React.ReactNode;
     hideGradientBackground?: boolean;
+    customLinkedCredentialsComponent?: React.ReactNode;
 };
 
 export const VCIDDisplayCard: React.FC<VCIDDisplayCardProps> = ({
@@ -50,7 +52,7 @@ export const VCIDDisplayCard: React.FC<VCIDDisplayCardProps> = ({
     issueHistory,
     showBackButton = true,
     enableLightbox,
-    trustedAppRegistry,
+    knownDIDRegistry,
     customSkillsComponent,
     isFrontOverride,
     setIsFrontOverride,
@@ -60,6 +62,7 @@ export const VCIDDisplayCard: React.FC<VCIDDisplayCardProps> = ({
     showDetailsBtn = false,
     customIDDescription,
     hideGradientBackground = false,
+    customLinkedCredentialsComponent,
 }) => {
     const [_isFront, _setIsFront] = useState<boolean>(isFrontOverride ?? true);
     const isFront = isFrontOverride ?? _isFront;
@@ -99,7 +102,7 @@ export const VCIDDisplayCard: React.FC<VCIDDisplayCardProps> = ({
                                     showDetailsBtn={showDetailsBtn}
                                     customThumbComponent={customThumbComponent}
                                     credential={credential}
-                                    trustedAppRegistry={trustedAppRegistry}
+                                    knownDIDRegistry={knownDIDRegistry}
                                     qrCodeOnClick={qrCodeOnClick}
                                     hideQRCode={hideQRCode}
                                     customIDDescription={customIDDescription}
@@ -122,6 +125,9 @@ export const VCIDDisplayCard: React.FC<VCIDDisplayCardProps> = ({
                                     customIssueHistoryComponent={customIssueHistoryComponent}
                                     enableLightbox={enableLightbox}
                                     customSkillsComponent={customSkillsComponent}
+                                    customLinkedCredentialsComponent={
+                                        customLinkedCredentialsComponent
+                                    }
                                 />
                             )}
                         </div>

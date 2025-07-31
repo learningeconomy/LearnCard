@@ -3,9 +3,9 @@ import X from '../../assets/images/X.svg';
 import { NotificationBoostCardProps } from './types';
 import { NotificationTypeStyles } from '../Notification/types';
 import { NotificationTypeEnum } from '../../constants/notifications';
-import DefaultFace from '../../assets/images/default-face.jpeg';
 import Checkmark from '../svgs/Checkmark';
 import ArrowArcLeft from '../../assets/images/ArrowArcLeft.svg';
+import UserProfilePicture from '../UserProfilePicture/UserProfilePicture';
 
 export const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
     title,
@@ -99,9 +99,11 @@ export const NotificationBoostCard: React.FC<NotificationBoostCardProps> = ({
                     {showIssuerInfo && (
                         <div className="notification-card-issuer-info flex items-center mt-[10px]">
                             <div className="profile-thumb-img border-[2px] border-white border-solid  vc-issuee-image h-[35px] w-[35px] rounded-full overflow-hidden mx-[-5px]">
-                                <img
-                                    className="h-full w-full object-cover"
-                                    src={issuerInfo?.image || DefaultFace}
+                                <UserProfilePicture
+                                    customContainerClass={`h-full w-full object-cover text-xl ${
+                                        !issuerInfo?.image ? 'pt-[3px]' : ''
+                                    }`}
+                                    user={{ image: issuerInfo?.image, name: issuerInfo?.fullName }}
                                     alt="profile"
                                 />
                             </div>

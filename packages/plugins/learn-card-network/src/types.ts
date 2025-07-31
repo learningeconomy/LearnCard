@@ -43,6 +43,12 @@ import {
     AutoBoostConfig,
     AuthGrantType,
     AuthGrantQuery,
+    IssueInboxCredentialType,
+    InboxCredentialType,
+    PaginatedInboxCredentialsType,
+    ContactMethodType,
+    InboxCredentialQuery,
+    IssueInboxCredentialResponseType,
 } from '@learncard/types';
 import { Plugin } from '@learncard/core';
 import { ProofOptions } from '@learncard/didkit-plugin';
@@ -223,6 +229,19 @@ export type LearnCardNetworkPluginMethods = {
         query?: LCNProfileQuery
     ) => Promise<PaginatedBoostRecipientsType>;
     countBoostRecipients: (uri: string, includeUnacceptedBoosts?: boolean) => Promise<number>;
+    getConnectedBoostRecipients: (
+        uri: string,
+        options?: {
+            limit?: number;
+            cursor?: string;
+            includeUnacceptedBoosts?: boolean;
+            query?: LCNProfileQuery;
+        }
+    ) => Promise<PaginatedBoostRecipientsType>;
+    countConnectedBoostRecipients: (
+        uri: string,
+        includeUnacceptedBoosts?: boolean
+    ) => Promise<number>;
     getBoostChildrenProfileManagers: (
         uri: string,
         options?: Partial<PaginationOptionsType> & { query?: LCNProfileManagerQuery }
@@ -267,6 +286,8 @@ export type LearnCardNetworkPluginMethods = {
         endpoint: string,
         name: string
     ) => Promise<LCNSigningAuthorityForUserType | undefined>;
+    setPrimaryRegisteredSigningAuthority: (endpoint: string, name: string) => Promise<boolean>;
+    getPrimaryRegisteredSigningAuthority: () => Promise<LCNSigningAuthorityForUserType | undefined>;
 
     generateClaimLink: (
         boostUri: string,
@@ -321,8 +342,9 @@ export type LearnCardNetworkPluginMethods = {
             terms: ConsentFlowTerms;
             expiresAt?: string;
             oneTime?: boolean;
-        }
-    ) => Promise<string>;
+        },
+        recipientToken?: string
+    ) => Promise<{ termsUri: string; redirectUrl?: string }>;
     getConsentedContracts: (
         options?: Partial<PaginationOptionsType> & { query?: ConsentFlowTermsQuery }
     ) => Promise<PaginatedConsentFlowTerms>;
@@ -375,6 +397,27 @@ export type LearnCardNetworkPluginMethods = {
     updateAuthGrant: (id: string, updates: Partial<AuthGrantType>) => Promise<boolean>;
     revokeAuthGrant: (id: string) => Promise<boolean>;
     getAPITokenForAuthGrant: (id: string) => Promise<string>;
+
+    sendCredentialViaInbox: (
+        issueInboxCredential: IssueInboxCredentialType
+    ) => Promise<IssueInboxCredentialResponseType>;
+    getMySentInboxCredentials: (
+        options?: Partial<PaginationOptionsType> & { query?: InboxCredentialQuery }
+    ) => Promise<PaginatedInboxCredentialsType>;
+
+    getInboxCredential: (id: string) => Promise<InboxCredentialType | null>;
+
+    addContactMethod: (
+        contactMethod: ContactMethodType
+    ) => Promise<{ message: string; contactMethodId: string; verificationRequired: boolean }>;
+    getMyContactMethods: () => Promise<ContactMethodType[]>;
+
+    setPrimaryContactMethod: (contactMethodId: string) => Promise<{ message: string }>;
+    verifyContactMethod: (
+        token: string
+    ) => Promise<{ message: string; contactMethod: ContactMethodType }>;
+    removeContactMethod: (contactMethodId: string) => Promise<{ message: string }>;
+
     resolveFromLCN: (
         uri: string
     ) => Promise<VC | UnsignedVC | VP | JWE | ConsentFlowContract | ConsentFlowTerms>;
