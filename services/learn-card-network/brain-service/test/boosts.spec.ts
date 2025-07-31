@@ -5890,6 +5890,80 @@ describe('Boosts', () => {
             expect(result.records[0]?.to.profileId).toBe('userb');
         });
 
+        it('should support filtering by profile query with regex', async () => {
+            // Create boost
+            const parentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'Test',
+            });
+
+            // Send boost to multiple users with different profileId patterns
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB },
+                parentUri
+            );
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userc', user: userC },
+                parentUri
+            );
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userd', user: userD },
+                parentUri
+            );
+
+            // Filter for profiles starting with 'user'
+            const result =
+                await userA.clients.fullAuth.boost.getPaginatedBoostRecipientsWithChildren({
+                    uri: parentUri,
+                    profileQuery: { profileId: { $regex: '/userb/i' } },
+                });
+
+            // Should get userB and userC (but not testuser)
+            expect(result.records).toHaveLength(1);
+            const profileIds = result.records.map(r => r.to.profileId).sort();
+            expect(profileIds).toEqual(['userb']);
+        });
+
+        it('should support filtering by profile query with $in operator', async () => {
+            // Create boost
+            const parentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'Test',
+            });
+
+            // Send boost to multiple users
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB },
+                parentUri
+            );
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userc', user: userC },
+                parentUri
+            );
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userd', user: userD },
+                parentUri
+            );
+
+            // Filter for specific set of profiles using $in
+            const result =
+                await userA.clients.fullAuth.boost.getPaginatedBoostRecipientsWithChildren({
+                    uri: parentUri,
+                    profileQuery: { profileId: { $in: ['userb', 'userd'] } },
+                });
+
+            // Should get userB and testuser (but not userc)
+            expect(result.records).toHaveLength(2);
+            const profileIds = result.records.map(r => r.to.profileId).sort();
+            expect(profileIds).toEqual(['userb', 'userd']);
+        });
+
         it('should support custom numberOfGenerations parameter', async () => {
             // Create 3-level hierarchy: parent -> child -> grandchild
             const parentUri = await userA.clients.fullAuth.boost.createBoost({

@@ -1160,17 +1160,21 @@ export const getBoostRecipientsWithChildren = async (
             ],
         })
         // Group by recipient and collect boost data first
-        .with(`recipient, 
-               COLLECT(DISTINCT {relevantBoost: relevantBoost, sender: sender, sent: sent, received: received, credential: credential}) AS boostData`)
+        .with(
+            `recipient, 
+               COLLECT(DISTINCT {relevantBoost: relevantBoost, sender: sender, sent: sent, received: received, credential: credential}) AS boostData`
+        )
         // Apply profile query filtering after grouping
-        .where(profileQuery?.profileId ? `recipient.profileId = '${profileQuery.profileId}'` : 'true')
+        .where(getMatchQueryWhere('recipient', 'profileQuery'))
         // Add cursor filtering if provided
         .raw(cursor ? 'AND recipient.profileId > $cursor' : '')
         // Order by profileId and limit profiles (not individual boost relationships)
         .orderBy('recipient.profileId ASC')
         .limit(limit)
         .unwind('boostData AS data')
-        .return('data.relevantBoost AS relevantBoost, data.sender AS sender, data.sent AS sent, data.received AS received, recipient, data.credential AS credential');
+        .return(
+            'data.relevantBoost AS relevantBoost, data.sender AS sender, data.sent AS sent, data.received AS received, recipient, data.credential AS credential'
+        );
 
     // Execute the query
     const results = convertQueryResultToPropertiesObjectArray<{
@@ -1180,9 +1184,7 @@ export const getBoostRecipientsWithChildren = async (
         recipient?: FlatProfileType;
         received?: CredentialRelationships['credentialReceived']['RelationshipProperties'];
         credential?: CredentialInstance;
-    }>(
-        await _query.run()
-    );
+    }>(await _query.run());
 
     // Process results and group by profile
     const resultsWithIds = results.map(({ relevantBoost, sender, sent, received, credential }) => {
