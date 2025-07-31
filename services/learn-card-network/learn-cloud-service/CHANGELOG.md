@@ -1,5 +1,25 @@
 # @learncard/network-brain-service
 
+## 2.3.12
+
+### Patch Changes
+
+-   [#770](https://github.com/learningeconomy/LearnCard/pull/770) [`b27587a70d3ddfd2d2f54d2008b7fa37fc3985a4`](https://github.com/learningeconomy/LearnCard/commit/b27587a70d3ddfd2d2f54d2008b7fa37fc3985a4) Thanks [@Custard7](https://github.com/Custard7)! - 🧹Chore: Update Git Actions to use Git Environments
+
+-   Updated dependencies [[`41a24971a8e9a916736c82e44b5b41f1da1f1a67`](https://github.com/learningeconomy/LearnCard/commit/41a24971a8e9a916736c82e44b5b41f1da1f1a67)]:
+    -   @learncard/core@9.3.34
+    -   @learncard/helpers@1.1.22
+    -   @learncard/types@5.8.2
+    -   @learncard/crypto-plugin@1.0.45
+    -   @learncard/did-web-plugin@1.0.71
+    -   @learncard/didkey-plugin@1.0.45
+    -   @learncard/didkit-plugin@1.5.24
+    -   @learncard/encryption-plugin@1.0.19
+    -   @learncard/expiration-plugin@1.1.54
+    -   @learncard/learn-card-plugin@1.1.52
+    -   @learncard/vc-plugin@1.1.54
+    -   @learncard/vc-templates-plugin@1.0.59
+
 ## 2.3.11
 
 ### Patch Changes

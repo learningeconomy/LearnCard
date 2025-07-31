@@ -1,6 +1,6 @@
 # serverless.yml
 
-service: lcn-brain-service
+service: ${env:SERVERLESS_SERVICE_NAME, 'lcn-brain-service'}
 
 frameworkVersion: '3'
 
@@ -21,7 +21,7 @@ constructs:
 
 custom:
     config:
-        CACHE_INSTANCE_SIZE: cache.t2.micro
+        CACHE_INSTANCE_SIZE: ${env:SERVERLESS_CACHE_INSTANCE_SIZE, 'cache.t2.micro'}
     esbuild:
         packager: pnpm
         plugins: esbuildPlugins.cjs
@@ -36,19 +36,21 @@ custom:
     domains:
         # References to 'prod' stage
         production:
-            domainName: network.learncard.com
-            certificateName: network.learncard.com
+            hostedZoneName: ${env:SERVERLESS_HOSTED_ZONE_NAMES, 'network.learncard.com.'}
+            domainName: ${env:SERVERLESS_DOMAIN_NAME, 'network.learncard.com'}
+            certificateName: ${env:SERVERLESS_DOMAIN_NAME, 'network.learncard.com'}
 
         # References to 'dev' stage
         dev:
-            domainName: testnet.network.learncard.com
-            certificateName: testnet.network.learncard.com
+            hostedZoneName: ${env:SERVERLESS_HOSTED_ZONE_NAMES, 'network.learncard.com.'}
+            domainName: ${env:SERVERLESS_DOMAIN_NAME, 'staging.network.learncard.com'}
+            certificateName: ${env:SERVERLESS_DOMAIN_NAME, 'staging.network.learncard.com'}
 
     # Amazon Certificate Manager
     customCertificate:
         # Route 53 Hosted Zone name
         # don't forget the dot on the end!
-        hostedZoneNames: 'network.learncard.com.'
+        hostedZoneNames: ${self:custom.domains.${self:provider.stage}.hostedZoneName}
 
         # Here we get our certificate name inside custom.domain.STAGE.certificateName
         # STAGE will be automatically filled with the value from "provider > stage"
@@ -115,9 +117,9 @@ provider:
         REDIS_PORT:
             'Fn::GetAtt': [ElasticCacheCluster, RedisEndpoint.Port]
         NOTIFICATIONS_QUEUE_URL: ${construct:notifications-queue.queueUrl}
-        SMART_RESUME_CLIENT_ID: ${env:SMART_RESUME_CLIENT_ID}
-        SMART_RESUME_ACCESS_KEY: ${env:SMART_RESUME_ACCESS_KEY}
-        SMART_RESUME_CONTRACT_URI: ${env:SMART_RESUME_CONTRACT_URI}
+        SMART_RESUME_CLIENT_ID: ${env:SMART_RESUME_CLIENT_ID, ""}
+        SMART_RESUME_ACCESS_KEY: ${env:SMART_RESUME_ACCESS_KEY, ""}
+        SMART_RESUME_CONTRACT_URI: ${env:SMART_RESUME_CONTRACT_URI, ""}
     tracing:
         apiGateway: true
         lambda: true
