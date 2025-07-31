@@ -19,6 +19,7 @@
  * - contracts-data
  * - didMetadata
  * - authGrants
+ * - inbox
  *
  * Actions include:
  * - read: Permission to view resources
@@ -31,6 +32,7 @@
  * - Resource-wide: "authGrants:*"
  * - Multiple scopes: Space-separated list of scopes
  *   e.g., "authGrants:read contracts:write didMetadata:read"
+ * - No access: "".
  */
 
 // Common scope bundles
