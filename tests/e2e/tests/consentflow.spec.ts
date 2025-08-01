@@ -532,7 +532,7 @@ describe('ConsentFlow E2E Tests', () => {
             });
 
             // User B consents but DENIES write permission for Achievement category
-            const termsUri = await b.invoke.consentToContract(contractUri, {
+            const { termsUri } = await b.invoke.consentToContract(contractUri, {
                 terms: normalNoTerms, // This denies ALL write permissions: Achievement: false, ID: false
             });
 

@@ -257,6 +257,20 @@ export const PaginatedBoostRecipientsValidator = PaginationResponseValidator.ext
 });
 export type PaginatedBoostRecipientsType = z.infer<typeof PaginatedBoostRecipientsValidator>;
 
+export const BoostRecipientWithChildrenValidator = z.object({
+    to: LCNProfileValidator,
+    from: z.string(),
+    received: z.string().optional(),
+    boostUris: z.array(z.string()),
+    credentialUris: z.array(z.string()).optional(),
+});
+export type BoostRecipientWithChildrenInfo = z.infer<typeof BoostRecipientWithChildrenValidator>;
+
+export const PaginatedBoostRecipientsWithChildrenValidator = PaginationResponseValidator.extend({
+    records: BoostRecipientWithChildrenValidator.array(),
+});
+export type PaginatedBoostRecipientsWithChildrenType = z.infer<typeof PaginatedBoostRecipientsWithChildrenValidator>;
+
 export const LCNBoostClaimLinkSigningAuthorityValidator = z.object({
     endpoint: z.string(),
     name: z.string(),
