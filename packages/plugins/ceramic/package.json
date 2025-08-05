@@ -1,6 +1,6 @@
 {
     "name": "@learncard/ceramic-plugin",
-    "version": "1.0.45",
+    "version": "1.0.46",
     "description": "",
     "main": "./dist/index.js",
     "module": "./dist/ceramic-plugin.esm.js",

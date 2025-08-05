@@ -1,5 +1,16 @@
 # learn-card-core
 
+## 2.5.14
+
+### Patch Changes
+
+-   [#771](https://github.com/learningeconomy/LearnCard/pull/771) [`d0e2245d915c711d69e98f5a8f5c9fd7909f13ef`](https://github.com/learningeconomy/LearnCard/commit/d0e2245d915c711d69e98f5a8f5c9fd7909f13ef) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add getPaginatedBoostsWithChildren
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.3.19
+    -   @learncard/core@9.3.35
+    -   @learncard/helpers@1.1.23
+
 ## 2.5.13
 
 ### Patch Changes
