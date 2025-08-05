@@ -89,7 +89,7 @@ export const workflowsRouter = t.router({
             const { localWorkflowId, localExchangeId, verifiablePresentation } = input;
             const { domain } = ctx;
 
-            // TODO: This is a temporary redirect for testing
+            // Demonstration of VC-API workflow with redirect
             if (localWorkflowId == "redirect") {
                 return {
                     redirectUrl: "https://www.learncard.com"
@@ -119,7 +119,7 @@ export const workflowsRouter = t.router({
 
             }
 
-            // TODO: This is a temporary redirect for testing verification flows
+            // Demonstration of VC-API verify workflow with redirect
             if (localWorkflowId == "verify") {
                 if (verifiablePresentation) {
                     return { redirectUrl: "https://www.learncard.com" }
@@ -534,8 +534,8 @@ async function handleInboxClaimPresentation(
 
     const claimedCredentials: VC[] = [];
 
-    // Process each pending credential
-    for (const inboxCredential of pendingCredentials) {
+    // Process each pending credential in parallel
+    const credentialProcessingPromises = pendingCredentials.map(async inboxCredential => {
         try {
             let finalCredential: VC;
 
@@ -549,15 +549,17 @@ async function handleInboxClaimPresentation(
                 // Neo4j doesn't support object properties, so we have to do this
                 //@ts-ignore
                 if (!inboxCredential?.signingAuthority?.endpoint || !inboxCredential?.signingAuthority?.name) {
-                    console.error(`Inbox credential ${inboxCredential.id} missing signing authority info`);
-                    continue;
+                    console.error(
+                        `Inbox credential ${inboxCredential.id} missing signing authority info`
+                    );
+                    return null;
                 }
 
                 // Get the issuer profile and signing authority
                 const issuerProfile = await getProfileByDid(inboxCredential.issuerDid);
                 if (!issuerProfile) {
                     console.error(`Issuer profile not found for ${inboxCredential.issuerDid}`);
-                    continue;
+                    return null;
                 }
 
                 const signingAuthorityForUser = await getSigningAuthorityForUserByName(
@@ -569,16 +571,20 @@ async function handleInboxClaimPresentation(
                 );
 
                 if (!signingAuthorityForUser) {
-                    console.error(`Signing authority not found for issuer ${inboxCredential.issuerDid}`);
-                    continue;
+                    console.error(
+                        `Signing authority not found for issuer ${inboxCredential.issuerDid}`
+                    );
+                    return null;
                 }
 
                 // Set credential subject to claimer's DID
                 if (Array.isArray(unsignedCredential.credentialSubject)) {
-                    unsignedCredential.credentialSubject = unsignedCredential.credentialSubject.map(subject => ({
-                        ...subject,
-                        id: subject.did || subject.id || holderDid,
-                    }));
+                    unsignedCredential.credentialSubject = unsignedCredential.credentialSubject.map(
+                        subject => ({
+                            ...subject,
+                            id: subject.did || subject.id || holderDid,
+                        })
+                    );
                 } else {
                     unsignedCredential.credentialSubject.id = holderDid;
                 }
@@ -587,26 +593,21 @@ async function handleInboxClaimPresentation(
                 unsignedCredential.issuer = signingAuthorityForUser.relationship.did;
 
                 // Sign the credential
-                finalCredential = await issueCredentialWithSigningAuthority(
+                finalCredential = (await issueCredentialWithSigningAuthority(
                     issuerProfile,
                     unsignedCredential,
                     signingAuthorityForUser,
                     ctx.domain,
                     false // don't encrypt
-                ) as VC;
+                )) as VC;
             }
 
             // Mark credential as claimed
             if (holderProfile) {
                 // Only marking as claimed if we have a profile - since we can't claim a credential for a DID—but we need a way to signal to the issuer that the credential has been claimed.
-                // MAYBE: mark it as claimed with metadata about the claim token, so the claim token can be re-used?
-                // TODO: Should this be enabled? It disrupts VC-API workflows - and other mechanisms are sufficient to prevent double claims.
                 await markInboxCredentialAsClaimed(inboxCredential.id);
                 await createClaimedRelationship(holderProfile.profileId, inboxCredential.id, claimToken);
-            } 
-
-            // Add to claimed credentials
-            claimedCredentials.push(finalCredential);
+            }
 
             // Trigger webhook if configured
             if (inboxCredential.webhookUrl) {
@@ -620,7 +621,7 @@ async function handleInboxClaimPresentation(
                         title: 'Credential Claimed from Inbox',
                         body: `${contactMethod.value} claimed a credential from their inbox.`,
                     },
-                    data: { 
+                    data: {
                         inbox: {
                             issuanceId: inboxCredential.id,
                             status: LCNInboxStatusEnumValidator.enum.CLAIMED,
@@ -633,15 +634,16 @@ async function handleInboxClaimPresentation(
                     },
                 });
             }
+
+            return finalCredential;
         } catch (error) {
             console.error(`Failed to process inbox credential ${inboxCredential.id}:`, error);
-            // Continue processing other credentials
+            return null; // Continue processing other credentials
         }
-    }
+    });
 
-    // Mark claim token as used
-    // TODO: Disabling, since it disrupts VC-API workflows - and other mechanisms are sufficient to prevent double claims.
-    // await markInboxClaimTokenAsUsed(claimToken);
+    const settledCredentials = await Promise.all(credentialProcessingPromises);
+    claimedCredentials.push(...settledCredentials.filter((c): c is VC => c !== null));
 
     if (claimedCredentials.length === 0) {
         throw new TRPCError({

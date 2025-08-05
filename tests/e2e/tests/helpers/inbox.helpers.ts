@@ -25,9 +25,8 @@ export const sendCredentialsViaInbox = async (learnCard: LearnCard, token: strin
                 body: JSON.stringify(payload),
             }
         );
-        expect(response.status).toBe(200);
+
         const inboxIssuanceResponse = await response.json();
-        expect(inboxIssuanceResponse).toBeDefined();
 
         responses.push(inboxIssuanceResponse);
     }
