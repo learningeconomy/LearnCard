@@ -441,7 +441,9 @@ async function handleInboxClaimPresentation(
         });
     }
 
-    const challenge = Array.isArray(verifiablePresentation.proof) ? verifiablePresentation.proof?.[0]?.challenge : verifiablePresentation.proof?.challenge;
+    const challenge = Array.isArray(verifiablePresentation.proof) 
+        ? (verifiablePresentation.proof?.length > 0 ? verifiablePresentation.proof[0]?.challenge : undefined)
+        : verifiablePresentation.proof?.challenge;
     if (!challenge) {
         throw new TRPCError({
             code: 'BAD_REQUEST',
