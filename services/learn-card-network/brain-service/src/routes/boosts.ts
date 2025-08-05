@@ -21,6 +21,7 @@ import {
     UnsignedVC,
     JWE,
     VC,
+    PaginatedBoostRecipientsWithChildrenValidator,
 } from '@learncard/types';
 import { isVC2Format } from '@learncard/helpers';
 
@@ -45,6 +46,7 @@ import {
     getBoostRecipientsSkipLimit,
     getBoostAdmins,
     getBoostRecipients,
+    getBoostRecipientsWithChildren,
     getConnectedBoostRecipients,
     countConnectedBoostRecipients,
     isProfileBoostAdmin,
@@ -679,6 +681,74 @@ export const boostsRouter = t.router({
                         return { ...remaining, uri: getBoostUri(id, ctx.domain) };
                     })
                     .slice(0, limit),
+                ...(newCursor && { cursor: newCursor }),
+            };
+        }),
+
+    getPaginatedBoostRecipientsWithChildren: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/boost/recipients-with-children/paginated',
+                tags: ['Boosts'],
+                summary: 'Get boost recipients with children',
+                description: 'This endpoint gets the recipients of a boost and all its children boosts',
+            },
+            requiredScope: 'boosts:read',
+        })
+        .input(
+            PaginationOptionsValidator.extend({
+                limit: PaginationOptionsValidator.shape.limit.default(25),
+                uri: z.string(),
+                includeUnacceptedBoosts: z.boolean().default(true),
+                numberOfGenerations: z.number().default(1),
+                boostQuery: BoostQueryValidator.optional(),
+                profileQuery: LCNProfileQueryValidator.optional(),
+            })
+        )
+        .output(PaginatedBoostRecipientsWithChildrenValidator)
+        .query(async ({ input, ctx }) => {
+            const { domain } = ctx;
+            const {
+                uri,
+                limit,
+                cursor,
+                includeUnacceptedBoosts,
+                numberOfGenerations,
+                boostQuery,
+                profileQuery,
+            } = input;
+
+            const decodedUri = decodeURIComponent(uri);
+            const boost = await getBoostByUri(decodedUri);
+
+            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            const records = await getBoostRecipientsWithChildren(boost, {
+                limit: limit + 1,
+                cursor,
+                includeUnacceptedBoosts,
+                numberOfGenerations,
+                boostQuery,
+                profileQuery,
+                domain,
+            });
+
+            const hasMore = records.length > limit;
+            
+            // Create cursor from the last record (using profileId for consistency with Neo4j sorting)
+            let newCursor: string | undefined;
+            if (hasMore && records.length > 0) {
+                const lastRecord = records[limit - 1];
+                if (lastRecord) {
+                    newCursor = lastRecord.to.profileId;
+                }
+            }
+
+            return {
+                hasMore,
+                records: records.slice(0, limit),
                 ...(newCursor && { cursor: newCursor }),
             };
         }),
