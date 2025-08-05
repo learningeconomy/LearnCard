@@ -1,5 +1,5 @@
 import { getClient, getUser } from './helpers/getClient';
-import { testVc, sendBoost, testUnsignedBoost } from './helpers/send';
+import { sendBoost, testUnsignedBoost, testVc } from './helpers/send';
 import { Profile, Credential, Boost, SigningAuthority } from '@models';
 import { getClaimLinkOptionsInfoForBoost, getTTLForClaimLink } from '@cache/claim-links';
 import { BoostStatus } from 'types/boost';
@@ -38,18 +38,18 @@ describe('Boosts', () => {
 
         it('should not allow you to create a boost without full auth', async () => {
             await expect(
-                noAuthClient.boost.createBoost({ credential: testVc })
+                noAuthClient.boost.createBoost({ credential: testUnsignedBoost })
             ).rejects.toMatchObject({
                 code: 'UNAUTHORIZED',
             });
             await expect(
-                userA.clients.partialAuth.boost.createBoost({ credential: testVc })
+                userA.clients.partialAuth.boost.createBoost({ credential: testUnsignedBoost })
             ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
         });
 
         it('should allow you to create a boost', async () => {
             await expect(
-                userA.clients.fullAuth.boost.createBoost({ credential: testVc })
+                userA.clients.fullAuth.boost.createBoost({ credential: testUnsignedBoost })
             ).resolves.not.toThrow();
         });
     });
@@ -70,7 +70,9 @@ describe('Boosts', () => {
         });
 
         it('should require full auth to get boost', async () => {
-            const uri = await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
 
             await expect(noAuthClient.boost.getBoost({ uri })).rejects.toMatchObject({
                 code: 'UNAUTHORIZED',
@@ -81,7 +83,9 @@ describe('Boosts', () => {
         });
 
         it('should allow getting boosts', async () => {
-            const uri = await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
 
             await expect(userA.clients.fullAuth.boost.getBoost({ uri })).resolves.not.toThrow();
 
@@ -91,7 +95,9 @@ describe('Boosts', () => {
         });
 
         it('should allow admins to get boosts', async () => {
-            const uri = await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
 
             await userA.clients.fullAuth.boost.addBoostAdmin({ uri, profileId: 'userb' });
 
@@ -101,7 +107,9 @@ describe('Boosts', () => {
         });
 
         it('should allow non-admins to get boosts', async () => {
-            const uri = await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
 
             await expect(userA.clients.fullAuth.boost.getBoost({ uri })).resolves.not.toThrow();
 
@@ -110,11 +118,11 @@ describe('Boosts', () => {
 
         it('should allow admins of parent boosts to get boosts', async () => {
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
             const uri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc },
+                boost: { credential: testUnsignedBoost },
             });
 
             await userA.clients.fullAuth.boost.addBoostAdmin({
@@ -129,7 +137,7 @@ describe('Boosts', () => {
 
         it('should include default claim permissions', async () => {
             const uri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 claimPermissions: adminRole,
             });
 
@@ -143,7 +151,7 @@ describe('Boosts', () => {
 
         it('should include meta', async () => {
             const uri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 meta: { test: 'lol' },
             });
 
@@ -172,7 +180,7 @@ describe('Boosts', () => {
         });
 
         it('should require full auth to get boosts', async () => {
-            await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
+            await userA.clients.fullAuth.boost.createBoost({ credential: testUnsignedBoost });
 
             await expect(noAuthClient.boost.getBoosts()).rejects.toMatchObject({
                 code: 'UNAUTHORIZED',
@@ -183,7 +191,7 @@ describe('Boosts', () => {
         });
 
         it('should allow getting boosts', async () => {
-            await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
+            await userA.clients.fullAuth.boost.createBoost({ credential: testUnsignedBoost });
 
             await expect(userA.clients.fullAuth.boost.getBoosts()).resolves.not.toThrow();
 
@@ -193,7 +201,9 @@ describe('Boosts', () => {
         });
 
         it('should get boosts you are admin of, not just created', async () => {
-            const uri = await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
 
             await userA.clients.fullAuth.boost.addBoostAdmin({ uri, profileId: 'userb' });
 
@@ -205,8 +215,14 @@ describe('Boosts', () => {
         });
 
         it('should allow querying boosts', async () => {
-            await userA.clients.fullAuth.boost.createBoost({ credential: testVc, category: 'A' });
-            await userA.clients.fullAuth.boost.createBoost({ credential: testVc, category: 'B' });
+            await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'A',
+            });
+            await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'B',
+            });
 
             await expect(
                 userA.clients.fullAuth.boost.getBoosts({ query: { category: 'A' } })
@@ -221,9 +237,18 @@ describe('Boosts', () => {
         });
 
         it('should allow querying with $in', async () => {
-            await userA.clients.fullAuth.boost.createBoost({ credential: testVc, category: 'A' });
-            await userA.clients.fullAuth.boost.createBoost({ credential: testVc, category: 'B' });
-            await userA.clients.fullAuth.boost.createBoost({ credential: testVc, category: 'C' });
+            await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'A',
+            });
+            await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'B',
+            });
+            await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'C',
+            });
 
             await expect(
                 userA.clients.fullAuth.boost.getBoosts({ query: { category: { $in: ['A', 'B'] } } })
@@ -239,12 +264,18 @@ describe('Boosts', () => {
         });
 
         it('should allow querying with $regex', async () => {
-            await userA.clients.fullAuth.boost.createBoost({ credential: testVc, category: 'All' });
             await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
+                category: 'All',
+            });
+            await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
                 category: 'allo',
             });
-            await userA.clients.fullAuth.boost.createBoost({ credential: testVc, category: 'C' });
+            await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'C',
+            });
 
             await expect(
                 userA.clients.fullAuth.boost.getBoosts({ query: { category: { $regex: /all/i } } })
@@ -261,7 +292,7 @@ describe('Boosts', () => {
 
         it('should include meta', async () => {
             await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 meta: { test: 'lol' },
             });
 
@@ -288,7 +319,7 @@ describe('Boosts', () => {
         });
 
         it('should require full auth to get boosts', async () => {
-            await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
+            await userA.clients.fullAuth.boost.createBoost({ credential: testUnsignedBoost });
 
             await expect(noAuthClient.boost.getPaginatedBoosts()).rejects.toMatchObject({
                 code: 'UNAUTHORIZED',
@@ -301,7 +332,7 @@ describe('Boosts', () => {
         });
 
         it('should allow getting boosts', async () => {
-            await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
+            await userA.clients.fullAuth.boost.createBoost({ credential: testUnsignedBoost });
 
             await expect(userA.clients.fullAuth.boost.getPaginatedBoosts()).resolves.not.toThrow();
 
@@ -311,8 +342,14 @@ describe('Boosts', () => {
         });
 
         it('should allow querying boosts', async () => {
-            await userA.clients.fullAuth.boost.createBoost({ credential: testVc, category: 'A' });
-            await userA.clients.fullAuth.boost.createBoost({ credential: testVc, category: 'B' });
+            await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'A',
+            });
+            await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'B',
+            });
 
             await expect(
                 userA.clients.fullAuth.boost.getPaginatedBoosts({ query: { category: 'A' } })
@@ -327,9 +364,18 @@ describe('Boosts', () => {
         });
 
         it('should allow querying with $in', async () => {
-            await userA.clients.fullAuth.boost.createBoost({ credential: testVc, category: 'A' });
-            await userA.clients.fullAuth.boost.createBoost({ credential: testVc, category: 'B' });
-            await userA.clients.fullAuth.boost.createBoost({ credential: testVc, category: 'C' });
+            await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'A',
+            });
+            await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'B',
+            });
+            await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'C',
+            });
 
             await expect(
                 userA.clients.fullAuth.boost.getPaginatedBoosts({
@@ -347,12 +393,18 @@ describe('Boosts', () => {
         });
 
         it('should allow querying with $regex', async () => {
-            await userA.clients.fullAuth.boost.createBoost({ credential: testVc, category: 'All' });
             await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
+                category: 'All',
+            });
+            await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
                 category: 'allo',
             });
-            await userA.clients.fullAuth.boost.createBoost({ credential: testVc, category: 'C' });
+            await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'C',
+            });
 
             await expect(
                 userA.clients.fullAuth.boost.getPaginatedBoosts({
@@ -372,7 +424,7 @@ describe('Boosts', () => {
         it('should paginate correctly', async () => {
             for (let index = 0; index < 10; index += 1) {
                 await userA.clients.fullAuth.boost.createBoost({
-                    credential: testVc,
+                    credential: testUnsignedBoost,
                     name: `Test ${index}`,
                 });
             }
@@ -401,7 +453,7 @@ describe('Boosts', () => {
 
         it('should include meta', async () => {
             await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 meta: { test: 'lol' },
             });
 
@@ -983,7 +1035,7 @@ describe('Boosts', () => {
 
         it('should require full auth to update a boost', async () => {
             const uri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 status: BoostStatus.enum.DRAFT,
             });
 
@@ -996,7 +1048,7 @@ describe('Boosts', () => {
         });
 
         it('should prevent you from updating a published boosts name', async () => {
-            await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
+            await userA.clients.fullAuth.boost.createBoost({ credential: testUnsignedBoost });
             const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
             const boost = boosts.records[0]!;
             const uri = boost.uri;
@@ -1015,7 +1067,7 @@ describe('Boosts', () => {
 
         it('should allow you to update a draft boosts name', async () => {
             await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 status: BoostStatus.enum.DRAFT,
             });
             const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
@@ -1036,7 +1088,7 @@ describe('Boosts', () => {
         });
 
         it('should prevent you from updating a published boosts category', async () => {
-            await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
+            await userA.clients.fullAuth.boost.createBoost({ credential: testUnsignedBoost });
             const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
             const boost = boosts.records[0]!;
             const uri = boost.uri;
@@ -1055,7 +1107,7 @@ describe('Boosts', () => {
 
         it('should allow you to update a draft boosts category', async () => {
             await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 status: BoostStatus.enum.DRAFT,
             });
             const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
@@ -1075,7 +1127,7 @@ describe('Boosts', () => {
         });
 
         it('should prevent you from updating a published boosts type', async () => {
-            await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
+            await userA.clients.fullAuth.boost.createBoost({ credential: testUnsignedBoost });
             const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
             const boost = boosts.records[0]!;
             const uri = boost.uri;
@@ -1094,7 +1146,7 @@ describe('Boosts', () => {
 
         it('should allow you to update boost type', async () => {
             await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 status: BoostStatus.enum.DRAFT,
             });
             const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
@@ -1114,7 +1166,7 @@ describe('Boosts', () => {
         });
 
         it('should prevent you from updating a published boosts credential', async () => {
-            await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
+            await userA.clients.fullAuth.boost.createBoost({ credential: testUnsignedBoost });
             const boosts = await userA.clients.fullAuth.boost.getPaginatedBoosts();
             const boost = boosts.records[0]!;
             const uri = boost.uri;
@@ -1166,7 +1218,7 @@ describe('Boosts', () => {
 
         it("should allow you to update a draft boost's meta", async () => {
             await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 status: BoostStatus.enum.DRAFT,
                 meta: { nice: 'lol' },
             });
@@ -1192,7 +1244,7 @@ describe('Boosts', () => {
 
         it("should allow you to update a published boost's meta", async () => {
             await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 status: BoostStatus.enum.LIVE,
                 meta: { nice: 'lol' },
             });
@@ -1218,7 +1270,7 @@ describe('Boosts', () => {
 
         it('should not remove existing meta keys', async () => {
             await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 status: BoostStatus.enum.DRAFT,
                 meta: { nice: 'lol' },
             });
@@ -1244,7 +1296,7 @@ describe('Boosts', () => {
 
         it("should allow you to update a draft boost's meta key with null to remove it", async () => {
             await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 status: BoostStatus.enum.DRAFT,
                 meta: { nice: 'lol' },
             });
@@ -1270,7 +1322,7 @@ describe('Boosts', () => {
 
         it('should allow admins to update boost credential', async () => {
             const uri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 status: BoostStatus.enum.DRAFT,
             });
 
@@ -1296,7 +1348,7 @@ describe('Boosts', () => {
 
         it('should not allow non-admins to update boost credential', async () => {
             const uri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 status: BoostStatus.enum.DRAFT,
             });
 
@@ -1663,7 +1715,7 @@ describe('Boosts', () => {
             await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
             await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
 
-            await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
+            await userA.clients.fullAuth.boost.createBoost({ credential: testUnsignedBoost });
         });
 
         afterAll(async () => {
@@ -1686,7 +1738,7 @@ describe('Boosts', () => {
 
         it('should allow you to delete a draft boost', async () => {
             const draftBoostUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 status: BoostStatus.enum.DRAFT,
             });
 
@@ -1703,7 +1755,7 @@ describe('Boosts', () => {
 
         it('should allow admins to delete a draft boost', async () => {
             const draftBoostUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 status: BoostStatus.enum.DRAFT,
             });
 
@@ -1725,7 +1777,7 @@ describe('Boosts', () => {
 
         it('should not allow non-admins to delete a draft boost', async () => {
             const draftBoostUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 status: BoostStatus.enum.DRAFT,
             });
 
@@ -1761,7 +1813,7 @@ describe('Boosts', () => {
 
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: uri,
-                boost: { credential: testVc, status: BoostStatus.enum.DRAFT },
+                boost: { credential: testUnsignedBoost, status: BoostStatus.enum.DRAFT },
             });
 
             const beforeDeleteLength = (await userA.clients.fullAuth.boost.getPaginatedBoosts())
@@ -2136,16 +2188,18 @@ describe('Boosts', () => {
         });
 
         it('should count boosts created by the user', async () => {
-            await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
-            await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
+            await userA.clients.fullAuth.boost.createBoost({ credential: testUnsignedBoost });
+            await userA.clients.fullAuth.boost.createBoost({ credential: testUnsignedBoost });
 
             const count = await userA.clients.fullAuth.boost.countBoosts();
             expect(count).toBe(2);
         });
 
         it('should count boosts where user is an admin', async () => {
-            await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
-            const uriB = await userB.clients.fullAuth.boost.createBoost({ credential: testVc });
+            await userA.clients.fullAuth.boost.createBoost({ credential: testUnsignedBoost });
+            const uriB = await userB.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
 
             await userB.clients.fullAuth.boost.addBoostAdmin({ uri: uriB, profileId: 'usera' });
 
@@ -2154,15 +2208,17 @@ describe('Boosts', () => {
         });
 
         it('should not count boosts where user is not creator or admin', async () => {
-            await userB.clients.fullAuth.boost.createBoost({ credential: testVc });
+            await userB.clients.fullAuth.boost.createBoost({ credential: testUnsignedBoost });
 
             const count = await userA.clients.fullAuth.boost.countBoosts();
             expect(count).toBe(0);
         });
 
         it('should count distinct boosts only', async () => {
-            await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
-            const uriB = await userB.clients.fullAuth.boost.createBoost({ credential: testVc });
+            await userA.clients.fullAuth.boost.createBoost({ credential: testUnsignedBoost });
+            const uriB = await userB.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
 
             // Make userA an admin of userB's boost
             await userB.clients.fullAuth.boost.addBoostAdmin({ uri: uriB, profileId: 'usera' });
@@ -2172,8 +2228,14 @@ describe('Boosts', () => {
         });
 
         it('should allow querying boosts', async () => {
-            await userA.clients.fullAuth.boost.createBoost({ credential: testVc, category: 'A' });
-            await userA.clients.fullAuth.boost.createBoost({ credential: testVc, category: 'B' });
+            await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'A',
+            });
+            await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'B',
+            });
 
             await expect(
                 userA.clients.fullAuth.boost.countBoosts({ query: { category: 'A' } })
@@ -2187,9 +2249,18 @@ describe('Boosts', () => {
         });
 
         it('should allow querying with $in', async () => {
-            await userA.clients.fullAuth.boost.createBoost({ credential: testVc, category: 'A' });
-            await userA.clients.fullAuth.boost.createBoost({ credential: testVc, category: 'B' });
-            await userA.clients.fullAuth.boost.createBoost({ credential: testVc, category: 'C' });
+            await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'A',
+            });
+            await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'B',
+            });
+            await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'C',
+            });
 
             await expect(
                 userA.clients.fullAuth.boost.countBoosts({
@@ -2205,12 +2276,18 @@ describe('Boosts', () => {
         });
 
         it('should allow querying with $regex', async () => {
-            await userA.clients.fullAuth.boost.createBoost({ credential: testVc, category: 'All' });
             await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
+                category: 'All',
+            });
+            await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
                 category: 'allo',
             });
-            await userA.clients.fullAuth.boost.createBoost({ credential: testVc, category: 'C' });
+            await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'C',
+            });
 
             await expect(
                 userA.clients.fullAuth.boost.countBoosts({
@@ -2240,31 +2317,34 @@ describe('Boosts', () => {
 
         it('should not allow you to create a child boost without full auth', async () => {
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
 
             await expect(
-                noAuthClient.boost.createChildBoost({ parentUri, boost: { credential: testVc } })
+                noAuthClient.boost.createChildBoost({
+                    parentUri,
+                    boost: { credential: testUnsignedBoost },
+                })
             ).rejects.toMatchObject({
                 code: 'UNAUTHORIZED',
             });
             await expect(
                 userA.clients.partialAuth.boost.createChildBoost({
                     parentUri,
-                    boost: { credential: testVc },
+                    boost: { credential: testUnsignedBoost },
                 })
             ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
         });
 
         it('should allow you to make a child boost a parent', async () => {
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
 
             await expect(
                 userA.clients.fullAuth.boost.createChildBoost({
                     parentUri,
-                    boost: { credential: testVc },
+                    boost: { credential: testUnsignedBoost },
                 })
             ).resolves.not.toThrow();
         });
@@ -2284,9 +2364,11 @@ describe('Boosts', () => {
 
         it('should not allow you to make a boost a parent without full auth', async () => {
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
-            const childUri = await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
+            const childUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
 
             await expect(
                 noAuthClient.boost.makeBoostParent({ parentUri, childUri })
@@ -2300,9 +2382,11 @@ describe('Boosts', () => {
 
         it('should allow you to make a boost a parent', async () => {
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
-            const childUri = await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
+            const childUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
 
             await expect(
                 userA.clients.fullAuth.boost.makeBoostParent({ parentUri, childUri })
@@ -2311,9 +2395,11 @@ describe('Boosts', () => {
 
         it("should not allow making a parent when it's already a parent", async () => {
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
-            const childUri = await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
+            const childUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
 
             await expect(
                 userA.clients.fullAuth.boost.makeBoostParent({ parentUri, childUri })
@@ -2326,14 +2412,14 @@ describe('Boosts', () => {
 
         it("should not allow making a parent when it's already a grandparent", async () => {
             const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 category: 'A',
             });
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
             const childUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 category: 'B',
             });
 
@@ -2353,9 +2439,11 @@ describe('Boosts', () => {
 
         it("should not allow making a parent when it's already a child", async () => {
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
-            const childUri = await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
+            const childUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
 
             await expect(
                 userA.clients.fullAuth.boost.makeBoostParent({ parentUri, childUri })
@@ -2371,14 +2459,14 @@ describe('Boosts', () => {
 
         it("should not allow making a parent when it's already a grandchild", async () => {
             const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 category: 'A',
             });
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
             const childUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 category: 'B',
             });
 
@@ -2411,11 +2499,11 @@ describe('Boosts', () => {
 
         it('should require full auth to get boost children', async () => {
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc },
+                boost: { credential: testUnsignedBoost },
             });
 
             await expect(
@@ -2428,11 +2516,11 @@ describe('Boosts', () => {
 
         it('should allow getting boost children', async () => {
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'B' },
+                boost: { credential: testUnsignedBoost, category: 'B' },
             });
 
             await expect(
@@ -2447,16 +2535,16 @@ describe('Boosts', () => {
 
         it('should not return parents', async () => {
             const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 category: 'A',
             });
             const parentUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: grandParentUri,
-                boost: { credential: testVc },
+                boost: { credential: testUnsignedBoost },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'B' },
+                boost: { credential: testUnsignedBoost, category: 'B' },
             });
 
             const boosts = await userA.clients.fullAuth.boost.getBoostChildren({ uri: parentUri });
@@ -2467,15 +2555,15 @@ describe('Boosts', () => {
 
         it('should not return grandchildren', async () => {
             const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
             const parentUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: grandParentUri,
-                boost: { credential: testVc, category: 'A' },
+                boost: { credential: testUnsignedBoost, category: 'A' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'B' },
+                boost: { credential: testUnsignedBoost, category: 'B' },
             });
 
             const boosts = await userA.clients.fullAuth.boost.getBoostChildren({
@@ -2488,15 +2576,15 @@ describe('Boosts', () => {
 
         it('should allow returning grandchildren', async () => {
             const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
             const parentUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: grandParentUri,
-                boost: { credential: testVc, category: 'A' },
+                boost: { credential: testUnsignedBoost, category: 'A' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'B' },
+                boost: { credential: testUnsignedBoost, category: 'B' },
             });
 
             const boosts = await userA.clients.fullAuth.boost.getBoostChildren({
@@ -2509,15 +2597,15 @@ describe('Boosts', () => {
 
         it('should allow querying boost children', async () => {
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'A' },
+                boost: { credential: testUnsignedBoost, category: 'A' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'B' },
+                boost: { credential: testUnsignedBoost, category: 'B' },
             });
 
             await expect(
@@ -2538,19 +2626,19 @@ describe('Boosts', () => {
 
         it('should allow querying with $in', async () => {
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'A' },
+                boost: { credential: testUnsignedBoost, category: 'A' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'B' },
+                boost: { credential: testUnsignedBoost, category: 'B' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'C' },
+                boost: { credential: testUnsignedBoost, category: 'C' },
             });
 
             await expect(
@@ -2572,19 +2660,19 @@ describe('Boosts', () => {
 
         it('should allow querying with $regex', async () => {
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'All' },
+                boost: { credential: testUnsignedBoost, category: 'All' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'allo' },
+                boost: { credential: testUnsignedBoost, category: 'allo' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'C' },
+                boost: { credential: testUnsignedBoost, category: 'C' },
             });
 
             await expect(
@@ -2606,13 +2694,13 @@ describe('Boosts', () => {
 
         it('should paginate correctly', async () => {
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
 
             for (let index = 0; index < 10; index += 1) {
                 await userA.clients.fullAuth.boost.createChildBoost({
                     parentUri,
-                    boost: { credential: testVc, name: `Test ${index}` },
+                    boost: { credential: testUnsignedBoost, name: `Test ${index}` },
                 });
             }
 
@@ -2649,11 +2737,11 @@ describe('Boosts', () => {
 
         it('should include meta', async () => {
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'B', meta: { nice: 'lol' } },
+                boost: { credential: testUnsignedBoost, category: 'B', meta: { nice: 'lol' } },
             });
 
             const boosts = await userA.clients.fullAuth.boost.getBoostChildren({ uri: parentUri });
@@ -2678,11 +2766,11 @@ describe('Boosts', () => {
 
         it('should require full auth to count boost children', async () => {
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc },
+                boost: { credential: testUnsignedBoost },
             });
 
             await expect(
@@ -2695,10 +2783,10 @@ describe('Boosts', () => {
 
         it('should allow counting boost children', async () => {
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
             const childUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
 
             await userA.clients.fullAuth.boost.makeBoostParent({ parentUri, childUri });
@@ -2714,13 +2802,13 @@ describe('Boosts', () => {
 
         it('should not count parents', async () => {
             const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
             const childUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
 
             await userA.clients.fullAuth.boost.makeBoostParent({
@@ -2736,13 +2824,13 @@ describe('Boosts', () => {
 
         it('should not count grandchildren', async () => {
             const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
             const childUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
 
             await userA.clients.fullAuth.boost.makeBoostParent({
@@ -2760,13 +2848,13 @@ describe('Boosts', () => {
 
         it('should allow counting grandchildren', async () => {
             const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
             const childUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
 
             await userA.clients.fullAuth.boost.makeBoostParent({
@@ -2785,14 +2873,14 @@ describe('Boosts', () => {
 
         it('should allow querying boost children', async () => {
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
             const child1Uri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 category: 'A',
             });
             const child2Uri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 category: 'B',
             });
 
@@ -2816,19 +2904,19 @@ describe('Boosts', () => {
 
         it('should allow querying with $in', async () => {
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'A' },
+                boost: { credential: testUnsignedBoost, category: 'A' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'B' },
+                boost: { credential: testUnsignedBoost, category: 'B' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'C' },
+                boost: { credential: testUnsignedBoost, category: 'C' },
             });
 
             await expect(
@@ -2848,19 +2936,19 @@ describe('Boosts', () => {
 
         it('should allow querying with $regex', async () => {
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'All' },
+                boost: { credential: testUnsignedBoost, category: 'All' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'allo' },
+                boost: { credential: testUnsignedBoost, category: 'allo' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'C' },
+                boost: { credential: testUnsignedBoost, category: 'C' },
             });
 
             await expect(
@@ -2893,15 +2981,15 @@ describe('Boosts', () => {
 
         it('should require full auth to get boost siblings', async () => {
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
             const childUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc },
+                boost: { credential: testUnsignedBoost },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc },
+                boost: { credential: testUnsignedBoost },
             });
 
             await expect(
@@ -2914,15 +3002,15 @@ describe('Boosts', () => {
 
         it('should allow getting boost siblings', async () => {
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
             const childUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'A' },
+                boost: { credential: testUnsignedBoost, category: 'A' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'B' },
+                boost: { credential: testUnsignedBoost, category: 'B' },
             });
 
             await expect(
@@ -2937,29 +3025,29 @@ describe('Boosts', () => {
 
         it('should not return cousins', async () => {
             const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 category: 'A',
             });
             const parentUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: grandParentUri,
-                boost: { credential: testVc },
+                boost: { credential: testUnsignedBoost },
             });
             const childUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'A' },
+                boost: { credential: testUnsignedBoost, category: 'A' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'B' },
+                boost: { credential: testUnsignedBoost, category: 'B' },
             });
 
             const parent2Uri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: grandParentUri,
-                boost: { credential: testVc },
+                boost: { credential: testUnsignedBoost },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: parent2Uri,
-                boost: { credential: testVc, category: 'C' },
+                boost: { credential: testUnsignedBoost, category: 'C' },
             });
 
             const boosts = await userA.clients.fullAuth.boost.getBoostSiblings({ uri: childUri });
@@ -2970,23 +3058,23 @@ describe('Boosts', () => {
 
         it('should return siblings from multiple parents', async () => {
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
             const childUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'A' },
+                boost: { credential: testUnsignedBoost, category: 'A' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'B' },
+                boost: { credential: testUnsignedBoost, category: 'B' },
             });
 
             const parent2Uri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: parent2Uri,
-                boost: { credential: testVc, category: 'C' },
+                boost: { credential: testUnsignedBoost, category: 'C' },
             });
 
             await userA.clients.fullAuth.boost.makeBoostParent({ parentUri: parent2Uri, childUri });
@@ -3004,19 +3092,19 @@ describe('Boosts', () => {
 
         it('should allow querying boost siblings', async () => {
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
             const childUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'A' },
+                boost: { credential: testUnsignedBoost, category: 'A' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'B' },
+                boost: { credential: testUnsignedBoost, category: 'B' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'C' },
+                boost: { credential: testUnsignedBoost, category: 'C' },
             });
 
             await expect(
@@ -3037,23 +3125,23 @@ describe('Boosts', () => {
 
         it('should allow querying with $in', async () => {
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
             const childUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'A' },
+                boost: { credential: testUnsignedBoost, category: 'A' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'B' },
+                boost: { credential: testUnsignedBoost, category: 'B' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'C' },
+                boost: { credential: testUnsignedBoost, category: 'C' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'D' },
+                boost: { credential: testUnsignedBoost, category: 'D' },
             });
 
             await expect(
@@ -3075,23 +3163,23 @@ describe('Boosts', () => {
 
         it('should allow querying with $regex', async () => {
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
             const childUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'A' },
+                boost: { credential: testUnsignedBoost, category: 'A' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'All' },
+                boost: { credential: testUnsignedBoost, category: 'All' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'allo' },
+                boost: { credential: testUnsignedBoost, category: 'allo' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'C' },
+                boost: { credential: testUnsignedBoost, category: 'C' },
             });
 
             await expect(
@@ -3113,17 +3201,17 @@ describe('Boosts', () => {
 
         it('should paginate correctly', async () => {
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
             const childUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, name: 'Nice' },
+                boost: { credential: testUnsignedBoost, name: 'Nice' },
             });
 
             for (let index = 0; index < 10; index += 1) {
                 await userA.clients.fullAuth.boost.createChildBoost({
                     parentUri,
-                    boost: { credential: testVc, name: `Test ${index}` },
+                    boost: { credential: testUnsignedBoost, name: `Test ${index}` },
                 });
             }
 
@@ -3160,15 +3248,15 @@ describe('Boosts', () => {
 
         it('should include meta', async () => {
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
             const childUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'A' },
+                boost: { credential: testUnsignedBoost, category: 'A' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'B', meta: { nice: 'lol' } },
+                boost: { credential: testUnsignedBoost, category: 'B', meta: { nice: 'lol' } },
             });
 
             const boosts = await userA.clients.fullAuth.boost.getBoostSiblings({ uri: childUri });
@@ -3193,16 +3281,16 @@ describe('Boosts', () => {
 
         it('should require full auth to count boost siblings', async () => {
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
             const childUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc },
+                boost: { credential: testUnsignedBoost },
             });
 
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc },
+                boost: { credential: testUnsignedBoost },
             });
 
             await expect(
@@ -3215,15 +3303,15 @@ describe('Boosts', () => {
 
         it('should allow counting boost siblings', async () => {
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
             const childUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc },
+                boost: { credential: testUnsignedBoost },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc },
+                boost: { credential: testUnsignedBoost },
             });
 
             await expect(
@@ -3237,28 +3325,28 @@ describe('Boosts', () => {
 
         it('should not count cousins', async () => {
             const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
             const parentUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: grandParentUri,
-                boost: { credential: testVc },
+                boost: { credential: testUnsignedBoost },
             });
             const childUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc },
+                boost: { credential: testUnsignedBoost },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc },
+                boost: { credential: testUnsignedBoost },
             });
 
             const parent2Uri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: grandParentUri,
-                boost: { credential: testVc },
+                boost: { credential: testUnsignedBoost },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: parent2Uri,
-                boost: { credential: testVc },
+                boost: { credential: testUnsignedBoost },
             });
 
             const count = await userA.clients.fullAuth.boost.countBoostSiblings({ uri: childUri });
@@ -3268,23 +3356,23 @@ describe('Boosts', () => {
 
         it('should count siblings from multiple parents', async () => {
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
             const childUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc },
+                boost: { credential: testUnsignedBoost },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc },
+                boost: { credential: testUnsignedBoost },
             });
 
             const parent2Uri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: parent2Uri,
-                boost: { credential: testVc },
+                boost: { credential: testUnsignedBoost },
             });
 
             await userA.clients.fullAuth.boost.makeBoostParent({ parentUri: parent2Uri, childUri });
@@ -3300,19 +3388,19 @@ describe('Boosts', () => {
 
         it('should allow querying boost siblings', async () => {
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
             const childUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'A' },
+                boost: { credential: testUnsignedBoost, category: 'A' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'B' },
+                boost: { credential: testUnsignedBoost, category: 'B' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'C' },
+                boost: { credential: testUnsignedBoost, category: 'C' },
             });
 
             await expect(
@@ -3332,23 +3420,23 @@ describe('Boosts', () => {
 
         it('should allow querying with $in', async () => {
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
             const childUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'A' },
+                boost: { credential: testUnsignedBoost, category: 'A' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'B' },
+                boost: { credential: testUnsignedBoost, category: 'B' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'C' },
+                boost: { credential: testUnsignedBoost, category: 'C' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'D' },
+                boost: { credential: testUnsignedBoost, category: 'D' },
             });
 
             await expect(
@@ -3368,23 +3456,23 @@ describe('Boosts', () => {
 
         it('should allow querying with $regex', async () => {
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
             const childUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'A' },
+                boost: { credential: testUnsignedBoost, category: 'A' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'All' },
+                boost: { credential: testUnsignedBoost, category: 'All' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'allo' },
+                boost: { credential: testUnsignedBoost, category: 'allo' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'C' },
+                boost: { credential: testUnsignedBoost, category: 'C' },
             });
 
             await expect(
@@ -3417,20 +3505,20 @@ describe('Boosts', () => {
 
         it('should require full auth to get familial boosts', async () => {
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
             const childUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc },
+                boost: { credential: testUnsignedBoost },
             });
 
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: childUri,
-                boost: { credential: testVc },
+                boost: { credential: testUnsignedBoost },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc },
+                boost: { credential: testUnsignedBoost },
             });
 
             await expect(
@@ -3443,21 +3531,21 @@ describe('Boosts', () => {
 
         it('should allow getting familial boosts', async () => {
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 category: 'A',
             });
             const childUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'B' },
+                boost: { credential: testUnsignedBoost, category: 'B' },
             });
 
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: childUri,
-                boost: { credential: testVc, category: 'C' },
+                boost: { credential: testUnsignedBoost, category: 'C' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'D' },
+                boost: { credential: testUnsignedBoost, category: 'D' },
             });
 
             await expect(
@@ -3474,19 +3562,19 @@ describe('Boosts', () => {
 
         it('should return children', async () => {
             const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 category: 'A',
             });
             const parentUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: grandParentUri,
                 boost: {
-                    credential: testVc,
+                    credential: testUnsignedBoost,
                 },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
                 boost: {
-                    credential: testVc,
+                    credential: testUnsignedBoost,
                     category: 'B',
                 },
             });
@@ -3499,16 +3587,16 @@ describe('Boosts', () => {
 
         it('should return parents', async () => {
             const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 category: 'A',
             });
             const parentUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: grandParentUri,
-                boost: { credential: testVc },
+                boost: { credential: testUnsignedBoost },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'B' },
+                boost: { credential: testUnsignedBoost, category: 'B' },
             });
 
             const boosts = await userA.clients.fullAuth.boost.getFamilialBoosts({ uri: parentUri });
@@ -3519,15 +3607,15 @@ describe('Boosts', () => {
 
         it('should return siblings', async () => {
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
             const childUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'A' },
+                boost: { credential: testUnsignedBoost, category: 'A' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'B' },
+                boost: { credential: testUnsignedBoost, category: 'B' },
             });
 
             const boosts = await userA.clients.fullAuth.boost.getFamilialBoosts({ uri: childUri });
@@ -3538,16 +3626,16 @@ describe('Boosts', () => {
 
         it('should not return grandparents', async () => {
             const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 category: 'A',
             });
             const parentUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: grandParentUri,
-                boost: { credential: testVc, category: 'B' },
+                boost: { credential: testUnsignedBoost, category: 'B' },
             });
             const childUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc },
+                boost: { credential: testUnsignedBoost },
             });
 
             const boosts = await userA.clients.fullAuth.boost.getFamilialBoosts({ uri: childUri });
@@ -3558,16 +3646,16 @@ describe('Boosts', () => {
 
         it('should allow returning grandparents', async () => {
             const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 category: 'A',
             });
             const parentUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: grandParentUri,
-                boost: { credential: testVc, category: 'B' },
+                boost: { credential: testUnsignedBoost, category: 'B' },
             });
             const childUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc },
+                boost: { credential: testUnsignedBoost },
             });
 
             const boosts = await userA.clients.fullAuth.boost.getFamilialBoosts({
@@ -3580,15 +3668,15 @@ describe('Boosts', () => {
 
         it('should not return grandchildren', async () => {
             const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
             const parentUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: grandParentUri,
-                boost: { credential: testVc, category: 'A' },
+                boost: { credential: testUnsignedBoost, category: 'A' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'B' },
+                boost: { credential: testUnsignedBoost, category: 'B' },
             });
 
             const boosts = await userA.clients.fullAuth.boost.getFamilialBoosts({
@@ -3601,15 +3689,15 @@ describe('Boosts', () => {
 
         it('should allow returning grandchildren', async () => {
             const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
             const parentUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: grandParentUri,
-                boost: { credential: testVc, category: 'A' },
+                boost: { credential: testUnsignedBoost, category: 'A' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'B' },
+                boost: { credential: testUnsignedBoost, category: 'B' },
             });
 
             const boosts = await userA.clients.fullAuth.boost.getFamilialBoosts({
@@ -3622,25 +3710,25 @@ describe('Boosts', () => {
 
         it('should allow different numbers of generations for children/parents', async () => {
             const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 name: 'My Grandpa',
             });
             const parentUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: grandParentUri,
-                boost: { credential: testVc, name: 'My Dad' },
+                boost: { credential: testUnsignedBoost, name: 'My Dad' },
             });
             const middleUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, name: 'Me' },
+                boost: { credential: testUnsignedBoost, name: 'Me' },
             });
 
             const childUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: middleUri,
-                boost: { credential: testVc, name: 'My Son' },
+                boost: { credential: testUnsignedBoost, name: 'My Son' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: childUri,
-                boost: { credential: testVc, name: 'My Grandson' },
+                boost: { credential: testUnsignedBoost, name: 'My Grandson' },
             });
 
             const boosts = await userA.clients.fullAuth.boost.getFamilialBoosts({
@@ -3658,29 +3746,29 @@ describe('Boosts', () => {
 
         it('should not return cousins', async () => {
             const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 category: 'A',
             });
             const parentUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: grandParentUri,
-                boost: { credential: testVc },
+                boost: { credential: testUnsignedBoost },
             });
             const childUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'A' },
+                boost: { credential: testUnsignedBoost, category: 'A' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'B' },
+                boost: { credential: testUnsignedBoost, category: 'B' },
             });
 
             const parent2Uri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: grandParentUri,
-                boost: { credential: testVc },
+                boost: { credential: testUnsignedBoost },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: parent2Uri,
-                boost: { credential: testVc, category: 'C' },
+                boost: { credential: testUnsignedBoost, category: 'C' },
             });
 
             const boosts = await userA.clients.fullAuth.boost.getFamilialBoosts({
@@ -3696,29 +3784,29 @@ describe('Boosts', () => {
 
         it('should allow returning cousins', async () => {
             const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 category: 'A',
             });
             const parentUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: grandParentUri,
-                boost: { credential: testVc },
+                boost: { credential: testUnsignedBoost },
             });
             const childUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'A' },
+                boost: { credential: testUnsignedBoost, category: 'A' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'B' },
+                boost: { credential: testUnsignedBoost, category: 'B' },
             });
 
             const parent2Uri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: grandParentUri,
-                boost: { credential: testVc },
+                boost: { credential: testUnsignedBoost },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: parent2Uri,
-                boost: { credential: testVc, category: 'C' },
+                boost: { credential: testUnsignedBoost, category: 'C' },
             });
 
             const boosts = await userA.clients.fullAuth.boost.getFamilialBoosts({
@@ -3734,23 +3822,23 @@ describe('Boosts', () => {
 
         it('should return siblings from multiple parents', async () => {
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
             const childUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'A' },
+                boost: { credential: testUnsignedBoost, category: 'A' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'B' },
+                boost: { credential: testUnsignedBoost, category: 'B' },
             });
 
             const parent2Uri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: parent2Uri,
-                boost: { credential: testVc, category: 'C' },
+                boost: { credential: testUnsignedBoost, category: 'C' },
             });
 
             await userA.clients.fullAuth.boost.makeBoostParent({ parentUri: parent2Uri, childUri });
@@ -3762,29 +3850,29 @@ describe('Boosts', () => {
 
         it('should allow querying familial boosts', async () => {
             const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 name: 'My Grandpa',
             });
             const parentUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: grandParentUri,
-                boost: { credential: testVc, name: 'My Dad' },
+                boost: { credential: testUnsignedBoost, name: 'My Dad' },
             });
             const middleUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, name: 'Me' },
+                boost: { credential: testUnsignedBoost, name: 'Me' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, name: 'My Brother' },
+                boost: { credential: testUnsignedBoost, name: 'My Brother' },
             });
 
             const childUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: middleUri,
-                boost: { credential: testVc, name: 'My Son' },
+                boost: { credential: testUnsignedBoost, name: 'My Son' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: childUri,
-                boost: { credential: testVc, name: 'My Grandson' },
+                boost: { credential: testUnsignedBoost, name: 'My Grandson' },
             });
 
             const boosts = await userA.clients.fullAuth.boost.getFamilialBoosts({
@@ -3798,29 +3886,29 @@ describe('Boosts', () => {
 
         it('should allow querying with $in', async () => {
             const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 name: 'My Grandpa',
             });
             const parentUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: grandParentUri,
-                boost: { credential: testVc, name: 'My Dad' },
+                boost: { credential: testUnsignedBoost, name: 'My Dad' },
             });
             const middleUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, name: 'Me' },
+                boost: { credential: testUnsignedBoost, name: 'Me' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, name: 'My Brother' },
+                boost: { credential: testUnsignedBoost, name: 'My Brother' },
             });
 
             const childUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: middleUri,
-                boost: { credential: testVc, name: 'My Son' },
+                boost: { credential: testUnsignedBoost, name: 'My Son' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: childUri,
-                boost: { credential: testVc, name: 'My Grandson' },
+                boost: { credential: testUnsignedBoost, name: 'My Grandson' },
             });
 
             const boosts = await userA.clients.fullAuth.boost.getFamilialBoosts({
@@ -3835,29 +3923,29 @@ describe('Boosts', () => {
 
         it('should allow querying with $regex', async () => {
             const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 name: 'My Grandpa',
             });
             const parentUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: grandParentUri,
-                boost: { credential: testVc, name: 'My Dad' },
+                boost: { credential: testUnsignedBoost, name: 'My Dad' },
             });
             const middleUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, name: 'Me' },
+                boost: { credential: testUnsignedBoost, name: 'Me' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, name: 'My Brother' },
+                boost: { credential: testUnsignedBoost, name: 'My Brother' },
             });
 
             const childUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: middleUri,
-                boost: { credential: testVc, name: 'My Son' },
+                boost: { credential: testUnsignedBoost, name: 'My Son' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: childUri,
-                boost: { credential: testVc, name: 'My Grandson' },
+                boost: { credential: testUnsignedBoost, name: 'My Grandson' },
             });
 
             const boosts = await userA.clients.fullAuth.boost.getFamilialBoosts({
@@ -3874,16 +3962,16 @@ describe('Boosts', () => {
 
         it('should paginate correctly', async () => {
             const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 name: 'My Grandpa',
             });
             const grandParent2Uri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 name: 'My Grandma',
             });
             const parentUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: grandParentUri,
-                boost: { credential: testVc, name: 'My Dad' },
+                boost: { credential: testUnsignedBoost, name: 'My Dad' },
             });
 
             await userA.clients.fullAuth.boost.makeBoostParent({
@@ -3893,36 +3981,36 @@ describe('Boosts', () => {
 
             const middleUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, name: 'Me' },
+                boost: { credential: testUnsignedBoost, name: 'Me' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, name: 'My Brother' },
+                boost: { credential: testUnsignedBoost, name: 'My Brother' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, name: 'My Sister' },
+                boost: { credential: testUnsignedBoost, name: 'My Sister' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, name: 'My Other Brother' },
+                boost: { credential: testUnsignedBoost, name: 'My Other Brother' },
             });
 
             const childUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: middleUri,
-                boost: { credential: testVc, name: 'My Son' },
+                boost: { credential: testUnsignedBoost, name: 'My Son' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: middleUri,
-                boost: { credential: testVc, name: 'My Daughter' },
+                boost: { credential: testUnsignedBoost, name: 'My Daughter' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: childUri,
-                boost: { credential: testVc, name: 'My Grandson' },
+                boost: { credential: testUnsignedBoost, name: 'My Grandson' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: childUri,
-                boost: { credential: testVc, name: 'My Granddaughter' },
+                boost: { credential: testUnsignedBoost, name: 'My Granddaughter' },
             });
 
             const boosts = await userA.clients.fullAuth.boost.getFamilialBoosts({
@@ -3960,22 +4048,22 @@ describe('Boosts', () => {
 
         it('should include meta', async () => {
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 category: 'A',
                 meta: { nice: 'lol' },
             });
             const childUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'B' },
+                boost: { credential: testUnsignedBoost, category: 'B' },
             });
 
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: childUri,
-                boost: { credential: testVc, category: 'C', meta: { nice: 'lol' } },
+                boost: { credential: testUnsignedBoost, category: 'C', meta: { nice: 'lol' } },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'D', meta: { nice: 'lol' } },
+                boost: { credential: testUnsignedBoost, category: 'D', meta: { nice: 'lol' } },
             });
 
             const boosts = await userA.clients.fullAuth.boost.getFamilialBoosts({ uri: childUri });
@@ -3998,20 +4086,20 @@ describe('Boosts', () => {
 
         it('should require full auth to count familial boosts', async () => {
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
             const childUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc },
+                boost: { credential: testUnsignedBoost },
             });
 
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: childUri,
-                boost: { credential: testVc },
+                boost: { credential: testUnsignedBoost },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc },
+                boost: { credential: testUnsignedBoost },
             });
 
             await expect(
@@ -4024,21 +4112,21 @@ describe('Boosts', () => {
 
         it('should allow counting familial boosts', async () => {
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 category: 'A',
             });
             const childUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'B' },
+                boost: { credential: testUnsignedBoost, category: 'B' },
             });
 
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: childUri,
-                boost: { credential: testVc, category: 'C' },
+                boost: { credential: testUnsignedBoost, category: 'C' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'D' },
+                boost: { credential: testUnsignedBoost, category: 'D' },
             });
 
             await expect(
@@ -4052,19 +4140,19 @@ describe('Boosts', () => {
 
         it('should count children', async () => {
             const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 category: 'A',
             });
             const parentUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: grandParentUri,
                 boost: {
-                    credential: testVc,
+                    credential: testUnsignedBoost,
                 },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
                 boost: {
-                    credential: testVc,
+                    credential: testUnsignedBoost,
                     category: 'B',
                 },
             });
@@ -4078,16 +4166,16 @@ describe('Boosts', () => {
 
         it('should count parents', async () => {
             const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 category: 'A',
             });
             const parentUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: grandParentUri,
-                boost: { credential: testVc },
+                boost: { credential: testUnsignedBoost },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'B' },
+                boost: { credential: testUnsignedBoost, category: 'B' },
             });
 
             const count = await userA.clients.fullAuth.boost.countFamilialBoosts({
@@ -4099,15 +4187,15 @@ describe('Boosts', () => {
 
         it('should count siblings', async () => {
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
             const childUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'A' },
+                boost: { credential: testUnsignedBoost, category: 'A' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'B' },
+                boost: { credential: testUnsignedBoost, category: 'B' },
             });
 
             const count = await userA.clients.fullAuth.boost.countFamilialBoosts({ uri: childUri });
@@ -4117,16 +4205,16 @@ describe('Boosts', () => {
 
         it('should not count grandparents', async () => {
             const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 category: 'A',
             });
             const parentUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: grandParentUri,
-                boost: { credential: testVc, category: 'B' },
+                boost: { credential: testUnsignedBoost, category: 'B' },
             });
             const childUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc },
+                boost: { credential: testUnsignedBoost },
             });
 
             const count = await userA.clients.fullAuth.boost.countFamilialBoosts({ uri: childUri });
@@ -4136,16 +4224,16 @@ describe('Boosts', () => {
 
         it('should allow counting grandparents', async () => {
             const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 category: 'A',
             });
             const parentUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: grandParentUri,
-                boost: { credential: testVc, category: 'B' },
+                boost: { credential: testUnsignedBoost, category: 'B' },
             });
             const childUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc },
+                boost: { credential: testUnsignedBoost },
             });
 
             const count = await userA.clients.fullAuth.boost.countFamilialBoosts({
@@ -4158,15 +4246,15 @@ describe('Boosts', () => {
 
         it('should not count grandchildren', async () => {
             const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
             const parentUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: grandParentUri,
-                boost: { credential: testVc, category: 'A' },
+                boost: { credential: testUnsignedBoost, category: 'A' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'B' },
+                boost: { credential: testUnsignedBoost, category: 'B' },
             });
 
             const count = await userA.clients.fullAuth.boost.countFamilialBoosts({
@@ -4178,15 +4266,15 @@ describe('Boosts', () => {
 
         it('should allow counting grandchildren', async () => {
             const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
             const parentUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: grandParentUri,
-                boost: { credential: testVc, category: 'A' },
+                boost: { credential: testUnsignedBoost, category: 'A' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'B' },
+                boost: { credential: testUnsignedBoost, category: 'B' },
             });
 
             const count = await userA.clients.fullAuth.boost.countFamilialBoosts({
@@ -4199,25 +4287,25 @@ describe('Boosts', () => {
 
         it('should allow different numbers of generations for children/parents', async () => {
             const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 name: 'My Grandpa',
             });
             const parentUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: grandParentUri,
-                boost: { credential: testVc, name: 'My Dad' },
+                boost: { credential: testUnsignedBoost, name: 'My Dad' },
             });
             const middleUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, name: 'Me' },
+                boost: { credential: testUnsignedBoost, name: 'Me' },
             });
 
             const childUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: middleUri,
-                boost: { credential: testVc, name: 'My Son' },
+                boost: { credential: testUnsignedBoost, name: 'My Son' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: childUri,
-                boost: { credential: testVc, name: 'My Grandson' },
+                boost: { credential: testUnsignedBoost, name: 'My Grandson' },
             });
 
             const count = await userA.clients.fullAuth.boost.countFamilialBoosts({
@@ -4231,29 +4319,29 @@ describe('Boosts', () => {
 
         it('should not count cousins', async () => {
             const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 category: 'A',
             });
             const parentUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: grandParentUri,
-                boost: { credential: testVc },
+                boost: { credential: testUnsignedBoost },
             });
             const childUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'A' },
+                boost: { credential: testUnsignedBoost, category: 'A' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'B' },
+                boost: { credential: testUnsignedBoost, category: 'B' },
             });
 
             const parent2Uri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: grandParentUri,
-                boost: { credential: testVc },
+                boost: { credential: testUnsignedBoost },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: parent2Uri,
-                boost: { credential: testVc, category: 'C' },
+                boost: { credential: testUnsignedBoost, category: 'C' },
             });
 
             const count = await userA.clients.fullAuth.boost.countFamilialBoosts({
@@ -4267,29 +4355,29 @@ describe('Boosts', () => {
 
         it('should allow counting cousins', async () => {
             const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 category: 'A',
             });
             const parentUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: grandParentUri,
-                boost: { credential: testVc },
+                boost: { credential: testUnsignedBoost },
             });
             const childUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'A' },
+                boost: { credential: testUnsignedBoost, category: 'A' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'B' },
+                boost: { credential: testUnsignedBoost, category: 'B' },
             });
 
             const parent2Uri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: grandParentUri,
-                boost: { credential: testVc },
+                boost: { credential: testUnsignedBoost },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: parent2Uri,
-                boost: { credential: testVc, category: 'C' },
+                boost: { credential: testUnsignedBoost, category: 'C' },
             });
 
             const count = await userA.clients.fullAuth.boost.countFamilialBoosts({
@@ -4304,23 +4392,23 @@ describe('Boosts', () => {
 
         it('should count siblings from multiple parents', async () => {
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
             const childUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'A' },
+                boost: { credential: testUnsignedBoost, category: 'A' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, category: 'B' },
+                boost: { credential: testUnsignedBoost, category: 'B' },
             });
 
             const parent2Uri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: parent2Uri,
-                boost: { credential: testVc, category: 'C' },
+                boost: { credential: testUnsignedBoost, category: 'C' },
             });
 
             await userA.clients.fullAuth.boost.makeBoostParent({ parentUri: parent2Uri, childUri });
@@ -4332,29 +4420,29 @@ describe('Boosts', () => {
 
         it('should allow querying familial boosts', async () => {
             const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 name: 'My Grandpa',
             });
             const parentUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: grandParentUri,
-                boost: { credential: testVc, name: 'My Dad' },
+                boost: { credential: testUnsignedBoost, name: 'My Dad' },
             });
             const middleUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, name: 'Me' },
+                boost: { credential: testUnsignedBoost, name: 'Me' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, name: 'My Brother' },
+                boost: { credential: testUnsignedBoost, name: 'My Brother' },
             });
 
             const childUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: middleUri,
-                boost: { credential: testVc, name: 'My Son' },
+                boost: { credential: testUnsignedBoost, name: 'My Son' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: childUri,
-                boost: { credential: testVc, name: 'My Grandson' },
+                boost: { credential: testUnsignedBoost, name: 'My Grandson' },
             });
 
             const count = await userA.clients.fullAuth.boost.countFamilialBoosts({
@@ -4367,29 +4455,29 @@ describe('Boosts', () => {
 
         it('should allow querying with $in', async () => {
             const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 name: 'My Grandpa',
             });
             const parentUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: grandParentUri,
-                boost: { credential: testVc, name: 'My Dad' },
+                boost: { credential: testUnsignedBoost, name: 'My Dad' },
             });
             const middleUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, name: 'Me' },
+                boost: { credential: testUnsignedBoost, name: 'Me' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, name: 'My Brother' },
+                boost: { credential: testUnsignedBoost, name: 'My Brother' },
             });
 
             const childUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: middleUri,
-                boost: { credential: testVc, name: 'My Son' },
+                boost: { credential: testUnsignedBoost, name: 'My Son' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: childUri,
-                boost: { credential: testVc, name: 'My Grandson' },
+                boost: { credential: testUnsignedBoost, name: 'My Grandson' },
             });
 
             const count = await userA.clients.fullAuth.boost.countFamilialBoosts({
@@ -4402,29 +4490,29 @@ describe('Boosts', () => {
 
         it('should allow querying with $regex', async () => {
             const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 name: 'My Grandpa',
             });
             const parentUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: grandParentUri,
-                boost: { credential: testVc, name: 'My Dad' },
+                boost: { credential: testUnsignedBoost, name: 'My Dad' },
             });
             const middleUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, name: 'Me' },
+                boost: { credential: testUnsignedBoost, name: 'Me' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc, name: 'My Brother' },
+                boost: { credential: testUnsignedBoost, name: 'My Brother' },
             });
 
             const childUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: middleUri,
-                boost: { credential: testVc, name: 'My Son' },
+                boost: { credential: testUnsignedBoost, name: 'My Son' },
             });
             await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: childUri,
-                boost: { credential: testVc, name: 'My Grandson' },
+                boost: { credential: testUnsignedBoost, name: 'My Grandson' },
             });
 
             const count = await userA.clients.fullAuth.boost.countFamilialBoosts({
@@ -4452,9 +4540,11 @@ describe('Boosts', () => {
 
         it('should require full auth to get boost parents', async () => {
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
-            const childUri = await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
+            const childUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
 
             await userA.clients.fullAuth.boost.makeBoostParent({ parentUri, childUri });
 
@@ -4468,11 +4558,11 @@ describe('Boosts', () => {
 
         it('should allow getting boost parents', async () => {
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 category: 'B',
             });
             const childUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
 
             await userA.clients.fullAuth.boost.makeBoostParent({ parentUri, childUri });
@@ -4489,14 +4579,14 @@ describe('Boosts', () => {
 
         it('should not return children', async () => {
             const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 category: 'A',
             });
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
             const childUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 category: 'B',
             });
 
@@ -4514,14 +4604,16 @@ describe('Boosts', () => {
 
         it('should not return grandparents', async () => {
             const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 category: 'A',
             });
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 category: 'B',
             });
-            const childUri = await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
+            const childUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
 
             await userA.clients.fullAuth.boost.makeBoostParent({
                 parentUri: grandParentUri,
@@ -4539,14 +4631,16 @@ describe('Boosts', () => {
 
         it('should allow returning grandparents', async () => {
             const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 category: 'A',
             });
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 category: 'B',
             });
-            const childUri = await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
+            const childUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
 
             await userA.clients.fullAuth.boost.makeBoostParent({
                 parentUri: grandParentUri,
@@ -4564,15 +4658,15 @@ describe('Boosts', () => {
 
         it('should allow querying boost parents', async () => {
             const parent1Uri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 category: 'A',
             });
             const parent2Uri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 category: 'B',
             });
             const childUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
 
             await userA.clients.fullAuth.boost.makeBoostParent({ parentUri: parent1Uri, childUri });
@@ -4596,19 +4690,19 @@ describe('Boosts', () => {
 
         it('should allow querying with $in', async () => {
             const parent1Uri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 category: 'A',
             });
             const parent2Uri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 category: 'B',
             });
             const parent3Uri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 category: 'C',
             });
             const childUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
 
             await userA.clients.fullAuth.boost.makeBoostParent({ parentUri: parent1Uri, childUri });
@@ -4634,19 +4728,19 @@ describe('Boosts', () => {
 
         it('should allow querying with $regex', async () => {
             const parent1Uri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 category: 'All',
             });
             const parent2Uri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 category: 'allo',
             });
             const parent3Uri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 category: 'C',
             });
             const childUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
 
             await userA.clients.fullAuth.boost.makeBoostParent({ parentUri: parent1Uri, childUri });
@@ -4672,12 +4766,12 @@ describe('Boosts', () => {
 
         it('should paginate correctly', async () => {
             const childUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
 
             for (let index = 0; index < 10; index += 1) {
                 const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                    credential: testVc,
+                    credential: testUnsignedBoost,
                     name: `Test ${index}`,
                 });
                 await userA.clients.fullAuth.boost.makeBoostParent({ parentUri, childUri });
@@ -4716,12 +4810,12 @@ describe('Boosts', () => {
 
         it('should include meta', async () => {
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 category: 'B',
                 meta: { nice: 'lol' },
             });
             const childUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
 
             await userA.clients.fullAuth.boost.makeBoostParent({ parentUri, childUri });
@@ -4748,9 +4842,11 @@ describe('Boosts', () => {
 
         it('should require full auth to count boost parents', async () => {
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
-            const childUri = await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
+            const childUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
 
             await userA.clients.fullAuth.boost.makeBoostParent({ parentUri, childUri });
 
@@ -4764,10 +4860,10 @@ describe('Boosts', () => {
 
         it('should allow counting boost parents', async () => {
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
             const childUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
 
             await userA.clients.fullAuth.boost.makeBoostParent({ parentUri, childUri });
@@ -4783,13 +4879,13 @@ describe('Boosts', () => {
 
         it('should not count children', async () => {
             const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
             const childUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
 
             await userA.clients.fullAuth.boost.makeBoostParent({
@@ -4805,13 +4901,13 @@ describe('Boosts', () => {
 
         it('should not count grandparents', async () => {
             const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
             const childUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
 
             await userA.clients.fullAuth.boost.makeBoostParent({
@@ -4829,13 +4925,13 @@ describe('Boosts', () => {
 
         it('should allow counting grandparents', async () => {
             const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
             const childUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
 
             await userA.clients.fullAuth.boost.makeBoostParent({
@@ -4854,15 +4950,15 @@ describe('Boosts', () => {
 
         it('should allow querying boost parents', async () => {
             const parent1Uri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 category: 'A',
             });
             const parent2Uri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 category: 'B',
             });
             const childUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
 
             await userA.clients.fullAuth.boost.makeBoostParent({ parentUri: parent1Uri, childUri });
@@ -4885,19 +4981,19 @@ describe('Boosts', () => {
 
         it('should allow querying with $in', async () => {
             const parent1Uri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 category: 'A',
             });
             const parent2Uri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 category: 'B',
             });
             const parent3Uri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 category: 'C',
             });
             const childUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
 
             await userA.clients.fullAuth.boost.makeBoostParent({ parentUri: parent1Uri, childUri });
@@ -4921,19 +5017,19 @@ describe('Boosts', () => {
 
         it('should allow querying with $regex', async () => {
             const parent1Uri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 category: 'All',
             });
             const parent2Uri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 category: 'allo',
             });
             const parent3Uri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 category: 'C',
             });
             const childUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
 
             await userA.clients.fullAuth.boost.makeBoostParent({ parentUri: parent1Uri, childUri });
@@ -4970,9 +5066,11 @@ describe('Boosts', () => {
 
         it('should not allow you to remove a boost parent without full auth', async () => {
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
-            const childUri = await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
+            const childUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
 
             await userA.clients.fullAuth.boost.makeBoostParent({ parentUri, childUri });
 
@@ -4988,9 +5086,11 @@ describe('Boosts', () => {
 
         it('should allow you to remove a boost parent', async () => {
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
-            const childUri = await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
+            const childUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
 
             await userA.clients.fullAuth.boost.makeBoostParent({ parentUri, childUri });
 
@@ -5011,9 +5111,11 @@ describe('Boosts', () => {
 
         it("should not allow removing a parent when it isn't a parent", async () => {
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
-            const childUri = await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
+            const childUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
 
             await expect(
                 userA.clients.fullAuth.boost.removeBoostParent({ parentUri, childUri })
@@ -5022,14 +5124,14 @@ describe('Boosts', () => {
 
         it("should not allow removing a parent when it's a grandparent", async () => {
             const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 category: 'A',
             });
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
             const childUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
                 category: 'B',
             });
 
@@ -5049,9 +5151,11 @@ describe('Boosts', () => {
 
         it("should not allow removing a parent when it's actually a child", async () => {
             const parentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
-            const childUri = await userA.clients.fullAuth.boost.createBoost({ credential: testVc });
+            const childUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
 
             await expect(
                 userA.clients.fullAuth.boost.makeBoostParent({ parentUri, childUri })
@@ -5081,7 +5185,7 @@ describe('Boosts', () => {
 
         it('should not allow you to get permissions without full auth', async () => {
             const uri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
 
             await expect(noAuthClient.boost.getBoostPermissions({ uri })).rejects.toMatchObject({
@@ -5094,7 +5198,7 @@ describe('Boosts', () => {
 
         it('should allow you to view permissions of boosts you created', async () => {
             const uri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
 
             await expect(
@@ -5108,7 +5212,7 @@ describe('Boosts', () => {
 
         it('should allow you to view permissions of boosts you are admin of', async () => {
             const uri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
 
             await userA.clients.fullAuth.boost.addBoostAdmin({ profileId: 'userb', uri });
@@ -5120,7 +5224,7 @@ describe('Boosts', () => {
 
         it('should allow you to view permissions of boosts you are not admin of', async () => {
             const uri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
 
             const permissions = await userB.clients.fullAuth.boost.getBoostPermissions({ uri });
@@ -5130,15 +5234,15 @@ describe('Boosts', () => {
 
         it('should respect parent and grandparent overrides', async () => {
             const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
             const parentUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: grandParentUri,
-                boost: { credential: testVc },
+                boost: { credential: testUnsignedBoost },
             });
             const grandChildUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc },
+                boost: { credential: testUnsignedBoost },
             });
 
             await userA.clients.fullAuth.boost.addBoostAdmin({
@@ -5181,7 +5285,7 @@ describe('Boosts', () => {
 
         it('should not allow you to get permissions without full auth', async () => {
             const uri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
 
             await expect(
@@ -5199,7 +5303,7 @@ describe('Boosts', () => {
 
         it('should allow you to view permissions of boosts you created', async () => {
             const uri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
 
             await expect(
@@ -5228,7 +5332,7 @@ describe('Boosts', () => {
 
         it('should allow you to view permissions of boosts you are admin of', async () => {
             const uri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
 
             await userA.clients.fullAuth.boost.addBoostAdmin({ profileId: 'userb', uri });
@@ -5243,7 +5347,7 @@ describe('Boosts', () => {
 
         it('should not allow you to view permissions of boosts you are not admin of', async () => {
             const uri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
 
             await expect(
@@ -5256,15 +5360,15 @@ describe('Boosts', () => {
 
         it('should respect parent and grandparent overrides', async () => {
             const grandParentUri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
             const parentUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri: grandParentUri,
-                boost: { credential: testVc },
+                boost: { credential: testUnsignedBoost },
             });
             const grandChildUri = await userA.clients.fullAuth.boost.createChildBoost({
                 parentUri,
-                boost: { credential: testVc },
+                boost: { credential: testUnsignedBoost },
             });
 
             await userA.clients.fullAuth.boost.addBoostAdmin({
@@ -5312,7 +5416,7 @@ describe('Boosts', () => {
 
         it('should not allow you to update permissions without full auth', async () => {
             const uri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
 
             await userA.clients.fullAuth.boost.addBoostAdmin({ profileId: 'userb', uri });
@@ -5332,7 +5436,7 @@ describe('Boosts', () => {
 
         it('should allow you to update permissions of boosts you are admin of', async () => {
             const uri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
 
             await userA.clients.fullAuth.boost.addBoostAdmin({ profileId: 'userb', uri });
@@ -5357,7 +5461,7 @@ describe('Boosts', () => {
 
         it('should not allow you to update permissions of boosts you are not admin of', async () => {
             const uri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
 
             await expect(
@@ -5370,7 +5474,7 @@ describe('Boosts', () => {
 
         it("should not allow you to update permissions you don't have access to", async () => {
             const uri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
 
             await userA.clients.fullAuth.boost.addBoostAdmin({ profileId: 'userb', uri });
@@ -5391,7 +5495,7 @@ describe('Boosts', () => {
 
         it('should not allow you the boost creator to break permissions', async () => {
             const uri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
 
             await expect(
@@ -5419,7 +5523,7 @@ describe('Boosts', () => {
 
         it('should not allow you to update permissions without full auth', async () => {
             const uri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
 
             await userA.clients.fullAuth.boost.addBoostAdmin({ profileId: 'userb', uri });
@@ -5440,7 +5544,7 @@ describe('Boosts', () => {
 
         it('should allow you to update permissions of boosts you are admin of', async () => {
             const uri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
 
             await userA.clients.fullAuth.boost.addBoostAdmin({ profileId: 'userb', uri });
@@ -5470,7 +5574,7 @@ describe('Boosts', () => {
 
         it('should not allow you to update permissions of boosts you are not admin of', async () => {
             const uri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
 
             await expect(
@@ -5484,7 +5588,7 @@ describe('Boosts', () => {
 
         it("should not allow you to update permissions you don't have access to", async () => {
             const uri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
 
             await userA.clients.fullAuth.boost.addBoostAdmin({ profileId: 'userb', uri });
@@ -5506,7 +5610,7 @@ describe('Boosts', () => {
 
         it('should not allow you to update permissions of the boost creator', async () => {
             const uri = await userA.clients.fullAuth.boost.createBoost({
-                credential: testVc,
+                credential: testUnsignedBoost,
             });
 
             await userA.clients.fullAuth.boost.addBoostAdmin({ profileId: 'userb', uri });
@@ -5518,6 +5622,402 @@ describe('Boosts', () => {
                     updates: { canEdit: false },
                 })
             ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        });
+    });
+
+    describe('getPaginatedBoostRecipientsWithChildren', () => {
+        beforeEach(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+            await userC.clients.fullAuth.profile.createProfile({ profileId: 'userc' });
+            await userD.clients.fullAuth.profile.createProfile({ profileId: 'userd' });
+        });
+
+        afterAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+            await Boost.delete({ detach: true, where: {} });
+        });
+
+        it('should not allow access without full auth', async () => {
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            await expect(
+                noAuthClient.boost.getPaginatedBoostRecipientsWithChildren({ uri })
+            ).rejects.toMatchObject({
+                code: 'UNAUTHORIZED',
+            });
+            await expect(
+                userA.clients.partialAuth.boost.getPaginatedBoostRecipientsWithChildren({ uri })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        });
+
+        it('should return empty results for boost with no recipients', async () => {
+            const uri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            const result =
+                await userA.clients.fullAuth.boost.getPaginatedBoostRecipientsWithChildren({ uri });
+
+            expect(result.records).toHaveLength(0);
+            expect(result.hasMore).toBe(false);
+            expect(result.cursor).toBeUndefined();
+        });
+
+        it('should return recipients for boost with children boosts', async () => {
+            // Create parent boost
+            const parentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'Parent',
+            });
+
+            // Create child boost
+            const childUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testUnsignedBoost, category: 'Child' },
+            });
+
+            // Send parent boost to userB
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB },
+                parentUri
+            );
+
+            // Send child boost to userC
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userc', user: userC },
+                childUri
+            );
+
+            const result =
+                await userA.clients.fullAuth.boost.getPaginatedBoostRecipientsWithChildren({
+                    uri: parentUri,
+                });
+
+            expect(result.records).toHaveLength(2);
+
+            // Check that we have both recipients
+            const profileIds = result.records.map(r => r.to.profileId).sort();
+            expect(profileIds).toEqual(['userb', 'userc']);
+
+            // Check that userB has parent boost URI
+            const userBRecord = result.records.find(r => r.to.profileId === 'userb');
+            expect(userBRecord?.boostUris).toContain(parentUri);
+
+            // Check that userC has child boost URI
+            const userCRecord = result.records.find(r => r.to.profileId === 'userc');
+            expect(userCRecord?.boostUris).toContain(childUri);
+        });
+
+        it('should group recipients by profile when they receive multiple boosts', async () => {
+            // Create parent boost
+            const parentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'Parent',
+            });
+
+            // Create two child boosts
+            const childUri1 = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testUnsignedBoost, category: 'Child1' },
+            });
+            const childUri2 = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testUnsignedBoost, category: 'Child2' },
+            });
+
+            // Send parent boost to userB
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB },
+                parentUri
+            );
+
+            // Send both child boosts to userB as well
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB },
+                childUri1
+            );
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB },
+                childUri2
+            );
+
+            const result =
+                await userA.clients.fullAuth.boost.getPaginatedBoostRecipientsWithChildren({
+                    uri: parentUri,
+                });
+
+            // Should only have one record for userB, but with all three boost URIs
+            expect(result.records).toHaveLength(1);
+            expect(result.records[0]?.to.profileId).toBe('userb');
+            expect(result.records[0]?.boostUris).toHaveLength(3);
+            expect(result.records[0]?.boostUris).toContain(parentUri);
+            expect(result.records[0]?.boostUris).toContain(childUri1);
+            expect(result.records[0]?.boostUris).toContain(childUri2);
+        });
+
+        it('should support pagination with cursor', async () => {
+            // Create parent boost
+            const parentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'Parent',
+            });
+
+            // Send boost to multiple users
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB },
+                parentUri
+            );
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userc', user: userC },
+                parentUri
+            );
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userd', user: userD },
+                parentUri
+            );
+
+            // Get first page with limit 2
+            const firstPage =
+                await userA.clients.fullAuth.boost.getPaginatedBoostRecipientsWithChildren({
+                    uri: parentUri,
+                    limit: 2,
+                });
+
+            expect(firstPage.records).toHaveLength(2);
+            expect(firstPage.hasMore).toBe(true);
+            expect(firstPage.cursor).toBeDefined();
+
+            // Get second page using cursor
+            const secondPage =
+                await userA.clients.fullAuth.boost.getPaginatedBoostRecipientsWithChildren({
+                    uri: parentUri,
+                    limit: 2,
+                    cursor: firstPage.cursor,
+                });
+
+            expect(secondPage.records).toHaveLength(1);
+            expect(secondPage.hasMore).toBe(false);
+
+            // Ensure no overlap between pages
+            const firstPageIds = firstPage.records.map(r => r.to.profileId);
+            const secondPageIds = secondPage.records.map(r => r.to.profileId);
+            const overlap = firstPageIds.filter(id => secondPageIds.includes(id));
+            expect(overlap).toHaveLength(0);
+        });
+
+        it('should support filtering by boost query', async () => {
+            // Create parent boost with category
+            const parentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'Achievement',
+            });
+
+            // Create child boost with different category
+            const childUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testUnsignedBoost, category: 'Badge' },
+            });
+
+            // Send both boosts to users
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB },
+                parentUri
+            );
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userc', user: userC },
+                childUri
+            );
+
+            // Filter for only Achievement category boosts
+            const result =
+                await userA.clients.fullAuth.boost.getPaginatedBoostRecipientsWithChildren({
+                    uri: parentUri,
+                    boostQuery: { category: 'Achievement' },
+                });
+
+            // Should only get userB who received the Achievement boost
+            expect(result.records).toHaveLength(1);
+            expect(result.records[0]?.to.profileId).toBe('userb');
+            expect(result.records[0]?.boostUris).toContain(parentUri);
+        });
+
+        it('should support filtering by profile query', async () => {
+            // Create boost
+            const parentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'Test',
+            });
+
+            // Send boost to multiple users
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB },
+                parentUri
+            );
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userc', user: userC },
+                parentUri
+            );
+
+            // Filter for specific profile
+            const result =
+                await userA.clients.fullAuth.boost.getPaginatedBoostRecipientsWithChildren({
+                    uri: parentUri,
+                    profileQuery: { profileId: 'userb' },
+                });
+
+            // Should only get userB
+            expect(result.records).toHaveLength(1);
+            expect(result.records[0]?.to.profileId).toBe('userb');
+        });
+
+        it('should support filtering by profile query with regex', async () => {
+            // Create boost
+            const parentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'Test',
+            });
+
+            // Send boost to multiple users with different profileId patterns
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB },
+                parentUri
+            );
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userc', user: userC },
+                parentUri
+            );
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userd', user: userD },
+                parentUri
+            );
+
+            // Filter for profiles starting with 'user'
+            const result =
+                await userA.clients.fullAuth.boost.getPaginatedBoostRecipientsWithChildren({
+                    uri: parentUri,
+                    profileQuery: { profileId: { $regex: '/userb/i' } },
+                });
+
+            // Should get userB and userC (but not testuser)
+            expect(result.records).toHaveLength(1);
+            const profileIds = result.records.map(r => r.to.profileId).sort();
+            expect(profileIds).toEqual(['userb']);
+        });
+
+        it('should support filtering by profile query with $in operator', async () => {
+            // Create boost
+            const parentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'Test',
+            });
+
+            // Send boost to multiple users
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB },
+                parentUri
+            );
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userc', user: userC },
+                parentUri
+            );
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userd', user: userD },
+                parentUri
+            );
+
+            // Filter for specific set of profiles using $in
+            const result =
+                await userA.clients.fullAuth.boost.getPaginatedBoostRecipientsWithChildren({
+                    uri: parentUri,
+                    profileQuery: { profileId: { $in: ['userb', 'userd'] } },
+                });
+
+            // Should get userB and testuser (but not userc)
+            expect(result.records).toHaveLength(2);
+            const profileIds = result.records.map(r => r.to.profileId).sort();
+            expect(profileIds).toEqual(['userb', 'userd']);
+        });
+
+        it('should support custom numberOfGenerations parameter', async () => {
+            // Create 3-level hierarchy: parent -> child -> grandchild
+            const parentUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                category: 'Parent',
+            });
+
+            const childUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri,
+                boost: { credential: testUnsignedBoost, category: 'Child' },
+            });
+
+            const grandchildUri = await userA.clients.fullAuth.boost.createChildBoost({
+                parentUri: childUri,
+                boost: { credential: testUnsignedBoost, category: 'Grandchild' },
+            });
+
+            // Send boosts to different users
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB },
+                parentUri
+            );
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userc', user: userC },
+                childUri
+            );
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userd', user: userD },
+                grandchildUri
+            );
+
+            // Test with numberOfGenerations = 1 (should only get parent + 1 level)
+            const result1Gen =
+                await userA.clients.fullAuth.boost.getPaginatedBoostRecipientsWithChildren({
+                    uri: parentUri,
+                    numberOfGenerations: 1,
+                });
+
+            expect(result1Gen.records).toHaveLength(2); // userB (parent) + userC (child)
+            const profileIds1Gen = result1Gen.records.map(r => r.to.profileId).sort();
+            expect(profileIds1Gen).toEqual(['userb', 'userc']);
+
+            // Test with numberOfGenerations = 2 (should get all 3 levels)
+            const result2Gen =
+                await userA.clients.fullAuth.boost.getPaginatedBoostRecipientsWithChildren({
+                    uri: parentUri,
+                    numberOfGenerations: 2,
+                });
+
+            expect(result2Gen.records).toHaveLength(3); // All users
+            const profileIds2Gen = result2Gen.records.map(r => r.to.profileId).sort();
+            expect(profileIds2Gen).toEqual(['userb', 'userc', 'userd']);
         });
     });
 });

@@ -539,6 +539,28 @@ export const getLearnCardNetworkPlugin = async (
                     query,
                 });
             },
+            getPaginatedBoostRecipientsWithChildren: async (
+                _learnCard,
+                uri,
+                limit = 25,
+                cursor = undefined,
+                includeUnacceptedBoosts = true,
+                boostQuery,
+                profileQuery,
+                numberOfGenerations = 1
+            ) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.boost.getPaginatedBoostRecipientsWithChildren.query({
+                    uri,
+                    limit,
+                    cursor,
+                    includeUnacceptedBoosts,
+                    boostQuery,
+                    profileQuery,
+                    numberOfGenerations,
+                });
+            },
             countBoostRecipients: async (_learnCard, uri, includeUnacceptedBoosts = true) => {
                 if (!userData) throw new Error('Please make an account first!');
 

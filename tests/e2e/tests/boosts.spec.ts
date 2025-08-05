@@ -578,4 +578,252 @@ describe('Boosts', () => {
         const secondChildParents = await b.invoke.getBoostParents(secondChildBoostUri);
         expect(secondChildParents.records.some(record => record.uri === parentBoostUri)).toBe(true);
     });
+
+    describe('Combined Boost Recipients With Children E2E', () => {
+        // Helper function to send boost in E2E context
+        const e2eSendBoostAndAccept = async ({
+            sender,
+            recipientProfileId,
+            recipientLc,
+            boostUri,
+        }: {
+            sender: LearnCard;
+            recipientProfileId: string;
+            recipientLc: LearnCard;
+            boostUri: string;
+        }) => {
+            const credentialUri = await sender.invoke.sendBoost(recipientProfileId, boostUri);
+            await recipientLc.invoke.acceptCredential(credentialUri);
+            return credentialUri;
+        };
+
+        test('should return empty results for boost with no recipients', async () => {
+            const boostUri = await a.invoke.createBoost(testUnsignedBoost);
+            
+            const result = await a.invoke.getPaginatedBoostRecipientsWithChildren(boostUri);
+            
+            expect(result.records).toHaveLength(0);
+            expect(result.hasMore).toBe(false);
+            expect(result.cursor).toBeUndefined();
+        });
+
+        test('should return recipients for boost with children boosts', async () => {
+            // Create parent boost
+            const parentUri = await a.invoke.createBoost(testUnsignedBoost);
+            
+            // Create child boost
+            const childUri = await a.invoke.createChildBoost(parentUri, testUnsignedBoost);
+            
+            // Send parent boost to user B
+            await e2eSendBoostAndAccept({
+                sender: a,
+                recipientProfileId: USERS.b.profileId,
+                recipientLc: b,
+                boostUri: parentUri,
+            });
+            
+            // Send child boost to user C
+            await e2eSendBoostAndAccept({
+                sender: a,
+                recipientProfileId: USERS.c.profileId,
+                recipientLc: c,
+                boostUri: childUri,
+            });
+            
+            const result = await a.invoke.getPaginatedBoostRecipientsWithChildren(parentUri);
+            
+            expect(result.records).toHaveLength(2);
+            
+            // Check that we have both recipients
+            const profileIds = result.records.map(r => r.to.profileId).sort();
+            expect(profileIds).toEqual([USERS.b.profileId, USERS.c.profileId].sort());
+            
+            // Check that user B has parent boost URI
+            const userBRecord = result.records.find(r => r.to.profileId === USERS.b.profileId);
+            expect(userBRecord?.boostUris).toContain(parentUri);
+            
+            // Check that user C has child boost URI
+            const userCRecord = result.records.find(r => r.to.profileId === USERS.c.profileId);
+            expect(userCRecord?.boostUris).toContain(childUri);
+        });
+
+        test('should group recipients by profile when they receive multiple boosts', async () => {
+            // Create parent boost
+            const parentUri = await a.invoke.createBoost(testUnsignedBoost);
+            
+            // Create two child boosts
+            const childUri1 = await a.invoke.createChildBoost(parentUri, testUnsignedBoost);
+            const childUri2 = await a.invoke.createChildBoost(parentUri, testUnsignedBoost);
+            
+            // Send all boosts to user B
+            await e2eSendBoostAndAccept({
+                sender: a,
+                recipientProfileId: USERS.b.profileId,
+                recipientLc: b,
+                boostUri: parentUri,
+            });
+            await e2eSendBoostAndAccept({
+                sender: a,
+                recipientProfileId: USERS.b.profileId,
+                recipientLc: b,
+                boostUri: childUri1,
+            });
+            await e2eSendBoostAndAccept({
+                sender: a,
+                recipientProfileId: USERS.b.profileId,
+                recipientLc: b,
+                boostUri: childUri2,
+            });
+            
+            const result = await a.invoke.getPaginatedBoostRecipientsWithChildren(parentUri);
+            
+            // Should only have one record for user B, but with all three boost URIs
+            expect(result.records).toHaveLength(1);
+            expect(result.records[0]?.to.profileId).toBe(USERS.b.profileId);
+            expect(result.records[0]?.boostUris).toHaveLength(3);
+            expect(result.records[0]?.boostUris).toContain(parentUri);
+            expect(result.records[0]?.boostUris).toContain(childUri1);
+            expect(result.records[0]?.boostUris).toContain(childUri2);
+        });
+
+        test('should support pagination with cursor', async () => {
+            // Create parent boost
+            const parentUri = await a.invoke.createBoost(testUnsignedBoost);
+            
+            // Send boost to multiple users
+            await e2eSendBoostAndAccept({
+                sender: a,
+                recipientProfileId: USERS.b.profileId,
+                recipientLc: b,
+                boostUri: parentUri,
+            });
+            await e2eSendBoostAndAccept({
+                sender: a,
+                recipientProfileId: USERS.c.profileId,
+                recipientLc: c,
+                boostUri: parentUri,
+            });
+            await e2eSendBoostAndAccept({
+                sender: a,
+                recipientProfileId: USERS.d.profileId,
+                recipientLc: d,
+                boostUri: parentUri,
+            });
+            
+            // Get first page with limit 2
+            const firstPage = await a.invoke.getPaginatedBoostRecipientsWithChildren(parentUri, 2);
+            
+            expect(firstPage.records).toHaveLength(2);
+            expect(firstPage.hasMore).toBe(true);
+            expect(firstPage.cursor).toBeDefined();
+            
+            // Get second page using cursor
+            const secondPage = await a.invoke.getPaginatedBoostRecipientsWithChildren(
+                parentUri, 
+                2, 
+                firstPage.cursor
+            );
+            
+            expect(secondPage.records).toHaveLength(1);
+            expect(secondPage.hasMore).toBe(false);
+            
+            // Ensure no overlap between pages
+            const firstPageIds = firstPage.records.map(r => r.to.profileId);
+            const secondPageIds = secondPage.records.map(r => r.to.profileId);
+            const overlap = firstPageIds.filter(id => secondPageIds.includes(id));
+            expect(overlap).toHaveLength(0);
+        });
+
+        test('should support custom numberOfGenerations parameter', async () => {
+            // Create 3-level hierarchy: parent -> child -> grandchild
+            const parentUri = await a.invoke.createBoost(testUnsignedBoost);
+            const childUri = await a.invoke.createChildBoost(parentUri, testUnsignedBoost);
+            const grandchildUri = await a.invoke.createChildBoost(childUri, testUnsignedBoost);
+            
+            // Send boosts to different users
+            await e2eSendBoostAndAccept({
+                sender: a,
+                recipientProfileId: USERS.b.profileId,
+                recipientLc: b,
+                boostUri: parentUri,
+            });
+            await e2eSendBoostAndAccept({
+                sender: a,
+                recipientProfileId: USERS.c.profileId,
+                recipientLc: c,
+                boostUri: childUri,
+            });
+            await e2eSendBoostAndAccept({
+                sender: a,
+                recipientProfileId: USERS.d.profileId,
+                recipientLc: d,
+                boostUri: grandchildUri,
+            });
+            
+            // Test with numberOfGenerations = 1 (should only get parent + 1 level)
+            const result1Gen = await a.invoke.getPaginatedBoostRecipientsWithChildren(
+                parentUri, 
+                25, 
+                undefined, 
+                true, 
+                undefined, 
+                undefined, 
+                1
+            );
+            
+            expect(result1Gen.records).toHaveLength(2); // userB (parent) + userC (child)
+            const profileIds1Gen = result1Gen.records.map(r => r.to.profileId).sort();
+            expect(profileIds1Gen).toEqual([USERS.b.profileId, USERS.c.profileId].sort());
+            
+            // Test with numberOfGenerations = 2 (should get all 3 levels)
+            const result2Gen = await a.invoke.getPaginatedBoostRecipientsWithChildren(
+                parentUri, 
+                25, 
+                undefined, 
+                true, 
+                undefined, 
+                undefined, 
+                2
+            );
+            
+            expect(result2Gen.records).toHaveLength(3); // All users
+            const profileIds2Gen = result2Gen.records.map(r => r.to.profileId).sort();
+            expect(profileIds2Gen).toEqual([USERS.b.profileId, USERS.c.profileId, USERS.d.profileId].sort());
+        });
+
+        test('should work with includeUnacceptedBoosts option', async () => {
+            // Create boost
+            const parentUri = await a.invoke.createBoost(testUnsignedBoost);
+            
+            // Send boost to user B but don't accept
+            await a.invoke.sendBoost(USERS.b.profileId, parentUri);
+            
+            // Send boost to user C and accept
+            await e2eSendBoostAndAccept({
+                sender: a,
+                recipientProfileId: USERS.c.profileId,
+                recipientLc: c,
+                boostUri: parentUri,
+            });
+            
+            // With includeUnacceptedBoosts = true (default)
+            const resultWithUnaccepted = await a.invoke.getPaginatedBoostRecipientsWithChildren(
+                parentUri, 
+                25, 
+                undefined, 
+                true
+            );
+            expect(resultWithUnaccepted.records).toHaveLength(2);
+            
+            // With includeUnacceptedBoosts = false
+            const resultWithoutUnaccepted = await a.invoke.getPaginatedBoostRecipientsWithChildren(
+                parentUri, 
+                25, 
+                undefined, 
+                false
+            );
+            expect(resultWithoutUnaccepted.records).toHaveLength(1);
+            expect(resultWithoutUnaccepted.records[0]?.to.profileId).toBe(USERS.c.profileId);
+        });
+    });
 });
