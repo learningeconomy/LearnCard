@@ -448,7 +448,14 @@ async function handleInboxClaimPresentation(
             message: 'Verifiable presentation must include challenge in proof',
         });
     }
-    const [token, exchangeChallenge] = challenge.split(':');
+    const challengeParts = challenge.split(':');
+    if (challengeParts.length !== 2 || !challengeParts[0] || !challengeParts[1]) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Invalid challenge format',
+        });
+    }
+    const [token, exchangeChallenge] = challengeParts;
 
     if (token !== claimTokenData.token) {
         throw new TRPCError({
