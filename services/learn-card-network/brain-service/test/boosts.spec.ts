@@ -5885,7 +5885,6 @@ describe('Boosts', () => {
                 });
 
             // Should only get userB
-            console.log('records', result.records);
             expect(result.records).toHaveLength(1);
             expect(result.records[0]?.to.profileId).toBe('userb');
         });
