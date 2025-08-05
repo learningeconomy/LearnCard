@@ -30,6 +30,7 @@ import { Role as RoleType } from 'types/role';
 import { inflateObject } from '@helpers/objects.helpers';
 import { getCredentialUri } from '@helpers/credential.helpers';
 import { giveProfileEmptyPermissions } from './create';
+import { getBoostUri } from '@helpers/boost.helpers';
 
 export const getBoostOwner = async (boost: BoostInstance): Promise<ProfileType | undefined> => {
     const profile = (await boost.findRelationships({ alias: 'createdBy' }))[0]?.target;
@@ -1070,4 +1071,178 @@ export const countConnectedBoostRecipients = async (
     const result = await countQuery.return('COUNT(DISTINCT sent.to) AS count').run();
 
     return Number(result.records[0]?.get('count') ?? 0);
+};
+
+/**
+ * Combined function to get recipients of a boost and all its children boosts.
+ * Results are grouped by profile (each profile appears once) with an array of boost URIs.
+ * Results are sorted by profileId and pagination is handled in Neo4j for performance.
+ */
+export const getBoostRecipientsWithChildren = async (
+    boost: BoostInstance,
+    {
+        limit,
+        cursor,
+        includeUnacceptedBoosts = true,
+        numberOfGenerations = 1,
+        boostQuery = {},
+        profileQuery = {},
+        domain,
+    }: {
+        limit: number;
+        cursor?: string;
+        includeUnacceptedBoosts?: boolean;
+        numberOfGenerations?: number;
+        boostQuery?: any;
+        profileQuery?: LCNProfileQuery;
+        domain: string;
+    }
+): Promise<Array<Omit<BoostRecipientInfo, 'uri'> & { boostUris: string[] }>> => {
+    // Convert queries for Neo4j compatibility
+    const boostQuery_neo4j = convertObjectRegExpToNeo4j(boostQuery);
+    const profileQuery_neo4j = convertObjectRegExpToNeo4j(profileQuery);
+
+    // Build the complete query that does everything in Neo4j
+    const _query = new QueryBuilder(
+        new BindParam({
+            boostQuery: boostQuery_neo4j,
+            profileQuery: profileQuery_neo4j,
+            cursor,
+        })
+    )
+        // Get parent boost and its children
+        .match({ model: Boost, where: { id: boost.id }, identifier: 'parentBoost' })
+        .match({
+            optional: true,
+            related: [
+                { identifier: 'parentBoost' },
+                {
+                    ...Boost.getRelationshipByAlias('parentOf'),
+                    maxHops: numberOfGenerations,
+                },
+                { identifier: 'childBoost', model: Boost },
+            ],
+        })
+        .with('COLLECT(DISTINCT parentBoost) + COLLECT(DISTINCT childBoost) AS allBoosts')
+        .unwind('allBoosts AS relevantBoost')
+        .match({ identifier: 'relevantBoost', model: Boost })
+        .where(`relevantBoost IS NOT NULL AND ${getMatchQueryWhere('relevantBoost', 'boostQuery')}`)
+        // Get recipients for each boost
+        .match({
+            related: [
+                { identifier: 'relevantBoost' },
+                {
+                    ...Credential.getRelationshipByAlias('instanceOf'),
+                    identifier: 'instanceOf',
+                    direction: 'in',
+                },
+                { identifier: 'credential', model: Credential },
+                {
+                    ...Profile.getRelationshipByAlias('credentialSent'),
+                    identifier: 'sent',
+                    direction: 'in',
+                },
+                { identifier: 'sender', model: Profile },
+            ],
+        })
+        .match({ model: Profile, identifier: 'recipient' })
+        .where('recipient.profileId = sent.to')
+        // Optional match for received credentials
+        .match({
+            optional: includeUnacceptedBoosts,
+            related: [
+                { identifier: 'credential', model: Credential },
+                {
+                    ...Credential.getRelationshipByAlias('credentialReceived'),
+                    identifier: 'received',
+                },
+                { identifier: 'recipient' },
+            ],
+        })
+        // Group by recipient and collect boost data first
+        .with(
+            `recipient, 
+               COLLECT(DISTINCT {relevantBoost: relevantBoost, sender: sender, sent: sent, received: received, credential: credential}) AS boostData`
+        )
+        // Apply profile query filtering after grouping
+        .where(getMatchQueryWhere('recipient', 'profileQuery'))
+        // Add cursor filtering if provided
+        .raw(cursor ? 'AND recipient.profileId > $cursor' : '')
+        // Order by profileId and limit profiles (not individual boost relationships)
+        .orderBy('recipient.profileId ASC')
+        .limit(limit)
+        .unwind('boostData AS data')
+        .return(
+            'data.relevantBoost AS relevantBoost, data.sender AS sender, data.sent AS sent, data.received AS received, recipient, data.credential AS credential'
+        );
+
+    // Execute the query
+    const results = convertQueryResultToPropertiesObjectArray<{
+        relevantBoost: any;
+        sender: FlatProfileType;
+        sent: ProfileRelationships['credentialSent']['RelationshipProperties'];
+        recipient?: FlatProfileType;
+        received?: CredentialRelationships['credentialReceived']['RelationshipProperties'];
+        credential?: CredentialInstance;
+    }>(await _query.run());
+
+    // Process results and group by profile
+    const resultsWithIds = results.map(({ relevantBoost, sender, sent, received, credential }) => {
+        const boostId = relevantBoost.id;
+        return {
+            sent: sent.date,
+            to: sent.to,
+            from: sender.profileId,
+            received: received?.date,
+            boostUri: getBoostUri(boostId, domain),
+            ...(credential && { uri: getCredentialUri(credential.id, domain) }),
+        };
+    });
+
+    // Get profile data for recipients (this should be a small set thanks to the limit)
+    const recipientIds = [...new Set(resultsWithIds.map(result => result.to))];
+    const recipients = await getProfilesByProfileIds(recipientIds);
+
+    // Group by profile and aggregate boost URIs
+    const profileMap = new Map<
+        string,
+        {
+            to: any;
+            from: string;
+            received?: string;
+            boostUris: string[];
+            credentialUris: string[];
+        }
+    >();
+
+    for (const result of resultsWithIds) {
+        const profile = recipients.find(recipient => recipient.profileId === result.to);
+        if (!profile) continue;
+
+        const key = result.to;
+        if (!profileMap.has(key)) {
+            profileMap.set(key, {
+                to: profile,
+                from: result.from,
+                received: result.received,
+                boostUris: [],
+                credentialUris: [],
+            });
+        }
+
+        const entry = profileMap.get(key)!;
+        entry.boostUris.push(result.boostUri);
+        if (result.uri) {
+            entry.credentialUris.push(result.uri);
+        }
+        // Keep the most recent received date
+        if (result.received && (!entry.received || result.received > entry.received)) {
+            entry.received = result.received;
+        }
+    }
+
+    // Convert map to array and maintain profileId sorting
+    return Array.from(profileMap.values()).sort((a, b) =>
+        a.to.profileId.localeCompare(b.to.profileId)
+    );
 };
