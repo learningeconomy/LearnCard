@@ -23,8 +23,13 @@ export const testRouter = t.router({
                 return null;
             }
     
-            const notification = JSON.parse(deliveryData);
-            return notification;
+            try {
+                const notification = JSON.parse(deliveryData);
+                return notification;
+            } catch (error) {
+                console.error('Failed to parse cached delivery data:', error);
+                return null;
+            }
         }),
 });
 
