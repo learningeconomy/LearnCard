@@ -1,5 +1,15 @@
 # learn-card-core
 
+## 2.1.38
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.35
+    -   @learncard/helpers@1.1.23
+    -   @learncard/learn-cloud-client@1.4.13
+    -   @learncard/didkit-plugin@1.5.25
+
 ## 2.1.37
 
 ### Patch Changes

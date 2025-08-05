@@ -1,5 +1,11 @@
 # learn-card-types
 
+## 5.8.3
+
+### Patch Changes
+
+-   [#771](https://github.com/learningeconomy/LearnCard/pull/771) [`d0e2245d915c711d69e98f5a8f5c9fd7909f13ef`](https://github.com/learningeconomy/LearnCard/commit/d0e2245d915c711d69e98f5a8f5c9fd7909f13ef) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add PaginatedBoostRecipientsWithChildren
+
 ## 5.8.2
 
 ### Patch Changes
