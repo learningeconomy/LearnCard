@@ -34,6 +34,8 @@ import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.h
 import { createProfileContactMethodRelationship } from '@accesslayer/contact-method/relationships/create';
 import { verifyContactMethod } from '@accesslayer/contact-method/update';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
+import { EXHAUSTED, exhaustExchangeChallengeForToken, getExchangeChallengeStateForToken, setValidExchangeChallengeForToken } from '@cache/exchanges';
+import { randomUUID } from 'crypto';
 
 // Zod schema for the participate in exchange input
 const participateInExchangeInput = z.object({
@@ -379,11 +381,12 @@ async function handleInboxClaimInitiation(
     claimToken: string,
     domain: string
 ) {
+
     // Validate the claim token
     const claimTokenData = await validateInboxClaimToken(claimToken);
     if (!claimTokenData) {
         throw new TRPCError({
-            code: 'NOT_FOUND',
+            code: 'BAD_REQUEST',
             message: 'Invalid or expired claim token',
         });
     }
@@ -399,6 +402,9 @@ async function handleInboxClaimInitiation(
         });
     }
 
+    const exchangeDidAuthChallenge = randomUUID();
+    await setValidExchangeChallengeForToken(claimTokenData.token, exchangeDidAuthChallenge);
+
     // Return VerifiablePresentationRequest
     return {
         verifiablePresentationRequest: {
@@ -406,7 +412,7 @@ async function handleInboxClaimInitiation(
                 type: 'DIDAuthentication',
                 acceptedMethods: [{method: "key"}, {method: "web"}]
             }],
-            challenge: claimTokenData.token,
+            challenge: `${claimTokenData.token}:${exchangeDidAuthChallenge}`,
             domain,
         },
     };
@@ -435,10 +441,42 @@ async function handleInboxClaimPresentation(
         });
     }
 
+    const challenge = Array.isArray(verifiablePresentation.proof) ? verifiablePresentation.proof?.[0]?.challenge : verifiablePresentation.proof?.challenge;
+    if (!challenge) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Verifiable presentation must include challenge in proof',
+        });
+    }
+    const [token, exchangeChallenge] = challenge.split(':');
+
+    if (token !== claimTokenData.token) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Invalid or expired claim token',
+        });
+    }
+
+    if (!exchangeChallenge) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Invalid exchange challenge',
+        });
+    }
+
+    // VERIFY the token exists. Return {} if just exhausted. Throw error if DNE. Later, exhaust the token after using it!
+    const exchangeChallengeState = await getExchangeChallengeStateForToken(token, exchangeChallenge);
+    if (!exchangeChallengeState || exchangeChallengeState === EXHAUSTED) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Invalid exchange challenge',
+        });
+    }
+
     // Verify the presentation
     const learnCard = await getEmptyLearnCard();
     const verificationResult = await learnCard.invoke.verifyPresentation(verifiablePresentation, {
-        challenge: claimTokenData.token,
+        challenge,
         domain: ctx.domain,
     });
 
@@ -460,29 +498,14 @@ async function handleInboxClaimPresentation(
 
     let holderProfile = await getProfileByContactMethod(contactMethod.id);
 
-    if (holderProfile) {
-        // If the holder's DID from the presentation doesn't match the profile's DID, throw an error
-        if (holderProfile.did !== holderDid) {
-            throw new TRPCError({
-                code: 'BAD_REQUEST',
-                message: 'DID mismatch. The presented DID does not match the profile associated with this contact method.',
-            });
-        }
-    } else {
+    if (!holderProfile) {
         // If no profile is associated with the contact method, check if a profile exists for the presented DID
         const existingProfile = await getProfileByDid(holderDid);
         if (existingProfile) {
             // If a profile exists, link the contact method to it
             holderProfile = existingProfile;
             await createProfileContactMethodRelationship(holderProfile.profileId, contactMethod.id);
-        } else {
-            // If no profile exists for the DID, we can't proceed with claiming
-            // The user should create a profile first
-            throw new TRPCError({
-                code: 'NOT_FOUND',
-                message: 'No profile found for the presented DID. Please create a profile before claiming.',
-            });
-        }
+        } 
     }
 
     // Mark the contact method as verified
@@ -567,8 +590,13 @@ async function handleInboxClaimPresentation(
             }
 
             // Mark credential as claimed
-            await markInboxCredentialAsClaimed(inboxCredential.id);
-            await createClaimedRelationship(holderProfile.profileId, inboxCredential.id, claimToken);
+            if (holderProfile) {
+                // Only marking as claimed if we have a profile - since we can't claim a credential for a DID—but we need a way to signal to the issuer that the credential has been claimed.
+                // MAYBE: mark it as claimed with metadata about the claim token, so the claim token can be re-used?
+                // TODO: Should this be enabled? It disrupts VC-API workflows - and other mechanisms are sufficient to prevent double claims.
+                await markInboxCredentialAsClaimed(inboxCredential.id);
+                await createClaimedRelationship(holderProfile.profileId, inboxCredential.id, claimToken);
+            } 
 
             // Add to claimed credentials
             claimedCredentials.push(finalCredential);
@@ -591,7 +619,7 @@ async function handleInboxClaimPresentation(
                             status: LCNInboxStatusEnumValidator.enum.CLAIMED,
                             recipient: {
                                 contactMethod: { type: contactMethod.type, value: contactMethod.value },
-                                learnCardId: holderProfile.did || holderDid,
+                                learnCardId: holderProfile?.did || holderDid,
                             },
                             timestamp: new Date().toISOString(),
                         },
@@ -617,6 +645,13 @@ async function handleInboxClaimPresentation(
 
     // Create response VP with all claimed credentials
     const responseVP = await issueResponsePresentationWithVcs(claimedCredentials);
+
+    // Mark exchange challenge as used
+    try {
+        await exhaustExchangeChallengeForToken(token, exchangeChallenge);
+    } catch (error) {
+        console.error(`Failed to mark exchange challenge as used:`, error);
+    }
 
     return {
         verifiablePresentation: responseVP

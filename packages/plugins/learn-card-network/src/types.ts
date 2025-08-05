@@ -46,6 +46,7 @@ import {
     IssueInboxCredentialType,
     InboxCredentialType,
     PaginatedInboxCredentialsType,
+    ContactMethodQueryType,
     ContactMethodType,
     InboxCredentialQuery,
     IssueInboxCredentialResponseType,
@@ -408,7 +409,7 @@ export type LearnCardNetworkPluginMethods = {
     getInboxCredential: (id: string) => Promise<InboxCredentialType | null>;
 
     addContactMethod: (
-        contactMethod: ContactMethodType
+        contactMethod: ContactMethodQueryType
     ) => Promise<{ message: string; contactMethodId: string; verificationRequired: boolean }>;
     getMyContactMethods: () => Promise<ContactMethodType[]>;
 
