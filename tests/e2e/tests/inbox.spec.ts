@@ -527,6 +527,201 @@ describe('Inbox', () => {
                 claimUrl: expect.any(String),
             });
         });
+
+        test('(8) should send a ISSUANCE_DELIVERED notification to the issuer if a webhook is configured', async () => {
+            const sa = await a.invoke.createSigningAuthority('test-sa');
+            if (!sa) { 
+                throw new Error('Failed to create signing authority');
+            }
+            const registered = await a.invoke.registerSigningAuthority(sa.endpoint!, sa.name, sa.did!);
+            if (!registered) {
+                throw new Error('Failed to register signing authority');
+            } 
+
+            // Prepare the payload for the HTTP request
+            const payload = {
+                credential: await a.invoke.issueCredential(await a.invoke.getTestVc()),
+                recipient: { type: 'email', value: 'userB@test.com' },
+                configuration: {
+                    webhookUrl: 'https://example.com/webhook',
+                    signingAuthority: {
+                        endpoint: sa.endpoint!,
+                        name: sa.name,
+                    },
+                },
+            };
+
+            // Send the boost using the HTTP route
+            await fetch(
+                `http://localhost:4000/api/inbox/issue`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`,
+                    },
+                    body: JSON.stringify(payload),
+                }
+            );
+
+            // Check if the ISSUANCE_DELIVERED notification was added to the queue
+            const notificationQueueData = await fetch('http://localhost:4000/api/test/notification-queue');
+            const notificationQueue = await notificationQueueData.json();
+            expect(notificationQueue).toBeDefined();
+            expect(notificationQueue.length).toBe(1);
+            const notification = notificationQueue[0];
+            expect(notification.type).toBe('ISSUANCE_DELIVERED');
+            expect(notification.webhookUrl).toBe('https://example.com/webhook');
+            expect(notification.data.inbox).toBeDefined();
+            expect(notification.data.inbox.issuanceId).toBeDefined();
+            expect(notification.data.inbox.status).toBe('DELIVERED');
+        });
+
+        test('(9) should send a ISSUANCE_CLAIMED notification to the issuer if a webhook is configured', async () => {
+            const sa = await a.invoke.createSigningAuthority('test-sa');
+            if (!sa) { 
+                throw new Error('Failed to create signing authority');
+            }
+            const registered = await a.invoke.registerSigningAuthority(sa.endpoint!, sa.name, sa.did!);
+            if (!registered) {
+                throw new Error('Failed to register signing authority');
+            } 
+
+            // Prepare the payload for the HTTP request
+            const payload = {
+                credential: await a.invoke.issueCredential(await a.invoke.getTestVc()),
+                recipient: { type: 'email', value: 'userB@test.com' },
+                configuration: {
+                    webhookUrl: 'https://example.com/webhook',
+                    signingAuthority: {
+                        endpoint: sa.endpoint!,
+                        name: sa.name,
+                    },
+                },
+            };
+
+            // Send the boost using the HTTP route
+            await fetch(
+                `http://localhost:4000/api/inbox/issue`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`,
+                    },
+                    body: JSON.stringify(payload),
+                }
+            );
+
+            // Fetch the claimUrl from our new test endpoint
+            const testResponse = await fetch('http://localhost:4000/api/test/last-delivery');
+            const deliveryData = await testResponse.json();
+            const claimUrl = deliveryData.templateModel.claimUrl;
+
+            const interactionUrl = parseInteractionUrl(claimUrl);
+            if (!interactionUrl) {
+                throw new Error('Failed to parse interaction URL');
+            }
+
+            // accept the inbox credential
+            const vcapiUrl = `http://localhost:4000/api/workflows/${interactionUrl.workflowId}/exchanges/${interactionUrl.interactionId}`; 
+            const vcapiResponse = await fetch(vcapiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
+
+            const vcapiData = await vcapiResponse.json(); 
+
+            const vpr = vcapiData.verifiablePresentationRequest;
+
+            const vp = await b_anonymous.invoke.getDidAuthVp({ challenge: vpr.challenge, domain: vpr.domain });
+            await fetch(vcapiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ verifiablePresentation: vp }) });
+
+            // Check if the ISSUANCE_CLAIMED notification was added to the queue
+            const notificationQueueData = await fetch('http://localhost:4000/api/test/notification-queue');
+            const notificationQueue = await notificationQueueData.json();
+            expect(notificationQueue).toBeDefined();
+
+            const claimedNotification = notificationQueue.find((n: any) => n.type === 'ISSUANCE_CLAIMED');
+            expect(claimedNotification.type).toBe('ISSUANCE_CLAIMED');
+            expect(claimedNotification.webhookUrl).toBe('https://example.com/webhook');
+            expect(claimedNotification.data.inbox).toBeDefined();
+            expect(claimedNotification.data.inbox.issuanceId).toBeDefined();
+            expect(claimedNotification.data.inbox.status).toBe('CLAIMED');
+        });
+
+        test('(10) should send a ISSUANCE_ERROR notification to the issuer if a webhook is configured', async () => {
+            const sa = await a.invoke.createSigningAuthority('test-sa');
+            if (!sa) { 
+                throw new Error('Failed to create signing authority');
+            }
+            const registered = await a.invoke.registerSigningAuthority(sa.endpoint!, sa.name, sa.did!);
+            if (!registered) {
+                throw new Error('Failed to register signing authority');
+            } 
+
+            const badTestVc = await a.invoke.getTestVc();
+            badTestVc['banana'] = { '@context': 'broken' };
+             
+            // Prepare the payload for the HTTP request
+            const payload = {
+                credential: badTestVc,
+                recipient: { type: 'email', value: 'userB@test.com' },
+                configuration: {
+                    webhookUrl: 'https://example.com/webhook',
+                    signingAuthority: {
+                        endpoint: sa.endpoint!,
+                        name: sa.name,
+                    },
+                },
+            };
+
+            // Send the boost using the HTTP route
+            await fetch(
+                `http://localhost:4000/api/inbox/issue`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`,
+                    },
+                    body: JSON.stringify(payload),
+                }
+            );
+
+            // Fetch the claimUrl from our new test endpoint
+            const testResponse = await fetch('http://localhost:4000/api/test/last-delivery');
+            const deliveryData = await testResponse.json();
+            const claimUrl = deliveryData.templateModel.claimUrl;
+
+            const interactionUrl = parseInteractionUrl(claimUrl);
+            if (!interactionUrl) {
+                throw new Error('Failed to parse interaction URL');
+            }
+
+            // accept the inbox credential
+            const vcapiUrl = `http://localhost:4000/api/workflows/${interactionUrl.workflowId}/exchanges/${interactionUrl.interactionId}`; 
+            const vcapiResponse = await fetch(vcapiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
+
+            const vcapiData = await vcapiResponse.json(); 
+
+            const vpr = vcapiData.verifiablePresentationRequest;
+
+            const vp = await b_anonymous.invoke.getDidAuthVp({ challenge: vpr.challenge, domain: vpr.domain });
+            await fetch(vcapiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ verifiablePresentation: vp }) });
+
+            // Check if the ISSUANCE_ERROR notification was added to the queue
+            const notificationQueueData = await fetch('http://localhost:4000/api/test/notification-queue');
+            const notificationQueue = await notificationQueueData.json();
+            expect(notificationQueue).toBeDefined();
+
+            const errorNotification = notificationQueue.find((n: any) => n.type === 'ISSUANCE_ERROR');
+            if (!errorNotification) {
+                throw new Error('Failed to find ISSUANCE_ERROR notification'); 
+            }
+            expect(errorNotification.type).toBe('ISSUANCE_ERROR');
+            expect(errorNotification.webhookUrl).toBe('https://example.com/webhook');
+            expect(errorNotification.data.inbox).toBeDefined();
+            expect(errorNotification.data.inbox.issuanceId).toBeDefined();
+            expect(errorNotification.data.inbox.status).toBe('PENDING');
+        });
      
     });
 });

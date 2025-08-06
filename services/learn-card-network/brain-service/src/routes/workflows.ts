@@ -556,14 +556,14 @@ async function handleInboxClaimPresentation(
                     console.error(
                         `Inbox credential ${inboxCredential.id} missing signing authority info`
                     );
-                    return null;
+                    throw new Error('Inbox credential missing signing authority info');
                 }
 
                 // Get the issuer profile and signing authority
                 const issuerProfile = await getProfileByDid(inboxCredential.issuerDid);
                 if (!issuerProfile) {
                     console.error(`Issuer profile not found for ${inboxCredential.issuerDid}`);
-                    return null;
+                    throw new Error('Issuer profile not found');
                 }
 
                 const signingAuthorityForUser = await getSigningAuthorityForUserByName(
@@ -576,7 +576,7 @@ async function handleInboxClaimPresentation(
                     console.error(
                         `Signing authority not found for issuer ${inboxCredential.issuerDid}`
                     );
-                    return null;
+                    throw new Error('Signing authority not found');
                 }
 
                 // Set credential subject to claimer's DID
@@ -640,6 +640,36 @@ async function handleInboxClaimPresentation(
             return finalCredential;
         } catch (error) {
             console.error(`Failed to process inbox credential ${inboxCredential.id}:`, error);
+            
+            try {
+                // Trigger webhook for error if configured
+                if (inboxCredential.webhookUrl) {
+                    const learnCard = await getLearnCard();
+                    await addNotificationToQueue({
+                        webhookUrl: inboxCredential.webhookUrl,
+                        type: LCNNotificationTypeEnumValidator.enum.ISSUANCE_ERROR,
+                        from: { did: learnCard.id.did() },
+                        to: { did: inboxCredential.issuerDid },
+                        message: {
+                            title: 'Credential Issuance Error from Inbox',
+                            body: error instanceof Error ? error.message : `${contactMethod.value} failed to claim a credential from their inbox.`,
+                        },
+                        data: {
+                            inbox: {
+                                issuanceId: inboxCredential.id,
+                                status: LCNInboxStatusEnumValidator.enum.PENDING,
+                                recipient: {
+                                    contactMethod: { type: contactMethod.type, value: contactMethod.value },
+                                    learnCardId: holderProfile?.did || holderDid,
+                                },
+                                timestamp: new Date().toISOString(),
+                            },
+                        },
+                    });
+                }
+            } catch (webhookError) {
+                console.error(`Failed to trigger webhook for inbox credential error ${inboxCredential.id}:`, webhookError);
+            }
             return null; // Continue processing other credentials
         }
     });
