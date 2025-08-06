@@ -86,7 +86,11 @@ describe('Credentials', () => {
 
         const { proof, ...everythingElse } = signedVc;
 
-        expect(everythingElse).toMatchObject({ ...credential, issuer: signingAuthority.did });
+        expect(everythingElse).toMatchObject({
+            ...credential,
+            issuer: signingAuthority.did,
+            '@context': signedVc['@context'],
+        });
         expect(proof).toBeDefined();
     });
 });
