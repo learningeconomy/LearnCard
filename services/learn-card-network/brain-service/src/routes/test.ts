@@ -64,7 +64,7 @@ export const testRouter = t.router({
                 })
             );
 
-            return notifications;
+            return notifications.filter((notification): notification is NonNullable<typeof notification> => notification !== null);
         }),
 });
 
