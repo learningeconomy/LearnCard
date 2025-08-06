@@ -214,16 +214,17 @@ export const issueToInbox = async (
             });
         }
 
-        const claimToken = await generateInboxClaimToken(recipientContactMethod.id);
-        const claimUrl = generateClaimUrl(claimToken);
+
 
         if (!delivery?.suppress) {
+            const emailClaimToken = await generateInboxClaimToken(recipientContactMethod.id, expiresInDays ? 24 * expiresInDays : 24, true);
+            const emailClaimUrl = generateClaimUrl(emailClaimToken);
             // Record email being sent
             await createEmailSentRelationship(
                 issuerProfile.did,
                 inboxCredential?.id,
                 recipient.value,
-                claimToken
+                emailClaimToken
             );
 
             // Send claim email
@@ -254,7 +255,7 @@ export const issueToInbox = async (
                 contactMethod: recipient,
                 templateId: delivery?.template?.id || 'universal-inbox-claim',
                 templateModel: {
-                    claimUrl,
+                    claimUrl: emailClaimUrl,
                     ...injectedTemplateFields,
                 },
                 messageStream: 'universal-inbox'
@@ -285,6 +286,9 @@ export const issueToInbox = async (
                 },
             });
         }
+
+        const claimToken = await generateInboxClaimToken(recipientContactMethod.id, expiresInDays ? 24 * expiresInDays : 24, false);
+        const claimUrl = generateClaimUrl(claimToken);
 
         return {
             status: LCNInboxStatusEnumValidator.enum.DELIVERED,

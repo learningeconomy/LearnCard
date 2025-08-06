@@ -36,7 +36,8 @@ export const validateContactMethodVerificationToken = async (token: string): Pro
 
 export const generateInboxClaimToken = async (
     contactMethodId: string,
-    ttlHours = 48
+    ttlHours = 48,
+    autoVerifyContactMethod = false
 ): Promise<string> => {
     const token = uuid();
     const key = `${INBOX_CLAIM_TOKEN_PREFIX}${token}`;
@@ -47,6 +48,7 @@ export const generateInboxClaimToken = async (
         createdAt: new Date().toISOString(),
         expiresAt: new Date(Date.now() + ttlHours * 60 * 60 * 1000).toISOString(),
         used: false,
+        autoVerifyContactMethod,
     };
 
     await cache.set(key, JSON.stringify(claimTokenData), ttlHours * 60 * 60);

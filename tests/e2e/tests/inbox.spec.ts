@@ -403,8 +403,83 @@ describe('Inbox', () => {
             expect(credentialNames2).toContain(credential2?.name);
         });
 
+        test('(6) it should not automatically associate and verify the contact method with the profile if a claim link is not from the contact method', async () => {
+            
+            // User starts without a verified contact method
+            await expect(b_anonymous.invoke.getMyContactMethods()).rejects.toThrowError();
+            
+            // Prepare the payload for the HTTP request
+            const credentialToSend = await a.invoke.issueCredential(await a.invoke.getTestVc());
+
+            const payload = {
+                credential: credentialToSend,
+                recipient: { type: 'email', value: 'userB@test.com' },
+            };
+
+            // Send the boost using the HTTP route
+            const response = await fetch(
+                `http://localhost:4000/api/inbox/issue`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`,
+                    },
+                    body: JSON.stringify(payload),
+                }
+            );
+            const inboxIssuanceResponse = await response.json();
+            // Get the claim URL from the response—not the contact method!
+            const claimUrl = inboxIssuanceResponse?.claimUrl;
+            expect(claimUrl).toBeDefined();
+
+            const interactionUrl = parseInteractionUrl(claimUrl);
+            if (!interactionUrl) {
+                throw new Error('Failed to parse interaction URL');
+            }
+            expect(interactionUrl.workflowId).toBeDefined();
+            expect(interactionUrl.interactionId).toBeDefined();
  
-        test('(6) should allow sending a credential using the HTTP route with a signing authority', async () => {
+            // sign up for an account
+            await b_anonymous.invoke.createProfile({ displayName: 'User B', profileId: 'userb', shortBio: 'User B', bio: 'User B' });
+
+            // accept the inbox credential
+            const vcapiUrl = `http://localhost:4000/api/workflows/${interactionUrl.workflowId}/exchanges/${interactionUrl.interactionId}`; 
+            const vcapiResponse = await fetch(vcapiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
+            expect(vcapiResponse.status).toBe(200);
+
+            const vcapiData = await vcapiResponse.json(); 
+            expect(vcapiData).toBeDefined();
+
+            const vpr = vcapiData.verifiablePresentationRequest;
+            expect(vpr).toBeDefined();
+
+            const vp = await b_anonymous.invoke.getDidAuthVp({ challenge: vpr.challenge, domain: vpr.domain });
+            expect(vp).toBeDefined();
+
+            const vprResponse = await fetch(vcapiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ verifiablePresentation: vp }) });
+            expect(vprResponse.status).toBe(200);
+            const vprData = await vprResponse.json(); 
+            expect(vprData).toBeDefined();
+
+            const vc = vprData.verifiablePresentation.verifiableCredential[0];
+            expect(vc).toMatchObject(credentialToSend)
+
+            // User has a verified email after claiming the cred
+            const contactMethods = await b_anonymous.invoke.getMyContactMethods();
+            expect(contactMethods).toBeDefined();
+            expect(contactMethods.length).toBe(0);
+
+            const credentialNames2 = ['Test 4', 'Test 5'];
+            await sendCredentialsViaInbox(a, token, 'userB@test.com', credentialNames2);
+
+            // Instead, the credential should be received by the user
+            const receivedCredentials = await b_anonymous.invoke.getIncomingCredentials();
+            expect(receivedCredentials.length).toBe(0);
+        });
+
+ 
+        test('(7) should allow sending a credential using the HTTP route with a signing authority', async () => {
             const sa = await a.invoke.createSigningAuthority('test-sa');
             if (!sa) { 
                 throw new Error('Failed to create signing authority');

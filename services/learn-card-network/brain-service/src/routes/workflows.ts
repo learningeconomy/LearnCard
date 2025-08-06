@@ -513,12 +513,14 @@ async function handleInboxClaimPresentation(
         if (existingProfile) {
             // If a profile exists, link the contact method to it
             holderProfile = existingProfile;
-            await createProfileContactMethodRelationship(holderProfile.profileId, contactMethod.id);
+            if (claimTokenData.autoVerifyContactMethod) {
+                await createProfileContactMethodRelationship(holderProfile.profileId, contactMethod.id);
+            }
         } 
     }
 
     // Mark the contact method as verified
-    if (!contactMethod.isVerified) {
+    if (!contactMethod.isVerified && claimTokenData.autoVerifyContactMethod) {
         await verifyContactMethod(contactMethod.id);
     }
 

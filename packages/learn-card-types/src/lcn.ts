@@ -855,6 +855,7 @@ export type IssueInboxCredentialResponseType = z.infer<typeof IssueInboxCredenti
 export const ClaimTokenValidator = z.object({
     token: z.string(),
     contactMethodId: z.string(),
+    autoVerifyContactMethod: z.boolean().optional().default(false),
     createdAt: z.string(),
     expiresAt: z.string(),
     used: z.boolean(),
