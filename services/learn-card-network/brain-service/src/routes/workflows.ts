@@ -547,10 +547,10 @@ async function handleInboxClaimPresentation(
             } else {
                 // Need to sign the credential using signing authority
                 const unsignedCredential = JSON.parse(inboxCredential.credential) as UnsignedVC;
+                const inboxCredentialSigningAuthorityEndpoint = inboxCredential['signingAuthority.endpoint'] as string;
+                const inboxCredentialSigningAuthorityName = inboxCredential['signingAuthority.name'] as string;
 
-                // Neo4j doesn't support object properties, so we have to do this
-                //@ts-ignore
-                if (!inboxCredential?.signingAuthority?.endpoint || !inboxCredential?.signingAuthority?.name) {
+                if (!inboxCredentialSigningAuthorityEndpoint || !inboxCredentialSigningAuthorityName) {
                     console.error(
                         `Inbox credential ${inboxCredential.id} missing signing authority info`
                     );
@@ -566,10 +566,8 @@ async function handleInboxClaimPresentation(
 
                 const signingAuthorityForUser = await getSigningAuthorityForUserByName(
                     issuerProfile,
-                    //@ts-ignore
-                    inboxCredential?.signingAuthority?.endpoint,
-                    //@ts-ignore
-                    inboxCredential?.signingAuthority?.name
+                    inboxCredentialSigningAuthorityEndpoint,
+                    inboxCredentialSigningAuthorityName
                 );
 
                 if (!signingAuthorityForUser) {
