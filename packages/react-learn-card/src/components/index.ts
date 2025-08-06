@@ -35,6 +35,7 @@ export * from "./SkillVerticalCard/index";
 export * from "./SkillsCard/index";
 export * from "./SkillsStatsCard/index";
 export * from "./SmallAchievementCard/index";
+export * from "./UserProfilePicture/index";
 export * from "./VCCard/index";
 export * from "./VCDisplayBackFace/index";
 export * from "./VCDisplayCard/index";
