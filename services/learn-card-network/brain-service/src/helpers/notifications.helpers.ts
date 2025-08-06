@@ -19,16 +19,18 @@ const sqs = new SQSClient({
 });
 
 export async function addNotificationToQueue(notification: LCNNotification) {
+    if (!!process.env.IS_E2E_TEST) {
+        /** 
+         * For end-to-end tests, store the last delivery in cache
+         */
+        await cache.set(`e2e:notification-queue:${randomUUID()}`, JSON.stringify(notification));
+    }
+
     if (
         process.env.NODE_ENV === 'test' ||
         process.env.IS_OFFLINE ||
         !process.env.NOTIFICATIONS_QUEUE_URL
     ) {
-        /** 
-         * For end-to-end tests, store the last delivery in cache
-         */
-        await cache.set(`e2e:notification-queue:${randomUUID()}`, JSON.stringify(notification));
-
         return; // Can not use SQS in test environment or locally
     }
 

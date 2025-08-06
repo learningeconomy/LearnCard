@@ -10,7 +10,7 @@ export class LogAdapter implements DeliveryService {
         /** 
          * For end-to-end tests, store the last delivery in cache
          */
-        if (!!process.env.IS_OFFLINE) {
+        if (!!process.env.IS_E2E_TEST) {
             await cache.set('e2e:last-delivery', JSON.stringify(notification));
         }
     }

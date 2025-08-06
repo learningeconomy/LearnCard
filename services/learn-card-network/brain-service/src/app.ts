@@ -50,7 +50,7 @@ export const appRouter = t.router<{
     workflows: workflowsRouter,
     contactMethods: contactMethodsRouter,
     inbox: inboxRouter,
-    test: !!process.env.IS_OFFLINE ? testRouter : undefined,
+    test: !!process.env.IS_E2E_TEST ? testRouter : undefined,
 });
 
 export type AppRouter = typeof appRouter;
