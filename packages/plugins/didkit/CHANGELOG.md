@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 1.5.26
+
+### Patch Changes
+
+-   [#767](https://github.com/learningeconomy/LearnCard/pull/767) [`55b342b57df9f66a7d1d539964f4c6985b7062bb`](https://github.com/learningeconomy/LearnCard/commit/55b342b57df9f66a7d1d539964f4c6985b7062bb) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Better DataIntegrity support, and move the proof context to the top level
+
 ## 1.5.25
 
 ### Patch Changes
