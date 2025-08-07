@@ -19,7 +19,7 @@ import {
 import {
     validateInboxClaimToken,
 } from '@helpers/contact-method.helpers';
-import { getPendingInboxCredentialsForContactMethodId } from '@accesslayer/inbox-credential/read';
+import { getPendingOrClaimedInboxCredentialsForContactMethodId } from '@accesslayer/inbox-credential/read';
 import { markInboxCredentialAsClaimed } from '@accesslayer/inbox-credential/update';
 import { createClaimedRelationship } from '@accesslayer/inbox-credential/relationships/create';
 import {
@@ -392,7 +392,7 @@ async function handleInboxClaimInitiation(
     }
 
     // Verify there are pending credentials for this contact method
-    const pendingCredentials = await getPendingInboxCredentialsForContactMethodId(
+    const pendingCredentials = await getPendingOrClaimedInboxCredentialsForContactMethodId(
         claimTokenData.contactMethodId
     );
     if (pendingCredentials.length === 0) {
@@ -525,7 +525,7 @@ async function handleInboxClaimPresentation(
     }
 
     // Get pending credentials for this contact method
-    const pendingCredentials = await getPendingInboxCredentialsForContactMethodId(
+    const pendingCredentials = await getPendingOrClaimedInboxCredentialsForContactMethodId(
         contactMethod.id
     );
 
@@ -549,8 +549,8 @@ async function handleInboxClaimPresentation(
             } else {
                 // Need to sign the credential using signing authority
                 const unsignedCredential = JSON.parse(inboxCredential.credential) as UnsignedVC;
-                const inboxCredentialSigningAuthorityEndpoint = inboxCredential['signingAuthority.endpoint'] as string;
-                const inboxCredentialSigningAuthorityName = inboxCredential['signingAuthority.name'] as string;
+                const inboxCredentialSigningAuthorityEndpoint = (inboxCredential.signingAuthority?.endpoint as string) ?? undefined;
+                const inboxCredentialSigningAuthorityName = (inboxCredential.signingAuthority?.name as string) ?? undefined;
 
                 if (!inboxCredentialSigningAuthorityEndpoint || !inboxCredentialSigningAuthorityName) {
                     console.error(
@@ -604,10 +604,10 @@ async function handleInboxClaimPresentation(
                 )) as VC;
             }
 
-            // Mark credential as claimed
+            await markInboxCredentialAsClaimed(inboxCredential.id);
+
+            // Create claimed relationship if holder has a profile
             if (holderProfile) {
-                // Only marking as claimed if we have a profile - since we can't claim a credential for a DID—but we need a way to signal to the issuer that the credential has been claimed.
-                await markInboxCredentialAsClaimed(inboxCredential.id);
                 await createClaimedRelationship(holderProfile.profileId, inboxCredential.id, claimToken);
             }
 
@@ -677,12 +677,6 @@ async function handleInboxClaimPresentation(
     const settledCredentials = await Promise.all(credentialProcessingPromises);
     claimedCredentials.push(...settledCredentials.filter((c): c is VC => c !== null));
 
-    if (claimedCredentials.length === 0) {
-        throw new TRPCError({
-            code: 'INTERNAL_SERVER_ERROR',
-            message: 'Failed to process any credentials',
-        });
-    }
 
     // Create response VP with all claimed credentials
     const responseVP = await issueResponsePresentationWithVcs(claimedCredentials);

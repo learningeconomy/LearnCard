@@ -19,5 +19,8 @@ export default defineConfig({
             '**/.{idea,git,cache,output,temp}/**',
             '**/{karma,rollup,webpack,vite,vitest,jest,ava,babel,nyc,cypress,tsup,build}.config.*',
         ],
+        env: {
+            IS_E2E_TEST: 'true',
+        }
     },
 });

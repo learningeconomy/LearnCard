@@ -251,6 +251,7 @@ export const issueToInbox = async (
                     ...(delivery?.template?.model?.credential ?? {})
                 }
             }
+
             await deliveryService.send({
                 contactMethod: recipient,
                 templateId: delivery?.template?.id || 'universal-inbox-claim',

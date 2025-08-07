@@ -769,8 +769,10 @@ export const InboxCredentialValidator = z.object({
     createdAt: z.string(),
     issuerDid: z.string(),
     webhookUrl: z.string().optional(),
-    'signingAuthority.endpoint': z.string().optional(),
-    'signingAuthority.name': z.string().optional(),
+    signingAuthority: z.object({
+        endpoint: z.string().optional(),
+        name: z.string().optional(),
+    }).optional(),
 });
 
 export type InboxCredentialType = z.infer<typeof InboxCredentialValidator>;
