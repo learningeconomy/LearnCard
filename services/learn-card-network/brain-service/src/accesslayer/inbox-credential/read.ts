@@ -37,7 +37,7 @@ export const getPendingOrClaimedInboxCredentialsForContactMethodId = async (
         .match({ model: ContactMethod, identifier: 'contactMethod' })
         .where('contactMethod.id = $contactMethodId')
         .match('(inboxCredential:InboxCredential)-[:ADDRESSED_TO]->(contactMethod)')
-        .where(`inboxCredential.currentStatus = "PENDING" OR inboxCredential.currentStatus = "CLAIMED" AND datetime(inboxCredential.expiresAt) > datetime()`)
+        .where(`(inboxCredential.currentStatus = "PENDING" OR inboxCredential.currentStatus = "CLAIMED") AND datetime(inboxCredential.expiresAt) > datetime()`)
         .return('inboxCredential')
         .run();
 
