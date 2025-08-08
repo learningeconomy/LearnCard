@@ -9,6 +9,11 @@
             "location": "Washington, DC, USA",
             "url": "https://www.learncard.com/"
         },
+        "did:web:network.learncard.com:users:beta-university": {
+            "name": "Beta University",
+            "location": "Washington, DC, USA",
+            "url": "https://www.learncard.com/"
+        },
         "did:web:network.learncard.com:users:smartresume": {
             "name": "SmartResume",
             "location": "Little Rock, AR 72201",
