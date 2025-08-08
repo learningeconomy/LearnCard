@@ -1,5 +1,14 @@
 # learn-card-core
 
+## 2.5.16
+
+### Patch Changes
+
+-   [#773](https://github.com/learningeconomy/LearnCard/pull/773) [`98a86fb6fda26f5bb83e72da655e7acf4acaf260`](https://github.com/learningeconomy/LearnCard/commit/98a86fb6fda26f5bb83e72da655e7acf4acaf260) Thanks [@Custard7](https://github.com/Custard7)! - feat: Update E2E Tests for Universal Inbox
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.3.21
+
 ## 2.5.15
 
 ### Patch Changes
