@@ -542,12 +542,16 @@ describe('Universal Inbox', () => {
             });
 
             // Have User B claim the inbox credentials for this user issued by User A
-            const inboxCredential = await userA.clients.fullAuth.inbox.issue({
+            await userA.clients.fullAuth.inbox.issue({
                 credential: signedCredential,
                 recipient: { type: 'phone', value: '+15555555' },
             });
 
-            const localExchangeId = getExchangeIdFromClaimUrl(inboxCredential?.claimUrl);
+            // Retrieve the verification token from the first spy's call arguments
+            const sendArgs = sendSpy.mock.calls[8][0];
+            const claimUrl = sendArgs.templateModel.claimUrl;
+
+            const localExchangeId = getExchangeIdFromClaimUrl(claimUrl);
             if (!localExchangeId) {
                 throw new Error('Local exchange ID is undefined');
             }
@@ -1026,16 +1030,62 @@ describe('Universal Inbox', () => {
             );
         });
 
-        it('should verify and associate your email address contact method with your profile', async () => {
+        it('should NOT verify and associate your email address contact method with your profile from the inbox claim link', async () => {
             const vc = await userA.learnCard.invoke.issueCredential(
                 await userA.learnCard.invoke.getTestVc()
             );
-            const inboxCredential = await userA.clients.fullAuth.inbox.issue({
+            
+             const inboxCredential = await userA.clients.fullAuth.inbox.issue({
                 credential: vc,
                 recipient: { type: 'email', value: 'userB@test.com' },
             });
 
             const localExchangeId = getExchangeIdFromClaimUrl(inboxCredential?.claimUrl);
+            expect(localExchangeId).toBeDefined();
+
+            if (!localExchangeId) {
+                throw new Error('Local exchange ID is undefined');
+            }
+
+            const exchangeInitiationResponse =
+                await userB.clients.fullAuth.workflows.participateInExchange({
+                    localWorkflowId: 'inbox-claim',
+                    localExchangeId,
+                });
+            const didAuthVp = (await userB.learnCard.invoke.getDidAuthVp({
+                challenge: exchangeInitiationResponse?.verifiablePresentationRequest?.challenge,
+                domain: exchangeInitiationResponse?.verifiablePresentationRequest?.domain,
+            })) as VP;
+
+            await userB.clients.fullAuth.workflows.participateInExchange({
+                localWorkflowId: 'inbox-claim',
+                localExchangeId,
+                verifiablePresentation: didAuthVp,
+            });
+
+            const profile = await userB.clients.fullAuth.profile.getProfile();
+            expect(profile).toBeDefined();
+            const contactMethods =
+                await userB.clients.fullAuth.contactMethods.getMyContactMethods();
+            expect(contactMethods).toBeDefined();
+            expect(contactMethods?.length).toBe(0);
+        });
+        
+        it('should verify and associate your email address contact method with your profile', async () => {
+            const vc = await userA.learnCard.invoke.issueCredential(
+                await userA.learnCard.invoke.getTestVc()
+            );
+            
+            await userA.clients.fullAuth.inbox.issue({
+                credential: vc,
+                recipient: { type: 'email', value: 'userB@test.com' },
+            });
+
+            // Retrieve the verification token from the first spy's call arguments
+            const sendArgs = sendSpy.mock.calls[0][0];
+            const claimUrl = sendArgs.templateModel.claimUrl;
+
+            const localExchangeId = getExchangeIdFromClaimUrl(claimUrl);
             expect(localExchangeId).toBeDefined();
 
             if (!localExchangeId) {
@@ -1076,12 +1126,16 @@ describe('Universal Inbox', () => {
             const vc = await userA.learnCard.invoke.issueCredential(
                 await userA.learnCard.invoke.getTestVc()
             );
-            const inboxCredential = await userA.clients.fullAuth.inbox.issue({
+            await userA.clients.fullAuth.inbox.issue({
                 credential: vc,
                 recipient: { type: 'phone', value: '+15555555' },
             });
 
-            const localExchangeId = getExchangeIdFromClaimUrl(inboxCredential?.claimUrl);
+            // Retrieve the verification token from the first spy's call arguments
+            const sendArgs = sendSpy.mock.calls[0][0];
+            const claimUrl = sendArgs.templateModel.claimUrl;
+
+            const localExchangeId = getExchangeIdFromClaimUrl(claimUrl);
             expect(localExchangeId).toBeDefined();
 
             if (!localExchangeId) {
@@ -1117,17 +1171,21 @@ describe('Universal Inbox', () => {
             expect(contactMethods?.[0].isVerified).toBe(true);
         });
 
-        it('should reject a second profile claiming an inbox credential if the first profile already claimed it', async () => {
+        it('should not associate a second profile with an inbox credential if a first profile already claimed it', async () => {
             // Issue first credential to anyone@test.com
             const vc = await userA.learnCard.invoke.issueCredential(
                 await userA.learnCard.invoke.getTestVc()
             );
-            const inboxCredential = await userA.clients.fullAuth.inbox.issue({
+            await userA.clients.fullAuth.inbox.issue({
                 credential: vc,
                 recipient: { type: 'email', value: 'anyone@test.com' },
             });
 
-            const localExchangeId = getExchangeIdFromClaimUrl(inboxCredential?.claimUrl);
+            // Retrieve the verification token from the first spy's call arguments
+            const sendArgs = sendSpy.mock.calls[0][0];
+            const claimUrl = sendArgs.templateModel.claimUrl;
+
+            const localExchangeId = getExchangeIdFromClaimUrl(claimUrl);
 
             if (!localExchangeId) {
                 throw new Error('Local exchange ID is undefined');
@@ -1137,12 +1195,16 @@ describe('Universal Inbox', () => {
             const vc2 = await userA.learnCard.invoke.issueCredential(
                 await userA.learnCard.invoke.getTestVc()
             );
-            const inboxCredential2 = await userA.clients.fullAuth.inbox.issue({
+            await userA.clients.fullAuth.inbox.issue({
                 credential: vc2,
                 recipient: { type: 'email', value: 'anyone@test.com' },
             });
 
-            const localExchangeId2 = getExchangeIdFromClaimUrl(inboxCredential2?.claimUrl);
+            // Retrieve the verification token from the first spy's call arguments
+            const sendArgs2 = sendSpy.mock.calls[1][0];
+            const claimUrl2 = sendArgs2.templateModel.claimUrl;
+
+            const localExchangeId2 = getExchangeIdFromClaimUrl(claimUrl2);
 
             if (!localExchangeId2) {
                 throw new Error('Local exchange ID is undefined');
@@ -1181,23 +1243,29 @@ describe('Universal Inbox', () => {
             });
 
             // User C attempts to claim second credential
-            expect(
-                userC.clients.fullAuth.workflows.participateInExchange({
+            await userC.clients.fullAuth.workflows.participateInExchange({
                     localWorkflowId: 'inbox-claim',
                     localExchangeId: localExchangeId2,
                 })
-            ).rejects.toThrow();
+
+            const userCContactMethods =
+                await userC.clients.fullAuth.contactMethods.getMyContactMethods();
+            expect(userCContactMethods?.length).toBe(0);
         });
 
         it('should route credentials to the correct profile if the recipient exists with a verified email contact method', async () => {
             const vc = await userA.learnCard.invoke.issueCredential(
                 await userA.learnCard.invoke.getTestVc()
             );
-            const inboxCredential = await userA.clients.fullAuth.inbox.issue({
+            await userA.clients.fullAuth.inbox.issue({
                 credential: vc,
                 recipient: { type: 'email', value: 'userB@test.com' },
             });
-            const localExchangeId = getExchangeIdFromClaimUrl(inboxCredential?.claimUrl);
+
+            // Retrieve the verification token from the first spy's call arguments
+            const sendArgs = sendSpy.mock.calls[0][0];
+            const claimUrl = sendArgs.templateModel.claimUrl;
+            const localExchangeId = getExchangeIdFromClaimUrl(claimUrl);
 
             if (!localExchangeId) {
                 throw new Error('Local exchange ID is undefined');

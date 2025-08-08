@@ -584,6 +584,7 @@ export const LCNNotificationTypeEnumValidator = z.enum([
     'CONSENT_FLOW_TRANSACTION',
     'ISSUANCE_CLAIMED',
     'ISSUANCE_DELIVERED',
+    'ISSUANCE_ERROR'
 ]);
 
 export type LCNNotificationTypeEnum = z.infer<typeof LCNNotificationTypeEnumValidator>;
@@ -768,8 +769,10 @@ export const InboxCredentialValidator = z.object({
     createdAt: z.string(),
     issuerDid: z.string(),
     webhookUrl: z.string().optional(),
-    'signingAuthority.endpoint': z.string().optional(),
-    'signingAuthority.name': z.string().optional(),
+    signingAuthority: z.object({
+        endpoint: z.string().optional(),
+        name: z.string().optional(),
+    }).optional(),
 });
 
 export type InboxCredentialType = z.infer<typeof InboxCredentialValidator>;
@@ -855,6 +858,7 @@ export type IssueInboxCredentialResponseType = z.infer<typeof IssueInboxCredenti
 export const ClaimTokenValidator = z.object({
     token: z.string(),
     contactMethodId: z.string(),
+    autoVerifyContactMethod: z.boolean().optional().default(false),
     createdAt: z.string(),
     expiresAt: z.string(),
     used: z.boolean(),

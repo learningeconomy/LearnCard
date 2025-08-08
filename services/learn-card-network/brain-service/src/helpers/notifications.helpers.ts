@@ -4,6 +4,8 @@ import { LCNNotification } from '@learncard/types';
 import { getDidWeb } from '@helpers/did.helpers';
 import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
 import { createWebhookSentRelationship } from '@accesslayer/inbox-credential/relationships/create';
+import cache from '@cache';
+import { randomUUID } from 'crypto';
 
 // Timeout value in milliseconds for aborting the request
 const TIMEOUT = 6000;
@@ -17,6 +19,13 @@ const sqs = new SQSClient({
 });
 
 export async function addNotificationToQueue(notification: LCNNotification) {
+    if (!!process.env.IS_E2E_TEST) {
+        /** 
+         * For end-to-end tests, store the last delivery in cache
+         */
+        await cache.set(`e2e:notification-queue:${randomUUID()}`, JSON.stringify(notification));
+    }
+
     if (
         process.env.NODE_ENV === 'test' ||
         process.env.IS_OFFLINE ||

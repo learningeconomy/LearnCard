@@ -7,7 +7,7 @@ import { TwilioAdapter } from './adapters/twilio.adapter';
 const IS_TEST_ENVIRONMENT = process.env.NODE_ENV === 'test';
 
 export const getDeliveryService = (contactMethod: ContactMethod): DeliveryService => {
-    if (IS_TEST_ENVIRONMENT || process.env.IS_CI) {
+    if (IS_TEST_ENVIRONMENT || process.env.IS_CI || process.env.IS_E2E_TEST) {
         return new LogAdapter();
     }
     
