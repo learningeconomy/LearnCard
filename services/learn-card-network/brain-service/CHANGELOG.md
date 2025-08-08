@@ -1,5 +1,11 @@
 # @learncard/network-brain-service
 
+## 3.5.15
+
+### Patch Changes
+
+-   [#773](https://github.com/learningeconomy/LearnCard/pull/773) [`98a86fb6fda26f5bb83e72da655e7acf4acaf260`](https://github.com/learningeconomy/LearnCard/commit/98a86fb6fda26f5bb83e72da655e7acf4acaf260) Thanks [@Custard7](https://github.com/Custard7)! - feat: Update E2E Tests for Universal Inbox
+
 ## 3.5.14
 
 ### Patch Changes
