@@ -825,5 +825,137 @@ describe('Boosts', () => {
             expect(resultWithoutUnaccepted.records).toHaveLength(1);
             expect(resultWithoutUnaccepted.records[0]?.to.profileId).toBe(USERS.c.profileId);
         });
+
+        test('count should be 0 for boost with no recipients', async () => {
+            const boostUri = await a.invoke.createBoost(testUnsignedBoost);
+
+            const count = await a.invoke.countBoostRecipientsWithChildren(boostUri);
+
+            expect(count).toBe(0);
+        });
+
+        test('count should include recipients from children boosts', async () => {
+            const parentUri = await a.invoke.createBoost(testUnsignedBoost);
+            const childUri = await a.invoke.createChildBoost(parentUri, testUnsignedBoost);
+
+            await e2eSendBoostAndAccept({
+                sender: a,
+                recipientProfileId: USERS.b.profileId,
+                recipientLc: b,
+                boostUri: parentUri,
+            });
+
+            await e2eSendBoostAndAccept({
+                sender: a,
+                recipientProfileId: USERS.c.profileId,
+                recipientLc: c,
+                boostUri: childUri,
+            });
+
+            const count = await a.invoke.countBoostRecipientsWithChildren(parentUri);
+
+            expect(count).toBe(2);
+        });
+
+        test('count should be distinct by recipient profile', async () => {
+            const parentUri = await a.invoke.createBoost(testUnsignedBoost);
+            const childUri1 = await a.invoke.createChildBoost(parentUri, testUnsignedBoost);
+            const childUri2 = await a.invoke.createChildBoost(parentUri, testUnsignedBoost);
+
+            await e2eSendBoostAndAccept({
+                sender: a,
+                recipientProfileId: USERS.b.profileId,
+                recipientLc: b,
+                boostUri: parentUri,
+            });
+            await e2eSendBoostAndAccept({
+                sender: a,
+                recipientProfileId: USERS.b.profileId,
+                recipientLc: b,
+                boostUri: childUri1,
+            });
+            await e2eSendBoostAndAccept({
+                sender: a,
+                recipientProfileId: USERS.b.profileId,
+                recipientLc: b,
+                boostUri: childUri2,
+            });
+
+            const count = await a.invoke.countBoostRecipientsWithChildren(parentUri);
+
+            expect(count).toBe(1);
+        });
+
+        test('count should respect numberOfGenerations', async () => {
+            const parentUri = await a.invoke.createBoost(testUnsignedBoost);
+            const childUri = await a.invoke.createChildBoost(parentUri, testUnsignedBoost);
+            const grandchildUri = await a.invoke.createChildBoost(childUri, testUnsignedBoost);
+
+            await e2eSendBoostAndAccept({
+                sender: a,
+                recipientProfileId: USERS.b.profileId,
+                recipientLc: b,
+                boostUri: parentUri,
+            });
+            await e2eSendBoostAndAccept({
+                sender: a,
+                recipientProfileId: USERS.c.profileId,
+                recipientLc: c,
+                boostUri: childUri,
+            });
+            await e2eSendBoostAndAccept({
+                sender: a,
+                recipientProfileId: USERS.d.profileId,
+                recipientLc: d,
+                boostUri: grandchildUri,
+            });
+
+            const count1 = await a.invoke.countBoostRecipientsWithChildren(
+                parentUri,
+                true,
+                undefined,
+                undefined,
+                1
+            );
+
+            const count2 = await a.invoke.countBoostRecipientsWithChildren(
+                parentUri,
+                true,
+                undefined,
+                undefined,
+                2
+            );
+
+            expect(count1).toBe(2);
+            expect(count2).toBe(3);
+        });
+
+        test('count should respect includeUnacceptedBoosts option', async () => {
+            const parentUri = await a.invoke.createBoost(testUnsignedBoost);
+
+            // Send to B (unaccepted)
+            await a.invoke.sendBoost(USERS.b.profileId, parentUri);
+
+            // Send to C (accepted)
+            await e2eSendBoostAndAccept({
+                sender: a,
+                recipientProfileId: USERS.c.profileId,
+                recipientLc: c,
+                boostUri: parentUri,
+            });
+
+            const countWithUnaccepted = await a.invoke.countBoostRecipientsWithChildren(
+                parentUri,
+                true
+            );
+
+            const countWithoutUnaccepted = await a.invoke.countBoostRecipientsWithChildren(
+                parentUri,
+                false
+            );
+
+            expect(countWithUnaccepted).toBe(2);
+            expect(countWithoutUnaccepted).toBe(1);
+        });
     });
 });
