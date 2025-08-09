@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 1.5.27
+
+### Patch Changes
+
+-   [#777](https://github.com/learningeconomy/LearnCard/pull/777) [`df90eee5e7176ce57a4cdb2124ff1578890a8345`](https://github.com/learningeconomy/LearnCard/commit/df90eee5e7176ce57a4cdb2124ff1578890a8345) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Move VP Proof Context as well
+
 ## 1.5.26
 
 ### Patch Changes
