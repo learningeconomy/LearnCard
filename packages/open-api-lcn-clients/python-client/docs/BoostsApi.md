@@ -30,6 +30,7 @@ Method | HTTP request | Description
 [**boost_get_familial_boosts**](BoostsApi.md#boost_get_familial_boosts) | **POST** /boost/family | Get familial boosts
 [**boost_get_other_boost_permissions**](BoostsApi.md#boost_get_other_boost_permissions) | **GET** /boost/permissions/{profileId} | Get boost permissions for someone else
 [**boost_get_paginated_boost_recipients**](BoostsApi.md#boost_get_paginated_boost_recipients) | **POST** /boost/recipients/paginated | Get boost recipients
+[**boost_get_paginated_boost_recipients_with_children**](BoostsApi.md#boost_get_paginated_boost_recipients_with_children) | **POST** /boost/recipients-with-children/paginated | Get boost recipients with children
 [**boost_get_paginated_boosts**](BoostsApi.md#boost_get_paginated_boosts) | **POST** /boost/paginated | Get boosts
 [**boost_make_boost_parent**](BoostsApi.md#boost_make_boost_parent) | **POST** /boost/make-parent | Make Boost Parent
 [**boost_remove_boost_admin**](BoostsApi.md#boost_remove_boost_admin) | **POST** /boost/remove-admin | Remove a Boost admin
@@ -2181,6 +2182,89 @@ Name | Type | Description  | Notes
 ### Return type
 
 [**BoostGetPaginatedBoostRecipients200Response**](BoostGetPaginatedBoostRecipients200Response.md)
+
+### Authorization
+
+[Authorization](../README.md#Authorization)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+### HTTP response details
+
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | Successful response |  -  |
+**400** | Invalid input data |  -  |
+**401** | Authorization not provided |  -  |
+**403** | Insufficient access |  -  |
+**500** | Internal server error |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **boost_get_paginated_boost_recipients_with_children**
+> BoostGetPaginatedBoostRecipientsWithChildren200Response boost_get_paginated_boost_recipients_with_children(boost_get_paginated_boost_recipients_with_children_request)
+
+Get boost recipients with children
+
+This endpoint gets the recipients of a boost and all its children boosts
+
+### Example
+
+* Bearer Authentication (Authorization):
+
+```python
+import openapi_client
+from openapi_client.models.boost_get_paginated_boost_recipients_with_children200_response import BoostGetPaginatedBoostRecipientsWithChildren200Response
+from openapi_client.models.boost_get_paginated_boost_recipients_with_children_request import BoostGetPaginatedBoostRecipientsWithChildrenRequest
+from openapi_client.rest import ApiException
+from pprint import pprint
+
+# Defining the host is optional and defaults to https://network.learncard.com/api
+# See configuration.py for a list of all supported configuration parameters.
+configuration = openapi_client.Configuration(
+    host = "https://network.learncard.com/api"
+)
+
+# The client must configure the authentication and authorization parameters
+# in accordance with the API server security policy.
+# Examples for each auth method are provided below, use the example that
+# satisfies your auth use case.
+
+# Configure Bearer authorization: Authorization
+configuration = openapi_client.Configuration(
+    access_token = os.environ["BEARER_TOKEN"]
+)
+
+# Enter a context with an instance of the API client
+with openapi_client.ApiClient(configuration) as api_client:
+    # Create an instance of the API class
+    api_instance = openapi_client.BoostsApi(api_client)
+    boost_get_paginated_boost_recipients_with_children_request = openapi_client.BoostGetPaginatedBoostRecipientsWithChildrenRequest() # BoostGetPaginatedBoostRecipientsWithChildrenRequest | 
+
+    try:
+        # Get boost recipients with children
+        api_response = api_instance.boost_get_paginated_boost_recipients_with_children(boost_get_paginated_boost_recipients_with_children_request)
+        print("The response of BoostsApi->boost_get_paginated_boost_recipients_with_children:\n")
+        pprint(api_response)
+    except Exception as e:
+        print("Exception when calling BoostsApi->boost_get_paginated_boost_recipients_with_children: %s\n" % e)
+```
+
+
+
+### Parameters
+
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **boost_get_paginated_boost_recipients_with_children_request** | [**BoostGetPaginatedBoostRecipientsWithChildrenRequest**](BoostGetPaginatedBoostRecipientsWithChildrenRequest.md)|  | 
+
+### Return type
+
+[**BoostGetPaginatedBoostRecipientsWithChildren200Response**](BoostGetPaginatedBoostRecipientsWithChildren200Response.md)
 
 ### Authorization
 
