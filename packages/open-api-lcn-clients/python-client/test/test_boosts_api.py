@@ -208,6 +208,13 @@ class TestBoostsApi(unittest.TestCase):
         """
         pass
 
+    def test_boost_get_paginated_boost_recipients_with_children(self) -> None:
+        """Test case for boost_get_paginated_boost_recipients_with_children
+
+        Get boost recipients with children
+        """
+        pass
+
     def test_boost_get_paginated_boosts(self) -> None:
         """Test case for boost_get_paginated_boosts
 

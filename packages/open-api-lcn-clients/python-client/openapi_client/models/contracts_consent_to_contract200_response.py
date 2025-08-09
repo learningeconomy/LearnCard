@@ -17,22 +17,18 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr
+from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
-from openapi_client.models.contracts_consent_to_contract_request_terms import ContractsConsentToContractRequestTerms
 from typing import Optional, Set
 from typing_extensions import Self
 
-class ContractsConsentToContractRequest(BaseModel):
+class ContractsConsentToContract200Response(BaseModel):
     """
-    ContractsConsentToContractRequest
+    ContractsConsentToContract200Response
     """ # noqa: E501
-    terms: ContractsConsentToContractRequestTerms
-    contract_uri: StrictStr = Field(alias="contractUri")
-    expires_at: Optional[StrictStr] = Field(default=None, alias="expiresAt")
-    one_time: Optional[StrictBool] = Field(default=None, alias="oneTime")
-    recipient_token: Optional[StrictStr] = Field(default=None, alias="recipientToken")
-    __properties: ClassVar[List[str]] = ["terms", "contractUri", "expiresAt", "oneTime", "recipientToken"]
+    terms_uri: StrictStr = Field(alias="termsUri")
+    redirect_url: Optional[StrictStr] = Field(default=None, alias="redirectUrl")
+    __properties: ClassVar[List[str]] = ["termsUri", "redirectUrl"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -52,7 +48,7 @@ class ContractsConsentToContractRequest(BaseModel):
 
     @classmethod
     def from_json(cls, json_str: str) -> Optional[Self]:
-        """Create an instance of ContractsConsentToContractRequest from a JSON string"""
+        """Create an instance of ContractsConsentToContract200Response from a JSON string"""
         return cls.from_dict(json.loads(json_str))
 
     def to_dict(self) -> Dict[str, Any]:
@@ -73,14 +69,11 @@ class ContractsConsentToContractRequest(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
-        # override the default output from pydantic by calling `to_dict()` of terms
-        if self.terms:
-            _dict['terms'] = self.terms.to_dict()
         return _dict
 
     @classmethod
     def from_dict(cls, obj: Optional[Dict[str, Any]]) -> Optional[Self]:
-        """Create an instance of ContractsConsentToContractRequest from a dict"""
+        """Create an instance of ContractsConsentToContract200Response from a dict"""
         if obj is None:
             return None
 
@@ -88,11 +81,8 @@ class ContractsConsentToContractRequest(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
-            "terms": ContractsConsentToContractRequestTerms.from_dict(obj["terms"]) if obj.get("terms") is not None else None,
-            "contractUri": obj.get("contractUri"),
-            "expiresAt": obj.get("expiresAt"),
-            "oneTime": obj.get("oneTime"),
-            "recipientToken": obj.get("recipientToken")
+            "termsUri": obj.get("termsUri"),
+            "redirectUrl": obj.get("redirectUrl")
         })
         return _obj
 
