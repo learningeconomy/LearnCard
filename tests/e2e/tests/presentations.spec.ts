@@ -1,9 +1,9 @@
 import { describe, test, expect } from 'vitest';
-
 import { getLearnCardForUser } from './helpers/learncard.helpers';
+import type { LearnCard } from './helpers/learncard.helpers';
 
-let a: NetworkLearnCardFromSeed['returnValue'];
-let b: NetworkLearnCardFromSeed['returnValue'];
+let a: LearnCard;
+let b: LearnCard;
 
 describe('Presentations', () => {
     beforeEach(async () => {
@@ -25,9 +25,9 @@ describe('Presentations', () => {
         const incomingPresentations = await b.invoke.getIncomingPresentations();
 
         expect(incomingPresentations).toHaveLength(1);
-        expect(incomingPresentations[0].uri).toEqual(uri);
+        expect(incomingPresentations[0]!.uri).toEqual(uri);
 
-        const resolvedVp = await b.read.get(incomingPresentations[0].uri);
+        const resolvedVp = await b.read.get(incomingPresentations[0]!.uri);
 
         expect(resolvedVp).toEqual(vp);
 
@@ -62,5 +62,40 @@ describe('Presentations', () => {
         // Verify that received presentations count hasn't changed
         const receivedPresentationsAfter = await b.invoke.getReceivedPresentations();
         expect(receivedPresentationsAfter).toHaveLength(1);
+    });
+
+    test('proof context is placed at top-level vp["@context"] for interoperability', async () => {
+        // Create a test credential first
+        const unsignedVc = a.invoke.getTestVc(b.id.did());
+        const vc = await a.invoke.issueCredential(unsignedVc);
+
+        // Create and issue a presentation with a DataIntegrity proof
+        const unsignedVp = await a.invoke.newPresentation(vc);
+        const vp = await a.invoke.issuePresentation(unsignedVp);
+
+        // Verify structure
+        expect(vp).toBeDefined();
+        expect(vp.proof).toBeDefined();
+
+        // Proof-level @context should NOT exist
+        if (Array.isArray(vp.proof)) {
+            (vp.proof as any[]).forEach(p => expect((p as any)['@context']).toBeUndefined());
+        } else {
+            expect((vp.proof as any)['@context']).toBeUndefined();
+        }
+
+        // Top-level @context should exist and be an array
+        expect(vp['@context']).toBeDefined();
+        expect(Array.isArray(vp['@context'])).toBe(true);
+
+        const contexts = vp['@context'] as string[];
+        expect(contexts).toContain('https://www.w3.org/ns/credentials/v2');
+        expect(contexts).toContain('https://w3id.org/security/suites/ed25519-2020/v1');
+
+        // Verify the presentation is valid
+        const verification = await a.invoke.verifyPresentation(vp);
+        expect(verification.warnings).toHaveLength(0);
+        expect(verification.errors).toHaveLength(0);
+        expect(verification.checks).toContain('proof');
     });
 });
