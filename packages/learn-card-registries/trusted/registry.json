@@ -1,7 +1,7 @@
 {
     "meta": {
         "created": "2022-10-27T17:57:31+00:00",
-        "updated": "2025-07-19T05:08:19.031Z"
+        "updated": "2025-08-11T22:53:34.881Z"
     },
     "registry": {
         "did:web:network.learncard.com:users:learn-cloud": {
@@ -206,6 +206,11 @@
         },
         "did:web:network.learncard.com:users:tayken": {
             "name": "LearnCloud AI",
+            "location": "Washington, DC, USA",
+            "url": "https://www.learncard.com/"
+        },
+        "did:web:network.learncard.com:users:whitehall-demo": {
+            "name": "Whitehall Demo",
             "location": "Washington, DC, USA",
             "url": "https://www.learncard.com/"
         }
