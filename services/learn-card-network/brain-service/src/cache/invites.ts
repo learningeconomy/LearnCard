@@ -23,10 +23,7 @@ const parseInviteValue = (value?: string | null): InviteCacheJson | undefined =>
         const parsed = JSON.parse(value) as InviteCacheJson;
 
         // Basic shape validation
-        if (
-            parsed &&
-            ('usesRemaining' in parsed || 'maxUses' in parsed)
-        ) {
+        if (parsed && ('usesRemaining' in parsed || 'maxUses' in parsed)) {
             return parsed;
         }
     } catch {}
@@ -70,8 +67,8 @@ export const setValidInviteForProfile = async (
     maxUses: number | null | undefined
 ) => {
     const value: InviteCacheJson = {
-        maxUses: maxUses === 0 ? null : (maxUses ?? 1),
-        usesRemaining: maxUses === 0 ? null : (maxUses ?? 1),
+        maxUses: maxUses === 0 ? null : maxUses ?? 1,
+        usesRemaining: maxUses === 0 ? null : maxUses ?? 1,
     };
 
     const serialized = JSON.stringify(value);
@@ -120,7 +117,7 @@ export const consumeInviteUseForProfile = async (
     const parsed = parseInviteValue(raw);
 
     // If no value, nothing to consume
-    if (!parsed) return { usesRemaining: 0, maxUses: 0 } as any;
+    if (!parsed) return { usesRemaining: 0, maxUses: 0 };
 
     // Unlimited uses: keep as-is
     if (parsed.usesRemaining === null) {
@@ -150,7 +147,12 @@ export const consumeInviteUseForProfile = async (
 export const getValidInvitesForProfile = async (
     profileId: string
 ): Promise<
-    { challenge: string; expiresIn: number | null; usesRemaining: number | null; maxUses: number | null }[]
+    {
+        challenge: string;
+        expiresIn: number | null;
+        usesRemaining: number | null;
+        maxUses: number | null;
+    }[]
 > => {
     const pattern = `inviteChallenge:${profileId}:*`;
 
