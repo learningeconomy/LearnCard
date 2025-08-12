@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "LearnCard",
+  "description": "Save digital credentials to your LearnCard in one click.",
+  "version": "1.0.0",
+  "action": {
+    "default_title": "LearnCard",
+    "default_popup": "src/popup/index.html"
+  },
+  "permissions": [
+    "storage",
+    "tabs",
+    "clipboardRead",
+    "activeTab",
+    "scripting"
+  ],
+  "background": {
+    "service_worker": "src/background/main.ts",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["src/content/main.ts"],
+      "run_at": "document_idle"
+    }
+  ]
+}

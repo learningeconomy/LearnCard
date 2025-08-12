@@ -6,5 +6,6 @@ packages:
   - 'packages/plugins/*'
   - 'services/*'
   - 'services/learn-card-network/*'
+  - 'apps/*'
   - 'tests/*'
   - 'tools/executors/workspace/*'

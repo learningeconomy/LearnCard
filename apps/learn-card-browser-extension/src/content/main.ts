@@ -1,0 +1,210 @@
+import type { CredentialCandidate } from '../types/messages';
+
+// Minimal VC shape for type guard usage
+type VerifiableCredential = {
+  '@context': unknown[];
+  type: string | string[];
+  name?: string;
+  [k: string]: unknown;
+};
+
+let lastSentKey: string | null = null;
+let observer: MutationObserver | null = null;
+let listenersAttached = false;
+let locHookInstalled = false;
+
+const debounce = (fn: () => void, wait = 200) => {
+  let t: number | undefined;
+  return () => {
+    if (t) window.clearTimeout(t);
+    t = window.setTimeout(fn, wait);
+  };
+};
+
+const installLocationChangeHook = () => {
+  if (locHookInstalled) return;
+  const pushState = history.pushState;
+  history.pushState = function (this: History, ...args) {
+    const ret = pushState.apply(this, args as unknown as any);
+    window.dispatchEvent(new Event('locationchange'));
+    return ret;
+  } as typeof history.pushState;
+
+  const replaceState = history.replaceState;
+  history.replaceState = function (this: History, ...args) {
+    const ret = replaceState.apply(this, args as unknown as any);
+    window.dispatchEvent(new Event('locationchange'));
+    return ret;
+  } as typeof history.replaceState;
+
+  window.addEventListener('popstate', () => {
+    window.dispatchEvent(new Event('locationchange'));
+  });
+  locHookInstalled = true;
+};
+
+const detectLinks = (): CredentialCandidate[] => {
+  const anchors = Array.from(
+    document.querySelectorAll<HTMLAnchorElement>('a[href^="dccrequest://"], a[href^="msprequest://"]')
+  );
+
+  const seen = new Set<string>();
+  const platform = /credly\.com/.test(location.hostname)
+    ? 'credly'
+    : /coursera\.org/.test(location.hostname)
+    ? 'coursera'
+    : 'unknown';
+
+  const results: CredentialCandidate[] = [];
+  for (const a of anchors) {
+    const href = a.href;
+    if (!href || seen.has(href)) continue;
+    seen.add(href);
+    results.push({
+      source: 'link',
+      url: href,
+      title: a.textContent?.trim() || document.title,
+      platform
+    });
+  }
+
+  return results;
+};
+
+const isVc = (data: unknown): data is VerifiableCredential => {
+  if (!data || typeof data !== 'object') return false;
+  const obj = data as Record<string, unknown>;
+  const ctx = obj['@context'];
+  const type = obj['type'];
+  return Array.isArray(ctx) && (Array.isArray(type) || typeof type === 'string');
+};
+
+const detectJsonLd = (): CredentialCandidate[] => {
+  const platform = /credly\.com/.test(location.hostname)
+    ? 'credly'
+    : /coursera\.org/.test(location.hostname)
+    ? 'coursera'
+    : 'unknown';
+
+  const results: CredentialCandidate[] = [];
+
+  const addData = (data: unknown) => {
+    if (Array.isArray(data)) {
+      for (const item of data) addData(item);
+      return;
+    }
+    if (isVc(data)) {
+      results.push({
+        source: 'jsonld',
+        raw: data,
+        title: (data as any).name || document.title,
+        platform
+      });
+    }
+  };
+
+  const scripts = Array.from(
+    document.querySelectorAll<HTMLScriptElement>('script[type="application/ld+json"]')
+  );
+
+  for (const s of scripts) {
+    try {
+      const data = JSON.parse(s.textContent || 'null');
+      if (!data) continue;
+      addData(data);
+    } catch {}
+  }
+
+  const potentialScripts = Array.from(document.querySelectorAll('pre, code'));
+
+  for (const s of potentialScripts) {
+    const text = s.textContent;
+    if (!text) continue;
+    // Heuristic check: Does it contain key VC terms? This avoids trying to parse every code snippet.
+    if (text.includes('"VerifiableCredential"') && text.includes('"credentialSubject"')) {
+      try {
+        const data = JSON.parse(text);
+        addData(data);
+      } catch (e) {
+        /* Ignore elements with malformed JSON */
+      }
+    }
+  }
+
+  return results;
+};
+
+const runDetection = () => {
+  const links = detectLinks();
+  const jsonld = detectJsonLd();
+  const map = new Map<string, CredentialCandidate>();
+
+  const platform = /credly\.com/.test(location.hostname)
+    ? 'credly'
+    : /coursera\.org/.test(location.hostname)
+    ? 'coursera'
+    : 'unknown';
+
+  const hash = (c: CredentialCandidate) => {
+    if (c.url) return `url:${c.url}`;
+    try {
+      return `raw:${JSON.stringify(c.raw)}`;
+    } catch {
+      return `raw:${String(c.title ?? '')}:${platform}`;
+    }
+  };
+
+  for (const c of [...links, ...jsonld]) {
+    const key = hash(c);
+    if (!map.has(key)) map.set(key, c);
+  }
+
+  const list = Array.from(map.values());
+  const newKey = `${list.length}:${Array.from(map.keys()).sort().join('|')}`;
+  if (newKey === lastSentKey) return;
+  lastSentKey = newKey;
+
+  chrome.runtime.sendMessage({ type: 'credentials-detected', payload: list });
+};
+
+const startObserving = () => {
+  if (!observer) {
+    const debounced = debounce(runDetection, 200);
+    observer = new MutationObserver(() => {
+      debounced();
+    });
+    observer.observe(document.documentElement, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['href']
+    });
+  }
+
+  if (!listenersAttached) {
+    installLocationChangeHook();
+    const resetAndScan = () => {
+      lastSentKey = null;
+      if (!observer) startObserving();
+      runDetection();
+    };
+    // React to SPA route changes
+    window.addEventListener('hashchange', resetAndScan);
+    window.addEventListener('locationchange', resetAndScan);
+    // When tab becomes visible again, try a scan
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') runDetection();
+    });
+    listenersAttached = true;
+  }
+};
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    runDetection();
+    startObserving();
+  });
+} else {
+  runDetection();
+  startObserving();
+}
