@@ -165,7 +165,7 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
                 )}
 
                 <div className="text-[14px] text-grayscale-800 flex flex-col items-center w-full">
-                    <span className="font-jacques flex gap-[5px] items-center w-full overflow-ellipsis whitespace-nowrap overflow-hidden justify-center">
+                    <span className="font-jacques flex gap-[5px] items-center w-full justify-center text-center">
                         {issueeName === '0 person' ? (
                             'Not yet awarded'
                         ) : (
