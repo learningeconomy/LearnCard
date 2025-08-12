@@ -27,6 +27,18 @@ Use the package manager [pnpm](https://pnpm.io/) to install LearnCard.
 pnpm install
 ```
 
+## Building and Testing
+
+This repository uses [Nx](https://nx.dev) to manage package relationships. Use the provided scripts to ensure everything is built in the correct order and that tests run against fresh artifacts:
+
+```bash
+pnpm build              # builds all packages (excluding docs and example apps) according to the dependency graph
+pnpm test:e2e           # builds dependencies then runs the end-to-end tests
+pnpm run-network-tests  # builds dependencies then runs the Brain service test suite
+```
+
+Avoid running individual package builds or tests with `pnpm` directly, as that can lead to stale artifacts.
+
 ## Contributing
 
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.

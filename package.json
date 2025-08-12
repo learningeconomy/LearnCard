@@ -3,7 +3,10 @@
     "private": true,
     "version": "1.0.1",
     "scripts": {
-        "preinstall": "npx only-allow pnpm"
+        "preinstall": "npx only-allow pnpm",
+        "build": "nx run-many -t build --all --exclude=docs,chapi-example,snap-chapi-example,snap-example-dapp",
+        "test:e2e": "nx run e2e:test:e2e",
+        "run-network-tests": "nx run network-brain-service:build && cd services/learn-card-network/brain-service && pnpm test"
     },
     "devDependencies": {
         "@changesets/changelog-github": "^0.4.8",
