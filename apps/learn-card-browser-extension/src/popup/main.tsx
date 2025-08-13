@@ -1,4 +1,4 @@
-import { StrictMode, useEffect, useState } from 'react';
+import { StrictMode, useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import type { CredentialCandidate, ExtensionMessage } from '../types/messages';
 
@@ -9,6 +9,7 @@ const App = () => {
   const [status, setStatus] = useState<string | null>(null);
   const [authLoading, setAuthLoading] = useState(false);
   const [authDid, setAuthDid] = useState<string | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -17,7 +18,6 @@ const App = () => {
       chrome.runtime.sendMessage({ type: 'get-detected', tabId: id ?? undefined } as ExtensionMessage, async (resp) => {
         const list = resp?.ok && Array.isArray(resp.data) ? (resp.data as CredentialCandidate[]) : [];
         setCandidates(list);
-        // If nothing found, ask the content script in this tab to rescan
         if ((id ?? null) !== null && list.length === 0) {
           try {
             await new Promise<void>((resolve) => {
@@ -31,9 +31,7 @@ const App = () => {
       });
     });
     chrome.runtime.sendMessage({ type: 'get-auth-status' } as ExtensionMessage, (resp) => {
-      if (resp?.ok && resp.data) {
-        setAuthDid(resp.data.did ?? null);
-      }
+      if (resp?.ok && resp.data) setAuthDid(resp.data.did ?? null);
     });
   }, []);
 
@@ -43,6 +41,26 @@ const App = () => {
     const ctx = obj['@context'];
     const type = obj['type'];
     return Array.isArray(ctx) && (Array.isArray(type) || typeof type === 'string');
+  };
+
+  const getTitleFromVc = (vc: any) => {
+    if (vc?.boostCredential) {
+      return vc.boostCredential?.name || vc.boostCredential?.credentialSubject?.name || 'Credential';
+    } else if (vc?.credentialSubject) {
+      return vc.name || vc.credentialSubject?.name || 'Credential';
+    } else {
+      return 'Credential';
+    }
+  };
+
+  const getIssuerNameFromVc = (vc: any) => {
+    if (vc?.boostCredential) {
+      return vc.boostCredential?.issuer || vc.boostCredential?.credentialSubject?.issuer || 'Unknown';
+    } else if (vc?.credentialSubject) {
+      return vc.issuer || vc.credentialSubject?.issuer || 'Unknown';
+    } else {
+      return 'Unknown';
+    }
   };
 
   const dedupe = (list: CredentialCandidate[]) => {
@@ -62,30 +80,36 @@ const App = () => {
     return Array.from(map.values());
   };
 
+  const first = candidates[0] as CredentialCandidate | undefined;
+  const firstTitle = useMemo(() => {
+    if (!first) return '';
+    if (first.title) return first.title;
+    if (first.raw && typeof first.raw === 'object' && (first.raw as any).name) return getTitleFromVc(first.raw);
+    if (first.url) return first.url;
+    return 'Credential';
+  }, [first]);
+
+  const issuerName = useMemo(() => {
+    if (!first?.raw || typeof first.raw !== 'object') return '';
+    const raw = first.raw as any;
+    return getIssuerNameFromVc(raw);
+  }, [first]);
+
   const analyzeClipboard = async () => {
     setStatus(null);
     try {
       const text = await navigator.clipboard.readText();
       let found: CredentialCandidate[] = [];
 
-      // Try parse as a whole
       try {
         const parsed = JSON.parse(text);
         const add = (val: unknown) => {
-          if (Array.isArray(val)) {
-            val.forEach(add);
-            return;
-          }
-          if (isVc(val)) {
-            found.push({ source: 'jsonld', raw: val, title: (val as any).name ?? 'Clipboard VC', platform: 'unknown' });
-          }
+          if (Array.isArray(val)) return val.forEach(add);
+          if (isVc(val)) found.push({ source: 'jsonld', raw: val, title: getTitleFromVc(val), platform: 'unknown' });
         };
         add(parsed);
-      } catch {
-        // ignore parse failure, fall through
-      }
+      } catch {}
 
-      // If nothing found and text contains JSON-like block, attempt a naive extraction between first '{' and last '}'
       if (found.length === 0) {
         const start = text.indexOf('{');
         const end = text.lastIndexOf('}');
@@ -93,12 +117,8 @@ const App = () => {
           const snippet = text.slice(start, end + 1);
           try {
             const parsed = JSON.parse(snippet);
-            if (isVc(parsed)) {
-              found.push({ source: 'jsonld', raw: parsed, title: (parsed as any).name ?? 'Clipboard VC', platform: 'unknown' });
-            }
-          } catch {
-            // ignore
-          }
+            if (isVc(parsed)) found.push({ source: 'jsonld', raw: parsed, title: getTitleFromVc(parsed), platform: 'unknown' });
+          } catch {}
         }
       }
 
@@ -124,7 +144,6 @@ const App = () => {
       setSaving(false);
       if (resp?.ok) {
         setStatus('Saved to LearnCard');
-        // Optimistically clear first item
         setCandidates((prev) => prev.slice(1));
       } else setStatus(`Failed: ${resp?.error ?? 'Unknown error'}`);
     });
@@ -138,9 +157,7 @@ const App = () => {
       if (resp?.ok) {
         setAuthDid(resp.data?.did ?? null);
         setStatus('Logged in successfully');
-      } else {
-        setStatus(`Login failed: ${resp?.error ?? 'Unknown error'}`);
-      }
+      } else setStatus(`Login failed: ${resp?.error ?? 'Unknown error'}`);
     });
   };
 
@@ -151,39 +168,89 @@ const App = () => {
       if (resp?.ok) {
         setAuthDid(null);
         setStatus('Logged out');
-      } else {
-        setStatus(`Logout failed: ${resp?.error ?? 'Unknown error'}`);
-      }
+      } else setStatus(`Logout failed: ${resp?.error ?? 'Unknown error'}`);
     });
   };
 
+  const copyDid = async () => {
+    if (!authDid) return;
+    try {
+      await navigator.clipboard.writeText(authDid);
+      setStatus('DID copied to clipboard');
+      setMenuOpen(false);
+    } catch {}
+  };
+
   return (
-    <div style={{ minWidth: 320, minHeight: 160, padding: 12, fontFamily: 'Inter, system-ui, sans-serif' }}>
-      <h3 style={{ marginTop: 0 }}>LearnCard</h3>
-      <div style={{ marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-        {authDid ? (
-          <>
-            <span title={authDid} style={{ fontSize: 12, color: '#333' }}>
-              Logged in as
-              <br />
-              <code style={{ fontSize: 11 }}>{authDid}</code>
-            </span>
-            <button onClick={onLogout} disabled={authLoading} style={{ padding: '6px 10px', cursor: 'pointer' }}>
-              {authLoading ? 'Working…' : 'Logout'}
+    <div className="popup">
+      {/* Header */}
+      <div className="header">
+        <div className="logo">LearnCard</div>
+        {authDid && (
+          <div className="user">
+            <button className="btn-icon avatar" aria-label="User menu" onClick={() => setMenuOpen((v) => !v)}>
+              <span>LC</span>
             </button>
-          </>
-        ) : (
-          <button onClick={onLogin} disabled={authLoading} style={{ padding: '6px 10px', cursor: 'pointer' }}>
-            {authLoading ? 'Opening…' : 'Login'}
-          </button>
+            {menuOpen && (
+              <div className="menu">
+                <div className="menu-row">
+                  <div className="menu-title">Signed in</div>
+                  <div className="menu-did" title={authDid}>{authDid}</div>
+                </div>
+                <div className="menu-actions">
+                  <button className="btn-secondary" onClick={copyDid}>Copy DID</button>
+                  <button className="btn-secondary" onClick={onLogout} disabled={authLoading}>{authLoading ? 'Working…' : 'Logout'}</button>
+                </div>
+              </div>
+            )}
+          </div>
         )}
       </div>
-      <div style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
-        <button onClick={analyzeClipboard} style={{ padding: '6px 10px', cursor: 'pointer' }}>
-          Analyze clipboard for a credential
-        </button>
+
+      {/* Body */}
+      <div className="content">
+        {!authDid ? (
+          <div className="state">
+            <h2 className="heading">Welcome to LearnCard</h2>
+            <p className="subtext">Sign in to save credentials directly to your LearnCard wallet.</p>
+            <button className="btn-primary" onClick={onLogin} disabled={authLoading}>
+              {authLoading ? 'Opening…' : 'Login to LearnCard'}
+            </button>
+          </div>
+        ) : candidates.length > 0 ? (
+          <div className="state">
+            <div className="card">
+              <div className="card-icon" aria-hidden>
+                <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 2l3 7h7l-5.5 4 2.5 7-7-4.5L5 20l2.5-7L2 9h7z" />
+                </svg>
+              </div>
+              <div className="card-body">
+                <p className="credential-title">{firstTitle}</p>
+                <p className="credential-issuer">{issuerName ? `by ${issuerName}` : first?.platform ? `from ${first.platform}` : ''}</p>
+              </div>
+            </div>
+            <button className="btn-primary" onClick={onSave} disabled={saving}>
+              {saving ? 'Saving…' : 'Add to LearnCard'}
+            </button>
+            <div className="hint">{candidates.length > 1 ? `${candidates.length - 1} more detected` : ''}</div>
+          </div>
+        ) : (
+          <div className="state">
+            <h2 className="heading">No credentials found</h2>
+            <p className="subtext">The extension is active. Try rescanning the page or analyzing your clipboard.</p>
+          </div>
+        )}
+
+        {status && <div className={`status ${status.startsWith('Saved') ? 'ok' : status.startsWith('No credential') ? 'warn' : ''}`}>{status}</div>}
+      </div>
+
+      {/* Footer */}
+      <div className="footer">
+        <button className="btn-secondary" onClick={analyzeClipboard}>Analyze clipboard</button>
         {tabId !== null && (
           <button
+            className="btn-secondary"
             onClick={() => {
               chrome.tabs.sendMessage(tabId!, { type: 'request-scan' } as ExtensionMessage, () => {
                 chrome.runtime.sendMessage({ type: 'get-detected', tabId: tabId ?? undefined } as ExtensionMessage, (resp) => {
@@ -191,30 +258,11 @@ const App = () => {
                 });
               });
             }}
-            style={{ padding: '6px 10px', cursor: 'pointer' }}
           >
             Rescan this page
           </button>
         )}
       </div>
-      {candidates.length > 0 ? (
-        <div>
-          <p style={{ margin: '8px 0' }}>
-            <strong>{candidates.length} Credential{candidates.length === 1 ? '' : 's'} Found:</strong>
-            <br />
-            {candidates[0]?.title ?? candidates[0]?.url ?? 'Unknown'}
-          </p>
-          <button onClick={onSave} disabled={saving} style={{ padding: '8px 12px', cursor: 'pointer' }}>
-            {saving ? 'Saving…' : 'Add First to LearnCard'}
-          </button>
-          {status && <p style={{ color: status.startsWith('Saved') ? 'green' : 'crimson' }}>{status}</p>}
-        </div>
-      ) : (
-        <>
-        <p>No credentials detected on this page.</p>
-        {status && <p style={{ color: status.startsWith('No credential') ? 'crimson' : 'inherit' }}>{status}</p>}
-        </>
-      )}
     </div>
   );
 };

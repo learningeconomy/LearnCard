@@ -81,6 +81,14 @@ const isVc = (data: unknown): data is VerifiableCredential => {
   return ctxOk && typeOk;
 };
 
+const getTitleFromVc = (vc: VerifiableCredential) => {
+  if (vc?.boostCredential) {
+    return vc.boostCredential?.name || vc.boostCredential?.credentialSubject?.name || 'Credential';
+  } else {
+    return vc.name || vc.credentialSubject?.name || 'Credential';
+  }
+};
+
 const detectJsonLd = (): CredentialCandidate[] => {
   const platform = /credly\.com/.test(location.hostname)
     ? 'credly'
@@ -99,7 +107,7 @@ const detectJsonLd = (): CredentialCandidate[] => {
       results.push({
         source: 'jsonld',
         raw: data,
-        title: (data as any).name || document.title,
+        title: getTitleFromVc(data),
         platform
       });
     }
