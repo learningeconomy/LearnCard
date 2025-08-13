@@ -43,6 +43,41 @@ const runInitInOffscreen = async (seed: string): Promise<string | undefined> => 
 
 // Removed direct LearnCard initialization in service worker.
 
+// Offscreen helper to store a detected credential using LearnCard
+const runStoreInOffscreen = async (
+  candidate: CredentialCandidate
+): Promise<{ savedCount: number }> => {
+  // Ensure an offscreen document exists (best-effort)
+  try {
+    await chrome.offscreen.createDocument({
+      url: 'src/offscreen.html',
+      reasons: [chrome.offscreen.Reason.DOM_PARSER],
+      justification: 'Store credentials using LearnCard in a document context.'
+    });
+  } catch {
+    // ignore if already exists
+  }
+
+  // Retrieve seed from storage and forward to offscreen to avoid chrome.storage in offscreen
+  const { authSeed = null } = await storageGet<{ authSeed: string | null }>({ authSeed: null });
+  if (!authSeed) throw new Error('Not logged in');
+
+  const result = await chrome.runtime.sendMessage({
+    type: 'store-credential',
+    target: 'offscreen',
+    data: { candidate, seed: authSeed }
+  });
+
+  try {
+    chrome.offscreen?.closeDocument?.();
+  } catch {
+    // ignore
+  }
+
+  if (result?.ok) return { savedCount: Number(result.savedCount ?? 0) };
+  throw new Error(result?.error ?? 'Offscreen store failed');
+};
+
 const parseParams = (url: string): Record<string, string> => {
   try {
     const u = new URL(url);
@@ -149,19 +184,18 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendRe
     case 'save-credential': {
       (async () => {
         try {
-          // TODO: Replace this stub with LearnCard SDK based persistence
           const msg = message as SaveCredentialMessage;
           const tabId = (typeof msg.tabId === 'number' ? msg.tabId : _sender.tab?.id) ?? -1;
           const toSave = (detectedByTab[tabId] ?? [])[0] ?? null;
-          const { savedCredentials } = await storageGet<{ savedCredentials: unknown[] }>({
-            savedCredentials: []
-          });
-          const next = toSave
-            ? [...savedCredentials, { ...toSave, savedAt: Date.now() }]
-            : savedCredentials;
-          await storageSet({ savedCredentials: next });
+          if (!toSave) {
+            sendResponse({ ok: false, error: 'No credential to save' });
+            return;
+          }
 
-          // Remove the first item only and update badge count
+          // Delegate storing to the offscreen document with LearnCard
+          await runStoreInOffscreen(toSave);
+
+          // On success, remove the first item and update badge count
           const current = detectedByTab[tabId] ?? [];
           const remaining = current.slice(1);
           detectedByTab[tabId] = remaining;
