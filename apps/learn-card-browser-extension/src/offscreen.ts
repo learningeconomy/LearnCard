@@ -96,7 +96,9 @@ async function handleStoreCandidate(candidate: CredentialCandidate, seed?: strin
           let saved = 0;
           for (const vc of vcs) {
             const parsed = typeof vc === 'string' ? JSON.parse(vc) : vc;
-            await lc.store.uploadEncrypted(parsed);
+            const uri = await lc.store?.LearnCloud?.uploadEncrypted(vc);
+            const uriStr = typeof uri === 'string' ? uri : String(uri);
+            await lc.index?.LearnCloud?.add({ uri: uriStr, category: 'Achievement' });
             saved += 1;
           }
           if (saved > 0) return saved;
@@ -113,7 +115,9 @@ async function handleStoreCandidate(candidate: CredentialCandidate, seed?: strin
       if (!resp.ok) throw new Error(`Fetch failed: ${resp.status}`);
       const data = await resp.json();
       if (looksLikeVc(data)) {
-        await lc.store.uploadEncrypted(data);
+        const uri = await lc.store?.LearnCloud?.uploadEncrypted(data);
+        const uriStr = typeof uri === 'string' ? uri : String(uri);
+        await lc.index?.LearnCloud?.add({ uri: uriStr, category: 'Achievement' });
         return 1;
       }
     } catch (e) {
