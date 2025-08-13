@@ -3,11 +3,60 @@ import type {
   ExtensionMessage,
   GetDetectedMessage,
   SaveCredentialMessage,
-  CredentialsDetectedMessage
+  CredentialsDetectedMessage,
 } from '../types/messages';
 
 // Track detections per tab so we can show per-tab badge counts
 const detectedByTab: Record<number, CredentialCandidate[]> = {};
+
+// Offscreen helper to initialize LearnCard in a document context
+const runInitInOffscreen = async (seed: string): Promise<string | undefined> => {
+  // Ensure an offscreen document exists (best-effort)
+  try {
+    await chrome.offscreen.createDocument({
+      url: 'src/offscreen.html',
+      reasons: [chrome.offscreen.Reason.DOM_PARSER],
+      justification: 'Initialize DIDKit (WASM) in a document context.'
+    });
+  } catch {
+    // If it already exists, ignore
+  }
+
+  // Send message to offscreen page and await result
+  const result = await chrome.runtime.sendMessage({
+    type: 'start-learncard-init',
+    target: 'offscreen',
+    data: { seed }
+  });
+
+  // Best-effort close to save resources
+  try {
+    chrome.offscreen?.closeDocument?.();
+  } catch {
+    // ignore
+  }
+
+  if (result?.ok) return result.did as string | undefined;
+  throw new Error(result?.error ?? 'Offscreen init failed');
+};
+
+
+// Removed direct LearnCard initialization in service worker.
+
+const parseParams = (url: string): Record<string, string> => {
+  try {
+    const u = new URL(url);
+    const out: Record<string, string> = {};
+    u.searchParams.forEach((v, k) => (out[k] = v));
+    if (u.hash && u.hash.length > 1) {
+      const hash = u.hash.startsWith('#') ? u.hash.slice(1) : u.hash;
+      new URLSearchParams(hash).forEach((v, k) => (out[k] = v));
+    }
+    return out;
+  } catch {
+    return {};
+  }
+};
 
 const dedupeCandidates = (list: CredentialCandidate[]): CredentialCandidate[] => {
   const map = new Map<string, CredentialCandidate>();
@@ -38,6 +87,25 @@ const storageSet = (items: Record<string, unknown>): Promise<void> =>
 
 chrome.runtime.onInstalled.addListener(() => {
   chrome.action.setBadgeText({ text: '' });
+});
+
+chrome.runtime.onStartup.addListener(() => {
+  (async () => {
+    try {
+      const { authSeed = null, authDid = null } = await storageGet<{
+        authSeed: string | null;
+        authDid: string | null;
+      }>({ authSeed: null, authDid: null });
+      // if (authSeed) {
+      //   const lc = await ensureLearnCard(authSeed);
+      //   const did = lc.id.did();
+      //   if (!authDid) await storageSet({ authDid: did });
+      // }
+    } catch (err) {
+      // non-fatal
+      console.warn('Failed to init LearnCard on startup', err);
+    }
+  })();
 });
 
 chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendResponse) => {
@@ -82,8 +150,6 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendRe
       (async () => {
         try {
           // TODO: Replace this stub with LearnCard SDK based persistence
-          // const learnCard = await initLearnCard({ network: true });
-          // const uri = await learnCard.store.uploadEncrypted?.(detected);
           const msg = message as SaveCredentialMessage;
           const tabId = (typeof msg.tabId === 'number' ? msg.tabId : _sender.tab?.id) ?? -1;
           const toSave = (detectedByTab[tabId] ?? [])[0] ?? null;
@@ -112,6 +178,65 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendRe
         }
       })();
       return true; // keep channel open for async
+    }
+    case 'get-auth-status': {
+      (async () => {
+        const { authSeed = null, authDid = null } = await storageGet<{
+          authSeed: string | null;
+          authDid: string | null;
+        }>({ authSeed: null, authDid: null });
+        sendResponse({ ok: true, data: { loggedIn: Boolean(authSeed), did: authDid || null } });
+      })();
+      return true;
+    }
+    case 'start-auth': {
+      (async () => {
+        try {
+          console.log('Starting auth flow');
+          const redirectUri = chrome.identity.getRedirectURL('learncard');
+          const loginBase = 'http://localhost:3000/login';
+          const loginUrl = `${loginBase}?extRedirectUri=${encodeURIComponent(redirectUri)}`;
+
+          chrome.identity.launchWebAuthFlow(
+            { url: loginUrl, interactive: true },
+            async (responseUrl) => {
+              if (chrome.runtime.lastError) {
+                sendResponse({ ok: false, error: chrome.runtime.lastError.message });
+                return;
+              }
+              if (!responseUrl) {
+                sendResponse({ ok: false, error: 'No response URL from auth flow' });
+                return;
+              }
+              const params = parseParams(responseUrl);
+              const seed = params['seed'];
+              if (!seed) {
+                sendResponse({ ok: false, error: 'No seed found in redirect URL' });
+                return;
+              }
+
+              try {
+                await storageSet({ authSeed: seed });
+                const did = await runInitInOffscreen(seed);
+                await storageSet({ authDid: did });
+                sendResponse({ ok: true, data: { did } });
+              } catch (e) {
+                sendResponse({ ok: false, error: (e as Error).message });
+              }
+            }
+          );
+        } catch (e) {
+          sendResponse({ ok: false, error: (e as Error).message });
+        }
+      })();
+      return true; // keep channel open
+    }
+    case 'logout': {
+      (async () => {
+        await storageSet({ authSeed: null, authDid: null });
+        sendResponse({ ok: true });
+      })();
+      return true;
     }
   }
 });

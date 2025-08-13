@@ -7,5 +7,6 @@ packages:
   - 'services/*'
   - 'services/learn-card-network/*'
   - 'apps/*'
+  - 'apps/learn-card-browser-extension/*'
   - 'tests/*'
   - 'tools/executors/workspace/*'

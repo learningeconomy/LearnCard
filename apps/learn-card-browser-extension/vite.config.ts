@@ -8,6 +8,11 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: true,
-    target: 'es2020'
+    target: 'es2020',
+    rollupOptions: {
+      input: {
+        offscreen: 'src/offscreen.html'
+      }
+    }
   }
 });

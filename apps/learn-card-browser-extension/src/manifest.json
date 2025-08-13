@@ -11,12 +11,23 @@
     "storage",
     "tabs",
     "clipboardRead",
+    "identity",
     "activeTab",
-    "scripting"
+    "scripting",
+    "offscreen"
   ],
   "background": {
     "service_worker": "src/background/main.ts",
     "type": "module"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["assets/*.wasm"],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
   },
   "content_scripts": [
     {

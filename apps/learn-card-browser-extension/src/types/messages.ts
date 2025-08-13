@@ -29,8 +29,28 @@ export type SaveCredentialMessage = {
   tabId?: number;
 };
 
+export type StartAuthMessage = {
+  type: 'start-auth';
+};
+
+export type GetAuthStatusMessage = {
+  type: 'get-auth-status';
+};
+
+export type LogoutMessage = {
+  type: 'logout';
+};
+
+export type RequestScanMessage = {
+  type: 'request-scan';
+};
+
 export type ExtensionMessage =
   | CredentialDetectedMessage
   | CredentialsDetectedMessage
   | GetDetectedMessage
-  | SaveCredentialMessage;
+  | SaveCredentialMessage
+  | StartAuthMessage
+  | GetAuthStatusMessage
+  | LogoutMessage
+  | RequestScanMessage;

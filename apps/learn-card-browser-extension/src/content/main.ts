@@ -1,4 +1,4 @@
-import type { CredentialCandidate } from '../types/messages';
+import type { CredentialCandidate, ExtensionMessage } from '../types/messages';
 
 // Minimal VC shape for type guard usage
 type VerifiableCredential = {
@@ -76,7 +76,9 @@ const isVc = (data: unknown): data is VerifiableCredential => {
   const obj = data as Record<string, unknown>;
   const ctx = obj['@context'];
   const type = obj['type'];
-  return Array.isArray(ctx) && (Array.isArray(type) || typeof type === 'string');
+  const ctxOk = Array.isArray(ctx) || typeof ctx === 'string';
+  const typeOk = Array.isArray(type) || typeof type === 'string';
+  return ctxOk && typeOk;
 };
 
 const detectJsonLd = (): CredentialCandidate[] => {
@@ -194,6 +196,18 @@ const startObserving = () => {
     // When tab becomes visible again, try a scan
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') runDetection();
+    });
+    // Allow background/popup to request a re-scan
+    chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendResponse) => {
+      if (message?.type === 'request-scan') {
+        try {
+          runDetection();
+          sendResponse({ ok: true });
+        } catch (e) {
+          sendResponse({ ok: false, error: (e as Error).message });
+        }
+        return true;
+      }
     });
     listenersAttached = true;
   }
