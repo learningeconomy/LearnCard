@@ -4,7 +4,7 @@ Wrap legacy Open Badges v2.0 (OBv2) assertions into self‑issued W3C Verifiable
 
 - Name: `OpenBadgeV2`
 - Method: `wrapOpenBadgeV2(obv2Assertion: object | string): Promise<VC>`
-- Context added: `https://docs.learncard.com/wrappers/obv2/1.0.0.json`
+- Context added: `https://ctx.learncard.com/wrappers/obv2/1.0.0.json`
 - VC type produced: `LegacyOpenBadgeCredential`
 
 ## Why this plugin?
@@ -19,7 +19,7 @@ This enables:
 ## What it produces
 
 A signed VC with these characteristics:
-- `@context`: `["https://www.w3.org/ns/credentials/v2", "https://docs.learncard.com/wrappers/obv2/1.0.0.json"]`
+- `@context`: `["https://www.w3.org/ns/credentials/v2", "https://ctx.learncard.com/wrappers/obv2/1.0.0.json"]`
 - `type`: `["VerifiableCredential", "LegacyOpenBadgeCredential"]`
 - `issuer`: your LearnCard DID
 - `validFrom`: `new Date().toISOString()`
