@@ -1,7 +1,7 @@
 // Offscreen document script for LearnCard initialization and storage
 import { initLearnCard } from '@learncard/init';
 import didkitWasmUrl from '@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm?url';
-import type { CredentialCandidate } from './types/messages';
+import type { CredentialCandidate, CredentialCategory } from './types/messages';
 
 type LearnCardLike = {
   id: { did: () => string };
@@ -47,7 +47,11 @@ function looksLikeVc(obj: any): boolean {
   );
 }
 
-async function handleStoreCandidate(candidate: CredentialCandidate, seed?: string): Promise<number> {
+async function handleStoreCandidate(
+  candidate: CredentialCandidate,
+  seed: string | undefined,
+  category: CredentialCategory = 'Achievement'
+): Promise<number> {
   const lc = await ensureLearnCard(seed);
 
   // JSON-LD payload directly provided
@@ -56,7 +60,7 @@ async function handleStoreCandidate(candidate: CredentialCandidate, seed?: strin
     const vc = typeof raw === 'string' ? JSON.parse(raw) : raw;
     const uri = await lc.store?.LearnCloud?.uploadEncrypted(vc);
     const uriStr = typeof uri === 'string' ? uri : String(uri);
-    await lc.index?.LearnCloud?.add({ uri: uriStr, category: 'Achievement' });
+    await lc.index?.LearnCloud?.add({ uri: uriStr, category });
     return 1;
   }
 
@@ -98,7 +102,7 @@ async function handleStoreCandidate(candidate: CredentialCandidate, seed?: strin
             const parsed = typeof vc === 'string' ? JSON.parse(vc) : vc;
             const uri = await lc.store?.LearnCloud?.uploadEncrypted(vc);
             const uriStr = typeof uri === 'string' ? uri : String(uri);
-            await lc.index?.LearnCloud?.add({ uri: uriStr, category: 'Achievement' });
+            await lc.index?.LearnCloud?.add({ uri: uriStr, category });
             saved += 1;
           }
           if (saved > 0) return saved;
@@ -117,7 +121,7 @@ async function handleStoreCandidate(candidate: CredentialCandidate, seed?: strin
       if (looksLikeVc(data)) {
         const uri = await lc.store?.LearnCloud?.uploadEncrypted(data);
         const uriStr = typeof uri === 'string' ? uri : String(uri);
-        await lc.index?.LearnCloud?.add({ uri: uriStr, category: 'Achievement' });
+        await lc.index?.LearnCloud?.add({ uri: uriStr, category });
         return 1;
       }
     } catch (e) {
@@ -148,11 +152,12 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (message?.type === 'store-credential') {
       const candidate = message?.data?.candidate as CredentialCandidate | undefined;
       const seed = message?.data?.seed as string | undefined;
+      const category = message?.data?.category as CredentialCategory | undefined;
       if (!candidate) {
         sendResponse({ ok: false, error: 'Missing credential candidate' });
         return false;
       }
-      handleStoreCandidate(candidate, seed)
+      handleStoreCandidate(candidate, seed, category ?? 'Achievement')
         .then((savedCount) => sendResponse({ ok: true, savedCount }))
         .catch((err: unknown) => {
           const msg = err instanceof Error ? err.message : String(err);

@@ -8,6 +8,18 @@ export type CredentialCandidate = {
   platform?: 'credly' | 'coursera' | 'unknown';
 };
 
+export type CredentialCategory =
+  | 'Achievement'
+  | 'Skill'
+  | 'ID'
+  | 'Learning History'
+  | 'Work History'
+  | 'Social Badge'
+  | 'Membership'
+  | 'Course'
+  | 'Accomplishment'
+  | 'Accommodation';
+
 export type CredentialDetectedMessage = {
   type: 'credential-detected';
   payload: CredentialCandidate;
@@ -27,6 +39,7 @@ export type GetDetectedMessage = {
 export type SaveCredentialMessage = {
   type: 'save-credential';
   tabId?: number;
+  category?: CredentialCategory;
 };
 
 export type StartAuthMessage = {

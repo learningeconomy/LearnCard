@@ -4,6 +4,7 @@ import type {
   GetDetectedMessage,
   SaveCredentialMessage,
   CredentialsDetectedMessage,
+  CredentialCategory,
 } from '../types/messages';
 
 // Track detections per tab so we can show per-tab badge counts
@@ -45,7 +46,8 @@ const runInitInOffscreen = async (seed: string): Promise<string | undefined> => 
 
 // Offscreen helper to store a detected credential using LearnCard
 const runStoreInOffscreen = async (
-  candidate: CredentialCandidate
+  candidate: CredentialCandidate,
+  category?: CredentialCategory
 ): Promise<{ savedCount: number }> => {
   // Ensure an offscreen document exists (best-effort)
   try {
@@ -65,7 +67,7 @@ const runStoreInOffscreen = async (
   const result = await chrome.runtime.sendMessage({
     type: 'store-credential',
     target: 'offscreen',
-    data: { candidate, seed: authSeed }
+    data: { candidate, seed: authSeed, category }
   });
 
   try {
@@ -193,7 +195,7 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendRe
           }
 
           // Delegate storing to the offscreen document with LearnCard
-          await runStoreInOffscreen(toSave);
+          await runStoreInOffscreen(toSave, msg.category);
 
           // On success, remove the first item and update badge count
           const current = detectedByTab[tabId] ?? [];

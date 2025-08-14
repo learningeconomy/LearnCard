@@ -1,6 +1,6 @@
 import { StrictMode, useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import type { CredentialCandidate, ExtensionMessage } from '../types/messages';
+import type { CredentialCandidate, ExtensionMessage, CredentialCategory, SaveCredentialMessage } from '../types/messages';
 
 const App = () => {
   const [tabId, setTabId] = useState<number | null>(null);
@@ -10,6 +10,7 @@ const App = () => {
   const [authLoading, setAuthLoading] = useState(false);
   const [authDid, setAuthDid] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [category, setCategory] = useState<CredentialCategory>('Achievement');
 
   useEffect(() => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -140,7 +141,8 @@ const App = () => {
 
   const onSave = () => {
     setSaving(true);
-    chrome.runtime.sendMessage({ type: 'save-credential', tabId: tabId ?? undefined } as ExtensionMessage, (resp) => {
+    const msg: SaveCredentialMessage = { type: 'save-credential', tabId: tabId ?? undefined, category };
+    chrome.runtime.sendMessage(msg as unknown as ExtensionMessage, (resp) => {
       setSaving(false);
       if (resp?.ok) {
         setStatus('Saved to LearnCard');
@@ -229,6 +231,26 @@ const App = () => {
                 <p className="credential-title">{firstTitle}</p>
                 <p className="credential-issuer">{issuerName ? `by ${issuerName}` : first?.platform ? `from ${first.platform}` : ''}</p>
               </div>
+            </div>
+            <div className="field">
+              <label className="label" htmlFor="category">Save as</label>
+              <select
+                id="category"
+                className="select"
+                value={category}
+                onChange={(e) => setCategory(e.target.value as CredentialCategory)}
+              >
+                <option value="Achievement">Achievement</option>
+                <option value="Skill">Skill</option>
+                <option value="ID">ID</option>
+                <option value="Learning History">Learning History</option>
+                <option value="Work History">Work History</option>
+                <option value="Social Badge">Social Badge</option>
+                <option value="Membership">Membership</option>
+                <option value="Course">Course</option>
+                <option value="Accomplishment">Accomplishment</option>
+                <option value="Accommodation">Accommodation</option>
+              </select>
             </div>
             <button className="btn-primary" onClick={onSave} disabled={saving}>
               {saving ? 'Saving…' : 'Add to LearnCard'}
