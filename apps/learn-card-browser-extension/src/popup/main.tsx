@@ -324,32 +324,34 @@ const App = () => {
                         ) : null}
                       </p>
                     </div>
-                    <div className="category">
-                      <button
-                        className="btn-secondary btn-small"
-                        onClick={() => setOpenCategoryIdx(isOpen ? null : i)}
-                      >
-                        {cat || 'Set Category'}
-                      </button>
-                      {isOpen && (
-                        <div className="category-menu">
-                          {['Achievement','Skill','ID','Learning History','Work History','Social Badge','Membership','Course','Accomplishment','Accommodation'].map((opt) => (
-                            <button
-                              key={opt}
-                              className="menu-item"
-                              onClick={() => {
-                                const next = categories.slice();
-                                next[i] = opt as CredentialCategory;
-                                setCategories(next);
-                                setOpenCategoryIdx(null);
-                              }}
-                            >
-                              {opt}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+                    {!c.claimed && (
+                      <div className="category">
+                        <button
+                          className="btn-secondary btn-small"
+                          onClick={() => setOpenCategoryIdx(isOpen ? null : i)}
+                        >
+                          {cat || 'Set Category'}
+                        </button>
+                        {isOpen && (
+                          <div className="category-menu">
+                            {['Achievement','Skill','ID','Learning History','Work History','Social Badge','Membership','Course','Accomplishment','Accommodation'].map((opt) => (
+                              <button
+                                key={opt}
+                                className="menu-item"
+                                onClick={() => {
+                                  const next = categories.slice();
+                                  next[i] = opt as CredentialCategory;
+                                  setCategories(next);
+                                  setOpenCategoryIdx(null);
+                                }}
+                              >
+                                {opt}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               })}
