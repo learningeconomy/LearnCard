@@ -3,6 +3,12 @@
   "name": "LearnCard",
   "description": "Save digital credentials to your LearnCard in one click.",
   "version": "1.0.0",
+  "icons": {
+   "16": "extension_icon16.png",
+   "32": "extension_icon32.png",
+   "48": "extension_icon48.png",
+   "128": "extension_icon128.png"
+  },
   "action": {
     "default_title": "LearnCard",
     "default_popup": "src/popup/index.html"

@@ -15,6 +15,7 @@ const App = () => {
   const [authLoading, setAuthLoading] = useState(false);
   const [authDid, setAuthDid] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [optsOpen, setOptsOpen] = useState(false);
   // Inbox UI state
   const [selected, setSelected] = useState<boolean[]>([]);
   const [categories, setCategories] = useState<CredentialCategory[]>([]);
@@ -214,6 +215,53 @@ const App = () => {
         <div className="logo">LearnCard</div>
         {authDid && (
           <div className="user">
+            <div className="actions" aria-label="Utility actions">
+              {tabId !== null && (
+                <button
+                  className="btn-icon"
+                  aria-label="Rescan page"
+                  title="Rescan page"
+                  onClick={() => {
+                    const id = tabId!;
+                    chrome.tabs.sendMessage(id, { type: 'request-scan' } as ExtensionMessage, () => {
+                      chrome.runtime.sendMessage({ type: 'get-detected', tabId: id } as ExtensionMessage, (resp) => {
+                        if (resp?.ok) setCandidates(Array.isArray(resp.data) ? resp.data : []);
+                      });
+                    });
+                  }}
+                >
+                  <span aria-hidden>🔄</span>
+                </button>
+              )}
+              <button
+                className="btn-icon"
+                aria-label="Analyze clipboard"
+                title="Analyze clipboard"
+                onClick={analyzeClipboard}
+              >
+                <span aria-hidden>📋</span>
+              </button>
+              <div className="options">
+                <button
+                  className="btn-icon"
+                  aria-label="More options"
+                  title="More options"
+                  onClick={() => setOptsOpen((v) => !v)}
+                >
+                  <span aria-hidden>⋮</span>
+                </button>
+                {optsOpen && (
+                  <div className="menu">
+                    <div className="menu-row">
+                      <label className="select-all">
+                        <input type="checkbox" checked={hideClaimed} onChange={(e) => setHideClaimed(e.target.checked)} />
+                        <span>Hide claimed</span>
+                      </label>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
             <button className="btn-icon avatar" aria-label="User menu" onClick={() => setMenuOpen((v) => !v)}>
               <span>LC</span>
             </button>
@@ -245,28 +293,7 @@ const App = () => {
           </div>
         ) : candidates.length > 0 ? (
           <div className="state">
-            <div className="tools">
-              <button className="btn-secondary btn-small" onClick={analyzeClipboard}>Analyze clipboard</button>
-              <label className="select-all" style={{ marginLeft: 8 }}>
-                <input type="checkbox" checked={hideClaimed} onChange={(e) => setHideClaimed(e.target.checked)} />
-                <span>Hide claimed</span>
-              </label>
-              {tabId !== null && (
-                <button
-                  className="btn-secondary btn-small"
-                  onClick={() => {
-                    chrome.tabs.sendMessage(tabId!, { type: 'request-scan' } as ExtensionMessage, () => {
-                      chrome.runtime.sendMessage({ type: 'get-detected', tabId: tabId ?? undefined } as ExtensionMessage, (resp) => {
-                        if (resp?.ok) setCandidates(Array.isArray(resp.data) ? resp.data : []);
-                      });
-                    });
-                  }}
-                >
-                  Rescan page
-                </button>
-              )}
-            </div>
-             <div className="inbox-list">
+            <div className="inbox-list">
               {(
                 hideClaimed
                   ? candidates.map((_, i) => i).filter((i) => !candidates[i]?.claimed)

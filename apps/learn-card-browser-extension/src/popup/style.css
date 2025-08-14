@@ -42,6 +42,10 @@ html,body{margin:0;padding:0}
   color: var(--text);
 }
 .user{ position: relative; }
+.header .user{ display: inline-flex; align-items: center; gap: 8px; }
+.header .user .actions{ display: inline-flex; align-items: center; gap: 6px; margin-right: 8px; }
+.header .user .options{ position: relative; }
+.header .user .options > .menu{ width: 200px; }
 .btn-icon{
   appearance: none; border: 1px solid var(--border); background: var(--panel);
   color: var(--text); border-radius: 999px; padding: 0; width: 32px; height: 32px;
