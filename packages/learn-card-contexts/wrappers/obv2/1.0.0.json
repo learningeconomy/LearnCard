@@ -1,17 +1,16 @@
 {
-  "@context": {
-    "xsd": "http://www.w3.org/2001/XMLSchema#",
-    "lcn": "https://docs.learncard.com/definitions#",
-
-    "LegacyOpenBadgeCredential": {
-      "@id": "lcn:LegacyOpenBadgeCredential",
-      "@comment": "A Verifiable Credential used to wrap a legacy OpenBadge v2.0 assertion, self-issued by the holder."
-    },
-
-    "legacyAssertion": {
-      "@id": "lcn:legacyAssertion",
-      "@type": "@json",
-      "@comment": "Contains the complete, unmodified JSON of the legacy OpenBadge v2.0 assertion."
+    "@context": {
+        "lcn": "https://docs.learncard.com/definitions#",
+        "type": "@type",
+        "xsd": "http://www.w3.org/2001/XMLSchema#",
+        "LegacyOpenBadgeCredential": {
+            "@id": "lcn:LegacyOpenBadgeCredential",
+            "@context": {
+                "legacyAssertion": {
+                    "@id": "lcn:legacyAssertion",
+                    "@type": "@json"
+                }
+            }
+        }
     }
-  }
 }
