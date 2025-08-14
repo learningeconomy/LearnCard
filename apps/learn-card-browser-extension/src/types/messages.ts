@@ -11,13 +11,10 @@ export type CredentialCandidate = {
 
 export type CredentialCategory =
   | 'Achievement'
-  | 'Skill'
   | 'ID'
   | 'Learning History'
   | 'Work History'
   | 'Social Badge'
-  | 'Membership'
-  | 'Course'
   | 'Accomplishment'
   | 'Accommodation';
 

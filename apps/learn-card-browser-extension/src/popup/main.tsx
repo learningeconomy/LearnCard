@@ -29,6 +29,23 @@ const App = () => {
   const [openCategoryIdx, setOpenCategoryIdx] = useState<number | null>(null);
   const [hideClaimed, setHideClaimed] = useState(false);
 
+  // Category options: store value, show label
+  const CATEGORY_OPTIONS: ReadonlyArray<{ value: CredentialCategory; label: string }> = [
+    { value: 'Achievement', label: 'Achievement' },
+    { value: 'ID', label: 'ID' },
+    { value: 'Learning History', label: 'Studies' },
+    { value: 'Work History', label: 'Experiences' },
+    { value: 'Social Badge', label: 'Boosts' },
+    { value: 'Accomplishment', label: 'Portfolio' },
+    { value: 'Accommodation', label: 'Assistance' },
+  ] as const;
+
+  const getCategoryLabel = (val: CredentialCategory | null | undefined) => {
+    if (!val) return 'Set Category';
+    const found = CATEGORY_OPTIONS.find((o) => o.value === val);
+    return found?.label ?? val;
+  };
+
   useEffect(() => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       const id = tabs?.[0]?.id ?? null;
@@ -396,22 +413,22 @@ const App = () => {
                           className="btn-secondary btn-small"
                           onClick={() => setOpenCategoryIdx(isOpen ? null : i)}
                         >
-                          {cat || 'Set Category'}
+                          {getCategoryLabel(cat)}
                         </button>
                         {isOpen && (
                           <div className="category-menu">
-                            {['Achievement','Skill','ID','Learning History','Work History','Social Badge','Membership','Course','Accomplishment','Accommodation'].map((opt) => (
+                            {CATEGORY_OPTIONS.map(({ value, label }) => (
                               <button
-                                key={opt}
+                                key={value}
                                 className="menu-item"
                                 onClick={() => {
                                   const next = categories.slice();
-                                  next[i] = opt as CredentialCategory;
+                                  next[i] = value;
                                   setCategories(next);
                                   setOpenCategoryIdx(null);
                                 }}
                               >
-                                {opt}
+                                {label}
                               </button>
                             ))}
                           </div>
