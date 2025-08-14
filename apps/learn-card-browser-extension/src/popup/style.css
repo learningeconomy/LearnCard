@@ -134,6 +134,8 @@ html,body{margin:0;padding:0}
   box-shadow: var(--shadow);
 }
 .inbox-card .check{ width: 16px; height: 16px; }
+.inbox-card .claimed-indicator{ width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; color: #16a34a; }
+.inbox-card .claimed-indicator .icon{ width: 16px; height: 16px; }
 .category{ position: relative; }
 .category-menu{
   position: absolute;
@@ -162,3 +164,4 @@ html,body{margin:0;padding:0}
 .menu-item:hover{ background: #f3f4f6; }
 
 .select-all{ display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }
+.claimed-label{ font-style: italic; color: var(--muted); margin-left: 8px; }

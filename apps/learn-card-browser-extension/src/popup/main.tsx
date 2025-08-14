@@ -280,17 +280,34 @@ const App = () => {
                 const isOpen = openCategoryIdx === i;
                 return (
                   <div key={i} className="inbox-card">
-                    <input
-                      className="check"
-                      type="checkbox"
-                      checked={!!selected[i]}
-                      disabled={!!c.claimed}
-                      onChange={(e) => {
-                        const next = selected.slice();
-                        next[i] = e.target.checked;
-                        setSelected(next);
-                      }}
-                    />
+                    {c.claimed ? (
+                      <div className="check claimed-indicator" aria-label="Already claimed" title="Already claimed">
+                        <svg
+                          className="icon"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          aria-hidden
+                          style={{ color: '#16a34a' }}
+                        >
+                          <path d="M20 6L9 17l-5-5" />
+                        </svg>
+                      </div>
+                    ) : (
+                      <input
+                        className="check"
+                        type="checkbox"
+                        checked={!!selected[i]}
+                        onChange={(e) => {
+                          const next = selected.slice();
+                          next[i] = e.target.checked;
+                          setSelected(next);
+                        }}
+                      />
+                    )}
                     <div className="card-icon" aria-hidden>
                       <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M12 2l3 7h7l-5.5 4 2.5 7-7-4.5L5 20l2.5-7L2 9h7z" />
@@ -300,7 +317,11 @@ const App = () => {
                       <p className="credential-title">{title}</p>
                       <p className="credential-issuer">
                         {issuer ? `by ${issuer}` : ''}
-                        {c.claimed ? <span className="claimed-badge" title="Already claimed" style={{ marginLeft: 8, padding: '2px 6px', borderRadius: 6, fontSize: 12, background: '#e8e8e8' }}>Claimed</span> : null}
+                        {c.claimed ? (
+                          <em className="claimed-label" title="Already claimed" style={{ marginLeft: 8, fontStyle: 'italic', color: '#555' }}>
+                            Claimed
+                          </em>
+                        ) : null}
                       </p>
                     </div>
                     <div className="category">
@@ -350,7 +371,10 @@ const App = () => {
             <label className="select-all">
               <input
                 type="checkbox"
-                checked={selected.length > 0 && selected.every(Boolean)}
+                checked={
+                  candidates.filter((c) => !c.claimed).length > 0 &&
+                  candidates.every((c, i) => (c.claimed ? true : !!selected[i]))
+                }
                 onChange={(e) => {
                   const all = e.target.checked;
                   setSelected(candidates.map((c) => (c.claimed ? false : all)));
