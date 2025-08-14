@@ -7,6 +7,10 @@ import type {
   SaveCredentialsMessage,
 } from '../types/messages';
 
+import RefreshIcon from './icons/refresh.svg';
+import ClipboardIcon from './icons/paste-from-clipboard.svg';
+import HamburgerIcon from './icons/hamburger.svg';
+
 const App = () => {
   const [tabId, setTabId] = useState<number | null>(null);
   const [candidates, setCandidates] = useState<CredentialCandidate[]>([]);
@@ -259,10 +263,7 @@ const App = () => {
                     });
                   }}
                 >
-                  <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                    <path d="M20 11a8 8 0 1 0 2.34 5.66" />
-                    <path d="M20 5v6h-6" />
-                  </svg>
+                  <img src={RefreshIcon} alt="Rescan page" className="icon" />
                 </button>
               )}
               <button
@@ -273,10 +274,7 @@ const App = () => {
                 aria-busy={analyzeBusy}
                 onClick={analyzeClipboard}
               >
-                <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                  <rect x="6" y="4" width="12" height="16" rx="2" ry="2" />
-                  <rect x="9" y="2" width="6" height="4" rx="1" ry="1" />
-                </svg>
+                <img src={ClipboardIcon} alt="Analyze clipboard" className="icon" />
               </button>
               <div className="options">
                 <button
@@ -285,11 +283,7 @@ const App = () => {
                   title="More options"
                   onClick={() => setOptsOpen((v) => !v)}
                 >
-                  <svg className="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-                    <circle cx="12" cy="5" r="1.6" />
-                    <circle cx="12" cy="12" r="1.6" />
-                    <circle cx="12" cy="19" r="1.6" />
-                  </svg>
+                  <img src={HamburgerIcon} alt="More options" className="icon" />
                 </button>
                 {optsOpen && (
                   <div className="menu">
