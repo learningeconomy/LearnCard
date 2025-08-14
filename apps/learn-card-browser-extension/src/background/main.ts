@@ -80,6 +80,35 @@ const runStoreInOffscreen = async (
   throw new Error(result?.error ?? 'Offscreen store failed');
 };
 
+// Offscreen helper to store many credentials in one shot
+const runStoreManyInOffscreen = async (
+  items: { candidate: CredentialCandidate; category?: CredentialCategory }[]
+): Promise<{ savedCount: number }> => {
+  try {
+    await chrome.offscreen.createDocument({
+      url: 'src/offscreen.html',
+      reasons: [chrome.offscreen.Reason.DOM_PARSER],
+      justification: 'Store credentials using LearnCard in a document context.'
+    });
+  } catch {}
+
+  const { authSeed = null } = await storageGet<{ authSeed: string | null }>({ authSeed: null });
+  if (!authSeed) throw new Error('Not logged in');
+
+  const result = await chrome.runtime.sendMessage({
+    type: 'store-credentials',
+    target: 'offscreen',
+    data: { items, seed: authSeed }
+  });
+
+  try {
+    chrome.offscreen?.closeDocument?.();
+  } catch {}
+
+  if (result?.ok) return { savedCount: Number(result.savedCount ?? 0) };
+  throw new Error(result?.error ?? 'Offscreen bulk store failed');
+};
+
 const parseParams = (url: string): Record<string, string> => {
   try {
     const u = new URL(url);
@@ -214,6 +243,51 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendRe
         }
       })();
       return true; // keep channel open for async
+    }
+    case 'save-credentials': {
+      (async () => {
+        try {
+          const msg = message as any as {
+            type: 'save-credentials';
+            tabId?: number;
+            selections: { index: number; category?: CredentialCategory }[];
+            candidates?: CredentialCandidate[];
+          };
+          const tabId = (typeof msg.tabId === 'number' ? msg.tabId : _sender.tab?.id) ?? -1;
+          const current = detectedByTab[tabId] ?? [];
+          const baseList: CredentialCandidate[] = current.length ? current : Array.isArray(msg.candidates) ? msg.candidates ?? [] : [];
+          if (!baseList.length) {
+            sendResponse({ ok: false, error: 'No selections' });
+            return;
+          }
+          const indices = (msg.selections ?? [])
+            .map((s) => s.index)
+            .filter((i) => Number.isInteger(i) && i >= 0 && i < baseList.length);
+          const unique = Array.from(new Set(indices));
+          if (unique.length === 0) {
+            sendResponse({ ok: false, error: 'No selections' });
+            return;
+          }
+          const items = unique.map((i) => ({ candidate: baseList[i], category: (msg.selections.find((s) => s.index === i) || {}).category }));
+
+          const { savedCount } = await runStoreManyInOffscreen(items);
+
+          // Remove saved indices from list
+          const remaining = baseList.filter((_, idx) => !unique.includes(idx));
+          detectedByTab[tabId] = remaining; // refresh with remaining list even if we used snapshot
+          const badgeText = remaining.length ? String(remaining.length) : '';
+          if (typeof tabId === 'number' && _sender.tab?.id === tabId) {
+            chrome.action.setBadgeText({ text: badgeText, tabId });
+          } else {
+            chrome.action.setBadgeText({ text: badgeText });
+          }
+          sendResponse({ ok: true, savedCount });
+        } catch (err) {
+          console.error('Failed to save credentials', err);
+          sendResponse({ ok: false, error: (err as Error).message });
+        }
+      })();
+      return true;
     }
     case 'get-auth-status': {
       (async () => {

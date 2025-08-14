@@ -165,6 +165,32 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         });
       return true;
     }
+
+    if (message?.type === 'store-credentials') {
+      const items = (message?.data?.items as { candidate: CredentialCandidate; category?: CredentialCategory }[] | undefined) ?? [];
+      const seed = message?.data?.seed as string | undefined;
+      if (!Array.isArray(items) || items.length === 0) {
+        sendResponse({ ok: false, error: 'Missing selections' });
+        return false;
+      }
+      (async () => {
+        try {
+          let saved = 0;
+          for (const it of items) {
+            try {
+              saved += await handleStoreCandidate(it.candidate, seed, (it.category as CredentialCategory) ?? 'Achievement');
+            } catch (e) {
+              // continue with next
+            }
+          }
+          sendResponse({ ok: true, savedCount: saved });
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          sendResponse({ ok: false, error: msg });
+        }
+      })();
+      return true;
+    }
   }
 
   return false;

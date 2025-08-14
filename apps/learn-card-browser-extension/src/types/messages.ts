@@ -42,6 +42,18 @@ export type SaveCredentialMessage = {
   category?: CredentialCategory;
 };
 
+export type BulkSaveSelection = {
+  index: number;
+  category?: CredentialCategory;
+};
+
+export type SaveCredentialsMessage = {
+  type: 'save-credentials';
+  tabId?: number;
+  selections: BulkSaveSelection[];
+  candidates?: CredentialCandidate[];
+};
+
 export type StartAuthMessage = {
   type: 'start-auth';
 };
@@ -63,6 +75,7 @@ export type ExtensionMessage =
   | CredentialsDetectedMessage
   | GetDetectedMessage
   | SaveCredentialMessage
+  | SaveCredentialsMessage
   | StartAuthMessage
   | GetAuthStatusMessage
   | LogoutMessage

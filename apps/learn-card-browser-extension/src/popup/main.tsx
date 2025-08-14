@@ -1,6 +1,11 @@
-import { StrictMode, useEffect, useMemo, useState } from 'react';
+import { StrictMode, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import type { CredentialCandidate, ExtensionMessage, CredentialCategory, SaveCredentialMessage } from '../types/messages';
+import type {
+  CredentialCandidate,
+  ExtensionMessage,
+  CredentialCategory,
+  SaveCredentialsMessage,
+} from '../types/messages';
 
 const App = () => {
   const [tabId, setTabId] = useState<number | null>(null);
@@ -10,7 +15,10 @@ const App = () => {
   const [authLoading, setAuthLoading] = useState(false);
   const [authDid, setAuthDid] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [category, setCategory] = useState<CredentialCategory>('Achievement');
+  // Inbox UI state
+  const [selected, setSelected] = useState<boolean[]>([]);
+  const [categories, setCategories] = useState<CredentialCategory[]>([]);
+  const [openCategoryIdx, setOpenCategoryIdx] = useState<number | null>(null);
 
   useEffect(() => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -81,20 +89,17 @@ const App = () => {
     return Array.from(map.values());
   };
 
-  const first = candidates[0] as CredentialCandidate | undefined;
-  const firstTitle = useMemo(() => {
-    if (!first) return '';
-    if (first.title) return first.title;
-    if (first.raw && typeof first.raw === 'object' && (first.raw as any).name) return getTitleFromVc(first.raw);
-    if (first.url) return first.url;
-    return 'Credential';
-  }, [first]);
-
-  const issuerName = useMemo(() => {
-    if (!first?.raw || typeof first.raw !== 'object') return '';
-    const raw = first.raw as any;
-    return getIssuerNameFromVc(raw);
-  }, [first]);
+  // Keep selection and categories arrays in sync with candidates
+  useEffect(() => {
+    setSelected((prev) => {
+      const next = candidates.map((_, i) => (typeof prev[i] === 'boolean' ? prev[i] : true));
+      return next;
+    });
+    setCategories((prev) => {
+      const next = candidates.map((_, i) => (prev[i] ? prev[i] : 'Achievement'));
+      return next as CredentialCategory[];
+    });
+  }, [candidates]);
 
   const analyzeClipboard = async () => {
     setStatus(null);
@@ -139,14 +144,25 @@ const App = () => {
     }
   };
 
-  const onSave = () => {
+  const onBulkSave = () => {
+    const selections = selected
+      .map((v, i) => ({ v, i }))
+      .filter(({ v }) => v)
+      .map(({ i }) => ({ index: i, category: categories[i] }));
+    if (selections.length === 0) return;
     setSaving(true);
-    const msg: SaveCredentialMessage = { type: 'save-credential', tabId: tabId ?? undefined, category };
+    const msg: SaveCredentialsMessage = {
+      type: 'save-credentials',
+      tabId: tabId ?? undefined,
+      selections,
+      candidates,
+    };
     chrome.runtime.sendMessage(msg as unknown as ExtensionMessage, (resp) => {
       setSaving(false);
       if (resp?.ok) {
-        setStatus('Saved to LearnCard');
-        setCandidates((prev) => prev.slice(1));
+        const saved = new Set(selections.map((s) => s.index));
+        setCandidates((prev) => prev.filter((_, idx) => !saved.has(idx)));
+        setStatus(`Saved ${resp.savedCount ?? selections.length} credential${(resp.savedCount ?? selections.length) === 1 ? '' : 's'} to LearnCard`);
       } else setStatus(`Failed: ${resp?.error ?? 'Unknown error'}`);
     });
   };
@@ -221,41 +237,82 @@ const App = () => {
           </div>
         ) : candidates.length > 0 ? (
           <div className="state">
-            <div className="card">
-              <div className="card-icon" aria-hidden>
-                <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 2l3 7h7l-5.5 4 2.5 7-7-4.5L5 20l2.5-7L2 9h7z" />
-                </svg>
-              </div>
-              <div className="card-body">
-                <p className="credential-title">{firstTitle}</p>
-                <p className="credential-issuer">{issuerName ? `by ${issuerName}` : first?.platform ? `from ${first.platform}` : ''}</p>
-              </div>
+            <div className="tools">
+              <button className="btn-secondary btn-small" onClick={analyzeClipboard}>Analyze clipboard</button>
+              {tabId !== null && (
+                <button
+                  className="btn-secondary btn-small"
+                  onClick={() => {
+                    chrome.tabs.sendMessage(tabId!, { type: 'request-scan' } as ExtensionMessage, () => {
+                      chrome.runtime.sendMessage({ type: 'get-detected', tabId: tabId ?? undefined } as ExtensionMessage, (resp) => {
+                        if (resp?.ok) setCandidates(Array.isArray(resp.data) ? resp.data : []);
+                      });
+                    });
+                  }}
+                >
+                  Rescan page
+                </button>
+              )}
             </div>
-            <div className="field">
-              <label className="label" htmlFor="category">Save as</label>
-              <select
-                id="category"
-                className="select"
-                value={category}
-                onChange={(e) => setCategory(e.target.value as CredentialCategory)}
-              >
-                <option value="Achievement">Achievement</option>
-                <option value="Skill">Skill</option>
-                <option value="ID">ID</option>
-                <option value="Learning History">Learning History</option>
-                <option value="Work History">Work History</option>
-                <option value="Social Badge">Social Badge</option>
-                <option value="Membership">Membership</option>
-                <option value="Course">Course</option>
-                <option value="Accomplishment">Accomplishment</option>
-                <option value="Accommodation">Accommodation</option>
-              </select>
+            <div className="inbox-list">
+              {candidates.map((c, i) => {
+                const raw = c.raw as any;
+                const title = c.title || (raw ? getTitleFromVc(raw) : c.url || 'Credential');
+                const issuer = raw ? getIssuerNameFromVc(raw) : (c.platform ? `from ${c.platform}` : '');
+                const cat = categories[i] || 'Achievement';
+                const isOpen = openCategoryIdx === i;
+                return (
+                  <div key={i} className="inbox-card">
+                    <input
+                      className="check"
+                      type="checkbox"
+                      checked={!!selected[i]}
+                      onChange={(e) => {
+                        const next = selected.slice();
+                        next[i] = e.target.checked;
+                        setSelected(next);
+                      }}
+                    />
+                    <div className="card-icon" aria-hidden>
+                      <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 2l3 7h7l-5.5 4 2.5 7-7-4.5L5 20l2.5-7L2 9h7z" />
+                      </svg>
+                    </div>
+                    <div className="card-body">
+                      <p className="credential-title">{title}</p>
+                      <p className="credential-issuer">{issuer ? `by ${issuer}` : ''}</p>
+                    </div>
+                    <div className="category">
+                      <button
+                        className="btn-secondary btn-small"
+                        onClick={() => setOpenCategoryIdx(isOpen ? null : i)}
+                      >
+                        {cat || 'Set Category'}
+                      </button>
+                      {isOpen && (
+                        <div className="category-menu">
+                          {['Achievement','Skill','ID','Learning History','Work History','Social Badge','Membership','Course','Accomplishment','Accommodation'].map((opt) => (
+                            <button
+                              key={opt}
+                              className="menu-item"
+                              onClick={() => {
+                                const next = categories.slice();
+                                next[i] = opt as CredentialCategory;
+                                setCategories(next);
+                                setOpenCategoryIdx(null);
+                              }}
+                            >
+                              {opt}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-            <button className="btn-primary" onClick={onSave} disabled={saving}>
-              {saving ? 'Saving…' : 'Add to LearnCard'}
-            </button>
-            <div className="hint">{candidates.length > 1 ? `${candidates.length - 1} more detected` : ''}</div>
+            {status && <div className={`status ${status.startsWith('Saved') ? 'ok' : status.startsWith('No credential') ? 'warn' : ''}`}>{status}</div>}
           </div>
         ) : (
           <div className="state">
@@ -263,26 +320,45 @@ const App = () => {
             <p className="subtext">The extension is active. Try rescanning the page or analyzing your clipboard.</p>
           </div>
         )}
-
-        {status && <div className={`status ${status.startsWith('Saved') ? 'ok' : status.startsWith('No credential') ? 'warn' : ''}`}>{status}</div>}
       </div>
 
-      {/* Footer */}
+      {/* Footer / Action bar */}
       <div className="footer">
-        <button className="btn-secondary" onClick={analyzeClipboard}>Analyze clipboard</button>
-        {tabId !== null && (
-          <button
-            className="btn-secondary"
-            onClick={() => {
-              chrome.tabs.sendMessage(tabId!, { type: 'request-scan' } as ExtensionMessage, () => {
-                chrome.runtime.sendMessage({ type: 'get-detected', tabId: tabId ?? undefined } as ExtensionMessage, (resp) => {
-                  if (resp?.ok) setCandidates(Array.isArray(resp.data) ? resp.data : []);
-                });
-              });
-            }}
-          >
-            Rescan this page
-          </button>
+        {authDid && candidates.length > 0 ? (
+          <>
+            <label className="select-all">
+              <input
+                type="checkbox"
+                checked={selected.length > 0 && selected.every(Boolean)}
+                onChange={(e) => {
+                  const all = e.target.checked;
+                  setSelected(candidates.map(() => all));
+                }}
+              />
+              <span>Select all</span>
+            </label>
+            <button className="btn-primary" onClick={onBulkSave} disabled={saving || !selected.some(Boolean)}>
+              {saving ? 'Claiming…' : `Claim ${selected.filter(Boolean).length} Credential${selected.filter(Boolean).length === 1 ? '' : 's'}`}
+            </button>
+          </>
+        ) : (
+          <>
+            <button className="btn-secondary" onClick={analyzeClipboard}>Analyze clipboard</button>
+            {tabId !== null && (
+              <button
+                className="btn-secondary"
+                onClick={() => {
+                  chrome.tabs.sendMessage(tabId!, { type: 'request-scan' } as ExtensionMessage, () => {
+                    chrome.runtime.sendMessage({ type: 'get-detected', tabId: tabId ?? undefined } as ExtensionMessage, (resp) => {
+                      if (resp?.ok) setCandidates(Array.isArray(resp.data) ? resp.data : []);
+                    });
+                  });
+                }}
+              >
+                Rescan this page
+              </button>
+            )}
+          </>
         )}
       </div>
     </div>
