@@ -11,6 +11,6 @@ export type OpenBadgeV2PluginMethods = {
 
 export type OpenBadgeV2Plugin = Plugin<'OpenBadgeV2', any, OpenBadgeV2PluginMethods, 'id', VCPluginMethods>;
 
-export const OBV2_WRAPPER_CONTEXT_URL = 'https://docs.learncard.com/wrappers/obv2/1.0.0.json';
+export const OBV2_WRAPPER_CONTEXT_URL = 'https://ctx.learncard.com/wrappers/obv2/1.0.0.json';
 
 export type RequiresVC = VCPluginMethods;

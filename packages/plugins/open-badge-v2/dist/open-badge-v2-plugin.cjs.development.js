@@ -27,7 +27,7 @@ __export(src_exports, {
 module.exports = __toCommonJS(src_exports);
 
 // src/types.ts
-var OBV2_WRAPPER_CONTEXT_URL = "https://docs.learncard.com/wrappers/obv2/1.0.0.json";
+var OBV2_WRAPPER_CONTEXT_URL = "https://ctx.learncard.com/wrappers/obv2/1.0.0.json";
 
 // src/plugin.ts
 var VC_V2_CONTEXT = "https://www.w3.org/ns/credentials/v2";
@@ -81,9 +81,9 @@ var openBadgeV2Plugin = /* @__PURE__ */ __name((learnCard) => ({
         issuer: issuerDid,
         validFrom: new Date().toISOString(),
         credentialSubject: {
-          id: issuerDid,
-          legacyAssertion: obv2
-        }
+          id: issuerDid
+        },
+        legacyAssertion: obv2
       };
       return learnCard.invoke.issueCredential(unsigned, { proofPurpose: "assertionMethod" });
     }

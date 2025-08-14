@@ -75,11 +75,12 @@ export const openBadgeV2Plugin = (
                 validFrom: new Date().toISOString(),
                 credentialSubject: {
                     id: issuerDid,
-                    legacyAssertion: obv2,
                 },
+                legacyAssertion: obv2,
             };
 
             return learnCard.invoke.issueCredential(unsigned, { proofPurpose: 'assertionMethod' });
         },
     },
 });
+
