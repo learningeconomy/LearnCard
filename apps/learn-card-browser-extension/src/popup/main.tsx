@@ -19,6 +19,7 @@ const App = () => {
   const [selected, setSelected] = useState<boolean[]>([]);
   const [categories, setCategories] = useState<CredentialCategory[]>([]);
   const [openCategoryIdx, setOpenCategoryIdx] = useState<number | null>(null);
+  const [hideClaimed, setHideClaimed] = useState(false);
 
   useEffect(() => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -92,7 +93,7 @@ const App = () => {
   // Keep selection and categories arrays in sync with candidates
   useEffect(() => {
     setSelected((prev) => {
-      const next = candidates.map((_, i) => (typeof prev[i] === 'boolean' ? prev[i] : true));
+      const next = candidates.map((c, i) => (c.claimed ? false : (typeof prev[i] === 'boolean' ? prev[i] : true)));
       return next;
     });
     setCategories((prev) => {
@@ -134,10 +135,15 @@ const App = () => {
       }
 
       const merged = dedupe([...found, ...candidates]);
-      setCandidates(merged);
+      // Update background with merged detections, then refresh to pick up claimed statuses
       chrome.runtime.sendMessage({ type: 'credentials-detected', payload: merged, tabId: tabId ?? undefined } as ExtensionMessage, (resp) => {
-        if (resp?.ok) setStatus(`Found ${found.length} credential${found.length === 1 ? '' : 's'} from clipboard`);
-        else setStatus(`Failed to update detections`);
+        if (resp?.ok) {
+          chrome.runtime.sendMessage({ type: 'get-detected', tabId: tabId ?? undefined } as ExtensionMessage, (resp2) => {
+            const list = resp2?.ok && Array.isArray(resp2.data) ? (resp2.data as CredentialCandidate[]) : merged;
+            setCandidates(list);
+          });
+          setStatus(`Found ${found.length} credential${found.length === 1 ? '' : 's'} from clipboard`);
+        } else setStatus(`Failed to update detections`);
       });
     } catch (e) {
       setStatus('Clipboard read failed. Grant clipboard permission and try again.');
@@ -160,8 +166,10 @@ const App = () => {
     chrome.runtime.sendMessage(msg as unknown as ExtensionMessage, (resp) => {
       setSaving(false);
       if (resp?.ok) {
-        const saved = new Set(selections.map((s) => s.index));
-        setCandidates((prev) => prev.filter((_, idx) => !saved.has(idx)));
+        // Refresh from background, which only removed actually-saved items
+        chrome.runtime.sendMessage({ type: 'get-detected', tabId: tabId ?? undefined } as ExtensionMessage, (resp2) => {
+          if (resp2?.ok && Array.isArray(resp2.data)) setCandidates(resp2.data as CredentialCandidate[]);
+        });
         setStatus(`Saved ${resp.savedCount ?? selections.length} credential${(resp.savedCount ?? selections.length) === 1 ? '' : 's'} to LearnCard`);
       } else setStatus(`Failed: ${resp?.error ?? 'Unknown error'}`);
     });
@@ -239,6 +247,10 @@ const App = () => {
           <div className="state">
             <div className="tools">
               <button className="btn-secondary btn-small" onClick={analyzeClipboard}>Analyze clipboard</button>
+              <label className="select-all" style={{ marginLeft: 8 }}>
+                <input type="checkbox" checked={hideClaimed} onChange={(e) => setHideClaimed(e.target.checked)} />
+                <span>Hide claimed</span>
+              </label>
               {tabId !== null && (
                 <button
                   className="btn-secondary btn-small"
@@ -254,8 +266,13 @@ const App = () => {
                 </button>
               )}
             </div>
-            <div className="inbox-list">
-              {candidates.map((c, i) => {
+             <div className="inbox-list">
+              {(
+                hideClaimed
+                  ? candidates.map((_, i) => i).filter((i) => !candidates[i]?.claimed)
+                  : candidates.map((_, i) => i)
+               ).map((i) => {
+                const c = candidates[i];
                 const raw = c.raw as any;
                 const title = c.title || (raw ? getTitleFromVc(raw) : c.url || 'Credential');
                 const issuer = raw ? getIssuerNameFromVc(raw) : (c.platform ? `from ${c.platform}` : '');
@@ -267,6 +284,7 @@ const App = () => {
                       className="check"
                       type="checkbox"
                       checked={!!selected[i]}
+                      disabled={!!c.claimed}
                       onChange={(e) => {
                         const next = selected.slice();
                         next[i] = e.target.checked;
@@ -280,7 +298,10 @@ const App = () => {
                     </div>
                     <div className="card-body">
                       <p className="credential-title">{title}</p>
-                      <p className="credential-issuer">{issuer ? `by ${issuer}` : ''}</p>
+                      <p className="credential-issuer">
+                        {issuer ? `by ${issuer}` : ''}
+                        {c.claimed ? <span className="claimed-badge" title="Already claimed" style={{ marginLeft: 8, padding: '2px 6px', borderRadius: 6, fontSize: 12, background: '#e8e8e8' }}>Claimed</span> : null}
+                      </p>
                     </div>
                     <div className="category">
                       <button
@@ -332,7 +353,7 @@ const App = () => {
                 checked={selected.length > 0 && selected.every(Boolean)}
                 onChange={(e) => {
                   const all = e.target.checked;
-                  setSelected(candidates.map(() => all));
+                  setSelected(candidates.map((c) => (c.claimed ? false : all)));
                 }}
               />
               <span>Select all</span>

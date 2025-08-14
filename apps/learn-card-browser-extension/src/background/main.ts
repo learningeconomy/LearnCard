@@ -80,6 +80,35 @@ const runStoreInOffscreen = async (
   throw new Error(result?.error ?? 'Offscreen store failed');
 };
 
+// Offscreen helper to check claimed status for many candidates
+const runCheckClaimedManyInOffscreen = async (
+  candidates: CredentialCandidate[]
+): Promise<boolean[]> => {
+  try {
+    await chrome.offscreen.createDocument({
+      url: 'src/offscreen.html',
+      reasons: [chrome.offscreen.Reason.DOM_PARSER],
+      justification: 'Query LearnCloud index for claimed status in a document context.'
+    });
+  } catch {}
+
+  const { authSeed = null } = await storageGet<{ authSeed: string | null }>({ authSeed: null });
+  if (!authSeed) throw new Error('Not logged in');
+
+  const result = await chrome.runtime.sendMessage({
+    type: 'check-claimed-many',
+    target: 'offscreen',
+    data: { candidates, seed: authSeed }
+  });
+
+  try {
+    chrome.offscreen?.closeDocument?.();
+  } catch {}
+
+  if (result?.ok && Array.isArray(result.results)) return result.results as boolean[];
+  throw new Error(result?.error ?? 'Offscreen claimed check failed');
+};
+
 // Offscreen helper to store many credentials in one shot
 const runStoreManyInOffscreen = async (
   items: { candidate: CredentialCandidate; category?: CredentialCategory }[]
@@ -206,11 +235,31 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendRe
       return; // synchronous
     }
     case 'get-detected': {
-      const msg = message as GetDetectedMessage;
-      const tabId = (typeof msg.tabId === 'number' ? msg.tabId : _sender.tab?.id) ?? -1;
-      const data = detectedByTab[tabId] ?? [];
-      sendResponse({ ok: true, data });
-      return;
+      (async () => {
+        try {
+          const msg = message as GetDetectedMessage;
+          const tabId = (typeof msg.tabId === 'number' ? msg.tabId : _sender.tab?.id) ?? -1;
+          const data = detectedByTab[tabId] ?? [];
+          if (data.length === 0) {
+            sendResponse({ ok: true, data });
+            return;
+          }
+          let results: boolean[] = [];
+          try {
+            results = await runCheckClaimedManyInOffscreen(data);
+          } catch {
+            // not logged in or failed; return as-is
+            sendResponse({ ok: true, data });
+            return;
+          }
+          const enriched = data.map((c, i) => ({ ...c, claimed: !!results[i] }));
+          detectedByTab[tabId] = enriched;
+          sendResponse({ ok: true, data: enriched });
+        } catch (err) {
+          sendResponse({ ok: false, error: (err as Error).message });
+        }
+      })();
+      return true;
     }
     case 'save-credential': {
       (async () => {
@@ -222,6 +271,19 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendRe
             sendResponse({ ok: false, error: 'No credential to save' });
             return;
           }
+
+          // Block saving if already claimed (UI should prevent this, but guard here too)
+          if (toSave.claimed) {
+            sendResponse({ ok: false, error: 'Already claimed' });
+            return;
+          }
+          try {
+            const [isClaimed] = await runCheckClaimedManyInOffscreen([toSave]);
+            if (isClaimed) {
+              sendResponse({ ok: false, error: 'Already claimed' });
+              return;
+            }
+          } catch {}
 
           // Delegate storing to the offscreen document with LearnCard
           await runStoreInOffscreen(toSave, msg.category);
@@ -268,12 +330,26 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendRe
             sendResponse({ ok: false, error: 'No selections' });
             return;
           }
-          const items = unique.map((i) => ({ candidate: baseList[i], category: (msg.selections.find((s) => s.index === i) || {}).category }));
+          // Double-check claimed status for selected items and filter out already-claimed
+          const selectedList = unique.map((i) => baseList[i]);
+          let claimedResults: boolean[] = [];
+          try {
+            claimedResults = await runCheckClaimedManyInOffscreen(selectedList);
+          } catch {}
+          const allowed = unique.filter((idx, j) => {
+            const c = baseList[idx];
+            return !(c?.claimed || claimedResults[j]);
+          });
+          if (allowed.length === 0) {
+            sendResponse({ ok: false, error: 'All selected credentials are already claimed' });
+            return;
+          }
+          const items = allowed.map((i) => ({ candidate: baseList[i], category: (msg.selections.find((s) => s.index === i) || {}).category }));
 
           const { savedCount } = await runStoreManyInOffscreen(items);
 
-          // Remove saved indices from list
-          const remaining = baseList.filter((_, idx) => !unique.includes(idx));
+          // Remove only saved indices from list
+          const remaining = baseList.filter((_, idx) => !allowed.includes(idx));
           detectedByTab[tabId] = remaining; // refresh with remaining list even if we used snapshot
           const badgeText = remaining.length ? String(remaining.length) : '';
           if (typeof tabId === 'number' && _sender.tab?.id === tabId) {
@@ -289,6 +365,7 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendRe
       })();
       return true;
     }
+    // no external message for claimed checks; background uses internal helper
     case 'get-auth-status': {
       (async () => {
         const { authSeed = null, authDid = null } = await storageGet<{

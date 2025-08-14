@@ -2,15 +2,25 @@
 import { initLearnCard } from '@learncard/init';
 import didkitWasmUrl from '@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm?url';
 import type { CredentialCandidate, CredentialCategory } from './types/messages';
+import { computeCredentialHash } from './utils/hash';
 
 type LearnCardLike = {
-  id: { did: () => string };
+  id: { did: () => string; keypair: (type: string) => { d: string } };
   store: {
     uploadEncrypted: (vc: unknown) => Promise<unknown>;
     LearnCloud?: { uploadEncrypted: (vc: unknown) => Promise<string | unknown> };
   };
-  index?: { LearnCloud?: { add: (args: { uri: string; category: string }) => Promise<unknown> } };
-  invoke: { getDidAuthVp: (args: { challenge: string; domain?: string }) => Promise<unknown> };
+  index?: {
+    LearnCloud?: {
+      add: (args: { id?: string; uri: string; category: string }) => Promise<unknown>;
+      getCount: (query?: Record<string, any>) => Promise<number>;
+    };
+  };
+  invoke: {
+    getDidAuthVp: (args: { challenge: string; domain?: string }) => Promise<unknown>;
+    hash?: (message: string, algorithm?: string) => Promise<string | undefined>;
+    crypto: () => Crypto;
+  };
 };
 
 let learnCard: LearnCardLike | null = null;
@@ -47,6 +57,43 @@ function looksLikeVc(obj: any): boolean {
   );
 }
 
+async function checkClaimedForVc(lc: LearnCardLike, vc: unknown): Promise<boolean> {
+  try {
+    const canonicalId = await computeCredentialHash(lc as any, vc);
+    const count = await lc.index?.LearnCloud?.getCount?.({ id: canonicalId });
+    return Boolean(count && count > 0);
+  } catch {
+    return false;
+  }
+}
+
+async function handleCheckClaimed(
+  candidate: CredentialCandidate,
+  seed: string | undefined
+): Promise<boolean> {
+  const lc = await ensureLearnCard(seed);
+
+  if (candidate.source === 'jsonld' && candidate.raw) {
+    const raw = candidate.raw as any;
+    const vc = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    return checkClaimedForVc(lc, vc);
+  }
+
+  if (candidate.url) {
+    const url = candidate.url;
+    try {
+      const resp = await fetch(url, { method: 'GET', headers: { accept: 'application/json' } });
+      if (!resp.ok) throw new Error('Fetch failed');
+      const data = await resp.json();
+      if (looksLikeVc(data)) return checkClaimedForVc(lc, data);
+    } catch {
+      // Best-effort only; if we can't fetch/parse, treat as not claimed
+    }
+  }
+
+  return false;
+}
+
 async function handleStoreCandidate(
   candidate: CredentialCandidate,
   seed: string | undefined,
@@ -60,7 +107,13 @@ async function handleStoreCandidate(
     const vc = typeof raw === 'string' ? JSON.parse(raw) : raw;
     const uri = await lc.store?.LearnCloud?.uploadEncrypted(vc);
     const uriStr = typeof uri === 'string' ? uri : String(uri);
-    await lc.index?.LearnCloud?.add({ uri: uriStr, category });
+    try {
+      const canonicalId = await computeCredentialHash(lc as any, vc);
+      await lc.index?.LearnCloud?.add({ id: canonicalId, uri: uriStr, category });
+    } catch {
+      // Fall back to no-id add if hashing fails for any reason
+      await lc.index?.LearnCloud?.add({ uri: uriStr, category });
+    }
     return 1;
   }
 
@@ -102,7 +155,12 @@ async function handleStoreCandidate(
             const parsed = typeof vc === 'string' ? JSON.parse(vc) : vc;
             const uri = await lc.store?.LearnCloud?.uploadEncrypted(vc);
             const uriStr = typeof uri === 'string' ? uri : String(uri);
-            await lc.index?.LearnCloud?.add({ uri: uriStr, category });
+            try {
+              const canonicalId = await computeCredentialHash(lc as any, parsed);
+              await lc.index?.LearnCloud?.add({ id: canonicalId, uri: uriStr, category });
+            } catch {
+              await lc.index?.LearnCloud?.add({ uri: uriStr, category });
+            }
             saved += 1;
           }
           if (saved > 0) return saved;
@@ -121,7 +179,12 @@ async function handleStoreCandidate(
       if (looksLikeVc(data)) {
         const uri = await lc.store?.LearnCloud?.uploadEncrypted(data);
         const uriStr = typeof uri === 'string' ? uri : String(uri);
-        await lc.index?.LearnCloud?.add({ uri: uriStr, category });
+        try {
+          const canonicalId = await computeCredentialHash(lc as any, data);
+          await lc.index?.LearnCloud?.add({ id: canonicalId, uri: uriStr, category });
+        } catch {
+          await lc.index?.LearnCloud?.add({ uri: uriStr, category });
+        }
         return 1;
       }
     } catch (e) {
@@ -184,6 +247,48 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
             }
           }
           sendResponse({ ok: true, savedCount: saved });
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          sendResponse({ ok: false, error: msg });
+        }
+      })();
+      return true;
+    }
+
+    if (message?.type === 'check-claimed') {
+      const candidate = message?.data?.candidate as CredentialCandidate | undefined;
+      const seed = message?.data?.seed as string | undefined;
+      if (!candidate) {
+        sendResponse({ ok: false, error: 'Missing credential candidate' });
+        return false;
+      }
+      handleCheckClaimed(candidate, seed)
+        .then((claimed) => sendResponse({ ok: true, claimed }))
+        .catch((err: unknown) => {
+          const msg = err instanceof Error ? err.message : String(err);
+          sendResponse({ ok: false, error: msg });
+        });
+      return true;
+    }
+
+    if (message?.type === 'check-claimed-many') {
+      const items = (message?.data?.candidates as CredentialCandidate[] | undefined) ?? [];
+      const seed = message?.data?.seed as string | undefined;
+      if (!Array.isArray(items) || items.length === 0) {
+        sendResponse({ ok: false, error: 'Missing candidates' });
+        return false;
+      }
+      (async () => {
+        try {
+          const results: boolean[] = [];
+          for (const it of items) {
+            try {
+              results.push(await handleCheckClaimed(it, seed));
+            } catch {
+              results.push(false);
+            }
+          }
+          sendResponse({ ok: true, results });
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err);
           sendResponse({ ok: false, error: msg });

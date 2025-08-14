@@ -6,6 +6,7 @@ export type CredentialCandidate = {
   url?: string;
   raw?: unknown;
   platform?: 'credly' | 'coursera' | 'unknown';
+  claimed?: boolean;
 };
 
 export type CredentialCategory =
