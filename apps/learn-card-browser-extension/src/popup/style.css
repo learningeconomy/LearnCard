@@ -51,8 +51,23 @@ html,body{margin:0;padding:0}
   color: var(--text); border-radius: 999px; padding: 0; width: 32px; height: 32px;
   display: inline-flex; align-items: center; justify-content: center;
   box-shadow: var(--shadow); cursor: pointer;
+  transition: transform .12s ease, background-color .12s ease, border-color .12s ease, box-shadow .12s ease;
+}
+.btn-icon:hover{ background: #f9fafb; }
+.btn-icon:active{ transform: scale(0.96); }
+.btn-icon:focus-visible{ outline: none; box-shadow: 0 0 0 2px var(--ring), 0 0 0 4px #fff inset; }
+.btn-icon:disabled{ opacity: .6; cursor: default; }
+.btn-icon.is-busy{ pointer-events: none; }
+.btn-icon.is-busy .icon{ animation: spin .9s linear infinite; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce){
+  .btn-icon{ transition: none; }
+  .btn-icon.is-busy .icon{ animation: none; }
 }
 .avatar span{ font-weight: 700; font-size: 12px; }
+.avatar img{ width: 100%; height: 100%; display: block; border-radius: 999px; object-fit: cover; }
 
 .menu{
   position: absolute; top: 38px; right: 0; width: 300px;

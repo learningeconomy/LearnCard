@@ -71,6 +71,10 @@ export type RequestScanMessage = {
   type: 'request-scan';
 };
 
+export type GetProfileMessage = {
+  type: 'get-profile';
+};
+
 export type ExtensionMessage =
   | CredentialDetectedMessage
   | CredentialsDetectedMessage
@@ -80,4 +84,5 @@ export type ExtensionMessage =
   | StartAuthMessage
   | GetAuthStatusMessage
   | LogoutMessage
-  | RequestScanMessage;
+  | RequestScanMessage
+  | GetProfileMessage;

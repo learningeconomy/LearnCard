@@ -16,6 +16,9 @@ const App = () => {
   const [authDid, setAuthDid] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [optsOpen, setOptsOpen] = useState(false);
+  const [rescanBusy, setRescanBusy] = useState(false);
+  const [analyzeBusy, setAnalyzeBusy] = useState(false);
+  const [profileImage, setProfileImage] = useState<string | null>(null);
   // Inbox UI state
   const [selected, setSelected] = useState<boolean[]>([]);
   const [categories, setCategories] = useState<CredentialCategory[]>([]);
@@ -42,7 +45,14 @@ const App = () => {
       });
     });
     chrome.runtime.sendMessage({ type: 'get-auth-status' } as ExtensionMessage, (resp) => {
-      if (resp?.ok && resp.data) setAuthDid(resp.data.did ?? null);
+      if (resp?.ok && resp.data) {
+        setAuthDid(resp.data.did ?? null);
+        if (resp.data.loggedIn) {
+          chrome.runtime.sendMessage({ type: 'get-profile' } as ExtensionMessage, (p) => {
+            if (p?.ok) setProfileImage(p.profile?.image ?? null);
+          });
+        }
+      }
     });
   }, []);
 
@@ -104,7 +114,8 @@ const App = () => {
   }, [candidates]);
 
   const analyzeClipboard = async () => {
-    setStatus(null);
+    setAnalyzeBusy(true);
+    setStatus('Analyzing clipboard…');
     try {
       const text = await navigator.clipboard.readText();
       let found: CredentialCandidate[] = [];
@@ -148,6 +159,8 @@ const App = () => {
       });
     } catch (e) {
       setStatus('Clipboard read failed. Grant clipboard permission and try again.');
+    } finally {
+      setAnalyzeBusy(false);
     }
   };
 
@@ -183,6 +196,9 @@ const App = () => {
       setAuthLoading(false);
       if (resp?.ok) {
         setAuthDid(resp.data?.did ?? null);
+        chrome.runtime.sendMessage({ type: 'get-profile' } as ExtensionMessage, (p) => {
+          if (p?.ok) setProfileImage(p.profile?.image ?? null);
+        });
         setStatus('Logged in successfully');
       } else setStatus(`Login failed: ${resp?.error ?? 'Unknown error'}`);
     });
@@ -194,6 +210,8 @@ const App = () => {
       setAuthLoading(false);
       if (resp?.ok) {
         setAuthDid(null);
+        setProfileImage(null);
+        setMenuOpen(false);
         setStatus('Logged out');
       } else setStatus(`Logout failed: ${resp?.error ?? 'Unknown error'}`);
     });
@@ -218,28 +236,47 @@ const App = () => {
             <div className="actions" aria-label="Utility actions">
               {tabId !== null && (
                 <button
-                  className="btn-icon"
+                  className={`btn-icon${rescanBusy ? ' is-busy' : ''}`}
                   aria-label="Rescan page"
                   title="Rescan page"
+                  disabled={rescanBusy}
+                  aria-busy={rescanBusy}
                   onClick={() => {
                     const id = tabId!;
+                    setStatus('Rescanning page…');
+                    setRescanBusy(true);
                     chrome.tabs.sendMessage(id, { type: 'request-scan' } as ExtensionMessage, () => {
                       chrome.runtime.sendMessage({ type: 'get-detected', tabId: id } as ExtensionMessage, (resp) => {
-                        if (resp?.ok) setCandidates(Array.isArray(resp.data) ? resp.data : []);
+                        if (resp?.ok) {
+                          const list = Array.isArray(resp.data) ? (resp.data as CredentialCandidate[]) : [];
+                          setCandidates(list);
+                          setStatus(`Scan complete: ${list.length} credential${list.length === 1 ? '' : 's'} found`);
+                        } else {
+                          setStatus('Rescan failed');
+                        }
+                        setRescanBusy(false);
                       });
                     });
                   }}
                 >
-                  <span aria-hidden>🔄</span>
+                  <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                    <path d="M20 11a8 8 0 1 0 2.34 5.66" />
+                    <path d="M20 5v6h-6" />
+                  </svg>
                 </button>
               )}
               <button
-                className="btn-icon"
+                className={`btn-icon${analyzeBusy ? ' is-busy' : ''}`}
                 aria-label="Analyze clipboard"
                 title="Analyze clipboard"
+                disabled={analyzeBusy}
+                aria-busy={analyzeBusy}
                 onClick={analyzeClipboard}
               >
-                <span aria-hidden>📋</span>
+                <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <rect x="6" y="4" width="12" height="16" rx="2" ry="2" />
+                  <rect x="9" y="2" width="6" height="4" rx="1" ry="1" />
+                </svg>
               </button>
               <div className="options">
                 <button
@@ -248,7 +285,11 @@ const App = () => {
                   title="More options"
                   onClick={() => setOptsOpen((v) => !v)}
                 >
-                  <span aria-hidden>⋮</span>
+                  <svg className="icon" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                    <circle cx="12" cy="5" r="1.6" />
+                    <circle cx="12" cy="12" r="1.6" />
+                    <circle cx="12" cy="19" r="1.6" />
+                  </svg>
                 </button>
                 {optsOpen && (
                   <div className="menu">
@@ -263,7 +304,11 @@ const App = () => {
               </div>
             </div>
             <button className="btn-icon avatar" aria-label="User menu" onClick={() => setMenuOpen((v) => !v)}>
-              <span>LC</span>
+              {profileImage ? (
+                <img src={profileImage} alt="Profile" />
+              ) : (
+                <span aria-hidden>LC</span>
+              )}
             </button>
             {menuOpen && (
               <div className="menu">
@@ -383,7 +428,11 @@ const App = () => {
                 );
               })}
             </div>
-            {status && <div className={`status ${status.startsWith('Saved') ? 'ok' : status.startsWith('No credential') ? 'warn' : ''}`}>{status}</div>}
+            {status && (
+              <div role="status" aria-live="polite" className={`status ${status.startsWith('Saved') ? 'ok' : status.startsWith('No credential') ? 'warn' : ''}`}>
+                {status}
+              </div>
+            )}
           </div>
         ) : (
           <div className="state">
@@ -415,25 +464,7 @@ const App = () => {
               {saving ? 'Claiming…' : `Claim ${selected.filter(Boolean).length} Credential${selected.filter(Boolean).length === 1 ? '' : 's'}`}
             </button>
           </>
-        ) : (
-          <>
-            <button className="btn-secondary" onClick={analyzeClipboard}>Analyze clipboard</button>
-            {tabId !== null && (
-              <button
-                className="btn-secondary"
-                onClick={() => {
-                  chrome.tabs.sendMessage(tabId!, { type: 'request-scan' } as ExtensionMessage, () => {
-                    chrome.runtime.sendMessage({ type: 'get-detected', tabId: tabId ?? undefined } as ExtensionMessage, (resp) => {
-                      if (resp?.ok) setCandidates(Array.isArray(resp.data) ? resp.data : []);
-                    });
-                  });
-                }}
-              >
-                Rescan this page
-              </button>
-            )}
-          </>
-        )}
+        ) : null}
       </div>
     </div>
   );

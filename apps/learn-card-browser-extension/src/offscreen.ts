@@ -20,6 +20,7 @@ type LearnCardLike = {
     getDidAuthVp: (args: { challenge: string; domain?: string }) => Promise<unknown>;
     hash?: (message: string, algorithm?: string) => Promise<string | undefined>;
     crypto: () => Crypto;
+    getProfile?: () => Promise<any>;
   };
 };
 
@@ -43,6 +44,18 @@ async function ensureLearnCard(seed?: string): Promise<LearnCardLike> {
 async function initializeAndGetDid(seed: string): Promise<string | undefined> {
   const lc = await ensureLearnCard(seed);
   return lc?.id.did();
+}
+
+async function getProfile(seed: string): Promise<any | undefined> {
+  const lc = await ensureLearnCard(seed);
+  try {
+    const prof = await (lc as any)?.invoke?.getProfile?.();
+    if (!prof) return undefined;
+    return prof;
+  } catch {
+    // ignore
+  }
+  return undefined;
 }
 
 function isObject(x: unknown): x is Record<string, any> {
@@ -222,6 +235,21 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       }
       handleStoreCandidate(candidate, seed, category ?? 'Achievement')
         .then((savedCount) => sendResponse({ ok: true, savedCount }))
+        .catch((err: unknown) => {
+          const msg = err instanceof Error ? err.message : String(err);
+          sendResponse({ ok: false, error: msg });
+        });
+      return true;
+    }
+
+    if (message?.type === 'get-profile') {
+      const seed = message?.data?.seed as string | undefined;
+      if (!seed) {
+        sendResponse({ ok: false, error: 'Missing seed' });
+        return false;
+      }
+      getProfile(seed)
+        .then((profile) => sendResponse({ ok: true, profile }))
         .catch((err: unknown) => {
           const msg = err instanceof Error ? err.message : String(err);
           sendResponse({ ok: false, error: msg });

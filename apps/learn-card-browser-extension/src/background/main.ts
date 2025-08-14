@@ -44,6 +44,33 @@ const runInitInOffscreen = async (seed: string): Promise<string | undefined> => 
 
 // Removed direct LearnCard initialization in service worker.
 
+// Offscreen helper to get profile image via LearnCard
+const runGetProfileInOffscreen = async (): Promise<object | undefined> => {
+  try {
+    await chrome.offscreen.createDocument({
+      url: 'src/offscreen.html',
+      reasons: [chrome.offscreen.Reason.DOM_PARSER],
+      justification: 'Fetch profile via LearnCard in a document context.'
+    });
+  } catch {}
+
+  const { authSeed = null } = await storageGet<{ authSeed: string | null }>({ authSeed: null });
+  if (!authSeed) throw new Error('Not logged in');
+
+  const result = await chrome.runtime.sendMessage({
+    type: 'get-profile',
+    target: 'offscreen',
+    data: { seed: authSeed }
+  });
+
+  try {
+    chrome.offscreen?.closeDocument?.();
+  } catch {}
+
+  if (result?.ok) return (result.profile as object | undefined) ?? undefined;
+  throw new Error(result?.error ?? 'Offscreen get-profile failed');
+};
+
 // Offscreen helper to store a detected credential using LearnCard
 const runStoreInOffscreen = async (
   candidate: CredentialCandidate,
@@ -417,6 +444,17 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendRe
         }
       })();
       return true; // keep channel open
+    }
+    case 'get-profile': {
+      (async () => {
+        try {
+          const profile = await runGetProfileInOffscreen();
+          sendResponse({ ok: true, profile });
+        } catch (err) {
+          sendResponse({ ok: false, error: (err as Error).message });
+        }
+      })();
+      return true;
     }
     case 'logout': {
       (async () => {
