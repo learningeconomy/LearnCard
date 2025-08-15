@@ -15,6 +15,8 @@ export type StoreIndexOptions = {
     indexName?: string;
 };
 
+export type LinkedClaimsPluginDependentMethods = VCPluginMethods;
+
 export type LinkedClaimsPluginMethods = {
     endorseCredential: (
         original: VC,
@@ -43,5 +45,5 @@ export type LinkedClaimsPlugin = Plugin<
     any,
     LinkedClaimsPluginMethods,
     'id' | 'store' | 'index' | 'read',
-    VCPluginMethods
+    LinkedClaimsPluginDependentMethods
 >;

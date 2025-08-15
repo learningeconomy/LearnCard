@@ -1,7 +1,6 @@
 import { LearnCard } from '@learncard/core';
 import { VC, UnsignedVC } from '@learncard/types';
-import { VCPluginMethods } from '@learncard/vc-plugin';
-import { LinkedClaimsPlugin, EndorsementDetails, LinkedClaimsPluginMethods } from './types';
+import { LinkedClaimsPlugin, EndorsementDetails, LinkedClaimsPluginDependentMethods } from './types';
 
 export * from './types';
 
@@ -34,7 +33,7 @@ const ensureArray = <T>(arr: T | T[] | undefined): T[] =>
     Array.isArray(arr) ? arr : arr ? [arr] : [];
 
 export const getLinkedClaimsPlugin = (
-    learnCard: LearnCard<any, 'id' | 'store' | 'index' | 'read', VCPluginMethods>
+    learnCard: LearnCard<any, 'id' | 'store' | 'index' | 'read', LinkedClaimsPluginDependentMethods>
 ): LinkedClaimsPlugin => ({
     name: 'LinkedClaims',
     displayName: 'LinkedClaims',
