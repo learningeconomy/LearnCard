@@ -26,10 +26,17 @@ async function getObv2Assertion(input: object | string): Promise<Record<string, 
             }
         }
 
-        const res = await fetch(trimmed);
-        if (!res.ok) throw new Error(`wrapOpenBadgeV2: Failed to fetch OBv2 assertion: ${res.status}`);
+        try {
+            const res = await fetch(trimmed);
+            if (!res.ok) throw new Error(`wrapOpenBadgeV2: Failed to fetch OBv2 assertion: ${res.status}`);
 
-        return await res.json();
+            return await res.json();
+        } catch (error) {
+            if (error instanceof TypeError) {
+                throw new Error(`wrapOpenBadgeV2: Network error while fetching OBv2 assertion: ${error.message}`);
+            }
+            throw error;
+        }
     }
 
     return input as Record<string, any>;
