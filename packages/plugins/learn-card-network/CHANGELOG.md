@@ -1,5 +1,14 @@
 # learn-card-core
 
+## 2.5.18
+
+### Patch Changes
+
+-   [#776](https://github.com/learningeconomy/LearnCard/pull/776) [`1d857d892a25990999e533863f0c50feb2727340`](https://github.com/learningeconomy/LearnCard/commit/1d857d892a25990999e533863f0c50feb2727340) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add countBoostRecipientsWithChildren resolver
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.3.23
+
 ## 2.5.17
 
 ### Patch Changes
