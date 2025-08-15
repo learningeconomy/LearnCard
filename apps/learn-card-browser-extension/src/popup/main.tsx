@@ -1,20 +1,6 @@
-  // Helper: normalize unknown errors to a readable string
-  const toErrorString = (e: unknown): string => {
-    try {
-      if (!e) return 'Unknown error';
-      if (typeof e === 'string') return e;
-      if (e instanceof Error) return e.message || String(e);
-      if (typeof e === 'object') {
-        const anyE = e as any;
-        if (typeof anyE.message === 'string') return anyE.message;
-        if (typeof anyE.error === 'string') return anyE.error;
-        return JSON.stringify(anyE);
-      }
-      return String(e);
-    } catch {
-      return 'Unknown error';
-    }
-  };
+  // Helper: delegate to shared error utility
+const toErrorString = (e: unknown): string => toErrorStringUtil(e);
+
 import { StrictMode, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import type {
@@ -28,6 +14,7 @@ import type {
 import RefreshIcon from './icons/refresh.svg';
 import ClipboardIcon from './icons/paste-from-clipboard.svg';
 import HamburgerIcon from './icons/hamburger.svg';
+import { toErrorString as toErrorStringUtil } from '../utils/errors';
 
 const App = () => {
   const [tabId, setTabId] = useState<number | null>(null);
