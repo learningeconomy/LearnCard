@@ -8,7 +8,8 @@
     "implicitDependencies": [
         "nx-run-command",
         "types",
-        "init"
+        "init",
+        "open-badge-v2-plugin"
     ],
     "namedInputs": {
         "source": ["{projectRoot}/src/**/*"],

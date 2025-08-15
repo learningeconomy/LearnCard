@@ -1,5 +1,11 @@
 # @learncard/network-brain-service
 
+## 3.5.17
+
+### Patch Changes
+
+-   [#776](https://github.com/learningeconomy/LearnCard/pull/776) [`1d857d892a25990999e533863f0c50feb2727340`](https://github.com/learningeconomy/LearnCard/commit/1d857d892a25990999e533863f0c50feb2727340) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add countBoostRecipientsWithChildren resolver
+
 ## 3.5.16
 
 ### Patch Changes
