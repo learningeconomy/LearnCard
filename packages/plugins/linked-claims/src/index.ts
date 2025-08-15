@@ -80,7 +80,7 @@ export const getLinkedClaimsPlugin = (
             const ctx = ensureArray((endorsement as any)['@context']);
             const types = ensureArray((endorsement as any)['type']);
 
-            if (!ctx.includes('https://www.w3.org/ns/credentials/v2') || !ctx.includes(ENDORSEMENT_CONTEXT)) {
+            if (!ctx.some((c: string) => c === 'https://www.w3.org/ns/credentials/v2') || !ctx.some((c: string) => c === ENDORSEMENT_CONTEXT)) {
                 check.errors.push('linked-claims error: missing VCv2 or OBv3 context');
             }
             if (!types.includes('EndorsementCredential')) {
