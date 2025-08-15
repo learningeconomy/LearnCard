@@ -15,6 +15,8 @@ import RefreshIcon from './icons/refresh.svg';
 import ClipboardIcon from './icons/paste-from-clipboard.svg';
 import HamburgerIcon from './icons/hamburger.svg';
 import { toErrorString as toErrorStringUtil } from '../utils/errors';
+import { isVc, getTitleFromVc, getIssuerNameFromVc } from '../utils/vc';
+import CategorySelector from './components/CategorySelector';
 
 const App = () => {
   const [tabId, setTabId] = useState<number | null>(null);
@@ -46,22 +48,7 @@ const App = () => {
   const [autoPrefilledExchange, setAutoPrefilledExchange] = useState(false);
   const [showExchange, setShowExchange] = useState(false); // hidden by default
 
-  // Category options: store value, show label
-  const CATEGORY_OPTIONS: ReadonlyArray<{ value: CredentialCategory; label: string }> = [
-    { value: 'Achievement', label: 'Achievement' },
-    { value: 'ID', label: 'ID' },
-    { value: 'Learning History', label: 'Studies' },
-    { value: 'Work History', label: 'Experiences' },
-    { value: 'Social Badge', label: 'Boosts' },
-    { value: 'Accomplishment', label: 'Portfolio' },
-    { value: 'Accommodation', label: 'Assistance' },
-  ] as const;
-
-  const getCategoryLabel = (val: CredentialCategory | null | undefined) => {
-    if (!val) return 'Set Category';
-    const found = CATEGORY_OPTIONS.find((o) => o.value === val);
-    return found?.label ?? val;
-  };
+  // Category options/labels now imported from ./constants
 
   useEffect(() => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -144,33 +131,7 @@ const App = () => {
     }
   }, [candidates, exchangeState, authDid, autoPrefilledExchange, exchangeUrl]);
 
-  const isVc = (data: unknown): data is { '@context': unknown[]; type: string | string[]; name?: string } => {
-    if (!data || typeof data !== 'object') return false;
-    const obj = data as Record<string, unknown>;
-    const ctx = obj['@context'];
-    const type = obj['type'];
-    return Array.isArray(ctx) && (Array.isArray(type) || typeof type === 'string');
-  };
-
-  const getTitleFromVc = (vc: any) => {
-    if (vc?.boostCredential) {
-      return vc.boostCredential?.name || vc.boostCredential?.credentialSubject?.name || 'Credential';
-    } else if (vc?.credentialSubject) {
-      return vc.name || vc.credentialSubject?.name || 'Credential';
-    } else {
-      return 'Credential';
-    }
-  };
-
-  const getIssuerNameFromVc = (vc: any) => {
-    if (vc?.boostCredential) {
-      return vc.boostCredential?.issuer || vc.boostCredential?.credentialSubject?.issuer || 'Unknown';
-    } else if (vc?.credentialSubject) {
-      return vc.issuer || vc.credentialSubject?.issuer || 'Unknown';
-    } else {
-      return 'Unknown';
-    }
-  };
+  // VC helpers now imported from ../utils/vc
 
   const dedupe = (list: CredentialCandidate[]) => {
     const map = new Map<string, CredentialCandidate>();
@@ -614,32 +575,18 @@ const App = () => {
                             <p className="credential-title">{title}</p>
                             <p className="credential-issuer">{issuer ? `by ${issuer}` : ''}</p>
                           </div>
-                          <div className="category">
-                            <button
-                              className="btn-secondary btn-small"
-                              onClick={() => setOfferOpenCatIdx(isOpen ? null : i)}
-                            >
-                              {getCategoryLabel(cat)}
-                            </button>
-                            {isOpen && (
-                              <div className="category-menu">
-                                {CATEGORY_OPTIONS.map(({ value, label }) => (
-                                  <button
-                                    key={value}
-                                    className="menu-item"
-                                    onClick={() => {
-                                      const next = offerCategories.slice();
-                                      next[i] = value;
-                                      setOfferCategories(next);
-                                      setOfferOpenCatIdx(null);
-                                    }}
-                                  >
-                                    {label}
-                                  </button>
-                                ))}
-                              </div>
-                            )}
-                          </div>
+                          <CategorySelector
+                            value={cat}
+                            isOpen={isOpen}
+                            onOpen={() => setOfferOpenCatIdx(i)}
+                            onClose={() => setOfferOpenCatIdx(null)}
+                            onSelect={(value) => {
+                              const next = offerCategories.slice();
+                              next[i] = value;
+                              setOfferCategories(next);
+                              setOfferOpenCatIdx(null);
+                            }}
+                          />
                         </div>
                       );
                     })}
@@ -760,32 +707,18 @@ const App = () => {
                           </p>
                         </div>
                         {!c.claimed && (
-                          <div className="category">
-                            <button
-                              className="btn-secondary btn-small"
-                              onClick={() => setOpenCategoryIdx(isOpen ? null : i)}
-                            >
-                              {getCategoryLabel(cat)}
-                            </button>
-                            {isOpen && (
-                              <div className="category-menu">
-                                {CATEGORY_OPTIONS.map(({ value, label }) => (
-                                  <button
-                                    key={value}
-                                    className="menu-item"
-                                    onClick={() => {
-                                      const next = categories.slice();
-                                      next[i] = value;
-                                      setCategories(next);
-                                      setOpenCategoryIdx(null);
-                                    }}
-                                  >
-                                    {label}
-                                  </button>
-                                ))}
-                              </div>
-                            )}
-                          </div>
+                          <CategorySelector
+                            value={cat}
+                            isOpen={isOpen}
+                            onOpen={() => setOpenCategoryIdx(i)}
+                            onClose={() => setOpenCategoryIdx(null)}
+                            onSelect={(value) => {
+                              const next = categories.slice();
+                              next[i] = value;
+                              setCategories(next);
+                              setOpenCategoryIdx(null);
+                            }}
+                          />
                         )}
                       </div>
                     );
