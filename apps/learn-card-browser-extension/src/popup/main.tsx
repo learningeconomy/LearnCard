@@ -40,6 +40,7 @@ const App = () => {
   const [exchangeBusy, setExchangeBusy] = useState(false);
   const [exchangeError, setExchangeError] = useState<string | null>(null);
   const [autoPrefilledExchange, setAutoPrefilledExchange] = useState(false);
+  const [showExchange, setShowExchange] = useState(false); // hidden by default
 
   // Category options: store value, show label
   const CATEGORY_OPTIONS: ReadonlyArray<{ value: CredentialCategory; label: string }> = [
@@ -135,6 +136,7 @@ const App = () => {
       setExchangeUrl(link.url);
       setAutoPrefilledExchange(true);
       setStatus('Detected offer URL from page');
+      setShowExchange(true); // show exchange box when a URL candidate is detected
     }
   }, [candidates, exchangeState, authDid, autoPrefilledExchange, exchangeUrl]);
 
@@ -379,6 +381,7 @@ const App = () => {
         setOfferOpenCatIdx(null);
         setExchangeBusy(false);
         setExchangeError(null);
+        setShowExchange(false);
       }
     );
   };
@@ -479,6 +482,26 @@ const App = () => {
                         <span>Hide claimed</span>
                       </label>
                     </div>
+                    <div className="menu-row">
+                      <button
+                        className="menu-item"
+                        onClick={() => {
+                          // Prefill from detected link if empty
+                          if (!exchangeUrl.trim()) {
+                            const link = candidates.find((c) => c.source === 'link' && !!c.url && !c.claimed);
+                            if (link?.url) {
+                              setExchangeUrl(link.url);
+                              setStatus('Detected offer URL from page');
+                              setAutoPrefilledExchange(true);
+                            }
+                          }
+                          setShowExchange(true);
+                          setOptsOpen(false);
+                        }}
+                      >
+                        Claim via VC-API
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -519,6 +542,7 @@ const App = () => {
         ) : (
           <>
             {/* Exchange Card */}
+            {(showExchange || exchangeState !== 'idle') && (
             <div className="card exchange-card" role="region" aria-label="VC-API Exchange">
               {exchangeState === 'idle' && (
                 <div className="state">
@@ -662,9 +686,10 @@ const App = () => {
                 </div>
               )}
             </div>
+            )}
 
             {/* Inbox */}
-            {candidates.length > 0 ? (
+            {!(showExchange || exchangeState !== 'idle') && (candidates.length > 0 ? (
               <div className="state">
                 <div className="inbox-list">
                   {(
@@ -767,14 +792,14 @@ const App = () => {
                 <h2 className="heading">No credentials found</h2>
                 <p className="subtext">The extension is active. Try rescanning the page or analyzing your clipboard.</p>
               </div>
-            )}
+            ))}
           </>
         )}
       </div>
 
       {/* Footer / Action bar */}
       <div className="footer">
-        {authDid && candidates.length > 0 ? (
+        {authDid && !(showExchange || exchangeState !== 'idle') && candidates.length > 0 ? (
           <>
             <label className="select-all">
               <input
