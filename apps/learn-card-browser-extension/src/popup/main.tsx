@@ -5,17 +5,17 @@ import { StrictMode, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import type {
   CredentialCandidate,
-  ExtensionMessage,
   CredentialCategory,
   SaveCredentialsMessage,
   VcApiExchangeState,
 } from '../types/messages';
 
 import { toErrorString as toErrorStringUtil } from '../utils/errors';
-import { isVc, getTitleFromVc, getIssuerNameFromVc } from '../utils/vc';
+import { isVc, getTitleFromVc, getIssuerNameFromVc, MinimalVc } from '../utils/vc';
 import CategorySelector from './components/CategorySelector';
 import HeaderBar from './components/HeaderBar';
 import ActionBar from './components/ActionBar';
+import { sendMessage, sendTabMessage } from '../messaging/client';
 
 const App = () => {
   const [tabId, setTabId] = useState<number | null>(null);
@@ -53,26 +53,24 @@ const App = () => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       const id = tabs?.[0]?.id ?? null;
       setTabId(id ?? null);
-      chrome.runtime.sendMessage({ type: 'get-detected', tabId: id ?? undefined } as ExtensionMessage, async (resp) => {
+      sendMessage({ type: 'get-detected', tabId: id ?? undefined }).then(async (resp) => {
         const list = resp?.ok && Array.isArray(resp.data) ? (resp.data as CredentialCandidate[]) : [];
         setCandidates(list);
         if ((id ?? null) !== null && list.length === 0) {
           try {
-            await new Promise<void>((resolve) => {
-              chrome.tabs.sendMessage(id!, { type: 'request-scan' } as ExtensionMessage, () => resolve());
-            });
-            chrome.runtime.sendMessage({ type: 'get-detected', tabId: id ?? undefined } as ExtensionMessage, (resp2) => {
-              if (resp2?.ok) setCandidates(Array.isArray(resp2.data) ? resp2.data : []);
+            await sendTabMessage(id!, { type: 'request-scan' });
+            sendMessage({ type: 'get-detected', tabId: id ?? undefined }).then((resp2) => {
+              if (resp2?.ok) setCandidates(Array.isArray(resp2.data) ? (resp2.data as CredentialCandidate[]) : []);
             });
           } catch {}
         }
       });
     });
-    chrome.runtime.sendMessage({ type: 'get-auth-status' } as ExtensionMessage, (resp) => {
+    sendMessage({ type: 'get-auth-status' }).then((resp) => {
       if (resp?.ok && resp.data) {
         setAuthDid(resp.data.did ?? null);
         if (resp.data.loggedIn) {
-          chrome.runtime.sendMessage({ type: 'get-profile' } as ExtensionMessage, (p) => {
+          sendMessage({ type: 'get-profile' }).then((p) => {
             if (p?.ok) setProfileImage(p.profile?.image ?? null);
           });
         }
@@ -84,33 +82,30 @@ const App = () => {
   useEffect(() => {
     if (tabId === null) return;
     const refreshExchangeStatus = () => {
-      chrome.runtime.sendMessage(
-        { type: 'get-vcapi-exchange-status', tabId: tabId ?? undefined } as ExtensionMessage,
-        (resp) => {
-          if (!resp?.ok) return;
-          const sess = (resp.data || { state: 'idle' }) as {
-            state: VcApiExchangeState;
-            url?: string;
-            offers?: unknown[];
-            error?: string | null;
-          };
-          setExchangeState(sess.state);
-          if (sess.url) setExchangeUrl(sess.url);
-          setExchangeError(sess.state === 'error' ? sess.error ?? 'Unknown error' : null);
-          if (Array.isArray(sess.offers)) {
-            setExchangeOffers(sess.offers);
-            setOfferSelected(sess.offers.map(() => true));
-            setOfferCategories(sess.offers.map(() => 'Achievement' as CredentialCategory));
-          } else {
-            setExchangeOffers([]);
-            setOfferSelected([]);
-            setOfferCategories([]);
-          }
-          if (sess.state === 'contacting' || sess.state === 'saving') {
-            window.setTimeout(refreshExchangeStatus, 600);
-          }
+      sendMessage({ type: 'get-vcapi-exchange-status', tabId: tabId ?? undefined }).then((resp) => {
+        if (!resp?.ok) return;
+        const sess = (resp.data || { state: 'idle' }) as {
+          state: VcApiExchangeState;
+          url?: string;
+          offers?: unknown[];
+          error?: string | null;
+        };
+        setExchangeState(sess.state);
+        if (sess.url) setExchangeUrl(sess.url);
+        setExchangeError(sess.state === 'error' ? (sess.error ?? 'Unknown error') : null);
+        if (Array.isArray(sess.offers)) {
+          setExchangeOffers(sess.offers);
+          setOfferSelected(sess.offers.map(() => true));
+          setOfferCategories(sess.offers.map(() => 'Achievement' as CredentialCategory));
+        } else {
+          setExchangeOffers([]);
+          setOfferSelected([]);
+          setOfferCategories([]);
         }
-      );
+        if (sess.state === 'contacting' || sess.state === 'saving') {
+          window.setTimeout(refreshExchangeStatus, 600);
+        }
+      });
     };
     refreshExchangeStatus();
   }, [tabId]);
@@ -202,9 +197,9 @@ const App = () => {
 
       const merged = dedupe([...found, ...candidates]);
       // Update background with merged detections, then refresh to pick up claimed statuses
-      chrome.runtime.sendMessage({ type: 'credentials-detected', payload: merged, tabId: tabId ?? undefined } as ExtensionMessage, (resp) => {
+      sendMessage({ type: 'credentials-detected', payload: merged, tabId: tabId ?? undefined }).then((resp) => {
         if (resp?.ok) {
-          chrome.runtime.sendMessage({ type: 'get-detected', tabId: tabId ?? undefined } as ExtensionMessage, (resp2) => {
+          sendMessage({ type: 'get-detected', tabId: tabId ?? undefined }).then((resp2) => {
             const list = resp2?.ok && Array.isArray(resp2.data) ? (resp2.data as CredentialCandidate[]) : merged;
             setCandidates(list);
           });
@@ -231,14 +226,14 @@ const App = () => {
       selections,
       candidates,
     };
-    chrome.runtime.sendMessage(msg as unknown as ExtensionMessage, (resp) => {
+    sendMessage(msg).then((resp) => {
       setSaving(false);
       if (resp?.ok) {
         // Refresh from background, which only removed actually-saved items
-        chrome.runtime.sendMessage({ type: 'get-detected', tabId: tabId ?? undefined } as ExtensionMessage, (resp2) => {
+        sendMessage({ type: 'get-detected', tabId: tabId ?? undefined }).then((resp2) => {
           if (resp2?.ok && Array.isArray(resp2.data)) setCandidates(resp2.data as CredentialCandidate[]);
         });
-        setStatus(`Saved ${resp.savedCount ?? selections.length} credential${(resp.savedCount ?? selections.length) === 1 ? '' : 's'} to LearnCard`);
+        setStatus(`Saved ${resp.savedCount} credential${(resp.savedCount === 1) ? '' : 's'} to LearnCard`);
       } else setStatus(`Failed: ${toErrorString(resp?.error ?? 'Unknown error')}`);
     });
   };
@@ -246,11 +241,11 @@ const App = () => {
   const onLogin = () => {
     setAuthLoading(true);
     setStatus(null);
-    chrome.runtime.sendMessage({ type: 'start-auth' } as ExtensionMessage, (resp) => {
+    sendMessage({ type: 'start-auth' }).then((resp) => {
       setAuthLoading(false);
       if (resp?.ok) {
         setAuthDid(resp.data?.did ?? null);
-        chrome.runtime.sendMessage({ type: 'get-profile' } as ExtensionMessage, (p) => {
+        sendMessage({ type: 'get-profile' }).then((p) => {
           if (p?.ok) setProfileImage(p.profile?.image ?? null);
         });
         setStatus('Logged in successfully');
@@ -260,7 +255,7 @@ const App = () => {
 
   const onLogout = () => {
     setAuthLoading(true);
-    chrome.runtime.sendMessage({ type: 'logout' } as ExtensionMessage, (resp) => {
+    sendMessage({ type: 'logout' }).then((resp) => {
       setAuthLoading(false);
       if (resp?.ok) {
         setAuthDid(null);
@@ -282,33 +277,30 @@ const App = () => {
 
   // VC-API Exchange helpers
   const refreshExchangeStatus = () => {
-    chrome.runtime.sendMessage(
-      { type: 'get-vcapi-exchange-status', tabId: tabId ?? undefined } as ExtensionMessage,
-      (resp) => {
-        if (!resp?.ok) return;
-        const sess = (resp.data || { state: 'idle' }) as {
-          state: VcApiExchangeState;
-          url?: string;
-          offers?: unknown[];
-          error?: string | null;
-        };
-        setExchangeState(sess.state);
-        if (sess.url) setExchangeUrl(sess.url);
-        setExchangeError(sess.state === 'error' ? toErrorString(sess.error ?? 'Unknown error') : null);
-        if (Array.isArray(sess.offers)) {
-          setExchangeOffers(sess.offers);
-          setOfferSelected(sess.offers.map(() => true));
-          setOfferCategories(sess.offers.map(() => 'Achievement' as CredentialCategory));
-        } else {
-          setExchangeOffers([]);
-          setOfferSelected([]);
-          setOfferCategories([]);
-        }
-        if (sess.state === 'contacting' || sess.state === 'saving') {
-          window.setTimeout(refreshExchangeStatus, 600);
-        }
+    sendMessage({ type: 'get-vcapi-exchange-status', tabId: tabId ?? undefined }).then((resp) => {
+      if (!resp?.ok) return;
+      const sess = (resp.data || { state: 'idle' }) as {
+        state: VcApiExchangeState;
+        url?: string;
+        offers?: unknown[];
+        error?: string | null;
+      };
+      setExchangeState(sess.state);
+      if (sess.url) setExchangeUrl(sess.url);
+      setExchangeError(sess.state === 'error' ? toErrorString(sess.error ?? 'Unknown error') : null);
+      if (Array.isArray(sess.offers)) {
+        setExchangeOffers(sess.offers);
+        setOfferSelected(sess.offers.map(() => true));
+        setOfferCategories(sess.offers.map(() => 'Achievement' as CredentialCategory));
+      } else {
+        setExchangeOffers([]);
+        setOfferSelected([]);
+        setOfferCategories([]);
       }
-    );
+      if (sess.state === 'contacting' || sess.state === 'saving') {
+        window.setTimeout(refreshExchangeStatus, 600);
+      }
+    });
   };
 
   const startExchange = () => {
@@ -317,37 +309,31 @@ const App = () => {
     setExchangeBusy(true);
     setExchangeError(null);
     setStatus('Starting exchange…');
-    chrome.runtime.sendMessage(
-      { type: 'start-vcapi-exchange', url, tabId: tabId ?? undefined } as ExtensionMessage,
-      (resp) => {
-        setExchangeBusy(false);
-        if (resp?.ok) {
-          setExchangeState('contacting');
-          refreshExchangeStatus();
-        } else {
-          const err = toErrorString(resp?.error ?? 'Failed to start');
-          setExchangeError(err);
-          setExchangeState('error');
-          setStatus(`Failed to start: ${err}`);
-        }
+    sendMessage({ type: 'start-vcapi-exchange', url, tabId: tabId ?? undefined }).then((resp) => {
+      setExchangeBusy(false);
+      if (resp?.ok) {
+        setExchangeState('contacting');
+        refreshExchangeStatus();
+      } else {
+        const err = toErrorString(resp?.error ?? 'Failed to start');
+        setExchangeError(err);
+        setExchangeState('error');
+        setStatus(`Failed to start: ${err}`);
       }
-    );
+    });
   };
 
   const cancelExchange = () => {
-    chrome.runtime.sendMessage(
-      { type: 'cancel-vcapi-exchange', tabId: tabId ?? undefined } as ExtensionMessage,
-      () => {
-        setExchangeState('idle');
-        setExchangeOffers([]);
-        setOfferSelected([]);
-        setOfferCategories([]);
-        setOfferOpenCatIdx(null);
-        setExchangeBusy(false);
-        setExchangeError(null);
-        setShowExchange(false);
-      }
-    );
+    sendMessage({ type: 'cancel-vcapi-exchange', tabId: tabId ?? undefined }).then(() => {
+      setExchangeState('idle');
+      setExchangeOffers([]);
+      setOfferSelected([]);
+      setOfferCategories([]);
+      setOfferOpenCatIdx(null);
+      setExchangeBusy(false);
+      setExchangeError(null);
+      setShowExchange(false);
+    });
   };
 
   const acceptExchange = () => {
@@ -358,29 +344,23 @@ const App = () => {
     if (selections.length === 0) return;
     setExchangeBusy(true);
     setStatus('Claiming…');
-    chrome.runtime.sendMessage(
-      { type: 'accept-vcapi-offer', selections, tabId: tabId ?? undefined } as ExtensionMessage,
-      (resp) => {
-        setExchangeBusy(false);
-        if (resp?.ok) {
-          setExchangeState('success');
-          const count = (resp.savedCount ?? selections.length) as number;
-          setStatus(`Saved ${count} credential${count === 1 ? '' : 's'} to LearnCard`);
-          // Refresh detected list to include claimed entries
-          chrome.runtime.sendMessage(
-            { type: 'get-detected', tabId: tabId ?? undefined } as ExtensionMessage,
-            (resp2) => {
-              if (resp2?.ok && Array.isArray(resp2.data)) setCandidates(resp2.data as CredentialCandidate[]);
-            }
-          );
-        } else {
-          const err = toErrorString(resp?.error ?? 'Unknown error');
-          setExchangeState('error');
-          setExchangeError(err);
-          setStatus(`Failed: ${err}`);
-        }
+    sendMessage({ type: 'accept-vcapi-offer', selections, tabId: tabId ?? undefined }).then((resp) => {
+      setExchangeBusy(false);
+      if (resp?.ok) {
+        setExchangeState('success');
+        const count = resp.savedCount;
+        setStatus(`Saved ${count} credential${count === 1 ? '' : 's'} to LearnCard`);
+        // Refresh detected list to include claimed entries
+        sendMessage({ type: 'get-detected', tabId: tabId ?? undefined }).then((resp2) => {
+          if (resp2?.ok && Array.isArray(resp2.data)) setCandidates(resp2.data as CredentialCandidate[]);
+        });
+      } else {
+        const err = toErrorString(resp?.error ?? 'Unknown error');
+        setExchangeState('error');
+        setExchangeError(err);
+        setStatus(`Failed: ${err}`);
       }
-    );
+    });
   };
 
   return (
@@ -401,8 +381,8 @@ const App = () => {
           const id = tabId;
           setStatus('Rescanning page…');
           setRescanBusy(true);
-          chrome.tabs.sendMessage(id, { type: 'request-scan' } as ExtensionMessage, () => {
-            chrome.runtime.sendMessage({ type: 'get-detected', tabId: id } as ExtensionMessage, (resp) => {
+          sendTabMessage(id, { type: 'request-scan' }).then(() => {
+            sendMessage({ type: 'get-detected', tabId: id }).then((resp) => {
               if (resp?.ok) {
                 const list = Array.isArray(resp.data) ? (resp.data as CredentialCandidate[]) : [];
                 setCandidates(list);
@@ -490,9 +470,9 @@ const App = () => {
                   <h3 className="heading">Select credentials to claim</h3>
                   <div className="inbox-list">
                     {exchangeOffers.map((vc, i) => {
-                      const anyVc = vc as any;
-                      const title = getTitleFromVc(anyVc);
-                      const issuer = getIssuerNameFromVc(anyVc);
+                      const typedVc = vc as MinimalVc;
+                      const title = getTitleFromVc(typedVc);
+                      const issuer = getIssuerNameFromVc(typedVc);
                       const isOpen = offerOpenCatIdx === i;
                       const cat = offerCategories[i] || 'Achievement';
                       return (
@@ -596,7 +576,7 @@ const App = () => {
                       : candidates.map((_, i) => i)
                    ).filter((i) => candidates[i]?.source !== 'link').map((i) => {
                     const c = candidates[i];
-                    const raw = c.raw as any;
+                    const raw = c.raw as MinimalVc | undefined;
                     const title = c.title || (raw ? getTitleFromVc(raw) : c.url || 'Credential');
                     const issuer = raw ? getIssuerNameFromVc(raw) : (c.platform ? `from ${c.platform}` : '');
                     const cat = categories[i] || 'Achievement';

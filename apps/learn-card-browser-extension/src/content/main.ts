@@ -1,4 +1,5 @@
 import type { CredentialCandidate, ExtensionMessage } from '../types/messages';
+import { sendMessage } from '../messaging/client';
 import { extractExchangeUrlFromLink, getExtractorProtocols } from '../utils/links';
 import { debounce, installLocationChangeHook } from '../utils/dom';
 import { isVc, getTitleFromVc } from '../utils/vc';
@@ -126,7 +127,7 @@ const runDetection = () => {
   if (newKey === lastSentKey) return;
   lastSentKey = newKey;
 
-  chrome.runtime.sendMessage({ type: 'credentials-detected', payload: list });
+  sendMessage({ type: 'credentials-detected', payload: list });
 };
 
 const startObserving = () => {
