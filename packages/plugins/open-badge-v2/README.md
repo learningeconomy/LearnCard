@@ -119,7 +119,7 @@ Validation rules enforced:
 
 The wrapper vocabulary is published at:
 
-- `https://docs.learncard.com/wrappers/obv2/1.0.0.json`
+- `https://ctx.learncard.com/wrappers/obv2/1.0.0.json`
 
 It defines:
 - `LegacyOpenBadgeCredential`
