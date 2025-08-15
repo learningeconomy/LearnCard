@@ -231,8 +231,9 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
             throw new Error(`VC-API init failed: ${initResp.status} ${text}`);
           }
           const initJson = await initResp.json().catch(() => ({}));
-          const challenge = initJson.challenge ?? initJson.nonce;
-          const domain = initJson.domain;
+          const vpr = initJson?.verifiablePresentationRequest ?? initJson;
+          const challenge = vpr?.challenge ?? vpr?.nonce;
+          const domain = vpr?.domain;
           if (!challenge) throw new Error('Missing VC-API challenge');
           const vp = await lc.invoke.getDidAuthVp({ challenge, domain });
           const finalize = await fetch(url, {
@@ -244,7 +245,10 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
             const text = await finalize.text().catch(() => '');
             throw new Error(`VC-API finalize failed: ${finalize.status} ${text}`);
           }
-          const result = await finalize.json().catch(() => ({}));
+          const result = await finalize.json()
+          if (!result.ok) {
+            throw new Error(`VC-API auth failed: (${result.code}) ${result.message}.`);
+          }
           const vpOut = (result?.verifiablePresentation ?? result?.vp ?? result) as any;
           const vcsRaw = vpOut?.verifiableCredential ?? vpOut?.verifiableCredentials;
           const rawList: unknown[] = Array.isArray(vcsRaw) ? vcsRaw : vcsRaw ? [vcsRaw] : [];
