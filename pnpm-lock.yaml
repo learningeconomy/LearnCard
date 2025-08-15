@@ -1460,6 +1460,9 @@ importers:
       '@learncard/core':
         specifier: workspace:*
         version: link:../../learn-card-core
+      '@learncard/crypto-plugin':
+        specifier: workspace:*
+        version: link:../crypto
       '@learncard/types':
         specifier: workspace:*
         version: link:../../learn-card-types
