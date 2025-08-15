@@ -1,6 +1,6 @@
 import { LearnCard } from '@learncard/core';
 import { UnsignedVC, VC } from '@learncard/types';
-import { UnsignedVC, VC } from '@learncard/types';
+import { VCPluginMethods } from '@learncard/vc-plugin';
 import { randomUUID } from 'crypto';
 
 import {
