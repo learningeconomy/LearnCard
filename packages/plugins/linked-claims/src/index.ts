@@ -1,6 +1,6 @@
-import { LearnCard } from '@learncard/core';
-import { VC, UnsignedVC } from '@learncard/types';
-import { LinkedClaimsPlugin, EndorsementDetails, LinkedClaimsPluginDependentMethods } from './types';
+import type { LearnCard } from '@learncard/core';
+import type { VC, UnsignedVC } from '@learncard/types';
+import type { LinkedClaimsPlugin, EndorsementDetails, LinkedClaimsPluginDependentMethods } from './types';
 
 export * from './types';
 
