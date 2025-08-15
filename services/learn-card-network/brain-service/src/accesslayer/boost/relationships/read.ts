@@ -1246,3 +1246,82 @@ export const getBoostRecipientsWithChildren = async (
         a.to.profileId.localeCompare(b.to.profileId)
     );
 };
+
+/**
+ * Count distinct recipients of a boost and all its children boosts, with optional filters.
+ */
+export const countBoostRecipientsWithChildren = async (
+    boost: BoostInstance,
+    {
+        includeUnacceptedBoosts = true,
+        numberOfGenerations = 1,
+        boostQuery = {},
+        profileQuery = {},
+    }: {
+        includeUnacceptedBoosts?: boolean;
+        numberOfGenerations?: number;
+        boostQuery?: any;
+        profileQuery?: LCNProfileQuery;
+    }
+): Promise<number> => {
+    const boostQuery_neo4j = convertObjectRegExpToNeo4j(boostQuery);
+    const profileQuery_neo4j = convertObjectRegExpToNeo4j(profileQuery);
+
+    const _query = new QueryBuilder(
+        new BindParam({ boostQuery: boostQuery_neo4j, profileQuery: profileQuery_neo4j })
+    )
+        // Get parent boost and its children
+        .match({ model: Boost, where: { id: boost.id }, identifier: 'parentBoost' })
+        .match({
+            optional: true,
+            related: [
+                { identifier: 'parentBoost' },
+                { ...Boost.getRelationshipByAlias('parentOf'), maxHops: numberOfGenerations },
+                { identifier: 'childBoost', model: Boost },
+            ],
+        })
+        .with('COLLECT(DISTINCT parentBoost) + COLLECT(DISTINCT childBoost) AS allBoosts')
+        .unwind('allBoosts AS relevantBoost')
+        .match({ identifier: 'relevantBoost', model: Boost })
+        .where(`relevantBoost IS NOT NULL AND ${getMatchQueryWhere('relevantBoost', 'boostQuery')}`)
+        // Get recipients for each boost
+        .match({
+            related: [
+                { identifier: 'relevantBoost' },
+                {
+                    ...Credential.getRelationshipByAlias('instanceOf'),
+                    identifier: 'instanceOf',
+                    direction: 'in',
+                },
+                { identifier: 'credential', model: Credential },
+                {
+                    ...Profile.getRelationshipByAlias('credentialSent'),
+                    identifier: 'sent',
+                    direction: 'in',
+                },
+                { identifier: 'sender', model: Profile },
+            ],
+        })
+        .match({ model: Profile, identifier: 'recipient' })
+        .where('recipient.profileId = sent.to')
+        // Optional match for received credentials
+        .match({
+            optional: includeUnacceptedBoosts,
+            related: [
+                { identifier: 'credential', model: Credential },
+                {
+                    ...Credential.getRelationshipByAlias('credentialReceived'),
+                    identifier: 'received',
+                },
+                { identifier: 'recipient' },
+            ],
+        })
+        // Reduce to recipient before applying filter to ensure it doesn't attach to OPTIONAL MATCH
+        .with('recipient')
+        // Apply profile query filtering after WITH so it filters rows, not optional pattern
+        .where(getMatchQueryWhere('recipient', 'profileQuery'));
+
+    const result = await _query.return('COUNT(DISTINCT recipient.profileId) AS count').run();
+
+    return Number(result.records[0]?.get('count') ?? 0);
+};
