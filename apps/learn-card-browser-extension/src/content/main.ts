@@ -1,5 +1,8 @@
 import type { CredentialCandidate, ExtensionMessage } from '../types/messages';
 import { extractExchangeUrlFromLink, getExtractorProtocols } from '../utils/links';
+import { debounce, installLocationChangeHook } from '../utils/dom';
+import { isVc, getTitleFromVc } from '../utils/vc';
+import { detectPlatformFromHostname } from '../utils/platform';
 
 // Minimal VC shape for type guard usage
 type VerifiableCredential = {
@@ -12,39 +15,8 @@ type VerifiableCredential = {
 let lastSentKey: string | null = null;
 let observer: MutationObserver | null = null;
 let listenersAttached = false;
-let locHookInstalled = false;
 
 // link extraction helpers are now centralized in ../utils/links
-
-const debounce = (fn: () => void, wait = 200) => {
-  let t: number | undefined;
-  return () => {
-    if (t) window.clearTimeout(t);
-    t = window.setTimeout(fn, wait);
-  };
-};
-
-const installLocationChangeHook = () => {
-  if (locHookInstalled) return;
-  const pushState = history.pushState;
-  history.pushState = function (this: History, ...args) {
-    const ret = pushState.apply(this, args as unknown as any);
-    window.dispatchEvent(new Event('locationchange'));
-    return ret;
-  } as typeof history.pushState;
-
-  const replaceState = history.replaceState;
-  history.replaceState = function (this: History, ...args) {
-    const ret = replaceState.apply(this, args as unknown as any);
-    window.dispatchEvent(new Event('locationchange'));
-    return ret;
-  } as typeof history.replaceState;
-
-  window.addEventListener('popstate', () => {
-    window.dispatchEvent(new Event('locationchange'));
-  });
-  locHookInstalled = true;
-};
 
 const detectLinks = (): CredentialCandidate[] => {
   const protocols = getExtractorProtocols();
@@ -53,11 +25,7 @@ const detectLinks = (): CredentialCandidate[] => {
   const anchors = Array.from(document.querySelectorAll<HTMLAnchorElement>(selector));
 
   const seen = new Set<string>();
-  const platform = /credly\.com/.test(location.hostname)
-    ? 'credly'
-    : /coursera\.org/.test(location.hostname)
-    ? 'coursera'
-    : 'unknown';
+  const platform = detectPlatformFromHostname(location.hostname);
 
   const results: CredentialCandidate[] = [];
   for (const a of anchors) {
@@ -79,30 +47,10 @@ const detectLinks = (): CredentialCandidate[] => {
   return results;
 };
 
-const isVc = (data: unknown): data is VerifiableCredential => {
-  if (!data || typeof data !== 'object') return false;
-  const obj = data as Record<string, unknown>;
-  const ctx = obj['@context'];
-  const type = obj['type'];
-  const ctxOk = Array.isArray(ctx) || typeof ctx === 'string';
-  const typeOk = Array.isArray(type) || typeof type === 'string';
-  return ctxOk && typeOk;
-};
-
-const getTitleFromVc = (vc: VerifiableCredential) => {
-  if (vc?.boostCredential) {
-    return vc.boostCredential?.name || vc.boostCredential?.credentialSubject?.name || 'Credential';
-  } else {
-    return vc.name || vc.credentialSubject?.name || 'Credential';
-  }
-};
+// VC helpers provided by ../utils/vc
 
 const detectJsonLd = (): CredentialCandidate[] => {
-  const platform = /credly\.com/.test(location.hostname)
-    ? 'credly'
-    : /coursera\.org/.test(location.hostname)
-    ? 'coursera'
-    : 'unknown';
+  const platform = detectPlatformFromHostname(location.hostname);
 
   const results: CredentialCandidate[] = [];
 
@@ -157,11 +105,7 @@ const runDetection = () => {
   const jsonld = detectJsonLd();
   const map = new Map<string, CredentialCandidate>();
 
-  const platform = /credly\.com/.test(location.hostname)
-    ? 'credly'
-    : /coursera\.org/.test(location.hostname)
-    ? 'coursera'
-    : 'unknown';
+  const platform = detectPlatformFromHostname(location.hostname);
 
   const hash = (c: CredentialCandidate) => {
     if (c.url) return `url:${c.url}`;
