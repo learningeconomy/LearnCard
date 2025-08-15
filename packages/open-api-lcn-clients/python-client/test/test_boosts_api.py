@@ -152,6 +152,13 @@ class TestBoostsApi(unittest.TestCase):
         """
         pass
 
+    def test_boost_get_boost_recipients_with_children_count(self) -> None:
+        """Test case for boost_get_boost_recipients_with_children_count
+
+        Count boost recipients with children
+        """
+        pass
+
     def test_boost_get_boost_siblings(self) -> None:
         """Test case for boost_get_boost_siblings
 
@@ -205,6 +212,13 @@ class TestBoostsApi(unittest.TestCase):
         """Test case for boost_get_paginated_boost_recipients
 
         Get boost recipients
+        """
+        pass
+
+    def test_boost_get_paginated_boost_recipients_with_children(self) -> None:
+        """Test case for boost_get_paginated_boost_recipients_with_children
+
+        Get boost recipients with children
         """
         pass
 
