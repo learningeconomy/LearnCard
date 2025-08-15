@@ -118,6 +118,7 @@ Class | Method | HTTP request | Description
 *BoostsApi* | [**boost_get_boost_permissions**](docs/BoostsApi.md#boost_get_boost_permissions) | **GET** /boost/permissions | Get boost permissions
 *BoostsApi* | [**boost_get_boost_recipient_count**](docs/BoostsApi.md#boost_get_boost_recipient_count) | **GET** /boost/recipients/count | Get boost recipients count
 *BoostsApi* | [**boost_get_boost_recipients**](docs/BoostsApi.md#boost_get_boost_recipients) | **GET** /boost/recipients | Get boost recipients
+*BoostsApi* | [**boost_get_boost_recipients_with_children_count**](docs/BoostsApi.md#boost_get_boost_recipients_with_children_count) | **POST** /boost/recipients-with-children/count | Count boost recipients with children
 *BoostsApi* | [**boost_get_boost_siblings**](docs/BoostsApi.md#boost_get_boost_siblings) | **POST** /boost/siblings | Get boost siblings
 *BoostsApi* | [**boost_get_boosts**](docs/BoostsApi.md#boost_get_boosts) | **POST** /boost/all | Get boosts
 *BoostsApi* | [**boost_get_children_profile_managers**](docs/BoostsApi.md#boost_get_children_profile_managers) | **POST** /boost/children-profile-managers | Get Profile Managers that are a child of a boost
@@ -126,6 +127,7 @@ Class | Method | HTTP request | Description
 *BoostsApi* | [**boost_get_familial_boosts**](docs/BoostsApi.md#boost_get_familial_boosts) | **POST** /boost/family | Get familial boosts
 *BoostsApi* | [**boost_get_other_boost_permissions**](docs/BoostsApi.md#boost_get_other_boost_permissions) | **GET** /boost/permissions/{profileId} | Get boost permissions for someone else
 *BoostsApi* | [**boost_get_paginated_boost_recipients**](docs/BoostsApi.md#boost_get_paginated_boost_recipients) | **POST** /boost/recipients/paginated | Get boost recipients
+*BoostsApi* | [**boost_get_paginated_boost_recipients_with_children**](docs/BoostsApi.md#boost_get_paginated_boost_recipients_with_children) | **POST** /boost/recipients-with-children/paginated | Get boost recipients with children
 *BoostsApi* | [**boost_get_paginated_boosts**](docs/BoostsApi.md#boost_get_paginated_boosts) | **POST** /boost/paginated | Get boosts
 *BoostsApi* | [**boost_make_boost_parent**](docs/BoostsApi.md#boost_make_boost_parent) | **POST** /boost/make-parent | Make Boost Parent
 *BoostsApi* | [**boost_remove_boost_admin**](docs/BoostsApi.md#boost_remove_boost_admin) | **POST** /boost/remove-admin | Remove a Boost admin
@@ -262,6 +264,7 @@ Class | Method | HTTP request | Description
  - [BoostGetBoostRecipients200ResponseInner](docs/BoostGetBoostRecipients200ResponseInner.md)
  - [BoostGetBoostRecipients200ResponseInnerTo](docs/BoostGetBoostRecipients200ResponseInnerTo.md)
  - [BoostGetBoostRecipients200ResponseInnerToDisplay](docs/BoostGetBoostRecipients200ResponseInnerToDisplay.md)
+ - [BoostGetBoostRecipientsWithChildrenCountRequest](docs/BoostGetBoostRecipientsWithChildrenCountRequest.md)
  - [BoostGetBoostSiblingsRequest](docs/BoostGetBoostSiblingsRequest.md)
  - [BoostGetBoosts200ResponseInner](docs/BoostGetBoosts200ResponseInner.md)
  - [BoostGetBoostsRequest](docs/BoostGetBoostsRequest.md)
@@ -281,6 +284,9 @@ Class | Method | HTTP request | Description
  - [BoostGetPaginatedBoostRecipients200Response](docs/BoostGetPaginatedBoostRecipients200Response.md)
  - [BoostGetPaginatedBoostRecipientsRequest](docs/BoostGetPaginatedBoostRecipientsRequest.md)
  - [BoostGetPaginatedBoostRecipientsRequestQuery](docs/BoostGetPaginatedBoostRecipientsRequestQuery.md)
+ - [BoostGetPaginatedBoostRecipientsWithChildren200Response](docs/BoostGetPaginatedBoostRecipientsWithChildren200Response.md)
+ - [BoostGetPaginatedBoostRecipientsWithChildren200ResponseRecordsInner](docs/BoostGetPaginatedBoostRecipientsWithChildren200ResponseRecordsInner.md)
+ - [BoostGetPaginatedBoostRecipientsWithChildrenRequest](docs/BoostGetPaginatedBoostRecipientsWithChildrenRequest.md)
  - [BoostGetPaginatedBoosts200Response](docs/BoostGetPaginatedBoosts200Response.md)
  - [BoostGetPaginatedBoosts200ResponseRecordsInner](docs/BoostGetPaginatedBoosts200ResponseRecordsInner.md)
  - [BoostGetPaginatedBoostsRequest](docs/BoostGetPaginatedBoostsRequest.md)
@@ -347,6 +353,7 @@ Class | Method | HTTP request | Description
  - [ContactMethodsVerifyContactMethod200Response](docs/ContactMethodsVerifyContactMethod200Response.md)
  - [ContactMethodsVerifyContactMethodRequest](docs/ContactMethodsVerifyContactMethodRequest.md)
  - [ContractsAddAutoBoostsToContractRequest](docs/ContractsAddAutoBoostsToContractRequest.md)
+ - [ContractsConsentToContract200Response](docs/ContractsConsentToContract200Response.md)
  - [ContractsConsentToContractRequest](docs/ContractsConsentToContractRequest.md)
  - [ContractsConsentToContractRequestTerms](docs/ContractsConsentToContractRequestTerms.md)
  - [ContractsConsentToContractRequestTermsRead](docs/ContractsConsentToContractRequestTermsRead.md)
@@ -428,6 +435,7 @@ Class | Method | HTTP request | Description
  - [ErrorUNAUTHORIZED](docs/ErrorUNAUTHORIZED.md)
  - [InboxGetMyIssuedCredentials200Response](docs/InboxGetMyIssuedCredentials200Response.md)
  - [InboxGetMyIssuedCredentials200ResponseRecordsInner](docs/InboxGetMyIssuedCredentials200ResponseRecordsInner.md)
+ - [InboxGetMyIssuedCredentials200ResponseRecordsInnerSigningAuthority](docs/InboxGetMyIssuedCredentials200ResponseRecordsInnerSigningAuthority.md)
  - [InboxGetMyIssuedCredentialsRequest](docs/InboxGetMyIssuedCredentialsRequest.md)
  - [InboxGetMyIssuedCredentialsRequestQuery](docs/InboxGetMyIssuedCredentialsRequestQuery.md)
  - [InboxIssue200Response](docs/InboxIssue200Response.md)
