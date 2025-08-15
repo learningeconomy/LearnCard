@@ -140,7 +140,7 @@ program
             `│      Verify a signed VP │ await ${g.learnCard}.invoke.verifyPresentation(vp); │`
         );
         console.log(
-            `│  Endorse a credential  │ await ${g.learnCard}.invoke.endorseCredential(vc,{recommendationText:'Great job'}); │`
+            `│  Endorse a credential  │ await ${g.learnCard}.invoke.endorseCredential(vc,{endorsementComment:'Great job'}); │`
         );
         console.log(
             `│ Store an endorsement   │ await ${g.learnCard}.invoke.storeEndorsement(vc);     │`

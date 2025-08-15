@@ -5,7 +5,7 @@ import { LinkedClaimsPlugin, EndorsementDetails, LinkedClaimsPluginMethods } fro
 
 export * from './types';
 
-const ENDORSEMENT_CONTEXT = 'https://ctx.learncard.com/linked-claims/endorsement/1.0.0.json';
+const ENDORSEMENT_CONTEXT = 'https://purl.imsglobal.org/spec/ob/v3p0/context-3.0.3.json';
 
 const getSubjectIds = (credential: VC): string[] => {
     const subject = credential.credentialSubject as any;
@@ -43,24 +43,17 @@ export const getLinkedClaimsPlugin = (
         endorseCredential: async (_learnCard, original, details, opts) => {
             const issuer = learnCard.id.did();
 
+            const originalId: string | undefined = (original as any).id;
             const subjectIds = getSubjectIds(original);
-            if (!subjectIds.length) throw new Error('Original credential has no credentialSubject.id');
-            const endorsedId = subjectIds[0];
+            const targetId = originalId || subjectIds[0];
+            if (!targetId) throw new Error('Original credential must have either id or credentialSubject.id');
 
-            const baseContext: (string | Record<string, any>)[] = [
+            const context: (string | Record<string, any>)[] = [
                 'https://www.w3.org/ns/credentials/v2',
-            ];
-            const originalCtx = ensureArray<string | Record<string, any>>(
-                ((original as any)['@context'] as (string | Record<string, any>)[]) || []
-            );
-            const ctxItems: (string | Record<string, any>)[] = [
-                ...baseContext,
                 ENDORSEMENT_CONTEXT,
-                ...originalCtx,
             ];
-            const context = Array.from(new Set<string | Record<string, any>>(ctxItems));
 
-            const types: [string, ...string[]] = ['VerifiableCredential', 'EndorsementClaim'];
+            const types: [string, ...string[]] = ['VerifiableCredential', 'EndorsementCredential'];
 
             const unsigned: UnsignedVC = {
                 '@context': context as any,
@@ -68,21 +61,14 @@ export const getLinkedClaimsPlugin = (
                 issuer,
                 validFrom: new Date().toISOString(),
                 credentialSubject: {
-                    '@type': 'EndorsementClaim',
-                    id: endorsedId,
-                    endorsedId,
-                    ...(details.recommendationText
-                        ? { recommendationText: details.recommendationText }
+                    type: ['EndorsementSubject'],
+                    id: targetId,
+                    ...(details.endorsementComment
+                        ? { endorsementComment: details.endorsementComment }
                         : {}),
-                    ...(typeof details.rating === 'number' ? { rating: details.rating } : {}),
-                    ...(details.tags ? { tags: details.tags } : {}),
-                    ...(details.portfolio ? { portfolio: details.portfolio } : {}),
-                    ...(details.howKnow ? { howKnow: details.howKnow } : {}),
-                    ...(details.qualifications ? { qualifications: details.qualifications } : {}),
-                    ...(details.reference ? { reference: details.reference } : {}),
-                    ...(details.metadata ? { metadata: details.metadata } : {}),
                 },
-                ...(details.reference ? { name: `Endorsement of ${details.reference}` } : {}),
+                ...(details.name ? { name: details.name } : { name: `Endorsement of ${targetId}` }),
+                ...(details.description ? { description: details.description } : {}),
             };
 
             return learnCard.invoke.issueCredential(unsigned);
@@ -94,17 +80,21 @@ export const getLinkedClaimsPlugin = (
             const ctx = ensureArray((endorsement as any)['@context']);
             const types = ensureArray((endorsement as any)['type']);
 
-            if (!ctx.includes(ENDORSEMENT_CONTEXT)) {
-                check.errors.push('linked-claims error: missing endorsement context');
+            if (!ctx.includes('https://www.w3.org/ns/credentials/v2') || !ctx.includes(ENDORSEMENT_CONTEXT)) {
+                check.errors.push('linked-claims error: missing VCv2 or OBv3 context');
             }
-            if (!types.includes('EndorsementClaim')) {
-                check.errors.push('linked-claims error: missing EndorsementClaim type');
+            if (!types.includes('EndorsementCredential')) {
+                check.errors.push('linked-claims error: missing EndorsementCredential type');
             }
 
             const cs: any = (endorsement as any).credentialSubject;
             const csObj = Array.isArray(cs) ? cs[0] : cs;
-            if (!csObj?.endorsedId || !csObj?.id || csObj.endorsedId !== csObj.id) {
-                check.warnings.push('linked-claims warning: credentialSubject.id should equal endorsedId');
+            const csTypes = ensureArray<string>(csObj?.type);
+            if (!csTypes.includes('EndorsementSubject')) {
+                check.errors.push('linked-claims error: credentialSubject.type must include EndorsementSubject');
+            }
+            if (!csObj?.id) {
+                check.errors.push('linked-claims error: credentialSubject.id missing');
             }
 
             if (!check.errors.length) check.checks.push('linked-claims');
@@ -115,7 +105,7 @@ export const getLinkedClaimsPlugin = (
             const storeName = pickStoreProvider(learnCard, options?.storeName);
             if (!storeName) throw new Error('No store plane provider available');
 
-            const uri: string = await (learnCard.store as any)[storeName].upload(endorsement);
+            const uri: string = await (learnCard.store as any)[storeName].uploadEncrypted(endorsement);
 
             const indexName = pickIndexProvider(learnCard, options?.indexName);
             let indexed = false;
@@ -128,9 +118,9 @@ export const getLinkedClaimsPlugin = (
                     id,
                     uri,
                     type: ensureArray((endorsement as any).type),
-                    endorsedId: csObj?.endorsedId || csObj?.id,
+                    endorsedId: csObj?.id,
                     subjectId: csObj?.id,
-                    originalCredentialId: csObj?.reference,
+                    originalCredentialId: csObj?.id,
                     issuedOn: (endorsement as any).validFrom || (endorsement as any).issuanceDate,
                     category: 'Endorsement',
                 };

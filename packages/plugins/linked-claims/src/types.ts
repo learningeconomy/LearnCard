@@ -4,15 +4,10 @@ import { VCPluginMethods } from '@learncard/vc-plugin';
 import { ProofOptions } from '@learncard/didkit-plugin';
 
 export type EndorsementDetails = {
-    // Endorsement fields
-    recommendationText?: string;
-    portfolio?: unknown[];
-    howKnow?: string;
-    qualifications?: string[];
-    rating?: number;
-    tags?: string[];
-    reference?: string; // original credential id or URI
-    metadata?: Record<string, unknown>;
+    // OBv3 Endorsement fields
+    endorsementComment?: string;
+    name?: string;
+    description?: string;
 };
 
 export type StoreIndexOptions = {
