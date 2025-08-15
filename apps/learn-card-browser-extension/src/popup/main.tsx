@@ -1,3 +1,20 @@
+  // Helper: normalize unknown errors to a readable string
+  const toErrorString = (e: unknown): string => {
+    try {
+      if (!e) return 'Unknown error';
+      if (typeof e === 'string') return e;
+      if (e instanceof Error) return e.message || String(e);
+      if (typeof e === 'object') {
+        const anyE = e as any;
+        if (typeof anyE.message === 'string') return anyE.message;
+        if (typeof anyE.error === 'string') return anyE.error;
+        return JSON.stringify(anyE);
+      }
+      return String(e);
+    } catch {
+      return 'Unknown error';
+    }
+  };
 import { StrictMode, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import type {
@@ -257,7 +274,7 @@ const App = () => {
   const onBulkSave = () => {
     const selections = selected
       .map((v, i) => ({ v, i }))
-      .filter(({ v }) => v)
+      .filter(({ v, i }) => v && !candidates[i]?.claimed && candidates[i]?.source !== 'link')
       .map(({ i }) => ({ index: i, category: categories[i] }));
     if (selections.length === 0) return;
     setSaving(true);
@@ -275,7 +292,7 @@ const App = () => {
           if (resp2?.ok && Array.isArray(resp2.data)) setCandidates(resp2.data as CredentialCandidate[]);
         });
         setStatus(`Saved ${resp.savedCount ?? selections.length} credential${(resp.savedCount ?? selections.length) === 1 ? '' : 's'} to LearnCard`);
-      } else setStatus(`Failed: ${resp?.error ?? 'Unknown error'}`);
+      } else setStatus(`Failed: ${toErrorString(resp?.error ?? 'Unknown error')}`);
     });
   };
 
@@ -330,7 +347,7 @@ const App = () => {
         };
         setExchangeState(sess.state);
         if (sess.url) setExchangeUrl(sess.url);
-        setExchangeError(sess.state === 'error' ? sess.error ?? 'Unknown error' : null);
+        setExchangeError(sess.state === 'error' ? toErrorString(sess.error ?? 'Unknown error') : null);
         if (Array.isArray(sess.offers)) {
           setExchangeOffers(sess.offers);
           setOfferSelected(sess.offers.map(() => true));
@@ -361,7 +378,7 @@ const App = () => {
           setExchangeState('contacting');
           refreshExchangeStatus();
         } else {
-          const err = resp?.error ?? 'Failed to start';
+          const err = toErrorString(resp?.error ?? 'Failed to start');
           setExchangeError(err);
           setExchangeState('error');
           setStatus(`Failed to start: ${err}`);
@@ -410,7 +427,7 @@ const App = () => {
             }
           );
         } else {
-          const err = resp?.error ?? 'Unknown error';
+          const err = toErrorString(resp?.error ?? 'Unknown error');
           setExchangeState('error');
           setExchangeError(err);
           setStatus(`Failed: ${err}`);
@@ -560,6 +577,7 @@ const App = () => {
                     />
                   </div>
                   <div className="tools">
+                    <button className="btn-secondary" onClick={cancelExchange}>Dismiss</button>
                     <button className="btn-primary" onClick={startExchange} disabled={exchangeBusy || !exchangeUrl.trim()}>
                       {exchangeBusy ? 'Starting…' : 'Start Exchange'}
                     </button>
@@ -689,14 +707,19 @@ const App = () => {
             )}
 
             {/* Inbox */}
-            {!(showExchange || exchangeState !== 'idle') && (candidates.length > 0 ? (
+            {!(showExchange || exchangeState !== 'idle') && ((
+              (hideClaimed
+                ? candidates.map((_, i) => i).filter((i) => !candidates[i]?.claimed)
+                : candidates.map((_, i) => i)
+              ).filter((i) => candidates[i]?.source !== 'link')
+            ).length > 0 ? (
               <div className="state">
                 <div className="inbox-list">
                   {(
                     hideClaimed
                       ? candidates.map((_, i) => i).filter((i) => !candidates[i]?.claimed)
                       : candidates.map((_, i) => i)
-                   ).map((i) => {
+                   ).filter((i) => candidates[i]?.source !== 'link').map((i) => {
                     const c = candidates[i];
                     const raw = c.raw as any;
                     const title = c.title || (raw ? getTitleFromVc(raw) : c.url || 'Credential');
@@ -799,24 +822,35 @@ const App = () => {
 
       {/* Footer / Action bar */}
       <div className="footer">
-        {authDid && !(showExchange || exchangeState !== 'idle') && candidates.length > 0 ? (
+        {authDid && !(showExchange || exchangeState !== 'idle') && candidates.filter((c) => !c.claimed && c.source !== 'link').length > 0 ? (
           <>
             <label className="select-all">
               <input
                 type="checkbox"
                 checked={
-                  candidates.filter((c) => !c.claimed).length > 0 &&
-                  candidates.every((c, i) => (c.claimed ? true : !!selected[i]))
+                  candidates.filter((c) => !c.claimed && c.source !== 'link').length > 0 &&
+                  candidates.every((c, i) => (c.claimed || c.source === 'link' ? true : !!selected[i]))
                 }
                 onChange={(e) => {
                   const all = e.target.checked;
-                  setSelected(candidates.map((c) => (c.claimed ? false : all)));
+                  setSelected(candidates.map((c) => (c.claimed || c.source === 'link' ? false : all)));
                 }}
               />
               <span>Select all</span>
             </label>
-            <button className="btn-primary" onClick={onBulkSave} disabled={saving || !selected.some(Boolean)}>
-              {saving ? 'Claiming…' : `Claim ${selected.filter(Boolean).length} Credential${selected.filter(Boolean).length === 1 ? '' : 's'}`}
+            <button
+              className="btn-primary"
+              onClick={onBulkSave}
+              disabled={
+                saving || candidates.reduce((acc, c, i) => acc + (!c.claimed && c.source !== 'link' && selected[i] ? 1 : 0), 0) === 0
+              }
+            >
+              {saving
+                ? 'Claiming…'
+                : (() => {
+                    const count = candidates.reduce((acc, c, i) => acc + (!c.claimed && c.source !== 'link' && selected[i] ? 1 : 0), 0);
+                    return `Claim ${count} Credential${count === 1 ? '' : 's'}`;
+                  })()}
             </button>
           </>
         ) : null}
