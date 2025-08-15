@@ -9,7 +9,7 @@ Wrap legacy Open Badges v2.0 (OBv2) assertions into self‑issued W3C Verifiable
 
 ## Why this plugin?
 
-Many issuers still publish Open Badges v2.0 assertions (JSON), not VCs. This plugin provides a backwards‑compatibility bridge by wrapping the raw OBv2 assertion inside a signed VC you control, preserving the original badge payload under `credentialSubject.legacyAssertion`.
+Many issuers still publish Open Badges v2.0 assertions (JSON), not VCs. This plugin provides a backwards‑compatibility bridge by wrapping the raw OBv2 assertion inside a signed VC you control, preserving the original badge payload under `legacyAssertion`.
 
 This enables:
 - Use of legacy badges anywhere a VC is expected (storage, indexing, sharing).
