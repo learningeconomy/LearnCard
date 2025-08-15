@@ -1,268 +1,115 @@
   // Helper: delegate to shared error utility
 const toErrorString = (e: unknown): string => toErrorStringUtil(e);
 
-import { StrictMode, useEffect, useState } from 'react';
+import { StrictMode, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
-import type {
-  CredentialCandidate,
-  CredentialCategory,
-  SaveCredentialsMessage,
-  VcApiExchangeState,
-} from '../types/messages';
 
 import { toErrorString as toErrorStringUtil } from '../utils/errors';
-import { isVc, getTitleFromVc, getIssuerNameFromVc, MinimalVc } from '../utils/vc';
+import { getTitleFromVc, getIssuerNameFromVc, MinimalVc } from '../utils/vc';
 import CategorySelector from './components/CategorySelector';
 import HeaderBar from './components/HeaderBar';
 import ActionBar from './components/ActionBar';
-import { sendMessage, sendTabMessage } from '../messaging/client';
+import { useActiveTabId } from './hooks/useActiveTabId';
+import { useUi } from './hooks/useUi';
+import { useAuth } from './hooks/useAuth';
+import { useInbox } from './hooks/useInbox';
+import { useExchange } from './hooks/useExchange';
 
 const App = () => {
-  const [tabId, setTabId] = useState<number | null>(null);
-  const [candidates, setCandidates] = useState<CredentialCandidate[]>([]);
-  const [saving, setSaving] = useState(false);
-  const [status, setStatus] = useState<string | null>(null);
-  const [authLoading, setAuthLoading] = useState(false);
-  const [authDid, setAuthDid] = useState<string | null>(null);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [optsOpen, setOptsOpen] = useState(false);
-  const [rescanBusy, setRescanBusy] = useState(false);
-  const [analyzeBusy, setAnalyzeBusy] = useState(false);
-  const [profileImage, setProfileImage] = useState<string | null>(null);
-  // Inbox UI state
-  const [selected, setSelected] = useState<boolean[]>([]);
-  const [categories, setCategories] = useState<CredentialCategory[]>([]);
-  const [openCategoryIdx, setOpenCategoryIdx] = useState<number | null>(null);
-  const [hideClaimed, setHideClaimed] = useState(false);
+  const tabId = useActiveTabId();
 
-  // VC-API Exchange UI state
-  const [exchangeUrl, setExchangeUrl] = useState('');
-  const [exchangeState, setExchangeState] = useState<VcApiExchangeState>('idle');
-  const [exchangeOffers, setExchangeOffers] = useState<unknown[]>([]);
-  const [offerSelected, setOfferSelected] = useState<boolean[]>([]);
-  const [offerCategories, setOfferCategories] = useState<CredentialCategory[]>([]);
-  const [offerOpenCatIdx, setOfferOpenCatIdx] = useState<number | null>(null);
-  const [exchangeBusy, setExchangeBusy] = useState(false);
-  const [exchangeError, setExchangeError] = useState<string | null>(null);
-  const [autoPrefilledExchange, setAutoPrefilledExchange] = useState(false);
-  const [showExchange, setShowExchange] = useState(false); // hidden by default
+  const { menuOpen, setMenuOpen, optsOpen, setOptsOpen, status, setStatus } = useUi();
+
+  const { did: authDid, profileImage, loading: authLoading, login, logout } = useAuth();
+
+  const {
+    candidates,
+    selected,
+    categories,
+    openCategoryIdx,
+    hideClaimed,
+    rescanBusy,
+    analyzeBusy,
+    saving,
+    setSelected,
+    setCategories,
+    setOpenCategoryIdx,
+    setHideClaimed,
+    refreshDetected,
+    analyzeClipboard,
+    rescan,
+    bulkSave,
+  } = useInbox(tabId, { onStatus: setStatus });
+
+  const {
+    url: exchangeUrl,
+    state: exchangeState,
+    offers: exchangeOffers,
+    selected: offerSelected,
+    categories: offerCategories,
+    openCatIdx: offerOpenCatIdx,
+    busy: exchangeBusy,
+    error: exchangeError,
+    autoPrefilled,
+    show: showExchange,
+    setUrl: setExchangeUrl,
+    setSelected: setOfferSelected,
+    setCategories: setOfferCategories,
+    setOpenCatIdx: setOfferOpenCatIdx,
+    setShow: setShowExchange,
+    start: startExchange,
+    cancel: cancelExchange,
+    accept: acceptExchange,
+    prefillFromCandidates,
+  } = useExchange(tabId, { onStatus: setStatus });
 
   // Category options/labels now imported from ./constants
 
-  useEffect(() => {
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      const id = tabs?.[0]?.id ?? null;
-      setTabId(id ?? null);
-      sendMessage({ type: 'get-detected', tabId: id ?? undefined }).then(async (resp) => {
-        const list = resp?.ok && Array.isArray(resp.data) ? (resp.data as CredentialCandidate[]) : [];
-        setCandidates(list);
-        if ((id ?? null) !== null && list.length === 0) {
-          try {
-            await sendTabMessage(id!, { type: 'request-scan' });
-            sendMessage({ type: 'get-detected', tabId: id ?? undefined }).then((resp2) => {
-              if (resp2?.ok) setCandidates(Array.isArray(resp2.data) ? (resp2.data as CredentialCandidate[]) : []);
-            });
-          } catch {}
-        }
-      });
-    });
-    sendMessage({ type: 'get-auth-status' }).then((resp) => {
-      if (resp?.ok && resp.data) {
-        setAuthDid(resp.data.did ?? null);
-        if (resp.data.loggedIn) {
-          sendMessage({ type: 'get-profile' }).then((p) => {
-            if (p?.ok) setProfileImage(p.profile?.image ?? null);
-          });
-        }
-      }
-    });
-  }, []);
-
-  // Sync Exchange session from background when tabId becomes available
-  useEffect(() => {
-    if (tabId === null) return;
-    const refreshExchangeStatus = () => {
-      sendMessage({ type: 'get-vcapi-exchange-status', tabId: tabId ?? undefined }).then((resp) => {
-        if (!resp?.ok) return;
-        const sess = (resp.data || { state: 'idle' }) as {
-          state: VcApiExchangeState;
-          url?: string;
-          offers?: unknown[];
-          error?: string | null;
-        };
-        setExchangeState(sess.state);
-        if (sess.url) setExchangeUrl(sess.url);
-        setExchangeError(sess.state === 'error' ? (sess.error ?? 'Unknown error') : null);
-        if (Array.isArray(sess.offers)) {
-          setExchangeOffers(sess.offers);
-          setOfferSelected(sess.offers.map(() => true));
-          setOfferCategories(sess.offers.map(() => 'Achievement' as CredentialCategory));
-        } else {
-          setExchangeOffers([]);
-          setOfferSelected([]);
-          setOfferCategories([]);
-        }
-        if (sess.state === 'contacting' || sess.state === 'saving') {
-          window.setTimeout(refreshExchangeStatus, 600);
-        }
-      });
-    };
-    refreshExchangeStatus();
-  }, [tabId]);
-
-  // Auto-prefill Exchange URL from detected link candidates (prompt user to start exchange)
+  // Auto-prefill Exchange URL from detected link candidates when logged in
   useEffect(() => {
     if (!authDid) return; // only prompt when logged in
-    if (exchangeState !== 'idle') return; // don't override an active session
-    if (autoPrefilledExchange) return; // only once per popup open
-    if (exchangeUrl.trim()) return; // don't override user input
-    const link = candidates.find((c) => c.source === 'link' && !!c.url && !c.claimed);
-    if (link?.url) {
-      setExchangeUrl(link.url);
-      setAutoPrefilledExchange(true);
-      setStatus('Detected offer URL from page');
-      setShowExchange(true); // show exchange box when a URL candidate is detected
-    }
-  }, [candidates, exchangeState, authDid, autoPrefilledExchange, exchangeUrl]);
+    prefillFromCandidates(candidates);
+  }, [authDid, candidates]);
+
+  // When exchange URL is auto-prefilled from page, de-select link candidates in inbox
+  useEffect(() => {
+    if (!autoPrefilled) return;
+    setSelected((prev) =>
+      candidates.map((c, i) => {
+        if (c.claimed) return false;
+        if (c.source === 'link') return false;
+        return typeof prev[i] === 'boolean' ? prev[i] : true;
+      })
+    );
+  }, [autoPrefilled, candidates]);
 
   // VC helpers now imported from ../utils/vc
 
-  const dedupe = (list: CredentialCandidate[]) => {
-    const map = new Map<string, CredentialCandidate>();
-    const keyFor = (c: CredentialCandidate) => {
-      if (c.url) return `url:${c.url}`;
-      try {
-        return `raw:${JSON.stringify(c.raw)}`;
-      } catch {
-        return `raw:${String(c.title ?? '')}`;
-      }
-    };
-    for (const c of list) {
-      const k = keyFor(c);
-      if (!map.has(k)) map.set(k, c);
+  const onBulkSave = async () => {
+    const resp = await bulkSave();
+    if ((resp as { ok?: boolean })?.ok) {
+      const count = (resp as { savedCount?: number }).savedCount ?? 0;
+      setStatus(`Saved ${count} credential${count === 1 ? '' : 's'} to LearnCard`);
+    } else {
+      const err = toErrorString((resp as { error?: string })?.error ?? 'Unknown error');
+      setStatus(`Failed: ${err}`);
     }
-    return Array.from(map.values());
-  };
-
-  // Keep selection and categories arrays in sync with candidates
-  useEffect(() => {
-    setSelected((prev) => {
-      const next = candidates.map((c, i) => {
-        if (c.claimed) return false;
-        if (typeof prev[i] === 'boolean') return prev[i] as boolean;
-        // If we auto-prefilled the exchange URL, de-select link candidates by default to encourage VC-API flow
-        if (autoPrefilledExchange && c.source === 'link') return false;
-        return true;
-      });
-      return next;
-    });
-    setCategories((prev) => {
-      const next = candidates.map((_, i) => (prev[i] ? prev[i] : 'Achievement'));
-      return next as CredentialCategory[];
-    });
-  }, [candidates, autoPrefilledExchange]);
-
-  const analyzeClipboard = async () => {
-    setAnalyzeBusy(true);
-    setStatus('Analyzing clipboard…');
-    try {
-      const text = await navigator.clipboard.readText();
-      let found: CredentialCandidate[] = [];
-
-      try {
-        const parsed = JSON.parse(text);
-        const add = (val: unknown) => {
-          if (Array.isArray(val)) return val.forEach(add);
-          if (isVc(val)) found.push({ source: 'jsonld', raw: val, title: getTitleFromVc(val), platform: 'unknown' });
-        };
-        add(parsed);
-      } catch {}
-
-      if (found.length === 0) {
-        const start = text.indexOf('{');
-        const end = text.lastIndexOf('}');
-        if (start !== -1 && end !== -1 && end > start) {
-          const snippet = text.slice(start, end + 1);
-          try {
-            const parsed = JSON.parse(snippet);
-            if (isVc(parsed)) found.push({ source: 'jsonld', raw: parsed, title: getTitleFromVc(parsed), platform: 'unknown' });
-          } catch {}
-        }
-      }
-
-      if (found.length === 0) {
-        setStatus('No credential found in clipboard');
-        return;
-      }
-
-      const merged = dedupe([...found, ...candidates]);
-      // Update background with merged detections, then refresh to pick up claimed statuses
-      sendMessage({ type: 'credentials-detected', payload: merged, tabId: tabId ?? undefined }).then((resp) => {
-        if (resp?.ok) {
-          sendMessage({ type: 'get-detected', tabId: tabId ?? undefined }).then((resp2) => {
-            const list = resp2?.ok && Array.isArray(resp2.data) ? (resp2.data as CredentialCandidate[]) : merged;
-            setCandidates(list);
-          });
-          setStatus(`Found ${found.length} credential${found.length === 1 ? '' : 's'} from clipboard`);
-        } else setStatus(`Failed to update detections`);
-      });
-    } catch (e) {
-      setStatus('Clipboard read failed. Grant clipboard permission and try again.');
-    } finally {
-      setAnalyzeBusy(false);
-    }
-  };
-
-  const onBulkSave = () => {
-    const selections = selected
-      .map((v, i) => ({ v, i }))
-      .filter(({ v, i }) => v && !candidates[i]?.claimed && candidates[i]?.source !== 'link')
-      .map(({ i }) => ({ index: i, category: categories[i] }));
-    if (selections.length === 0) return;
-    setSaving(true);
-    const msg: SaveCredentialsMessage = {
-      type: 'save-credentials',
-      tabId: tabId ?? undefined,
-      selections,
-      candidates,
-    };
-    sendMessage(msg).then((resp) => {
-      setSaving(false);
-      if (resp?.ok) {
-        // Refresh from background, which only removed actually-saved items
-        sendMessage({ type: 'get-detected', tabId: tabId ?? undefined }).then((resp2) => {
-          if (resp2?.ok && Array.isArray(resp2.data)) setCandidates(resp2.data as CredentialCandidate[]);
-        });
-        setStatus(`Saved ${resp.savedCount} credential${(resp.savedCount === 1) ? '' : 's'} to LearnCard`);
-      } else setStatus(`Failed: ${toErrorString(resp?.error ?? 'Unknown error')}`);
-    });
   };
 
   const onLogin = () => {
-    setAuthLoading(true);
     setStatus(null);
-    sendMessage({ type: 'start-auth' }).then((resp) => {
-      setAuthLoading(false);
-      if (resp?.ok) {
-        setAuthDid(resp.data?.did ?? null);
-        sendMessage({ type: 'get-profile' }).then((p) => {
-          if (p?.ok) setProfileImage(p.profile?.image ?? null);
-        });
-        setStatus('Logged in successfully');
-      } else setStatus(`Login failed: ${resp?.error ?? 'Unknown error'}`);
+    login().then((resp) => {
+      if ((resp as { ok?: boolean })?.ok) setStatus('Logged in successfully');
+      else setStatus(`Login failed: ${(resp as { error?: string })?.error ?? 'Unknown error'}`);
     });
   };
 
   const onLogout = () => {
-    setAuthLoading(true);
-    sendMessage({ type: 'logout' }).then((resp) => {
-      setAuthLoading(false);
-      if (resp?.ok) {
-        setAuthDid(null);
-        setProfileImage(null);
+    logout().then((resp) => {
+      if ((resp as { ok?: boolean })?.ok) {
         setMenuOpen(false);
         setStatus('Logged out');
-      } else setStatus(`Logout failed: ${resp?.error ?? 'Unknown error'}`);
+      } else setStatus(`Logout failed: ${(resp as { error?: string })?.error ?? 'Unknown error'}`);
     });
   };
 
@@ -276,90 +123,9 @@ const App = () => {
   };
 
   // VC-API Exchange helpers
-  const refreshExchangeStatus = () => {
-    sendMessage({ type: 'get-vcapi-exchange-status', tabId: tabId ?? undefined }).then((resp) => {
-      if (!resp?.ok) return;
-      const sess = (resp.data || { state: 'idle' }) as {
-        state: VcApiExchangeState;
-        url?: string;
-        offers?: unknown[];
-        error?: string | null;
-      };
-      setExchangeState(sess.state);
-      if (sess.url) setExchangeUrl(sess.url);
-      setExchangeError(sess.state === 'error' ? toErrorString(sess.error ?? 'Unknown error') : null);
-      if (Array.isArray(sess.offers)) {
-        setExchangeOffers(sess.offers);
-        setOfferSelected(sess.offers.map(() => true));
-        setOfferCategories(sess.offers.map(() => 'Achievement' as CredentialCategory));
-      } else {
-        setExchangeOffers([]);
-        setOfferSelected([]);
-        setOfferCategories([]);
-      }
-      if (sess.state === 'contacting' || sess.state === 'saving') {
-        window.setTimeout(refreshExchangeStatus, 600);
-      }
-    });
-  };
-
-  const startExchange = () => {
-    const url = exchangeUrl.trim();
-    if (!url) return;
-    setExchangeBusy(true);
-    setExchangeError(null);
-    setStatus('Starting exchange…');
-    sendMessage({ type: 'start-vcapi-exchange', url, tabId: tabId ?? undefined }).then((resp) => {
-      setExchangeBusy(false);
-      if (resp?.ok) {
-        setExchangeState('contacting');
-        refreshExchangeStatus();
-      } else {
-        const err = toErrorString(resp?.error ?? 'Failed to start');
-        setExchangeError(err);
-        setExchangeState('error');
-        setStatus(`Failed to start: ${err}`);
-      }
-    });
-  };
-
-  const cancelExchange = () => {
-    sendMessage({ type: 'cancel-vcapi-exchange', tabId: tabId ?? undefined }).then(() => {
-      setExchangeState('idle');
-      setExchangeOffers([]);
-      setOfferSelected([]);
-      setOfferCategories([]);
-      setOfferOpenCatIdx(null);
-      setExchangeBusy(false);
-      setExchangeError(null);
-      setShowExchange(false);
-    });
-  };
-
-  const acceptExchange = () => {
-    const selections = offerSelected
-      .map((v, i) => ({ v, i }))
-      .filter(({ v }) => v)
-      .map(({ i }) => ({ index: i, category: offerCategories[i] }));
-    if (selections.length === 0) return;
-    setExchangeBusy(true);
-    setStatus('Claiming…');
-    sendMessage({ type: 'accept-vcapi-offer', selections, tabId: tabId ?? undefined }).then((resp) => {
-      setExchangeBusy(false);
-      if (resp?.ok) {
-        setExchangeState('success');
-        const count = resp.savedCount;
-        setStatus(`Saved ${count} credential${count === 1 ? '' : 's'} to LearnCard`);
-        // Refresh detected list to include claimed entries
-        sendMessage({ type: 'get-detected', tabId: tabId ?? undefined }).then((resp2) => {
-          if (resp2?.ok && Array.isArray(resp2.data)) setCandidates(resp2.data as CredentialCandidate[]);
-        });
-      } else {
-        const err = toErrorString(resp?.error ?? 'Unknown error');
-        setExchangeState('error');
-        setExchangeError(err);
-        setStatus(`Failed: ${err}`);
-      }
+  const acceptAndRefresh = () => {
+    acceptExchange().then((resp) => {
+      if ((resp as { ok?: boolean })?.ok) refreshDetected();
     });
   };
 
@@ -376,24 +142,7 @@ const App = () => {
         profileImage={profileImage}
         hideClaimed={hideClaimed}
         authLoading={authLoading}
-        onRescan={() => {
-          if (tabId === null) return;
-          const id = tabId;
-          setStatus('Rescanning page…');
-          setRescanBusy(true);
-          sendTabMessage(id, { type: 'request-scan' }).then(() => {
-            sendMessage({ type: 'get-detected', tabId: id }).then((resp) => {
-              if (resp?.ok) {
-                const list = Array.isArray(resp.data) ? (resp.data as CredentialCandidate[]) : [];
-                setCandidates(list);
-                setStatus(`Scan complete: ${list.length} credential${list.length === 1 ? '' : 's'} found`);
-              } else {
-                setStatus('Rescan failed');
-              }
-              setRescanBusy(false);
-            });
-          });
-        }}
+        onRescan={rescan}
         onAnalyze={analyzeClipboard}
         onToggleOptions={() => setOptsOpen((v) => !v)}
         onToggleMenu={() => setMenuOpen((v) => !v)}
@@ -401,12 +150,7 @@ const App = () => {
         onShowExchange={() => {
           // Prefill from detected link if empty
           if (!exchangeUrl.trim()) {
-            const link = candidates.find((c) => c.source === 'link' && !!c.url && !c.claimed);
-            if (link?.url) {
-              setExchangeUrl(link.url);
-              setStatus('Detected offer URL from page');
-              setAutoPrefilledExchange(true);
-            }
+            prefillFromCandidates(candidates);
           }
           setShowExchange(true);
           setOptsOpen(false);
@@ -525,7 +269,7 @@ const App = () => {
                       <span>Select all</span>
                     </label>
                     <button className="btn-secondary" onClick={cancelExchange}>Cancel</button>
-                    <button className="btn-primary" onClick={acceptExchange} disabled={exchangeBusy || !offerSelected.some(Boolean)}>
+                    <button className="btn-primary" onClick={acceptAndRefresh} disabled={exchangeBusy || !offerSelected.some(Boolean)}>
                       {exchangeBusy ? 'Claiming…' : `Claim ${offerSelected.filter(Boolean).length} Credential${offerSelected.filter(Boolean).length === 1 ? '' : 's'}`}
                     </button>
                   </div>
