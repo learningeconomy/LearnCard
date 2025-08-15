@@ -11,12 +11,11 @@ import type {
   VcApiExchangeState,
 } from '../types/messages';
 
-import RefreshIcon from './icons/refresh.svg';
-import ClipboardIcon from './icons/paste-from-clipboard.svg';
-import HamburgerIcon from './icons/hamburger.svg';
 import { toErrorString as toErrorStringUtil } from '../utils/errors';
 import { isVc, getTitleFromVc, getIssuerNameFromVc } from '../utils/vc';
 import CategorySelector from './components/CategorySelector';
+import HeaderBar from './components/HeaderBar';
+import ActionBar from './components/ActionBar';
 
 const App = () => {
   const [tabId, setTabId] = useState<number | null>(null);
@@ -387,112 +386,54 @@ const App = () => {
   return (
     <div className="popup">
       {/* Header */}
-      <div className="header">
-        <div className="logo">LearnCard</div>
-        {authDid && (
-          <div className="user">
-            <div className="actions" aria-label="Utility actions">
-              {tabId !== null && (
-                <button
-                  className={`btn-icon${rescanBusy ? ' is-busy' : ''}`}
-                  aria-label="Rescan page"
-                  title="Rescan page"
-                  disabled={rescanBusy}
-                  aria-busy={rescanBusy}
-                  onClick={() => {
-                    const id = tabId!;
-                    setStatus('Rescanning page…');
-                    setRescanBusy(true);
-                    chrome.tabs.sendMessage(id, { type: 'request-scan' } as ExtensionMessage, () => {
-                      chrome.runtime.sendMessage({ type: 'get-detected', tabId: id } as ExtensionMessage, (resp) => {
-                        if (resp?.ok) {
-                          const list = Array.isArray(resp.data) ? (resp.data as CredentialCandidate[]) : [];
-                          setCandidates(list);
-                          setStatus(`Scan complete: ${list.length} credential${list.length === 1 ? '' : 's'} found`);
-                        } else {
-                          setStatus('Rescan failed');
-                        }
-                        setRescanBusy(false);
-                      });
-                    });
-                  }}
-                >
-                  <img src={RefreshIcon} alt="Rescan page" className="icon" />
-                </button>
-              )}
-              <button
-                className={`btn-icon${analyzeBusy ? ' is-busy' : ''}`}
-                aria-label="Analyze clipboard"
-                title="Analyze clipboard"
-                disabled={analyzeBusy}
-                aria-busy={analyzeBusy}
-                onClick={analyzeClipboard}
-              >
-                <img src={ClipboardIcon} alt="Analyze clipboard" className="icon" />
-              </button>
-              <div className="options">
-                <button
-                  className="btn-icon"
-                  aria-label="More options"
-                  title="More options"
-                  onClick={() => setOptsOpen((v) => !v)}
-                >
-                  <img src={HamburgerIcon} alt="More options" className="icon" />
-                </button>
-                {optsOpen && (
-                  <div className="menu">
-                    <div className="menu-row">
-                      <label className="select-all">
-                        <input type="checkbox" checked={hideClaimed} onChange={(e) => setHideClaimed(e.target.checked)} />
-                        <span>Hide claimed</span>
-                      </label>
-                    </div>
-                    <div className="menu-row">
-                      <button
-                        className="menu-item"
-                        onClick={() => {
-                          // Prefill from detected link if empty
-                          if (!exchangeUrl.trim()) {
-                            const link = candidates.find((c) => c.source === 'link' && !!c.url && !c.claimed);
-                            if (link?.url) {
-                              setExchangeUrl(link.url);
-                              setStatus('Detected offer URL from page');
-                              setAutoPrefilledExchange(true);
-                            }
-                          }
-                          setShowExchange(true);
-                          setOptsOpen(false);
-                        }}
-                      >
-                        Claim via VC-API
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-            <button className="btn-icon avatar" aria-label="User menu" onClick={() => setMenuOpen((v) => !v)}>
-              {profileImage ? (
-                <img src={profileImage} alt="Profile" />
-              ) : (
-                <span aria-hidden>LC</span>
-              )}
-            </button>
-            {menuOpen && (
-              <div className="menu">
-                <div className="menu-row">
-                  <div className="menu-title">Signed in</div>
-                  <div className="menu-did" title={authDid}>{authDid}</div>
-                </div>
-                <div className="menu-actions">
-                  <button className="btn-secondary" onClick={copyDid}>Copy DID</button>
-                  <button className="btn-secondary" onClick={onLogout} disabled={authLoading}>{authLoading ? 'Working…' : 'Logout'}</button>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+      <HeaderBar
+        authDid={authDid}
+        tabId={tabId}
+        rescanBusy={rescanBusy}
+        analyzeBusy={analyzeBusy}
+        optsOpen={optsOpen}
+        menuOpen={menuOpen}
+        profileImage={profileImage}
+        hideClaimed={hideClaimed}
+        authLoading={authLoading}
+        onRescan={() => {
+          if (tabId === null) return;
+          const id = tabId;
+          setStatus('Rescanning page…');
+          setRescanBusy(true);
+          chrome.tabs.sendMessage(id, { type: 'request-scan' } as ExtensionMessage, () => {
+            chrome.runtime.sendMessage({ type: 'get-detected', tabId: id } as ExtensionMessage, (resp) => {
+              if (resp?.ok) {
+                const list = Array.isArray(resp.data) ? (resp.data as CredentialCandidate[]) : [];
+                setCandidates(list);
+                setStatus(`Scan complete: ${list.length} credential${list.length === 1 ? '' : 's'} found`);
+              } else {
+                setStatus('Rescan failed');
+              }
+              setRescanBusy(false);
+            });
+          });
+        }}
+        onAnalyze={analyzeClipboard}
+        onToggleOptions={() => setOptsOpen((v) => !v)}
+        onToggleMenu={() => setMenuOpen((v) => !v)}
+        onToggleHideClaimed={(checked) => setHideClaimed(checked)}
+        onShowExchange={() => {
+          // Prefill from detected link if empty
+          if (!exchangeUrl.trim()) {
+            const link = candidates.find((c) => c.source === 'link' && !!c.url && !c.claimed);
+            if (link?.url) {
+              setExchangeUrl(link.url);
+              setStatus('Detected offer URL from page');
+              setAutoPrefilledExchange(true);
+            }
+          }
+          setShowExchange(true);
+          setOptsOpen(false);
+        }}
+        onCopyDid={copyDid}
+        onLogout={onLogout}
+      />
 
       {/* Body */}
       <div className="content">
@@ -742,38 +683,15 @@ const App = () => {
 
       {/* Footer / Action bar */}
       <div className="footer">
-        {authDid && !(showExchange || exchangeState !== 'idle') && candidates.filter((c) => !c.claimed && c.source !== 'link').length > 0 ? (
-          <>
-            <label className="select-all">
-              <input
-                type="checkbox"
-                checked={
-                  candidates.filter((c) => !c.claimed && c.source !== 'link').length > 0 &&
-                  candidates.every((c, i) => (c.claimed || c.source === 'link' ? true : !!selected[i]))
-                }
-                onChange={(e) => {
-                  const all = e.target.checked;
-                  setSelected(candidates.map((c) => (c.claimed || c.source === 'link' ? false : all)));
-                }}
-              />
-              <span>Select all</span>
-            </label>
-            <button
-              className="btn-primary"
-              onClick={onBulkSave}
-              disabled={
-                saving || candidates.reduce((acc, c, i) => acc + (!c.claimed && c.source !== 'link' && selected[i] ? 1 : 0), 0) === 0
-              }
-            >
-              {saving
-                ? 'Claiming…'
-                : (() => {
-                    const count = candidates.reduce((acc, c, i) => acc + (!c.claimed && c.source !== 'link' && selected[i] ? 1 : 0), 0);
-                    return `Claim ${count} Credential${count === 1 ? '' : 's'}`;
-                  })()}
-            </button>
-          </>
-        ) : null}
+        {authDid && !(showExchange || exchangeState !== 'idle') && (
+          <ActionBar
+            candidates={candidates}
+            selected={selected}
+            setSelected={(next) => setSelected(next)}
+            saving={saving}
+            onBulkSave={onBulkSave}
+          />
+        )}
       </div>
     </div>
   );
