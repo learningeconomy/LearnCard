@@ -6,6 +6,7 @@ import { getTestCache } from '@learncard/core';
 import { initLearnCard, emptyLearnCard, learnCardFromSeed } from '@learncard/init';
 import { getSimpleSigningPlugin } from '@learncard/simple-signing-plugin';
 import types from '@learncard/types';
+import { getLinkedClaimsPlugin } from '@learncard/linked-claims-plugin';
 import gradient from 'gradient-string';
 import figlet from 'figlet';
 import { program } from 'commander';
@@ -78,6 +79,11 @@ program
             await getSimpleSigningPlugin(_learnCard, 'https://api.learncard.app/trpc')
         );
 
+        // Add LinkedClaims plugin so endorse/verify/store/getEndorsements are available in the CLI
+        globalThis.learnCard = await globalThis.learnCard.addPlugin(
+            getLinkedClaimsPlugin(globalThis.learnCard)
+        );
+
         globalThis.types = types;
         globalThis.getTestCache = getTestCache;
 
@@ -132,6 +138,15 @@ program
         );
         console.log(
             `│      Verify a signed VP │ await ${g.learnCard}.invoke.verifyPresentation(vp); │`
+        );
+        console.log(
+            `│  Endorse a credential  │ await ${g.learnCard}.invoke.endorseCredential(vc,{recommendationText:'Great job'}); │`
+        );
+        console.log(
+            `│ Store an endorsement   │ await ${g.learnCard}.invoke.storeEndorsement(vc);     │`
+        );
+        console.log(
+            `│  Get endorsements      │ await ${g.learnCard}.invoke.getEndorsements(vc);      │`
         );
         console.log('└─────────────────────────┴────────────────────────────────────────────────┘');
 

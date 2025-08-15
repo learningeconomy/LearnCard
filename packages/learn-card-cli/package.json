@@ -15,6 +15,7 @@
         "@learncard/didkit-plugin": "workspace:^",
         "@learncard/init": "workspace:^",
         "@learncard/learn-cloud-plugin": "workspace:*",
+        "@learncard/linked-claims-plugin": "workspace:*",
         "@learncard/simple-signing-plugin": "workspace:*",
         "@learncard/types": "workspace:*",
         "@rollup/plugin-json": "^4.1.0",
