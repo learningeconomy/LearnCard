@@ -210,6 +210,88 @@ async function handleStoreCandidate(
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message?.target === 'offscreen') {
+    if (message?.type === 'vcapi-open') {
+      const seed = message?.data?.seed as string | undefined;
+      const url = message?.data?.url as string | undefined;
+      if (!seed || !url) {
+        sendResponse({ ok: false, error: 'Missing seed or url' });
+        return false;
+      }
+      (async () => {
+        try {
+          const lc = await ensureLearnCard(seed);
+          // Initiate VC-API flow
+          const initResp = await fetch(url, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({})
+          });
+          if (!initResp.ok) {
+            const text = await initResp.text().catch(() => '');
+            throw new Error(`VC-API init failed: ${initResp.status} ${text}`);
+          }
+          const initJson = await initResp.json().catch(() => ({}));
+          const challenge = initJson.challenge ?? initJson.nonce;
+          const domain = initJson.domain;
+          if (!challenge) throw new Error('Missing VC-API challenge');
+          const vp = await lc.invoke.getDidAuthVp({ challenge, domain });
+          const finalize = await fetch(url, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ verifiablePresentation: vp })
+          });
+          if (!finalize.ok) {
+            const text = await finalize.text().catch(() => '');
+            throw new Error(`VC-API finalize failed: ${finalize.status} ${text}`);
+          }
+          const result = await finalize.json().catch(() => ({}));
+          const vpOut = (result?.verifiablePresentation ?? result?.vp ?? result) as any;
+          const vcsRaw = vpOut?.verifiableCredential ?? vpOut?.verifiableCredentials;
+          const rawList: unknown[] = Array.isArray(vcsRaw) ? vcsRaw : vcsRaw ? [vcsRaw] : [];
+          const vcs: any[] = rawList.map((vc) => (typeof vc === 'string' ? JSON.parse(vc) : vc));
+          sendResponse({ ok: true, vcs });
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          sendResponse({ ok: false, error: msg });
+        }
+      })();
+      return true;
+    }
+
+    if (message?.type === 'vcapi-accept') {
+      const items = (message?.data?.items as { vc: unknown; category?: CredentialCategory }[] | undefined) ?? [];
+      const seed = message?.data?.seed as string | undefined;
+      if (!Array.isArray(items) || items.length === 0) {
+        sendResponse({ ok: false, error: 'Missing items' });
+        return false;
+      }
+      (async () => {
+        try {
+          const lc = await ensureLearnCard(seed);
+          let saved = 0;
+          for (const { vc, category } of items) {
+            try {
+              const uri = await lc.store?.LearnCloud?.uploadEncrypted(vc);
+              const uriStr = typeof uri === 'string' ? uri : String(uri);
+              try {
+                const canonicalId = await computeCredentialHash(lc as any, vc);
+                await lc.index?.LearnCloud?.add({ id: canonicalId, uri: uriStr, category: (category as CredentialCategory) ?? 'Achievement' });
+              } catch {
+                await lc.index?.LearnCloud?.add({ uri: uriStr, category: (category as CredentialCategory) ?? 'Achievement' });
+              }
+              saved += 1;
+            } catch {
+              // continue
+            }
+          }
+          sendResponse({ ok: true, savedCount: saved });
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          sendResponse({ ok: false, error: msg });
+        }
+      })();
+      return true;
+    }
     if (message?.type === 'start-learncard-init') {
       const seed = message?.data?.seed as string | undefined;
       if (!seed) {

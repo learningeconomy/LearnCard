@@ -5,6 +5,7 @@ import type {
   ExtensionMessage,
   CredentialCategory,
   SaveCredentialsMessage,
+  VcApiExchangeState,
 } from '../types/messages';
 
 import RefreshIcon from './icons/refresh.svg';
@@ -28,6 +29,16 @@ const App = () => {
   const [categories, setCategories] = useState<CredentialCategory[]>([]);
   const [openCategoryIdx, setOpenCategoryIdx] = useState<number | null>(null);
   const [hideClaimed, setHideClaimed] = useState(false);
+
+  // VC-API Exchange UI state
+  const [exchangeUrl, setExchangeUrl] = useState('');
+  const [exchangeState, setExchangeState] = useState<VcApiExchangeState>('idle');
+  const [exchangeOffers, setExchangeOffers] = useState<unknown[]>([]);
+  const [offerSelected, setOfferSelected] = useState<boolean[]>([]);
+  const [offerCategories, setOfferCategories] = useState<CredentialCategory[]>([]);
+  const [offerOpenCatIdx, setOfferOpenCatIdx] = useState<number | null>(null);
+  const [exchangeBusy, setExchangeBusy] = useState(false);
+  const [exchangeError, setExchangeError] = useState<string | null>(null);
 
   // Category options: store value, show label
   const CATEGORY_OPTIONS: ReadonlyArray<{ value: CredentialCategory; label: string }> = [
@@ -76,6 +87,41 @@ const App = () => {
       }
     });
   }, []);
+
+  // Sync Exchange session from background when tabId becomes available
+  useEffect(() => {
+    if (tabId === null) return;
+    const refreshExchangeStatus = () => {
+      chrome.runtime.sendMessage(
+        { type: 'get-vcapi-exchange-status', tabId: tabId ?? undefined } as ExtensionMessage,
+        (resp) => {
+          if (!resp?.ok) return;
+          const sess = (resp.data || { state: 'idle' }) as {
+            state: VcApiExchangeState;
+            url?: string;
+            offers?: unknown[];
+            error?: string | null;
+          };
+          setExchangeState(sess.state);
+          if (sess.url) setExchangeUrl(sess.url);
+          setExchangeError(sess.state === 'error' ? sess.error ?? 'Unknown error' : null);
+          if (Array.isArray(sess.offers)) {
+            setExchangeOffers(sess.offers);
+            setOfferSelected(sess.offers.map(() => true));
+            setOfferCategories(sess.offers.map(() => 'Achievement' as CredentialCategory));
+          } else {
+            setExchangeOffers([]);
+            setOfferSelected([]);
+            setOfferCategories([]);
+          }
+          if (sess.state === 'contacting' || sess.state === 'saving') {
+            window.setTimeout(refreshExchangeStatus, 600);
+          }
+        }
+      );
+    };
+    refreshExchangeStatus();
+  }, [tabId]);
 
   const isVc = (data: unknown): data is { '@context': unknown[]; type: string | string[]; name?: string } => {
     if (!data || typeof data !== 'object') return false;
@@ -247,6 +293,108 @@ const App = () => {
     } catch {}
   };
 
+  // VC-API Exchange helpers
+  const refreshExchangeStatus = () => {
+    chrome.runtime.sendMessage(
+      { type: 'get-vcapi-exchange-status', tabId: tabId ?? undefined } as ExtensionMessage,
+      (resp) => {
+        if (!resp?.ok) return;
+        const sess = (resp.data || { state: 'idle' }) as {
+          state: VcApiExchangeState;
+          url?: string;
+          offers?: unknown[];
+          error?: string | null;
+        };
+        setExchangeState(sess.state);
+        if (sess.url) setExchangeUrl(sess.url);
+        setExchangeError(sess.state === 'error' ? sess.error ?? 'Unknown error' : null);
+        if (Array.isArray(sess.offers)) {
+          setExchangeOffers(sess.offers);
+          setOfferSelected(sess.offers.map(() => true));
+          setOfferCategories(sess.offers.map(() => 'Achievement' as CredentialCategory));
+        } else {
+          setExchangeOffers([]);
+          setOfferSelected([]);
+          setOfferCategories([]);
+        }
+        if (sess.state === 'contacting' || sess.state === 'saving') {
+          window.setTimeout(refreshExchangeStatus, 600);
+        }
+      }
+    );
+  };
+
+  const startExchange = () => {
+    const url = exchangeUrl.trim();
+    if (!url) return;
+    setExchangeBusy(true);
+    setExchangeError(null);
+    setStatus('Starting exchange…');
+    chrome.runtime.sendMessage(
+      { type: 'start-vcapi-exchange', url, tabId: tabId ?? undefined } as ExtensionMessage,
+      (resp) => {
+        setExchangeBusy(false);
+        if (resp?.ok) {
+          setExchangeState('contacting');
+          refreshExchangeStatus();
+        } else {
+          const err = resp?.error ?? 'Failed to start';
+          setExchangeError(err);
+          setExchangeState('error');
+          setStatus(`Failed to start: ${err}`);
+        }
+      }
+    );
+  };
+
+  const cancelExchange = () => {
+    chrome.runtime.sendMessage(
+      { type: 'cancel-vcapi-exchange', tabId: tabId ?? undefined } as ExtensionMessage,
+      () => {
+        setExchangeState('idle');
+        setExchangeOffers([]);
+        setOfferSelected([]);
+        setOfferCategories([]);
+        setOfferOpenCatIdx(null);
+        setExchangeBusy(false);
+        setExchangeError(null);
+      }
+    );
+  };
+
+  const acceptExchange = () => {
+    const selections = offerSelected
+      .map((v, i) => ({ v, i }))
+      .filter(({ v }) => v)
+      .map(({ i }) => ({ index: i, category: offerCategories[i] }));
+    if (selections.length === 0) return;
+    setExchangeBusy(true);
+    setStatus('Claiming…');
+    chrome.runtime.sendMessage(
+      { type: 'accept-vcapi-offer', selections, tabId: tabId ?? undefined } as ExtensionMessage,
+      (resp) => {
+        setExchangeBusy(false);
+        if (resp?.ok) {
+          setExchangeState('success');
+          const count = (resp.savedCount ?? selections.length) as number;
+          setStatus(`Saved ${count} credential${count === 1 ? '' : 's'} to LearnCard`);
+          // Refresh detected list to include claimed entries
+          chrome.runtime.sendMessage(
+            { type: 'get-detected', tabId: tabId ?? undefined } as ExtensionMessage,
+            (resp2) => {
+              if (resp2?.ok && Array.isArray(resp2.data)) setCandidates(resp2.data as CredentialCandidate[]);
+            }
+          );
+        } else {
+          const err = resp?.error ?? 'Unknown error';
+          setExchangeState('error');
+          setExchangeError(err);
+          setStatus(`Failed: ${err}`);
+        }
+      }
+    );
+  };
+
   return (
     <div className="popup">
       {/* Header */}
@@ -347,109 +495,259 @@ const App = () => {
               {authLoading ? 'Opening…' : 'Login to LearnCard'}
             </button>
           </div>
-        ) : candidates.length > 0 ? (
-          <div className="state">
-            <div className="inbox-list">
-              {(
-                hideClaimed
-                  ? candidates.map((_, i) => i).filter((i) => !candidates[i]?.claimed)
-                  : candidates.map((_, i) => i)
-               ).map((i) => {
-                const c = candidates[i];
-                const raw = c.raw as any;
-                const title = c.title || (raw ? getTitleFromVc(raw) : c.url || 'Credential');
-                const issuer = raw ? getIssuerNameFromVc(raw) : (c.platform ? `from ${c.platform}` : '');
-                const cat = categories[i] || 'Achievement';
-                const isOpen = openCategoryIdx === i;
-                return (
-                  <div key={i} className="inbox-card">
-                    {c.claimed ? (
-                      <div className="check claimed-indicator" aria-label="Already claimed" title="Already claimed">
-                        <svg
-                          className="icon"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          aria-hidden
-                          style={{ color: '#16a34a' }}
-                        >
-                          <path d="M20 6L9 17l-5-5" />
-                        </svg>
-                      </div>
-                    ) : (
+        ) : (
+          <>
+            {/* Exchange Card */}
+            <div className="card exchange-card" role="region" aria-label="VC-API Exchange">
+              {exchangeState === 'idle' && (
+                <div className="state">
+                  <h3 className="heading">Claim via VC-API</h3>
+                  <p className="subtext">Paste a credential offer URL to start an exchange.</p>
+                  <div className="field">
+                    <label className="label" htmlFor="exchange-url">Offer URL</label>
+                    <input
+                      id="exchange-url"
+                      className="select"
+                      type="url"
+                      placeholder="https://issuer.example/offer/..."
+                      value={exchangeUrl}
+                      onChange={(e) => setExchangeUrl(e.target.value)}
+                    />
+                  </div>
+                  <div className="tools">
+                    <button className="btn-primary" onClick={startExchange} disabled={exchangeBusy || !exchangeUrl.trim()}>
+                      {exchangeBusy ? 'Starting…' : 'Start Exchange'}
+                    </button>
+                  </div>
+                  {exchangeError && <div className="status">{exchangeError}</div>}
+                </div>
+              )}
+
+              {exchangeState === 'contacting' && (
+                <div className="state">
+                  <h3 className="heading">Contacting issuer…</h3>
+                  <p className="subtext">Fetching credential offers from the issuer.</p>
+                  <div className="tools">
+                    <button className="btn-secondary" onClick={cancelExchange}>Cancel</button>
+                  </div>
+                </div>
+              )}
+
+              {exchangeState === 'offer' && (
+                <div className="state">
+                  <h3 className="heading">Select credentials to claim</h3>
+                  <div className="inbox-list">
+                    {exchangeOffers.map((vc, i) => {
+                      const anyVc = vc as any;
+                      const title = getTitleFromVc(anyVc);
+                      const issuer = getIssuerNameFromVc(anyVc);
+                      const isOpen = offerOpenCatIdx === i;
+                      const cat = offerCategories[i] || 'Achievement';
+                      return (
+                        <div key={i} className="inbox-card">
+                          <input
+                            className="check"
+                            type="checkbox"
+                            checked={!!offerSelected[i]}
+                            onChange={(e) => {
+                              const next = offerSelected.slice();
+                              next[i] = e.target.checked;
+                              setOfferSelected(next);
+                            }}
+                          />
+                          <div className="card-icon" aria-hidden>
+                            <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M12 2l3 7h7l-5.5 4 2.5 7-7-4.5L5 20l2.5-7L2 9h7z" />
+                            </svg>
+                          </div>
+                          <div className="card-body">
+                            <p className="credential-title">{title}</p>
+                            <p className="credential-issuer">{issuer ? `by ${issuer}` : ''}</p>
+                          </div>
+                          <div className="category">
+                            <button
+                              className="btn-secondary btn-small"
+                              onClick={() => setOfferOpenCatIdx(isOpen ? null : i)}
+                            >
+                              {getCategoryLabel(cat)}
+                            </button>
+                            {isOpen && (
+                              <div className="category-menu">
+                                {CATEGORY_OPTIONS.map(({ value, label }) => (
+                                  <button
+                                    key={value}
+                                    className="menu-item"
+                                    onClick={() => {
+                                      const next = offerCategories.slice();
+                                      next[i] = value;
+                                      setOfferCategories(next);
+                                      setOfferOpenCatIdx(null);
+                                    }}
+                                  >
+                                    {label}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="tools">
+                    <label className="select-all">
                       <input
-                        className="check"
                         type="checkbox"
-                        checked={!!selected[i]}
+                        checked={exchangeOffers.length > 0 && offerSelected.every(Boolean)}
                         onChange={(e) => {
-                          const next = selected.slice();
-                          next[i] = e.target.checked;
-                          setSelected(next);
+                          const all = e.target.checked;
+                          setOfferSelected(exchangeOffers.map(() => all));
                         }}
                       />
-                    )}
-                    <div className="card-icon" aria-hidden>
-                      <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M12 2l3 7h7l-5.5 4 2.5 7-7-4.5L5 20l2.5-7L2 9h7z" />
-                      </svg>
-                    </div>
-                    <div className="card-body">
-                      <p className="credential-title">{title}</p>
-                      <p className="credential-issuer">
-                        {issuer ? `by ${issuer}` : ''}
+                      <span>Select all</span>
+                    </label>
+                    <button className="btn-secondary" onClick={cancelExchange}>Cancel</button>
+                    <button className="btn-primary" onClick={acceptExchange} disabled={exchangeBusy || !offerSelected.some(Boolean)}>
+                      {exchangeBusy ? 'Claiming…' : `Claim ${offerSelected.filter(Boolean).length} Credential${offerSelected.filter(Boolean).length === 1 ? '' : 's'}`}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {exchangeState === 'saving' && (
+                <div className="state">
+                  <h3 className="heading">Claiming…</h3>
+                  <p className="subtext">Saving credentials to your LearnCard wallet.</p>
+                </div>
+              )}
+
+              {exchangeState === 'success' && (
+                <div className="state">
+                  <h3 className="heading">Success</h3>
+                  <p className="subtext">Credentials were added to your inbox below. You can now manage them like other detections.</p>
+                  <div className="tools">
+                    <button className="btn-primary" onClick={cancelExchange}>Done</button>
+                  </div>
+                </div>
+              )}
+
+              {exchangeState === 'error' && (
+                <div className="state">
+                  <h3 className="heading">Something went wrong</h3>
+                  <div className="status">{exchangeError ?? 'Unknown error'}</div>
+                  <div className="tools">
+                    <button className="btn-secondary" onClick={cancelExchange}>Dismiss</button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Inbox */}
+            {candidates.length > 0 ? (
+              <div className="state">
+                <div className="inbox-list">
+                  {(
+                    hideClaimed
+                      ? candidates.map((_, i) => i).filter((i) => !candidates[i]?.claimed)
+                      : candidates.map((_, i) => i)
+                   ).map((i) => {
+                    const c = candidates[i];
+                    const raw = c.raw as any;
+                    const title = c.title || (raw ? getTitleFromVc(raw) : c.url || 'Credential');
+                    const issuer = raw ? getIssuerNameFromVc(raw) : (c.platform ? `from ${c.platform}` : '');
+                    const cat = categories[i] || 'Achievement';
+                    const isOpen = openCategoryIdx === i;
+                    return (
+                      <div key={i} className="inbox-card">
                         {c.claimed ? (
-                          <em className="claimed-label" title="Already claimed" style={{ marginLeft: 8, fontStyle: 'italic', color: '#555' }}>
-                            Claimed
-                          </em>
-                        ) : null}
-                      </p>
-                    </div>
-                    {!c.claimed && (
-                      <div className="category">
-                        <button
-                          className="btn-secondary btn-small"
-                          onClick={() => setOpenCategoryIdx(isOpen ? null : i)}
-                        >
-                          {getCategoryLabel(cat)}
-                        </button>
-                        {isOpen && (
-                          <div className="category-menu">
-                            {CATEGORY_OPTIONS.map(({ value, label }) => (
-                              <button
-                                key={value}
-                                className="menu-item"
-                                onClick={() => {
-                                  const next = categories.slice();
-                                  next[i] = value;
-                                  setCategories(next);
-                                  setOpenCategoryIdx(null);
-                                }}
-                              >
-                                {label}
-                              </button>
-                            ))}
+                          <div className="check claimed-indicator" aria-label="Already claimed" title="Already claimed">
+                            <svg
+                              className="icon"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              aria-hidden
+                              style={{ color: '#16a34a' }}
+                            >
+                              <path d="M20 6L9 17l-5-5" />
+                            </svg>
+                          </div>
+                        ) : (
+                          <input
+                            className="check"
+                            type="checkbox"
+                            checked={!!selected[i]}
+                            onChange={(e) => {
+                              const next = selected.slice();
+                              next[i] = e.target.checked;
+                              setSelected(next);
+                            }}
+                          />
+                        )}
+                        <div className="card-icon" aria-hidden>
+                          <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M12 2l3 7h7l-5.5 4 2.5 7-7-4.5L5 20l2.5-7L2 9h7z" />
+                          </svg>
+                        </div>
+                        <div className="card-body">
+                          <p className="credential-title">{title}</p>
+                          <p className="credential-issuer">
+                            {issuer ? `by ${issuer}` : ''}
+                            {c.claimed ? (
+                              <em className="claimed-label" title="Already claimed" style={{ marginLeft: 8, fontStyle: 'italic', color: '#555' }}>
+                                Claimed
+                              </em>
+                            ) : null}
+                          </p>
+                        </div>
+                        {!c.claimed && (
+                          <div className="category">
+                            <button
+                              className="btn-secondary btn-small"
+                              onClick={() => setOpenCategoryIdx(isOpen ? null : i)}
+                            >
+                              {getCategoryLabel(cat)}
+                            </button>
+                            {isOpen && (
+                              <div className="category-menu">
+                                {CATEGORY_OPTIONS.map(({ value, label }) => (
+                                  <button
+                                    key={value}
+                                    className="menu-item"
+                                    onClick={() => {
+                                      const next = categories.slice();
+                                      next[i] = value;
+                                      setCategories(next);
+                                      setOpenCategoryIdx(null);
+                                    }}
+                                  >
+                                    {label}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
-                    )}
+                    );
+                  })}
+                </div>
+                {status && (
+                  <div role="status" aria-live="polite" className={`status ${status.startsWith('Saved') ? 'ok' : status.startsWith('No credential') ? 'warn' : ''}`}>
+                    {status}
                   </div>
-                );
-              })}
-            </div>
-            {status && (
-              <div role="status" aria-live="polite" className={`status ${status.startsWith('Saved') ? 'ok' : status.startsWith('No credential') ? 'warn' : ''}`}>
-                {status}
+                )}
+              </div>
+            ) : (
+              <div className="state">
+                <h2 className="heading">No credentials found</h2>
+                <p className="subtext">The extension is active. Try rescanning the page or analyzing your clipboard.</p>
               </div>
             )}
-          </div>
-        ) : (
-          <div className="state">
-            <h2 className="heading">No credentials found</h2>
-            <p className="subtext">The extension is active. Try rescanning the page or analyzing your clipboard.</p>
-          </div>
+          </>
         )}
       </div>
 

@@ -18,6 +18,37 @@ export type CredentialCategory =
   | 'Accomplishment'
   | 'Accommodation';
 
+// VC-API exchange types
+export type VcApiExchangeState = 'idle' | 'contacting' | 'offer' | 'saving' | 'success' | 'error';
+
+export type VcApiOffer = {
+  id?: string;
+  title: string;
+  description?: string;
+};
+
+export type StartVcApiExchangeMessage = {
+  type: 'start-vcapi-exchange';
+  url: string;
+  tabId?: number;
+};
+
+export type GetVcApiExchangeStatusMessage = {
+  type: 'get-vcapi-exchange-status';
+  tabId?: number;
+};
+
+export type AcceptVcApiOfferMessage = {
+  type: 'accept-vcapi-offer';
+  selections: { index: number; category?: CredentialCategory }[];
+  tabId?: number;
+};
+
+export type CancelVcApiExchangeMessage = {
+  type: 'cancel-vcapi-exchange';
+  tabId?: number;
+};
+
 export type CredentialDetectedMessage = {
   type: 'credential-detected';
   payload: CredentialCandidate;
@@ -82,4 +113,8 @@ export type ExtensionMessage =
   | GetAuthStatusMessage
   | LogoutMessage
   | RequestScanMessage
-  | GetProfileMessage;
+  | GetProfileMessage
+  | StartVcApiExchangeMessage
+  | GetVcApiExchangeStatusMessage
+  | AcceptVcApiOfferMessage
+  | CancelVcApiExchangeMessage;

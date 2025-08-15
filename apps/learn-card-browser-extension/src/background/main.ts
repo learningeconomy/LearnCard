@@ -5,10 +5,17 @@ import type {
   SaveCredentialMessage,
   CredentialsDetectedMessage,
   CredentialCategory,
+  VcApiExchangeState,
 } from '../types/messages';
 
 // Track detections per tab so we can show per-tab badge counts
 const detectedByTab: Record<number, CredentialCandidate[]> = {};
+
+// Track VC-API exchange session state per tab
+const vcapiByTab: Record<
+  number,
+  { state: VcApiExchangeState; url?: string; offers?: any[]; error?: string | null }
+> = {};
 
 // Offscreen helper to initialize LearnCard in a document context
 const runInitInOffscreen = async (seed: string): Promise<string | undefined> => {
@@ -163,6 +170,62 @@ const runStoreManyInOffscreen = async (
 
   if (result?.ok) return { savedCount: Number(result.savedCount ?? 0) };
   throw new Error(result?.error ?? 'Offscreen bulk store failed');
+};
+
+// Offscreen helper to open a VC-API offer and fetch VCs without storing
+const runVcApiOpenInOffscreen = async (url: string): Promise<{ vcs: any[] }> => {
+  try {
+    await chrome.offscreen.createDocument({
+      url: 'src/offscreen.html',
+      reasons: [chrome.offscreen.Reason.DOM_PARSER],
+      justification: 'Perform VC-API handshake and fetch offers in a document context.'
+    });
+  } catch {}
+
+  const { authSeed = null } = await storageGet<{ authSeed: string | null }>({ authSeed: null });
+  if (!authSeed) throw new Error('Not logged in');
+
+  const result = await chrome.runtime.sendMessage({
+    type: 'vcapi-open',
+    target: 'offscreen',
+    data: { seed: authSeed, url }
+  });
+
+  try {
+    chrome.offscreen?.closeDocument?.();
+  } catch {}
+
+  if (result?.ok) return { vcs: (Array.isArray(result.vcs) ? result.vcs : []) as any[] };
+  throw new Error(result?.error ?? 'Offscreen VC-API open failed');
+};
+
+// Offscreen helper to accept selected VC-API offers and store them
+const runVcApiAcceptInOffscreen = async (
+  items: { vc: unknown; category?: CredentialCategory }[]
+): Promise<{ savedCount: number }> => {
+  try {
+    await chrome.offscreen.createDocument({
+      url: 'src/offscreen.html',
+      reasons: [chrome.offscreen.Reason.DOM_PARSER],
+      justification: 'Store VC-API credentials using LearnCard in a document context.'
+    });
+  } catch {}
+
+  const { authSeed = null } = await storageGet<{ authSeed: string | null }>({ authSeed: null });
+  if (!authSeed) throw new Error('Not logged in');
+
+  const result = await chrome.runtime.sendMessage({
+    type: 'vcapi-accept',
+    target: 'offscreen',
+    data: { items, seed: authSeed }
+  });
+
+  try {
+    chrome.offscreen?.closeDocument?.();
+  } catch {}
+
+  if (result?.ok) return { savedCount: Number(result.savedCount ?? 0) };
+  throw new Error(result?.error ?? 'Offscreen VC-API accept failed');
 };
 
 const parseParams = (url: string): Record<string, string> => {
@@ -455,6 +518,75 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendRe
         }
       })();
       return true;
+    }
+    case 'start-vcapi-exchange': {
+      (async () => {
+        try {
+          const url = (message as any).url as string | undefined;
+          const tabId = ((message as any).tabId as number | undefined) ?? _sender.tab?.id ?? -1;
+          if (!url) {
+            sendResponse({ ok: false, error: 'Missing URL' });
+            return;
+          }
+          vcapiByTab[tabId] = { state: 'contacting', url, error: null } as any;
+          const { vcs } = await runVcApiOpenInOffscreen(url);
+          vcapiByTab[tabId] = { state: 'offer', url, offers: vcs, error: null } as any;
+          sendResponse({ ok: true });
+        } catch (err) {
+          const tabId = _sender.tab?.id ?? -1;
+          vcapiByTab[tabId] = { state: 'error', error: (err as Error).message } as any;
+          sendResponse({ ok: false, error: (err as Error).message });
+        }
+      })();
+      return true;
+    }
+    case 'get-vcapi-exchange-status': {
+      const tabId = ((message as any).tabId as number | undefined) ?? _sender.tab?.id ?? -1;
+      const session = vcapiByTab[tabId] ?? ({ state: 'idle' } as any);
+      sendResponse({ ok: true, data: session });
+      return; // synchronous
+    }
+    case 'accept-vcapi-offer': {
+      (async () => {
+        try {
+          const tabId = ((message as any).tabId as number | undefined) ?? _sender.tab?.id ?? -1;
+          const selections = ((message as any).selections as { index: number; category?: CredentialCategory }[]) ?? [];
+          const session = vcapiByTab[tabId];
+          const offers = Array.isArray(session?.offers) ? session!.offers : [];
+          if (!offers.length || !selections.length) {
+            sendResponse({ ok: false, error: 'No selections' });
+            return;
+          }
+          vcapiByTab[tabId] = { ...(session as any), state: 'saving' };
+          const items = selections
+            .filter((s) => Number.isInteger(s.index) && s.index >= 0 && s.index < offers.length)
+            .map((s) => ({ vc: offers[s.index], category: s.category }));
+          const { savedCount } = await runVcApiAcceptInOffscreen(items);
+
+          // Integrate saved credentials into detected list as claimed
+          const current = detectedByTab[tabId] ?? [];
+          const claimedItems: CredentialCandidate[] = items.map(({ vc }) => {
+            const anyVc = vc as any;
+            const title = anyVc?.boostCredential?.name || anyVc?.name || 'Credential';
+            return { source: 'jsonld', title, raw: vc, platform: 'unknown', claimed: true } as CredentialCandidate;
+          });
+          detectedByTab[tabId] = [...current, ...claimedItems];
+
+          vcapiByTab[tabId] = { state: 'success', offers: offers, url: session?.url, error: null } as any;
+          sendResponse({ ok: true, savedCount });
+        } catch (err) {
+          const tabId = _sender.tab?.id ?? -1;
+          vcapiByTab[tabId] = { state: 'error', error: (err as Error).message } as any;
+          sendResponse({ ok: false, error: (err as Error).message });
+        }
+      })();
+      return true;
+    }
+    case 'cancel-vcapi-exchange': {
+      const tabId = ((message as any).tabId as number | undefined) ?? _sender.tab?.id ?? -1;
+      delete vcapiByTab[tabId];
+      sendResponse({ ok: true });
+      return; // synchronous
     }
     case 'logout': {
       (async () => {
