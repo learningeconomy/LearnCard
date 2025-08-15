@@ -24,7 +24,7 @@ A signed VC with these characteristics:
 - `issuer`: your LearnCard DID
 - `validFrom`: `new Date().toISOString()`
 - `credentialSubject.id`: your LearnCard DID
-- `credentialSubject.legacyAssertion`: the original OBv2 assertion JSON
+- `legacyAssertion`: the original OBv2 assertion JSON
 
 Notes:
 - The wrapper signs the fact that “you attest to this legacy assertion,” not that you were the original OBv2 issuer.
