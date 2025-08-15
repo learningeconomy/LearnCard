@@ -39,6 +39,7 @@ const App = () => {
   const [offerOpenCatIdx, setOfferOpenCatIdx] = useState<number | null>(null);
   const [exchangeBusy, setExchangeBusy] = useState(false);
   const [exchangeError, setExchangeError] = useState<string | null>(null);
+  const [autoPrefilledExchange, setAutoPrefilledExchange] = useState(false);
 
   // Category options: store value, show label
   const CATEGORY_OPTIONS: ReadonlyArray<{ value: CredentialCategory; label: string }> = [
@@ -123,6 +124,20 @@ const App = () => {
     refreshExchangeStatus();
   }, [tabId]);
 
+  // Auto-prefill Exchange URL from detected link candidates (prompt user to start exchange)
+  useEffect(() => {
+    if (!authDid) return; // only prompt when logged in
+    if (exchangeState !== 'idle') return; // don't override an active session
+    if (autoPrefilledExchange) return; // only once per popup open
+    if (exchangeUrl.trim()) return; // don't override user input
+    const link = candidates.find((c) => c.source === 'link' && !!c.url && !c.claimed);
+    if (link?.url) {
+      setExchangeUrl(link.url);
+      setAutoPrefilledExchange(true);
+      setStatus('Detected offer URL from page');
+    }
+  }, [candidates, exchangeState, authDid, autoPrefilledExchange, exchangeUrl]);
+
   const isVc = (data: unknown): data is { '@context': unknown[]; type: string | string[]; name?: string } => {
     if (!data || typeof data !== 'object') return false;
     const obj = data as Record<string, unknown>;
@@ -171,14 +186,20 @@ const App = () => {
   // Keep selection and categories arrays in sync with candidates
   useEffect(() => {
     setSelected((prev) => {
-      const next = candidates.map((c, i) => (c.claimed ? false : (typeof prev[i] === 'boolean' ? prev[i] : true)));
+      const next = candidates.map((c, i) => {
+        if (c.claimed) return false;
+        if (typeof prev[i] === 'boolean') return prev[i] as boolean;
+        // If we auto-prefilled the exchange URL, de-select link candidates by default to encourage VC-API flow
+        if (autoPrefilledExchange && c.source === 'link') return false;
+        return true;
+      });
       return next;
     });
     setCategories((prev) => {
       const next = candidates.map((_, i) => (prev[i] ? prev[i] : 'Achievement'));
       return next as CredentialCategory[];
     });
-  }, [candidates]);
+  }, [candidates, autoPrefilledExchange]);
 
   const analyzeClipboard = async () => {
     setAnalyzeBusy(true);
