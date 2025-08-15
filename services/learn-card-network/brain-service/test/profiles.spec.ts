@@ -2139,5 +2139,105 @@ describe('Profiles', () => {
                 });
             });
         });
+
+        describe('listInvites', () => {
+            it('lists invites with usage info and updates after consumption', async () => {
+                // Create profiles
+                const gen = await userB.clients.fullAuth.profile.generateInvite({ maxUses: 2, expiration: 10 });
+
+                // Initially: one invite with 2 uses remaining
+                const before = await userB.clients.fullAuth.profile.listInvites();
+
+                expect(before.length).toBe(1);
+                expect(before[0]!.challenge).toBe(gen.challenge);
+                expect(before[0]!.maxUses).toBe(2);
+                expect(before[0]!.usesRemaining).toBe(2);
+                expect(typeof before[0]!.expiresIn === 'number' || before[0]!.expiresIn === null).toBeTruthy();
+
+                // Consume once
+                await userA.clients.fullAuth.profile.connectWithInvite({
+                    profileId: 'userb',
+                    challenge: gen.challenge,
+                });
+
+                const afterOne = await userB.clients.fullAuth.profile.listInvites();
+                expect(afterOne.length).toBe(1);
+                expect(afterOne[0]!.usesRemaining).toBe(1);
+
+                // Consume second time (by a different user)
+                await userC.clients.fullAuth.profile.connectWithInvite({
+                    profileId: 'userb',
+                    challenge: gen.challenge,
+                });
+
+                // Exhausted invites should no longer be listed
+                const afterTwo = await userB.clients.fullAuth.profile.listInvites();
+                expect(afterTwo.length).toBe(0);
+            });
+        });
+
+        describe('usage limits', () => {
+            it('supports multi-use invites until exhausted', async () => {
+                const { challenge } = await userB.clients.fullAuth.profile.generateInvite({ maxUses: 2 });
+
+                // First user connects
+                await expect(
+                    userA.clients.fullAuth.profile.connectWithInvite({ profileId: 'userb', challenge })
+                ).resolves.toBe(true);
+
+                // Second user connects
+                await expect(
+                    userC.clients.fullAuth.profile.connectWithInvite({ profileId: 'userb', challenge })
+                ).resolves.toBe(true);
+
+                // Third distinct user should fail (invite exhausted)
+                const userD = await getUser('d'.repeat(64));
+                await userD.clients.fullAuth.profile.createProfile({ profileId: 'userd' });
+
+                await expect(
+                    userD.clients.fullAuth.profile.connectWithInvite({ profileId: 'userb', challenge })
+                ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+            });
+
+            it('supports unlimited invites (maxUses: 0)', async () => {
+                const { challenge } = await userB.clients.fullAuth.profile.generateInvite({ maxUses: 0, expiration: 10 });
+
+                // Listed with unlimited usage
+                const listed = await userB.clients.fullAuth.profile.listInvites();
+                expect(listed.length).toBe(1);
+                expect(listed[0]!.challenge).toBe(challenge);
+                expect(listed[0]!.maxUses).toBeNull();
+                expect(listed[0]!.usesRemaining).toBeNull();
+
+                // Multiple connections succeed
+                await expect(
+                    userA.clients.fullAuth.profile.connectWithInvite({ profileId: 'userb', challenge })
+                ).resolves.toBe(true);
+                await expect(
+                    userC.clients.fullAuth.profile.connectWithInvite({ profileId: 'userb', challenge })
+                ).resolves.toBe(true);
+
+                // Still listed as unlimited
+                const after = await userB.clients.fullAuth.profile.listInvites();
+                expect(after.length).toBe(1);
+                expect(after[0]!.usesRemaining).toBeNull();
+            });
+        });
+
+        describe('invalidateInvite route', () => {
+            it('invalidates a specific invite and prevents future use', async () => {
+                const { challenge } = await userB.clients.fullAuth.profile.generateInvite({ maxUses: 0 });
+
+                // Owner invalidates invite
+                await expect(
+                    userB.clients.fullAuth.profile.invalidateInvite({ challenge })
+                ).resolves.toBe(true);
+
+                // Attempting to use now fails
+                await expect(
+                    userA.clients.fullAuth.profile.connectWithInvite({ profileId: 'userb', challenge })
+                ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+            });
+        });
     });
 });

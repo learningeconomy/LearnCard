@@ -195,3 +195,169 @@ For certain workflows, such as sending a boost (credential) to another profile v
 -   Always check for the availability of key material before issuing credentials server-side. If unavailable, require a signing authority.
 -   Document the expected flow, security implications, and how to set up signing authorities in both code and tests.
 -   Prefer direct HTTP calls in E2E tests for service-only routes, and demonstrate signing authority setup in test code.
+
+## Profile Connection Invites
+
+LearnCard supports creating and managing profile connection invitation links with single-use, multi-use, and unlimited usage, as well as optional expiration.
+
+### Overview
+
+-   Invites are identified by a `challenge` string and are scoped to the profile that created them.
+
+-   Each invite tracks `maxUses` and `usesRemaining`.
+
+-   Unlimited invites have `maxUses = null` and `usesRemaining = null`.
+
+-   Expiration is expressed in seconds. `0` means no expiration.
+
+### Routes
+
+#### Generate Invite
+
+-   Method: `POST`
+
+-   Path: `/profile/generate-invite`
+
+-   Scope: `connections:write`
+
+-   Input:
+
+    ```json
+    {
+      "expiration": 2592000,
+      "challenge": "optional-custom-string",
+      "maxUses": 1
+    }
+    ```
+
+    -   `expiration` (number, optional): Seconds until expiration. Defaults to 30 days. Use `0` for no expiration.
+
+    -   `challenge` (string, optional): Custom challenge; if omitted, a UUID is generated.
+
+    -   `maxUses` (integer, optional): Minimum `0`. Defaults to `1` (single-use). Use `0` for unlimited usage.
+
+-   Response:
+
+    ```json
+    {
+      "profileId": "alice",
+      "challenge": "uuid-or-custom",
+      "expiresIn": 2592000
+    }
+    ```
+
+#### List Invites
+
+-   Method: `GET`
+
+-   Path: `/profile/invites`
+
+-   Scope: `connections:read`
+
+-   Output: Array of invites
+
+    ```json
+    [
+      {
+        "challenge": "abc123",
+        "expiresIn": 1200,
+        "usesRemaining": 2,
+        "maxUses": 5
+      },
+      {
+        "challenge": "unlimited",
+        "expiresIn": null,
+        "usesRemaining": null,
+        "maxUses": null
+      }
+    ]
+    ```
+
+-   Notes:
+
+    -   Exhausted invites (where `usesRemaining === 0`) are omitted.
+
+    -   `expiresIn` is `null` if the invite never expires.
+
+#### Invalidate Invite
+
+-   Method: `POST`
+
+-   Path: `/profile/invite/{challenge}/invalidate`
+
+-   Scope: `connections:write`
+
+-   Output: `true` on success.
+
+#### Connect Using Invite
+
+-   Method: `POST`
+
+-   Path: `/profile/{profileId}/connect/{challenge}`
+
+-   Scope: `profiles:write`
+
+-   Behavior:
+
+    -   Validates that the invite exists, is not expired, and has remaining uses (or is unlimited).
+
+    -   On successful connection, consumes one use for finite invites (decrements `usesRemaining`).
+
+    -   Returns `404` if invite is invalid or expired.
+
+### Behavior & Storage Details
+
+-   Cache key format: `inviteChallenge:{profileId}:{challenge}`.
+
+-   Stored value is JSON with `{ maxUses, usesRemaining }`.
+
+-   Unlimited usage: `maxUses = null` and `usesRemaining = null`.
+
+-   Expiration TTL:
+
+    -   `expiration = 0` stores without TTL (never expires); `expiresIn` will be `null`.
+
+    -   Positive `expiration` stores the TTL in seconds; listing returns remaining seconds as `expiresIn`.
+
+-   When `usesRemaining` reaches `0`, the invite is considered exhausted and will not be listed. The key may be deleted during consumption.
+
+-   Backward compatibility: Older invites stored as `'valid'` or `'never'` are parsed and treated as single-use or unlimited, respectively.
+
+### Examples
+
+Create a 2-use invite expiring in 10 minutes:
+
+```bash
+curl -X POST \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"maxUses":2, "expiration":600}' \
+  https://<host>/profile/generate-invite
+```
+
+List invites:
+
+```bash
+curl -H "Authorization: Bearer <token>" \
+  https://<host>/profile/invites
+```
+
+Invalidate an invite:
+
+```bash
+curl -X POST \
+  -H "Authorization: Bearer <token>" \
+  https://<host>/profile/invite/<challenge>/invalidate
+```
+
+Connect using an invite:
+
+```bash
+curl -X POST \
+  -H "Authorization: Bearer <token>" \
+  https://<host>/profile/<profileId>/connect/<challenge>
+```
+
+### Testing
+
+-   See `test/profiles.spec.ts` for unit/integration coverage of generation, listing, consumption, unlimited behavior, and invalidation.

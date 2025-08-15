@@ -60,6 +60,8 @@ import {
     isInviteValidForProfile,
     setValidInviteForProfile,
     invalidateInvite,
+    getValidInvitesForProfile,
+    consumeInviteUseForProfile,
 } from '@cache/invites';
 import { getLearnCard } from '@helpers/learnCard.helpers';
 import {
@@ -246,7 +248,7 @@ export const profilesRouter = t.router({
             const isViewingSelf = selfProfile?.profileId === profile.profileId;
 
             if (!isViewingSelf) {
-                const { dob, ...sanitizedProfile } = profile;
+                const { dob: _dob, ...sanitizedProfile } = profile;
                 return sanitizedProfile;
             }
 
@@ -579,7 +581,7 @@ export const profilesRouter = t.router({
                 path: '/profile/{profileId}/connect/{challenge}',
                 tags: ['Profiles'],
                 summary: 'Connect using an invitation',
-                description: 'Connects with another profile using an invitation challenge',
+                description: 'Connects with another profile using an invitation challenge. Respects invite usage and expiration; succeeds while the invite is valid (usesRemaining is null or > 0) and not expired. Returns 404 if the invite is invalid or expired.',
             },
             requiredScope: 'profiles:write',
         })
@@ -610,7 +612,7 @@ export const profilesRouter = t.router({
             const success = await connectProfiles(profile, targetProfile, false);
 
             if (success) {
-                await invalidateInvite(profileId, challenge);
+                await consumeInviteUseForProfile(profileId, challenge);
             }
 
             return success;
@@ -864,7 +866,7 @@ export const profilesRouter = t.router({
                 tags: ['Profiles'],
                 summary: 'Generate a connection invitation',
                 description:
-                    'This route creates a one-time challenge that an unknown profile can use to connect with this account',
+                    'Generate a connection invitation challenge. By default, invites are single-use; set maxUses > 1 for multi-use, or maxUses = 0 for unlimited. Expiration is in seconds (default 30 days); set expiration = 0 for no expiration.',
             },
             requiredScope: 'connections:write',
         })
@@ -876,6 +878,12 @@ export const profilesRouter = t.router({
                         .optional()
                         .default(30 * 24 * 3600), // Default to 30 days in seconds
                     challenge: z.string().optional(),
+                    maxUses: z
+                        .number()
+                        .int()
+                        .min(0)
+                        .optional()
+                        .default(1) // Default single-use invites
                 })
                 .optional()
                 .default({})
@@ -896,7 +904,7 @@ export const profilesRouter = t.router({
                 });
             }
 
-            const { expiration = 3600, challenge: inputChallenge } = input; // expiration now in seconds by default
+            const { expiration = 3600, challenge: inputChallenge, maxUses } = input; // expiration now in seconds by default
 
             // Use UUID for challenge if none is provided
             const challenge = inputChallenge || uuid();
@@ -912,10 +920,63 @@ export const profilesRouter = t.router({
 
             let expiresIn: number | null = expiration === 0 ? null : expiration;
 
-            // Set the invite with the calculated expiration time
-            await setValidInviteForProfile(profile.profileId, challenge, expiresIn ?? null);
+            // Set the invite with the calculated expiration time and usage limits
+            await setValidInviteForProfile(profile.profileId, challenge, expiresIn ?? null, maxUses);
 
             return { profileId: profile.profileId, challenge, expiresIn };
+        }),
+
+    // List all valid invites for the current user
+    listInvites: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/profile/invites',
+                tags: ['Profiles'],
+                summary: 'List valid connection invitations',
+                description: "List all valid connection invitation links you've created. Each item includes: challenge, expiresIn (seconds or null), usesRemaining (number or null), and maxUses (number or null). Exhausted invites are omitted.",
+            },
+            requiredScope: 'connections:read',
+        })
+        .input(z.void())
+        .output(
+            z
+                .object({
+                    challenge: z.string(),
+                    expiresIn: z.number().nullable(),
+                    usesRemaining: z.number().nullable(),
+                    maxUses: z.number().nullable(),
+                })
+                .array()
+        )
+        .query(async ({ ctx }) => {
+            const invites = await getValidInvitesForProfile(ctx.user.profile.profileId);
+
+            return invites;
+        }),
+
+    // Invalidate a specific invite by challenge for the current user
+    invalidateInvite: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/profile/invite/{challenge}/invalidate',
+                tags: ['Profiles'],
+                summary: 'Invalidate an invitation',
+                description: 'Invalidate a specific connection invitation by its challenge string. Idempotent: returns true even if the invite was already invalid or missing.',
+            },
+            requiredScope: 'connections:write',
+        })
+        .input(z.object({ challenge: z.string() }))
+        .output(z.boolean())
+        .mutation(async ({ ctx, input }) => {
+            const { challenge } = input;
+
+            await invalidateInvite(ctx.user.profile.profileId, challenge);
+
+            return true;
         }),
 
     blockProfile: profileRoute
