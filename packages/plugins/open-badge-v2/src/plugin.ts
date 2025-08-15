@@ -1,6 +1,7 @@
 import { LearnCard } from '@learncard/core';
 import { UnsignedVC, VC } from '@learncard/types';
-import { VCPluginMethods } from '@learncard/vc-plugin';
+import { UnsignedVC, VC } from '@learncard/types';
+import { randomUUID } from 'crypto';
 
 import {
     OpenBadgeV2Plugin,
