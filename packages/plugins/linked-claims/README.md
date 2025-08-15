@@ -21,7 +21,6 @@ const endorsement = await lc.invoke.endorseCredential(originalVc, {
   endorsementComment: 'I endorse this credential.',
   name: `Endorsement of ${originalVc.id ?? originalVc.credentialSubject?.id}`,
   description: 'Peer endorsement',
-  evidence: [{ type: 'Evidence', id: originalVc.id ?? originalVc.credentialSubject?.id }],
 });
 
 const verified = await lc.invoke.verifyEndorsement(endorsement);
@@ -46,4 +45,3 @@ Uses VC v2 and OBv3 contexts:
 - `endorsementComment?: string`
 - `name?: string`
 - `description?: string`
-- `evidence?: { type: string | [string, ...string[]]; id?: string }[]`
