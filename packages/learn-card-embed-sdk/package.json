@@ -1,0 +1,41 @@
+{
+  "name": "@learncard/embed-sdk",
+  "version": "0.1.0",
+  "description": "LearnCard Embed SDK for credential claim modal (MVP V1)",
+  "main": "dist/learncard.js",
+  "module": "dist/learncard.esm.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/learncard.esm.js",
+      "require": "./dist/learncard.js",
+      "default": "./dist/learncard.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "sideEffects": false,
+  "scripts": {
+    "build": "rollup -c",
+    "dev": "rollup -c -w",
+    "typecheck": "tsc --noEmit"
+  },
+  "license": "MIT",
+  "author": "Learning Economy Foundation (www.learningeconomy.io)",
+  "dependencies": {
+    "preact": "^10.20.2"
+  },
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^22.0.2",
+    "@rollup/plugin-node-resolve": "^13.3.0",
+    "@rollup/plugin-replace": "^5.0.2",
+    "@types/node": "^18.19.64",
+    "rollup-plugin-delete": "^2.0.0",
+    "rollup-plugin-dts": "^4.2.2",
+    "rollup": "^2.79.1",
+    "rollup-plugin-esbuild": "^4.9.1",
+    "typescript": "^5.4.5"
+  },
+  "files": [
+    "dist/**"
+  ]
+}

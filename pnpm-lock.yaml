@@ -535,6 +535,40 @@ importers:
         specifier: ^1.8.10
         version: 1.8.11
 
+  packages/learn-card-embed-sdk:
+    dependencies:
+      preact:
+        specifier: ^10.20.2
+        version: 10.27.1
+    devDependencies:
+      '@rollup/plugin-commonjs':
+        specifier: ^22.0.2
+        version: 22.0.2(rollup@2.79.2)
+      '@rollup/plugin-node-resolve':
+        specifier: ^13.3.0
+        version: 13.3.0(rollup@2.79.2)
+      '@rollup/plugin-replace':
+        specifier: ^5.0.2
+        version: 5.0.7(rollup@2.79.2)
+      '@types/node':
+        specifier: ^18.19.64
+        version: 18.19.83
+      rollup:
+        specifier: ^2.79.1
+        version: 2.79.2
+      rollup-plugin-delete:
+        specifier: ^2.0.0
+        version: 2.2.0(rollup@2.79.2)
+      rollup-plugin-dts:
+        specifier: ^6.1.1
+        version: 6.2.3(rollup@2.79.2)(typescript@5.6.2)
+      rollup-plugin-esbuild:
+        specifier: ^4.9.1
+        version: 4.10.3(esbuild@0.25.1)(rollup@2.79.2)
+      typescript:
+        specifier: 5.6.2
+        version: 5.6.2
+
   packages/learn-card-helpers:
     dependencies:
       '@learncard/types':
@@ -3059,6 +3093,10 @@ packages:
     resolution: {integrity: sha512-RJlIHRueQgwWitWgF8OdFYGZX328Ax5BCemNGlqHfplnRT9ESi8JkFlvaVYbS+UubVY6dpv87Fs2u5M29iNFVQ==}
     engines: {node: '>=6.9.0'}
 
+  '@babel/code-frame@7.27.1':
+    resolution: {integrity: sha512-cjQ7ZlQ0Mv3b47hABuTevyTuYN4i+loJKGeV9flcCgIK37cCXRh+L1bd3iBHlynerhQ7BhCkn2BPbQUL+rGqFg==}
+    engines: {node: '>=6.9.0'}
+
   '@babel/compat-data@7.26.8':
     resolution: {integrity: sha512-oH5UPLMWR3L2wEFLnFJ1TZXqHufiTKAiLfqw5zkhS4dKXLJ10yVztfil/twG8EDTA4F/tvVNw9nOl4ZMslB8rQ==}
     engines: {node: '>=6.9.0'}
@@ -3147,6 +3185,10 @@ packages:
 
   '@babel/helper-validator-identifier@7.25.9':
     resolution: {integrity: sha512-Ed61U6XJc3CVRfkERJWDz4dJwKe7iLmmJsbOGu9wSloNSFttHV0I8g6UAgb7qnK5ly5bGLPd4oXZlxCdANBOWQ==}
+    engines: {node: '>=6.9.0'}
+
+  '@babel/helper-validator-identifier@7.27.1':
+    resolution: {integrity: sha512-D2hP9eA+Sqx1kBZgzxZh0y1trbuU+JoDkiEwqhQ36nodYqJwyEIhPSdMNd7lOm/4io72luTPWH20Yda0xOuUow==}
     engines: {node: '>=6.9.0'}
 
   '@babel/helper-validator-option@7.25.9':
@@ -6773,6 +6815,15 @@ packages:
     engines: {node: '>= 10.0.0'}
     peerDependencies:
       rollup: ^2.42.0
+
+  '@rollup/plugin-replace@5.0.7':
+    resolution: {integrity: sha512-PqxSfuorkHz/SPpyngLyg5GCEkOcee9M1bkxiVDr41Pd61mqP1PLOoDPbpl44SB2mQGKwV/In74gqQmGITOhEQ==}
+    engines: {node: '>=14.0.0'}
+    peerDependencies:
+      rollup: ^1.20.0||^2.0.0||^3.0.0||^4.0.0
+    peerDependenciesMeta:
+      rollup:
+        optional: true
 
   '@rollup/pluginutils@3.1.0':
     resolution: {integrity: sha512-GksZ6pr6TpIjHm8h9lSQ8pi8BE9VeubNT0OMJ3B5uZJ8pz73NPiqOtCog/x2/QzM1ENChPKxMDhiQuRHsqc+lg==}
@@ -16946,6 +16997,9 @@ packages:
   postmark@4.0.5:
     resolution: {integrity: sha512-nerZdd3TwOH4CgGboZnlUM/q7oZk0EqpZgJL+Y3Nup8kHeaukxouQ6JcFF3EJEijc4QbuNv1TefGhboAKtf/SQ==}
 
+  preact@10.27.1:
+    resolution: {integrity: sha512-V79raXEWch/rbqoNc7nT9E4ep7lu+mI3+sBmfRD4i1M73R3WLYcCtdI0ibxGVf4eQL8ZIz2nFacqEC+rmnOORQ==}
+
   preferred-pm@3.1.4:
     resolution: {integrity: sha512-lEHd+yEm22jXdCphDrkvIJQU66EuLojPPtvZkpKIkiD+l0DMThF/niqZKJSoU8Vl7iuvtmzyMhir9LdVy5WMnA==}
     engines: {node: '>=10'}
@@ -17915,6 +17969,13 @@ packages:
     engines: {node: '>=v12.22.12'}
     peerDependencies:
       rollup: ^2.55
+      typescript: 5.6.2
+
+  rollup-plugin-dts@6.2.3:
+    resolution: {integrity: sha512-UgnEsfciXSPpASuOelix7m4DrmyQgiaWBnvI0TM4GxuDh5FkqW8E5hu57bCxXB90VvR1WNfLV80yEDN18UogSA==}
+    engines: {node: '>=16'}
+    peerDependencies:
+      rollup: ^3.29.4 || ^4
       typescript: 5.6.2
 
   rollup-plugin-esbuild@4.10.3:
@@ -22017,6 +22078,13 @@ snapshots:
       js-tokens: 4.0.0
       picocolors: 1.1.1
 
+  '@babel/code-frame@7.27.1':
+    dependencies:
+      '@babel/helper-validator-identifier': 7.27.1
+      js-tokens: 4.0.0
+      picocolors: 1.1.1
+    optional: true
+
   '@babel/compat-data@7.26.8': {}
 
   '@babel/core@7.12.9':
@@ -22179,6 +22247,9 @@ snapshots:
   '@babel/helper-string-parser@7.25.9': {}
 
   '@babel/helper-validator-identifier@7.25.9': {}
+
+  '@babel/helper-validator-identifier@7.27.1':
+    optional: true
 
   '@babel/helper-validator-option@7.25.9': {}
 
@@ -27670,6 +27741,13 @@ snapshots:
       is-builtin-module: 3.2.1
       is-module: 1.0.0
       resolve: 1.22.10
+      rollup: 2.79.2
+
+  '@rollup/plugin-replace@5.0.7(rollup@2.79.2)':
+    dependencies:
+      '@rollup/pluginutils': 5.1.4(rollup@2.79.2)
+      magic-string: 0.30.17
+    optionalDependencies:
       rollup: 2.79.2
 
   '@rollup/pluginutils@3.1.0(rollup@2.79.2)':
@@ -42060,6 +42138,8 @@ snapshots:
     transitivePeerDependencies:
       - debug
 
+  preact@10.27.1: {}
+
   preferred-pm@3.1.4:
     dependencies:
       find-up: 5.0.0
@@ -43347,6 +43427,14 @@ snapshots:
       typescript: 5.6.2
     optionalDependencies:
       '@babel/code-frame': 7.26.2
+
+  rollup-plugin-dts@6.2.3(rollup@2.79.2)(typescript@5.6.2):
+    dependencies:
+      magic-string: 0.30.17
+      rollup: 2.79.2
+      typescript: 5.6.2
+    optionalDependencies:
+      '@babel/code-frame': 7.27.1
 
   rollup-plugin-esbuild@4.10.3(esbuild@0.14.54)(rollup@2.79.2):
     dependencies:
