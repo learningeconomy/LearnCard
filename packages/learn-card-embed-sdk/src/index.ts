@@ -130,7 +130,9 @@ function openModal(opts: InitOptions): { close: () => void } {
   }
 
   function onMessage(ev: MessageEvent) {
-    if (ev.source !== iframe.contentWindow) return;
+    // In real browsers, ev.source will be the iframe's contentWindow. In jsdom, iframe.contentWindow is null
+    // and ev.source may be null. Only enforce strict equality when both values are available.
+    if (iframe.contentWindow && ev.source && ev.source !== iframe.contentWindow) return;
     const data = ev.data;
     if (!isTrustedMessage(data, nonce)) return;
     const details = data.payload;

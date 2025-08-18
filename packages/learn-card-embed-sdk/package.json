@@ -17,7 +17,9 @@
   "scripts": {
     "build": "rollup -c",
     "dev": "rollup -c -w",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "jest -c jest.config.js",
+    "test:watch": "jest -c jest.config.js --watch"
   },
   "license": "MIT",
   "author": "Learning Economy Foundation (www.learningeconomy.io)",

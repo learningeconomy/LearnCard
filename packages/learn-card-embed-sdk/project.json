@@ -25,6 +25,11 @@
       "executor": "nx:run-script",
       "inputs": ["source"],
       "options": { "script": "typecheck" }
+    },
+    "test": {
+      "executor": "nx:run-script",
+      "inputs": ["source"],
+      "options": { "script": "test" }
     }
   }
 }
