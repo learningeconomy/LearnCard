@@ -1,0 +1,99 @@
+---
+const course = {
+  title: 'Intro to Web3',
+  provider: 'Acme Academy',
+  description:
+    'You completed a 4-week introductory course covering decentralized identity, verifiable credentials, and web3 fundamentals.',
+  badgeName: 'Intro to Web3 — Course Completion',
+};
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{course.title} • Completion</title>
+    <meta name="description" content={`Claim your credential for ${course.title} at ${course.provider}`} />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <style>
+      :root { color-scheme: light dark; }
+      html, body { height: 100%; }
+      body { margin: 0; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; background: #0b1020; }
+      .gradient { background: radial-gradient(1200px 600px at 20% -10%, rgba(31,81,255,0.35), transparent), radial-gradient(1000px 500px at 100% 0%, rgba(15,59,217,0.25), transparent); }
+      .card { backdrop-filter: blur(8px); background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; }
+      .muted { color: rgba(255,255,255,0.75); }
+      .pill { display:inline-flex; gap:.5rem; align-items:center; padding:.25rem .5rem; border-radius:999px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.08); font-size:12px }
+      .footer { color: rgba(255,255,255,0.6); font-size: 12px; margin-top: 2rem; text-align:center }
+      .success { display:none; margin-top: 1rem; padding: .75rem 1rem; border-radius: 10px; background: rgba(16,185,129,0.15); color: #34D399; border: 1px solid rgba(16,185,129,0.35); }
+      .success.show { display:block }
+    </style>
+  </head>
+  <body>
+    <main class="gradient" style="min-height: 100%; display: grid; place-items: center; padding: 48px 16px;">
+      <section class="card" style="max-width: 920px; width: 100%; padding: 28px;">
+        <div style="display:flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; align-items: center;">
+          <div>
+            <div class="pill">
+              <span style="opacity:.8">Course Complete</span>
+              <span style="width:6px; height:6px; border-radius:50%; background:#10B981"></span>
+            </div>
+            <h1 style="margin:.5rem 0 0; font-size: 28px; color: #fff;">{course.title}</h1>
+            <p class="muted" style="margin:.5rem 0 0;">by {course.provider}</p>
+          </div>
+          <img alt="Course Illustration" width="120" height="120" style="border-radius: 12px; border:1px solid rgba(255,255,255,.08)" src="https://images.unsplash.com/photo-1556157382-97eda2d62296?q=80&w=360&auto=format&fit=crop" />
+        </div>
+
+        <div style="display:grid; grid-template-columns: 1.2fr .8fr; gap: 24px; margin-top: 28px; align-items: start;">
+          <div>
+            <h2 style="margin: 0; font-size: 18px; color: #fff;">What you learned</h2>
+            <ul class="muted" style="margin:.5rem 0 0; padding-left: 1rem; line-height: 1.6;">
+              <li>Decentralized identity (DID) concepts</li>
+              <li>Verifiable Credentials (VCs) fundamentals</li>
+              <li>Wallets, attestations, and trust flows</li>
+              <li>Using LearnCard to claim and manage credentials</li>
+            </ul>
+          </div>
+          <div>
+            <div class="card" style="padding: 16px;">
+              <h3 style="margin: 0 0 .5rem; color: #fff; font-size: 16px;">Claim your credential</h3>
+              <p class="muted" style="margin: 0 0 1rem;">Add the completion credential for “{course.title}” to your LearnCard wallet.</p>
+              <div id="claim-target"></div>
+              <div id="success-msg" class="success">Credential claimed! You can view it in your LearnCard wallet.</div>
+            </div>
+          </div>
+        </div>
+
+        <p class="footer">Powered by LearnCard • <a style="color:#93C5FD" href="https://docs.learncard.com" target="_blank" rel="noreferrer noopener">Docs</a></p>
+      </section>
+    </main>
+
+    <script type="module">
+      import { init } from '@learncard/embed-sdk';
+
+      const partner = 'acme-academy';
+      const partnerName = 'Acme Academy';
+      const credentialName = {JSON.stringify(`${course.title} — Course Completion`)};
+
+      window.addEventListener('DOMContentLoaded', () => {
+        init({
+          partnerId: partner,
+          partnerName,
+          target: '#claim-target',
+          credential: { name: credentialName },
+          requestBackgroundIssuance: true,
+          branding: {
+            primaryColor: '#1F51FF',
+            accentColor: '#0F3BD9',
+            partnerLogoUrl: 'https://avatars.githubusercontent.com/u/9919?s=200&v=4'
+          },
+          onSuccess: () => {
+            const el = document.getElementById('success-msg');
+            if (el) el.classList.add('show');
+          },
+        });
+      });
+    </script>
+  </body>
+</html>
