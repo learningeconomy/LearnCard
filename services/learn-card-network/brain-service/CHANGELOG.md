@@ -1,5 +1,11 @@
 # @learncard/network-brain-service
 
+## 3.5.18
+
+### Patch Changes
+
+-   [`110f04e2b4687848fee71b315843c746fdff9772`](https://github.com/learningeconomy/LearnCard/commit/110f04e2b4687848fee71b315843c746fdff9772) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Fix bug with autoConnectRecipients
+
 ## 3.5.17
 
 ### Patch Changes
