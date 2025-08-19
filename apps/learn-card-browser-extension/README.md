@@ -97,28 +97,91 @@ The content script currently detects:
     </script>
     ```
 
-When something is detected, the extension badge shows "1". Click the icon to open the popup and press "Add to LearnCard" to save. Saved items are persisted to `chrome.storage.local` under the `savedCredentials` key for now.
+## Testing
 
+- __Run tests__
+  - From repo root: `pnpm --filter learn-card-browser-extension test`
+  - Or from the app dir: `pnpm test`
+
+- __Vitest + jsdom__
+  - Tests that touch the DOM (detectors) use Vitest's jsdom environment via a file header:
+    ```ts
+    // @vitest-environment jsdom
+    ```
+  - You can then create DOM fixtures by setting `document.body.innerHTML`.
+
+- __What is covered__
+  - Detectors: `src/detectors/__tests__/` validate link extraction, JSON-LD parsing, and de-duping via `runDetectors()`.
+  - Transformers: `src/transformers/__tests__/` validate JSON-LD pass-through and VC-API/fetch flows via mocked helper functions.
+
+Example detector test snippet:
+
+```ts
+// @vitest-environment jsdom
+import { describe, it, expect, beforeEach } from 'vitest';
+import { linksDetector } from '../../detectors/links';
+
+beforeEach(() => { document.body.innerHTML = ''; });
+
+describe('linksDetector', () => {
+  it('extracts normalized HTTPS URLs from protocol links', () => {
+    document.body.innerHTML = '<a href="msprequest://request?vc_request_url=https%3A%2F%2Fissuer.example%2Fex">Go</a>';
+    const out = linksDetector();
+    expect(out[0].url).toBe('https://issuer.example/ex');
+  });
+});
+```
+
+## Plugin architecture
+
+- __Detectors__ (`src/detectors/`)
+  - Contract: `type Detector = () => CredentialCandidate[]`
+  - Add a new file (e.g., `acme.ts`) that returns candidates; register it by pushing its results in `src/detectors/index.ts`.
+  - Prefer using `src/utils/links.ts` for any protocol/param normalization logic.
+
+- __Transformers__ (`src/transformers/`)
+  - Contract:
+    ```ts
+    type Transformer = {
+      id: string;
+      canTransform: (candidate: CredentialCandidate) => boolean;
+      transform: (candidate, helpers) => Promise<{ vcs: unknown[] } | null>;
+    }
+    ```
+  - Add a transformer and register it in `src/transformers/index.ts` (order matters). Keep guards narrow in `canTransform`.
+  - Use provided helpers: `postJson`, `fetchJson`, and `getDidAuthVp` for VC-API flows.
 
 ## Architecture overview
 
 - __Messaging__ (`src/types/messages.ts`)
-  - `credential-detected`: sent by `content/main.ts` → received by `background/main.ts`
-  - `get-detected`: popup asks background for current candidate
-  - `save-credential`: popup triggers save in background
-
-- __Background__ (`src/background/main.ts`)
-  - Maintains the in-memory current detection and action badge
-  - Persists saves to `chrome.storage.local`
-  - Stubbed LearnCard persistence point is marked with `TODO`
+  - `credentials-detected`: sent by `content/main.ts` → received by `background/main.ts`
+  - `get-detected`, `save-credential`, `save-credentials`, `check-claimed`, etc.
 
 - __Content script__ (`src/content/main.ts`)
-  - Scans anchors (`dccrequest://`, `msrequest://`)
-  - Scans JSON-LD blocks for VC-like structures
-  - Sends `credential-detected` once per page load
+  - Delegates page scanning to pluggable detectors (`src/detectors/`)
+  - De-dupes results and notifies background with `credentials-detected`
+
+- __Detectors__ (`src/detectors/`)
+  - `links.ts`: finds custom-scheme links and extracts normalized HTTPS exchange URLs via `src/utils/links.ts`
+  - `jsonld.ts`: finds VC-shaped JSON-LD from `<script type="application/ld+json">` and heuristically from `pre/code`
+  - `index.ts`: runs all detectors and de-dupes candidates
+
+- __Background__ (`src/background/main.ts`)
+  - Tracks detections per tab and updates the action badge
+  - For save/exchange flows, forwards to the offscreen document
+
+- __Offscreen document__ (`src/offscreen.ts`)
+  - Initializes LearnCard (`@learncard/init`)
+  - Uses pluggable transformers (`src/transformers/`) to turn candidates into VCs
+  - Encrypts/uploads to LearnCloud and indexes by canonical ID
+
+- __Transformers__ (`src/transformers/`)
+  - `jsonld-pass-through`: passes through JSON-LD VC objects
+  - `vcapi-or-fetch`: runs VC-API challenge/response; falls back to GET JSON when needed
+  - `index.ts`: tries transformers in order until VCs are produced
 
 - __Popup__ (`src/popup/`)
-  - Minimal UI that shows the candidate and a save button
+  - Inbox UI that lists detected credentials with category selection and bulk save
 
 
 ## LearnCard SDK integration (next)
