@@ -3,10 +3,11 @@
   Exposes global LearnCard.init(...) when built as IIFE.
 */
 
-import preactUmd from 'preact/dist/preact.min.umd.js';
-import islandScript from './iframe/island.js';
+/// <reference path="./ambient.d.ts" />
+
+import islandScript from './iframe/island-vanilla.js';
 import { createGlobalStyleEl, iframeCss } from './styles';
-import { getTargetEl, el } from './dom';
+import { getTargetEl } from './dom';
 import { createNonce } from './security';
 import type { InitOptions, KnownMessages } from './types';
 
@@ -55,7 +56,6 @@ function buildIframeHtml(opts: InitOptions, nonce: string, parentOrigin: string)
   <body>
     <div id="root"></div>
     <script>window.__LC_EMBED__ = ${JSON.stringify(cfg)};<\/script>
-    <script>${preactUmd}<\/script>
     <script>${islandScript}<\/script>
   </body>
 </html>`;

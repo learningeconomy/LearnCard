@@ -28,9 +28,8 @@ export default [
       del({ targets: ['dist/*'] }),
       string({
         include: [
-          '**/preact/dist/preact.min.umd.js',
-          'packages/learn-card-embed-sdk/src/iframe/island.js',
-          'src/iframe/island.js',
+          'packages/learn-card-embed-sdk/src/iframe/island-vanilla.js',
+          'src/iframe/island-vanilla.js',
         ],
       }),
       replace({

@@ -9,5 +9,6 @@ module.exports = {
   moduleNameMapper: {
     '^preact/dist/preact\\.min\\.umd\\.js$': '<rootDir>/__mocks__/stringMock.js',
     '^\\./iframe/island\\.js$': '<rootDir>/__mocks__/stringMock.js',
+    '^\\./iframe/island-vanilla\\.js$': '<rootDir>/__mocks__/stringMock.js',
   },
 };

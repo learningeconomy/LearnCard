@@ -23,9 +23,6 @@
   },
   "license": "MIT",
   "author": "Learning Economy Foundation (www.learningeconomy.io)",
-  "dependencies": {
-    "preact": "^10.20.2"
-  },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^22.0.2",
     "@rollup/plugin-node-resolve": "^13.3.0",
@@ -35,6 +32,7 @@
     "rollup-plugin-dts": "^4.2.2",
     "rollup": "^2.79.1",
     "rollup-plugin-esbuild": "^4.9.1",
+    "rollup-plugin-string": "^3.0.0",
     "typescript": "^5.4.5"
   },
   "files": [

@@ -6,6 +6,7 @@ const course = {
     'You completed a 4-week introductory course covering decentralized identity, verifiable credentials, and web3 fundamentals.',
   badgeName: 'Intro to Web3 — Course Completion',
 };
+
 ---
 
 <html lang="en">
@@ -59,7 +60,7 @@ const course = {
             <div class="card" style="padding: 16px;">
               <h3 style="margin: 0 0 .5rem; color: #fff; font-size: 16px;">Claim your credential</h3>
               <p class="muted" style="margin: 0 0 1rem;">Add the completion credential for “{course.title}” to your LearnCard wallet.</p>
-              <div id="claim-target"></div>
+              <div id="claim-target" data-credential-name={`${course.title} — Course Completion`}></div>
               <div id="success-msg" class="success">Credential claimed! You can view it in your LearnCard wallet.</div>
             </div>
           </div>
@@ -69,31 +70,6 @@ const course = {
       </section>
     </main>
 
-    <script type="module">
-      import { init } from '@learncard/embed-sdk';
-
-      const partner = 'acme-academy';
-      const partnerName = 'Acme Academy';
-      const credentialName = {JSON.stringify(`${course.title} — Course Completion`)};
-
-      window.addEventListener('DOMContentLoaded', () => {
-        init({
-          partnerId: partner,
-          partnerName,
-          target: '#claim-target',
-          credential: { name: credentialName },
-          requestBackgroundIssuance: true,
-          branding: {
-            primaryColor: '#1F51FF',
-            accentColor: '#0F3BD9',
-            partnerLogoUrl: 'https://avatars.githubusercontent.com/u/9919?s=200&v=4'
-          },
-          onSuccess: () => {
-            const el = document.getElementById('success-msg');
-            if (el) el.classList.add('show');
-          },
-        });
-      });
-    </script>
+    <script type="module" src="/src/scripts/embed-init.ts"></script>
   </body>
 </html>

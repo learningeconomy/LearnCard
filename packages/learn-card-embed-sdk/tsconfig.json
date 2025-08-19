@@ -8,8 +8,6 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "jsx": "react-jsx",
-    "jsxImportSource": "preact",
     "resolveJsonModule": true,
     "types": ["node", "jest"],
     "baseUrl": ".",

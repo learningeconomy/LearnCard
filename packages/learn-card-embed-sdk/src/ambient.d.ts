@@ -7,3 +7,8 @@ declare module './iframe/island.js' {
   const content: string;
   export default content;
 }
+
+declare module './iframe/island-vanilla.js' {
+  const content: string;
+  export default content;
+}

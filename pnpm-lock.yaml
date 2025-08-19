@@ -191,6 +191,19 @@ importers:
         specifier: ^0.5.4
         version: 0.5.5
 
+  examples/embed-example:
+    dependencies:
+      '@learncard/embed-sdk':
+        specifier: workspace:^
+        version: link:../../packages/learn-card-embed-sdk
+      astro:
+        specifier: ^4.7.0
+        version: 4.16.18(@types/node@22.13.14)(less@4.2.2)(lightningcss@1.27.0)(rollup@4.37.0)(terser@5.39.0)(typescript@5.6.2)
+    devDependencies:
+      prettier-plugin-astro:
+        specifier: ^0.5.4
+        version: 0.5.5
+
   examples/snap-chapi-example:
     dependencies:
       '@astrojs/react':
@@ -560,11 +573,14 @@ importers:
         specifier: ^2.0.0
         version: 2.2.0(rollup@2.79.2)
       rollup-plugin-dts:
-        specifier: ^6.1.1
-        version: 6.2.3(rollup@2.79.2)(typescript@5.6.2)
+        specifier: ^4.2.2
+        version: 4.2.3(rollup@2.79.2)(typescript@5.6.2)
       rollup-plugin-esbuild:
         specifier: ^4.9.1
         version: 4.10.3(esbuild@0.25.1)(rollup@2.79.2)
+      rollup-plugin-string:
+        specifier: ^3.0.0
+        version: 3.0.0
       typescript:
         specifier: 5.6.2
         version: 5.6.2
@@ -17971,13 +17987,6 @@ packages:
       rollup: ^2.55
       typescript: 5.6.2
 
-  rollup-plugin-dts@6.2.3:
-    resolution: {integrity: sha512-UgnEsfciXSPpASuOelix7m4DrmyQgiaWBnvI0TM4GxuDh5FkqW8E5hu57bCxXB90VvR1WNfLV80yEDN18UogSA==}
-    engines: {node: '>=16'}
-    peerDependencies:
-      rollup: ^3.29.4 || ^4
-      typescript: 5.6.2
-
   rollup-plugin-esbuild@4.10.3:
     resolution: {integrity: sha512-RILwUCgnCL5vo8vyZ/ZpwcqRuE5KmLizEv6BujBQfgXFZ6ggcS0FiYvQN+gsTJfWCMaU37l0Fosh4eEufyO97Q==}
     engines: {node: '>=12'}
@@ -17994,6 +18003,9 @@ packages:
     resolution: {integrity: sha512-Y/gD3abliw3F20uY6ILpmH6sokXKntuTFKvDdLEJxHFcyQRsTb12u2KbsapqPZDa4JN/Nxx7BslYlZ/KmYAtPg==}
     peerDependencies:
       rollup: '>0.60'
+
+  rollup-plugin-string@3.0.0:
+    resolution: {integrity: sha512-vqyzgn9QefAgeKi+Y4A7jETeIAU1zQmS6VotH6bzm/zmUQEnYkpIGRaOBPY41oiWYV4JyBoGAaBjYMYuv+6wVw==}
 
   rollup-plugin-styles@4.0.0:
     resolution: {integrity: sha512-A2K2sao84OsTmDxXG83JTCdXWrmgvQkkI38XDat46rdtpGMRm9tSYqeCdlwwGDJF4kKIafhV1mUidqu8MxUGig==}
@@ -22268,7 +22280,7 @@ snapshots:
 
   '@babel/highlight@7.25.9':
     dependencies:
-      '@babel/helper-validator-identifier': 7.25.9
+      '@babel/helper-validator-identifier': 7.27.1
       chalk: 2.4.2
       js-tokens: 4.0.0
       picocolors: 1.1.1
@@ -39711,7 +39723,7 @@ snapshots:
 
   metro@0.81.4:
     dependencies:
-      '@babel/code-frame': 7.26.2
+      '@babel/code-frame': 7.27.1
       '@babel/core': 7.26.10
       '@babel/generator': 7.27.0
       '@babel/parser': 7.27.0
@@ -43428,14 +43440,6 @@ snapshots:
     optionalDependencies:
       '@babel/code-frame': 7.26.2
 
-  rollup-plugin-dts@6.2.3(rollup@2.79.2)(typescript@5.6.2):
-    dependencies:
-      magic-string: 0.30.17
-      rollup: 2.79.2
-      typescript: 5.6.2
-    optionalDependencies:
-      '@babel/code-frame': 7.27.1
-
   rollup-plugin-esbuild@4.10.3(esbuild@0.14.54)(rollup@2.79.2):
     dependencies:
       '@rollup/pluginutils': 4.2.1
@@ -43471,6 +43475,10 @@ snapshots:
       mime: 2.6.0
       mkdirp: 1.0.4
       rollup: 2.79.2
+      rollup-pluginutils: 2.8.2
+
+  rollup-plugin-string@3.0.0:
+    dependencies:
       rollup-pluginutils: 2.8.2
 
   rollup-plugin-styles@4.0.0(rollup@2.79.2):
