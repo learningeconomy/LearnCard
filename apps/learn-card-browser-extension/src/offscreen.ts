@@ -134,7 +134,8 @@ async function handleStoreCandidate(
       if (!resp.ok) throw new Error(`GET ${url} failed: ${resp.status}`);
       return resp.json();
     },
-    getDidAuthVp: (args) => lc.invoke.getDidAuthVp(args)
+    getDidAuthVp: (args) => lc.invoke.getDidAuthVp(args),
+    getDid: async () => Promise.resolve(lc.id.did())
   };
 
   const transformed = await transformCandidate(candidate, helpers);

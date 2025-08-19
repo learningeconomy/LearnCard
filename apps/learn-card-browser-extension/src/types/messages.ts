@@ -5,7 +5,7 @@ export type CredentialCandidate = {
   title?: string;
   url?: string;
   raw?: unknown;
-  platform?: 'credly' | 'coursera' | 'unknown';
+  platform?: 'credly' | 'coursera' | 'khanacademy' | 'unknown';
   claimed?: boolean;
 };
 

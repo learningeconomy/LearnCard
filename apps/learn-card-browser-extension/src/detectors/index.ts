@@ -2,10 +2,12 @@ export type { Detector } from './types';
 
 export * from './links';
 export * from './jsonld';
+export * from './khan';
 
 import type { CredentialCandidate } from '../types/messages';
 import { linksDetector } from './links';
 import { jsonldDetector } from './jsonld';
+import { khanDetector } from './khan';
 
 // Run all registered detectors and return a de-duplicated list
 export const runDetectors = (): CredentialCandidate[] => {
@@ -14,6 +16,7 @@ export const runDetectors = (): CredentialCandidate[] => {
   // Order matters only for presentation; detection is deduped below
   all.push(...linksDetector());
   all.push(...jsonldDetector());
+  all.push(...khanDetector());
 
   // De-dupe by URL or raw JSON value
   const map = new Map<string, CredentialCandidate>();

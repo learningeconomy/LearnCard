@@ -4,6 +4,7 @@ export type TransformerHelpers = {
   postJson: (url: string, body: unknown) => Promise<any>;
   fetchJson: (url: string) => Promise<any>;
   getDidAuthVp: (args: { challenge: string; domain?: string }) => Promise<unknown>;
+  getDid?: () => Promise<string | undefined>;
 };
 
 export type TransformResult = {
