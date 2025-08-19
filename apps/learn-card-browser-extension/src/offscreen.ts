@@ -3,6 +3,8 @@ import { initLearnCard } from '@learncard/init';
 import didkitWasmUrl from '@learncard/didkit-plugin/dist/didkit/didkit_wasm_bg.wasm?url';
 import type { CredentialCandidate, CredentialCategory } from './types/messages';
 import { computeCredentialHash } from './utils/hash';
+import { transformCandidate } from './transformers';
+import type { TransformerHelpers } from './transformers/types';
 
 type LearnCardLike = {
   id: { did: () => string; keypair: (type: string) => { d: string } };
@@ -114,98 +116,51 @@ async function handleStoreCandidate(
 ): Promise<number> {
   const lc = await ensureLearnCard(seed);
 
-  // JSON-LD payload directly provided
-  if (candidate.source === 'jsonld' && candidate.raw) {
-    const raw = candidate.raw as any;
-    const vc = typeof raw === 'string' ? JSON.parse(raw) : raw;
-    const uri = await lc.store?.LearnCloud?.uploadEncrypted(vc);
-    const uriStr = typeof uri === 'string' ? uri : String(uri);
-    try {
-      const canonicalId = await computeCredentialHash(lc as any, vc);
-      await lc.index?.LearnCloud?.add({ id: canonicalId, uri: uriStr, category });
-    } catch {
-      // Fall back to no-id add if hashing fails for any reason
-      await lc.index?.LearnCloud?.add({ uri: uriStr, category });
-    }
-    return 1;
-  }
-
-  // Link based - attempt VC-API handshake first, then fall back to fetching VC JSON
-  if (candidate.url) {
-    const url = candidate.url;
-
-    // Try VC-API flow
-    try {
-      const initResp = await fetch(url, {
+  const helpers: TransformerHelpers = {
+    postJson: async (url: string, body: unknown) => {
+      const resp = await fetch(url, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({})
+        body: JSON.stringify(body ?? {})
       });
-
-      if (initResp.ok) {
-        const initJson = await initResp.json().catch(() => ({}));
-        const challenge = initJson.challenge ?? initJson.nonce;
-        const domain = initJson.domain;
-        if (challenge) {
-          const vp = await lc.invoke.getDidAuthVp({ challenge, domain });
-          const finalize = await fetch(url, {
-            method: 'POST',
-            headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ verifiablePresentation: vp })
-          });
-
-          if (!finalize.ok) {
-            const text = await finalize.text();
-            throw new Error(`VC-API finalize failed: ${finalize.status} ${text}`);
-          }
-
-          const result = await finalize.json().catch(() => ({}));
-          const vpOut = result?.verifiablePresentation ?? result?.vp ?? result;
-          const vcsRaw = vpOut?.verifiableCredential ?? vpOut?.verifiableCredentials;
-          const vcs: any[] = Array.isArray(vcsRaw) ? vcsRaw : vcsRaw ? [vcsRaw] : [];
-          let saved = 0;
-          for (const vc of vcs) {
-            const parsed = typeof vc === 'string' ? JSON.parse(vc) : vc;
-            const uri = await lc.store?.LearnCloud?.uploadEncrypted(vc);
-            const uriStr = typeof uri === 'string' ? uri : String(uri);
-            try {
-              const canonicalId = await computeCredentialHash(lc as any, parsed);
-              await lc.index?.LearnCloud?.add({ id: canonicalId, uri: uriStr, category });
-            } catch {
-              await lc.index?.LearnCloud?.add({ uri: uriStr, category });
-            }
-            saved += 1;
-          }
-          if (saved > 0) return saved;
-          // If no VC returned, fall through to GET as a fallback
-        }
+      if (!resp.ok) {
+        const text = await resp.text().catch(() => '');
+        throw new Error(`POST ${url} failed: ${resp.status} ${text}`);
       }
-    } catch (e) {
-      // swallow and try GET fallback below
-    }
-
-    // Fallback: try fetching a JSON VC directly
-    try {
+      return resp.json().catch(() => ({} as unknown));
+    },
+    fetchJson: async (url: string) => {
       const resp = await fetch(url, { method: 'GET', headers: { accept: 'application/json' } });
-      if (!resp.ok) throw new Error(`Fetch failed: ${resp.status}`);
-      const data = await resp.json();
-      if (looksLikeVc(data)) {
-        const uri = await lc.store?.LearnCloud?.uploadEncrypted(data);
-        const uriStr = typeof uri === 'string' ? uri : String(uri);
-        try {
-          const canonicalId = await computeCredentialHash(lc as any, data);
-          await lc.index?.LearnCloud?.add({ id: canonicalId, uri: uriStr, category });
-        } catch {
-          await lc.index?.LearnCloud?.add({ uri: uriStr, category });
-        }
-        return 1;
+      if (!resp.ok) throw new Error(`GET ${url} failed: ${resp.status}`);
+      return resp.json();
+    },
+    getDidAuthVp: (args) => lc.invoke.getDidAuthVp(args)
+  };
+
+  const transformed = await transformCandidate(candidate, helpers);
+  if (!transformed || !Array.isArray(transformed.vcs) || transformed.vcs.length === 0) {
+    throw new Error('Unsupported credential source or failed to retrieve credential');
+  }
+
+  let saved = 0;
+  for (const vc of transformed.vcs) {
+    try {
+      const parsed = typeof vc === 'string' ? JSON.parse(vc as string) : vc;
+      const uri = await lc.store?.LearnCloud?.uploadEncrypted(parsed);
+      const uriStr = typeof uri === 'string' ? uri : String(uri);
+      try {
+        const canonicalId = await computeCredentialHash(lc as any, parsed);
+        await lc.index?.LearnCloud?.add({ id: canonicalId, uri: uriStr, category });
+      } catch {
+        await lc.index?.LearnCloud?.add({ uri: uriStr, category });
       }
-    } catch (e) {
-      // final failure will be thrown below
+      saved += 1;
+    } catch {
+      // continue with next VC
     }
   }
 
-  throw new Error('Unsupported credential source or failed to retrieve credential');
+  return saved;
 }
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {

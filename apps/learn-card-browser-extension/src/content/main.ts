@@ -1,114 +1,24 @@
 import type { CredentialCandidate, ExtensionMessage } from '../types/messages';
 import { sendMessage } from '../messaging/client';
-import { extractExchangeUrlFromLink, getExtractorProtocols } from '../utils/links';
 import { debounce, installLocationChangeHook } from '../utils/dom';
-import { isVc, getTitleFromVc } from '../utils/vc';
 import { detectPlatformFromHostname } from '../utils/platform';
+import { runDetectors } from '../detectors';
 
-// Minimal VC shape for type guard usage
-type VerifiableCredential = {
-  '@context': unknown[];
-  type: string | string[];
-  name?: string;
-  [k: string]: unknown;
-};
+// Detection is now delegated to modular detectors in ../detectors
 
 let lastSentKey: string | null = null;
 let observer: MutationObserver | null = null;
 let listenersAttached = false;
 
-// link extraction helpers are now centralized in ../utils/links
+// link extraction handled by detectors
 
-const detectLinks = (): CredentialCandidate[] => {
-  const protocols = getExtractorProtocols();
-  if (protocols.length === 0) return [];
-  const selector = protocols.map((p) => `a[href^="${p}:"]`).join(', ');
-  const anchors = Array.from(document.querySelectorAll<HTMLAnchorElement>(selector));
-
-  const seen = new Set<string>();
-  const platform = detectPlatformFromHostname(location.hostname);
-
-  const results: CredentialCandidate[] = [];
-  for (const a of anchors) {
-    const href = a.href;
-    if (!href) continue;
-    const extracted = extractExchangeUrlFromLink(href);
-    // Only include if we could extract a usable HTTP(S) URL
-    if (!extracted || !/^https?:\/\//i.test(extracted)) continue;
-    if (seen.has(extracted)) continue;
-    seen.add(extracted);
-    results.push({
-      source: 'link',
-      url: extracted,
-      title: a.textContent?.trim() || document.title,
-      platform
-    });
-  }
-
-  return results;
-};
-
-// VC helpers provided by ../utils/vc
-
-const detectJsonLd = (): CredentialCandidate[] => {
-  const platform = detectPlatformFromHostname(location.hostname);
-
-  const results: CredentialCandidate[] = [];
-
-  const addData = (data: unknown) => {
-    if (Array.isArray(data)) {
-      for (const item of data) addData(item);
-      return;
-    }
-    if (isVc(data)) {
-      results.push({
-        source: 'jsonld',
-        raw: data,
-        title: getTitleFromVc(data),
-        platform
-      });
-    }
-  };
-
-  const scripts = Array.from(
-    document.querySelectorAll<HTMLScriptElement>('script[type="application/ld+json"]')
-  );
-
-  for (const s of scripts) {
-    try {
-      const data = JSON.parse(s.textContent || 'null');
-      if (!data) continue;
-      addData(data);
-    } catch {}
-  }
-
-  const potentialScripts = Array.from(document.querySelectorAll('pre, code'));
-
-  for (const s of potentialScripts) {
-    const text = s.textContent;
-    if (!text) continue;
-    // Heuristic check: Does it contain key VC terms? This avoids trying to parse every code snippet.
-    if (text.includes('"VerifiableCredential"') && text.includes('"credentialSubject"')) {
-      try {
-        const data = JSON.parse(text);
-        addData(data);
-      } catch (e) {
-        /* Ignore elements with malformed JSON */
-      }
-    }
-  }
-
-  return results;
-};
+// json-ld handled by detectors
 
 const runDetection = () => {
-  const links = detectLinks();
-  const jsonld = detectJsonLd();
-  const map = new Map<string, CredentialCandidate>();
+  const detected = runDetectors();
 
   const platform = detectPlatformFromHostname(location.hostname);
-
-  const hash = (c: CredentialCandidate) => {
+  const keyFor = (c: CredentialCandidate) => {
     if (c.url) return `url:${c.url}`;
     try {
       return `raw:${JSON.stringify(c.raw)}`;
@@ -117,17 +27,12 @@ const runDetection = () => {
     }
   };
 
-  for (const c of [...links, ...jsonld]) {
-    const key = hash(c);
-    if (!map.has(key)) map.set(key, c);
-  }
-
-  const list = Array.from(map.values());
-  const newKey = `${list.length}:${Array.from(map.keys()).sort().join('|')}`;
+  const keys = detected.map(keyFor).sort();
+  const newKey = `${detected.length}:${keys.join('|')}`;
   if (newKey === lastSentKey) return;
   lastSentKey = newKey;
 
-  sendMessage({ type: 'credentials-detected', payload: list });
+  sendMessage({ type: 'credentials-detected', payload: detected });
 };
 
 const startObserving = () => {
