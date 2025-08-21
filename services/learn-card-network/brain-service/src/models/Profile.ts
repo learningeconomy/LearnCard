@@ -56,6 +56,7 @@ export const Profile: any = ModelFactory<FlatProfileType, ProfileRelationships>(
             isServiceProfile: { type: 'boolean', required: false },
             type: { type: 'string', required: false },
             notificationsWebhook: { type: 'string', required: false },
+            highlightedCredentials: { type: 'string[]', required: false } as any,
             dob: { type: 'string', required: false },
             role: {
                 type: 'string',
