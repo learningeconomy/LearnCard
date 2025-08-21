@@ -47,7 +47,7 @@ export const LCNProfileValidator = z.object({
         .describe('URL to send notifications to.'),
     display: LCNProfileDisplayValidator.optional().describe('Display settings for the profile.'),
     highlightedCredentials: z
-        .array(z.string())
+        .array(z.string().max(2048))
         .max(5)
         .refine(arr => new Set(arr).size === arr.length, { message: 'Duplicate URIs are not allowed' })
         .optional()
