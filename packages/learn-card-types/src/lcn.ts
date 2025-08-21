@@ -169,7 +169,7 @@ export const BoostPermissionsQueryValidator = z
     .partial();
 export type BoostPermissionsQuery = z.infer<typeof BoostPermissionsQueryValidator>;
 
-export const ClaimHookTypeValidator = z.enum(['GRANT_PERMISSIONS', 'ADD_ADMIN']);
+export const ClaimHookTypeValidator = z.enum(['GRANT_PERMISSIONS', 'ADD_ADMIN', 'AUTO_CONNECT']);
 export type ClaimHookType = z.infer<typeof ClaimHookTypeValidator>;
 
 export const ClaimHookValidator = z.discriminatedUnion('type', [
@@ -183,6 +183,10 @@ export const ClaimHookValidator = z.discriminatedUnion('type', [
     }),
     z.object({
         type: z.literal(ClaimHookTypeValidator.Values.ADD_ADMIN),
+        data: z.object({ claimUri: z.string(), targetUri: z.string() }),
+    }),
+    z.object({
+        type: z.literal(ClaimHookTypeValidator.Values.AUTO_CONNECT),
         data: z.object({ claimUri: z.string(), targetUri: z.string() }),
     }),
 ]);

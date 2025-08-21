@@ -15,6 +15,7 @@ export type BoostRelationships = {
         { date: string }
     >;
     parentOf: ModelRelatedNodesI<typeof Boost, BoostInstance>;
+    autoConnectRecipient: ModelRelatedNodesI<typeof Profile, ProfileInstance>;
     hasRole: ModelRelatedNodesI<
         typeof Profile,
         ProfileInstance,
@@ -50,6 +51,7 @@ export const Boost = ModelFactory<FlatBoostType, BoostRelationships>(
                 },
             },
             parentOf: { model: 'self', direction: 'out', name: 'PARENT_OF' },
+            autoConnectRecipient: { model: Profile, direction: 'out', name: 'AUTO_CONNECT_RECIPIENT' },
             hasRole: {
                 model: Profile,
                 direction: 'in',
