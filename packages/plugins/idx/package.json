@@ -1,6 +1,6 @@
 {
     "name": "@learncard/idx-plugin",
-    "version": "1.0.47",
+    "version": "1.0.48",
     "description": "",
     "main": "./dist/index.js",
     "module": "./dist/idx-plugin.esm.js",
