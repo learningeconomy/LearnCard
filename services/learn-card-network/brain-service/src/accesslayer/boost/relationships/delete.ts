@@ -25,3 +25,24 @@ export const removeBoostAsParent = async (
         })
     );
 };
+
+/** Remove a single explicit auto-connect recipient relationship for a boost */
+export const removeAutoConnectRecipientRelationship = async (
+    boost: BoostInstance,
+    recipient: ProfileType
+): Promise<void> => {
+    await Boost.deleteRelationships({
+        alias: 'autoConnectRecipient',
+        where: { source: { id: boost.id }, target: { profileId: recipient.profileId } },
+    });
+};
+
+/** Remove all explicit auto-connect recipient relationships for a boost */
+export const removeAutoConnectRecipientRelationshipsForBoost = async (
+    boost: BoostInstance
+): Promise<void> => {
+    await Boost.deleteRelationships({
+        alias: 'autoConnectRecipient',
+        where: { source: { id: boost.id } },
+    });
+};
