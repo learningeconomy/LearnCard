@@ -1,6 +1,6 @@
 {
     "name": "@learncard/vc-templates-plugin",
-    "version": "1.0.60",
+    "version": "1.0.61",
     "description": "",
     "main": "./dist/index.js",
     "module": "./dist/vc-templates-plugin.esm.js",
