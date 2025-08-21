@@ -17,6 +17,7 @@ Name | Type | Description | Notes
 **type** | **str** | Profile type: e.g. \&quot;person\&quot;, \&quot;organization\&quot;, \&quot;service\&quot;. | [optional] 
 **notifications_webhook** | **str** | URL to send notifications to. | [optional] 
 **display** | [**BoostGetBoostRecipients200ResponseInnerToDisplay**](BoostGetBoostRecipients200ResponseInnerToDisplay.md) |  | [optional] 
+**highlighted_credentials** | **List[str]** | Up to 5 unique boost URIs to highlight on the profile. | [optional] 
 **role** | **str** | Role of the profile: e.g. \&quot;teacher\&quot;, \&quot;student\&quot;. | [optional] [default to '']
 **dob** | **str** | Date of birth of the profile: e.g. \&quot;1990-01-01\&quot;. | [optional] [default to '']
 

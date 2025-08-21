@@ -35,7 +35,8 @@ class TestStorageResolve200ResponseAnyOfAnyOfReadCredentialsCategoriesValue(unit
         model = StorageResolve200ResponseAnyOfAnyOfReadCredentialsCategoriesValue()
         if include_optional:
             return StorageResolve200ResponseAnyOfAnyOfReadCredentialsCategoriesValue(
-                required = True
+                required = True,
+                default_enabled = True
             )
         else:
             return StorageResolve200ResponseAnyOfAnyOfReadCredentialsCategoriesValue(
