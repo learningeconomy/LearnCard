@@ -1,6 +1,5 @@
 import { describe, test, expect } from 'vitest';
 import { LCNProfileValidator } from '@learncard/types';
-import { ZodError } from 'zod';
 
 const baseProfile = (overrides: Record<string, any> = {}) => ({
     profileId: 'john-doe',
@@ -23,29 +22,17 @@ describe('LCNProfile.highlightedCredentials', () => {
 
     test('rejects more than 5 URIs', () => {
         const uris = ['boost:1', 'boost:2', 'boost:3', 'boost:4', 'boost:5', 'boost:6'];
-        let err: unknown;
-        try {
-            LCNProfileValidator.parse(baseProfile({ highlightedCredentials: uris }));
-        } catch (e) {
-            err = e;
-        }
-
-        expect(err).toBeInstanceOf(ZodError);
-        const issues = (err as ZodError).issues;
+        const result = LCNProfileValidator.safeParse(baseProfile({ highlightedCredentials: uris }));
+        expect(result.success).toBe(false);
+        const issues = result.success ? [] : result.error.issues;
         expect(issues.some(i => i.code === 'too_big' && (i as any).maximum === 5)).toBe(true);
     });
 
     test('rejects duplicate URIs', () => {
         const uris = ['boost:1', 'boost:2', 'boost:1'];
-        let err: unknown;
-        try {
-            LCNProfileValidator.parse(baseProfile({ highlightedCredentials: uris }));
-        } catch (e) {
-            err = e;
-        }
-
-        expect(err).toBeInstanceOf(ZodError);
-        const issues = (err as ZodError).issues;
+        const result = LCNProfileValidator.safeParse(baseProfile({ highlightedCredentials: uris }));
+        expect(result.success).toBe(false);
+        const issues = result.success ? [] : result.error.issues;
         expect(issues.some(i => i.message.includes('Duplicate URIs'))).toBe(true);
     });
 });
