@@ -31,7 +31,8 @@ class ContractsConsentToContractRequest(BaseModel):
     contract_uri: StrictStr = Field(alias="contractUri")
     expires_at: Optional[StrictStr] = Field(default=None, alias="expiresAt")
     one_time: Optional[StrictBool] = Field(default=None, alias="oneTime")
-    __properties: ClassVar[List[str]] = ["terms", "contractUri", "expiresAt", "oneTime"]
+    recipient_token: Optional[StrictStr] = Field(default=None, alias="recipientToken")
+    __properties: ClassVar[List[str]] = ["terms", "contractUri", "expiresAt", "oneTime", "recipientToken"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -90,7 +91,8 @@ class ContractsConsentToContractRequest(BaseModel):
             "terms": ContractsConsentToContractRequestTerms.from_dict(obj["terms"]) if obj.get("terms") is not None else None,
             "contractUri": obj.get("contractUri"),
             "expiresAt": obj.get("expiresAt"),
-            "oneTime": obj.get("oneTime")
+            "oneTime": obj.get("oneTime"),
+            "recipientToken": obj.get("recipientToken")
         })
         return _obj
 

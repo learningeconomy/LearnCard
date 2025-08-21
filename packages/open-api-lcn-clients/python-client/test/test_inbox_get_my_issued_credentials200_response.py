@@ -46,8 +46,9 @@ class TestInboxGetMyIssuedCredentials200Response(unittest.TestCase):
                         created_at = '', 
                         issuer_did = '', 
                         webhook_url = '', 
-                        signing_authority/endpoint = '', 
-                        signing_authority/name = '', )
+                        signing_authority = openapi_client.models.inbox_get_my_issued_credentials_200_response_records_inner_signing_authority.inbox_getMyIssuedCredentials_200_response_records_inner_signingAuthority(
+                            endpoint = '', 
+                            name = '', ), )
                     ],
                 cursor = ''
             )
@@ -64,8 +65,9 @@ class TestInboxGetMyIssuedCredentials200Response(unittest.TestCase):
                         created_at = '', 
                         issuer_did = '', 
                         webhook_url = '', 
-                        signing_authority/endpoint = '', 
-                        signing_authority/name = '', )
+                        signing_authority = openapi_client.models.inbox_get_my_issued_credentials_200_response_records_inner_signing_authority.inbox_getMyIssuedCredentials_200_response_records_inner_signingAuthority(
+                            endpoint = '', 
+                            name = '', ), )
                     ],
         )
         """
