@@ -46,6 +46,11 @@ export const LCNProfileValidator = z.object({
         .optional()
         .describe('URL to send notifications to.'),
     display: LCNProfileDisplayValidator.optional().describe('Display settings for the profile.'),
+    highlightedCredentials: z
+        .array(z.string())
+        .max(5)
+        .optional()
+        .describe('Up to 5 unique boost URIs to highlight on the profile.'),
     role: z
         .string()
         .default('')

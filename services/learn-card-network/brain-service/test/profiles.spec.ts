@@ -198,6 +198,15 @@ describe('Profiles', () => {
 
             expect(profile?.dob).toEqual('2000-01-01');
         });
+        it('should allow setting highlightedCredentials on create', async () => {
+            await userA.clients.fullAuth.profile.createProfile({
+                profileId: 'usera',
+                highlightedCredentials: ['cred1', 'cred2', 'cred3'],
+            });
+            const profile = await userA.clients.fullAuth.profile.getProfile();
+
+            expect(profile?.highlightedCredentials).toEqual(['cred1', 'cred2', 'cred3']);
+        });
     });
 
     describe('createServiceProfile', () => {
@@ -856,6 +865,18 @@ describe('Profiles', () => {
             const userAResult = await userA.clients.fullAuth.profile.getProfile();
 
             expect(userAResult?.isPrivate).toBeTruthy();
+        });
+
+        it('should allow updating highlightedCredentials', async () => {
+            await expect(
+                userA.clients.fullAuth.profile.updateProfile({
+                    highlightedCredentials: ['credA', 'credB'],
+                })
+            ).resolves.not.toThrow();
+
+            const profile = await userA.clients.fullAuth.profile.getProfile();
+
+            expect(profile?.highlightedCredentials).toEqual(['credA', 'credB']);
         });
     });
 
