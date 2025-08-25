@@ -10,6 +10,27 @@
                 "address": {
                     "@id": "https://purl.imsglobal.org/spec/vc/ob/vocab.html#Address"
                 },
+                "network": {
+                    "@id": "lcn:boostNetwork",
+                    "@context": {
+                        "networkType": {
+                            "@id": "lcn:boostNetworkType",
+                            "@type": "xsd:string"
+                        },
+                        "country": {
+                            "@id": "lcn:boostNetworkCountry",
+                            "@type": "xsd:string"
+                        },
+                        "region": {
+                            "@id": "lcn:boostNetworkRegion",
+                            "@type": "xsd:string"
+                        },
+                        "organization": {
+                            "@id": "lcn:boostNetworkOrganization",
+                            "@type": "xsd:string"
+                        }
+                    }
+                },
                 "attachments": {
                     "@container": "@set",
                     "@context": {
