@@ -74,6 +74,12 @@ export type AddressSpec = {
         longitude?: number | undefined;
     };
 };
+export type BoostNetworkFields = {
+    networkType?: string;
+    country?: string;
+    region?: string;
+    organization?: string;
+};
 export type BoostTemplate = {
     did?: string;
     subject?: string;
@@ -94,6 +100,7 @@ export type BoostTemplate = {
     familyTitles?: BoostFamilyTitles;
     boostID?: BoostID;
     address?: AddressSpec;
+    network?: BoostNetworkFields;
     groupID?: string;
 };
 
