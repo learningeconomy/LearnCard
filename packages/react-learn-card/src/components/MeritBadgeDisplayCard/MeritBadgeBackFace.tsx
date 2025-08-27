@@ -50,7 +50,7 @@ export const MeritBadgeBackFace: React.FC<MeritBadgeBackFaceProps> = ({
 
     const { description } = credentialSubject?.achievement ?? {};
     const criteria = credentialSubject?.achievement?.criteria?.narrative;
-    const alignment = credentialSubject?.achievement?.alignment;
+    const alignments = credentialSubject?.achievement?.alignments;
 
     const credentialDarkColor = getCategoryDarkColor(categoryType);
 
@@ -115,7 +115,7 @@ export const MeritBadgeBackFace: React.FC<MeritBadgeBackFaceProps> = ({
                 />
             )}
 
-            {alignment && <AlignmentsBox alignment={alignment} style="MeritBadge" />}
+            {alignments && <AlignmentsBox alignment={alignments} style="MeritBadge" />}
 
             {verificationItems && verificationItems.length > 0 && (
                 <VerificationsBox verificationItems={verificationItems} />
