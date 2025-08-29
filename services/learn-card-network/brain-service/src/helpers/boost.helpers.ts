@@ -170,11 +170,12 @@ export const issueCertifiedBoost = async (
         if (!didDoc) {
             lcnDID = learnCard.id.did();
         }
-    } catch (e) {
+    } catch (error) {
         if (process.env.NODE_ENV !== 'test') {
             console.warn(
                 'LCN DID Document is unable to resolve while issuing Certified Boost. Reverting to did:key. Is this a test environment?',
-                lcnDID
+                lcnDID,
+                error
             );
         }
         lcnDID = learnCard.id.did();
@@ -214,7 +215,7 @@ export const decryptCredential = async (credential: VC | JWE): Promise<VC | fals
         ]);
         return decrypted || false;
     } catch (error) {
-        console.warn('Could not decrypt Boost Credential!');
+        console.warn('Could not decrypt Boost Credential!', error);
         return false;
     }
 };

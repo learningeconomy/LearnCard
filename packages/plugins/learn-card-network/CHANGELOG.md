@@ -1,5 +1,32 @@
 # learn-card-core
 
+## 2.5.21
+
+### Patch Changes
+
+-   [#796](https://github.com/learningeconomy/LearnCard/pull/796) [`00c5403c2932185290ae4e226ca4bf446a1d636c`](https://github.com/learningeconomy/LearnCard/commit/00c5403c2932185290ae4e226ca4bf446a1d636c) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add AUTO_CONNECT claim hook
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.3.26
+    -   @learncard/core@9.3.37
+    -   @learncard/helpers@1.1.25
+
+## 2.5.20
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.36
+    -   @learncard/helpers@1.1.24
+    -   @learncard/network-brain-client@2.3.25
+
+## 2.5.19
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.3.24
+
 ## 2.5.18
 
 ### Patch Changes
