@@ -13,7 +13,8 @@
     email: '',
     code: '',
     consent: false,
-    error: ''
+    error: '',
+    pending: false
   };
 
   function validEmail(v) { return /.+@.+\..+/.test(v); }
@@ -33,6 +34,8 @@
         else if (k === 'onClick') n.addEventListener('click', v);
         else if (k === 'onInput') n.addEventListener('input', v);
         else if (k === 'onChange') n.addEventListener('change', v);
+        else if (k === 'disabled') n.disabled = !!v;
+        else if (k === 'checked') n.checked = !!v;
         else if (v != null) n.setAttribute(k, String(v));
       }
     }
@@ -82,6 +85,45 @@
     return wrap;
   }
 
+  function sendToParent(type, payload) {
+    try {
+      window.parent.postMessage({ __lcEmbed: true, type: type, nonce: config.nonce, payload: payload }, config.parentOrigin || '*');
+    } catch (e) {}
+  }
+
+  function isTrustedReply(data, type) {
+    return (
+      data && typeof data === 'object' && data.__lcEmbed === true && data.type === type && data.nonce === config.nonce
+    );
+  }
+
+  window.addEventListener('message', function (ev) {
+    var data = ev.data;
+    if (isTrustedReply(data, 'lc-embed:email-submit:result')) {
+      state.pending = false;
+      if (data.payload && data.payload.ok) {
+        state.view = 'otp';
+        state.error = '';
+      } else {
+        state.error = (data.payload && data.payload.error) || 'Failed to send code.';
+      }
+      render();
+      return;
+    }
+
+    if (isTrustedReply(data, 'lc-embed:otp-verify:result')) {
+      state.pending = false;
+      if (data.payload && data.payload.ok) {
+        state.view = 'success';
+        state.error = '';
+      } else {
+        state.error = (data.payload && data.payload.error) || 'Verification failed.';
+      }
+      render();
+      return;
+    }
+  });
+
   function EmailView() {
     var partner = config.partnerLabel || '';
     var cred = config.credentialName || 'Credential';
@@ -95,26 +137,47 @@
           var input = el('input', {
             id: 'email', class: 'input', type: 'email', placeholder: 'you@example.com', autocomplete: 'email', value: state.email
           }, []);
-          input.addEventListener('input', function (e) { state.email = e.target.value; });
+          input.addEventListener('input', function (e) {
+            state.email = e.target.value;
+            var btn = document.getElementById('send');
+            if (btn) btn.disabled = !validEmail((state.email || '').trim()) || !!state.pending;
+            if (state.error) {
+              state.error = '';
+              var err = document.getElementById('error');
+              if (err) err.textContent = '';
+            }
+          });
+          input.addEventListener('keydown', function (e) { if (e.key === 'Enter') { var btn = document.getElementById('send'); if (btn) btn.click(); } });
           return input;
         })()
       ]),
       el('div', { class: 'center' }, [
         el('button', {
-          id: 'send', class: 'btn btn-primary', onClick: function () {
+          id: 'send', class: 'btn btn-primary', disabled: !validEmail((state.email || '').trim()) || !!state.pending, onClick: function () {
             var email = (state.email || '').trim();
             if (!validEmail(email)) { state.error = 'Please enter a valid email.'; render(); return; }
             state.error = '';
-            setTimeout(function () { state.view = 'otp'; render(); }, 300);
+            state.pending = true;
+            render();
+            sendToParent('lc-embed:email-submit', { email: email });
           }
         }, [text('Send Code')])
       ]),
-      el('div', { class: 'error' }, [text(state.error || '')])
+      el('div', { class: 'error', id: 'error' }, [text(state.error || '')])
     ]);
   }
 
   function OtpView() {
-    var codeWrap = otpInputs(state.code, function (v) { state.code = v; render(); });
+    var codeWrap = otpInputs(state.code, function (v) {
+      state.code = v;
+      var verifyBtn = document.getElementById('verify');
+      if (verifyBtn) verifyBtn.disabled = (state.code.length !== 6) || !!state.pending;
+      if (state.error && state.code.length > 0) {
+        state.error = '';
+        var err = document.getElementById('error');
+        if (err) err.textContent = '';
+      }
+    });
 
     return el('div', { id: 'view-otp' }, [
       el('div', { class: 'title' }, [text('Enter 6‑digit code')]),
@@ -122,15 +185,17 @@
       codeWrap,
       el('div', { class: 'center', style: 'margin-top: 8px' }, [
         el('button', {
-          id: 'verify', class: 'btn btn-primary', disabled: state.code.length !== 6,
+          id: 'verify', class: 'btn btn-primary', disabled: state.code.length !== 6 || !!state.pending,
           onClick: function () {
             if (state.code.length !== 6) { state.error = 'Enter the 6-digit code.'; render(); return; }
             state.error = '';
-            setTimeout(function () { state.view = 'success'; render(); }, 300);
+            state.pending = true;
+            render();
+            sendToParent('lc-embed:otp-verify', { email: state.email, code: state.code });
           }
         }, [text('Verify')])
       ]),
-      el('div', { class: 'error' }, [text(state.error || '')]),
+      el('div', { class: 'error', id: 'error' }, [text(state.error || '')]),
       el('div', { class: 'hint' }, [text("Didn't get it? Check spam or try again.")])
     ]);
   }

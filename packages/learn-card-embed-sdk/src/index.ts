@@ -9,7 +9,7 @@ import islandScript from './iframe/island-vanilla.js';
 import { createGlobalStyleEl, iframeCss } from './styles';
 import { getTargetEl } from './dom';
 import { createNonce } from './security';
-import type { InitOptions, KnownMessages } from './types';
+import type { InitOptions, KnownMessages, EmailSubmitResult, OtpVerifyResult } from './types';
 
 // Types moved to types.ts
 
@@ -20,6 +20,20 @@ function isTrustedMessage(data: unknown, expectedNonce: string): data is KnownMe
     data !== null &&
     (data as any).__lcEmbed === true &&
     (data as any).type === 'lc-embed:complete' &&
+    (data as any).nonce === expectedNonce
+  );
+}
+
+function isTrustedMessageOfType(
+  data: unknown,
+  expectedNonce: string,
+  type: string
+): data is { __lcEmbed: true; type: string; nonce: string; payload?: unknown } {
+  return (
+    typeof data === 'object' &&
+    data !== null &&
+    (data as any).__lcEmbed === true &&
+    (data as any).type === type &&
     (data as any).nonce === expectedNonce
   );
 }
@@ -113,6 +127,12 @@ function openModal(opts: InitOptions): { close: () => void } {
   const parentOrigin = window.location.origin;
   iframe.srcdoc = buildIframeHtml(opts, nonce, parentOrigin);
 
+  function sendToIframe(type: string, payload: unknown) {
+    try {
+      iframe.contentWindow?.postMessage({ __lcEmbed: true, type, nonce, payload }, '*');
+    } catch {}
+  }
+
   header.appendChild(brand);
   header.appendChild(closeBtn);
   modal.appendChild(header);
@@ -134,8 +154,34 @@ function openModal(opts: InitOptions): { close: () => void } {
     // and ev.source may be null. Only enforce strict equality when both values are available.
     if (iframe.contentWindow && ev.source && ev.source !== iframe.contentWindow) return;
     const data = ev.data;
+
+    // Handle interim requests from iframe
+    if (isTrustedMessageOfType(data, nonce, 'lc-embed:email-submit')) {
+      const email = (data as any).payload?.email as string | undefined;
+      const cb = opts.onEmailSubmit;
+      const p: Promise<EmailSubmitResult> = Promise.resolve(
+        cb ? cb(email || '') : { ok: true }
+      ) as Promise<EmailSubmitResult>;
+      p.then(res => sendToIframe('lc-embed:email-submit:result', res))
+       .catch(() => sendToIframe('lc-embed:email-submit:result', { ok: false, error: 'Failed to send code' }));
+      return;
+    }
+
+    if (isTrustedMessageOfType(data, nonce, 'lc-embed:otp-verify')) {
+      const email = (data as any).payload?.email as string | undefined;
+      const code = (data as any).payload?.code as string | undefined;
+      const cb = opts.onOtpVerify;
+      const p: Promise<OtpVerifyResult> = Promise.resolve(
+        cb ? cb(email || '', code || '') : { ok: true }
+      ) as Promise<OtpVerifyResult>;
+      p.then(res => sendToIframe('lc-embed:otp-verify:result', res))
+       .catch(() => sendToIframe('lc-embed:otp-verify:result', { ok: false, error: 'Verification failed' }));
+      return;
+    }
+
+    // Completion
     if (!isTrustedMessage(data, nonce)) return;
-    const details = data.payload;
+    const details = (data as any).payload;
     const walletUrl = opts.branding?.walletUrl || 'https://learncard.app';
     window.open(walletUrl, '_blank', 'noopener,noreferrer');
     if (opts.onSuccess) {

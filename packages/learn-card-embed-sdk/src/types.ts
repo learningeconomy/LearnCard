@@ -10,6 +10,10 @@ export type ClaimSuccessDetails = {
   consentGiven: boolean;
 };
 
+export type EmailSubmitResult = { ok: true } | { ok: false; error: string };
+
+export type OtpVerifyResult = { ok: true } | { ok: false; error: string };
+
 export type BrandingTokens = {
   primaryColor?: string; // replaces theme.primaryColor
   accentColor?: string;
@@ -31,6 +35,8 @@ export type InitOptions = {
   };
   // New: branding tokens for simple configuration
   branding?: BrandingTokens;
+  onEmailSubmit?: (email: string) => Promise<EmailSubmitResult> | EmailSubmitResult;
+  onOtpVerify?: (email: string, code: string) => Promise<OtpVerifyResult> | OtpVerifyResult;
 };
 
 // Message payload from iframe to parent
