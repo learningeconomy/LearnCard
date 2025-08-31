@@ -864,6 +864,68 @@ export const IssueInboxCredentialResponseValidator = z.object({
 
 export type IssueInboxCredentialResponseType = z.infer<typeof IssueInboxCredentialResponseValidator>;
 
+// Integrations
+export const LCNDomainOrOriginValidator = z.union([
+    z
+        .string()
+        .regex(
+            /^(?:(?:[a-zA-Z0-9-]{1,63}\.)+[a-zA-Z]{2,63}|localhost|\d{1,3}(?:\.\d{1,3}){3})(?::\d{1,5})?$/,
+            {
+                message:
+                    'Must be a valid domain (incl. subdomains), localhost, or IPv4, optionally with port',
+            }
+        ),
+    z
+        .string()
+        .regex(
+            /^https?:\/\/(?:(?:[a-zA-Z0-9-]{1,63}\.)+[a-zA-Z]{2,63}|localhost|\d{1,3}(?:\.\d{1,3}){3})(?::\d{1,5})?$/,
+            { message: 'Must be a valid http(s) origin' }
+        ),
+]);
+
+export const LCNIntegrationValidator = z.object({
+    id: z.string(),
+    name: z.string(),
+    description: z.string().optional(),
+    publishableKey: z.string(),
+    whitelistedDomains: z.array(LCNDomainOrOriginValidator).default([]),
+});
+
+export type LCNIntegration = z.infer<typeof LCNIntegrationValidator>;
+
+export const LCNIntegrationCreateValidator = z.object({
+    name: z.string(),
+    description: z.string().optional(),
+    whitelistedDomains: z.array(LCNDomainOrOriginValidator).default([]),
+});
+
+export type LCNIntegrationCreateType = z.infer<typeof LCNIntegrationCreateValidator>;
+
+export const LCNIntegrationUpdateValidator = z.object({
+    name: z.string().optional(),
+    description: z.string().optional(),
+    whitelistedDomains: z.array(LCNDomainOrOriginValidator).optional(),
+    rotatePublishableKey: z.boolean().optional(),
+});
+
+export type LCNIntegrationUpdateType = z.infer<typeof LCNIntegrationUpdateValidator>;
+
+export const LCNIntegrationQueryValidator = z
+    .object({
+        id: StringQuery,
+        name: StringQuery,
+        description: StringQuery,
+    })
+    .partial();
+
+export type LCNIntegrationQueryType = z.infer<typeof LCNIntegrationQueryValidator>;
+
+export const PaginatedLCNIntegrationsValidator = PaginationResponseValidator.extend({
+    records: LCNIntegrationValidator.array(),
+});
+
+export type PaginatedLCNIntegrationsType = z.infer<typeof PaginatedLCNIntegrationsValidator>;
+
 export const ClaimTokenValidator = z.object({
     token: z.string(),
     contactMethodId: z.string(),
@@ -874,3 +936,5 @@ export const ClaimTokenValidator = z.object({
 });
 
 export type ClaimTokenType = z.infer<typeof ClaimTokenValidator>;
+
+// ... (rest of the code remains the same)

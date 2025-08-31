@@ -72,6 +72,12 @@ Presentation.addRelationships({
         neogma.queryRunner.run(
             'CREATE INDEX inbox_credential_expires_idx IF NOT EXISTS FOR (i:InboxCredential) ON (i.expiresAt)'
         ),
+        neogma.queryRunner.run(
+            'CREATE INDEX integration_id_idx IF NOT EXISTS FOR (i:Integration) ON (i.id)'
+        ),
+        neogma.queryRunner.run(
+            'CREATE INDEX integration_publishablekey_idx IF NOT EXISTS FOR (i:Integration) ON (i.publishableKey)'
+        ),
     ])
         .then(() => {
             if (process.env.NODE_ENV !== 'test') console.log('Ensured indices!');
@@ -96,3 +102,4 @@ export * from './ConsentFlowContract';
 export * from './ConsentFlowTransaction';
 export * from './ContactMethod';    
 export * from './InboxCredential';
+export * from './Integration';
