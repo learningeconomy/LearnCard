@@ -104,6 +104,70 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
 
         let finalDoc = { ...replacedDoc, controller: profile.did };
 
+        // Ensure a Multikey VM is present and primary for Data Integrity (eddsa-2022)
+        try {
+            const mkContext = 'https://w3id.org/security/multikey/v1';
+            const primaryJwk = (finalDoc.verificationMethod?.[0] as any)?.publicKeyJwk as JWK | undefined;
+
+            if (primaryJwk?.x) {
+                // Convert Ed25519 JWK x -> multibase (z) with multicodec 0xed 0x01
+                const ed25519Pub = base64url.decode(`u${primaryJwk.x}`);
+                const ed25519Bytes = new Uint8Array(ed25519Pub.length + 2);
+                ed25519Bytes[0] = 0xed;
+                ed25519Bytes[1] = 0x01;
+                ed25519Bytes.set(ed25519Pub, 2);
+
+                const publicKeyMultibase = base58btc.encode(ed25519Bytes);
+
+                const multikeyVM = {
+                    id: `${did}#owner`,
+                    type: 'Multikey',
+                    controller: did,
+                    publicKeyMultibase,
+                };
+
+                // Preserve legacy JWK-based method for backwards compatibility
+                const legacyVM = {
+                    ...(finalDoc.verificationMethod?.[0] as any),
+                    id: `${did}#owner-jwk`,
+                };
+
+                // Ensure the multikey security context is present
+                const context = Array.isArray((finalDoc as any)['@context'])
+                    ? ([...(finalDoc as any)['@context']] as any[])
+                    : ([(finalDoc as any)['@context']] as any[]);
+                if (!context.includes(mkContext)) context.push(mkContext);
+
+                const legacyId = `${did}#owner-jwk`;
+
+                finalDoc = {
+                    ...(finalDoc as any),
+                    '@context': context as any,
+                    verificationMethod: [
+                        multikeyVM,
+                        ...((finalDoc.verificationMethod || []).slice(1) as any[]),
+                        legacyVM,
+                    ],
+                    authentication: Array.from(
+                        new Set([
+                            `${did}#owner`,
+                            legacyId,
+                            ...((finalDoc.authentication as any[]) || []),
+                        ])
+                    ) as any,
+                    assertionMethod: Array.from(
+                        new Set([
+                            `${did}#owner`,
+                            legacyId,
+                            ...((finalDoc.assertionMethod as any[]) || []),
+                        ])
+                    ) as any,
+                } as any;
+            }
+        } catch (e) {
+            request.log?.warn({ err: e }, 'Failed to add Multikey VM to did:web document');
+        }
+
         if (saDocs) {
             saDocs.map(sa => {
                 (finalDoc.verificationMethod = [
