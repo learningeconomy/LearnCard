@@ -207,6 +207,16 @@ describe('Profiles', () => {
 
             expect(profile?.highlightedCredentials).toEqual(['cred1', 'cred2', 'cred3']);
         });
+        it('should allow setting your country', async () => {
+            await userA.clients.fullAuth.profile.createProfile({
+                profileId: 'usera',
+                country: 'US',
+            });
+
+            const profile = await userA.clients.fullAuth.profile.getProfile();
+
+            expect(profile?.country).toEqual('US');
+        });
     });
 
     describe('createServiceProfile', () => {
