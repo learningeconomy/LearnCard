@@ -549,10 +549,6 @@ importers:
         version: 1.8.11
 
   packages/learn-card-embed-sdk:
-    dependencies:
-      preact:
-        specifier: ^10.20.2
-        version: 10.27.1
     devDependencies:
       '@rollup/plugin-commonjs':
         specifier: ^22.0.2
@@ -17012,9 +17008,6 @@ packages:
 
   postmark@4.0.5:
     resolution: {integrity: sha512-nerZdd3TwOH4CgGboZnlUM/q7oZk0EqpZgJL+Y3Nup8kHeaukxouQ6JcFF3EJEijc4QbuNv1TefGhboAKtf/SQ==}
-
-  preact@10.27.1:
-    resolution: {integrity: sha512-V79raXEWch/rbqoNc7nT9E4ep7lu+mI3+sBmfRD4i1M73R3WLYcCtdI0ibxGVf4eQL8ZIz2nFacqEC+rmnOORQ==}
 
   preferred-pm@3.1.4:
     resolution: {integrity: sha512-lEHd+yEm22jXdCphDrkvIJQU66EuLojPPtvZkpKIkiD+l0DMThF/niqZKJSoU8Vl7iuvtmzyMhir9LdVy5WMnA==}
@@ -42149,8 +42142,6 @@ snapshots:
       axios: 1.8.4
     transitivePeerDependencies:
       - debug
-
-  preact@10.27.1: {}
 
   preferred-pm@3.1.4:
     dependencies:

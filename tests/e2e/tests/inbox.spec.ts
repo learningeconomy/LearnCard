@@ -2,11 +2,13 @@ import { describe, test, expect } from 'vitest';
 
 import { getLearnCardForUser, getLearnCard, LearnCard } from './helpers/learncard.helpers';
 import { sendCredentialsViaInbox } from './helpers/inbox.helpers';
+import { LCNIntegration } from '@learncard/types';
 
 let a: LearnCard;
 let b_anonymous: LearnCard;
 let c: LearnCard;
 let token: string;
+let integration: LCNIntegration | undefined;
 
 // Function to extract the workflowId and interactionId from the URL
 const parseInteractionUrl = (url: string): { workflowId: string; interactionId: string } | null => {
@@ -724,4 +726,99 @@ describe('Inbox', () => {
         });
      
     });
+
+    describe('Claim credentials INTO inbox from an integration', () => {
+
+        beforeEach(async () => {
+            a = await getLearnCardForUser('a');
+            b_anonymous = await getLearnCard('b')
+            c = await getLearnCardForUser('c');        
+
+            const sa = await a.invoke.createSigningAuthority('test-sa');
+            if (!sa) { 
+                throw new Error('Failed to create signing authority');
+            }
+            const registered = await a.invoke.registerSigningAuthority(sa.endpoint!, sa.name, sa.did!);
+            if (!registered) {
+                throw new Error('Failed to register signing authority');
+            } 
+    
+            const integrationId = await a.invoke.addIntegration({
+                name: 'test',
+                whitelistedDomains: ['localhost:4000'],
+                description: 'test',    
+            }); 
+            
+            await a.invoke.associateIntegrationWithSigningAuthority(integrationId, sa.endpoint!, sa.name, sa.did!, true);
+
+            integration = await a.invoke.getIntegration(integrationId);
+
+        });
+
+
+        it('should allow you to claim a credential into your inbox from an integration', async () => {
+            const payload = {  
+                type: 'email', 
+                value: 'userA@test.com',
+                configuration: {
+                    publishableKey: integration?.publishableKey,
+                }, 
+            }; 
+
+            // Send challenge
+            await fetch(
+                `http://localhost:4000/api/contact-methods/challenge`,
+                {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload),
+                }
+            );
+
+            // Fetch the verification token from our new test endpoint
+            const testResponse = await fetch('http://localhost:4000/api/test/last-delivery');
+            const deliveryData = await testResponse.json();
+            const otpChallenge = deliveryData.templateModel.verificationToken;   
+
+            const res = await fetch(
+                `http://localhost:4000/api/contact-methods/session`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ contactMethod: { type: 'email', value: 'userA@test.com' }, otpChallenge }),
+                }
+            );
+            const sessionJwt = (await res.json()).sessionJwt;
+            expect(sessionJwt).toBeDefined();
+            expect(sessionJwt).toBeTypeOf('string');
+
+            const credential = await a.invoke.getTestVc();
+            const claimPayload = {
+                credential,
+                configuration: {
+                    publishableKey: integration?.publishableKey,
+                },
+            }
+
+            const claimResponse = await fetch(
+                `http://localhost:4000/api/inbox/claim`,
+                {
+                    method: 'POST', 
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${sessionJwt}`,
+                    },
+                    body: JSON.stringify(claimPayload),
+                } 
+            ); 
+            const claimData = await claimResponse.json();
+            expect(claimData).toBeDefined();
+            expect(claimData).toBeTypeOf('object');
+            expect(claimData.status).toBe('DELIVERED');
+        })
+    })
 });

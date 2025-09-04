@@ -1,10 +1,12 @@
 import { vi, describe, it, expect, beforeEach, afterAll, beforeAll } from 'vitest';
 import { getClient, getUser } from './helpers/getClient';
-import { Profile, ContactMethod } from '@models';
+import { Profile, ContactMethod, Integration } from '@models';
+import { LCNIntegration } from '@learncard/types';
 
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;
 let userB: Awaited<ReturnType<typeof getUser>>;
+let integration: LCNIntegration | undefined;
 
 const sendSpy = vi.fn();
 vi.mock('@services/delivery/delivery.factory', () => ({
@@ -308,6 +310,72 @@ describe('Contact Methods', () => {
                 code: 'FORBIDDEN',
                 message: 'You do not own this contact method',
             });
+        });
+
+    });
+
+    describe('Create Inbox Claim Session', () => {
+
+        beforeEach(async () => {
+            sendSpy.mockClear();
+            await Profile.delete({ detach: true, where: {} });
+            await Integration.delete({ detach: true, where: {} });
+            await ContactMethod.delete({ detach: true, where: {} });
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+
+    
+            const integrationId = await userA.clients.fullAuth.integrations.addIntegration({
+                name: 'test',
+                whitelistedDomains: ['localhost:3000'],
+                description: 'test',    
+            }); 
+            
+            integration = await userA.clients.fullAuth.integrations.getIntegration({ id: integrationId });
+        });
+
+        afterAll(async () => {
+            sendSpy.mockClear();
+            await Profile.delete({ detach: true, where: {} });
+            await Integration.delete({ detach: true, where: {} });
+            await ContactMethod.delete({ detach: true, where: {} });
+        });
+
+        it('should create an inbox claim session with a valid provisional auth token', async () => {
+            if (!integration) {
+                throw new Error('Integration not found');
+            }
+            // Add a contact method to user B
+            await noAuthClient.contactMethods.sendChallenge({ type: 'email', value: 'userA@test.com', configuration: { publishableKey: integration.publishableKey } });
+
+            const sendArgs = sendSpy.mock.calls[0][0];
+            const otpChallenge = sendArgs.templateModel.verificationToken;
+
+            const res = await noAuthClient.contactMethods.createContactMethodSession({ contactMethod: { type: 'email', value: 'userA@test.com' }, otpChallenge });
+
+            expect(res).toBeDefined();
+            expect(res.sessionJwt).toBeTypeOf('string');
+            
+            const verification = await userA.learnCard.invoke.verifyPresentation(res.sessionJwt, { proofFormat: 'jwt' });
+            expect(verification).toBeDefined();
+            expect(verification.errors.length).toBe(0);
+            expect(verification.warnings.length).toBe(0);
+            expect(verification.checks.includes('JWS')).toBe(true);
+
+        });
+
+        it('should return UNAUTHORIZED when creating a contact method session with an incorrect otp code', async () => {
+            
+            if (!integration) {
+                throw new Error('Integration not found');
+            }
+            
+            // Add a contact method to user A 
+            await userA.clients.fullAuth.contactMethods.sendChallenge({ type: 'email', value: 'userA@test.com', configuration: { publishableKey: integration.publishableKey } });
+ 
+            await expect(
+                userB.clients.fullAuth.contactMethods.createContactMethodSession({ contactMethod: { type: 'email', value: 'userA@test.com' }, otpChallenge: '123456' })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED', message: 'Invalid OTP challenge' });
         });
     });
 });

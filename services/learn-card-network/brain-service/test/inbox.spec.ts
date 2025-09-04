@@ -1496,6 +1496,6 @@ describe('Universal Inbox', () => {
                     verifiablePresentation: didAuthVp,
                 })
             ).rejects.toThrow();
-        });
+        }); 
     });
 });

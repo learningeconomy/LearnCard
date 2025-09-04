@@ -102,16 +102,23 @@ export const getLearnCard = async (seed = process.env.SEED): Promise<SeedLearnCa
     return learnCards[seed]!;
 };
 
-export const getDidWebLearnCard = async (): Promise<DidWebLearnCard> => {
-    const seed = process.env.SEED;
-
-    // TODO: is this best as an env variable, or can we grab implicitly, like in dids.ts?
+export const getServerDidWebDID = (): string => {
     const domainName = process.env.DOMAIN_NAME;
     const domain =
         !domainName || process.env.IS_OFFLINE
             ? `localhost%3A${process.env.PORT || 3000}`
-            : domainName;
-    const didWeb = `did:web:${domain}`;
+            : domainName.replace(/:/g, '%3A');
+    return `did:web:${domain}`;
+};
+
+export const isServersDidWebDID = (did: string): boolean => {
+    return did === getServerDidWebDID();
+};
+
+export const getDidWebLearnCard = async (): Promise<DidWebLearnCard> => {
+    const seed = process.env.SEED;
+
+    const didWeb = getServerDidWebDID();
 
     if (!seed) throw new Error('No seed set!');
 

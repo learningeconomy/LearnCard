@@ -1075,7 +1075,45 @@ export const getLearnCardNetworkPlugin = async (
             },
             removeContactMethod: async (_learnCard, id) => {
                 if (!userData) throw new Error('Please make an account first!');
+
                 return client.contactMethods.removeContactMethod.mutate({ id });
+            },
+            
+            // Integrations
+            addIntegration: async (_learnCard, integration) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.integrations.addIntegration.mutate(integration);
+            },
+            getIntegration: async (_learnCard, id) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.integrations.getIntegration.query({ id });
+            },
+            getIntegrations: async (_learnCard, options = {}) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.integrations.getIntegrations.query(options);
+            },
+            countIntegrations: async (_learnCard, options = {}) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.integrations.countIntegrations.query(options);
+            },
+            updateIntegration: async (_learnCard, id, updates) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.integrations.updateIntegration.mutate({ id, updates });
+            },
+            deleteIntegration: async (_learnCard, id) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.integrations.deleteIntegration.mutate({ id });
+            },
+            associateIntegrationWithSigningAuthority: async (_learnCard, integrationId, endpoint, name, did, isPrimary) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.integrations.associateIntegrationWithSigningAuthority.mutate({ integrationId, endpoint, name, did, isPrimary });
             },
 
             resolveFromLCN: async (_learnCard, uri) => {

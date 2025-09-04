@@ -768,6 +768,22 @@ export const SetPrimaryContactMethodValidator = z.object({
 
 export type SetPrimaryContactMethodType = z.infer<typeof SetPrimaryContactMethodValidator>;
 
+// Create Inbox Claim Session for a Contact Method
+export const CreateContactMethodSessionValidator = z.object({
+    contactMethod: ContactMethodVerificationRequestValidator,
+    otpChallenge: z.string(),
+});
+
+export type CreateContactMethodSessionType = z.infer<typeof CreateContactMethodSessionValidator>;
+
+export const CreateContactMethodSessionResponseValidator = z.object({
+    sessionJwt: z.string(),
+});
+
+export type CreateContactMethodSessionResponseType = z.infer<
+    typeof CreateContactMethodSessionResponseValidator
+>;
+
 // Inbox Credentials
 export const InboxCredentialValidator = z.object({
     id: z.string(),
@@ -863,6 +879,17 @@ export const IssueInboxCredentialResponseValidator = z.object({
 });
 
 export type IssueInboxCredentialResponseType = z.infer<typeof IssueInboxCredentialResponseValidator>;
+
+
+export const ClaimInboxCredentialValidator = z.object({
+    credential: VCValidator.passthrough().or(VPValidator.passthrough()).or(UnsignedVCValidator.passthrough()).describe('The credential to issue.'),
+    configuration: z.object({
+        publishableKey: z.string(),
+        signingAuthorityName: z.string().optional(),
+    }).optional(),
+});
+
+export type ClaimInboxCredentialType = z.infer<typeof ClaimInboxCredentialValidator>;
 
 // Integrations
 export const LCNDomainOrOriginValidator = z.union([

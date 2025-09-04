@@ -25,7 +25,7 @@ export async function clearDatabases() {
 
         // Run all clear operations concurrently
         await Promise.all([
-            // Clear Redises
+            // Clear Redises 
             redis1.flushall(),
             redis2.flushall(),
 

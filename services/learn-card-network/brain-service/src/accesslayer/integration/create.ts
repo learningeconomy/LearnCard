@@ -12,7 +12,7 @@ export const createIntegration = async (
         id: uuid(),
         name: input.name,
         description: input.description,
-        publishableKey: uuid(),
+        publishableKey: 'pk_' + uuid(),
         whitelistedDomains: input.whitelistedDomains ?? [],
     });
 

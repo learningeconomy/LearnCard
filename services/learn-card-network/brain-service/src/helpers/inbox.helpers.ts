@@ -1,7 +1,7 @@
 import { TRPCError } from '@trpc/server';
 import { VC, UnsignedVC, LCNNotificationTypeEnumValidator, LCNInboxStatusEnumValidator, VP, ContactMethodQueryType, InboxCredentialType, IssueInboxCredentialType, IssueInboxSigningAuthority } from '@learncard/types';
 
-import { ProfileType } from 'types/profile';
+import { ProfileType, SigningAuthorityForUserType } from 'types/profile';
 import { createInboxCredential } from '@accesslayer/inbox-credential/create';
 import { markInboxCredentialAsDelivered } from '@accesslayer/inbox-credential/update';
 import { Context } from '@routes'
@@ -32,6 +32,163 @@ export const verifyCredentialCanBeSigned = async (credential: UnsignedVC): Promi
        return false;
     }
     return true;
+}
+
+export const claimIntoInbox = async(
+    issuerProfile: ProfileType,
+    signingAuthorityForUser: SigningAuthorityForUserType,
+    recipient: ContactMethodQueryType,
+    credential: VC | UnsignedVC | VP,
+    configuration: IssueInboxCredentialType['configuration'] = {},
+    ctx: Context
+): Promise<{ 
+    status: 'PENDING' | 'DELIVERED' | 'CLAIMED' | 'EXPIRED'; 
+    inboxCredential: InboxCredentialType;
+    recipientDid?: string;
+}> => {
+    const { webhookUrl, expiresInDays } = configuration;
+    
+    const isSigned = !!credential?.proof;
+
+    if (!isSigned && !signingAuthorityForUser) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Unsigned credentials require a signing authority',
+        });
+    }
+
+    // Check if recipient already exists with verified email
+    const existingProfile = await getProfileByVerifiedContactMethod(recipient.type, recipient.value);
+
+    if (existingProfile) {
+        // Auto-deliver to existing user
+        let finalCredential: VC;
+
+        if (isSigned) {
+            finalCredential = credential as VC;
+        } else {
+            finalCredential = await issueCredentialWithSigningAuthority(
+                issuerProfile,
+                credential as UnsignedVC,
+                signingAuthorityForUser,
+                ctx.domain,
+                false // don't encrypt
+            ) as VC;
+        }
+
+        // Create inbox record for tracking
+        const inboxCredential = await createInboxCredential({
+            credential: JSON.stringify(finalCredential),
+            isSigned: true,
+            recipient,
+            issuerProfile,
+            webhookUrl,
+            expiresInDays,
+        });
+
+        // Send credential directly
+        await sendCredential(
+            issuerProfile,
+            existingProfile,
+            finalCredential,
+            ctx.domain // domain
+        );
+
+        // Mark as delivered and create relationship
+        await markInboxCredentialAsDelivered(inboxCredential.id);
+        await createDeliveredRelationship(
+            issuerProfile.profileId,
+            inboxCredential.id,
+            existingProfile.did,
+            'auto-delivery'
+        );
+
+        // // Send webhook if configured
+        // if (webhookUrl) {
+        //     const learnCard = await getLearnCard();
+        //     await addNotificationToQueue({
+        //         webhookUrl,
+        //         type: LCNNotificationTypeEnumValidator.enum.ISSUANCE_DELIVERED,
+        //         from: { did: learnCard.id.did() },
+        //         to: issuerProfile,
+        //         message: {
+        //             title: 'Credential Delivered to Inbox',
+        //             body: `${issuerProfile.displayName} sent a credential to ${recipient.type}'s inbox at ${recipient.value}!`,
+        //         },
+        //         data: { 
+        //             inbox: {
+        //                 issuanceId: inboxCredential.id,
+        //                 status: LCNInboxStatusEnumValidator.enum.DELIVERED,
+        //                 recipient: {
+        //                     contactMethod: recipient,
+        //                     learnCardId: existingProfile.did,
+        //                 },
+        //                 timestamp: new Date().toISOString(),
+        //             },
+        //         },
+        //     });
+        // }
+
+        return {
+            status: LCNInboxStatusEnumValidator.enum.DELIVERED,
+            inboxCredential,
+            recipientDid: existingProfile.did,
+        };
+    } else {
+        // Store in inbox for claiming
+        const inboxCredential = await createInboxCredential({
+            credential: JSON.stringify(credential),
+            isSigned,
+            recipient,
+            issuerProfile,
+            webhookUrl,
+            signingAuthority: {
+                endpoint: signingAuthorityForUser.signingAuthority.endpoint,
+                name: signingAuthorityForUser.relationship.name,
+            },
+            expiresInDays,
+        });
+
+        // Generate claim token
+        // let recipientContactMethod = await getContactMethodByValue(recipient.type, recipient.value);
+        // if (!recipientContactMethod) {
+        //     recipientContactMethod = await createContactMethod({
+        //         type: recipient.type,
+        //         value: recipient.value,
+        //         isVerified: false,
+        //     });
+        // }
+
+        // // Send webhook if configured
+        // if (webhookUrl) {
+        //     const learnCard = await getLearnCard();
+        //     await addNotificationToQueue({
+        //         webhookUrl,
+        //         type: LCNNotificationTypeEnumValidator.enum.ISSUANCE_DELIVERED,
+        //         from: { did: learnCard.id.did() },
+        //         to: issuerProfile,
+        //         message: {
+        //             title: 'Credential Delivered to Inbox',
+        //             body: `${issuerProfile.displayName} sent a credential to ${recipient.type}'s inbox at ${recipient.value}!`,
+        //         },
+        //         data: { 
+        //             inbox: {
+        //                 issuanceId: inboxCredential.id,
+        //                 status: LCNInboxStatusEnumValidator.enum.DELIVERED,
+        //                 recipient: {
+        //                     contactMethod: recipient,
+        //                 },
+        //                 timestamp: new Date().toISOString(),
+        //             },
+        //         },
+        //     });
+        // }
+
+        return {
+            status: LCNInboxStatusEnumValidator.enum.DELIVERED,
+            inboxCredential,
+        };
+    }
 }
 
 

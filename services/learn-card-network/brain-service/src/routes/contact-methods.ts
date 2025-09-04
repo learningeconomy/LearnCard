@@ -1,10 +1,10 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
-import { t, profileRoute } from '@routes';
+import { t, profileRoute, openRoute } from '@routes';
 
 import { createContactMethod } from '@accesslayer/contact-method/create';
-import { getContactMethodByValue } from '@accesslayer/contact-method/read';
+import { getContactMethodByValue, getContactMethodById } from '@accesslayer/contact-method/read';
 import { setPrimaryContactMethod, verifyContactMethod } from '@accesslayer/contact-method/update';
 import { deleteContactMethod } from '@accesslayer/contact-method/delete';
 import { createProfileContactMethodRelationship } from '@accesslayer/contact-method/relationships/create';
@@ -17,14 +17,20 @@ import {
     generateContactMethodVerificationToken,
     validateContactMethodVerificationToken,
 } from '@helpers/contact-method.helpers';
+import { getDidWebLearnCard, getLearnCard } from '@helpers/learnCard.helpers';
 import {
     ContactMethodValidator,
     ContactMethodVerificationRequestValidator,
     ContactMethodVerificationValidator,
     SetPrimaryContactMethodValidator,
+    CreateContactMethodSessionValidator,
+    CreateContactMethodSessionResponseValidator,
 } from '@learncard/types';
 import { getDeliveryService } from '@services/delivery/delivery.factory';
 import { getRegistryService } from '@services/registry/registry.factory';
+import { readIntegrationByPublishableKey } from '@accesslayer/integration/read';
+import { isDomainWhitelisted } from '@helpers/integrations.helpers';
+import { CONTACT_METHOD_SESSION_PREFIX } from '@helpers/contact-method.helpers';
 
 export const contactMethodsRouter = t.router({
     // Get all contact methods for the authenticated profile
@@ -45,6 +51,136 @@ export const contactMethodsRouter = t.router({
         .query(async ({ ctx }) => {
             const { profile } = ctx.user;
             return getProfileContactMethodRelationships(profile);
+        }),
+
+    // Create a session for a contact method
+    createContactMethodSession: openRoute
+        .meta({
+            openapi: {
+                protect: false,
+                method: 'POST',
+                path: '/contact-methods/session',
+                tags: ['Contact Methods'],
+                summary: 'Create Contact Method Session',
+                description:
+                    'Creates a short-lived claim session for the specified contact method and returns a claim URL that can be used to claim pending inbox credentials.',
+            },
+        })
+        .input(CreateContactMethodSessionValidator)
+        .output(CreateContactMethodSessionResponseValidator)
+        .mutation(async ({ input }) => {
+            const { contactMethod, otpChallenge } = input;
+
+            const contactMethodId = await validateContactMethodVerificationToken(otpChallenge);
+            if (!contactMethodId) {
+                throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Invalid OTP challenge' });
+            }
+
+            const contactMethodFromChallenge = await getContactMethodById(contactMethodId);
+            if (!contactMethodFromChallenge) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Contact method not found' });
+            }
+
+            if (contactMethodFromChallenge.type !== contactMethod.type || contactMethodFromChallenge.value !== contactMethod.value) {
+                throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Invalid contact method' });
+            }
+
+            try {
+                const learnCard = await getDidWebLearnCard();
+
+                const sessionJwt = (await learnCard.invoke.getDidAuthVp({
+                   proofFormat: 'jwt',
+                   challenge: CONTACT_METHOD_SESSION_PREFIX + contactMethodId
+                })) as unknown as string;
+
+                return { sessionJwt };
+            } catch (error) {
+                console.error(error);
+                if (error instanceof TRPCError) throw error;
+                throw new TRPCError({
+                    code: 'INTERNAL_SERVER_ERROR',
+                    message: 'Failed to create inbox claim session: ' + error,
+                });
+            }
+        }),
+
+    // Send an OTP challenge to a contact method
+    sendChallenge: openRoute
+        .meta({
+            openapi: {
+                protect: false,
+                method: 'POST',
+                path: '/contact-methods/challenge',
+                tags: ['Contact Methods'],
+                summary: 'Send Contact Method Challenge (OTP)',
+                description:
+                    'Generates a 6-digit OTP and sends it to the specified contact method, caching it for short-lived verification.',
+            },
+        })
+        .input(ContactMethodVerificationRequestValidator.extend({ configuration: z.object({ 
+            publishableKey: z.string() }) }))
+        .output(
+            z.object({
+                message: z.string(),
+            })
+        )
+        .mutation(async ({ ctx, input }) => {
+            const { domain } = ctx;
+            const { type, value, configuration } = input;
+
+            const { publishableKey } = configuration;
+
+            const integration = await readIntegrationByPublishableKey(publishableKey);
+            if (!integration) throw new TRPCError({ code: 'NOT_FOUND' });   
+            
+            if (!isDomainWhitelisted(domain, integration.whitelistedDomains)) throw new TRPCError({ code: 'UNAUTHORIZED' });
+
+            /**
+             * Phone numbers can only be added and verified by trusted integrations
+            */
+            if (type === 'phone') {
+                // TODO: This should be a trusted integration, not a trusted issuer
+                const isTrusted = await getRegistryService().isTrusted(integration.id);
+                if (!isTrusted) {
+                    throw new TRPCError({
+                        code: 'FORBIDDEN',
+                        message: 'Sending a challenge to a phone is a feature reserved for members of the LearnCard Trusted Registry. To verify your DID, visit: https://docs.learncard.com/how-to-guides/verify-my-issuer',
+                    });
+                }
+            }
+
+            // Check if contact method already exists
+            let contactMethodToVerify = await getContactMethodByValue(type, value);
+            if (!contactMethodToVerify) {
+                // Create new contact method (unverified)
+                contactMethodToVerify = await createContactMethod({
+                    type,
+                    value,
+                    isVerified: false,
+                    isPrimary: false,
+                });
+            }
+
+            // Generate verification token
+            const verificationToken = await generateContactMethodVerificationToken(
+                contactMethodToVerify.id,
+                type,
+                24,
+                '6-digit-code'
+            );
+
+            const deliveryService = getDeliveryService(contactMethodToVerify);
+            await deliveryService.send({
+                contactMethod: contactMethodToVerify,
+                templateId: 'contact-method-verification',
+                templateModel: {
+                    verificationToken,
+                },
+            });
+
+            return {
+                message: 'Challenge sent successfully.',
+            };
         }),
 
     // Add a new contact method (requires verification)

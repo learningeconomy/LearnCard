@@ -25,6 +25,20 @@ export const readIntegrationById = async (id: string): Promise<IntegrationType |
     return inflateObject<IntegrationType>(integration as any);
 };
 
+export const readIntegrationByPublishableKey = async (publishableKey: string): Promise<IntegrationType | null> => {
+    const result = await new QueryBuilder(new BindParam({ publishableKey }))
+        .match({ model: Integration, identifier: 'integration', where: { publishableKey } })
+        .return('integration')
+        .limit(1)
+        .run();
+
+    const integration = result.records[0]?.get('integration')?.properties;
+
+    if (!integration) return null;
+
+    return inflateObject<IntegrationType>(integration as any);
+};
+
 export const readIntegrationByName = async (name: string): Promise<IntegrationType | null> => {
     const result = await new QueryBuilder(new BindParam({ name }))
         .match({ model: Integration, identifier: 'integration', where: { name } })

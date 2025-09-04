@@ -1,5 +1,6 @@
-import { Profile } from '@models';
+import { Integration, Profile } from '@models';
 import { ProfileType, SigningAuthorityForUserType } from 'types/profile';
+import { IntegrationType } from 'types/integration';
 
 export const getSigningAuthoritiesForUser = async (
     user: ProfileType
@@ -53,6 +54,58 @@ export const getPrimarySigningAuthorityForUser = async (
     ).map((relationship: { target: any; relationship: any }) => {
         return {
             signingAuthority: relationship.target.dataValues,
+            relationship: relationship.relationship,
+        };
+    })[0];
+};
+
+export const getSigningAuthoritiesForIntegration = async (
+    integration: IntegrationType
+): Promise<SigningAuthorityForUserType[]> => {
+    return (
+        await Integration.findRelationships({
+            alias: 'usesSigningAuthority',
+            where: { source: { id: integration.id } },
+        })
+    ).map((relationship: { source: any; relationship: any }) => {
+        return {
+            signingAuthority: relationship.source.dataValues,
+            relationship: relationship.relationship,
+        };
+    });
+};
+
+export const getSigningAuthoritiesForIntegrationByName = async (
+    integration: IntegrationType,
+    name: string
+): Promise<SigningAuthorityForUserType[]> => {
+    return (
+        await Integration.findRelationships({
+            alias: 'usesSigningAuthority',
+            where: { source: { id: integration.id }, relationship: { name } },
+        })
+    ).map((relationship: { source: any; relationship: any }) => {
+        return {
+            signingAuthority: relationship.source.dataValues,
+            relationship: relationship.relationship,
+        };
+    });
+};
+
+export const getPrimarySigningAuthorityForIntegration = async (
+    integration: IntegrationType
+): Promise<SigningAuthorityForUserType | undefined> => {
+    return (
+        await Integration.findRelationships({
+            alias: 'usesSigningAuthority',
+            where: {
+                source: { id: integration.id },
+                relationship: { isPrimary: true },
+            },
+        })
+    ).map((relationship: { source: any; relationship: any }) => {
+        return {
+            signingAuthority: relationship.source.dataValues,
             relationship: relationship.relationship,
         };
     })[0];

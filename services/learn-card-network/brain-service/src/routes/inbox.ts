@@ -1,7 +1,7 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
-import { t, profileRoute } from '@routes';
+import { t, profileRoute, verifiedContactRoute } from '@routes';
 import { 
     PaginationOptionsValidator,     
     IssueInboxCredentialValidator,
@@ -9,11 +9,16 @@ import {
     InboxCredentialValidator,
     PaginatedInboxCredentialsValidator,
     InboxCredentialQueryValidator, 
-    ContactMethodQueryValidator 
+    ContactMethodQueryValidator, 
+    ClaimInboxCredentialValidator
 } from '@learncard/types';
 
-import { issueToInbox } from '@helpers/inbox.helpers';
+import { claimIntoInbox, issueToInbox } from '@helpers/inbox.helpers';
 import { getInboxCredentialsForProfile } from '@accesslayer/inbox-credential/read';
+import { readIntegrationByPublishableKey } from '@accesslayer/integration/read';
+import { getPrimarySigningAuthorityForIntegration, getSigningAuthoritiesForIntegrationByName } from '@accesslayer/signing-authority/relationships/read';
+import { getOwnerProfileForIntegration } from '@accesslayer/integration/relationships/read';
+import { isDomainWhitelisted } from '@helpers/integrations.helpers';
 
 export const inboxRouter = t.router({
     // Issue a credential to someone's inbox
@@ -65,6 +70,69 @@ export const inboxRouter = t.router({
                     message: 'Failed to issue credential to inbox',
                 });
             }
+        }),
+
+    claim: verifiedContactRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/inbox/claim',
+                tags: ['Universal Inbox'],
+                summary: 'Claim Universal Inbox Credential',
+                description: 'Claim a credential from the inbox',
+            }
+        })
+        .input(ClaimInboxCredentialValidator)
+        .output(z.object({
+            inboxCredential: z.any(),
+            status: z.string(),
+            recipientDid: z.string().optional(),
+        }))
+        .mutation(async ({ ctx, input }) => {
+            const { contactMethod, domain } = ctx;
+            const { credential, configuration } = input;
+
+            if (!credential) throw new TRPCError({ code: 'NOT_FOUND', message: 'Credential not found' });
+
+            if (!configuration) throw new TRPCError({ code: 'BAD_REQUEST', message: 'Configuration is required' });
+            const { publishableKey } = configuration;
+
+            const integration = await readIntegrationByPublishableKey(publishableKey);
+            if (!integration) throw new TRPCError({ code: 'NOT_FOUND', message: 'Integration not found' });
+
+            if (!isDomainWhitelisted(domain, integration.whitelistedDomains)) throw new TRPCError({ code: 'UNAUTHORIZED' });
+ 
+            const signingAuthorityRel = configuration?.signingAuthorityName
+                ? (await getSigningAuthoritiesForIntegrationByName(
+                      integration,
+                      configuration.signingAuthorityName
+                  )).at(0)
+                : await getPrimarySigningAuthorityForIntegration(integration);
+
+            if (!signingAuthorityRel)
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Signing Authority not found' });
+
+            const issuerProfile = await getOwnerProfileForIntegration(integration.id);
+            if (!issuerProfile) throw new TRPCError({ code: 'NOT_FOUND', message: 'Issuer Profile not found' });
+            
+            // Claim Credential into Contact Method's inbox
+            const result = await claimIntoInbox(
+                issuerProfile,
+                signingAuthorityRel,
+                contactMethod,
+                credential,
+                {
+                    expiresInDays: 720,
+                },
+                ctx
+            );
+
+            return {
+                inboxCredential: result.inboxCredential?.dataValues,
+                status: result.status,
+                recipientDid: result.recipientDid,
+            };
         }),
 
     // Get inbox credentials issued by this profile
