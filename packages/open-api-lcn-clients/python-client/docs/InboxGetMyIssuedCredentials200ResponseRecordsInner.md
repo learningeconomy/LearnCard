@@ -13,8 +13,7 @@ Name | Type | Description | Notes
 **created_at** | **str** |  | 
 **issuer_did** | **str** |  | 
 **webhook_url** | **str** |  | [optional] 
-**signing_authority_endpoint** | **str** |  | [optional] 
-**signing_authority_name** | **str** |  | [optional] 
+**signing_authority** | [**InboxGetMyIssuedCredentials200ResponseRecordsInnerSigningAuthority**](InboxGetMyIssuedCredentials200ResponseRecordsInnerSigningAuthority.md) |  | [optional] 
 
 ## Example
 
