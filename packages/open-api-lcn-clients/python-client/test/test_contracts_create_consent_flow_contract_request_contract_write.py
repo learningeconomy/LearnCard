@@ -38,11 +38,13 @@ class TestContractsCreateConsentFlowContractRequestContractWrite(unittest.TestCa
                 credentials = openapi_client.models.contracts_create_consent_flow_contract_request_contract_read_credentials.contracts_createConsentFlowContract_request_contract_read_credentials(
                     categories = {
                         'key' : openapi_client.models.storage_resolve_200_response_any_of_any_of_read_credentials_categories_value.storage_resolve_200_response_anyOf_anyOf_read_credentials_categories_value(
-                            required = True, )
+                            required = True, 
+                            default_enabled = True, )
                         }, ),
                 personal = {
                     'key' : openapi_client.models.storage_resolve_200_response_any_of_any_of_read_credentials_categories_value.storage_resolve_200_response_anyOf_anyOf_read_credentials_categories_value(
-                        required = True, )
+                        required = True, 
+                        default_enabled = True, )
                     }
             )
         else:
