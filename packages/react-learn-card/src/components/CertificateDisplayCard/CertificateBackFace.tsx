@@ -50,7 +50,7 @@ export const CertificateBackFace: React.FC<CertificateBackFaceProps> = ({
 
     const { description } = credentialSubject?.achievement ?? {};
     const criteria = credentialSubject?.achievement?.criteria?.narrative;
-    const alignment = credentialSubject?.achievement?.alignment;
+    const alignments = credentialSubject?.achievement?.alignments;
 
     const credentialDarkColor = getCategoryDarkColor(categoryType);
 
@@ -115,7 +115,7 @@ export const CertificateBackFace: React.FC<CertificateBackFaceProps> = ({
                 />
             )}
 
-            {alignment && <AlignmentsBox alignment={alignment} style="Certificate" />}
+            {alignments && <AlignmentsBox alignment={alignments} style="Certificate" />}
 
             {verificationItems && verificationItems.length > 0 && (
                 <VerificationsBox verificationItems={verificationItems} />

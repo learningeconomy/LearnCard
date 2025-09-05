@@ -103,6 +103,26 @@ export const AllFieldsCredential = {
                 narrative:
                     'You really know your crednetials! Pretty rad. Being able to find and handle all of these fields is incredible! This narrative is going to be pretty long so that we can see if you can handle long blocks of text too. This should probably be truncated off by now or something.',
             },
+            alignments: [
+                {
+                    type: 'Alignment',
+                    targetType: 'Competency',
+                    targetName: 'Teamwork',
+                    targetDescription: 'Teamwork is the ability to work well with others',
+                    targetFramework: '21st Century Skills',
+                    targetUrl: 'https://example.com/alignments/21st-century-skills/teamwork',
+                    targetCode: '123',
+                },
+                {
+                    type: ['Alignment'],
+                    targetType: 'Competency',
+                    targetName: 'Quick Thinker',
+                    targetDescription: 'Quick Thinker is the ability to think quickly',
+                    targetFramework: '21st Century Skills',
+                    targetUrl: 'https://example.com/alignments/21st-century-skills/quick-thinker',
+                    targetCode: '456',
+                },
+            ],
         },
     },
     proof: {
