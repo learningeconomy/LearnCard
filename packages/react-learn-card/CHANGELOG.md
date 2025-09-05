@@ -1,5 +1,46 @@
 # @welibraryos/react-learn-card
 
+## 2.8.39
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.45
+
+## 2.8.38
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.44
+
+## 2.8.37
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.43
+
+## 2.8.36
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.42
+
+## 2.8.35
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.41
+
+## 2.8.34
+
+### Patch Changes
+
+-   [#782](https://github.com/learningeconomy/LearnCard/pull/782) [`877dd2e4b95fe78ac656a5098cc3b22b591bcf35`](https://github.com/learningeconomy/LearnCard/commit/877dd2e4b95fe78ac656a5098cc3b22b591bcf35) Thanks [@rhen92](https://github.com/rhen92)! - [LC-1248] & [LC-1254] fix long pdf names
+
 ## 2.8.33
 
 ### Patch Changes

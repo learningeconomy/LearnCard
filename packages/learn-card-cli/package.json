@@ -1,6 +1,6 @@
 {
     "name": "@learncard/cli",
-    "version": "3.3.124",
+    "version": "3.3.130",
     "description": "Test out learn card!",
     "main": "dist/index.js",
     "bin": "dist/index.js",
@@ -15,6 +15,7 @@
         "@learncard/didkit-plugin": "workspace:^",
         "@learncard/init": "workspace:^",
         "@learncard/learn-cloud-plugin": "workspace:*",
+        "@learncard/open-badge-v2-plugin": "workspace:*",
         "@learncard/simple-signing-plugin": "workspace:*",
         "@learncard/types": "workspace:*",
         "@rollup/plugin-json": "^4.1.0",

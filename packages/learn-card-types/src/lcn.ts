@@ -46,6 +46,11 @@ export const LCNProfileValidator = z.object({
         .optional()
         .describe('URL to send notifications to.'),
     display: LCNProfileDisplayValidator.optional().describe('Display settings for the profile.'),
+    highlightedCredentials: z
+        .array(z.string())
+        .max(5)
+        .optional()
+        .describe('Up to 5 unique boost URIs to highlight on the profile.'),
     role: z
         .string()
         .default('')
@@ -169,7 +174,7 @@ export const BoostPermissionsQueryValidator = z
     .partial();
 export type BoostPermissionsQuery = z.infer<typeof BoostPermissionsQueryValidator>;
 
-export const ClaimHookTypeValidator = z.enum(['GRANT_PERMISSIONS', 'ADD_ADMIN']);
+export const ClaimHookTypeValidator = z.enum(['GRANT_PERMISSIONS', 'ADD_ADMIN', 'AUTO_CONNECT']);
 export type ClaimHookType = z.infer<typeof ClaimHookTypeValidator>;
 
 export const ClaimHookValidator = z.discriminatedUnion('type', [
@@ -183,6 +188,10 @@ export const ClaimHookValidator = z.discriminatedUnion('type', [
     }),
     z.object({
         type: z.literal(ClaimHookTypeValidator.Values.ADD_ADMIN),
+        data: z.object({ claimUri: z.string(), targetUri: z.string() }),
+    }),
+    z.object({
+        type: z.literal(ClaimHookTypeValidator.Values.AUTO_CONNECT),
         data: z.object({ claimUri: z.string(), targetUri: z.string() }),
     }),
 ]);

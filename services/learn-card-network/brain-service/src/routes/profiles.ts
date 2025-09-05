@@ -442,6 +442,7 @@ export const profilesRouter = t.router({
                 display,
                 role,
                 dob,
+                highlightedCredentials,
             } = input;
 
             const actualUpdates: Partial<ProfileType> = {};
@@ -486,6 +487,8 @@ export const profilesRouter = t.router({
             if (display) actualUpdates.display = display;
             if (role) actualUpdates.role = role;
             if (dob) actualUpdates.dob = dob;
+            if (highlightedCredentials)
+                actualUpdates.highlightedCredentials = highlightedCredentials;
 
             return updateProfile(profile, actualUpdates);
         }),

@@ -570,6 +570,24 @@ export const getLearnCardNetworkPlugin = async (
                     numberOfGenerations,
                 });
             },
+            countBoostRecipientsWithChildren: async (
+                _learnCard,
+                uri,
+                includeUnacceptedBoosts = true,
+                boostQuery,
+                profileQuery,
+                numberOfGenerations = 1
+            ) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.boost.getBoostRecipientsWithChildrenCount.query({
+                    uri,
+                    includeUnacceptedBoosts,
+                    boostQuery,
+                    profileQuery,
+                    numberOfGenerations,
+                });
+            },
             countBoostRecipients: async (_learnCard, uri, includeUnacceptedBoosts = true) => {
                 if (!userData) throw new Error('Please make an account first!');
 

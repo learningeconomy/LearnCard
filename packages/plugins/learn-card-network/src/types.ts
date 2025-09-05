@@ -246,6 +246,13 @@ export type LearnCardNetworkPluginMethods = {
         profileQuery?: LCNProfileQuery,
         numberOfGenerations?: number
     ) => Promise<PaginatedBoostRecipientsWithChildrenType>;
+    countBoostRecipientsWithChildren: (
+        uri: string,
+        includeUnacceptedBoosts?: boolean,
+        boostQuery?: BoostQuery,
+        profileQuery?: LCNProfileQuery,
+        numberOfGenerations?: number
+    ) => Promise<number>;
     countBoostRecipients: (uri: string, includeUnacceptedBoosts?: boolean) => Promise<number>;
     getConnectedBoostRecipients: (
         uri: string,
