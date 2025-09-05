@@ -61,6 +61,7 @@ export const LCNProfileValidator = z.object({
         .default('')
         .optional()
         .describe('Date of birth of the profile: e.g. "1990-01-01".'),
+    country: z.string().optional().describe('Country for the profile.'),
 });
 export type LCNProfile = z.infer<typeof LCNProfileValidator>;
 

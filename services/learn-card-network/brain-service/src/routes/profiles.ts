@@ -442,6 +442,7 @@ export const profilesRouter = t.router({
                 display,
                 role,
                 dob,
+                country,
                 highlightedCredentials,
             } = input;
 
@@ -487,6 +488,7 @@ export const profilesRouter = t.router({
             if (display) actualUpdates.display = display;
             if (role) actualUpdates.role = role;
             if (dob) actualUpdates.dob = dob;
+            if (country) actualUpdates.country = country;
             if (highlightedCredentials)
                 actualUpdates.highlightedCredentials = highlightedCredentials;
 
