@@ -1,4 +1,6 @@
 import { getEmptyLearnCard } from './learnCard.helpers';
+import { base58btc } from 'multiformats/bases/base58';
+import { base64url } from 'multiformats/bases/base64';
 
 export const areDidsEqual = async (did1: string, did2: string) => {
     try {
@@ -13,11 +15,29 @@ export const areDidsEqual = async (did1: string, did2: string) => {
             lc.invoke.resolveDid(did2),
         ]);
 
-        return resolvedDid1?.verificationMethod?.some(method1 => {
-            return resolvedDid2?.verificationMethod?.some(
-                method2 => (method1 as any)?.publicKeyJwk?.x === (method2 as any)?.publicKeyJwk?.x
-            );
-        });
+        const toX = (vm: any): string | undefined => {
+            if (!vm || typeof vm === 'string') return undefined;
+            if (vm.publicKeyJwk?.x) return vm.publicKeyJwk.x;
+            if (vm.publicKeyMultibase) {
+                const decoded = base58btc.decode(vm.publicKeyMultibase);
+                const ed = decoded[0] === 0xed && decoded[1] === 0x01 ? decoded.slice(2) : decoded;
+                return base64url.encode(ed).slice(1);
+            }
+            if (vm.publicKeyBase58) {
+                const ed = base58btc.baseDecode(vm.publicKeyBase58);
+                return base64url.encode(ed).slice(1);
+            }
+            return undefined;
+        };
+
+        const keys1 = (resolvedDid1?.verificationMethod || [])
+            .map(vm => toX(vm as any))
+            .filter(Boolean) as string[];
+        const keys2 = (resolvedDid2?.verificationMethod || [])
+            .map(vm => toX(vm as any))
+            .filter(Boolean) as string[];
+
+        return keys1.some(x => keys2.includes(x));
     } catch (error) {
         console.error('Are dids equal error', error, did1, did2);
         return false;

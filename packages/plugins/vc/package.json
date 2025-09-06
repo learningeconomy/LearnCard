@@ -38,6 +38,7 @@
     "dependencies": {
         "@learncard/core": "workspace:*",
         "@learncard/didkit-plugin": "workspace:^",
-        "@learncard/types": "workspace:*"
+        "@learncard/types": "workspace:*",
+        "multiformats": "^11.0.1"
     }
 }

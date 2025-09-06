@@ -28,6 +28,38 @@ const encodeKey = (key: Uint8Array) => {
     return base58btc.encode(bytes);
 };
 
+// Extract Ed25519 public key bytes and a JWK from a verification method that may
+// have either publicKeyJwk (2018) or publicKeyMultibase/Multikey (2020).
+const extractEd25519FromVerificationMethod = (
+    vm: any
+): { bytes: Uint8Array; jwk: JWK } => {
+    // Prefer JWK if provided
+    const jwk = vm?.publicKeyJwk as JWK | undefined;
+    if (jwk?.x) {
+        const bytes = base64url.decode(`u${jwk.x}`);
+        return { bytes, jwk } as { bytes: Uint8Array; jwk: JWK };
+    }
+
+    // Handle Multikey / 2020 suite
+    const mb = vm?.publicKeyMultibase as string | undefined;
+    if (mb) {
+        const decoded = base58btc.decode(mb);
+        const bytes = decoded[0] === 0xed && decoded[1] === 0x01 ? decoded.slice(2) : decoded;
+        const x = base64url.encode(bytes).slice(1);
+        return { bytes, jwk: { kty: 'OKP', crv: 'Ed25519', x } as JWK };
+    }
+
+    // Fallback: legacy base58 without multibase prefix
+    const b58 = vm?.publicKeyBase58 as string | undefined;
+    if (b58) {
+        const bytes = base58btc.baseDecode(b58);
+        const x = base64url.encode(bytes).slice(1);
+        return { bytes, jwk: { kty: 'OKP', crv: 'Ed25519', x } as JWK };
+    }
+
+    throw new Error('Unsupported verification method format: missing public key');
+};
+
 export const app = Fastify();
 
 app.register(fastifyCors);
@@ -104,6 +136,70 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
 
         let finalDoc = { ...replacedDoc, controller: profile.did };
 
+        // Ensure a Multikey VM is present and primary for Data Integrity (eddsa-2022)
+        try {
+            const mkContext = 'https://w3id.org/security/multikey/v1';
+            const primaryJwk = (finalDoc.verificationMethod?.[0] as any)?.publicKeyJwk as JWK | undefined;
+
+            if (primaryJwk?.x) {
+                // Convert Ed25519 JWK x -> multibase (z) with multicodec 0xed 0x01
+                const ed25519Pub = base64url.decode(`u${primaryJwk.x}`);
+                const ed25519Bytes = new Uint8Array(ed25519Pub.length + 2);
+                ed25519Bytes[0] = 0xed;
+                ed25519Bytes[1] = 0x01;
+                ed25519Bytes.set(ed25519Pub, 2);
+
+                const publicKeyMultibase = base58btc.encode(ed25519Bytes);
+
+                const multikeyVM = {
+                    id: `${did}#owner`,
+                    type: 'Multikey',
+                    controller: did,
+                    publicKeyMultibase,
+                };
+
+                // Preserve legacy JWK-based method for backwards compatibility
+                const legacyVM = {
+                    ...(finalDoc.verificationMethod?.[0] as any),
+                    id: `${did}#owner-jwk`,
+                };
+
+                // Ensure the multikey security context is present
+                const context = Array.isArray((finalDoc as any)['@context'])
+                    ? ([...(finalDoc as any)['@context']] as any[])
+                    : ([(finalDoc as any)['@context']] as any[]);
+                if (!context.includes(mkContext)) context.push(mkContext);
+
+                const legacyId = `${did}#owner-jwk`;
+
+                finalDoc = {
+                    ...(finalDoc as any),
+                    '@context': context as any,
+                    verificationMethod: [
+                        multikeyVM,
+                        ...((finalDoc.verificationMethod || []).slice(1) as any[]),
+                        legacyVM,
+                    ],
+                    authentication: Array.from(
+                        new Set([
+                            `${did}#owner`,
+                            legacyId,
+                            ...((finalDoc.authentication as any[]) || []),
+                        ])
+                    ) as any,
+                    assertionMethod: Array.from(
+                        new Set([
+                            `${did}#owner`,
+                            legacyId,
+                            ...((finalDoc.assertionMethod as any[]) || []),
+                        ])
+                    ) as any,
+                } as any;
+            }
+        } catch (e) {
+            request.log?.warn({ err: e }, 'Failed to add Multikey VM to did:web document');
+        }
+
         if (saDocs) {
             saDocs.map(sa => {
                 (finalDoc.verificationMethod = [
@@ -135,12 +231,12 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
                         const targetKey = manager.did.split(':')[2];
 
                         const targetDidDoc = await learnCard.invoke.resolveDid(targetDid);
-                        const targetJwk = (targetDidDoc.verificationMethod?.[0] as any)
-                            .publicKeyJwk as JWK;
+                        const vm = targetDidDoc.verificationMethod?.[0] as any;
+                        const { jwk: targetJwk, bytes: ed25519Bytes } =
+                            extractEd25519FromVerificationMethod(vm);
 
-                        const _decodedJwk = base64url.decode(`u${targetJwk.x}`);
                         const _x25519PublicKeyBytes =
-                            sodium.crypto_sign_ed25519_pk_to_curve25519(_decodedJwk);
+                            sodium.crypto_sign_ed25519_pk_to_curve25519(ed25519Bytes);
 
                         const id = `${did}#${targetKey}`;
 
@@ -239,12 +335,12 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
                     const targetKey = administrator.did.split(':')[2];
 
                     const targetDidDoc = await learnCard.invoke.resolveDid(targetDid);
-                    const targetJwk = (targetDidDoc.verificationMethod?.[0] as any)
-                        .publicKeyJwk as JWK;
+                    const vm = targetDidDoc.verificationMethod?.[0] as any;
+                    const { jwk: targetJwk, bytes: ed25519Bytes } =
+                        extractEd25519FromVerificationMethod(vm);
 
-                    const _decodedJwk = base64url.decode(`u${targetJwk.x}`);
                     const _x25519PublicKeyBytes =
-                        sodium.crypto_sign_ed25519_pk_to_curve25519(_decodedJwk);
+                        sodium.crypto_sign_ed25519_pk_to_curve25519(ed25519Bytes);
 
                     const id = `${did}#${targetKey}`;
 
@@ -306,10 +402,9 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
             JSON.stringify(didDoc).replaceAll(did, didWeb).replaceAll(`#${key}`, '#owner')
         );
 
-        const jwk = replacedDoc.verificationMethod[0].publicKeyJwk;
-
-        const decodedJwk = base64url.decode(`u${jwk.x}`);
-        const x25519PublicKeyBytes = sodium.crypto_sign_ed25519_pk_to_curve25519(decodedJwk);
+        const vm = replacedDoc.verificationMethod[0] as any;
+        const { bytes: ed25519Bytes } = extractEd25519FromVerificationMethod(vm);
+        const x25519PublicKeyBytes = sodium.crypto_sign_ed25519_pk_to_curve25519(ed25519Bytes);
 
         const finalDoc = {
             ...replacedDoc,
