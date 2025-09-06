@@ -28,6 +28,38 @@ const encodeKey = (key: Uint8Array) => {
     return base58btc.encode(bytes);
 };
 
+// Extract Ed25519 public key bytes and a JWK from a verification method that may
+// have either publicKeyJwk (2018) or publicKeyMultibase/Multikey (2020).
+const extractEd25519FromVerificationMethod = (
+    vm: any
+): { bytes: Uint8Array; jwk: JWK } => {
+    // Prefer JWK if provided
+    const jwk = vm?.publicKeyJwk as JWK | undefined;
+    if (jwk?.x) {
+        const bytes = base64url.decode(`u${jwk.x}`);
+        return { bytes, jwk } as { bytes: Uint8Array; jwk: JWK };
+    }
+
+    // Handle Multikey / 2020 suite
+    const mb = vm?.publicKeyMultibase as string | undefined;
+    if (mb) {
+        const decoded = base58btc.decode(mb);
+        const bytes = decoded[0] === 0xed && decoded[1] === 0x01 ? decoded.slice(2) : decoded;
+        const x = base64url.encode(bytes).slice(1);
+        return { bytes, jwk: { kty: 'OKP', crv: 'Ed25519', x } as JWK };
+    }
+
+    // Fallback: legacy base58 without multibase prefix
+    const b58 = vm?.publicKeyBase58 as string | undefined;
+    if (b58) {
+        const bytes = base58btc.baseDecode(b58);
+        const x = base64url.encode(bytes).slice(1);
+        return { bytes, jwk: { kty: 'OKP', crv: 'Ed25519', x } as JWK };
+    }
+
+    throw new Error('Unsupported verification method format: missing public key');
+};
+
 export const app = Fastify();
 
 app.register(fastifyCors);
@@ -199,12 +231,12 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
                         const targetKey = manager.did.split(':')[2];
 
                         const targetDidDoc = await learnCard.invoke.resolveDid(targetDid);
-                        const targetJwk = (targetDidDoc.verificationMethod?.[0] as any)
-                            .publicKeyJwk as JWK;
+                        const vm = targetDidDoc.verificationMethod?.[0] as any;
+                        const { jwk: targetJwk, bytes: ed25519Bytes } =
+                            extractEd25519FromVerificationMethod(vm);
 
-                        const _decodedJwk = base64url.decode(`u${targetJwk.x}`);
                         const _x25519PublicKeyBytes =
-                            sodium.crypto_sign_ed25519_pk_to_curve25519(_decodedJwk);
+                            sodium.crypto_sign_ed25519_pk_to_curve25519(ed25519Bytes);
 
                         const id = `${did}#${targetKey}`;
 
@@ -303,12 +335,12 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
                     const targetKey = administrator.did.split(':')[2];
 
                     const targetDidDoc = await learnCard.invoke.resolveDid(targetDid);
-                    const targetJwk = (targetDidDoc.verificationMethod?.[0] as any)
-                        .publicKeyJwk as JWK;
+                    const vm = targetDidDoc.verificationMethod?.[0] as any;
+                    const { jwk: targetJwk, bytes: ed25519Bytes } =
+                        extractEd25519FromVerificationMethod(vm);
 
-                    const _decodedJwk = base64url.decode(`u${targetJwk.x}`);
                     const _x25519PublicKeyBytes =
-                        sodium.crypto_sign_ed25519_pk_to_curve25519(_decodedJwk);
+                        sodium.crypto_sign_ed25519_pk_to_curve25519(ed25519Bytes);
 
                     const id = `${did}#${targetKey}`;
 
@@ -370,10 +402,9 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
             JSON.stringify(didDoc).replaceAll(did, didWeb).replaceAll(`#${key}`, '#owner')
         );
 
-        const jwk = replacedDoc.verificationMethod[0].publicKeyJwk;
-
-        const decodedJwk = base64url.decode(`u${jwk.x}`);
-        const x25519PublicKeyBytes = sodium.crypto_sign_ed25519_pk_to_curve25519(decodedJwk);
+        const vm = replacedDoc.verificationMethod[0] as any;
+        const { bytes: ed25519Bytes } = extractEd25519FromVerificationMethod(vm);
+        const x25519PublicKeyBytes = sodium.crypto_sign_ed25519_pk_to_curve25519(ed25519Bytes);
 
         const finalDoc = {
             ...replacedDoc,

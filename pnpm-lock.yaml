@@ -1549,6 +1549,9 @@ importers:
       '@learncard/types':
         specifier: workspace:*
         version: link:../../learn-card-types
+      multiformats:
+        specifier: ^11.0.1
+        version: 11.0.2
     devDependencies:
       '@types/jest':
         specifier: ^29.2.2
