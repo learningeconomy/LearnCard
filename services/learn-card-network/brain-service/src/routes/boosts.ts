@@ -526,6 +526,7 @@ export const boostsRouter = t.router({
                 summary: 'Get connected boost recipients',
                 description: 'This endpoint gets the recipients of a particular boost',
             },
+            requiredScope: 'boosts:read',
         })
         .input(
             PaginationOptionsValidator.extend({
@@ -693,7 +694,8 @@ export const boostsRouter = t.router({
                 path: '/boost/recipients-with-children/paginated',
                 tags: ['Boosts'],
                 summary: 'Get boost recipients with children',
-                description: 'This endpoint gets the recipients of a boost and all its children boosts',
+                description:
+                    'This endpoint gets the recipients of a boost and all its children boosts',
             },
             requiredScope: 'boosts:read',
         })
@@ -736,7 +738,7 @@ export const boostsRouter = t.router({
             });
 
             const hasMore = records.length > limit;
-            
+
             // Create cursor from the last record (using profileId for consistency with Neo4j sorting)
             let newCursor: string | undefined;
             if (hasMore && records.length > 0) {

@@ -1298,7 +1298,6 @@ export const contractsRouter = t.router({
                 summary: 'Verifies that a profile has consented to a contract',
                 description: 'Checks if a profile has consented to the specified contract',
             },
-            requiredScope: 'contracts:read',
         })
         .input(z.object({ uri: z.string(), profileId: z.string() }))
         .output(z.boolean())

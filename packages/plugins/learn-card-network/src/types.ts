@@ -288,11 +288,7 @@ export type LearnCardNetworkPluginMethods = {
     ) => Promise<string>;
 
     registerSigningAuthority: (endpoint: string, name: string, did: string) => Promise<boolean>;
-    getRegisteredSigningAuthorities: (
-        endpoint: string,
-        name: string,
-        did: string
-    ) => Promise<LCNSigningAuthorityForUserType[]>;
+    getRegisteredSigningAuthorities: () => Promise<LCNSigningAuthorityForUserType[]>;
     getRegisteredSigningAuthority: (
         endpoint: string,
         name: string
