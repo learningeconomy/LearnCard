@@ -9,7 +9,6 @@ import {
     ConsentFlowContractValidator,
     ConsentFlowTermsValidator,
     JWE,
-    AUTH_GRANT_AUDIENCE_DOMAIN_PREFIX,
 } from '@learncard/types';
 import { LearnCard } from '@learncard/core';
 import { VerifyExtension } from '@learncard/vc-plugin';
@@ -302,9 +301,19 @@ export const getLearnCardNetworkPlugin = async (
                 return client.profile.paginatedConnectionRequests.query(options);
             },
 
-            generateInvite: async (_learnCard, challenge, expiration) => {
+            generateInvite: async (_learnCard, challenge, expiration, maxUses) => {
                 if (!userData) throw new Error('Please make an account first!');
-                return client.profile.generateInvite.mutate({ challenge, expiration });
+                return client.profile.generateInvite.mutate({ challenge, expiration, maxUses });
+            },
+
+            listInvites: async () => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.profile.listInvites.query();
+            },
+
+            invalidateInvite: async (_learnCard, challenge) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.profile.invalidateInvite.mutate({ challenge });
             },
 
             blockProfile: async (_learnCard, profileId) => {
@@ -1187,7 +1196,7 @@ export const getVerifyBoostPlugin = async (
                             }
                         }
                     }
-                } catch (e) {
+                } catch {
                     verificationCheck.errors.push('Boost authenticity could not be verified.');
                 }
                 return verificationCheck;
