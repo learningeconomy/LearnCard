@@ -9,7 +9,6 @@ import {
     ConsentFlowContractValidator,
     ConsentFlowTermsValidator,
     JWE,
-    AUTH_GRANT_AUDIENCE_DOMAIN_PREFIX,
 } from '@learncard/types';
 import { LearnCard } from '@learncard/core';
 import { VerifyExtension } from '@learncard/vc-plugin';
@@ -55,12 +54,12 @@ export async function getLearnCardNetworkPlugin(
     const client = apiToken
         ? await getApiTokenClient(url, apiToken)
         : await getClient(url, async challenge => {
-              const jwt = await learnCard.invoke.getDidAuthVp({ proofFormat: 'jwt', challenge });
+            const jwt = await learnCard.invoke.getDidAuthVp({ proofFormat: 'jwt', challenge });
 
-              if (typeof jwt !== 'string') throw new Error('Error getting DID-Auth-JWT!');
+            if (typeof jwt !== 'string') throw new Error('Error getting DID-Auth-JWT!');
 
-              return jwt;
-          });
+            return jwt;
+        });
 
     let userData: LCNProfile | undefined;
 
@@ -295,7 +294,7 @@ export async function getLearnCardNetworkPlugin(
             getProfile: async (_learnCard, profileId) => {
                 try {
                     await ensureUser();
-                } catch {}
+                } catch { }
 
                 // If no profileId is provided, return whatever we have cached locally.
                 if (!profileId) return userData;
@@ -393,10 +392,22 @@ export async function getLearnCardNetworkPlugin(
                 return client.profile.paginatedConnectionRequests.query(options);
             },
 
-            generateInvite: async (_learnCard, challenge, expiration) => {
+            generateInvite: async (_learnCard, challenge, expiration, maxUses) => {
                 await ensureUser();
 
-                return client.profile.generateInvite.mutate({ challenge, expiration });
+                return client.profile.generateInvite.mutate({ challenge, expiration, maxUses });
+            },
+
+            listInvites: async () => {
+                await ensureUser();
+
+                return client.profile.listInvites.query();
+            },
+
+            invalidateInvite: async (_learnCard, challenge) => {
+                await ensureUser();
+
+                return client.profile.invalidateInvite.mutate({ challenge });
             },
 
             blockProfile: async (_learnCard, profileId) => {
@@ -647,6 +658,24 @@ export async function getLearnCardNetworkPlugin(
                     uri,
                     limit,
                     cursor,
+                    includeUnacceptedBoosts,
+                    boostQuery,
+                    profileQuery,
+                    numberOfGenerations,
+                });
+            },
+            countBoostRecipientsWithChildren: async (
+                _learnCard,
+                uri,
+                includeUnacceptedBoosts = true,
+                boostQuery,
+                profileQuery,
+                numberOfGenerations = 1
+            ) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.boost.getBoostRecipientsWithChildrenCount.query({
+                    uri,
                     includeUnacceptedBoosts,
                     boostQuery,
                     profileQuery,
@@ -1276,7 +1305,7 @@ export const getVerifyBoostPlugin = async (
                             }
                         }
                     }
-                } catch (e) {
+                } catch {
                     verificationCheck.errors.push('Boost authenticity could not be verified.');
                 }
                 return verificationCheck;

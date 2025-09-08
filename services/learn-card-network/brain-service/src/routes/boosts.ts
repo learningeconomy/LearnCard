@@ -51,6 +51,7 @@ import {
     countConnectedBoostRecipients,
     isProfileBoostAdmin,
     countBoostRecipients,
+    countBoostRecipientsWithChildren,
     isBoostParent,
     getBoostPermissions,
     canManageBoostPermissions,
@@ -753,6 +754,46 @@ export const boostsRouter = t.router({
                 records: records.slice(0, limit),
                 ...(newCursor && { cursor: newCursor }),
             };
+        }),
+
+    getBoostRecipientsWithChildrenCount: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/boost/recipients-with-children/count',
+                tags: ['Boosts'],
+                summary: 'Count boost recipients with children',
+                description:
+                    'This endpoint counts distinct recipients of a boost and all its children boosts',
+            },
+            requiredScope: 'boosts:read',
+        })
+        .input(
+            z.object({
+                uri: z.string(),
+                includeUnacceptedBoosts: z.boolean().default(true),
+                numberOfGenerations: z.number().default(1),
+                boostQuery: BoostQueryValidator.optional(),
+                profileQuery: LCNProfileQueryValidator.optional(),
+            })
+        )
+        .output(z.number())
+        .query(async ({ input }) => {
+            const { uri, includeUnacceptedBoosts, numberOfGenerations, boostQuery, profileQuery } =
+                input;
+
+            const decodedUri = decodeURIComponent(uri);
+            const boost = await getBoostByUri(decodedUri);
+
+            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            return countBoostRecipientsWithChildren(boost, {
+                includeUnacceptedBoosts,
+                numberOfGenerations,
+                boostQuery,
+                profileQuery,
+            });
         }),
 
     countBoostChildren: profileRoute

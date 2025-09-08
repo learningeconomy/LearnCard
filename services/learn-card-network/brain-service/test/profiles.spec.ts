@@ -1,7 +1,7 @@
 import { vi } from 'vitest';
 import { LCNProfileConnectionStatusEnum } from '@learncard/types';
 import { getClient, getUser } from './helpers/getClient';
-import { Profile, SigningAuthority, Credential, Boost } from '@models';
+import { Profile, SigningAuthority, Credential, Boost, ClaimHook } from '@models';
 import cache from '@cache';
 import { testVc, sendBoost, testVp, testUnsignedBoost } from './helpers/send';
 
@@ -197,6 +197,15 @@ describe('Profiles', () => {
             const profile = await userA.clients.fullAuth.profile.getProfile();
 
             expect(profile?.dob).toEqual('2000-01-01');
+        });
+        it('should allow setting highlightedCredentials on create', async () => {
+            await userA.clients.fullAuth.profile.createProfile({
+                profileId: 'usera',
+                highlightedCredentials: ['cred1', 'cred2', 'cred3'],
+            });
+            const profile = await userA.clients.fullAuth.profile.getProfile();
+
+            expect(profile?.highlightedCredentials).toEqual(['cred1', 'cred2', 'cred3']);
         });
     });
 
@@ -857,6 +866,18 @@ describe('Profiles', () => {
 
             expect(userAResult?.isPrivate).toBeTruthy();
         });
+
+        it('should allow updating highlightedCredentials', async () => {
+            await expect(
+                userA.clients.fullAuth.profile.updateProfile({
+                    highlightedCredentials: ['credA', 'credB'],
+                })
+            ).resolves.not.toThrow();
+
+            const profile = await userA.clients.fullAuth.profile.getProfile();
+
+            expect(profile?.highlightedCredentials).toEqual(['credA', 'credB']);
+        });
     });
 
     describe('deleteProfile', () => {
@@ -1391,6 +1412,191 @@ describe('Profiles', () => {
 
             expect([...firstPage.records, ...secondPage.records]).toEqual(connections.records);
         });
+
+        it('should include explicit auto-connect recipients in paginated connections', async () => {
+            // Clean up any existing graph artifacts
+            await Boost.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+            await ClaimHook.delete({ detach: true, where: {} });
+
+            const claimUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            const targetUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            await userA.clients.fullAuth.claimHook.createClaimHook({
+                hook: {
+                    type: 'AUTO_CONNECT',
+                    data: { claimUri, targetUri },
+                },
+            });
+
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB },
+                claimUri,
+                true
+            );
+
+            const connections = await userA.clients.fullAuth.profile.paginatedConnections();
+
+            expect(connections.records).toHaveLength(1);
+            expect(connections.records[0]?.profileId).toEqual('userb');
+        });
+
+        it("should include creator of explicit auto-connect boost in recipient's paginated connections", async () => {
+            // Clean up any existing graph artifacts
+            await Boost.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+            await ClaimHook.delete({ detach: true, where: {} });
+
+            const claimUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            const targetUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            await userA.clients.fullAuth.claimHook.createClaimHook({
+                hook: {
+                    type: 'AUTO_CONNECT',
+                    data: { claimUri, targetUri },
+                },
+            });
+
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB },
+                claimUri,
+                true
+            );
+
+            const connections = await userB.clients.fullAuth.profile.paginatedConnections();
+
+            expect(connections.records).toHaveLength(1);
+            expect(connections.records[0]?.profileId).toEqual('usera');
+        });
+
+        it('should paginate explicit auto-connect connections for multiple recipients', async () => {
+            // Clean up any existing graph artifacts
+            await Boost.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+            await ClaimHook.delete({ detach: true, where: {} });
+
+            const claimUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            const targetUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            await userA.clients.fullAuth.claimHook.createClaimHook({
+                hook: {
+                    type: 'AUTO_CONNECT',
+                    data: { claimUri, targetUri },
+                },
+            });
+
+            // Send the claim boost to two recipients; accepting should create explicit edges for both
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB },
+                claimUri,
+                true
+            );
+
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userc', user: userC },
+                claimUri,
+                true
+            );
+
+            const firstPage = await userA.clients.fullAuth.profile.paginatedConnections({
+                limit: 1,
+            });
+
+            expect(firstPage.records).toHaveLength(1);
+            expect(firstPage.hasMore).toBeTruthy();
+            expect(firstPage.cursor).toBeDefined();
+
+            const secondPage = await userA.clients.fullAuth.profile.paginatedConnections({
+                limit: 1,
+                cursor: firstPage.cursor,
+            });
+
+            expect(secondPage.records).toHaveLength(1);
+            expect(secondPage.hasMore).toBeFalsy();
+
+            const combined = [...firstPage.records, ...secondPage.records].map(r => r.profileId);
+            expect(combined.sort()).toEqual(['userb', 'userc']);
+        });
+
+        it('should include target-only recipients when only some claim the explicit auto-connect hook', async () => {
+            // Clean up any existing graph artifacts
+            await Boost.delete({ detach: true, where: {} });
+            await Credential.delete({ detach: true, where: {} });
+            await ClaimHook.delete({ detach: true, where: {} });
+
+            const claimUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+            });
+
+            const targetUri = await userA.clients.fullAuth.boost.createBoost({
+                credential: testUnsignedBoost,
+                autoConnectRecipients: true,
+            });
+
+            await userA.clients.fullAuth.claimHook.createClaimHook({
+                hook: {
+                    type: 'AUTO_CONNECT',
+                    data: { claimUri, targetUri },
+                },
+            });
+
+            // userb claims the claim boost, creating an explicit auto-connect edge on the target boost
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userb', user: userB },
+                claimUri,
+                true
+            );
+
+            // userc only receives the target boost; no claim of the claim boost occurs
+            await sendBoost(
+                { profileId: 'usera', user: userA },
+                { profileId: 'userc', user: userC },
+                targetUri,
+                true
+            );
+
+            const ownerConnections = await userA.clients.fullAuth.profile.paginatedConnections();
+
+            // Expect both the claimant (userb) and the target-only recipient (userc) to be connected
+            expect(ownerConnections.records.map(r => r.profileId).sort()).toEqual([
+                'userb',
+                'userc',
+            ]);
+
+            const userBConnections = await userB.clients.fullAuth.profile.paginatedConnections();
+            expect(userBConnections.records).toHaveLength(2);
+            expect(userBConnections.records.map(r => r.profileId).sort()).toEqual([
+                'usera',
+                'userc',
+            ]);
+
+            const userCConnections = await userC.clients.fullAuth.profile.paginatedConnections();
+            expect(userCConnections.records).toHaveLength(2);
+            expect(userCConnections.records.map(r => r.profileId).sort()).toEqual([
+                'usera',
+                'userb',
+            ]);
+        });
     });
 
     describe('pendingConnections', () => {
@@ -1751,7 +1957,9 @@ describe('Profiles', () => {
         });
 
         it('should set the first signing authority registered as primary', async () => {
-            await expect(userA.clients.fullAuth.profile.primarySigningAuthority()).resolves.toBeUndefined();
+            await expect(
+                userA.clients.fullAuth.profile.primarySigningAuthority()
+            ).resolves.toBeUndefined();
             await expect(
                 userA.clients.fullAuth.profile.registerSigningAuthority({
                     endpoint: 'http://localhost:4000',
@@ -1759,7 +1967,9 @@ describe('Profiles', () => {
                     did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
                 })
             ).resolves.not.toThrow();
-            await expect(userA.clients.fullAuth.profile.primarySigningAuthority()).resolves.toMatchObject({
+            await expect(
+                userA.clients.fullAuth.profile.primarySigningAuthority()
+            ).resolves.toMatchObject({
                 signingAuthority: {
                     endpoint: 'http://localhost:4000',
                 },
@@ -1771,7 +1981,9 @@ describe('Profiles', () => {
         });
 
         it('should allow setting a signing authority as primary', async () => {
-            await expect(userA.clients.fullAuth.profile.primarySigningAuthority()).resolves.toBeUndefined();
+            await expect(
+                userA.clients.fullAuth.profile.primarySigningAuthority()
+            ).resolves.toBeUndefined();
             await expect(
                 userA.clients.fullAuth.profile.registerSigningAuthority({
                     endpoint: 'http://localhost:4000',
@@ -1779,7 +1991,9 @@ describe('Profiles', () => {
                     did: 'did:key:z6MkitsQTk2GDNYXAFckVcQHtC68S9j9ruVFYWrixM6RG5Mw',
                 })
             ).resolves.not.toThrow();
-            await expect(userA.clients.fullAuth.profile.primarySigningAuthority()).resolves.toMatchObject({
+            await expect(
+                userA.clients.fullAuth.profile.primarySigningAuthority()
+            ).resolves.toMatchObject({
                 signingAuthority: {
                     endpoint: 'http://localhost:4000',
                 },
@@ -1797,7 +2011,9 @@ describe('Profiles', () => {
                 })
             ).resolves.not.toThrow();
 
-            await expect(userA.clients.fullAuth.profile.primarySigningAuthority()).resolves.toMatchObject({
+            await expect(
+                userA.clients.fullAuth.profile.primarySigningAuthority()
+            ).resolves.toMatchObject({
                 signingAuthority: {
                     endpoint: 'http://localhost:4000',
                 },
@@ -1813,7 +2029,9 @@ describe('Profiles', () => {
                     name: 'mysa2',
                 })
             ).resolves.not.toThrow();
-            await expect(userA.clients.fullAuth.profile.primarySigningAuthority()).resolves.toMatchObject({
+            await expect(
+                userA.clients.fullAuth.profile.primarySigningAuthority()
+            ).resolves.toMatchObject({
                 signingAuthority: {
                     endpoint: 'http://localhost:5000',
                 },
@@ -2137,6 +2355,106 @@ describe('Profiles', () => {
                     code: 'NOT_FOUND',
                     message: 'Invite not found or has expired',
                 });
+            });
+        });
+
+        describe('listInvites', () => {
+            it('lists invites with usage info and updates after consumption', async () => {
+                // Create profiles
+                const gen = await userB.clients.fullAuth.profile.generateInvite({ maxUses: 2, expiration: 10 });
+
+                // Initially: one invite with 2 uses remaining
+                const before = await userB.clients.fullAuth.profile.listInvites();
+
+                expect(before.length).toBe(1);
+                expect(before[0]!.challenge).toBe(gen.challenge);
+                expect(before[0]!.maxUses).toBe(2);
+                expect(before[0]!.usesRemaining).toBe(2);
+                expect(typeof before[0]!.expiresIn === 'number' || before[0]!.expiresIn === null).toBeTruthy();
+
+                // Consume once
+                await userA.clients.fullAuth.profile.connectWithInvite({
+                    profileId: 'userb',
+                    challenge: gen.challenge,
+                });
+
+                const afterOne = await userB.clients.fullAuth.profile.listInvites();
+                expect(afterOne.length).toBe(1);
+                expect(afterOne[0]!.usesRemaining).toBe(1);
+
+                // Consume second time (by a different user)
+                await userC.clients.fullAuth.profile.connectWithInvite({
+                    profileId: 'userb',
+                    challenge: gen.challenge,
+                });
+
+                // Exhausted invites should no longer be listed
+                const afterTwo = await userB.clients.fullAuth.profile.listInvites();
+                expect(afterTwo.length).toBe(0);
+            });
+        });
+
+        describe('usage limits', () => {
+            it('supports multi-use invites until exhausted', async () => {
+                const { challenge } = await userB.clients.fullAuth.profile.generateInvite({ maxUses: 2 });
+
+                // First user connects
+                await expect(
+                    userA.clients.fullAuth.profile.connectWithInvite({ profileId: 'userb', challenge })
+                ).resolves.toBe(true);
+
+                // Second user connects
+                await expect(
+                    userC.clients.fullAuth.profile.connectWithInvite({ profileId: 'userb', challenge })
+                ).resolves.toBe(true);
+
+                // Third distinct user should fail (invite exhausted)
+                const userD = await getUser('d'.repeat(64));
+                await userD.clients.fullAuth.profile.createProfile({ profileId: 'userd' });
+
+                await expect(
+                    userD.clients.fullAuth.profile.connectWithInvite({ profileId: 'userb', challenge })
+                ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+            });
+
+            it('supports unlimited invites (maxUses: 0)', async () => {
+                const { challenge } = await userB.clients.fullAuth.profile.generateInvite({ maxUses: 0, expiration: 10 });
+
+                // Listed with unlimited usage
+                const listed = await userB.clients.fullAuth.profile.listInvites();
+                expect(listed.length).toBe(1);
+                expect(listed[0]!.challenge).toBe(challenge);
+                expect(listed[0]!.maxUses).toBeNull();
+                expect(listed[0]!.usesRemaining).toBeNull();
+
+                // Multiple connections succeed
+                await expect(
+                    userA.clients.fullAuth.profile.connectWithInvite({ profileId: 'userb', challenge })
+                ).resolves.toBe(true);
+                await expect(
+                    userC.clients.fullAuth.profile.connectWithInvite({ profileId: 'userb', challenge })
+                ).resolves.toBe(true);
+
+                // Still listed as unlimited
+                const after = await userB.clients.fullAuth.profile.listInvites();
+                expect(after.length).toBe(1);
+                expect(after[0]!.usesRemaining).toBeNull();
+            });
+        });
+
+        describe('invalidateInvite route', () => {
+            it('invalidates a specific invite and prevents future use', async () => {
+                const { challenge } = await userB.clients.fullAuth.profile.generateInvite({ maxUses: 0 });
+
+                // Owner invalidates invite
+                await expect(
+                    userB.clients.fullAuth.profile.invalidateInvite({ challenge })
+                ).resolves.toBe(true);
+
+                // Attempting to use now fails
+                await expect(
+                    userA.clients.fullAuth.profile.connectWithInvite({ profileId: 'userb', challenge })
+                ).rejects.toMatchObject({ code: 'NOT_FOUND' });
             });
         });
     });

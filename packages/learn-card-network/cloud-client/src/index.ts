@@ -19,6 +19,7 @@ export const getClient = async (
                 methodOverride: 'POST',
                 url,
                 maxURLLength: 3072,
+                maxItems: 50,
                 headers: { Authorization: `Bearer ${await didAuthFunction()}` },
             }),
         ],
@@ -40,6 +41,7 @@ export const getClient = async (
             httpBatchLink({
                 methodOverride: 'POST',
                 url,
+                maxItems: 50,
                 maxURLLength: 3072,
                 headers: async () => {
                     if (challenges.length === 0) challenges.push(...(await getChallenges()));

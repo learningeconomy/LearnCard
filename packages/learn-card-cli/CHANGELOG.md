@@ -1,5 +1,69 @@
 # @learncard/cli
 
+## 3.3.131
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.46
+
+## 3.3.130
+
+### Patch Changes
+
+-   Updated dependencies [[`53da9a38a1cc07d2c4c5721dd3a9d9ddc4ecb316`](https://github.com/learningeconomy/LearnCard/commit/53da9a38a1cc07d2c4c5721dd3a9d9ddc4ecb316)]:
+    -   @learncard/learn-cloud-plugin@2.1.43
+    -   @learncard/init@2.0.45
+
+## 3.3.129
+
+### Patch Changes
+
+-   Updated dependencies [[`00c5403c2932185290ae4e226ca4bf446a1d636c`](https://github.com/learningeconomy/LearnCard/commit/00c5403c2932185290ae4e226ca4bf446a1d636c)]:
+    -   @learncard/types@5.8.5
+    -   @learncard/core@9.3.37
+    -   @learncard/init@2.0.44
+    -   @learncard/didkit-plugin@1.5.29
+    -   @learncard/learn-cloud-plugin@2.1.42
+    -   @learncard/open-badge-v2-plugin@1.0.3
+    -   @learncard/simple-signing-plugin@1.0.27
+
+## 3.3.128
+
+### Patch Changes
+
+-   Updated dependencies [[`3707252bea0526aed3c17f0501ec3275e162f6bb`](https://github.com/learningeconomy/LearnCard/commit/3707252bea0526aed3c17f0501ec3275e162f6bb)]:
+    -   @learncard/types@5.8.4
+    -   @learncard/core@9.3.36
+    -   @learncard/init@2.0.43
+    -   @learncard/didkit-plugin@1.5.28
+    -   @learncard/learn-cloud-plugin@2.1.41
+    -   @learncard/open-badge-v2-plugin@1.0.2
+    -   @learncard/simple-signing-plugin@1.0.26
+
+## 3.3.127
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.42
+
+## 3.3.126
+
+### Patch Changes
+
+-   [#786](https://github.com/learningeconomy/LearnCard/pull/786) [`632f516a38aed4397f68abecc89cd7c6c6fa5fcf`](https://github.com/learningeconomy/LearnCard/commit/632f516a38aed4397f68abecc89cd7c6c6fa5fcf) Thanks [@Custard7](https://github.com/Custard7)! - [LC-1293] - feat: Add OpenBadgeV2 SDK Plugin
+
+-   Updated dependencies [[`632f516a38aed4397f68abecc89cd7c6c6fa5fcf`](https://github.com/learningeconomy/LearnCard/commit/632f516a38aed4397f68abecc89cd7c6c6fa5fcf)]:
+    -   @learncard/open-badge-v2-plugin@1.0.1
+
+## 3.3.125
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.0.41
+
 ## 3.3.124
 
 ### Patch Changes

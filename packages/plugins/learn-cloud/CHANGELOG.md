@@ -1,5 +1,34 @@
 # learn-card-core
 
+## 2.1.43
+
+### Patch Changes
+
+-   [#801](https://github.com/learningeconomy/LearnCard/pull/801) [`53da9a38a1cc07d2c4c5721dd3a9d9ddc4ecb316`](https://github.com/learningeconomy/LearnCard/commit/53da9a38a1cc07d2c4c5721dd3a9d9ddc4ecb316) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Lower the `maxItems` in the tRPC client to 50 to prevent AWS payload response limits
+
+-   Updated dependencies [[`53da9a38a1cc07d2c4c5721dd3a9d9ddc4ecb316`](https://github.com/learningeconomy/LearnCard/commit/53da9a38a1cc07d2c4c5721dd3a9d9ddc4ecb316)]:
+    -   @learncard/learn-cloud-client@1.4.18
+
+## 2.1.42
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.37
+    -   @learncard/helpers@1.1.25
+    -   @learncard/learn-cloud-client@1.4.17
+    -   @learncard/didkit-plugin@1.5.29
+
+## 2.1.41
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.36
+    -   @learncard/helpers@1.1.24
+    -   @learncard/learn-cloud-client@1.4.16
+    -   @learncard/didkit-plugin@1.5.28
+
 ## 2.1.40
 
 ### Patch Changes
