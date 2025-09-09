@@ -30,9 +30,7 @@ const encodeKey = (key: Uint8Array) => {
 
 // Extract Ed25519 public key bytes and a JWK from a verification method that may
 // have either publicKeyJwk (2018) or publicKeyMultibase/Multikey (2020).
-const extractEd25519FromVerificationMethod = (
-    vm: any
-): { bytes: Uint8Array; jwk: JWK } => {
+const extractEd25519FromVerificationMethod = (vm: any): { bytes: Uint8Array; jwk: JWK } => {
     // Prefer JWK if provided
     const jwk = vm?.publicKeyJwk as JWK | undefined;
     if (jwk?.x) {
@@ -136,68 +134,28 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
 
         let finalDoc = { ...replacedDoc, controller: profile.did };
 
-        // Ensure a Multikey VM is present and primary for Data Integrity (eddsa-2022)
+        // Ensure the primary verification method is 2020 (publicKeyMultibase) only
         try {
-            const mkContext = 'https://w3id.org/security/multikey/v1';
-            const primaryJwk = (finalDoc.verificationMethod?.[0] as any)?.publicKeyJwk as JWK | undefined;
+            const vm0 = (finalDoc.verificationMethod?.[0] as any) || {};
+            const { bytes: ed25519Bytes } = extractEd25519FromVerificationMethod(vm0);
 
-            if (primaryJwk?.x) {
-                // Convert Ed25519 JWK x -> multibase (z) with multicodec 0xed 0x01
-                const ed25519Pub = base64url.decode(`u${primaryJwk.x}`);
-                const ed25519Bytes = new Uint8Array(ed25519Pub.length + 2);
-                ed25519Bytes[0] = 0xed;
-                ed25519Bytes[1] = 0x01;
-                ed25519Bytes.set(ed25519Pub, 2);
+            // Ensure the primary keyAgreement uses 2019 suite with publicKeyBase58
+            const x25519PublicKeyBytes = sodium.crypto_sign_ed25519_pk_to_curve25519(ed25519Bytes);
+            const primaryKAId = `${did}#${encodeKey(x25519PublicKeyBytes)}`;
+            const primaryKA = {
+                id: primaryKAId,
+                type: 'X25519KeyAgreementKey2019',
+                controller: did,
+                publicKeyBase58: base58btc.encode(x25519PublicKeyBytes).slice(1),
+            } as const;
 
-                const publicKeyMultibase = base58btc.encode(ed25519Bytes);
-
-                const multikeyVM = {
-                    id: `${did}#owner`,
-                    type: 'Multikey',
-                    controller: did,
-                    publicKeyMultibase,
-                };
-
-                // Preserve legacy JWK-based method for backwards compatibility
-                const legacyVM = {
-                    ...(finalDoc.verificationMethod?.[0] as any),
-                    id: `${did}#owner-jwk`,
-                };
-
-                // Ensure the multikey security context is present
-                const context = Array.isArray((finalDoc as any)['@context'])
-                    ? ([...(finalDoc as any)['@context']] as any[])
-                    : ([(finalDoc as any)['@context']] as any[]);
-                if (!context.includes(mkContext)) context.push(mkContext);
-
-                const legacyId = `${did}#owner-jwk`;
-
-                finalDoc = {
-                    ...(finalDoc as any),
-                    '@context': context as any,
-                    verificationMethod: [
-                        multikeyVM,
-                        ...((finalDoc.verificationMethod || []).slice(1) as any[]),
-                        legacyVM,
-                    ],
-                    authentication: Array.from(
-                        new Set([
-                            `${did}#owner`,
-                            legacyId,
-                            ...((finalDoc.authentication as any[]) || []),
-                        ])
-                    ) as any,
-                    assertionMethod: Array.from(
-                        new Set([
-                            `${did}#owner`,
-                            legacyId,
-                            ...((finalDoc.assertionMethod as any[]) || []),
-                        ])
-                    ) as any,
-                } as any;
-            }
+            const existingKA = ((finalDoc as any).keyAgreement as any[]) || [];
+            (finalDoc as any).keyAgreement = [
+                primaryKA,
+                ...existingKA.filter(ka => ka?.id !== primaryKAId),
+            ];
         } catch (e) {
-            request.log?.warn({ err: e }, 'Failed to add Multikey VM to did:web document');
+            request.log?.warn({ err: e }, 'Failed to set 2020 VM on did:web document');
         }
 
         if (saDocs) {
@@ -407,7 +365,7 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
         const x25519PublicKeyBytes = sodium.crypto_sign_ed25519_pk_to_curve25519(ed25519Bytes);
 
         const finalDoc = {
-            ...replacedDoc,
+            ...(replacedDoc as any),
             keyAgreement: [
                 {
                     id: `${didWeb}#${encodeKey(x25519PublicKeyBytes)}`,
@@ -415,8 +373,11 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
                     controller: didWeb,
                     publicKeyBase58: base58btc.encode(x25519PublicKeyBytes).slice(1),
                 },
+                ...(((replacedDoc as any).keyAgreement as any[]) || []).filter(
+                    (ka: any) => ka?.id !== `${didWeb}#${encodeKey(x25519PublicKeyBytes)}`
+                ),
             ],
-        };
+        } as any;
 
         setDidDocForProfile('::root::', finalDoc);
 

@@ -68,17 +68,23 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
         const ed25519Bytes = extractEd25519FromVerificationMethod(vm);
         const x25519PublicKeyBytes = sodium.crypto_sign_ed25519_pk_to_curve25519(ed25519Bytes);
 
+        const primaryKAId = `${didWeb}#${encodeKey(x25519PublicKeyBytes)}`;
+        const primaryKA = {
+            id: primaryKAId,
+            type: 'X25519KeyAgreementKey2019',
+            controller: didWeb,
+            publicKeyBase58: base58btc.encode(x25519PublicKeyBytes).slice(1),
+        } as const;
+
         const finalDoc = {
             ...replacedDoc,
             keyAgreement: [
-                {
-                    id: `${didWeb}#${encodeKey(x25519PublicKeyBytes)}`,
-                    type: 'X25519KeyAgreementKey2019',
-                    controller: didWeb,
-                    publicKeyBase58: base58btc.encode(x25519PublicKeyBytes).slice(1),
-                },
+                primaryKA,
+                ...(((replacedDoc as any).keyAgreement as any[]) || []).filter(
+                    (ka: any) => ka?.id !== primaryKAId
+                ),
             ],
-        };
+        } as any;
 
         setDidDocForProfile('::root::', finalDoc);
 
