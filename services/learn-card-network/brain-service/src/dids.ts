@@ -155,7 +155,7 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
                 ...existingKA.filter(ka => ka?.id !== primaryKAId),
             ];
         } catch (e) {
-            request.log?.warn({ err: e }, 'Failed to set 2020 VM on did:web document');
+            request.log?.warn({ err: e }, 'Failed to set 2019 keyAgreement on did:web document');
         }
 
         if (saDocs) {
