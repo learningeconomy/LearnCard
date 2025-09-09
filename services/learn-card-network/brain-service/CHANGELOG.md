@@ -1,5 +1,29 @@
 # @learncard/network-brain-service
 
+## 3.5.22
+
+### Patch Changes
+
+-   [#800](https://github.com/learningeconomy/LearnCard/pull/800) [`f61e75a7a1de5913e4a7a2b381aa9815e726cec3`](https://github.com/learningeconomy/LearnCard/commit/f61e75a7a1de5913e4a7a2b381aa9815e726cec3) Thanks [@Custard7](https://github.com/Custard7)! - chore: Add Interop Tests for DCC + Multikey to DID Doc
+
+-   [#805](https://github.com/learningeconomy/LearnCard/pull/805) [`3627c858a339630e4cf033b64cb04564ff78040c`](https://github.com/learningeconomy/LearnCard/commit/3627c858a339630e4cf033b64cb04564ff78040c) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - [Hotfix] KeyAgreement Backwards Compatibility
+
+-   [#803](https://github.com/learningeconomy/LearnCard/pull/803) [`beb9c54789a2f48b06e1f82082e1dd51eab6b51d`](https://github.com/learningeconomy/LearnCard/commit/beb9c54789a2f48b06e1f82082e1dd51eab6b51d) Thanks [@goblincore](https://github.com/goblincore)! - [LC-1001] Add country to user profile
+
+-   Updated dependencies [[`f61e75a7a1de5913e4a7a2b381aa9815e726cec3`](https://github.com/learningeconomy/LearnCard/commit/f61e75a7a1de5913e4a7a2b381aa9815e726cec3), [`beb9c54789a2f48b06e1f82082e1dd51eab6b51d`](https://github.com/learningeconomy/LearnCard/commit/beb9c54789a2f48b06e1f82082e1dd51eab6b51d)]:
+    -   @learncard/types@5.8.6
+    -   @learncard/didkit-plugin@1.5.30
+    -   @learncard/vc-plugin@1.1.60
+    -   @learncard/core@9.3.38
+    -   @learncard/helpers@1.1.26
+    -   @learncard/did-web-plugin@1.0.75
+    -   @learncard/didkey-plugin@1.0.49
+    -   @learncard/encryption-plugin@1.0.23
+    -   @learncard/learn-card-plugin@1.1.58
+    -   @learncard/vc-templates-plugin@1.0.63
+    -   @learncard/expiration-plugin@1.1.60
+    -   @learncard/crypto-plugin@1.0.49
+
 ## 3.5.21
 
 ### Patch Changes
