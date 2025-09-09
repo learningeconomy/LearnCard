@@ -6,6 +6,10 @@
         "test": "echo \"Skipping E2E tests in CI. Run test:e2e if you'd like to actually run this!\"",
         "test:e2e": "vitest",
         "test:run": "vitest run",
+        "test:e2e:interop": "TEST_TAGS=@interop vitest",
+        "test:run:interop": "TEST_TAGS=@interop vitest run",
+        "test:e2e:no-interop": "TEST_TAGS_NOT=@interop vitest",
+        "test:run:no-interop": "TEST_TAGS_NOT=@interop vitest run",
         "logs": "docker compose logs -f"
     },
     "dependencies": {
@@ -23,6 +27,7 @@
         "pg": "^8.13.1"
     },
     "devDependencies": {
-        "@types/pg": "^8.11.10"
+        "@types/pg": "^8.11.10",
+        "@digitalcredentials/verifier-core": "^0.0.1-beta.2"
     }
 }
