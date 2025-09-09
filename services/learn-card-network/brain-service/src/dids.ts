@@ -134,7 +134,7 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
 
         let finalDoc = { ...replacedDoc, controller: profile.did };
 
-        // Ensure the primary verification method is 2020 (publicKeyMultibase) only
+        // Ensure the primary keyAgreement uses 2019 suite format for backwards compatibility
         try {
             const vm0 = (finalDoc.verificationMethod?.[0] as any) || {};
             const { bytes: ed25519Bytes } = extractEd25519FromVerificationMethod(vm0);
