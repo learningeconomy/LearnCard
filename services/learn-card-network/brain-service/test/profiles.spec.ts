@@ -207,6 +207,16 @@ describe('Profiles', () => {
 
             expect(profile?.highlightedCredentials).toEqual(['cred1', 'cred2', 'cred3']);
         });
+        it('should allow setting your country', async () => {
+            await userA.clients.fullAuth.profile.createProfile({
+                profileId: 'usera',
+                country: 'US',
+            });
+
+            const profile = await userA.clients.fullAuth.profile.getProfile();
+
+            expect(profile?.country).toEqual('US');
+        });
     });
 
     describe('createServiceProfile', () => {
@@ -447,6 +457,14 @@ describe('Profiles', () => {
             expect(userBProfile?.email).toEqual('userB@test.com');
             expect(userBProfile?.bio).toEqual('I am user B');
         });
+
+        it('should include country in your profile when set', async () => {
+            await userA.clients.fullAuth.profile.updateProfile({ country: 'US' });
+
+            const userAProfile = await userA.clients.fullAuth.profile.getProfile();
+
+            expect(userAProfile?.country).toEqual('US');
+        });
     });
 
     describe('getOtherProfile', () => {
@@ -498,6 +516,16 @@ describe('Profiles', () => {
             expect(userBProfile?.displayName).toEqual('B');
             expect(userBProfile?.email).toEqual('userB@test.com');
             expect(userBProfile?.bio).toEqual('I am user B');
+        });
+
+        it('should include country when viewing other profiles', async () => {
+            await userA.clients.fullAuth.profile.updateProfile({ country: 'US' });
+
+            const userBView = await userB.clients.fullAuth.profile.getOtherProfile({
+                profileId: 'usera',
+            });
+
+            expect(userBView?.country).toEqual('US');
         });
     });
 
@@ -877,6 +905,28 @@ describe('Profiles', () => {
             const profile = await userA.clients.fullAuth.profile.getProfile();
 
             expect(profile?.highlightedCredentials).toEqual(['credA', 'credB']);
+        });
+
+        it('should allow you to update your country', async () => {
+            await expect(
+                userA.clients.fullAuth.profile.updateProfile({ country: 'US' })
+            ).resolves.not.toThrow();
+
+            const profile = await userA.clients.fullAuth.profile.getProfile();
+
+            expect(profile?.country).toEqual('US');
+        });
+
+        it('should allow you to change your country', async () => {
+            await userA.clients.fullAuth.profile.updateProfile({ country: 'US' });
+
+            await expect(
+                userA.clients.fullAuth.profile.updateProfile({ country: 'CA' })
+            ).resolves.not.toThrow();
+
+            const profile = await userA.clients.fullAuth.profile.getProfile();
+
+            expect(profile?.country).toEqual('CA');
         });
     });
 
