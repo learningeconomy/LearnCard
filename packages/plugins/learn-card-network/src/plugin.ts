@@ -54,12 +54,12 @@ export async function getLearnCardNetworkPlugin(
     const client = apiToken
         ? await getApiTokenClient(url, apiToken)
         : await getClient(url, async challenge => {
-            const jwt = await learnCard.invoke.getDidAuthVp({ proofFormat: 'jwt', challenge });
+              const jwt = await learnCard.invoke.getDidAuthVp({ proofFormat: 'jwt', challenge });
 
-            if (typeof jwt !== 'string') throw new Error('Error getting DID-Auth-JWT!');
+              if (typeof jwt !== 'string') throw new Error('Error getting DID-Auth-JWT!');
 
-            return jwt;
-        });
+              return jwt;
+          });
 
     let userData: LCNProfile | undefined;
 
@@ -253,8 +253,6 @@ export async function getLearnCardNetworkPlugin(
                 return client.profile.getAvailableProfiles.query(options);
             },
             getManagedProfiles: async (_learnCard, options = {}) => {
-                await ensureUser();
-
                 return client.profileManager.getManagedProfiles.query(options);
             },
             getManagedServiceProfiles: async (_learnCard, options = {}) => {
@@ -294,7 +292,7 @@ export async function getLearnCardNetworkPlugin(
             getProfile: async (_learnCard, profileId) => {
                 try {
                     await ensureUser();
-                } catch { }
+                } catch {}
 
                 // If no profileId is provided, return whatever we have cached locally.
                 if (!profileId) return userData;
