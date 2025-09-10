@@ -267,8 +267,11 @@ function openModal(opts: InitOptions): { close: () => void } {
     // Completion
     if (!isTrustedMessage(data, nonce)) return;
     const details = (data as any).payload;
-    const walletUrl = opts.branding?.walletUrl || 'https://learncard.app';
-    window.open(walletUrl, '_blank', 'noopener,noreferrer');
+    const baseWalletUrl = (opts.branding?.walletUrl || 'https://learncard.app').replace(/\/$/, '');
+    const handoffUrl = sessionJwt
+      ? `${baseWalletUrl}/auth/handoff?token=${encodeURIComponent(sessionJwt)}`
+      : baseWalletUrl;
+    window.open(handoffUrl, '_blank', 'noopener,noreferrer');
     if (opts.onSuccess) {
       try { opts.onSuccess(details); } catch {}
     }

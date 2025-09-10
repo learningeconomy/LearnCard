@@ -90,7 +90,7 @@ export const contactMethodsRouter = t.router({
 
                 const sessionJwt = (await learnCard.invoke.getDidAuthVp({
                    proofFormat: 'jwt',
-                   challenge: CONTACT_METHOD_SESSION_PREFIX + contactMethodId
+                   challenge: `${CONTACT_METHOD_SESSION_PREFIX}${contactMethodId}:${contactMethod.type}:${contactMethod.value}`
                 })) as unknown as string;
 
                 return { sessionJwt };
