@@ -40,7 +40,6 @@ describe('LearnCard Embed SDK', () => {
     const target = setupTarget();
 
     init({
-      partnerId: 'partner-123',
       target: '#mount',
       credential: { name: 'Test Credential' },
     });
@@ -58,7 +57,6 @@ describe('LearnCard Embed SDK', () => {
     setupTarget();
 
     init({
-      partnerId: 'p-1',
       partnerName: 'ACME',
       target: '#mount',
       credential: { name: 'Badge' },
@@ -89,7 +87,6 @@ describe('LearnCard Embed SDK', () => {
     const onSuccess = jest.fn();
 
     init({
-      partnerId: 'p-2',
       target: '#mount',
       credential: { name: 'Thing' },
       onSuccess,
@@ -112,7 +109,7 @@ describe('LearnCard Embed SDK', () => {
   test('Escape key closes modal', () => {
     setupTarget();
 
-    init({ partnerId: 'p-3', target: '#mount', credential: { name: 'Cred' } });
+    init({ target: '#mount', credential: { name: 'Cred' } });
     (document.querySelector('button.lc-claim-btn') as HTMLButtonElement).click();
 
     expect(getOverlay()).toBeTruthy();
@@ -126,8 +123,8 @@ describe('LearnCard Embed SDK', () => {
     setupTarget('a');
     setupTarget('b');
 
-    init({ partnerId: 'p-4', target: '#a', credential: { name: 'A' } });
-    init({ partnerId: 'p-4', target: '#b', credential: { name: 'B' } });
+    init({ target: '#a', credential: { name: 'A' } });
+    init({ target: '#b', credential: { name: 'B' } });
 
     const styles = document.querySelectorAll('style[data-learncard-embed]');
     expect(styles.length).toBe(1);

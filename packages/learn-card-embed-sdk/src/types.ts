@@ -23,7 +23,6 @@ export type BrandingTokens = {
 };
 
 export type InitOptions = {
-  partnerId: string;
   partnerName?: string;
   target: string | HTMLElement;
   credential: CredentialConfig;
@@ -37,6 +36,10 @@ export type InitOptions = {
   branding?: BrandingTokens;
   onEmailSubmit?: (email: string) => Promise<EmailSubmitResult> | EmailSubmitResult;
   onOtpVerify?: (email: string, code: string) => Promise<OtpVerifyResult> | OtpVerifyResult;
+  // Optional configuration for Hosted Wallet API calls used by the default flow
+  // If not provided, SDK falls back to a no-op stub flow, unless overridden via callbacks above.
+  publishableKey?: string;
+  apiBaseUrl?: string; // Defaults to "https://network.learncard.com/api" if not provided
 };
 
 // Message payload from iframe to parent

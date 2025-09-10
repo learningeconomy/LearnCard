@@ -43,7 +43,7 @@ function isTrustedMessageOfType(
 /* Styles moved to styles.ts */
 
 function buildIframeHtml(opts: InitOptions, nonce: string, parentOrigin: string): string {
-  const partnerLabel = (opts.partnerName || opts.partnerId).replace(/</g, '&lt;');
+  const partnerLabel = (opts.partnerName || 'Partner').replace(/</g, '&lt;');
   const primary = (opts.branding?.primaryColor || opts.theme?.primaryColor || '#1F51FF');
   const accent = (opts.branding?.accentColor || '#0F3BD9');
   const credName = (opts.credential?.name || 'Credential').replace(/</g, '&lt;');
@@ -87,11 +87,11 @@ function openModal(opts: InitOptions): { close: () => void } {
 
   const brand = document.createElement('div');
   brand.className = 'lc-brand';
-  brand.setAttribute('aria-label', `LearnCard × ${(opts.partnerName || opts.partnerId)}`);
+  brand.setAttribute('aria-label', `LearnCard × ${(opts.partnerName || 'Partner')}`);
   const logos = document.createElement('div');
   logos.className = 'lc-brand-logos';
   const brandText = document.createElement('span');
-  brandText.textContent = `LearnCard × ${(opts.partnerName || opts.partnerId)}`;
+  brandText.textContent = `LearnCard × ${(opts.partnerName || 'Partner')}`;
   const lcLogoUrl = opts.branding?.logoUrl;
   const partnerLogoUrl = opts.branding?.partnerLogoUrl;
   if (lcLogoUrl) {
@@ -104,7 +104,7 @@ function openModal(opts: InitOptions): { close: () => void } {
   }
   if (partnerLogoUrl) {
     const img = document.createElement('img');
-    img.alt = (opts.partnerName || opts.partnerId);
+    img.alt = (opts.partnerName || 'Partner');
     img.referrerPolicy = 'no-referrer';
     img.decoding = 'async';
     img.src = partnerLogoUrl;
@@ -131,6 +131,91 @@ function openModal(opts: InitOptions): { close: () => void } {
     try {
       iframe.contentWindow?.postMessage({ __lcEmbed: true, type, nonce, payload }, '*');
     } catch {}
+  }
+
+  // Default network-backed handlers for email submit and OTP verify
+  // Use provided apiBaseUrl + publishableKey if available, otherwise fall back to stubbed success.
+  const apiBase = (opts.apiBaseUrl ?? 'https://network.learncard.com/api').replace(/\/$/, '');
+  let sessionJwt: string | null = null;
+
+  async function defaultEmailSubmit(email: string): Promise<EmailSubmitResult> {
+    // If publishableKey is missing, preserve no-op behavior for backwards compatibility and tests
+    if (!opts.publishableKey) return { ok: true };
+
+    try {
+      const res = await fetch(`${apiBase}/contact-methods/challenge`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'email',
+          value: email,
+          configuration: { publishableKey: opts.publishableKey },
+        }),
+      });
+
+      if (!res.ok) {
+        // Try to parse a message if available
+        let message = 'Failed to send code';
+        try { const j = await res.json(); if (j?.message) message = j.message; } catch {}
+        return { ok: false, error: message };
+      }
+
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, error: 'Network error while sending code' };
+    }
+  }
+
+  async function defaultOtpVerify(email: string, code: string): Promise<OtpVerifyResult> {
+    // If publishableKey is missing, preserve no-op behavior for backwards compatibility and tests
+    if (!opts.publishableKey) return { ok: true };
+
+    try {
+      // 1) Verify OTP to get session JWT
+      const verifyRes = await fetch(`${apiBase}/contact-methods/session`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contactMethod: { type: 'email', value: email },
+          otpChallenge: code,
+        }),
+      });
+
+      if (!verifyRes.ok) {
+        let message = 'Verification failed';
+        try { const j = await verifyRes.json(); if (j?.message) message = j.message; } catch {}
+        return { ok: false, error: message };
+      }
+
+      const verifyJson = await verifyRes.json() as { sessionJwt?: string };
+      if (!verifyJson?.sessionJwt || typeof verifyJson.sessionJwt !== 'string') {
+        return { ok: false, error: 'Invalid session response' };
+      }
+      sessionJwt = verifyJson.sessionJwt;
+
+      // 2) Perform authenticated claim request
+      const claimRes = await fetch(`${apiBase}/inbox/claim`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sessionJwt}`,
+        },
+        body: JSON.stringify({
+          credential: opts.credential,
+          configuration: { publishableKey: opts.publishableKey },
+        }),
+      });
+
+      if (!claimRes.ok) {
+        let message = 'Failed to claim credential';
+        try { const j = await claimRes.json(); if (j?.message) message = j.message; } catch {}
+        return { ok: false, error: message };
+      }
+
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, error: 'Network error during verification' };
+    }
   }
 
   header.appendChild(brand);
@@ -160,7 +245,7 @@ function openModal(opts: InitOptions): { close: () => void } {
       const email = (data as any).payload?.email as string | undefined;
       const cb = opts.onEmailSubmit;
       const p: Promise<EmailSubmitResult> = Promise.resolve(
-        cb ? cb(email || '') : { ok: true }
+        cb ? cb(email || '') : defaultEmailSubmit(email || '')
       ) as Promise<EmailSubmitResult>;
       p.then(res => sendToIframe('lc-embed:email-submit:result', res))
        .catch(() => sendToIframe('lc-embed:email-submit:result', { ok: false, error: 'Failed to send code' }));
@@ -172,7 +257,7 @@ function openModal(opts: InitOptions): { close: () => void } {
       const code = (data as any).payload?.code as string | undefined;
       const cb = opts.onOtpVerify;
       const p: Promise<OtpVerifyResult> = Promise.resolve(
-        cb ? cb(email || '', code || '') : { ok: true }
+        cb ? cb(email || '', code || '') : defaultOtpVerify(email || '', code || '')
       ) as Promise<OtpVerifyResult>;
       p.then(res => sendToIframe('lc-embed:otp-verify:result', res))
        .catch(() => sendToIframe('lc-embed:otp-verify:result', { ok: false, error: 'Verification failed' }));

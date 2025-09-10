@@ -17,7 +17,7 @@ import {
     generateContactMethodVerificationToken,
     validateContactMethodVerificationToken,
 } from '@helpers/contact-method.helpers';
-import { getDidWebLearnCard, getLearnCard } from '@helpers/learnCard.helpers';
+import { getDidWebLearnCard } from '@helpers/learnCard.helpers';
 import {
     ContactMethodValidator,
     ContactMethodVerificationRequestValidator,

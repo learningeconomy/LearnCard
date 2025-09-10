@@ -186,7 +186,7 @@ export const claimIntoInbox = async(
 
         return {
             status: LCNInboxStatusEnumValidator.enum.DELIVERED,
-            inboxCredential,
+            inboxCredential: inboxCredential.dataValues,
         };
     }
 }

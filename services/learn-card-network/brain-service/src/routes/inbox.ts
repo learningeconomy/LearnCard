@@ -85,7 +85,7 @@ export const inboxRouter = t.router({
         })
         .input(ClaimInboxCredentialValidator)
         .output(z.object({
-            inboxCredential: z.any(),
+            inboxCredential: InboxCredentialValidator,
             status: z.string(),
             recipientDid: z.string().optional(),
         }))
@@ -129,7 +129,7 @@ export const inboxRouter = t.router({
             );
 
             return {
-                inboxCredential: result.inboxCredential?.dataValues,
+                inboxCredential: result.inboxCredential,
                 status: result.status,
                 recipientDid: result.recipientDid,
             };
