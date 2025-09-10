@@ -28,6 +28,7 @@ function main(): void {
       primaryColor: '#1F51FF',
       accentColor: '#0F3BD9',
       partnerLogoUrl: 'https://avatars.githubusercontent.com/u/9919?s=200&v=4',
+      walletUrl: 'http://localhost:3000'
     },
     onSuccess: () => {
       const el = document.getElementById('success-msg');

@@ -42,7 +42,12 @@ function isTrustedMessageOfType(
 
 /* Styles moved to styles.ts */
 
-function buildIframeHtml(opts: InitOptions, nonce: string, parentOrigin: string): string {
+function buildIframeHtml(
+  opts: InitOptions,
+  nonce: string,
+  parentOrigin: string,
+  loggedInEmail?: string
+): string {
   const partnerLabel = (opts.partnerName || 'Partner').replace(/</g, '&lt;');
   const primary = (opts.branding?.primaryColor || opts.theme?.primaryColor || '#1F51FF');
   const accent = (opts.branding?.accentColor || '#0F3BD9');
@@ -56,6 +61,7 @@ function buildIframeHtml(opts: InitOptions, nonce: string, parentOrigin: string)
     showConsent,
     nonce,
     parentOrigin,
+    ...(loggedInEmail ? { loggedInEmail } : {}),
   } as const;
 
   return `<!DOCTYPE html>
@@ -125,7 +131,28 @@ function openModal(opts: InitOptions): { close: () => void } {
   iframe.setAttribute('referrerpolicy', 'no-referrer');
   const nonce = createNonce();
   const parentOrigin = window.location.origin;
-  iframe.srcdoc = buildIframeHtml(opts, nonce, parentOrigin);
+  // Local session persistence helpers
+  const storageKey = `lcEmbed:v1:${opts.publishableKey || 'anon'}`;
+  function getStoredSession(): { email: string; jwt: string } | null {
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed.jwt === 'string' && typeof parsed.email === 'string') return parsed;
+      return null;
+    } catch {
+      return null;
+    }
+  }
+  function setStoredSession(email: string, jwt: string) {
+    try { localStorage.setItem(storageKey, JSON.stringify({ email, jwt })); } catch {}
+  }
+  function clearStoredSession() {
+    try { localStorage.removeItem(storageKey); } catch {}
+  }
+
+  const stored = getStoredSession();
+  iframe.srcdoc = buildIframeHtml(opts, nonce, parentOrigin, stored?.email);
 
   function sendToIframe(type: string, payload: unknown) {
     try {
@@ -136,7 +163,7 @@ function openModal(opts: InitOptions): { close: () => void } {
   // Default network-backed handlers for email submit and OTP verify
   // Use provided apiBaseUrl + publishableKey if available, otherwise fall back to stubbed success.
   const apiBase = (opts.apiBaseUrl ?? 'https://network.learncard.com/api').replace(/\/$/, '');
-  let sessionJwt: string | null = null;
+  let sessionJwt: string | null = stored?.jwt || null;
 
   async function defaultEmailSubmit(email: string): Promise<EmailSubmitResult> {
     // If publishableKey is missing, preserve no-op behavior for backwards compatibility and tests
@@ -192,6 +219,7 @@ function openModal(opts: InitOptions): { close: () => void } {
         return { ok: false, error: 'Invalid session response' };
       }
       sessionJwt = verifyJson.sessionJwt;
+      setStoredSession(email, sessionJwt);
 
       // 2) Perform authenticated claim request
       const claimRes = await fetch(`${apiBase}/inbox/claim`, {
@@ -261,6 +289,51 @@ function openModal(opts: InitOptions): { close: () => void } {
       ) as Promise<OtpVerifyResult>;
       p.then(res => sendToIframe('lc-embed:otp-verify:result', res))
        .catch(() => sendToIframe('lc-embed:otp-verify:result', { ok: false, error: 'Verification failed' }));
+      return;
+    }
+
+    // Accept (already-logged-in) flow
+    if (isTrustedMessageOfType(data, nonce, 'lc-embed:accept')) {
+      const p: Promise<OtpVerifyResult> = (async () => {
+        if (!opts.publishableKey) return { ok: false, error: 'Configuration error' };
+        if (!sessionJwt) return { ok: false, error: 'Not logged in' };
+
+        try {
+          const claimRes = await fetch(`${apiBase}/inbox/claim`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${sessionJwt}`,
+            },
+            body: JSON.stringify({
+              credential: opts.credential,
+              configuration: { publishableKey: opts.publishableKey },
+            }),
+          });
+
+          if (!claimRes.ok) {
+            let message = 'Failed to claim credential';
+            try { const j = await claimRes.json(); if (j?.message) message = j.message; } catch {}
+            if (claimRes.status === 401) message = 'Session expired. Please log in again.';
+            return { ok: false, error: message };
+          }
+
+          return { ok: true };
+        } catch {
+          return { ok: false, error: 'Network error during claim' };
+        }
+      })();
+
+      p.then(res => sendToIframe('lc-embed:accept:result', res))
+       .catch(() => sendToIframe('lc-embed:accept:result', { ok: false, error: 'Failed to claim' }));
+      return;
+    }
+
+    // Logout request
+    if (isTrustedMessageOfType(data, nonce, 'lc-embed:logout')) {
+      clearStoredSession();
+      sessionJwt = null;
+      sendToIframe('lc-embed:logout:result', { ok: true });
       return;
     }
 

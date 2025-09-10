@@ -8,9 +8,41 @@
     return;
   }
 
+  function AcceptView() {
+    var cred = config.credentialName || 'Credential';
+
+    return el('div', { id: 'view-accept' }, [
+      el('div', { class: 'title' }, [text('Claim “' + cred + '”')]),
+      el('div', { class: 'subtitle' }, [text('Signed in as '), el('span', { id: 'email-disp' }, [text(state.email)])]),
+      el('div', { class: 'center' }, [
+        el('button', {
+          id: 'accept', class: 'btn btn-primary', disabled: !!state.pending,
+          onClick: function () {
+            state.error = '';
+            state.pending = true;
+            render();
+            sendToParent('lc-embed:accept', { email: state.email });
+          }
+        }, [text('Accept Credential')])
+      ]),
+      el('div', { class: 'center', style: 'margin-top: 8px' }, [
+        el('button', {
+          id: 'logout', class: 'btn btn-secondary', disabled: !!state.pending,
+          onClick: function () {
+            state.error = '';
+            state.pending = true;
+            render();
+            sendToParent('lc-embed:logout', {});
+          }
+        }, [text('Use a different email')])
+      ]),
+      el('div', { class: 'error', id: 'error' }, [text(state.error || '')])
+    ]);
+  }
+
   var state = {
-    view: 'email',
-    email: '',
+    view: (config.loggedInEmail ? 'accept' : 'email'),
+    email: (config.loggedInEmail || ''),
     code: '',
     consent: false,
     error: '',
@@ -119,6 +151,29 @@
       } else {
         state.error = (data.payload && data.payload.error) || 'Verification failed.';
       }
+      render();
+      return;
+    }
+
+    if (isTrustedReply(data, 'lc-embed:accept:result')) {
+      state.pending = false;
+      if (data.payload && data.payload.ok) {
+        state.view = 'success';
+        state.error = '';
+      } else {
+        state.error = (data.payload && data.payload.error) || 'Failed to claim credential.';
+      }
+      render();
+      return;
+    }
+
+    if (isTrustedReply(data, 'lc-embed:logout:result')) {
+      state.pending = false;
+      // Reset to email flow
+      state.view = 'email';
+      state.email = '';
+      state.code = '';
+      state.error = '';
       render();
       return;
     }
@@ -240,7 +295,13 @@
   function render() {
     clear(root);
     var wrap = el('div', { class: 'wrap' }, []);
-    var viewEl = state.view === 'email' ? EmailView() : state.view === 'otp' ? OtpView() : SuccessView();
+    var viewEl = state.view === 'email'
+      ? EmailView()
+      : state.view === 'otp'
+      ? OtpView()
+      : state.view === 'accept'
+      ? AcceptView()
+      : SuccessView();
     wrap.appendChild(viewEl);
     root.appendChild(wrap);
   }

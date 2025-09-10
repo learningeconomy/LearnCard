@@ -56,6 +56,15 @@ This renders a “Claim “Python for Data Science”” button. Clicking opens 
 - `publishableKey?: string` Optional. When provided, the SDK will call Hosted Wallet APIs for OTP + claim. When omitted, the SDK falls back to a stubbed success flow (useful for simple demos or UI testing).
 - `apiBaseUrl?: string` Optional. Defaults to `https://network.learncard.com/api`. You can point to your self-hosted LearnCard Network (e.g., `http://localhost:4000/api`).
 
+## Sessions, Accept Flow, and Logout
+
+- When OTP verification succeeds, the SDK stores a short‑lived session token (`sessionJwt`) in `localStorage` under a key scoped by your `publishableKey`.
+- If a session exists the next time the modal opens, the iframe renders an Accept screen that shows the stored email and an “Accept Credential” button. Clicking it directly calls the claim endpoint using the existing session (no need to re‑enter email or OTP).
+- A “Use a different email” button logs out by clearing the stored session and returns you to the email entry screen.
+- When viewing your LearnCard after success, the SDK opens the wallet URL with an auth handoff when a session exists:
+  - Opens `(branding.walletUrl || 'https://learncard.app') + '/auth/handoff?token=' + encodeURIComponent(sessionJwt)`
+  - Falls back to opening the base wallet URL when no session exists.
+
 ## Build
 
 - `pnpm -w nx run embed-sdk:build`
