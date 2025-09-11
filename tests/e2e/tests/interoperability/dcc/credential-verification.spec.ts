@@ -156,7 +156,7 @@ taggedDescribe('DCC Interoperability: credential verification', ['@interop', '@d
             },
         };
         const signedVc = await learnCard.invoke.issueCredential(unsignedVc);
-        let vp = await learnCard.invoke.getTestVp()
+        let vp = await learnCard.invoke.getTestVp();
         vp.verifiableCredential = [signedVc]
         const presentation = await learnCard.invoke.issuePresentation(vp);
 
