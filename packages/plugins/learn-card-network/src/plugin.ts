@@ -1,4 +1,4 @@
-import { getClient } from '@learncard/network-brain-client';
+import { getClient, getApiTokenClient } from '@learncard/network-brain-client';
 import {
     JWEValidator,
     LCNProfile,
@@ -25,28 +25,87 @@ export * from './types';
 /**
  * @group Plugins
  */
-export const getLearnCardNetworkPlugin = async (
+export async function getLearnCardNetworkPlugin(
     learnCard: LearnCard<any, 'id', LearnCardNetworkPluginDependentMethods>,
     url: string
-): Promise<LearnCardNetworkPlugin> => {
-    let did = learnCard.id.did();
+): Promise<LearnCardNetworkPlugin>;
+export async function getLearnCardNetworkPlugin(
+    learnCard: LearnCard<any, any, LearnCardNetworkPluginDependentMethods>,
+    url: string,
+    apiToken: string
+): Promise<LearnCardNetworkPlugin>;
+export async function getLearnCardNetworkPlugin(
+    learnCard: LearnCard<any, any, LearnCardNetworkPluginDependentMethods>,
+    url: string,
+    apiToken?: string
+): Promise<LearnCardNetworkPlugin> {
+    // Initialize DID safely: in API-key mode there may be no local ID plane provider
+    let did = '';
+    try {
+        const idPlane = (learnCard as any)?.id;
+        if (idPlane && typeof idPlane.did === 'function') {
+            did = idPlane.did();
+        }
+    } catch {
+        learnCard?.debug?.('LCN: no local DID available at init; will fetch from profile');
+    }
 
     learnCard?.debug?.('Adding LearnCardNetwork Plugin');
-    const client = await getClient(url, async challenge => {
-        const jwt = await learnCard.invoke.getDidAuthVp({ proofFormat: 'jwt', challenge });
+    const client = apiToken
+        ? await getApiTokenClient(url, apiToken)
+        : await getClient(url, async challenge => {
+              const jwt = await learnCard.invoke.getDidAuthVp({ proofFormat: 'jwt', challenge });
 
-        if (typeof jwt !== 'string') throw new Error('Error getting DID-Auth-JWT!');
+              if (typeof jwt !== 'string') throw new Error('Error getting DID-Auth-JWT!');
 
-        return jwt;
-    });
+              return jwt;
+          });
 
     let userData: LCNProfile | undefined;
 
-    const initialQuery = client.profile.getProfile.query().then(result => {
-        userData = result;
+    learnCard?.debug?.('LCN: initial getProfile query starting', { apiToken: !!apiToken });
+    const initialQuery = client.profile.getProfile
+        .query()
+        .then(result => {
+            userData = result;
 
-        if (userData?.did) did = userData.did;
-    });
+            if (userData?.did) did = userData.did;
+
+            learnCard?.debug?.('LCN: initial getProfile success', { did });
+            return result;
+        })
+        .catch(error => {
+            // Non-fatal: API-key tokens may not have profiles:read; avoid unhandled rejection
+            learnCard?.debug?.('LCN: getProfile failed (non-fatal)', error);
+            return undefined;
+        });
+
+    // Ensure profile context is loaded (if available) before enforcing user presence.
+    // Prevents races where methods run before initial profile query resolves.
+    const ensureUser = async (): Promise<LCNProfile> => {
+        try {
+            await initialQuery;
+        } catch {
+            // ignore; initialQuery errors are non-fatal in API-key mode
+        }
+
+        // Retry once in API-token mode in case the initial query raced with method calls
+        if (!userData && apiToken) {
+            try {
+                learnCard?.debug?.('LCN ensureUser: retrying getProfile with apiToken');
+                const res = await client.profile.getProfile.query();
+                userData = res;
+                if (userData?.did) did = userData.did;
+                learnCard?.debug?.('LCN ensureUser: retry success', { did });
+            } catch (e) {
+                learnCard?.debug?.('LCN ensureUser: retry failed', e);
+            }
+        }
+
+        if (!userData) throw new Error('Please make an account first!');
+
+        return userData;
+    };
 
     return {
         name: 'LearnCard Network',
@@ -56,9 +115,9 @@ export const getLearnCardNetworkPlugin = async (
             did: (_learnCard, method) => {
                 if (!method || method === 'web') return did;
 
-                return learnCard.id.did(method);
+                return (learnCard as any).id?.did?.(method);
             },
-            keypair: (_learnCard, algorithm) => learnCard.id.keypair(algorithm),
+            keypair: (_learnCard, algorithm) => (learnCard as any).id?.keypair?.(algorithm),
         },
         read: {
             get: async (_learnCard, vcUri) => {
@@ -78,9 +137,16 @@ export const getLearnCardNetworkPlugin = async (
                     let result = await client.storage.resolve.query({ uri: vcUri });
 
                     if ('ciphertext' in result) {
-                        result = await _learnCard.invoke.decryptDagJwe(result as JWE, [
-                            _learnCard.id.keypair(),
-                        ]);
+                        try {
+                            const kp = _learnCard.id.keypair();
+                            result = await _learnCard.invoke.decryptDagJwe(result as JWE, [kp]);
+                        } catch (e) {
+                            _learnCard.debug?.(
+                                'LCN read.get: skipping decryption (no keypair?)',
+                                e
+                            );
+                            return undefined;
+                        }
                     }
 
                     return await VCValidator.or(VPValidator).parseAsync(result);
@@ -102,17 +168,32 @@ export const getLearnCardNetworkPlugin = async (
                 { recipients = [] } = { recipients: [] }
             ) => {
                 _learnCard.debug?.("learnCard.store['LearnCard Network'].upload");
+                await ensureUser();
 
-                const jwe = await _learnCard.invoke.createDagJwe(credential, [
-                    _learnCard.id.did(),
-                    ...recipients,
-                ]);
+                // Use known DID if available (from init or loaded profile)
+                const selfDid = did || userData?.did || '';
+                const recipientsList = [selfDid, ...recipients].filter(Boolean);
+
+                if (recipientsList.length === 0) {
+                    throw new Error(
+                        'No recipients specified for encrypted upload; provide at least one DID'
+                    );
+                }
+
+                const jwe = await _learnCard.invoke.createDagJwe(credential, recipientsList);
 
                 return client.storage.store.mutate({ item: jwe });
             },
         },
         methods: {
             createProfile: async (_learnCard, profile) => {
+                try {
+                    await ensureUser();
+                } catch {
+                    // ignore; This is to prevent a race condition but we are expecting the profile
+                    // to not exist yet here.
+                }
+
                 if (userData) throw new Error('Account already exists!');
 
                 const newDid = await client.profile.createProfile.mutate(profile);
@@ -123,7 +204,12 @@ export const getLearnCardNetworkPlugin = async (
                 return newDid;
             },
             createServiceProfile: async (_learnCard, profile) => {
-                if (userData) throw new Error('Account already exists!');
+                try {
+                    await ensureUser();
+                } catch {
+                    // ignore; This is to prevent a race condition but we are expecting the profile
+                    // to not exist yet here.
+                }
 
                 const newDid = await client.profile.createServiceProfile.mutate(profile);
 
@@ -138,14 +224,14 @@ export const getLearnCardNetworkPlugin = async (
                 return newDid;
             },
             createProfileManager: async (_learnCard, profile) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 const newDid = await client.profileManager.createProfileManager.mutate(profile);
 
                 return newDid;
             },
             createChildProfileManager: async (_learnCard, parentUri, profile) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 const newDid = await client.profileManager.createChildProfileManager.mutate({
                     parentUri,
@@ -155,14 +241,14 @@ export const getLearnCardNetworkPlugin = async (
                 return newDid;
             },
             createManagedServiceProfile: async (_learnCard, profile) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 const newDid = await client.profile.createManagedServiceProfile.mutate(profile);
 
                 return newDid;
             },
             getAvailableProfiles: async (_learnCard, options = {}) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.profile.getAvailableProfiles.query(options);
             },
@@ -170,12 +256,12 @@ export const getLearnCardNetworkPlugin = async (
                 return client.profileManager.getManagedProfiles.query(options);
             },
             getManagedServiceProfiles: async (_learnCard, options = {}) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.profile.getManagedServiceProfiles.query(options);
             },
             updateProfile: async (_learnCard, profile) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 const result = await client.profile.updateProfile.mutate(profile);
 
@@ -204,9 +290,12 @@ export const getLearnCardNetworkPlugin = async (
                 return false;
             },
             getProfile: async (_learnCard, profileId) => {
-                await initialQuery;
+                try {
+                    await ensureUser();
+                } catch {}
 
-                if (!profileId) return client.profile.getProfile.query();
+                // If no profileId is provided, return whatever we have cached locally.
+                if (!profileId) return userData;
 
                 return client.profile.getOtherProfile.query({ profileId });
             },
@@ -234,27 +323,27 @@ export const getLearnCardNetworkPlugin = async (
                 });
             },
             connectWith: async (_learnCard, profileId) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.profile.connectWith.mutate({ profileId });
             },
             cancelConnectionRequest: async (_learnCard, profileId) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.profile.cancelConnectionRequest.mutate({ profileId });
             },
             connectWithInvite: async (_learnCard, profileId, challenge) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.profile.connectWithInvite.mutate({ profileId, challenge });
             },
             disconnectWith: async (_learnCard, profileId) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.profile.disconnectWith.mutate({ profileId });
             },
             acceptConnectionRequest: async (_learnCard, profileId) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.profile.acceptConnectionRequest.mutate({ profileId });
             },
@@ -263,12 +352,12 @@ export const getLearnCardNetworkPlugin = async (
                     'The getConnections method is deprecated! Please use getPaginatedConnections instead!'
                 );
 
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.profile.connections.query();
             },
             getPaginatedConnections: async (_learnCard, options) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.profile.paginatedConnections.query(options);
             },
@@ -277,12 +366,12 @@ export const getLearnCardNetworkPlugin = async (
                     'The getPendingConnections method is deprecated! Please use getPaginatedPendingConnections instead!'
                 );
 
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.profile.pendingConnections.query();
             },
             getPaginatedPendingConnections: async (_learnCard, options) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.profile.paginatedPendingConnections.query(options);
             },
@@ -291,49 +380,52 @@ export const getLearnCardNetworkPlugin = async (
                     'The getConnectionRequests method is deprecated! Please use getPaginatedConnectionRequests instead!'
                 );
 
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.profile.connectionRequests.query();
             },
             getPaginatedConnectionRequests: async (_learnCard, options) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.profile.paginatedConnectionRequests.query(options);
             },
 
             generateInvite: async (_learnCard, challenge, expiration, maxUses) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
+
                 return client.profile.generateInvite.mutate({ challenge, expiration, maxUses });
             },
 
             listInvites: async () => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
+
                 return client.profile.listInvites.query();
             },
 
             invalidateInvite: async (_learnCard, challenge) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
+
                 return client.profile.invalidateInvite.mutate({ challenge });
             },
 
             blockProfile: async (_learnCard, profileId) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.profile.blockProfile.mutate({ profileId });
             },
             unblockProfile: async (_learnCard, profileId) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.profile.unblockProfile.mutate({ profileId });
             },
             getBlockedProfiles: async () => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.profile.blocked.query();
             },
 
             sendCredential: async (_learnCard, profileId, vc, encrypt = true) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 if (!encrypt) {
                     return client.credential.sendCredential.mutate({ profileId, credential: vc });
@@ -344,40 +436,40 @@ export const getLearnCardNetworkPlugin = async (
                 if (!target) throw new Error('Could not find target account');
 
                 const credential = await _learnCard.invoke.createDagJwe(vc, [
-                    userData.did,
+                    _learnCard.id.did(),
                     target.did,
                 ]);
 
                 return client.credential.sendCredential.mutate({ profileId, credential });
             },
             acceptCredential: async (_learnCard, uri, options) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.credential.acceptCredential.mutate({ uri, options });
             },
             getReceivedCredentials: async (_learnCard, from) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.credential.receivedCredentials.query({ from });
             },
             getSentCredentials: async (_learnCard, to) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.credential.sentCredentials.query({ to });
             },
             getIncomingCredentials: async (_learnCard, from) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.credential.incomingCredentials.query({ from });
             },
             deleteCredential: async (_learnCard, uri) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.credential.deleteCredential.mutate({ uri });
             },
 
             sendPresentation: async (_learnCard, profileId, vp, encrypt = true) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 if (!encrypt) {
                     return client.presentation.sendPresentation.mutate({
@@ -391,45 +483,45 @@ export const getLearnCardNetworkPlugin = async (
                 if (!target) throw new Error('Could not find target account');
 
                 const presentation = await _learnCard.invoke.createDagJwe(vp, [
-                    userData.did,
+                    _learnCard.id.did(),
                     target.did,
                 ]);
 
                 return client.presentation.sendPresentation.mutate({ profileId, presentation });
             },
             acceptPresentation: async (_learnCard, uri) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.presentation.acceptPresentation.mutate({ uri });
             },
             getReceivedPresentations: async (_learnCard, from) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.presentation.receivedPresentations.query({ from });
             },
             getSentPresentations: async (_learnCard, to) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.presentation.sentPresentations.query({ to });
             },
             getIncomingPresentations: async (_learnCard, from) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.presentation.incomingPresentations.query({ from });
             },
             deletePresentation: async (_learnCard, uri) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.presentation.deletePresentation.mutate({ uri });
             },
 
             createBoost: async (_learnCard, credential, metadata) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.boost.createBoost.mutate({ credential, ...metadata });
             },
             createChildBoost: async (_learnCard, parentUri, credential, metadata) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.boost.createChildBoost.mutate({
                     parentUri,
@@ -437,7 +529,7 @@ export const getLearnCardNetworkPlugin = async (
                 });
             },
             getBoost: async (_learnCard, uri) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.boost.getBoost.query({ uri });
             },
@@ -446,67 +538,67 @@ export const getLearnCardNetworkPlugin = async (
                     'The getBoosts method is deprecated! Please use getPaginatedBoosts instead!'
                 );
 
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.boost.getBoosts.query({ query });
             },
             countBoosts: async (_learnCard, query) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.boost.countBoosts.query({ query });
             },
             getPaginatedBoosts: async (_learnCard, options) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.boost.getPaginatedBoosts.query(options);
             },
             getBoostChildren: async (_learnCard, uri, options) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.boost.getBoostChildren.query({ uri, ...options });
             },
             countBoostChildren: async (_learnCard, uri, options) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.boost.countBoostChildren.query({ uri, ...options });
             },
             getBoostSiblings: async (_learnCard, uri, options) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.boost.getBoostSiblings.query({ uri, ...options });
             },
             countBoostSiblings: async (_learnCard, uri, options) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.boost.countBoostSiblings.query({ uri, ...options });
             },
             getFamilialBoosts: async (_learnCard, uri, options) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.boost.getFamilialBoosts.query({ uri, ...options });
             },
             countFamilialBoosts: async (_learnCard, uri, options) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.boost.countFamilialBoosts.query({ uri, ...options });
             },
             getBoostParents: async (_learnCard, uri, options) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.boost.getBoostParents.query({ uri, ...options });
             },
             countBoostParents: async (_learnCard, uri, options) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.boost.countBoostParents.query({ uri, ...options });
             },
             makeBoostParent: async (_learnCard, uris) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.boost.makeBoostParent.mutate(uris);
             },
             removeBoostParent: async (_learnCard, uris) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.boost.removeBoostParent.mutate(uris);
             },
@@ -521,7 +613,7 @@ export const getLearnCardNetworkPlugin = async (
                     'The getBoostRecipients method is deprecated! Please use getPaginatedBoostRecipients instead!'
                 );
 
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.boost.getBoostRecipients.query({
                     uri,
@@ -538,7 +630,7 @@ export const getLearnCardNetworkPlugin = async (
                 includeUnacceptedBoosts = true,
                 query
             ) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.boost.getPaginatedBoostRecipients.query({
                     uri,
@@ -558,7 +650,7 @@ export const getLearnCardNetworkPlugin = async (
                 profileQuery,
                 numberOfGenerations = 1
             ) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.boost.getPaginatedBoostRecipientsWithChildren.query({
                     uri,
@@ -589,7 +681,7 @@ export const getLearnCardNetworkPlugin = async (
                 });
             },
             countBoostRecipients: async (_learnCard, uri, includeUnacceptedBoosts = true) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.boost.getBoostRecipientCount.query({ uri, includeUnacceptedBoosts });
             },
@@ -598,7 +690,7 @@ export const getLearnCardNetworkPlugin = async (
                 uri,
                 { limit = 25, cursor = undefined, includeUnacceptedBoosts = true, query } = {}
             ) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.boost.getConnectedBoostRecipients.query({
                     uri,
@@ -613,7 +705,7 @@ export const getLearnCardNetworkPlugin = async (
                 uri,
                 includeUnacceptedBoosts = true
             ) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.boost.getConnectedBoostRecipientCount.query({
                     uri,
@@ -621,12 +713,12 @@ export const getLearnCardNetworkPlugin = async (
                 });
             },
             getBoostChildrenProfileManagers: async (_learnCard, uri, options) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.boost.getChildrenProfileManagers.query({ uri, ...options });
             },
             updateBoost: async (_learnCard, uri, updates, credential) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.boost.updateBoost.mutate({
                     uri,
@@ -634,19 +726,19 @@ export const getLearnCardNetworkPlugin = async (
                 });
             },
             getBoostAdmins: async (_learnCard, uri, options = {}) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.boost.getBoostAdmins.query({ uri, ...options });
             },
             getBoostPermissions: async (_learnCard, uri, profileId) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 if (!profileId) return client.boost.getBoostPermissions.query({ uri });
 
                 return client.boost.getOtherBoostPermissions.query({ uri, profileId });
             },
             updateBoostPermissions: async (_learnCard, uri, updates, profileId) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 if (!profileId) return client.boost.updateBoostPermissions.query({ uri, updates });
 
@@ -661,7 +753,7 @@ export const getLearnCardNetworkPlugin = async (
                 return result;
             },
             addBoostAdmin: async (_learnCard, uri, profileId) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 const result = await client.boost.addBoostAdmin.mutate({ uri, profileId });
 
@@ -670,7 +762,7 @@ export const getLearnCardNetworkPlugin = async (
                 return result;
             },
             removeBoostAdmin: async (_learnCard, uri, profileId) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 const result = await client.boost.removeBoostAdmin.mutate({ uri, profileId });
 
@@ -679,7 +771,7 @@ export const getLearnCardNetworkPlugin = async (
                 return result;
             },
             deleteBoost: async (_learnCard, uri) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.boost.deleteBoost.mutate({ uri });
             },
@@ -689,7 +781,7 @@ export const getLearnCardNetworkPlugin = async (
                 boostUri,
                 options = { encrypt: true, skipNotification: false }
             ) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 const result = await _learnCard.invoke.resolveFromLCN(boostUri);
                 const data = await UnsignedVCValidator.spa(result);
@@ -743,7 +835,7 @@ export const getLearnCardNetworkPlugin = async (
                 const lcnDid = await client.utilities.getDid.query();
 
                 const credential = await _learnCard.invoke.createDagJwe(vc, [
-                    userData.did,
+                    _learnCard.id.did(),
                     targetProfile.did,
                     lcnDid,
                 ]);
@@ -759,7 +851,7 @@ export const getLearnCardNetworkPlugin = async (
             },
 
             registerSigningAuthority: async (_learnCard, endpoint, name, _did) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.profile.registerSigningAuthority.mutate({
                     endpoint,
@@ -767,29 +859,29 @@ export const getLearnCardNetworkPlugin = async (
                     did: _did,
                 });
             },
-            getRegisteredSigningAuthorities: async (_learnCard, _endpoint, _name, _did) => {
-                if (!userData) throw new Error('Please make an account first!');
+            getRegisteredSigningAuthorities: async _learnCard => {
+                await ensureUser();
 
                 return client.profile.signingAuthorities.query();
             },
             getRegisteredSigningAuthority: async (_learnCard, endpoint, name) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.profile.signingAuthority.query({ endpoint, name });
             },
             setPrimaryRegisteredSigningAuthority: async (_learnCard, endpoint, name) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.profile.setPrimarySigningAuthority.mutate({ endpoint, name });
             },
             getPrimaryRegisteredSigningAuthority: async _learnCard => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.profile.primarySigningAuthority.query();
             },
 
             generateClaimLink: async (_learnCard, boostUri, claimLinkSA, options, challenge) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.boost.generateClaimLink.mutate({
                     boostUri,
@@ -800,25 +892,25 @@ export const getLearnCardNetworkPlugin = async (
             },
 
             claimBoostWithLink: async (_learnCard, boostUri, challenge) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.boost.claimBoostWithLink.mutate({ boostUri, challenge });
             },
 
             createContract: async (_learnCard, contract) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.contracts.createConsentFlowContract.mutate(contract);
             },
 
             addAutoBoostsToContract: async (_learnCard, contractUri, autoboosts) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.contracts.addAutoBoostsToContract.mutate({ contractUri, autoboosts });
             },
 
             removeAutoBoostsFromContract: async (_learnCard, contractUri, boostUris) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.contracts.removeAutoBoostsFromContract.mutate({
                     contractUri,
@@ -831,31 +923,31 @@ export const getLearnCardNetworkPlugin = async (
             },
 
             getContracts: async (_learnCard, options) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.contracts.getConsentFlowContracts.query(options);
             },
 
             deleteContract: async (_learnCard, uri) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.contracts.deleteConsentFlowContract.mutate({ uri });
             },
 
             getConsentFlowData: async (_learnCard, uri, options = {}) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.contracts.getConsentedDataForContract.query({ uri, ...options });
             },
 
             getConsentFlowDataForDid: async (_learnCard, did, options = {}) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.contracts.getConsentedDataForDid.query({ did, ...options });
             },
 
             getAllConsentFlowData: async (_learnCard, query = {}, options = {}) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.contracts.getConsentedData.query({ query, ...options });
             },
@@ -867,7 +959,7 @@ export const getLearnCardNetworkPlugin = async (
                 credential,
                 boostUri
             ) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.contracts.writeCredentialToContract.mutate({
                     did,
@@ -877,26 +969,31 @@ export const getLearnCardNetworkPlugin = async (
                 });
             },
 
-            consentToContract: async (_learnCard, contractUri, { terms, expiresAt, oneTime }, recipientToken) => {
-                if (!userData) throw new Error('Please make an account first!');
+            consentToContract: async (
+                _learnCard,
+                contractUri,
+                { terms, expiresAt, oneTime },
+                recipientToken
+            ) => {
+                await ensureUser();
 
                 return client.contracts.consentToContract.mutate({
                     contractUri,
                     terms,
                     expiresAt,
                     oneTime,
-                    recipientToken // for SmartResume
+                    recipientToken, // for SmartResume
                 });
             },
 
             getConsentedContracts: async (_learnCard, options) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.contracts.getConsentedContracts.query(options);
             },
 
             updateContractTerms: async (_learnCard, uri, { terms, expiresAt, oneTime }) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.contracts.updateConsentedContractTerms.mutate({
                     uri,
@@ -907,35 +1004,37 @@ export const getLearnCardNetworkPlugin = async (
             },
 
             withdrawConsent: async (_learnCard, uri) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.contracts.withdrawConsent.mutate({ uri });
             },
 
             getConsentFlowTransactions: async (_learnCard, uri, options) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.contracts.getTermsTransactionHistory.query({ uri, ...options });
             },
 
             getCredentialsForContract: async (_learnCard, termsUri, options = {}) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.contracts.getCredentialsForContract.query({ termsUri, ...options });
             },
 
             getConsentFlowCredentials: async (_learnCard, options = {}) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.contracts.getAllCredentialsForTerms.query(options);
             },
 
             verifyConsent: async (_learnCard, uri, profileId) => {
+                await ensureUser();
+
                 return client.contracts.verifyConsent.query({ uri, profileId });
             },
 
             syncCredentialsToContract: async (_learnCard, termsUri, categories) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.contracts.syncCredentialsToContract.mutate({
                     termsUri,
@@ -944,7 +1043,7 @@ export const getLearnCardNetworkPlugin = async (
             },
 
             addDidMetadata: async (_learnCard, metadata) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 const result = await client.didMetadata.addDidMetadata.mutate(metadata);
 
@@ -954,19 +1053,19 @@ export const getLearnCardNetworkPlugin = async (
             },
 
             getDidMetadata: async (_learnCard, id) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.didMetadata.getDidMetadata.query({ id });
             },
 
             getMyDidMetadata: async () => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.didMetadata.getMyDidMetadata.query();
             },
 
             updateDidMetadata: async (_learnCard, id, updates) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 const result = await client.didMetadata.updateDidMetadata.mutate({ id, updates });
 
@@ -976,7 +1075,7 @@ export const getLearnCardNetworkPlugin = async (
             },
 
             deleteDidMetadata: async (_learnCard, id) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 const result = await client.didMetadata.deleteDidMetadata.mutate({ id });
 
@@ -986,55 +1085,55 @@ export const getLearnCardNetworkPlugin = async (
             },
 
             createClaimHook: async (_learnCard, hook) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.claimHook.createClaimHook.mutate({ hook });
             },
 
             getClaimHooksForBoost: async (_learnCard, options) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.claimHook.getClaimHooksForBoost.query(options);
             },
 
             deleteClaimHook: async (_learnCard, id) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.claimHook.deleteClaimHook.mutate({ id });
             },
 
             addAuthGrant: async (_learnCard, authGrant) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.authGrants.addAuthGrant.mutate(authGrant);
             },
             revokeAuthGrant: async (_learnCard, id) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.authGrants.revokeAuthGrant.mutate({ id });
             },
             deleteAuthGrant: async (_learnCard, id) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.authGrants.deleteAuthGrant.mutate({ id });
             },
             updateAuthGrant: async (_learnCard, id, updates) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.authGrants.updateAuthGrant.mutate({ id, updates });
             },
             getAuthGrant: async (_learnCard, id) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.authGrants.getAuthGrant.query({ id });
             },
             getAuthGrants: async (_learnCard, options) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 return client.authGrants.getAuthGrants.query(options);
             },
             getAPITokenForAuthGrant: async (_learnCard, id) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
 
                 const authGrant = await client.authGrants.getAuthGrant.query({ id });
                 if (!authGrant) throw new Error('Auth grant not found');
@@ -1055,35 +1154,43 @@ export const getLearnCardNetworkPlugin = async (
             },
 
             sendCredentialViaInbox: async (_learnCard, issueInboxCredential) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
+
                 return client.inbox.issue.mutate(issueInboxCredential);
             },
             getMySentInboxCredentials: async (_learnCard, options) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
+
                 return client.inbox.getMyIssuedCredentials.query(options);
             },
             getInboxCredential: async (_learnCard, id) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
+
                 return client.inbox.getInboxCredential.query({ credentialId: id });
             },
             addContactMethod: async (_learnCard, contactMethod) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
+
                 return client.contactMethods.addContactMethod.mutate(contactMethod);
             },
             getMyContactMethods: async _learnCard => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
+
                 return client.contactMethods.getMyContactMethods.query();
             },
             setPrimaryContactMethod: async (_learnCard, contactMethodId) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
+
                 return client.contactMethods.setPrimaryContactMethod.mutate({ contactMethodId });
             },
             verifyContactMethod: async (_learnCard, token) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
+
                 return client.contactMethods.verifyContactMethod.mutate({ token });
             },
             removeContactMethod: async (_learnCard, id) => {
-                if (!userData) throw new Error('Please make an account first!');
+                await ensureUser();
+
                 return client.contactMethods.removeContactMethod.mutate({ id });
             },
 
@@ -1101,7 +1208,7 @@ export const getLearnCardNetworkPlugin = async (
             getLCNClient: () => client,
         },
     };
-};
+}
 
 /**
  * @group Plugins

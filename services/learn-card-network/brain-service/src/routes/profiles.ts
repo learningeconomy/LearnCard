@@ -208,7 +208,6 @@ export const profilesRouter = t.router({
                 description:
                     'This route uses the request header to grab the profile of the current user',
             },
-            requiredScope: 'profiles:read',
         })
         .input(z.void())
         .output(LCNProfileValidator.optional())
@@ -227,7 +226,6 @@ export const profilesRouter = t.router({
                 description:
                     'This route grabs the profile information of any user, using their profileId',
             },
-            requiredScope: 'profiles:read',
         })
         .input(z.object({ profileId: z.string() }))
         .output(LCNProfileValidator.optional())
@@ -349,7 +347,6 @@ export const profilesRouter = t.router({
                 summary: 'Search profiles',
                 description: 'This route searches for profiles based on their profileId',
             },
-            requiredScope: 'profiles:read',
         })
         .input(
             z.object({
@@ -1102,7 +1099,13 @@ export const profilesRouter = t.router({
             const setAsPrimary = existingSas.length === 0;
 
             const sa = await upsertSigningAuthority(endpoint);
-            await createUseSigningAuthorityRelationship(ctx.user.profile, sa, name, did, setAsPrimary);
+            await createUseSigningAuthorityRelationship(
+                ctx.user.profile,
+                sa,
+                name,
+                did,
+                setAsPrimary
+            );
             await deleteDidDocForProfile(ctx.user.profile.profileId);
             return true;
         }),
@@ -1154,7 +1157,7 @@ export const profilesRouter = t.router({
                 tags: ['Profiles'],
                 summary: 'Set Primary Signing Authority',
                 description:
-                    "This route is used to set a signing authority as the primary one for the current user",
+                    'This route is used to set a signing authority as the primary one for the current user',
             },
             requiredScope: 'signingAuthorities:write',
         })
