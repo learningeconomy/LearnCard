@@ -64,8 +64,12 @@ class TestBoostGetBoostAdmins200Response(unittest.TestCase):
                             fade_id_background_image = True, 
                             id_background_color = '', 
                             repeat_id_background_image = True, ), 
+                        highlighted_credentials = [
+                            ''
+                            ], 
                         role = '', 
-                        dob = '', )
+                        dob = '', 
+                        country = '', )
                     ]
             )
         else:
@@ -98,8 +102,12 @@ class TestBoostGetBoostAdmins200Response(unittest.TestCase):
                             fade_id_background_image = True, 
                             id_background_color = '', 
                             repeat_id_background_image = True, ), 
+                        highlighted_credentials = [
+                            ''
+                            ], 
                         role = '', 
-                        dob = '', )
+                        dob = '', 
+                        country = '', )
                     ],
         )
         """

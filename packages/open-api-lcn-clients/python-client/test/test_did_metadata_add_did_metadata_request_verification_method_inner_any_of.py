@@ -49,6 +49,7 @@ class TestDidMetadataAddDidMetadataRequestVerificationMethodInnerAnyOf(unittest.
                     n = '', 
                     d = '', ),
                 public_key_base58 = '',
+                public_key_multibase = '',
                 block_chain_account_id = ''
             )
         else:
