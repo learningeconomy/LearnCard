@@ -1,6 +1,6 @@
 {
     "name": "@learncard/network-brain-client",
-    "version": "2.3.28",
+    "version": "2.4.0",
     "description": "",
     "main": "dist/index.js",
     "module": "./dist/brain-client.esm.js",

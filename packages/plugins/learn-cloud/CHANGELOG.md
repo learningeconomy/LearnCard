@@ -1,5 +1,16 @@
 # learn-card-core
 
+## 2.2.0
+
+### Minor Changes
+
+-   [#807](https://github.com/learningeconomy/LearnCard/pull/807) [`cfabf6686a0233ed89de6201a70c01598c5ab298`](https://github.com/learningeconomy/LearnCard/commit/cfabf6686a0233ed89de6201a70c01598c5ab298) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add initFromApiKey support
+
+### Patch Changes
+
+-   Updated dependencies [[`cfabf6686a0233ed89de6201a70c01598c5ab298`](https://github.com/learningeconomy/LearnCard/commit/cfabf6686a0233ed89de6201a70c01598c5ab298)]:
+    -   @learncard/learn-cloud-client@1.5.0
+
 ## 2.1.44
 
 ### Patch Changes
