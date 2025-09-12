@@ -1,4 +1,4 @@
-import { UnsignedVC, VC, UnsignedVP } from '@learncard/types';
+import { UnsignedVC, VC, UnsignedVP, Alignment } from '@learncard/types';
 import { DiscriminatedUnionize } from './type.helpers';
 import { Plugin } from '@learncard/core';
 
@@ -90,6 +90,8 @@ export type BoostTemplate = {
     achievementImage?: string;
     attachments?: BoostAttachment[];
     skills?: BoostSkills[];
+    /** OBv3 alignment targets associated with the achievement */
+    alignments?: Alignment[];
     display?: BoostDisplay;
     familyTitles?: BoostFamilyTitles;
     boostID?: BoostID;
