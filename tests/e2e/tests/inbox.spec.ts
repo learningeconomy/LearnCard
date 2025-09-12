@@ -576,7 +576,7 @@ describe('Inbox', () => {
             expect(notification.webhookUrl).toBe('https://example.com/webhook');
             expect(notification.data.inbox).toBeDefined();
             expect(notification.data.inbox.issuanceId).toBeDefined();
-            expect(notification.data.inbox.status).toBe('DELIVERED');
+            expect(notification.data.inbox.status).toBe('ISSUED');
         });
 
         test('(9) should send a ISSUANCE_CLAIMED notification to the issuer if a webhook is configured', async () => {
@@ -646,7 +646,7 @@ describe('Inbox', () => {
             expect(claimedNotification.webhookUrl).toBe('https://example.com/webhook');
             expect(claimedNotification.data.inbox).toBeDefined();
             expect(claimedNotification.data.inbox.issuanceId).toBeDefined();
-            expect(claimedNotification.data.inbox.status).toBe('CLAIMED');
+            expect(claimedNotification.data.inbox.status).toBe('ISSUED');
         });
 
         test('(10) should send a ISSUANCE_ERROR notification to the issuer if a webhook is configured', async () => {
@@ -734,24 +734,18 @@ describe('Inbox', () => {
             b_anonymous = await getLearnCard('b')
             c = await getLearnCardForUser('c');        
 
-            const sa = await a.invoke.createSigningAuthority('test-sa');
-            if (!sa) { 
-                throw new Error('Failed to create signing authority');
-            }
-            const registered = await a.invoke.registerSigningAuthority(sa.endpoint!, sa.name, sa.did!);
-            if (!registered) {
-                throw new Error('Failed to register signing authority');
-            } 
-    
-            const integrationId = await a.invoke.addIntegration({
+            await learnCard.invoke.createProfile({ profileId: 'test-user', displayName: "Test User" })
+            sa = await learnCard.invoke.createSigningAuthority('test-sa');
+            registered = await learnCard.invoke.registerSigningAuthority(sa.endpoint, sa.name, sa.did);
+            integrationId = await learnCard.invoke.addIntegration({
                 name: 'test',
-                whitelistedDomains: ['localhost:4000'],
+                whitelistedDomains: ['localhost:3000'],
                 description: 'test',    
             }); 
             
-            await a.invoke.associateIntegrationWithSigningAuthority(integrationId, sa.endpoint!, sa.name, sa.did!, true);
+            await learnCard.invoke.associateIntegrationWithSigningAuthority(integrationId, sa.endpoint, sa.name, sa.did, true);
 
-            integration = await a.invoke.getIntegration(integrationId);
+            integration = await learnCard.invoke.getIntegration(integrationId);
 
         });
 
@@ -818,7 +812,7 @@ describe('Inbox', () => {
             const claimData = await claimResponse.json();
             expect(claimData).toBeDefined();
             expect(claimData).toBeTypeOf('object');
-            expect(claimData.status).toBe('DELIVERED');
+            expect(claimData.status).toBe('ISSUED');
         })
     })
 });

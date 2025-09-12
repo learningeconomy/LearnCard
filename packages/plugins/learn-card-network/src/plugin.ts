@@ -1057,6 +1057,11 @@ export const getLearnCardNetworkPlugin = async (
                 if (!userData) throw new Error('Please make an account first!');
                 return client.inbox.getInboxCredential.query({ credentialId: id });
             },
+            finalizeInboxCredentials: async _learnCard => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.inbox.finalize.mutate();
+            },
+             
             addContactMethod: async (_learnCard, contactMethod) => {
                 if (!userData) throw new Error('Please make an account first!');
                 return client.contactMethods.addContactMethod.mutate(contactMethod);
@@ -1115,7 +1120,7 @@ export const getLearnCardNetworkPlugin = async (
 
                 return client.integrations.associateIntegrationWithSigningAuthority.mutate({ integrationId, endpoint, name, did, isPrimary });
             },
-
+ 
             resolveFromLCN: async (_learnCard, uri) => {
                 const result = await client.storage.resolve.query({ uri });
 

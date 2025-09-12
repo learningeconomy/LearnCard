@@ -3,7 +3,7 @@ import { VC, UnsignedVC, LCNNotificationTypeEnumValidator, LCNInboxStatusEnumVal
 
 import { ProfileType, SigningAuthorityForUserType } from 'types/profile';
 import { createInboxCredential } from '@accesslayer/inbox-credential/create';
-import { markInboxCredentialAsDelivered } from '@accesslayer/inbox-credential/update';
+import { markInboxCredentialAsIssued } from '@accesslayer/inbox-credential/update';
 import { Context } from '@routes'
 import { 
     createDeliveredRelationship,
@@ -42,7 +42,7 @@ export const claimIntoInbox = async(
     configuration: IssueInboxCredentialType['configuration'] = {},
     ctx: Context
 ): Promise<{ 
-    status: 'PENDING' | 'DELIVERED' | 'CLAIMED' | 'EXPIRED'; 
+    status: 'PENDING' | 'ISSUED' | 'EXPIRED' | 'CLAIMED' | 'DELIVERED'; // DELIVERED & CLAIMED are deprecated, use ISSUED 
     inboxCredential: InboxCredentialType;
     recipientDid?: string;
 }> => {
@@ -80,6 +80,7 @@ export const claimIntoInbox = async(
         const inboxCredential = await createInboxCredential({
             credential: JSON.stringify(finalCredential),
             isSigned: true,
+            isAccepted: true,
             recipient,
             issuerProfile,
             webhookUrl,
@@ -94,8 +95,8 @@ export const claimIntoInbox = async(
             ctx.domain // domain
         );
 
-        // Mark as delivered and create relationship
-        await markInboxCredentialAsDelivered(inboxCredential.id);
+        // Mark as issued and create relationship
+        await markInboxCredentialAsIssued(inboxCredential.id);
         await createDeliveredRelationship(
             issuerProfile.profileId,
             inboxCredential.id,
@@ -118,7 +119,7 @@ export const claimIntoInbox = async(
         //         data: { 
         //             inbox: {
         //                 issuanceId: inboxCredential.id,
-        //                 status: LCNInboxStatusEnumValidator.enum.DELIVERED,
+        //                 status: LCNInboxStatusEnumValidator.enum.ISSUED,
         //                 recipient: {
         //                     contactMethod: recipient,
         //                     learnCardId: existingProfile.did,
@@ -130,7 +131,7 @@ export const claimIntoInbox = async(
         // }
 
         return {
-            status: LCNInboxStatusEnumValidator.enum.DELIVERED,
+            status: LCNInboxStatusEnumValidator.enum.ISSUED,
             inboxCredential,
             recipientDid: existingProfile.did,
         };
@@ -139,6 +140,7 @@ export const claimIntoInbox = async(
         const inboxCredential = await createInboxCredential({
             credential: JSON.stringify(credential),
             isSigned,
+            isAccepted: true,
             recipient,
             issuerProfile,
             webhookUrl,
@@ -174,7 +176,7 @@ export const claimIntoInbox = async(
         //         data: { 
         //             inbox: {
         //                 issuanceId: inboxCredential.id,
-        //                 status: LCNInboxStatusEnumValidator.enum.DELIVERED,
+        //                 status: LCNInboxStatusEnumValidator.enum.PENDING,
         //                 recipient: {
         //                     contactMethod: recipient,
         //                 },
@@ -185,7 +187,7 @@ export const claimIntoInbox = async(
         // }
 
         return {
-            status: LCNInboxStatusEnumValidator.enum.DELIVERED,
+            status: LCNInboxStatusEnumValidator.enum.PENDING,
             inboxCredential: inboxCredential.dataValues,
         };
     }
@@ -199,7 +201,7 @@ export const issueToInbox = async (
     configuration: IssueInboxCredentialType['configuration'] = {},
     ctx: Context
 ): Promise<{ 
-    status: 'PENDING' | 'DELIVERED' | 'CLAIMED' | 'EXPIRED'; 
+    status: 'PENDING' | 'ISSUED' | 'EXPIRED' | 'DELIVERED' | 'CLAIMED'; // DELIVERED & CLAIMED are deprecated, use ISSUED
     inboxCredential: InboxCredentialType;
     claimUrl?: string;
     recipientDid?: string;
@@ -308,8 +310,8 @@ export const issueToInbox = async (
         );
 
 
-        // Mark as delivered and create relationship
-        await markInboxCredentialAsDelivered(inboxCredential.id);
+        // Mark as issued and create relationship
+        await markInboxCredentialAsIssued(inboxCredential.id);
         await createDeliveredRelationship(
             issuerProfile.profileId,
             inboxCredential.id,
@@ -332,7 +334,7 @@ export const issueToInbox = async (
                 data: { 
                     inbox: {
                         issuanceId: inboxCredential.id,
-                        status: LCNInboxStatusEnumValidator.enum.DELIVERED,
+                        status: LCNInboxStatusEnumValidator.enum.ISSUED,
                         recipient: {
                             contactMethod: recipient,
                             learnCardId: existingProfile.did,
@@ -344,7 +346,7 @@ export const issueToInbox = async (
         }
 
         return {
-            status: LCNInboxStatusEnumValidator.enum.DELIVERED,
+            status: LCNInboxStatusEnumValidator.enum.ISSUED,
             inboxCredential,
             recipientDid: existingProfile.did,
         };
@@ -435,7 +437,7 @@ export const issueToInbox = async (
                 data: { 
                     inbox: {
                         issuanceId: inboxCredential.id,
-                        status: LCNInboxStatusEnumValidator.enum.DELIVERED,
+                        status: LCNInboxStatusEnumValidator.enum.PENDING,
                         recipient: {
                             contactMethod: recipient,
                         },
@@ -449,7 +451,7 @@ export const issueToInbox = async (
         const claimUrl = generateClaimUrl(claimToken);
 
         return {
-            status: LCNInboxStatusEnumValidator.enum.DELIVERED,
+            status: LCNInboxStatusEnumValidator.enum.PENDING,
             inboxCredential,
             claimUrl,
         };

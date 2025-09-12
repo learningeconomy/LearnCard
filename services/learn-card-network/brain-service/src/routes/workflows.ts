@@ -19,8 +19,8 @@ import {
 import {
     validateInboxClaimToken,
 } from '@helpers/contact-method.helpers';
-import { getPendingOrClaimedInboxCredentialsForContactMethodId } from '@accesslayer/inbox-credential/read';
-import { markInboxCredentialAsClaimed } from '@accesslayer/inbox-credential/update';
+import { getPendingOrIssuedInboxCredentialsForContactMethodId } from '@accesslayer/inbox-credential/read';
+import { markInboxCredentialAsIsAccepted, markInboxCredentialAsIssued } from '@accesslayer/inbox-credential/update';
 import { createClaimedRelationship } from '@accesslayer/inbox-credential/relationships/create';
 import {
     getContactMethodById,
@@ -392,7 +392,7 @@ async function handleInboxClaimInitiation(
     }
 
     // Verify there are pending credentials for this contact method
-    const pendingCredentials = await getPendingOrClaimedInboxCredentialsForContactMethodId(
+    const pendingCredentials = await getPendingOrIssuedInboxCredentialsForContactMethodId(
         claimTokenData.contactMethodId
     );
     if (pendingCredentials.length === 0) {
@@ -525,7 +525,7 @@ async function handleInboxClaimPresentation(
     }
 
     // Get pending credentials for this contact method
-    const pendingCredentials = await getPendingOrClaimedInboxCredentialsForContactMethodId(
+    const pendingCredentials = await getPendingOrIssuedInboxCredentialsForContactMethodId(
         contactMethod.id
     );
 
@@ -604,7 +604,8 @@ async function handleInboxClaimPresentation(
                 )) as VC;
             }
 
-            await markInboxCredentialAsClaimed(inboxCredential.id);
+            await markInboxCredentialAsIssued(inboxCredential.id);
+            await markInboxCredentialAsIsAccepted(inboxCredential.id);
 
             // Create claimed relationship if holder has a profile
             if (holderProfile) {
@@ -626,7 +627,7 @@ async function handleInboxClaimPresentation(
                     data: {
                         inbox: {
                             issuanceId: inboxCredential.id,
-                            status: LCNInboxStatusEnumValidator.enum.CLAIMED,
+                            status: LCNInboxStatusEnumValidator.enum.ISSUED,
                             recipient: {
                                 contactMethod: { type: contactMethod.type, value: contactMethod.value },
                                 learnCardId: holderProfile?.did || holderDid,

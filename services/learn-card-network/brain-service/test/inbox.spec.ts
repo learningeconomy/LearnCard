@@ -306,7 +306,7 @@ describe('Universal Inbox', () => {
                             recipient: {
                                 contactMethod: { type: 'email', value: 'userB@test.com' },
                             },
-                            status: LCNInboxStatusEnumValidator.enum.DELIVERED,
+                            status: LCNInboxStatusEnumValidator.enum.PENDING,
                             timestamp: expect.any(String),
                         },
                     },
@@ -545,7 +545,7 @@ describe('Universal Inbox', () => {
             await userA.clients.fullAuth.inbox.issue({
                 credential: signedCredential,
                 recipient: { type: 'phone', value: '+15555555' },
-            });
+            }); 
 
             // Retrieve the verification token from the first spy's call arguments
             const sendArgs = sendSpy.mock.calls[8][0];
@@ -582,19 +582,19 @@ describe('Universal Inbox', () => {
             expect(
                 (
                     await userA.clients.fullAuth.inbox.getMyIssuedCredentials({
-                        query: { currentStatus: LCNInboxStatusEnumValidator.enum.CLAIMED },
+                        query: { currentStatus: LCNInboxStatusEnumValidator.enum.ISSUED, isAccepted: true },
                     })
                 ).records
             ).toHaveLength(3);
             const claimed = await userA.clients.fullAuth.inbox.getMyIssuedCredentials({
-                query: { currentStatus: LCNInboxStatusEnumValidator.enum.CLAIMED },
+                query: { currentStatus: LCNInboxStatusEnumValidator.enum.ISSUED, isAccepted: true },
                 limit: 1,
             });
             await expect(claimed.records).toHaveLength(1);
             expect(
                 (
                     await userA.clients.fullAuth.inbox.getMyIssuedCredentials({
-                        query: { currentStatus: LCNInboxStatusEnumValidator.enum.CLAIMED },
+                        query: { currentStatus: LCNInboxStatusEnumValidator.enum.ISSUED, isAccepted: true },
                         limit: 3,
                         cursor: claimed.cursor,
                     })
@@ -603,7 +603,7 @@ describe('Universal Inbox', () => {
             expect(
                 (
                     await userA.clients.fullAuth.inbox.getMyIssuedCredentials({
-                        query: { currentStatus: LCNInboxStatusEnumValidator.enum.CLAIMED },
+                        query: { currentStatus: LCNInboxStatusEnumValidator.enum.ISSUED, isAccepted: true },
                         limit: 1,
                         cursor: claimed.cursor,
                     })
@@ -666,7 +666,7 @@ describe('Universal Inbox', () => {
                 (
                     await userA.clients.fullAuth.inbox.getMyIssuedCredentials({
                         recipient: { type: 'phone', value: '+15555555' },
-                        query: { currentStatus: LCNInboxStatusEnumValidator.enum.CLAIMED },
+                        query: { currentStatus: LCNInboxStatusEnumValidator.enum.ISSUED, isAccepted: true },
                     })
                 ).records
             ).toHaveLength(3);
@@ -682,7 +682,7 @@ describe('Universal Inbox', () => {
                 (
                     await userA.clients.fullAuth.inbox.getMyIssuedCredentials({
                         recipient: { type: 'phone', value: '+15555555' },
-                        query: { currentStatus: LCNInboxStatusEnumValidator.enum.DELIVERED },
+                        query: { currentStatus: LCNInboxStatusEnumValidator.enum.ISSUED, isAccepted: false },
                     })
                 ).records
             ).toHaveLength(2);
@@ -691,7 +691,8 @@ describe('Universal Inbox', () => {
                     await userA.clients.fullAuth.inbox.getMyIssuedCredentials({
                         recipient: { type: 'phone', value: '+15555555' },
                         query: {
-                            currentStatus: LCNInboxStatusEnumValidator.enum.CLAIMED,
+                            currentStatus: LCNInboxStatusEnumValidator.enum.ISSUED,
+                            isAccepted: true,
                             isSigned: true,
                         },
                     })
@@ -702,7 +703,8 @@ describe('Universal Inbox', () => {
                     await userA.clients.fullAuth.inbox.getMyIssuedCredentials({
                         recipient: { type: 'phone', value: '+15555555' },
                         query: {
-                            currentStatus: LCNInboxStatusEnumValidator.enum.CLAIMED,
+                            currentStatus: LCNInboxStatusEnumValidator.enum.ISSUED,
+                            isAccepted: true,
                             isSigned: false,
                         },
                     })
@@ -713,7 +715,8 @@ describe('Universal Inbox', () => {
                     await userA.clients.fullAuth.inbox.getMyIssuedCredentials({
                         recipient: { type: 'phone', value: '+15555555' },
                         query: {
-                            currentStatus: LCNInboxStatusEnumValidator.enum.DELIVERED,
+                            currentStatus: LCNInboxStatusEnumValidator.enum.ISSUED,
+                            isAccepted: false,
                             id: deliveredInboxCredential.issuanceId,
                             issuerDid: userA.learnCard.id.did(),
                         },
@@ -979,7 +982,7 @@ describe('Universal Inbox', () => {
                         inbox: {
                             issuanceId: inboxCredential.issuanceId,
                             recipient: { contactMethod: { type: 'phone', value: '+15555555555' } },
-                            status: LCNInboxStatusEnumValidator.enum.DELIVERED,
+                            status: LCNInboxStatusEnumValidator.enum.PENDING,
                             timestamp: expect.any(String),
                         },
                     },
@@ -1021,7 +1024,7 @@ describe('Universal Inbox', () => {
                                 contactMethod: { type: 'phone', value: '+15555555555' },
                                 learnCardId: userB.learnCard.id.did(),
                             },
-                            status: LCNInboxStatusEnumValidator.enum.CLAIMED,
+                            status: LCNInboxStatusEnumValidator.enum.ISSUED,
                             timestamp: expect.any(String),
                         },
                     },
@@ -1299,7 +1302,7 @@ describe('Universal Inbox', () => {
                 credential: vc2,
                 recipient: { type: 'email', value: 'userB@test.com' },
             });
-            expect(deliveredCredential.status).toBe('DELIVERED');
+            expect(deliveredCredential.status).toBe('ISSUED');
 
             // User B should see the credentials as incoming
             const incomingCredentials =
@@ -1347,7 +1350,7 @@ describe('Universal Inbox', () => {
                 credential: vc2,
                 recipient: { type: 'email', value: 'userB@test.com' },
             });
-            expect(deliveredCredential.status).toBe('DELIVERED');
+            expect(deliveredCredential.status).toBe('PENDING');
 
             // User B should see the credentials as incoming
             const incomingCredentials =
@@ -1378,7 +1381,7 @@ describe('Universal Inbox', () => {
                 credential: vc3,
                 recipient: { type: 'email', value: 'userB@test.com' },
             });
-            expect(deliveredCredential2.status).toBe('DELIVERED');
+            expect(deliveredCredential2.status).toBe('ISSUED');
 
             // User B should see the credentials as incoming
             const incomingCredentials2 =
@@ -1497,5 +1500,95 @@ describe('Universal Inbox', () => {
                 })
             ).rejects.toThrow();
         }); 
+    });
+
+    describe('Finalize inbox credentials', () => {
+        beforeEach(async () => {
+            sendSpy.mockClear();
+            await Profile.delete({ detach: true, where: {} });
+            await InboxCredential.delete({ detach: true, where: {} });
+            await ContactMethod.delete({ detach: true, where: {} });
+            await SigningAuthority.delete({ detach: true, where: {} });
+
+            await SigningAuthority.createOne({ endpoint: 'https://example.com' });
+
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+        });
+
+        afterAll(async () => {
+            await Profile.delete({ detach: true, where: {} });
+            await InboxCredential.delete({ detach: true, where: {} });
+            await ContactMethod.delete({ detach: true, where: {} });
+            await SigningAuthority.delete({ detach: true, where: {} });
+        });
+
+        it('should not allow finalize without full auth', async () => {
+            await expect(noAuthClient.inbox.finalize({})).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+            await expect(userA.clients.partialAuth.inbox.finalize({})).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+        });
+
+        it('should return zero counts and empty VCs when no pending credentials', async () => {
+            // Add and verify a contact method for userA
+            await userA.clients.fullAuth.contactMethods.addContactMethod({ type: 'email', value: 'userA@test.com' });
+            const sendArgs = sendSpy.mock.calls[0][0];
+            const verificationToken = sendArgs.templateModel.verificationToken;
+            await userA.clients.fullAuth.contactMethods.verifyContactMethod({ token: verificationToken });
+
+            const res = await userA.clients.fullAuth.inbox.finalize({});
+            expect(res.processed).toBe(0);
+            expect(res.claimed).toBe(0);
+            expect(res.errors).toBe(0);
+            expect(res.verifiableCredentials).toHaveLength(0);
+        });
+
+        it('should finalize pending inbox credentials and return signed VCs', async () => {
+            // Set up signing authority for issuer (userA)
+            await Profile.relateTo({
+                alias: 'usesSigningAuthority',
+                where: {
+                    source: { profileId: 'usera' },
+                    target: { endpoint: 'https://example.com' },
+                },
+                properties: {
+                    name: 'Example',
+                    did: await (userA.learnCard as any).id.did('key'),
+                },
+            });
+            // Issue two unsigned credentials to userA@test.com with signingAuthority metadata
+            const vc1 = await (userA.learnCard as any).invoke.getTestVc();
+            const vc2 = await (userA.learnCard as any).invoke.getTestVc();
+            await userA.clients.fullAuth.inbox.issue({
+                credential: vc1,
+                recipient: { type: 'email', value: 'userA@test.com' },
+                configuration: { signingAuthority: { endpoint: 'https://example.com', name: 'Example' } },
+            });
+            await userA.clients.fullAuth.inbox.issue({
+                credential: vc2,
+                recipient: { type: 'email', value: 'userA@test.com' },
+                configuration: { signingAuthority: { endpoint: 'https://example.com', name: 'Example' } },
+            });
+
+            // Assume userA accepts the inbox credentials through another flow i.e. an embed
+            await InboxCredential.update({ isAccepted: true });
+
+            // Add and verify a contact method for userB
+            await userB.clients.fullAuth.contactMethods.addContactMethod({ type: 'email', value: 'userA@test.com' });
+            const sendArgs = sendSpy.mock.calls[2][0];
+            const verificationToken = sendArgs.templateModel.verificationToken;
+            if (!verificationToken) throw new Error('Verification token not found');
+            await userB.clients.fullAuth.contactMethods.verifyContactMethod({ token: verificationToken });
+
+            const res = await userB.clients.fullAuth.inbox.finalize({});  
+
+            expect(res.processed).toBe(2);
+            expect(res.claimed).toBe(2);
+            expect(res.errors).toBe(0);
+            expect(res.verifiableCredentials).toHaveLength(2);
+            // Ensure returned VCs are signed
+            for (const vc of res.verifiableCredentials) {
+                expect(vc.proof).toBeDefined();
+            }
+        });
     });
 });

@@ -429,7 +429,13 @@ export type LearnCardNetworkPluginMethods = {
     ) => Promise<PaginatedInboxCredentialsType>;
 
     getInboxCredential: (id: string) => Promise<InboxCredentialType | null>;
-
+    finalizeInboxCredentials: () => Promise<{
+        processed: number;
+        claimed: number;
+        errors: number;
+        verifiableCredentials: VC[];
+    }>;
+ 
     addContactMethod: (
         contactMethod: ContactMethodQueryType
     ) => Promise<{ message: string; contactMethodId: string; verificationRequired: boolean }>;
@@ -451,7 +457,7 @@ export type LearnCardNetworkPluginMethods = {
     updateIntegration: (id: string, updates: LCNIntegrationUpdateType) => Promise<boolean>;
     deleteIntegration: (id: string) => Promise<boolean>;
     associateIntegrationWithSigningAuthority: (integrationId: string, endpoint: string, name: string, did: string, isPrimary?: boolean) => Promise<boolean>;
-
+ 
     resolveFromLCN: (
         uri: string
     ) => Promise<VC | UnsignedVC | VP | JWE | ConsentFlowContract | ConsentFlowTerms>;

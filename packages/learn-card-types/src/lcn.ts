@@ -612,7 +612,7 @@ export const LCNInboxContactMethodValidator = z.object({
 
 export type LCNInboxContactMethod = z.infer<typeof LCNInboxContactMethodValidator>;
 
-export const LCNInboxStatusEnumValidator = z.enum(['PENDING', 'DELIVERED', 'CLAIMED', 'EXPIRED']);
+export const LCNInboxStatusEnumValidator = z.enum(['PENDING', 'ISSUED', 'EXPIRED', /* DEPRECATED — use ISSUED */'DELIVERED', /* DEPRECATED — use ISSUED */'CLAIMED']);
 export type LCNInboxStatusEnum = z.infer<typeof LCNInboxStatusEnumValidator>;
 
 export const LCNNotificationInboxValidator = z.object({
@@ -790,6 +790,7 @@ export const InboxCredentialValidator = z.object({
     credential: z.string(),
     isSigned: z.boolean(),
     currentStatus: LCNInboxStatusEnumValidator,
+    isAccepted: z.boolean().optional(),
     expiresAt: z.string(),
     createdAt: z.string(),
     issuerDid: z.string(),
@@ -815,6 +816,7 @@ export const InboxCredentialQueryValidator = z
         currentStatus: LCNInboxStatusEnumValidator,
         id: z.string(),
         isSigned: z.boolean(),
+        isAccepted: z.boolean().optional(),
         issuerDid: z.string(),
     })
     .partial();

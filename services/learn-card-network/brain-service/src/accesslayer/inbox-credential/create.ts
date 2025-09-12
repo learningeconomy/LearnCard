@@ -12,6 +12,7 @@ import { ProfileType } from 'types/profile';
 export const createInboxCredential = async (input: {
     credential: string;
     isSigned: boolean;
+    isAccepted?: boolean;
     recipient: ContactMethodQueryType;
     issuerProfile: ProfileType;
     webhookUrl?: string;
@@ -28,6 +29,7 @@ export const createInboxCredential = async (input: {
         credential: input.credential,
         isSigned: input.isSigned,
         currentStatus: 'PENDING' as const,
+        isAccepted: input.isAccepted ?? false,
         expiresAt: expiresAt.toISOString(),
         createdAt: new Date().toISOString(),
         issuerDid: input.issuerProfile.did,

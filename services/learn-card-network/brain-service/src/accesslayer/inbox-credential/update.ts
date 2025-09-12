@@ -24,23 +24,25 @@ export const updateInboxCredential = async (
     return inflateObject<InboxCredentialType>(inboxCredential as any);
 };
 
-export const markInboxCredentialAsDelivered = async (
+export const markInboxCredentialAsIssued = async (
     id: string
 ): Promise<InboxCredentialType | null> => {
     return updateInboxCredential(id, {
-        currentStatus: 'DELIVERED',
-    });
-};
-
-export const markInboxCredentialAsClaimed = async (id: string): Promise<InboxCredentialType | null> => {
-    return updateInboxCredential(id, {
-        currentStatus: 'CLAIMED',
+        currentStatus: 'ISSUED',
     });
 };
 
 export const markInboxCredentialAsExpired = async (id: string): Promise<InboxCredentialType | null> => {
     return updateInboxCredential(id, {
         currentStatus: 'EXPIRED',
+    });
+};
+
+export const markInboxCredentialAsIsAccepted = async (
+    id: string
+): Promise<InboxCredentialType | null> => {
+    return updateInboxCredential(id, {
+        isAccepted: true,
     });
 };
 
