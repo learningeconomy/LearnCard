@@ -19,8 +19,8 @@ const sqs = new SQSClient({
 });
 
 export async function addNotificationToQueue(notification: LCNNotification) {
-    if (!!process.env.IS_E2E_TEST) {
-        /** 
+    if (process.env.IS_E2E_TEST) {
+        /**
          * For end-to-end tests, store the last delivery in cache
          */
         await cache.set(`e2e:notification-queue:${randomUUID()}`, JSON.stringify(notification));
@@ -65,7 +65,7 @@ export async function sendNotification(notification: LCNNotification) {
             notification.sent = new Date().toISOString();
         }
         // If webhookUrl is provided, use it instead of the default. It takes precedence over the default and 'to' default.
-        if(typeof notification.webhookUrl === 'string') {
+        if (typeof notification.webhookUrl === 'string') {
             notificationsWebhook = notification.webhookUrl;
         }
 
@@ -109,9 +109,8 @@ export async function sendNotification(notification: LCNNotification) {
 
             if (!validationResult.success) {
                 throw new Error('Notifications Endpoint returned a malformed result');
-                
-            } 
-            
+            }
+
             try {
                 if (notification?.data?.inbox?.issuanceId) {
                     await createWebhookSentRelationship(
@@ -123,7 +122,10 @@ export async function sendNotification(notification: LCNNotification) {
                     );
                 }
             } catch (error) {
-                console.error('Notifications Helpers - Error While Creating Webhook Sent Relationship:', error);
+                console.error(
+                    'Notifications Helpers - Error While Creating Webhook Sent Relationship:',
+                    error
+                );
             }
 
             return validationResult.data;
