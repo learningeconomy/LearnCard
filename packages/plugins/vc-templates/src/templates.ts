@@ -118,6 +118,7 @@ export const VC_TEMPLATES: {
             display,
             familyTitles,
             skills,
+            network,
             groupID = '',
         } = {},
         crypto
@@ -153,6 +154,7 @@ export const VC_TEMPLATES: {
         image: boostImage,
         attachments,
         skills,
+        ...(network ? { network } : {}),
         groupID,
     }),
     boostID: (
@@ -175,6 +177,7 @@ export const VC_TEMPLATES: {
             display,
             familyTitles,
             boostID,
+            network,
             groupID = '',
         } = {},
         crypto
@@ -221,6 +224,7 @@ export const VC_TEMPLATES: {
         attachments,
         skills,
         boostID,
+        ...(network ? { network } : {}),
         groupID,
     }),
     delegate: (
