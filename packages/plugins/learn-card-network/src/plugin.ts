@@ -415,8 +415,13 @@ export const getLearnCardNetworkPlugin = async (
 
             createBoost: async (_learnCard, credential, metadata) => {
                 if (!userData) throw new Error('Please make an account first!');
+                const { skillIds, ...rest } = metadata ?? {};
 
-                return client.boost.createBoost.mutate({ credential, ...metadata });
+                return client.boost.createBoost.mutate({
+                    credential,
+                    ...rest,
+                    ...(skillIds && skillIds.length > 0 ? { skillIds } : {}),
+                });
             },
             createChildBoost: async (_learnCard, parentUri, credential, metadata) => {
                 if (!userData) throw new Error('Please make an account first!');
@@ -706,44 +711,6 @@ export const getLearnCardNetworkPlugin = async (
                 if (typeof options === 'object' && options.overideFn) {
                     boost = options.overideFn(boost);
                 }
-
-                // Inject OBv3 alignments from LCN into the unsigned VC before issuing
-                try {
-                    const alignments = await client.boost.getBoostAlignments.query({
-                        uri: boostUri,
-                    });
-                    const addAlignments = (subject: any) => {
-                        if (!subject) return;
-                        if (alignments.length === 0) return;
-
-                        const jsonLdAlignments = alignments.map(alignment => ({
-                            ...alignment,
-                            type: ['Alignment'],
-                        }));
-
-                        if (subject.achievement) {
-                            const ach = subject.achievement;
-                            if (!Array.isArray(ach.alignment))
-                                ach.alignment = Array.isArray(ach.alignment) ? ach.alignment : [];
-                            ach.alignment = [...ach.alignment, ...jsonLdAlignments];
-                            return;
-                        }
-                        if (!Array.isArray(subject.alignment))
-                            subject.alignment = Array.isArray(subject.alignment)
-                                ? subject.alignment
-                                : [];
-                        subject.alignment = [...subject.alignment, ...jsonLdAlignments];
-                    };
-                    if (Array.isArray(boost.credentialSubject)) {
-                        boost.credentialSubject.forEach(addAlignments);
-                    } else {
-                        addAlignments(boost.credentialSubject as any);
-                    }
-                } catch (err) {
-                    _learnCard.debug?.('Failed to inject OBv3 alignments in plugin sendBoost', err);
-                }
-
-                console.log('boost', JSON.stringify(boost));
 
                 const vc = await _learnCard.invoke.issueCredential(boost);
 

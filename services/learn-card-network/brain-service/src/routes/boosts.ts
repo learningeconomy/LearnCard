@@ -99,6 +99,7 @@ import {
     addAlignedSkillsToBoost,
 } from '@accesslayer/boost/relationships/create';
 import { getSkillFrameworkById } from '@accesslayer/skill-framework/read';
+import { getFrameworkIdsForSkill } from '@accesslayer/skill/read';
 import { neogma } from '@instance';
 import {
     removeBoostAsParent,
@@ -325,14 +326,60 @@ export const boostsRouter = t.router({
                 .extend({
                     credential: VCValidator.or(UnsignedVCValidator),
                     claimPermissions: BoostPermissionsValidator.partial().optional(),
+                    skillIds: z.array(z.string()).min(1).optional(),
                 })
         )
         .output(z.string())
         .mutation(async ({ input, ctx }) => {
             const { profile } = ctx.user;
-            const { credential, claimPermissions, ...metadata } = input;
+            const { credential, claimPermissions, skillIds: incomingSkillIds, ...metadata } = input;
 
             const boost = await createBoost(credential, profile, metadata, ctx.domain);
+
+            const skillIds = incomingSkillIds ? Array.from(new Set(incomingSkillIds)) : undefined;
+
+            if (skillIds && skillIds.length > 0) {
+                const verification = await neogma.queryRunner.run(
+                    'MATCH (s:Skill) WHERE s.id IN $ids RETURN COLLECT(s.id) AS found',
+                    { ids: skillIds }
+                );
+
+                const found = (verification.records[0]?.get('found') as string[]) || [];
+                const missing = skillIds.filter(id => !found.includes(id));
+                if (missing.length > 0) {
+                    throw new TRPCError({
+                        code: 'NOT_FOUND',
+                        message: `Skill(s) not found: ${missing.join(', ')}`,
+                    });
+                }
+
+                const frameworkLookups = await Promise.all(
+                    skillIds.map(id => getFrameworkIdsForSkill(id))
+                );
+
+                const frameworks = new Set<string>();
+                frameworkLookups.forEach((frameworkIds, index) => {
+                    if (frameworkIds.length === 0) {
+                        throw new TRPCError({
+                            code: 'BAD_REQUEST',
+                            message: `Skill ${skillIds[index]} is not associated with a framework`,
+                        });
+                    }
+                    frameworkIds.forEach(fid => frameworks.add(fid));
+                });
+
+                if (frameworks.size !== 1) {
+                    throw new TRPCError({
+                        code: 'BAD_REQUEST',
+                        message: 'All skillIds must belong to the same framework',
+                    });
+                }
+
+                const frameworkId = Array.from(frameworks)[0]!;
+
+                await setBoostUsesFramework(boost, frameworkId);
+                await addAlignedSkillsToBoost(boost, skillIds);
+            }
 
             if (claimPermissions) {
                 await addClaimPermissionsForBoost(boost, {
@@ -430,13 +477,19 @@ export const boostsRouter = t.router({
             const { uri } = input;
 
             const decodedUri = decodeURIComponent(uri);
-            const boost = await getBoostByUriWithDefaultClaimPermissions(decodedUri);
+            const [boost, boostInstance] = await Promise.all([
+                getBoostByUriWithDefaultClaimPermissions(decodedUri),
+                getBoostByUri(decodedUri),
+            ]);
 
-            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+            if (!boost || !boostInstance)
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
             const { id, boost: _boost, ...remaining } = boost;
+            const parsedBoost = JSON.parse(_boost);
+            await injectObv3AlignmentsIntoCredentialForBoost(parsedBoost, boostInstance);
 
-            return { ...remaining, boost: JSON.parse(_boost), uri: getBoostUri(id, ctx.domain) };
+            return { ...remaining, boost: parsedBoost, uri: getBoostUri(id, ctx.domain) };
         }),
 
     getBoosts: profileRoute

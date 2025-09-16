@@ -1,11 +1,27 @@
 import type { UnsignedVC, VC } from '@learncard/types';
-import type { BoostInstance } from '@models';
+import type { BoostInstance, SkillInstance } from '@models';
 import { getSkillsProvider } from './index';
 import {
     getAlignedSkillsForBoost,
     getFrameworkUsedByBoost,
 } from '@accesslayer/boost/relationships/read';
 import type { Obv3Alignment } from './types';
+
+const getInjectableSkillIds = (skills: SkillInstance[]): string[] =>
+    skills
+        .map(skill => {
+            const props = ((skill as any)?.dataValues ?? (skill as any)) as Record<string, any> | undefined;
+            if (!props) return null;
+
+            const type = typeof props.type === 'string' ? props.type.toLowerCase() : undefined;
+            if (type === 'container') return null;
+
+            const id = props.id;
+            if (!id) return null;
+
+            return String(id);
+        })
+        .filter((id): id is string => Boolean(id));
 
 // Mutates the given credential in-place to add OBv3 alignments, if any exist on the boost.
 export async function injectObv3AlignmentsIntoCredentialForBoost(
@@ -21,9 +37,7 @@ export async function injectObv3AlignmentsIntoCredentialForBoost(
         if (!framework || skills.length === 0) return;
 
         const frameworkId: string | undefined = (framework as any)?.dataValues?.id ?? framework?.id;
-        const skillIds: string[] = skills
-            .map(s => (s as any)?.dataValues?.id ?? (s as any)?.id)
-            .filter(Boolean);
+        const skillIds = getInjectableSkillIds(skills);
 
         if (!frameworkId || skillIds.length === 0) return;
 
@@ -80,9 +94,7 @@ export async function buildObv3AlignmentsForBoost(boost: BoostInstance): Promise
         if (!framework || skills.length === 0) return [];
 
         const frameworkId: string | undefined = (framework as any)?.dataValues?.id ?? framework?.id;
-        const skillIds: string[] = skills
-            .map(s => (s as any)?.dataValues?.id ?? (s as any)?.id)
-            .filter(Boolean);
+        const skillIds = getInjectableSkillIds(skills);
 
         if (!frameworkId || skillIds.length === 0) return [];
 

@@ -198,7 +198,7 @@ export type LearnCardNetworkPluginMethods = {
 
     createBoost: (
         credential: VC | UnsignedVC,
-        metadata?: Partial<Omit<Boost, 'uri'>>
+        metadata?: Partial<Omit<Boost, 'uri'>> & { skillIds?: string[] }
     ) => Promise<string>;
     createChildBoost: (
         parentUri: string,

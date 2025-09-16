@@ -77,14 +77,26 @@ describe('Boost OBv3 Alignment Injection (via Signing Authority)', () => {
         await a.invoke.createSkillFramework({ frameworkId: fwId });
         await a.invoke.syncFrameworkSkills({ id: fwId });
 
-        // 3) Create a boost
-        const boostUri = await a.invoke.createBoost(testUnsignedBoost);
+        // 3) Create a boost with skill attachments in a single call
+        const boostUri = await a.invoke.createBoost(testUnsignedBoost, {
+            skillIds: [skill1Id, skill2Id],
+        });
 
-        // 4) Attach framework + align specific skills via production routes (plugin methods)
-        await a.invoke.attachFrameworkToBoost(boostUri, fwId);
-        await a.invoke.alignBoostSkills(boostUri, [skill1Id, skill2Id]);
+        // Fetch boost template and ensure alignments injected (container excluded)
+        const boostRecord = await a.invoke.getBoost(boostUri);
+        const boostSubject = Array.isArray(boostRecord.boost.credentialSubject)
+            ? boostRecord.boost.credentialSubject[0]
+            : boostRecord.boost.credentialSubject;
+        const boostAlignment = boostSubject?.achievement?.alignment || boostSubject?.alignment;
+        expect(Array.isArray(boostAlignment)).toBe(true);
+        const boostAlignmentNames = (boostAlignment || [])
+            .map((a: any) => a?.targetName)
+            .filter(Boolean)
+            .sort();
+        expect(boostAlignmentNames).toEqual(['Alignment Skill 1']);
+        expect(boostAlignmentNames).not.toContain('Alignment Skill 2');
 
-        // 5) Send the boost via plugin (plugin injects alignments)
+        // 4) Send the boost via plugin (plugin injects alignments)
         const credentialUri = await a.invoke.sendBoost(USERS.b.profileId, boostUri, {
             encrypt: false,
         });
@@ -102,7 +114,8 @@ describe('Boost OBv3 Alignment Injection (via Signing Authority)', () => {
             .map((a: any) => a?.targetName)
             .filter(Boolean)
             .sort();
-        expect(names).toEqual(['Alignment Skill 1', 'Alignment Skill 2']);
+        expect(names).toEqual(['Alignment Skill 1']);
+        expect(names).not.toContain('Alignment Skill 2');
 
         // Basic shape assertions
         alignment.forEach((aItem: any) => {
@@ -140,9 +153,9 @@ describe('Boost OBv3 Alignment Injection (via Signing Authority)', () => {
         await a.invoke.createSkillFramework({ frameworkId: fwId });
         await a.invoke.syncFrameworkSkills({ id: fwId });
 
-        const boostUri = await a.invoke.createBoost(testUnsignedBoost);
-        await a.invoke.attachFrameworkToBoost(boostUri, fwId);
-        await a.invoke.alignBoostSkills(boostUri, [skill1Id, skill2Id]);
+        const boostUri = await a.invoke.createBoost(testUnsignedBoost, {
+            skillIds: [skill1Id, skill2Id],
+        });
 
         // Register SA and generate claim link
         const sa = await a.invoke.createSigningAuthority('skills');
@@ -171,6 +184,44 @@ describe('Boost OBv3 Alignment Injection (via Signing Authority)', () => {
             .map((a: any) => a?.targetName)
             .filter(Boolean)
             .sort();
-        expect(names).toEqual(['A1', 'A2']);
+        expect(names).toEqual(['A1']);
+        expect(names).not.toContain('A2');
+    });
+
+    test('fails to create a boost when skills span multiple frameworks', async () => {
+        const fw1 = `fw-${crypto.randomUUID()}`;
+        const fw2 = `fw-${crypto.randomUUID()}`;
+        const fw1Skill = `${fw1}-S1`;
+        const fw2Skill = `${fw2}-S1`;
+
+        await seedFrameworkAndSkills(a, fw1, [
+            {
+                id: fw1Skill,
+                statement: 'Framework 1 Skill',
+                code: 'FW1',
+                type: 'skill',
+                status: 'active',
+                parentId: null,
+            },
+        ]);
+        await seedFrameworkAndSkills(a, fw2, [
+            {
+                id: fw2Skill,
+                statement: 'Framework 2 Skill',
+                code: 'FW2',
+                type: 'skill',
+                status: 'active',
+                parentId: null,
+            },
+        ]);
+
+        await a.invoke.createSkillFramework({ frameworkId: fw1 });
+        await a.invoke.createSkillFramework({ frameworkId: fw2 });
+        await a.invoke.syncFrameworkSkills({ id: fw1 });
+        await a.invoke.syncFrameworkSkills({ id: fw2 });
+
+        await expect(
+            a.invoke.createBoost(testUnsignedBoost, { skillIds: [fw1Skill, fw2Skill] })
+        ).rejects.toThrow(/same framework/i);
     });
 });
