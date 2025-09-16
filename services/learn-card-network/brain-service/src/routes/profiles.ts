@@ -86,7 +86,12 @@ export const profilesRouter = t.router({
             },
             requiredScope: 'profiles:write',
         })
-        .input(LCNProfileValidator.omit({ did: true, isServiceProfile: true }))
+        .input(
+            LCNProfileValidator.extend({ approved: z.boolean().optional() }).omit({
+                did: true,
+                isServiceProfile: true,
+            })
+        )
         .output(z.string())
         .mutation(async ({ input, ctx }) => {
             const profileExists = await checkIfProfileExists({
@@ -419,7 +424,11 @@ export const profilesRouter = t.router({
             },
             requiredScope: 'profiles:write',
         })
-        .input(LCNProfileValidator.omit({ did: true, isServiceProfile: true }).partial())
+        .input(
+            LCNProfileValidator.extend({ approved: z.boolean().optional() })
+                .omit({ did: true, isServiceProfile: true })
+                .partial()
+        )
         .output(z.boolean())
         .mutation(async ({ input, ctx }) => {
             const { profile } = ctx.user;
@@ -441,6 +450,7 @@ export const profilesRouter = t.router({
                 dob,
                 country,
                 highlightedCredentials,
+                approved,
             } = input;
 
             const actualUpdates: Partial<ProfileType> = {};
@@ -488,6 +498,7 @@ export const profilesRouter = t.router({
             if (country) actualUpdates.country = country;
             if (highlightedCredentials)
                 actualUpdates.highlightedCredentials = highlightedCredentials;
+            if (typeof approved === 'boolean') actualUpdates.approved = approved;
 
             return updateProfile(profile, actualUpdates);
         }),
