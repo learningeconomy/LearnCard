@@ -34,7 +34,6 @@ type CertificateFrontFaceProps = {
     issuerImageComponent?: React.ReactNode;
     customBodyCardComponent?: React.ReactNode;
     hideIssueDate?: boolean;
-    hideAwardedTo?: boolean;
     handleViewBackFace?: () => void;
     showDetailsBtn?: boolean;
     formattedDisplayType?: string;
@@ -51,7 +50,6 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
     issuerImageComponent,
     customBodyCardComponent,
     hideIssueDate,
-    hideAwardedTo,
     handleViewBackFace,
     showDetailsBtn = false,
     formattedDisplayType,
@@ -125,6 +123,9 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
 
     const issueeImageExists = issueeImage || subjectImageComponent;
 
+    const hideAwardedTo =
+        issueeName?.includes('did:key') || issueeName?.includes('did:example:123');
+
     return (
         <section
             role="button"
@@ -166,18 +167,19 @@ export const CertificateFrontFace: React.FC<CertificateFrontFaceProps> = ({
                     />
                 )}
 
-                {!hideAwardedTo && (
-                    <div className="text-[14px] text-grayscale-800 flex flex-col items-center w-full">
-                        <span className="font-jacques flex gap-[5px] items-center w-full justify-center text-center">
-                            {issueeName === '0 person' ? (
-                                'Not yet awarded'
-                            ) : (
-                                <>Awarded to {issueeName || <Line width="60" />}</>
-                            )}
-                        </span>
-                        {!hideIssueDate && <span className="font-jacques">on {createdAt}</span>}
-                    </div>
-                )}
+                <div className="text-[14px] text-grayscale-800 flex flex-col items-center w-full">
+                    <span className="font-jacques flex gap-[5px] items-center w-full justify-center text-center break-all">
+                        {issueeName === '0 person' ? (
+                            'Not yet awarded'
+                        ) : (
+                            <>
+                                Awarded{' '}
+                                {!hideAwardedTo && <>to {issueeName || <Line width="60" />}</>}
+                            </>
+                        )}
+                    </span>
+                    {!hideIssueDate && <span className="font-jacques">on {createdAt}</span>}
+                </div>
 
                 <div className="flex flex-col gap-[10px] items-center">
                     {description && (
