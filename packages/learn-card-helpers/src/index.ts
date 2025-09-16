@@ -58,3 +58,12 @@ export const isVC2Format = (credential: UnsignedVC | VC): boolean => {
 
     return credential['@context'].includes('https://www.w3.org/ns/credentials/v2');
 };
+
+/** Unwraps a boost credential from a CertifiedBoostCredential, if it is one */
+export const unwrapBoostCredential = (vc?: VC | UnsignedVC) => {
+    if (vc?.type?.includes('CertifiedBoostCredential') && vc?.boostCredential) {
+        return vc.boostCredential;
+    } else {
+        return vc;
+    }
+};
