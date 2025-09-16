@@ -590,8 +590,6 @@ export const profilesRouter = t.router({
                 path: '/profile/{profileId}/connect/{challenge}',
                 tags: ['Profiles'],
                 summary: 'Connect using an invitation',
-                description:
-                    'Connects with another profile using an invitation challenge. Respects invite usage and expiration; succeeds while the invite is valid (usesRemaining is null or > 0) and not expired. Returns 404 if the invite is invalid or expired.',
             },
             requiredScope: 'profiles:write',
         })
