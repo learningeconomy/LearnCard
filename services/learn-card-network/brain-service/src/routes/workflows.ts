@@ -31,6 +31,7 @@ import { getProfileByDid } from '@accesslayer/profile/read';
 import { getBoostUri, isDraftBoost } from '@helpers/boost.helpers';
 import { getEmptyLearnCard, getLearnCard } from '@helpers/learnCard.helpers';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
+import { injectObv3AlignmentsIntoCredentialForBoost } from '@services/skills-provider/inject';
 import { createProfileContactMethodRelationship } from '@accesslayer/contact-method/relationships/create';
 import { verifyContactMethod } from '@accesslayer/contact-method/update';
 import { addNotificationToQueue } from '@helpers/notifications.helpers';
@@ -350,6 +351,9 @@ async function handlePresentationForClaim(
         if (boostCredential?.type?.includes('BoostCredential')) {
             boostCredential.boostId = boostURI;
         }
+
+        // Inject OBv3 skill alignments based on boost's framework/skills
+        await injectObv3AlignmentsIntoCredentialForBoost(boostCredential, boost);
 
         const vc = await issueCredentialWithSigningAuthority(
             boostOwner,

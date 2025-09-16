@@ -15,6 +15,8 @@ import {
     CredentialRelationships,
     ProfileRelationships,
     Role,
+    SkillFrameworkInstance,
+    SkillInstance,
 } from '@models';
 import { getProfilesByProfileIds } from '@accesslayer/profile/read';
 import { FlatProfileType, ProfileType } from 'types/profile';
@@ -38,6 +40,24 @@ export const getBoostOwner = async (boost: BoostInstance): Promise<ProfileType |
     if (!profile) return undefined;
 
     return inflateObject<ProfileType>(profile.dataValues as any);
+};
+
+/**
+ * Returns the `SkillFramework` used by a given boost via the `USES_FRAMEWORK` relationship.
+ */
+export const getFrameworkUsedByBoost = async (
+    boost: BoostInstance
+): Promise<SkillFrameworkInstance | undefined> => {
+    const rel = (await boost.findRelationships({ alias: 'usesFramework' }))[0];
+    return rel?.target;
+};
+
+/**
+ * Returns the list of `Skill` nodes aligned to a given boost via the `ALIGNED_TO` relationship.
+ */
+export const getAlignedSkillsForBoost = async (boost: BoostInstance): Promise<SkillInstance[]> => {
+    const rels = await boost.findRelationships({ alias: 'alignedTo' });
+    return rels.map(r => r.target);
 };
 
 export const getCredentialInstancesOfBoost = async (

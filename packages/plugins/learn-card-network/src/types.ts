@@ -56,6 +56,46 @@ import { Plugin } from '@learncard/core';
 import { ProofOptions } from '@learncard/didkit-plugin';
 import { VerifyExtension } from '@learncard/vc-plugin';
 
+// Skills & Skill Frameworks types (mirror brain-service shapes)
+export type FlatTagType = {
+    id: string;
+    name: string;
+    slug: string;
+    createdAt?: string;
+    updatedAt?: string;
+};
+
+export type FlatSkillFrameworkType = {
+    id: string;
+    name: string;
+    description?: string;
+    sourceURI?: string;
+    status: 'active' | 'archived';
+    createdAt?: string;
+    updatedAt?: string;
+};
+
+export type SkillNode = {
+    id: string;
+    statement: string;
+    description?: string;
+    code?: string;
+    type: string;
+    status?: string;
+    parentId?: string | null;
+};
+
+export type FrameworkWithSkills = {
+    framework: FlatSkillFrameworkType;
+    skills: SkillNode[];
+};
+
+export type SyncFrameworkInput = { id: string };
+
+export type AddTagInput = { slug: string; name: string };
+
+export type LinkProviderFrameworkInputType = { frameworkId: string };
+
 /** @group LearnCardNetwork Plugin */
 export type LearnCardNetworkPluginDependentMethods = {
     getDidAuthVp: (options?: ProofOptions) => Promise<VP | string>;
@@ -262,6 +302,8 @@ export type LearnCardNetworkPluginMethods = {
         updates: Partial<Omit<Boost, 'uri'>>,
         credential?: UnsignedVC | VC
     ) => Promise<boolean>;
+    attachFrameworkToBoost: (boostUri: string, frameworkId: string) => Promise<boolean>;
+    alignBoostSkills: (boostUri: string, skillIds: string[]) => Promise<boolean>;
     deleteBoost: (uri: string) => Promise<boolean>;
     getBoostAdmins: (
         uri: string,
@@ -428,6 +470,18 @@ export type LearnCardNetworkPluginMethods = {
         token: string
     ) => Promise<{ message: string; contactMethod: ContactMethodType }>;
     removeContactMethod: (contactMethodId: string) => Promise<{ message: string }>;
+
+    // Skills & Skill Frameworks
+    syncFrameworkSkills: (input: SyncFrameworkInput) => Promise<FrameworkWithSkills>;
+    listSkillTags: (skillId: string) => Promise<FlatTagType[]>;
+    addSkillTag: (skillId: string, tag: AddTagInput) => Promise<FlatTagType[]>;
+    removeSkillTag: (skillId: string, slug: string) => Promise<{ success: boolean }>;
+
+    createSkillFramework: (
+        input: LinkProviderFrameworkInputType
+    ) => Promise<FlatSkillFrameworkType>;
+    listMySkillFrameworks: () => Promise<FlatSkillFrameworkType[]>;
+    getSkillFrameworkById: (id: string) => Promise<FrameworkWithSkills>;
 
     resolveFromLCN: (
         uri: string

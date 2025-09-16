@@ -1,8 +1,13 @@
 import isEqual from 'lodash/isEqual';
+import cloneDeep from 'lodash/cloneDeep';
 import { v4 as uuidv4 } from 'uuid';
 import { VC, JWE, UnsignedVC, LCNNotificationTypeEnumValidator } from '@learncard/types';
 import { isEncrypted, isVC2Format } from '@learncard/helpers';
 import { ProfileType, SigningAuthorityForUserType } from 'types/profile';
+import {
+    injectObv3AlignmentsIntoCredentialForBoost,
+    buildObv3AlignmentsForBoost,
+} from '@services/skills-provider/inject';
 
 import { getBoostOwner } from '@accesslayer/boost/relationships/read';
 import { BoostInstance } from '@models';
@@ -106,23 +111,84 @@ export const verifyCredentialIsDerivedFromBoost = async (
         return false;
     }
 
+    // Mirror plugin behavior: inject OBv3 alignments into the expected template before comparison.
+    // Additionally, warn (but allow) if the credential would match the base template without alignments.
     if (
         credential.credentialSubject &&
         'achievement' in credential.credentialSubject &&
-        typeof credential.credentialSubject.achievement === 'object'
+        typeof (credential as any).credentialSubject.achievement === 'object'
     ) {
-        if (
-            !isEqual(
-                credential.credentialSubject?.achievement,
-                boostCredential.credentialSubject?.achievement
-            )
-        ) {
-            console.error(
-                'Credential achievement !== boost credential achievement',
-                credential.credentialSubject?.achievement,
-                boostCredential.credentialSubject?.achievement
-            );
-            return false;
+        try {
+            // Build expected boost credential with OBv3 alignments injected (JSON-LD typed as in plugin)
+            const baseExpected = boostCredential as VC | UnsignedVC;
+            const expectedWithAlignments = cloneDeep(baseExpected);
+
+            const rawAlignments = await buildObv3AlignmentsForBoost(boost);
+            const jsonLdAlignments = (rawAlignments || []).map(a => ({
+                ...a,
+                type: ['Alignment'],
+            }));
+
+            const addAlignments = (subject: any) => {
+                if (!subject) return;
+
+                if (jsonLdAlignments.length === 0) return;
+
+                if (subject.achievement) {
+                    const ach = subject.achievement;
+                    if (!Array.isArray(ach.alignment))
+                        ach.alignment = Array.isArray(ach.alignment) ? ach.alignment : [];
+                    ach.alignment = [...ach.alignment, ...jsonLdAlignments];
+                    return;
+                }
+                if (!Array.isArray(subject.alignment))
+                    subject.alignment = Array.isArray(subject.alignment) ? subject.alignment : [];
+                subject.alignment = [...subject.alignment, ...jsonLdAlignments];
+            };
+
+            if (Array.isArray((expectedWithAlignments as any).credentialSubject)) {
+                (expectedWithAlignments as any).credentialSubject.forEach(addAlignments);
+            } else {
+                addAlignments((expectedWithAlignments as any).credentialSubject);
+            }
+
+            const credAch = (credential as any).credentialSubject.achievement;
+            const expectedAch = (expectedWithAlignments as any).credentialSubject?.achievement;
+            const baseAch = (baseExpected as any).credentialSubject?.achievement;
+
+            const matchWithAlignments = isEqual(credAch, expectedAch);
+            const matchWithoutAlignments = isEqual(credAch, baseAch);
+
+            if (!matchWithAlignments) {
+                if (matchWithoutAlignments && jsonLdAlignments.length > 0) {
+                    // Special warning: Accept but inform client to include alignments next time
+                    console.warn(
+                        '[OBV3 ALIGNMENTS WARNING] Credential matches boost template without OBv3 alignments. Please update the client to include alignments before issuing.'
+                    );
+                } else {
+                    console.error(
+                        'Credential achievement !== expected boost credential achievement (after alignment injection)',
+                        credAch,
+                        expectedAch
+                    );
+                    return false;
+                }
+            }
+        } catch (_e) {
+            // Non-fatal: fallback to legacy comparison
+            if (
+                !isEqual(
+                    (credential as any).credentialSubject?.achievement,
+                    (boostCredential as any).credentialSubject?.achievement
+                )
+            ) {
+                console.error(
+                    'Credential achievement !== boost credential achievement (legacy path)',
+                    (credential as any).credentialSubject?.achievement,
+                    (boostCredential as any).credentialSubject?.achievement
+                );
+                return false;
+            }
         }
     }
 
@@ -381,6 +447,9 @@ export const issueClaimLinkBoost = async (
     if (boostCredential?.type?.includes('BoostCredential')) {
         boostCredential.boostId = boostURI;
     }
+
+    // Inject OBv3 skill alignments based on boost's framework/skills
+    await injectObv3AlignmentsIntoCredentialForBoost(boostCredential, boost);
 
     const vc = await issueCredentialWithSigningAuthority(
         from,

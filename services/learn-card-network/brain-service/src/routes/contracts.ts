@@ -28,6 +28,7 @@ import {
     AutoBoostConfigValidator,
 } from '@learncard/types';
 import { isVC2Format } from '@learncard/helpers';
+import { injectObv3AlignmentsIntoCredentialForBoost } from '@services/skills-provider/inject';
 import { createConsentFlowContract } from '@accesslayer/consentflowcontract/create';
 import {
     getAutoBoostsForContract,
@@ -797,6 +798,8 @@ export const contractsRouter = t.router({
                     };
                 }
                 if (unsignedVc?.type?.includes('BoostCredential')) unsignedVc.boostId = boostUri;
+                // Inject OBv3 skill alignments based on boost's framework/skills
+                await injectObv3AlignmentsIntoCredentialForBoost(unsignedVc, boost);
             } catch (e) {
                 console.error('Failed to parse boost', e);
                 throw new TRPCError({

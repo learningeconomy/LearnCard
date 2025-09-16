@@ -5,6 +5,9 @@ import { Profile } from './Profile';
 import { Credential } from './Credential';
 import { Presentation } from './Presentation';
 import { ConsentFlowTransaction } from './ConsentFlowTransaction';
+import { SkillFramework } from './SkillFramework';
+import { Skill } from './Skill';
+import { Tag } from './Tag';
 
 Credential.addRelationships({
     credentialReceived: {
@@ -40,6 +43,17 @@ Presentation.addRelationships({
     },
 });
 
+// Skills Graph relationships
+SkillFramework.addRelationships({
+    managedBy: { model: Profile, direction: 'in', name: 'MANAGES' },
+    contains: { model: Skill, direction: 'out', name: 'CONTAINS' },
+});
+
+Skill.addRelationships({
+    childOf: { model: Skill, direction: 'out', name: 'IS_CHILD_OF' },
+    hasTag: { model: Tag, direction: 'out', name: 'HAS_TAG' },
+});
+
 // Use an IIFE to create indices without top-level await
 (function createIndices() {
     Promise.all([
@@ -72,6 +86,25 @@ Presentation.addRelationships({
         neogma.queryRunner.run(
             'CREATE INDEX inbox_credential_expires_idx IF NOT EXISTS FOR (i:InboxCredential) ON (i.expiresAt)'
         ),
+        // Skills Graph indices/constraints
+        neogma.queryRunner.run(
+            'CREATE INDEX skill_framework_id_idx IF NOT EXISTS FOR (f:SkillFramework) ON (f.id)'
+        ),
+        neogma.queryRunner.run(
+            'CREATE TEXT INDEX skill_framework_name_text_idx IF NOT EXISTS FOR (f:SkillFramework) ON (f.name)'
+        ),
+        neogma.queryRunner.run(
+            'CREATE INDEX skill_id_idx IF NOT EXISTS FOR (s:Skill) ON (s.id)'
+        ),
+        neogma.queryRunner.run(
+            'CREATE TEXT INDEX skill_statement_text_idx IF NOT EXISTS FOR (s:Skill) ON (s.statement)'
+        ),
+        neogma.queryRunner.run(
+            'CREATE CONSTRAINT tag_slug_unique IF NOT EXISTS FOR (t:Tag) REQUIRE (t.slug) IS UNIQUE'
+        ),
+        neogma.queryRunner.run(
+            'CREATE TEXT INDEX tag_name_text_idx IF NOT EXISTS FOR (t:Tag) ON (t.name)'
+        ),
     ])
         .then(() => {
             if (process.env.NODE_ENV !== 'test') console.log('Ensured indices!');
@@ -96,3 +129,6 @@ export * from './ConsentFlowContract';
 export * from './ConsentFlowTransaction';
 export * from './ContactMethod';    
 export * from './InboxCredential';
+export * from './SkillFramework';
+export * from './Skill';
+export * from './Tag';

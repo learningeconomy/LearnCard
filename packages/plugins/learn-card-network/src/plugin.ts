@@ -9,7 +9,6 @@ import {
     ConsentFlowContractValidator,
     ConsentFlowTermsValidator,
     JWE,
-    AUTH_GRANT_AUDIENCE_DOMAIN_PREFIX,
 } from '@learncard/types';
 import { LearnCard } from '@learncard/core';
 import { VerifyExtension } from '@learncard/vc-plugin';
@@ -606,6 +605,16 @@ export const getLearnCardNetworkPlugin = async (
                     updates: { ...(credential && { credential }), ...updates },
                 });
             },
+            attachFrameworkToBoost: async (_learnCard, boostUri, frameworkId) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.boost.attachFrameworkToBoost.mutate({ boostUri, frameworkId });
+            },
+            alignBoostSkills: async (_learnCard, boostUri, skillIds) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.boost.alignBoostSkills.mutate({ boostUri, skillIds });
+            },
             getBoostAdmins: async (_learnCard, uri, options = {}) => {
                 if (!userData) throw new Error('Please make an account first!');
 
@@ -697,6 +706,44 @@ export const getLearnCardNetworkPlugin = async (
                 if (typeof options === 'object' && options.overideFn) {
                     boost = options.overideFn(boost);
                 }
+
+                // Inject OBv3 alignments from LCN into the unsigned VC before issuing
+                try {
+                    const alignments = await client.boost.getBoostAlignments.query({
+                        uri: boostUri,
+                    });
+                    const addAlignments = (subject: any) => {
+                        if (!subject) return;
+                        if (alignments.length === 0) return;
+
+                        const jsonLdAlignments = alignments.map(alignment => ({
+                            ...alignment,
+                            type: ['Alignment'],
+                        }));
+
+                        if (subject.achievement) {
+                            const ach = subject.achievement;
+                            if (!Array.isArray(ach.alignment))
+                                ach.alignment = Array.isArray(ach.alignment) ? ach.alignment : [];
+                            ach.alignment = [...ach.alignment, ...jsonLdAlignments];
+                            return;
+                        }
+                        if (!Array.isArray(subject.alignment))
+                            subject.alignment = Array.isArray(subject.alignment)
+                                ? subject.alignment
+                                : [];
+                        subject.alignment = [...subject.alignment, ...jsonLdAlignments];
+                    };
+                    if (Array.isArray(boost.credentialSubject)) {
+                        boost.credentialSubject.forEach(addAlignments);
+                    } else {
+                        addAlignments(boost.credentialSubject as any);
+                    }
+                } catch (err) {
+                    _learnCard.debug?.('Failed to inject OBv3 alignments in plugin sendBoost', err);
+                }
+
+                console.log('boost', JSON.stringify(boost));
 
                 const vc = await _learnCard.invoke.issueCredential(boost);
 
@@ -850,7 +897,12 @@ export const getLearnCardNetworkPlugin = async (
                 });
             },
 
-            consentToContract: async (_learnCard, contractUri, { terms, expiresAt, oneTime }, recipientToken) => {
+            consentToContract: async (
+                _learnCard,
+                contractUri,
+                { terms, expiresAt, oneTime },
+                recipientToken
+            ) => {
                 if (!userData) throw new Error('Please make an account first!');
 
                 return client.contracts.consentToContract.mutate({
@@ -858,7 +910,7 @@ export const getLearnCardNetworkPlugin = async (
                     terms,
                     expiresAt,
                     oneTime,
-                    recipientToken // for SmartResume
+                    recipientToken, // for SmartResume
                 });
             },
 
@@ -1060,6 +1112,36 @@ export const getLearnCardNetworkPlugin = async (
                 return client.contactMethods.removeContactMethod.mutate({ id });
             },
 
+            // Skills & Skill Frameworks
+            syncFrameworkSkills: async (_learnCard, input) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skills.syncFrameworkSkills.mutate(input);
+            },
+            listSkillTags: async (_learnCard, skillId) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skills.listSkillTags.query({ id: skillId });
+            },
+            addSkillTag: async (_learnCard, skillId, tag) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skills.addSkillTag.mutate({ id: skillId, tag });
+            },
+            removeSkillTag: async (_learnCard, skillId, slug) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skills.removeSkillTag.mutate({ id: skillId, slug });
+            },
+            createSkillFramework: async (_learnCard, input) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skillFrameworks.create.mutate(input);
+            },
+            listMySkillFrameworks: async _learnCard => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skillFrameworks.listMine.query();
+            },
+            getSkillFrameworkById: async (_learnCard, id) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skillFrameworks.getById.query({ id });
+            },
+
             resolveFromLCN: async (_learnCard, uri) => {
                 const result = await client.storage.resolve.query({ uri });
 
@@ -1169,7 +1251,8 @@ export const getVerifyBoostPlugin = async (
                             }
                         }
                     }
-                } catch (e) {
+                } catch (error) {
+                    _learnCard.debug?.(error);
                     verificationCheck.errors.push('Boost authenticity could not be verified.');
                 }
                 return verificationCheck;

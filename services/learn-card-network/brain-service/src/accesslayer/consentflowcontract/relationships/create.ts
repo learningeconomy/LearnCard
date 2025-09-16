@@ -27,6 +27,7 @@ import { getSigningAuthorityForUserByName } from '@accesslayer/signing-authority
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
 import { getProfileByProfileId, getProfilesByProfileIds } from '@accesslayer/profile/read';
 import { cloneDeep } from 'lodash';
+import { injectObv3AlignmentsIntoCredentialForBoost } from '@services/skills-provider/inject';
 
 export const setCreatorForContract = async (contract: DbContractType, profile: LCNProfile) => {
     return ConsentFlowContract.relateTo({
@@ -232,6 +233,9 @@ export const consentToContract = async (
                             consenter.profileId
                         );
                     }
+
+                    // Inject OBv3 skill alignments based on boost's framework/skills
+                    await injectObv3AlignmentsIntoCredentialForBoost(boostCredential, boost.target);
 
                     const vc = await issueCredentialWithSigningAuthority(
                         issuer,

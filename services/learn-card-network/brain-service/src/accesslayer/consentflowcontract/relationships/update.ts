@@ -17,6 +17,7 @@ import { getDidWeb } from '@helpers/did.helpers';
 import { getSigningAuthorityForUserByName } from '@accesslayer/signing-authority/relationships/read';
 import { issueCredentialWithSigningAuthority } from '@helpers/signingAuthority.helpers';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
+import { injectObv3AlignmentsIntoCredentialForBoost } from '@services/skills-provider/inject';
 
 export const reconsentTerms = async (
     relationship: {
@@ -151,6 +152,8 @@ export const reconsentTerms = async (
                     }
 
                     // Issue the credential using contract owner's signing authority
+                    // Inject OBv3 skill alignments based on boost's framework/skills
+                    await injectObv3AlignmentsIntoCredentialForBoost(boostCredential, boostRel.target);
                     const vc = await issueCredentialWithSigningAuthority(
                         issuer,
                         boostCredential,
@@ -356,6 +359,8 @@ export const updateTerms = async (
                     }
 
                     // Issue the credential using contract owner's signing authority
+                    // Inject OBv3 skill alignments based on boost's framework/skills
+                    await injectObv3AlignmentsIntoCredentialForBoost(boostCredential, boost.target);
                     const vc = await issueCredentialWithSigningAuthority(
                         issuer,
                         boostCredential,
