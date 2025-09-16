@@ -64,7 +64,6 @@ export type VCDisplayCard2Props = {
     customFrontButton?: React.ReactNode;
     knownDIDRegistry?: KnownDIDRegistryType;
     hideIssueDate?: boolean;
-    hideAwardedTo?: boolean;
     onDotsClick?: () => void;
     customSkillsComponent?: React.ReactNode;
     isFrontOverride?: boolean;
@@ -109,7 +108,6 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
     customFrontButton,
     knownDIDRegistry,
     hideIssueDate,
-    hideAwardedTo,
     onDotsClick,
     customSkillsComponent,
     isFrontOverride,
@@ -235,7 +233,6 @@ export const VCDisplayCard2: React.FC<VCDisplayCard2Props> = ({
                 issuerImageComponent={issuerImageComponent}
                 customBodyCardComponent={customBodyCardComponent}
                 hideIssueDate={hideIssueDate}
-                hideAwardedTo={hideAwardedTo}
                 onDotsClick={onDotsClick}
                 isFrontOverride={isFrontOverride}
                 setIsFrontOverride={setIsFrontOverride}

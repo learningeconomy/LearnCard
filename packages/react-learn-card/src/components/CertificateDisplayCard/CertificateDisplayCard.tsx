@@ -23,7 +23,6 @@ type CertificateDisplayCardProps = {
     issuerImageComponent?: React.ReactNode;
     customBodyCardComponent?: React.ReactNode;
     hideIssueDate?: boolean;
-    hideAwardedTo?: boolean;
     customSkillsComponent?: React.ReactNode;
 
     getFileMetadata?: (url: string) => MediaMetadata;
@@ -53,7 +52,6 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
     customBodyCardComponent,
     knownDIDRegistry,
     hideIssueDate,
-    hideAwardedTo,
     customSkillsComponent,
 
     getFileMetadata,
@@ -90,7 +88,6 @@ export const CertificateDisplayCard: React.FC<CertificateDisplayCardProps> = ({
                         issuerImageComponent={issuerImageComponent}
                         customBodyCardComponent={customBodyCardComponent}
                         hideIssueDate={hideIssueDate}
-                        hideAwardedTo={hideAwardedTo}
                         handleViewBackFace={() => setIsFront(!isFront)}
                         isFront={isFront}
                         showDetailsBtn={showDetailsBtn}
