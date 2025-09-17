@@ -1,5 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+
+import X from '../svgs/X';
+
 import { getVideoMetadata, VideoMetadata } from '../../helpers/video.helpers';
 
 export type LightboxItemType = 'photo' | 'video';
@@ -22,9 +25,17 @@ export type LightboxProps = {
     items: LightboxItem[];
     currentUrl: string | undefined;
     setCurrentUrl: (url: string | undefined) => void;
+    showCloseButton?: boolean;
+    enableImageClick?: boolean;
 };
 
-export const Lightbox: React.FC<LightboxProps> = ({ items, currentUrl, setCurrentUrl }) => {
+export const Lightbox: React.FC<LightboxProps> = ({
+    items,
+    currentUrl,
+    setCurrentUrl,
+    showCloseButton = true,
+    enableImageClick = false,
+}) => {
     const currentItem = items.find(item => item.url === currentUrl);
     const innerRef = useRef<HTMLImageElement>(null);
     const [videoMetadata, setVideoMetadata] = useState<VideoMetadata | null>(null);
@@ -89,11 +100,14 @@ export const Lightbox: React.FC<LightboxProps> = ({ items, currentUrl, setCurren
                 }
             }}
         >
+            {showCloseButton && (
+                <X className="absolute w-[30px] h-[30px] top-[20px] right-[20px] cursor-pointer text-white z-[999999]" />
+            )}
             {currentItem.type === 'photo' && (
                 <img
                     className="cursor-pointer max-w-[90vw] max-h-[90vh]"
                     src={currentUrl}
-                    onClick={() => window.open(currentUrl, '_blank')}
+                    onClick={() => enableImageClick && window.open(currentUrl, '_blank')}
                     ref={innerRef}
                     alt=""
                 />
