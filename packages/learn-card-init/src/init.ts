@@ -4,6 +4,7 @@ import { learnCardFromSeed } from './initializers/learnCardFromSeed';
 import { networkLearnCardFromSeed } from './initializers/networkLearnCardFromSeed';
 import { didWebLearnCardFromSeed } from './initializers/didWebLearnCardFromSeed';
 import { didWebNetworkLearnCardFromSeed } from './initializers/didWebNetworkLearnCardFromSeed';
+import { networkLearnCardFromApiKey } from './initializers/networkLearnCardFromApiKey';
 import { learnCardFromApiUrl } from './initializers/apiLearnCard';
 
 import {
@@ -15,6 +16,7 @@ import {
     NetworkLearnCardFromSeed,
     DidWebLearnCardFromSeed,
     DidWebNetworkLearnCardFromSeed,
+    NetworkLearnCardFromApiKey,
 } from './types/LearnCard';
 
 export * from './initializers/customLearnCard';
@@ -24,6 +26,7 @@ export * from './initializers/networkLearnCardFromSeed';
 export * from './initializers/didWebLearnCardFromSeed';
 export * from './initializers/didWebNetworkLearnCardFromSeed';
 export * from './initializers/apiLearnCard';
+export * from './initializers/networkLearnCardFromApiKey';
 
 // Overloads (Unfortunately necessary boilerplate 😢)
 
@@ -73,6 +76,15 @@ export function initLearnCard(
 ): Promise<DidWebNetworkLearnCardFromSeed['returnValue']>;
 
 /**
+ * Generates a wallet with access to LearnCard Network using an API key (no local seed)
+ *
+ * @group Init Functions
+ */
+export function initLearnCard(
+    config: NetworkLearnCardFromApiKey['args']
+): Promise<NetworkLearnCardFromApiKey['returnValue']>;
+
+/**
  * Generates a wallet that can sign VCs/VPs from a VC API
  *
  * @group Init Functions
@@ -110,6 +122,10 @@ export async function initLearnCard(
             did: vcApi === true ? 'did:key:z6MkjSz4mYqcn7dePGuktJ5PxecMkXQQHWRg8Lm6okATyFVh' : did,
             debug,
         });
+    }
+
+    if ('apiKey' in config) {
+        return networkLearnCardFromApiKey(config as NetworkLearnCardFromApiKey['args']);
     }
 
     if ('seed' in config) {

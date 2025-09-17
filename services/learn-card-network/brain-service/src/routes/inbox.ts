@@ -9,7 +9,7 @@ import {
     InboxCredentialValidator,
     PaginatedInboxCredentialsValidator,
     InboxCredentialQueryValidator, 
-    ContactMethodQueryValidator, 
+    ContactMethodQueryValidator,
     ClaimInboxCredentialValidator,
     // For finalize flow
     LCNNotificationTypeEnumValidator,
@@ -43,19 +43,16 @@ export const inboxRouter = t.router({
                 path: '/inbox/issue',
                 tags: ['Universal Inbox'],
                 summary: 'Issue Credential to Universal Inbox',
-                description: 'Issue a credential to a recipient\'s inbox. If the recipient exists with a verified email, the credential is auto-delivered.',
+                description:
+                    "Issue a credential to a recipient's inbox. If the recipient exists with a verified email, the credential is auto-delivered.",
             },
             requiredScope: 'inbox:write',
-        }) 
+        })
         .input(IssueInboxCredentialValidator)
         .output(IssueInboxCredentialResponseValidator)
         .mutation(async ({ ctx, input }) => {
             const { profile } = ctx.user;
-            const { 
-                recipient, 
-                credential, 
-                configuration,
-            } = input;
+            const { recipient, credential, configuration } = input;
 
             try {
                 const result = await issueToInbox(
@@ -77,7 +74,7 @@ export const inboxRouter = t.router({
                 if (error instanceof TRPCError) {
                     throw error;
                 }
-                
+
                 throw new TRPCError({
                     code: 'INTERNAL_SERVER_ERROR',
                     message: 'Failed to issue credential to inbox: ' + error,
@@ -325,7 +322,7 @@ export const inboxRouter = t.router({
             },
             requiredScope: 'inbox:read',
         })
-        .input( 
+        .input(
             PaginationOptionsValidator.extend({
                 limit: PaginationOptionsValidator.shape.limit.default(25),
                 query: InboxCredentialQueryValidator.optional(),
@@ -337,10 +334,12 @@ export const inboxRouter = t.router({
             const { profile } = ctx.user;
             const { limit, cursor, query, recipient } = input;
 
-            const credentials = await getInboxCredentialsForProfile(
-                profile.profileId,
-                { limit: limit + 1, cursor, query, recipient }
-            );
+            const credentials = await getInboxCredentialsForProfile(profile.profileId, {
+                limit: limit + 1,
+                cursor,
+                query,
+                recipient,
+            });
 
             const hasMore = credentials.length > limit;
             const newCursor = credentials.at(hasMore ? -2 : -1)?.createdAt;
@@ -351,7 +350,6 @@ export const inboxRouter = t.router({
             };
         }),
 
-
     // Get a specific inbox credential (if owned by the profile)
     getInboxCredential: profileRoute
         .meta({
@@ -361,20 +359,26 @@ export const inboxRouter = t.router({
                 path: '/inbox/credentials/{credentialId}',
                 tags: ['Universal Inbox'],
                 summary: 'Get Universal Inbox Credential Details',
-                description: 'Get details of a specific inbox credential (if owned by the authenticated profile)',
+                description:
+                    'Get details of a specific inbox credential (if owned by the authenticated profile)',
             },
             requiredScope: 'inbox:read',
         })
-        .input(z.object({
-            credentialId: z.string(),
-        }))
+        .input(
+            z.object({
+                credentialId: z.string(),
+            })
+        )
         .output(InboxCredentialValidator)
         .query(async ({ ctx, input }) => {
             const { profile } = ctx.user;
             const { credentialId } = input;
 
             // Get all credentials for this profile and find the requested one
-            const inboxCredentials = await getInboxCredentialsForProfile(profile.profileId, { limit: 1, query: { id: credentialId } });
+            const inboxCredentials = await getInboxCredentialsForProfile(profile.profileId, {
+                limit: 1,
+                query: { id: credentialId },
+            });
 
             const inboxCredential = inboxCredentials[0];
             if (!inboxCredential) {

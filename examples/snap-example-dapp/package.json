@@ -1,6 +1,6 @@
 {
     "name": "@learncard/snap-example-dapp",
-    "version": "1.0.109",
+    "version": "1.0.110",
     "description": "An example dapp using the Learn Card MetaMask Snap",
     "private": true,
     "repository": {

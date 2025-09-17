@@ -1595,6 +1595,9 @@ importers:
       '@learncard/types':
         specifier: workspace:*
         version: link:../../learn-card-types
+      multiformats:
+        specifier: ^11.0.1
+        version: 11.0.2
     devDependencies:
       '@types/jest':
         specifier: ^29.2.2
@@ -2638,6 +2641,9 @@ importers:
         specifier: ^8.13.1
         version: 8.14.1
     devDependencies:
+      '@digitalcredentials/verifier-core':
+        specifier: ^1.0.0-beta.8
+        version: 1.0.0-beta.8(expo@52.0.41(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(react-native@0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(react@18.3.1))(react@18.3.1))(msrcrypto@1.5.8)(react-native-securerandom@1.0.1(react-native@0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(react@18.3.1)))
       '@types/pg':
         specifier: ^8.11.10
         version: 8.11.11
@@ -4009,9 +4015,82 @@ packages:
     resolution: {integrity: sha512-jveE3QI+N1TwYvGPl6bWIqYUFTdIuLNv4A4n0KAAjXM2zjtEP/MbR++yl39qoDasJ/lrCq4addEj9SfWxDS5aw==}
     engines: {node: '>=14'}
 
+  '@digitalbazaar/data-integrity-context@2.0.1':
+    resolution: {integrity: sha512-XpXUzId6ZIEaNq9R+Fv3LrArj1bRj0QX3yfYgxi2bGZGIMs8EkdwsQdzTq38cmHXBQz4DASVun7mBtwrEqjf3g==}
+    engines: {node: '>=18'}
+
+  '@digitalbazaar/security-context@1.0.1':
+    resolution: {integrity: sha512-0WZa6tPiTZZF8leBtQgYAfXQePFQp2z5ivpCEN/iZguYYZ0TB9qRmWtan5XH6mNFuusHtMcyIzAcReyE6rZPhA==}
+
+  '@digitalbazaar/vc-bitstring-status-list-context@1.1.0':
+    resolution: {integrity: sha512-IULBb2BJ/FQwTwdmvtltBb9JspWXY4tS2ZimRtFfWBJW6T35r6x8TzRK6eDVHpLLEzeJs1jCvqqTXWH0RJgQRA==}
+    engines: {node: '>=18'}
+
+  '@digitalbazaar/vc-status-list-context@3.1.1':
+    resolution: {integrity: sha512-cMVtd+EV+4KN2kUG4/vsV74JVsGE6dcpod6zRoFB/AJA2W/sZbJqR44KL3G6P262+GcAECNhtnSsKsTnQ6y8+w==}
+
   '@digitalbazaar/vpqr@3.0.0':
     resolution: {integrity: sha512-j+Axw7TL50XIe90I7mE7HmqKjnWJBErq6gvlzzVhSEoKWOo+mvqnbs/ncWpS/gBKtBxx4sqYo1IK9GPNXH617g==}
     engines: {node: '>=14'}
+
+  '@digitalcredentials/base58-universal@1.0.1':
+    resolution: {integrity: sha512-1xKdJnfITMvrF/sCgwBx2C4p7qcNAARyIvrAOZGqIHmBaT/hAenpC8bf44qVY+UIMuCYP23kqpIfJQebQDThDQ==}
+    engines: {node: '>=12'}
+
+  '@digitalcredentials/base64url-universal@2.0.6':
+    resolution: {integrity: sha512-QJyK6xS8BYNnkKLhEAgQc6Tb9DMe+GkHnBAWJKITCxVRXJAFLhJnr+FsJnCThS3x2Y0UiiDAXoWjwMqtUrp4Kg==}
+    engines: {node: '>=14'}
+
+  '@digitalcredentials/bitstring@3.1.2':
+    resolution: {integrity: sha512-ixe9f8RbnmaZ9XP0cnjKlEhSytWerk1CKseYS8XtF3wOsT/fhzdIRtZP8iL6oDiFijsBLsnvxosgWTgltK/k8A==}
+    engines: {node: '>=16'}
+
+  '@digitalcredentials/credentials-v2-context@0.0.1-beta.0':
+    resolution: {integrity: sha512-i0AQXFnMeOqf2uKNBUcnN78mO8L9H91QKMdpDqsgDYzTIKGLnNCOOxbRbrJOimhR+soYO64xn54U8/R7Qx0nyA==}
+    engines: {node: '>=18'}
+
+  '@digitalcredentials/credentials-v2-context@1.0.0':
+    resolution: {integrity: sha512-n+zBS+fYlKfvDmt8jdpB6n6p2JRLo6v6A2BGLVmbqzHFvfdQZXS+t489TWipFmi5g3FV12/bDCILUpCrqswDvg==}
+    engines: {node: '>=18'}
+
+  '@digitalcredentials/crypto-ld@7.0.6':
+    resolution: {integrity: sha512-wxgjiU08rIMUaPhaOOVUjcdWZoL1FVfzGuX9ADHiyx0O34lJ4wdXnGk5QMYgwpl7B4gy1vDDp5VVHpO8l+aVFQ==}
+    engines: {node: '>=16'}
+
+  '@digitalcredentials/data-integrity@2.6.0':
+    resolution: {integrity: sha512-vk8nFmkdQfOf6VvJk2lw6tIdORI8r4rOrxYZvb1pBh/1d+IJ7O6csnXJUmmQA2UJ6dwfxFuFyADORgc2ZYb4iA==}
+    engines: {node: '>=18'}
+
+  '@digitalcredentials/dcc-context@1.0.0':
+    resolution: {integrity: sha512-iun3HTqOqcAoG0lz5GWx/fJYxpbKjzqq866dBo0osxs+pj/CwZDNHKXVC6sdd662tXg9EF0r4YdZ/AW6DOnS6A==}
+
+  '@digitalcredentials/did-io@1.0.2':
+    resolution: {integrity: sha512-z6lLRe4drHYwtfxbySQJZZl2YbCPvG5UDkh/H3kAK2NSZY9GaIm9iz9A6E/J5Lu6rct/BOj1XQhtEJnzRdB8wQ==}
+    engines: {node: '>=12'}
+
+  '@digitalcredentials/did-method-key@3.0.0':
+    resolution: {integrity: sha512-Cq75fbUkDed1O3TPFY89xlqq+oCKvBCMjDJz8KIVx75eZCnxhcE9h/a4t9yW0FRnp0LBrV9HDoSPNyN9P6dr1A==}
+    engines: {node: '>=16'}
+
+  '@digitalcredentials/did-method-web@1.1.0':
+    resolution: {integrity: sha512-FgsCNGz6Iniy1fR5G8wcT1EMfQzVPJUhz3ei9Ha0aavN3K3dD2XTIKG83vAV3L9tpmtcQhdwcIG+2JaBO1PBYQ==}
+    engines: {node: '>=18'}
+
+  '@digitalcredentials/ed25519-multikey@1.4.0':
+    resolution: {integrity: sha512-BXgNEX42a1EwnUantP6Po7yt43BamajrzVIvips6/egcQIFfXFHwl8yBvmPndsNY1Q9HKv/b743Nl5C3HEt8PA==}
+    engines: {node: '>=16'}
+
+  '@digitalcredentials/ed25519-signature-2020@7.0.0':
+    resolution: {integrity: sha512-Q0HdBdYKfg6yiPMJ1NlZMbUslSAVVwet/WhA/8emddb7W9lmmAtPJv3f9AuMfLFhY70z29Iedc5KWxqqbkMHbA==}
+    engines: {node: '>=18'}
+
+  '@digitalcredentials/ed25519-verification-key-2020@3.2.2':
+    resolution: {integrity: sha512-ZfxNFZlA379MZpf+gV2tUYyiZ15eGVgjtCQLWlyu3frWxsumUgv++o0OJlMnrDsWGwzFMRrsXcosd5+752rLOA==}
+    engines: {node: '>=14'}
+
+  '@digitalcredentials/eddsa-rdfc-2022-cryptosuite@1.3.0':
+    resolution: {integrity: sha512-tLebsSZGTqGu6VxGjxv8g18NuBmRxew20WgaIxaBoWpLr2cbWDKKkTs40nWWLQPhm/UPC7x4XWkkIWZq33K4eg==}
+    engines: {node: '>=18'}
 
   '@digitalcredentials/http-client@5.0.4':
     resolution: {integrity: sha512-TbbfFauhd5fUAcZ/6TDenTuYqkzqdEhxYk1Rqicxcz33B9rzvJcmT+/81KF9DrUXmu6gpoqCranT2UkZftsxZA==}
@@ -4020,6 +4099,56 @@ packages:
   '@digitalcredentials/issuer-registry-client@3.2.0-beta.5':
     resolution: {integrity: sha512-uwL7xkRpeANAtJ5Cgn6FDcVCjjEA959+HPokHB4IzV/gabnBBN1y8r3uCFwMTF6qCq30pA6+RZAhKsqMCI1SDw==}
     engines: {node: '>=18.0'}
+
+  '@digitalcredentials/jsonld-signatures@11.0.0':
+    resolution: {integrity: sha512-M44z5H66kr0p5CftQH3BlHkj2s9jCzEntIjauSZw/vUo/AALbRr50sICallaHi/KiuJ3qVyVJDRo/UxrsUN5jQ==}
+    engines: {node: '>=18'}
+
+  '@digitalcredentials/jsonld-signatures@12.0.1':
+    resolution: {integrity: sha512-KdyE7Bex+boqKRbvxofRyuI09BD6/8hQGSC5qbrXEmHd0oSLqePqKBM2pu9UZnzjxMZrN9sB3RqHxpijYEFh/w==}
+    engines: {node: '>=18'}
+
+  '@digitalcredentials/jsonld@9.0.0':
+    resolution: {integrity: sha512-lWVpg65xQbi4lvXWs3BezCwPrGDAllFjHwTBUWJCoKsfGzxtxTwbRNXpfhii5psQ2vvpjPXSI+y0uyRNOzr4cw==}
+    engines: {node: '>=14'}
+
+  '@digitalcredentials/lru-memoize@2.1.4':
+    resolution: {integrity: sha512-dvgeYYHW8lAWJrGyIY1qhuTahqvVJYXxuSkJ2A1MgenFLb/nWnIcSov0K/5nDnPYA5TilItmMpAxt6iuNtaKQg==}
+    engines: {node: '>=10.0.0'}
+
+  '@digitalcredentials/open-badges-context@2.1.0':
+    resolution: {integrity: sha512-VK7X5u6OoBFxkyIFplNqUPVbo+8vFSAEoam8tSozpj05KPfcGw41Tp5p9fqMnY38oPfwtZR2yDNSctj/slrE0A==}
+
+  '@digitalcredentials/open-badges-context@3.0.0':
+    resolution: {integrity: sha512-pyXirpq29gy+NIaTBozDEm7nk1Oh8Yqie2WR0JuIqRX0ePCbiFeMv2uPEP3TXzyh1Jz++28fD+qjNojlhUmiIw==}
+
+  '@digitalcredentials/security-document-loader@8.0.0':
+    resolution: {integrity: sha512-0rURdip0S/L4aegONkef5yzaGqQ35n7TXE0RhtEJa6scEaZssazaADgg9ApMA47kiGRjCn30yKrds9YULwoltA==}
+    engines: {node: '>=16.0'}
+
+  '@digitalcredentials/vc-bitstring-status-list@1.0.0':
+    resolution: {integrity: sha512-07CZVU3cH1rwLJ5a1DzUT4vBvbYZKtX8l2au9e3wd21iSRXCwzCOVtPy496JjEWnmstyUJCIskAeyfv6MS4H2A==}
+    engines: {node: '>=18'}
+
+  '@digitalcredentials/vc@10.0.0':
+    resolution: {integrity: sha512-yHSE2iJy/uhdboa7ybO+emGMiKAlhq4iRXvsteUWSoBtNE20CoBeSKJ1Fh06EhbzlOyLJSBg2s54C9dParehdw==}
+    engines: {node: '>=18'}
+
+  '@digitalcredentials/vc@8.0.1':
+    resolution: {integrity: sha512-QbfdAo4czT4gqCyS9c+YMMw8Vy5h1/pVmjpRrsTPGfBjWudHoT8OAa5VCfxdsiCFFdXZnGSqruPslt1W8RC/hw==}
+    engines: {node: '>=18'}
+
+  '@digitalcredentials/verifier-core@1.0.0-beta.8':
+    resolution: {integrity: sha512-vsmDwcSZHxac6oMy33a8rUoUy3vTM6yKyZFJNH4adwy/hiQjBMY5yDV9aBorHi5K21z6kTWAT9oGx5ElArlHAA==}
+    engines: {node: '>=18.0'}
+
+  '@digitalcredentials/x25519-key-agreement-key-2020@2.0.2':
+    resolution: {integrity: sha512-7Ay5AkGfIEWBRJiHl6PhrpFrjAqCZ/+G4rV6sqTUGK8fBnkxqlJ/XiD7NouUF6uTalVm7mJWJXHuCN5FAuXGsg==}
+    engines: {node: '>=12'}
+
+  '@digitalcredentials/x25519-key-agreement-key-2020@3.0.0':
+    resolution: {integrity: sha512-mCh6eRh6opBZiEtAWZ3RvCGs6JP9QpN2/xPxncQIKBK9WBUxONgL1CEsTUTRcisGvWQrUcqVXRHQ0Tl6b8weSQ==}
+    engines: {node: '>=12'}
 
   '@discordjs/builders@1.10.1':
     resolution: {integrity: sha512-OWo1fY4ztL1/M/DUyRPShB4d/EzVfuUvPTRRHRIt/YxBrUYSz0a+JicD5F5zHFoNs2oTuWavxCOVFV1UljHTng==}
@@ -6009,6 +6138,9 @@ packages:
     resolution: {integrity: sha512-warwspo+UYUPep0Q+vtdVB4Ugn8GGQj8iyB3gnRWsztmUHTI3S1nhdiWNsPUGL0vud7JlRRk1XEu7Lq1KGTnMQ==}
     engines: {node: ^14.21.3 || >=16}
 
+  '@noble/ed25519@1.7.5':
+    resolution: {integrity: sha512-xuS0nwRMQBvSxDa7UxMb61xTiH3MxTgUfhyPUALVIe0FlOAz4sjELwyDRyUvqeEYfRSG9qNjFIycqLZppg4RSA==}
+
   '@noble/hashes@1.1.5':
     resolution: {integrity: sha512-LTMZiiLc+V4v1Yi16TD6aX2gmtKszNye0pQgbaLqkvhIqP7nVsSaJsWloGQjJfJ8offaoP5GtX3yY5swbcJxxQ==}
 
@@ -7443,11 +7575,32 @@ packages:
     resolution: {integrity: sha512-JtaY3FxmD+te+KSI2FJuEcfNC9T/DGGVf551babM7fAaXhjJUt7oSYurH1Devxd2+BOSUACCgt3buinx4UnmEA==}
     engines: {node: '>=18.0.0'}
 
+  '@sphereon/isomorphic-webcrypto@2.5.0-unstable.0':
+    resolution: {integrity: sha512-HEOpZATW7zzYiF8Ak2X0lMvrVQL+6FTeIHm6E815zu7xP5PLjwYPJ0galBjc/F+kex22BzK9hndsdH0/y3bjqA==}
+    peerDependencies:
+      expo: '*'
+      expo-crypto: '*'
+      msrcrypt: '*'
+      msrcrypto: ^1.5.8
+      react-native-securerandom: ^1.0.1
+    peerDependenciesMeta:
+      expo:
+        optional: true
+      expo-crypto:
+        optional: true
+      msrcrypt:
+        optional: true
+      react-native-securerandom:
+        optional: true
+
   '@stablelib/aead@1.0.1':
     resolution: {integrity: sha512-q39ik6sxGHewqtO0nP4BuSe3db5G1fEJE8ukvngS2gLkBXyy6E7pLubhbYgnkDFv6V8cWaxcE4Xn0t6LWcJkyg==}
 
   '@stablelib/binary@1.0.1':
     resolution: {integrity: sha512-ClJWvmL6UBM/wjkvv/7m5VP3GMr9t0osr4yVgLZsLCOz4hGN9gIAFEqnJ0TsSMAN+n840nf2cHZnA5/KFqHC7Q==}
+
+  '@stablelib/binary@2.0.1':
+    resolution: {integrity: sha512-U9iAO8lXgEDONsA0zPPSgcf3HUBNAqHiJmSHgZz62OvC3Hi2Bhc5kTnQ3S1/L+sthDTHtCMhcEiklmIly6uQ3w==}
 
   '@stablelib/bytes@1.0.1':
     resolution: {integrity: sha512-Kre4Y4kdwuqL8BR2E9hV/R5sOrUj6NanZaZis0V6lX5yzqC3hBuVSDXUIBqQv/sCpmuWRiHLwqiT1pqqjuBXoQ==}
@@ -7464,11 +7617,20 @@ packages:
   '@stablelib/ed25519@1.0.3':
     resolution: {integrity: sha512-puIMWaX9QlRsbhxfDc5i+mNPMY+0TmQEskunY1rZEBPi1acBCVQAhnsk/1Hk50DGPtVsZtAWQg4NHGlVaO9Hqg==}
 
+  '@stablelib/ed25519@2.0.2':
+    resolution: {integrity: sha512-d/lJ5sgzhtmpMIbKFWfev+i6WebBdIzzBpMzXtZdvUijoksjXosYFNqytoMj7cRshNj+/XTLYnnVMdZfd+penw==}
+
   '@stablelib/hash@1.0.1':
     resolution: {integrity: sha512-eTPJc/stDkdtOcrNMZ6mcMK1e6yBbqRBaNW55XA1jU8w/7QdnCF0CmMmOD1m7VSkBR44PWrMHU2l6r8YEQHMgg==}
 
+  '@stablelib/hash@2.0.0':
+    resolution: {integrity: sha512-u3WPSqGido8lwJuMcrBgM5K54LrPGhkWAdtsyccf7dGsLixAZUds77zOAbu7bvKPwQlmoByH0txBi5rTmEKuHg==}
+
   '@stablelib/int@1.0.1':
     resolution: {integrity: sha512-byr69X/sDtDiIjIV6m4roLVWnNNlRGzsvxw+agj8CIEazqWGOQp2dTYgQhtyVXV9wpO6WyXRQUzLV/JRNumT2w==}
+
+  '@stablelib/int@2.0.1':
+    resolution: {integrity: sha512-Ht63fQp3wz/F8U4AlXEPb7hfJOIILs8Lq55jgtD7KueWtyjhVuzcsGLSTAWtZs3XJDZYdF1WcSKn+kBtbzupww==}
 
   '@stablelib/keyagreement@1.0.1':
     resolution: {integrity: sha512-VKL6xBwgJnI6l1jKrBAfn265cspaWBPAPEc62VBQrWHLqVgNRE09gQ/AnOEyKUWrrqfD+xSQ3u42gJjLDdMDQg==}
@@ -7479,14 +7641,23 @@ packages:
   '@stablelib/random@1.0.2':
     resolution: {integrity: sha512-rIsE83Xpb7clHPVRlBj8qNe5L8ISQOzjghYQm/dZ7VaM2KHYwMW5adjQjrzTZCchFnNCNhkwtnOBa9HTMJCI8w==}
 
+  '@stablelib/random@2.0.1':
+    resolution: {integrity: sha512-W6GAtXEEs7r+dSbuBsvoFmlyL3gLxle41tQkjKu17dDWtDdjhVUbtRfRCQcCUeczwkgjQxMPopgwYEvxXtHXGw==}
+
   '@stablelib/sha256@1.0.1':
     resolution: {integrity: sha512-GIIH3e6KH+91FqGV42Kcj71Uefd/QEe7Dy42sBTeqppXV95ggCcxLTk39bEr+lZfJmp+ghsR07J++ORkRELsBQ==}
 
   '@stablelib/sha512@1.0.1':
     resolution: {integrity: sha512-13gl/iawHV9zvDKciLo1fQ8Bgn2Pvf7OV6amaRVKiq3pjQ3UmEpXxWiAfV8tYjUpeZroBxtyrwtdooQT/i3hzw==}
 
+  '@stablelib/sha512@2.0.1':
+    resolution: {integrity: sha512-DUNe5cbnoH3sSIN+MG04RvTCLXtkbyy/SnQxiNO+GgF/KSXkkUSlF6mUVvCUdZBZ2X3NgogR+tAvaRSn8wxnLw==}
+
   '@stablelib/wipe@1.0.1':
     resolution: {integrity: sha512-WfqfX/eXGiAd3RJe4VU2snh/ZPwtSjLG4ynQ/vYzvghTh7dHFcI1wl+nrkWG6lGhukOxOsUHfv8dUXr58D0ayg==}
+
+  '@stablelib/wipe@2.0.1':
+    resolution: {integrity: sha512-1eU2K9EgOcV4qc9jcP6G72xxZxEm5PfeI5H55l08W95b4oRJaqhmlWRc4xZAm6IVSKhVNxMi66V67hCzzuMTAg==}
 
   '@stablelib/x25519@1.0.3':
     resolution: {integrity: sha512-KnTbKmUhPhHavzobclVJQG5kuivH+qDLpe84iRqX3CLrKp881cF160JvXJ+hjn1aMyCwYOKeIZefIH/P5cJoRw==}
@@ -8954,6 +9125,9 @@ packages:
   asmcrypto.js@0.22.0:
     resolution: {integrity: sha512-usgMoyXjMbx/ZPdzTSXExhMPur2FTdz/Vo5PVx2gIaBcdAAJNOFlsdgqveM8Cff7W0v+xrf9BwjOV26JSAF9qA==}
 
+  asmcrypto.js@2.3.2:
+    resolution: {integrity: sha512-3FgFARf7RupsZETQ1nHnhLUUvpcttcCq1iZCaVAbJZbCZ5VNRrNyvpDyHTOb0KC3llFcsyOT/a99NZcCbeiEsA==}
+
   asn1.js@4.10.1:
     resolution: {integrity: sha512-p32cOF5q0Zqs9uBiONKYLm6BClCoBCM5O9JfeUSlnQLBTxYdTK+pW+nXflm8UkKd2UYlEbYz5qEi0JuZR9ckSw==}
 
@@ -9303,6 +9477,14 @@ packages:
 
   base64-js@1.5.1:
     resolution: {integrity: sha512-AKpaYlHn8t4SVbOHCy+b5+KKgvR4vrsD8vbvrbiQJps7fKDTkjkDry6ji0rUJjC0kzbNePLwzxq8iypo41qeWA==}
+
+  base64url-universal@1.1.0:
+    resolution: {integrity: sha512-WyftvZqye29YQ10ZnuiBeEj0lk8SN8xHU9hOznkLc85wS1cLTp6RpzlMrHxMPD9nH7S55gsBqMqgGyz93rqmkA==}
+    engines: {node: '>=8.3.0'}
+
+  base64url-universal@2.0.0:
+    resolution: {integrity: sha512-6Hpg7EBf3t148C3+fMzjf+CHnADVDafWzlJUXAqqqbm4MKNXbsoPdOkWeRTjNlkYG7TpyjIpRO1Gk0SnsFD1rw==}
+    engines: {node: '>=14'}
 
   base64url@3.0.1:
     resolution: {integrity: sha512-ir1UPr3dkwexU7FdV8qBBbNDRUhMmIekYMFZfi+C/sLNnRESKPl23nB9b2pltqfOQNnGzsDdId90AEtG5tCx4A==}
@@ -10367,6 +10549,9 @@ packages:
   credential-handler-polyfill@3.2.1:
     resolution: {integrity: sha512-3atcMQ8urA/M5d9bGc9NkTcCP6XEXS9uPMBltjp3itaiSDmdmbGXfBRWtAhJ37+NxmCsDNxmjjL9Y3E2SiRzJw==}
 
+  credentials-context@2.0.0:
+    resolution: {integrity: sha512-/mFKax6FK26KjgV2KW2D4YqKgoJ5DVJpNt87X2Jc9IxT2HBMy7nEIlc+n7pEi+YFFe721XqrvZPd+jbyyBjsvQ==}
+
   cron-parser@4.9.0:
     resolution: {integrity: sha512-p0SaNjrHOnQeR8/VnfGbmg9te2kfyYSQ7Sc/j/6DtPL3JQvKxmjO9TSjNFpujqV3vEYYBvNNvXSxzyksBWAx1Q==}
     engines: {node: '>=12.0.0'}
@@ -10394,6 +10579,10 @@ packages:
   crypto-browserify@3.12.1:
     resolution: {integrity: sha512-r4ESw/IlusD17lgQi1O20Fa3qNnsckR126TdUuBgAu7GBYSIPvdNyONd3Zrxh0xCwA4+6w/TDArBPsMvhur+KQ==}
     engines: {node: '>= 0.10'}
+
+  crypto-ld@6.0.0:
+    resolution: {integrity: sha512-XWL1LslqggNoaCI/m3I7HcvaSt9b2tYzdrXO+jHLUj9G1BvRfvV7ZTFDVY5nifYuIGAPdAGu7unPxLRustw3VA==}
+    engines: {node: '>=8.3.0'}
 
   crypto-random-string@2.0.0:
     resolution: {integrity: sha512-v1plID3y9r/lPhviJ1wrXpLeyUIGAZ2SHNYTEapm7/8A9nLPoyvVp3RK/EPFqn5kEznyWgYZNsRtYYIWbuG8KA==}
@@ -10877,6 +11066,9 @@ packages:
   dezalgo@1.0.4:
     resolution: {integrity: sha512-rXSP0bf+5n0Qonsb+SVVfNfIsimO4HEtmnIpPHY8Q1UCzKlQrDMfdobr8nJOOsRgWCyMRqeSBQzmWUMq7zvVig==}
 
+  did-context@3.1.1:
+    resolution: {integrity: sha512-iFpszgSxc7d1kNBJWC+PAzNTpe5LPalzsIunTMIpbG3O37Q7Zi7u4iIaedaM7UhziBhT+Agr9DyvAiXSUyfepQ==}
+
   did-jwt@5.9.0:
     resolution: {integrity: sha512-vJCxSL5nZmqchGwh0hFFeGUkIi0FgZGWSB3Usa6zGT1SgvV46IPQlr9eqksD68Epf0Ov6qP6t4wvdbHrmUSFig==}
 
@@ -11085,6 +11277,15 @@ packages:
 
   ecdsa-sig-formatter@1.0.11:
     resolution: {integrity: sha512-nagl3RYrbNv6kQkeJIpt6NJZy8twLB/2vtz6yN9Z4vRKHN4/QZJIEbqohALSgwKdnksuY3k5Addp5lg8sVoVcQ==}
+
+  ed25519-signature-2018-context@1.1.0:
+    resolution: {integrity: sha512-ppDWYMNwwp9bploq0fS4l048vHIq41nWsAbPq6H4mNVx9G/GxW3fwg4Ln0mqctP13MoEpREK7Biz8TbVVdYXqA==}
+
+  ed25519-signature-2020-context@1.1.0:
+    resolution: {integrity: sha512-dBGSmoUIK6h2vadDctrDnhhTO01PR2hJk0mRNEfrRDPCjaIwrfy4J+eziEQ9Q1m8By4f/CSRgKM1h53ydKfdNg==}
+
+  ed2curve@0.3.0:
+    resolution: {integrity: sha512-8w2fmmq3hv9rCrcI7g9hms2pMunQr1JINfcjwR9tAyZqhtyaMN991lF/ZfHfr5tzZQ8c7y7aBgZbjfbd0fjFwQ==}
 
   ee-first@1.1.1:
     resolution: {integrity: sha512-WMwm9LhRUo+WUaRN+vRuETqG89IgZphVSNkdFgeb6sS/E4OrDIN7t48CAewSHXc6C8lefD8KKfr5vY61brQlow==}
@@ -12063,6 +12264,9 @@ packages:
 
   fast-safe-stringify@2.1.1:
     resolution: {integrity: sha512-W+KJc2dmILlPplD/H4K9l9LcAHAfPtP6BY84uVLXQ6Evcz9Lcg33Y2z1IVblT6xdY54PXYVHEv+0Wpq8Io6zkA==}
+
+  fast-text-encoding@1.0.6:
+    resolution: {integrity: sha512-VhXlQgj9ioXCqGstD37E/HBeqEGV/qOD/kmbVG8h5xKBYvM1L3lR1Zn4555cQ8GkYbJa8aJSipLPndE1k6zK2w==}
 
   fast-uri@2.4.0:
     resolution: {integrity: sha512-ypuAmmMKInk5q7XcepxlnUWDLWv4GFtaJqAzWKqn62IpQ3pejtr5dTVbt3vwqVaMKmkNR55sTT+CqUKIaT21BA==}
@@ -14341,6 +14545,10 @@ packages:
   jsonfile@6.1.0:
     resolution: {integrity: sha512-5dgndWOriYSm5cnYaJNhalLNDKOqFwyDB/rr1E9ZsGciGvKPs8R2xYGCacuf3z6K1YKDz182fd+fY3cn3pMqXQ==}
 
+  jsonld-document-loader@1.2.1:
+    resolution: {integrity: sha512-CtFyIBZApeVvs6QgyS7Gcp8h1dUs+1XNHcV4Sr6O9ItPaL0hVgqe47Tgs3RNH0A5Bc4p3UFPKAJVHKSOQq4mhQ==}
+    engines: {node: '>=12'}
+
   jsonparse@1.3.1:
     resolution: {integrity: sha512-POQXvpdL69+CluYsillJ7SUhKvytYjW9vG/GKpnf+xP8UWgYEM/RaMzHHofbALDiKbbP1W8UEYmgGl39WkPZsg==}
     engines: {'0': node >= 0.2.0}
@@ -16302,6 +16510,9 @@ packages:
   pako@1.0.11:
     resolution: {integrity: sha512-4hLB8Py4zZce5s4yd9XzopqwVv/yGNhV1Bl8NTmCq1763HeK2+EwVTv+leGeL13Dnh2wfbqowVPXCIO0z4taYw==}
 
+  pako@2.1.0:
+    resolution: {integrity: sha512-w+eufiZ1WuJYgPXbV/PO3NCMEc3xqylkKHzp8bxp1uW4qaSNQUkwmLLEc3kKsfz8lpV1F8Ht3U1Cm+9Srog2ug==}
+
   param-case@3.0.4:
     resolution: {integrity: sha512-RXlj7zCYokReqWpOPH9oYivUzLYZ5vAPIfEmCTNViosC78F8F0H9y7T7gG2M39ymgutxF5gcFEsyZQSph9Bp3A==}
 
@@ -17331,6 +17542,14 @@ packages:
     resolution: {integrity: sha512-y3bGgqKj3QBdxLbLkomlohkvsA8gdAiUQlSBJnBhfn+BPxg4bc62d8TcBW15wavDfgexCgccckhcZvywyQYPOw==}
     hasBin: true
 
+  rdf-canonize@3.4.0:
+    resolution: {integrity: sha512-fUeWjrkOO0t1rg7B2fdyDTvngj+9RlUyL92vOdiB7c0FPguWVsniIMjEtHH+meLBO9rzkUlUzBVXgWrjI8P9LA==}
+    engines: {node: '>=12'}
+
+  rdf-canonize@4.0.1:
+    resolution: {integrity: sha512-B5ynHt4sasbUafzrvYI2GFARgeFcD8Sx9yXPbg7gEyT2EH76rlCv84kyO6tnxzVbxUN/uJDbK1S/MXh+DsnuTA==}
+    engines: {node: '>=18'}
+
   react-barcode@1.6.1:
     resolution: {integrity: sha512-pc4ftnO5syHa/UjCruEeRsomlhoxKSugIgTA8T4dH0fvc89UMHL+/1Sp25IAphqG44pJkE5hMXhv89iS09jQyw==}
     peerDependencies:
@@ -17435,6 +17654,11 @@ packages:
 
   react-native-securerandom@0.1.1:
     resolution: {integrity: sha512-CozcCx0lpBLevxiXEb86kwLRalBCHNjiGPlw3P7Fi27U6ZLdfjOCNRHD1LtBKcvPvI3TvkBXB3GOtLvqaYJLGw==}
+    peerDependencies:
+      react-native: '*'
+
+  react-native-securerandom@1.0.1:
+    resolution: {integrity: sha512-ibuDnd3xi17HyD5CkilOXGPFpS9Z1oifjyHFwUl8NMzcQcpruM0ZX8ytr3A4rCeAsaBHjz69r78Xgd6vUswv1Q==}
     peerDependencies:
       react-native: '*'
 
@@ -18255,6 +18479,10 @@ packages:
 
   serialize-error@7.0.1:
     resolution: {integrity: sha512-8I8TjW5KMOKsZQTvoxjuSIa7foAwPWGOts+6o7sgjz41/qMD9VQHEDxi6PBvK2l0MXUmqZyNpUK+T2tQaaElvw==}
+    engines: {node: '>=10'}
+
+  serialize-error@8.1.0:
+    resolution: {integrity: sha512-3NnuWfM6vBYoy5gZFvHiYsVbafvI9vZv/+jlIigFn4oP4zjNPK3LhcY0xSCgeb1a5L8jO71Mit9LlNoi2UfDDQ==}
     engines: {node: '>=10'}
 
   serialize-javascript@6.0.2:
@@ -19528,6 +19756,9 @@ packages:
   tweetnacl@0.14.5:
     resolution: {integrity: sha512-KXXFFdAbFXY4geFIwoyNK+f5Z1b7swfXABfL7HXCmoIWMKU3dmS26672A4EeQtDzLKy7SXmfBu51JolvEKwtGA==}
 
+  tweetnacl@1.0.3:
+    resolution: {integrity: sha512-6rt+RN7aOi1nGMyC4Xa5DdYiukl2UWCbcJft7YhxReBGQD7OAM8Pbxw6YMo4r2diNEA8FEmu32YOn9rhaiE5yw==}
+
   twilio@5.7.1:
     resolution: {integrity: sha512-BcoVK6FR580HRX94z2u3b+foHkvFj39DDzLU4Xv+N/7ejDIGgQdrtg7CgRqIT04UNs98HJAvjuAOzkYetI6ExQ==}
     engines: {node: '>=14.0'}
@@ -20651,6 +20882,9 @@ packages:
         optional: true
       utf-8-validate:
         optional: true
+
+  x25519-key-agreement-2020-context@1.0.0:
+    resolution: {integrity: sha512-zblYd8oSg6hNAD+fA9X7ek1hJQRircl3jVlEVCaBTNN9Mv9b4G32uJvRZFMQEMmda8iaTtYo9i2dRMdXX8pjpA==}
 
   xcode@3.0.1:
     resolution: {integrity: sha512-kCz5k7J7XbJtjABOvkc5lJmkiDh8VhjVCGNiqdKCscmVpdVUpEAyXv1xmCLkQJ5dsHqx3IPO4XW+NTDhU/fatA==}
@@ -23437,12 +23671,91 @@ snapshots:
       js-base64: 3.7.7
       uuid: 9.0.1
 
+  '@digitalbazaar/data-integrity-context@2.0.1': {}
+
+  '@digitalbazaar/security-context@1.0.1': {}
+
+  '@digitalbazaar/vc-bitstring-status-list-context@1.1.0': {}
+
+  '@digitalbazaar/vc-status-list-context@3.1.1': {}
+
   '@digitalbazaar/vpqr@3.0.0':
     dependencies:
       '@digitalbazaar/cborld': 5.2.0
       '@nuintun/qrcode': 3.4.0
       base32-decode: 1.0.0
       base32-encode: 2.0.0
+
+  '@digitalcredentials/base58-universal@1.0.1': {}
+
+  '@digitalcredentials/base64url-universal@2.0.6':
+    dependencies:
+      base64url: 3.0.1
+
+  '@digitalcredentials/bitstring@3.1.2':
+    dependencies:
+      '@digitalcredentials/base64url-universal': 2.0.6
+      pako: 2.1.0
+
+  '@digitalcredentials/credentials-v2-context@0.0.1-beta.0': {}
+
+  '@digitalcredentials/credentials-v2-context@1.0.0': {}
+
+  '@digitalcredentials/crypto-ld@7.0.6': {}
+
+  '@digitalcredentials/data-integrity@2.6.0':
+    dependencies:
+      '@digitalcredentials/jsonld-signatures': 12.0.1
+      base58-universal: 2.0.0
+      base64url-universal: 2.0.0
+      fast-text-encoding: 1.0.6
+
+  '@digitalcredentials/dcc-context@1.0.0': {}
+
+  '@digitalcredentials/did-io@1.0.2':
+    dependencies:
+      '@digitalcredentials/lru-memoize': 2.1.4
+
+  '@digitalcredentials/did-method-key@3.0.0':
+    dependencies:
+      '@digitalcredentials/did-io': 1.0.2
+      '@digitalcredentials/x25519-key-agreement-key-2020': 2.0.2
+
+  '@digitalcredentials/did-method-web@1.1.0':
+    dependencies:
+      '@digitalcredentials/did-io': 1.0.2
+      '@digitalcredentials/did-method-key': 3.0.0
+      '@digitalcredentials/http-client': 5.0.4
+      klona: 2.0.6
+
+  '@digitalcredentials/ed25519-multikey@1.4.0':
+    dependencies:
+      '@noble/ed25519': 1.7.5
+      '@stablelib/ed25519': 2.0.2
+      base58-universal: 2.0.0
+      base64url-universal: 2.0.0
+
+  '@digitalcredentials/ed25519-signature-2020@7.0.0':
+    dependencies:
+      '@digitalcredentials/base58-universal': 1.0.1
+      '@digitalcredentials/ed25519-multikey': 1.4.0
+      '@digitalcredentials/ed25519-verification-key-2020': 3.2.2
+      '@digitalcredentials/jsonld-signatures': 12.0.1
+      ed25519-signature-2018-context: 1.1.0
+      ed25519-signature-2020-context: 1.1.0
+
+  '@digitalcredentials/ed25519-verification-key-2020@3.2.2':
+    dependencies:
+      '@digitalcredentials/base58-universal': 1.0.1
+      '@stablelib/ed25519': 1.0.3
+      base64url-universal: 1.1.0
+      crypto-ld: 6.0.0
+
+  '@digitalcredentials/eddsa-rdfc-2022-cryptosuite@1.3.0':
+    dependencies:
+      '@digitalcredentials/ed25519-multikey': 1.4.0
+      '@digitalcredentials/jsonld': 9.0.0
+      rdf-canonize: 4.0.1
 
   '@digitalcredentials/http-client@5.0.4':
     dependencies:
@@ -23454,6 +23767,134 @@ snapshots:
       '@digitalcredentials/http-client': 5.0.4
       core-js: 3.44.0
       jwt-decode: 4.0.0
+
+  '@digitalcredentials/jsonld-signatures@11.0.0(expo@52.0.41(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(react-native@0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(react@18.3.1))(react@18.3.1))(msrcrypto@1.5.8)(react-native-securerandom@1.0.1(react-native@0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(react@18.3.1)))':
+    dependencies:
+      '@digitalbazaar/security-context': 1.0.1
+      '@digitalcredentials/jsonld': 9.0.0
+      '@sphereon/isomorphic-webcrypto': 2.5.0-unstable.0(expo@52.0.41(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(react-native@0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(react@18.3.1))(react@18.3.1))(msrcrypto@1.5.8)(react-native-securerandom@1.0.1(react-native@0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(react@18.3.1)))
+      fast-text-encoding: 1.0.6
+      serialize-error: 8.1.0
+    transitivePeerDependencies:
+      - expo
+      - expo-crypto
+      - msrcrypt
+      - msrcrypto
+      - react-native-securerandom
+
+  '@digitalcredentials/jsonld-signatures@12.0.1':
+    dependencies:
+      '@digitalbazaar/security-context': 1.0.1
+      '@digitalcredentials/jsonld': 9.0.0
+      fast-text-encoding: 1.0.6
+      serialize-error: 8.1.0
+
+  '@digitalcredentials/jsonld@9.0.0':
+    dependencies:
+      '@digitalcredentials/http-client': 5.0.4
+      canonicalize: 1.0.8
+      lru-cache: 6.0.0
+      rdf-canonize: 3.4.0
+
+  '@digitalcredentials/lru-memoize@2.1.4':
+    dependencies:
+      lru-cache: 6.0.0
+
+  '@digitalcredentials/open-badges-context@2.1.0': {}
+
+  '@digitalcredentials/open-badges-context@3.0.0': {}
+
+  '@digitalcredentials/security-document-loader@8.0.0':
+    dependencies:
+      '@digitalbazaar/data-integrity-context': 2.0.1
+      '@digitalbazaar/vc-bitstring-status-list-context': 1.1.0
+      '@digitalbazaar/vc-status-list-context': 3.1.1
+      '@digitalcredentials/credentials-v2-context': 1.0.0
+      '@digitalcredentials/crypto-ld': 7.0.6
+      '@digitalcredentials/dcc-context': 1.0.0
+      '@digitalcredentials/did-io': 1.0.2
+      '@digitalcredentials/did-method-key': 3.0.0
+      '@digitalcredentials/did-method-web': 1.1.0
+      '@digitalcredentials/ed25519-multikey': 1.4.0
+      '@digitalcredentials/ed25519-verification-key-2020': 3.2.2
+      '@digitalcredentials/http-client': 5.0.4
+      '@digitalcredentials/open-badges-context': 3.0.0
+      '@digitalcredentials/x25519-key-agreement-key-2020': 3.0.0
+      credentials-context: 2.0.0
+      did-context: 3.1.1
+      ed25519-signature-2020-context: 1.1.0
+      html-entities: 2.5.3
+      jsonld-document-loader: 1.2.1
+      x25519-key-agreement-2020-context: 1.0.0
+
+  '@digitalcredentials/vc-bitstring-status-list@1.0.0(expo@52.0.41(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(react-native@0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(react@18.3.1))(react@18.3.1))(msrcrypto@1.5.8)(react-native-securerandom@1.0.1(react-native@0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(react@18.3.1)))':
+    dependencies:
+      '@digitalbazaar/vc-bitstring-status-list-context': 1.1.0
+      '@digitalcredentials/bitstring': 3.1.2
+      '@digitalcredentials/credentials-v2-context': 0.0.1-beta.0
+      '@digitalcredentials/vc': 8.0.1(expo@52.0.41(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(react-native@0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(react@18.3.1))(react@18.3.1))(msrcrypto@1.5.8)(react-native-securerandom@1.0.1(react-native@0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(react@18.3.1)))
+      credentials-context: 2.0.0
+    transitivePeerDependencies:
+      - expo
+      - expo-crypto
+      - msrcrypt
+      - msrcrypto
+      - react-native-securerandom
+
+  '@digitalcredentials/vc@10.0.0':
+    dependencies:
+      '@digitalcredentials/credentials-v2-context': 0.0.1-beta.0
+      '@digitalcredentials/jsonld': 9.0.0
+      '@digitalcredentials/jsonld-signatures': 12.0.1
+      '@digitalcredentials/open-badges-context': 2.1.0
+      credentials-context: 2.0.0
+      ed25519-signature-2018-context: 1.1.0
+
+  '@digitalcredentials/vc@8.0.1(expo@52.0.41(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(react-native@0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(react@18.3.1))(react@18.3.1))(msrcrypto@1.5.8)(react-native-securerandom@1.0.1(react-native@0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(react@18.3.1)))':
+    dependencies:
+      '@digitalcredentials/credentials-v2-context': 0.0.1-beta.0
+      '@digitalcredentials/jsonld': 9.0.0
+      '@digitalcredentials/jsonld-signatures': 11.0.0(expo@52.0.41(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(react-native@0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(react@18.3.1))(react@18.3.1))(msrcrypto@1.5.8)(react-native-securerandom@1.0.1(react-native@0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(react@18.3.1)))
+      '@digitalcredentials/open-badges-context': 2.1.0
+      credentials-context: 2.0.0
+      ed25519-signature-2018-context: 1.1.0
+    transitivePeerDependencies:
+      - expo
+      - expo-crypto
+      - msrcrypt
+      - msrcrypto
+      - react-native-securerandom
+
+  '@digitalcredentials/verifier-core@1.0.0-beta.8(expo@52.0.41(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(react-native@0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(react@18.3.1))(react@18.3.1))(msrcrypto@1.5.8)(react-native-securerandom@1.0.1(react-native@0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(react@18.3.1)))':
+    dependencies:
+      '@digitalcredentials/data-integrity': 2.6.0
+      '@digitalcredentials/ed25519-signature-2020': 7.0.0
+      '@digitalcredentials/eddsa-rdfc-2022-cryptosuite': 1.3.0
+      '@digitalcredentials/issuer-registry-client': 3.2.0-beta.5
+      '@digitalcredentials/jsonld-signatures': 12.0.1
+      '@digitalcredentials/security-document-loader': 8.0.0
+      '@digitalcredentials/vc': 10.0.0
+      '@digitalcredentials/vc-bitstring-status-list': 1.0.0(expo@52.0.41(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(react-native@0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(react@18.3.1))(react@18.3.1))(msrcrypto@1.5.8)(react-native-securerandom@1.0.1(react-native@0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(react@18.3.1)))
+    transitivePeerDependencies:
+      - expo
+      - expo-crypto
+      - msrcrypt
+      - msrcrypto
+      - react-native-securerandom
+
+  '@digitalcredentials/x25519-key-agreement-key-2020@2.0.2':
+    dependencies:
+      '@digitalcredentials/base58-universal': 1.0.1
+      crypto-ld: 6.0.0
+      ed2curve: 0.3.0
+      tweetnacl: 1.0.3
+
+  '@digitalcredentials/x25519-key-agreement-key-2020@3.0.0':
+    dependencies:
+      '@digitalcredentials/base58-universal': 1.0.1
+      '@noble/ed25519': 1.7.5
+      crypto-ld: 6.0.0
+      tweetnacl: 1.0.3
 
   '@discordjs/builders@1.10.1':
     dependencies:
@@ -26761,6 +27202,8 @@ snapshots:
     dependencies:
       '@noble/hashes': 1.7.1
 
+  '@noble/ed25519@1.7.5': {}
+
   '@noble/hashes@1.1.5': {}
 
   '@noble/hashes@1.7.1': {}
@@ -28616,11 +29059,35 @@ snapshots:
       '@smithy/types': 4.2.0
       tslib: 2.8.1
 
+  '@sphereon/isomorphic-webcrypto@2.5.0-unstable.0(expo@52.0.41(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(react-native@0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(react@18.3.1))(react@18.3.1))(msrcrypto@1.5.8)(react-native-securerandom@1.0.1(react-native@0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(react@18.3.1)))':
+    dependencies:
+      '@peculiar/webcrypto': 1.5.0
+      asmcrypto.js: 2.3.2
+      b64-lite: 1.4.0
+      b64u-lite: 1.1.0
+      cipher-base: 1.0.6
+      create-hash: 1.2.0
+      inherits: 2.0.4
+      md5.js: 1.3.5
+      msrcrypto: 1.5.8
+      randomfill: 1.0.4
+      ripemd160: 2.0.2
+      sha.js: 2.4.11
+      str2buf: 1.3.0
+      webcrypto-shim: 0.1.7
+    optionalDependencies:
+      expo: 52.0.41(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(react-native@0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(react@18.3.1))(react@18.3.1)
+      react-native-securerandom: 1.0.1(react-native@0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(react@18.3.1))
+
   '@stablelib/aead@1.0.1': {}
 
   '@stablelib/binary@1.0.1':
     dependencies:
       '@stablelib/int': 1.0.1
+
+  '@stablelib/binary@2.0.1':
+    dependencies:
+      '@stablelib/int': 2.0.1
 
   '@stablelib/bytes@1.0.1': {}
 
@@ -28646,9 +29113,19 @@ snapshots:
       '@stablelib/sha512': 1.0.1
       '@stablelib/wipe': 1.0.1
 
+  '@stablelib/ed25519@2.0.2':
+    dependencies:
+      '@stablelib/random': 2.0.1
+      '@stablelib/sha512': 2.0.1
+      '@stablelib/wipe': 2.0.1
+
   '@stablelib/hash@1.0.1': {}
 
+  '@stablelib/hash@2.0.0': {}
+
   '@stablelib/int@1.0.1': {}
+
+  '@stablelib/int@2.0.1': {}
 
   '@stablelib/keyagreement@1.0.1':
     dependencies:
@@ -28664,6 +29141,11 @@ snapshots:
       '@stablelib/binary': 1.0.1
       '@stablelib/wipe': 1.0.1
 
+  '@stablelib/random@2.0.1':
+    dependencies:
+      '@stablelib/binary': 2.0.1
+      '@stablelib/wipe': 2.0.1
+
   '@stablelib/sha256@1.0.1':
     dependencies:
       '@stablelib/binary': 1.0.1
@@ -28676,7 +29158,15 @@ snapshots:
       '@stablelib/hash': 1.0.1
       '@stablelib/wipe': 1.0.1
 
+  '@stablelib/sha512@2.0.1':
+    dependencies:
+      '@stablelib/binary': 2.0.1
+      '@stablelib/hash': 2.0.0
+      '@stablelib/wipe': 2.0.1
+
   '@stablelib/wipe@1.0.1': {}
+
+  '@stablelib/wipe@2.0.1': {}
 
   '@stablelib/x25519@1.0.3':
     dependencies:
@@ -30961,6 +31451,8 @@ snapshots:
 
   asmcrypto.js@0.22.0: {}
 
+  asmcrypto.js@2.3.2: {}
+
   asn1.js@4.10.1:
     dependencies:
       bn.js: 4.12.1
@@ -31580,6 +32072,14 @@ snapshots:
   base58-universal@2.0.0: {}
 
   base64-js@1.5.1: {}
+
+  base64url-universal@1.1.0:
+    dependencies:
+      base64url: 3.0.1
+
+  base64url-universal@2.0.0:
+    dependencies:
+      base64url: 3.0.1
 
   base64url@3.0.1: {}
 
@@ -32925,6 +33425,8 @@ snapshots:
     dependencies:
       web-request-rpc: 2.0.3
 
+  credentials-context@2.0.0: {}
+
   cron-parser@4.9.0:
     dependencies:
       luxon: 3.6.0
@@ -32972,6 +33474,8 @@ snapshots:
       public-encrypt: 4.0.3
       randombytes: 2.1.0
       randomfill: 1.0.4
+
+  crypto-ld@6.0.0: {}
 
   crypto-random-string@2.0.0: {}
 
@@ -33488,6 +33992,8 @@ snapshots:
       asap: 2.0.6
       wrappy: 1.0.2
 
+  did-context@3.1.1: {}
+
   did-jwt@5.9.0:
     dependencies:
       '@stablelib/ed25519': 1.0.3
@@ -33741,6 +34247,14 @@ snapshots:
   ecdsa-sig-formatter@1.0.11:
     dependencies:
       safe-buffer: 5.2.1
+
+  ed25519-signature-2018-context@1.1.0: {}
+
+  ed25519-signature-2020-context@1.1.0: {}
+
+  ed2curve@0.3.0:
+    dependencies:
+      tweetnacl: 1.0.3
 
   ee-first@1.1.1: {}
 
@@ -35093,6 +35607,8 @@ snapshots:
   fast-redact@3.5.0: {}
 
   fast-safe-stringify@2.1.1: {}
+
+  fast-text-encoding@1.0.6: {}
 
   fast-uri@2.4.0: {}
 
@@ -38597,6 +39113,8 @@ snapshots:
     optionalDependencies:
       graceful-fs: 4.2.11
 
+  jsonld-document-loader@1.2.1: {}
+
   jsonparse@1.3.1: {}
 
   jsonpath-plus@10.3.0:
@@ -41394,6 +41912,8 @@ snapshots:
 
   pako@1.0.11: {}
 
+  pako@2.1.0: {}
+
   param-case@3.0.4:
     dependencies:
       dot-case: 3.0.4
@@ -42498,6 +43018,14 @@ snapshots:
       minimist: 1.2.8
       strip-json-comments: 2.0.1
 
+  rdf-canonize@3.4.0:
+    dependencies:
+      setimmediate: 1.0.5
+
+  rdf-canonize@4.0.1:
+    dependencies:
+      setimmediate: 1.0.5
+
   react-barcode@1.6.1(react@18.3.1):
     dependencies:
       jsbarcode: 3.11.6
@@ -42657,6 +43185,12 @@ snapshots:
       webpack: 5.98.0(esbuild@0.25.1)
 
   react-native-securerandom@0.1.1(react-native@0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(react@18.3.1)):
+    dependencies:
+      base64-js: 1.5.1
+      react-native: 0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(react@18.3.1)
+    optional: true
+
+  react-native-securerandom@1.0.1(react-native@0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(react@18.3.1)):
     dependencies:
       base64-js: 1.5.1
       react-native: 0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(react@18.3.1)
@@ -43785,6 +44319,10 @@ snapshots:
   serialize-error@7.0.1:
     dependencies:
       type-fest: 0.13.1
+
+  serialize-error@8.1.0:
+    dependencies:
+      type-fest: 0.20.2
 
   serialize-javascript@6.0.2:
     dependencies:
@@ -45716,6 +46254,8 @@ snapshots:
 
   tweetnacl@0.14.5: {}
 
+  tweetnacl@1.0.3: {}
+
   twilio@5.7.1:
     dependencies:
       axios: 1.8.4
@@ -46987,6 +47527,8 @@ snapshots:
   ws@8.18.0: {}
 
   ws@8.18.1: {}
+
+  x25519-key-agreement-2020-context@1.0.0: {}
 
   xcode@3.0.1:
     dependencies:

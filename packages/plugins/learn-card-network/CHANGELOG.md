@@ -1,5 +1,57 @@
 # learn-card-core
 
+## 2.6.0
+
+### Minor Changes
+
+-   [#807](https://github.com/learningeconomy/LearnCard/pull/807) [`cfabf6686a0233ed89de6201a70c01598c5ab298`](https://github.com/learningeconomy/LearnCard/commit/cfabf6686a0233ed89de6201a70c01598c5ab298) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Add initFromApiKey support
+
+### Patch Changes
+
+-   Updated dependencies [[`cfabf6686a0233ed89de6201a70c01598c5ab298`](https://github.com/learningeconomy/LearnCard/commit/cfabf6686a0233ed89de6201a70c01598c5ab298)]:
+    -   @learncard/network-brain-client@2.4.0
+
+## 2.5.23
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/core@9.3.38
+    -   @learncard/helpers@1.1.26
+    -   @learncard/network-brain-client@2.3.28
+
+## 2.5.22
+
+### Patch Changes
+
+-   [#780](https://github.com/learningeconomy/LearnCard/pull/780) [`cd6f8aba37dd67721e10e60c90f65ceb278d4a1e`](https://github.com/learningeconomy/LearnCard/commit/cd6f8aba37dd67721e10e60c90f65ceb278d4a1e) Thanks [@TaylorBeeston](https://github.com/TaylorBeeston)! - Expose and validate Profile Connection Invite features end-to-end
+
+    -   Brain Service (profiles routes):
+
+        -   generateInvite: supports multi-use (`maxUses`), including unlimited (`maxUses = 0`), and expiration in seconds (`expiration = 0` = no expiration). Returns `{ profileId, challenge, expiresIn }`.
+        -   listInvites: lists valid invites with `{ challenge, expiresIn, usesRemaining, maxUses }` and omits exhausted invites.
+        -   invalidateInvite: idempotently invalidates a specific invite by `challenge`.
+
+    -   Network Plugin (`@learncard/network-plugin`):
+
+        -   Expose `generateInvite(challenge?, expiration?, maxUses?)`.
+        -   Expose `listInvites()` and `invalidateInvite(challenge)`.
+
+    -   Tests (E2E):
+
+        -   Added `tests/e2e/tests/invites.spec.ts` covering single-use, multi-use, unlimited, and invalidation flows from a client perspective.
+
+    -   Docs:
+
+        -   OpenAPI descriptions updated in `services/learn-card-network/brain-service/src/routes/profiles.ts`.
+        -   Detailed notes in `services/learn-card-network/brain-service/CLAUDE.md`.
+
+    -   Notes:
+        -   No breaking changes; routes remain authenticated and backward compatible with older invite formats.
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-client@2.3.27
+
 ## 2.5.21
 
 ### Patch Changes
