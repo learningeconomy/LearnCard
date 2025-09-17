@@ -123,6 +123,7 @@ export const inboxRouter = t.router({
                   )).at(0)
                 : await getPrimarySigningAuthorityForIntegration(integration);
 
+            console.log('signingAuthorityRel', signingAuthorityRel)
             if (!signingAuthorityRel)
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Signing Authority not found' });
 
@@ -187,6 +188,7 @@ export const inboxRouter = t.router({
 
             for (const cm of verifiedContacts) {
                 const pending = await getAcceptedPendingInboxCredentialsForContactMethodId(cm.id);
+                console.log(`Found ${pending.length} pending inbox credentials for contact method ${cm.value}`, pending);
                 for (const inboxCredential of pending) {
                     processed += 1;
                     try {

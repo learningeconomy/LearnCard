@@ -445,6 +445,9 @@ export type LearnCardNetworkPluginMethods = {
     verifyContactMethod: (
         token: string
     ) => Promise<{ message: string; contactMethod: ContactMethodType }>;
+    verifyContactMethodWithCredential: (
+        proofOfLoginJwt: string
+    ) => Promise<{ message: string; contactMethod: ContactMethodType }>;
     removeContactMethod: (contactMethodId: string) => Promise<{ message: string }>;
  
     // Integrations

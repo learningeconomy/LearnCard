@@ -115,6 +115,10 @@ export const isServersDidWebDID = (did: string): boolean => {
     return did === getServerDidWebDID();
 };
 
+export const isTrustedLoginProviderDID = (did: string): boolean => {
+    return did === getServerDidWebDID() || did === process.env.LOGIN_PROVIDER_DID!;
+};
+
 export const getDidWebLearnCard = async (): Promise<DidWebLearnCard> => {
     const seed = process.env.SEED;
 

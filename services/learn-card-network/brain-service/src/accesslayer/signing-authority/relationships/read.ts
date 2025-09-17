@@ -103,9 +103,9 @@ export const getPrimarySigningAuthorityForIntegration = async (
                 relationship: { isPrimary: true },
             },
         })
-    ).map((relationship: { source: any; relationship: any }) => {
+    ).map((relationship: { target: any; relationship: any }) => {
         return {
-            signingAuthority: relationship.source.dataValues,
+            signingAuthority: relationship.target.dataValues,
             relationship: relationship.relationship,
         };
     })[0];

@@ -1078,6 +1078,10 @@ export const getLearnCardNetworkPlugin = async (
                 if (!userData) throw new Error('Please make an account first!');
                 return client.contactMethods.verifyContactMethod.mutate({ token });
             },
+            verifyContactMethodWithCredential: async (_learnCard, proofOfLoginJwt) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.contactMethods.verifyWithCredential.mutate({ proofOfLoginJwt });
+            },
             removeContactMethod: async (_learnCard, id) => {
                 if (!userData) throw new Error('Please make an account first!');
 

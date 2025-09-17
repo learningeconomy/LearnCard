@@ -1,6 +1,7 @@
 import { vi, describe, it, expect, beforeEach, afterAll, beforeAll } from 'vitest';
 import { getClient, getUser } from './helpers/getClient';
 import { Profile, ContactMethod, Integration } from '@models';
+import { getDidWebLearnCard } from '@helpers/learnCard.helpers';
 import { LCNIntegration } from '@learncard/types';
 
 const noAuthClient = getClient();
@@ -36,6 +37,75 @@ describe('Contact Methods', () => {
             await ContactMethod.delete({ detach: true, where: {} });
             await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
             await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+        });
+
+        describe('Verify With Credential (proof-of-login VP-JWT)', () => {
+            beforeEach(async () => {
+                sendSpy.mockClear();
+                await Profile.delete({ detach: true, where: {} });
+                await ContactMethod.delete({ detach: true, where: {} });
+                await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+                await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+            });
+
+            it('should verify an email contact method via VP-JWT and create it if missing', async () => {
+                const serverLc = await getDidWebLearnCard();
+
+                const vpJwt = (await serverLc.invoke.getDidAuthVp({
+                    proofFormat: 'jwt',
+                    challenge: 'proof-of-login:email:userB@test.com',
+                })) as unknown as string;
+
+                const res = await userB.clients.fullAuth.contactMethods.verifyWithCredential({
+                    proofOfLoginJwt: vpJwt,
+                });
+
+                expect(res).toBeDefined();
+                expect(res.message).toBe('Contact method verified successfully.');
+                expect(res.contactMethod.type).toBe('email');
+                expect(res.contactMethod.value).toBe('userB@test.com');
+                expect(res.contactMethod.isVerified).toBe(true);
+
+                const methods = await userB.clients.fullAuth.contactMethods.getMyContactMethods();
+                const cm = methods?.find(m => m.value === 'userB@test.com');
+                expect(cm?.isVerified).toBe(true);
+                expect(cm?.verifiedAt).toBeDefined(); 
+            });
+
+            it('should reject a VP-JWT whose holder is not a trusted login provider', async () => {
+                const vpJwt = (await userB.learnCard.invoke.getDidAuthVp({
+                    proofFormat: 'jwt',
+                    challenge: 'proof-of-login:email:untrusted@test.com',
+                })) as unknown as string;
+
+                await expect(
+                    userB.clients.fullAuth.contactMethods.verifyWithCredential({ proofOfLoginJwt: vpJwt })
+                ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+            });
+
+            it('should reject an invalid proof-of-login challenge prefix', async () => {
+                const serverLc = await getDidWebLearnCard();
+                const vpJwt = (await serverLc.invoke.getDidAuthVp({
+                    proofFormat: 'jwt',
+                    challenge: 'invalid-prefix:email:userB@test.com',
+                })) as unknown as string;
+
+                await expect(
+                    userB.clients.fullAuth.contactMethods.verifyWithCredential({ proofOfLoginJwt: vpJwt })
+                ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+            });
+
+            it('should reject an unsupported contact method type in the challenge', async () => {
+                const serverLc = await getDidWebLearnCard();
+                const vpJwt = (await serverLc.invoke.getDidAuthVp({
+                    proofFormat: 'jwt',
+                    challenge: 'proof-of-login:fax:12345',
+                })) as unknown as string;
+
+                await expect(
+                    userB.clients.fullAuth.contactMethods.verifyWithCredential({ proofOfLoginJwt: vpJwt })
+                ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+            });
         });
 
         afterAll(async () => {

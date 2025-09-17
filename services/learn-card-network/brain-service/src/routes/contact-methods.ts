@@ -2,10 +2,11 @@ import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
 import { t, profileRoute, openRoute } from '@routes';
+import type { DidAuthVP } from '@routes';
 
 import { createContactMethod } from '@accesslayer/contact-method/create';
 import { getContactMethodByValue, getContactMethodById } from '@accesslayer/contact-method/read';
-import { setPrimaryContactMethod, verifyContactMethod } from '@accesslayer/contact-method/update';
+import { setPrimaryContactMethod, unverifyContactMethod, verifyContactMethod } from '@accesslayer/contact-method/update';
 import { deleteContactMethod } from '@accesslayer/contact-method/delete';
 import { createProfileContactMethodRelationship } from '@accesslayer/contact-method/relationships/create';
 import {
@@ -17,7 +18,8 @@ import {
     generateContactMethodVerificationToken,
     validateContactMethodVerificationToken,
 } from '@helpers/contact-method.helpers';
-import { getDidWebLearnCard } from '@helpers/learnCard.helpers';
+import { getDidWebLearnCard, isTrustedLoginProviderDID } from '@helpers/learnCard.helpers';
+import jwtDecode from 'jwt-decode';
 import {
     ContactMethodValidator,
     ContactMethodVerificationRequestValidator,
@@ -51,6 +53,120 @@ export const contactMethodsRouter = t.router({
         .query(async ({ ctx }) => {
             const { profile } = ctx.user;
             return getProfileContactMethodRelationships(profile);
+        }),
+
+    // Verify a contact method using a proof-of-login VP-JWT
+    verifyWithCredential: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/profile/contact-methods/verify-with-credential',
+                tags: ['Contact Methods'],
+                summary: 'Verify Contact Method With Credential',
+                description:
+                    "Verify ownership of a contact method using a cryptographically verified proof-of-login Verifiable Presentation JWT.",
+            },
+            requiredScope: 'contact-methods:write',
+        })
+        .input(
+            z.object({
+                proofOfLoginJwt: z.string(),
+            })
+        )
+        .output(
+            z.object({
+                message: z.string(),
+                contactMethod: ContactMethodValidator,
+            })
+        )
+        .mutation(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const { proofOfLoginJwt } = input;
+
+            // 1) Cryptographically verify the VP-JWT
+            const learnCard = await getDidWebLearnCard();
+            const verification = await learnCard.invoke.verifyPresentation(proofOfLoginJwt, {
+                proofFormat: 'jwt',
+            });
+
+            if (!verification || (verification as any).errors?.length) {
+                throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Invalid Verifiable Presentation' });
+            }
+
+            // 2) Extract challenge from the VP-JWT payload
+            const decoded = jwtDecode<DidAuthVP>(proofOfLoginJwt);
+            const challenge = (decoded as any)?.nonce ?? (decoded as any)?.challenge;
+
+            const holder = decoded?.vp?.holder;
+            console.log(holder, isTrustedLoginProviderDID(holder), process.env.LOGIN_PROVIDER_DID);
+
+            if(!holder || !isTrustedLoginProviderDID(holder)) {
+                throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Unauthorized holder' });
+            }
+
+            if (!challenge || typeof challenge !== 'string') {
+                throw new TRPCError({ code: 'BAD_REQUEST', message: 'Missing challenge in VP-JWT' });
+            }
+
+            // 3) Validate and parse challenge: 'proof-of-login:<type>:<value>'
+            if (!challenge.startsWith('proof-of-login:')) {
+                throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid proof-of-login challenge' });
+            }
+
+            const parts = challenge.split(':');
+            if (parts.length < 3) {
+                throw new TRPCError({ code: 'BAD_REQUEST', message: 'Malformed proof-of-login challenge' });
+            }
+
+            const type = parts[1] as 'email' | 'phone';
+            const value = parts.slice(2).join(':');
+
+            if (type !== 'email' && type !== 'phone') {
+                throw new TRPCError({ code: 'BAD_REQUEST', message: 'Unsupported contact method type' });
+            }
+            if (!value) {
+                throw new TRPCError({ code: 'BAD_REQUEST', message: 'Missing contact method value' });
+            }
+
+            // 4) Find or create the contact method by value
+            let contactMethod = await getContactMethodByValue(type, value);
+            if (!contactMethod) {
+                contactMethod = await createContactMethod({
+                    type,
+                    value,
+                    isVerified: false,
+                    isPrimary: false,
+                });
+            }
+
+            // 5) Ensure the current profile owns this contact method
+            const ownsContactMethod = await checkProfileContactMethodRelationship(
+                profile.profileId,
+                contactMethod.id
+            );
+            if (!ownsContactMethod) {
+                await createProfileContactMethodRelationship(profile.profileId, contactMethod.id);
+            }
+
+            // 6) Make this contact method exclusive to this profile and set verified
+            await deleteAllProfileContactMethodRelationshipsExceptForProfileId(
+                profile.profileId,
+                contactMethod.id
+            );
+
+            const updated = await verifyContactMethod(contactMethod.id);
+            if (!updated) {
+                throw new TRPCError({
+                    code: 'INTERNAL_SERVER_ERROR',
+                    message: 'Failed to verify contact method',
+                });
+            }
+
+            return {
+                message: 'Contact method verified successfully.',
+                contactMethod: updated,
+            };
         }),
 
     // Create a session for a contact method
@@ -417,7 +533,12 @@ export const contactMethodsRouter = t.router({
 
             // Delete relationship and contact method node
             await deleteProfileContactMethodRelationship(profile.profileId, id);
-            await deleteContactMethod(id);
+            try {
+                await deleteContactMethod(id);
+            } catch (e) {
+                console.error(e);
+                await unverifyContactMethod(id);
+            }
 
             return { message: 'Contact method removed successfully.' };
         }),
