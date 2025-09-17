@@ -101,7 +101,9 @@ export const Lightbox: React.FC<LightboxProps> = ({
             }}
         >
             {showCloseButton && (
-                <X className="absolute w-[30px] h-[30px] top-[20px] right-[20px] cursor-pointer text-white z-[999999]" />
+                <button onClick={() => setCurrentUrl(undefined)}>
+                    <X className="absolute w-[30px] h-[30px] top-[20px] right-[20px] cursor-pointer text-white z-[999999]" />
+                </button>
             )}
             {currentItem.type === 'photo' && (
                 <img
