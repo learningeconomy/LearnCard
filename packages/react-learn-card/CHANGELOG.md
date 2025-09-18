@@ -1,5 +1,13 @@
 # @welibraryos/react-learn-card
 
+## 2.8.43
+
+### Patch Changes
+
+-   [#810](https://github.com/learningeconomy/LearnCard/pull/810) [`16e9f31e765b7c3c5782ee6313e5b4e2704e5b01`](https://github.com/learningeconomy/LearnCard/commit/16e9f31e765b7c3c5782ee6313e5b4e2704e5b01) Thanks [@rhen92](https://github.com/rhen92)! - fix: [LC-1333] Hide awarded to for claimable credentials
+
+-   [#812](https://github.com/learningeconomy/LearnCard/pull/812) [`5d4320f157ac8be2832564a0f7bb2341f9c45361`](https://github.com/learningeconomy/LearnCard/commit/5d4320f157ac8be2832564a0f7bb2341f9c45361) Thanks [@gerardopar](https://github.com/gerardopar)! - fix: LC-1369 - update lightbox props
+
 ## 2.8.42
 
 ### Patch Changes
