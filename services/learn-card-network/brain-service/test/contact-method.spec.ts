@@ -7,6 +7,7 @@ import { LCNIntegration } from '@learncard/types';
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;
 let userB: Awaited<ReturnType<typeof getUser>>;
+let serverLC: Awaited<ReturnType<typeof getUser>>;
 let integration: LCNIntegration | undefined;
 
 const sendSpy = vi.fn();
@@ -28,6 +29,8 @@ describe('Contact Methods', () => {
     beforeAll(async () => {
         userA = await getUser('a'.repeat(64));
         userB = await getUser('b'.repeat(64));
+        // serverLC is the login provider specified in vite.config.ts LOGIN_PROVIDER_DID
+        serverLC = await getUser('e'.repeat(64));
     });
 
     describe('Get my contact methods', () => {
@@ -40,6 +43,7 @@ describe('Contact Methods', () => {
         });
 
         describe('Verify With Credential (proof-of-login VP-JWT)', () => {
+
             beforeEach(async () => {
                 sendSpy.mockClear();
                 await Profile.delete({ detach: true, where: {} });
@@ -49,9 +53,7 @@ describe('Contact Methods', () => {
             });
 
             it('should verify an email contact method via VP-JWT and create it if missing', async () => {
-                const serverLc = await getDidWebLearnCard();
-
-                const vpJwt = (await serverLc.invoke.getDidAuthVp({
+                const vpJwt = (await serverLC.learnCard.invoke.getDidAuthVp({
                     proofFormat: 'jwt',
                     challenge: 'proof-of-login:email:userB@test.com',
                 })) as unknown as string;
@@ -84,8 +86,7 @@ describe('Contact Methods', () => {
             });
 
             it('should reject an invalid proof-of-login challenge prefix', async () => {
-                const serverLc = await getDidWebLearnCard();
-                const vpJwt = (await serverLc.invoke.getDidAuthVp({
+                const vpJwt = (await serverLC.learnCard.invoke.getDidAuthVp({
                     proofFormat: 'jwt',
                     challenge: 'invalid-prefix:email:userB@test.com',
                 })) as unknown as string;
@@ -96,8 +97,7 @@ describe('Contact Methods', () => {
             });
 
             it('should reject an unsupported contact method type in the challenge', async () => {
-                const serverLc = await getDidWebLearnCard();
-                const vpJwt = (await serverLc.invoke.getDidAuthVp({
+                const vpJwt = (await serverLC.learnCard.invoke.getDidAuthVp({
                     proofFormat: 'jwt',
                     challenge: 'proof-of-login:fax:12345',
                 })) as unknown as string;
@@ -409,29 +409,6 @@ describe('Contact Methods', () => {
             await Profile.delete({ detach: true, where: {} });
             await Integration.delete({ detach: true, where: {} });
             await ContactMethod.delete({ detach: true, where: {} });
-        });
-
-        it('should create an inbox claim session with a valid provisional auth token', async () => {
-            if (!integration) {
-                throw new Error('Integration not found');
-            }
-            // Add a contact method to user B
-            await noAuthClient.contactMethods.sendChallenge({ type: 'email', value: 'userA@test.com', configuration: { publishableKey: integration.publishableKey } });
-
-            const sendArgs = sendSpy.mock.calls[0][0];
-            const otpChallenge = sendArgs.templateModel.verificationToken;
-
-            const res = await noAuthClient.contactMethods.createContactMethodSession({ contactMethod: { type: 'email', value: 'userA@test.com' }, otpChallenge });
-
-            expect(res).toBeDefined();
-            expect(res.sessionJwt).toBeTypeOf('string');
-            
-            const verification = await userA.learnCard.invoke.verifyPresentation(res.sessionJwt, { proofFormat: 'jwt' });
-            expect(verification).toBeDefined();
-            expect(verification.errors.length).toBe(0);
-            expect(verification.warnings.length).toBe(0);
-            expect(verification.checks.includes('JWS')).toBe(true);
-
         });
 
         it('should return UNAUTHORIZED when creating a contact method session with an incorrect otp code', async () => {

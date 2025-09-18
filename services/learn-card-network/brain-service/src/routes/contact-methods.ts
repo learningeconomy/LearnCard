@@ -196,7 +196,7 @@ export const contactMethodsRouter = t.router({
             if (!contactMethodFromChallenge) {
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Contact method not found' });
             }
-
+ 
             if (contactMethodFromChallenge.type !== contactMethod.type || contactMethodFromChallenge.value !== contactMethod.value) {
                 throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Invalid contact method' });
             }
@@ -249,6 +249,7 @@ export const contactMethodsRouter = t.router({
             const integration = await readIntegrationByPublishableKey(publishableKey);
             if (!integration) throw new TRPCError({ code: 'NOT_FOUND' });   
             
+            console.log('Integration:', integration, domain, isDomainWhitelisted(domain, integration.whitelistedDomains));
             if (!isDomainWhitelisted(domain, integration.whitelistedDomains)) throw new TRPCError({ code: 'UNAUTHORIZED' });
 
             /**

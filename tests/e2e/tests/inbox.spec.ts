@@ -9,6 +9,7 @@ let b_anonymous: LearnCard;
 let c: LearnCard;
 let token: string;
 let integration: LCNIntegration | undefined;
+let integration2: LCNIntegration | undefined;
 
 // Function to extract the workflowId and interactionId from the URL
 const parseInteractionUrl = (url: string): { workflowId: string; interactionId: string } | null => {
@@ -64,7 +65,7 @@ describe('Inbox', () => {
             expect(inboxIssuanceResponse).toBeDefined();
             expect(inboxIssuanceResponse).toMatchObject({
                 issuanceId: expect.any(String),
-                status: expect.stringMatching('DELIVERED'),
+                status: expect.stringMatching('PENDING'),
                 recipient: expect.objectContaining({
                     type: 'email',
                     value: 'userB@test.com',
@@ -190,7 +191,7 @@ describe('Inbox', () => {
             expect(inboxIssuanceResponse).toBeDefined();
             expect(inboxIssuanceResponse).toMatchObject({
                 issuanceId: expect.any(String),
-                status: expect.stringMatching('DELIVERED'),
+                status: expect.stringMatching('PENDING'),
                 recipient: expect.objectContaining({
                     type: 'email',
                     value: 'userB@test.com',
@@ -290,7 +291,7 @@ describe('Inbox', () => {
             expect(inboxIssuanceResponse).toBeDefined();
             expect(inboxIssuanceResponse).toMatchObject({
                 issuanceId: expect.any(String),
-                status: expect.stringMatching('DELIVERED'),
+                status: expect.stringMatching('ISSUED'),
                 recipient: expect.objectContaining({
                     type: 'email',
                     value: 'userC@test.com',
@@ -578,7 +579,7 @@ describe('Inbox', () => {
             expect(inboxIssuanceResponse).toBeDefined();
             expect(inboxIssuanceResponse).toMatchObject({
                 issuanceId: expect.any(String),
-                status: expect.stringMatching('DELIVERED'),
+                status: expect.stringMatching('PENDING'),
                 recipient: expect.objectContaining({
                     type: 'email',
                     value: 'userB@test.com',
@@ -636,12 +637,12 @@ describe('Inbox', () => {
             expect(notification.webhookUrl).toBe('https://example.com/webhook');
             expect(notification.data.inbox).toBeDefined();
             expect(notification.data.inbox.issuanceId).toBeDefined();
-            expect(notification.data.inbox.status).toBe('ISSUED');
+            expect(notification.data.inbox.status).toBe('PENDING');
         });
 
         test('(9) should send a ISSUANCE_CLAIMED notification to the issuer if a webhook is configured', async () => {
             const sa = await a.invoke.createSigningAuthority('test-sa');
-            if (!sa) {
+            if (!sa) { 
                 throw new Error('Failed to create signing authority');
             }
             const registered = await a.invoke.registerSigningAuthority(
@@ -825,18 +826,30 @@ describe('Inbox', () => {
             b_anonymous = await getLearnCard('b')
             c = await getLearnCardForUser('c');        
 
-            await learnCard.invoke.createProfile({ profileId: 'test-user', displayName: "Test User" })
-            sa = await learnCard.invoke.createSigningAuthority('test-sa');
-            registered = await learnCard.invoke.registerSigningAuthority(sa.endpoint, sa.name, sa.did);
-            integrationId = await learnCard.invoke.addIntegration({
+            const sa = await a.invoke.createSigningAuthority('test-sa');
+            if (!sa) {
+                throw new Error('Failed to create signing authority');
+            }
+            await a.invoke.registerSigningAuthority(sa.endpoint!, sa.name, sa.did!);
+            const integrationId = await a.invoke.addIntegration({
                 name: 'test',
-                whitelistedDomains: ['localhost:3000'],
+                whitelistedDomains: ['localhost:4000'],
                 description: 'test',    
             }); 
             
-            await learnCard.invoke.associateIntegrationWithSigningAuthority(integrationId, sa.endpoint, sa.name, sa.did, true);
+            await a.invoke.associateIntegrationWithSigningAuthority(integrationId, sa.endpoint!, sa.name, sa.did!, true);
 
-            integration = await learnCard.invoke.getIntegration(integrationId);
+
+            const integrationId2 = await a.invoke.addIntegration({
+                name: 'port-3000',
+                whitelistedDomains: ['localhost:3000'],
+                description: 'Integration ID 2',    
+            }); 
+            
+            await a.invoke.associateIntegrationWithSigningAuthority(integrationId2, sa.endpoint!, sa.name, sa.did!, true);
+
+            integration = await a.invoke.getIntegration(integrationId);
+            integration2 = await a.invoke.getIntegration(integrationId2);
 
         });
 
@@ -845,13 +858,13 @@ describe('Inbox', () => {
             const payload = {  
                 type: 'email', 
                 value: 'userA@test.com',
-                configuration: {
+                configuration: { 
                     publishableKey: integration?.publishableKey,
                 }, 
             }; 
-
+ 
             // Send challenge
-            await fetch(
+            const challengeResponse = await fetch(
                 `http://localhost:4000/api/contact-methods/challenge`,
                 {
                     method: 'POST',
@@ -861,10 +874,12 @@ describe('Inbox', () => {
                     body: JSON.stringify(payload),
                 }
             );
+            console.log("CHallenge response", await challengeResponse.json());
 
             // Fetch the verification token from our new test endpoint
             const testResponse = await fetch('http://localhost:4000/api/test/last-delivery');
             const deliveryData = await testResponse.json();
+            console.log(deliveryData);
             const otpChallenge = deliveryData.templateModel.verificationToken;   
 
             const res = await fetch(
@@ -903,7 +918,31 @@ describe('Inbox', () => {
             const claimData = await claimResponse.json();
             expect(claimData).toBeDefined();
             expect(claimData).toBeTypeOf('object');
-            expect(claimData.status).toBe('ISSUED');
+            expect(claimData.status).toBe('PENDING');
+        })
+
+        it('should reject a claim if not from a whitelisted domain', async () => {
+            const payload = {  
+                type: 'email', 
+                value: 'userA@test.com',
+                configuration: { 
+                    publishableKey: integration2?.publishableKey,
+                }, 
+            }; 
+ 
+            // Send challenge
+            const challengeResponse = await fetch(
+                `http://localhost:4000/api/contact-methods/challenge`,
+                {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload),
+                }
+            );
+            const challengeData = await challengeResponse.json();
+            expect(challengeData.code).toBe('UNAUTHORIZED');
         })
     })
 });

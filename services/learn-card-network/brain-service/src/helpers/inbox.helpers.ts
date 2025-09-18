@@ -87,49 +87,6 @@ export const claimIntoInbox = async(
             expiresInDays,
         });
 
-        // Send credential directly
-        await sendCredential(
-            issuerProfile,
-            existingProfile,
-            finalCredential,
-            ctx.domain // domain
-        );
-
-        // Mark as issued and create relationship
-        await markInboxCredentialAsIssued(inboxCredential.id);
-        await createDeliveredRelationship(
-            issuerProfile.profileId,
-            inboxCredential.id,
-            existingProfile.did,
-            'auto-delivery'
-        );
-
-        // // Send webhook if configured
-        // if (webhookUrl) {
-        //     const learnCard = await getLearnCard();
-        //     await addNotificationToQueue({
-        //         webhookUrl,
-        //         type: LCNNotificationTypeEnumValidator.enum.ISSUANCE_DELIVERED,
-        //         from: { did: learnCard.id.did() },
-        //         to: issuerProfile,
-        //         message: {
-        //             title: 'Credential Delivered to Inbox',
-        //             body: `${issuerProfile.displayName} sent a credential to ${recipient.type}'s inbox at ${recipient.value}!`,
-        //         },
-        //         data: { 
-        //             inbox: {
-        //                 issuanceId: inboxCredential.id,
-        //                 status: LCNInboxStatusEnumValidator.enum.ISSUED,
-        //                 recipient: {
-        //                     contactMethod: recipient,
-        //                     learnCardId: existingProfile.did,
-        //                 },
-        //                 timestamp: new Date().toISOString(),
-        //             },
-        //         },
-        //     });
-        // }
-
         return {
             status: LCNInboxStatusEnumValidator.enum.ISSUED,
             inboxCredential,
@@ -150,41 +107,6 @@ export const claimIntoInbox = async(
             },
             expiresInDays,
         });
-
-        // Generate claim token
-        // let recipientContactMethod = await getContactMethodByValue(recipient.type, recipient.value);
-        // if (!recipientContactMethod) {
-        //     recipientContactMethod = await createContactMethod({
-        //         type: recipient.type,
-        //         value: recipient.value,
-        //         isVerified: false,
-        //     });
-        // }
-
-        // // Send webhook if configured
-        // if (webhookUrl) {
-        //     const learnCard = await getLearnCard();
-        //     await addNotificationToQueue({
-        //         webhookUrl,
-        //         type: LCNNotificationTypeEnumValidator.enum.ISSUANCE_DELIVERED,
-        //         from: { did: learnCard.id.did() },
-        //         to: issuerProfile,
-        //         message: {
-        //             title: 'Credential Delivered to Inbox',
-        //             body: `${issuerProfile.displayName} sent a credential to ${recipient.type}'s inbox at ${recipient.value}!`,
-        //         },
-        //         data: { 
-        //             inbox: {
-        //                 issuanceId: inboxCredential.id,
-        //                 status: LCNInboxStatusEnumValidator.enum.PENDING,
-        //                 recipient: {
-        //                     contactMethod: recipient,
-        //                 },
-        //                 timestamp: new Date().toISOString(),
-        //             },
-        //         },
-        //     });
-        // }
 
         return {
             status: LCNInboxStatusEnumValidator.enum.PENDING,
