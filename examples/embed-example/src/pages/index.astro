@@ -1,10 +1,10 @@
 ---
 const course = {
-  title: 'Intro to Web3',
-  provider: 'Acme Academy',
+  title: 'Intro to Digital Credentials',
+  provider: 'Learning Economy Academy',
   description:
-    'You completed a 4-week introductory course covering decentralized identity, verifiable credentials, and web3 fundamentals.',
-  badgeName: 'Intro to Web3 — Course Completion',
+    'You completed a 4-week introductory course covering decentralized identity, verifiable credentials, and learner data fundamentals.',
+  badgeName: 'Intro to Portable Credentials',
 };
 
 ---
@@ -43,7 +43,7 @@ const course = {
             <h1 style="margin:.5rem 0 0; font-size: 28px; color: #fff;">{course.title}</h1>
             <p class="muted" style="margin:.5rem 0 0;">by {course.provider}</p>
           </div>
-          <img alt="Course Illustration" width="120" height="120" style="border-radius: 12px; border:1px solid rgba(255,255,255,.08)" src="https://images.unsplash.com/photo-1556157382-97eda2d62296?q=80&w=360&auto=format&fit=crop" />
+          <img alt="Course Illustration" width="120" height="120" style="border-radius: 12px; border:1px solid rgba(255,255,255,.08)" src="https://cdn.filestackcontent.com/noLAvDoRxmfQcZ9120gv" />
         </div>
 
         <div style="display:grid; grid-template-columns: 1.2fr .8fr; gap: 24px; margin-top: 28px; align-items: start;">
@@ -60,7 +60,7 @@ const course = {
             <div class="card" style="padding: 16px;">
               <h3 style="margin: 0 0 .5rem; color: #fff; font-size: 16px;">Claim your credential</h3>
               <p class="muted" style="margin: 0 0 1rem;">Add the completion credential for “{course.title}” to your LearnCard wallet.</p>
-              <div id="claim-target" data-credential-name={`${course.title} — Course Completion`}></div>
+              <div id="claim-target" data-credential-name={`${course.title} — Course`}></div>
               <div id="success-msg" class="success">Credential claimed! You can view it in your LearnCard wallet.</div>
             </div>
           </div>
