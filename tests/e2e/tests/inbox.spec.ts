@@ -874,7 +874,6 @@ describe('Inbox', () => {
                     body: JSON.stringify(payload),
                 }
             );
-            console.log("CHallenge response", await challengeResponse.json());
 
             // Fetch the verification token from our new test endpoint
             const testResponse = await fetch('http://localhost:4000/api/test/last-delivery');

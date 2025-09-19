@@ -99,7 +99,6 @@ export const contactMethodsRouter = t.router({
             const challenge = (decoded as any)?.nonce ?? (decoded as any)?.challenge;
 
             const holder = decoded?.vp?.holder;
-            console.log(holder, isTrustedLoginProviderDID(holder), process.env.LOGIN_PROVIDER_DID);
 
             if(!holder || !isTrustedLoginProviderDID(holder)) {
                 throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Unauthorized holder' });
@@ -249,7 +248,6 @@ export const contactMethodsRouter = t.router({
             const integration = await readIntegrationByPublishableKey(publishableKey);
             if (!integration) throw new TRPCError({ code: 'NOT_FOUND' });   
             
-            console.log('Integration:', integration, domain, isDomainWhitelisted(domain, integration.whitelistedDomains));
             if (!isDomainWhitelisted(domain, integration.whitelistedDomains)) throw new TRPCError({ code: 'UNAUTHORIZED' });
 
             /**
