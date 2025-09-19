@@ -73,11 +73,13 @@ class TestContractsGetConsentedContracts200ResponseRecordsInner(unittest.TestCas
                             credentials = openapi_client.models.storage_resolve_200_response_any_of_any_of_read_credentials.storage_resolve_200_response_anyOf_anyOf_read_credentials(
                                 categories = {
                                     'key' : openapi_client.models.storage_resolve_200_response_any_of_any_of_read_credentials_categories_value.storage_resolve_200_response_anyOf_anyOf_read_credentials_categories_value(
-                                        required = True, )
+                                        required = True, 
+                                        default_enabled = True, )
                                     }, ), 
                             personal = {
                                 'key' : openapi_client.models.storage_resolve_200_response_any_of_any_of_read_credentials_categories_value.storage_resolve_200_response_anyOf_anyOf_read_credentials_categories_value(
-                                    required = True, )
+                                    required = True, 
+                                    default_enabled = True, )
                                 }, ), 
                         write = openapi_client.models.storage_resolve_200_response_any_of_any_of_write.storage_resolve_200_response_anyOf_anyOf_write(
                             credentials = openapi_client.models.storage_resolve_200_response_any_of_any_of_read_credentials.storage_resolve_200_response_anyOf_anyOf_read_credentials(
@@ -113,8 +115,12 @@ class TestContractsGetConsentedContracts200ResponseRecordsInner(unittest.TestCas
                             fade_id_background_image = True, 
                             id_background_color = '', 
                             repeat_id_background_image = True, ), 
+                        highlighted_credentials = [
+                            ''
+                            ], 
                         role = '', 
-                        dob = '', ), 
+                        dob = '', 
+                        country = '', ), 
                     name = '', 
                     subtitle = '', 
                     description = '', 
@@ -146,7 +152,8 @@ class TestContractsGetConsentedContracts200ResponseRecordsInner(unittest.TestCas
                             type = '', 
                             notifications_webhook = 'http', 
                             role = '', 
-                            dob = '', )
+                            dob = '', 
+                            country = '', )
                         ], ),
                 uri = '',
                 consenter = openapi_client.models.boost_get_boost_recipients_200_response_inner_to.boost_getBoostRecipients_200_response_inner_to(
@@ -175,8 +182,12 @@ class TestContractsGetConsentedContracts200ResponseRecordsInner(unittest.TestCas
                         fade_id_background_image = True, 
                         id_background_color = '', 
                         repeat_id_background_image = True, ), 
+                    highlighted_credentials = [
+                        ''
+                        ], 
                     role = '', 
-                    dob = '', ),
+                    dob = '', 
+                    country = '', ),
                 status = 'live'
             )
         else:
@@ -217,11 +228,13 @@ class TestContractsGetConsentedContracts200ResponseRecordsInner(unittest.TestCas
                             credentials = openapi_client.models.storage_resolve_200_response_any_of_any_of_read_credentials.storage_resolve_200_response_anyOf_anyOf_read_credentials(
                                 categories = {
                                     'key' : openapi_client.models.storage_resolve_200_response_any_of_any_of_read_credentials_categories_value.storage_resolve_200_response_anyOf_anyOf_read_credentials_categories_value(
-                                        required = True, )
+                                        required = True, 
+                                        default_enabled = True, )
                                     }, ), 
                             personal = {
                                 'key' : openapi_client.models.storage_resolve_200_response_any_of_any_of_read_credentials_categories_value.storage_resolve_200_response_anyOf_anyOf_read_credentials_categories_value(
-                                    required = True, )
+                                    required = True, 
+                                    default_enabled = True, )
                                 }, ), 
                         write = openapi_client.models.storage_resolve_200_response_any_of_any_of_write.storage_resolve_200_response_anyOf_anyOf_write(
                             credentials = openapi_client.models.storage_resolve_200_response_any_of_any_of_read_credentials.storage_resolve_200_response_anyOf_anyOf_read_credentials(
@@ -257,8 +270,12 @@ class TestContractsGetConsentedContracts200ResponseRecordsInner(unittest.TestCas
                             fade_id_background_image = True, 
                             id_background_color = '', 
                             repeat_id_background_image = True, ), 
+                        highlighted_credentials = [
+                            ''
+                            ], 
                         role = '', 
-                        dob = '', ), 
+                        dob = '', 
+                        country = '', ), 
                     name = '', 
                     subtitle = '', 
                     description = '', 
@@ -290,7 +307,8 @@ class TestContractsGetConsentedContracts200ResponseRecordsInner(unittest.TestCas
                             type = '', 
                             notifications_webhook = 'http', 
                             role = '', 
-                            dob = '', )
+                            dob = '', 
+                            country = '', )
                         ], ),
                 uri = '',
                 consenter = openapi_client.models.boost_get_boost_recipients_200_response_inner_to.boost_getBoostRecipients_200_response_inner_to(
@@ -319,8 +337,12 @@ class TestContractsGetConsentedContracts200ResponseRecordsInner(unittest.TestCas
                         fade_id_background_image = True, 
                         id_background_color = '', 
                         repeat_id_background_image = True, ), 
+                    highlighted_credentials = [
+                        ''
+                        ], 
                     role = '', 
-                    dob = '', ),
+                    dob = '', 
+                    country = '', ),
                 status = 'live',
         )
         """
