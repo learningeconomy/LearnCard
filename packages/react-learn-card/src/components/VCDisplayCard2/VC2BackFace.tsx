@@ -75,7 +75,7 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
             : undefined;
     const criteria = achievement?.criteria?.narrative;
     const description = achievement?.description;
-    const alignment = achievement?.alignment;
+    const alignments = achievement?.alignments;
 
     /* 
     const tags = credential.credentialSubject.achievement?.tag;
@@ -164,7 +164,7 @@ const VC2BackFace: React.FC<VC2BackFaceProps> = ({
                 )}
                 {/* {credential.notes && <TruncateTextBox headerText="Notes" text={credential.notes} />} */}
 
-                {alignment && <AlignmentsBox alignment={alignment} style="boost" />}
+                {alignments && <AlignmentsBox alignment={alignments} style="boost" />}
 
                 {verificationItems && verificationItems.length > 0 && (
                     <VerificationsBox verificationItems={verificationItems} />
