@@ -1,5 +1,18 @@
 # @welibraryos/react-learn-card
 
+## 2.8.45
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/init@2.1.1
+
+## 2.8.44
+
+### Patch Changes
+
+-   [#815](https://github.com/learningeconomy/LearnCard/pull/815) [`133d455b26d30d9d4e09745d4fb128e4a596a80b`](https://github.com/learningeconomy/LearnCard/commit/133d455b26d30d9d4e09745d4fb128e4a596a80b) Thanks [@rhen92](https://github.com/rhen92)! - fix: [LC-1357] Broken video attachment and make skill button clickable
+
 ## 2.8.43
 
 ### Patch Changes

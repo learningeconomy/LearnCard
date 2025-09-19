@@ -18,6 +18,9 @@ export type BoostSkills = {
     subskills: string[];
 };
 
+export type DisplayType = 'badge' | 'certificate' | 'id' | 'course' | 'award' | 'media';
+export type PreviewType = 'default' | 'media';
+
 /** @group VC Templates Plugin */
 export type BoostDisplay = {
     backgroundImage?: string;
@@ -27,6 +30,9 @@ export type BoostDisplay = {
     repeatBackgroundImage?: boolean;
 
     emoji: BoostEmoji;
+
+    displayType?: DisplayType;
+    previewType?: PreviewType;
 };
 
 export type BoostFamilyTitleOption = {
