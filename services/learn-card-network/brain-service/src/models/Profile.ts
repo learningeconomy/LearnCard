@@ -64,6 +64,7 @@ export const Profile: any = ModelFactory<FlatProfileType, ProfileRelationships>(
                 required: false,
                 enum: Object.values(LearnCardRolesEnum),
             },
+            approved: { type: 'boolean', required: false },
         },
         relationships: {
             connectionRequested: { model: 'self', direction: 'out', name: 'CONNECTION_REQUESTED' },
