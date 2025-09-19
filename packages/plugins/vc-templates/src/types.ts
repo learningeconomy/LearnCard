@@ -27,6 +27,9 @@ export type BoostDisplay = {
     repeatBackgroundImage?: boolean;
 
     emoji: BoostEmoji;
+
+    displayType?: string;
+    previewType?: string;
 };
 
 export type BoostFamilyTitleOption = {
