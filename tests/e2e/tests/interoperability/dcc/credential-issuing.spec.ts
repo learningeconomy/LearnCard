@@ -148,12 +148,10 @@ taggedDescribe('DCC Interoperability: credential issuing', ['@interop', '@dcc'],
             expect(proof).toHaveProperty('type');
             expect(typeof proof?.type).toBe('string');
 
-            console.log('VC', vc);
             // Verify the issued credential with a LearnCard instance
             const verifier = await getLearnCardForUser('c');
             const verification = await verifier.invoke.verifyCredential(vc as unknown as VC);
 
-            console.log('Verification', verification);
             expect(verification.warnings).toHaveLength(0);
             expect(verification.errors).toHaveLength(0);
             expect(verification.checks).toContain('proof');

@@ -10,6 +10,7 @@ export type InboxCredentialType = {
     credential: string; // JSON - signed or unsigned credential
     isSigned: boolean;
     currentStatus: 'PENDING' | 'CLAIMED' | 'EXPIRED' | 'DELIVERED';
+    isAccepted?: boolean;
     expiresAt: string;
     createdAt: string;
     issuerDid: string;
@@ -70,8 +71,9 @@ export const InboxCredential = ModelFactory<InboxCredentialType, InboxCredential
             currentStatus: { 
                 type: 'string', 
                 required: true, 
-                enum: ['PENDING', 'CLAIMED', 'EXPIRED', 'DELIVERED'] 
+                enum: ['PENDING', 'ISSUED', 'EXPIRED', /* DEPRECATED — use ISSUED */'DELIVERED', /* DEPRECATED — use ISSUED */'CLAIMED'] 
             },
+            isAccepted: { type: 'boolean', required: false, default: false },
             expiresAt: { type: 'string', required: true },
             createdAt: { type: 'string', required: true },
             issuerDid: { type: 'string', required: true },

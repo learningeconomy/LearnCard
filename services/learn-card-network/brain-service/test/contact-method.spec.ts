@@ -1,10 +1,14 @@
 import { vi, describe, it, expect, beforeEach, afterAll, beforeAll } from 'vitest';
 import { getClient, getUser } from './helpers/getClient';
-import { Profile, ContactMethod } from '@models';
+import { Profile, ContactMethod, Integration } from '@models';
+import { getDidWebLearnCard } from '@helpers/learnCard.helpers';
+import { LCNIntegration } from '@learncard/types';
 
 const noAuthClient = getClient();
 let userA: Awaited<ReturnType<typeof getUser>>;
 let userB: Awaited<ReturnType<typeof getUser>>;
+let serverLC: Awaited<ReturnType<typeof getUser>>;
+let integration: LCNIntegration | undefined;
 
 const sendSpy = vi.fn();
 vi.mock('@services/delivery/delivery.factory', () => ({
@@ -25,6 +29,8 @@ describe('Contact Methods', () => {
     beforeAll(async () => {
         userA = await getUser('a'.repeat(64));
         userB = await getUser('b'.repeat(64));
+        // serverLC is the login provider specified in vite.config.ts LOGIN_PROVIDER_DID
+        serverLC = await getUser('e'.repeat(64));
     });
 
     describe('Get my contact methods', () => {
@@ -34,6 +40,72 @@ describe('Contact Methods', () => {
             await ContactMethod.delete({ detach: true, where: {} });
             await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
             await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+        });
+
+        describe('Verify With Credential (proof-of-login VP-JWT)', () => {
+
+            beforeEach(async () => {
+                sendSpy.mockClear();
+                await Profile.delete({ detach: true, where: {} });
+                await ContactMethod.delete({ detach: true, where: {} });
+                await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+                await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+            });
+
+            it('should verify an email contact method via VP-JWT and create it if missing', async () => {
+                const vpJwt = (await serverLC.learnCard.invoke.getDidAuthVp({
+                    proofFormat: 'jwt',
+                    challenge: 'proof-of-login:email:userB@test.com',
+                })) as unknown as string;
+
+                const res = await userB.clients.fullAuth.contactMethods.verifyWithCredential({
+                    proofOfLoginJwt: vpJwt,
+                });
+
+                expect(res).toBeDefined();
+                expect(res.message).toBe('Contact method verified successfully.');
+                expect(res.contactMethod.type).toBe('email');
+                expect(res.contactMethod.value).toBe('userB@test.com');
+                expect(res.contactMethod.isVerified).toBe(true);
+
+                const methods = await userB.clients.fullAuth.contactMethods.getMyContactMethods();
+                const cm = methods?.find(m => m.value === 'userB@test.com');
+                expect(cm?.isVerified).toBe(true);
+                expect(cm?.verifiedAt).toBeDefined(); 
+            });
+
+            it('should reject a VP-JWT whose holder is not a trusted login provider', async () => {
+                const vpJwt = (await userB.learnCard.invoke.getDidAuthVp({
+                    proofFormat: 'jwt',
+                    challenge: 'proof-of-login:email:untrusted@test.com',
+                })) as unknown as string;
+
+                await expect(
+                    userB.clients.fullAuth.contactMethods.verifyWithCredential({ proofOfLoginJwt: vpJwt })
+                ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+            });
+
+            it('should reject an invalid proof-of-login challenge prefix', async () => {
+                const vpJwt = (await serverLC.learnCard.invoke.getDidAuthVp({
+                    proofFormat: 'jwt',
+                    challenge: 'invalid-prefix:email:userB@test.com',
+                })) as unknown as string;
+
+                await expect(
+                    userB.clients.fullAuth.contactMethods.verifyWithCredential({ proofOfLoginJwt: vpJwt })
+                ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+            });
+
+            it('should reject an unsupported contact method type in the challenge', async () => {
+                const vpJwt = (await serverLC.learnCard.invoke.getDidAuthVp({
+                    proofFormat: 'jwt',
+                    challenge: 'proof-of-login:fax:12345',
+                })) as unknown as string;
+
+                await expect(
+                    userB.clients.fullAuth.contactMethods.verifyWithCredential({ proofOfLoginJwt: vpJwt })
+                ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+            });
         });
 
         afterAll(async () => {
@@ -308,6 +380,49 @@ describe('Contact Methods', () => {
                 code: 'FORBIDDEN',
                 message: 'You do not own this contact method',
             });
+        });
+
+    });
+
+    describe('Create Inbox Claim Session', () => {
+
+        beforeEach(async () => {
+            sendSpy.mockClear();
+            await Profile.delete({ detach: true, where: {} });
+            await Integration.delete({ detach: true, where: {} });
+            await ContactMethod.delete({ detach: true, where: {} });
+            await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+            await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+
+    
+            const integrationId = await userA.clients.fullAuth.integrations.addIntegration({
+                name: 'test',
+                whitelistedDomains: ['localhost:3000'],
+                description: 'test',    
+            }); 
+            
+            integration = await userA.clients.fullAuth.integrations.getIntegration({ id: integrationId });
+        });
+
+        afterAll(async () => {
+            sendSpy.mockClear();
+            await Profile.delete({ detach: true, where: {} });
+            await Integration.delete({ detach: true, where: {} });
+            await ContactMethod.delete({ detach: true, where: {} });
+        });
+
+        it('should return UNAUTHORIZED when creating a contact method session with an incorrect otp code', async () => {
+            
+            if (!integration) {
+                throw new Error('Integration not found');
+            }
+            
+            // Add a contact method to user A 
+            await userA.clients.fullAuth.contactMethods.sendChallenge({ type: 'email', value: 'userA@test.com', configuration: { publishableKey: integration.publishableKey } });
+ 
+            await expect(
+                userB.clients.fullAuth.contactMethods.createContactMethodSession({ contactMethod: { type: 'email', value: 'userA@test.com' }, otpChallenge: '123456' })
+            ).rejects.toMatchObject({ code: 'UNAUTHORIZED', message: 'Invalid OTP challenge' });
         });
     });
 });

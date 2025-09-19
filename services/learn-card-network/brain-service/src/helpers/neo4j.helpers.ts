@@ -57,18 +57,34 @@ export const convertRegExpToNeo4j = ({ source, flags }: RegExp | RegExpValue): s
     // Add case insensitive flag if needed
     const prefix = flags.includes('i') ? '(?i)' : '';
 
-    // Add .* to start and end if needed, avoiding doubles
-    const needsStartWildcard = !pattern.startsWith('.*');
-    const needsEndWildcard = !pattern.endsWith('.*');
+    // Respect anchors: only add leading wildcard when not anchored at start; only add trailing when not anchored at end
+    const anchoredStart = pattern.startsWith('^');
+    const anchoredEnd = pattern.endsWith('$');
+
+    const needsStartWildcard = !anchoredStart && !pattern.startsWith('.*');
+    const needsEndWildcard = !anchoredEnd && !pattern.endsWith('.*');
 
     pattern = `${needsStartWildcard ? '.*' : ''}${pattern}${needsEndWildcard ? '.*' : ''}`;
 
-    // Handle the case where the pattern is just ".*"
+    // Keep legacy behavior expected by tests for empty patterns
     if (pattern === '.*.*') {
         return '.*.*';
     }
 
     return `${prefix}${pattern}`;
+};
+
+const isSlashDelimitedRegexString = (value: unknown): value is string =>
+    typeof value === 'string' && /^\/.+\/[a-zA-Z]*$/.test(value);
+
+const parseSlashDelimitedRegexString = (regexString: string): RegExpValue => {
+    // Expect format /pattern/flags where flags are optional
+    // Remove leading and trailing slashes and extract flags
+    const lastSlash = regexString.lastIndexOf('/');
+    const source = regexString.slice(1, lastSlash);
+    const flags = regexString.slice(lastSlash + 1);
+
+    return { source, flags };
 };
 
 export const convertObjectRegExpToNeo4j = (obj: Record<string, any>): Record<string, any> => {
@@ -89,6 +105,8 @@ export const convertObjectRegExpToNeo4j = (obj: Record<string, any>): Record<str
     for (const [key, value] of Object.entries(obj)) {
         if (isRegExp(value) || isRegExpValue(value)) {
             result[key] = convertRegExpToNeo4j(value);
+        } else if (key === '$regex' && isSlashDelimitedRegexString(value)) {
+            result[key] = convertRegExpToNeo4j(parseSlashDelimitedRegexString(value));
         } else if (Array.isArray(value)) {
             result[key] = convertObjectRegExpToNeo4j(value);
         } else if (value instanceof Date) {

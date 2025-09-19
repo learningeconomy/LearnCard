@@ -5,6 +5,8 @@ import { ClaimTokenType } from '@learncard/types';
 const CONTACT_METHOD_VERIFICATION_PREFIX = 'contact_method_verification:';
 const INBOX_CLAIM_TOKEN_PREFIX = 'inbox_claim:';
 
+export const CONTACT_METHOD_SESSION_PREFIX = 'contact_method_session:';
+
 const generate6DigitCode = () => {
     return Math.floor(100000 + Math.random() * 900000).toString();
 };
@@ -12,9 +14,17 @@ const generate6DigitCode = () => {
 export const generateContactMethodVerificationToken = async (
     contactMethodId: string,
     type: 'phone' | 'email',
-    ttlHours = 24
+    ttlHours = 24,
+    overrideTokenType?: '6-digit-code' | 'uuid' | undefined
 ): Promise<string> => {
-    const token = type == 'phone' ? generate6DigitCode() : uuid();
+    let token;
+    if (overrideTokenType === '6-digit-code') {
+        token = generate6DigitCode();
+    } else if (overrideTokenType === 'uuid') {
+        token = uuid();
+    } else {
+        token = type == 'phone' ? generate6DigitCode() : uuid();
+    }
     const key = `${CONTACT_METHOD_VERIFICATION_PREFIX}${token}`;
 
     await cache.set(key, contactMethodId, ttlHours * 60 * 60);

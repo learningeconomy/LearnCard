@@ -105,11 +105,9 @@ export const didFastifyPlugin: FastifyPluginAsync = async fastify => {
 
         let saDocs: Record<string, any>[] = [];
         try {
-            console.log('Signing authorities get');
             const signingAuthorities = (await getSigningAuthoritiesForUser(profile)).filter(
                 sa => !sa.relationship.did.includes('did:web')
             );
-            console.log('Signing authorities', signingAuthorities);
             if (signingAuthorities) {
                 saDocs = await Promise.all(
                     signingAuthorities.map(async (sa): Promise<Record<string, any>> => {

@@ -1,9 +1,9 @@
 import { TRPCError } from '@trpc/server';
 import { VC, UnsignedVC, LCNNotificationTypeEnumValidator, LCNInboxStatusEnumValidator, VP, ContactMethodQueryType, InboxCredentialType, IssueInboxCredentialType, IssueInboxSigningAuthority } from '@learncard/types';
 
-import { ProfileType } from 'types/profile';
+import { ProfileType, SigningAuthorityForUserType } from 'types/profile';
 import { createInboxCredential } from '@accesslayer/inbox-credential/create';
-import { markInboxCredentialAsDelivered } from '@accesslayer/inbox-credential/update';
+import { markInboxCredentialAsIssued } from '@accesslayer/inbox-credential/update';
 import { Context } from '@routes'
 import { 
     createDeliveredRelationship,
@@ -34,6 +34,87 @@ export const verifyCredentialCanBeSigned = async (credential: UnsignedVC): Promi
     return true;
 }
 
+export const claimIntoInbox = async(
+    issuerProfile: ProfileType,
+    signingAuthorityForUser: SigningAuthorityForUserType,
+    recipient: ContactMethodQueryType,
+    credential: VC | UnsignedVC | VP,
+    configuration: IssueInboxCredentialType['configuration'] = {},
+    ctx: Context
+): Promise<{ 
+    status: 'PENDING' | 'ISSUED' | 'EXPIRED' | 'CLAIMED' | 'DELIVERED'; // DELIVERED & CLAIMED are deprecated, use ISSUED 
+    inboxCredential: InboxCredentialType;
+    recipientDid?: string;
+}> => {
+    const { webhookUrl, expiresInDays } = configuration;
+    
+    const isSigned = !!credential?.proof;
+
+    if (!isSigned && !signingAuthorityForUser) {
+        throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'Unsigned credentials require a signing authority',
+        });
+    }
+
+    // Check if recipient already exists with verified email
+    const existingProfile = await getProfileByVerifiedContactMethod(recipient.type, recipient.value);
+
+    if (existingProfile) {
+        // Auto-deliver to existing user
+        let finalCredential: VC;
+
+        if (isSigned) {
+            finalCredential = credential as VC;
+        } else {
+            finalCredential = await issueCredentialWithSigningAuthority(
+                issuerProfile,
+                credential as UnsignedVC,
+                signingAuthorityForUser,
+                ctx.domain,
+                false // don't encrypt
+            ) as VC;
+        }
+
+        // Create inbox record for tracking
+        const inboxCredential = await createInboxCredential({
+            credential: JSON.stringify(finalCredential),
+            isSigned: true,
+            isAccepted: true,
+            recipient,
+            issuerProfile,
+            webhookUrl,
+            expiresInDays,
+        });
+
+        return {
+            status: LCNInboxStatusEnumValidator.enum.ISSUED,
+            inboxCredential,
+            recipientDid: existingProfile.did,
+        };
+    } else {
+        // Store in inbox for claiming
+        const inboxCredential = await createInboxCredential({
+            credential: JSON.stringify(credential),
+            isSigned,
+            isAccepted: true,
+            recipient,
+            issuerProfile,
+            webhookUrl,
+            signingAuthority: {
+                endpoint: signingAuthorityForUser.signingAuthority.endpoint,
+                name: signingAuthorityForUser.relationship.name,
+            },
+            expiresInDays,
+        });
+
+        return {
+            status: LCNInboxStatusEnumValidator.enum.PENDING,
+            inboxCredential: inboxCredential.dataValues,
+        };
+    }
+}
+
 
 export const issueToInbox = async (
     issuerProfile: ProfileType,
@@ -42,7 +123,7 @@ export const issueToInbox = async (
     configuration: IssueInboxCredentialType['configuration'] = {},
     ctx: Context
 ): Promise<{ 
-    status: 'PENDING' | 'DELIVERED' | 'CLAIMED' | 'EXPIRED'; 
+    status: 'PENDING' | 'ISSUED' | 'EXPIRED' | 'DELIVERED' | 'CLAIMED'; // DELIVERED & CLAIMED are deprecated, use ISSUED
     inboxCredential: InboxCredentialType;
     claimUrl?: string;
     recipientDid?: string;
@@ -151,8 +232,8 @@ export const issueToInbox = async (
         );
 
 
-        // Mark as delivered and create relationship
-        await markInboxCredentialAsDelivered(inboxCredential.id);
+        // Mark as issued and create relationship
+        await markInboxCredentialAsIssued(inboxCredential.id);
         await createDeliveredRelationship(
             issuerProfile.profileId,
             inboxCredential.id,
@@ -175,7 +256,7 @@ export const issueToInbox = async (
                 data: { 
                     inbox: {
                         issuanceId: inboxCredential.id,
-                        status: LCNInboxStatusEnumValidator.enum.DELIVERED,
+                        status: LCNInboxStatusEnumValidator.enum.ISSUED,
                         recipient: {
                             contactMethod: recipient,
                             learnCardId: existingProfile.did,
@@ -187,7 +268,7 @@ export const issueToInbox = async (
         }
 
         return {
-            status: LCNInboxStatusEnumValidator.enum.DELIVERED,
+            status: LCNInboxStatusEnumValidator.enum.ISSUED,
             inboxCredential,
             recipientDid: existingProfile.did,
         };
@@ -278,7 +359,7 @@ export const issueToInbox = async (
                 data: { 
                     inbox: {
                         issuanceId: inboxCredential.id,
-                        status: LCNInboxStatusEnumValidator.enum.DELIVERED,
+                        status: LCNInboxStatusEnumValidator.enum.PENDING,
                         recipient: {
                             contactMethod: recipient,
                         },
@@ -292,7 +373,7 @@ export const issueToInbox = async (
         const claimUrl = generateClaimUrl(claimToken);
 
         return {
-            status: LCNInboxStatusEnumValidator.enum.DELIVERED,
+            status: LCNInboxStatusEnumValidator.enum.PENDING,
             inboxCredential,
             claimUrl,
         };

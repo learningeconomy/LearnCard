@@ -1,0 +1,22 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "embed-example",
+  "sourceRoot": "examples/embed-example/src",
+  "projectType": "application",
+  "root": "examples/embed-example",
+  "tags": [],
+  "implicitDependencies": ["embed-sdk"],
+  "namedInputs": {
+    "source": ["{projectRoot}/src/**/*"],
+    "dist": ["{projectRoot}/dist/**/*"]
+  },
+  "targets": {
+    "build": {
+      "executor": "nx:run-script",
+      "inputs": ["source"],
+      "options": {
+        "script": "build"
+      }
+    }
+  }
+}
