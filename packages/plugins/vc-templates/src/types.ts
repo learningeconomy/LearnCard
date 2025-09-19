@@ -18,6 +18,9 @@ export type BoostSkills = {
     subskills: string[];
 };
 
+export type DisplayTypeEnum = 'badge' | 'certificate' | 'id' | 'course' | 'award' | 'media';
+export type PreviewTypeEnum = 'default' | 'media';
+
 /** @group VC Templates Plugin */
 export type BoostDisplay = {
     backgroundImage?: string;
@@ -28,8 +31,8 @@ export type BoostDisplay = {
 
     emoji: BoostEmoji;
 
-    displayType?: string;
-    previewType?: string;
+    displayType?: DisplayTypeEnum;
+    previewType?: PreviewTypeEnum;
 };
 
 export type BoostFamilyTitleOption = {
