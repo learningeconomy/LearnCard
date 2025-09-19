@@ -1,5 +1,11 @@
 # learn-card-core
 
+## 1.0.64
+
+### Patch Changes
+
+-   [#817](https://github.com/learningeconomy/LearnCard/pull/817) [`15480b7f8ab73d9d5af67e38fd39eb7d0fcb1380`](https://github.com/learningeconomy/LearnCard/commit/15480b7f8ab73d9d5af67e38fd39eb7d0fcb1380) Thanks [@gerardopar](https://github.com/gerardopar)! - feat: LC-1216 - extend boost context add "previewType"
+
 ## 1.0.63
 
 ### Patch Changes
