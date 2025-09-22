@@ -1,5 +1,12 @@
 # @learncard/open-badge-v2-plugin
 
+## 1.0.7
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/vc-plugin@1.2.2
+
 ## 1.0.6
 
 ### Patch Changes

@@ -1,5 +1,12 @@
 # @learncard/network-brain-client
 
+## 2.4.3
+
+### Patch Changes
+
+-   Updated dependencies []:
+    -   @learncard/network-brain-service@3.6.3
+
 ## 2.4.2
 
 ### Patch Changes
