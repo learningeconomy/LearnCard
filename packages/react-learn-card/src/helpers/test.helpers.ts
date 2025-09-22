@@ -427,7 +427,7 @@ export const TestVerificationItems = {
         NO_EXPIRATION: {
             status: 'Success',
             check: 'expiration',
-            message: 'Valid • Does Not Expire',
+            message: 'Does Not Expire',
         },
         PROOF: {
             status: 'Success',
@@ -437,7 +437,7 @@ export const TestVerificationItems = {
         NOT_EXPIRED: {
             status: 'Success',
             check: 'expiration',
-            message: 'Valid • Expires 28 FEB 2023',
+            message: 'Expires 28 FEB 2023',
         },
     },
     FAILED: {
@@ -445,7 +445,7 @@ export const TestVerificationItems = {
         EXPIRED: {
             status: 'Failed',
             check: 'expiration',
-            details: 'Invalid • Expired 28 JAN 2023',
+            details: 'Expired 28 JAN 2023',
         },
         // missing proof object or verificationMethod has bad data
         APPLICABLE_PROOF: {
@@ -488,7 +488,7 @@ export const TestVerificationItems = {
         EXPIRED: {
             check: 'proof',
             status: VerificationStatusEnum.Failed,
-            message: 'Invalid • Expired on 17 Nov 2022',
+            message: 'Expired on 17 Nov 2022',
         },
         ACTIVE: {
             check: 'proof',

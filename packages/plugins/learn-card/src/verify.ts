@@ -13,11 +13,8 @@ const transformErrorCheck = (error: string, _credential: VC): string => {
 const transformErrorMessage = (error: string, credential: VC): string => {
     if (error.startsWith('expiration')) {
         return credential.expirationDate
-            ? `Invalid • Expired ${format(
-                new Date(credential.expirationDate),
-                'dd MMM yyyy'
-            ).toUpperCase()}`
-            : 'Invalid • Expired';
+            ? `Expired ${format(new Date(credential.expirationDate), 'dd MMM yyyy').toUpperCase()}`
+            : 'Expired';
     }
 
     return error;
@@ -36,11 +33,11 @@ const transformCheckMessage = (check: string, credential: VC): string => {
         {
             proof: 'Valid',
             expiration: credential.expirationDate
-                ? `Valid • Expires ${format(
-                    new Date(credential.expirationDate),
-                    'dd MMM yyyy'
-                ).toUpperCase()}`
-                : 'Valid • Does Not Expire',
+                ? `Expires ${format(
+                      new Date(credential.expirationDate),
+                      'dd MMM yyyy'
+                  ).toUpperCase()}`
+                : 'Does Not Expire',
         }[check] || check
     );
 };
