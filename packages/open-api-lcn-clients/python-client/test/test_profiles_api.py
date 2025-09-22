@@ -152,6 +152,20 @@ class TestProfilesApi(unittest.TestCase):
         """
         pass
 
+    def test_profile_invalidate_invite(self) -> None:
+        """Test case for profile_invalidate_invite
+
+        Invalidate an invitation
+        """
+        pass
+
+    def test_profile_list_invites(self) -> None:
+        """Test case for profile_list_invites
+
+        List valid connection invitations
+        """
+        pass
+
     def test_profile_manager_create_managed_profile(self) -> None:
         """Test case for profile_manager_create_managed_profile
 
