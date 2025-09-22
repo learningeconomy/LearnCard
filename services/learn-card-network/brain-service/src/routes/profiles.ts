@@ -86,7 +86,12 @@ export const profilesRouter = t.router({
             },
             requiredScope: 'profiles:write',
         })
-        .input(LCNProfileValidator.omit({ did: true, isServiceProfile: true }))
+        .input(
+            LCNProfileValidator.omit({
+                did: true,
+                isServiceProfile: true,
+            })
+        )
         .output(z.string())
         .mutation(async ({ input, ctx }) => {
             const profileExists = await checkIfProfileExists({
@@ -441,6 +446,7 @@ export const profilesRouter = t.router({
                 dob,
                 country,
                 highlightedCredentials,
+                approved,
             } = input;
 
             const actualUpdates: Partial<ProfileType> = {};
@@ -488,6 +494,7 @@ export const profilesRouter = t.router({
             if (country) actualUpdates.country = country;
             if (highlightedCredentials)
                 actualUpdates.highlightedCredentials = highlightedCredentials;
+            if (typeof approved === 'boolean') actualUpdates.approved = approved;
 
             return updateProfile(profile, actualUpdates);
         }),
@@ -583,7 +590,6 @@ export const profilesRouter = t.router({
                 path: '/profile/{profileId}/connect/{challenge}',
                 tags: ['Profiles'],
                 summary: 'Connect using an invitation',
-                description: 'Connects with another profile using an invitation challenge. Respects invite usage and expiration; succeeds while the invite is valid (usesRemaining is null or > 0) and not expired. Returns 404 if the invite is invalid or expired.',
             },
             requiredScope: 'profiles:write',
         })
@@ -880,12 +886,7 @@ export const profilesRouter = t.router({
                         .optional()
                         .default(30 * 24 * 3600), // Default to 30 days in seconds
                     challenge: z.string().optional(),
-                    maxUses: z
-                        .number()
-                        .int()
-                        .min(0)
-                        .optional()
-                        .default(1) // Default single-use invites
+                    maxUses: z.number().int().min(0).optional().default(1), // Default single-use invites
                 })
                 .optional()
                 .default({})
@@ -923,7 +924,12 @@ export const profilesRouter = t.router({
             let expiresIn: number | null = expiration === 0 ? null : expiration;
 
             // Set the invite with the calculated expiration time and usage limits
-            await setValidInviteForProfile(profile.profileId, challenge, expiresIn ?? null, maxUses);
+            await setValidInviteForProfile(
+                profile.profileId,
+                challenge,
+                expiresIn ?? null,
+                maxUses
+            );
 
             return { profileId: profile.profileId, challenge, expiresIn };
         }),
@@ -937,7 +943,8 @@ export const profilesRouter = t.router({
                 path: '/profile/invites',
                 tags: ['Profiles'],
                 summary: 'List valid connection invitations',
-                description: "List all valid connection invitation links you've created. Each item includes: challenge, expiresIn (seconds or null), usesRemaining (number or null), and maxUses (number or null). Exhausted invites are omitted.",
+                description:
+                    "List all valid connection invitation links you've created. Each item includes: challenge, expiresIn (seconds or null), usesRemaining (number or null), and maxUses (number or null). Exhausted invites are omitted.",
             },
             requiredScope: 'connections:read',
         })
@@ -967,7 +974,8 @@ export const profilesRouter = t.router({
                 path: '/profile/invite/{challenge}/invalidate',
                 tags: ['Profiles'],
                 summary: 'Invalidate an invitation',
-                description: 'Invalidate a specific connection invitation by its challenge string. Idempotent: returns true even if the invite was already invalid or missing.',
+                description:
+                    'Invalidate a specific connection invitation by its challenge string. Idempotent: returns true even if the invite was already invalid or missing.',
             },
             requiredScope: 'connections:write',
         })

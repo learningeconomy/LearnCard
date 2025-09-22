@@ -217,6 +217,17 @@ describe('Profiles', () => {
 
             expect(profile?.country).toEqual('US');
         });
+
+        it('should allow setting approved on create', async () => {
+            await userA.clients.fullAuth.profile.createProfile({
+                profileId: 'usera',
+                approved: true,
+            });
+
+            const profile = await userA.clients.fullAuth.profile.getProfile();
+
+            expect(profile?.approved).toBeTruthy();
+        });
     });
 
     describe('createServiceProfile', () => {
@@ -927,6 +938,28 @@ describe('Profiles', () => {
             const profile = await userA.clients.fullAuth.profile.getProfile();
 
             expect(profile?.country).toEqual('CA');
+        });
+
+        it('should allow updating approved', async () => {
+            await expect(
+                userA.clients.fullAuth.profile.updateProfile({ approved: true })
+            ).resolves.not.toThrow();
+
+            const profile = await userA.clients.fullAuth.profile.getProfile();
+
+            expect(profile?.approved).toBeTruthy();
+        });
+
+        it('should allow toggling approved', async () => {
+            await userA.clients.fullAuth.profile.updateProfile({ approved: true });
+
+            await expect(
+                userA.clients.fullAuth.profile.updateProfile({ approved: false })
+            ).resolves.not.toThrow();
+
+            const profile = await userA.clients.fullAuth.profile.getProfile();
+
+            expect(profile?.approved).toBeFalsy();
         });
     });
 
