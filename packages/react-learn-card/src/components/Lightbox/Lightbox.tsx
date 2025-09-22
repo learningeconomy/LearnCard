@@ -87,7 +87,7 @@ export const Lightbox: React.FC<LightboxProps> = ({
         };
 
         fetchMetadata();
-    }, []);
+    }, [currentItem]);
 
     if (!currentUrl || !currentItem) return null;
 
