@@ -14,7 +14,7 @@ describe('Guardian Approval', () => {
     const originalEnv = process.env;
 
     beforeAll(async () => {
-        userA = await getUser('ga'.repeat(32));
+        userA = await getUser('a'.repeat(64));
     });
 
     beforeEach(async () => {
@@ -174,7 +174,9 @@ describe('Guardian Approval', () => {
         // Mark already approved
         await userA.clients.fullAuth.profile.updateProfile({ approved: true });
 
-        await userA.clients.fullAuth.inbox.sendGuardianApprovalEmail({ guardianEmail: 'guardian@test.com' });
+        await userA.clients.fullAuth.inbox.sendGuardianApprovalEmail({
+            guardianEmail: 'guardian@test.com',
+        });
 
         const sendArgs = sendSpy.mock.calls[0][0];
         const token = sendArgs.templateModel.approvalToken as string | undefined;
