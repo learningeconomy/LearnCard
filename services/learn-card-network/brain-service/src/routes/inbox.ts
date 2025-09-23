@@ -42,9 +42,17 @@ export const inboxRouter = t.router({
         .input(
             z.object({
                 guardianEmail: z.string().email(),
-                ttlHours: z.number().int().positive().max(24 * 30).optional(),
+                ttlHours: z
+                    .number()
+                    .int()
+                    .positive()
+                    .max(24 * 30)
+                    .optional(),
                 template: z
-                    .object({ id: z.string().optional(), model: z.record(z.string(), z.any()).optional() })
+                    .object({
+                        id: z.string().optional(),
+                        model: z.record(z.string(), z.any()).optional(),
+                    })
                     .optional(),
             })
         )
@@ -60,7 +68,11 @@ export const inboxRouter = t.router({
 
             try {
                 // Generate approval token and URL
-                const token = await generateGuardianApprovalToken(profile.profileId, guardianEmail, ttlHours);
+                const token = await generateGuardianApprovalToken(
+                    profile.profileId,
+                    guardianEmail,
+                    ttlHours
+                );
                 const approvalUrl = generateGuardianApprovalUrl(token);
 
                 // Send email via delivery service
@@ -115,7 +127,10 @@ export const inboxRouter = t.router({
             // Validate token
             const tokenData = await validateGuardianApprovalToken(token);
             if (!tokenData) {
-                throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid or expired approval token' });
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Invalid or expired approval token',
+                });
             }
 
             // Fetch requester profile and mark approved
@@ -138,7 +153,59 @@ export const inboxRouter = t.router({
             // Mark token as used (idempotent)
             await markGuardianApprovalTokenAsUsed(token);
 
-            return { message: alreadyApproved ? 'Profile already approved.' : 'Profile approved successfully.' };
+            return {
+                message: alreadyApproved
+                    ? 'Profile already approved.'
+                    : 'Profile approved successfully.',
+            };
+        }),
+    // Open route (GET): approve via path parameter for direct email link usage
+    approveGuardianRequestByPath: openRoute
+        .meta({
+            openapi: {
+                method: 'GET',
+                path: '/inbox/guardian-approval/{token}',
+                tags: ['Universal Inbox', 'Profiles'],
+                summary: 'Approve Guardian Request (GET)',
+                description: 'GET endpoint to consume guardian approval token from URL path.',
+            },
+        })
+        .input(z.object({ token: z.string() }))
+        .output(z.object({ message: z.string() }))
+        .query(async ({ input }) => {
+            const { token } = input;
+
+            const tokenData = await validateGuardianApprovalToken(token);
+            if (!tokenData) {
+                throw new TRPCError({
+                    code: 'BAD_REQUEST',
+                    message: 'Invalid or expired approval token',
+                });
+            }
+
+            const requester = await getProfileByProfileId(tokenData.requesterProfileId);
+            if (!requester) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Requester profile not found' });
+            }
+
+            const alreadyApproved = !!requester.approved;
+            if (!alreadyApproved) {
+                const updated = await updateProfile(requester, { approved: true });
+                if (!updated) {
+                    throw new TRPCError({
+                        code: 'INTERNAL_SERVER_ERROR',
+                        message: 'Failed to mark profile as approved',
+                    });
+                }
+            }
+
+            await markGuardianApprovalTokenAsUsed(token);
+
+            return {
+                message: alreadyApproved
+                    ? 'Profile already approved.'
+                    : 'Profile approved successfully.',
+            };
         }),
     // Issue a credential to someone's inbox
     issue: profileRoute
