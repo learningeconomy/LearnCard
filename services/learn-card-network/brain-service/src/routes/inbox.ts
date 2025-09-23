@@ -45,7 +45,7 @@ export const inboxRouter = t.router({
                 ttlHours: z
                     .number()
                     .int()
-                    .positive()
+                    .min(0)
                     .max(24 * 30)
                     .optional(),
                 template: z
