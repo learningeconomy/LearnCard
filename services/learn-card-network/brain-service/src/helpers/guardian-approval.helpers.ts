@@ -51,14 +51,20 @@ export const validateGuardianApprovalToken = async (
 
     if (!data) return null;
 
-    const parsed = JSON.parse(data) as GuardianApprovalTokenData;
+    try {
+        const parsed = JSON.parse(data) as GuardianApprovalTokenData;
 
-    if (parsed.used || new Date(parsed.expiresAt) <= new Date()) {
+        if (parsed.used || new Date(parsed.expiresAt) <= new Date()) {
+            await cache.delete([key]);
+            return null;
+        }
+
+        return parsed;
+    } catch (error) {
+        // Handle corrupted JSON data by cleaning up the cache entry
         await cache.delete([key]);
         return null;
     }
-
-    return parsed;
 };
 
 export const markGuardianApprovalTokenAsUsed = async (token: string): Promise<boolean> => {
