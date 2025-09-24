@@ -20,16 +20,25 @@ export const generateGuardianApprovalToken = async (
     const token = uuid();
     const key = `${GUARDIAN_APPROVAL_PREFIX}${token}`;
 
+    const ttlSeconds = Math.max(0, Math.floor(ttlHours * 60 * 60));
     const data: GuardianApprovalTokenData = {
         token,
         requesterProfileId,
         guardianEmail,
         createdAt: new Date().toISOString(),
-        expiresAt: new Date(Date.now() + ttlHours * 60 * 60 * 1000).toISOString(),
+        // If ttlSeconds is 0, set expiresAt in the past to guarantee immediate invalidation
+        expiresAt:
+            ttlSeconds > 0
+                ? new Date(Date.now() + ttlSeconds * 1000).toISOString()
+                : new Date(Date.now() - 1000).toISOString(),
         used: false,
     };
 
-    await cache.set(key, JSON.stringify(data), ttlHours * 60 * 60);
+    // If ttlSeconds <= 0, do not persist the token in cache.
+    // Validation will not find it and will treat it as invalid.
+    if (ttlSeconds > 0) {
+        await cache.set(key, JSON.stringify(data), ttlSeconds);
+    }
 
     return token;
 };
@@ -44,7 +53,7 @@ export const validateGuardianApprovalToken = async (
 
     const parsed = JSON.parse(data) as GuardianApprovalTokenData;
 
-    if (parsed.used || new Date(parsed.expiresAt) < new Date()) {
+    if (parsed.used || new Date(parsed.expiresAt) <= new Date()) {
         await cache.delete([key]);
         return null;
     }
