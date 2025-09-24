@@ -13,17 +13,29 @@ import {
     getChildrenForSkillInFrameworkPaged,
     getFrameworkRootSkillsPaged,
 } from '@accesslayer/skill/read';
+import { createSkill } from '@accesslayer/skill/create';
+import { updateSkill, deleteSkill } from '@accesslayer/skill/update';
 import { listTagsForSkill, addTagToSkill, removeTagFromSkill } from '@accesslayer/skill/tags';
-import { TagValidator, type FlatTagType } from 'types/tag';
-import { SkillFrameworkValidator } from 'types/skill-framework';
-import { SkillValidator } from 'types/skill';
-import { PaginatedSkillTreeValidator } from 'types/skill-tree';
+import {
+    TagValidator,
+    type TagType,
+    SkillFrameworkValidator,
+    SkillValidator,
+    PaginatedSkillTreeValidator,
+    SkillTreeNodeValidator,
+    SyncFrameworkInputValidator,
+    AddTagInputValidator,
+    CreateSkillInputValidator,
+    UpdateSkillInputValidator,
+    DeleteSkillInputValidator,
+    CreateSkillsBatchInputValidator,
+} from '@learncard/types';
+import { createSkillTree } from './skill-inputs';
 
-export const SyncFrameworkInputValidator = z.object({ id: z.string() });
-export type SyncFrameworkInput = z.infer<typeof SyncFrameworkInputValidator>;
-
-export const AddTagInputValidator = z.object({ slug: z.string().min(1), name: z.string().min(1) });
-export type AddTagInput = z.infer<typeof AddTagInputValidator>;
+const stripParent = <T extends Record<string, any>>(skill: T): Omit<T, 'parentId'> => {
+    const { parentId: _unusedParent, ...rest } = skill as T & { parentId?: string };
+    return rest;
+};
 
 export const skillsRouter = t.router({
     getFrameworkSkillTree: profileRoute
@@ -65,10 +77,7 @@ export const skillsRouter = t.router({
             // For each root, fetch first page of children (depth 1). If depth > 1, we still only fetch 1 for now.
             const records = await Promise.all(
                 rootsPage.records.map(async root => {
-                    const normalizedRoot = {
-                        ...root,
-                        parentId: root.parentId ?? undefined,
-                    };
+                    const normalizedRoot = stripParent(root);
 
                     const childrenPage = await getChildrenForSkillInFrameworkPaged(
                         frameworkId,
@@ -78,10 +87,12 @@ export const skillsRouter = t.router({
                     );
 
                     const children = childrenPage.records.map(child => {
-                        const { hasChildren, ...rest } = child;
+                        const childWithoutParent = stripParent(child);
+                        const { hasChildren, ...rest } = childWithoutParent as typeof childWithoutParent & {
+                            hasChildren: boolean;
+                        };
                         return {
                             ...rest,
-                            parentId: rest.parentId ?? undefined,
                             children: [],
                             hasChildren,
                             childrenCursor: null,
@@ -157,7 +168,7 @@ export const skillsRouter = t.router({
             return {
                 hasMore: page.hasMore,
                 cursor: page.cursor,
-                records: page.records,
+                records: page.records.map(child => stripParent(child)),
             };
         }),
     syncFrameworkSkills: profileRoute
@@ -177,7 +188,7 @@ export const skillsRouter = t.router({
         .output(
             z.object({
                 framework: SkillFrameworkValidator,
-                skills: z.array(SkillValidator.omit({ createdAt: true, updatedAt: true })),
+                skills: z.array(SkillTreeNodeValidator),
             })
         )
         .mutation(async ({ ctx, input }) => {
@@ -191,14 +202,239 @@ export const skillsRouter = t.router({
                 });
 
             const provider = getSkillsProvider();
-            const providerSkills = await provider.getSkillsForFramework(input.id);
+            const providerFramework = await provider.getFrameworkById(input.id);
 
-            await upsertSkillsIntoFramework(input.id, providerSkills);
+            if (providerFramework) {
+                const providerSkills = await provider.getSkillsForFramework(input.id);
 
-            const result = await getFrameworkWithSkills(input.id);
-            if (!result) throw new TRPCError({ code: 'NOT_FOUND', message: 'Framework not found' });
-            console.log('result', JSON.stringify(result, null, 2));
-            return result as any;
+                await upsertSkillsIntoFramework(input.id, providerSkills);
+
+                const result = await getFrameworkWithSkills(input.id);
+                if (!result)
+                    throw new TRPCError({ code: 'NOT_FOUND', message: 'Framework not found' });
+                return result;
+            }
+
+            const local = await getFrameworkWithSkills(input.id);
+            if (!local) {
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Framework not found' });
+            }
+
+            return local;
+        }),
+
+    create: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/skills',
+                tags: ['Skills'],
+                summary: 'Create a skill',
+                description: 'Creates a new skill within a framework managed by the caller.',
+            },
+            requiredScope: 'skills:write',
+        })
+        .input(CreateSkillInputValidator)
+        .output(SkillValidator)
+        .mutation(async ({ ctx, input }) => {
+            const profileId = ctx.user.profile.profileId;
+            const { frameworkId, skill, parentId } = input;
+            const normalizedParentId = parentId ?? undefined;
+
+            const manages = await doesProfileManageFramework(profileId, frameworkId);
+            if (!manages)
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'You do not manage this framework',
+                });
+
+            try {
+                const provider = getSkillsProvider();
+
+                const createdSkills = await createSkillTree(
+                    frameworkId,
+                    [skill],
+                    (fwId, input, parent) => createSkill(fwId, input, parent),
+                    async (createdNode, _source, parent) => {
+                        await provider.createSkill?.(frameworkId, {
+                            id: createdNode.id,
+                            statement: createdNode.statement,
+                            description: createdNode.description ?? undefined,
+                            code: createdNode.code ?? undefined,
+                            type: createdNode.type ?? 'skill',
+                            status: createdNode.status ?? 'active',
+                            parentId: parent ?? null,
+                        });
+                    },
+                    normalizedParentId
+                );
+
+                const created = createdSkills[0];
+                if (!created) throw new Error('Failed to create skill');
+
+                const apiSkill = stripParent(created);
+
+                return {
+                    ...apiSkill,
+                    description: created.description ?? undefined,
+                    code: created.code ?? undefined,
+                    type: created.type ?? 'skill',
+                    status: created.status ?? 'active',
+                } as any;
+            } catch (error: any) {
+                if (
+                    typeof error?.message === 'string' &&
+                    /parent skill not found/i.test(error.message)
+                ) {
+                    throw new TRPCError({
+                        code: 'BAD_REQUEST',
+                        message: 'Parent skill not found in this framework',
+                    });
+                }
+
+                throw error;
+            }
+        }),
+
+    createMany: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/skills/batch',
+                tags: ['Skills'],
+                summary: 'Create many skills',
+                description:
+                    'Creates multiple skills within a framework managed by the caller in a single request.',
+            },
+            requiredScope: 'skills:write',
+        })
+        .input(CreateSkillsBatchInputValidator)
+        .output(SkillValidator.array())
+        .mutation(async ({ ctx, input }) => {
+            const profileId = ctx.user.profile.profileId;
+            const { frameworkId, skills } = input;
+
+            const manages = await doesProfileManageFramework(profileId, frameworkId);
+            if (!manages)
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'You do not manage this framework',
+                });
+
+            const provider = getSkillsProvider();
+            const created = await createSkillTree(
+                frameworkId,
+                skills,
+                (fwId, input, parent) => createSkill(fwId, input, parent),
+                async (createdNode, _source, parent) => {
+                    await provider.createSkill?.(frameworkId, {
+                        id: createdNode.id,
+                        statement: createdNode.statement,
+                        description: createdNode.description ?? undefined,
+                        code: createdNode.code ?? undefined,
+                        type: createdNode.type ?? 'skill',
+                        status: createdNode.status ?? 'active',
+                        parentId: parent ?? null,
+                    });
+                }
+            );
+
+            return created.map(skill => {
+                const apiSkill = stripParent(skill);
+                return {
+                    ...apiSkill,
+                    description: skill.description ?? undefined,
+                    code: skill.code ?? undefined,
+                    type: skill.type ?? 'skill',
+                    status: skill.status ?? 'active',
+                } as any;
+            });
+        }),
+
+    update: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'PATCH',
+                path: '/skills/{id}',
+                tags: ['Skills'],
+                summary: 'Update a skill',
+                description: 'Updates a skill within a framework managed by the caller.',
+            },
+            requiredScope: 'skills:write',
+        })
+        .input(UpdateSkillInputValidator)
+        .output(SkillValidator)
+        .mutation(async ({ ctx, input }) => {
+            const profileId = ctx.user.profile.profileId;
+            const { frameworkId, id, ...updates } = input;
+
+            const manages = await doesProfileManageFramework(profileId, frameworkId);
+            if (!manages)
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'You do not manage this framework',
+                });
+
+            const updated = await updateSkill(frameworkId, id, updates);
+
+            const provider = getSkillsProvider();
+            const providerUpdates: Record<string, any> = {};
+            if (updates.statement !== undefined) providerUpdates.statement = updates.statement;
+            if (updates.description !== undefined)
+                providerUpdates.description = updates.description;
+            if (updates.code !== undefined) providerUpdates.code = updates.code;
+            if (updates.type !== undefined) providerUpdates.type = updates.type;
+            if (updates.status !== undefined) providerUpdates.status = updates.status;
+            if (Object.keys(providerUpdates).length > 0) {
+                await provider.updateSkill?.(frameworkId, id, providerUpdates);
+            }
+
+            const apiSkill = stripParent(updated);
+
+            return {
+                ...apiSkill,
+                description: updated.description ?? undefined,
+                code: updated.code ?? undefined,
+                type: updated.type ?? 'skill',
+                status: updated.status ?? 'active',
+            } as any;
+        }),
+
+    delete: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'DELETE',
+                path: '/skills/{id}',
+                tags: ['Skills'],
+                summary: 'Delete a skill',
+                description:
+                    'Deletes a skill from a framework managed by the caller and detaches any relationships.',
+            },
+            requiredScope: 'skills:write',
+        })
+        .input(DeleteSkillInputValidator)
+        .output(z.object({ success: z.boolean() }))
+        .mutation(async ({ ctx, input }) => {
+            const profileId = ctx.user.profile.profileId;
+            const { frameworkId, id } = input;
+
+            const manages = await doesProfileManageFramework(profileId, frameworkId);
+            if (!manages)
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'You do not manage this framework',
+                });
+
+            const result = await deleteSkill(frameworkId, id);
+
+            const provider = getSkillsProvider();
+            await provider.deleteSkill?.(frameworkId, id);
+
+            return result;
         }),
 
     listSkillTags: profileRoute
@@ -216,7 +452,7 @@ export const skillsRouter = t.router({
         })
         .input(z.object({ id: z.string() }))
         .output(TagValidator.array())
-        .query(async ({ ctx, input }): Promise<FlatTagType[]> => {
+        .query(async ({ ctx, input }): Promise<TagType[]> => {
             const profileId = ctx.user.profile.profileId;
             const allowed = await doesProfileManageSkill(profileId, input.id);
             if (!allowed)
@@ -243,7 +479,7 @@ export const skillsRouter = t.router({
         })
         .input(z.object({ id: z.string(), tag: AddTagInputValidator }))
         .output(TagValidator.array())
-        .mutation(async ({ ctx, input }): Promise<FlatTagType[]> => {
+        .mutation(async ({ ctx, input }): Promise<TagType[]> => {
             const profileId = ctx.user.profile.profileId;
             const allowed = await doesProfileManageSkill(profileId, input.id);
             if (!allowed)

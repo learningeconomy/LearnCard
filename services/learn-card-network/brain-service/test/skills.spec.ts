@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { getUser, getClient } from './helpers/getClient';
@@ -14,7 +15,55 @@ let userWriter: Awaited<ReturnType<typeof getUser>>; // scope: skills:write
 const FW_ID = 'fw-test-001';
 const SKILL_IDS = ['s-1', 's-2', 's-3'];
 
+const flattenSkillTree = (
+    skills?: Array<{ id?: string; children?: any[] }>
+): Array<{ id?: string; children?: any[]; parentRef?: string }> => {
+    if (!skills) return [];
+    const result: Array<{ id?: string; children?: any[]; parentRef?: string }> = [];
+
+    const visit = (
+        nodes: Array<{ id?: string; children?: any[] }>,
+        parentId?: string
+    ) => {
+        nodes.forEach(node => {
+            const flattened = { ...node } as {
+                id?: string;
+                children?: any[];
+                parentRef?: string;
+            };
+
+            if (parentId) flattened.parentRef = parentId;
+
+            result.push(flattened);
+
+            if (node.children?.length) visit(node.children as any[], node.id);
+        });
+    };
+
+    visit(skills, undefined);
+
+    return result;
+};
+
+const pluckSkillIds = (skills?: Array<{ id?: string; children?: any[] }>): string[] =>
+    flattenSkillTree(skills).map(skill => skill.id).filter(Boolean) as string[];
+
+const findSkillById = <T extends { id?: string }>(
+    skills: Array<T & { children?: any[] }> | undefined,
+    id: string
+): (T & { parentRef?: string }) | undefined =>
+    flattenSkillTree(skills).find(skill => skill.id === id) as (T & { parentRef?: string }) | undefined;
+
 describe('Skills router', () => {
+    const createProfileFor = async (
+        user: Awaited<ReturnType<typeof getUser>>,
+        prefix: string
+    ): Promise<string> => {
+        const profileId = `${prefix}-${crypto.randomUUID().replace(/-/g, '').slice(0, 8)}`;
+        await user.clients.fullAuth.profile.createProfile({ profileId });
+        return profileId;
+    };
+
     beforeAll(async () => {
         userA = await getUser('a'.repeat(64));
         userB = await getUser('b'.repeat(64));
@@ -66,46 +115,49 @@ describe('Skills router', () => {
     });
 
     it('syncs provider skills into local graph when I manage the framework', async () => {
-        await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+        await createProfileFor(userA, 'usera');
         await userA.clients.fullAuth.skillFrameworks.create({ frameworkId: FW_ID });
 
         const result = await userA.clients.fullAuth.skills.syncFrameworkSkills({ id: FW_ID });
 
         expect(result.framework.id).toBe(FW_ID);
         expect(result.framework.name).toBe('Test Framework');
-        expect(result.skills.length).toBe(3);
-        expect(result.skills.map(s => s.id)).toEqual(expect.arrayContaining(SKILL_IDS));
-        expect(result.skills.map(s => s.type)).toEqual(
+        // Two root skills, but three total nodes in the tree
+        expect(result.skills.length).toBe(2);
+        const flattened = flattenSkillTree(result.skills);
+        expect(flattened.length).toBe(3);
+        expect(flattened.map(s => s.id)).toEqual(expect.arrayContaining(SKILL_IDS));
+        expect(flattened.map(s => s.type)).toEqual(
             expect.arrayContaining(['skill', 'container'])
         );
         // Verify parent linkage present where provided
-        const child = result.skills.find(s => s.id === SKILL_IDS[2]);
-        expect(child?.parentId).toBe(SKILL_IDS[0]);
+        const child = flattened.find(s => s.id === SKILL_IDS[2]);
+        expect(child?.parentRef).toBe(SKILL_IDS[0]);
         expect(child?.type).toBe('skill');
     });
 
     it('is idempotent on repeated sync', async () => {
-        await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+        await createProfileFor(userA, 'usera');
         await userA.clients.fullAuth.skillFrameworks.create({ frameworkId: FW_ID });
 
         const first = await userA.clients.fullAuth.skills.syncFrameworkSkills({ id: FW_ID });
         const second = await userA.clients.fullAuth.skills.syncFrameworkSkills({ id: FW_ID });
 
-        expect(first.skills.length).toBe(3);
-        expect(second.skills.length).toBe(3);
-        const ids = second.skills.map(s => s.id);
+        expect(first.skills.length).toBe(2);
+        expect(second.skills.length).toBe(2);
+        const ids = flattenSkillTree(second.skills).map(s => s.id);
         expect(new Set(ids).size).toBe(3);
     });
 
     it('enforces management permissions on sync', async () => {
-        await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+        await createProfileFor(userB, 'userb');
         await expect(
             userB.clients.fullAuth.skills.syncFrameworkSkills({ id: FW_ID })
         ).rejects.toThrow();
     });
 
     it('requires skills:write to sync', async () => {
-        await userReader.clients.fullAuth.profile.createProfile({ profileId: 'reader' });
+        await createProfileFor(userReader, 'reader');
         // Reader does not have write scope, should be unauthorized regardless of management
         await expect(
             userReader.clients.fullAuth.skills.syncFrameworkSkills({ id: FW_ID })
@@ -113,7 +165,7 @@ describe('Skills router', () => {
     });
 
     it('add/list/remove tags on a skill I manage', async () => {
-        await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+        await createProfileFor(userA, 'usera');
         await userA.clients.fullAuth.skillFrameworks.create({ frameworkId: FW_ID });
         await userA.clients.fullAuth.skills.syncFrameworkSkills({ id: FW_ID });
 
@@ -157,7 +209,7 @@ describe('Skills router', () => {
 
     it('enforces management and scope on tag routes', async () => {
         // Writer can link and sync but lacks read scope
-        await userWriter.clients.fullAuth.profile.createProfile({ profileId: 'writer' });
+        await createProfileFor(userWriter, 'writer');
         await userWriter.clients.fullAuth.skillFrameworks.create({ frameworkId: FW_ID });
         await userWriter.clients.fullAuth.skills.syncFrameworkSkills({ id: FW_ID });
 
@@ -174,7 +226,7 @@ describe('Skills router', () => {
         ).rejects.toThrow();
 
         // Another user without management cannot add/list/remove
-        await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+        await createProfileFor(userB, 'userb');
         await expect(
             userB.clients.fullAuth.skills.addSkillTag({
                 id: SKILL_IDS[1]!,
@@ -189,6 +241,239 @@ describe('Skills router', () => {
         ).rejects.toThrow();
     });
 
+    describe('custom skill CRUD', () => {
+        const setupManagedFramework = async () => {
+            const profileId = await createProfileFor(userA, 'usera');
+            const frameworkId = `fw-custom-${crypto.randomUUID()}`;
+
+            await userA.clients.fullAuth.skillFrameworks.createManaged({
+                id: frameworkId,
+                name: 'Local Framework',
+                description: 'Framework managed through CRUD routes',
+            });
+
+            return { frameworkId };
+        };
+
+        it('creates skills inside a managed framework', async () => {
+            const { frameworkId } = await setupManagedFramework();
+            const parentSkillId = `${frameworkId}-parent`;
+            const childSkillId = `${frameworkId}-child`;
+
+            const parent = await userA.clients.fullAuth.skills.create({
+                frameworkId,
+                skill: {
+                    id: parentSkillId,
+                    statement: 'Local Parent Skill',
+                    code: 'LP1',
+                    type: 'skill',
+                },
+            });
+            expect(parent.id).toBe(parentSkillId);
+            expect(parent.frameworkId).toBe(frameworkId);
+            expect(parent).not.toHaveProperty('parentId');
+
+            const child = await userA.clients.fullAuth.skills.create({
+                frameworkId,
+                parentId: parentSkillId,
+                skill: {
+                    id: childSkillId,
+                    statement: 'Local Child Skill',
+                },
+            });
+            expect(child).not.toHaveProperty('parentId');
+
+            const fetched = await userA.clients.fullAuth.skillFrameworks.getById({ id: frameworkId });
+            expect(pluckSkillIds(fetched.skills)).toEqual(
+                expect.arrayContaining([parentSkillId, childSkillId])
+            );
+            const fetchedChild = findSkillById(fetched.skills, childSkillId);
+            expect(fetchedChild?.parentRef).toBe(parentSkillId);
+            const fetchedParent = findSkillById(fetched.skills, parentSkillId);
+            expect(fetchedParent?.children?.some((c: any) => c.id === childSkillId)).toBe(true);
+        });
+
+        it('creates nested skills in a single create call', async () => {
+            const { frameworkId } = await setupManagedFramework();
+            const rootSkillId = `${frameworkId}-root`;
+            const childSkillId = `${frameworkId}-child`;
+
+            const created = await userA.clients.fullAuth.skills.create({
+                frameworkId,
+                skill: {
+                    id: rootSkillId,
+                    statement: 'Root from tree',
+                    children: [
+                        {
+                            id: childSkillId,
+                            statement: 'Child from tree',
+                        },
+                    ],
+                },
+            });
+
+            expect(created.id).toBe(rootSkillId);
+
+            const fetched = await userA.clients.fullAuth.skillFrameworks.getById({ id: frameworkId });
+            const ids = pluckSkillIds(fetched.skills);
+            expect(ids).toEqual(expect.arrayContaining([rootSkillId, childSkillId]));
+            const child = findSkillById(fetched.skills, childSkillId);
+            expect(child?.parentRef).toBe(rootSkillId);
+        });
+
+        it('creates many skills within a framework via batch endpoint', async () => {
+            const { frameworkId } = await setupManagedFramework();
+
+            const results = await userA.clients.fullAuth.skills.createMany({
+                frameworkId,
+                skills: [
+                    {
+                        id: `${frameworkId}-batch-parent`,
+                        statement: 'Batch Parent',
+                        code: 'BP1',
+                        children: [
+                            {
+                                id: `${frameworkId}-batch-child`,
+                                statement: 'Batch Child',
+                            },
+                        ],
+                    },
+                ],
+            });
+
+            expect(results).toHaveLength(2);
+            const parent = results.find(s => s.id === `${frameworkId}-batch-parent`);
+            const child = results.find(s => s.id === `${frameworkId}-batch-child`);
+            expect(parent).toBeDefined();
+            expect(child).not.toHaveProperty('parentId');
+
+            const fetched = await userA.clients.fullAuth.skillFrameworks.getById({ id: frameworkId });
+            expect(pluckSkillIds(fetched.skills)).toEqual(
+                expect.arrayContaining([`${frameworkId}-batch-parent`, `${frameworkId}-batch-child`])
+            );
+            const flattened = flattenSkillTree(fetched.skills);
+            const fetchedChild = flattened.find(s => s.id === `${frameworkId}-batch-child`);
+            expect(fetchedChild?.parentRef).toBe(`${frameworkId}-batch-parent`);
+        });
+
+        it('updates skill metadata for a managed framework', async () => {
+            const { frameworkId } = await setupManagedFramework();
+            const parentSkillId = `${frameworkId}-parent`;
+            const childSkillId = `${frameworkId}-child`;
+
+            await userA.clients.fullAuth.skills.create({
+                frameworkId,
+                skill: {
+                    id: parentSkillId,
+                    statement: 'Primary Parent',
+                    code: 'PP1',
+                },
+            });
+            await userA.clients.fullAuth.skills.create({
+                frameworkId,
+                parentId: parentSkillId,
+                skill: {
+                    id: childSkillId,
+                    statement: 'Child Skill',
+                },
+            });
+
+            const updated = await userA.clients.fullAuth.skills.update({
+                frameworkId,
+                id: childSkillId,
+                statement: 'Child Skill Updated',
+                code: 'CS2',
+                status: 'archived',
+            });
+
+            expect(updated.statement).toBe('Child Skill Updated');
+            expect(updated.status).toBe('archived');
+            expect(updated).not.toHaveProperty('parentId');
+
+            const fetched = await userA.clients.fullAuth.skillFrameworks.getById({ id: frameworkId });
+            const fetchedChild = findSkillById(fetched.skills, childSkillId);
+            expect(fetchedChild?.parentRef).toBe(parentSkillId);
+            expect(fetchedChild?.status).toBe('archived');
+            expect(fetchedChild?.code).toBe('CS2');
+        });
+
+        it('deletes a skill that I manage', async () => {
+            const { frameworkId } = await setupManagedFramework();
+            const parentSkillId = `${frameworkId}-parent`;
+            const childSkillId = `${frameworkId}-child`;
+
+            await userA.clients.fullAuth.skills.create({
+                frameworkId,
+                skill: {
+                    id: parentSkillId,
+                    statement: 'Parent Skill',
+                },
+            });
+            await userA.clients.fullAuth.skills.create({
+                frameworkId,
+                parentId: parentSkillId,
+                skill: {
+                    id: childSkillId,
+                    statement: 'Child to delete',
+                },
+            });
+
+            const deleted = await userA.clients.fullAuth.skills.delete({
+                frameworkId,
+                id: childSkillId,
+            });
+
+            expect(deleted.success).toBe(true);
+
+            const fetched = await userA.clients.fullAuth.skillFrameworks.getById({ id: frameworkId });
+            const ids = pluckSkillIds(fetched.skills);
+            expect(ids).not.toContain(childSkillId);
+            expect(ids).toContain(parentSkillId);
+        });
+
+        it('enforces management and scopes on skill CRUD', async () => {
+            const { frameworkId } = await setupManagedFramework();
+            const skillId = `${frameworkId}-skill`;
+
+            const created = await userA.clients.fullAuth.skills.create({
+                frameworkId,
+                skill: {
+                    id: skillId,
+                    statement: 'Owner Skill',
+                },
+            });
+            expect(created.id).toBe(skillId);
+
+            await createProfileFor(userB, 'userb');
+            await expect(
+                userB.clients.fullAuth.skills.create({
+                    frameworkId,
+                    skill: { id: `${frameworkId}-other`, statement: 'Unauthorized' },
+                })
+            ).rejects.toThrow();
+
+            await expect(
+                userB.clients.fullAuth.skills.update({
+                    frameworkId,
+                    id: skillId,
+                    statement: 'Nope',
+                })
+            ).rejects.toThrow();
+
+            await expect(
+                userB.clients.fullAuth.skills.delete({ frameworkId, id: skillId })
+            ).rejects.toThrow();
+
+            await createProfileFor(userReader, 'reader');
+            await expect(
+                userReader.clients.fullAuth.skills.create({
+                    frameworkId,
+                    skill: { id: `${frameworkId}-reader`, statement: 'Read only' },
+                })
+            ).rejects.toThrow();
+        });
+    });
+
     it('rejects unauthenticated calls', async () => {
         await expect(noAuthClient.skills.syncFrameworkSkills({ id: FW_ID })).rejects.toThrow();
 
@@ -200,6 +485,21 @@ describe('Skills router', () => {
 
         await expect(
             noAuthClient.skills.removeSkillTag({ id: SKILL_IDS[0]!, slug: 't' })
+        ).rejects.toThrow();
+
+        await expect(
+            noAuthClient.skills.create({
+                frameworkId: FW_ID,
+                skill: { id: 'noauth-skill', statement: 'No auth' },
+            })
+        ).rejects.toThrow();
+
+        await expect(
+            noAuthClient.skills.update({ frameworkId: FW_ID, id: 'noauth-skill', statement: 'Nope' })
+        ).rejects.toThrow();
+
+        await expect(
+            noAuthClient.skills.delete({ frameworkId: FW_ID, id: 'noauth-skill' })
         ).rejects.toThrow();
     });
 });

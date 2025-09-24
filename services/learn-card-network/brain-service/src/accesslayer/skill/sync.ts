@@ -72,7 +72,25 @@ export const upsertSkillsIntoFramework = async (
          MATCH (f:SkillFramework { id: $frameworkId })
          MATCH (child:Skill { id: sk.id, frameworkId: $frameworkId })<-[:CONTAINS]-(f)
          MATCH (parent:Skill { id: sk.parentId, frameworkId: $frameworkId })<-[:CONTAINS]-(f)
-         MERGE (child)-[:IS_CHILD_OF]->(parent)`,
+        MERGE (child)-[:IS_CHILD_OF]->(parent)`,
+        { frameworkId, skills: skillParams }
+    );
+
+    // 3) Remove parent relationships and property when provider indicates root
+    await neogma.queryRunner.run(
+        `UNWIND $skills AS sk
+         WITH sk WHERE sk.parentId IS NULL
+         MATCH (:SkillFramework { id: $frameworkId })-[:CONTAINS]->(child:Skill { id: sk.id })
+         OPTIONAL MATCH (child)-[rel:IS_CHILD_OF]->(:Skill)
+         DELETE rel`,
+        { frameworkId, skills: skillParams }
+    );
+
+    await neogma.queryRunner.run(
+        `UNWIND $skills AS sk
+         WITH sk WHERE sk.parentId IS NULL
+         MATCH (:SkillFramework { id: $frameworkId })-[:CONTAINS]->(root:Skill { id: sk.id })
+         REMOVE root.parentId`,
         { frameworkId, skills: skillParams }
     );
 
@@ -85,8 +103,11 @@ export const upsertSkillsIntoFramework = async (
 
     return result.records.map(r => {
         const props = ((r.get('s') as any)?.properties ?? {}) as Record<string, any>;
+        const normalizedParentId = typeof props.parentId === 'string' ? props.parentId : undefined;
+        const { parentId: _unusedParent, ...rest } = props;
         return {
-            ...props,
+            ...rest,
+            ...(normalizedParentId ? { parentId: normalizedParentId } : {}),
             type: props.type ?? 'skill',
         } as FlatSkillType;
     });

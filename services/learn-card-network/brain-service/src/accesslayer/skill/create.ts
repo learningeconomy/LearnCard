@@ -20,6 +20,8 @@ export const createSkill = async (
         code: input.code,
         type: input.type ?? 'skill',
         status: input.status ?? 'active',
+        frameworkId,
+        ...(parentId ? { parentId } : {}),
     } as FlatSkillType;
 
     await Skill.createOne(data);
@@ -31,6 +33,16 @@ export const createSkill = async (
     );
 
     if (parentId) {
+        const parentCheck = await neogma.queryRunner.run(
+            `MATCH (f:SkillFramework {id: $frameworkId})-[:CONTAINS]->(p:Skill {id: $parentId})
+             RETURN p.id AS id`,
+            { frameworkId, parentId }
+        );
+
+        if (parentCheck.records.length === 0) {
+            throw new Error('Parent skill not found in this framework');
+        }
+
         await neogma.queryRunner.run(
             `MATCH (s:Skill {id: $skillId}), (p:Skill {id: $parentId})
              MERGE (s)-[:IS_CHILD_OF]->(p)`,
@@ -39,4 +51,25 @@ export const createSkill = async (
     }
 
     return data;
+};
+
+export type CreateSkillBatchItem = {
+    input: CreateSkillInput;
+    parentId?: string;
+};
+
+export const createSkillsBatch = async (
+    frameworkId: string,
+    items: CreateSkillBatchItem[]
+): Promise<FlatSkillType[]> => {
+    if (items.length === 0) return [];
+
+    const created: FlatSkillType[] = [];
+
+    for (const { input, parentId } of items) {
+        const skill = await createSkill(frameworkId, input, parentId);
+        created.push(skill);
+    }
+
+    return created;
 };

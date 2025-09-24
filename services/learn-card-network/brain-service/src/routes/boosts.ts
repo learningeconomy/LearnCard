@@ -58,6 +58,7 @@ import {
     canProfileEditBoost,
     canProfileCreateChildBoost,
     getBoostByUriWithDefaultClaimPermissions,
+    getFrameworkSkillsAvailableForBoost,
 } from '@accesslayer/boost/relationships/read';
 
 import { deleteStorageForUri, setStorageForUri } from '@cache/storage';
@@ -77,8 +78,13 @@ import {
     BoostType,
     BoostWithClaimPermissionsValidator,
 } from 'types/boost';
+import { SkillFrameworkValidator } from 'types/skill-framework';
+import { SkillValidator } from 'types/skill';
 import { deleteBoost } from '@accesslayer/boost/delete';
-import { injectObv3AlignmentsIntoCredentialForBoost, buildObv3AlignmentsForBoost } from '@services/skills-provider/inject';
+import {
+    injectObv3AlignmentsIntoCredentialForBoost,
+    buildObv3AlignmentsForBoost,
+} from '@services/skills-provider/inject';
 import { createBoost } from '@accesslayer/boost/create';
 import { getBoostOwner } from '@accesslayer/boost/relationships/read';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
@@ -122,7 +128,7 @@ export const boostsRouter = t.router({
                 tags: ['Boosts'],
                 summary: 'Get OBv3 alignments for a boost',
                 description:
-                    'Returns OBv3 alignment entries based on the boost\'s linked framework and aligned skills. Requires issue permission.',
+                    "Returns OBv3 alignment entries based on the boost's linked framework and aligned skills. Requires issue permission.",
             },
             requiredScope: 'boosts:read',
         })
@@ -179,11 +185,15 @@ export const boostsRouter = t.router({
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
             if (!(await isProfileBoostAdmin(profile, boost))) {
-                throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Profile is not a boost admin' });
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile is not a boost admin',
+                });
             }
 
             const framework = await getSkillFrameworkById(frameworkId);
-            if (!framework) throw new TRPCError({ code: 'NOT_FOUND', message: 'Framework not found' });
+            if (!framework)
+                throw new TRPCError({ code: 'NOT_FOUND', message: 'Framework not found' });
 
             await setBoostUsesFramework(boost, frameworkId);
 
@@ -213,7 +223,10 @@ export const boostsRouter = t.router({
             if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
 
             if (!(await isProfileBoostAdmin(profile, boost))) {
-                throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Profile is not a boost admin' });
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile is not a boost admin',
+                });
             }
 
             // Verify all skills exist before creating relationships
@@ -233,6 +246,64 @@ export const boostsRouter = t.router({
             await addAlignedSkillsToBoost(boost, skillIds);
 
             return true;
+        }),
+    getSkillsAvailableForBoost: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'GET',
+                path: '/boost/skills/available',
+                tags: ['Boosts'],
+                summary: 'List available skills for a boost',
+                description:
+                    'Returns skills from frameworks attached to the boost or any of its ancestors. Requires boost admin.',
+            },
+            requiredScope: 'boosts:read',
+        })
+        .input(z.object({ uri: z.string() }))
+        .output(
+            z
+                .object({
+                    framework: SkillFrameworkValidator,
+                    skills: z.array(SkillValidator.omit({ createdAt: true, updatedAt: true })),
+                })
+                .array()
+        )
+        .query(async ({ ctx, input }) => {
+            const { profile } = ctx.user;
+            const decodedUri = decodeURIComponent(input.uri);
+            const boost = await getBoostByUri(decodedUri);
+
+            if (!boost) throw new TRPCError({ code: 'NOT_FOUND', message: 'Could not find boost' });
+
+            if (!(await isProfileBoostAdmin(profile, boost))) {
+                throw new TRPCError({
+                    code: 'UNAUTHORIZED',
+                    message: 'Profile is not a boost admin',
+                });
+            }
+
+            const data = await getFrameworkSkillsAvailableForBoost(boost);
+
+            return data.map(({ framework, skills }) => ({
+                framework: {
+                    id: framework.id,
+                    name: framework.name,
+                    description: framework.description,
+                    sourceURI: framework.sourceURI,
+                    status: (framework.status as any) ?? 'active',
+                    createdAt: (framework as any).createdAt,
+                    updatedAt: (framework as any).updatedAt,
+                },
+                skills: skills.map(skill => ({
+                    id: skill.id,
+                    statement: skill.statement,
+                    description: skill.description ?? undefined,
+                    code: skill.code ?? undefined,
+                    type: skill.type ?? 'skill',
+                    status: (skill.status as any) ?? 'active',
+                })),
+            }));
         }),
     sendBoost: profileRoute
         .meta({
@@ -875,7 +946,8 @@ export const boostsRouter = t.router({
                 path: '/boost/recipients-with-children/paginated',
                 tags: ['Boosts'],
                 summary: 'Get boost recipients with children',
-                description: 'This endpoint gets the recipients of a boost and all its children boosts',
+                description:
+                    'This endpoint gets the recipients of a boost and all its children boosts',
             },
             requiredScope: 'boosts:read',
         })
@@ -918,7 +990,7 @@ export const boostsRouter = t.router({
             });
 
             const hasMore = records.length > limit;
-            
+
             // Create cursor from the last record (using profileId for consistency with Neo4j sorting)
             let newCursor: string | undefined;
             if (hasMore && records.length > 0) {

@@ -7,21 +7,24 @@ import {
 } from '@accesslayer/boost/relationships/read';
 import type { Obv3Alignment } from './types';
 
-const getInjectableSkillIds = (skills: SkillInstance[]): string[] =>
-    skills
-        .map(skill => {
-            const props = ((skill as any)?.dataValues ?? (skill as any)) as Record<string, any> | undefined;
-            if (!props) return null;
+const getInjectableSkillIds = (skills: SkillInstance[]): string[] => {
+    const ids = new Set<string>();
 
-            const type = typeof props.type === 'string' ? props.type.toLowerCase() : undefined;
-            if (type === 'container') return null;
+    for (const skill of skills) {
+        const props = ((skill as any)?.dataValues ?? (skill as any)) as Record<string, any> | undefined;
+        if (!props) continue;
 
-            const id = props.id;
-            if (!id) return null;
+        const type = typeof props.type === 'string' ? props.type.toLowerCase() : undefined;
+        if (type === 'container') continue;
 
-            return String(id);
-        })
-        .filter((id): id is string => Boolean(id));
+        const id = props.id;
+        if (!id) continue;
+
+        ids.add(String(id));
+    }
+
+    return [...ids];
+};
 
 // Mutates the given credential in-place to add OBv3 alignments, if any exist on the boost.
 export async function injectObv3AlignmentsIntoCredentialForBoost(

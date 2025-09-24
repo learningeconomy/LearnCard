@@ -1,18 +1,12 @@
 import { z } from 'zod';
+import {
+    SkillFrameworkStatusEnum,
+    SkillFrameworkValidator,
+    SkillFrameworkType,
+} from '@learncard/types';
 
-export const SkillFrameworkStatusEnum = z.enum(['active', 'archived']);
-export type SkillFrameworkStatus = z.infer<typeof SkillFrameworkStatusEnum>;
+export { SkillFrameworkStatusEnum, SkillFrameworkValidator, SkillFrameworkType };
 
-export const SkillFrameworkValidator = z.object({
-    id: z.string(),
-    name: z.string(),
-    description: z.string().optional(),
-    sourceURI: z.string().url().optional(),
-    status: SkillFrameworkStatusEnum.default('active'),
-    createdAt: z.string().optional(),
-    updatedAt: z.string().optional(),
-});
-
-export type SkillFrameworkType = z.infer<typeof SkillFrameworkValidator>;
+// Brain-service specific flat types
+export type FlatSkillFrameworkType = z.infer<typeof SkillFrameworkValidator>;
 export const FlatSkillFrameworkValidator = SkillFrameworkValidator;
-export type FlatSkillFrameworkType = z.infer<typeof FlatSkillFrameworkValidator>;

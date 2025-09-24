@@ -436,6 +436,11 @@ export const getLearnCardNetworkPlugin = async (
 
                 return client.boost.getBoost.query({ uri });
             },
+            getSkillsAvailableForBoost: async (_learnCard, uri) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.boost.getSkillsAvailableForBoost.query({ uri });
+            },
             getBoosts: async (_learnCard, query) => {
                 console.warn(
                     'The getBoosts method is deprecated! Please use getPaginatedBoosts instead!'
@@ -1096,6 +1101,14 @@ export const getLearnCardNetworkPlugin = async (
                 if (!userData) throw new Error('Please make an account first!');
                 return client.skills.removeSkillTag.mutate({ id: skillId, slug });
             },
+            createManagedSkillFramework: async (_learnCard, input) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skillFrameworks.createManaged.mutate(input);
+            },
+            createManagedSkillFrameworks: async (_learnCard, input) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skillFrameworks.createManagedBatch.mutate(input);
+            },
             createSkillFramework: async (_learnCard, input) => {
                 if (!userData) throw new Error('Please make an account first!');
                 return client.skillFrameworks.create.mutate(input);
@@ -1107,6 +1120,30 @@ export const getLearnCardNetworkPlugin = async (
             getSkillFrameworkById: async (_learnCard, id) => {
                 if (!userData) throw new Error('Please make an account first!');
                 return client.skillFrameworks.getById.query({ id });
+            },
+            updateSkillFramework: async (_learnCard, input) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skillFrameworks.update.mutate(input);
+            },
+            deleteSkillFramework: async (_learnCard, id) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skillFrameworks.delete.mutate({ id });
+            },
+            createSkill: async (_learnCard, input) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skills.create.mutate(input);
+            },
+            createSkills: async (_learnCard, input) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skills.createMany.mutate(input);
+            },
+            updateSkill: async (_learnCard, input) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skills.update.mutate(input);
+            },
+            deleteSkill: async (_learnCard, input) => {
+                if (!userData) throw new Error('Please make an account first!');
+                return client.skills.delete.mutate(input);
             },
 
             resolveFromLCN: async (_learnCard, uri) => {

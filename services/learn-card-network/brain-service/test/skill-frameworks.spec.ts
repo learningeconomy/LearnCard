@@ -1,8 +1,10 @@
+import crypto from 'crypto';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { getUser, getClient } from './helpers/getClient';
 import { Profile, SkillFramework, Skill } from '@models';
 import { __skillsProviderTestUtils } from '@services/skills-provider';
+import { neogma } from '@instance';
 
 const noAuthClient = getClient();
 
@@ -14,7 +16,38 @@ let userWriter: Awaited<ReturnType<typeof getUser>>; // scope: skills:write
 const FW_ID = 'fw-test-001';
 const SKILL_IDS = ['s-1', 's-2', 's-3'];
 
+const flattenSkillIds = (skills?: Array<{ id?: string; children?: any[] }>): string[] => {
+    if (!skills) return [];
+    return skills.flatMap(skill => [skill.id, ...flattenSkillIds(skill.children)]).filter(Boolean) as string[];
+};
+
+const findSkillById = (
+    skills: Array<{ id?: string; children?: any[] }> | undefined,
+    id: string,
+    parentId?: string
+): ({ id?: string; children?: any[]; parentRef?: string } | undefined) => {
+    if (!skills) return undefined;
+    for (const skill of skills) {
+        if (skill.id === id) {
+            return { ...skill, parentRef: parentId };
+        }
+
+        const child = findSkillById(skill.children, id, skill.id);
+        if (child) return child;
+    }
+    return undefined;
+};
+
 describe('Skill Frameworks (provider-based)', () => {
+    const createProfileFor = async (
+        user: Awaited<ReturnType<typeof getUser>>,
+        prefix: string
+    ): Promise<string> => {
+        const profileId = `${prefix}-${crypto.randomUUID().replace(/-/g, '').slice(0, 8)}`;
+        await user.clients.fullAuth.profile.createProfile({ profileId });
+        return profileId;
+    };
+
     beforeAll(async () => {
         userA = await getUser('a'.repeat(64));
         userB = await getUser('b'.repeat(64));
@@ -65,7 +98,7 @@ describe('Skill Frameworks (provider-based)', () => {
     });
 
     it('links an existing provider framework to my profile and shows up in listMine', async () => {
-        await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+        await createProfileFor(userA, 'usera');
 
         const linked = await userA.clients.fullAuth.skillFrameworks.create({ frameworkId: FW_ID });
 
@@ -78,33 +111,34 @@ describe('Skill Frameworks (provider-based)', () => {
         expect(mine.map(f => f.id)).toContain(FW_ID);
 
         // Another user with their own profile should not see it unless they manage it
-        await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+        await createProfileFor(userB, 'userb');
         const mineB = await userB.clients.fullAuth.skillFrameworks.listMine();
         expect(mineB.find(f => f.id === FW_ID)).toBeUndefined();
     });
 
     it('fetches the framework and its skills from the provider if I manage it', async () => {
-        await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+        await createProfileFor(userA, 'usera');
         await userA.clients.fullAuth.skillFrameworks.create({ frameworkId: FW_ID });
 
         const result = await userA.clients.fullAuth.skillFrameworks.getById({ id: FW_ID });
 
         expect(result.framework.id).toBe(FW_ID);
         expect(result.framework.name).toBe('Test Framework');
-        expect(result.skills.length).toBe(3);
-        expect(result.skills.map(s => s.id)).toEqual(expect.arrayContaining(SKILL_IDS));
-        expect(result.skills.find(s => s.id === SKILL_IDS[1])?.type).toBe('container');
+        // 2 roots, 3 nodes in total
+        expect(result.skills.length).toBe(2);
+        expect(flattenSkillIds(result.skills)).toEqual(expect.arrayContaining(SKILL_IDS));
+        expect(findSkillById(result.skills, SKILL_IDS[1])?.type).toBe('container');
         // Verify parent linkage present where provided
-        const child = result.skills.find(s => s.id === SKILL_IDS[2]);
-        expect(child?.parentId).toBe(SKILL_IDS[0]);
+        const child = findSkillById(result.skills, SKILL_IDS[2]);
+        expect(child?.parentRef).toBe(SKILL_IDS[0]);
         expect(child?.type).toBe('skill');
     });
 
     it('enforces management permissions on getById', async () => {
-        await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+        await createProfileFor(userA, 'usera');
         await userA.clients.fullAuth.skillFrameworks.create({ frameworkId: FW_ID });
 
-        await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+        await createProfileFor(userB, 'userb');
 
         await expect(
             userB.clients.fullAuth.skillFrameworks.getById({ id: FW_ID })
@@ -112,7 +146,7 @@ describe('Skill Frameworks (provider-based)', () => {
     });
 
     it('returns NOT_FOUND when linking a non-existent provider framework', async () => {
-        await userA.clients.fullAuth.profile.createProfile({ profileId: 'usera' });
+        await createProfileFor(userA, 'usera');
 
         await expect(
             userA.clients.fullAuth.skillFrameworks.create({ frameworkId: 'does-not-exist' })
@@ -121,13 +155,13 @@ describe('Skill Frameworks (provider-based)', () => {
 
     it('requires skills:write to link, and skills:read to list/get', async () => {
         // Reader (only skills:read) cannot link
-        await userReader.clients.fullAuth.profile.createProfile({ profileId: 'reader' });
+        await createProfileFor(userReader, 'reader');
         await expect(
             userReader.clients.fullAuth.skillFrameworks.create({ frameworkId: FW_ID })
         ).rejects.toThrow();
 
         // Writer (only skills:write) can link but cannot list or get
-        await userWriter.clients.fullAuth.profile.createProfile({ profileId: 'writer' });
+        await createProfileFor(userWriter, 'writer');
         const linked = await userWriter.clients.fullAuth.skillFrameworks.create({
             frameworkId: FW_ID,
         });
@@ -146,5 +180,231 @@ describe('Skill Frameworks (provider-based)', () => {
         await expect(noAuthClient.skillFrameworks.getById({ id: FW_ID })).rejects.toThrow();
 
         await expect(noAuthClient.skillFrameworks.create({ frameworkId: FW_ID })).rejects.toThrow();
+    });
+});
+
+describe('Skill Frameworks (custom CRUD)', () => {
+    beforeEach(async () => {
+        await Skill.delete({ detach: true, where: {} });
+        await SkillFramework.delete({ detach: true, where: {} });
+        await Profile.delete({ detach: true, where: {} });
+    });
+
+    const ensureProfile = async () => {
+        const profileId = `usera-${crypto.randomUUID().replace(/-/g, '').slice(0, 8)}`;
+        await userA.clients.fullAuth.profile.createProfile({ profileId });
+        return profileId;
+    };
+
+    it('creates and retrieves a managed custom framework', async () => {
+        await ensureProfile();
+        const customFrameworkId = `fw-custom-${crypto.randomUUID()}`;
+
+        const created = await userA.clients.fullAuth.skillFrameworks.createManaged({
+            id: customFrameworkId,
+            name: 'Custom Framework',
+            description: 'Locally managed framework',
+            sourceURI: 'https://example.com/custom',
+        });
+
+        expect(created.id).toBe(customFrameworkId);
+        expect(created.status).toBe('active');
+
+        const mine = await userA.clients.fullAuth.skillFrameworks.listMine();
+        expect(mine.map(fw => fw.id)).toContain(customFrameworkId);
+
+        const fetched = await userA.clients.fullAuth.skillFrameworks.getById({ id: customFrameworkId });
+        expect(fetched.framework.id).toBe(customFrameworkId);
+        expect(fetched.framework.name).toBe('Custom Framework');
+        expect(fetched.skills).toHaveLength(0);
+    });
+
+    it('creates nested skills when providing a tree on createManaged', async () => {
+        await ensureProfile();
+        const frameworkId = `fw-custom-${crypto.randomUUID()}`;
+        const rootSkillId = `${frameworkId}-root`;
+        const childSkillId = `${frameworkId}-child`;
+
+        await userA.clients.fullAuth.skillFrameworks.createManaged({
+            id: frameworkId,
+            name: 'Nested Framework',
+            skills: [
+                {
+                    id: rootSkillId,
+                    statement: 'Root Skill',
+                    children: [
+                        {
+                            id: childSkillId,
+                            statement: 'Child Skill',
+                        },
+                    ],
+                },
+            ],
+        });
+
+        const fetched = await userA.clients.fullAuth.skillFrameworks.getById({ id: frameworkId });
+        const ids = flattenSkillIds(fetched.skills);
+        expect(ids).toEqual(expect.arrayContaining([rootSkillId, childSkillId]));
+        const child = findSkillById(fetched.skills, childSkillId);
+        expect(child?.parentRef).toBe(rootSkillId);
+    });
+
+    it('creates multiple frameworks with initial skills in one request', async () => {
+        await ensureProfile();
+        const fwInputs = [
+            {
+                id: `fw-custom-${crypto.randomUUID()}`,
+                name: 'Batch Framework 1',
+                description: 'First batch framework',
+                skills: [
+                    {
+                        id: 'bfw1-s1',
+                        statement: 'Framework 1 Skill 1',
+                        code: 'F1S1',
+                        children: [
+                            {
+                                id: 'bfw1-s2',
+                                statement: 'Framework 1 Skill 2',
+                                code: 'F1S2',
+                            },
+                        ],
+                    },
+                ],
+            },
+            {
+                id: `fw-custom-${crypto.randomUUID()}`,
+                name: 'Batch Framework 2',
+                status: 'archived' as const,
+                skills: [
+                    {
+                        id: 'bfw2-s1',
+                        statement: 'Framework 2 Skill 1',
+                        code: 'F2S1',
+                        status: 'archived' as const,
+                    },
+                ],
+            },
+        ];
+
+        const created = await userA.clients.fullAuth.skillFrameworks.createManagedBatch({
+            frameworks: fwInputs,
+        });
+
+        expect(created).toHaveLength(2);
+        expect(created.map(f => f.id)).toEqual(expect.arrayContaining(fwInputs.map(f => f.id!)));
+
+        for (const framework of fwInputs) {
+            const fetched = await userA.clients.fullAuth.skillFrameworks.getById({ id: framework.id! });
+            expect(fetched.framework.id).toBe(framework.id);
+            expect(fetched.framework.name).toBe(framework.name);
+            if (framework.status) {
+                expect(fetched.framework.status).toBe(framework.status);
+            }
+            const expectedSkillIds = flattenSkillIds(framework.skills);
+            expect(flattenSkillIds(fetched.skills)).toEqual(
+                expect.arrayContaining(expectedSkillIds)
+            );
+        }
+    });
+
+    it('updates metadata for a custom framework I manage', async () => {
+        await ensureProfile();
+        const customFrameworkId = `fw-custom-${crypto.randomUUID()}`;
+
+        await userA.clients.fullAuth.skillFrameworks.createManaged({
+            id: customFrameworkId,
+            name: 'Initial Name',
+            description: 'Initial description',
+        });
+
+        const updated = await userA.clients.fullAuth.skillFrameworks.update({
+            id: customFrameworkId,
+            name: 'Renamed Framework',
+            description: 'Updated description',
+            status: 'archived',
+        });
+
+        expect(updated.name).toBe('Renamed Framework');
+        expect(updated.description).toBe('Updated description');
+        expect(updated.status).toBe('archived');
+
+        const fetched = await userA.clients.fullAuth.skillFrameworks.getById({ id: customFrameworkId });
+        expect(fetched.framework.name).toBe('Renamed Framework');
+        expect(fetched.framework.status).toBe('archived');
+    });
+
+    it('deletes a custom framework and cascades skills', async () => {
+        await ensureProfile();
+        const customFrameworkId = `fw-custom-${crypto.randomUUID()}`;
+        const skillId = `${customFrameworkId}-skill`; // Track for cascade assertion
+
+        await userA.clients.fullAuth.skillFrameworks.createManaged({
+            id: customFrameworkId,
+            name: 'Framework to delete',
+        });
+
+        await userA.clients.fullAuth.skills.create({
+            frameworkId: customFrameworkId,
+            skill: {
+                id: skillId,
+                statement: 'Local skill',
+                code: 'LC1',
+            },
+        });
+
+        const result = await userA.clients.fullAuth.skillFrameworks.delete({ id: customFrameworkId });
+        expect(result.success).toBe(true);
+
+        const mine = await userA.clients.fullAuth.skillFrameworks.listMine();
+        expect(mine.find(fw => fw.id === customFrameworkId)).toBeUndefined();
+
+        await expect(
+            userA.clients.fullAuth.skillFrameworks.getById({ id: customFrameworkId })
+        ).rejects.toThrow();
+
+        const skillCount = await neogma.queryRunner.run(
+            'MATCH (s:Skill {id: $id}) RETURN count(s) AS c',
+            { id: skillId }
+        );
+        expect(Number(skillCount.records[0]?.get('c') ?? 0)).toBe(0);
+    });
+
+    it('enforces scopes and management on custom framework CRUD', async () => {
+        const customFrameworkId = `fw-custom-${crypto.randomUUID()}`;
+
+        await userReader.clients.fullAuth.profile.createProfile({ profileId: 'reader' });
+        await expect(
+            userReader.clients.fullAuth.skillFrameworks.createManaged({
+                id: customFrameworkId,
+                name: 'No Write Scope',
+            })
+        ).rejects.toThrow();
+
+        await ensureProfile();
+        await userA.clients.fullAuth.skillFrameworks.createManaged({
+            id: customFrameworkId,
+            name: 'Owner Framework',
+        });
+
+        await userB.clients.fullAuth.profile.createProfile({ profileId: 'userb' });
+        await expect(
+            userB.clients.fullAuth.skillFrameworks.update({ id: customFrameworkId, name: 'Hax' })
+        ).rejects.toThrow();
+
+        await expect(
+            userB.clients.fullAuth.skillFrameworks.delete({ id: customFrameworkId })
+        ).rejects.toThrow();
+
+        await userWriter.clients.fullAuth.profile.createProfile({ profileId: 'writer' });
+        const writerFrameworkId = `fw-custom-${crypto.randomUUID()}`;
+        const writerCreated = await userWriter.clients.fullAuth.skillFrameworks.createManaged({
+            id: writerFrameworkId,
+            name: 'Writer Owned',
+        });
+        expect(writerCreated.id).toBe(writerFrameworkId);
+
+        await expect(
+            userWriter.clients.fullAuth.skillFrameworks.getById({ id: writerFrameworkId })
+        ).rejects.toThrow();
     });
 });

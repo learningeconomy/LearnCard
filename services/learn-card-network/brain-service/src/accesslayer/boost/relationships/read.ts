@@ -18,6 +18,9 @@ import {
     SkillFrameworkInstance,
     SkillInstance,
 } from '@models';
+import { FlatSkillFrameworkType } from 'types/skill-framework';
+import { FlatSkillType } from 'types/skill';
+import { neogma } from '@instance';
 import { getProfilesByProfileIds } from '@accesslayer/profile/read';
 import { FlatProfileType, ProfileType } from 'types/profile';
 import { BoostType, BoostWithClaimPermissionsType } from 'types/boost';
@@ -58,6 +61,41 @@ export const getFrameworkUsedByBoost = async (
 export const getAlignedSkillsForBoost = async (boost: BoostInstance): Promise<SkillInstance[]> => {
     const rels = await boost.findRelationships({ alias: 'alignedTo' });
     return rels.map(r => r.target);
+};
+
+export const getFrameworkSkillsAvailableForBoost = async (
+    boost: BoostInstance
+): Promise<{ framework: FlatSkillFrameworkType; skills: FlatSkillType[] }[]> => {
+    const result = await neogma.queryRunner.run(
+        `MATCH (target:Boost { id: $boostId })
+         OPTIONAL MATCH (ancestor:Boost)-[:PARENT_OF*0..]->(target)
+         OPTIONAL MATCH (ancestor)-[:USES_FRAMEWORK]->(framework:SkillFramework)
+         OPTIONAL MATCH (framework)-[:CONTAINS]->(skill:Skill)
+         RETURN framework, collect(DISTINCT skill) AS skills`,
+        { boostId: boost.id }
+    );
+
+    return result.records
+        .map(record => {
+            const frameworkNode = record.get('framework') as { properties?: Record<string, any> } | null;
+            if (!frameworkNode?.properties) return null;
+
+            const frameworkProps = frameworkNode.properties as FlatSkillFrameworkType;
+            const skillNodes = (record.get('skills') as any[]) || [];
+            const skills = skillNodes
+                .map(node => (node?.properties ?? null) as Record<string, any> | null)
+                .filter(Boolean)
+                .map(props => ({
+                    ...props,
+                    type: props!.type ?? 'skill',
+                })) as FlatSkillType[];
+
+            return {
+                framework: frameworkProps,
+                skills,
+            };
+        })
+        .filter(Boolean) as { framework: FlatSkillFrameworkType; skills: FlatSkillType[] }[];
 };
 
 export const getCredentialInstancesOfBoost = async (

@@ -3,21 +3,34 @@ import { z } from 'zod';
 
 import { t, profileRoute } from '@routes';
 
-import { FlatSkillFrameworkType, SkillFrameworkValidator } from 'types/skill-framework';
-import { upsertSkillFrameworkFromProvider } from '@accesslayer/skill-framework/create';
+import {
+    SkillFrameworkType,
+    SkillFrameworkValidator,
+    LinkProviderFrameworkInputValidator,
+    CreateManagedFrameworkInputValidator,
+    CreateManagedFrameworkBatchInputValidator,
+    UpdateFrameworkInputValidator,
+    DeleteFrameworkInputValidator,
+} from '@learncard/types';
+import {
+    upsertSkillFrameworkFromProvider,
+    createSkillFramework as createSkillFrameworkNode,
+} from '@accesslayer/skill-framework/create';
 import {
     listSkillFrameworksManagedByProfile,
     doesProfileManageFramework,
+    getFrameworkWithSkills,
+    buildSkillTree,
+    type SkillNode,
 } from '@accesslayer/skill-framework/read';
+import {
+    updateSkillFramework as updateSkillFrameworkNode,
+    deleteSkillFramework as deleteSkillFrameworkNode,
+} from '@accesslayer/skill-framework/update';
 import { getSkillsProvider } from '@services/skills-provider';
-import { SkillValidator } from 'types/skill';
-
-// Link an existing provider framework to the caller's profile (mirror minimal fields locally)
-export const LinkProviderFrameworkInputValidator = z.object({
-    frameworkId: z.string(),
-});
-
-export type LinkProviderFrameworkInputType = z.infer<typeof LinkProviderFrameworkInputValidator>;
+import { SkillTreeNodeValidator } from 'types/skill-tree';
+import { createSkill } from '@accesslayer/skill/create';
+import { createSkillTree, type SkillTreeInput } from './skill-inputs';
 
 export const skillFrameworksRouter = t.router({
     create: profileRoute
@@ -35,7 +48,7 @@ export const skillFrameworksRouter = t.router({
         })
         .input(LinkProviderFrameworkInputValidator)
         .output(SkillFrameworkValidator)
-        .mutation(async ({ ctx, input }): Promise<FlatSkillFrameworkType> => {
+        .mutation(async ({ ctx, input }): Promise<SkillFrameworkType> => {
             const profileId = ctx.user.profile.profileId;
             const provider = getSkillsProvider();
             const providerFw = await provider.getFrameworkById(input.frameworkId);
@@ -47,6 +60,133 @@ export const skillFrameworksRouter = t.router({
 
             const linked = await upsertSkillFrameworkFromProvider(profileId, providerFw);
             return linked;
+        }),
+
+    createManaged: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/skills/frameworks/custom',
+                tags: ['Skills'],
+                summary: 'Create and manage a custom skill framework',
+                description:
+                    'Creates a new skill framework directly in the LearnCard Network and assigns the caller as a manager.',
+            },
+            requiredScope: 'skills:write',
+        })
+        .input(CreateManagedFrameworkInputValidator)
+        .output(SkillFrameworkValidator)
+        .mutation(async ({ ctx, input }): Promise<SkillFrameworkType> => {
+            const profileId = ctx.user.profile.profileId;
+            const { skills: initialSkills, ...frameworkInput } = input;
+            const created = await createSkillFrameworkNode(profileId, frameworkInput);
+
+            const provider = getSkillsProvider();
+            await provider.createFramework?.({
+                id: created.id,
+                name: created.name,
+                description: created.description,
+                sourceURI: created.sourceURI,
+                status: created.status,
+            });
+
+            await seedFrameworkSkills(created.id, initialSkills, provider);
+
+            return created;
+        }),
+
+    createManagedBatch: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'POST',
+                path: '/skills/frameworks/custom/batch',
+                tags: ['Skills'],
+                summary: 'Create multiple custom skill frameworks',
+                description:
+                    'Creates multiple custom frameworks (optionally with initial skills) and assigns the caller as their manager.',
+            },
+            requiredScope: 'skills:write',
+        })
+        .input(CreateManagedFrameworkBatchInputValidator)
+        .output(SkillFrameworkValidator.array())
+        .mutation(async ({ ctx, input }) => {
+            const profileId = ctx.user.profile.profileId;
+            const provider = getSkillsProvider();
+
+            const createdFrameworks: SkillFrameworkType[] = [];
+
+            for (const frameworkInput of input.frameworks) {
+                const { skills: initialSkills, ...frameworkPayload } = frameworkInput;
+                const created = await createSkillFrameworkNode(profileId, frameworkPayload);
+
+                await provider.createFramework?.({
+                    id: created.id,
+                    name: created.name,
+                    description: created.description,
+                    sourceURI: created.sourceURI,
+                    status: created.status,
+                });
+
+                await seedFrameworkSkills(created.id, initialSkills, provider);
+
+                createdFrameworks.push(created);
+            }
+
+            return createdFrameworks;
+        }),
+
+    update: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'PATCH',
+                path: '/skills/frameworks/{id}',
+                tags: ['Skills'],
+                summary: 'Update a managed skill framework',
+                description: 'Updates metadata for a framework managed by the caller.',
+            },
+            requiredScope: 'skills:write',
+        })
+        .input(UpdateFrameworkInputValidator)
+        .output(SkillFrameworkValidator)
+        .mutation(async ({ ctx, input }) => {
+            const profileId = ctx.user.profile.profileId;
+            const { id, ...updates } = input;
+            const updated = await updateSkillFrameworkNode(profileId, id, updates);
+
+            const provider = getSkillsProvider();
+            if (Object.keys(updates).length > 0) {
+                await provider.updateFramework?.(id, updates);
+            }
+
+            return updated;
+        }),
+
+    delete: profileRoute
+        .meta({
+            openapi: {
+                protect: true,
+                method: 'DELETE',
+                path: '/skills/frameworks/{id}',
+                tags: ['Skills'],
+                summary: 'Delete a managed skill framework',
+                description:
+                    'Deletes a framework and its associated skills. Only available to managers of the framework.',
+            },
+            requiredScope: 'skills:write',
+        })
+        .input(DeleteFrameworkInputValidator)
+        .output(z.object({ success: z.boolean() }))
+        .mutation(async ({ ctx, input }) => {
+            const profileId = ctx.user.profile.profileId;
+            const result = await deleteSkillFrameworkNode(profileId, input.id);
+
+            const provider = getSkillsProvider();
+            await provider.deleteFramework?.(input.id);
+
+            return result;
         }),
 
     listMine: profileRoute
@@ -63,7 +203,7 @@ export const skillFrameworksRouter = t.router({
         })
         .input(z.void())
         .output(SkillFrameworkValidator.array())
-        .query(async ({ ctx }): Promise<FlatSkillFrameworkType[]> => {
+        .query(async ({ ctx }): Promise<SkillFrameworkType[]> => {
             const profileId = ctx.user.profile.profileId;
             return listSkillFrameworksManagedByProfile(profileId);
         }),
@@ -77,7 +217,7 @@ export const skillFrameworksRouter = t.router({
                 tags: ['Skills'],
                 summary: 'Get Skill Framework with skills',
                 description:
-                    'Returns a framework and its skills from the configured provider (flat list with parent references)',
+                    'Returns a framework and its skills from the configured provider (hierarchical tree)',
             },
             requiredScope: 'skills:read',
         })
@@ -85,7 +225,7 @@ export const skillFrameworksRouter = t.router({
         .output(
             z.object({
                 framework: SkillFrameworkValidator,
-                skills: z.array(SkillValidator.omit({ createdAt: true, updatedAt: true })),
+                skills: z.array(SkillTreeNodeValidator),
             })
         )
         .query(async ({ ctx, input }) => {
@@ -99,28 +239,75 @@ export const skillFrameworksRouter = t.router({
 
             const provider = getSkillsProvider();
             const fw = await provider.getFrameworkById(input.id);
-            if (!fw) throw new TRPCError({ code: 'NOT_FOUND' });
-            const skills = await provider.getSkillsForFramework(input.id);
+            if (fw) {
+                const providerSkills = await provider.getSkillsForFramework(input.id);
+
+                const normalized: SkillNode[] = providerSkills.map(skill => ({
+                    id: skill.id,
+                    statement: skill.statement,
+                    description: skill.description,
+                    code: skill.code,
+                    type: skill.type ?? 'skill',
+                    status:
+                        skill.status === 'archived' || skill.status === 'inactive'
+                            ? 'archived'
+                            : 'active',
+                    parentId: skill.parentId ?? undefined,
+                }));
+
+                const tree = buildSkillTree(normalized);
+
+                return {
+                    framework: {
+                        id: fw.id,
+                        name: fw.name,
+                        description: fw.description,
+                        sourceURI: fw.sourceURI,
+                        status: (fw.status as any) ?? 'active',
+                    } as SkillFrameworkType,
+                    skills: tree,
+                };
+            }
+
+            const local = await getFrameworkWithSkills(input.id);
+            if (!local) throw new TRPCError({ code: 'NOT_FOUND' });
 
             return {
                 framework: {
-                    id: fw.id,
-                    name: fw.name,
-                    description: fw.description,
-                    sourceURI: fw.sourceURI,
-                    status: 'active' as const,
-                } as FlatSkillFrameworkType,
-                skills: skills.map(s => ({
-                    id: s.id,
-                    statement: s.statement,
-                    description: s.description,
-                    code: s.code,
-                    type: s.type ?? 'skill',
-                    status: s.status === 'archived' ? 'archived' : 'active',
-                    parentId: s.parentId ?? undefined,
-                })),
+                    id: local.framework.id,
+                    name: local.framework.name,
+                    description: local.framework.description,
+                    sourceURI: local.framework.sourceURI,
+                    status: (local.framework.status as any) ?? 'active',
+                } as SkillFrameworkType,
+                skills: local.skills,
             };
         }),
 });
+
+const seedFrameworkSkills = async (
+    frameworkId: string,
+    skills: SkillTreeInput[] | undefined,
+    provider = getSkillsProvider()
+): Promise<void> => {
+    if (!skills || skills.length === 0) return;
+
+    await createSkillTree(
+        frameworkId,
+        skills,
+        (fwId, input, parentId) => createSkill(fwId, input, parentId),
+        async (created, _source, parentId) => {
+            await provider.createSkill?.(frameworkId, {
+                id: created.id,
+                statement: created.statement,
+                description: created.description ?? undefined,
+                code: created.code ?? undefined,
+                type: created.type ?? 'skill',
+                status: created.status ?? 'active',
+                parentId: parentId ?? null,
+            });
+        }
+    );
+};
 
 export type SkillFrameworksRouter = typeof skillFrameworksRouter;

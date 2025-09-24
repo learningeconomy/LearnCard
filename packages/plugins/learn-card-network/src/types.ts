@@ -51,50 +51,25 @@ import {
     ContactMethodType,
     InboxCredentialQuery,
     IssueInboxCredentialResponseType,
+    // Shared Skills/Frameworks/Tags (non-flat)
+    TagType,
+    SkillFrameworkType,
+    SkillType,
+    FrameworkWithSkills,
+    SyncFrameworkInput,
+    AddTagInput,
+    LinkProviderFrameworkInputType,
+    CreateManagedSkillFrameworkInput,
+    CreateManagedSkillFrameworkBatchInput,
+    UpdateSkillFrameworkInput,
+    CreateSkillInput,
+    CreateSkillsBatchInput,
+    UpdateSkillInput,
+    DeleteSkillInput,
 } from '@learncard/types';
 import { Plugin } from '@learncard/core';
 import { ProofOptions } from '@learncard/didkit-plugin';
 import { VerifyExtension } from '@learncard/vc-plugin';
-
-// Skills & Skill Frameworks types (mirror brain-service shapes)
-export type FlatTagType = {
-    id: string;
-    name: string;
-    slug: string;
-    createdAt?: string;
-    updatedAt?: string;
-};
-
-export type FlatSkillFrameworkType = {
-    id: string;
-    name: string;
-    description?: string;
-    sourceURI?: string;
-    status: 'active' | 'archived';
-    createdAt?: string;
-    updatedAt?: string;
-};
-
-export type SkillNode = {
-    id: string;
-    statement: string;
-    description?: string;
-    code?: string;
-    type: string;
-    status?: string;
-    parentId?: string | null;
-};
-
-export type FrameworkWithSkills = {
-    framework: FlatSkillFrameworkType;
-    skills: SkillNode[];
-};
-
-export type SyncFrameworkInput = { id: string };
-
-export type AddTagInput = { slug: string; name: string };
-
-export type LinkProviderFrameworkInputType = { frameworkId: string };
 
 /** @group LearnCardNetwork Plugin */
 export type LearnCardNetworkPluginDependentMethods = {
@@ -206,6 +181,14 @@ export type LearnCardNetworkPluginMethods = {
         metadata?: Partial<Omit<Boost, 'uri'>>
     ) => Promise<string>;
     getBoost: (uri: string) => Promise<Boost & { boost: UnsignedVC }>;
+    getSkillsAvailableForBoost: (
+        uri: string
+    ) => Promise<
+        {
+            framework: SkillFrameworkType;
+            skills: Omit<SkillType, 'createdAt' | 'updatedAt'>[];
+        }[]
+    >;
     /** @deprecated Use getPaginatedBoosts */
     getBoosts: (query?: BoostQuery) => Promise<{ name?: string; uri: string }[]>;
     getPaginatedBoosts: (
@@ -473,15 +456,28 @@ export type LearnCardNetworkPluginMethods = {
 
     // Skills & Skill Frameworks
     syncFrameworkSkills: (input: SyncFrameworkInput) => Promise<FrameworkWithSkills>;
-    listSkillTags: (skillId: string) => Promise<FlatTagType[]>;
-    addSkillTag: (skillId: string, tag: AddTagInput) => Promise<FlatTagType[]>;
+    listSkillTags: (skillId: string) => Promise<TagType[]>;
+    addSkillTag: (skillId: string, tag: AddTagInput) => Promise<TagType[]>;
     removeSkillTag: (skillId: string, slug: string) => Promise<{ success: boolean }>;
 
+    createManagedSkillFramework: (
+        input: CreateManagedSkillFrameworkInput
+    ) => Promise<SkillFrameworkType>;
+    createManagedSkillFrameworks: (
+        input: CreateManagedSkillFrameworkBatchInput
+    ) => Promise<SkillFrameworkType[]>;
     createSkillFramework: (
         input: LinkProviderFrameworkInputType
-    ) => Promise<FlatSkillFrameworkType>;
-    listMySkillFrameworks: () => Promise<FlatSkillFrameworkType[]>;
+    ) => Promise<SkillFrameworkType>;
+    listMySkillFrameworks: () => Promise<SkillFrameworkType[]>;
     getSkillFrameworkById: (id: string) => Promise<FrameworkWithSkills>;
+    updateSkillFramework: (input: UpdateSkillFrameworkInput) => Promise<SkillFrameworkType>;
+    deleteSkillFramework: (id: string) => Promise<{ success: boolean }>;
+
+    createSkill: (input: CreateSkillInput) => Promise<SkillType>;
+    createSkills: (input: CreateSkillsBatchInput) => Promise<SkillType[]>;
+    updateSkill: (input: UpdateSkillInput) => Promise<SkillType>;
+    deleteSkill: (input: DeleteSkillInput) => Promise<{ success: boolean }>;
 
     resolveFromLCN: (
         uri: string

@@ -1,40 +1,34 @@
 import crypto from 'crypto';
 import { describe, test, expect, beforeEach } from 'vitest';
 import { unwrapBoostCredential } from '@learncard/helpers';
+import { SkillTreeInput } from '@learncard/types';
 
 import { getLearnCardForUser, getLearnCard, LearnCard, USERS } from './helpers/learncard.helpers';
 import { testUnsignedBoost } from './helpers/credential.helpers';
+import { findSkillIdInTree } from './helpers/skill.helpers';
 
 let a: LearnCard;
 let b: LearnCard;
 let noAuth: LearnCard;
 
-// Helper to seed a provider framework + skills via E2E-only routes
-const seedFrameworkAndSkills = async (
+// Helper to create a managed framework with skills through the real CRUD routes
+const createFrameworkAndSkills = async (
     lc: LearnCard,
     frameworkId: string,
-    skills: Array<{
-        id: string;
-        statement: string;
-        description?: string;
-        code?: string;
-        type?: string;
-        status?: string;
-        parentId?: string | null;
-    }>
+    skills: SkillTreeInput[]
 ) => {
-    const client = lc.invoke.getLCNClient() as any;
-    const testClient = client.test;
-    if (!testClient) throw new Error('Test router is not available. Ensure IS_E2E_TEST=true.');
-
-    await testClient.seedSkillsProviderFramework.mutate({
-        id: frameworkId,
-        name: `E2E OBv3 FW ${frameworkId}`,
-        description: 'E2E seeded provider framework for OBv3 alignment test',
-        sourceURI: 'https://example.com/framework',
+    await lc.invoke.createManagedSkillFrameworks({
+        frameworks: [
+            {
+                id: frameworkId,
+                name: `E2E OBv3 FW ${frameworkId}`,
+                description: 'E2E managed provider framework for OBv3 alignment test',
+                sourceURI: 'https://example.com/framework',
+                status: 'active',
+                skills: skills,
+            },
+        ],
     });
-
-    await testClient.seedSkillsProviderSkills.mutate({ frameworkId, skills });
 };
 
 describe('Boost OBv3 Alignment Injection (via Signing Authority)', () => {
@@ -49,7 +43,7 @@ describe('Boost OBv3 Alignment Injection (via Signing Authority)', () => {
         const skill1Id = `${fwId}-S1`;
         const skill2Id = `${fwId}-S2`;
 
-        const skills = [
+        const skills: SkillTreeInput[] = [
             {
                 id: skill1Id,
                 statement: 'Alignment Skill 1',
@@ -57,29 +51,44 @@ describe('Boost OBv3 Alignment Injection (via Signing Authority)', () => {
                 code: 'S1',
                 type: 'skill',
                 status: 'active',
-                parentId: null,
-            },
-            {
-                id: skill2Id,
-                statement: 'Alignment Skill 2',
-                description: 'Second test skill',
-                code: 'S2',
-                type: 'container',
-                status: 'active',
-                parentId: skill1Id,
+                children: [
+                    {
+                        id: skill2Id,
+                        statement: 'Alignment Skill 2',
+                        description: 'Second test skill',
+                        code: 'S2',
+                        type: 'container',
+                        status: 'active',
+                    },
+                ],
             },
         ];
 
         // 1) Seed provider with framework + skills
-        await seedFrameworkAndSkills(a, fwId, skills);
+        await createFrameworkAndSkills(a, fwId, skills);
 
         // 2) Link framework to user A and sync local skill nodes
-        await a.invoke.createSkillFramework({ frameworkId: fwId });
-        await a.invoke.syncFrameworkSkills({ id: fwId });
+        const { skills: syncedSkills } = await a.invoke.getSkillFrameworkById(fwId);
+
+        const parentSkillIdSynced =
+            findSkillIdInTree(
+                syncedSkills,
+                node => node.statement === 'Alignment Skill 1' || node.code === 'S1'
+            ) ?? skill1Id;
+        const childSkillIdSynced =
+            findSkillIdInTree(
+                syncedSkills,
+                node => node.statement === 'Alignment Skill 2' || node.code === 'S2'
+            ) ??
+            findSkillIdInTree(
+                syncedSkills,
+                (_node, { parent }) => parent?.id === parentSkillIdSynced
+            ) ??
+            skill2Id;
 
         // 3) Create a boost with skill attachments in a single call
         const boostUri = await a.invoke.createBoost(testUnsignedBoost, {
-            skillIds: [skill1Id, skill2Id],
+            skillIds: [parentSkillIdSynced, childSkillIdSynced],
         });
 
         // Fetch boost template and ensure alignments injected (container excluded)
@@ -130,31 +139,46 @@ describe('Boost OBv3 Alignment Injection (via Signing Authority)', () => {
         const skill1Id = `${fwId}-S1`;
         const skill2Id = `${fwId}-S2`;
 
-        const skills = [
+        const skills: SkillTreeInput[] = [
             {
                 id: skill1Id,
                 statement: 'A1',
                 code: 'S1',
                 type: 'skill',
                 status: 'active',
-                parentId: null,
-            },
-            {
-                id: skill2Id,
-                statement: 'A2',
-                code: 'S2',
-                type: 'container',
-                status: 'active',
-                parentId: skill1Id,
+                children: [
+                    {
+                        id: skill2Id,
+                        statement: 'A2',
+                        code: 'S2',
+                        type: 'container',
+                        status: 'active',
+                    },
+                ],
             },
         ];
 
-        await seedFrameworkAndSkills(a, fwId, skills);
-        await a.invoke.createSkillFramework({ frameworkId: fwId });
-        await a.invoke.syncFrameworkSkills({ id: fwId });
+        await createFrameworkAndSkills(a, fwId, skills);
+        const { skills: syncedSkills } = await a.invoke.getSkillFrameworkById(fwId);
+
+        const parentSkillIdSynced =
+            findSkillIdInTree(
+                syncedSkills,
+                node => node.statement === 'A1' || node.code === 'S1'
+            ) ?? skill1Id;
+        const childSkillIdSynced =
+            findSkillIdInTree(
+                syncedSkills,
+                node => node.statement === 'A2' || node.code === 'S2'
+            ) ??
+            findSkillIdInTree(
+                syncedSkills,
+                (_node, { parent }) => parent?.id === parentSkillIdSynced
+            ) ??
+            skill2Id;
 
         const boostUri = await a.invoke.createBoost(testUnsignedBoost, {
-            skillIds: [skill1Id, skill2Id],
+            skillIds: [parentSkillIdSynced, childSkillIdSynced],
         });
 
         // Register SA and generate claim link
@@ -194,34 +218,63 @@ describe('Boost OBv3 Alignment Injection (via Signing Authority)', () => {
         const fw1Skill = `${fw1}-S1`;
         const fw2Skill = `${fw2}-S1`;
 
-        await seedFrameworkAndSkills(a, fw1, [
+        await createFrameworkAndSkills(a, fw1, [
             {
                 id: fw1Skill,
                 statement: 'Framework 1 Skill',
                 code: 'FW1',
                 type: 'skill',
                 status: 'active',
-                parentId: null,
             },
         ]);
-        await seedFrameworkAndSkills(a, fw2, [
+        await createFrameworkAndSkills(a, fw2, [
             {
                 id: fw2Skill,
                 statement: 'Framework 2 Skill',
                 code: 'FW2',
                 type: 'skill',
                 status: 'active',
-                parentId: null,
             },
         ]);
-
-        await a.invoke.createSkillFramework({ frameworkId: fw1 });
-        await a.invoke.createSkillFramework({ frameworkId: fw2 });
-        await a.invoke.syncFrameworkSkills({ id: fw1 });
-        await a.invoke.syncFrameworkSkills({ id: fw2 });
 
         await expect(
             a.invoke.createBoost(testUnsignedBoost, { skillIds: [fw1Skill, fw2Skill] })
         ).rejects.toThrow(/same framework/i);
+    });
+
+    test('lists skills from ancestor boost frameworks', async () => {
+        const fwId = `fw-${crypto.randomUUID()}`;
+        const skillIds = [`${fwId}-S1`, `${fwId}-S2`, `${fwId}-S3`];
+
+        await createFrameworkAndSkills(
+            a,
+            fwId,
+            skillIds.map((id, index) => ({
+                id,
+                statement: `Skill ${index + 1}`,
+                code: `S${index + 1}`,
+                type: 'skill',
+                status: 'active',
+            }))
+        );
+
+        const rootBoostUri = await a.invoke.createBoost(testUnsignedBoost, {
+            skillIds,
+        });
+
+        const childBoostUri = await a.invoke.createChildBoost(rootBoostUri, testUnsignedBoost);
+        const grandChildBoostUri = await a.invoke.createChildBoost(
+            childBoostUri,
+            testUnsignedBoost
+        );
+
+        const available = await a.invoke.getSkillsAvailableForBoost(grandChildBoostUri);
+
+        expect(Array.isArray(available)).toBe(true);
+        expect(available.length).toBe(1);
+        expect(available[0]!.framework.id).toBe(fwId);
+
+        const returnedSkillIds = available[0]!.skills.map(s => s.id).sort();
+        expect(returnedSkillIds).toEqual([...skillIds].sort());
     });
 });

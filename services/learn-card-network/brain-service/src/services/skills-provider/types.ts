@@ -15,6 +15,7 @@ export type Framework = {
     name: string;
     description?: string;
     sourceURI?: string;
+    status?: string;
 };
 
 // Minimal skill representation independent of storage provider
@@ -43,10 +44,16 @@ export interface SkillsProvider {
 
     // Frameworks
     getFrameworkById(frameworkId: string): Promise<Framework | null>;
+    createFramework?(framework: Framework): Promise<Framework>;
+    updateFramework?(frameworkId: string, updates: Partial<Framework>): Promise<Framework | null>;
+    deleteFramework?(frameworkId: string): Promise<void>;
 
     // Skills
     getSkillsForFramework(frameworkId: string): Promise<Skill[]>;
     getSkillsByIds(frameworkId: string, skillIds: string[]): Promise<Skill[]>;
+    createSkill?(frameworkId: string, skill: Skill): Promise<Skill>;
+    updateSkill?(frameworkId: string, skillId: string, updates: Partial<Skill>): Promise<Skill | null>;
+    deleteSkill?(frameworkId: string, skillId: string): Promise<void>;
 
     // Convenience builder to produce OBv3-compatible alignment entries
     buildObv3Alignments(
