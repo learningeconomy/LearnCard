@@ -119,6 +119,7 @@ export const VC_TEMPLATES: {
             familyTitles,
             skills,
             groupID = '',
+            evidence = [],
         } = {},
         crypto
     ) => ({
@@ -148,6 +149,7 @@ export const VC_TEMPLATES: {
                 },
             },
         },
+        ...(Array.isArray(evidence) && evidence.length > 0 && { evidence }),
         display,
         familyTitles,
         image: boostImage,
@@ -176,6 +178,7 @@ export const VC_TEMPLATES: {
             familyTitles,
             boostID,
             groupID = '',
+            evidence = [],
         } = {},
         crypto
     ) => ({
@@ -215,6 +218,7 @@ export const VC_TEMPLATES: {
                   },
               }
             : {}),
+        ...(Array.isArray(evidence) && evidence.length > 0 && { evidence }),
         display,
         familyTitles,
         image: boostImage,
