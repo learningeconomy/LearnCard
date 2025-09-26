@@ -1,5 +1,11 @@
 # learn-card-types
 
+## 5.8.7
+
+### Patch Changes
+
+-   [#811](https://github.com/learningeconomy/LearnCard/pull/811) [`8c3f9ad3846c57b0442b5a09c74ee63323e47c34`](https://github.com/learningeconomy/LearnCard/commit/8c3f9ad3846c57b0442b5a09c74ee63323e47c34) Thanks [@goblincore](https://github.com/goblincore)! - chore: [LC-1001] Add 'approved' field to user profile
+
 ## 5.8.6
 
 ### Patch Changes
