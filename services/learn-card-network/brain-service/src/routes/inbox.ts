@@ -96,7 +96,7 @@ export const inboxRouter = t.router({
                         ...injectedTemplateFields,
                         ...(template?.model || {}),
                     },
-                    messageStream: 'guardian-approval',
+                    // messageStream: 'guardian-approval',
                 });
 
                 return { message: 'Guardian approval email sent.', approvalUrl };
