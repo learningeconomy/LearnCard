@@ -1122,9 +1122,23 @@ export const getLearnCardNetworkPlugin = async (
                 if (!userData) throw new Error('Please make an account first!');
                 return client.skillFrameworks.listMine.query();
             },
-            getSkillFrameworkById: async (_learnCard, id) => {
+            getSkillFrameworkById: async (_learnCard, id, options = {}) => {
                 if (!userData) throw new Error('Please make an account first!');
-                return client.skillFrameworks.getById.query({ id });
+                return client.skillFrameworks.getById.query({ id, ...options });
+            },
+            getFrameworkSkillTree: async (_learnCard, frameworkId, options = {}) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.skills.getFrameworkSkillTree.query({ id: frameworkId, ...options });
+            },
+            getSkillChildren: async (_learnCard, frameworkId, skillId, options = {}) => {
+                if (!userData) throw new Error('Please make an account first!');
+
+                return client.skills.getSkillChildrenTree.query({
+                    frameworkId,
+                    id: skillId,
+                    ...options,
+                });
             },
             updateSkillFramework: async (_learnCard, input) => {
                 if (!userData) throw new Error('Please make an account first!');

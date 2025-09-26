@@ -276,7 +276,8 @@ describe('Boost OBv3 Alignment Injection (via Signing Authority)', () => {
         await createFrameworkAndSkills(a, fwId, skills);
 
         // 2) Link framework to user A and sync local skill nodes
-        const { skills: syncedSkills } = await a.invoke.getSkillFrameworkById(fwId);
+        const { skills: syncedSkillsPage } = await a.invoke.getSkillFrameworkById(fwId);
+        const syncedSkills = syncedSkillsPage.records;
 
         const parentSkillIdSynced =
             findSkillIdInTree(
@@ -367,20 +368,24 @@ describe('Boost OBv3 Alignment Injection (via Signing Authority)', () => {
         ];
 
         await createFrameworkAndSkills(a, fwId, skills);
-        const { skills: syncedSkills } = await a.invoke.getSkillFrameworkById(fwId);
+        const { skills: syncedSkills } = await a.invoke.getSkillFrameworkById(fwId, {
+            limit: 10,
+            childrenLimit: 10,
+        });
+        const syncedSkillRecords = syncedSkills.records;
 
         const parentSkillIdSynced =
             findSkillIdInTree(
-                syncedSkills,
+                syncedSkillRecords,
                 node => node.statement === 'A1' || node.code === 'S1'
             ) ?? skill1Id;
         const childSkillIdSynced =
             findSkillIdInTree(
-                syncedSkills,
+                syncedSkillRecords,
                 node => node.statement === 'A2' || node.code === 'S2'
             ) ??
             findSkillIdInTree(
-                syncedSkills,
+                syncedSkillRecords,
                 (_node, { parent }) => parent?.id === parentSkillIdSynced
             ) ??
             skill2Id;

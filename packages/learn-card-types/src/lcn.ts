@@ -1208,7 +1208,7 @@ export type CreateSkillsBatchInput = z.infer<typeof CreateSkillsBatchInputValida
 // Composite return shapes
 export const FrameworkWithSkillsValidator = z.object({
     framework: SkillFrameworkValidator,
-    skills: z.array(SkillTreeNodeValidator),
+    skills: PaginatedSkillTreeValidator,
 });
 
 export type FrameworkWithSkills = z.infer<typeof FrameworkWithSkillsValidator>;

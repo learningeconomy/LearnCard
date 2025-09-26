@@ -123,8 +123,8 @@ describe('Skills router', () => {
         expect(result.framework.id).toBe(FW_ID);
         expect(result.framework.name).toBe('Test Framework');
         // Two root skills, but three total nodes in the tree
-        expect(result.skills.length).toBe(2);
-        const flattened = flattenSkillTree(result.skills);
+        expect(result.skills.records.length).toBe(2);
+        const flattened = flattenSkillTree(result.skills.records);
         expect(flattened.length).toBe(3);
         expect(flattened.map(s => s.id)).toEqual(expect.arrayContaining(SKILL_IDS));
         expect(flattened.map(s => s.type)).toEqual(
@@ -143,9 +143,9 @@ describe('Skills router', () => {
         const first = await userA.clients.fullAuth.skills.syncFrameworkSkills({ id: FW_ID });
         const second = await userA.clients.fullAuth.skills.syncFrameworkSkills({ id: FW_ID });
 
-        expect(first.skills.length).toBe(2);
-        expect(second.skills.length).toBe(2);
-        const ids = flattenSkillTree(second.skills).map(s => s.id);
+        expect(first.skills.records.length).toBe(2);
+        expect(second.skills.records.length).toBe(2);
+        const ids = flattenSkillTree(second.skills.records).map(s => s.id);
         expect(new Set(ids).size).toBe(3);
     });
 
@@ -162,6 +162,91 @@ describe('Skills router', () => {
         await expect(
             userReader.clients.fullAuth.skills.syncFrameworkSkills({ id: FW_ID })
         ).rejects.toThrow();
+    });
+
+    it('paginates framework skill tree responses', async () => {
+        await createProfileFor(userA, 'usera');
+        const frameworkId = `fw-tree-${crypto.randomUUID()}`;
+
+        await userA.clients.fullAuth.skillFrameworks.createManaged({
+            id: frameworkId,
+            name: 'Tree Pagination',
+            skills: ['a', 'b', 'c'].map(root => ({
+                id: `${frameworkId}-${root}`,
+                statement: `Root ${root}`,
+                children: [
+                    { id: `${frameworkId}-${root}-child-1`, statement: `Child 1 of ${root}` },
+                    { id: `${frameworkId}-${root}-child-2`, statement: `Child 2 of ${root}` },
+                ],
+            })),
+        });
+
+        const firstPage = await userA.clients.fullAuth.skills.getFrameworkSkillTree({
+            id: frameworkId,
+            rootsLimit: 2,
+            childrenLimit: 1,
+        });
+
+        expect(firstPage.records).toHaveLength(2);
+        expect(firstPage.hasMore).toBe(true);
+        expect(firstPage.cursor).toBeTruthy();
+
+        const firstRoot = firstPage.records[0]!;
+        expect(firstRoot.children).toHaveLength(1);
+        expect(firstRoot.childrenCursor).toBe(`${frameworkId}-a-child-1`);
+        expect(firstRoot.hasChildren).toBe(true);
+
+        const secondPage = await userA.clients.fullAuth.skills.getFrameworkSkillTree({
+            id: frameworkId,
+            cursor: firstPage.cursor,
+        });
+
+        expect(secondPage.records).toHaveLength(1);
+        expect(secondPage.hasMore).toBe(false);
+        expect(flattenSkillTree(secondPage.records).map(s => s?.id)).toContain(
+            `${frameworkId}-c`
+        );
+    });
+
+    it('paginates children for an individual skill', async () => {
+        await createProfileFor(userA, 'usera');
+        const frameworkId = `fw-children-${crypto.randomUUID()}`;
+        const parentId = `${frameworkId}-parent`;
+
+        await userA.clients.fullAuth.skillFrameworks.createManaged({
+            id: frameworkId,
+            name: 'Children Pagination',
+            skills: [
+                {
+                    id: parentId,
+                    statement: 'Parent Node',
+                    children: ['a', 'b', 'c'].map(child => ({
+                        id: `${frameworkId}-child-${child}`,
+                        statement: `Child ${child.toUpperCase()}`,
+                    })),
+                },
+            ],
+        });
+
+        const first = await userA.clients.fullAuth.skills.getSkillChildrenTree({
+            frameworkId,
+            id: parentId,
+            limit: 2,
+        });
+
+        expect(first.records).toHaveLength(2);
+        expect(first.hasMore).toBe(true);
+        expect(first.cursor).toBe(`${frameworkId}-child-b`);
+
+        const second = await userA.clients.fullAuth.skills.getSkillChildrenTree({
+            frameworkId,
+            id: parentId,
+            cursor: first.cursor,
+        });
+
+        expect(second.records).toHaveLength(1);
+        expect(second.hasMore).toBe(false);
+        expect(second.records[0]?.id).toBe(`${frameworkId}-child-c`);
     });
 
     it('add/list/remove tags on a skill I manage', async () => {
@@ -333,12 +418,12 @@ describe('Skills router', () => {
             expect(child).not.toHaveProperty('parentId');
 
             const fetched = await userA.clients.fullAuth.skillFrameworks.getById({ id: frameworkId });
-            expect(pluckSkillIds(fetched.skills)).toEqual(
+            expect(pluckSkillIds(fetched.skills.records)).toEqual(
                 expect.arrayContaining([parentSkillId, childSkillId])
             );
-            const fetchedChild = findSkillById(fetched.skills, childSkillId);
+            const fetchedChild = findSkillById(fetched.skills.records, childSkillId);
             expect(fetchedChild?.parentRef).toBe(parentSkillId);
-            const fetchedParent = findSkillById(fetched.skills, parentSkillId);
+            const fetchedParent = findSkillById(fetched.skills.records, parentSkillId);
             expect(fetchedParent?.children?.some((c: any) => c.id === childSkillId)).toBe(true);
         });
 
@@ -364,9 +449,9 @@ describe('Skills router', () => {
             expect(created.id).toBe(rootSkillId);
 
             const fetched = await userA.clients.fullAuth.skillFrameworks.getById({ id: frameworkId });
-            const ids = pluckSkillIds(fetched.skills);
+            const ids = pluckSkillIds(fetched.skills.records);
             expect(ids).toEqual(expect.arrayContaining([rootSkillId, childSkillId]));
-            const child = findSkillById(fetched.skills, childSkillId);
+            const child = findSkillById(fetched.skills.records, childSkillId);
             expect(child?.parentRef).toBe(rootSkillId);
         });
 
@@ -397,10 +482,10 @@ describe('Skills router', () => {
             expect(child).not.toHaveProperty('parentId');
 
             const fetched = await userA.clients.fullAuth.skillFrameworks.getById({ id: frameworkId });
-            expect(pluckSkillIds(fetched.skills)).toEqual(
+            expect(pluckSkillIds(fetched.skills.records)).toEqual(
                 expect.arrayContaining([`${frameworkId}-batch-parent`, `${frameworkId}-batch-child`])
             );
-            const flattened = flattenSkillTree(fetched.skills);
+            const flattened = flattenSkillTree(fetched.skills.records);
             const fetchedChild = flattened.find(s => s.id === `${frameworkId}-batch-child`);
             expect(fetchedChild?.parentRef).toBe(`${frameworkId}-batch-parent`);
         });
@@ -440,7 +525,7 @@ describe('Skills router', () => {
             expect(updated).not.toHaveProperty('parentId');
 
             const fetched = await userA.clients.fullAuth.skillFrameworks.getById({ id: frameworkId });
-            const fetchedChild = findSkillById(fetched.skills, childSkillId);
+            const fetchedChild = findSkillById(fetched.skills.records, childSkillId);
             expect(fetchedChild?.parentRef).toBe(parentSkillId);
             expect(fetchedChild?.status).toBe('archived');
             expect(fetchedChild?.code).toBe('CS2');
@@ -475,7 +560,7 @@ describe('Skills router', () => {
             expect(deleted.success).toBe(true);
 
             const fetched = await userA.clients.fullAuth.skillFrameworks.getById({ id: frameworkId });
-            const ids = pluckSkillIds(fetched.skills);
+            const ids = pluckSkillIds(fetched.skills.records);
             expect(ids).not.toContain(childSkillId);
             expect(ids).toContain(parentSkillId);
         });

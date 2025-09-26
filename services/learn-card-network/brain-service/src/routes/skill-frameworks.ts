@@ -23,16 +23,14 @@ import { getBoostsByUri } from '@accesslayer/boost/read';
 import {
     listSkillFrameworksManagedByProfile,
     doesProfileManageFramework,
-    getFrameworkWithSkills,
-    buildSkillTree,
-    type SkillNode,
+    getSkillFrameworkById,
 } from '@accesslayer/skill-framework/read';
 import {
     updateSkillFramework as updateSkillFrameworkNode,
     deleteSkillFramework as deleteSkillFrameworkNode,
 } from '@accesslayer/skill-framework/update';
 import { getSkillsProvider } from '@services/skills-provider';
-import { SkillTreeNodeValidator } from 'types/skill-tree';
+import { PaginatedSkillTreeValidator } from 'types/skill-tree';
 import { createSkill } from '@accesslayer/skill/create';
 import { createSkillTree, type SkillTreeInput } from './skill-inputs';
 import { isProfileBoostAdmin } from '@accesslayer/boost/relationships/read';
@@ -45,6 +43,14 @@ import {
 } from '@accesslayer/skill-framework/relationships';
 import { getProfileByProfileId } from '@accesslayer/profile/read';
 import type { ProfileType } from 'types/profile';
+import {
+    buildLocalSkillTreePage,
+    buildProviderSkillTreePage,
+    DEFAULT_ROOTS_LIMIT,
+    DEFAULT_CHILDREN_LIMIT,
+    formatFramework,
+    type ProviderSkillNode,
+} from '@helpers/skill-tree';
 
 export const skillFrameworksRouter = t.router({
     create: profileRoute
@@ -364,16 +370,24 @@ export const skillFrameworksRouter = t.router({
             },
             requiredScope: 'skills:read',
         })
-        .input(z.object({ id: z.string() }))
+        .input(
+            z.object({
+                id: z.string(),
+                limit: z.number().int().min(1).max(200).default(DEFAULT_ROOTS_LIMIT),
+                childrenLimit: z.number().int().min(1).max(200).default(DEFAULT_CHILDREN_LIMIT),
+                cursor: z.string().nullable().optional(),
+            })
+        )
         .output(
             z.object({
                 framework: SkillFrameworkValidator,
-                skills: z.array(SkillTreeNodeValidator),
+                skills: PaginatedSkillTreeValidator,
             })
         )
         .query(async ({ ctx, input }) => {
             const profileId = ctx.user.profile.profileId;
-            const manages = await doesProfileManageFramework(profileId, input.id);
+            const { id, limit, childrenLimit, cursor } = input;
+            const manages = await doesProfileManageFramework(profileId, id);
             if (!manages)
                 throw new TRPCError({
                     code: 'UNAUTHORIZED',
@@ -381,49 +395,47 @@ export const skillFrameworksRouter = t.router({
                 });
 
             const provider = getSkillsProvider();
-            const fw = await provider.getFrameworkById(input.id);
+            const fw = await provider.getFrameworkById(id);
             if (fw) {
-                const providerSkills = await provider.getSkillsForFramework(input.id);
+                const providerSkills = await provider.getSkillsForFramework(id);
 
-                const normalized: SkillNode[] = providerSkills.map(skill => ({
+                const normalized: ProviderSkillNode[] = providerSkills.map(skill => ({
                     id: skill.id,
                     statement: skill.statement,
-                    description: skill.description,
-                    code: skill.code,
-                    type: skill.type ?? 'skill',
-                    status:
-                        skill.status === 'archived' || skill.status === 'inactive'
-                            ? 'archived'
-                            : 'active',
+                    description: skill.description ?? undefined,
+                    code: skill.code ?? undefined,
+                    type: skill.type ?? undefined,
+                    status: skill.status ?? undefined,
                     parentId: skill.parentId ?? undefined,
                 }));
 
-                const tree = buildSkillTree(normalized);
+                const skillsPage = buildProviderSkillTreePage(
+                    id,
+                    normalized,
+                    limit,
+                    childrenLimit,
+                    cursor ?? null
+                );
 
                 return {
-                    framework: {
-                        id: fw.id,
-                        name: fw.name,
-                        description: fw.description,
-                        sourceURI: fw.sourceURI,
-                        status: (fw.status as any) ?? 'active',
-                    } as SkillFrameworkType,
-                    skills: tree,
+                    framework: formatFramework({ ...fw, id }),
+                    skills: skillsPage,
                 };
             }
 
-            const local = await getFrameworkWithSkills(input.id);
-            if (!local) throw new TRPCError({ code: 'NOT_FOUND' });
+            const localFramework = await getSkillFrameworkById(id);
+            if (!localFramework) throw new TRPCError({ code: 'NOT_FOUND' });
+
+            const skills = await buildLocalSkillTreePage(
+                id,
+                limit,
+                childrenLimit,
+                cursor ?? null
+            );
 
             return {
-                framework: {
-                    id: local.framework.id,
-                    name: local.framework.name,
-                    description: local.framework.description,
-                    sourceURI: local.framework.sourceURI,
-                    status: (local.framework.status as any) ?? 'active',
-                } as SkillFrameworkType,
-                skills: local.skills,
+                framework: formatFramework(localFramework),
+                skills,
             };
         }),
 });

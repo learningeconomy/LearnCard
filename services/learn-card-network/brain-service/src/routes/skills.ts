@@ -3,33 +3,31 @@ import { z } from 'zod';
 
 import { t, profileRoute } from '@routes';
 import { getSkillsProvider } from '@services/skills-provider';
-import {
-    doesProfileManageFramework,
-    getFrameworkWithSkills,
-} from '@accesslayer/skill-framework/read';
+import { doesProfileManageFramework, getSkillFrameworkById } from '@accesslayer/skill-framework/read';
 import { upsertSkillsIntoFramework } from '@accesslayer/skill/sync';
-import {
-    doesProfileManageSkill,
-    getChildrenForSkillInFrameworkPaged,
-    getFrameworkRootSkillsPaged,
-} from '@accesslayer/skill/read';
+import { doesProfileManageSkill, getChildrenForSkillInFrameworkPaged } from '@accesslayer/skill/read';
 import { createSkill } from '@accesslayer/skill/create';
 import { updateSkill, deleteSkill } from '@accesslayer/skill/update';
 import { listTagsForSkill, addTagToSkill, removeTagFromSkill } from '@accesslayer/skill/tags';
 import {
     TagValidator,
     type TagType,
-    SkillFrameworkValidator,
     SkillValidator,
     PaginatedSkillTreeValidator,
-    SkillTreeNodeValidator,
     SyncFrameworkInputValidator,
     AddTagInputValidator,
     CreateSkillInputValidator,
     UpdateSkillInputValidator,
     DeleteSkillInputValidator,
     CreateSkillsBatchInputValidator,
+    FrameworkWithSkillsValidator,
 } from '@learncard/types';
+import {
+    buildLocalSkillTreePage,
+    DEFAULT_CHILDREN_LIMIT,
+    DEFAULT_ROOTS_LIMIT,
+    formatFramework,
+} from '@helpers/skill-tree';
 import { createSkillTree } from './skill-inputs';
 
 const stripParent = <T extends Record<string, any>>(skill: T): Omit<T, 'parentId'> => {
@@ -54,16 +52,25 @@ export const skillsRouter = t.router({
         .input(
             z.object({
                 id: z.string(),
-                rootsLimit: z.number().int().min(1).max(200).default(50),
-                childrenLimit: z.number().int().min(1).max(200).default(25),
+                rootsLimit: z
+                    .number()
+                    .int()
+                    .min(1)
+                    .max(200)
+                    .default(DEFAULT_ROOTS_LIMIT),
+                childrenLimit: z
+                    .number()
+                    .int()
+                    .min(1)
+                    .max(200)
+                    .default(DEFAULT_CHILDREN_LIMIT),
                 cursor: z.string().nullable().optional(),
-                depth: z.number().int().min(0).max(5).default(1),
             })
         )
         .output(PaginatedSkillTreeValidator)
         .query(async ({ ctx, input }) => {
             const profileId = ctx.user.profile.profileId;
-            const { id: frameworkId, rootsLimit, childrenLimit, cursor, depth: _depth } = input;
+            const { id: frameworkId, rootsLimit, childrenLimit, cursor } = input;
 
             const manages = await doesProfileManageFramework(profileId, frameworkId);
             if (!manages)
@@ -72,50 +79,12 @@ export const skillsRouter = t.router({
                     message: 'You do not manage this framework',
                 });
 
-            const rootsPage = await getFrameworkRootSkillsPaged(frameworkId, rootsLimit, cursor);
-
-            // For each root, fetch first page of children (depth 1). If depth > 1, we still only fetch 1 for now.
-            const records = await Promise.all(
-                rootsPage.records.map(async root => {
-                    const normalizedRoot = stripParent(root);
-
-                    const childrenPage = await getChildrenForSkillInFrameworkPaged(
-                        frameworkId,
-                        root.id,
-                        childrenLimit,
-                        null
-                    );
-
-                    const children = childrenPage.records.map(child => {
-                        const childWithoutParent = stripParent(child);
-                        const { hasChildren, ...rest } = childWithoutParent as typeof childWithoutParent & {
-                            hasChildren: boolean;
-                        };
-                        return {
-                            ...rest,
-                            children: [],
-                            hasChildren,
-                            childrenCursor: null,
-                        };
-                    });
-
-                    const hasChildren =
-                        children.length > 0 || childrenPage.cursor !== null || childrenPage.hasMore;
-
-                    return {
-                        ...normalizedRoot,
-                        children,
-                        hasChildren,
-                        childrenCursor: childrenPage.cursor,
-                    };
-                })
+            return buildLocalSkillTreePage(
+                frameworkId,
+                rootsLimit,
+                childrenLimit,
+                cursor ?? null
             );
-
-            return {
-                hasMore: rootsPage.hasMore,
-                cursor: rootsPage.cursor,
-                records,
-            };
         }),
 
     getSkillChildrenTree: profileRoute
@@ -139,13 +108,7 @@ export const skillsRouter = t.router({
                 cursor: z.string().nullable().optional(),
             })
         )
-        .output(
-            z.object({
-                hasMore: z.boolean(),
-                cursor: z.string().nullable(),
-                records: SkillValidator.extend({ hasChildren: z.boolean() }).array(),
-            })
-        )
+        .output(PaginatedSkillTreeValidator)
         .query(async ({ ctx, input }) => {
             const profileId = ctx.user.profile.profileId;
             const { id: parentId, frameworkId, limit, cursor } = input;
@@ -165,10 +128,30 @@ export const skillsRouter = t.router({
                 cursor ?? null
             );
 
+            const records = page.records.map(child => {
+                const { hasChildren, parentId: _parent, ...rest } = child as typeof child & {
+                    hasChildren: boolean;
+                    parentId?: string;
+                };
+
+                return {
+                    id: rest.id,
+                    statement: rest.statement,
+                    description: rest.description ?? undefined,
+                    code: rest.code ?? undefined,
+                    type: rest.type ?? 'skill',
+                    status: rest.status ?? 'active',
+                    frameworkId: rest.frameworkId,
+                    children: [],
+                    hasChildren,
+                    childrenCursor: null,
+                };
+            });
+
             return {
                 hasMore: page.hasMore,
                 cursor: page.cursor,
-                records: page.records.map(child => stripParent(child)),
+                records,
             };
         }),
     syncFrameworkSkills: profileRoute
@@ -185,12 +168,7 @@ export const skillsRouter = t.router({
             requiredScope: 'skills:write',
         })
         .input(SyncFrameworkInputValidator)
-        .output(
-            z.object({
-                framework: SkillFrameworkValidator,
-                skills: z.array(SkillTreeNodeValidator),
-            })
-        )
+        .output(FrameworkWithSkillsValidator)
         .mutation(async ({ ctx, input }) => {
             const profileId = ctx.user.profile.profileId;
 
@@ -208,19 +186,23 @@ export const skillsRouter = t.router({
                 const providerSkills = await provider.getSkillsForFramework(input.id);
 
                 await upsertSkillsIntoFramework(input.id, providerSkills);
-
-                const result = await getFrameworkWithSkills(input.id);
-                if (!result)
-                    throw new TRPCError({ code: 'NOT_FOUND', message: 'Framework not found' });
-                return result;
             }
 
-            const local = await getFrameworkWithSkills(input.id);
-            if (!local) {
+            const localFramework = await getSkillFrameworkById(input.id);
+            if (!localFramework)
                 throw new TRPCError({ code: 'NOT_FOUND', message: 'Framework not found' });
-            }
 
-            return local;
+            const skills = await buildLocalSkillTreePage(
+                input.id,
+                DEFAULT_ROOTS_LIMIT,
+                DEFAULT_CHILDREN_LIMIT,
+                null
+            );
+
+            return {
+                framework: formatFramework(localFramework),
+                skills,
+            };
         }),
 
     create: profileRoute

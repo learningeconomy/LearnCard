@@ -1,4 +1,5 @@
 import { neogma } from '@instance';
+import { int } from 'neo4j-driver';
 import type { FlatSkillType, SkillType } from 'types/skill';
 
 export const doesProfileManageSkill = async (
@@ -47,7 +48,7 @@ export const getFrameworkRootSkillsPaged = async (
          RETURN s AS s
          ORDER BY s.id
          LIMIT $limitPlusOne`,
-        { frameworkId, cursorId: cursorId ?? null, limitPlusOne: limit + 1 }
+        { frameworkId, cursorId: cursorId ?? null, limitPlusOne: int(limit + 1) }
     );
 
     const all = result.records.map(r => {
@@ -95,8 +96,8 @@ export const getChildrenForSkillInFrameworkPaged = async (
             frameworkId,
             parentId,
             cursorId: cursorId ?? null,
-            limit,
-            limitPlusOne: limit + 1,
+            limit: int(limit),
+            limitPlusOne: int(limit + 1),
         }
     );
 

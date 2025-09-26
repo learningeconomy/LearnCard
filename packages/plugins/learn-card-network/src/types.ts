@@ -55,6 +55,7 @@ import {
     TagType,
     SkillFrameworkType,
     SkillType,
+    PaginatedSkillTree,
     FrameworkWithSkills,
     SyncFrameworkInput,
     AddTagInput,
@@ -471,7 +472,19 @@ export type LearnCardNetworkPluginMethods = {
         input: LinkProviderFrameworkInputType
     ) => Promise<SkillFrameworkType>;
     listMySkillFrameworks: () => Promise<SkillFrameworkType[]>;
-    getSkillFrameworkById: (id: string) => Promise<FrameworkWithSkills>;
+    getSkillFrameworkById: (
+        id: string,
+        options?: { limit?: number; childrenLimit?: number; cursor?: string | null }
+    ) => Promise<FrameworkWithSkills>;
+    getFrameworkSkillTree: (
+        frameworkId: string,
+        options?: { rootsLimit?: number; childrenLimit?: number; cursor?: string | null }
+    ) => Promise<PaginatedSkillTree>;
+    getSkillChildren: (
+        frameworkId: string,
+        skillId: string,
+        options?: { limit?: number; cursor?: string | null }
+    ) => Promise<PaginatedSkillTree>;
     updateSkillFramework: (input: UpdateSkillFrameworkInput) => Promise<SkillFrameworkType>;
     deleteSkillFramework: (id: string) => Promise<{ success: boolean }>;
     getSkillFrameworkAdmins: (frameworkId: string) => Promise<LCNProfile[]>;

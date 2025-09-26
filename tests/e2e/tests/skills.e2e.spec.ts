@@ -24,7 +24,16 @@ type SyncedSkillNode = SkillInputNode & {
 };
 type FlattenedSyncedSkillNode = SyncedSkillNode & { parentRef?: string };
 
-const flattenSkillTree = (skills: SyncedSkillNode[]): FlattenedSyncedSkillNode[] => {
+type SkillTreeLike = SyncedSkillNode[] | { records: SyncedSkillNode[] };
+
+const normalizeNodes = (input: SkillTreeLike): SyncedSkillNode[] => {
+    if (Array.isArray(input)) return input;
+    if (input && Array.isArray(input.records)) return input.records;
+    return [];
+};
+
+const flattenSkillTree = (skillsInput: SkillTreeLike): FlattenedSyncedSkillNode[] => {
+    const skills = normalizeNodes(skillsInput);
     const collected: FlattenedSyncedSkillNode[] = [];
 
     const visit = (nodes: SyncedSkillNode[], parentId?: string) => {
@@ -130,7 +139,7 @@ describe('Skills & Frameworks E2E', () => {
         // Sync skills for that framework
         const synced = await a.invoke.syncFrameworkSkills({ id: fwId });
         expect(synced.framework.id).toBe(fwId);
-        const flattenedSynced = flattenSkillTree(synced.skills as SyncedSkillNode[]);
+        const flattenedSynced = flattenSkillTree(synced.skills as any);
         const syncedSkillIds = flattenedSynced.map(s => s.id).sort();
         expect(syncedSkillIds).toEqual([skill1Id, skill2Id].sort());
         const s2 = flattenedSynced.find(s => s.id === skill2Id)!;
@@ -141,7 +150,7 @@ describe('Skills & Frameworks E2E', () => {
         // Retrieve framework by id (provider-based read, allowed only for manager)
         const fetched = await a.invoke.getSkillFrameworkById(fwId);
         expect(fetched.framework.id).toBe(fwId);
-        const fetchedSynced = flattenSkillTree(fetched.skills as SyncedSkillNode[]);
+        const fetchedSynced = flattenSkillTree(fetched.skills as any);
         const fetchedIds = fetchedSynced.map(s => s.id).sort();
         expect(fetchedIds).toEqual([skill1Id, skill2Id].sort());
         expect(fetchedSynced.find(s => s.id === skill2Id)?.type).toBe('container');
@@ -175,7 +184,7 @@ describe('Skills & Frameworks E2E', () => {
 
         await linkFrameworkForUser(a, fwId);
         const { skills } = await a.invoke.syncFrameworkSkills({ id: fwId });
-        const flattened = flattenSkillTree(skills as SyncedSkillNode[]);
+        const flattened = flattenSkillTree(skills as any);
         const targetSkillId = flattened.find(s => s.id === skill1Id)?.id ?? skill1Id;
 
         // Initially no tags
@@ -232,7 +241,7 @@ describe('Skills & Frameworks E2E', () => {
 
         // Sync to get local skills and pick a skill id
         const { skills } = await a.invoke.syncFrameworkSkills({ id: fwId });
-        const flattened = flattenSkillTree(skills as SyncedSkillNode[]);
+        const flattened = flattenSkillTree(skills as any);
         const targetSkillId = flattened.find(s => s.id === skill1Id)?.id ?? skill1Id;
 
         // User B does not manage A's framework -> should be unauthorized for framework read
