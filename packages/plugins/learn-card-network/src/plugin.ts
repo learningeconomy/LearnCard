@@ -1168,6 +1168,19 @@ export async function getLearnCardNetworkPlugin(
 
                 return client.inbox.getInboxCredential.query({ credentialId: id });
             },
+            sendGuardianApprovalEmail: async (_learnCard, options) => {
+                await ensureUser();
+
+                return client.inbox.sendGuardianApprovalEmail.mutate(options);
+            },
+            approveGuardianRequest: async (_learnCard, token) => {
+                // Open route; no auth required
+                return client.inbox.approveGuardianRequest.mutate({ token });
+            },
+            approveGuardianRequestByPath: async (_learnCard, token) => {
+                // Open route; no auth required
+                return client.inbox.approveGuardianRequestByPath.query({ token });
+            },
             addContactMethod: async (_learnCard, contactMethod) => {
                 await ensureUser();
 
