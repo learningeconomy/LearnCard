@@ -49,7 +49,23 @@
     pending: false
   };
 
-  function validEmail(v) { return /.+@.+\..+/.test(v); }
+  function validEmail(v) {
+    if (typeof v !== 'string') return false;
+
+    var s = v.trim();
+    if (!s) return false;
+
+    try {
+      // Prefer the browser's built-in HTML5 email validator
+      var el = document.createElement('input');
+      el.type = 'email';
+      el.value = s;
+      return el.checkValidity();
+    } catch (e) {
+      // Fallback: simple, well-known conservative regex
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
+    }
+  }
 
   function clear(el) { while (el.firstChild) el.removeChild(el.firstChild); }
 

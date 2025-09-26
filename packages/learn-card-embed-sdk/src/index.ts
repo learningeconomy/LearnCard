@@ -42,16 +42,25 @@ function isTrustedMessageOfType(
 
 /* Styles moved to styles.ts */
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
 function buildIframeHtml(
   opts: InitOptions,
   nonce: string,
   parentOrigin: string,
   loggedInEmail?: string
 ): string {
-  const partnerLabel = (opts.partnerName || 'Partner').replace(/</g, '&lt;');
+  const partnerLabel = escapeHtml(opts.partnerName || 'Partner');
   const primary = (opts.branding?.primaryColor || opts.theme?.primaryColor || '#1F51FF');
   const accent = (opts.branding?.accentColor || '#0F3BD9');
-  const credName = (opts.credential?.name || 'Credential').replace(/</g, '&lt;');
+  const credName = escapeHtml(opts.credential?.name || 'Credential');
   const showConsent = !!opts.requestBackgroundIssuance;
   const csp = "default-src 'none'; img-src https: data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'";
 
