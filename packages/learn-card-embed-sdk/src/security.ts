@@ -6,7 +6,7 @@ export function createNonce(bytes: number = 16): string {
     crypto.getRandomValues(arr);
   } else {
     // Fallback: not cryptographically strong, but keeps API stable
-    for (let i = 0; i < arr.length; i++) arr[i] = Math.floor(Math.random() * 256);
+    throw new Error('Crypto API unavailable: Cannot generate secure nonce');
   }
   return Array.from(arr).map((b) => b.toString(16).padStart(2, '0')).join('');
 }
